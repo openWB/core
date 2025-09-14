@@ -9,6 +9,7 @@ from modules.common.component_state import TariffState
 from modules.electricity_tariffs.groupe_e.config import GroupeETariffConfiguration
 from modules.electricity_tariffs.groupe_e.config import GroupeETariff
 
+
 # Combine power and grid prices, convert to kWh
 def transformPrices(power: dict) -> tuple[str, float]:
     timestamp = str(int(datetime.strptime(power['start_timestamp'], "%Y-%m-%dT%H:%M:%S%z")
@@ -19,14 +20,14 @@ def transformPrices(power: dict) -> tuple[str, float]:
 
 # Read prices from Groupe E API
 def readApi() -> list[tuple[str, float]]:
-    endpoint="https://api.tariffs.groupe-e.ch/v1/tariffs"
+    endpoint = "https://api.tariffs.groupe-e.ch/v1/tariffs"
     utcnow = datetime.now(timezone.utc)
     startDate = quote(utcnow.strftime("%Y-%m-%dT%H:00:00+02:00"))
-    endDate = quote((utcnow + timedelta(days = 2)).strftime("%Y-%m-%dT%H:00:00+02:00"))
-    session=req.get_http_session()
+    endDate = quote((utcnow + timedelta(days=2)).strftime("%Y-%m-%dT%H:00:00+02:00"))
+    session = req.get_http_session()
     power_raw = session.get(
         url=endpoint +
-            f"?start_timestamp={startDate}&end_timestamp={endDate}",
+        f"?start_timestamp={startDate}&end_timestamp={endDate}",
         ).json()
     return list(map(transformPrices, power_raw))
 
@@ -46,8 +47,9 @@ def aggregatePrices(quarterlyPrices) -> list[tuple[str, float]]:
         else:
             currentHourPrices.append(p[1])
     if len(currentHourPrices) > 0:
-            hourlyPrices.append((currentTimestamp, max(currentHourPrices)))
+        hourlyPrices.append((currentTimestamp, max(currentHourPrices)))
     return hourlyPrices
+
 
 def fetch_prices(config: GroupeETariffConfiguration) -> Dict[str, float]:
     # Fetch electricity prices from EKZ API
@@ -55,6 +57,7 @@ def fetch_prices(config: GroupeETariffConfiguration) -> Dict[str, float]:
     hourly_list = aggregatePrices(pricelist)
     prices: Dict[str, float] = dict(hourly_list)
     return prices
+
 
 def create_electricity_tariff(config: GroupeETariff):
     def updater():
