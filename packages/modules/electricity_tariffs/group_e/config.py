@@ -1,9 +1,7 @@
-from typing import Optional
-
-
 class GroupeETariffConfiguration:
     def __init__(self):
         self.country = "ch"
+
 
 class GroupeETariff:
     def __init__(self,

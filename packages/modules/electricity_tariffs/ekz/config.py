@@ -6,6 +6,7 @@ class EkzTariffConfiguration:
         self.country = "ch"
         self.unit = "rp"
 
+
 class EkzTariff:
     def __init__(self,
                  name: str = "EKZ (CH)",
