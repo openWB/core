@@ -257,12 +257,8 @@ $dark-tab-icon: #d7d9e0;
   .theme-text {
     color: var(--q-white) !important;
   }
-  .deselected {
-    color: var(--q-grey) !important;
-  }
   // Header colors
   .q-header {
-    background-color: var(--q-background-2);
     color: var(--q-white);
   }
   // Drawer background
@@ -275,17 +271,6 @@ $dark-tab-icon: #d7d9e0;
       color: var(--q-tab-icon) !important;
     }
   }
-  // Tab panel background
-  .q-tab-panels {
-    background-color: var(--q-background-2);
-  }
-  // Tab CSS
-  .q-tab {
-    background-color: var(--q-background-2);
-    border-top-left-radius: 10px;
-    border-top-right-radius: 10px;
-    border: 1px solid var(--q-secondary);
-  }
   // Tab active background color
   .q-tab--active {
     background-color: color.scale($dark-secondary, $lightness: 10%);
@@ -293,26 +278,20 @@ $dark-tab-icon: #d7d9e0;
   // Carousel control arrows and buttons
   .q-carousel__control {
     .q-btn {
-      &:before {
-        box-shadow: none;
-      }
       .q-icon {
         color: var(--q-carousel-control);
         &:before {
           color: var(--q-carousel-control);
-          box-shadow: none;
         }
       }
     }
   }
   // Slide container background
   .q-carousel__slide {
-    background-color: var(--q-background-2);
     color: var(--q-white);
   }
   // Slide background
   .q-card {
-    background-color: var(--q-secondary);
     color: var(--q-white);
   }
   // Input field text label color
@@ -350,65 +329,17 @@ $dark-tab-icon: #d7d9e0;
 
   // Table styling - Dark Theme
   .sticky-header-table {
-    /* height or max-height is important */
-    height: 310px;
-
-    .q-table__top,
-    .q-table__bottom,
-    thead tr:first-child th {
-      background-color: var(--q-primary);
-      color: var(--q-white);
-      font-size: 0.9rem;
-    }
-
-    thead tr th {
-      position: sticky;
-      z-index: 1;
-    }
-
-    thead tr:first-child th {
-      top: 0;
-    }
-
-    /* this is when the loading indicator appears */
-    &.q-table--loading thead tr:last-child th {
-      /* height of all previous header rows */
-      top: 48px;
-    }
-
-    /* prevent scrolling behind sticky top row on focus */
     tbody {
-      /* height of all previous header rows */
-      scroll-margin-top: 48px;
-      background-color: var(--q-secondary);
       color: var(--q-white);
-    }
-
-    tbody tr,
-    .q-table__middle,
-    .q-table__grid-content {
-      background-color: var(--q-secondary);
     }
 
     tbody tr:hover {
       background-color: rgba(255, 255, 255, 0.07);
     }
-
-    // Scrollbar styling for tables - Dark Theme
-    .q-table__middle.q-virtual-scroll {
-      // Firefox
-      scrollbar-width: thin;
-      scrollbar-color: var(--q-primary) var(--q-secondary);
-    }
-  }
-
-  .q-scrollarea {
-    border: 1px solid var(--q-secondary) !important;
   }
 
   //Scrollbar styling für .q-list - Dark Theme
   .q-list {
-    scrollbar-width: thin;
     scrollbar-color: var(--q-primary) var(--q-list);
   }
 }
