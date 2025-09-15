@@ -138,6 +138,7 @@ $battery: #ba7128;
   // Table styling
   .sticky-header-table {
     flex-grow: 1;
+    max-width: 100%;
 
     .q-table__top,
     .q-table__bottom,

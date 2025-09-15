@@ -23,13 +23,33 @@
     @row-click="onRowClick"
   >
     <!-- "col" = column must match Quasar naming convention -->
+    <template #row-expand="slotProps">
+      <VehicleConnectionStateIcon :vehicle-id="slotProps.row.id" />
+    </template>
+    <template #body-cell-name="slotProps">
+      <q-td :class="[`text-${slotProps.col.align}`, 'max-width-0']">
+        <div class="ellipsis" :title="slotProps.row.name">{{ slotProps.row.name }}</div>
+      </q-td>
+    </template>
+    <template #body-cell-manufacturer="slotProps">
+      <q-td auto-width :class="`text-${slotProps.col.align}`">
+        {{ slotProps.row.manufacturer }}
+      </q-td>
+    </template>
+    <template #body-cell-model="slotProps">
+      <q-td auto-width :class="`text-${slotProps.col.align}`">
+        {{ slotProps.row.model }}
+      </q-td>
+    </template>
     <template #body-cell-plugged="slotProps">
-      <q-td :class="`text-${slotProps.col.align}`">
+      <q-td auto-width :class="`text-${slotProps.col.align}`">
         <ChargePointStateIcon :vehicle-id="slotProps.row.id" />
       </q-td>
     </template>
-    <template #row-expand="slotProps">
-      <VehicleConnectionStateIcon :vehicle-id="slotProps.row.id" />
+    <template #body-cell-vehicleSocValue="slotProps">
+      <q-td auto-width :class="`text-${slotProps.col.align}`">
+        {{ slotProps.row.vehicleSocValue }}
+      </q-td>
     </template>
   </BaseTable>
 
@@ -119,3 +139,9 @@ const onRowClick = (row: VehicleRow) => {
   modalChargeVehicleCardVisible.value = true;
 };
 </script>
+
+<style scoped lang="scss">
+.max-width-0 {
+  max-width: 0;
+}
+</style>
