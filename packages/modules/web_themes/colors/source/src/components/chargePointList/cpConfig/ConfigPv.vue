@@ -11,7 +11,7 @@
 			<template #inline-item>
 				<SwitchInput v-model="useMinPv" />
 			</template>
-			<div class="subconfigstack grid-col-12">
+			<div class="subconfigstack grid-col-12 mt-4">
 				<div v-if="useMinPv" class="subconfig subgrid">
 					<span class="subconfigtitle grid-col-1">Stärke:</span>
 					<RangeInput
@@ -46,7 +46,7 @@
 			<template #inline-item>
 				<SwitchInput v-model="useMinSoc" class="grid-col-3" />
 			</template>
-			<div v-if="useMinSoc" class="subconfigstack">
+			<div v-if="useMinSoc" class="subconfigstack mt-4">
 				<div class="subconfig subgrid">
 					<span class="subconfigtitle grid-col-1">SoC:</span>
 					<RangeInput
