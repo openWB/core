@@ -25,12 +25,16 @@
     <!-- full view table body slots -->
     <template #body-cell-name="slotProps">
       <q-td :class="[`text-${slotProps.col.align}`, 'max-width-0']">
-        <div class="ellipsis" :title="slotProps.row.name">{{ slotProps.row.name }}</div>
+        <div class="ellipsis" :title="slotProps.row.name">
+          {{ slotProps.row.name }}
+        </div>
       </q-td>
     </template>
     <template #body-cell-vehicle="slotProps">
       <q-td :class="[`text-${slotProps.col.align}`, 'max-width-0']">
-        <div class="ellipsis" :title="slotProps.row.vehicle">{{ slotProps.row.vehicle }}</div>
+        <div class="ellipsis" :title="slotProps.row.vehicle">
+          {{ slotProps.row.vehicle }}
+        </div>
       </q-td>
     </template>
     <template #body-cell-plugged="slotProps">
@@ -79,11 +83,13 @@
     <!-- compact view table body slots -->
     <!-- compact view charge point name and vehicle name displayed in one field -->
     <template #body-cell-nameAndVehicle="slotProps">
-      <q-td
-        :class="[`text-${slotProps.col.align}`, 'max-width-0']"
-      >
-        <div class="ellipsis" :title="slotProps.row.name">{{ slotProps.row.name }}</div>
-        <div class="ellipsis text-caption" :title="slotProps.row.vehicle">{{ slotProps.row.vehicle }}</div>
+      <q-td :class="[`text-${slotProps.col.align}`, 'max-width-0']">
+        <div class="ellipsis" :title="slotProps.row.name">
+          {{ slotProps.row.name }}
+        </div>
+        <div class="ellipsis text-caption" :title="slotProps.row.vehicle">
+          {{ slotProps.row.vehicle }}
+        </div>
       </q-td>
     </template>
 

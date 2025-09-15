@@ -28,7 +28,9 @@
     </template>
     <template #body-cell-name="slotProps">
       <q-td :class="[`text-${slotProps.col.align}`, 'max-width-0']">
-        <div class="ellipsis" :title="slotProps.row.name">{{ slotProps.row.name }}</div>
+        <div class="ellipsis" :title="slotProps.row.name">
+          {{ slotProps.row.name }}
+        </div>
       </q-td>
     </template>
     <template #body-cell-manufacturer="slotProps">
