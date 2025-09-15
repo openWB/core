@@ -137,8 +137,7 @@ $battery: #ba7128;
   }
   // Table styling
   .sticky-header-table {
-    /* height or max-height is important */
-    height: 310px;
+    flex-grow: 1;
 
     .q-table__top,
     .q-table__bottom,
