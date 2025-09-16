@@ -22,17 +22,17 @@
         </q-tab> -->
       </q-tabs>
       <!-- Tab Panels -->
-      <q-tab-panels v-model="tab" class="col">
+      <q-tab-panels v-model="tab" class="col column">
         <!-- Charge Points -->
-        <q-tab-panel name="charge-points">
+        <q-tab-panel name="charge-points" class="column">
           <ChargePointInformation />
         </q-tab-panel>
         <!-- Vehicles -->
-        <q-tab-panel name="vehicles">
+        <q-tab-panel name="vehicles" class="column">
           <VehicleInformation />
         </q-tab-panel>
         <!-- Batteries -->
-        <q-tab-panel v-if="batteryConfigured" name="batteries">
+        <q-tab-panel v-if="batteryConfigured" name="batteries" class="column">
           <BatteryInformation />
         </q-tab-panel>
         <!-- Smart Home -->
@@ -68,10 +68,19 @@ const batteryConfigured = computed(() => {
 <style scoped lang="scss">
 .chart-section {
   height: 40vh;
+  min-height: 350px;
+}
+
+.tab-section,
+.tab-section :deep(.q-panel-parent .q-panel) {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .tab-section .q-tab-panel {
   max-width: 100vw;
+  flex-grow: 1;
 }
 
 @media screen and (max-width: $breakpoint-xs-max) {

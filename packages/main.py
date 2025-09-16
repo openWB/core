@@ -233,6 +233,11 @@ class HandlerAlgorithm:
 
     @__with_handler_lock(error_threshold=60)
     def handler_random_nightly(self):
+        log.warning("Display wird neu geladen.")  # nur zur Info im Log
+        # chromium neu starten, um größere Auswirkungen eines Speicherlecks zu vermeiden
+        run_command.run_command([
+            str(Path(__file__).resolve().parents[1] / "runs" / "update_local_display.sh"), "1"
+        ], process_exception=True)
         try:
             data.data.system_data["system"].thread_backup_and_send_to_cloud()
         except Exception:

@@ -1,12 +1,12 @@
 <template>
   <SliderStandard
     title="Minimaler Dauerstrom"
-    :min="-1"
+    :min="0"
     :max="16"
     :step="1"
     unit="A"
-    :off-value-left="-1"
-    :discrete-values="[-1, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]"
+    :off-value-left="0"
+    :discrete-values="[0, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]"
     v-model="pvMinCurrent.value"
     class="q-mt-md"
   />

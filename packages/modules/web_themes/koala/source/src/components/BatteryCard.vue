@@ -7,15 +7,17 @@
       'full-height': props.fullHeight,
     }"
   >
-    <q-card-section class="row items-center justify-between">
+    <q-card-section class="row no-wrap items-center justify-between">
       <div class="text-h6 text-bold ellipsis" :title="cardTitle">
         {{ cardTitle }}
       </div>
-      <q-icon
-        class="cursor-pointer q-ml-auto"
+      <q-space />
+      <q-btn
         v-if="showSettings"
-        name="settings"
-        size="sm"
+        icon="settings"
+        flat
+        round
+        dense
         @click="dialog?.open()"
       />
     </q-card-section>

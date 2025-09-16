@@ -4,7 +4,7 @@
     class="card-width"
     :class="{ 'full-height': props.fullHeight }"
   >
-    <q-card-section class="row">
+    <q-card-section class="row no-wrap">
       <div class="text-h6 text-bold ellipsis" :title="vehicle?.name">
         {{ vehicle?.name }}
       </div>

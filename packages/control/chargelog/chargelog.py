@@ -2,6 +2,7 @@ import datetime
 from enum import Enum
 import json
 import logging
+import os
 import pathlib
 from typing import Any, Dict, List, Optional
 
@@ -250,13 +251,18 @@ def write_new_entry(new_entry):
     filepath = str(_get_parent_file() / "data" / "charge_log" /
                    (timecheck.create_timestamp_YYYYMM() + ".json"))
     try:
-        with open(filepath, "r", encoding="utf-8") as json_file:
-            content = json.load(json_file)
+        if os.path.exists(filepath) and os.path.getsize(filepath) == 0:
+            content = []
+        else:
+            with open(filepath, "r", encoding="utf-8") as json_file:
+                try:
+                    content = json.load(json_file)
+                except json.decoder.JSONDecodeError:
+                    corrupt_path = f"{filepath}.unparsable_{timecheck.create_timestamp()}"
+                    os.rename(filepath, corrupt_path)
+                    log.error(f"ChargeLog: Korrupte Datei umbenannt nach {corrupt_path}")
+                    content = []
     except FileNotFoundError:
-        # with open(filepath, "w", encoding="utf-8") as jsonFile:
-        #     json.dump([], jsonFile)
-        # with open(filepath, "r", encoding="utf-8") as jsonFile:
-        #     content = json.load(jsonFile)
         content = []
     content.append(new_entry)
     write_and_check(filepath, content)
