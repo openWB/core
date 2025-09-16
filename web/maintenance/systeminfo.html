@@ -11,6 +11,13 @@
 			<p>Lade Daten...</p>
 		</div>
 		<div id="error"></div>
+		<div id="details-modal" class="details-modal">
+			<div class="details-modal-content">
+				<h2 id="details-modal-header">Details</h2>
+				<pre id="details-modal-message"></pre>
+				<button id="details-modal-close">Schließen</button>
+			</div>
+		</div>
 		<script>
 			const fetchInterval = 5000; // 5 Sekunden
 			const maxHistoryLength = 60; // z.B. 5 Minuten bei 5s Intervall
@@ -94,6 +101,16 @@
 							for (const subKey in value) {
 								if (Object.hasOwn(value, subKey)) {
 									const v = value[subKey];
+									html += `<tr><th>${subKey}`;
+									// Falls "details" vorhanden, einen runden Info-Button anzeigen
+									if (v && typeof v === "object" && "details" in v) {
+										const infoBtnId = `info_${key}_${subKey}`.replace(
+											/\W/g,
+											"_"
+										);
+										html += ` <button class="details-button" data-details="${v.details}">i</button>`;
+									}
+									html += '</th><td style="text-align:right;">';
 									if (
 										v &&
 										typeof v === "object" &&
@@ -102,10 +119,11 @@
 									) {
 										let num = Number(v.value);
 										let formatted = isFinite(num) ? num.toFixed(1) : v.value;
-										html += `<tr><th>${subKey}</th><td style="text-align:right;">${formatted} <span style="color:#888;font-size:0.95em">${v.unit}</span></td></tr>`;
+										html += `${formatted} <span style="color:#888;font-size:0.95em">${v.unit}</span>`;
 									} else {
-										html += `<tr><th>${subKey}</th><td style="text-align:right;">${v}</td></tr>`;
+										html += `${v}`;
 									}
+									html += "</td></tr>";
 								}
 							}
 							html += "</table>";
@@ -168,6 +186,20 @@
 						}
 					}
 				}
+
+				// Event-Handler für Info-Buttons (Details)
+				document.querySelectorAll(".details-button").forEach((btn) => {
+					btn.onclick = function () {
+						const modal = document.getElementById("details-modal");
+						const msg = document.getElementById("details-modal-message");
+						msg.textContent = btn.getAttribute("data-details");
+						const header = document.getElementById("details-modal-header");
+						const th = btn.closest("th");
+						let subKeyText = th ? th.childNodes[0].textContent.trim() : "";
+						header.textContent = `Details zu '${subKeyText}'`;
+						modal.style.display = "flex";
+					};
+				});
 			}
 
 			function renderCharts() {
@@ -193,7 +225,8 @@
 				let chartsHtml = '<div class="card-container">';
 				for (const key in history) {
 					if (!Object.hasOwn(history, key)) continue;
-					if (!chartSections.some(section => key.startsWith(section))) continue;
+					if (!chartSections.some((section) => key.startsWith(section)))
+						continue;
 					const value = history[key];
 					// Prüfe, ob es sich um mehrere Reihen handelt (Objekt mit value/unit) oder Array
 					if (Array.isArray(value)) {
@@ -248,7 +281,8 @@
 				// Diagramme zeichnen
 				for (const key in history) {
 					if (!Object.hasOwn(history, key)) continue;
-					if (!chartSections.some(section => key.startsWith(section))) continue;
+					if (!chartSections.some((section) => key.startsWith(section)))
+						continue;
 					const value = history[key];
 					if (Array.isArray(value)) {
 						const canvas = document.getElementById(`chart_${key}`);
@@ -389,6 +423,13 @@
 					document.getElementById("error").textContent = err.message;
 				}
 			}
+
+			document.getElementById("details-modal-close").onclick = function () {
+				document.getElementById("details-modal").style.display = "none";
+			};
+			document.getElementById("details-modal").onclick = function (e) {
+				if (e.target === this) this.style.display = "none";
+			};
 
 			fetchSystemInfo();
 			setInterval(fetchSystemInfo, fetchInterval);
