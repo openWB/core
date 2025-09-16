@@ -192,7 +192,11 @@ class ModbusClient:
     def write_single_coil(self, address: int, value: Any, **kwargs):
         self._delegate.write_coil(address, value, **kwargs)
 
-    def __read_bulk(self, read_register_method: Callable, start_address: int, count: int, mapping: list[tuple[int, ModbusDataType]],
+    def __read_bulk(self,
+                    read_register_method: Callable,
+                    start_address: int,
+                    count: int,
+                    mapping: list[tuple[int, Union[ModbusDataType, Iterable[ModbusDataType]]]],
                     byteorder: Endian = Endian.Big, wordorder: Endian = Endian.Big, **kwargs):
         """
         Liest einen Registerbereich und gibt ein dict mit reg als Key und dekodiertem Wert als Value zurück.
@@ -206,15 +210,16 @@ class ModbusClient:
                 raise Exception(__name__+" "+str(response))
             decoder = BinaryPayloadDecoder.fromRegisters(response.registers, byteorder, wordorder)
             results = {}
-            for reg, dtype in mapping:
+            for reg, data_type in mapping:
+                multi_request = isinstance(data_type, Iterable)
+                if not multi_request:
+                    data_type = [data_type]
                 offset = reg - start_address
                 decoder.reset()
                 decoder.skip_bytes(offset * 2)
-                if dtype == ModbusDataType.FLOAT_16:
-                    val = struct.unpack(">e", struct.pack(">H", decoder.decode_16bit_uint()))
-                else:
-                    val = getattr(decoder, dtype.decoding_method)()
-                results[reg] = val
+                val = [struct.unpack(">e", struct.pack(">H", decoder.decode_16bit_uint())) if t ==
+                       ModbusDataType.FLOAT_16 else getattr(decoder, t.decoding_method)() for t in data_type]
+                results[reg] = val if multi_request else val[0]
             return results
         except pymodbus.exceptions.ConnectionException as e:
             self.close()
@@ -228,14 +233,35 @@ class ModbusClient:
             self.close()
             raise Exception(__name__+" "+str(type(e))+" " + str(e)) from e
 
-    def read_input_registers_bulk(self, start_address: int, count: int, mapping: list[tuple[int, ModbusDataType]],
-                                  byteorder: Endian = Endian.Big, wordorder: Endian = Endian.Big, **kwargs):
+    def read_input_registers_bulk(self,
+                                  start_address: int,
+                                  count: int,
+                                  mapping: list[tuple[int, Union[ModbusDataType, Iterable[ModbusDataType]]]],
+                                  byteorder: Endian = Endian.Big,
+                                  wordorder: Endian = Endian.Big,
+                                  **kwargs):
         return self.__read_bulk(self._delegate.read_input_registers,
                                 start_address,
                                 count,
                                 mapping,
                                 byteorder,
-                                wordorder)
+                                wordorder,
+                                **kwargs)
+
+    def read_holding_registers_bulk(self,
+                                    start_address: int,
+                                    count: int,
+                                    mapping: list[tuple[int, Union[ModbusDataType, Iterable[ModbusDataType]]]],
+                                    byteorder: Endian = Endian.Big,
+                                    wordorder: Endian = Endian.Big,
+                                    **kwargs):
+        return self.__read_bulk(self._delegate.read_holding_registers,
+                                start_address,
+                                count,
+                                mapping,
+                                byteorder,
+                                wordorder,
+                                **kwargs)
 
 
 class ModbusTcpClient_(ModbusClient):

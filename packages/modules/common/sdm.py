@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 from enum import IntEnum
-import time
-from typing import List, Tuple
 
 from modules.common import modbus
 from modules.common.abstract_counter import AbstractCounter
@@ -21,17 +19,9 @@ class Sdm(AbstractCounter):
 
 class SdmRegister(IntEnum):
     VOLTAGE_L1 = 0x00
-    VOLTAGE_L2 = 0x02
-    VOLTAGE_L3 = 0x04
     CURRENT_L1 = 0x06
-    CURRENT_L2 = 0x08
-    CURRENT_L3 = 0x0A
     POWER_L1 = 0x0C
-    POWER_L2 = 0x0E
-    POWER_L3 = 0x10
     POWER_FACTOR_L1 = 0x1E
-    POWER_FACTOR_L2 = 0x20
-    POWER_FACTOR_L3 = 0x22
     FREQUENCY = 0x46
     IMPORTED = 0x48
     EXPORTED = 0x4A
@@ -39,18 +29,10 @@ class SdmRegister(IntEnum):
 
 class Sdm630_72(Sdm):
     REG_MAPPING = (
-        (SdmRegister.VOLTAGE_L1, ModbusDataType.FLOAT_32),
-        (SdmRegister.VOLTAGE_L2, ModbusDataType.FLOAT_32),
-        (SdmRegister.VOLTAGE_L3, ModbusDataType.FLOAT_32),
-        (SdmRegister.CURRENT_L1, ModbusDataType.FLOAT_32),
-        (SdmRegister.CURRENT_L2, ModbusDataType.FLOAT_32),
-        (SdmRegister.CURRENT_L3, ModbusDataType.FLOAT_32),
-        (SdmRegister.POWER_L1, ModbusDataType.FLOAT_32),
-        (SdmRegister.POWER_L2, ModbusDataType.FLOAT_32),
-        (SdmRegister.POWER_L3, ModbusDataType.FLOAT_32),
-        (SdmRegister.POWER_FACTOR_L1, ModbusDataType.FLOAT_32),
-        (SdmRegister.POWER_FACTOR_L2, ModbusDataType.FLOAT_32),
-        (SdmRegister.POWER_FACTOR_L3, ModbusDataType.FLOAT_32),
+        (SdmRegister.VOLTAGE_L1, [ModbusDataType.FLOAT_32]*3),
+        (SdmRegister.CURRENT_L1, [ModbusDataType.FLOAT_32]*3),
+        (SdmRegister.POWER_L1, [ModbusDataType.FLOAT_32]*3),
+        (SdmRegister.POWER_FACTOR_L1, [ModbusDataType.FLOAT_32]*3),
         (SdmRegister.FREQUENCY, ModbusDataType.FLOAT_32),
         (SdmRegister.IMPORTED, ModbusDataType.FLOAT_32),
         (SdmRegister.EXPORTED, ModbusDataType.FLOAT_32),
@@ -69,14 +51,11 @@ class Sdm630_72(Sdm):
         counter_state = CounterState(
             imported=resp[SdmRegister.IMPORTED]*1000,
             exported=resp[SdmRegister.EXPORTED]*1000,
-            power=sum(resp[r] for r in (SdmRegister.POWER_L1, SdmRegister.POWER_L2, SdmRegister.POWER_L3)),
-            voltages=[resp[r]
-                      for r in (SdmRegister.VOLTAGE_L1, SdmRegister.VOLTAGE_L2, SdmRegister.VOLTAGE_L3)],
-            currents=[resp[r]
-                      for r in (SdmRegister.CURRENT_L1, SdmRegister.CURRENT_L2, SdmRegister.CURRENT_L3)],
-            powers=[resp[r] for r in (SdmRegister.POWER_L1, SdmRegister.POWER_L2, SdmRegister.POWER_L3)],
-            power_factors=[resp[r] for r in (SdmRegister.POWER_FACTOR_L1,
-                                             SdmRegister.POWER_FACTOR_L2, SdmRegister.POWER_FACTOR_L3)],
+            power=sum(resp[SdmRegister.POWER_L1]),
+            voltages=resp[SdmRegister.VOLTAGE_L1],
+            currents=resp[SdmRegister.CURRENT_L1],
+            powers=resp[SdmRegister.POWER_L1],
+            power_factors=resp[SdmRegister.POWER_FACTOR_L1],
             frequency=frequency,
             serial_number=self.get_serial_number()
         )
