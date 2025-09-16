@@ -43,8 +43,6 @@ export class Config {
 	private _lowerPriceBound = 0
 	private _upperPriceBound = 0
 	private _showPmLabels = true
-	isEtEnabled: boolean = false
-	etPrice: number = 20.5
 	showRightButton = true
 	showLeftButton = true
 	// graphMode = ''
@@ -407,6 +405,7 @@ export class GlobalData {
 	cpDailyExported = 0
 	evuId = 0
 	etProvider = ''
+	country = 'de'
 	get pvBatteryPriority() {
 		return this._pvBatteryPriority
 	}

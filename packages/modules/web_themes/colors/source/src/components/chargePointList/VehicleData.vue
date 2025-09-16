@@ -120,14 +120,14 @@
 			heading="Strompreis:"
 			class="grid-col-4 grid-left"
 		>
-			<span :style="currentPriceStyle">{{ currentPrice }} ct </span>
+			<span :style="currentPriceStyle">{{ etData.etCurrentPriceString }} </span>
 		</InfoItem>
 		<InfoItem v-if="cp.etActive" heading="max. Preis:" class="grid-col-4">
 			<span type="button" @click="editPrice = !editPrice"
 				>{{
 					props.chargepoint.etActive
 						? (Math.round(props.chargepoint.etMaxPrice * 10) / 10).toFixed(1) +
-							' ct'
+							priceUnit
 						: '-'
 				}}
 				<i
@@ -175,6 +175,7 @@ import RangeInput from '../shared/RangeInput.vue'
 import PriceChart from '../priceChart/PriceChart.vue'
 import InfoItem from '@/components/shared/InfoItem.vue'
 import ChargingState from './ChargingState.vue'
+import { globalData } from '@/assets/js/model'
 
 const props = defineProps<{
 	chargepoint: ChargePoint
@@ -253,7 +254,9 @@ const modePillStyle = computed(() => {
 			}
 	}
 })
-
+const priceUnit = computed(() => {
+	return globalData.country === 'ch' ? ' Rp' : ' ct'
+})
 //methods
 function loadSoc() {
 	updateServer('socUpdate', 1, props.chargepoint.connectedVehicle)
