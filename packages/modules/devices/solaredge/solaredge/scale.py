@@ -1,8 +1,8 @@
 import logging
 import math
-from typing import List
+from typing import Iterable, List, Union
 
-from modules.common.modbus import ModbusDataType, ModbusTcpClient_, Number
+from modules.common.modbus import Number
 
 log = logging.getLogger(__name__)
 
@@ -12,16 +12,9 @@ log = logging.getLogger(__name__)
 UINT16_UNSUPPORTED = 0xFFFF
 
 
-def scale_registers(registers: List[Number]) -> List[float]:
-    log.debug("Registers %s, Scale %s", registers[:-1],  registers[-1])
-    scale = math.pow(10, registers[-1])
-    return [register * scale if register != UINT16_UNSUPPORTED else 0 for register in registers[:-1]]
-
-
-def create_scaled_reader(client: ModbusTcpClient_, modbus_id: int, type: ModbusDataType):
-    def scaled_reader(address: int, count: int):
-        return scale_registers(
-            client.read_holding_registers(address, [type] * count + [ModbusDataType.INT_16], unit=modbus_id)
-        )
-
-    return scaled_reader
+def scale_registers(registers: Union[List[Number], Number], scale: float) -> List[float]:
+    log.debug("Registers %s, Scale %s", registers, scale)
+    if not isinstance(registers, Iterable):
+        return registers * math.pow(10, scale) if registers != UINT16_UNSUPPORTED else 0
+    else:
+        return [register * math.pow(10, scale) if register != UINT16_UNSUPPORTED else 0 for register in registers]
