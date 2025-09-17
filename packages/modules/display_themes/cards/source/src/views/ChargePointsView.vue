@@ -1304,7 +1304,7 @@ export default {
                   @click="
                     setChargePointConnectedVehicleScheduledChargingPlanActive(
                       modalChargePointId,
-                      plan.id,
+                      planKey,
                       !plan.active,
                     )
                   "
@@ -1444,7 +1444,7 @@ export default {
                     @click="
                       setChargePointConnectedVehicleTimeChargingPlanActive(
                         modalChargePointId,
-                        plan.id,
+                        planKey,
                         !plan.active,
                       )
                     "
