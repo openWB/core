@@ -210,16 +210,16 @@ class ModbusClient:
                 raise Exception(__name__+" "+str(response))
             decoder = BinaryPayloadDecoder.fromRegisters(response.registers, byteorder, wordorder)
             results = {}
-            for reg, data_type in mapping:
-                multi_request = isinstance(data_type, Iterable)
-                if not multi_request:
+            for register_address, data_type in mapping:
+                multiple_register_requested = isinstance(data_type, Iterable)
+                if not multiple_register_requested:
                     data_type = [data_type]
-                offset = reg - start_address
+                offset = register_address - start_address
                 decoder.reset()
                 decoder.skip_bytes(offset * 2)
                 val = [struct.unpack(">e", struct.pack(">H", decoder.decode_16bit_uint())) if t ==
                        ModbusDataType.FLOAT_16 else getattr(decoder, t.decoding_method)() for t in data_type]
-                results[reg] = val if multi_request else val[0]
+                results[register_address] = val if multiple_register_requested else val[0]
             return results
         except pymodbus.exceptions.ConnectionException as e:
             self.close()
