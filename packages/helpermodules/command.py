@@ -463,6 +463,7 @@ class Command:
             new_charge_template = asdict(new_charge_template)
         else:
             new_charge_template = get_new_charge_template()
+            new_charge_template["name"] = f'{new_charge_template["name"]} {new_id}'
         new_charge_template["id"] = new_id
 
         Pub().pub("openWB/set/command/max_id/charge_template", new_id)
@@ -643,13 +644,14 @@ class Command:
     def addEvTemplate(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neues Fahrzeug-Profil erstellt werden soll.
         """
+        new_id = self.max_id_ev_template + 1
         # check if "payload" contains "data.copy"
         if "data" in payload and "copy" in payload["data"]:
             new_ev_template = asdict(data.data.ev_template_data[f"et{payload['data']['copy']}"].data).copy()
             new_ev_template["name"] = f'Kopie von {new_ev_template["name"]}'
         else:
             new_ev_template = dataclass_utils.asdict(EvTemplateData())
-        new_id = self.max_id_ev_template + 1
+            new_ev_template["name"] = f'{new_ev_template["name"]} {new_id}'
         new_ev_template["id"] = new_id
         self.max_id_ev_template = new_id
         Pub().pub(f'openWB/set/vehicle/template/ev_template/{new_id}', new_ev_template)
@@ -678,6 +680,7 @@ class Command:
         """
         new_id = self.max_id_vehicle + 1
         vehicle_default = ev.get_vehicle_default()
+        vehicle_default["name"] = f'{vehicle_default["name"]} {new_id}'
         for default in vehicle_default:
             Pub().pub(f"openWB/set/vehicle/{new_id}/{default}", vehicle_default[default])
         Pub().pub(f"openWB/set/vehicle/{new_id}/soc_module/config", {"type": None, "configuration": {}})
