@@ -31,7 +31,8 @@ class IDMCounter(AbstractCounter):
 
     def update(self):
         unit = self.component_config.configuration.modbus_id
-        power = self.client.read_input_registers(4123, ModbusDataType.FLOAT_32, wordorder=Endian.Little, unit=unit)
+        power = self.client.read_input_registers(4122, ModbusDataType.FLOAT_32, 
+                                                 wordorder=Endian.Little, unit=unit) *1000
         imported, exported = self.sim_counter.sim_count(power)
 
         counter_state = CounterState(
