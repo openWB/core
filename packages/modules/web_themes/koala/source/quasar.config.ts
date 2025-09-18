@@ -5,7 +5,7 @@
 
 import { defineConfig } from '#q-app/wrappers';
 
-export default defineConfig((/* ctx */) => {
+export default defineConfig((ctx) => {
   return {
     // https://v2.quasar.dev/quasar-cli-vite/prefetch-feature
     // preFetch: true,
@@ -56,6 +56,15 @@ export default defineConfig((/* ctx */) => {
       distDir: '../web/',
 
       // extendViteConf (viteConf) {},
+      extendViteConf(viteConf) {
+        if (ctx.prod === true) {
+          // drop console statements in production build
+          viteConf.esbuild = {
+            ...viteConf.esbuild,
+            drop: ['console', 'debugger'],
+          };
+        }
+      },
       // viteVuePluginOptions: {},
 
       vitePlugins: [
