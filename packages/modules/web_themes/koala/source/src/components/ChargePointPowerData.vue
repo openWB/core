@@ -2,7 +2,7 @@
   <div
     :class="[
       'text-no-wrap items-center',
-      columnDisplayFormat ? 'column' : 'row inline',
+      columnDisplayFormat ? 'column' : 'row inline no-wrap',
     ]"
   >
     <span>{{ power }}</span>

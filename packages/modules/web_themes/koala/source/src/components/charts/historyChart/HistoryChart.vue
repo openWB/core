@@ -178,9 +178,11 @@ const chartLabels = computed(() => {
     : Math.floor(Date.now() / 1000);
   const dataRange = maxTimestamp - minTimestamp;
   let range = 300; // 5 Minuten
-  if (dataRange <= 30 * 60) { // bis 15 Minuten
+  if (dataRange <= 30 * 60) {
+    // bis 30 Minuten
     range = 60; // 1 Minute
-  } else if (dataRange <= 60 * 60) { // bis 30 Minuten
+  } else if (dataRange <= 60 * 60) {
+    // bis 60 Minuten
     range = 120; // 2 Minuten
   }
 
