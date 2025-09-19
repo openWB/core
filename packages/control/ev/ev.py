@@ -314,13 +314,12 @@ class Ev:
         phases_to_use = control_parameter.phases
         phases_in_use = control_parameter.phases
         pv_config = data.data.general_data.data.chargemode_config.pv_charging
-        cm_config = data.data.general_data.data.chargemode_config
         if charge_template.data.chargemode.pv_charging.feed_in_limit:
             feed_in_yield = pv_config.feed_in_yield
         else:
             feed_in_yield = 0
         all_surplus = data.data.counter_all_data.get_evu_counter().get_usable_surplus(feed_in_yield)
-        delay = cm_config.phase_switch_delay * 60
+        delay = pv_config.phase_switch_delay * 60
         if phases_in_use == 1:
             direction_str = f"Umschaltung von 1 auf {max_phases}"
             required_reserved_power = (control_parameter.min_current * max_phases * 230 -

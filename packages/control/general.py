@@ -38,6 +38,9 @@ class PvCharging:
         "topic": "chargemode_config/pv_charging/max_bat_soc"})
     bat_mode: BatConsiderationMode = field(default=BatConsiderationMode.EV_MODE.value, metadata={
         "topic": "chargemode_config/pv_charging/bat_mode"})
+    retry_failed_phase_switches: bool = field(
+        default=False,
+        metadata={"topic": "chargemode_config/pv_charging/retry_failed_phase_switches"})
     switch_off_delay: int = field(default=60, metadata={
                                   "topic": "chargemode_config/pv_charging/switch_off_delay"})
     switch_off_threshold: int = field(default=0, metadata={
@@ -54,12 +57,7 @@ def pv_charging_factory() -> PvCharging:
 
 @dataclass
 class ChargemodeConfig:
-    phase_switch_delay: int = field(default=5, metadata={
-        "topic": "chargemode_config/phase_switch_delay"})
     pv_charging: PvCharging = field(default_factory=pv_charging_factory)
-    retry_failed_phase_switches: bool = field(
-        default=False,
-        metadata={"topic": "chargemode_config/retry_failed_phase_switches"})
     unbalanced_load_limit: int = field(
         default=18, metadata={"topic": "chargemode_config/unbalanced_load_limit"})
     unbalanced_load: bool = field(default=False, metadata={
