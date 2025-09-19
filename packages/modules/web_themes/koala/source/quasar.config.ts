@@ -61,7 +61,8 @@ export default defineConfig((ctx) => {
           // drop console statements in production build
           viteConf.esbuild = {
             ...viteConf.esbuild,
-            drop: ['console', 'debugger'],
+            drop: ['debugger'],
+            pure: ['console.log', 'console.info', 'console.debug', 'console.table'],
           };
         }
       },
