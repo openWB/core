@@ -9,10 +9,15 @@ fi
 case "$1" in
 	"clearall")
 		echo "checking for configured cloud bridge..."
-		cloud_bridge=$(timeout 1 mosquitto_sub -t 'openWB/system/mqtt/bridge/+' | grep -E '"is_openwb_cloud": ?true')
+		cloud_bridge=$(timeout 1 mosquitto_sub -v -t 'openWB/system/mqtt/bridge/+' | grep -E '"is_openwb_cloud": ?true')
+		echo "$cloud_bridge"
 		if [ -n "$cloud_bridge" ]; then
-			echo "cloud bridge is configured"
+			cloud_bridge_index=$(echo "$cloud_bridge" | cut -d' ' -f1 | cut -d'/' -f5)
+			cloud_bridge_configuration=$(echo "$cloud_bridge" | cut -d' ' -f2-)
+			echo "cloud bridge is configured with index \"$cloud_bridge_index\""
+			echo "configuration: $cloud_bridge_configuration"
 			valid_partner_ids=$(timeout 1 mosquitto_sub -t 'openWB/system/mqtt/valid_partner_ids' -C 1)
+			php -f "$OPENWBBASEDIR/runs/save_mqtt.php" "$cloud_bridge_index" ''
 		else
 			echo "no cloud bridge configured"
 		fi
@@ -25,10 +30,12 @@ case "$1" in
 		echo "reset display rotation"
 		sudo sed -i "s/^lcd_rotate=[0-3]$/lcd_rotate=0/" "/boot/config.txt"
 		if [ -n "$cloud_bridge" ]; then
-			echo "restore cloud bridge configuration: $cloud_bridge"
-			mosquitto_pub -t 'openWB/command/max_id/mqtt_bridge' -r -m 1 -p 1886
+			new_cloud_bridge_index=0
+			echo "restore cloud bridge configuration at index \"$new_cloud_bridge_index\": $cloud_bridge_configuration"
+			mosquitto_pub -t 'openWB/command/max_id/mqtt_bridge' -r -m $new_cloud_bridge_index -p 1886
 			mosquitto_pub -t 'openWB/system/mqtt/valid_partner_ids' -r -m "$valid_partner_ids" -p 1886
-			mosquitto_pub -t 'openWB/system/mqtt/bridge/0' -r -m "$cloud_bridge" -p 1886
+			mosquitto_pub -t "openWB/system/mqtt/bridge/$new_cloud_bridge_index" -r -m "$cloud_bridge_configuration" -p 1886
+			php -f "$OPENWBBASEDIR/runs/save_mqtt.php" "$new_cloud_bridge_index" "$cloud_bridge_configuration"
 		fi
 		echo "all done";;
 	*)
