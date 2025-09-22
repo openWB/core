@@ -118,7 +118,7 @@
 			:modal-id="'cpsconfig-' + chargepoint.id"
 		>
 			<template #title> Konfiguration: {{ chargepoint.name }} </template>
-			<CPChargeConfigPanel
+			<ChargeConfigPanel
 				v-if="chargepoint != undefined"
 				:chargepoint="chargepoint"
 			/>
@@ -131,7 +131,7 @@ import { ref, computed } from 'vue'
 import { chargePoints, type ChargePoint } from '../model'
 import { chargemodes, globalConfig } from '@/assets/js/themeConfig'
 import { formatWatt, formatWattH } from '@/assets/js/helpers'
-import CPChargeConfigPanel from '../cpConfig/CPChargeConfigPanel.vue'
+import ChargeConfigPanel from '../cpConfig/ChargeConfigPanel.vue'
 import BatterySymbol from '../../shared/BatterySymbol.vue'
 import RangeInput from '@/components/shared/RangeInput.vue'
 import { updateServer } from '@/assets/js/sendMessages'

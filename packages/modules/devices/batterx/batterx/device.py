@@ -4,7 +4,7 @@ from typing import Iterable, Optional, Union, List
 
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.component_context import MultiComponentUpdateContext
+from modules.common.component_context import MultiComponentUpdateContext, SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.common.store import get_inverter_value_store
 from modules.devices.batterx.batterx import bat, external_inverter
@@ -23,23 +23,24 @@ batterx_component_classes = Union[bat.BatterXBat, counter.BatterXCounter,
 
 def create_device(device_config: BatterX):
     def create_bat_component(component_config: BatterXBatSetup):
-        return bat.BatterXBat(device_config.id, component_config)
+        return bat.BatterXBat(component_config=component_config, device_id=device_config.id)
 
     def create_counter_component(component_config: BatterXCounterSetup):
-        return counter.BatterXCounter(device_config.id, component_config)
+        return counter.BatterXCounter(component_config=component_config, device_id=device_config.id)
 
     def create_inverter_component(component_config: BatterXInverterSetup):
-        return inverter.BatterXInverter(device_config.id, component_config)
+        return inverter.BatterXInverter(component_config=component_config, device_id=device_config.id)
 
     def create_external_inverter_component(component_config: BatterXExternalInverterSetup):
-        return external_inverter.BatterXExternalInverter(device_config.id, component_config)
+        return external_inverter.BatterXExternalInverter(component_config=component_config, device_id=device_config.id)
 
     def update_components(components: Iterable[batterx_component_classes]):
         resp_json = req.get_http_session().get(
             'http://' + device_config.configuration.ip_address + '/api.php?get=currentstate',
             timeout=5).json()
         for component in components:
-            component.update(resp_json)
+            with SingleComponentUpdateContext(component.fault_state):
+                component.update(resp_json)
 
     return ConfigurableDevice(
         device_config=device_config,

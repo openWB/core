@@ -1,10 +1,13 @@
+from unittest.mock import Mock
 from control.optional import Optional
 
 
-def test_et_get_loading_hours():
+def test_et_get_loading_hours(monkeypatch):
     # setup
     opt = Optional()
     opt.data.et.get.prices = PRICE_LIST
+    mock_et_provider_available = Mock(return_value=True)
+    monkeypatch.setattr(opt, "et_provider_available", mock_et_provider_available)
 
     # execution
     loading_hours = opt.et_get_loading_hours(3600, 7200)

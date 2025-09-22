@@ -26,7 +26,7 @@ def upload_backup(config: NextcloudBackupCloudConfiguration, backup_filename: st
         headers={'X-Requested-With': 'XMLHttpRequest', },
         data=backup_file,
         auth=(user, '' if config.password is None else config.password),
-        timeout=30
+        timeout=60
     )
 
 

@@ -34,7 +34,7 @@ def parse_datagram(sma_data: dict):
 
 
 def create_component(component_config: SmaHomeManagerCounterSetup):
-    return SpeedwireComponent(get_counter_value_store, parse_datagram, component_config)
+    return SpeedwireComponent(component_config, value_store_factory=get_counter_value_store, parser=parse_datagram)
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=SmaHomeManagerCounterSetup)

@@ -33,6 +33,7 @@ class PSACCVehicleSoc(JsonSocSetup):
     def __init__(self,
                  name: str = "PSA Car Controller",
                  type: str = "psacc",
+                 official: bool = False,
                  configuration: PSACCVehicleSocConfiguration = None) -> None:
-        super().__init__(name=name, type=type,
+        super().__init__(name=name, type=type, official=official,
                          configuration=configuration or PSACCVehicleSocConfiguration())

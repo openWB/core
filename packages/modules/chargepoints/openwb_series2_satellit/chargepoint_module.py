@@ -1,10 +1,12 @@
 #!/usr/bin/python3
 import logging
+from pathlib import Path
 import time
 from typing import Optional
 
 from control import data
 from helpermodules.utils.error_handling import CP_ERROR, ErrorTimerContext
+from helpermodules.utils.run_command import run_command
 from modules.chargepoints.openwb_series2_satellit.config import OpenWBseries2Satellit
 from modules.common import modbus
 from modules.common.abstract_chargepoint import AbstractChargepoint
@@ -40,7 +42,6 @@ class ChargepointModule(AbstractChargepoint):
                 f"openWB/set/chargepoint/{self.config.id}/get/error_timestamp", CP_ERROR, hide_exception=True)
             self._create_client()
             self._validate_version()
-        self.max_evse_current = self._client.evse_client.get_max_current()
 
     def delay_second_cp(self, delay: float):
         if self.config.configuration.duo_num == 0:
@@ -74,34 +75,37 @@ class ChargepointModule(AbstractChargepoint):
     def get_values(self) -> None:
         with SingleComponentUpdateContext(self.fault_state):
             if self.version is not None:
-                with self.client_error_context:
-                    try:
-                        self.delay_second_cp(self.CP1_DELAY)
-                        with self._client.client:
-                            self._client.check_hardware(self.fault_state)
-                            if self.version is False:
-                                self._validate_version()
-                            currents = self._client.meter_client.get_currents()
-                            phases_in_use = sum(1 for current in currents if current > 3)
-                            plug_state, charge_state, _ = self._client.evse_client.get_plug_charge_state()
+                try:
+                    self.delay_second_cp(self.CP1_DELAY)
+                    with self._client.client, self.client_error_context:
+                        evse_state, counter_state = self._client.request_and_check_hardware(self.fault_state)
+                        if self.version is False:
+                            self._validate_version()
 
-                            chargepoint_state = ChargepointState(
-                                power=self._client.meter_client.get_power()[1],
-                                currents=currents,
-                                imported=self._client.meter_client.get_imported(),
-                                exported=0,
-                                voltages=self._client.meter_client.get_voltages(),
-                                plug_state=plug_state,
-                                charge_state=charge_state,
-                                phases_in_use=phases_in_use,
-                                serial_number=self._client.meter_client.get_serial_number(),
-                                max_evse_current=self.max_evse_current
-                            )
+                        currents = counter_state.currents
+                        phases_in_use = sum(1 for current in currents if current > 3)
+
+                        chargepoint_state = ChargepointState(
+                            power=counter_state.power,
+                            currents=currents,
+                            imported=counter_state.imported,
+                            exported=0,
+                            voltages=counter_state.voltages,
+                            plug_state=evse_state.plug_state,
+                            charge_state=evse_state.charge_state,
+                            phases_in_use=phases_in_use,
+                            serial_number=counter_state.serial_number,
+                            max_evse_current=evse_state.max_current
+                        )
                         self.store.set(chargepoint_state)
                         self.client_error_context.reset_error_counter()
-                    except AttributeError:
-                        self._create_client()
-                        self._validate_version()
+                except Exception:
+                    if self.client_error_context.error_counter_exceeded():
+                        run_command(f"{Path(__file__).resolve().parents[3]}/modules/chargepoints/"
+                                    "openwb_series2_satellit/restart_protoss_satellite")
+                except AttributeError:
+                    self._create_client()
+                    self._validate_version()
             else:
                 self._create_client()
                 self._validate_version()
@@ -115,7 +119,6 @@ class ChargepointModule(AbstractChargepoint):
                     try:
                         self.delay_second_cp(self.CP1_DELAY)
                         with self._client.client:
-                            self._client.check_hardware(self.fault_state)
                             if self.version:
                                 self._client.evse_client.set_current(int(current))
                             else:
@@ -130,7 +133,6 @@ class ChargepointModule(AbstractChargepoint):
                 with self.client_error_context:
                     try:
                         with self._client.client:
-                            self._client.check_hardware(self.fault_state)
                             if phases_to_use == 1:
                                 self._client.client.delegate.write_register(
                                     0x0001, 256, unit=self.ID_PHASE_SWITCH_UNIT)

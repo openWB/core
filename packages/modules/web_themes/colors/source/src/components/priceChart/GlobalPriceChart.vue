@@ -127,7 +127,11 @@ const xAxisGenerator = computed(() => {
 		.ticks(plotdata.value.length)
 		.tickSize(5)
 		.tickSizeInner(-height)
-		.tickFormat((d) => (d.getHours() % 6 == 0 ? timeFormat('%H:%M')(d) : ''))
+		.tickFormat((d) =>
+			d.getHours() % 6 == 0 && d.getMinutes() == 0
+				? timeFormat('%H:%M')(d)
+				: '',
+		)
 })
 const yAxisGenerator = computed(() => {
 	return (
@@ -136,7 +140,8 @@ const yAxisGenerator = computed(() => {
 			.ticks(yDomain.value[1] - yDomain.value[0])
 			.tickSize(0)
 			.tickSizeInner(-(width - margin.right - margin.left))
-			.tickFormat((d) => d.toString())
+			//.tickFormat((d) => d.toString())
+			.tickFormat((d: number) => (d % 5 != 0 ? '' : d.toString()))
 	)
 })
 // Draw the diagram
@@ -155,7 +160,9 @@ const draw = computed(() => {
 	bargroups
 		.append('rect')
 		.attr('class', 'bar')
-		.attr('x', (d) => xScale.value(d[0]))
+		.attr('x', (d) => {
+			return xScale.value(d[0])
+		})
 		.attr('y', (d) => yScale.value(d[1]))
 		.attr('width', barwidth.value)
 		.attr('height', (d) => yScale.value(yDomain.value[0]) - yScale.value(d[1]))
@@ -171,7 +178,11 @@ const draw = computed(() => {
 		.selectAll('.tick line')
 		.attr('stroke', 'var(--color-bg)')
 		.attr('stroke-width', (d) =>
-			(d as Date).getHours() % 6 == 0 ? '2' : '0.5',
+			(d as Date).getMinutes() == 0
+				? (d as Date).getHours() % 6 == 0
+					? '2'
+					: '0.5'
+				: '0',
 		)
 	xAxis.select('.domain').attr('stroke', 'var(--color-bg')
 	// Y Axis

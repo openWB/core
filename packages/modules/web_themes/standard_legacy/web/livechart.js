@@ -28,7 +28,6 @@ var smartHomeBgColor = style.getPropertyValue('--smartHomeDeviceBgCol');
 
 var initialRead = 0;
 var graphLoaded = 0;
-var maxDisplayLength;
 var all1 = 0;
 var all2 = 0;
 var all3 = 0;
@@ -239,6 +238,41 @@ var chartDatasets = [
 	}
 ];
 
+// Generate custom legendAdd commentMore actions
+function generateCustomLegend(chart) {
+	const legendContainer = document.getElementById("custom-legend-container");
+	// Clear existing legend
+	legendContainer.innerHTML = "";
+	// Create legend items
+	chart.data.datasets.forEach((dataset, index) => {
+		if (!dataset.label) return;
+		const legendItem = document.createElement("div");
+		legendItem.className = "legend-item";
+		if (chart.getDatasetMeta(index).hidden) {
+			legendItem.className += " hidden";
+		}
+		const colorBox = document.createElement("span");
+		colorBox.className = "legend-color-box";
+		colorBox.style.backgroundColor = dataset.borderColor;
+		const text = document.createElement("span");
+		text.textContent = dataset.label;
+		legendItem.appendChild(colorBox);
+		legendItem.appendChild(text);
+		// toggle visibility
+		legendItem.onclick = () => {
+			const item = chart.getDatasetMeta(index);
+			item.hidden = !item.hidden;
+			if (item.hidden) {
+				legendItem.classList.add("hidden");
+			} else {
+				legendItem.classList.remove("hidden");
+			}
+			chart.update();
+		};
+		legendContainer.appendChild(legendItem);
+	});
+}
+
 function loadGraph(animationDuration = 1000) {
 
 	var chartData = {
@@ -296,8 +330,12 @@ function loadGraph(animationDuration = 1000) {
 	window.myLine = new Chart(ctx, {
 		type: 'line',
 		plugins: [{
-			afterInit: doGraphResponsive,
-			resize: doGraphResponsive
+			afterInit: (chart) => {
+				doGraphResponsive(chart);
+				generateCustomLegend(chart);
+			},
+			resize: doGraphResponsive,
+			afterUpdate: generateCustomLegend,
 		}],
 		data: chartData,
 		options: {
@@ -309,7 +347,7 @@ function loadGraph(animationDuration = 1000) {
 					enabled: true
 				},
 				legend: {
-					display: true,
+					display: false,
 					labels: {
 						color: fontColor,
 						// filter: function(item,chart) {
@@ -419,6 +457,7 @@ function loadGraph(animationDuration = 1000) {
 
 	initialRead = 1;
 	$('#waitForGraphLoadingDiv').hide();
+	$('#legend-container').show();
 }  // end loadGraph
 
 function getDatasetIndex(datasetId) {
@@ -471,11 +510,9 @@ function initDataset(datasetId) {
 }
 
 function truncateData(data) {
-	if (typeof maxDisplayLength !== "undefined") {
-		var limit = Date.now() - maxDisplayLength;
-		while (data[0].timestamp < limit) {
-			data.shift();
-		}
+	var limit = Date.now() - themeConfiguration.history_chart_range;
+	while (data[0]?.timestamp < limit) {
+		data.shift();
 	}
 }
 
@@ -559,10 +596,6 @@ function checkGraphLoad() {
 
 function forceGraphLoad() {
 	if (graphLoaded == 0) {
-		if (typeof maxDisplayLength === "undefined") {
-			console.warn("setting graph duration to default of 30 minutes");
-			maxDisplayLength = 30 * 60 * 1000;  // 30 minutes in milliseconds
-		}
 		checkGraphLoad();
 	}
 } // end forceGraphLoad

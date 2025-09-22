@@ -4,7 +4,7 @@ Instanzen gelöscht werden können, der Zugriff aber nicht verändert werden mus
 """
 import copy
 import logging
-import threading
+from threading import Event, Lock
 from functools import wraps
 from typing import Dict
 from control.bat import Bat
@@ -24,29 +24,33 @@ from control.ev.charge_template import ChargeTemplate
 from control.ev.ev import Ev
 from control.ev.ev_template import EvTemplate
 from control.general import General
+from control.io_device import IoActions, IoStates
 from control.optional import Optional
 from modules.common.abstract_device import AbstractDevice
+from modules.common.abstract_io import AbstractIoDevice
 
 log = logging.getLogger(__name__)
-bat_data_lock = threading.Lock()
-bat_all_data_lock = threading.Lock()
-graph_data_lock = threading.Lock()
-counter_data_lock = threading.Lock()
-counter_all_data_lock = threading.Lock()
-cp_data_lock = threading.Lock()
-cp_all_data_lock = threading.Lock()
-cp_template_data_lock = threading.Lock()
-ev_charge_template_data_lock = threading.Lock()
-ev_data_lock = threading.Lock()
-ev_template_data_lock = threading.Lock()
-general_data_lock = threading.Lock()
-optional_data_lock = threading.Lock()
-pv_data_lock = threading.Lock()
-pv_all_data_lock = threading.Lock()
-system_data_lock = threading.Lock()
+bat_data_lock = Lock()
+bat_all_data_lock = Lock()
+graph_data_lock = Lock()
+counter_data_lock = Lock()
+counter_all_data_lock = Lock()
+cp_data_lock = Lock()
+cp_all_data_lock = Lock()
+cp_template_data_lock = Lock()
+ev_charge_template_data_lock = Lock()
+ev_data_lock = Lock()
+ev_template_data_lock = Lock()
+general_data_lock = Lock()
+io_actions_lock = Lock()
+io_states_lock = Lock()
+optional_data_lock = Lock()
+pv_data_lock = Lock()
+pv_all_data_lock = Lock()
+system_data_lock = Lock()
 
 
-def locked(lock: threading.Lock):
+def locked(lock: Lock):
     def decorate(method):
         @wraps(method)
         def inner(*args, **kwargs):
@@ -61,7 +65,7 @@ def locked(lock: threading.Lock):
 
 
 class Data:
-    def __init__(self, event_module_update_completed: threading.Event):
+    def __init__(self, event_module_update_completed: Event):
         self.event_module_update_completed = event_module_update_completed
         self._bat_data: Dict[str, Bat] = {}
         self._bat_all_data = BatAll()
@@ -75,6 +79,8 @@ class Data:
         self._ev_template_data: Dict[str, EvTemplate] = {}
         self._general_data = General()
         self._graph_data = Graph()
+        self._io_actions: IoActions = {}
+        self._io_states: Dict[str, IoStates] = {}
         self._optional_data = Optional()
         self._pv_data: Dict[str, Pv] = {}
         self._pv_all_data = PvAll()
@@ -198,6 +204,24 @@ class Data:
         self._general_data = value
 
     @property
+    def io_actions(self) -> IoActions:
+        return self._io_actions
+
+    @io_actions.setter
+    @locked(io_actions_lock)
+    def io_actions(self, value):
+        self._io_actions = value
+
+    @property
+    def io_states(self) -> Dict[str, IoStates]:
+        return self._io_states
+
+    @io_states.setter
+    @locked(io_states_lock)
+    def io_states(self, value):
+        self._io_states = value
+
+    @property
     def optional_data(self) -> Optional:
         return self._optional_data
 
@@ -247,11 +271,14 @@ class Data:
         log.info(f"general_data\n{self._general_data.data}")
         log.info(f"general_data-display\n{self._general_data.data.extern_display_mode}")
         log.info(f"graph_data\n{self._graph_data.data}")
+        self._print_io_actions(self._io_actions)
+        self._print_dictionaries(self._io_states)
         log.info(f"optional_data\n{self._optional_data.data}")
         self._print_dictionaries(self._pv_data)
         log.info(f"pv_all_data\n{self._pv_all_data.data}")
         self._print_dictionaries(self._system_data)
         self._print_device_config(self._system_data)
+        self._print_io_device_config(self._system_data)
         log.info("\n")
 
     def _print_dictionaries(self, data):
@@ -284,6 +311,21 @@ class Data:
             except Exception:
                 log.exception("Fehler im Data-Modul")
 
+    def _print_io_device_config(self, data: Dict[str, AbstractIoDevice]):
+        for key, value in data.items():
+            try:
+                if isinstance(value, AbstractIoDevice):
+                    log.info(f"{key}\n{dataclass_utils.asdict(value.config)}")
+            except Exception:
+                log.exception("Fehler im Data-Modul")
+
+    def _print_io_actions(self, data: IoActions):
+        for key, value in data.actions.items():
+            try:
+                log.info(f"{key}\n{dataclass_utils.asdict(value.config)}")
+            except Exception:
+                log.exception("Fehler im Data-Modul")
+
     def copy_system_data(self) -> None:
         with ModuleDataReceivedContext(self.event_module_update_completed):
             self.__copy_system_data()
@@ -298,7 +340,8 @@ class Data:
             # werden, sodass die Nutzung einer Referenz vorerst funktioniert.
             self.system_data = {
                 "system": copy.deepcopy(SubData.system_data["system"])} | {
-                k: SubData.system_data[k] for k in SubData.system_data if "device" in k}
+                k: SubData.system_data[k] for k in SubData.system_data if "device" in k} | {
+                k: SubData.system_data[k] for k in SubData.system_data if "io" in k}
             self.general_data = copy.deepcopy(SubData.general_data)
             self.__copy_cp_data()
         except Exception:
@@ -370,7 +413,7 @@ class Data:
                                 break
                     if stop:
                         break
-                self.pv_all_data = copy.deepcopy(SubData.pv_all_data)
+            self.pv_all_data = copy.deepcopy(SubData.pv_all_data)
             self.bat_data.clear()
             for bat in SubData.bat_data:
                 stop = False
@@ -383,7 +426,7 @@ class Data:
                                 break
                     if stop:
                         break
-                self.bat_all_data = copy.deepcopy(SubData.bat_all_data)
+            self.bat_all_data = copy.deepcopy(SubData.bat_all_data)
         except Exception:
             log.exception("Fehler im Prepare-Modul")
 
@@ -393,6 +436,8 @@ class Data:
         with ModuleDataReceivedContext(self.event_module_update_completed):
             try:
                 self.general_data = copy.deepcopy(SubData.general_data)
+                self.io_actions = copy.deepcopy(SubData.io_actions)
+                self.io_states = copy.deepcopy(SubData.io_states)
                 self.optional_data = copy.deepcopy(SubData.optional_data)
                 self.__copy_ev_data()
                 self.__copy_cp_data()
@@ -444,7 +489,7 @@ class ModuleDataReceivedContext:
 data: Data
 
 
-def data_init(event_module_update_completed: threading.Event):
+def data_init(event_module_update_completed: Event):
     """instanziiert die Data-Klasse.
     """
     global data

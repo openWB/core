@@ -45,7 +45,8 @@ def test_counter_shelly_minipm_g3(monkeypatch, requests_mock: requests_mock.mock
     requests_mock.get(f"http://{SAMPLE_IP}/rpc/Shelly.GetStatus", json=DATA_MINPM_G3)
     mock_counter_value_store = Mock()
     monkeypatch.setattr(counter, "get_counter_value_store", Mock(return_value=mock_counter_value_store))
-    c = counter.ShellyCounter(0, ShellyCounterSetup(), SAMPLE_IP, 1, 2)
+    c = counter.ShellyCounter(ShellyCounterSetup(), device_id=0, ip_address=SAMPLE_IP, factor=1, generation=2)
+    c.initialize()
 
     # execution
     c.update()
@@ -55,4 +56,4 @@ def test_counter_shelly_minipm_g3(monkeypatch, requests_mock: requests_mock.mock
 
 
 SAMPLE_COUNTER_STATE = CounterState(voltages=[230.9, 0, 0], power=230, currents=[
-                                    1, 0, 0], frequency=51, imported=100, exported=200)
+                                    1, 0, 0], frequency=51, imported=100, exported=200, powers=[230, 0, 0])

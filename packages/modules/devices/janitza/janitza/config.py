@@ -36,3 +36,31 @@ class JanitzaCounterSetup(ComponentSetup[JanitzaCounterConfiguration]):
                  id: int = 0,
                  configuration: JanitzaCounterConfiguration = None) -> None:
         super().__init__(name, type, id, configuration or JanitzaCounterConfiguration())
+
+
+class JanitzaInverterConfiguration:
+    def __init__(self):
+        pass
+
+
+class JanitzaInverterSetup(ComponentSetup[JanitzaInverterConfiguration]):
+    def __init__(self,
+                 name: str = "Janitza PV-Zähler",
+                 type: str = "inverter",
+                 id: int = 0,
+                 configuration: JanitzaInverterConfiguration = None) -> None:
+        super().__init__(name, type, id, configuration or JanitzaInverterConfiguration())
+
+
+class JanitzaBatConfiguration:
+    def __init__(self):
+        pass
+
+
+class JanitzaBatSetup(ComponentSetup[JanitzaBatConfiguration]):
+    def __init__(self,
+                 name: str = "Janitza Speicher-Zähler",
+                 type: str = "bat",
+                 id: int = 0,
+                 configuration: JanitzaBatConfiguration = None) -> None:
+        super().__init__(name, type, id, configuration or JanitzaBatConfiguration())

@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 
 def create_device(device_config: SmaWebbox):
     def create_inverter_component(component_config: SmaWebboxInverterSetup):
-        return SmaWebboxInverter(device_config.configuration.ip_address, component_config)
+        return SmaWebboxInverter(component_config, ip_address=device_config.configuration.ip_address)
 
     return ConfigurableDevice(
         device_config=device_config,

@@ -23,7 +23,9 @@ def test_update(monkeypatch, requests_mock: requests_mock.Mocker, mock_ramdisk, 
     device_config = FroniusConfiguration()
     device_config.ip_address = SAMPLE_IP
     assert component_config.configuration.meter_id == 0
-    battery = bat.FroniusBat(0, component_config, dataclass_from_dict(FroniusConfiguration, device_config))
+    battery = bat.FroniusBat(component_config, device_config=dataclass_from_dict(
+        FroniusConfiguration, device_config), device_id=0)
+    battery.initialize()
 
     mock = Mock(return_value=None)
     monkeypatch.setattr(LoggingValueStore, "set", mock)

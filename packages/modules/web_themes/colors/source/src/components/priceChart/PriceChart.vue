@@ -1,5 +1,4 @@
 <template>
-	<p class="settingsheader mt-2 ms-1">Preisbasiertes Laden:</p>
 	<p class="providername ms-1">Anbieter: {{ etData.etProvider }}</p>
 	<hr />
 	<div class="container">
@@ -15,17 +14,16 @@
 	</div>
 	<div v-if="chargepoint != undefined" class="p-3">
 		<RangeInput
-			v-if="chargepoint.etActive"
 			id="pricechart_local"
 			v-model="maxPrice"
 			:min="Math.floor(prices[0] - 1)"
 			:max="Math.ceil(prices[prices.length - 1] + 1)"
 			:step="0.1"
-			:decimals="1"
+			:decimals="2"
 			:show-subrange="true"
 			:subrange-min="prices[0]"
 			:subrange-max="prices[prices.length - 1]"
-			unit="ct"
+			:unit="globalData.country == 'ch' ? 'Rp' : 'ct'"
 		/>
 	</div>
 	<div class="d-flex justify-content-between px-3 pb-2 pt-0 mt-0">
@@ -40,7 +38,7 @@
 		<span class="me-3 pt-0" @click="setMaxPrice">
 			<button
 				type="button"
-				class="btn btn-secondary"
+				class="btn btn-secondary confirmButton"
 				:style="confirmButtonStyle"
 				:disabled="!maxPriceEdited"
 			>
@@ -52,6 +50,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { globalData } from '@/assets/js/model'
 import { etData } from './model'
 import {
 	extent,
@@ -108,7 +107,7 @@ const plotdata = computed(() => {
 })
 const barwidth = computed(() => {
 	if (plotdata.value.length > 1) {
-		return (width - margin.left - margin.right) / plotdata.value.length - 1
+		return (width - margin.left - margin.right) / plotdata.value.length
 	} else {
 		return 0
 	}
@@ -183,15 +182,20 @@ const zeroPath = computed(() => {
 
 const xAxisGenerator = computed(() => {
 	return axisBottom<Date>(xScale.value)
-		.ticks(6)
+		.ticks(plotdata.value.length)
 		.tickSize(5)
-		.tickFormat(timeFormat('%H:%M'))
+		.tickSizeInner(-height)
+		.tickFormat((d) =>
+			d.getHours() % 6 == 0 && d.getMinutes() == 0
+				? timeFormat('%H:%M')(d)
+				: '',
+		)
 })
 const yAxisGenerator = computed(() => {
 	return axisLeft<number>(yScale.value)
 		.ticks(yDomain.value[1] - yDomain.value[0])
 		.tickSizeInner(-(width - margin.right - margin.left))
-		.tickFormat((d) => d.toString())
+		.tickFormat((d: number) => (d % 5 != 0 ? '' : d.toString()))
 })
 const draw = computed(() => {
 	if (needsUpdate.value == true) {
@@ -223,12 +227,19 @@ const draw = computed(() => {
 		.attr('color', 'var(--color-bg)')
 	xAxis
 		.selectAll('.tick line')
-		.attr('stroke', 'var(--color-fg)')
-		.attr('stroke-width', '0.5')
+		.attr('stroke', 'var(--color-bg)')
+		.attr('stroke-width', (d) =>
+			(d as Date).getMinutes() == 0
+				? (d as Date).getHours() % 6 == 0
+					? '2'
+					: '0.5'
+				: '0',
+		)
 	xAxis.select('.domain').attr('stroke', 'var(--color-bg')
 	// Y Axis
 	const yAxis = svg.append('g').attr('class', 'axis').call(yAxisGenerator.value)
 	yAxis.attr('transform', 'translate(' + margin.left + ',' + 0 + ')')
+
 	yAxis
 		.selectAll('.tick')
 		.attr('font-size', axisfontsize)
@@ -237,7 +248,8 @@ const draw = computed(() => {
 	yAxis
 		.selectAll('.tick line')
 		.attr('stroke', 'var(--color-bg)')
-		.attr('stroke-width', '0.5')
+		//.attr('stroke-width', '0.5')
+		.attr('stroke-width', (d) => ((d as number) % 5 == 0 ? '2' : '0.5'))
 	yAxis.select('.domain').attr('stroke', 'var(--color-bg)')
 	// zero line
 	if (yDomain.value[0] < 0) {
@@ -319,5 +331,9 @@ onMounted(() => {
 	background-color: var(--color-menu);
 	color: var(--color-bg);
 	border: 0;
+	font-size: var(--font-settings-button);
+}
+.confirmButton {
+	font-size: var(--font-settings-button);
 }
 </style>

@@ -13,21 +13,29 @@ log = logging.getLogger(__name__)
 
 
 def create_device(device_config: Saxpower):
+    client = None
+
     def create_bat_component(component_config: SaxpowerBatSetup):
-        return SaxpowerBat(device_config.id, component_config, client, device_config.configuration.modbus_id)
+        nonlocal client
+        return SaxpowerBat(component_config,
+                           device_id=device_config.id,
+                           client=client,
+                           modbus_id=device_config.configuration.modbus_id)
 
     def update_components(components: Iterable[SaxpowerBat]):
+        nonlocal client
         with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):
                     component.update()
 
-    try:
+    def initializer():
+        nonlocal client
         client = modbus.ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
-    except Exception:
-        log.exception("Fehler in create_device")
+
     return ConfigurableDevice(
         device_config=device_config,
+        initializer=initializer,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
         ),

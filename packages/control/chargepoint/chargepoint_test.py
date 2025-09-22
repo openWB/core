@@ -1,8 +1,11 @@
+from dataclasses import dataclass
 from typing import List
 from unittest.mock import Mock
 import pytest
 
+from control import data
 from control.chargepoint.chargepoint import Chargepoint
+from control.chargepoint.chargepoint_state import ChargepointState
 from control.chargepoint.chargepoint_template import CpTemplate
 from control.ev.ev import Ev
 
@@ -49,3 +52,93 @@ def test_check_min_max_current(required_current, phases, expected_required_curre
 
     # assertion
     assert ret == expected_required_current
+
+
+@dataclass
+class Params:
+    name: str
+    state: ChargepointState = ChargepointState.CHARGING_ALLOWED
+    set_current: float = 0
+    set_current_prev: float = 0
+    phases_to_use: int = 1
+    phases_in_use: int = 1
+    control_parameter_phases: int = 1
+    charge_state: bool = True
+    failed_phase_switches: int = 0
+    retry_failed_phase_switches: bool = False
+    phase_switch_required: bool = False
+
+
+params = [
+    # PV-Laden
+    Params(
+        name="Wartezeit",
+        state=ChargepointState.SWITCH_ON_DELAY,
+        charge_state=False,
+        phase_switch_required=False
+    ),
+    Params(
+        name="Einschalten nach Wartzeit, Umschaltung erforderlich",
+        state=ChargepointState.WAIT_FOR_USING_PHASES,
+        phases_to_use=3,
+        phases_in_use=3,
+        control_parameter_phases=1,
+        set_current=6,
+        charge_state=False,
+        phase_switch_required=True
+    ),
+    Params(
+        name="Einschalten nach Wartzeit, keine Umschaltung erforderlich",
+        state=ChargepointState.WAIT_FOR_USING_PHASES,
+        phases_to_use=3,
+        phases_in_use=3,
+        control_parameter_phases=3,
+        set_current=6,
+        charge_state=False,
+        phase_switch_required=False
+    ),
+    Params(
+        name="keine Umschaltung während Warten auf Phasennutzung",
+        state=ChargepointState.WAIT_FOR_USING_PHASES,
+        phases_to_use=1,
+        phases_in_use=3,
+        control_parameter_phases=1,
+        set_current=6,
+        set_current_prev=6,
+        charge_state=True,
+        phase_switch_required=False
+    ),
+    Params(
+        name="Umschaltung, wenn sich während der Ladung die Phasenvorgabe ändert",
+        state=ChargepointState.CHARGING_ALLOWED,
+        phases_to_use=3,
+        phases_in_use=3,
+        control_parameter_phases=1,
+        set_current=6,
+        set_current_prev=6,
+        charge_state=True,
+        phase_switch_required=True
+    ),
+]
+
+
+@pytest.mark.parametrize("params", params, ids=[p.name for p in params])
+def test_is_phase_switch_required(params: Params):
+    # setup
+    cp = Chargepoint(0, None)
+    cp.data.control_parameter.state = params.state
+    cp.data.set.current = params.set_current
+    cp.data.set.current_prev = params.set_current_prev
+    cp.data.set.phases_to_use = params.phases_to_use
+    cp.data.get.phases_in_use = params.phases_in_use
+    cp.data.control_parameter.phases = params.control_parameter_phases
+    cp.data.get.charge_state = params.charge_state
+    cp.data.control_parameter.failed_phase_switches = params.failed_phase_switches
+    data.data_init(Mock())
+    data.data.general_data.data.chargemode_config.retry_failed_phase_switches = params.retry_failed_phase_switches
+
+    # evaluation
+    ret = cp._is_phase_switch_required()
+
+    # assertion
+    assert ret == params.phase_switch_required

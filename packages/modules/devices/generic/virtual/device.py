@@ -10,7 +10,7 @@ log = logging.getLogger(__name__)
 
 def create_device(device_config: Virtual):
     def create_counter_component(component_config: VirtualCounterSetup):
-        return VirtualCounter(device_config.id, component_config)
+        return VirtualCounter(component_config, device_id=device_config.id)
 
     return ConfigurableDevice(
         device_config=device_config,

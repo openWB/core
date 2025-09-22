@@ -28,6 +28,8 @@ function processSmarthomeConfigMessages(topic: string, message: string) {
 		)
 	) {
 		dev.configured = message != '0'
+		updateShSummary('power')
+		updateShSummary('energy')
 	} else if (
 		topic.match(
 			/^openWB\/LegacySmarthome\/config\/get\/Devices\/[0-9]+\/device_name$/i,

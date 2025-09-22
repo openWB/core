@@ -29,7 +29,7 @@ def get_factory() -> Get:
 
 @dataclass
 class Set:
-    power_limit: float = field(default=0, metadata={"topic": "set/power_limit"})
+    power_limit: float = field(default=None, metadata={"topic": "set/power_limit"})
 
 
 def set_factory() -> Set:

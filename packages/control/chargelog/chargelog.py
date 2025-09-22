@@ -2,6 +2,7 @@ import datetime
 from enum import Enum
 import json
 import logging
+import os
 import pathlib
 from typing import Any, Dict, List, Optional
 
@@ -250,13 +251,18 @@ def write_new_entry(new_entry):
     filepath = str(_get_parent_file() / "data" / "charge_log" /
                    (timecheck.create_timestamp_YYYYMM() + ".json"))
     try:
-        with open(filepath, "r", encoding="utf-8") as json_file:
-            content = json.load(json_file)
+        if os.path.exists(filepath) and os.path.getsize(filepath) == 0:
+            content = []
+        else:
+            with open(filepath, "r", encoding="utf-8") as json_file:
+                try:
+                    content = json.load(json_file)
+                except json.decoder.JSONDecodeError:
+                    corrupt_path = f"{filepath}.unparsable_{timecheck.create_timestamp()}"
+                    os.rename(filepath, corrupt_path)
+                    log.error(f"ChargeLog: Korrupte Datei umbenannt nach {corrupt_path}")
+                    content = []
     except FileNotFoundError:
-        # with open(filepath, "w", encoding="utf-8") as jsonFile:
-        #     json.dump([], jsonFile)
-        # with open(filepath, "r", encoding="utf-8") as jsonFile:
-        #     content = json.load(jsonFile)
         content = []
     content.append(new_entry)
     write_and_check(filepath, content)
@@ -414,9 +420,7 @@ def calculate_charge_cost(cp, create_log_entry: bool = False):
                 raise TypeError(f"Unbekannter Referenz-Zeitpunkt {reference}")
             log.debug(f'power source {energy_source_entry["energy_source"]}')
             log.debug(f"charged_energy {charged_energy}")
-            costs = _calc(energy_source_entry["energy_source"],
-                          charged_energy,
-                          (data.data.optional_data.et_module is not None))
+            costs = _calc(energy_source_entry["energy_source"], charged_energy)
             cp.data.set.log.costs += costs
             log.debug(f"current costs {costs}, total costs {cp.data.set.log.costs}")
             Pub().pub(f"openWB/set/chargepoint/{cp.num}/set/log", asdict(cp.data.set.log))
@@ -492,14 +496,14 @@ def get_daily_log(day):
         return []
 
 
-def _calc(energy_source: Dict[str, float], charged_energy_last_hour: float, et_active: bool) -> float:
+def _calc(energy_source: Dict[str, float], charged_energy_last_hour: float) -> float:
     prices = data.data.general_data.data.prices
 
     bat_costs = prices.bat * charged_energy_last_hour * energy_source["bat"]
     cp_costs = prices.cp * charged_energy_last_hour * energy_source["cp"]
-    if et_active:
+    try:
         grid_costs = data.data.optional_data.et_get_current_price() * charged_energy_last_hour * energy_source["grid"]
-    else:
+    except Exception:
         grid_costs = prices.grid * charged_energy_last_hour * energy_source["grid"]
     pv_costs = prices.pv * charged_energy_last_hour * energy_source["pv"]
 

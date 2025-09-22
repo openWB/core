@@ -1,15 +1,20 @@
 import logging
 
 import time
+from helpermodules.broker import BrokerClient
 from helpermodules.logger import ModifyLoglevelContext
 
+from helpermodules.utils import run_command
 from helpermodules.utils.error_handling import CP_ERROR, ErrorTimerContext
+from helpermodules.utils.topic_parser import decode_payload
 from modules.common.abstract_chargepoint import AbstractChargepoint
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import ChargepointState
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_internal_chargepoint_value_store, get_chargepoint_value_store
 from modules.internal_chargepoint_handler.clients import ClientHandler
+from helpermodules.subdata import SubData
+from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import InternalChargepoint
 
 log = logging.getLogger(__name__)
 
@@ -24,25 +29,29 @@ class ChargepointModule(AbstractChargepoint):
 
     def __init__(self, local_charge_point_num: int,
                  client_handler: ClientHandler,
-                 parent_hostname: str,
-                 parent_cp: int,
+                 internal_cp: InternalChargepoint,
                  hierarchy_id: int) -> None:
         self.local_charge_point_num = local_charge_point_num
         self.fault_state = FaultState(ComponentInfo(
-            hierarchy_id,
+            local_charge_point_num,
             "Ladepunkt "+str(local_charge_point_num),
-            "chargepoint",
-            parent_id=parent_cp,
-            parent_hostname=parent_hostname))
+            "internal_chargepoint",
+            hierarchy_id=hierarchy_id))
         self.store_internal = get_internal_chargepoint_value_store(local_charge_point_num)
         self.store = get_chargepoint_value_store(hierarchy_id)
         self.client_error_context = ErrorTimerContext(
             f"openWB/set/internal_chargepoint/{local_charge_point_num}/get/error_timestamp",
             CP_ERROR,
             hide_exception=True)
+        self.client_error_context.error_timestamp = internal_cp.get.error_timestamp
         self.old_plug_state = False
-        self.old_phases_in_use = 0
-        self.old_chargepoint_state = ChargepointState()
+        self.old_chargepoint_state = ChargepointState(plug_state=False,
+                                                      charge_state=False,
+                                                      imported=None,
+                                                      exported=None,
+                                                      currents=None,
+                                                      phases_in_use=0,
+                                                      power=0)
         self._client = client_handler
         version = self._client.evse_client.get_firmware_version()
         with ModifyLoglevelContext(log, logging.DEBUG):
@@ -53,7 +62,24 @@ class ChargepointModule(AbstractChargepoint):
             if self._client.evse_client.is_precise_current_active() is False:
                 self._client.evse_client.activate_precise_current()
             self._precise_current = self._client.evse_client.is_precise_current_active()
-        self.max_evse_current = self._client.evse_client.get_max_current()
+
+        self.version = SubData.system_data["system"].data["version"]
+        self.current_branch = SubData.system_data["system"].data["current_branch"]
+        self.current_commit = SubData.system_data["system"].data["current_commit"]
+
+        if float(run_command.run_command(["cat", "/proc/uptime"]).split(" ")[0]) < 180:
+            self.perform_phase_switch(1, 4)
+            self.old_phases_in_use = 1
+        else:
+            def on_connect(client, userdata, flags, rc):
+                client.subscribe(f"openWB/internal_chargepoint/{self.local_charge_point_num}/get/phases_in_use")
+
+            def on_message(client, userdata, message):
+                self.old_phases_in_use = decode_payload(message.payload)
+
+            self.old_phases_in_use = None
+            BrokerClient(f"subscribeInternalCp{self.local_charge_point_num}",
+                         on_connect, on_message).start_finite_loop()
 
     def set_current(self, current: float) -> None:
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
@@ -71,24 +97,18 @@ class ChargepointModule(AbstractChargepoint):
             chargepoint_state = self.old_chargepoint_state
             self.set_current_evse = chargepoint_state.evse_current
 
-            self._client.check_hardware(self.fault_state)
-            powers, power = self._client.meter_client.get_power()
-            if power < self.PLUG_STANDBY_POWER_THRESHOLD:
+            evse_state, counter_state = self._client.request_and_check_hardware(self.fault_state)
+            power = counter_state.power
+            if counter_state.power < self.PLUG_STANDBY_POWER_THRESHOLD:
                 power = 0
-            voltages = self._client.meter_client.get_voltages()
-            currents = self._client.meter_client.get_currents()
-            imported = self._client.meter_client.get_imported()
-            power_factors = self._client.meter_client.get_power_factors()
-            frequency = self._client.meter_client.get_frequency()
-            serial_number = self._client.meter_client.get_serial_number()
-            phases_in_use = sum(1 for current in currents if current > 3)
+            phases_in_use = sum(1 for current in counter_state.currents if current > 3)
             if phases_in_use == 0:
                 phases_in_use = self.old_phases_in_use
             else:
                 self.old_phases_in_use = phases_in_use
 
             time.sleep(0.1)
-            plug_state, charge_state, self.set_current_evse = self._client.evse_client.get_plug_charge_state()
+            self.set_current_evse = evse_state.set_current
             self.client_error_context.reset_error_counter()
 
             if phase_switch_cp_active:
@@ -99,31 +119,37 @@ class ChargepointModule(AbstractChargepoint):
                 )
                 plug_state = self.old_plug_state
             else:
-                self.old_plug_state = plug_state
+                self.old_plug_state = evse_state.plug_state
+                plug_state = evse_state.plug_state
 
             chargepoint_state = ChargepointState(
                 power=power,
-                currents=currents,
-                imported=imported,
+                currents=counter_state.currents,
+                imported=counter_state.imported,
                 exported=0,
-                powers=powers,
-                voltages=voltages,
-                frequency=frequency,
+                powers=counter_state.powers,
+                voltages=counter_state.voltages,
+                frequency=counter_state.frequency,
                 plug_state=plug_state,
-                charge_state=charge_state,
+                charge_state=evse_state.charge_state,
                 phases_in_use=phases_in_use,
-                power_factors=power_factors,
+                power_factors=counter_state.power_factors,
                 rfid=last_tag,
                 evse_current=self.set_current_evse,
-                serial_number=serial_number,
-                max_evse_current=self.max_evse_current
+                serial_number=counter_state.serial_number,
+                max_evse_current=evse_state.max_current,
+                version=self.version,
+                current_branch=self.current_branch,
+                current_commit=self.current_commit
             )
         if self.client_error_context.error_counter_exceeded():
-            chargepoint_state = ChargepointState()
-            chargepoint_state.plug_state = False
-            chargepoint_state.charge_state = False
-            chargepoint_state.imported = self.old_chargepoint_state.imported
-            chargepoint_state.exported = self.old_chargepoint_state.exported
+            chargepoint_state = ChargepointState(plug_state=False,
+                                                 charge_state=False,
+                                                 imported=self.old_chargepoint_state.imported,
+                                                 exported=self.old_chargepoint_state.exported,
+                                                 currents=self.old_chargepoint_state.currents,
+                                                 phases_in_use=self.old_chargepoint_state.phases_in_use,
+                                                 power=self.old_chargepoint_state.power)
 
         store_state(chargepoint_state)
         self.old_chargepoint_state = chargepoint_state

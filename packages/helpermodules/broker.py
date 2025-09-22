@@ -16,14 +16,19 @@ def get_name_suffix() -> str:
     return f"{serial}-{datetime.datetime.today().timestamp()}"
 
 
-class InternalBrokerClient:
-    def __init__(self, name: str, on_connect: Callable, on_message: Callable) -> None:
+class BrokerClient:
+    def __init__(self,
+                 name: str,
+                 on_connect: Callable,
+                 on_message: Callable,
+                 host: str = "localhost",
+                 port: int = 1886) -> None:
         try:
             self.name = f"openWB-{name}-{get_name_suffix()}"
             self.client = mqtt.Client(self.name)
             self.client.on_connect = on_connect
             self.client.on_message = on_message
-            self.client.connect("localhost", 1886)
+            self.client.connect(host, port)
         except Exception:
             log.exception("Fehler beim Abonnieren des internen Brokers")
 
@@ -43,10 +48,10 @@ class InternalBrokerClient:
 class InternalBrokerPublisher:
     def __init__(self) -> None:
         try:
-            self.client = mqtt.Client(f"openWB-python-bulkpublisher-{get_name_suffix()}")
+            self.client = mqtt.Client(f"openWB-python-bulk-publisher-{get_name_suffix()}")
             self.client.connect("localhost", 1886)
         except Exception:
-            log.exception("Fehler beim Verbindungsaufbau zum Bulkpublisher")
+            log.exception("Fehler beim Verbindungsaufbau zum Bulk-Publisher")
 
     def start_loop(self) -> None:
         self.client.loop_start()

@@ -42,8 +42,7 @@ export class Config {
 	private _debug: boolean = false
 	private _lowerPriceBound = 0
 	private _upperPriceBound = 0
-	isEtEnabled: boolean = false
-	etPrice: number = 20.5
+	private _showPmLabels = true
 	showRightButton = true
 	showLeftButton = true
 	// graphMode = ''
@@ -318,6 +317,16 @@ export class Config {
 	setUpperPriceBound(val: number) {
 		this._upperPriceBound = val
 	}
+	get showPmLabels() {
+		return this._showPmLabels
+	}
+	set showPmLabels(val: boolean) {
+		this._showPmLabels = val
+		savePrefs()
+	}
+	setShowPmLabels(val: boolean) {
+		this._showPmLabels = val
+	}
 }
 
 export const globalConfig = reactive(new Config())
@@ -362,7 +371,7 @@ export const chargemodes: { [key: string]: ChargeModeInfo } = {
 	pv_charging: {
 		mode: ChargeMode.pv_charging,
 		name: 'PV',
-		color: 'var(--color-pv',
+		color: 'var(--color-pv)',
 		icon: 'fa-solar-panel',
 	},
 	scheduled_charging: {
@@ -371,11 +380,11 @@ export const chargemodes: { [key: string]: ChargeModeInfo } = {
 		color: 'var(--color-battery)',
 		icon: 'fa-bullseye',
 	},
-	standby: {
-		mode: ChargeMode.standby,
-		name: 'Standby',
-		color: 'var(--color-axis',
-		icon: 'fa-pause',
+	eco_charging: {
+		mode: ChargeMode.eco_charging,
+		name: 'Eco',
+		color: 'var(--color-devices)',
+		icon: 'fa-coins',
 	},
 	stop: {
 		mode: ChargeMode.stop,
@@ -396,6 +405,7 @@ export class GlobalData {
 	cpDailyExported = 0
 	evuId = 0
 	etProvider = ''
+	country = 'de'
 	get pvBatteryPriority() {
 		return this._pvBatteryPriority
 	}
@@ -494,6 +504,7 @@ interface Preferences {
 	lowerP?: number
 	upperP?: number
 	sslPrefs?: boolean
+	pmLabels?: boolean
 	debug?: boolean
 }
 
@@ -527,6 +538,7 @@ function writeCookie() {
 	prefs.lowerP = globalConfig.lowerPriceBound
 	prefs.upperP = globalConfig.upperPriceBound
 	prefs.sslPrefs = globalConfig.sslPrefs
+	prefs.pmLabels = globalConfig.showPmLabels
 	prefs.debug = globalConfig.debug
 
 	document.cookie =
@@ -625,6 +637,9 @@ function readCookie() {
 		}
 		if (prefs.sslPrefs !== undefined) {
 			globalConfig.setSslPrefs(prefs.sslPrefs)
+		}
+		if (prefs.pmLabels !== undefined) {
+			globalConfig.setShowPmLabels(prefs.pmLabels)
 		}
 		if (prefs.debug !== undefined) {
 			globalConfig.setDebug(prefs.debug)

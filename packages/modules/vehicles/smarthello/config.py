@@ -17,7 +17,9 @@ class SmartHello:
     def __init__(self,
                  name: str = "Smart Hello (#1, #3)",
                  type: str = "smarthello",
+                 official: bool = False,
                  configuration: SmartHelloConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.official = official
         self.configuration = configuration or SmartHelloConfiguration()

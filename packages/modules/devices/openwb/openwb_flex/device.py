@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 import logging
+from pathlib import Path
 from typing import Iterable, Union
 
+from helpermodules.utils.run_command import run_command
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
@@ -20,29 +22,40 @@ log = logging.getLogger(__name__)
 
 
 def create_device(device_config: Flex):
+    client = None
+
     def create_bat_component(component_config: BatKitFlexSetup):
-        return BatKitFlex(device_config.id, component_config, client)
+        nonlocal client
+        return BatKitFlex(component_config, device_id=device_config.id, client=client)
 
     def create_counter_component(component_config: EvuKitFlexSetup):
-        return EvuKitFlex(device_config.id, component_config, client)
+        nonlocal client
+        return EvuKitFlex(component_config, device_id=device_config.id, client=client)
 
     def create_consumption_counter_component(component_config: ConsumptionCounterFlexSetup):
-        return ConsumptionCounterFlex(device_config.id, component_config, client)
+        nonlocal client
+        return ConsumptionCounterFlex(component_config, device_id=device_config.id, client=client)
 
     def create_inverter_component(component_config: PvKitFlexSetup):
-        return PvKitFlex(device_config.id, component_config, client)
+        nonlocal client
+        return PvKitFlex(component_config, device_id=device_config.id, client=client)
 
     def update_components(components: Iterable[Union[BatKitFlex, ConsumptionCounterFlex, EvuKitFlex, PvKitFlex]]):
         for component in components:
             with SingleComponentUpdateContext(component.fault_state):
                 component.update()
 
-    try:
+    def initializer():
+        nonlocal client
         client = ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
-    except Exception:
-        log.exception("Fehler in create_device")
+
+    def error_handler():
+        run_command(f"{Path(__file__).resolve().parents[4]}/modules/common/restart_protoss_admin")
+
     return ConfigurableDevice(
         device_config=device_config,
+        initializer=initializer,
+        error_handler=error_handler,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
             consumption_counter=create_consumption_counter_component,

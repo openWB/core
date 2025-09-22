@@ -1,9 +1,8 @@
 """prüft, ob Zeitfenster aktuell sind
 """
-import copy
 import logging
 import datetime
-from typing import Dict, List, Optional, Tuple, TypeVar, Union
+from typing import List, Optional, Tuple, TypeVar, Union
 
 from helpermodules.utils.error_handling import ImportErrorContext
 with ImportErrorContext():
@@ -47,12 +46,12 @@ def is_now_in_locking_time(now: datetime.datetime,
 T = TypeVar("T", AutolockPlan, TimeChargingPlan)
 
 
-def check_plans_timeframe(plans: Dict[int, T]) -> Optional[T]:
+def check_plans_timeframe(plans: List[T]) -> Optional[T]:
     """ gibt den ersten aktiven Plan zurück. None, falls kein Plan aktiv ist.
     """
     state = False
     try:
-        for plan in plans.values():
+        for plan in plans:
             if plan.active:
                 state = check_timeframe(plan)
                 if state:
@@ -113,81 +112,63 @@ def check_timeframe(plan: Union[AutolockPlan, TimeChargingPlan]) -> bool:
         return state
 
 
-def check_duration(plan: ScheduledChargingPlan, duration: float, buffer: int) -> Tuple[Optional[float], bool]:
+def check_end_time(plan: ScheduledChargingPlan,
+                   chargemode_switch_timestamp: Optional[float]) -> Optional[float]:
     """ prüft, ob der in angegebene Zeitpunkt abzüglich der Dauer jetzt ist.
-    Um etwas Puffer zu haben, werden bei Überschreiten des Zeitpunkts die nachfolgenden 20 Min auch noch als Ladezeit
-    zurückgegeben.
 
     Return
     ------
     neg: Zeitpunkt vorbei
     pos: verbleibende Sekunden
     """
-
+    def missed_date_still_active(remaining_time: float) -> bool:
+        return (chargemode_switch_timestamp and
+                remaining_time.total_seconds() < 0 and
+                end.timestamp() < chargemode_switch_timestamp)
     now = datetime.datetime.today()
     end = datetime.datetime.strptime(plan.time, '%H:%M')
     remaining_time = None
     if plan.frequency.selected == "once":
         endDate = datetime.datetime.strptime(plan.frequency.once, "%Y-%m-%d")
         end = end.replace(endDate.year, endDate.month, endDate.day)
-        remaining_time = _get_remaining_time(now, duration, end)
+        remaining_time = end - now
     elif plan.frequency.selected == "daily":
         end = end.replace(now.year, now.month, now.day)
-        remaining_time_today = _get_remaining_time(now, duration, end)
-        remaining_time, end = check_following_days(now, duration, end, remaining_time_today, buffer)
+        remaining_time = end - now
+        if missed_date_still_active(remaining_time):
+            # Wenn auf Zielladen umgeschaltet wurde und der Termin noch nicht vorbei war, noch auf diesen Termin laden.
+            end = end + datetime.timedelta(days=1)
+            remaining_time = end - now
     elif plan.frequency.selected == "weekly":
-        end = end.replace(now.year, now.month, now.day)
-        if plan.frequency.weekly[now.weekday()]:
-            remaining_time = _get_remaining_time(now, duration, end)
-        # prüfen, ob für den nächsten Tag ein Termin ansteht und heute schon begonnen werden muss
         if not any(plan.frequency.weekly):
             raise ValueError("Es muss mindestens ein Tag ausgewählt werden.")
-        num_of_following_days = _get_next_charging_day(copy.deepcopy(plan.frequency.weekly), now.weekday())
-        remaining_time, end = check_following_days(now, duration, end, remaining_time, buffer, num_of_following_days)
+        end = end.replace(now.year, now.month, now.day)
+        end += datetime.timedelta(days=_get_next_charging_day(plan.frequency.weekly, now.weekday()))
+        remaining_time = end - now
+        if missed_date_still_active(remaining_time):
+            end = end.replace(now.year, now.month, now.day)
+            end += datetime.timedelta(days=_get_next_charging_day(plan.frequency.weekly, now.weekday()+1)+1)
+            remaining_time = end - now
     else:
         raise TypeError(f'Unbekannte Häufigkeit {plan.frequency.selected}')
-    return remaining_time, _missed_date_today(now, end, buffer)
+    if chargemode_switch_timestamp and end.timestamp() < chargemode_switch_timestamp:
+        # Als auf Zielladen umgeschaltet wurde, war der Termin schon vorbei
+        return None
+    else:
+        return remaining_time.total_seconds()
 
 
-def _get_next_charging_day(weekly_temp: List[bool], weekday: int) -> int:
-    weekly_temp[weekday] = False
-    try:
-        return (weekly_temp[weekday:] + weekly_temp[:weekday]).index(True)
-    except ValueError:
-        # Es wird nur am Wochentag von weekday geladen.
-        return 7
-
-
-def _missed_date_today(now: datetime.datetime,
-                       end: datetime.datetime,
-                       buffer: float):
-    return end < now + datetime.timedelta(seconds=buffer)
-
-
-def check_following_days(now: datetime.datetime,
-                         duration: float,
-                         end: datetime.datetime,
-                         remaining_time_today: Optional[float],
-                         buffer: float,
-                         num_of_following_days: int = 1) -> Tuple[Optional[float], datetime.datetime]:
-    # Zeitpunkt heute darf noch nicht verstrichen sein
-    if remaining_time_today and not _missed_date_today(now, end, buffer):
-        return remaining_time_today, end
-    end = end+datetime.timedelta(days=num_of_following_days)
-    remaining_time = _get_remaining_time(now, duration, end)
-    return remaining_time, end
-
-
-def _get_remaining_time(now: datetime.datetime, duration: float, end: datetime.datetime) -> float:
-    """ Return
-    ------
-    neg: Zeitpunkt vorbei
-    pos: verbleibende Sekunden
-    """
-    delta = datetime.timedelta(seconds=duration)
-    start_time = end-delta
-    log.debug(f"delta {delta} start_time {start_time} end {end} now {now}")
-    return (start_time-now).total_seconds()
+def _get_next_charging_day(weekly: List[bool], weekday: int) -> int:
+    count = 0
+    for i in range(weekday, len(weekly)):
+        if weekly[i] is True:
+            return count
+        count += 1
+    for i in range(0, weekday):
+        if weekly[i] is True:
+            return count
+        count += 1
+    return count
 
 
 def is_list_valid(hour_list: List[int]) -> bool:

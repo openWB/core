@@ -15,10 +15,10 @@
 		</div>
 
 		<div class="rightside">
-			<CPChargePoint
+			<ChargePoint
 				v-if="Object.values(chargePoints).length > globalConfig.cpToShow"
 				:chargepoint="Object.values(chargePoints)[globalConfig.cpToShow]"
-			></CPChargePoint>
+			></ChargePoint>
 		</div>
 	</div>
 	<ModalComponent modal-id="numberpad">
@@ -59,7 +59,7 @@ import StatusPage from '@/views/StatusPage.vue'
 import SettingsPage from '@/views/SettingsPage.vue'
 import { msgInit } from '@/assets/js/processMessages'
 import { initGraph } from '@/components/powerGraph/model'
-import CPChargePoint from '@/components/chargePointList/CPChargePoint.vue'
+import ChargePoint from '@/components/chargePointList/ChargePoint.vue'
 import { chargePoints } from '@/components/chargePointList/model'
 import { displayConfig, checkCode } from '@/assets/js/model'
 

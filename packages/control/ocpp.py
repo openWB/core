@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 import logging
 
@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 try:
     class OcppMixin:
         def _get_formatted_time(self: OptionalProtocol) -> str:
-            return datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+            return datetime.now(timezone.utc).isoformat()
 
         def _process_call(self: OptionalProtocol,
                           chargebox_id: str,
@@ -74,10 +74,10 @@ try:
                     timestamp=self._get_formatted_time()
                 ))
                 if ws:
-                    tansaction_id = json.loads(ws.messages[0])[2]["transactionId"]
-                    log.debug(f"Transaction ID: {tansaction_id} für Chargebox ID: {chargebox_id} mit Tag: {id_tag} und "
-                              f"Zählerstand: {imported} erhalten.")
-                    return tansaction_id
+                    transaction_id = json.loads(ws.messages[0])[2]["transactionId"]
+                    log.debug(f"Transaction ID: {transaction_id} für Chargebox ID: {chargebox_id} mit Tag: {id_tag} "
+                              f"und Zählerstand: {imported} erhalten.")
+                    return transaction_id
             except Exception as e:
                 fault_state.from_exception(e)
             return None
