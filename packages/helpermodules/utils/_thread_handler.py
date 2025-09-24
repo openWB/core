@@ -42,6 +42,8 @@ def joined_thread_handler(threads: List[Thread], timeout: Optional[int]) -> List
             if thread.is_alive():
                 log.error(f"{thread.name} konnte nicht innerhalb des Timeouts abgearbeitet werden.")
                 not_finished_threads.append(thread.name)
+    # Entferne alle beendeten Threads aus der übergebenen Liste
+    threads[:] = [t for t in threads if t.is_alive()]
     return not_finished_threads
 
 

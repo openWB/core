@@ -275,6 +275,19 @@ def setup_logging() -> None:
                                                                      steuve_control_command_file_handler)
     steuve_control_command_listener.start()
 
+    # Garbage collector logger
+    garbage_collector_queue = queue.Queue()
+    garbage_collector_queue_handler = logging.handlers.QueueHandler(garbage_collector_queue)
+    garbage_collector_log = logging.getLogger("garbage_collector")
+    garbage_collector_log.propagate = False
+    garbage_collector_file_handler = RotatingFileHandler(
+        RAMDISK_PATH + 'garbage_collector.log', maxBytes=mb_to_bytes(0.5), backupCount=1)
+    garbage_collector_file_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
+    garbage_collector_log.addHandler(garbage_collector_queue_handler)
+    garbage_collector_listener = logging.handlers.QueueListener(garbage_collector_queue,
+                                                                garbage_collector_file_handler)
+    garbage_collector_listener.start()
+
     # Smarthome logger
     smarthome_queue = queue.Queue()
     smarthome_queue_handler = logging.handlers.QueueHandler(smarthome_queue)

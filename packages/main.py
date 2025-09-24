@@ -8,10 +8,15 @@ from helpermodules.utils import run_command, thread_handler
 import threading
 import sys
 import functools
+import gc  # GC-Modul importieren
+import collections
 
 # als erstes logging initialisieren, damit auch ImportError geloggt werden
 logger.setup_logging()
 log = logging.getLogger()
+
+# GC-Logger einrichten
+gc_logger = logging.getLogger("garbage_collector")
 
 from pathlib import Path
 from random import randrange
@@ -167,6 +172,9 @@ class HandlerAlgorithm:
             try:
                 handler_with_control_interval()
                 logger.write_logs_to_file("main")
+                write_gc_stats()
+                #print_active_threads_and_referrers()
+                analyze_function_origins()
             finally:
                 self.__release_lock("handler10Sec")
         except Exception:
@@ -255,6 +263,58 @@ class HandlerAlgorithm:
         except Exception:
             log.exception("Fehler im Main-Modul")
 
+def write_gc_stats():
+    """Schreibt GC-Statistiken in eine Datei über den eigenen Logger."""
+    try:
+        gc.collect()
+        objs = gc.get_objects()
+        type_counter = collections.Counter(type(obj).__name__ for obj in objs)
+        most_common = type_counter.most_common(10)
+        stats = {
+            "garbage": len(gc.garbage),
+            "objects": len(objs),
+            "counts": gc.get_count(),
+            "top_types": most_common,
+        }
+        gc_logger.info(stats)
+    except Exception:
+        log.exception("Fehler beim Schreiben der GC-Statistiken")
+
+def analyze_function_origins():
+    """Analysiert, woher die Funktionsobjekte im Speicher stammen."""
+    import types
+    gc.collect()
+    objs = gc.get_objects()
+    origins = {}
+    for obj in objs:
+        if isinstance(obj, types.FunctionType):
+            try:
+                key = (
+                    getattr(obj, "__module__", None),
+                    getattr(obj, "__qualname__", None),
+                    getattr(obj, "__code__", None) and obj.__code__.co_filename,
+                    getattr(obj, "__code__", None) and obj.__code__.co_firstlineno,
+                )
+                origins[key] = origins.get(key, 0) + 1
+            except Exception:
+                pass
+    # Die 10 häufigsten Ursprünge loggen
+    top = sorted(origins.items(), key=lambda x: x[1], reverse=True)[:10]
+    for (mod, name, file, line), count in top:
+        gc_logger.info(f"Function origin: {mod}.{name} in {file}:{line} -> {count}x")
+
+def print_active_threads_and_referrers(max_referrers=3):
+    """Zeigt alle aktiven Thread-Objekte und eine begrenzte Anzahl Referrers an."""
+    for obj in gc.get_objects():
+        if isinstance(obj, threading.Thread) and not obj.is_alive():
+            gc_logger.info(f"Thread: {obj} (Name: {obj.name}, Alive: {obj.is_alive()}, id={id(obj)})")
+            referrers = gc.get_referrers(obj)
+            gc_logger.info(f"  Referrers count: {len(referrers)}")
+            for ref in referrers[:max_referrers]:
+                gc_logger.info(f"    Referrer type: {type(ref)}, id={id(ref)}, repr={repr(ref)[:400]}")
+
+# Beispiel: Manuell aufrufen, wenn du eine Analyse willst
+# analyze_function_origins()
 
 def schedule_jobs():
     [schedule.every().minute.at(f":{i:02d}").do(smarthome_handler).tag("algorithm") for i in range(0, 60, 5)]
@@ -269,6 +329,8 @@ def schedule_jobs():
     [schedule.every().minute.at(f":{i:02d}").do(handler.handler10Sec).tag("algorithm") for i in range(0, 60, 10)]
     # 30 Sekunden Handler, der die Locks überwacht, Deadlocks erkennt, loggt und ggf. den Prozess beendet
     schedule.every(30).seconds.do(handler.monitor_handler_locks, max_runtime=600)
+    # GC-Analyse alle 5 Minuten
+    schedule.every(5).minutes.do(write_gc_stats)
 
 
 try:
