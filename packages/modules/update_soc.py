@@ -34,11 +34,9 @@ class UpdateSoc:
                 clear_in_memory_log_handler("soc")
                 threads_update, threads_store = self._get_threads()
                 joined_thread_handler(threads_update, 300)
-                threads_update.clear()
                 wait_for_module_update_completed(self.event_vehicle_update_completed, topic)
                 # threads_store = self._filter_failed_store_threads(threads_store)
                 joined_thread_handler(threads_store, data.data.general_data.data.control_interval/3)
-                threads_store.clear()
                 wait_for_module_update_completed(self.event_vehicle_update_completed, topic)
                 write_logs_to_file("soc")
             except Exception:

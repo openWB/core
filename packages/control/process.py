@@ -106,7 +106,6 @@ class Process:
                             name=f"set output io{io.config.id}"))
             if modules_threads:
                 joined_thread_handler(modules_threads, 3)
-                modules_threads.clear()
         except Exception:
             log.exception("Fehler im Process-Modul")
 

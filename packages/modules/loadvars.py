@@ -52,7 +52,6 @@ class Loadvars:
             except Exception:
                 log.exception(f"Fehler im loadvars-Modul bei Element {cp.num}")
         result = joined_thread_handler(modules_threads, data.data.general_data.data.control_interval/3)
-        modules_threads.clear()
         return result
 
     def _update_values_of_level(self, elements, not_finished_threads: List[str]) -> None:
@@ -77,7 +76,6 @@ class Loadvars:
             except Exception:
                 log.exception(f"Fehler im loadvars-Modul bei Element {element}")
         joined_thread_handler(modules_threads, data.data.general_data.data.control_interval/3)
-        modules_threads.clear()
 
     def thread_without_set_value(self,
                                  modules_threads: List[Thread],
