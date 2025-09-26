@@ -28,7 +28,7 @@ def gc_callback(phase, info):
         "counts": gc.get_count(),
         "top_types": most_common,
     }
-    gc_logger.info(f"GC-Phase: {phase}, Info: {info}, Stats: {stats}")
+    gc_logger.error(f"GC-Phase: {phase}, Info: {info}, Stats: {stats}")
 
 
 from pathlib import Path
@@ -289,11 +289,11 @@ def log_memory_usage(always_log=False):
                 mem_kb = int(line.split()[1])
                 memory_usage = mem_kb / 1024  # MB
     if old_memory_usage + 30 < memory_usage or always_log:
-        tracemalloc_logger.debug(f"Speicherverbrauch: {memory_usage:.2f} MB, vorheriger: {old_memory_usage:.2f} MB")
+        tracemalloc_logger.error(f"Speicherverbrauch: {memory_usage:.2f} MB, vorheriger: {old_memory_usage:.2f} MB")
         snapshot = tracemalloc.take_snapshot()
         top_stats = snapshot.statistics('lineno')
         for stat in top_stats[:10]:
-            tracemalloc_logger.debug(stat)
+            tracemalloc_logger.error(stat)
     old_memory_usage = memory_usage
 
 def write_gc_stats():
@@ -308,7 +308,7 @@ def write_gc_stats():
             "counts": gc.get_count(),
             "top_types": most_common,
         }
-        gc_logger.info(stats)
+        gc_logger.error(stats)
     except Exception:
         log.exception("Fehler beim Schreiben der GC-Statistiken")
 
