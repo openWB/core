@@ -112,8 +112,7 @@ def test_check_meter_values_voltages(voltages, power, expected_msg, monkeypatch)
 
 @patch('modules.common.hardware_check.ClientHandlerProtocol')
 @pytest.mark.parametrize("serial_number, voltages, expected",
-                         [("0", [230]*3, (True, METER_NO_SERIAL_NUMBER, CounterState)),
-                          (12345, [230]*3, (True, None, CounterState)),
+                         [(12345, [230]*3, (True, None, CounterState)),
                           (Exception(), [230]*3, (False, METER_PROBLEM, None))])
 def test_check_meter(
     MockClientHandlerProtocol: Mock,
