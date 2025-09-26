@@ -244,7 +244,7 @@ class skoda:
                 'batteryStatus': {
                     'value': {
                         'currentSOC_pct': status_data['primaryEngineRange']['currentSoCInPercent'],
-                        'cruisingRangeElectric_km': status_data['primaryEngineRange']['remainingRangeInKm'],
+                        'cruisingRangeElectric_km': status_data['primaryEngineRange'].get('remainingRangeInKm', 0.0),
                         'carCapturedTimestamp': status_data['carCapturedTimestamp'].split('.')[0] + 'Z',
                     }
                 }
