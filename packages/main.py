@@ -10,13 +10,26 @@ import sys
 import functools
 import gc  # GC-Modul importieren
 import collections
-
+import tracemalloc
 # als erstes logging initialisieren, damit auch ImportError geloggt werden
 logger.setup_logging()
 log = logging.getLogger()
 
 # GC-Logger einrichten
 gc_logger = logging.getLogger("garbage_collector")
+tracemalloc_logger = logging.getLogger("tracemalloc")
+def gc_callback(phase, info):
+    objs = gc.get_objects()
+    type_counter = collections.Counter(type(obj).__name__ for obj in objs)
+    most_common = type_counter.most_common(10)
+    stats = {
+        "garbage": len(gc.garbage),
+        "objects": len(objs),
+        "counts": gc.get_count(),
+        "top_types": most_common,
+    }
+    gc_logger.info(f"GC-Phase: {phase}, Info: {info}, Stats: {stats}")
+
 
 from pathlib import Path
 from random import randrange
@@ -174,7 +187,8 @@ class HandlerAlgorithm:
                 logger.write_logs_to_file("main")
                 write_gc_stats()
                 #print_active_threads_and_referrers()
-                analyze_function_origins()
+                #analyze_function_origins()
+                log_memory_usage()
             finally:
                 self.__release_lock("handler10Sec")
         except Exception:
@@ -226,6 +240,7 @@ class HandlerAlgorithm:
                     general_internal_chargepoint_handler.internal_chargepoint_handler.heartbeat = False
             with ChangedValuesContext(loadvars_.event_module_update_completed):
                 sub.system_data["system"].update_ip_address()
+            log_memory_usage(always_log=True)
         except Exception:
             log.exception("Fehler im Main-Modul")
 
@@ -263,10 +278,27 @@ class HandlerAlgorithm:
         except Exception:
             log.exception("Fehler im Main-Modul")
 
+
+old_memory_usage: int
+
+def log_memory_usage(always_log=False):
+    global old_memory_usage
+    with open("/proc/self/status") as f:
+        for line in f:
+            if line.startswith("VmRSS:"):
+                mem_kb = int(line.split()[1])
+                memory_usage = mem_kb / 1024  # MB
+    if old_memory_usage + 30 < memory_usage or always_log:
+        tracemalloc_logger.debug(f"Speicherverbrauch: {memory_usage:.2f} MB, vorheriger: {old_memory_usage:.2f} MB")
+        snapshot = tracemalloc.take_snapshot()
+        top_stats = snapshot.statistics('lineno')
+        for stat in top_stats[:10]:
+            tracemalloc_logger.debug(stat)
+    old_memory_usage = memory_usage
+
 def write_gc_stats():
     """Schreibt GC-Statistiken in eine Datei über den eigenen Logger."""
     try:
-        gc.collect()
         objs = gc.get_objects()
         type_counter = collections.Counter(type(obj).__name__ for obj in objs)
         most_common = type_counter.most_common(10)
@@ -280,38 +312,38 @@ def write_gc_stats():
     except Exception:
         log.exception("Fehler beim Schreiben der GC-Statistiken")
 
-def analyze_function_origins():
-    """Analysiert, woher die Funktionsobjekte im Speicher stammen."""
-    import types
-    gc.collect()
-    objs = gc.get_objects()
-    origins = {}
-    for obj in objs:
-        if isinstance(obj, types.FunctionType):
-            try:
-                key = (
-                    getattr(obj, "__module__", None),
-                    getattr(obj, "__qualname__", None),
-                    getattr(obj, "__code__", None) and obj.__code__.co_filename,
-                    getattr(obj, "__code__", None) and obj.__code__.co_firstlineno,
-                )
-                origins[key] = origins.get(key, 0) + 1
-            except Exception:
-                pass
-    # Die 10 häufigsten Ursprünge loggen
-    top = sorted(origins.items(), key=lambda x: x[1], reverse=True)[:10]
-    for (mod, name, file, line), count in top:
-        gc_logger.info(f"Function origin: {mod}.{name} in {file}:{line} -> {count}x")
+# def analyze_function_origins():
+#     """Analysiert, woher die Funktionsobjekte im Speicher stammen."""
+#     import types
+#     gc.collect()
+#     objs = gc.get_objects()
+#     origins = {}
+#     for obj in objs:
+#         if isinstance(obj, types.FunctionType):
+#             try:
+#                 key = (
+#                     getattr(obj, "__module__", None),
+#                     getattr(obj, "__qualname__", None),
+#                     getattr(obj, "__code__", None) and obj.__code__.co_filename,
+#                     getattr(obj, "__code__", None) and obj.__code__.co_firstlineno,
+#                 )
+#                 origins[key] = origins.get(key, 0) + 1
+#             except Exception:
+#                 pass
+#     # Die 10 häufigsten Ursprünge loggen
+#     top = sorted(origins.items(), key=lambda x: x[1], reverse=True)[:10]
+#     for (mod, name, file, line), count in top:
+#         gc_logger.info(f"Function origin: {mod}.{name} in {file}:{line} -> {count}x")
 
-def print_active_threads_and_referrers(max_referrers=3):
-    """Zeigt alle aktiven Thread-Objekte und eine begrenzte Anzahl Referrers an."""
-    for obj in gc.get_objects():
-        if isinstance(obj, threading.Thread) and not obj.is_alive():
-            gc_logger.info(f"Thread: {obj} (Name: {obj.name}, Alive: {obj.is_alive()}, id={id(obj)})")
-            referrers = gc.get_referrers(obj)
-            gc_logger.info(f"  Referrers count: {len(referrers)}")
-            for ref in referrers[:max_referrers]:
-                gc_logger.info(f"    Referrer type: {type(ref)}, id={id(ref)}, repr={repr(ref)[:400]}")
+# def print_active_threads_and_referrers(max_referrers=3):
+#     """Zeigt alle aktiven Thread-Objekte und eine begrenzte Anzahl Referrers an."""
+#     for obj in gc.get_objects():
+#         if isinstance(obj, threading.Thread) and not obj.is_alive():
+#             gc_logger.info(f"Thread: {obj} (Name: {obj.name}, Alive: {obj.is_alive()}, id={id(obj)})")
+#             referrers = gc.get_referrers(obj)
+#             gc_logger.info(f"  Referrers count: {len(referrers)}")
+#             for ref in referrers[:max_referrers]:
+#                 gc_logger.info(f"    Referrer type: {type(ref)}, id={id(ref)}, repr={repr(ref)[:400]}")
 
 # Beispiel: Manuell aufrufen, wenn du eine Analyse willst
 # analyze_function_origins()
@@ -335,6 +367,8 @@ def schedule_jobs():
 
 try:
     log.debug("Start openWB2.service")
+    tracemalloc.start()
+    old_memory_usage = 0
     loadvars_ = loadvars.Loadvars()
     data.data_init(loadvars_.event_module_update_completed)
     update_config.UpdateConfig().update()
