@@ -779,7 +779,8 @@ class Chargepoint(ChargepointRfidMixin):
                 # check für charging stop or charging interruption, if so force a soc query for the ev
                 if self.data.set.charge_state_prev and self.data.get.charge_state is False:
                     Pub().pub(
-                        f"openWB/set/vehicle/{vehicle if vehicle != -1 else self.data.config.ev}/get/force_soc_update", True)
+                        f"openWB/set/vehicle/{vehicle if vehicle != -1 else self.data.config.ev}/get/force_soc_update",
+                        True)
                     log.info(f"SoC-Abfrage nach Ladeunterbrechung, cp{self.num}, ev{self.data.config.ev}")
             except Exception:
                 log.exception(f"Fehler bei Ladestop,cp{self.num}")
@@ -803,7 +804,8 @@ class Chargepoint(ChargepointRfidMixin):
                     (self.data.get.soc_timestamp and self.data.set.charging_ev_data.data.get.soc_timestamp and
                         self.data.get.soc_timestamp > self.data.set.charging_ev_data.data.get.soc_timestamp)):
                 Pub().pub(
-                    f"openWB/set/vehicle/{vehicle if vehicle != -1 else self.data.config.ev}/get/force_soc_update", True)
+                    f"openWB/set/vehicle/{vehicle if vehicle != -1 else self.data.config.ev}/get/force_soc_update",
+                    True)
                 log.debug("SoC nach Anstecken")
             self.set_state_and_log(message)
         except Exception:
