@@ -819,6 +819,16 @@ class Command:
                 Pub().pub("openWB/system/update_in_progress", False)
                 return
         parent_file = Path(__file__).resolve().parents[2]
+        if not SubData.general_data.data.extern and SubData.system_data["system"].data["secondary_auto_update"]:
+            for cp in SubData.cp_data.values():
+                # if chargepoint is external_openwb and not the second CP of duo and version is Release
+                if (
+                    cp.chargepoint.chargepoint_module.config.type == 'external_openwb' and
+                    cp.chargepoint.chargepoint_module.config.configuration.duo_num == 0 and
+                    cp.chargepoint.data.get.current_branch == "Release"
+                ):
+                    time.sleep(2)
+                    self.secondaryChargepointUpdate({"data": {"chargepoint": f"cp{cp.chargepoint.num}"}})
         if "branch" in payload["data"] and "tag" in payload["data"]:
             pub_user_message(
                 payload, connection_id,
