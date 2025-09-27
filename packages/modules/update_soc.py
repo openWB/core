@@ -127,7 +127,8 @@ class UpdateSoc:
                                  battery_capacity=battery_capacity,
                                  soc_from_cp=soc_from_cp,
                                  timestamp_soc_from_cp=timestamp_soc_from_cp,
-                                 soc_timestamp=soc_timestamp)
+                                 last_soc_timestamp=soc_timestamp,
+                                 last_soc=ev.data.get.soc)
 
     def _filter_failed_store_threads(self, threads_store: List[Thread]) -> List[Thread]:
         ev_data = copy.deepcopy(subdata.SubData.ev_data)
