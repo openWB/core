@@ -1,4 +1,5 @@
 import datetime
+import logging
 from typing import List, Optional, Union
 from unittest.mock import MagicMock, Mock
 import pytest
@@ -6,6 +7,8 @@ import pytest
 from helpermodules import timecheck
 from helpermodules.abstract_plans import (AutolockPlan, FrequencyDate, FrequencyPeriod, ScheduledChargingPlan,
                                           TimeChargingPlan)
+
+log = logging.getLogger(__name__)
 
 
 class Params:
@@ -140,3 +143,32 @@ def test_convert_timestamp_delta_to_time_string(timestamp, expected):
 
     # evaluation
     assert time_string == expected
+
+
+@pytest.mark.parametrize("timestamp, expected",
+                         [
+                             pytest.param("2025-10-01 9:00", "2025-10-01 9:00", id="9:00"),
+                             pytest.param("2025-10-01 9:01", "2025-10-01 9:00", id="9:01"),
+                             pytest.param("2025-10-01 9:10", "2025-10-01 9:00", id="9:10"),
+                             pytest.param("2025-10-01 9:14", "2025-10-01 9:00", id="9:14"),
+                             pytest.param("2025-10-01 9:15", "2025-10-01 9:15", id="9:15"),
+                             pytest.param("2025-10-01 9:41", "2025-10-01 9:30", id="9:41"),
+                             pytest.param("2025-10-01 9:46", "2025-10-01 9:45", id="9:46")
+                         ]
+                         )
+def test_create_unix_timestamp_current_quarter_hour(timestamp, expected, monkeypatch):
+    # setup
+    datetime_mock = MagicMock(wraps=datetime.datetime)
+    current_time = datetime.datetime.strptime(timestamp, "%Y-%m-%d %H:%M")
+    datetime_mock.today.return_value = current_time
+    monkeypatch.setattr(datetime, "datetime", datetime_mock)
+
+    # execution
+    qh=    timecheck.create_unix_timestamp_current_quarter_hour()
+    log.debug(f"timestamp: {current_time} , from mock: {datetime.datetime.today().timestamp()}"
+              f" result:  {qh}")
+
+    current_quarter_hour = datetime.datetime.fromtimestamp(qh).strftime("%Y-%m-%d %H:%M")
+
+    # evaluation
+    assert current_quarter_hour == expected
