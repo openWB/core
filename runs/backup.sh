@@ -31,9 +31,10 @@ fi
 	echo "  LOGFILE: $LOGFILE"
 	echo "  FILENAME: $FILENAME"
 
-	echo "deleting old backup files if present in '$BACKUPDIR'"
-	# remove old backup files
-	rm -v "$BACKUPDIR/"*
+	echo "removing old files in '$BACKUPDIR' if present"
+	# Delete old backups (robust, no glob issues)
+	find "$BACKUPDIR" -mindepth 1 -maxdepth 1 -not -name '.donotdelete' -exec rm -vrf {} +
+
 	BACKUPFILE="$BACKUPDIR/$FILENAME"
 
 	# tell mosquitto to store all retained topics in db now
