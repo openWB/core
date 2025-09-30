@@ -29,6 +29,7 @@ def all_cp_charging_1p():
     for i in range(3, 6):
         data.data.cp_data[f"cp{i}"].data.get.currents = [0]*3
         data.data.cp_data[f"cp{i}"].data.get.currents[i-3] = 16
+        data.data.cp_data[f"cp{i}"].data.get.charge_state = True
 
 
 @pytest.fixture()
@@ -40,6 +41,7 @@ def all_cp_instant_charging_3p():
         control_parameter.required_currents = [16]*3
         control_parameter.required_current = 16
         control_parameter.chargemode = Chargemode.INSTANT_CHARGING
+        data.data.cp_data[f"cp{i}"].data.get.charge_state = True
         data.data.cp_data[f"cp{i}"].data.get.currents = [16]*3
 
 

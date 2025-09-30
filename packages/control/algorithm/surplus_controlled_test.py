@@ -115,6 +115,7 @@ def test_add_unused_evse_current(evse_current: float,
                                  expected_current: float):
     # setup
     c = Chargepoint(0, None)
+    c.data.get.charge_state = True
     c.data.get.currents = [13]*3
     c.data.get.evse_current = evse_current
     c.data.control_parameter.required_current = 16
