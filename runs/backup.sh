@@ -13,7 +13,7 @@ useExtendedFilename=$1
 if ((useExtendedFilename == 1)); then
 	# only use characters supported in most OS!
 	# for Win see https://learn.microsoft.com/en-us/rest/api/storageservices/naming-and-referencing-shares--directories--files--and-metadata
-	FILENAME="openWB_backup_$(date +"%Y-%m-%d_%H-%M-%S").tar"
+	FILENAME="openWB_backup_$(date +"%Y-%m-%d_%H-%M-%S")_$(<"$OPENWBBASEDIR"/web/version).tar"
 else
 	FILENAME="backup.tar"
 fi
