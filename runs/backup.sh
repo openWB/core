@@ -40,7 +40,7 @@ fi
 	echo "sending 'SIGUSR1' to mosquitto processes"
 	sudo pkill -e -SIGUSR1 mosquitto
 	# give mosquitto some time to finish
-	sleep 0.2
+	sleep 1
 
 	# create backup file
 	echo "creating new backup file: $BACKUPFILE"
