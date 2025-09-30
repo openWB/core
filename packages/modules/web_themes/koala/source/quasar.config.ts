@@ -62,7 +62,12 @@ export default defineConfig((ctx) => {
           viteConf.esbuild = {
             ...viteConf.esbuild,
             drop: ['debugger'],
-            pure: ['console.log', 'console.info', 'console.debug', 'console.table'],
+            pure: [
+              'console.log',
+              'console.info',
+              'console.debug',
+              'console.table',
+            ],
           };
         }
       },
