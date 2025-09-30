@@ -37,49 +37,34 @@ fi
 
 	BACKUPFILE="$BACKUPDIR/$FILENAME"
 
-	# tell mosquitto to store all retained topics in db now
-	echo "sending 'SIGUSR1' to mosquitto processes"
-	sudo pkill -e -SIGUSR1 mosquitto
-	# give mosquitto some time to finish
-	sleep 1
-
-	# create backup file
-	echo "creating new backup file: $BACKUPFILE"
-	echo "adding openWB files"
-	tar --verbose --create \
-		--file="$BACKUPFILE" \
-		--directory="$TARBASEDIR/" \
-		"$OPENWBDIRNAME/data/charge_log" \
-		"$OPENWBDIRNAME/data/daily_log" \
-		"$OPENWBDIRNAME/data/monthly_log" \
-		"$OPENWBDIRNAME/data/log/uuid"
-	echo "adding configuration file"
-	sudo tar --verbose --append \
-		--file="$BACKUPFILE" \
-		--directory="/home/openwb/" \
-		"configuration.json"
-	echo "adding mosquitto files"
-	sudo tar --verbose --append \
-		--file="$BACKUPFILE" \
-		--directory="/var/lib/" \
-		"mosquitto/" "mosquitto_local/"
-	echo "adding mosquitto configuration"
-	sudo tar --verbose --append \
-		--file="$BACKUPFILE" \
-		--directory="/etc/mosquitto/" \
-		"conf_local.d/"
-	echo "adding boot file"
-	sudo tar --verbose --append \
-		--file="$BACKUPFILE" \
-		"/boot/config.txt"
-	echo "adding git information"
+	# git information
+	echo "collecting git information"
 	git branch --no-color --show-current >"$RAMDISKDIR/GIT_BRANCH"
 	git log --pretty='format:%H' -n1 >"$RAMDISKDIR/GIT_HASH"
 	echo "branch: $(<"$RAMDISKDIR/GIT_BRANCH") commit-hash: $(<"$RAMDISKDIR/GIT_HASH")"
-	tar --verbose --append \
+
+	# create backup file
+	echo "creating new backup file: $BACKUPFILE"
+	echo "adding files"
+	sudo tar --verbose --create \
 		--file="$BACKUPFILE" \
+		--directory="$TARBASEDIR/" \
+			"$OPENWBDIRNAME/data/charge_log" \
+			"$OPENWBDIRNAME/data/daily_log" \
+			"$OPENWBDIRNAME/data/monthly_log" \
+			"$OPENWBDIRNAME/data/log/uuid" \
+		--directory="/home/openwb/" \
+			"configuration.json" \
+		--directory="/var/lib/" \
+			"mosquitto/" \
+			"mosquitto_local/" \
+		--directory="/etc/mosquitto/" \
+			"conf_local.d/" \
+		--directory="/boot" \
+			"config.txt" \
 		--directory="$RAMDISKDIR/" \
-		"GIT_BRANCH" "GIT_HASH"
+			"GIT_BRANCH" \
+			"GIT_HASH"
 
 	echo "calculating checksums"
 	IFS=$'\n'
@@ -99,19 +84,22 @@ fi
 		# remove the file
 		rm -f "$TEMPDIR/$file"
 	done
-	tar --verbose --append \
+
+	echo "adding checksum file to archive"
+	sudo tar --verbose --append \
 		--file="$BACKUPFILE" \
 		--directory="$RAMDISKDIR/" \
-		"SHA256SUM"
+			"SHA256SUM"
 
 	# cleanup
 	echo "removing temporary files"
 	rm -v "$RAMDISKDIR/GIT_BRANCH" "$RAMDISKDIR/GIT_HASH" "$RAMDISKDIR/SHA256SUM"
 	rm -rf "${TEMPDIR:?}/"
-	tar --append \
+	echo "adding log file to archive"
+	sudo tar --append \
 		--file="$BACKUPFILE" \
 		--directory="$LOGDIR/" \
-		"backup.log"
+			"backup.log"
 	echo "zipping archive"
 	gzip --verbose "$BACKUPFILE"
 	echo "setting permissions of new backup file"
