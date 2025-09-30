@@ -399,8 +399,6 @@ export const useMqttStore = defineStore("mqtt", {
           "openWB/pv/get/power",
           "W",
           "",
-          true,
-          true,
         );
         if (Object.hasOwnProperty.call(power, returnType)) {
           return power[returnType];
