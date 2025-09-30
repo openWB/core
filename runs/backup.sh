@@ -9,6 +9,90 @@ TEMPDIR="$RAMDISKDIR/temp"
 LOGDIR="$OPENWBBASEDIR/data/log"
 LOGFILE="$LOGDIR/backup.log"
 
+# Mosquitto DB files to monitor
+DB_FILES=(
+	"/var/lib/mosquitto/mosquitto.db"
+	"/var/lib/mosquitto_local/mosquitto.db"
+)
+
+# Baseline mtimes to avoid race condition (captured before SIGUSR1)
+declare -Ag BASELINE_DB_MTIME=()
+
+wait_for_mosquitto_flush() {
+	local timeout=5
+	local start_ts
+	start_ts=$(date +%s)
+	declare -A initial_mtime
+
+	# Use previously captured baseline (recorded before signal)
+	if ((${#BASELINE_DB_MTIME[@]})); then
+		echo "using previously collected Baseline-mtime values:"
+		for f in "${DB_FILES[@]}"; do
+			initial_mtime["$f"]=${BASELINE_DB_MTIME["$f"]:-0}
+			echo "  $f -> ${initial_mtime["$f"]}"
+		done
+	else
+		# Fallback (should not occur)
+		for f in "${DB_FILES[@]}"; do
+			[ -e "$f" ] && initial_mtime["$f"]=$(stat -c %Y "$f") || initial_mtime["$f"]=0
+		done
+	fi
+
+	echo "waiting for mosquitto to flush db files (timeout ${timeout}s)..."
+
+	if command -v inotifywait >/dev/null 2>&1; then
+		echo "using 'inotifywait'"
+		local pending=()
+		for f in "${DB_FILES[@]}"; do
+			pending+=("$f")
+		done
+		while ((${#pending[@]})); do
+			local elapsed=$(( $(date +%s) - start_ts ))
+			local remain=$(( timeout - elapsed ))
+			(( remain <= 0 )) && echo "timeout reached (inotify), continuing." && break
+			inotifywait -q -t "$remain" -e modify -e close_write -e attrib -e move -e create "${pending[@]}" 2>/dev/null || true
+			local new_pending=()
+			for f in "${pending[@]}"; do
+				if [ -e "$f" ]; then
+					local mt
+					mt=$(stat -c %Y "$f")
+					if (( mt != initial_mtime["$f"] )); then
+						echo "modified: $f (old: ${initial_mtime["$f"]} -> new: $mt)"
+					else
+						new_pending+=("$f")
+					fi
+				else
+					new_pending+=("$f")
+				fi
+			done
+			pending=("${new_pending[@]}")
+		done
+	else
+		echo "'inotifywait' not found, falling back to polling"
+		while true; do
+			local all_ok=1
+			for f in "${DB_FILES[@]}"; do
+				if [ -e "$f" ]; then
+					local mt
+					mt=$(stat -c %Y "$f")
+					if (( mt != initial_mtime["$f"] )); then
+						echo "modified (polling): $f (old: ${initial_mtime["$f"]} -> new: $mt)"
+						initial_mtime["$f"]=$mt
+					else
+						all_ok=0
+					fi
+				else
+					all_ok=0
+				fi
+			done
+			(( all_ok == 1 )) && echo "all relevant files are modified" && break
+			local elapsed=$(( $(date +%s) - start_ts ))
+			(( elapsed >= timeout )) && echo "timeout reached (polling), continuing." && break
+			sleep 0.1
+		done
+	fi
+}
+
 useExtendedFilename=$1
 if ((useExtendedFilename == 1)); then
 	# only use characters supported in most OS!
@@ -36,6 +120,24 @@ fi
 	find "$BACKUPDIR" -mindepth 1 -maxdepth 1 -not -name '.donotdelete' -exec rm -vrf {} +
 
 	BACKUPFILE="$BACKUPDIR/$FILENAME"
+
+	# collect Baseline before signalling (prevents race-condition)
+	echo "collecting Baseline-mtime before SIGUSR1:"
+	for f in "${DB_FILES[@]}"; do
+		if [ -e "$f" ]; then
+			BASELINE_DB_MTIME["$f"]=$(stat -c %Y "$f")
+			echo "  $f -> ${BASELINE_DB_MTIME["$f"]}"
+		else
+			BASELINE_DB_MTIME["$f"]=0
+			echo "  $f -> (does not yet exist, setting to 0)"
+		fi
+	done
+
+	# inform mosquitto to flush data to disk
+	echo "sending 'SIGUSR1' to mosquitto processes to flush data to disk"
+	sudo pkill -e -SIGUSR1 mosquitto || echo "WARNING: no processes found?"
+	# wait for mosquitto to flush data to disk
+	wait_for_mosquitto_flush
 
 	# git information
 	echo "collecting git information"
