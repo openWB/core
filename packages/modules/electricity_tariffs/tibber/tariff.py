@@ -22,7 +22,7 @@ def _get_sorted_price_data(response_json: Dict, key: str):
 def fetch_prices(config: TibberTariffConfiguration) -> Dict[int, float]:
     headers = {'Authorization': 'Bearer ' + config.token, 'Content-Type': 'application/json'}
     data = '{ "query": "{viewer {home(id:\\"' + config.home_id + \
-        '\\") {currentSubscription {priceInfo {today {total startsAt} tomorrow {total startsAt}}}}}}" }'
+        '\\") {currentSubscription {priceInfo (resolution: QUARTER_HOURLY) {today {total startsAt} tomorrow {total startsAt}}}}}}" }'
     response = req.get_http_session().post('https://api.tibber.com/v1-beta/gql', headers=headers, data=data, timeout=6)
     response_json = response.json()
     if response_json.get("errors") is None:
