@@ -1,6 +1,5 @@
 """prüft, ob Zeitfenster aktuell sind
 """
-import math
 import logging
 import datetime
 from typing import List, Optional, Tuple, TypeVar, Union
