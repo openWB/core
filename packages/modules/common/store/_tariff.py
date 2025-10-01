@@ -12,11 +12,14 @@ class TariffValueStoreBroker(ValueStore[TariffState]):
     def set(self, state: TariffState) -> None:
         self.state = state
 
-    def update(self):
+    def __update(self):
         try:
             pub_to_broker("openWB/set/optional/et/get/prices", self.state.prices)
         except Exception as e:
             raise FaultState.from_exception(e)
+
+    def update(self):
+        self.__update(self)
 
 
 def get_electricity_tariff_value_store() -> ValueStore[TariffState]:
