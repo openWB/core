@@ -15,11 +15,11 @@ useExtendedFilename=$1
 if ((useExtendedFilename == 1)); then
 	# only use characters supported in most OS!
 	# for Win see https://learn.microsoft.com/en-us/rest/api/storageservices/naming-and-referencing-shares--directories--files--and-metadata
-	FILENAME="openWB_backup_$(date +"%Y-%m-%d_%H-%M-%S")_$(<"$OPENWBBASEDIR"/web/version).tar"
+	FILENAME="$(date +"%Y-%m-%d_%H-%M-%S")_$(<"$OPENWBBASEDIR"/web/version)"
 else
-	FILENAME="backup.tar"
+	FILENAME="backup"
 fi
-FILENAMESUFFIX=".gz"
+FILENAMESUFFIX=".openwb-backup"
 
 # Mosquitto DB files to monitor
 DB_FILES=(
@@ -206,19 +206,19 @@ wait_for_mosquitto_flush() {
 		--directory="$LOGDIR/" \
 			"backup.log"
 	echo "zipping archive"
-	gzip --verbose "$BACKUPFILE"
+	gzip --verbose --suffix "$FILENAMESUFFIX" "$BACKUPFILE"
 
 
 	# encrypt backup file with gpg
 	if [[ -f "$HOMEDIR/$KEYFILE" ]]; then
 		echo "encrypting backup file"
 		gpg --batch --yes --passphrase-file "$HOMEDIR/$KEYFILE" \
-			--symmetric --cipher-algo AES256 "$BACKUPFILE.gz"
-		FILENAMESUFFIX=".gz.gpg"
+			--symmetric --cipher-algo AES256 "$BACKUPFILE$FILENAMESUFFIX"
 		echo "removing unencrypted backup file"
-		rm -v "$BACKUPFILE.gz"
+		rm -v "$BACKUPFILE$FILENAMESUFFIX"
+		FILENAMESUFFIX="$FILENAMESUFFIX.gpg"
 	else
-		echo "ERROR: $BACKUPFILE.gz not found!"
+		echo "ERROR: $BACKUPFILE$FILENAMESUFFIX not found!"
 	fi
 
 	# fix permissions of backup file
