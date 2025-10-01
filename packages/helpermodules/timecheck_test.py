@@ -144,23 +144,26 @@ def test_convert_timestamp_delta_to_time_string(timestamp, expected):
 
 @pytest.mark.parametrize("timestamp, expected",
                          [
-                             pytest.param("2025-10-01 9:00", "2025-10-01 9:00"),
-                             pytest.param("2025-10-01 9:01", "2025-10-01 9:00"),
-                             pytest.param("2025-10-01 9:10", "2025-10-01 9:00"),
-                             pytest.param("2025-10-01 9:14", "2025-10-01 9:00"),
-                             pytest.param("2025-10-01 9:15", "2025-10-01 9:15"),
-                             pytest.param("2025-10-01 9:41", "2025-10-01 9:30"),
-                             pytest.param("2025-10-01 9:46", "2025-10-01 9:45")                     
+                             pytest.param("2025-10-01 9:00", "2025-10-01 9:00", id="9:00"),
+                             pytest.param("2025-10-01 9:01", "2025-10-01 9:00", id="9:01"),
+                             pytest.param("2025-10-01 9:10", "2025-10-01 9:00", id="9:10"),
+                             pytest.param("2025-10-01 9:14", "2025-10-01 9:00", id="9:14"),
+                             pytest.param("2025-10-01 9:15", "2025-10-01 9:15", id="9:15"),
+                             pytest.param("2025-10-01 9:41", "2025-10-01 9:30", id="9:41"),
+                             pytest.param("2025-10-01 9:46", "2025-10-01 9:45", id="9:46")
                          ]
                          )
-def test_create_unix_timestamp_current_quarter_hour(now, expected):
+def test_create_unix_timestamp_current_quarter_hour(now, expected, monkeypatch):
     # setup
     datetime_mock = MagicMock(wraps=datetime.datetime)
     datetime_mock.today.return_value = datetime.datetime.strptime(now, "%Y-%m-%d %H:%M")
-    monkeypatch.setattr(datetime, "datetime", datetime_mock)
+    monkeypatch.setattr(datetime, "timestamp", datetime_mock)
 
     # execution
-    current_quarter_hour = datetime.datetime.format(timecheck.create_unix_timestamp_current_quarter_hour(), "%Y-%m-%d %H:%M")
+    current_quarter_hour = 
+        datetime.datetime.format(
+            timecheck.create_unix_timestamp_current_quarter_hour(),
+            "%Y-%m-%d %H:%M")
 
     # evaluation
     assert current_quarter_hour == expected
