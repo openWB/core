@@ -240,7 +240,7 @@ def create_unix_timestamp_current_quarter_hour() -> int:
     def round_to_quarter_hour(current_time: float, quarter_hour: int = 900) -> float:
         log.debug(f"current time: {current_time} => modified: {current_time - (current_time % quarter_hour)}")
         return current_time - (current_time % quarter_hour)
-    return int(round_to_quarter_hour(create_timestamp()))
+    return int(round_to_quarter_hour(datetime.datetime.today().timestamp()))
 
 
 def get_relative_date_string(date_string: str, day_offset: int = 0, month_offset: int = 0, year_offset: int = 0) -> str:
