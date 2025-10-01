@@ -164,7 +164,7 @@ def test_create_unix_timestamp_current_quarter_hour(timestamp, expected, monkeyp
     monkeypatch.setattr(datetime, "datetime", datetime_mock)
 
     # execution
-    qh=    timecheck.create_unix_timestamp_current_quarter_hour()
+    qh = timecheck.create_unix_timestamp_current_quarter_hour()
     log.debug(f"timestamp: {current_time} , from mock: {datetime.datetime.today().timestamp()}"
               f" result:  {qh}")
 
