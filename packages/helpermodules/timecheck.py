@@ -239,7 +239,7 @@ def create_unix_timestamp_current_full_hour() -> int:
 
 def create_unix_timestamp_current_quarter_hour() -> int:
     def round_to_quarter_hour(current_time: float, quarter_hour: int = 900) -> float:
-        return math.floor(current_time / quarter_hour) * quarter_hour 
+        return math.floor(current_time / quarter_hour) * quarter_hour
     return int(round_to_quarter_hour(create_timestamp()))
 
 
