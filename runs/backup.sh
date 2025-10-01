@@ -8,6 +8,18 @@ RAMDISKDIR="$OPENWBBASEDIR/ramdisk"
 TEMPDIR="$RAMDISKDIR/temp"
 LOGDIR="$OPENWBBASEDIR/data/log"
 LOGFILE="$LOGDIR/backup.log"
+HOMEDIR="/home/openwb"
+KEYFILE="backup.key"
+
+useExtendedFilename=$1
+if ((useExtendedFilename == 1)); then
+	# only use characters supported in most OS!
+	# for Win see https://learn.microsoft.com/en-us/rest/api/storageservices/naming-and-referencing-shares--directories--files--and-metadata
+	FILENAME="openWB_backup_$(date +"%Y-%m-%d_%H-%M-%S")_$(<"$OPENWBBASEDIR"/web/version).tar"
+else
+	FILENAME="backup.tar"
+fi
+FILENAMESUFFIX=".gz"
 
 # Mosquitto DB files to monitor
 DB_FILES=(
@@ -93,15 +105,6 @@ wait_for_mosquitto_flush() {
 	fi
 }
 
-useExtendedFilename=$1
-if ((useExtendedFilename == 1)); then
-	# only use characters supported in most OS!
-	# for Win see https://learn.microsoft.com/en-us/rest/api/storageservices/naming-and-referencing-shares--directories--files--and-metadata
-	FILENAME="openWB_backup_$(date +"%Y-%m-%d_%H-%M-%S")_$(<"$OPENWBBASEDIR"/web/version).tar"
-else
-	FILENAME="backup.tar"
-fi
-
 {
 	echo "starting backup script"
 	echo "environment:"
@@ -155,7 +158,7 @@ fi
 			"$OPENWBDIRNAME/data/daily_log" \
 			"$OPENWBDIRNAME/data/monthly_log" \
 			"$OPENWBDIRNAME/data/log/uuid" \
-		--directory="/home/openwb/" \
+		--directory="$HOMEDIR/" \
 			"configuration.json" \
 		--directory="/var/lib/" \
 			"mosquitto/" \
@@ -204,12 +207,27 @@ fi
 			"backup.log"
 	echo "zipping archive"
 	gzip --verbose "$BACKUPFILE"
+
+
+	# encrypt backup file with gpg
+	if [[ -f "$HOMEDIR/$KEYFILE" ]]; then
+		echo "encrypting backup file"
+		gpg --batch --yes --passphrase-file "$HOMEDIR/$KEYFILE" \
+			--symmetric --cipher-algo AES256 "$BACKUPFILE.gz"
+		FILENAMESUFFIX=".gz.gpg"
+		echo "removing unencrypted backup file"
+		rm -v "$BACKUPFILE.gz"
+	else
+		echo "ERROR: $BACKUPFILE.gz not found!"
+	fi
+
+	# fix permissions of backup file
 	echo "setting permissions of new backup file"
-	sudo chown openwb:www-data "$BACKUPFILE.gz"
-	sudo chmod 664 "$BACKUPFILE.gz"
+	sudo chown openwb:www-data "$BACKUPFILE$FILENAMESUFFIX"
+	sudo chmod 664 "$BACKUPFILE$FILENAMESUFFIX"
 
 	echo "backup finished"
 } >"$LOGFILE" 2>&1
 
 # return our filename for further processing
-echo "$FILENAME.gz"
+echo "$FILENAME$FILENAMESUFFIX"
