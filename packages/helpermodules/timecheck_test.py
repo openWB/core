@@ -162,13 +162,13 @@ def test_create_unix_timestamp_current_quarter_hour(timestamp, expected, monkeyp
     current_time = datetime.datetime.strptime(timestamp, "%Y-%m-%d %H:%M")
     datetime_mock.today.return_value = current_time
     monkeypatch.setattr(datetime, "datetime", datetime_mock)
-    log.debug(f"timestamp: {current_time} , from mock: {datetime.datetime.today()}"
-              f" =>  {datetime.datetime.today().timestamp()}")
 
     # execution
-    current_quarter_hour = datetime.datetime.fromtimestamp(
-        timecheck.create_unix_timestamp_current_quarter_hour()
-        ).strftime("%Y-%m-%d %H:%M")
+    qh=    timecheck.create_unix_timestamp_current_quarter_hour()
+    log.debug(f"timestamp: {current_time} , from mock: {datetime.datetime.today().timestamp()}"
+              f" result:  {qh}")
+
+    current_quarter_hour = datetime.datetime.fromtimestamp(qh).strftime("%Y-%m-%d %H:%M")
 
     # evaluation
     assert current_quarter_hour == expected
