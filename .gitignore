@@ -14,8 +14,11 @@ data/log/*
 data/charge_log/*
 data/daily_log/*
 data/monthly_log/*
-data/backup/*.tar.gz
-data/restore/*.tar.gz
+data/backup/*.tar.gz*
+data/backup/*.openwb-backup*
+data/backup/backup.key
+data/restore/*.tar.gz*
+data/restore/*.openwb-backup*
 data/data_migration/*.tar.gz
 ramdisk/*
 web/lastcommit
