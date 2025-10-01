@@ -147,13 +147,13 @@ def test_convert_timestamp_delta_to_time_string(timestamp, expected):
 
 @pytest.mark.parametrize("timestamp, expected",
                          [
-                             pytest.param("2025-10-01 9:00", "2025-10-01 9:00", id="9:00"),
-                             pytest.param("2025-10-01 9:01", "2025-10-01 9:00", id="9:01"),
-                             pytest.param("2025-10-01 9:10", "2025-10-01 9:00", id="9:10"),
-                             pytest.param("2025-10-01 9:14", "2025-10-01 9:00", id="9:14"),
-                             pytest.param("2025-10-01 9:15", "2025-10-01 9:15", id="9:15"),
-                             pytest.param("2025-10-01 9:41", "2025-10-01 9:30", id="9:41"),
-                             pytest.param("2025-10-01 9:46", "2025-10-01 9:45", id="9:46")
+                             pytest.param("2025-10-01 09:00", "2025-10-01 09:00", id="9:00"),
+                             pytest.param("2025-10-01 09:01", "2025-10-01 09:00", id="9:01"),
+                             pytest.param("2025-10-01 09:10", "2025-10-01 09:00", id="9:10"),
+                             pytest.param("2025-10-01 09:14", "2025-10-01 09:00", id="9:14"),
+                             pytest.param("2025-10-01 09:15", "2025-10-01 09:15", id="9:15"),
+                             pytest.param("2025-10-01 09:41", "2025-10-01 09:30", id="9:41"),
+                             pytest.param("2025-10-01 09:46", "2025-10-01 09:45", id="9:46")
                          ]
                          )
 def test_create_unix_timestamp_current_quarter_hour(timestamp, expected, monkeypatch):
@@ -164,7 +164,7 @@ def test_create_unix_timestamp_current_quarter_hour(timestamp, expected, monkeyp
     monkeypatch.setattr(datetime, "datetime", datetime_mock)
 
     # execution
-    qh=    timecheck.create_unix_timestamp_current_quarter_hour()
+    qh = timecheck.create_unix_timestamp_current_quarter_hour()
     log.debug(f"timestamp: {current_time} , from mock: {datetime.datetime.today().timestamp()}"
               f" result:  {qh}")
 
