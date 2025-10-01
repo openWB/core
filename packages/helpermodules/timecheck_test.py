@@ -1,4 +1,5 @@
 import datetime
+import logging
 from typing import List, Optional, Union
 from unittest.mock import MagicMock, Mock
 import pytest
@@ -7,6 +8,7 @@ from helpermodules import timecheck
 from helpermodules.abstract_plans import (AutolockPlan, FrequencyDate, FrequencyPeriod, ScheduledChargingPlan,
                                           TimeChargingPlan)
 
+log = logging.getLogger(__name__)
 
 class Params:
     def __init__(self, name: str,
@@ -156,8 +158,11 @@ def test_convert_timestamp_delta_to_time_string(timestamp, expected):
 def test_create_unix_timestamp_current_quarter_hour(timestamp, expected, monkeypatch):
     # setup
     datetime_mock = MagicMock(wraps=datetime.datetime)
-    datetime_mock.today.return_value = datetime.datetime.strptime(timestamp, "%Y-%m-%d %H:%M")
+    current_time = datetime.datetime.strptime(timestamp, "%Y-%m-%d %H:%M")
+    datetime_mock.today.return_value = current_time
     monkeypatch.setattr(datetime, "datetime", datetime_mock)
+    log.debug(f"timestamp: {current_time} , from mock: {datetime.datetime.today()}"
+              f" =>  {datetime.datetime.today().timestamp()}")
 
     # execution
     current_quarter_hour = datetime.datetime.fromtimestamp(
