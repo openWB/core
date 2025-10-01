@@ -390,6 +390,9 @@ export const useMqttStore = defineStore("mqtt", {
     getBatterySocChartData(state) {
       return state.getChartData("openWB/bat/get/soc");
     },
+    getBatteryMode(state) {
+      return state.topics["openWB/general/chargemode_config/pv_charging/bat_mode"];
+    },
     getPvConfigured(state) {
       return state.getValueBool("openWB/pv/config/configured");
     },

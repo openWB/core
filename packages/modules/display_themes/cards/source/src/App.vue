@@ -54,6 +54,7 @@ export default {
         "openWB/counter/+/get/power",
         "openWB/counter/get/hierarchy",
         "openWB/counter/set/home_consumption",
+        "openWB/general/chargemode_config/pv_charging/bat_mode",
         "openWB/optional/et/provider",
         "openWB/optional/et/get/prices",
         "openWB/optional/int_display/theme",
