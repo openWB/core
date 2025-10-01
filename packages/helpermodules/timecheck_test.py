@@ -157,7 +157,7 @@ def test_create_unix_timestamp_current_quarter_hour(timestamp, expected, monkeyp
     # setup
     datetime_mock = MagicMock(wraps=datetime.datetime)
     datetime_mock.today.return_value = datetime.datetime.strptime(timestamp, "%Y-%m-%d %H:%M")
-    monkeypatch.setattr(datetime, "timestamp", datetime_mock)
+    monkeypatch.setattr(datetime, "datetime", datetime_mock)
 
     # execution
     current_quarter_hour = datetime.datetime.format(
