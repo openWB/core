@@ -153,10 +153,10 @@ def test_convert_timestamp_delta_to_time_string(timestamp, expected):
                              pytest.param("2025-10-01 9:46", "2025-10-01 9:45", id="9:46")
                          ]
                          )
-def test_create_unix_timestamp_current_quarter_hour(now, expected, monkeypatch):
+def test_create_unix_timestamp_current_quarter_hour(timestamp, expected, monkeypatch):
     # setup
     datetime_mock = MagicMock(wraps=datetime.datetime)
-    datetime_mock.today.return_value = datetime.datetime.strptime(now, "%Y-%m-%d %H:%M")
+    datetime_mock.today.return_value = datetime.datetime.strptime(timestamp, "%Y-%m-%d %H:%M")
     monkeypatch.setattr(datetime, "timestamp", datetime_mock)
 
     # execution
