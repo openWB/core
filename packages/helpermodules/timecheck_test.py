@@ -150,9 +150,9 @@ def test_convert_timestamp_delta_to_time_string(timestamp, expected):
                              pytest.param("2025-10-01 9:14", "2025-10-01 9:00"),
                              pytest.param("2025-10-01 9:15", "2025-10-01 9:15"),
                              pytest.param("2025-10-01 9:41", "2025-10-01 9:30"),
-                             pytest.param("2025-10-01 9:46", "2025-10-01 9:45")                             
+                             pytest.param("2025-10-01 9:46", "2025-10-01 9:45")                     
                          ]
-                         )create_unix_timestamp_current_quarter_hour
+                         )
 def test_create_unix_timestamp_current_quarter_hour(now, expected):
     # setup
     datetime_mock = MagicMock(wraps=datetime.datetime)
@@ -161,6 +161,6 @@ def test_create_unix_timestamp_current_quarter_hour(now, expected):
 
     # execution
     current_quarter_hour = datetime.datetime.format(timecheck.create_unix_timestamp_current_quarter_hour(), "%Y-%m-%d %H:%M")
-    
+
     # evaluation
     assert current_quarter_hour == expected
