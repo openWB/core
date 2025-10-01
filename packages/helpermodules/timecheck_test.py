@@ -10,6 +10,7 @@ from helpermodules.abstract_plans import (AutolockPlan, FrequencyDate, Frequency
 
 log = logging.getLogger(__name__)
 
+
 class Params:
     def __init__(self, name: str,
                  first_time: str,
