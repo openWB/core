@@ -2,12 +2,14 @@
 import { useMqttStore } from "@/stores/mqtt.js";
 import DashboardCard from "@/components/DashboardCard.vue";
 import ChargeModeModal from "../ChargePoints/ChargeModeModal.vue";
+import BatteryModeModal from "../Battery/BatteryModeModal.vue";
 
 export default {
   name: "DashboardFlowCard",
   components: {
     DashboardCard,
     ChargeModeModal,
+    BatteryModeModal,
   },
   props: {
     changesLocked: { required: false, type: Boolean, default: false },
@@ -27,6 +29,7 @@ export default {
         numColumns: 3,
       },
       modalChargeModeSettingsVisible: false,
+      modalBatteryModeSettingsVisible: false,
       modalChargePointId: 0,
     };
   },
@@ -314,6 +317,9 @@ export default {
           label: ["Speicher", this.absoluteValue(this.batteryPower).textValue],
           soc: this.batterySoc,
           icon: "icons/owbBattery.svg",
+          clicked: () => {
+            this.selectBatteryMode();
+          },
         });
       }
       // charge point and vehicle components
@@ -491,6 +497,7 @@ export default {
       // hide all modals if lock is kicking in
       if (oldValue !== true && newValue === true) {
         this.modalChargeModeSettingsVisible = false;
+        this.modalBatteryModeSettingsVisible = false;
       }
     },
   },
@@ -569,6 +576,11 @@ export default {
         this.modalChargeModeSettingsVisible = true;
       }
     },
+    selectBatteryMode() {
+      if (!this.changesLocked) {
+        this.modalBatteryModeSettingsVisible = true;
+      }
+    },
   },
 };
 </script>
@@ -577,6 +589,9 @@ export default {
   <charge-mode-modal
     v-model="modalChargeModeSettingsVisible"
     :charge-point-id="modalChargePointId"
+  />
+  <battery-mode-modal
+    v-model="modalBatteryModeSettingsVisible"
   />
   <dashboard-card color="primary">
     <template #headerLeft>
