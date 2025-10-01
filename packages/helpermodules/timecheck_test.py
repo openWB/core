@@ -160,8 +160,7 @@ def test_create_unix_timestamp_current_quarter_hour(now, expected, monkeypatch):
     monkeypatch.setattr(datetime, "timestamp", datetime_mock)
 
     # execution
-    current_quarter_hour = 
-        datetime.datetime.format(
+    current_quarter_hour = datetime.datetime.format(
             timecheck.create_unix_timestamp_current_quarter_hour(),
             "%Y-%m-%d %H:%M")
 
