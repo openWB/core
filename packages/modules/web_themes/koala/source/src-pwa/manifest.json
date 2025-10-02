@@ -1,4 +1,8 @@
 {
+  "name": "openWB Koala",
+  "short_name": "openWB",
+  "description": "Koala web theme for openWB software2",
+  "start_url": "/openWB/web/",
   "orientation": "any",
   "version": "0.0.1",
   "manifest_version": 1,
