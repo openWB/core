@@ -32,7 +32,7 @@ class Huawei_EmmaInverter(AbstractInverter):
 
     def update(self) -> None:
         power = self.client.read_holding_registers(30354, ModbusDataType.INT_32, unit=self.modbus_id) * -1
-        exported = self.client.read_holding_registers(30344, ModbusDataType.UINT_32, unit=self.modbus_id) * 10
+        exported = self.client.read_holding_registers(30348, ModbusDataType.UINT_64, unit=self.modbus_id) * 10
 
         inverter_state = InverterState(
             power=power,
