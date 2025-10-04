@@ -9,13 +9,11 @@ class TariffValueStoreBroker(ValueStore[TariffState]):
     def __init__(self):
         pass
 
-
     def set(self, state: TariffState) -> None:
         self.state = state
 
     def update(self):
-       __update(self)
-
+        __update(self)
 
     def __update(self):
         try:
