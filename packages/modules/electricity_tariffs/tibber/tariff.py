@@ -19,7 +19,7 @@ def _get_sorted_price_data(response_json: Dict, key: str):
                   ['priceInfo'][key], key=lambda k: (k['startsAt'], k['total']))
 
 
-def fetch_prices(config: TibberTariffConfiguration) -> Dict[int, float]:
+def fetch_prices(config: TibberTariffConfiguration) -> Dict[str, float]:
     headers = {'Authorization': 'Bearer ' + config.token, 'Content-Type': 'application/json'}
     query = """
     query PriceInfo($homeId: ID!) {
@@ -49,8 +49,8 @@ def fetch_prices(config: TibberTariffConfiguration) -> Dict[int, float]:
         sorted_market_prices = today_prices + tomorrow_prices
         current_hour = timecheck.create_unix_timestamp_current_quarter_hour()
         return {
-            timestamp: price
-            for timestamp, price in sorted_market_prices.items()
+            str(timestamp): float(price)
+            for price, timestamp in sorted_market_prices
             if int(timestamp) >= int(current_hour)  # is current timeslot or futur
             }
     else:
