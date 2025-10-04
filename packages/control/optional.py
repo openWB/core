@@ -15,6 +15,10 @@ from helpermodules.pub import Pub
 from helpermodules.utils import thread_handler
 from modules.common.configurable_tariff import ConfigurableElectricityTariff
 from modules.common.configurable_monitoring import ConfigurableMonitoring
+from helpermodules.timecheck import (
+    create_unix_timestamp_current_quarter_hour,
+    create_unix_timestamp_current_full_hour
+)
 
 log = logging.getLogger(__name__)
 
@@ -67,7 +71,7 @@ class Optional(OcppMixin):
     def et_get_current_price(self) -> float:
         if self.et_provider_available():
             prices = self.data.et.get.prices
-            timestamp, first =  next(iter(prices.items()))
+            timestamp, first = next(iter(prices.items()))
             log.debug(f"first in prices list: {first} from " +
                       f"{datetime.datetime.fromtimestamp(int(timestamp)).strftime('%Y-%m-%d %H:%M')}")
             return first
@@ -75,8 +79,8 @@ class Optional(OcppMixin):
             raise Exception("Kein Anbieter für strompreisbasiertes Laden konfiguriert.")
 
     def __calculate_price_timeslot_length(self, prices: dict) -> int:
-            first_timestamps = list( prices.keys())[:2]
-            return int(first_timestamps[1]) - int(first_timestamps[0])
+        first_timestamps = list(prices.keys())[:2]
+        return int(first_timestamps[1]) - int(first_timestamps[0])
 
     def et_get_loading_hours(self, duration: float, remaining_time: float) -> List[int]:
         """
@@ -85,7 +89,7 @@ class Optional(OcppMixin):
         duration: float
             benötigte Ladezeit
         remaining_time: float
-            Restzeit bis Termin (von wo an gerechnet???) 
+            Restzeit bis Termin (von wo an gerechnet???)
         Return
         ------
         list: Key des Dictionary (Unix-Sekunden der günstigen Zeit-Slots)
@@ -102,9 +106,9 @@ class Optional(OcppMixin):
             )
             prices = {
                 timestamp: price
-                for timestamp, price in  prices.items()
-                if (# is current timeslot or futur 
-                    int(timestamp) >= int(now)  and
+                for timestamp, price in prices.items()
+                if (  # is current timeslot or futur
+                    int(timestamp) >= int(now) and
                     # ends before plan target time
                     int(timestamp) + price_timeslot_seconds <= int(now) + remaining_time
                     )
