@@ -51,9 +51,9 @@ def fetch_prices(config: TibberTariffConfiguration) -> Dict[str, float]:
         sorted_market_prices = today_prices + tomorrow_prices
         current_hour = timecheck.create_unix_timestamp_current_quarter_hour()
         return {
-            str(timecheck.convert_to_timestamp(timeslot[startsAt])): float(timeslot[total]) / AS_EURO_PER_MW
+            str(timecheck.convert_to_timestamp(timeslot['startsAt'])): float(timeslot['total']) / AS_EURO_PER_MW
             for timeslot in sorted_market_prices
-            if timecheck.convert_to_timestamp(timeslot[startsAt]) >= int(current_hour)  # is current timeslot or futur
+            if timecheck.convert_to_timestamp(timeslot['startsAt']) >= int(current_hour)  # is current timeslot or futur
             }
     else:
         error = response_json['errors'][0]['message']
