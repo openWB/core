@@ -1,16 +1,23 @@
 from unittest.mock import Mock
 from control.optional import Optional
+import pytest
+
+ONE_HOUR_SECONDS = 3600
 
 
+@pytest.mark.no_mock_full_hour
 def test_et_get_loading_hours(monkeypatch):
     # setup
     opt = Optional()
     opt.data.et.get.prices = PRICE_LIST
     mock_et_provider_available = Mock(return_value=True)
     monkeypatch.setattr(opt, "et_provider_available", mock_et_provider_available)
+    monkeypatch.setattr("control.optional.create_unix_timestamp_current_full_hour",
+                        Mock(return_value=1698228000))
 
     # execution
-    loading_hours = opt.et_get_loading_hours(3600, 7200)
+    loading_hours = opt.et_get_loading_hours(duration=ONE_HOUR_SECONDS,
+                                             remaining_time=3 * ONE_HOUR_SECONDS)
 
     # evaluation
     assert loading_hours == [1698231600]
