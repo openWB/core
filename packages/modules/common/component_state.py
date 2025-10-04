@@ -234,7 +234,7 @@ class TariffState:
     def __init__(self,
                  prices: Optional[Dict[str, float]] = None,
                  prices_per_hour: int = 24) -> None:
-        self._prices = prices
+        self.prices = prices
         self.prices_per_hour = prices_per_hour
 
 
