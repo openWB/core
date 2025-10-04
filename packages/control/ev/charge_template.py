@@ -237,7 +237,7 @@ class ChargeTemplate:
             phases = pv_charging.phases_to_use
             min_pv_current = (pv_charging.min_current if charging_type == ChargingType.AC.value
                               else pv_charging.dc_min_current)
-            if pv_charging.limit.selected == "soc" and soc and soc > pv_charging.limit.soc:
+            if pv_charging.limit.selected == "soc" and soc and soc >= pv_charging.limit.soc:
                 current = 0
                 sub_mode = "stop"
                 message = self.SOC_REACHED
