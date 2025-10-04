@@ -345,5 +345,5 @@ def convert_timestamp_delta_to_time_string(timestamp: int, delta: int) -> str:
         return f"{seconds_diff} Sek."
 
 
-def convert_to_timestamp(timestring:str) -> int:
+def convert_to_timestamp(timestring: str) -> int:
     return int(datetime.datetime.fromisoformat(timestring).timestamp())

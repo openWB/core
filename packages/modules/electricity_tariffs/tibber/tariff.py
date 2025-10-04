@@ -13,7 +13,7 @@ from modules.electricity_tariffs.tibber.config import TibberTariff
 # Demo-Token: 5K4MVS-OjfWhK_4yrjOlFe1F6kJXPVf7eQYggo8ebAE
 # Demo Home-ID: 96a14971-525a-4420-aae9-e5aedaa129ff
 
-const AS_EURO_PER_MW = 1000
+AS_EURO_PER_MW = 1000
 
 
 def _get_sorted_price_data(response_json: Dict, key: str):
