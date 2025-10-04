@@ -97,7 +97,7 @@ class Optional(OcppMixin):
             price_timeslot_seconds = self.__calculate_price_timeslot_length(prices)
             now = (
                 create_unix_timestamp_current_full_hour()
-                if 3600 = price_timeslot_seconds
+                if 3600 == price_timeslot_seconds
                 else create_unix_timestamp_current_quarter_hour()
             )
             prices = {

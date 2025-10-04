@@ -238,7 +238,6 @@ class TariffState:
         self.prices_per_hour = prices_per_hour
 
 
-
 @auto_str
 class IoState:
     """JSON erlaubt nur Zeichenketten als Schlüssel für Objekte"""

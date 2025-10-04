@@ -43,7 +43,7 @@ class ConfigurableElectricityTariff(Generic[T_TARIFF_CONFIG]):
     def _remove_outdated_prices(self, tariff_state: TariffState) -> TariffState:
         current_hour = (
             create_unix_timestamp_current_full_hour()
-            if  1 == tariff_state.prices_per_hour
+            if 1 == tariff_state.prices_per_hour
             else create_unix_timestamp_current_quarter_hour()
         )
         for timestamp in list(tariff_state.prices.keys()):

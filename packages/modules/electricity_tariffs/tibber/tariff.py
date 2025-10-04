@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-from datetime import datetime
-from typing import Dict
+from typing import Dict, Callable
 from helpermodules import timecheck
 import json
 
@@ -48,10 +47,10 @@ def fetch_prices(config: TibberTariffConfiguration) -> Dict[int, float]:
         today_prices = _get_sorted_price_data(response_json, 'today')
         tomorrow_prices = _get_sorted_price_data(response_json, 'tomorrow')
         sorted_market_prices = today_prices + tomorrow_prices
-        current_hour = timecheck.create_unix_timestamp_current_quarter_hour
+        current_hour = timecheck.create_unix_timestamp_current_quarter_hour()
         return {
             timestamp: price
-            for timestamp, price in  prices.items()
+            for timestamp, price in sorted_market_prices.items()
             if int(timestamp) >= int(current_hour) # is current timeslot or futur
             }
     else:
