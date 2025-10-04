@@ -2,15 +2,15 @@ from unittest.mock import Mock
 from helpermodules import timecheck
 from modules.electricity_tariffs.tibber.config import TibberTariffConfiguration
 from modules.electricity_tariffs.tibber.tariff import fetch_prices
+import pytest
 
 
+@pytest.mark.no_mock_quarter_hour
 def test_fetch_prices(monkeypatch, requests_mock):
     # setup
     config = TibberTariffConfiguration(token="5K4MVS-OjfWhK_4yrjOlFe1F6kJXPVf7eQYggo8ebAE",
                                        home_id="96a14971-525a-4420-aae9-e5aedaa129ff")
-    mock_create_unix_timestamp_current_full_hour = Mock(return_value=1698382800)
-    monkeypatch.setattr(timecheck, "create_unix_timestamp_current_full_hour",
-                        mock_create_unix_timestamp_current_full_hour)
+    monkeypatch.setattr(timecheck, "create_unix_timestamp_current_quarter_hour", Mock(return_value=1698382800))
     requests_mock.post('https://api.tibber.com/v1-beta/gql', json=SAMPLE_DATA)
 
     # execution
