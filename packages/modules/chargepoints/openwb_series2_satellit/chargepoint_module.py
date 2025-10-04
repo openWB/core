@@ -120,7 +120,9 @@ class ChargepointModule(AbstractChargepoint):
                         self.delay_second_cp(self.CP1_DELAY)
                         with self._client.client:
                             if self.version:
-                                self._client.evse_client.set_current(int(current))
+                                formatted_current = round(current*100) if self._client.evse_client._precise_current else round(current)
+                                self._client.evse_client.set_current(formatted_current)
+                                log.debug("Current Set to EVSE(Satelite): %s", formatted_current)
                             else:
                                 self._client.evse_client.set_current(0)
                     except AttributeError:
