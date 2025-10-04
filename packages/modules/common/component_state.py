@@ -3,7 +3,7 @@ from typing import Dict, List, Optional, Tuple, Union
 from helpermodules import timecheck
 
 from helpermodules.auto_str import auto_str
-
+  
 log = logging.getLogger(__name__)
 
 
@@ -232,8 +232,11 @@ class ChargepointState:
 @auto_str
 class TariffState:
     def __init__(self,
-                 prices: Optional[Dict[int, float]] = None) -> None:
-        self.prices = prices
+                 prices: Optional[Dict[str, float]] = None,
+                 prices_per_hour: int = 24) -> None:
+        self._prices = prices
+        self.prices_per_hour = prices_per_hour
+
 
 
 @auto_str

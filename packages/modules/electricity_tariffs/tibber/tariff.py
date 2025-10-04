@@ -48,21 +48,20 @@ def fetch_prices(config: TibberTariffConfiguration) -> Dict[int, float]:
         today_prices = _get_sorted_price_data(response_json, 'today')
         tomorrow_prices = _get_sorted_price_data(response_json, 'tomorrow')
         sorted_market_prices = today_prices + tomorrow_prices
-        prices: Dict[int, float] = {}
-        current_hour = timecheck.create_unix_timestamp_current_full_hour()
-        for price_data in sorted_market_prices:
-            start_time_epoch = datetime.fromisoformat(price_data['startsAt']).timestamp()
-            if current_hour <= start_time_epoch:
-                prices.update({str(int(start_time_epoch)): price_data['total'] / 1000})
+        current_hour = timecheck.create_unix_timestamp_current_quarter_hour
+        return {
+            timestamp: price
+            for timestamp, price in  prices.items()
+            if int(timestamp) >= int(current_hour) # is current timeslot or futur 
+            }
     else:
         error = response_json['errors'][0]['message']
         raise Exception(error)
-    return prices
 
 
-def create_electricity_tariff(config: TibberTariff):
+def create_electricity_tariff(config: TibberTariff) -> Callable[[], TariffState]:
     def updater():
-        return TariffState(prices=fetch_prices(config.configuration))
+        return TariffState(prices=fetch_prices(config.configuration), prices_per_hour=4)
     return updater
 
 
