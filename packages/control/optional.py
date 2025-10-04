@@ -1,6 +1,7 @@
 """Optionale Module
 """
 import logging
+import datetime
 from math import ceil
 from threading import Thread
 from typing import List
@@ -11,14 +12,9 @@ from control.optional_data import OptionalData
 from helpermodules import hardware_configuration
 from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
-from helpermodules.timecheck import create_unix_timestamp_current_full_hour
 from helpermodules.utils import thread_handler
 from modules.common.configurable_tariff import ConfigurableElectricityTariff
 from modules.common.configurable_monitoring import ConfigurableMonitoring
-from helpermodules.timecheck import (
-    create_unix_timestamp_current_full_hour,
-    create_unix_timestamp_current_quarter_hour
-)
 
 log = logging.getLogger(__name__)
 
@@ -89,7 +85,7 @@ class Optional(OcppMixin):
         duration: float
             benötigte Ladezeit
         remaining_time: float
-            Restzeit bis Termin ??? 
+            Restzeit bis Termin (von wo an gerechnet???) 
         Return
         ------
         list: Key des Dictionary (Unix-Sekunden der günstigen Zeit-Slots)
@@ -99,21 +95,24 @@ class Optional(OcppMixin):
         try:
             prices = self.data.et.get.prices
             price_timeslot_seconds = self.__calculate_price_timeslot_length(prices)
-            now = datetime.datetime.today().timestamp()
+            now = (
+                create_unix_timestamp_current_full_hour()
+                if 3600 = price_timeslot_seconds
+                else create_unix_timestamp_current_quarter_hour()
+            )
             prices = {
                 timestamp: price
                 for timestamp, price in  prices.items()
-                if (
-                    # is current timeslot or futur 
-                    int(timestamp) >= int(now) - (price_timeslot_seconds -1) and
+                if (# is current timeslot or futur 
+                    int(timestamp) >= int(now)  and
                     # ends before plan target time
                     int(timestamp) + price_timeslot_seconds <= int(now) + remaining_time
                     )
             }
-            log.debug(f"shrinked prices list to {len(prices)} times lots before " +
+            log.debug(f"shrinked prices list to {len(prices)} time lots before " +
                       f"{datetime.datetime.fromtimestamp(int(now) + remaining_time).strftime('%Y-%m-%d %H:%M')}")
-            ordered = sorted(prices.items(), key=lambda x: x[1])
-            return [int(i[0]) for i in ordered][:ceil(duration/price_timeslot_seconds)]
+            ordered_by_price = sorted(prices.items(), key=lambda x: x[1])
+            return sorted([int(i[0]) for i in ordered_by_price][:ceil(duration/price_timeslot_seconds)])
         except Exception:
             log.exception("Fehler im Optional-Modul")
             return []

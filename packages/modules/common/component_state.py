@@ -3,7 +3,7 @@ from typing import Dict, List, Optional, Tuple, Union
 from helpermodules import timecheck
 
 from helpermodules.auto_str import auto_str
-  
+
 log = logging.getLogger(__name__)
 
 

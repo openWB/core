@@ -52,7 +52,7 @@ def fetch_prices(config: TibberTariffConfiguration) -> Dict[int, float]:
         return {
             timestamp: price
             for timestamp, price in  prices.items()
-            if int(timestamp) >= int(current_hour) # is current timeslot or futur 
+            if int(timestamp) >= int(current_hour) # is current timeslot or futur
             }
     else:
         error = response_json['errors'][0]['message']

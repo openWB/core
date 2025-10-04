@@ -44,10 +44,10 @@ class ConfigurableElectricityTariff(Generic[T_TARIFF_CONFIG]):
         current_hour = (
             create_unix_timestamp_current_full_hour()
             if  1 == tariff_state.prices_per_hour
-            else create_unix_timestamp_current_quarter_hour
+            else create_unix_timestamp_current_quarter_hour()
         )
         for timestamp in list(tariff_state.prices.keys()):
-            if (timestamp) < int(current_hour):
+            if int(timestamp) < int(current_hour):
                 self.fault_state.warning(
                     'Die Preisliste startet nicht mit der aktuellen Stunde. '
                     'Abgelaufene Einträge wurden entfernt.')
