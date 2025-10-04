@@ -1,6 +1,7 @@
 """Optionale Module
 """
 import logging
+import datetime
 from math import ceil
 from threading import Thread
 from typing import List
@@ -11,10 +12,13 @@ from control.optional_data import OptionalData
 from helpermodules import hardware_configuration
 from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
-from helpermodules.timecheck import create_unix_timestamp_current_full_hour
 from helpermodules.utils import thread_handler
 from modules.common.configurable_tariff import ConfigurableElectricityTariff
 from modules.common.configurable_monitoring import ConfigurableMonitoring
+from helpermodules.timecheck import (
+    create_unix_timestamp_current_quarter_hour,
+    create_unix_timestamp_current_full_hour
+)
 
 log = logging.getLogger(__name__)
 
@@ -64,11 +68,19 @@ class Optional(OcppMixin):
             log.exception("Fehler im Optional-Modul")
             return False
 
-    def et_get_current_price(self):
+    def et_get_current_price(self) -> float:
         if self.et_provider_available():
-            return self.data.et.get.prices[str(int(create_unix_timestamp_current_full_hour()))]
+            prices = self.data.et.get.prices
+            timestamp, first = next(iter(prices.items()))
+            log.debug(f"first in prices list: {first} from " +
+                      f"{datetime.datetime.fromtimestamp(int(timestamp)).strftime('%Y-%m-%d %H:%M')}")
+            return first
         else:
             raise Exception("Kein Anbieter für strompreisbasiertes Laden konfiguriert.")
+
+    def __calculate_price_timeslot_length(self, prices: dict) -> int:
+        first_timestamps = list(prices.keys())[:2]
+        return int(first_timestamps[1]) - int(first_timestamps[0])
 
     def et_get_loading_hours(self, duration: float, remaining_time: float) -> List[int]:
         """
@@ -76,25 +88,41 @@ class Optional(OcppMixin):
         ---------
         duration: float
             benötigte Ladezeit
-
+        remaining_time: float
+            Restzeit bis Termin (von wo an gerechnet???)
         Return
         ------
-        list: Key des Dictionary (Unix-Sekunden der günstigen Stunden)
+        list: Key des Dictionary (Unix-Sekunden der günstigen Zeit-Slots)
         """
         if self.et_provider_available() is False:
             raise Exception("Kein Anbieter für strompreisbasiertes Laden konfiguriert.")
         try:
             prices = self.data.et.get.prices
-            prices_in_scheduled_time = {}
-            i = 0
-            for timestamp, price in prices.items():
-                if i < ceil((duration+remaining_time)/3600):
-                    prices_in_scheduled_time.update({timestamp: price})
-                    i += 1
-                else:
-                    break
-            ordered = sorted(prices_in_scheduled_time.items(), key=lambda x: x[1])
-            return [int(i[0]) for i in ordered][:ceil(duration/3600)]
+            price_timeslot_seconds = self.__calculate_price_timeslot_length(prices)
+            now = (
+                create_unix_timestamp_current_full_hour()
+                if 3600 == price_timeslot_seconds
+                else create_unix_timestamp_current_quarter_hour()
+            )
+
+            log.debug(f"current full hour: "
+                      f"{int(now)} {datetime.datetime.fromtimestamp(int(now)).strftime('%Y-%m-%d %H:%M')} "
+                      f"Plan target Date: {int(now) + remaining_time} "
+                      f"{datetime.datetime.fromtimestamp(int(now) + remaining_time).strftime('%Y-%m-%d %H:%M')}")
+
+            prices = {
+                timestamp: price
+                for timestamp, price in prices.items()
+                if (  # is current timeslot or futur
+                    int(timestamp) >= int(now) and
+                    # ends before plan target time
+                    int(timestamp) + price_timeslot_seconds <= int(now) + remaining_time
+                    )
+            }
+            log.debug(f"shrinked prices list to {len(prices)} time lots before " +
+                      f"{datetime.datetime.fromtimestamp(int(now) + remaining_time).strftime('%Y-%m-%d %H:%M')}")
+            ordered_by_price = sorted(prices.items(), key=lambda x: x[1])
+            return sorted([int(i[0]) for i in ordered_by_price][:ceil(duration/price_timeslot_seconds)])
         except Exception:
             log.exception("Fehler im Optional-Modul")
             return []
