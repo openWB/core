@@ -145,6 +145,7 @@ def test_convert_timestamp_delta_to_time_string(timestamp, expected):
     assert time_string == expected
 
 
+@pytest.mark.no_mock_quarter_hour
 @pytest.mark.parametrize("timestamp, expected",
                          [
                              pytest.param("2025-10-01 09:00", "2025-10-01 09:00", id="9:00"),
