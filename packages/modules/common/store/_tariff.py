@@ -9,10 +9,15 @@ class TariffValueStoreBroker(ValueStore[TariffState]):
     def __init__(self):
         pass
 
+
     def set(self, state: TariffState) -> None:
         self.state = state
 
     def update(self):
+       __update(self)
+
+
+    def __update(self):
         try:
             pub_to_broker("openWB/set/optional/et/get/prices", self.state.prices)
         except Exception as e:
