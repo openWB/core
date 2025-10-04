@@ -13,6 +13,8 @@ from modules.electricity_tariffs.tibber.config import TibberTariff
 # Demo-Token: 5K4MVS-OjfWhK_4yrjOlFe1F6kJXPVf7eQYggo8ebAE
 # Demo Home-ID: 96a14971-525a-4420-aae9-e5aedaa129ff
 
+const AS_EURO_PER_MW = 1000
+
 
 def _get_sorted_price_data(response_json: Dict, key: str):
     return sorted(response_json['data']['viewer']['home']['currentSubscription']
@@ -49,9 +51,9 @@ def fetch_prices(config: TibberTariffConfiguration) -> Dict[str, float]:
         sorted_market_prices = today_prices + tomorrow_prices
         current_hour = timecheck.create_unix_timestamp_current_quarter_hour()
         return {
-            str(timestamp): float(price)
-            for price, timestamp in sorted_market_prices
-            if int(timestamp) >= int(current_hour)  # is current timeslot or futur
+            str(timecheck.convert_to_timestamp(timesltot[startsAt])): float(timesltot[total]) / AS_EURO_PER_MW
+            for timeslot in sorted_market_prices
+            if timecheck.convert_to_timestamp(timesltot[startsAt]) >= int(current_hour)  # is current timeslot or futur
             }
     else:
         error = response_json['errors'][0]['message']
