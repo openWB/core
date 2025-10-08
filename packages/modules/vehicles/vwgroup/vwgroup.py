@@ -81,7 +81,7 @@ class VwGroup(object):
             try:
                 self.soc = int(self.data['charging']['batteryStatus']['value']['currentSOC_pct'])
                 self.range = float(self.data['charging']['batteryStatus']['value']['cruisingRangeElectric_km'])
-                soc_tsZ = self.data['charging']['batteryStatus']['value']['carCapturedTimestamp']
+                soc_tsZ = self.data['charging']['batteryStatus']['value']['carCapturedTimestamp'].replace('ZZ', 'Z')
                 soc_tsdtZ = datetime.strptime(soc_tsZ, ts_fmt + "Z")
                 soc_tsdtL = self.utc2local(soc_tsdtZ)
                 self.soc_tsX = datetime.timestamp(soc_tsdtL)
