@@ -220,6 +220,8 @@ class HandlerAlgorithm:
                     general_internal_chargepoint_handler.internal_chargepoint_handler.heartbeat = False
             with ChangedValuesContext(loadvars_.event_module_update_completed):
                 sub.system_data["system"].update_ip_address()
+            
+            data.data.optional_data.et_get_prices()
         except Exception:
             log.exception("Fehler im Main-Modul")
 
@@ -250,7 +252,9 @@ class HandlerAlgorithm:
         """ Handler, der jede Stunde aufgerufen wird und die Aufgaben ausführt, die nur jede Stunde ausgeführt werden müssen.
         """
         try:
-            data.data.optional_data.et_get_prices()
+            with ChangedValuesContext(loadvars_.event_module_update_completed):
+                for cp in data.data.cp_data.values():
+                    calculate_charged_energy_by_source(cp)
             logger.clear_in_memory_log_handler(None)
         except Exception:
             log.exception("Fehler im Main-Modul")
