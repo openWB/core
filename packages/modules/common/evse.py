@@ -52,18 +52,18 @@ class Evse:
         raw_set_current, _, state_number = self.client.read_holding_registers(
             1000, [ModbusDataType.UINT_16]*3, unit=self.id)
         # remove leading zeros
-        self.set_current = int(raw_set_current)
-        log.debug("Gesetzte Stromstärke EVSE: "+str(self.set_current) +
+        self.evse_current = int(raw_set_current)
+        log.debug("Gesetzte Stromstärke EVSE: "+str(self.evse_current) +
                   ", Status: "+str(state_number)+", Modbus-ID: "+str(self.id))
         state = EvseStatusCode(state_number)
         if state == EvseStatusCode.FAILURE:
             raise ValueError("Unbekannter Zustand der EVSE: State " +
-                             str(state)+", Soll-Stromstärke: "+str(self.set_current))
+                             str(state)+", Soll-Stromstärke: "+str(self.evse_current))
         plugged = state.plugged
-        charging = self.set_current > 0 if state.charge_enabled else False
-        if self.set_current > 32:
-            self.set_current = self.set_current / 100
-        return plugged, charging, self.set_current
+        charging = self.evse_current > 0 if state.charge_enabled else False
+        if self.evse_current > 32:
+            self.evse_current = self.evse_current / 100
+        return plugged, charging, self.evse_current
 
     def get_firmware_version(self) -> int:
         return self.version
@@ -112,5 +112,5 @@ class Evse:
     def set_current(self, current: int) -> None:
         time.sleep(0.1)
         formatted_current = round(current*100) if self._precise_current else round(current)
-        if self.set_current != formatted_current:
+        if self.evse_current != formatted_current:
             self.client.write_registers(1000, formatted_current, unit=self.id)
