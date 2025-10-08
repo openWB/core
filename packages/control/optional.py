@@ -1,7 +1,6 @@
 """Optionale Module
 """
 import logging
-import datetime
 from math import ceil
 from threading import Thread
 from typing import List
@@ -12,13 +11,10 @@ from control.optional_data import OptionalData
 from helpermodules import hardware_configuration
 from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
+from helpermodules import timecheck
 from helpermodules.utils import thread_handler
 from modules.common.configurable_tariff import ConfigurableElectricityTariff
 from modules.common.configurable_monitoring import ConfigurableMonitoring
-from helpermodules.timecheck import (
-    create_unix_timestamp_current_quarter_hour,
-    create_unix_timestamp_current_full_hour
-)
 
 log = logging.getLogger(__name__)
 
@@ -68,15 +64,30 @@ class Optional(OcppMixin):
             log.exception("Fehler im Optional-Modul")
             return False
 
-    def et_get_current_price(self) -> float:
+    def __get_first_entry(self, prices: dict[str, float]) -> tuple[str, float]:
         if self.et_provider_available():
             prices = self.data.et.get.prices
             timestamp, first = next(iter(prices.items()))
-            log.debug(f"first in prices list: {first} from " +
-                      f"{datetime.datetime.fromtimestamp(int(timestamp)).strftime('%Y-%m-%d %H:%M')}")
-            return first
+            price_timeslot_seconds = self.__calculate_price_timeslot_length(prices)
+            now = int(timecheck.create_timestamp())
+            prices = {
+                price[0]: price[1]
+                for price in prices.items()
+                if int(price[0]) > now - (price_timeslot_seconds - 1)
+            }
+            self.data.et.get.prices = prices
+            timestamp, first = next(iter(prices.items()))
+            return timestamp, first
         else:
             raise Exception("Kein Anbieter für strompreisbasiertes Laden konfiguriert.")
+
+    def __get_current_timeslot_start(self, prices: dict[str, float]) -> float:
+        timestamp, first = self.__get_first_entry(prices)
+        return timestamp
+
+    def et_get_current_price(self, prices: dict[str, float]) -> float:
+        timestamp, first = self.__get_first_entry(prices)
+        return first
 
     def __calculate_price_timeslot_length(self, prices: dict) -> int:
         first_timestamps = list(prices.keys())[:2]
@@ -99,30 +110,29 @@ class Optional(OcppMixin):
         try:
             prices = self.data.et.get.prices
             price_timeslot_seconds = self.__calculate_price_timeslot_length(prices)
-            now = (
-                create_unix_timestamp_current_full_hour()
-                if 3600 == price_timeslot_seconds
-                else create_unix_timestamp_current_quarter_hour()
-            )
-
-            log.debug(f"current full hour: "
-                      f"{int(now)} {datetime.datetime.fromtimestamp(int(now)).strftime('%Y-%m-%d %H:%M')} "
-                      f"Plan target Date: {int(now) + remaining_time} "
-                      f"{datetime.datetime.fromtimestamp(int(now) + remaining_time).strftime('%Y-%m-%d %H:%M')}")
-
-            prices = {
+            first_timeslot_start = self.__get_current_timeslot_start(prices)
+            price_candidates = {
                 timestamp: price
                 for timestamp, price in prices.items()
-                if (  # is current timeslot or futur
-                    int(timestamp) >= int(now) and
+                if (
+                    # is current timeslot or futur
+                    int(timestamp) >= int(first_timeslot_start) and
                     # ends before plan target time
-                    int(timestamp) + price_timeslot_seconds <= int(now) + remaining_time
+                    int(timestamp) + price_timeslot_seconds <= int(first_timeslot_start) + remaining_time
                     )
             }
-            log.debug(f"shrinked prices list to {len(prices)} time lots before " +
-                      f"{datetime.datetime.fromtimestamp(int(now) + remaining_time).strftime('%Y-%m-%d %H:%M')}")
-            ordered_by_price = sorted(prices.items(), key=lambda x: x[1])
-            return sorted([int(i[0]) for i in ordered_by_price][:ceil(duration/price_timeslot_seconds)])
+            now = int(timecheck.create_timestamp())
+            ordered_by_date_reverse = reversed(sorted(price_candidates.items(), key=lambda x: x[0]))
+            ordered_by_price = sorted(ordered_by_date_reverse, key=lambda x: x[1])
+            selected_time_slots = {int(i[0]): float(i[1])
+                                   for i in ordered_by_price[:1 + ceil(duration/price_timeslot_seconds)]}
+            selected_lenght = price_timeslot_seconds * (
+                        len(selected_time_slots)-1) - (int(now) - min(selected_time_slots))
+            return sorted(selected_time_slots.keys()
+                          if not (min(selected_time_slots) > now or duration <= selected_lenght)
+                          else [timestamp[0] for timestamp in iter(selected_time_slots.items())][:-1]
+                          )
+            # if sum() sorted([int(i[0]) for i in ordered_by_price][:ceil(duration/price_timeslot_seconds)])
         except Exception:
             log.exception("Fehler im Optional-Modul")
             return []
