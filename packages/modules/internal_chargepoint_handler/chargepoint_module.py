@@ -2,7 +2,6 @@ import logging
 
 import time
 from helpermodules.broker import BrokerClient
-from helpermodules.logger import ModifyLoglevelContext
 
 from helpermodules.utils import run_command
 from helpermodules.utils.error_handling import CP_ERROR, ErrorTimerContext
@@ -53,15 +52,6 @@ class ChargepointModule(AbstractChargepoint):
                                                       phases_in_use=0,
                                                       power=0)
         self._client = client_handler
-        version = self._client.evse_client.get_firmware_version()
-        with ModifyLoglevelContext(log, logging.DEBUG):
-            log.debug(f"Firmware-Version der EVSE: {version}")
-        if version < 17:
-            self._precise_current = False
-        else:
-            if self._client.evse_client.is_precise_current_active() is False:
-                self._client.evse_client.activate_precise_current()
-            self._precise_current = self._client.evse_client.is_precise_current_active()
 
         self.version = SubData.system_data["system"].data["version"]
         self.current_branch = SubData.system_data["system"].data["current_branch"]
@@ -83,9 +73,7 @@ class ChargepointModule(AbstractChargepoint):
 
     def set_current(self, current: float) -> None:
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
-            formatted_current = round(current*100) if self._precise_current else round(current)
-            if self.set_current_evse != formatted_current:
-                self._client.evse_client.set_current(formatted_current)
+            self._client.evse_client.set_current(current)
 
     def get_values(self, phase_switch_cp_active: bool, last_tag: str) -> ChargepointState:
         def store_state(chargepoint_state: ChargepointState) -> None:
@@ -95,7 +83,6 @@ class ChargepointModule(AbstractChargepoint):
             self.store_internal.update()
         with self.client_error_context:
             chargepoint_state = self.old_chargepoint_state
-            self.set_current_evse = chargepoint_state.evse_current
 
             evse_state, counter_state = self._client.request_and_check_hardware(self.fault_state)
             power = counter_state.power
@@ -108,7 +95,6 @@ class ChargepointModule(AbstractChargepoint):
                 self.old_phases_in_use = phases_in_use
 
             time.sleep(0.1)
-            self.set_current_evse = evse_state.set_current
             self.client_error_context.reset_error_counter()
 
             if phase_switch_cp_active:
@@ -135,7 +121,7 @@ class ChargepointModule(AbstractChargepoint):
                 phases_in_use=phases_in_use,
                 power_factors=counter_state.power_factors,
                 rfid=last_tag,
-                evse_current=self.set_current_evse,
+                evse_current=evse_state.set_current,
                 serial_number=counter_state.serial_number,
                 max_evse_current=evse_state.max_current,
                 version=self.version,

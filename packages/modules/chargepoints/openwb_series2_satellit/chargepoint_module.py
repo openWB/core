@@ -120,7 +120,7 @@ class ChargepointModule(AbstractChargepoint):
                         self.delay_second_cp(self.CP1_DELAY)
                         with self._client.client:
                             if self.version:
-                                self._client.evse_client.set_current(int(current))
+                                self._client.evse_client.set_current(current)
                             else:
                                 self._client.evse_client.set_current(0)
                     except AttributeError:
