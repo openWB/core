@@ -1,5 +1,6 @@
 from unittest.mock import Mock
 from control.optional import Optional
+from helpermodules import timecheck
 import pytest
 
 ONE_HOUR_SECONDS = 3600
@@ -105,6 +106,77 @@ EXPENSIVE = 0.0003
             [1698227100, 1698229800, 1698231600, 1698232500, 1698233400, 1698235200, 1698238800, 1698239700],
             id="select 8 time slots of 15 minutes lenght, include current quarter hour"
         ),
+        pytest.param(
+            "quarter_hour",
+            1698227900,
+            2 * ONE_HOUR_SECONDS,
+            4 * ONE_HOUR_SECONDS,
+            {
+                # first hour
+                "1698224400": IGNORED,
+                "1698225300": IGNORED,
+                "1698226200": EXPENSIVE,
+                "1698227100": CHEEP,  # current quarert hour
+                # second hour
+                "1698228000": EXPENSIVE,
+                "1698228900": EXPENSIVE,
+                "1698229800": CHEEP,
+                "1698230700": EXPENSIVE,
+                # third hour
+                "1698231600": CHEEP,
+                "1698232500": CHEEP,
+                "1698233400": CHEEP,
+                "1698234300": EXPENSIVE,
+                # fourth hour
+                "1698235200": CHEEP,
+                "1698236100": EXPENSIVE,
+                "1698237000": EXPENSIVE,
+                "1698237900": EXPENSIVE,
+                # fifth hour
+                "1698238800": CHEEP,
+                "1698239700": CHEEP,
+                "1698240600": EXPENSIVE,  # last before plan target
+                "1698241500": IGNORED,
+            },
+            [1698227100, 1698229800, 1698231600, 1698232500,
+             1698233400, 1698235200, 1698238800, 1698239700, 1698240600],
+            id="select additional if time elapsed in current slot makes selection too short"
+        ),
+        pytest.param(
+            "quarter_hour",
+            1698226600,
+            2 * ONE_HOUR_SECONDS,
+            4 * ONE_HOUR_SECONDS,
+            {
+                # first hour
+                "1698224400": IGNORED,
+                "1698225300": IGNORED,
+                "1698226200": EXPENSIVE,
+                "1698227100": CHEEP,  # current quarert hour
+                # second hour
+                "1698228000": EXPENSIVE,
+                "1698228900": EXPENSIVE,
+                "1698229800": CHEEP,
+                "1698230700": EXPENSIVE,
+                # third hour
+                "1698231600": CHEEP,
+                "1698232500": CHEEP,
+                "1698233400": CHEEP,
+                "1698234300": EXPENSIVE,
+                # fourth hour
+                "1698235200": CHEEP,
+                "1698236100": EXPENSIVE,
+                "1698237000": EXPENSIVE,
+                "1698237900": EXPENSIVE,
+                # fifth hour
+                "1698238800": EXPENSIVE,
+                "1698239700": EXPENSIVE,
+                "1698240600": EXPENSIVE,  # last before plan target
+                "1698241500": IGNORED,
+            },
+            [1698227100, 1698229800, 1698231600, 1698232500, 1698233400, 1698235200, 1698238800, 1698239700],
+            id="select latest if most expensive candidates have same price"
+        ),
     ],
 )
 def test_et_get_loading_hours(granularity,
@@ -120,7 +192,8 @@ def test_et_get_loading_hours(granularity,
     mock_et_provider_available = Mock(return_value=True)
     monkeypatch.setattr(opt, "et_provider_available", mock_et_provider_available)
     monkeypatch.setattr(
-        f"control.optional.create_unix_timestamp_current_{granularity}",
+        timecheck,
+        "create_timestamp",
         Mock(return_value=now_ts)
     )
 

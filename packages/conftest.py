@@ -41,12 +41,8 @@ def mock_today(monkeypatch, request) -> None:
     monkeypatch.setattr(datetime, "datetime", datetime_mock)
     now_timestamp = Mock(return_value=1652683252)
     monkeypatch.setattr(timecheck, "create_timestamp", now_timestamp)
-    if "no_mock_full_hour" not in request.keywords:
-        full_hour_timestamp = Mock(return_value=int(datetime.datetime(2022, 5, 16, 8, 0, 0).timestamp()))
-        monkeypatch.setattr(timecheck, "create_unix_timestamp_current_full_hour", full_hour_timestamp)
-    if "no_mock_quarter_hour" not in request.keywords:
-        quarter_hour_timesatmp = Mock(return_value=int(datetime.datetime(2022, 5, 16, 8, 30, 0).timestamp()))
-        monkeypatch.setattr(timecheck, "create_unix_timestamp_current_quarter_hour", quarter_hour_timesatmp)
+    full_hour_timestamp = Mock(return_value=int(datetime.datetime(2022, 5, 16, 8, 0, 0).timestamp()))
+    monkeypatch.setattr(timecheck, "create_unix_timestamp_current_full_hour", full_hour_timestamp)
 
 
 @pytest.fixture(autouse=True)
