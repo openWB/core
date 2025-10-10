@@ -1,39 +1,76 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
+from typing import Any, TypedDict
 import logging
 
-from dataclass_utils import dataclass_from_dict
 from modules.devices.tasmota.tasmota.config import TasmotaCounterSetup
 from modules.common.abstract_device import AbstractCounter
-from modules.common.tasmota import Tasmota
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_counter_value_store
+from modules.common.simcount import SimCounter
+from modules.common import req
+from modules.common.component_state import CounterState
 
 log = logging.getLogger(__name__)
 
 
+class KwargsDict(TypedDict):
+    device_id: int
+    ip_address: str
+    phase: int
+
+
 class TasmotaCounter(AbstractCounter):
-    def __init__(self,
-                 device_id: int,
-                 component_config: Union[Dict, TasmotaCounterSetup],
-                 ip_address: str,
-                 phase: int) -> None:
-        self.__device_id = device_id
-        self.__ip_address = ip_address
-        if phase:
-            self.__phase = phase
-        else:
-            self.__phase = 1
-        self.component_config = dataclass_from_dict(TasmotaCounterSetup, component_config)
+    def __init__(self, component_config: TasmotaCounterSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__device_id: int = self.kwargs['device_id']
+        self.__ip_address: str = self.kwargs['ip_address']
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
+        self.__phase: int = self.kwargs['phase']
         self.store = get_counter_value_store(self.component_config.id)
-        self.component_info = ComponentInfo.from_component_config(self.component_config)
-        self.__tasmota = Tasmota(self.__device_id, self.__ip_address, self.__phase)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self):
-        log.debug("tasmota.counter.update: " + self.__ip_address)
-        counter_state = self.__tasmota.get_CounterState()
+        url = "http://" + self.__ip_address + "/cm?cmnd=Status%208"
+        response = req.get_http_session().get(url, timeout=5).json()
+
+        if 'ENERGY' in response['StatusSNS']:
+            voltages = [0.0, 0.0, 0.0]
+            powers = [0.0, 0.0, 0.0]
+            currents = [0.0, 0.0, 0.0]
+            power_factors = [0.0, 0.0, 0.0]
+
+            power = float(response['StatusSNS']['ENERGY']['Power'])
+            voltages[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Voltage'])
+            powers[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Power'])
+            currents[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Current'])
+            power_factors[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Factor'])
+            imported = float(response['StatusSNS']['ENERGY']['Total']*1000)
+            _, exported = self.sim_counter.sim_count(power)
+
+            counter_state = CounterState(
+                power=power,
+                voltages=voltages,
+                currents=currents,
+                powers=powers,
+                power_factors=power_factors,
+                imported=imported,
+                exported=exported
+            )
+        else:
+            power = float(response['StatusSNS']['Itron']['Power'])
+            imported = float(response['StatusSNS']['Itron']['E_in']*1000)
+            exported = float(response['StatusSNS']['Itron']['E_out']*1000)
+
+            counter_state = CounterState(
+                power=power,
+                imported=imported,
+                exported=exported
+            )
+
         self.store.set(counter_state)
 
 

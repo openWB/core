@@ -45,6 +45,7 @@ const topics: { [topic: string]: string } = {
 	socUpdate: 'openWB/set/vehicle/%/get/force_soc_update',
 	setSoc: 'openWB/set/vehicle/%/soc_module/calculated_soc_state/manual_soc',
 	priceCharging: 'openWB/set/vehicle/template/charge_template/%/et/active',
+	chargeTemplate: 'openWB/set/chargepoint/%/set/charge_template',
 }
 export function updateServer(
 	item: string,
@@ -61,7 +62,7 @@ export function updateServer(
 		return
 	}
 	switch (item) {
-		case 'chargeMode':
+		/* case 'chargeMode':
 		case 'cpPriority':
 		case 'cpScheduledCharging':
 		case 'cpInstantTargetCurrent':
@@ -76,7 +77,7 @@ export function updateServer(
 		case 'cpPvMinSocCurrent':
 			// these values are set in the charge template
 			topic = topic.replace('%', chargePoints[index].chargeTemplate.toString())
-			break
+			break */
 		default:
 			topic = topic.replace('%', String(index))
 	}
@@ -94,5 +95,12 @@ export function sendCommand(event: object) {
 	mqttPublish(
 		'openWB/set/command/' + mqttClientId() + '/todo',
 		JSON.stringify(event),
+	)
+}
+
+export function updateChargeTemplate(cp: number) {
+	mqttPublish(
+		topics.chargeTemplate.replace('%', String(cp)),
+		JSON.stringify(chargePoints[cp].chargeTemplate),
 	)
 }

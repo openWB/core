@@ -3,8 +3,9 @@ from dataclasses import dataclass, field
 
 @dataclass
 class EvTemplateData:
-    dc_min_current: int = 0
-    dc_max_current: int = 0
+    dc_min_current: int = 20
+    dc_max_current: int = 150
+    id: int = 0
     name: str = "Fahrzeug-Profil"
     max_current_multi_phases: int = 16
     max_phases: int = 3
@@ -20,6 +21,7 @@ class EvTemplateData:
     efficiency: float = 90
     nominal_difference: float = 1
     keep_charge_active_duration: int = 40
+    bidi: bool = False
 
 
 def ev_template_data_factory() -> EvTemplateData:
@@ -33,4 +35,3 @@ class EvTemplate:
 
     data: EvTemplateData = field(default_factory=ev_template_data_factory, metadata={
                                  "topic": "config"})
-    et_num: int = 0

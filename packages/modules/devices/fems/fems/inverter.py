@@ -1,5 +1,6 @@
 import logging
 from requests import Session
+from typing import TypedDict, Any
 from helpermodules.scale_metric import scale_metric
 from modules.devices.fems.fems.config import FemsInverterSetup
 from modules.common.abstract_device import AbstractInverter
@@ -8,14 +9,23 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_inverter_value_store
 from modules.devices.fems.fems.version import FemsVersion, get_version
+
 log = logging.getLogger(__name__)
 
 
+class KwargsDict(TypedDict):
+    ip_address: str
+    session: Session
+
+
 class FemsInverter(AbstractInverter):
-    def __init__(self, ip_address: str, component_config: FemsInverterSetup, session: Session) -> None:
-        self.ip_address = ip_address
+    def __init__(self, component_config: FemsInverterSetup, **kwargs: Any) -> None:
         self.component_config = component_config
-        self.session = session
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.ip_address: str = self.kwargs['ip_address']
+        self.session: Session = self.kwargs['session']
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.version = get_version(self.get_data_by_multiple_segement_regex_query)

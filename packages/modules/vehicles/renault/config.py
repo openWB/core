@@ -17,7 +17,9 @@ class Renault:
     def __init__(self,
                  name: str = "Renault",
                  type: str = "renault",
+                 official: bool = False,
                  configuration: RenaultConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.official = official
         self.configuration = configuration or RenaultConfiguration()

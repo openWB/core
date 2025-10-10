@@ -14,6 +14,7 @@ import pymodbus
 from pymodbus.client.sync import ModbusTcpClient, ModbusUdpClient, ModbusSerialClient
 from pymodbus.constants import Endian
 from pymodbus.payload import BinaryPayloadDecoder
+from pymodbus.transaction import ModbusSocketFramer
 from urllib3.util import parse_url
 
 log = logging.getLogger(__name__)
@@ -188,18 +189,22 @@ class ModbusClient:
     def write_registers(self, address: int, value: Any, **kwargs):
         self._delegate.write_registers(address, value, **kwargs)
 
+    def write_single_coil(self, address: int, value: Any, **kwargs):
+        self._delegate.write_coil(address, value, **kwargs)
+
 
 class ModbusTcpClient_(ModbusClient):
     def __init__(self,
                  address: str,
                  port: int = 502,
                  sleep_after_connect: Optional[int] = 0,
+                 framer: type[ModbusSocketFramer] = ModbusSocketFramer,
                  **kwargs):
         parsed_url = parse_url(address)
         host = parsed_url.host
         if parsed_url.port is not None:
             port = parsed_url.port
-        super().__init__(ModbusTcpClient(host, port, **kwargs), address, port, sleep_after_connect)
+        super().__init__(ModbusTcpClient(host, port, framer, **kwargs), address, port, sleep_after_connect)
 
 
 class ModbusUdpClient_(ModbusClient):

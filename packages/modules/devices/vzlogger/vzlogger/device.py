@@ -4,6 +4,7 @@ from typing import Iterable, Union
 
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
 from modules.devices.vzlogger.vzlogger.config import VZLogger, VZLoggerCounterSetup, VZLoggerInverterSetup
 from modules.devices.vzlogger.vzlogger.counter import VZLoggerCounter
@@ -14,15 +15,16 @@ log = logging.getLogger(__name__)
 
 def create_device(device_config: VZLogger):
     def create_counter_component(component_config: VZLoggerCounterSetup):
-        return VZLoggerCounter(device_config.id, component_config)
+        return VZLoggerCounter(component_config, device_id=device_config.id)
 
     def create_inverter_component(component_config: VZLoggerInverterSetup):
-        return VZLoggerInverter(device_config.id, component_config)
+        return VZLoggerInverter(component_config, device_id=device_config.id)
 
     def update_components(components: Iterable[Union[VZLoggerCounter, VZLoggerInverter]]):
         response = req.get_http_session().get(device_config.configuration.ip_address, timeout=5).json()
         for component in components:
-            component.update(response)
+            with SingleComponentUpdateContext(component.fault_state):
+                component.update(response)
 
     return ConfigurableDevice(
         device_config=device_config,

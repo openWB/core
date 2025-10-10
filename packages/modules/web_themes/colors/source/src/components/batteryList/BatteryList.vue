@@ -18,7 +18,7 @@ Hagen */
 				{{ batteryState }}
 			</WbBadge>
 		</template>
-		<div class="px-3 subgrid grid-12">
+		<div class="subgrid grid-12">
 			<InfoItem heading="Ladestand:" class="grid-left grid-col-4">
 				<BatterySymbol
 					color="var(--color-battery)"
@@ -36,7 +36,14 @@ Hagen */
 				</span>
 			</InfoItem>
 		</div>
-		<BLBattery v-for="[key, battery] in batteries" :key="key" :bat="battery" />
+		<div v-if="batteries.size > 1" class="subgrid">
+			<BLBattery
+				v-for="[key, battery] in batteries"
+				:key="key"
+				:bat="battery"
+				class="px-0"
+			/>
+		</div>
 	</WbWidgetFlex>
 </template>
 

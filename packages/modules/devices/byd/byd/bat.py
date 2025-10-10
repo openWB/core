@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 import logging
 from html.parser import HTMLParser
-from typing import Dict, List, Union, Tuple
+from typing import Any, List, Tuple, TypedDict
 
-from dataclass_utils import dataclass_from_dict
-from modules.devices.byd.byd.config import BYDBatSetup
+from modules.devices.byd.byd.config import BYD, BYDBatSetup
 from modules.common import req
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
@@ -16,13 +15,18 @@ from modules.common.store import get_bat_value_store
 log = logging.getLogger(__name__)
 
 
+class KwargsDict(TypedDict):
+    device_config: BYD
+
+
 class BYDBat(AbstractBat):
-    def __init__(self,
-                 component_config: Union[Dict, BYDBatSetup],
-                 device_config) -> None:
-        self.__device_config = device_config
-        self.component_config = dataclass_from_dict(BYDBatSetup, component_config)
-        self.sim_counter = SimCounter(self.__device_config.id, self.component_config.id, prefix="speicher")
+    def __init__(self, component_config: BYDBatSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.device_config: BYD = self.kwargs['device_config']
+        self.sim_counter = SimCounter(self.device_config.id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
@@ -44,8 +48,8 @@ class BYDBat(AbstractBat):
         RunData.asp auf ganze kW gerundet und somit für openWB nicht brauchbar.
         '''
         resp = req.get_http_session().get(
-            'http://' + self.__device_config.configuration.ip_address + '/asp/Home.asp',
-            auth=(self.__device_config.configuration.user, self.__device_config.configuration.password))
+            'http://' + self.device_config.configuration.ip_address + '/asp/Home.asp',
+            auth=(self.device_config.configuration.user, self.device_config.configuration.password))
         return BydParser.parse(resp.text)
 
 
@@ -53,7 +57,7 @@ class BydParser(HTMLParser):
     values = {"SOC:": 0, "Power:": 0}
     armed = None
 
-    @ staticmethod
+    @staticmethod
     def parse(html: str):
         parser = BydParser()
         parser.feed(html)

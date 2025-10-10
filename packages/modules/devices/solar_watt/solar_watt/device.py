@@ -46,13 +46,13 @@ def update(components: Iterable[Union[SolarWattBat, SolarWattCounter, SolarWattI
 
 def create_device(device_config: SolarWatt):
     def create_bat_component(component_config: SolarWattBatSetup):
-        return SolarWattBat(device_config.id, component_config)
+        return SolarWattBat(component_config, device_id=device_config.id)
 
     def create_counter_component(component_config: SolarWattCounterSetup):
-        return SolarWattCounter(device_config.id, component_config)
+        return SolarWattCounter(component_config, device_id=device_config.id)
 
     def create_inverter_component(component_config: SolarWattInverterSetup):
-        return SolarWattInverter(device_config.id, component_config)
+        return SolarWattInverter(component_config, device_id=device_config.id)
 
     def update_components(components: Dict[str, Union[SolarWattBat, SolarWattCounter, SolarWattInverter]]):
         update(components, device_config.configuration.energy_manager, device_config.configuration.ip_address)

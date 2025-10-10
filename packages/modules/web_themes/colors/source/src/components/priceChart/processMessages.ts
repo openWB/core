@@ -1,3 +1,4 @@
+import { globalData } from '@/assets/js/model'
 import { etData } from './model'
 
 export function processEtProviderMessages(topic: string, message: string) {
@@ -8,6 +9,9 @@ export function processEtProviderMessages(topic: string, message: string) {
 		} else {
 			etData.active = true
 			etData.etProvider = JSON.parse(message).name
+		}
+		if (data.configuration && data.configuration.country != null) {
+			globalData.country = data.configuration.country
 		}
 	} else if (topic == 'openWB/optional/et/get/prices') {
 		const plist = JSON.parse(message)

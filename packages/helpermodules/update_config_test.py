@@ -1,3 +1,7 @@
+import json
+from pathlib import Path
+
+import pytest
 from helpermodules.update_config import UpdateConfig
 
 
@@ -28,3 +32,24 @@ def test_remove_invalid_topics(mock_pub):
     assert len(mock_pub.method_calls) == 2
     assert mock_pub.method_calls[0][1][0] == 'openWB/chargepoint/5/get/voltages'
     assert mock_pub.method_calls[1][1][0] == 'openWB/optional/int_display/theme'
+
+
+@pytest.mark.parametrize("index_test_template, expected_index", [
+    pytest.param(0, [2, 1], id="IDs korrekt"),
+    pytest.param(1, [0, 3], id="IDs gleich"),
+    pytest.param(2, [], id="keine Pläne"),
+])
+def test_upgrade_datastore_94(index_test_template, expected_index):
+    update_con = UpdateConfig()
+    update_con.all_received_topics = {"openWB/command/max_id/charge_template_scheduled_plan": 2}
+    with open(Path(__file__).resolve().parents[0]/"upgrade_datastore_94.json", "r") as f:
+        test_data = f.read()
+    update_con.all_received_topics.update(json.loads(test_data)[index_test_template])
+
+    update_con.upgrade_datastore_94()
+
+    plan_ids = []
+    for plan in update_con.all_received_topics["openWB/vehicle/template/charge_template/0"]["chargemode"][
+            "scheduled_charging"]["plans"]:
+        plan_ids.append(plan["id"])
+    assert plan_ids == expected_index

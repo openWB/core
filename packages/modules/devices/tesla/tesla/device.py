@@ -5,6 +5,7 @@ from requests import HTTPError
 from typing import Iterable, Union
 
 from modules.common.abstract_device import DeviceDescriptor
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.common.req import get_http_session
 from modules.devices.tesla.tesla.bat import TeslaBat
@@ -20,7 +21,8 @@ def __update_components(client: PowerwallHttpClient,
                         components: Iterable[Union[TeslaBat, TeslaCounter, TeslaInverter]]):
     aggregate = client.get_json("/api/meters/aggregates")
     for component in components:
-        component.update(client, aggregate)
+        with SingleComponentUpdateContext(component.fault_state):
+            component.update(client, aggregate)
 
 
 def _authenticate(session: requests.Session, url: str, email: str, password: str):
@@ -38,6 +40,9 @@ def _authenticate(session: requests.Session, url: str, email: str, password: str
 
 
 def create_device(device_config: Tesla):
+    http_client = None
+    session = None
+
     def create_bat_component(component_config: TeslaBatSetup):
         return TeslaBat(component_config)
 
@@ -49,7 +54,7 @@ def create_device(device_config: Tesla):
 
     def update_components(components: Iterable[Union[TeslaBat, TeslaCounter, TeslaInverter]]):
         log.debug("Beginning update")
-        nonlocal http_client
+        nonlocal http_client, session
         address = device_config.configuration.ip_address
         email = device_config.configuration.email
         password = device_config.configuration.password
@@ -69,10 +74,14 @@ def create_device(device_config: Tesla):
         __update_components(http_client, components)
         log.debug("Update completed successfully")
 
-    session = get_http_session()
-    http_client = PowerwallHttpClient(device_config.configuration.ip_address, session, None)
+    def initializer():
+        nonlocal http_client, session
+        session = get_http_session()
+        http_client = PowerwallHttpClient(device_config.configuration.ip_address, session, None)
+
     return ConfigurableDevice(
         device_config=device_config,
+        initializer=initializer,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
             counter=create_counter_component,
