@@ -14,7 +14,7 @@ from modules.devices.victron.victron.config import VictronCounterSetup
 
 class KwargsDict(TypedDict):
     device_id: int
-    client: modbus.ModbusTcpClient_
+    client: modbus.ModbusUdpClient_
 
 
 class VictronCounter(AbstractCounter):
@@ -24,7 +24,7 @@ class VictronCounter(AbstractCounter):
 
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
-        self.__tcp_client = self.kwargs['client']
+        self.__udp_client = self.kwargs['client']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
@@ -32,18 +32,20 @@ class VictronCounter(AbstractCounter):
     def update(self):
         unit = self.component_config.configuration.modbus_id
         energy_meter = self.component_config.configuration.energy_meter
-        with self.__tcp_client:
+        with self.__udp_client:
             if energy_meter:
-                powers = self.__tcp_client.read_holding_registers(2600, [ModbusDataType.INT_16]*3, unit=unit)
+                powers = [
+                    self.__udp_client.read_holding_registers(reg, ModbusDataType.INT_32, unit=unit) / -1
+                    for reg in [0x3082, 0x3086, 0x308A]]
                 currents = [
-                    self.__tcp_client.read_holding_registers(reg, ModbusDataType.INT_16, unit=unit) / 10
-                    for reg in [2617, 2619, 2621]]
+                    self.__udp_client.read_holding_registers(reg, ModbusDataType.INT_16, unit=unit) / -100
+                    for reg in [0x3041, 0x3049, 0x3051]]
                 voltages = [
-                    self.__tcp_client.read_holding_registers(reg, ModbusDataType.UINT_16, unit=unit) / 10
-                    for reg in [2616, 2618, 2620]]
+                    self.__udp_client.read_holding_registers(reg, ModbusDataType.INT_16, unit=unit) / 100
+                    for reg in [0x3040, 0x3048, 0x3050]]
                 power = sum(powers)
             else:
-                powers = self.__tcp_client.read_holding_registers(820, [ModbusDataType.INT_16]*3, unit=unit)
+                powers = self.__udp_client.read_holding_registers(820, [ModbusDataType.INT_16]*3, unit=unit)
                 power = sum(powers)
 
         imported, exported = self.sim_counter.sim_count(power)
