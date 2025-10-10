@@ -10,25 +10,11 @@ import logging
 
 log = logging.getLogger(__name__)
 
-
-def totalPowerFromShellyJson(answer: Any, workchan: int) -> int:
+def totalPowerFromShellyJson(answer: Any, workchan: int, component: str, count: int) -> int:
     if (workchan == 0):
-        if 'meters' in answer:
-            meters = answer['meters']   # shelly
-        else:
-            meters = answer['emeters']  # shellyEM & shelly3EM
-        total = 0
-        # shellyEM has one meter, shelly3EM has three meters:
-        for meter in meters:
-            total = total + meter['power']
-        return int(total)
-    workchan = workchan - 1
-    try:
-        total = int(answer['meters'][workchan]['power'])   # Abfrage shelly
-    except Exception:
-        total = int(answer['emeters'][workchan]['power'])  # Abfrage shellyEM
-    return int(total)
-
+        power_sum = sum(emeter['power'] for emeter in answer[component] if isinstance(emeter, dict) and 'power' in emeter)
+        return int(power_sum)
+    return int(answer[component][workchan-1]['power'])
 
 named_tuple = time.localtime()   # getstruct_time
 time_string = time.strftime("%m/%d/%Y, %H:%M:%S shelly watty.py", named_tuple)
@@ -49,22 +35,35 @@ pw = str(sys.argv[7])
 # Insbesondere wichtig für aktuelle Leistung
 # Zähler wird beim Neustart auf 0 gesetzt, darf daher nicht übergeben werden.
 powerc = 0
-temp0 = '0.0'
-temp1 = '0.0'
-temp2 = '0.0'
+temp = [ '0.0', '0.0', '0.0' ]
 aktpower = 0
 relais = 0
 gen = '1'
 model = '???'
+# Shelly 3EM kennt die Profile monophase & triphase:
+profile = '???'
+components = {}
 # lesen endpoint, gen bestimmem. gen 1 hat unter Umstaenden keinen Eintrag
+write_info = False
+delete_info = False
+device_info = {}
+power_field = [ 'total_act_power', 'a_act_power', 'b_act_power', 'c_act_power' ]
+
 fbase = '/var/www/html/openWB/ramdisk/smarthome_device_ret.'
 fname = fbase + str(ipadr) + '_shelly_info'
-fnameg = fbase + str(ipadr) + '_shelly_infogv1'
+fnameg = fbase + str(ipadr) + '_shelly_infogv2'
+fnamec = fbase + str(ipadr) + '_shelly_infoc'
 if os.path.isfile(fnameg):
-    with open(fnameg, 'r') as f:
-        jsonin = json.loads(f.read())
-        gen = str(jsonin['gen'])
-        model = str(jsonin['model'])
+    try:
+        with open(fnameg, 'r') as f:
+            device_info = json.loads(f.read())
+            gen = str(device_info['gen'])
+            model = str(device_info['model'])
+            profile = str(device_info['profile'])
+            components = str(device_info['components'])
+    except Exception:
+        delete_info = True
+        pass
 else:
     aread = urllib.request.urlopen("http://" + str(ipadr) + "/shelly",
                                    timeout=3).read().decode("utf-8")
@@ -73,17 +72,32 @@ else:
         json.dump(agen, f)
     if 'gen' in agen:
         gen = str(int(agen['gen']))
+    device_info['gen'] = gen
     if 'model' in agen:
         model = str(agen['model'])
     elif 'type' in agen:
         model = str(agen['type'])
-    jsontype = {"gen": str(gen), "model": str(model)}
-    with open(fnameg, 'w') as f:
-        f.write(json.dumps(jsontype))
+    device_info['model'] = model
+    if 'profile' in agen:
+        # Shelly mit mehreren Profilen (z.B. 3EM, 2PM)
+        profile = str(agen['profile'])
+        device_info['profile'] = profile
+        if gen != "1":
+            aread = urllib.request.urlopen("http://" + str(ipadr) + "/rpc/Shelly.ListProfiles",
+                                       timeout=3).read().decode("utf-8")
+            agen = json.loads(str(aread))
+            with open(fnamec, 'w') as f:
+                json.dump(agen, f)
+            for item in agen['profiles'][profile]['components']:
+                components[item['type']] = item['count']
+            device_info['components'] = components
+
+    write_info = True
+
 # Versuche Daten von Shelly abzurufen.
 try:
     # print("Shelly " + str(shaut) + user + pw)
-    if (gen == "1"):
+    if gen == "1":
         url = "http://" + str(ipadr) + "/status"
         if (shaut == 1):
             passman = urllib.request.HTTPPasswordMgrWithDefaultRealm()
@@ -102,78 +116,84 @@ try:
     with open('/var/www/html/openWB/ramdisk/smarthome_device_ret.' +
               str(ipadr) + '_shelly', 'w') as f:
         f.write(str(answer))
-except Exception:
+    if not components:
+        # Gen2+ - Komponenten:
+        prefixes = ["switch:", "em:", "emdata:", "pm1:", "em1:", "em1data:", "temperature:"]
+        components = {
+            prefix[:-1]: count  # Entfernt ":" für den Schlüssel (z. B. "switch:" -> "switch")
+            for prefix in prefixes
+            if (count := sum(key.startswith(prefix) for key in answer.keys())) > 0
+        }
+        # Gen1 - Komponenten:
+        prefixes = ["relays", "emeters", "meters", "ext_temperature"]
+        for prefix in prefixes:
+            if prefix in answer:
+                components[prefix] = len(answer.get(prefix))
+        device_info['components'] = components
+
+except Exception as e:
+    print ("Fehler" + str(e))
     log.debug("failed to connect to device on " +
               ipadr + ", setting all values to 0")
 #  answer.update(a_dictionary)
 #  Versuche Werte aus der Antwort zu extrahieren.
-try:
-    if (gen == "1"):
-        aktpower = totalPowerFromShellyJson(answer, chan)
-    else:
-        if (chan > 0):
-            workchan = chan - 1
-        else:
-            workchan = chan
-        sw = 'switch:' + str(workchan)
-        if ("SPEM-003CE" in model):
-            if (workchan == 1):
-                aktpower = int(answer['em:0']['a_act_power'])
-            elif (workchan == 2):
-                aktpower = int(answer['em:0']['b_act_power'])
-            elif (workchan == 3):
-                aktpower = int(answer['em:0']['c_act_power'])
-            else:
-                aktpower = int(answer['em:0']['total_act_power'])
-        elif ("PM-001PCEU16" in model):
-            #   "SNPM-001PCEU16" (gen 2) und "S3PM-001PCEU16" (gen 3)
-            aktpower = int(answer['pm1:0']['apower'])
-        else:
-            aktpower = int(answer[sw]['apower'])
 except Exception:
     pass
 
-try:
-    if (chan > 0):
-        workchan = chan - 1
-    else:
-        workchan = chan
-    if (gen == "1"):
-        relais = int(answer['relays'][workchan]['ison'])
-    else:
         # shelly pro 3em mit add on hat fix id 100 als switch Kanal, das Device muss auf jeden fall mit separater
-        # Leistunsmessung erfasst werden, da die Leistung auf drei verschieden Kanäle angeliefert werden kann
-        if ("SPEM-003CE" in model):
-            workchan = 100
-        sw = 'switch:' + str(workchan)
-        relais = int(answer[sw]['output'])
-except Exception:
-    pass
+        # Leistungsmessung erfasst werden, da die Leistung auf drei verschieden Kanäle angeliefert werden kann
+#        if ("SPEM-003CE" in model):
+#            workchan = 100
+#        sw = 'switch:' + str(workchan)
+#        relais = int(answer[sw]['output'])
 
-try:
-    if gen == "1":
-        temp0 = str(answer['ext_temperature']['0']['tC'])
-    else:
-        temp0 = str(answer['temperature:100']['tC'])
-except Exception:
-    pass
+workchan = chan - 1 if chan > 0 else chan
 
-try:
-    if gen == "1":
-        temp1 = str(answer['ext_temperature']['1']['tC'])
+if 'switch' in components:
+    sw = 'switch:'+str(workchan)
+    if not sw in answer:
+        sw = 'switch:0'
+    relais = int(answer[sw]['output'])
+    aktpower = int(answer[sw]['apower']) if 'apower' in answer[sw] else 0
+if 'relays' in components:
+    relais = int(answer['relays'][workchan if (workchan < len(answer['relays'])) else 0]['ison'])
+if 'meters' in components:
+    aktpower = totalPowerFromShellyJson(answer, chan, 'meters', components['meters'])
+if 'pm1' in components:
+    sw = 'pm1:'+str(workchan)
+    aktpower = int(answer[sw]['apower'])
+if 'em1' in components:
+    if (workchan == 0):
+        aktpower = int(sum(answer['em1:'+str(em)]['act_power'] for em in range(components['em1'])))
     else:
-        temp1 = str(answer['temperature:101']['tC'])
-except Exception:
-    pass
+        sw = 'em1:'+str(workchan)
+        aktpower = int(answer[sw]['act_power'])
+if 'em' in components:
+    aktpower = int(answer['em:0'][power_field[chan]])
+if 'emeters' in components:
+    aktpower = totalPowerFromShellyJson(answer, chan, 'emeters', components['emeters'])
 
-try:
-    if gen == "1":
-        temp2 = str(answer['ext_temperature']['2']['tC'])
-    else:
-        temp2 = str(answer['temperature:102']['tC'])
-except Exception:
-    pass
+if 'ext_temperature' in components:
+    for i in range(len(answer['ext_temperature'])):
+        temp[i] = str(answer['ext_temperature'][str(i)]['tC'])
+if 'temperature' in components:
+    for i in range(components['temperature']):
+        field = 'temperature:' + str(i+100)
+        if field in answer:
+            temp[i] = str(answer[field]['tC'])
+
+if write_info:
+    with open(fnameg, 'w') as f:
+        f.write(json.dumps(device_info))
+
+if delete_info:
+    try:
+        os.remove(fname)
+    except Exception:
+        pass
+
 answer = '{"power":' + str(aktpower) + ',"powerc":' + str(powerc)
-answer += ',"on":' + str(relais) + ',"temp0":' + str(temp0)
-answer += ',"temp1":' + str(temp1) + ',"temp2":' + str(temp2) + '}'
+answer += ',"on":' + str(relais) + ',"temp0":' + str(temp[0])
+answer += ',"temp1":' + str(temp[1]) + ',"temp2":' + str(temp[2]) + '}'
 writeret(answer, devicenumber)
+print ("Answer: " + answer)
