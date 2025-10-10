@@ -31,7 +31,7 @@ class Process:
             for cp in data.data.cp_data.values():
                 try:
                     control_parameter = cp.data.control_parameter
-                    if cp.data.set.charging_ev != -1:
+                    if cp.data.set.current != 0:
                         # Ladelog-Daten müssen vor dem Setzen des Stroms gesammelt werden,
                         # damit bei Phasenumschaltungs-empfindlichen EV sicher noch nicht geladen wurde.
                         chargelog.collect_data(cp)
@@ -43,13 +43,10 @@ class Process:
                         cp.set_timestamp_charge_start()
                     else:
                         # LP, an denen nicht geladen werden darf
-                        if cp.data.set.charging_ev_prev != -1:
-                            chargelog.save_interim_data(
-                                cp, data.data.ev_data
-                                ["ev" + str(cp.data.set.charging_ev_prev)],
-                                immediately=False)
-                        cp.data.set.current = 0
-                        Pub().pub("openWB/set/chargepoint/"+str(cp.num)+"/set/current", 0)
+                        chargelog.save_interim_data(
+                            cp, data.data.ev_data
+                            ["ev" + str(cp.data.config.ev)],
+                            immediately=False)
                         control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
                     if cp.data.get.state_str is not None:
                         Pub().pub("openWB/set/chargepoint/"+str(cp.num)+"/get/state_str",

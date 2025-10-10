@@ -125,8 +125,6 @@ def save_interim_data(chargepoint, charging_ev, immediately: bool = True):
     try:
         log_data = chargepoint.data.set.log
         # Es wurde noch nie ein Auto zugeordnet
-        if charging_ev == -1:
-            return
         if log_data.imported_since_mode_switch == 0:
             # Die Daten wurden schon erfasst.
             return
@@ -134,7 +132,7 @@ def save_interim_data(chargepoint, charging_ev, immediately: bool = True):
             if chargepoint.data.get.power != 0:
                 # Das Fahrzeug hat die Ladung noch nicht beendet. Der Logeintrag wird später erstellt.
                 return
-        save_data(chargepoint, charging_ev, immediately)
+        save_data(chargepoint, charging_ev)
         chargepoint.reset_log_data_chargemode_switch()
     except Exception:
         log.exception("Fehler im Ladelog-Modul")
@@ -154,16 +152,13 @@ def save_and_reset_data(chargepoint, charging_ev, immediately: bool = True):
         Soll sofort ein Eintrag erstellt werden oder gewartet werden, bis die Ladung beendet ist.
     """
     try:
-        if charging_ev == -1:
-            # Es wurde noch nie ein Auto zugeordnet.
-            return
         if not immediately:
             if chargepoint.data.get.power != 0:
                 # Das Fahrzeug hat die Ladung noch nicht beendet. Der Logeintrag wird später erstellt.
                 return
         if chargepoint.data.set.log.imported_since_mode_switch > 0:
             # Die Daten wurden noch nicht erfasst.
-            save_data(chargepoint, charging_ev, immediately)
+            save_data(chargepoint, charging_ev)
         chargepoint.reset_log_data()
     except Exception:
         log.exception("Fehler im Ladelog-Modul")
@@ -187,7 +182,7 @@ def _get_range_charged(log_data, charging_ev) -> float:
              charging_ev.ev_template.data.average_consump), 2))
 
 
-def save_data(chargepoint, charging_ev, immediately: bool = True):
+def save_data(chargepoint, charging_ev):
     """ json-Objekt für den Log-Eintrag erstellen, an die Datei anhängen und die Daten, die sich auf den Ladevorgang
     beziehen, löschen.
 
@@ -198,17 +193,13 @@ def save_data(chargepoint, charging_ev, immediately: bool = True):
     charging_ev: class
         EV, das an diesem Ladepunkt lädt. (Wird extra übergeben, da es u.U. noch nicht zugewiesen ist und nur die
         Nummer aus dem Broker in der LP-Klasse hinterlegt ist.)
-    reset: bool
-        Wenn die Daten komplett zurückgesetzt werden, wird nicht der Zwischenzählerstand für
-        imported_at_mode_switch notiert. Sonst schon, damit zwischen save_data und dem nächsten collect_data keine
-        Daten verloren gehen.
     """
     if chargepoint.data.set.log.imported_since_mode_switch != 0:
-        new_entry = _create_entry(chargepoint, charging_ev, immediately)
+        new_entry = _create_entry(chargepoint, charging_ev)
         write_new_entry(new_entry)
 
 
-def _create_entry(chargepoint, charging_ev, immediately: bool = True):
+def _create_entry(chargepoint, charging_ev):
     log_data = chargepoint.data.set.log
     # Daten vor dem Speichern nochmal aktualisieren, auch wenn nicht mehr geladen wird.
     log_data.imported_since_plugged = get_value_or_default(lambda: round(

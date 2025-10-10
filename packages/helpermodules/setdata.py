@@ -472,12 +472,8 @@ class SetData:
             elif re.search("chargepoint/[0-9]+/config$", msg.topic) is not None:
                 self._validate_value(msg, "json")
             elif subdata.SubData.cp_data.get(f"cp{get_index(msg.topic)}"):
-                if ("/set/charging_ev" in msg.topic or
-                        "/set/charging_ev_prev" in msg.topic or
-                        "/set/ev_prev" in msg.topic):
-                    self._validate_value(msg, int, [(-1, float("inf"))])
-                elif ("/set/current" in msg.topic or
-                      "/set/current_prev" in msg.topic):
+                if ("/set/current" in msg.topic or
+                        "/set/current_prev" in msg.topic):
                     if hardware_configuration.get_hardware_configuration_setting("dc_charging"):
                         self._validate_value(msg, float, [(float("-inf"), 0), (0, 0), (6, 32), (0, 450)])
                     else:

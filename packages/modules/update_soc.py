@@ -100,7 +100,7 @@ class UpdateSoc:
         ev_template = subdata.SubData.ev_template_data[f"et{ev.data.ev_template}"]
         for cp_state_update in list(subdata.SubData.cp_data.values()):
             cp = cp_state_update.chargepoint
-            if cp.data.set.charging_ev == ev_num or cp.data.set.charging_ev_prev == ev_num:
+            if cp.data.config.ev == ev_num:
                 plug_state = cp.data.get.plug_state
                 charge_state = cp.data.get.charge_state
                 imported = cp.data.get.imported

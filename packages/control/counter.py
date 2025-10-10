@@ -11,7 +11,6 @@ from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE
 from control.algorithm.filter_chargepoints import get_chargepoints_by_chargemodes
 from control.algorithm.utils import get_medium_charging_current
 from control.chargemode import Chargemode
-from control.ev.ev import Ev
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state import ChargepointState
 from dataclass_utils.factories import currents_list_factory, voltages_list_factory
@@ -475,16 +474,7 @@ class Counter:
         chargepoint.set_state_and_log(msg)
         return charge
 
-    def reset_switch_on_off(self, chargepoint: Chargepoint, charging_ev: Ev):
-        """ Zeitstempel und reservierte Leistung löschen
-
-        Parameter
-        ---------
-        chargepoint: dict
-            Ladepunkt, für den die Werte zurückgesetzt werden sollen
-        charging_ev: dict
-            EV, das dem Ladepunkt zugeordnet ist
-        """
+    def reset_switch_on_off(self, chargepoint: Chargepoint):
         try:
             if chargepoint.data.control_parameter.timestamp_switch_on_off is not None:
                 chargepoint.data.control_parameter.timestamp_switch_on_off = None
