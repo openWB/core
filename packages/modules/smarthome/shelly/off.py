@@ -1,11 +1,14 @@
 #!/usr/bin/python3
 import sys
-import time
-import urllib.request
+from logging import exception
+
+import requests
+from requests.auth import HTTPBasicAuth, HTTPDigestAuth
 import os
 import json
-named_tuple = time.localtime()  # getstruct_time
-time_string = time.strftime("%m/%d/%Y, %H:%M:%S shelly off.py", named_tuple)
+import logging
+
+log = logging.getLogger(__name__)
 devicenumber = str(sys.argv[1])
 ipadr = str(sys.argv[2])
 uberschuss = int(sys.argv[3])
@@ -18,40 +21,44 @@ except Exception:
 shaut = int(sys.argv[5])
 user = str(sys.argv[6])
 pw = str(sys.argv[7])
+
 fbase = '/var/www/html/openWB/ramdisk/smarthome_device_ret.'
-fnameg = fbase + str(ipadr) + '_shelly_infogv1'
-if os.path.isfile(fnameg):
-    with open(fnameg, 'r') as f:
-        jsonin = json.loads(f.read())
-        gen = str(jsonin['gen'])
-        model = str(jsonin['model'])
-else:
-    gen = "1"
-if (gen == "1"):
-    if (chan == 0):
-        url = "http://" + str(ipadr) + "/relay/0?turn=off"
-    #    urllib.request.urlopen("http://"+str(ipadr)+"/relay/0?turn=off",
-    #                           timeout=3)
+fnameg = fbase + str(ipadr) + '_shelly_infogv2'
+log_pfx = "Device " + str(devicenumber) + " IP " + ipadr + ": "
+
+try:
+    if os.path.isfile(fnameg):
+        with open(fnameg, 'r') as f:
+            jsonin = json.loads(f.read())
+            gen = str(jsonin['gen'])
+            model = str(jsonin['model'])
     else:
-        chan = chan - 1
-        url = "http://" + str(ipadr) + "/relay/" + str(chan) + "?turn=off"
-    #    urllib.request.urlopen("http://"+str(ipadr)+"/relay/" + str(chan) +
-    #                           "?turn=off", timeout=3)
-else:
-    if (chan > 0):
-        chan = chan - 1
-    # shelly pro 3em mit add on hat fix id 100 als switch Kanal, das Device muss auf jeden fall mit separater
-    # Leistunsmessung erfasst werden, da die Leistung auf drei verschiedenenen Kanälen angeliefert werden kann
-    if ("SPEM-003CE" in model):
-        chan = 100
-    # gen 2 will das als off cmd IPderPro3EM/rpc/Switch.Set?id=100&on=false
-    url = "http://" + str(ipadr) + "/rpc/Switch.Set?id=" + str(chan) + "&on=false"
-if (shaut == 1):
-    #  print("Shelly off" + str(shaut) + user + pw)
-    passman = urllib.request.HTTPPasswordMgrWithDefaultRealm()
-    passman.add_password(None, url, user, pw)
-    authhandler = urllib.request.HTTPBasicAuthHandler(passman)
-    opener = urllib.request.build_opener(authhandler)
-    urllib.request.install_opener(opener)
-with urllib.request.urlopen(url) as response:
-    response.read().decode("utf-8")
+        gen = "1"
+
+    if gen == "1":
+        if chan == 0:
+            url = f"http://{ipadr}/relay/0?turn=off"
+        else:
+            chan = chan - 1
+            url = f"http://{ipadr}/relay/{chan}?turn=off"
+    else:
+        if chan > 0:
+            chan = chan - 1
+        if "SPEM-003CE" in model:
+            chan = 100
+        url = f"http://{ipadr}/rpc/Switch.Set?id={chan}&on=false"
+
+    if shaut == 1:
+        if gen == "1":
+            # HTTP Basic Auth für Gen 1
+            auth = HTTPBasicAuth(user, pw)
+        else:
+            # HTTP Digest Auth für Gen 2 oder SPEM-003CE
+            auth = HTTPDigestAuth("admin", pw)
+        response = requests.get(url, auth=auth, timeout=3)
+    else:
+        response = requests.get(url, timeout=3)
+
+    response.raise_for_status()  # Fehler, wenn Statuscode nicht 2xx ist
+except Exception as e:
+    log.error(f"{log_pfx}Error on changing switch: {str(e)}")

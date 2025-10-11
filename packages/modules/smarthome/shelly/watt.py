@@ -4,7 +4,7 @@ import os
 import time
 import json
 import requests
-import hashlib
+from requests.auth import HTTPBasicAuth, HTTPDigestAuth
 from typing import Any
 from smarthome.smartret import writeret
 import logging
@@ -16,42 +16,6 @@ def totalPowerFromShellyJson(answer: Any, workchan: int, component: str) -> int:
         return int(answer[component][workchan - 1]['power'])
     power_sum = sum(emeter['power'] for emeter in answer[component] if isinstance(emeter, dict) and 'power' in emeter)
     return int(power_sum)
-
-def build_digest_header(url: str, method: str, username: str, password: str, auth_header: str) -> str:
-    """Erstellt den Digest Authorization-Header für Shelly (SHA-256)."""
-    if not auth_header.startswith('Digest'):
-        raise Exception("Kein Digest-Auth-Header gefunden.")
-
-    # Extrahiere realm, nonce, etc.
-    auth_fields = {}
-    for field in auth_header[6:].split(','):
-        key, value = field.strip().split('=', 1)
-        auth_fields[key] = value.strip('"')
-
-    realm = auth_fields['realm']
-    nonce = auth_fields['nonce']
-    qop = auth_fields.get('qop', 'auth')
-    opaque = auth_fields.get('opaque', '')
-    uri = url.split('/', 3)[3] if '/' in url else ''  # Extrahiere URI-Pfad
-
-    # Digest-Berechnungen (Shelly verwendet SHA-256)
-    nc = "00000001"  # Request-Counter
-    cnonce = str(int(time.time() * 1000))  # Client-Nonce
-
-    # HA1 = SHA-256(username:realm:password)
-    ha1 = hashlib.sha256(f"{username}:{realm}:{password}".encode()).hexdigest()
-    # HA2 = SHA-256(method:uri)
-    ha2 = hashlib.sha256(f"{method}:/{uri}".encode()).hexdigest()
-    # Response = SHA-256(HA1:nonce:nc:cnonce:qop:HA2)
-    response = hashlib.sha256(f"{ha1}:{nonce}:{nc}:{cnonce}:{qop}:{ha2}".encode()).hexdigest()
-
-    # Authorization-Header
-    auth_str = (f'Digest username="{username}", realm="{realm}", nonce="{nonce}", '
-                f'uri="/{uri}", qop={qop}, nc={nc}, cnonce="{cnonce}", '
-                f'response="{response}", algorithm=SHA-256')
-    if opaque:
-        auth_str += f', opaque="{opaque}"'
-    return auth_str
 
 named_tuple = time.localtime()   # getstruct_time
 time_string = time.strftime("%m/%d/%Y, %H:%M:%S shelly watty.py", named_tuple)
@@ -134,7 +98,11 @@ try:
             device_info['profile'] = profile
             if gen != "1":
                 url = f'http://{ipadr}/rpc/Shelly.ListProfiles'
-                response = requests.get(url, timeout=3)
+                if shaut==1:
+                    response = requests.get(url, timeout=3,
+                                            auth=HTTPDigestAuth("admin", pw))
+                else:
+                    response = requests.get(url, timeout=3)
                 response.raise_for_status()
                 aread = response.text
                 log.warning(log_pfx + " /rpc/Shelly.ListProfiles response " + aread)
@@ -162,37 +130,21 @@ try:
     else:
         # No (valid) cache: We have to fetch the data:
         url = f'http://{ipadr}/{"status" if gen == "1" else "rpc/Shelly.GetStatus"}'
-        headers = {}
-        try:
-            if shaut == 1:
-                if gen == "1":
-                    # Basic Auth für Gen1
-                    response = requests.get(url, auth=(user, pw), timeout=3)
-                else:
-                    # Digest Auth für Gen2+
-                    response = requests.get(url, timeout=3)
-                    if response.status_code == 401:
-                        auth_header = response.headers.get('WWW-Authenticate')
-                        if auth_header:
-                            headers['Authorization'] = build_digest_header(url, 'GET', "admin", pw, auth_header)
-                            response = requests.get(url, headers=headers, timeout=3)
-                        else:
-                            raise Exception("Kein WWW-Authenticate-Header in 401-Antwort.")
-                    elif response.status_code != 200:
-                        raise Exception(f"Unerwarteter Statuscode: {response.status_code}")
+        if shaut == 1:
+            if gen == "1":
+                response = requests.get(url, timeout=3,
+                                    auth=HTTPBasicAuth(user, pw))
             else:
-                # Keine Authentifizierung erforderlich
-                response = requests.get(url, timeout=3)
-            
-            # Antwort verarbeiten
-            response.raise_for_status()
-            aread = response.text
-            answer = json.loads(aread)
-            with open(fname_statusrsp, 'w') as f:
-                json.dump(answer, f)
-        except requests.exceptions.RequestException as e:
-            log.error(f"{log_pfx}Error on data fetching: {str(e)}")
-            raise Exception(f"Fehler bei Datenabfrage: {e}")
+                response = requests.get(url, timeout=3,
+                                    auth=HTTPDigestAuth("admin", pw))
+        else:
+            response = requests.get(url, timeout=3)
+
+        response.raise_for_status()
+        aread = response.text
+        answer = json.loads(aread)
+        with open(fname_statusrsp, 'w') as f:
+            json.dump(answer, f)
 
     if not components:
         # Late device analysis, based on the first response:
