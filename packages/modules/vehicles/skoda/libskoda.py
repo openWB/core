@@ -214,7 +214,7 @@ class skoda:
         return True
 
     async def get_status(self):
-        status_url = f"{API_BASE}/v2/vehicle-status/{self.vin}/driving-range"
+        status_url = f"{API_BASE}/v1/charging/{self.vin}"
         response = await self.session.get(status_url, headers=self.headers)
 
         # If first attempt fails, try to refresh tokens
@@ -243,9 +243,11 @@ class skoda:
             'charging': {
                 'batteryStatus': {
                     'value': {
-                        'currentSOC_pct': status_data['primaryEngineRange']['currentSoCInPercent'],
-                        'cruisingRangeElectric_km': status_data['primaryEngineRange']['remainingRangeInKm'],
-                        'carCapturedTimestamp': status_data['carCapturedTimestamp'].split('.')[0] + 'Z',
+                        'currentSOC_pct': status_data['status']['battery']['stateOfChargeInPercent'],
+                        'cruisingRangeElectric_km': (
+                            status_data['status']['battery'].get('remainingCruisingRangeInMeters', 1000) / 1000
+                        ),
+                        'carCapturedTimestamp': status_data['carCapturedTimestamp'],
                     }
                 }
             }
