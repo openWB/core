@@ -10,11 +10,11 @@ import logging
 
 log = logging.getLogger(__name__)
 
-def totalPowerFromShellyJson(answer: Any, workchan: int, component: str, count: int) -> int:
-    if (workchan == 0):
-        power_sum = sum(emeter['power'] for emeter in answer[component] if isinstance(emeter, dict) and 'power' in emeter)
-        return int(power_sum)
-    return int(answer[component][workchan-1]['power'])
+def totalPowerFromShellyJson(answer: Any, workchan: int, component: str) -> int:
+    if workchan > 0:
+        return int(answer[component][workchan - 1]['power'])
+    power_sum = sum(emeter['power'] for emeter in answer[component] if isinstance(emeter, dict) and 'power' in emeter)
+    return int(power_sum)
 
 named_tuple = time.localtime()   # getstruct_time
 time_string = time.strftime("%m/%d/%Y, %H:%M:%S shelly watty.py", named_tuple)
@@ -50,120 +50,135 @@ device_info = {}
 power_field = [ 'total_act_power', 'a_act_power', 'b_act_power', 'c_act_power' ]
 
 fbase = '/var/www/html/openWB/ramdisk/smarthome_device_ret.'
-fname = fbase + str(ipadr) + '_shelly_info'
-fnameg = fbase + str(ipadr) + '_shelly_infogv2'
-fnamec = fbase + str(ipadr) + '_shelly_infoc'
-if os.path.isfile(fnameg):
-    try:
-        with open(fnameg, 'r') as f:
-            device_info = json.loads(f.read())
-            gen = str(device_info['gen'])
-            model = str(device_info['model'])
-            profile = str(device_info['profile'])
-            components = str(device_info['components'])
-    except Exception:
-        delete_info = True
-        pass
-else:
-    aread = urllib.request.urlopen("http://" + str(ipadr) + "/shelly",
-                                   timeout=3).read().decode("utf-8")
-    agen = json.loads(str(aread))
-    with open(fname, 'w') as f:
-        json.dump(agen, f)
-    if 'gen' in agen:
-        gen = str(int(agen['gen']))
-    device_info['gen'] = gen
-    if 'model' in agen:
-        model = str(agen['model'])
-    elif 'type' in agen:
-        model = str(agen['type'])
-    device_info['model'] = model
-    if 'profile' in agen:
-        # Shelly mit mehreren Profilen (z.B. 3EM, 2PM)
-        profile = str(agen['profile'])
-        device_info['profile'] = profile
-        if gen != "1":
-            aread = urllib.request.urlopen("http://" + str(ipadr) + "/rpc/Shelly.ListProfiles",
-                                       timeout=3).read().decode("utf-8")
-            agen = json.loads(str(aread))
-            with open(fnamec, 'w') as f:
-                json.dump(agen, f)
-            for item in agen['profiles'][profile]['components']:
-                components[item['type']] = item['count']
-            device_info['components'] = components
+# Response of "/shelly"-url:
+fname_shellyinfo = fbase + ipadr + '_shelly_info'
+# Response of "/rpc/Shelly.ListProfiles":
+fname_profiles = fbase + ipadr + '_shelly_infoc'
+# Internal cache for gathered device info:
+fname_devcache = fbase + ipadr + '_shelly_infogv2'
+# Response for "/status" or "/rpc/Shelly.GetStatus":
+fname_statusrsp = fbase + ipadr + '_shelly'
 
-    write_info = True
+log_pfx = "Device " + str(devicenumber) + " IP " + ipadr + ": "
 
-# Versuche Daten von Shelly abzurufen.
+# Do we have a cache of the device features?
 try:
-    # print("Shelly " + str(shaut) + user + pw)
-    if gen == "1":
-        url = "http://" + str(ipadr) + "/status"
-        if (shaut == 1):
+    if os.path.isfile(fname_devcache):
+        try:
+            with open(fname_devcache, 'r') as f:
+                device_info = json.loads(f.read())
+                gen = str(device_info['gen'])
+                model = str(device_info['model'])
+                profile = str(device_info['profile'])
+                components = str(device_info['components'])
+        except Exception:
+            # Delete this cache file - it seems broken
+            delete_info = True
+            pass
+    else:
+        # New device analysis: Start with /shelly URL:
+        aread = urllib.request.urlopen('http://' + ipadr + '/shelly',
+                                       timeout=3).read().decode("utf-8")
+        log.warning(log_pfx + "/shelly response " + aread)
+        device_info = json.loads(aread)
+        agen = json.loads(str(aread))
+        with open(fname_shellyinfo, 'w') as f:
+            json.dump(agen, f)
+        if 'gen' in agen:
+            gen = str(int(agen['gen']))
+        device_info['gen'] = gen
+        if 'model' in agen:
+            model = str(agen['model'])
+        elif 'type' in agen:
+            model = str(agen['type'])
+        device_info['model'] = model
+        if 'profile' in agen:
+            # Shelly with multiple profiles (z.B. 3EM, 2PM)
+            profile = str(agen['profile'])
+            device_info['profile'] = profile
+            if gen != "1":
+                aread = urllib.request.urlopen('http://' + ipadr + '/rpc/Shelly.ListProfiles',
+                                               timeout=3).read().decode('utf-8')
+                log.warning(log_pfx + " /rpc/Shelly.ListProfiles response " + aread)
+                agen = json.loads(str(aread))
+                with open(fname_profiles, 'w') as f:
+                    json.dump(agen, f)
+                for item in agen['profiles'][profile]['components']:
+                    components[item['type']] = item['count']
+                device_info['components'] = components
+        # We have a new device analysis, store it:
+        write_info = True
+except Exception as e:
+    log.error (log_pfx + 'Error on device analysis ' + str(e))
+    pass
+
+# Pre-Analysis done / loaded, now get the data:
+try:
+    # For future use: Caching of response:
+    # Check the last response is < 5 seconds old
+    if (os.path.exists(fname_statusrsp) and
+        os.path.getmtime(fname_statusrsp) + 4 > time.time()):
+        # We will use a cached Status-page
+        with open(fname_statusrsp, 'r') as f:
+            answer = json.loads(str(f.read()))
+    else:
+        # No (valid) cache: We have to fetch the data:
+        url = 'http://' + str(ipadr) + ('/status' if gen == '1' else '/rpc/Shelly.GetStatus')
+        if shaut == 1:
             passman = urllib.request.HTTPPasswordMgrWithDefaultRealm()
             passman.add_password(None, url, user, pw)
             authhandler = urllib.request.HTTPBasicAuthHandler(passman)
             opener = urllib.request.build_opener(authhandler)
             urllib.request.install_opener(opener)
         with urllib.request.urlopen(url, timeout=3) as response:
-            aread = response.read().decode("utf-8")
-        answer = json.loads(str(aread))
-    else:
-        aread = urllib.request.urlopen("http://"+str(ipadr) +
-                                       "/rpc/Shelly.GetStatus",
-                                       timeout=3).read().decode("utf-8")
-        answer = json.loads(str(aread))
-    with open('/var/www/html/openWB/ramdisk/smarthome_device_ret.' +
-              str(ipadr) + '_shelly', 'w') as f:
-        f.write(str(answer))
+            aread = response.read().decode('utf-8')
+            answer = json.loads(aread)
+        with open(fname_statusrsp, 'w') as f:
+            json.dump(answer, f)
+
     if not components:
-        # Gen2+ - Komponenten:
-        prefixes = ["switch:", "em:", "emdata:", "pm1:", "em1:", "em1data:", "temperature:"]
+        # Late device analysis, based on the first response:
+        prefixes = ['switch:', 'em:', 'emdata:', 'pm1:', 'em1:', 'em1data:', 'temperature:']
         components = {
             prefix[:-1]: count  # Entfernt ":" für den Schlüssel (z. B. "switch:" -> "switch")
             for prefix in prefixes
             if (count := sum(key.startswith(prefix) for key in answer.keys())) > 0
         }
         # Gen1 - Komponenten:
-        prefixes = ["relays", "emeters", "meters", "ext_temperature"]
+        prefixes = ['relays', 'emeters', 'meters', 'ext_temperature']
         for prefix in prefixes:
             if prefix in answer:
                 components[prefix] = len(answer.get(prefix))
         device_info['components'] = components
+        write_info = True
 
 except Exception as e:
-    print ("Fehler" + str(e))
-    log.debug("failed to connect to device on " +
-              ipadr + ", setting all values to 0")
-#  answer.update(a_dictionary)
-#  Versuche Werte aus der Antwort zu extrahieren.
-except Exception:
+    log.error (log_pfx + 'Error on data fetch ' + str(e))
     pass
 
-        # shelly pro 3em mit add on hat fix id 100 als switch Kanal, das Device muss auf jeden fall mit separater
-        # Leistungsmessung erfasst werden, da die Leistung auf drei verschieden Kanäle angeliefert werden kann
-#        if ("SPEM-003CE" in model):
-#            workchan = 100
-#        sw = 'switch:' + str(workchan)
-#        relais = int(answer[sw]['output'])
-
+# We have the response: Start parsing:
 workchan = chan - 1 if chan > 0 else chan
 
 if 'switch' in components:
-    sw = 'switch:'+str(workchan)
+    # Beim Shelly Pro 3EM mit AddOn ist die Switch-ID 100, sonst ab 0:
+    sw = 'switch:'+str(workchan) if not 'SPEM-003CE' in model else 'switch:100'
     if not sw in answer:
+        # Typisch, wenn der Messwert auf einem höheren Kanal geholt werden soll
         sw = 'switch:0'
     relais = int(answer[sw]['output'])
     aktpower = int(answer[sw]['apower']) if 'apower' in answer[sw] else 0
 if 'relays' in components:
     relais = int(answer['relays'][workchan if (workchan < len(answer['relays'])) else 0]['ison'])
 if 'meters' in components:
-    aktpower = totalPowerFromShellyJson(answer, chan, 'meters', components['meters'])
+    aktpower = totalPowerFromShellyJson(answer, chan, 'meters')
 if 'pm1' in components:
-    sw = 'pm1:'+str(workchan)
-    aktpower = int(answer[sw]['apower'])
+    if chan == 0:
+        aktpower = int(sum(answer['pm1:'+str(em)]['apower'] for em in range(components['pm1'])))
+    else:
+        sw = 'pm1:'+str(workchan)
+        aktpower = int(answer[sw]['apower'])
 if 'em1' in components:
-    if (workchan == 0):
+    if chan == 0:
         aktpower = int(sum(answer['em1:'+str(em)]['act_power'] for em in range(components['em1'])))
     else:
         sw = 'em1:'+str(workchan)
@@ -171,7 +186,7 @@ if 'em1' in components:
 if 'em' in components:
     aktpower = int(answer['em:0'][power_field[chan]])
 if 'emeters' in components:
-    aktpower = totalPowerFromShellyJson(answer, chan, 'emeters', components['emeters'])
+    aktpower = totalPowerFromShellyJson(answer, chan, 'emeters')
 
 if 'ext_temperature' in components:
     for i in range(len(answer['ext_temperature'])):
@@ -183,12 +198,13 @@ if 'temperature' in components:
             temp[i] = str(answer[field]['tC'])
 
 if write_info:
-    with open(fnameg, 'w') as f:
+    with open(fname_devcache, 'w') as f:
         f.write(json.dumps(device_info))
+    log.warning(log_pfx + " cached info " + json.dumps(device_info))
 
 if delete_info:
     try:
-        os.remove(fname)
+        os.remove(fname_shellyinfo)
     except Exception:
         pass
 
@@ -196,4 +212,3 @@ answer = '{"power":' + str(aktpower) + ',"powerc":' + str(powerc)
 answer += ',"on":' + str(relais) + ',"temp0":' + str(temp[0])
 answer += ',"temp1":' + str(temp[1]) + ',"temp2":' + str(temp[2]) + '}'
 writeret(answer, devicenumber)
-print ("Answer: " + answer)
