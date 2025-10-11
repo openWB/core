@@ -1,7 +1,5 @@
 #!/usr/bin/python3
 import sys
-from logging import exception
-
 import requests
 from requests.auth import HTTPBasicAuth, HTTPDigestAuth
 import os

@@ -11,11 +11,13 @@ import logging
 
 log = logging.getLogger(__name__)
 
+
 def totalPowerFromShellyJson(answer: Any, workchan: int, component: str) -> int:
     if workchan > 0:
         return int(answer[component][workchan - 1]['power'])
     power_sum = sum(emeter['power'] for emeter in answer[component] if isinstance(emeter, dict) and 'power' in emeter)
     return int(power_sum)
+
 
 named_tuple = time.localtime()   # getstruct_time
 time_string = time.strftime("%m/%d/%Y, %H:%M:%S shelly watty.py", named_tuple)
@@ -98,7 +100,7 @@ try:
             device_info['profile'] = profile
             if gen != "1":
                 url = f'http://{ipadr}/rpc/Shelly.ListProfiles'
-                if shaut==1:
+                if shaut == 1:
                     response = requests.get(url, timeout=3,
                                             auth=HTTPDigestAuth("admin", pw))
                 else:
@@ -133,10 +135,10 @@ try:
         if shaut == 1:
             if gen == "1":
                 response = requests.get(url, timeout=3,
-                                    auth=HTTPBasicAuth(user, pw))
+                                        auth=HTTPBasicAuth(user, pw))
             else:
                 response = requests.get(url, timeout=3,
-                                    auth=HTTPDigestAuth("admin", pw))
+                                        auth=HTTPDigestAuth("admin", pw))
         else:
             response = requests.get(url, timeout=3)
 
@@ -172,8 +174,8 @@ workchan = chan - 1 if chan > 0 else chan
 try:
     if 'switch' in components:
         # Beim Shelly Pro 3EM mit AddOn ist die Switch-ID 100, sonst ab 0:
-        sw = 'switch:' + str(workchan) if not 'SPEM-003CE' in model else 'switch:100'
-        if not sw in answer:
+        sw = 'switch:' + str(workchan) if 'SPEM-003CE' not in model else 'switch:100'
+        if sw not in answer:
             # Typisch, wenn der Messwert auf einem höheren Kanal geholt werden soll
             sw = 'switch:0'
         relais = int(answer[sw]['output'])
