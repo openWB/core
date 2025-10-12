@@ -214,20 +214,21 @@ class skoda:
         return True
 
     async def get_status(self):
-        status_url = f"{API_BASE}/v1/charging/{self.vin}"
-        response = await self.session.get(status_url, headers=self.headers)
+        vehicle_status_url = f"{API_BASE}/v2/vehicle-status/{self.vin}/driving-range"
+        charging_url = f"{API_BASE}/v1/charging/{self.vin}"
+        response = await self.session.get(vehicle_status_url, headers=self.headers)
 
         # If first attempt fails, try to refresh tokens
         if response.status >= 400:
             self.log.debug("Refreshing tokens")
             if await self.refresh_tokens():
-                response = await self.session.get(status_url, headers=self.headers)
+                response = await self.session.get(vehicle_status_url, headers=self.headers)
 
         # If refreshing tokens failed, try a full reconnect
         if response.status >= 400:
             self.log.info("Reconnecting")
             if await self.reconnect():
-                response = await self.session.get(status_url, headers=self.headers)
+                response = await self.session.get(vehicle_status_url, headers=self.headers)
             else:
                 self.log.error("Reconnect failed")
                 return {}
@@ -237,17 +238,41 @@ class skoda:
             return {}
 
         status_data = await response.json()
-        self.log.debug(f"Status data from Skoda API: {status_data}")
+        self.log.debug(f"Status data from Skoda API (vehicle-status): {status_data}")
+
+        # check if all values are valid, otherwise use charging_url
+        primary_engine_range = status_data.get('primaryEngineRange', {})
+        required_keys = ['currentSoCInPercent', 'remainingRangeInKm']
+        if not all(k in primary_engine_range for k in required_keys) or 'carCapturedTimestamp' not in status_data:
+            self.log.info("vehicle-status did not contain all values, trying charging_url")
+            response = await self.session.get(charging_url, headers=self.headers)
+
+            if response.status >= 400:
+                self.log.error("Get status from charging_url failed")
+                return {}
+
+            status_data = await response.json()
+            self.log.debug(f"Status data from Skoda API (charging): {status_data}")
+
+            soc = status_data['status']['battery']['stateOfChargeInPercent']
+            range_km = (
+                status_data['status']['battery'].get('remainingCruisingRangeInMeters', 1000) / 1000
+            )
+        else:
+            soc = status_data['primaryEngineRange']['currentSoCInPercent']
+            range_km = status_data['primaryEngineRange']['remainingRangeInKm']
+
+        timestamp = status_data['carCapturedTimestamp'].split('.')[0]
+        if not timestamp.endswith('Z'):
+            timestamp += 'Z'
 
         return {
             'charging': {
                 'batteryStatus': {
                     'value': {
-                        'currentSOC_pct': status_data['status']['battery']['stateOfChargeInPercent'],
-                        'cruisingRangeElectric_km': (
-                            status_data['status']['battery'].get('remainingCruisingRangeInMeters', 1000) / 1000
-                        ),
-                        'carCapturedTimestamp': status_data['carCapturedTimestamp'],
+                        'currentSOC_pct': soc,
+                        'cruisingRangeElectric_km': range_km,
+                        'carCapturedTimestamp': timestamp,
                     }
                 }
             }
