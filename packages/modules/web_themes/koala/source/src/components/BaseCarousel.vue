@@ -78,7 +78,7 @@ function measure() {
 
 onMounted(() => {
   measure();
-  window.addEventListener('resize', measure);
+  window.addEventListener('resize', measure, {passive: true});
 });
 
 onBeforeUnmount(() => {
@@ -92,17 +92,17 @@ const groupSize = computed(() => {
   const maxGroup = Math.max(
     1,
     Math.floor(
-      (carouselWidth.value - (showArrows.value ? carouselPadding.value : 50)) /
+      (carouselWidth.value - 2 - (showArrows.value ? carouselPadding.value : 50)) /
         itemWidth.value,
     ),
   );
   // Spezialfall: Alle passen nebeneinander
   if (
     props.items.length > maxGroup &&
-    props.items.length <= maxGroup * 2 &&
+    props.items.length <= maxGroup + 1 &&
     props.items.length - maxGroup === 1
   ) {
-    if (props.items.length * itemWidth.value <= carouselWidth.value) {
+    if (props.items.length * itemWidth.value < carouselWidth.value) {
       return props.items.length;
     }
   }
@@ -126,6 +126,7 @@ watch(groupedItems, (groups) => {
   if (currentSlide.value > groups.length - 1) {
     currentSlide.value = Math.max(0, groups.length - 1);
   }
+  measure();
 });
 </script>
 
