@@ -94,10 +94,4 @@ export default {
   max-height: 72vh;
   overflow-y: scroll;
 }
-
-.large-button {
-  height: 3.5rem;
-  font-size: 1.5rem;
-  padding: 0.75rem 1.5rem;
-}
 </style>
