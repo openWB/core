@@ -34,6 +34,5 @@ client.publish("openWB/set/LegacySmartHome/Devices/"+str(devicenumber) +
 client.loop(timeout=2.0)
 client.disconnect()
 file_stringpv = '/var/www/html/openWB/ramdisk/smarthome_device_' + str(devicenumber) + '_pv'
-f = open(file_stringpv, 'w')
-f.write(str(1))
-f.close()
+with open(file_stringpv, 'w') as f:
+    f.write(str(1))

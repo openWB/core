@@ -1,8 +1,11 @@
 #!/usr/bin/python3
+import logging
 import sys
 import json
 import jq
 import urllib.request
+
+log = logging.getLogger(__name__)
 
 devicenumber = str(sys.argv[1])
 # Abfrage-URL, die die .json Antwort liefert. Z.B.
@@ -26,7 +29,5 @@ try:
 except Exception:
     powerc = 0
 
-f1 = open('/var/www/html/openWB/ramdisk/smarthome_device_ret' + str(devicenumber), 'w')
-answer = '{"power":' + str(power) + ',"powerc":' + str(powerc) + '}'
-json.dump(answer, f1)
-f1.close()
+with open('/var/www/html/openWB/ramdisk/smarthome_device_ret' + str(devicenumber), 'w') as f1:
+    log.debug('{"power":' + str(power) + ',"powerc":' + str(powerc) + '}')
