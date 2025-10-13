@@ -235,6 +235,23 @@ export default {
     chargePoint3Discharging() {
       return this.chargePoint3Power.value < 0;
     },
+    batteryModeIcon() {
+    const mode = this.mqttStore.getBatteryMode;
+      switch (mode) {
+        case "ev_mode": return "icons/owbVehicle.svg";
+        case "bat_mode": return "icons/owbBattery.svg";
+        case "min_soc_bat_mode": return "icons/owbBattery40.svg";
+        default: return "---";
+      }
+    },
+     batteryModeColor() {
+      switch (this.mqttStore.getBatteryMode) {
+        case "ev_mode": return "var(--color--primary)";
+        case "bat_mode": return "var(--color--warning)";
+        case "min_soc_bat_mode": return "var(--color--success)";
+        default: return "var(--color--primary)";
+      }
+    },
     svgComponents() {
       var components = [];
       // add grid component
@@ -752,6 +769,26 @@ export default {
                   :width="svgIconWidth"
                 />
               </g>
+              <g v-if="component.id === 'battery'">
+                <rect
+                  :x="svgSize.circleRadius * -0.4"
+                  :y="-svgSize.circleRadius * -0.15"
+                  :width="svgSize.circleRadius * 1.4"
+                  :height="svgSize.circleRadius * 0.8"
+                  :rx="svgSize.circleRadius * 0.3"
+                  :ry="svgSize.circleRadius * 0.55"
+                  :fill="batteryModeColor"
+                  class="battery-mode-button"
+                  opacity="1"
+                />
+                <image
+                  :href="batteryModeIcon"
+                  :x="svgSize.circleRadius * -0.02"
+                  :y="-svgSize.circleRadius * -0.20"
+                  :height="svgSize.circleRadius * 0.7"
+                  :width="svgSize.circleRadius * 0.7"
+                />
+              </g>
             </g>
           </g>
         </svg>
@@ -900,6 +937,10 @@ text .fill-dark {
 
 .battery circle:not(.soc) {
   fill: var(--color--warning-90);
+}
+
+.battery-mode-button {
+  stroke: black !important;
 }
 
 .home text {
