@@ -43,24 +43,24 @@ export default {
   emits: ["update:modelValue"],
   data() {
     return {
-  mqttStore: useMqttStore(),
-  batteryModes: [
-    {
-      value: 'ev_mode',
-      label: 'Fahrzeuge',
-      color: 'primary',
-    },
-    {
-      value: 'bat_mode',
-      label: 'Speicher',
-      color: 'primary',
-    },
-    {
-      value: 'min_soc_bat_mode',
-      label: 'Mindest-SoC',
-      color: 'primary',
-    },
-  ]
+      mqttStore: useMqttStore(),
+      batteryModes: [
+        {
+          value: 'ev_mode',
+          label: 'Fahrzeuge',
+          color: 'primary',
+        },
+        {
+          value: 'bat_mode',
+          label: 'Speicher',
+          color: 'primary',
+        },
+        {
+          value: 'min_soc_bat_mode',
+          label: 'Mindest-SoC',
+          color: 'primary',
+        },
+      ]
     };
   },
   methods: {
