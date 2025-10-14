@@ -148,30 +148,20 @@ def setup_logging() -> None:
     steuve_control_command_log.addHandler(steuve_control_command_file_handler)
 
     # Garbage collector logger
-    garbage_collector_queue = queue.Queue()
-    garbage_collector_queue_handler = logging.handlers.QueueHandler(garbage_collector_queue)
     garbage_collector_log = logging.getLogger("garbage_collector")
     garbage_collector_log.propagate = False
     garbage_collector_file_handler = RotatingFileHandler(
         RAMDISK_PATH + 'garbage_collector.log', maxBytes=mb_to_bytes(0.5), backupCount=1)
     garbage_collector_file_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
-    garbage_collector_log.addHandler(garbage_collector_queue_handler)
-    garbage_collector_listener = logging.handlers.QueueListener(garbage_collector_queue,
-                                                                garbage_collector_file_handler)
-    garbage_collector_listener.start()
+    garbage_collector_log.addHandler(garbage_collector_file_handler)
 
     # tracemalloc logger
-    tracemalloc_queue = queue.Queue()
-    tracemalloc_queue_handler = logging.handlers.QueueHandler(tracemalloc_queue)
     tracemalloc_log = logging.getLogger("tracemalloc")
     tracemalloc_log.propagate = False
     tracemalloc_file_handler = RotatingFileHandler(
         RAMDISK_PATH + 'tracemalloc.log', maxBytes=mb_to_bytes(0.5), backupCount=1)
     tracemalloc_file_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
-    tracemalloc_log.addHandler(tracemalloc_queue_handler)
-    tracemalloc_listener = logging.handlers.QueueListener(tracemalloc_queue,
-                                                          tracemalloc_file_handler)
-    tracemalloc_listener.start()
+    tracemalloc_log.addHandler(tracemalloc_file_handler)
 
     # Smarthome logger
     smarthome_log_handler = RotatingFileHandler(RAMDISK_PATH + 'smarthome.log', maxBytes=mb_to_bytes(1), backupCount=1)
