@@ -38,13 +38,12 @@ class FroniusProductionCounter(AbstractCounter):
         session = req.get_http_session()
         variant = self.component_config.configuration.variant
         if variant == 0 or variant == 1:
-            counter_state = self.__update_variant_0_1(session)
+            inverter_state = self.__update_variant_0_1(session)
         elif variant == 2:
-            counter_state = self.__update_variant_2(session)
+            inverter_state = self.__update_variant_2(session)
         else:
             raise ValueError("Unbekannte Variante: "+str(variant))
-        counter_state.imported, counter_state.exported = self.sim_counter.sim_count(counter_state.power)
-        self.store.set(counter_state)
+        self.store.set(inverter_state)
 
     def __update_variant_0_1(self, session: Session) -> InverterState:
         variant = self.component_config.configuration.variant
@@ -78,10 +77,11 @@ class FroniusProductionCounter(AbstractCounter):
             power = response_json_id["PowerReal_P_Sum"] * -1
             voltages = [response_json_id["Voltage_AC_Phase_"+str(num)] for num in range(1, 4)]
             currents = [powers[i] / voltages[i] for i in range(0, 3)]
-
+            _, exported = self.sim_counter.sim_count(power)
         return InverterState(
             currents=currents,
-            power=power
+            power=power,
+            exported=exported
         )
 
     def __update_variant_2(self, session: Session) -> InverterState:
@@ -102,10 +102,11 @@ class FroniusProductionCounter(AbstractCounter):
             power = response_json_id["SMARTMETER_POWERACTIVE_MEAN_SUM_F64"]
             voltages = [response_json_id["SMARTMETER_VOLTAGE_0"+str(num)+"_F64"] for num in range(1, 4)]
             currents = [powers[i] / voltages[i] for i in range(0, 3)]
-
+            _, exported = self.sim_counter.sim_count(power)
         return InverterState(
             currents=currents,
-            power=power
+            power=power,
+            exported=exported
         )
 
 

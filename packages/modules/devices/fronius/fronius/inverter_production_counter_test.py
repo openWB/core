@@ -5,8 +5,8 @@ import requests_mock
 
 from dataclass_utils import dataclass_from_dict
 from helpermodules import compatibility
-from modules.common.store._api import LoggingValueStore
 from modules.conftest import SAMPLE_IP
+from modules.common.component_state import InverterState
 from modules.devices.fronius.fronius import inverter_production_counter
 from modules.devices.fronius.fronius.config import FroniusConfiguration, FroniusProductionCounterSetup
 from test_utils.mock_ramdisk import MockRamdisk
@@ -18,29 +18,34 @@ def mock_ramdisk(monkeypatch):
     return MockRamdisk(monkeypatch)
 
 
-def test_update_external_var2(monkeypatch, requests_mock: requests_mock.Mocker, mock_ramdisk, mock_simcount):
+def test_production_counter(monkeypatch, requests_mock: requests_mock.mock):
+    mock_inverter_value_store = Mock()
+    monkeypatch.setattr(inverter_production_counter, "get_inverter_value_store",
+                        Mock(return_value=mock_inverter_value_store))
+    requests_mock.get(f"http://{SAMPLE_IP}/solar_api/v1/GetMeterRealtimeData.cgi", json=json_ext_var2)
+    mock_inverter_value_store = Mock()
+    monkeypatch.setattr(inverter_production_counter, "get_inverter_value_store",
+                        Mock(return_value=mock_inverter_value_store))
+
     component_config = FroniusProductionCounterSetup()
     component_config.configuration.variant = 2
     device_config = FroniusConfiguration()
     device_config.ip_address = SAMPLE_IP
     component_config.configuration.meter_id = 1
-    inverter = inverter_production_counter.FroniusProductionCounter(component_config, device_config=dataclass_from_dict(
+    i = inverter_production_counter.FroniusProductionCounter(component_config, device_config=dataclass_from_dict(
         FroniusConfiguration, device_config), device_id=0)
-    inverter.initialize()
+    i.initialize()
 
-    mock = Mock(return_value=None)
-    monkeypatch.setattr(LoggingValueStore, "set", mock)
-    mock_simcount.return_value = 0, 0
-    requests_mock.get(
-        "http://" + SAMPLE_IP + "/solar_api/v1/GetMeterRealtimeData.cgi",
-        json=json_ext_var2)
+    # execution
+    i.update()
 
-    inverter.update()
+    # evaluation
+    assert vars(mock_inverter_value_store.set.call_args[0][0]) == vars(SAMPLE_INVERTER_STATE)
 
-    # mock.assert_called_once()
-    inverter_state = mock.call_args[0][0]
-    assert inverter_state.currents == [-5.373121093182142, -5.664436188811191, -5.585225225225224]
-    assert inverter_state.power == 3809.4
+
+SAMPLE_INVERTER_STATE = InverterState(power=3809.4,
+                                      currents=[-5.373121093182142, -5.664436188811191, -5.585225225225224],
+                                      exported=200)
 
 
 json_ext_var2 = {
