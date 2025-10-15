@@ -1,10 +1,7 @@
 #!/usr/bin/python3
-import logging
 import sys
 import json
 from pymodbus.client.sync import ModbusTcpClient
-
-log = logging.getLogger(__name__)
 
 # get variables from arguments
 devicenumber = str(sys.argv[1])  # SmartHome device number

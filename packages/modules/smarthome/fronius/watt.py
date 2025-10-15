@@ -30,5 +30,4 @@ try:
 except Exception:
     powerc = 0
 
-with open('/var/www/html/openWB/ramdisk/smarthome_device_ret' + str(devicenumber), 'w') as f1:
-    log.debug('{"power":' + str(power) + ',"powerc":' + str(powerc) + '}')
+log.debug("Device" + str(devicenumber) + '{"power":' + str(power) + ',"powerc":' + str(powerc) + '}')
