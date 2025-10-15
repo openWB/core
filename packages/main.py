@@ -275,6 +275,7 @@ class HandlerAlgorithm:
                 for cp in data.data.cp_data.values():
                     calculate_charge_cost(cp)
             data.data.optional_data.et_get_prices()
+            logger.clear_in_memory_log_handler(None)
         except Exception:
             log.exception("Fehler im Main-Modul")
 
