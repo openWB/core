@@ -8,8 +8,10 @@ from modules.internal_chargepoint_handler.internal_chargepoint_handler_config im
 
 
 class ProPlus(ChargepointModule):
+    NO_DATA_SINCE_BOOT = "Es konnten seit dem Start keine Daten abgefangen werden."
+    NO_CONNECTION_TO_INTERNAL_CP = "Interner Ladepunkt ist nicht erreichbar."
+
     def __init__(self, local_charge_point_num: int,
-                 parent_hostname: str,
                  internal_cp: InternalChargepoint,
                  hierarchy_id: int) -> None:
         self.local_charge_point_num = local_charge_point_num
@@ -18,7 +20,7 @@ class ProPlus(ChargepointModule):
         self.old_chargepoint_state = None
 
         super().__init__(OpenWBPro(configuration=OpenWBProConfiguration(ip_address="192.168.192.50")))
-        super().set_internal_context_handlers(hierarchy_id, internal_cp, parent_hostname)
+        self.set_internal_context_handlers(hierarchy_id, internal_cp)
 
     def get_values(self, phase_switch_cp_active: bool, last_tag: str) -> ChargepointState:
         def store_state(chargepoint_state: ChargepointState) -> None:
@@ -26,22 +28,33 @@ class ProPlus(ChargepointModule):
             self.store.update()
             self.store_internal.set(chargepoint_state)
             self.store_internal.update()
+            self.old_chargepoint_state = chargepoint_state
 
         try:
-            chargepoint_state = super().request_values()
+            chargepoint_state = self.request_values()
             if chargepoint_state is not None and last_tag is not None and last_tag != "":
                 chargepoint_state.rfid = last_tag
-        except (requests.exceptions.ConnectTimeout, requests.exceptions.ConnectionError):
-            raise Exception("Interner Ladepunkt ist nicht erreichbar.")
-
-        if chargepoint_state is None:
-            if self.old_chargepoint_state is None:
-                raise Exception("Keine erfolgreiche Auslesung der Daten seit dem Start möglich.")
-            # bei Fehler, aber Fehlerzähler noch nicht abgelaufen
-            chargepoint_state = self.old_chargepoint_state
-        store_state(chargepoint_state)
-        self.old_chargepoint_state = chargepoint_state
-        return chargepoint_state
+            if chargepoint_state is not None:
+                store_state(chargepoint_state)
+                return chargepoint_state
+            else:
+                store_state(self.old_chargepoint_state)
+                return self.old_chargepoint_state
+        except Exception as e:
+            if self.client_error_context.error_counter_exceeded():
+                chargepoint_state = ChargepointState(plug_state=False, charge_state=False, imported=None,
+                                                     # bei im-/exported None werden keine Werte gepublished
+                                                     exported=None, phases_in_use=0, power=0, currents=[0]*3)
+                store_state(chargepoint_state)
+                if isinstance(e, (requests.exceptions.ConnectTimeout, requests.exceptions.ConnectionError)):
+                    raise Exception(self.NO_CONNECTION_TO_INTERNAL_CP)
+                else:
+                    raise e
+            elif self.old_chargepoint_state is not None:
+                store_state(self.old_chargepoint_state)
+                return self.old_chargepoint_state
+            else:
+                raise Exception(self.NO_DATA_SINCE_BOOT)
 
     def perform_phase_switch(self, phases_to_use: int, duration: int) -> None:
         super().switch_phases(phases_to_use, duration)

@@ -581,10 +581,10 @@ class MigrateData:
             action.configuration.io_device = 0
             # Wenn mindestens ein Kontakt geschlossen ist, wird die Ladung gesperrt. Wenn beide Kontakt
             # offen sind, darf geladen werden.
-            action.configuration.input_pattern = [{"value": 1, "input_matrix": {"21": False, "24": False}},
-                                                  {"value": 0, "input_matrix": {"21": False, "24": True}},
-                                                  {"value": 0, "input_matrix": {"21": True, "24": False}},
-                                                  {"value": 0, "input_matrix": {"21": True, "24": True}}]
+            action.configuration.input_pattern = [{"value": 1, "matrix": {"21": False, "24": False}},
+                                                  {"value": 0, "matrix": {"21": False, "24": True}},
+                                                  {"value": 0, "matrix": {"21": True, "24": False}},
+                                                  {"value": 0, "matrix": {"21": True, "24": True}}]
             Pub().pub('openWB/system/io/0/config', dataclass_utils.asdict(AddOn()))
             Pub().pub('openWB/io/action/0/config', dataclass_utils.asdict(action))
 

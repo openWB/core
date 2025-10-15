@@ -436,7 +436,7 @@ class SetData:
                     "openWB/set/chargepoint/get/power" in msg.topic or
                     "openWB/set/chargepoint/get/daily_imported" in msg.topic or
                     "openWB/set/chargepoint/get/daily_exported" in msg.topic):
-                self._validate_value(msg, float, [(0, float("inf"))])
+                self._validate_value(msg, float)
             elif re.search("chargepoint/[0-9]+/config/template$", msg.topic) is not None:
                 self._validate_value(msg, int, pub_json=True)
             elif "template" in msg.topic:
@@ -451,9 +451,9 @@ class SetData:
                 elif ("/set/current" in msg.topic or
                       "/set/current_prev" in msg.topic):
                     if hardware_configuration.get_hardware_configuration_setting("dc_charging"):
-                        self._validate_value(msg, float, [(0, 0), (6, 32), (0, 450)])
+                        self._validate_value(msg, float, [(float("-inf"), 0), (0, 0), (6, 32), (0, 450)])
                     else:
-                        self._validate_value(msg, float, [(6, 32), (0, 0)])
+                        self._validate_value(msg, float, [(float("-inf"), 0), (6, 32), (0, 0)])
                 elif ("/set/energy_to_charge" in msg.topic or
                         "/set/required_power" in msg.topic):
                     self._validate_value(msg, float, [(0, float("inf"))])
@@ -485,7 +485,8 @@ class SetData:
                         self._validate_value(msg, float, [(0, 0), (6, 32), (0, 450)])
                     else:
                         self._validate_value(msg, float, [(6, 32), (0, 0)])
-                elif "/control_parameter/phases" in msg.topic:
+                elif ("/control_parameter/phases" in msg.topic or
+                      "/control_parameter/template_phases" in msg.topic):
                     self._validate_value(msg, int, [(0, 3)])
                 elif "/control_parameter/failed_phase_switches" in msg.topic:
                     self._validate_value(msg, int, [(0, 4)])
@@ -528,14 +529,18 @@ class SetData:
             self._validate_value(msg, float, [(40, 60)])
         elif ("/get/daily_imported" in msg.topic or
                 "/get/daily_exported" in msg.topic or
-                "/get/power" in msg.topic or
                 "/get/charging_current" in msg.topic or
                 "/get/charging_power" in msg.topic or
                 "/get/charging_voltage" in msg.topic or
+                "/get/max_charge_power" in msg.topic or
                 "/get/imported" in msg.topic or
                 "/get/exported" in msg.topic or
                 "/get/soc_timestamp" in msg.topic):
             self._validate_value(msg, float, [(0, float("inf"))])
+        elif "/get/max_discharge_power" in msg.topic:
+            self._validate_value(msg, float, [(float("-inf"), 0)])
+        elif "/get/power" in msg.topic:
+            self._validate_value(msg, float)
         elif "/get/phases_in_use" in msg.topic:
             self._validate_value(msg, int, [(0, 3)])
         elif ("/get/charge_state" in msg.topic or
@@ -545,7 +550,8 @@ class SetData:
             self._validate_value(msg, int, [(0, 2)])
         elif ("/get/evse_current" in msg.topic or
               "/get/max_evse_current" in msg.topic):
-            self._validate_value(msg, float, [(0, 0), (6, 32), (600, 3200)])
+            # AC-EVSE: 0, 6-32, 600-3200, DC-EVSE 0-500
+            self._validate_value(msg, float, [(0, 3200)])
         elif ("/get/version" in msg.topic or
               "/get/current_branch" in msg.topic or
               "/get/current_commit" in msg.topic):
@@ -558,7 +564,8 @@ class SetData:
                 "/get/heartbeat" in msg.topic or
                 "/get/rfid" in msg.topic or
                 "/get/vehicle_id" in msg.topic or
-                "/get/serial_number" in msg.topic):
+                "/get/serial_number" in msg.topic or
+                "/get/evse_signaling" in msg.topic):
             self._validate_value(msg, str)
         elif ("/get/soc" in msg.topic):
             self._validate_value(msg, float, [(0, 100)])
@@ -712,7 +719,7 @@ class SetData:
             elif "openWB/set/general/chargemode_config/pv_charging/switch_off_threshold" in msg.topic:
                 self._validate_value(msg, float)
             elif "openWB/set/general/chargemode_config/phase_switch_delay" in msg.topic:
-                self._validate_value(msg, int, [(5, 20)])
+                self._validate_value(msg, int, [(5, 60)])
             elif "openWB/set/general/chargemode_config/pv_charging/control_range" in msg.topic:
                 self._validate_value(msg, int, collection=list)
             elif "openWB/set/general/chargemode_config/pv_charging/min_bat_soc" in msg.topic:

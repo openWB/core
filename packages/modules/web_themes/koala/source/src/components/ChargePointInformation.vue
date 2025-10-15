@@ -4,7 +4,7 @@
     :items="chargePointIds"
   >
     <template #item="{ item }">
-      <ChargePointCard :charge-point-id="item" />
+      <ChargePointCard :charge-point-id="item" full-height />
     </template>
   </BaseCarousel>
 
@@ -12,29 +12,45 @@
     v-else
     :items="chargePointIds"
     :row-data="tableRowData"
-    :column-config="isMobile ? tableColumnsMobile : columnConfigDesktop"
+    :column-config="compactTable ? tableColumnsCompact : columnConfig"
+    :dense="compactTable"
+    :square="compactTable"
     :search-input-visible="searchInputVisible"
-    :table-height="isMobile ? '35vh' : '45vh'"
+    :table-height="compactTable ? '35vh' : '45vh'"
     v-model:filter="filter"
     :columns-to-search="['vehicle', 'name']"
-    :row-expandable="isMobile"
+    :row-expandable="compactTable"
     @row-click="onRowClick"
   >
-    <!-- desktop view table body slots -->
+    <!-- full view table body slots -->
+    <template #body-cell-name="slotProps">
+      <q-td :class="[`text-${slotProps.col.align}`, 'max-width-0']">
+        <div class="ellipsis" :title="slotProps.row.name">
+          {{ slotProps.row.name }}
+        </div>
+      </q-td>
+    </template>
+    <template #body-cell-vehicle="slotProps">
+      <q-td :class="[`text-${slotProps.col.align}`, 'max-width-0']">
+        <div class="ellipsis" :title="slotProps.row.vehicle">
+          {{ slotProps.row.vehicle }}
+        </div>
+      </q-td>
+    </template>
     <template #body-cell-plugged="slotProps">
-      <q-td :class="`text-${slotProps.col.align}`">
+      <q-td auto-width :class="`text-${slotProps.col.align}`">
         <ChargePointStateIcon :charge-point-id="slotProps.row.id" />
       </q-td>
     </template>
 
     <template #body-cell-chargeMode="slotProps">
-      <q-td :class="`text-${slotProps.col.align}`">
+      <q-td auto-width :class="`text-${slotProps.col.align}`">
         <ChargePointMode :charge-point-id="slotProps.row.id" />
       </q-td>
     </template>
 
     <template #body-cell-timeCharging="slotProps">
-      <q-td :class="`text-${slotProps.col.align}`">
+      <q-td auto-width :class="`text-${slotProps.col.align}`">
         <ChargePointTimeCharging
           :charge-point-id="slotProps.row.id"
           :readonly="true"
@@ -45,27 +61,41 @@
     </template>
 
     <template #body-cell-powerColumn="slotProps">
-      <q-td :class="`text-${slotProps.col.align}`">
+      <q-td auto-width :class="`text-${slotProps.col.align}`">
         <ChargePointPowerData
           :power="slotProps.row.power"
           :phase-number="slotProps.row.phaseNumber"
           :current="slotProps.row.current"
-          :column-display-format="isMobile"
+          :column-display-format="isSmallScreen"
         />
       </q-td>
     </template>
-    <!-- mobile view table body slots -->
-    <!-- mobile view chargepoint name and vehicle name displayed in one field -->
+    <template #body-cell-charged="slotProps">
+      <q-td auto-width :class="`text-${slotProps.col.align}`">
+        {{ slotProps.row.charged }}
+      </q-td>
+    </template>
+    <template #body-cell-soc="slotProps">
+      <q-td auto-width :class="`text-${slotProps.col.align}`">
+        {{ slotProps.row.soc }}
+      </q-td>
+    </template>
+    <!-- compact view table body slots -->
+    <!-- compact view charge point name and vehicle name displayed in one field -->
     <template #body-cell-nameAndVehicle="slotProps">
-      <q-td :class="`text-${slotProps.col.align}`">
-        {{ slotProps.row.name }}<br />
-        <span class="text-caption">{{ slotProps.row.vehicle }}</span>
+      <q-td :class="[`text-${slotProps.col.align}`, 'max-width-0']">
+        <div class="ellipsis" :title="slotProps.row.name">
+          {{ slotProps.row.name }}
+        </div>
+        <div class="ellipsis text-caption" :title="slotProps.row.vehicle">
+          {{ slotProps.row.vehicle }}
+        </div>
       </q-td>
     </template>
 
-    <!-- mobile view chargepoint chargemode, plug status and time charging displayed in one field -->
+    <!-- compact view charge point charge mode, plug status and time charging displayed in one field -->
     <template #body-cell-modePluggedTimeCharging="slotProps">
-      <q-td :class="`text-${slotProps.col.align}`">
+      <q-td auto-width :class="`text-${slotProps.col.align}`">
         <div class="items-center">
           <ChargePointMode :charge-point-id="slotProps.row.id" />
           <ChargePointStateIcon :charge-point-id="slotProps.row.id" />
@@ -83,7 +113,7 @@
     <template #row-expand="slotProps">
       <div class="q-pa-xs column q-gutter-y-xs">
         <div
-          v-for="column in expansionColumnsMobile"
+          v-for="column in expansionColumnsCompact"
           :key="column.field"
           class="row items-start"
         >
@@ -103,34 +133,22 @@
     v-model="modalChargePointCardVisible"
     transition-show="fade"
     transition-hide="fade"
+    :maximized="isSmallScreen"
+    :full-height="isSmallScreen"
+    :full-width="isSmallScreen"
     :backdrop-filter="$q.screen.width < 385 ? '' : 'blur(4px)'"
   >
-    <div class="dialog-content">
-      <ChargePointCard
-        v-if="selectedChargePointId !== null"
-        :charge-point-id="selectedChargePointId"
-      >
-        <template #card-footer>
-          <div class="card-footer">
-            <q-btn
-              color="primary"
-              flat
-              no-caps
-              v-close-popup
-              class="close-button"
-              size="md"
-              >Schließen</q-btn
-            >
-          </div>
-        </template>
-      </ChargePointCard>
-    </div>
+    <ChargePointCard
+      v-if="selectedChargePointId !== null"
+      :charge-point-id="selectedChargePointId"
+      :close-button="true"
+    />
   </q-dialog>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { Platform } from 'quasar';
+import { Screen } from 'quasar';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import { useChargeModes } from 'src/composables/useChargeModes';
 import BaseCarousel from 'src/components/BaseCarousel.vue';
@@ -154,7 +172,8 @@ const cardViewBreakpoint = computed(
 const searchInputVisible = computed(
   () => mqttStore.themeConfiguration?.chargePoint_table_search_input_field,
 );
-const isMobile = computed(() => Platform.is.mobile);
+const isSmallScreen = computed(() => Screen.lt.sm);
+const compactTable = computed(() => Screen.lt.md);
 const selectedChargePointId = ref<number | null>(null);
 const modalChargePointCardVisible = ref(false);
 const filter = ref('');
@@ -202,7 +221,7 @@ const tableRowData = computed<(id: number) => ChargePointRow>(() => {
   };
 });
 
-const columnConfigDesktop: ColumnConfiguration[] = [
+const columnConfig: ColumnConfiguration[] = [
   { field: 'name', label: 'Ladepunkt' },
   { field: 'vehicle', label: 'Fahrzeug' },
   { field: 'plugged', label: 'Status', align: 'center' },
@@ -213,7 +232,7 @@ const columnConfigDesktop: ColumnConfiguration[] = [
   { field: 'soc', label: 'Ladestand', align: 'right' },
 ];
 
-const columnConfigMobile: ColumnConfiguration[] = [
+const columnConfigCompact: ColumnConfiguration[] = [
   { field: 'nameAndVehicle', label: 'Ladepunkt' },
   { field: 'modePluggedTimeCharging', label: 'Lademodus', align: 'center' },
   {
@@ -225,10 +244,10 @@ const columnConfigMobile: ColumnConfiguration[] = [
   { field: 'soc', label: 'Ladestand', align: 'right', expandField: true },
 ];
 
-const tableColumnsMobile = columnConfigMobile.filter(
+const tableColumnsCompact = columnConfigCompact.filter(
   (column) => !column.expandField,
 );
-const expansionColumnsMobile = columnConfigMobile.filter(
+const expansionColumnsCompact = columnConfigCompact.filter(
   (column) => column.expandField,
 );
 
@@ -238,21 +257,8 @@ const onRowClick = (row: ChargePointRow) => {
 };
 </script>
 
-<style scoped>
-.dialog-content {
-  width: auto;
-  max-width: 24em;
-}
-
-.close-button {
-  position: absolute;
-  bottom: 0.4em;
-  right: 0.4em;
-  z-index: 1;
-  background: transparent;
-}
-
-.card-footer {
-  height: 1.9em;
+<style scoped lang="scss">
+.max-width-0 {
+  max-width: 0;
 }
 </style>

@@ -1,15 +1,17 @@
 <template>
   <div
     :class="[
-      'cp-power items-center q-gutter-xs',
-      columnDisplayFormat ? 'column' : 'row inline',
+      'text-no-wrap items-center',
+      columnDisplayFormat ? 'column' : 'row inline no-wrap',
     ]"
   >
     <span>{{ power }}</span>
-    <q-badge rounded color="primary" :label="phaseNumber">
-      <q-tooltip>Phasenanzahl</q-tooltip>
-    </q-badge>
-    <span>{{ current }}</span>
+    <div :class="{ 'q-ml-xs': !columnDisplayFormat }">
+      <q-badge rounded color="primary" :label="phaseNumber" class="q-mr-xs">
+        <q-tooltip>Phasenanzahl</q-tooltip>
+      </q-badge>
+      <span>{{ current }}</span>
+    </div>
   </div>
 </template>
 
@@ -21,9 +23,3 @@ defineProps<{
   columnDisplayFormat?: boolean;
 }>();
 </script>
-
-<style scoped>
-.cp-power {
-  white-space: nowrap;
-}
-</style>

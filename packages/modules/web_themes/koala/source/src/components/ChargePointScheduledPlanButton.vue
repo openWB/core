@@ -46,6 +46,13 @@
           />
           <div v-if="plan.limit.selected === 'soc'">
             {{ plan.limit.soc_scheduled }}%
+            <q-icon
+              :name="
+                plan.bidi_charging_enabled ? 'sync_alt' : 'arrow_right_alt'
+              "
+              size="sm"
+            />
+            {{ plan.limit.soc_limit }}%
           </div>
           <div v-if="plan.limit.selected === 'amount'">
             {{ plan.limit.amount ? plan.limit.amount / 1000 : '' }}kWh
@@ -133,25 +140,22 @@ const formattedDate = computed(() => {
 });
 </script>
 
-<style scoped>
-.full-width {
-  width: 100%;
-}
+<style scoped lang="scss">
 .plan-name {
   font-weight: bold;
 }
+
 .plan-details {
   display: flex;
   justify-content: center;
 }
+
 .plan-details > div {
   display: flex;
   align-items: center;
 }
+
 .plan-details > div:not(:last-child) {
-  margin-right: 0.5em;
-}
-body.mobile .height {
-  height: 2.5em;
+  margin-right: #{map-get($space-sm, x)};
 }
 </style>

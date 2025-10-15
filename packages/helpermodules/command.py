@@ -256,15 +256,7 @@ class Command:
             Pub().pub(f'openWB/chargepoint/{new_id}/set/manual_lock', False)
             {Pub().pub(f"openWB/chargepoint/{new_id}/get/"+k, v) for (k, v) in asdict(chargepoint.Get()).items()}
             charge_template = SubData.ev_charge_template_data[f"ct{SubData.ev_data['ev0'].data.charge_template}"]
-            for time_plan in charge_template.data.time_charging.plans:
-                Pub().pub(f'openWB/chargepoint/{new_id}/set/charge_template/time_charging/plans',
-                          dataclass_utils.asdict(time_plan))
-            for scheduled_plan in charge_template.data.chargemode.scheduled_charging.plans:
-                Pub().pub(f'openWB/chargepoint/{new_id}/set/charge_template/chargemode/scheduled_charging/plans',
-                          scheduled_plan)
             charge_template = dataclass_utils.asdict(charge_template.data)
-            charge_template["chargemode"]["scheduled_charging"]["plans"].clear()
-            charge_template["time_charging"]["plans"].clear()
             Pub().pub(f'openWB/chargepoint/{new_id}/set/charge_template', charge_template)
             self.max_id_hierarchy = self.max_id_hierarchy + 1
             Pub().pub("openWB/set/command/max_id/hierarchy", self.max_id_hierarchy)
@@ -347,7 +339,7 @@ class Command:
         """ löscht ein Ladepunkt.
         """
         if self.max_id_hierarchy < payload["data"]["id"]:
-            log.error(
+            pub_user_message(
                 payload, connection_id,
                 f'Die ID \'{payload["data"]["id"]}\' ist größer als die maximal vergebene '
                 f'ID \'{self.max_id_hierarchy}\'.', MessageType.ERROR)
@@ -374,7 +366,7 @@ class Command:
                   self.max_id_chargepoint_template)
         # if copying a template, copy autolock plans
         if "data" in payload and "copy" in payload["data"]:
-            for _, plan in data.data.cp_template_data[f'cpt{payload["data"]["copy"]}'].data.autolock.plans.items():
+            for plan in data.data.cp_template_data[f'cpt{payload["data"]["copy"]}'].data.autolock.plans:
                 new_plan = asdict(plan).copy()
                 new_plan["id"] = self.max_id_autolock_plan + 1
                 Pub().pub(f'openWB/set/chargepoint/template/{new_id}/autolock/{new_plan["id"]}', new_plan)
@@ -452,40 +444,27 @@ class Command:
     def addChargeTemplate(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neues Lade-Profil erstellt werden soll.
         """
+        new_id = self.max_id_charge_template + 1
+        self.max_id_charge_template = new_id
         # check if "payload" contains "data.copy"
         if "data" in payload and "copy" in payload["data"]:
-            new_charge_template = asdict(data.data.ev_charge_template_data[f'ct{payload["data"]["copy"]}'].data).copy()
-            new_charge_template["chargemode"]["scheduled_charging"].pop("plans")
-            new_charge_template["time_charging"].pop("plans")
-            new_charge_template["name"] = f'Kopie von {new_charge_template["name"]}'
-        else:
-            new_charge_template = get_new_charge_template()
-        new_id = self.max_id_charge_template + 1
-        new_charge_template["id"] = new_id
-        Pub().pub("openWB/set/vehicle/template/charge_template/" +
-                  str(new_id), new_charge_template)
-        self.max_id_charge_template = new_id
-        Pub().pub("openWB/set/command/max_id/charge_template", new_id)
-        # if copying a template, also copy schedule plans and time charging plans
-        if "data" in payload and "copy" in payload["data"]:
-            for _, plan in (data.data.ev_charge_template_data[f'ct{payload["data"]["copy"]}']
-                            .data.chargemode.scheduled_charging.plans.items()):
-                new_plan = asdict(plan).copy()
-                new_plan["id"] = self.max_id_charge_template_scheduled_plan + 1
-                Pub().pub(f'openWB/set/vehicle/template/charge_template/{new_id}/'
-                          f'chargemode/scheduled_charging/plans/{new_plan["id"]}',
-                          new_plan)
+            new_charge_template = copy.deepcopy(data.data.ev_charge_template_data[f'ct{payload["data"]["copy"]}'].data)
+            new_charge_template.name = f'Kopie von {new_charge_template.name}'
+            for plan in new_charge_template.chargemode.scheduled_charging.plans:
+                plan.id = self.max_id_charge_template_scheduled_plan + 1
                 self.max_id_charge_template_scheduled_plan += 1
             Pub().pub("openWB/set/command/max_id/charge_template_scheduled_plan", new_id)
-            for _, plan in (data.data.ev_charge_template_data[f'ct{payload["data"]["copy"]}']
-                            .data.time_charging.plans.items()):
-                new_plan = asdict(plan).copy()
-                new_plan["id"] = self.max_id_charge_template_time_charging_plan + 1
-                Pub().pub(f'openWB/set/vehicle/template/charge_template/{new_id}/'
-                          f'time_charging/plans/{new_plan["id"]}',
-                          new_plan)
+            for plan in new_charge_template.time_charging.plans:
+                plan.id = self.max_id_charge_template_time_charging_plan + 1
                 self.max_id_charge_template_time_charging_plan += 1
             Pub().pub("openWB/set/command/max_id/charge_template_time_charging_plan", new_id)
+            new_charge_template = asdict(new_charge_template)
+        else:
+            new_charge_template = get_new_charge_template()
+        new_charge_template["id"] = new_id
+
+        Pub().pub("openWB/set/command/max_id/charge_template", new_id)
+        Pub().pub(f"openWB/set/vehicle/template/charge_template/{new_id}", new_charge_template)
         pub_user_message(payload, connection_id,
                          f'Neues Lade-Profil mit ID \'{new_id}\' hinzugefügt.',
                          MessageType.SUCCESS)
@@ -669,8 +648,9 @@ class Command:
         else:
             new_ev_template = dataclass_utils.asdict(EvTemplateData())
         new_id = self.max_id_ev_template + 1
-        Pub().pub(f'openWB/set/vehicle/template/ev_template/{new_id}', new_ev_template)
+        new_ev_template["id"] = new_id
         self.max_id_ev_template = new_id
+        Pub().pub(f'openWB/set/vehicle/template/ev_template/{new_id}', new_ev_template)
         Pub().pub("openWB/set/command/max_id/ev_template", new_id)
         pub_user_message(
             payload, connection_id,
@@ -839,6 +819,16 @@ class Command:
                 Pub().pub("openWB/system/update_in_progress", False)
                 return
         parent_file = Path(__file__).resolve().parents[2]
+        if not SubData.general_data.data.extern and SubData.system_data["system"].data["secondary_auto_update"]:
+            for cp in SubData.cp_data.values():
+                # if chargepoint is external_openwb and not the second CP of duo and version is Release
+                if (
+                    cp.chargepoint.chargepoint_module.config.type == 'external_openwb' and
+                    cp.chargepoint.chargepoint_module.config.configuration.duo_num == 0 and
+                    cp.chargepoint.data.get.current_branch == "Release"
+                ):
+                    time.sleep(2)
+                    self.secondaryChargepointUpdate({"data": {"chargepoint": f"cp{cp.chargepoint.num}"}})
         if "branch" in payload["data"] and "tag" in payload["data"]:
             pub_user_message(
                 payload, connection_id,
@@ -853,16 +843,6 @@ class Command:
             run_command([
                 str(parent_file / "runs" / "update_self.sh"),
                 SubData.system_data["system"].data["current_branch"]])
-        if not SubData.general_data.data.extern and SubData.system_data["system"].data["secondary_auto_update"]:
-            for cp in SubData.cp_data.values():
-                # if chargepoint is external_openwb and not the second CP of duo and version is Release
-                if (
-                    cp.chargepoint.chargepoint_module.config.type == 'external_openwb' and
-                    cp.chargepoint.chargepoint_module.config.configuration.duo_num == 0 and
-                    cp.chargepoint.data.get.current_branch == "Release"
-                ):
-                    time.sleep(2)
-                    self.secondaryChargepointUpdate({"data": {"chargepoint": f"cp{cp.chargepoint.num}"}})
 
     def systemFetchVersions(self, connection_id: str, payload: dict) -> None:
         log.info("Fetch versions requested")
@@ -872,7 +852,7 @@ class Command:
         pub_user_message(payload, connection_id, "Versionsliste erfolgreich aktualisiert.", MessageType.SUCCESS)
 
     def createBackup(self, connection_id: str, payload: dict) -> None:
-        pub_user_message(payload, connection_id, "Backup wird erstellt...", MessageType.INFO)
+        pub_user_message(payload, connection_id, "Sicherung wird erstellt...", MessageType.INFO)
         parent_file = Path(__file__).resolve().parents[2]
         result = run_command(
             [str(parent_file / "runs" / "backup.sh"),
@@ -880,16 +860,16 @@ class Command:
         file_name = result.rstrip('\n')
         file_link = "/openWB/data/backup/" + file_name
         pub_user_message(payload, connection_id,
-                         "Backup erfolgreich erstellt.<br />"
+                         "Sicherung erfolgreich erstellt.<br />"
                          f'Jetzt <a href="{file_link}" target="_blank">herunterladen</a>.', MessageType.SUCCESS)
 
     def createCloudBackup(self, connection_id: str, payload: dict) -> None:
         if SubData.system_data["system"].backup_cloud is not None:
-            pub_user_message(payload, connection_id, ("Backup wird erstellt. Dieser Vorgang kann je nach Umfang der "
+            pub_user_message(payload, connection_id, ("Sicherung wird erstellt. Dieser Vorgang kann je nach Umfang der "
                              "Logdaten und Upload-Geschwindigkeit des Cloud-Dienstes einige Zeit in Anspruch nehmen."),
                              MessageType.INFO)
             SubData.system_data["system"].create_backup_and_send_to_cloud()
-            pub_user_message(payload, connection_id, "Backup erfolgreich erstellt.<br />", MessageType.SUCCESS)
+            pub_user_message(payload, connection_id, "Sicherung erfolgreich erstellt.<br />", MessageType.SUCCESS)
         else:
             pub_user_message(payload, connection_id,
                              "Es ist keine Backup-Cloud konfiguriert.<br />", MessageType.WARNING)
@@ -963,16 +943,17 @@ class ErrorHandlingContext:
         return None
 
     def __exit__(self, exception_type, exception, exception_traceback) -> bool:
-        if isinstance(exception, Exception):
+        if isinstance(exception, subprocess.CalledProcessError):
+            pub_user_message(self.payload, self.connection_id,
+                             (f'Fehler-Status: {exception.returncode}<br />Meldung: '
+                              f'{exception.stderr if exception.stderr else ""} '
+                              f'{exception.output if exception.output else ""}'),
+                             MessageType.ERROR)
+            return True
+        elif isinstance(exception, Exception):
             pub_user_message(self.payload, self.connection_id,
                              f'Es ist ein interner Fehler aufgetreten: {exception}', MessageType.ERROR)
             log.error({traceback.format_exc()})
-            return True
-        elif isinstance(exception, subprocess.CalledProcessError):
-            log.debug(exception.stdout)
-            pub_user_message(self.payload, self.connection_id,
-                             f'Fehler-Status: {exception.returncode}<br />Meldung: {exception.stderr}',
-                             MessageType.ERROR)
             return True
         else:
             return False

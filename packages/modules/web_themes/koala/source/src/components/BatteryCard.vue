@@ -1,27 +1,38 @@
 <template>
   <q-card
     ref="cardRef"
-    class="full-height card-width"
-    :class="{ 'battery-sum': props.batteryId === -1 }"
+    class="card-width"
+    :class="{
+      'battery-sum': props.batteryId === -1,
+      'full-height': props.fullHeight,
+    }"
   >
-    <q-card-section>
-      <div class="row text-h6 items-center text-bold justify-between">
+    <q-card-section class="row no-wrap items-center justify-between">
+      <div class="text-h6 text-bold ellipsis" :title="cardTitle">
         {{ cardTitle }}
-        <q-icon
-          class="cursor-pointer"
-          v-if="showSettings"
-          name="settings"
-          size="sm"
-          @click="dialog?.open()"
-        />
       </div>
-      <div class="row q-mt-sm text-subtitle2 justify-between full-width">
-        <div>Leistung:</div>
-        <div class="q-ml-sm">
-          {{ power }}
-        </div>
+      <q-space />
+      <q-btn
+        v-if="showSettings"
+        icon="settings"
+        flat
+        round
+        dense
+        @click="dialog?.open()"
+      />
+    </q-card-section>
+    <q-separator class="q-mt-sm" />
+    <q-card-section
+      class="row q-mt-sm text-subtitle2 justify-between full-width"
+    >
+      <div>Leistung:</div>
+      <div class="q-ml-sm">
+        {{ power }}
       </div>
-      <div
+    </q-card-section>
+    <div v-if="showSettings">
+      <q-separator inset class="q-mt-sm" />
+      <q-card-section
         v-if="showSettings"
         class="row q-mt-md justify-between text-subtitle2"
       >
@@ -33,10 +44,15 @@
             class="q-mr-sm"
             color="primary"
           />
-          {{ batteryMode.label }}
+          <div>
+            {{ batteryMode.label }}
+          </div>
         </div>
-      </div>
-      <div class="text-subtitle1 text-weight-bold q-mt-md">Heute:</div>
+      </q-card-section>
+    </div>
+    <q-separator inset />
+    <q-card-section>
+      <div class="text-subtitle1 text-weight-bold q-mt-sm">Heute:</div>
       <div class="row q-mt-sm text-subtitle2 justify-between full-width">
         <div>Geladen:</div>
         <div class="q-ml-sm">
@@ -49,32 +65,27 @@
           {{ dailyExportedEnergy }}
         </div>
       </div>
-      <SliderDouble
-        class="q-mt-sm"
-        :current-value="soc"
-        :readonly="true"
-        limit-mode="none"
-      />
+    </q-card-section>
+    <q-separator inset class="q-mt-sm" />
+    <q-card-section>
+      <SliderDouble :current-value="soc" :readonly="true" limit-mode="none" />
     </q-card-section>
   </q-card>
   <BatterySettingsDialog :battery-id="props.batteryId" ref="dialog" />
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, inject } from 'vue';
+import { computed, ref } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import BatterySettingsDialog from './BatterySettingsDialog.vue';
-import { useBatteryModes } from 'src/composables/useBatteryModes.ts';
+import { useBatteryModes } from 'src/composables/useBatteryModes';
 import SliderDouble from './SliderDouble.vue';
 
 const cardRef = ref<{ $el: HTMLElement } | null>(null);
-const setCardWidth = inject<((width: number | undefined) => void) | undefined>(
-  'setCardWidth',
-  undefined,
-);
 
 const props = defineProps<{
   batteryId: number;
+  fullHeight?: boolean;
 }>();
 
 const singleBattery = computed(() => {
@@ -140,15 +151,32 @@ const dailyExportedEnergy = computed(() => {
     '---'
   );
 });
-
-onMounted(() => {
-  const cardWidth = cardRef.value?.$el.clientWidth;
-  setCardWidth?.(cardWidth);
-});
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .card-width {
   width: 22em;
+}
+
+.q-card__section {
+  padding-left: $space-base;
+  padding-right: $space-base;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.q-card__section:first-of-type {
+  padding-top: $space-base;
+  padding-bottom: 0;
+}
+
+.q-card__section:last-of-type {
+  padding-top: 0;
+  padding-bottom: $space-base;
+}
+
+.q-card__section:not(:first-of-type):not(:last-of-type) {
+  padding-top: 0;
+  padding-bottom: 0;
 }
 </style>

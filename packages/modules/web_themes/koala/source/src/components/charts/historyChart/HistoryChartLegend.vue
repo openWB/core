@@ -1,68 +1,127 @@
 <template>
-  <q-scroll-area
-    v-if="chart"
-    :thumb-style="thumbStyle"
-    :bar-style="barStyle"
-    class="custom-legend-container"
-  >
-    <q-list dense class="q-pa-none">
-      <div class="row wrap q-pa-none items-center justify-center">
-        <q-item
-          v-for="(dataset, index) in legendItems"
-          :key="dataset.text || index"
-          clickable
-          dense
-          class="q-py-none"
-          :class="{ 'legend-item-hidden': dataset.hidden }"
-          @click="toggleDataset(dataset.text, dataset.datasetIndex)"
-        >
-          <q-item-section avatar class="q-pr-none">
-            <div
-              class="legend-color-box q-mr-sm"
-              :style="{ backgroundColor: getItemColor(dataset) }"
-            ></div>
-          </q-item-section>
-          <q-item-section>
-            <q-item-label class="text-caption">{{ dataset.text }}</q-item-label>
-          </q-item-section>
-        </q-item>
-      </div>
-    </q-list>
-  </q-scroll-area>
+  <!-- On smaller screens (<md) always show categories -->
+  <HistoryChartLegendCategoriesGroup
+    v-if="$q.screen.lt.md"
+    :categorizedLegendItems="categorizedLegendItems"
+    :toggleDataset="toggleDataset"
+    :getItemColor="getItemColor"
+    :getItemLineType="getItemLineType"
+  />
+
+  <!-- On larger screens: show standard legend if legend not large; otherwise show categories -->
+  <HistoryChartLegendStandard
+    v-else-if="chart && !$q.screen.lt.sm && !legendLarge"
+    :items="legendItems"
+    :toggleDataset="toggleDataset"
+    :getItemColor="getItemColor"
+    :getItemLineType="getItemLineType"
+  />
+
+  <HistoryChartLegendCategoriesGroup
+    v-else
+    :categorizedLegendItems="categorizedLegendItems"
+    :toggleDataset="toggleDataset"
+    :getItemColor="getItemColor"
+    :getItemLineType="getItemLineType"
+  />
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, computed, nextTick } from 'vue';
 import { useLocalDataStore } from 'src/stores/localData-store';
-import { Chart, LegendItem } from 'chart.js';
+import { Chart, ChartDataset, LegendItem } from 'chart.js';
+import type {
+  Category,
+  CategorizedDataset,
+  LegendItemWithCategory,
+} from './history-chart-model';
+import { useMqttStore } from 'src/stores/mqtt-store';
+import { useQuasar } from 'quasar';
+import HistoryChartLegendCategoriesGroup from './HistoryChartLegendCategoriesGroup.vue';
+import HistoryChartLegendStandard from './HistoryChartLegendStandard.vue';
+
+const mqttStore = useMqttStore();
+const $q = useQuasar();
 
 const props = defineProps<{
   chart: Chart | null;
 }>();
 
 const localDataStore = useLocalDataStore();
-const legendItems = ref<LegendItem[]>([]);
+const legendItems = ref<LegendItemWithCategory[]>([]);
+
+const legendLarge = computed(() => {
+  return legendItems.value.length > 20;
+});
+
+const batteryConfigured = computed(() => {
+  return mqttStore.batteryConfigured;
+});
 
 const updateLegendItems = () => {
   if (!props.chart) return;
-  const items =
+  let items =
     props.chart.options.plugins?.legend?.labels?.generateLabels?.(
       props.chart,
     ) || [];
-
-  items.forEach((item) => {
+  if (!batteryConfigured.value) {
+    items = items.filter(
+      (item: LegendItemWithCategory) =>
+        item.text !== 'Speicher ges.' && item.text !== 'Speicher SoC',
+    );
+  }
+  (items as LegendItemWithCategory[]).forEach((item) => {
     if (item.text && localDataStore.isDatasetHidden(item.text)) {
       item.hidden = true;
     }
+    // Inject the category from the dataset
+    const dataset = props.chart?.data.datasets[
+      item.datasetIndex!
+    ] as unknown as CategorizedDataset;
+    item.category = dataset.category;
   });
-  legendItems.value = items;
+  legendItems.value = items as LegendItemWithCategory[];
 };
 
-const getItemColor = (item: LegendItem) => {
-  if (!props.chart || item.datasetIndex === undefined) return '#ccc';
+const categorizedLegendItems = computed(() => {
+  const categories: Record<Category, LegendItemWithCategory[]> = {
+    chargepoint: [],
+    vehicle: [],
+    battery: [],
+    component: [],
+  };
+  for (const item of legendItems.value) {
+    const category = item.category;
+    if (category && categories[category]) {
+      categories[category].push(item);
+    } else {
+      categories.component.push(item);
+    }
+  }
+  // Sort each category's items alphabetically
+  Object.keys(categories).forEach((key) => {
+    categories[key as Category].sort((a, b) =>
+      (a.text || '').localeCompare(b.text || '', undefined, { numeric: true }),
+    );
+  });
+  return categories;
+});
 
+const getItemColor = (item: LegendItem): string => {
+  if (!props.chart || item.datasetIndex === undefined) return '#ccc';
   const dataset = props.chart.data.datasets[item.datasetIndex];
   return (dataset.borderColor as string) || '#ccc';
+};
+
+const getItemLineType = (item: LegendItem) => {
+  if (!props.chart || item.datasetIndex === undefined) return;
+  const dataset = props.chart.data.datasets[
+    item.datasetIndex
+  ] as ChartDataset<'line'>;
+  const borderDash = dataset.borderDash;
+  return Array.isArray(borderDash) && borderDash.length > 0
+    ? 'dashed'
+    : 'solid';
 };
 
 const toggleDataset = (datasetName?: string, datasetIndex?: number) => {
@@ -96,52 +155,11 @@ watch(
   { immediate: true },
 );
 
-const thumbStyle = {
-  borderRadius: '5px',
-  backgroundColor: 'var(--q-primary)',
-  width: '6px',
-  opacity: '1',
-};
-
-const barStyle = {
-  borderRadius: '5px',
-  backgroundColor: 'var(--q-secondary)',
-  width: '6px',
-  opacity: '1',
-};
+watch(
+  () => mqttStore.vehicleList,
+  async () => {
+    await nextTick();
+    updateLegendItems();
+  },
+);
 </script>
-
-<style scoped>
-.custom-legend-container {
-  margin-bottom: 5px;
-  height: 70px;
-  border-radius: 5px;
-  text-align: left;
-  width: 100%;
-}
-
-.legend-color-box {
-  display: inline-block;
-  width: 20px;
-  height: 3px;
-}
-
-.legend-item-hidden {
-  opacity: 0.6 !important;
-  text-decoration: line-through !important;
-}
-
-/* Override the avatar section min-width */
-:deep(.q-item__section--avatar) {
-  min-width: 5px !important;
-  padding-right: 0px !important;
-}
-
-/* For very small screens */
-@media (max-width: 576px) {
-  .legend-color-box {
-    width: 10px;
-    height: 2px;
-  }
-}
-</style>

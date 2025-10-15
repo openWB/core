@@ -35,8 +35,8 @@ def create_vehicle(config: EVCCVehicleSocConfiguration, stub: vehicle_pb2_grpc.V
         vehicle_pb2.NewRequest(
             token=config.sponsor_token,
             type="template",
-            template=config.vehicle_type,
             config=cast(Mapping[str, str], {
+                'template': config.vehicle_type,
                 'User': config.user_id,
                 'Password': config.password,
                 'VIN': config.VIN  # VIN is optional, but must not be None
@@ -69,13 +69,13 @@ def fetch_soc(
         stub = vehicle_pb2_grpc.VehicleStub(channel)
 
         if not evcc_config.vehicle_id:  # create and fetch vehicle id if not included in config
-            create_and_save_vehicle_id(stub, evcc_config, vehicle)
-#            vehicle_to_fetch = create_vehicle(evcc_config, stub)
-#            log.debug("Vehicle client received: " + str(vehicle_to_fetch))
+            vehicle_to_fetch = create_and_save_vehicle_id(stub, evcc_config, vehicle)
+            # vehicle_to_fetch = create_vehicle(evcc_config, stub)
+            # log.debug("Vehicle client received: " + str(vehicle_to_fetch))
 
             # saving vehicle id in config
-#            topic = "openWB/set/vehicle/" + str(vehicle) + "/soc_module/config"
-#            write_vehicle_id_mqtt(topic, vehicle_to_fetch, evcc_config)
+            # topic = "openWB/set/vehicle/" + str(vehicle) + "/soc_module/config"
+            # write_vehicle_id_mqtt(topic, vehicle_to_fetch, evcc_config)
         else:
             log.debug("Vehicle id found in config: " + str(evcc_config.vehicle_id))
             vehicle_to_fetch = evcc_config.vehicle_id

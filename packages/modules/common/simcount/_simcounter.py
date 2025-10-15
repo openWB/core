@@ -10,7 +10,9 @@ class SimCounter:
         self.prefix = "pv2" if prefix == "pv" and component_id != 1 else prefix
         self.data: Optional[SimCounterState] = None
 
-    def sim_count(self, power: float) -> Tuple[float, float]:
+    def sim_count(self, power: float, dc_power: Optional[float] = None) -> Tuple[float, float]:
+        if (self.prefix == "pv" or self.prefix == "pv2") and dc_power is not None and dc_power == 0:
+            power = 0
         self.data = sim_count(power, self.topic, self.data, self.prefix)
         return self.data.imported, self.data.exported
 

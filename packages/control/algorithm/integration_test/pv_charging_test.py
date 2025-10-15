@@ -133,7 +133,7 @@ def test_start_pv_delay(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatch)
     assert data.data.cp_data[
         "cp5"].data.control_parameter.timestamp_switch_on_off == 1652683252.0
     assert data.data.counter_data["counter0"].data.set.raw_power_left == 31975
-    assert data.data.counter_data["counter0"].data.set.surplus_power_left == 10090.0
+    assert data.data.counter_data["counter0"].data.set.surplus_power_left == -690
     assert data.data.counter_data["counter0"].data.set.reserved_surplus == 9000
 
 
@@ -170,7 +170,7 @@ def test_pv_delay_expired(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatc
     assert data.data.cp_data[
         "cp5"].data.control_parameter.timestamp_switch_on_off is None
     assert data.data.counter_data["counter0"].data.set.raw_power_left == 24300
-    assert data.data.counter_data["counter0"].data.set.surplus_power_left == 2415
+    assert data.data.counter_data["counter0"].data.set.surplus_power_left == -690
     assert data.data.counter_data["counter0"].data.set.reserved_surplus == 0
 
 
@@ -184,7 +184,7 @@ cases_limit = [
                   expected_current_cp4=8,
                   expected_current_cp5=8,
                   expected_raw_power_left=34820,
-                  expected_surplus_power_left=6035.0,
+                  expected_surplus_power_left=1090,
                   expected_reserved_surplus=0,
                   expected_released_surplus=0),
     ParamsSurplus(name="reduce current",
@@ -196,7 +196,7 @@ cases_limit = [
                   expected_current_cp4=7.8731884057971016,
                   expected_current_cp5=7.8731884057971016,
                   expected_raw_power_left=24470,
-                  expected_surplus_power_left=0,
+                  expected_surplus_power_left=1090,
                   expected_reserved_surplus=0,
                   expected_released_surplus=0),
     ParamsSurplus(name="switch off delay for two of three charging",
@@ -208,7 +208,7 @@ cases_limit = [
                   expected_current_cp4=6,
                   expected_current_cp5=6,
                   expected_raw_power_left=5635,
-                  expected_surplus_power_left=-16250.0,
+                  expected_surplus_power_left=-8200,
                   expected_reserved_surplus=0,
                   expected_released_surplus=11040),
 ]
@@ -223,9 +223,9 @@ def test_surplus(params: ParamsSurplus, all_cp_pv_charging_3p, all_cp_charging_3
     data.data.counter_data["counter6"].data.set.raw_currents_left = params.raw_currents_left_counter6
     mock_get_component_name_by_id = Mock(return_value="Garage")
     monkeypatch.setattr(loadmanagement, "get_component_name_by_id", mock_get_component_name_by_id)
-    data.data.cp_data["cp3"].data.set.charge_template.data.chargemode.pv_charging.phases_to_use = 1
-    data.data.cp_data["cp4"].data.set.charge_template.data.chargemode.pv_charging.phases_to_use = 1
-    data.data.cp_data["cp5"].data.set.charge_template.data.chargemode.pv_charging.phases_to_use = 1
+    for i in range(3, 6):
+        data.data.cp_data[f"cp{i}"].data.set.charge_template.data.chargemode.pv_charging.phases_to_use = 1
+        data.data.cp_data[f"cp{i}"].data.control_parameter.template_phases = 1
 
     # execution
     Algorithm().calc_current()
@@ -247,7 +247,7 @@ cases_phase_switch = [
                       expected_current_cp4=6,
                       expected_current_cp5=6,
                       expected_raw_power_left=17400,
-                      expected_surplus_power_left=-4485,
+                      expected_surplus_power_left=-690,
                       expected_reserved_surplus=0,
                       expected_released_surplus=0),
     ParamsPhaseSwitch(name="phase switch 1p->3p",
@@ -261,7 +261,7 @@ cases_phase_switch = [
                       expected_current_cp4=6,
                       expected_current_cp5=6,
                       expected_raw_power_left=37520.0,
-                      expected_surplus_power_left=10575.0,
+                      expected_surplus_power_left=3000,
                       expected_reserved_surplus=0,
                       expected_released_surplus=0)
 ]
@@ -276,6 +276,8 @@ def test_phase_switch(all_cp_pv_charging_3p, all_cp_charging_3p, monkeypatch):
         "cp3"].data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
     data.data.cp_data[
         "cp3"].data.control_parameter.timestamp_last_phase_switch = 1652682252
+    for i in range(3, 6):
+        data.data.cp_data[f"cp{i}"].data.control_parameter.template_phases = 0
 
     # execution
     Algorithm().calc_current()
@@ -298,6 +300,8 @@ def test_phase_switch_1p_3p(all_cp_pv_charging_1p, monkeypatch):
     data.data.cp_data["cp3"].data.control_parameter.timestamp_last_phase_switch = 1652682252
     data.data.cp_data["cp4"].data.get.currents = [0, 0, 0]
     data.data.cp_data["cp5"].data.get.currents = [0, 0, 0]
+    for i in range(3, 6):
+        data.data.cp_data[f"cp{i}"].data.control_parameter.template_phases = 0
 
     # execution
     Algorithm().calc_current()

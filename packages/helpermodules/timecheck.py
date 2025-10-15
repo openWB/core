@@ -113,11 +113,8 @@ def check_timeframe(plan: Union[AutolockPlan, TimeChargingPlan]) -> bool:
 
 
 def check_end_time(plan: ScheduledChargingPlan,
-                   chargemode_switch_timestamp: Optional[float],
-                   plan_fulfilled: bool) -> Optional[float]:
+                   chargemode_switch_timestamp: Optional[float]) -> Optional[float]:
     """ prüft, ob der in angegebene Zeitpunkt abzüglich der Dauer jetzt ist.
-    Um etwas Puffer zu haben, werden bei Überschreiten des Zeitpunkts die nachfolgenden 20 Min auch noch als Ladezeit
-    zurückgegeben.
 
     Return
     ------
@@ -154,7 +151,7 @@ def check_end_time(plan: ScheduledChargingPlan,
             remaining_time = end - now
     else:
         raise TypeError(f'Unbekannte Häufigkeit {plan.frequency.selected}')
-    if chargemode_switch_timestamp and (end.timestamp() < chargemode_switch_timestamp or plan_fulfilled):
+    if chargemode_switch_timestamp and end.timestamp() < chargemode_switch_timestamp:
         # Als auf Zielladen umgeschaltet wurde, war der Termin schon vorbei
         return None
     else:

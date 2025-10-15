@@ -1,7 +1,7 @@
 <template>
   <BaseCarousel :items="batteryIds">
     <template #item="{ item }">
-      <BatteryCard :battery-id="item" />
+      <BatteryCard :battery-id="item" full-height />
     </template>
   </BaseCarousel>
 </template>
@@ -17,8 +17,7 @@ const mqttStore = useMqttStore();
 
 const batteryIds = computed(() => {
   let ids = mqttStore.batteryIds;
-  console.log('Battery IDs:' + ids);
-  if (ids.length > 0) {
+  if (ids.length > 1) {
     return [-1].concat(ids); // add overview card if more than one battery
   }
   return ids;

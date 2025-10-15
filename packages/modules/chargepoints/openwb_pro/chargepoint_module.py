@@ -17,6 +17,13 @@ from modules.internal_chargepoint_handler.internal_chargepoint_handler_config im
 log = logging.getLogger(__name__)
 
 
+class EvseSignaling:
+    HLC = "HLC"
+    ISO15118 = "ISO15118"
+    FAKE_HIGHLEVEL = "fake_highlevel"
+    PWM = "PWM"
+
+
 class ChargepointModule(AbstractChargepoint):
     WRONG_CHARGE_STATE = "Lade-Status ist nicht aktiv, aber Strom fließt."
     WRONG_PLUG_STATE = "Ladepunkt ist nicht angesteckt, aber es wird geladen."
@@ -36,13 +43,12 @@ class ChargepointModule(AbstractChargepoint):
                 'http://' + self.config.configuration.ip_address + '/connect.php',
                 data={'heartbeatenabled': '1'})
 
-    def set_internal_context_handlers(self, hierarchy_id: int, internal_cp: InternalChargepoint, parent_hostname: str):
+    def set_internal_context_handlers(self, hierarchy_id: int, internal_cp: InternalChargepoint):
         self.fault_state = FaultState(ComponentInfo(
             self.config.id,
             "Ladepunkt "+str(self.config.id),
             "internal_chargepoint",
-            hierarchy_id=hierarchy_id,
-            parent_hostname=parent_hostname))
+            hierarchy_id=hierarchy_id))
         self.client_error_context = ErrorTimerContext(
             f"openWB/set/internal_chargepoint/{self.config.id}/get/error_timestamp", CP_ERROR, hide_exception=True)
         self.client_error_context.error_timestamp = internal_cp.get.error_timestamp
@@ -57,10 +63,18 @@ class ChargepointModule(AbstractChargepoint):
 
     def get_values(self) -> None:
         with SingleComponentUpdateContext(self.fault_state):
-            chargepoint_state = self.request_values()
-            if chargepoint_state is not None:
-                # bei Fehler, aber Fehlezähler noch nicht abgelaufen, keine Werte mehr publishen.
-                self.store.set(chargepoint_state)
+            try:
+                chargepoint_state = self.request_values()
+                if chargepoint_state is not None:
+                    # bei Fehler, aber Fehlezähler noch nicht abgelaufen, keine Werte mehr publishen.
+                    self.store.set(chargepoint_state)
+            except Exception as e:
+                if self.client_error_context.error_counter_exceeded():
+                    chargepoint_state = ChargepointState(plug_state=False, charge_state=False, imported=None,
+                                                         # bei im-/exported None werden keine Werte gepublished
+                                                         exported=None, phases_in_use=0, power=0, currents=[0]*3)
+                    self.store.set(chargepoint_state)
+                    raise e
 
     def request_values(self) -> ChargepointState:
         with self.client_error_context:
@@ -78,7 +92,8 @@ class ChargepointModule(AbstractChargepoint):
                 phases_in_use=json_rsp["phases_in_use"],
                 vehicle_id=json_rsp["vehicle_id"],
                 evse_current=json_rsp["offered_current"],
-                serial_number=json_rsp["serial"]
+                serial_number=json_rsp["serial"],
+                evse_signaling=json_rsp["evse_signaling"],
             )
 
             if json_rsp.get("voltages"):
@@ -98,19 +113,14 @@ class ChargepointModule(AbstractChargepoint):
                 chargepoint_state.rfid = json_rsp["rfid_tag"]
             if json_rsp.get("rfid_timestamp"):
                 chargepoint_state.rfid_timestamp = json_rsp["rfid_timestamp"]
+            if json_rsp.get("max_discharge_power"):
+                chargepoint_state.max_discharge_power = json_rsp["max_discharge_power"]
+            if json_rsp.get("max_charge_power"):
+                chargepoint_state.max_charge_power = json_rsp["max_charge_power"]
 
             self.validate_values(chargepoint_state)
             self.client_error_context.reset_error_counter()
             return chargepoint_state
-        if self.client_error_context.error_counter_exceeded():
-            chargepoint_state = ChargepointState()
-            chargepoint_state.plug_state = False
-            chargepoint_state.charge_state = False
-            chargepoint_state.imported = None  # bei None werden keine Werte gepublished
-            chargepoint_state.exported = None
-            return chargepoint_state
-        else:
-            return None
 
     def validate_values(self, chargepoint_state: ChargepointState) -> None:
         if chargepoint_state.charge_state is False and max(chargepoint_state.currents) > 1:

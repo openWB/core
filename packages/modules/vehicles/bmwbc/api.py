@@ -45,9 +45,9 @@ log = getLogger(__name__)
 # send store content n debug level to soc log
 def log_store(store: dict, txt: str):
     st = deepcopy(store)            # create a copy of the store
-    st['rt'] = st['refresh_token']  # copy key to avoid REDACTED
-    st['at'] = st['access_token']   # copy key to avoid REDACTED
-    log.info("store file action:" + txt)
+    # st['rt'] = st['refresh_token']  # copy key to avoid REDACTED
+    # st['at'] = st['access_token']   # copy key to avoid REDACTED
+    log.debug("store file action:" + txt)
     log.debug(txt + ":\n" + dumps(st, indent=4))
 
 
@@ -139,6 +139,7 @@ class Api:
     _clconf = {}
     _account = {}
     _last_reload = {}
+    _login_required = {}
     _primary_vehicle_id = {}
     _lock = Lock()
 
@@ -188,6 +189,7 @@ class Api:
             soc = 0
             range = 0.0
             soc_tsX = 0.0
+            self._login_required[user_id] = False
 
             if captcha_token != "SECONDARY":
                 self._mode = "PRIMARY  "
@@ -207,13 +209,20 @@ class Api:
                     # last used captcha token in store, compare with captcha_token in configuration
                     if self._store[user_id]['captcha_token'] != captcha_token:
                         # invalidate current refresh and access token to force new login
-                        log.debug("new captcha token configured - invalidate stored token set")
+                        self._login_required[user_id] = True
+                        log.info("new captcha token configured - invalidate stored token set")
                         self._new_captcha = True
                         self._store[user_id]['expires_at'] = None
                         self._store[user_id]['access_token'] = None
                         self._store[user_id]['refresh_token'] = None
                         self._store[user_id]['session_id'] = None
                         self._store[user_id]['gcid'] = None
+                        if user_id in self._auth:
+                            self._auth.pop(user_id)
+                        if user_id in self._clconf:
+                            self._clconf.pop(user_id)
+                        if user_id in self._account:
+                            self._account.pop(user_id)
                     else:
                         log.debug("captcha token unchanged")
                         self._new_captcha = False
@@ -246,10 +255,11 @@ class Api:
                     log.debug("# Reuse _auth instance")
 
                 # set session_id and gcid in _auth to store values
-                if self._store[user_id]['session_id'] is not None:
-                    self._auth[user_id].session_id = self._store[user_id]['session_id']
-                if self._store[user_id]['gcid'] is not None:
-                    self._auth[user_id].gcid = self._store[user_id]['gcid']
+                if self._login_required[user_id] is False:
+                    if self._store[user_id]['session_id'] is not None:
+                        self._auth[user_id].session_id = self._store[user_id]['session_id']
+                    if self._store[user_id]['gcid'] is not None:
+                        self._auth[user_id].gcid = self._store[user_id]['gcid']
 
                 # instantiate client configuration object is not existent yet
                 if user_id not in self._clconf:
@@ -265,14 +275,22 @@ class Api:
                     self._account[user_id] = MyBMWAccount(None, None, None,
                                                           config=self._clconf[user_id],
                                                           hcaptcha_token=captcha_token)
-                    self._account[user_id].set_refresh_token(refresh_token=self._store[user_id]['refresh_token'],
-                                                             gcid=self._store[user_id]['gcid'],
-                                                             access_token=self._store[user_id]['access_token'],
-                                                             session_id=self._store[user_id]['session_id'])
+                    if self._login_required[user_id] is False:
+                        self._account[user_id].set_refresh_token(refresh_token=self._store[user_id]['refresh_token'],
+                                                                 gcid=self._store[user_id]['gcid'],
+                                                                 access_token=self._store[user_id]['access_token'],
+                                                                 session_id=self._store[user_id]['session_id'])
                 else:
                     log.debug("# Reuse _account instance")
             else:
                 self._mode = "SECONDARY"
+
+            if self._login_required[user_id]:
+                log.debug("# before initial login:" + str(self._auth[user_id].expires_at))
+                await self._auth[user_id].login()
+                log.debug("# after  initial login:" + str(self._auth[user_id].expires_at))
+                self._login_required[user_id] = False
+                self._last_reload[user_id] = 0
 
             # get vehicle list - if last reload is more than 5 min ago
             self._now = datetime.timestamp(datetime.now())
@@ -287,11 +305,9 @@ class Api:
 
                     if nowdt > expires_at:
                         log.debug("# Proactive login to force refresh token before get_vehicles")
-                        log.debug("# before proactive login:" + str(self._auth[user_id].expires_at) +
-                                  "/" + self._auth[user_id].refresh_token)
+                        log.debug("# before proactive login:" + str(self._auth[user_id].expires_at))
                         await self._auth[user_id].login()
-                        log.debug("# after  proactive login:" + str(self._auth[user_id].expires_at) +
-                                  "/" + self._auth[user_id].refresh_token)
+                        log.debug("# after  proactive login:" + str(self._auth[user_id].expires_at))
 
                 # get vehicle list - needs to be called async
                 _loop = 5  # 5 retries
@@ -309,16 +325,10 @@ class Api:
                             log.info(self._mode + ": get_vehicles : Request Timeout (408)")
                             _err = 408
                         else:
-                            log.info(self._mode + ": get_vehicles err=" + str(err))
+                            log.info(self._mode + ": get_vehicles unknown err=" + str(err))
                         log.info(self._mode + ": get_vehicles : MyBMWAPIError, _loop/_err=" +
                                  str(_loop) + "/" + str(_err))
-                        time.sleep(10)  # sleep for 10 secs before token refresh
-                        log.info("# before except login:" + str(self._auth[user_id].expires_at))
-                        # refresh token
-                        await self._auth[user_id].login()
-                        log.info("# after  except login:" + str(self._auth[user_id].expires_at))
-                        # await self._account[user_id].get_vehicles()
-                        time.sleep(5)  # sleep for 5 secs after token refresh
+                        time.sleep(15)  # sleep for 15 secs before retry
                         _loop = _loop - 1
                     except Exception as err:
                         log.error("bmwbc.fetch_soc: get_vehicles Error, vehicle_id: " +
@@ -333,6 +343,7 @@ class Api:
 
             # get json of vehicle data
             resp = dumps(vehicle, cls=MyBMWJSONEncoder, indent=4)
+            log.debug("bmwbc.fetch_soc: resp=" + resp)
 
             # vehicle data - json to dict
             respd = loads(resp)

@@ -30,6 +30,7 @@ import {
 	zoomedRange,
 	type GraphDataItem,
 } from './model'
+import { pvSystems } from '@/assets/js/model'
 
 const props = defineProps<{
 	width: number
@@ -123,8 +124,9 @@ const keysToUse = computed(() => {
 			}
 		case 'today':
 		case 'day':
-			additionalKeys.forEach((key, i) => {
-				colors[key] = 'var(--color-pv' + (i + 1) + ')'
+			additionalKeys.forEach((key) => {
+				colors[key] =
+					pvSystems.value.get(+key.slice(2))?.color ?? 'var(--color-pv)'
 			})
 			return globalConfig.showInverters
 				? [...additionalKeys, ...k]

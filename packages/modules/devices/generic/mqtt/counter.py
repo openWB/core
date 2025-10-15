@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from typing import Any, Dict, TypedDict
 
+from helpermodules.utils._get_default import get_default
 from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -25,17 +26,20 @@ class MqttCounter(AbstractCounter):
         self.store = get_counter_value_store(self.component_config.id)
 
     def update(self, received_topics: Dict) -> None:
+        def parse_received_topics(value: str):
+            return received_topics.get(f"{topic_prefix}{value}", get_default(CounterState, value))
         # [] für erforderliche Topics, .get() für optionale Topics
-        currents = received_topics.get(f"openWB/mqtt/counter/{self.component_config.id}/get/currents")
-        power = received_topics[f"openWB/mqtt/counter/{self.component_config.id}/get/power"]
-        frequency = received_topics.get(f"openWB/mqtt/counter/{self.component_config.id}/get/frequency")
-        power_factors = received_topics.get(f"openWB/mqtt/counter/{self.component_config.id}/get/power_factors")
-        powers = received_topics.get(f"openWB/mqtt/counter/{self.component_config.id}/get/powers")
-        voltages = received_topics.get(f"openWB/mqtt/counter/{self.component_config.id}/get/voltages")
-        if (received_topics.get(f"openWB/mqtt/counter/{self.component_config.id}/get/imported") and
-                received_topics.get(f"openWB/mqtt/counter/{self.component_config.id}/get/exported")):
-            imported = received_topics.get(f"openWB/mqtt/counter/{self.component_config.id}/get/imported")
-            exported = received_topics.get(f"openWB/mqtt/counter/{self.component_config.id}/get/exported")
+        topic_prefix = f"openWB/mqtt/counter/{self.component_config.id}/get/"
+        currents = parse_received_topics("currents")
+        power = received_topics[f"{topic_prefix}power"]
+        frequency = parse_received_topics("frequency")
+        power_factors = parse_received_topics("power_factors")
+        powers = parse_received_topics("powers")
+        voltages = parse_received_topics("voltages")
+        if (received_topics.get(f"{topic_prefix}imported") and
+                received_topics.get(f"{topic_prefix}exported")):
+            imported = received_topics[f"{topic_prefix}imported"]
+            exported = received_topics[f"{topic_prefix}exported"]
         else:
             imported, exported = self.sim_counter.sim_count(power)
 

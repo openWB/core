@@ -3,7 +3,7 @@ import time
 import os
 from typing import Dict, Tuple
 from smarthome.smartbase0 import Sbase0
-from smarthome.smartmeas import Slsdm630, Sllovato, Slsdm120, Slwe514, Slfronius
+from smarthome.smartmeas import SlElgris, Slsdm630, Sllovato, Slsdm120, Slwe514, Slfronius
 from smarthome.smartmeas import Sljson, Slsmaem, Slshelly, Sltasmota, Slmqtt
 from smarthome.smartmeas import Slhttp, Slavm, Slmystrom, Slb23
 from smarthome.smartbut import Sbshelly
@@ -396,7 +396,9 @@ class Sbase(Sbase0):
                              ") Separate Messung. Altes Measure"
                              + "device gelöscht " + self._oldmeasuretype1)
                     del self._mydevicemeasure
-                if (self._device_measuretype == 'sdm630'):
+                if (self._device_measuretype == 'elgris'):
+                    self._mydevicemeasure = SlElgris()
+                elif (self._device_measuretype == 'sdm630'):
                     self._mydevicemeasure = Slsdm630()
                 elif (self._device_measuretype == 'lovato'):
                     self._mydevicemeasure = Sllovato()

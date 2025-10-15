@@ -9,8 +9,8 @@
       />
     </div>
     <HistoryChartLegend
-      v-if="legendDisplay && legendLarge"
-      :chart="chartRef?.chart || null"
+      v-if="legendDisplay"
+      :chart="chartInstance"
       class="legend-wrapper q-mt-sm"
     />
   </div>
@@ -31,10 +31,6 @@ import {
   TimeScale,
   Tooltip,
   Filler,
-  ChartEvent,
-  LegendItem,
-  LegendElement,
-  ChartTypeRegistry,
   ChartDataset,
   ChartType,
 } from 'chart.js';
@@ -69,9 +65,9 @@ const props = defineProps<{
 
 const chartRef = ref<ChartComponentRef | null>(null);
 
-const legendLarge = computed(() =>
-  lineChartData?.value?.datasets.length > 15 ? true : false,
-);
+const chartInstance = computed(() => {
+  return (chartRef.value?.chart as Chart) ?? null;
+});
 
 const applyHiddenDatasetsToChart = <TType extends ChartType, TData>(
   chart: Chart<TType, TData>,
@@ -91,7 +87,7 @@ watch(
   () => chartRef.value?.chart,
   (chart) => {
     if (chart) {
-      applyHiddenDatasetsToChart(chart);
+      applyHiddenDatasetsToChart(chart as Chart);
     }
   },
   { immediate: true },
@@ -125,6 +121,7 @@ const chartRange = computed(
 const chargePointDatasets = computed(() =>
   chargePointIds.value.map((cpId) => ({
     label: `${chargePointNames.value(cpId)}`,
+    category: 'chargepoint',
     unit: 'kW',
     borderColor: '#4766b5',
     backgroundColor: 'rgba(71, 102, 181, 0.2)',
@@ -148,6 +145,7 @@ const vehicleDatasets = computed(() =>
       if (selectedData.value.some((item) => socKey in item)) {
         return {
           label: `${vehicle.name} SoC`,
+          category: 'vehicle',
           unit: '%',
           borderColor: '#9F8AFF',
           borderWidth: 2,
@@ -170,11 +168,40 @@ const vehicleDatasets = computed(() =>
         dataset !== undefined,
     ),
 );
+
+const chartLabels = computed(() => {
+  const minTimestamp = selectedData.value.length
+    ? selectedData.value[0].timestamp
+    : Math.floor(Date.now() / 1000) - chartRange.value;
+  const maxTimestamp = selectedData.value.length
+    ? selectedData.value[selectedData.value.length - 1].timestamp
+    : Math.floor(Date.now() / 1000);
+  const dataRange = maxTimestamp - minTimestamp;
+  let range = 300; // 5 Minuten
+  if (dataRange <= 30 * 60) {
+    // bis 30 Minuten
+    range = 60; // 1 Minute
+  } else if (dataRange <= 60 * 60) {
+    // bis 60 Minuten
+    range = 120; // 2 Minuten
+  }
+
+  const calculatedLabels = <number[]>[];
+  let first = minTimestamp - (minTimestamp % range);
+  if (first < minTimestamp) first += range;
+  for (let t = first; t <= maxTimestamp; t += range) {
+    calculatedLabels.push(t * 1000);
+  }
+  return calculatedLabels;
+});
+
 const lineChartData = computed(() => {
   return {
+    labels: chartLabels.value,
     datasets: [
       {
         label: gridMeterName.value,
+        category: 'component',
         unit: 'kW',
         borderColor: '#a33c42',
         backgroundColor: 'rgba(239,182,188, 0.2)',
@@ -191,6 +218,7 @@ const lineChartData = computed(() => {
       },
       {
         label: 'Hausverbrauch',
+        category: 'component',
         unit: 'kW',
         borderColor: '#949aa1',
         backgroundColor: 'rgba(148, 154, 161, 0.2)',
@@ -207,6 +235,7 @@ const lineChartData = computed(() => {
       },
       {
         label: 'PV ges.',
+        category: 'component',
         unit: 'kW',
         borderColor: 'green',
         backgroundColor: 'rgba(144, 238, 144, 0.2)',
@@ -223,6 +252,7 @@ const lineChartData = computed(() => {
       },
       {
         label: 'Speicher ges.',
+        category: 'component',
         unit: 'kW',
         borderColor: '#b5a647',
         backgroundColor: 'rgba(181, 166, 71, 0.2)',
@@ -239,6 +269,7 @@ const lineChartData = computed(() => {
       },
       {
         label: 'Speicher SoC',
+        category: 'component',
         unit: '%',
         borderColor: '#FFB96E',
         borderWidth: 2,
@@ -265,33 +296,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
   animation: false,
   plugins: {
     legend: {
-      display: !legendLarge.value && legendDisplay.value,
-      fullSize: true,
-      align: 'center' as const,
-      position: 'bottom' as const,
-      labels: {
-        boxWidth: 19,
-        boxHeight: 0.1,
-      },
-      onClick: (
-        e: ChartEvent,
-        legendItem: LegendItem,
-        legend: LegendElement<keyof ChartTypeRegistry>,
-      ) => {
-        const index = legendItem.datasetIndex!;
-        const chartInstance = legend.chart;
-        const datasetName = legendItem.text;
-
-        // Toggle visibility using the store
-        localDataStore.toggleDataset(datasetName);
-
-        // Update chart visibility
-        if (localDataStore.isDatasetHidden(datasetName)) {
-          chartInstance.hide(index);
-        } else {
-          chartInstance.show(index);
-        }
-      },
+      display: false,
     },
     tooltip: {
       mode: 'index' as const,
@@ -312,8 +317,8 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
         },
       },
       ticks: {
-        maxTicksLimit: 12,
-        source: 'auto' as const,
+        maxTicksLimit: 40,
+        source: 'labels' as const,
       },
       grid: {
         tickLength: 5,

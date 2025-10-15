@@ -10,8 +10,7 @@ from modules.common.modbus import ModbusDataType, Endian, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.sungrow.sungrow.config import SungrowBatSetup, Sungrow
-from modules.devices.sungrow.sungrow.version import Version
-from modules.devices.sungrow.sungrow.firmware import Firmware
+from modules.devices.sungrow.sungrow.registers import RegMode
 
 log = logging.getLogger(__name__)
 
@@ -33,38 +32,72 @@ class SungrowBat(AbstractBat):
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.last_mode = 'Undefined'
+        self.register_check = self.detect_register_check()
+
+    def detect_register_check(self) -> RegMode:
+        # Battery register availability test
+        unit = self.device_config.configuration.modbus_id
+
+        try:
+            self.__tcp_client.read_input_registers(5213, ModbusDataType.INT_32,
+                                                   wordorder=Endian.Little, unit=unit)
+            self.__tcp_client.read_input_registers(5630, ModbusDataType.INT_16, unit=unit)
+            log.debug("Battery register check: using new_registers (5213/5630).")
+            return RegMode.NEW_REGISTERS
+        except Exception:
+            pass
+
+        try:
+            self.__tcp_client.read_input_registers(13000, ModbusDataType.UINT_16, unit=unit)
+            log.debug("Battery register check: using old_registers (13021 + 13000 bits for sign).")
+            return RegMode.OLD_REGISTERS
+        except Exception:
+            pass
+
+        log.debug("Battery register check: using fallback (13021 + total vs PV power).")
+        return RegMode.FALLBACK
 
     def update(self) -> None:
         unit = self.device_config.configuration.modbus_id
-        soc = int(
-            self.__tcp_client.read_input_registers(13022, ModbusDataType.UINT_16, unit=unit) / 10)
-        # Es gibt nur einen DC Strom der Batterie, daher Aufteilen auf 3 Phasenströme
-        bat_current = self.__tcp_client.read_input_registers(13020, ModbusDataType.INT_16, unit=unit) * -0.1
-        currents = [bat_current / 3] * 3
+        soc = int(self.__tcp_client.read_input_registers(13022, ModbusDataType.UINT_16, unit=unit) / 10)
 
-        if (
-            Firmware(self.device_config.configuration.firmware) == Firmware.v2
-            and self.device_config.configuration.version == Version.SH
-        ):
-            bat_power = self.__tcp_client.read_input_registers(13021, ModbusDataType.INT_16, unit=unit) * -1
-        else:
+        # === Mode 1: new_registers ===
+        if self.register_check == RegMode.NEW_REGISTERS:
+            bat_current = self.__tcp_client.read_input_registers(5630, ModbusDataType.INT_16, unit=unit) * -0.1
+            bat_power = self.__tcp_client.read_input_registers(5213, ModbusDataType.INT_32,
+                                                               wordorder=Endian.Little, unit=unit) * -1
+
+        # === Mode 2: old_registers ===
+        elif self.register_check == RegMode.OLD_REGISTERS:
+            bat_current = self.__tcp_client.read_input_registers(13020, ModbusDataType.INT_16, unit=unit) * -0.1
             bat_power = self.__tcp_client.read_input_registers(13021, ModbusDataType.UINT_16, unit=unit)
 
-            # Beim WiNet S-Dongle fehlt das Register für das Vorzeichen der Speicherleistung
-            if self.device_config.configuration.version == Version.SH_winet_dongle:
-                total_power = self.__tcp_client.read_input_registers(13033, ModbusDataType.INT_32,
-                                                                     wordorder=Endian.Little, unit=unit)
-                pv_power = self.__tcp_client.read_input_registers(5016, ModbusDataType.UINT_32,
-                                                                  wordorder=Endian.Little, unit=unit)
+            resp = self.__tcp_client._delegate.read_input_registers(13000, 1, unit=unit)
+            running_state = resp.registers[0]
+            is_charging = (running_state & 0x02) != 0
+            is_discharging = (running_state & 0x04) != 0
 
-                # Ist die Gesamtleistung des WR größer als die PV-Erzeugung wird der Speicher entladen
-                if total_power > pv_power:
-                    bat_power = bat_power * -1
+            if is_discharging:
+                bat_power = -abs(bat_power)
+            elif is_charging:
+                bat_power = abs(bat_power)
+
+        # === Mode 3: fallback ===
+        else:
+            bat_current = self.__tcp_client.read_input_registers(13020, ModbusDataType.INT_16, unit=unit) * -0.1
+            bat_power = self.__tcp_client.read_input_registers(13021, ModbusDataType.UINT_16, unit=unit)
+
+            total_power = self.__tcp_client.read_input_registers(13033, ModbusDataType.INT_32,
+                                                                 wordorder=Endian.Little, unit=unit)
+            pv_power = self.__tcp_client.read_input_registers(5016, ModbusDataType.UINT_32,
+                                                              wordorder=Endian.Little, unit=unit)
+
+            if total_power > pv_power:
+                bat_power = -abs(bat_power)
             else:
-                resp = self.__tcp_client._delegate.read_input_registers(13000, 1, unit=unit)
-                binary = bin(resp.registers[0])[2:].zfill(8)
-                if binary[5] == "1":
-                    bat_power = bat_power * -1
+                bat_power = abs(bat_power)
+
+        currents = [bat_current / 3] * 3
 
         imported, exported = self.sim_counter.sim_count(bat_power)
         bat_state = BatState(

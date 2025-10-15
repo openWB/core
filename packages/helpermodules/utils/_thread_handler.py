@@ -1,5 +1,6 @@
 import logging
 from threading import Thread, enumerate
+import time
 from typing import List, Optional
 
 log = logging.getLogger(__name__)
@@ -26,9 +27,16 @@ def joined_thread_handler(threads: List[Thread], timeout: Optional[int]) -> List
         for thread in threads_to_keep:
             thread.start()
 
-        # Wait for all to complete
-        for thread in threads_to_keep:
-            thread.join(timeout=timeout)
+        if threads_to_keep:
+            if timeout is not None:
+                start_time = time.monotonic()
+                while time.monotonic() - start_time < timeout:
+                    if not [t for t in threads_to_keep if t.is_alive()]:
+                        break
+                    time.sleep(0.05)
+            else:
+                for thread in threads_to_keep:
+                    thread.join()
 
         for thread in threads_to_keep:
             if thread.is_alive():

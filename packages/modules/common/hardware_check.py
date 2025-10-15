@@ -20,10 +20,7 @@ METER_BROKEN_VOLTAGES = "Die Spannungen des Zählers konnten nicht korrekt ausge
 METER_NO_SERIAL_NUMBER = ("Die Seriennummer des Zählers für das Ladelog kann nicht ausgelesen werden. Wenn Sie die "
                           "Seriennummer für Abrechnungszwecke benötigen, wenden Sie sich bitte an unseren Support. Die "
                           "Funktionalität wird dadurch nicht beeinträchtigt!")
-EVSE_BROKEN = ("Auslesen der EVSE nicht möglich. Vermutlich ist die EVSE defekt oder hat eine unbekannte Modbus-ID. "
-               "(Fehlermeldung nur relevant, wenn diese auf der Startseite oder im Status angezeigt wird.)")
-METER_IMPLAUSIBLE_VALUE = ("Der Zähler hat einen unplausiblen Wert zurückgegeben: Leistungen {}W, Ströme {}A, "
-                           "Spannungen {}V.")
+EVSE_BROKEN = "Auslesen der EVSE nicht möglich. Vermutlich ist die EVSE defekt oder hat eine unbekannte Modbus-ID. "
 
 
 def check_meter_values(counter_state: CounterState, fault_state: Optional[FaultState] = None) -> None:
@@ -33,18 +30,14 @@ def check_meter_values(counter_state: CounterState, fault_state: Optional[FaultS
 
 
 def _check_meter_values(counter_state: CounterState) -> Optional[str]:
-    def valid_voltage(voltage) -> bool:
-        return 200 < voltage < 250
+    # Nur prüfen, dass keine Phase ausgefallen ist
+    # Es gibt einige Fälle, in denen die Normtoleranzen der Netzspannung nicht eingehalten werden, aber kein Defekt
+    # vorliegt und der Kunde nicht eingreifen muss. Dann soll keine Warnung angezeigt werden.
+    # Kona 1-phasig induziert auf L2 40V, Zoe auf L2 130V
+    # beim Ladestart sind Strom und Spannung nicht immer konsistent.
     voltages = counter_state.voltages
-    if not ((valid_voltage(voltages[0]) and voltages[1] == 0 and voltages[2] == 0) or
-            # Zoe lädt einphasig an einphasiger Wallbox und erzeugt Spannung auf L2 (ca 126V)
-            (valid_voltage(voltages[0]) and 115 < voltages[1] < 135 and voltages[2] == 0) or
-            (valid_voltage(voltages[0]) and valid_voltage(voltages[1]) and voltages[2] == 0) or
-            (valid_voltage(voltages[0]) and valid_voltage(voltages[1]) and valid_voltage((voltages[2])))):
+    if (voltages[1] == 0 and voltages[2] > 30) or voltages[0] == 0:
         return METER_BROKEN_VOLTAGES.format(voltages)
-    if ((sum(counter_state.currents) < 0.5 and counter_state.power > 100) or
-            (sum(counter_state.currents) > 0.5 and counter_state.power < 100)):
-        return METER_IMPLAUSIBLE_VALUE.format(counter_state.powers, counter_state.currents, counter_state.voltages)
     return None
 
 

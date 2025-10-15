@@ -34,13 +34,14 @@ class ShellyBat(AbstractBat):
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
-    def total_power_from_shelly(self) -> int:
-        total = 0
+    def update(self) -> None:
+        power = 0
         if self.generation == 1:
             status_url = "http://" + self.address + "/status"
         else:
             status_url = "http://" + self.address + "/rpc/Shelly.GetStatus"
         status = req.get_http_session().get(status_url, timeout=3).json()
+
         try:
             if self.generation == 1:
                 if 'meters' in status:
@@ -49,28 +50,34 @@ class ShellyBat(AbstractBat):
                     meters = status['emeters']  # shellyEM & shelly3EM
                 # shellyEM has one meter, shelly3EM has three meters:
                 for meter in meters:
-                    total = total + meter['power']
+                    power = power + meter['power']
+                currents = [0, 0, 0]
             else:
-                if 'switch:0' in status:
-                    total = status['switch:0']['apower']
+                if 'switch:0' in status and 'apower' in status['switch:0']:
+                    power = status['switch:0']['apower']
+                    currents = [status['switch:0']['current'], 0, 0]
+                elif 'em1:0' in status:
+                    power = status['em1:0']['act_power']  # shelly Pro EM Gen 2
+                    currents = [status['em1:0']['current'], 0, 0]
                 elif 'pm1:0' in status:
-                    total = status['pm1:0']['apower']  # shelly PM Mini Gen 3
+                    power = status['pm1:0']['apower']  # shelly PM Mini Gen 3
+                    currents = [status['pm1:0']['current'], 0, 0]
                 else:
-                    total = status['em:0']['total_act_power']  # shelly Pro3EM
-        except KeyError:
-            log.exception("unsupported shelly device?")
-        finally:
-            return int(total)
+                    power = status['em:0']['total_act_power']  # shelly Pro3EM
+                    currents = [status['em:0'][f'{i}_current'] for i in 'abc']
 
-    def update(self) -> None:
-        bat = self.total_power_from_shelly() * self.factor
-        imported, exported = self.sim_counter.sim_count(bat)
-        bat_state = BatState(
-            power=bat,
-            imported=imported,
-            exported=exported
-        )
-        self.store.set(bat_state)
+            power = power * self.factor
+            imported, exported = self.sim_counter.sim_count(power)
+            bat_state = BatState(
+                power=power,
+                imported=imported,
+                exported=exported
+            )
+            if 'currents' in locals():
+                bat_state.currents = currents
+            self.store.set(bat_state)
+        except KeyError:
+            log.exception("unsupported shelly device.")
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=ShellyBatSetup)

@@ -7,13 +7,11 @@
 
 	<title>openWB</title>
 	<meta charset="UTF-8">
-	<meta name="viewport"
-		content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 	<meta name="apple-mobile-web-app-title" content="openWB">
 	<meta name="apple-mobile-web-app-status-bar-style" content="default">
-	<meta name="apple-mobile-web-app-title" content="openWB">
 	<meta name="description" content="openWB">
 	<meta name="keywords" content="openWB">
 	<meta name="author" content="Michael Ortenstein">
@@ -42,7 +40,7 @@
 	<!-- Normalize -->
 	<link rel="stylesheet" type="text/css" href="css/normalize-8.0.1.css">
 	<!-- Font Awesome, all styles -->
-	<link rel="stylesheet" type="text/css" href="fonts/font-awesome-5.8.2/css/all.css">
+	<link rel="stylesheet" type="text/css" href="fonts/font-awesome-6.7.2/css/all.min.css">
 	<!-- local css due to async loading of theme css -->
 	<style>
 		#preloader {
@@ -68,7 +66,7 @@
 			color: grey;
 		}
 	</style>
-	<link rel="stylesheet" href="style.css?v=20221122">
+	<link rel="stylesheet" href="style.css?v=20250731">
 	<!-- important scripts to be loaded -->
 	<script src="js/jquery-3.6.0.min.js"></script>
 	<script src="js/bootstrap-4.4.1/bootstrap.bundle.min.js"></script>
@@ -579,12 +577,13 @@
 										<div class="form-row mb-1 charge-point-time-charge-plan charge-point-time-charge-plan-template hide"
 											data-plan-type="time_charging"
 											data-plan=""
+											data-index=""
 										>
 											<div class="col">
 												<span class="charge-point-time-charge-name">--</span>
 											</div>
 											<div class="col-lg-6 text-right">
-												<span class="charge-point-time-charge-pill charge-point-time-charge-active cursor-pointer border rounded p-1">
+												<span class="charge-point-time-charge-pill cursor-pointer border rounded p-1">
 													<span class="charge-point-time-charge-frequency">
 														<i class="fas fa-calendar-alt"></i>
 														<span class="charge-point-time-charge-frequency-value">--</span>
@@ -995,24 +994,22 @@
 										Es wurden noch keine Zeitpläne eingerichtet!
 									</div>
 									<div class="form-row mb-1 charge-point-schedule-plan charge-point-schedule-plan-template hide"
-										data-plan="">
+										data-plan=""
+										data-index=""
+									>
 										<div class="col">
 											<span class="charge-point-schedule-name">--</span>
 										</div>
 										<div class="col-lg-6 text-right">
-											<span class="charge-point-schedule-plan-pill charge-point-schedule-active cursor-pointer border rounded p-1">
-												<span class="charge-point-schedule-frequency">
-													<i class="fas fa-calendar-alt"></i>
-													<span class="charge-point-schedule-frequency-value">--</span>
-												</span>
-												<span class="charge-point-schedule-date">
-													<i class="fas fa-calendar-day"></i>
-													<span class="charge-point-schedule-date-value">--</span>
-												</span>
+											<span class="charge-point-schedule-plan-pill cursor-pointer border rounded p-1">
+												<i class="charge-point-schedule-frequency fas fa-calendar-alt"></i>
+												<span class="charge-point-schedule-frequency-value">--</span>
 												<i class="fas fa-clock"></i> <span
 													class="charge-point-schedule-time">--</span>
 												<i class="charge-point-schedule-limit-icon fas fa-car-battery"></i>
 												<span class="charge-point-schedule-limit">--</span>
+												<i class="charge-point-schedule-mode hide fas"></i>
+												<span class="charge-point-schedule-soc-limit hide">--</span>
 												<i class="charge-point-schedule-et-active-icon fas fa-coins hide"></i>
 											</span>
 										</div>
@@ -1549,7 +1546,7 @@
 				// some helper functions
 				'helperFunctions.js?ver=20250217',
 				// functions for processing messages
-				'processAllMqttMsg.js?ver=20250617',
+				'processAllMqttMsg.js?ver=20250801',
 				// respective Chart.js definition live
 				'livechart.js?ver=20250404',
 				// respective Chart.js definition price based charging
@@ -1632,12 +1629,13 @@
 				const parentChargePoint = $(this).closest('[data-cp]');
 				const chargePointIndex = parseInt(parentChargePoint.data('cp'));
 				const planId = parseInt($(this).closest('.charge-point-time-charge-plan').data('plan'));
-				if (!isNaN(chargePointIndex) && !isNaN(planId)) {
-					console.log('toggle time charge plan', chargePointIndex, planId);
+				const planIndex = parseInt($(this).closest('.charge-point-time-charge-plan').data('plan-index'));
+				if (!isNaN(chargePointIndex) && !isNaN(planId) && !isNaN(planIndex)) {
 					const object = "chargeTemplate";
-					const objectPath = "time_charging.plans." + planId + ".active";
+					const objectPath = "time_charging.plans." + planIndex + ".active";
 					const topic = "openWB/set/chargepoint/" + chargePointIndex + "/set/charge_template";
-					const option = !$(this).hasClass('charge-point-time-charge-active');
+					const option = !$(this).hasClass('charge-point-plan-pill-active');
+					console.log('toggle time charge plan', chargePointIndex, planId, planIndex, option);
 					if (typeof window[object] !== undefined && window[object][chargePointIndex] !== undefined) {
 						let currentObjectState = JSON.parse(JSON.stringify(window[object][chargePointIndex]));
 						currentObjectState = updateObject(currentObjectState, objectPath, option);
@@ -1665,12 +1663,13 @@
 				const parentChargePoint = $(this).closest('[data-cp]');
 				const chargePointIndex = parseInt(parentChargePoint.data('cp'));
 				const planId = parseInt($(this).closest('.charge-point-schedule-plan').data('plan'));
-				if (!isNaN(chargePointIndex) && !isNaN(planId)) {
-					console.log('toggle schedule plan', chargePointIndex, planId);
+				const planIndex = parseInt($(this).closest('.charge-point-schedule-plan').data('plan-index'));
+				if (!isNaN(chargePointIndex) && !isNaN(planId) && !isNaN(planIndex)) {
 					const object = "chargeTemplate";
-					const objectPath = "chargemode.scheduled_charging.plans." + planId + ".active";
+					const objectPath = "chargemode.scheduled_charging.plans." + planIndex + ".active";
 					const topic = "openWB/set/chargepoint/" + chargePointIndex + "/set/charge_template";
-					const option = !$(this).hasClass('charge-point-schedule-active');
+					const option = !$(this).hasClass('charge-point-plan-pill-active');
+					console.log('toggle schedule plan', chargePointIndex, planId, planIndex, option);
 					if (typeof window[object] !== undefined && window[object][chargePointIndex] !== undefined) {
 						let currentObjectState = JSON.parse(JSON.stringify(window[object][chargePointIndex]));
 						currentObjectState = updateObject(currentObjectState, objectPath, option);

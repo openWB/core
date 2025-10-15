@@ -24,6 +24,7 @@ from typing import List, Optional
 
 from control import data
 from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_CHARGING
+from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_CHARGING
 from control.algorithm.filter_chargepoints import get_chargepoints_by_chargemodes
 from control.pv import Pv
 from helpermodules.constants import NO_ERROR
@@ -113,7 +114,10 @@ class BatAll:
                 for battery in data.data.bat_data.values():
                     try:
                         if battery.data.get.fault_state < 2:
-                            power += battery.data.get.power
+                            try:
+                                power += battery.data.get.power
+                            except Exception:
+                                log.exception(f"Fehler im Bat-Modul {battery.num}")
                             imported += battery.data.get.imported
                             exported += battery.data.get.exported
                             soc_sum += battery.data.get.soc
@@ -206,6 +210,7 @@ class BatAll:
                 else:
                     charging_power_left = 0
                 self.data.set.regulate_up = True if self.data.get.soc < 100 else False
+            #  ev wird nach Speicher geladen
             elif config.bat_mode == BatConsiderationMode.EV_MODE.value:
                 # Speicher sollte weder ge- noch entladen werden.
                 charging_power_left = self.data.get.power
@@ -287,40 +292,42 @@ class BatAll:
 
     def get_power_limit(self):
         if self.data.config.bat_control_permitted is False:
-            return
-        chargepoint_by_chargemodes = get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_CHARGING)
-        # Falls aktive Steuerung an und Fahrzeuge laden und kein Überschuss im System ist,
-        # dann Speichereistung begrenzen.
-        if (self.data.config.power_limit_mode != BatPowerLimitMode.NO_LIMIT.value and
-            len(chargepoint_by_chargemodes) > 0 and
-                data.data.cp_all_data.data.get.power > 100 and
-                self.data.get.power_limit_controllable and
-                self.data.get.power <= 0 and
-                data.data.counter_all_data.get_evu_counter().data.get.power >= -100):
-            if self.data.config.power_limit_mode == BatPowerLimitMode.LIMIT_STOP.value:
-                self.data.set.power_limit = 0
-            elif self.data.config.power_limit_mode == BatPowerLimitMode.LIMIT_TO_HOME_CONSUMPTION.value:
-                self.data.set.power_limit = data.data.counter_all_data.data.set.home_consumption * -1
-            log.debug(f"Speicher-Leistung begrenzen auf {self.data.set.power_limit/1000}kW")
-        else:
             self.data.set.power_limit = None
-            control_range_low = data.data.general_data.data.chargemode_config.pv_charging.control_range[0]
-            control_range_high = data.data.general_data.data.chargemode_config.pv_charging.control_range[1]
-            control_range_center = control_range_high - (control_range_high - control_range_low) / 2
-            if len(chargepoint_by_chargemodes) == 0:
-                log.debug("Speicher-Leistung nicht begrenzen, "
-                          "da keine Ladepunkte in einem Lademodus mit Netzbezug sind.")
-            elif data.data.cp_all_data.data.get.power <= 100:
-                log.debug("Speicher-Leistung nicht begrenzen, da kein Ladepunkt mit Netzubezug lädt.")
-            elif self.data.get.power_limit_controllable is False:
-                log.debug("Speicher-Leistung nicht begrenzen, da keine regelbaren Speicher vorhanden sind.")
-            elif self.data.get.power > 0:
-                log.debug("Speicher-Leistung nicht begrenzen, da kein Speicher entladen wird.")
-            elif data.data.counter_all_data.get_evu_counter().data.get.power < control_range_center + 80:
-                # Wenn der Regelbereich zB auf Bezug steht, darf auch die Leistung des Regelbereichs entladen werden.
-                log.debug("Speicher-Leistung nicht begrenzen, da EVU-Überschuss vorhanden ist.")
+        else:
+            chargepoint_by_chargemodes = get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_CHARGING)
+            # Falls aktive Steuerung an und Fahrzeuge laden und kein Überschuss im System ist,
+            # dann Speicherleistung begrenzen.
+            if (self.data.config.power_limit_mode != BatPowerLimitMode.NO_LIMIT.value and
+                len(chargepoint_by_chargemodes) > 0 and
+                    data.data.cp_all_data.data.get.power > 100 and
+                    self.data.get.power_limit_controllable and
+                    self.data.get.power <= 0 and
+                    data.data.counter_all_data.get_evu_counter().data.get.power >= -100):
+                if self.data.config.power_limit_mode == BatPowerLimitMode.LIMIT_STOP.value:
+                    self.data.set.power_limit = 0
+                elif self.data.config.power_limit_mode == BatPowerLimitMode.LIMIT_TO_HOME_CONSUMPTION.value:
+                    self.data.set.power_limit = data.data.counter_all_data.data.set.home_consumption * -1
+                log.debug(f"Speicher-Leistung begrenzen auf {self.data.set.power_limit/1000}kW")
             else:
-                log.debug("Speicher-Leistung nicht begrenzen.")
+                self.data.set.power_limit = None
+                control_range_low = data.data.general_data.data.chargemode_config.pv_charging.control_range[0]
+                control_range_high = data.data.general_data.data.chargemode_config.pv_charging.control_range[1]
+                control_range_center = control_range_high - (control_range_high - control_range_low) / 2
+                if len(chargepoint_by_chargemodes) == 0:
+                    log.debug("Speicher-Leistung nicht begrenzen, "
+                              "da keine Ladepunkte in einem Lademodus mit Netzbezug sind.")
+                elif data.data.cp_all_data.data.get.power <= 100:
+                    log.debug("Speicher-Leistung nicht begrenzen, da kein Ladepunkt mit Netzbezug lädt.")
+                elif self.data.get.power_limit_controllable is False:
+                    log.debug("Speicher-Leistung nicht begrenzen, da keine regelbaren Speicher vorhanden sind.")
+                elif self.data.get.power > 0:
+                    log.debug("Speicher-Leistung nicht begrenzen, da kein Speicher entladen wird.")
+                elif data.data.counter_all_data.get_evu_counter().data.get.power < control_range_center + 80:
+                    # Wenn der Regelbereich zB auf Bezug steht, darf auch die Leistung des Regelbereichs entladen
+                    # werden.
+                    log.debug("Speicher-Leistung nicht begrenzen, da EVU-Überschuss vorhanden ist.")
+                else:
+                    log.debug("Speicher-Leistung nicht begrenzen.")
         remaining_power_limit = self.data.set.power_limit
         for bat_component in get_controllable_bat_components():
             if self.data.set.power_limit is None:

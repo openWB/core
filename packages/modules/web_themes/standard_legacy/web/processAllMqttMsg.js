@@ -268,7 +268,7 @@ function refreshChargeTemplate(chargePointIndex) {
 			chargeTemplate[chargePointIndex].chargemode.scheduled_charging.plans.length > 0
 		) {
 			chargePoint.find(".charge-point-schedule-plan-missing").addClass("hide");
-			for (const value of chargeTemplate[chargePointIndex].chargemode.scheduled_charging.plans) {
+			for (const [index, value] of chargeTemplate[chargePointIndex].chargemode.scheduled_charging.plans.entries()) {
 				const key = value.id;
 				// console.debug("schedule", key, value);
 				if (chargePoint.find('.charge-point-schedule-plan[data-plan=' + key + ']').length == 0) {
@@ -276,6 +276,7 @@ function refreshChargeTemplate(chargePointIndex) {
 					var clonedElement = sourceElement.clone();
 					// update all data referencing the old index in our clone
 					clonedElement.attr('data-plan', key).data('plan', key);
+					clonedElement.attr('data-plan-index', index).data('plan-index', index);
 					// insert after last existing plan to honor sorting from the array
 					target = chargePoint.find('.charge-point-schedule-plan').last();
 					// console.log("target: "+target.data('plan')+" index: "+key);
@@ -288,13 +289,22 @@ function refreshChargeTemplate(chargePointIndex) {
 					// set values from payload
 					schedulePlanElement.find('.charge-point-schedule-name').text(value.name);
 					if (value.limit.selected == "soc") {
-						schedulePlanElement.find('.charge-point-schedule-limit').text(value.limit.soc_scheduled + "%");
 						schedulePlanElement.find('.charge-point-schedule-limit-icon').removeClass('fa-bolt');
 						schedulePlanElement.find('.charge-point-schedule-limit-icon').addClass('fa-car-battery');
+						schedulePlanElement.find('.charge-point-schedule-limit').text(value.limit.soc_scheduled + "%");
+						schedulePlanElement.find('.charge-point-schedule-mode').removeClass('hide');
+						if (value.bidi_charging_enabled == true) {
+							schedulePlanElement.find('.charge-point-schedule-mode').addClass('fa-right-left');
+						} else {
+							schedulePlanElement.find('.charge-point-schedule-mode').addClass('fa-right-long');
+						}
+						schedulePlanElement.find('.charge-point-schedule-soc-limit').removeClass('hide');
+						schedulePlanElement.find('.charge-point-schedule-soc-limit').text(value.limit.soc_limit + "%");
 					} else {
 						schedulePlanElement.find('.charge-point-schedule-limit').text((value.limit.amount / 1000) + "kWh");
 						schedulePlanElement.find('.charge-point-schedule-limit-icon').removeClass('fa-car-battery');
 						schedulePlanElement.find('.charge-point-schedule-limit-icon').addClass('fa-bolt');
+						schedulePlanElement.find('.charge-point-schedule-soc-limit').addClass('hide');
 					}
 					if (value.et_active == true) {
 						schedulePlanElement.find('.charge-point-schedule-et-active-icon').removeClass('hide');
@@ -303,38 +313,48 @@ function refreshChargeTemplate(chargePointIndex) {
 					}
 					schedulePlanElement.find('.charge-point-schedule-time').text(value.time);
 					if (value.active == true) {
-						schedulePlanElement.find('.charge-point-schedule-active').removeClass('alert-danger border-danger');
-						schedulePlanElement.find('.charge-point-schedule-active').addClass('alert-success border-success');
+						schedulePlanElement.find('.charge-point-schedule-plan-pill').addClass('charge-point-plan-pill-active');
 					} else {
-						schedulePlanElement.find('.charge-point-schedule-active').removeClass('alert-success border-success');
-						schedulePlanElement.find('.charge-point-schedule-active').addClass('alert-danger border-danger');
+						schedulePlanElement.find('.charge-point-schedule-plan-pill').removeClass('charge-point-plan-pill-active');
 					}
 					switch (value.frequency.selected) {
 						case "once":
-							schedulePlanElement.find('.charge-point-schedule-frequency').addClass('hide');
-							schedulePlanElement.find('.charge-point-schedule-date').removeClass('hide');
+							schedulePlanElement.find('.charge-point-schedule-frequency').addClass('fa-calendar-day');
 							const d = new Date(value.frequency.once);
-							schedulePlanElement.find('.charge-point-schedule-date-value').text(d.toLocaleDateString(undefined, { year: "numeric", month: "2-digit", day: "2-digit", weekday: "short" }));
+							schedulePlanElement.find('.charge-point-schedule-frequency-value').text(d.toLocaleDateString(undefined, { year: "numeric", month: "2-digit", day: "2-digit", weekday: "short" }));
 							break;
 						case "daily":
-							schedulePlanElement.find('.charge-point-schedule-frequency').removeClass('hide');
-							schedulePlanElement.find('.charge-point-schedule-date').addClass('hide');
+							schedulePlanElement.find('.charge-point-schedule-frequency').addClass('fa-calendar-week');
 							schedulePlanElement.find('.charge-point-schedule-frequency-value').text('täglich');
 							break;
 						case "weekly":
-							const days = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
-							var daysText = '';
-							value.frequency.weekly.forEach(function (dayValue, index) {
-								if (dayValue == true) {
-									if (daysText.length > 0) {
-										daysText += ',';
-									}
-									daysText += days[index];
+							const weekdays = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+							let planDays = [];
+							let rangeStart = null;
+
+							value.frequency.weekly.forEach((dayValue, index) => {
+								if (dayValue) {
+									if (rangeStart === null) rangeStart = index;
+								} else if (rangeStart !== null) {
+									planDays.push(
+										rangeStart === index - 1
+											? weekdays[rangeStart]
+											: `${weekdays[rangeStart]}-${weekdays[index - 1]}`
+									);
+									rangeStart = null;
 								}
 							});
-							schedulePlanElement.find('.charge-point-schedule-frequency').removeClass('hide');
-							schedulePlanElement.find('.charge-point-schedule-date').addClass('hide');
-							schedulePlanElement.find('.charge-point-schedule-frequency-value').text(daysText);
+
+							// Falls der letzte Bereich bis zum Ende geht
+							if (rangeStart !== null) {
+								planDays.push(
+									rangeStart === value.frequency.weekly.length - 1
+										? weekdays[rangeStart]
+										: `${weekdays[rangeStart]}-${weekdays[value.frequency.weekly.length - 1]}`
+								);
+							}
+							schedulePlanElement.find('.charge-point-schedule-frequency').addClass('fa-calendar-alt');
+							schedulePlanElement.find('.charge-point-schedule-frequency-value').text(planDays.join(', '));
 							break;
 						default:
 							console.error("unknown schedule frequency: " + value.frequency.selected);
@@ -362,7 +382,7 @@ function refreshChargeTemplate(chargePointIndex) {
 			chargeTemplate[chargePointIndex].time_charging.plans.length > 0
 		) {
 			chargePoint.find(".charge-point-time-charge-plan-missing").addClass("hide");
-			for (const value of chargeTemplate[chargePointIndex].time_charging.plans) {
+			for (const [index, value] of chargeTemplate[chargePointIndex].time_charging.plans.entries()) {
 				const key = value.id;
 				// console.debug("schedule", key, value);
 				if (chargePoint.find('.charge-point-time-charge-plan[data-plan=' + key + ']').length == 0) {
@@ -370,6 +390,7 @@ function refreshChargeTemplate(chargePointIndex) {
 					var clonedElement = sourceElement.clone();
 					// update all data referencing the old index in our clone
 					clonedElement.attr('data-plan', key).data('plan', key);
+					clonedElement.attr('data-plan-index', index).data('plan-index', index);
 					// insert after last existing plan to honor sorting from the array
 					target = chargePoint.find('.charge-point-time-charge-plan').last();
 					// console.log("target: "+target.data('plan')+" index: "+key);
@@ -383,11 +404,9 @@ function refreshChargeTemplate(chargePointIndex) {
 					timeChargePlanElement.find('.charge-point-time-charge-name').text(value.name);
 					timeChargePlanElement.find('.charge-point-time-charge-time').text(value.time[0] + " - " + value.time[1]);
 					if (value.active == true) {
-						timeChargePlanElement.find('.charge-point-time-charge-active').removeClass('alert-danger border-danger');
-						timeChargePlanElement.find('.charge-point-time-charge-active').addClass('alert-success border-success');
+						timeChargePlanElement.find('.charge-point-time-charge-pill').addClass('charge-point-plan-pill-active');
 					} else {
-						timeChargePlanElement.find('.charge-point-time-charge-active').removeClass('alert-success border-success');
-						timeChargePlanElement.find('.charge-point-time-charge-active').addClass('alert-danger border-danger');
+						timeChargePlanElement.find('.charge-point-time-charge-pill').removeClass('charge-point-plan-pill-active');
 					}
 					if (value.limit.selected == "soc") {
 						timeChargePlanElement.find('.charge-point-time-charge-limit').removeClass('hide');

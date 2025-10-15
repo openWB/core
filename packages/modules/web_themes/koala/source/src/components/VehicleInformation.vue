@@ -4,7 +4,7 @@
     :items="vehicleIds"
   >
     <template #item="{ item }">
-      <VehicleCard :vehicle-id="item" />
+      <VehicleCard :vehicle-id="item" full-height />
     </template>
   </BaseCarousel>
 
@@ -12,22 +12,46 @@
     v-else
     :items="vehicleIds"
     :row-data="tableRowData"
-    :column-config="isMobile ? columnConfigMobile : columnConfigDesktop"
+    :column-config="compactTable ? columnConfigCompact : columnConfig"
+    :dense="compactTable"
+    :square="compactTable"
     :search-input-visible="searchInputVisible"
-    :table-height="isMobile ? '35vh' : '45vh'"
+    :table-height="compactTable ? '35vh' : '45vh'"
     v-model:filter="filter"
     :columns-to-search="['name', 'manufacturer', 'model']"
     :row-expandable="true"
     @row-click="onRowClick"
   >
     <!-- "col" = column must match Quasar naming convention -->
+    <template #row-expand="slotProps">
+      <VehicleConnectionStateIcon :vehicle-id="slotProps.row.id" />
+    </template>
+    <template #body-cell-name="slotProps">
+      <q-td :class="[`text-${slotProps.col.align}`, 'max-width-0']">
+        <div class="ellipsis" :title="slotProps.row.name">
+          {{ slotProps.row.name }}
+        </div>
+      </q-td>
+    </template>
+    <template #body-cell-manufacturer="slotProps">
+      <q-td auto-width :class="`text-${slotProps.col.align}`">
+        {{ slotProps.row.manufacturer }}
+      </q-td>
+    </template>
+    <template #body-cell-model="slotProps">
+      <q-td auto-width :class="`text-${slotProps.col.align}`">
+        {{ slotProps.row.model }}
+      </q-td>
+    </template>
     <template #body-cell-plugged="slotProps">
-      <q-td :class="`text-${slotProps.col.align}`">
+      <q-td auto-width :class="`text-${slotProps.col.align}`">
         <ChargePointStateIcon :vehicle-id="slotProps.row.id" />
       </q-td>
     </template>
-    <template #row-expand="slotProps">
-      <VehicleConnectionStateIcon :vehicle-id="slotProps.row.id" />
+    <template #body-cell-vehicleSocValue="slotProps">
+      <q-td auto-width :class="`text-${slotProps.col.align}`">
+        {{ slotProps.row.vehicleSocValue }}
+      </q-td>
     </template>
   </BaseTable>
 
@@ -42,21 +66,8 @@
       <VehicleCard
         v-if="selectedVehicleId !== null"
         :vehicle-id="selectedVehicleId"
-      >
-        <template #card-footer>
-          <div class="card-footer">
-            <q-btn
-              color="primary"
-              flat
-              no-caps
-              v-close-popup
-              class="close-button"
-              size="md"
-              >Schließen</q-btn
-            >
-          </div>
-        </template>
-      </VehicleCard>
+        closeButton
+      />
     </div>
   </q-dialog>
 </template>
@@ -64,7 +75,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
-import { Platform } from 'quasar';
+import { Screen } from 'quasar';
 import BaseCarousel from 'src/components/BaseCarousel.vue';
 import BaseTable from 'src/components/BaseTable.vue';
 import { VehicleRow } from 'src/components/models/table-model';
@@ -74,7 +85,7 @@ import VehicleCard from 'src/components/VehicleCard.vue';
 import { ColumnConfiguration } from 'src/components/models/table-model';
 
 const mqttStore = useMqttStore();
-const isMobile = computed(() => Platform.is.mobile);
+const compactTable = computed(() => Screen.lt.md);
 const modalChargeVehicleCardVisible = ref(false);
 const selectedVehicleId = ref<number | null>(null);
 const filter = ref('');
@@ -111,7 +122,7 @@ const tableRowData = computed<(id: number) => VehicleRow>(() => {
   };
 });
 
-const columnConfigDesktop: ColumnConfiguration[] = [
+const columnConfig: ColumnConfiguration[] = [
   { field: 'name', label: 'Fahrzeug' },
   { field: 'manufacturer', label: 'Hersteller' },
   { field: 'model', label: 'Modell' },
@@ -119,7 +130,7 @@ const columnConfigDesktop: ColumnConfiguration[] = [
   { field: 'vehicleSocValue', label: 'Ladestand', align: 'right' },
 ];
 
-const columnConfigMobile: ColumnConfiguration[] = [
+const columnConfigCompact: ColumnConfiguration[] = [
   { field: 'name', label: 'Fahrzeug' },
   { field: 'plugged', label: 'Status', align: 'center' },
   { field: 'vehicleSocValue', label: 'Ladestand', align: 'right' },
@@ -131,21 +142,8 @@ const onRowClick = (row: VehicleRow) => {
 };
 </script>
 
-<style scoped>
-.dialog-content {
-  width: auto;
-  max-width: 24em;
-}
-
-.close-button {
-  position: absolute;
-  bottom: 0.4em;
-  right: 0.4em;
-  z-index: 1;
-  background: transparent;
-}
-
-.card-footer {
-  height: 1.9em;
+<style scoped lang="scss">
+.max-width-0 {
+  max-width: 0;
 }
 </style>

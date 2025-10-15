@@ -1,52 +1,81 @@
 <template>
-  <q-card ref="cardRef" class="full-height card-width">
-    <q-card-section>
-      <div class="row items-center text-h6 text-bold">
-        <div class="col flex items-center">
-          {{ name }}
-          <ChargePointLock :charge-point-id="props.chargePointId" />
-          <ChargePointStateIcon
-            :charge-point-id="Number(props.chargePointId)"
-          />
-          <ChargePointTimeCharging
-            :charge-point-id="Number(props.chargePointId)"
-            :readonly="true"
-            :iconSize="'xs'"
-            :toolTip="true"
-          />
-        </div>
-        <q-icon
-          class="cursor-pointer"
-          name="settings"
-          size="sm"
-          @click="settingsVisible = true"
-        />
+  <q-card
+    ref="cardRef"
+    class="card-width"
+    :class="{ 'full-height': props.fullHeight }"
+  >
+    <q-card-section class="row no-wrap">
+      <div class="text-h6 text-bold ellipsis" :title="name">
+        {{ name }}
       </div>
-      <ChargePointFaultMessage :charge-point-id="props.chargePointId" />
-      <ChargePointStateMessage :charge-point-id="props.chargePointId" />
-      <div class="row items-center q-mt-sm">
-        <ChargePointVehicleSelect
+      <q-space />
+      <q-btn
+        v-if="props.closeButton"
+        icon="close"
+        flat
+        round
+        dense
+        v-close-popup
+      />
+    </q-card-section>
+    <q-separator class="q-mt-sm" />
+    <q-card-section class="row flex items-center justify-between">
+      <div>
+        <ChargePointStateIcon :charge-point-id="Number(props.chargePointId)" />
+        <ChargePointTimeCharging
           :charge-point-id="Number(props.chargePointId)"
+          :readonly="true"
+          :iconSize="'xs'"
+          :toolTip="true"
         />
-        <ChargePointPriority :charge-point-id="props.chargePointId" />
+        <ChargePointLock :charge-point-id="props.chargePointId" />
       </div>
+      <q-icon
+        class="cursor-pointer"
+        name="settings"
+        size="sm"
+        @click="settingsVisible = true"
+      />
+    </q-card-section>
+    <q-card-section>
+      <ChargePointMessage
+        fault-message
+        :charge-point-id="props.chargePointId"
+      />
+      <ChargePointMessage :charge-point-id="props.chargePointId" />
+    </q-card-section>
+    <q-card-section
+      class="full-width row no-wrap justify-between content-start items-center q-mt-sm"
+    >
+      <ChargePointVehicleSelect
+        class="col"
+        :charge-point-id="Number(props.chargePointId)"
+      />
+      <ChargePointPriority
+        class="col-auto"
+        :charge-point-id="props.chargePointId"
+      />
+    </q-card-section>
+    <q-card-section>
       <ChargePointModeButtons :charge-point-id="props.chargePointId" />
-      <div class="row q-mt-sm">
-        <div class="col">
-          <div class="text-subtitle2">Leistung</div>
-          <div class="col no-wrap">
-            <ChargePointPowerData
-              :power="power"
-              :phase-number="phaseNumber"
-              :current="chargingCurrent"
-            />
-          </div>
-        </div>
-        <div class="col text-right">
-          <div class="text-subtitle2">geladen</div>
-          {{ energyChargedPlugged }}
+    </q-card-section>
+    <q-card-section class="row q-mt-sm">
+      <div class="col">
+        <div class="text-subtitle2">Leistung</div>
+        <div class="col no-wrap">
+          <ChargePointPowerData
+            :power="power"
+            :phase-number="phaseNumber"
+            :current="chargingCurrent"
+          />
         </div>
       </div>
+      <div class="col text-right">
+        <div class="text-subtitle2">geladen</div>
+        {{ energyChargedPlugged }}
+      </div>
+    </q-card-section>
+    <q-card-section>
       <SliderDouble
         v-if="showSocTargetSlider"
         class="q-mt-sm"
@@ -60,30 +89,32 @@
         :on-edit-soc="openSocDialog"
         :on-refresh-soc="refreshSoc"
       />
-      <slot name="card-footer"></slot>
     </q-card-section>
+    <q-card-actions v-if="$slots['card-actions']" align="right">
+      <slot name="card-actions"></slot>
+    </q-card-actions>
+    <!-- //////////////////////  modal settings dialog   //////////////////// -->
+    <ChargePointSettings
+      :chargePointId="props.chargePointId"
+      v-model="settingsVisible"
+    />
+    <!-- //////////////////////  modal soc dialog   //////////////////// -->
+    <ManualSocDialog
+      :vehicleId="vehicleId"
+      :chargePointId="props.chargePointId"
+      v-model:socDialogVisible="socInputVisible"
+    />
   </q-card>
-  <!-- //////////////////////  Settings popup dialog   //////////////////// -->
-  <ChargePointSettings
-    :chargePointId="props.chargePointId"
-    v-model="settingsVisible"
-  />
-  <ManualSocDialog
-    :vehicleId="vehicleId"
-    :chargePointId="props.chargePointId"
-    v-model:socDialogVisible="socInputVisible"
-  />
 </template>
 <script setup lang="ts">
-import { computed, ref, onMounted, inject } from 'vue';
+import { computed, ref } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import SliderDouble from './SliderDouble.vue';
 import ChargePointLock from './ChargePointLock.vue';
 import ChargePointStateIcon from './ChargePointStateIcon.vue';
 import ChargePointPriority from './ChargePointPriority.vue';
 import ChargePointModeButtons from './ChargePointModeButtons.vue';
-import ChargePointStateMessage from './ChargePointStateMessage.vue';
-import ChargePointFaultMessage from './ChargePointFaultMessage.vue';
+import ChargePointMessage from './ChargePointMessage.vue';
 import ChargePointVehicleSelect from './ChargePointVehicleSelect.vue';
 import ChargePointSettings from './ChargePointSettings.vue';
 import ManualSocDialog from './ManualSocDialog.vue';
@@ -92,8 +123,6 @@ import ChargePointPowerData from './ChargePointPowerData.vue';
 import { useQuasar } from 'quasar';
 
 const cardRef = ref<{ $el: HTMLElement } | null>(null);
-const setCardWidth =
-  inject<(width: number | undefined) => void>('setCardWidth');
 
 const mqttStore = useMqttStore();
 
@@ -101,6 +130,8 @@ const $q = useQuasar();
 
 const props = defineProps<{
   chargePointId: number;
+  closeButton?: boolean;
+  fullHeight?: boolean;
 }>();
 
 const vehicleId = computed(() => {
@@ -268,14 +299,31 @@ const refreshSoc = () => {
     message: 'SoC Update angefordert.',
   });
 };
-
-onMounted(() => {
-  const cardWidth = cardRef.value?.$el.offsetWidth;
-  setCardWidth?.(cardWidth);
-});
 </script>
 <style lang="scss" scoped>
 .card-width {
   width: 22em;
+}
+
+.q-card__section {
+  padding-left: $space-base;
+  padding-right: $space-base;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.q-card__section:first-of-type {
+  padding-top: $space-base;
+  padding-bottom: 0;
+}
+
+.q-card__section:last-of-type {
+  padding-top: 0;
+  padding-bottom: $space-base;
+}
+
+.q-card__section:not(:first-of-type):not(:last-of-type) {
+  padding-top: 0;
+  padding-bottom: 0;
 }
 </style>
