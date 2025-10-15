@@ -42,8 +42,9 @@ class AVMHomeAutomation:
         if os.path.isfile(CACHEFILE):
             self.logMessage(LOGLEVELDEBUG, "found an AVM cache file, trying to load")
             try:
-                with open(CACHEFILE, 'r') as f:
-                    self.cache = json.loads(f.read().strip())
+                f = open(CACHEFILE, 'r')
+                self.cache = json.loads(f.read().strip())
+                f.close()
             except Exception as e:
                 self.logMessage(LOGLEVELDEBUG, "unable to load cache file: %s" % (e))
 
@@ -64,8 +65,9 @@ class AVMHomeAutomation:
                 else:
                     cacheToWrite[login] = self.cache[login]
         try:
-            with open(CACHEFILE, 'w') as f:
-                json.dump(cacheToWrite, f)
+            f = open(CACHEFILE, 'w')
+            json.dump(cacheToWrite, f)
+            f.close()
         except Exception as e:
             self.logMessage(LOGLEVELDEBUG, "unable to write cache file: %s" % (e))
 
@@ -164,7 +166,28 @@ class AVMHomeAutomation:
 
     # logMessage writes a message to the logfile for the smarthome device.
     def logMessage(self, level, message):
-        log.debug(f'({self.devicenumber}) AVM (actor: {self.switchname}) {message}')
+        if level < self.loglevel:
+            return
+        now = time.localtime()  # getstruct_time
+        time_string = time.strftime("%Y-%m-%d %H:%M:%S", now)
+        logfile_string = '/var/www/html/openWB/ramdisk/smarthome.log'
+        try:
+            if os.path.isfile(logfile_string):
+                f = open(logfile_string, 'a', encoding='utf8')
+            else:
+                f = open(logfile_string, 'w', encoding='utf8')
+            prefix = ""
+            if level == LOGLEVELDEBUG:
+                prefix = "[DEBUG] "
+            if level == LOGLEVELINFO:
+                prefix = "[INFO] "
+            if level == LOGLEVELERROR:
+                prefix = "[ERROR] "
+            log.debug('%s: (%s) AVM (actor: %s) %s%s' %
+                      (time_string, self.devicenumber, self.switchname, prefix, message), file=f)
+            f.close()
+        except IOError:
+            pass
 
     # getDevicesDict returns a dictionary that maps defined actor names to its
     # unique hardware ID (called "AIN": "Actuator Identification Number") and
@@ -339,8 +362,9 @@ class AVMHomeAutomation:
         outFileString = '/var/www/html/openWB/ramdisk/smarthome_device_ret' + str(self.devicenumber)
         self.logMessage(LOGLEVELDEBUG, "handing answer back to smarthomehandler via %s" % (outFileString))
         try:
-            with open(outFileString, 'w') as f1:
-                json.dump(answer, f1)
+            f1 = open(outFileString, 'w')
+            json.dump(answer, f1)
+            f1.close()
         except IOError as e:
             self.logMessage(LOGLEVELERROR, "error writing power result %s" % (e))
             log.debug(answer)  # dump answer to stdout if file cannot be written

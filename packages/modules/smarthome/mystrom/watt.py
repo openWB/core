@@ -1,11 +1,8 @@
 #!/usr/bin/python3
-import logging
 import sys
 import time
 import json
 import urllib.request
-
-log = logging.getLogger(__name__)
 
 named_tuple = time.localtime()  # getstruct_time
 time_string = time.strftime("%m/%d/%Y, %H:%M:%S mystrom watty.py", named_tuple)
@@ -24,5 +21,6 @@ temp = templong[0:5]
 powerc = 0
 answer = '{"power":' + str(aktpower) + ',"powerc":' + str(powerc) + ',"on":' + \
     str(relais) + ',"temp0":' + str(temp) + '} '
-with open('/var/www/html/openWB/ramdisk/smarthome_device_ret' + str(devicenumber), 'w') as f1:
-    log.debug(answer)
+f1 = open('/var/www/html/openWB/ramdisk/smarthome_device_ret' + str(devicenumber), 'w')
+json.dump(answer, f1)
+f1.close()

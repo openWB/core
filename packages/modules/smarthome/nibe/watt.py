@@ -1,10 +1,7 @@
 #!/usr/bin/python3
-import logging
 import sys
 import json
 from pymodbus.client.sync import ModbusTcpClient
-
-log = logging.getLogger(__name__)
 
 # get variables from arguments
 devicenumber = str(sys.argv[1])  # SmartHome device number
@@ -32,7 +29,8 @@ else:
     CurrentPower = None  # Handle error case
 
 answer = '{"power":' + str(CurrentPower) + '}'
-with open('/var/www/html/openWB/ramdisk/smarthome_device_ret' + str(devicenumber), 'w') as f1:
-    json.dump(answer, f1)
+f1 = open('/var/www/html/openWB/ramdisk/smarthome_device_ret' + str(devicenumber), 'w')
+json.dump(answer, f1)
+f1.close()
 
 client.close()  # clean disconnect from modbus server

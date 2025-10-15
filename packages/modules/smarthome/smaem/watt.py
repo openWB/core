@@ -33,6 +33,7 @@ import sys
 import os
 import datetime
 import time
+import json
 import signal
 import socket
 import struct
@@ -67,7 +68,7 @@ returnfile = '/var/www/html/openWB/ramdisk/smarthome_device_ret' + \
 timefile = '/var/www/html/openWB/ramdisk/smarthome_device_ret' + \
     str(devicenumber) + '_time'  # Dummy file needed for timestamp of last metering
 # Logfile for additional output beside of the smarthome.log
-
+debugfile = open('/var/www/html/openWB/ramdisk/smaem.log', 'a', newline='\r\n')
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -107,9 +108,9 @@ if sock_data[16:18] != b'\x60\x69':
              "HomeManager (2) is sending in the network.")
 
 emparts = decode_speedwire(sock_data)
-log.debug('SMA:: smaserial: #' + str(smaserial) + '# - Current SMA serial number:#' +
-          str(emparts['serial']) + '# - watt:#' + str(int(emparts.get("pconsume"))) + '# - wattc:#' +
-          str("{:.3f}".format(int(emparts.get('pconsumecounter')*1000))) + '#')
+debugfile.write(str(datetime.datetime.now()) + ': smaserial: #' + str(smaserial) + '# - Current SMA serial number:#' +
+                str(emparts['serial']) + '# - watt:#' + str(int(emparts.get("pconsume"))) + '# - wattc:#' +
+                str("{:.3f}".format(int(emparts.get('pconsumecounter')*1000))) + '#\n')
 
 # Remember: We assume that beside of our EnergyMeter there are more SMA devices present (like HomeManager 2.0 or other
 # EnergyMeter) - so must not accept any data or smaserial = None
@@ -117,8 +118,8 @@ if str(emparts['serial']) == str(smaserial):  # Scenario 1: Our EnergyMeter is s
     # our output variables
     watt = str(int(emparts.get("pconsume")))
     wattc = str("{:.3f}".format(int(emparts.get('pconsumecounter')*1000)))
-    log.debug('SMA:: 1 - Our SMA EM ' + str(smaserial) +
-              ' is sending, everything fine. watt: #' + str(watt) + '# - wattc: #' + str(wattc) + '#')
+    debugfile.write(str(datetime.datetime.now()) + ': 1 - Our SMA EM ' + str(smaserial) +
+                    ' is sending, everything fine. watt: #' + str(watt) + '# - wattc: #' + str(wattc) + '#\n')
 # Scenario 2: Our EnergyMeter is not sending but we have a returnfile which is older than n seconds (parameter
 # secondssincelastmetering)
 elif ((os.path.isfile(returnfile)) and
@@ -127,27 +128,29 @@ elif ((os.path.isfile(returnfile)) and
     # We set "0" as current Power Consume (pconsume) and (from the existing ret-file) the last value for the Power
     # Consume Counter (pconsumecounter)
     watt = '0'
-    with open(returnfile, 'r') as ret:
-        lastvalues = ret.read()
+    ret = open(returnfile, 'r')
+    lastvalues = ret.read()
+    ret.close()
     timesincelastmetering = int(round(time.time(), 0)-lastmodificationtime)
     wattc = lastvalues[int(lastvalues.rfind('powerc')) + 9:lastvalues.find('}')]
-    log.debug('SMA:: 2 - Debug: time.time(): #' + str(round(time.time(), 0)) +
-              '# - lastmodificationtime: #' + str(lastmodificationtime) +
-              '# - timesincelastmetering: #' + str(timesincelastmetering) +
-              '# - int(secondssincelastmetering): #' + str(int(secondssincelastmetering)) + '#')
-    log.debug('SMA:: 2 - We create a fake ret-file. watt: #' + str(watt) +
-              '# - wattc: #' + str(
+    debugfile.write(str(datetime.datetime.now()) + ': 2 - Debug: time.time(): #' + str(round(time.time(), 0)) +
+                    '# - lastmodificationtime: #' + str(lastmodificationtime) +
+                    '# - timesincelastmetering: #' + str(timesincelastmetering) +
+                    '# - int(secondssincelastmetering): #' + str(int(secondssincelastmetering)) + '#\n')
+    debugfile.write(str(datetime.datetime.now()) + ': 2 - We create a fake ret-file. watt: #' + str(watt) +
+                    '# - wattc: #' + str(
         wattc) + '# - lastvalues: #' + lastvalues + '# - int-lastvalues.rfind-powerc: #' +
-        str((lastvalues.rfind('powerc'))) + '#')
+        str((lastvalues.rfind('powerc'))) + '#\n')
 
 # Scenario 3: Our EnergyMeter is not sending but we have a returnfile which is younger than n seconds
 # (parameter secondssincelastmetering)
 elif ((os.path.isfile(returnfile)) and
         (int((round(time.time(), 0)-lastmodificationtime)) < int(secondssincelastmetering))):
     # We have a ret-file which is younger than n seconds. We do nothing as the existing ret-file is good enough.
-    log.debug('SMA:: 3 - The existing ret-file is fine enough. round(time.time(),0): #' + str(round(time.time(), 0))
-              + '# - lastmodificationtime: #' + str(lastmodificationtime) + '# - secondssincelastmetering: #'
-              + str(secondssincelastmetering) + '#')
+    debugfile.write(str(datetime.datetime.now()) +
+                    ': 3 - The existing ret-file is fine enough. round(time.time(),0): #' + str(round(time.time(), 0))
+                    + '# - lastmodificationtime: #' + str(lastmodificationtime) + '# - secondssincelastmetering: #'
+                    + str(secondssincelastmetering) + '#\n')
     sys.exit("Module SMAEM: No data received but we have historical data which is younger than " +
              str(secondssincelastmetering) + " seconds.")
 else:
@@ -159,16 +162,20 @@ else:
     # Module SMAEM: No data received and no historical data since boot time
     # Leistungsmessung smaem [...] Fehlermeldung: [Errno 2] No such file or directory:
     # '/var/www/html/openWB/ramdisk/smarthome_device_ret1'
-    log.debug('SMA:: 4 - No data received and no historical data since boottime')
+    debugfile.write(str(datetime.datetime.now()) + ': 4 - No data received and no historical data since boottime\n')
     sys.exit(str(datetime.datetime.now()) + ": Module SMAEM: No data received and no historical data since boottime")
 
 # General output section
 
 answer = '{"power":' + watt + ',"powerc":' + wattc + '}'
+f = open(returnfile, 'w')
+json.dump(answer, f)
+f.close()
 
-with open(timefile, 'w') as t:
-    t.write(str(datetime.datetime.now()) +
-            ': File is created by Smarthome module SMAEM for validating '
-            'the timestamp of the last return-file creation.')
+t = open(timefile, 'w')
+t.write(str(datetime.datetime.now()) +
+        ': File is created by Smarthome module SMAEM for validating the timestamp of the last return-file creation.')
+t.close()
 
-log.debug('SMA:: 99 - Output answer: #' + answer + '#')
+debugfile.write(str(datetime.datetime.now()) + ': 99 - Output answer: #' + answer + '#\n')
+debugfile.close()
