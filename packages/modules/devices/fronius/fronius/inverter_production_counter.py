@@ -110,4 +110,4 @@ class FroniusProductionCounter(AbstractCounter):
         )
 
 
-component_descriptor = ComponentDescriptor(configuration_factory=FroniusProductionCounter)
+component_descriptor = ComponentDescriptor(configuration_factory=FroniusProductionCounterSetup)
