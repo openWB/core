@@ -440,7 +440,7 @@ class Chargepoint(ChargepointRfidMixin):
             if self.data.control_parameter.state == ChargepointState.WAIT_FOR_USING_PHASES:
                 if check_timestamp(self.data.control_parameter.timestamp_charge_start,
                                    charging_ev.ev_template.data.keep_charge_active_duration) is False:
-                    if self.cp_ev_support_phase_switch() and self.failed_phase_switches_reached():
+                    if self.hw_supports_phase_switch() and self.failed_phase_switches_reached():
                         if phase_switch.phase_switch_thread_alive(self.num) is False:
                             self.data.control_parameter.state = ChargepointState.PHASE_SWITCH_AWAITED
                             if self._is_phase_switch_required() is False:
@@ -467,7 +467,7 @@ class Chargepoint(ChargepointRfidMixin):
                     Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/phases_to_use",
                               self.data.control_parameter.phases)
                     self.data.set.phases_to_use = self.data.control_parameter.phases
-                if self.cp_ev_support_phase_switch():
+                if self.hw_supports_phase_switch():
                     if self._is_phase_switch_required():
                         # Wenn die Umschaltverzögerung aktiv ist, darf nicht umgeschaltet werden.
                         if (self.data.control_parameter.state != ChargepointState.PERFORMING_PHASE_SWITCH and
@@ -569,7 +569,7 @@ class Chargepoint(ChargepointRfidMixin):
         else:
             return BidiState.BIDI_CAPABLE
 
-    def set_phases(self, phases: int) -> int:
+    def set_phases(self, phases: int, template_phases: int) -> int:
         charging_ev = self.data.set.charging_ev_data
         phases = min(phases, self.get_max_phase_hw())
 
@@ -584,12 +584,13 @@ class Chargepoint(ChargepointRfidMixin):
                         phases = self.data.get.phases_in_use
                     else:
                         phases = self.data.control_parameter.phases
-                elif self.cp_ev_support_phase_switch() is False:
+                elif self.hw_supports_phase_switch() is False:
                     # sonst passt die Phasenzahl nicht bei Autos, die eine Phase weg schalten.
                     log.info(f"Phasenumschaltung an Ladepunkt {self.num} wird durch die Hardware nicht unterstützt.")
                     phases = phases
         if phases != self.data.control_parameter.phases:
             self.data.control_parameter.phases = phases
+        self.data.control_parameter.template_phases = template_phases
         return phases
 
     def check_cp_max_current(self, required_current: float, phases: int) -> float:
@@ -698,18 +699,18 @@ class Chargepoint(ChargepointRfidMixin):
             if charging_possible:
                 try:
                     charging_ev = self._get_charging_ev(vehicle, ev_list)
-                    state, message_ev, submode, required_current, phases = charging_ev.get_required_current(
+                    state, message_ev, submode, required_current, template_phases = charging_ev.get_required_current(
                         self.data.set.charge_template,
                         self.data.control_parameter,
                         self.get_max_phase_hw(),
-                        self.cp_ev_support_phase_switch(),
+                        self.hw_supports_phase_switch(),
                         self.template.data.charging_type,
                         self.data.control_parameter.timestamp_chargemode_changed or create_timestamp(),
                         self.data.set.log.imported_since_plugged,
                         self.hw_bidi_capable(),
                         self.data.get.phases_in_use)
-                    phases = self.get_phases_by_selected_chargemode(phases)
-                    phases = self.set_phases(phases)
+                    required_phases = self.get_phases_by_selected_chargemode(template_phases)
+                    required_phases = self.set_phases(required_phases, template_phases)
                     self._pub_connected_vehicle(charging_ev)
                     required_current = self.chargepoint_module.add_conversion_loss_to_current(required_current)
                     self.set_chargemode_changed(submode)
@@ -900,39 +901,20 @@ class Chargepoint(ChargepointRfidMixin):
         except Exception:
             log.exception("Fehler im Prepare-Modul")
 
-    def cp_ev_chargemode_support_phase_switch(self) -> bool:
-        if (self.cp_ev_support_phase_switch() and
+    def cp_state_hw_support_phase_switch(self) -> bool:
+        if (self.hw_supports_phase_switch() and
                 self.data.get.charge_state and
-                self.chargemode_support_phase_switch() and
                 (self.data.control_parameter.state == ChargepointState.CHARGING_ALLOWED or
                  self.data.control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY)):
             return self.failed_phase_switches_reached()
         else:
             return False
 
-    def cp_ev_support_phase_switch(self) -> bool:
+    def hw_supports_phase_switch(self) -> bool:
         return (self.data.config.auto_phase_switch_hw and
                 self.data.get.evse_signaling != EvseSignaling.HLC and
                 (self.data.set.charging_ev_data.ev_template.data.prevent_phase_switch is False or
                  self.data.set.log.imported_since_plugged == 0))
-
-    def chargemode_support_phase_switch(self) -> bool:
-        control_parameter = self.data.control_parameter
-        pv_auto_switch = ((control_parameter.chargemode == Chargemode.PV_CHARGING or
-                           control_parameter.chargemode == Chargemode.ECO_CHARGING) and
-                          control_parameter.submode == Chargemode.PV_CHARGING and
-                          self.data.set.charge_template.data.chargemode.pv_charging.phases_to_use == 0)
-        for p in self.data.set.charge_template.data.chargemode.scheduled_charging.plans:
-            if p.id == self.data.control_parameter.current_plan:
-                phases_to_use_pv = p.phases_to_use_pv
-                break
-        else:
-            phases_to_use_pv = 1
-        scheduled_auto_switch = (
-            control_parameter.chargemode == Chargemode.SCHEDULED_CHARGING and
-            control_parameter.submode == Chargemode.PV_CHARGING and
-            phases_to_use_pv == 0)
-        return (pv_auto_switch or scheduled_auto_switch)
 
     def failed_phase_switches_reached(self) -> bool:
         if ((data.data.general_data.data.chargemode_config.retry_failed_phase_switches and
