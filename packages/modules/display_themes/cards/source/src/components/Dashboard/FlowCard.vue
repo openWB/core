@@ -244,14 +244,6 @@ export default {
         default: return "---";
       }
     },
-     batteryModeColor() {
-      switch (this.mqttStore.getBatteryMode) {
-        case "ev_mode": return "var(--color--primary)";
-        case "bat_mode": return "var(--color--warning)";
-        case "min_soc_bat_mode": return "var(--color--success)";
-        default: return "var(--color--primary)";
-      }
-    },
     svgComponents() {
       var components = [];
       // add grid component
@@ -771,22 +763,21 @@ export default {
               </g>
               <g v-if="component.id === 'battery'">
                 <rect
-                  :x="svgSize.circleRadius * -0.4"
-                  :y="-svgSize.circleRadius * -0.15"
-                  :width="svgSize.circleRadius * 1.4"
-                  :height="svgSize.circleRadius * 0.8"
+                  :x="svgSize.circleRadius * 1.2"
+                  :y="-svgSize.circleRadius * 1.4"
+                  :width="svgSize.circleRadius * 1.1"
+                  :height="svgSize.circleRadius * 0.7"
                   :rx="svgSize.circleRadius * 0.3"
                   :ry="svgSize.circleRadius * 0.55"
-                  :fill="batteryModeColor"
                   class="battery-mode-button"
                   opacity="1"
                 />
                 <image
                   :href="batteryModeIcon"
-                  :x="svgSize.circleRadius * -0.02"
-                  :y="-svgSize.circleRadius * -0.20"
-                  :height="svgSize.circleRadius * 0.7"
-                  :width="svgSize.circleRadius * 0.7"
+                  :x="svgSize.circleRadius * 1.45"
+                  :y="-svgSize.circleRadius * 1.35"
+                  :height="svgSize.circleRadius * 0.6"
+                  :width="svgSize.circleRadius * 0.6"
                 />
               </g>
             </g>
@@ -940,7 +931,7 @@ text .fill-dark {
 }
 
 .battery-mode-button {
-  stroke: black !important;
+  stroke: var(--color--warning) !important;
 }
 
 .home text {

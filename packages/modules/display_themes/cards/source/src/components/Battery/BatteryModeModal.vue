@@ -5,7 +5,7 @@
     @update:model-value="$emit('update:modelValue', $event)"
   >
     <template #header>
-      Laden mit Überschuss Modus:
+      Speicher-Beachtung: Überschuss primär für
     </template>
     <i-form>
       <i-form-group>
