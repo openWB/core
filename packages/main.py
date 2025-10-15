@@ -8,6 +8,7 @@ from helpermodules.utils import run_command, thread_handler
 import threading
 import sys
 import functools
+
 # als erstes logging initialisieren, damit auch ImportError geloggt werden
 logger.setup_logging()
 log = logging.getLogger()
