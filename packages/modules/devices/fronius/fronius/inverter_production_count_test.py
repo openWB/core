@@ -7,8 +7,8 @@ from dataclass_utils import dataclass_from_dict
 from helpermodules import compatibility
 from modules.conftest import SAMPLE_IP
 from modules.common.component_state import InverterState
-from modules.devices.fronius.fronius import inverter_production_counter
-from modules.devices.fronius.fronius.config import FroniusConfiguration, FroniusProductionCounterSetup
+from modules.devices.fronius.fronius import inverter_production_count
+from modules.devices.fronius.fronius.config import FroniusConfiguration, FroniusProductionCountSetup
 from test_utils.mock_ramdisk import MockRamdisk
 
 
@@ -18,21 +18,21 @@ def mock_ramdisk(monkeypatch):
     return MockRamdisk(monkeypatch)
 
 
-def test_production_counter(monkeypatch, requests_mock: requests_mock.mock):
+def test_production_count(monkeypatch, requests_mock: requests_mock.mock):
     mock_inverter_value_store = Mock()
-    monkeypatch.setattr(inverter_production_counter, "get_inverter_value_store",
+    monkeypatch.setattr(inverter_production_count, "get_inverter_value_store",
                         Mock(return_value=mock_inverter_value_store))
     requests_mock.get(f"http://{SAMPLE_IP}/solar_api/v1/GetMeterRealtimeData.cgi", json=json_ext_var2)
     mock_inverter_value_store = Mock()
-    monkeypatch.setattr(inverter_production_counter, "get_inverter_value_store",
+    monkeypatch.setattr(inverter_production_count, "get_inverter_value_store",
                         Mock(return_value=mock_inverter_value_store))
 
-    component_config = FroniusProductionCounterSetup()
+    component_config = FroniusProductionCountSetup()
     component_config.configuration.variant = 2
     device_config = FroniusConfiguration()
     device_config.ip_address = SAMPLE_IP
     component_config.configuration.meter_id = 1
-    i = inverter_production_counter.FroniusProductionCounter(component_config, device_config=dataclass_from_dict(
+    i = inverter_production_count.FroniusProductionCount(component_config, device_config=dataclass_from_dict(
         FroniusConfiguration, device_config), device_id=0)
     i.initialize()
 

@@ -10,17 +10,17 @@ from modules.common.configurable_device import ComponentFactoryByType, Configura
 from modules.devices.fronius.fronius.bat import FroniusBat
 from modules.devices.fronius.fronius.config import (Fronius, FroniusBatSetup, FroniusSecondaryInverterSetup,
                                                     FroniusSmCounterSetup, FroniusS0CounterSetup,
-                                                    FroniusProductionCounterSetup, FroniusInverterSetup)
+                                                    FroniusProductionCountSetup, FroniusInverterSetup)
 from modules.devices.fronius.fronius.counter_s0 import FroniusS0Counter
 from modules.devices.fronius.fronius.counter_sm import FroniusSmCounter
 from modules.devices.fronius.fronius.inverter import FroniusInverter
 from modules.devices.fronius.fronius.inverter_secondary import FroniusSecondaryInverter
-from modules.devices.fronius.fronius.inverter_production_counter import FroniusProductionCounter
+from modules.devices.fronius.fronius.inverter_production_count import FroniusProductionCount
 
 log = logging.getLogger(__name__)
 
 fronius_component_classes = Union[FroniusBat, FroniusSmCounter, FroniusS0Counter,
-                                  FroniusInverter, FroniusSecondaryInverter, FroniusProductionCounter]
+                                  FroniusInverter, FroniusSecondaryInverter, FroniusProductionCount]
 
 
 def create_device(device_config: Fronius):
@@ -47,10 +47,10 @@ def create_device(device_config: Fronius):
         return FroniusSecondaryInverter(component_config=component_config,
                                         device_id=device_config.id)
 
-    def create_inverter_counter_production_component(component_config: FroniusProductionCounterSetup):
-        return FroniusProductionCounter(component_config=component_config,
-                                        device_id=device_config.id,
-                                        device_config=device_config.configuration)
+    def create_inverter_counter_production_component(component_config: FroniusProductionCountSetup):
+        return FroniusProductionCount(component_config=component_config,
+                                      device_id=device_config.id,
+                                      device_config=device_config.configuration)
 
     def update_components(components: Iterable[fronius_component_classes]):
         inverter_response = None

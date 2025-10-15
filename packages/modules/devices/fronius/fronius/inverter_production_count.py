@@ -5,14 +5,14 @@ from typing import TypedDict, Any
 from requests import Session
 
 from modules.common import req
-from modules.common.abstract_device import AbstractCounter
+from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount import SimCounter
 from modules.common.store import get_inverter_value_store
 from modules.devices.fronius.fronius.config import FroniusConfiguration, MeterLocation
-from modules.devices.fronius.fronius.config import FroniusProductionCounterSetup
+from modules.devices.fronius.fronius.config import FroniusProductionCountSetup
 
 log = logging.getLogger(__name__)
 
@@ -22,8 +22,8 @@ class KwargsDict(TypedDict):
     device_config: FroniusConfiguration
 
 
-class FroniusProductionCounter(AbstractCounter):
-    def __init__(self, component_config: FroniusProductionCounterSetup, **kwargs: Any) -> None:
+class FroniusProductionCount(AbstractInverter):
+    def __init__(self, component_config: FroniusProductionCountSetup, **kwargs: Any) -> None:
         self.component_config = component_config
         self.kwargs: KwargsDict = kwargs
 
@@ -71,7 +71,7 @@ class FroniusProductionCounter(AbstractCounter):
         log.debug("Einbauort: "+str(meter_location))
 
         powers = [response_json_id["PowerReal_P_Phase_"+str(num)] for num in range(1, 4)]
-        if meter_location != MeterLocation.external:
+        if meter_location == MeterLocation.grid:
             raise ValueError("Fehler: Dieser Zähler ist kein Erzeugerzähler.")
         else:
             power = response_json_id["PowerReal_P_Sum"] * -1
@@ -96,7 +96,7 @@ class FroniusProductionCounter(AbstractCounter):
         log.debug("Einbauort: "+str(meter_location))
 
         powers = [response_json_id["SMARTMETER_POWERACTIVE_MEAN_0"+str(num)+"_F64"] for num in range(1, 4)]
-        if meter_location != MeterLocation.external:
+        if meter_location == MeterLocation.grid:
             raise ValueError("Fehler: Dieser Zähler ist kein Erzeugerzähler.")
         else:
             power = response_json_id["SMARTMETER_POWERACTIVE_MEAN_SUM_F64"]
@@ -110,4 +110,4 @@ class FroniusProductionCounter(AbstractCounter):
         )
 
 
-component_descriptor = ComponentDescriptor(configuration_factory=FroniusProductionCounterSetup)
+component_descriptor = ComponentDescriptor(configuration_factory=FroniusProductionCountSetup)
