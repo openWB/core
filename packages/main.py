@@ -172,6 +172,10 @@ class HandlerAlgorithm:
                     self.interval_counter = 1
                 else:
                     self.interval_counter = self.interval_counter + 1
+            
+            # In-Memory Log-Handler zurücksetzen
+            logger.clear_in_memory_log_handler("main")
+
             log.info("# ***Start*** ")
             # log.debug(run_command.run_shell_command("top -b -n 1 | head -n 20"))
             # log.debug(f'Drosselung: {run_command.run_shell_command("if which vcgencmd >/dev/null; then vcgencmd get_throttled; else echo not found; fi")}')
@@ -180,6 +184,7 @@ class HandlerAlgorithm:
                 return
             try:
                 handler_with_control_interval()
+                logger.write_logs_to_file("main")
                 write_gc_stats()
                 #print_active_threads_and_referrers()
                 #analyze_function_origins()
