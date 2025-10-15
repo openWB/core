@@ -51,8 +51,7 @@ class Loadvars:
                                        args=(), name=f"set values cp{cp.chargepoint_module.config.id}"))
             except Exception:
                 log.exception(f"Fehler im loadvars-Modul bei Element {cp.num}")
-        result = joined_thread_handler(modules_threads, data.data.general_data.data.control_interval/3)
-        return result
+        return joined_thread_handler(modules_threads, data.data.general_data.data.control_interval/3)
 
     def _update_values_of_level(self, elements, not_finished_threads: List[str]) -> None:
         """Threads, um von der niedrigsten Ebene der Hierarchie Werte ggf. miteinander zu verrechnen und zu
