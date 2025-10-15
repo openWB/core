@@ -25,4 +25,4 @@ powerc = 0
 answer = '{"power":' + str(aktpower) + ',"powerc":' + str(powerc) + ',"on":' + \
     str(relais) + ',"temp0":' + str(temp) + '} '
 with open('/var/www/html/openWB/ramdisk/smarthome_device_ret' + str(devicenumber), 'w') as f1:
-    log.debug(answer)
+    log.debug('Device' + str(devicenumber) + ' ' + answer)
