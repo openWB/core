@@ -252,6 +252,7 @@ class HandlerAlgorithm:
                 for cp in data.data.cp_data.values():
                     calculate_charge_cost(cp)
             data.data.optional_data.et_get_prices()
+            logger.clear_in_memory_log_handler(None)
         except Exception:
             log.exception("Fehler im Main-Modul")
 
@@ -273,6 +274,7 @@ def schedule_jobs():
 
 try:
     log.debug("Start openWB2.service")
+    old_memory_usage = 0
     loadvars_ = loadvars.Loadvars()
     data.data_init(loadvars_.event_module_update_completed)
     update_config.UpdateConfig().update()
