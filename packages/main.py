@@ -221,6 +221,68 @@ class HandlerAlgorithm:
             with ChangedValuesContext(loadvars_.event_module_update_completed):
                 sub.system_data["system"].update_ip_address()
             
+            # In-Memory Log-Handler zurücksetzen
+            logger.clear_in_memory_log_handler("main")
+
+            log.info("# ***Start*** ")
+            # log.debug(run_command.run_shell_command("top -b -n 1 | head -n 20"))
+            # log.debug(f'Drosselung: {run_command.run_shell_command("if which vcgencmd >/dev/null; then vcgencmd get_throttled; else echo not found; fi")}')
+            Pub().pub("openWB/set/system/time", timecheck.create_timestamp())
+            if not self.__acquire_lock("handler10Sec", error_threshold=30):
+                return
+            try:
+                logger.write_logs_to_file("main")
+            finally:
+                self.__release_lock("handler10Sec")
+        except Exception:
+            log.exception("Fehler im Main-Modul")
+
+    @__with_handler_lock(error_threshold=60)
+    def handler5MinAlgorithm(self):
+        """ Handler, der alle 5 Minuten aufgerufen wird und die Heartbeats der Threads überprüft und die Aufgaben
+        ausführt, die nur alle 5 Minuten ausgeführt werden müssen.
+        """
+        try:
+            with ChangedValuesContext(loadvars_.event_module_update_completed):
+                totals = save_log(LogType.DAILY)
+                update_daily_yields(totals)
+                update_pv_monthly_yearly_yields()
+                data.data.general_data.grid_protection()
+                data.data.optional_data.ocpp_transfer_meter_values()
+                data.data.counter_all_data.validate_hierarchy()
+        except Exception:
+            log.exception("Fehler im Main-Modul")
+
+    @__with_handler_lock(error_threshold=60)
+    def handler5Min(self):
+        """ Handler, der alle 5 Minuten aufgerufen wird und die Heartbeats der Threads überprüft und die Aufgaben
+        ausführt, die nur alle 5 Minuten ausgeführt werden müssen.
+        """
+        try:
+            log.debug("5 Minuten Handler ausführen.")
+            if not sub.heartbeat:
+                log.error("Heartbeat für Subdata nicht zurückgesetzt.")
+                sub.disconnect()
+                thread_handler(Thread(target=sub.sub_topics, args=(), name="Subdata"))
+            else:
+                sub.heartbeat = False
+
+            if not set.heartbeat:
+                log.error("Heartbeat für Setdata nicht zurückgesetzt.")
+                set.disconnect()
+                thread_handler(Thread(target=set.set_data, args=(), name="Setdata"))
+            else:
+                set.heartbeat = False
+
+            if sub.internal_chargepoint_data["global_data"].configured:
+                if not general_internal_chargepoint_handler.internal_chargepoint_handler.heartbeat:
+                    log.error("Heartbeat für Internen Ladepunkt nicht zurückgesetzt.")
+                    general_internal_chargepoint_handler.event_stop.set()
+                    general_internal_chargepoint_handler.event_start.set()
+                else:
+                    general_internal_chargepoint_handler.internal_chargepoint_handler.heartbeat = False
+            with ChangedValuesContext(loadvars_.event_module_update_completed):
+                sub.system_data["system"].update_ip_address()
             data.data.optional_data.et_get_prices()
         except Exception:
             log.exception("Fehler im Main-Modul")

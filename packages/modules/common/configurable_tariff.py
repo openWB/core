@@ -40,17 +40,20 @@ class ConfigurableElectricityTariff(Generic[T_TARIFF_CONFIG]):
                 self.__log_and_publish_progress(timeslot_length_seconds)
 
     def __query_et_provider_data_once_per_day(self):
+        def is_tomorrow(last_timestamp: str) -> bool:
+            return self.__day_of(date=datetime.now()) < self.__day_of(datetime.fromtimestamp(int(last_timestamp)))
         if datetime.now() > self.__next_query_time:
             log.info(f'Wartezeit {self.__next_query_time.strftime("%Y%m%d-%H:%M:%S")}'
                      ' abgelaufen, Strompreise werden abgefragt')
             try:
-                last_known_timestamp = self.__get_last_entry_time_stamp()
-                self.__tariff_state = self._component_updater()
-                if last_known_timestamp < (max(self.__tariff_state.prices)):
+                new_tariff_state = self._component_updater()
+                if (0 < len(new_tariff_state.prices) and is_tomorrow(max(new_tariff_state.prices))):
+                    self.__tariff_state = new_tariff_state
                     self.__calulate_next_query_time()
                 else:
                     log.info('Keine Daten für morgen erhalten, weiterer Versuch in 5 Minuten')
             except Exception as e:
+                log.warning(f'Fehler beim Abruf der Strompreise: {e}, nächster Versuch in 5 Minuten.')
                 self.fault_state.warning(
                     f'Fehler beim Abruf der Strompreise: {e}, nächster Versuch in 5 Minuten.'
                 )
@@ -66,16 +69,16 @@ class ConfigurableElectricityTariff(Generic[T_TARIFF_CONFIG]):
             else 'morgen '
         )
         return (
-                f'frühestens {tomorrow}{self.__next_query_time.strftime("%H:%M")}'
-                if datetime.now() < self.__next_query_time
-                else "im nächsten Regelzyklus"
+            f'frühestens {tomorrow}{self.__next_query_time.strftime("%H:%M")}'
+            if datetime.now() < self.__next_query_time
+            else "im nächsten Regelzyklus"
         )
 
     def __log_and_publish_progress(self, timeslot_length_seconds):
         def publish_info(message_extension: str) -> None:
             self.fault_state.no_error(
-                        f'Die Preisliste hat {message_extension}{len(self.__tariff_state.prices)} Einträge. '
-                        f'Nächster Abruf der Strompreise {self.__next_query_message()}.')
+                f'Die Preisliste hat {message_extension}{len(self.__tariff_state.prices)} Einträge. '
+                f'Nächster Abruf der Strompreise {self.__next_query_message()}.')
         expected_time_slots = int(24 * ONE_HOUR_SECONDS / timeslot_length_seconds)
         publish_info(f'nicht {expected_time_slots}, sondern '
                      if len(self.__tariff_state.prices) < expected_time_slots
