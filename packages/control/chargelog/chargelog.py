@@ -191,8 +191,13 @@ def _create_entry(chargepoint, charging_ev, immediately: bool = True):
         chargepoint.data.get.imported - log_data.imported_at_plugtime, 2))
     log_data.imported_since_mode_switch = get_value_or_default(lambda: round(
         chargepoint.data.get.imported - log_data.imported_at_mode_switch, 2))
-    log_data.range_charged = get_value_or_default(lambda: round(
-        log_data.imported_since_mode_switch / charging_ev.ev_template.data.average_consump*100, 2))
+    if log_data.range_at_start is not None:
+        log_data.range_charged = get_value_or_default(lambda: round(
+            charging_ev.data.get.range - log_data.range_at_start, 2))
+    else:
+        log_data.range_charged = get_value_or_default(lambda: round(
+            (log_data.imported_since_mode_switch * charging_ev.ev_template.data.efficiency /
+             charging_ev.ev_template.data.average_consump), 2))
     log_data.time_charged, duration = timecheck.get_difference_to_now(log_data.timestamp_start_charging)
     power = 0
     if duration > 0:
