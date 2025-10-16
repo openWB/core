@@ -202,3 +202,42 @@ def test_et_get_loading_hours(granularity,
 
     # evaluation
     assert loading_hours == expected_loading_hours
+
+
+@pytest.mark.parametrize(
+    "provider_available, current_price, max_price, expected",
+    [
+        pytest.param(True, 0.10, 0.15, True, id="price_below_max"),
+        pytest.param(True, 0.15, 0.15, True, id="price_equal_max"),
+        pytest.param(True, 0.20, 0.15, False, id="price_above_max"),
+        pytest.param(False, None, 0.15, True, id="provider_not_available"),
+    ]
+)
+def test_et_charging_allowed(monkeypatch, provider_available, current_price, max_price, expected):
+    opt = Optional()
+    monkeypatch.setattr(opt, "et_provider_available", Mock(return_value=provider_available))
+    if provider_available:
+        monkeypatch.setattr(opt, "et_get_current_price", Mock(return_value=current_price))
+    result = opt.et_charging_allowed(max_price)
+    assert result == expected
+
+
+def test_et_charging_allowed_keyerror(monkeypatch):
+    opt = Optional()
+    monkeypatch.setattr(opt, "et_provider_available", Mock(return_value=True))
+    monkeypatch.setattr(opt, "et_get_current_price", Mock(side_effect=KeyError))
+    called = {}
+
+    def fake_et_get_prices():
+        called["called"] = True
+    monkeypatch.setattr(opt, "et_get_prices", fake_et_get_prices)
+    opt.et_charging_allowed(0.15)
+    assert called.get("called") is True
+
+
+def test_et_charging_allowed_exception(monkeypatch):
+    opt = Optional()
+    monkeypatch.setattr(opt, "et_provider_available", Mock(return_value=True))
+    monkeypatch.setattr(opt, "et_get_current_price", Mock(side_effect=Exception))
+    result = opt.et_charging_allowed(0.15)
+    assert result is False
