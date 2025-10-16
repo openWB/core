@@ -1,5 +1,6 @@
 #!/bin/bash
 OPENWBBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+OPENWBHOMEDIR="/home/openwb"
 
 if (( $(id -u) != 0 )); then
 	echo "this script has to be run as root or with sudo"
@@ -27,6 +28,8 @@ case "$1" in
 		timeout 3 mosquitto_sub -t '#' --remove-retained --retained-only -p 1886
 		echo "deleting log data"
 		rm -r "$OPENWBBASEDIR/data/charge_log/"* "$OPENWBBASEDIR/data/daily_log/"* "$OPENWBBASEDIR/data/log/"*.log "$OPENWBBASEDIR/data/monthly_log/"*
+		echo "deleting backup key if set"
+		rm -f "$OPENWBHOMEDIR/backup.key"
 		echo "reset display rotation"
 		sudo sed -i "s/^lcd_rotate=[0-3]$/lcd_rotate=0/" "/boot/config.txt"
 		if [ -n "$cloud_bridge" ]; then

@@ -1005,7 +1005,8 @@ class SetData:
             elif "openWB/set/system/debug_level" in msg.topic:
                 self._validate_value(msg, int, [(10, 10), (20, 20), (30, 30)])
             elif ("openWB/set/system/ip_address" in msg.topic or
-                    "openWB/set/system/release_train" in msg.topic):
+                    "openWB/set/system/release_train" in msg.topic or
+                    "openWB/set/system/backup_password" in msg.topic):
                 self._validate_value(msg, str)
             elif "openWB/set/system/mqtt/bridge/" in msg.topic:
                 self._validate_value(msg, "json")
