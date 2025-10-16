@@ -45,12 +45,14 @@ class ConfigurableElectricityTariff(Generic[T_TARIFF_CONFIG]):
                      ' abgelaufen, Strompreise werden abgefragt')
             try:
                 last_known_timestamp = self.__get_last_entry_time_stamp()
-                self.__tariff_state = self._component_updater()
-                if last_known_timestamp < (max(self.__tariff_state.prices)):
+                new_tariff_state = self._component_updater()
+                if 0 < len(new_tariff_state.prices) and last_known_timestamp < (max(new_tariff_state.prices)):
+                    self.__tariff_state = new_tariff_state
                     self.__calulate_next_query_time()
                 else:
                     log.info('Keine Daten für morgen erhalten, weiterer Versuch in 5 Minuten')
             except Exception as e:
+                log.warning(f'Fehler beim Abruf der Strompreise: {e}, nächster Versuch in 5 Minuten.')
                 self.fault_state.warning(
                     f'Fehler beim Abruf der Strompreise: {e}, nächster Versuch in 5 Minuten.'
                 )

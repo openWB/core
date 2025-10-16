@@ -51,10 +51,7 @@ class Optional(OcppMixin):
         """
         try:
             if self.et_provider_available():
-                if self.et_get_current_price(prices=self.data.et.get.prices) <= max_price:
-                    return True
-                else:
-                    return False
+                return self.et_get_current_price(prices=self.data.et.get.prices) <= max_price
             else:
                 return True
         except KeyError:
