@@ -26,6 +26,5 @@ if (aktpower > 50) or (r_status == 1):
     relais = 1
 powerc = 0
 answer = '{"power":' + str(aktpower) + ',"powerc":' + str(powerc) + ',"on":' + str(relais) + '} '
-f1 = open('/var/www/html/openWB/ramdisk/smarthome_device_ret' + str(devicenumber), 'w')
-json.dump(answer, f1)
-f1.close()
+with open('/var/www/html/openWB/ramdisk/smarthome_device_ret' + str(devicenumber), 'w') as f1:
+    json.dump(answer, f1)

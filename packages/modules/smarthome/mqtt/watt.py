@@ -69,9 +69,8 @@ file_stringpv = '/var/www/html/openWB/ramdisk/smarthome_device_' + str(devicenum
 # PV-Modus
 pvmodus = 0
 if os.path.isfile(file_stringpv):
-    f = open(file_stringpv, 'r')
-    pvmodus = int(f.read())
-    f.close()
+    with open(file_stringpv, 'r') as f:
+        pvmodus = int(f.read())
 answer = '{"power":' + str(aktpower) + ',"powerc":' + str(powerc)
 answer += ',"on":' + str(pvmodus) + ',"temp0":' + str(tempa)
 answer += ',"temp1":' + str(tempb) + ',"temp2":' + str(tempc) + '}'

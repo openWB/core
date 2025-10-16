@@ -29,8 +29,7 @@ else:
     CurrentPower = None  # Handle error case
 
 answer = '{"power":' + str(CurrentPower) + '}'
-f1 = open('/var/www/html/openWB/ramdisk/smarthome_device_ret' + str(devicenumber), 'w')
-json.dump(answer, f1)
-f1.close()
+with open('/var/www/html/openWB/ramdisk/smarthome_device_ret' + str(devicenumber), 'w') as f1:
+    json.dump(answer, f1)
 
 client.close()  # clean disconnect from modbus server
