@@ -127,10 +127,12 @@ class SurplusControlled:
         for cp in get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_PV_ONLY):
             try:
                 def phase_switch_necessary() -> bool:
-                    return cp.cp_ev_chargemode_support_phase_switch() and cp.data.get.phases_in_use != 1
+                    return (cp.cp_state_hw_support_phase_switch() and
+                            cp.data.get.phases_in_use != 1 and
+                            cp.data.control_parameter.template_phases == 0)
                 control_parameter = cp.data.control_parameter
                 if cp.chargemode_changed or cp.submode_changed:
-                    if control_parameter.state == ChargepointState.CHARGING_ALLOWED:
+                    if (control_parameter.state in CHARGING_STATES):
                         if cp.data.set.charging_ev_data.ev_template.data.prevent_charge_stop is False:
                             threshold = evu_counter.calc_switch_off_threshold(cp)[0]
                             if evu_counter.calc_raw_surplus() - cp.data.set.required_power < threshold:

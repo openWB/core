@@ -62,8 +62,19 @@ def rfid_factory() -> Rfid:
 class Ocpp:
     active: bool = False
     boot_notification_sent: bool = False
-    url: Optional[str] = None
+    _url: Optional[str] = None
     version: str = "ocpp1.6"
+
+    @property
+    def url(self) -> Optional[str]:
+        return self._url
+
+    @url.setter
+    def url(self, value: Optional[str]):
+        if value is not None and not value.endswith("/"):
+            self._url = value + "/"
+        else:
+            self._url = value
 
 
 def ocpp_factory() -> Ocpp:

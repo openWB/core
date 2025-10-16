@@ -197,6 +197,9 @@ export default {
       return this.homePower.value < 0;
     },
     pvProduction() {
+      return this.pvPower.value < 0;
+    },
+    pvConsumption() {
       return this.pvPower.value > 0;
     },
     batteryDischarging() {
@@ -279,9 +282,9 @@ export default {
           id: "pv",
           class: {
             base: "pv",
-            valueLabel: this.pvProduction ? "fill-success" : "",
+            valueLabel: this.pvProduction || this.pvConsumption ? "fill-success" : "",
             animated: this.pvProduction,
-            animatedReverse: false,
+            animatedReverse: this.pvConsumption,
           },
           position: {
             row: 1,
