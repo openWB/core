@@ -7,6 +7,7 @@ from typing import Optional
 from helpermodules import timecheck
 from helpermodules import pub
 
+from helpermodules.logger import clear_in_memory_log_handler
 from helpermodules.pub import Pub, pub_single
 from helpermodules.subdata import SubData
 from modules.chargepoints.internal_openwb.config import InternalChargepointMode
@@ -147,6 +148,7 @@ class InternalChargepointHandler:
             while True:
                 if self.event_stop.is_set():
                     break
+                clear_in_memory_log_handler("internal_chargepoint")
                 log.debug("***Start***")
                 data = copy.deepcopy(SubData.internal_chargepoint_data)
                 log.debug(data)
