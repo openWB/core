@@ -75,7 +75,11 @@ const homeProduction = computed(() => Number(homePower.value.value) < 0);
 const pvPower = computed(() => mqttStore.getPvPower('object') as ValueObject);
 const pvProduction = computed(() => {
   const value = Number(pvPower.value.value);
-  return Math.abs(value) >= 50;
+  return value < 0;
+});
+const pvConsumption = computed(() => {
+  const value = Number(pvPower.value.value);
+  return value > 0;
 });
 
 const connectedChargePoints = computed(() => mqttStore.chargePointIds);
@@ -284,7 +288,7 @@ const svgComponents = computed((): FlowComponent[] => {
         base: 'pv',
         valueLabel: 'fill-success',
         animated: pvProduction.value,
-        animatedReverse: false,
+        animatedReverse: pvConsumption.value,
       },
       position: { row: 1, column: 0 },
       label: ['PV', absoluteValueObject(pvPower.value).textValue],

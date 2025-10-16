@@ -64,7 +64,7 @@ class ShellyBat(AbstractBat):
                     currents = [status['pm1:0']['current'], 0, 0]
                 else:
                     power = status['em:0']['total_act_power']  # shelly Pro3EM
-                    currents = [meter[f'{i}_current'] for i in 'abc']
+                    currents = [status['em:0'][f'{i}_current'] for i in 'abc']
 
             power = power * self.factor
             imported, exported = self.sim_counter.sim_count(power)

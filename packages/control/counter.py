@@ -349,7 +349,7 @@ class Counter:
                 max_phases_power = ev_template.data.min_current * ev_template.data.max_phases * 230
                 if (control_parameter.submode == Chargemode.PV_CHARGING and
                     chargepoint.data.set.charge_template.data.chargemode.pv_charging.phases_to_use == 0 and
-                        chargepoint.cp_ev_support_phase_switch() and
+                        chargepoint.hw_supports_phase_switch() and
                         self.get_usable_surplus(feed_in_yield) > max_phases_power):
                     control_parameter.phases = ev_template.data.max_phases
                     msg += self.SWITCH_ON_MAX_PHASES.format(ev_template.data.max_phases)
