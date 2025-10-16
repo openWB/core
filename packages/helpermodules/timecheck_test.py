@@ -1,4 +1,5 @@
 import datetime
+import logging
 from typing import List, Optional, Union
 from unittest.mock import MagicMock, Mock
 import pytest
@@ -6,6 +7,8 @@ import pytest
 from helpermodules import timecheck
 from helpermodules.abstract_plans import (AutolockPlan, FrequencyDate, FrequencyPeriod, ScheduledChargingPlan,
                                           TimeChargingPlan)
+
+log = logging.getLogger(__name__)
 
 
 class Params:
