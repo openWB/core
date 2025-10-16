@@ -257,15 +257,16 @@ class Ev:
     def _check_phase_switch_conditions(self,
                                        charge_template: ChargeTemplate,
                                        control_parameter: ControlParameter,
+                                       evse_current: float,
                                        get_currents: List[float],
                                        get_power: float,
                                        max_current_cp: int,
                                        limit: LoadmanagementLimit) -> Tuple[bool, Optional[str]]:
         # Manche EV laden mit 6.1A bei 6A Soll-Strom
-        min_current = (max(control_parameter.min_current, control_parameter.required_current) +
-                       self.ev_template.data.nominal_difference)
-        max_current = (min(self.ev_template.data.max_current_single_phase, max_current_cp)
-                       - self.ev_template.data.nominal_difference)
+        min_current = max(control_parameter.min_current, control_parameter.required_current)
+        min_current_range = min_current + self.ev_template.data.nominal_difference
+        max_current = min(self.ev_template.data.max_current_single_phase, max_current_cp)
+        max_current_range = max_current - self.ev_template.data.nominal_difference
         phases_in_use = control_parameter.phases
         pv_config = data.data.general_data.data.chargemode_config.pv_charging
         max_phases_ev = self.ev_template.data.max_phases
@@ -276,20 +277,25 @@ class Ev:
         all_surplus = data.data.counter_all_data.get_evu_counter().get_usable_surplus(feed_in_yield)
         required_surplus = control_parameter.min_current * max_phases_ev * 230 - get_power
         unbalanced_load_limit_reached = limit.limiting_value == LimitingValue.UNBALANCED_LOAD
-        condition_1_to_3 = (((get_medium_charging_current(get_currents) > max_current and
+        condition_1_to_3 = (((get_medium_charging_current(get_currents) > max_current_range and
                             all_surplus > required_surplus) or unbalanced_load_limit_reached) and
                             phases_in_use == 1)
         condition_3_to_1 = get_medium_charging_current(
-            get_currents) < min_current and all_surplus <= 0 and phases_in_use > 1
+            get_currents) < min_current_range and all_surplus <= 0 and phases_in_use > 1
         if condition_1_to_3 or condition_3_to_1:
             return True, None
         else:
             if phases_in_use > 1 and all_surplus > 0:
+                # genug Leistung, um weiter mehrphasig zu laden
                 return False, self.ENOUGH_POWER
             elif phases_in_use == 1 and all_surplus < required_surplus:
+                # nicht genug Leistung, um mehrphasig zu laden, also einphasig laden
                 return False, self.NOT_ENOUGH_POWER
-            else:
+            elif min_current == evse_current or max_current == evse_current:
+                # EV lädt nicht mit dem vorgegebenen Strom +/- der erlaubten Abweichung
                 return False, self.CURRENT_OUT_OF_NOMINAL_DIFFERENCE
+            else:
+                return False, None
 
     PHASE_SWITCH_DELAY_TEXT = '{} Phasen in {}.'
 
@@ -297,6 +303,7 @@ class Ev:
                           charge_template: ChargeTemplate,
                           control_parameter: ControlParameter,
                           cp_num: int,
+                          evse_current: float,
                           get_currents: List[float],
                           get_power: float,
                           max_current_cp: int,
@@ -337,6 +344,7 @@ class Ev:
         if not self.ev_template.data.prevent_phase_switch:
             condition, condition_msg = self._check_phase_switch_conditions(charge_template,
                                                                            control_parameter,
+                                                                           evse_current,
                                                                            get_currents,
                                                                            get_power,
                                                                            max_current_cp,
