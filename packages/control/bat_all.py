@@ -317,7 +317,7 @@ class BatAll:
                 data.data.cp_all_data.data.get.power > 100 and
                 self.data.get.power <= 0 and
                 data.data.counter_all_data.get_evu_counter().data.get.power >= -100):
-            charge_mode = BatChargeMode.BAT_BLOCK_DISCHARGE
+            charge_mode = BatChargeMode.BAT_USE_LIMIT
             log.debug("Speicher-Entladung beschränken da Fahrzeuge laden.")
         else:
             charge_mode = BatChargeMode.BAT_SELF_REGULATION
@@ -355,16 +355,16 @@ class BatAll:
                 log.debug("Speicher-Leistung nicht begrenzen, da aktive Speichersteuerung deaktiviert wurde.")
         else:
             charge_mode = BatChargeMode.BAT_SELF_REGULATION
-            if self.data.config.bat_control_condition == BatPowerLimitCondition.MANUAL:
+            if self.data.config.bat_control_condition == BatPowerLimitCondition.MANUAL.value:
                 log.debug("Aktive Speichersteuerung: Manueller Modus.")
                 charge_mode = BatChargeMode(self.data.config.manual_mode)
-            elif self.data.config.bat_control_condition == BatPowerLimitCondition.VEHICLE_CHARGING:
+            elif self.data.config.bat_control_condition == BatPowerLimitCondition.VEHICLE_CHARGING.value:
                 log.debug("Aktive Speichersteuerung: Wenn Fahrzeuge laden.")
                 charge_mode = self.get_charge_mode_vehicle_charge()
-            elif self.data.config.bat_control_condition == BatPowerLimitCondition.PRICE_LIMIT:
+            elif self.data.config.bat_control_condition == BatPowerLimitCondition.PRICE_LIMIT.value:
                 log.debug("Aktive Speichersteuerung: Strompreisbasiert.")
                 pass
-            elif self.data.config.bat_control_condition == BatPowerLimitCondition.SCHEDULED:
+            elif self.data.config.bat_control_condition == BatPowerLimitCondition.SCHEDULED.value:
                 log.debug("Aktive Speichersteuerung: Vorhersagebasiertes Zielladen.")
                 pass
             
