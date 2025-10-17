@@ -870,6 +870,19 @@ class SubData:
                 user = splitted[2] if len(splitted) > 2 else "getsupport"
                 run_command([str(Path(__file__).resolve().parents[2] / "runs" / "start_remote_support.sh"),
                              token, port, user], process_exception=True)
+            elif "openWB/system/backup_password" in msg.topic:
+                if self.event_subdata_initialized.is_set():
+                    password = decode_payload(msg.payload)
+                    # delete password file if length = 0 and file exists
+                    if password is None or password == "":
+                        if Path("/home/openwb/backup.key").exists():
+                            Path("/home/openwb/backup.key").unlink()
+                            log.warning("Backup-Kennwortdatei gelöscht.")
+                    else:
+                        # write password to file
+                        with open("/home/openwb/backup.key", "w", encoding="utf-8") as f:
+                            f.write(password)
+                            log.warning("Backup-Kennwortdatei geschrieben.")
             elif "openWB/system/backup_cloud/config" in msg.topic:
                 config_dict = decode_payload(msg.payload)
                 if config_dict["type"] is None:
