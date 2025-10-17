@@ -163,7 +163,7 @@ def default_chargepoint_factory() -> List[Chargepoint]:
 class PowerLimitParams:
     name: str
     expected_power_limit_bat: Optional[float]
-    power_limit_mode: str = BatPowerLimitMode.NO_LIMIT.value
+    power_limit_mode: str = BatPowerLimitMode.MODE_NO_DISCHARGE.value
     cps: List[Chargepoint] = field(default_factory=default_chargepoint_factory)
     power_limit_controllable: bool = True
     bat_power: float = -10
@@ -173,16 +173,16 @@ class PowerLimitParams:
 cases = [
     PowerLimitParams("keine Begrenzung", None),
     PowerLimitParams("Begrenzung immer, keine LP im Sofortladen", None, cps=[],
-                     power_limit_mode=BatPowerLimitMode.LIMIT_STOP.value),
+                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
     PowerLimitParams("Begrenzung immer, Speicher nicht regelbar", None, power_limit_controllable=False,
-                     power_limit_mode=BatPowerLimitMode.LIMIT_STOP.value),
+                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
     PowerLimitParams("Begrenzung immer, Speicher lädt", None, bat_power=100,
-                     power_limit_mode=BatPowerLimitMode.LIMIT_STOP.value),
+                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
     PowerLimitParams("Begrenzung immer,Einspeisung", None, evu_power=-110,
-                     power_limit_mode=BatPowerLimitMode.LIMIT_STOP.value),
-    PowerLimitParams("Begrenzung immer", 0, power_limit_mode=BatPowerLimitMode.LIMIT_STOP.value),
+                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
+    PowerLimitParams("Begrenzung immer", 0, power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
     PowerLimitParams("Begrenzung Hausverbrauch", -456,
-                     power_limit_mode=BatPowerLimitMode.LIMIT_TO_HOME_CONSUMPTION.value),
+                     power_limit_mode=BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION.value),
 ]
 
 
