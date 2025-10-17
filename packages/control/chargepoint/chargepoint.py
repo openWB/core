@@ -731,7 +731,7 @@ class Chargepoint(ChargepointRfidMixin):
                     message = message_ev if message_ev else message
                     # Ein Eintrag muss nur erstellt werden, wenn vorher schon geladen wurde und auch danach noch
                     # geladen werden soll.
-                    if self.chargemode_changed and self.data.set.log.imported_since_mode_switch != 0 and state:
+                    if self.chargemode_changed and state:
                         chargelog.save_interim_data(self, charging_ev)
 
                     # Wenn die Nachrichten gesendet wurden, EV wieder löschen, wenn das EV im Algorithmus nicht
