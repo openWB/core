@@ -485,7 +485,8 @@ class SetData:
                         self._validate_value(msg, float, [(0, 0), (6, 32), (0, 450)])
                     else:
                         self._validate_value(msg, float, [(6, 32), (0, 0)])
-                elif "/control_parameter/phases" in msg.topic:
+                elif ("/control_parameter/phases" in msg.topic or
+                      "/control_parameter/template_phases" in msg.topic):
                     self._validate_value(msg, int, [(0, 3)])
                 elif "/control_parameter/failed_phase_switches" in msg.topic:
                     self._validate_value(msg, int, [(0, 4)])
