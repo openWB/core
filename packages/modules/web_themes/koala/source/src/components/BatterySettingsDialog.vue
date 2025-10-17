@@ -7,7 +7,7 @@
     <q-card>
       <q-card-section>
         <div class="row no-wrap">
-          <div class="text-h6 q-pr-sm">Einstellungen:</div>
+          <div class="text-h6 q-pr-sm">Speicher-Beachtung:</div>
           <div class="text-h6 ellipsis" :title="name">{{ name }}</div>
           <q-space />
           <q-btn icon="close" flat round dense v-close-popup />
@@ -15,7 +15,7 @@
       </q-card-section>
       <q-separator />
       <q-card-section>
-        <div class="text-subtitle2">Laden mit Überschuss Modus:</div>
+        <div class="text-subtitle2">Überschuss primär für:</div>
         <BatteryModeButtons />
       </q-card-section>
     </q-card>
