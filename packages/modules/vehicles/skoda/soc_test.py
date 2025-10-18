@@ -23,7 +23,7 @@ class TestSkoda:
     def test_update_updates_value_store(self):
         # setup
         config = Skoda(configuration=SkodaConfiguration(user_id="test_user", password="test_password", vin="test_vin"))
-        
+
         # execution
         create_vehicle(config, 1).update(VehicleUpdateData())
 
