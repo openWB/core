@@ -241,9 +241,14 @@ class skoda:
         self.log.debug(f"Status data from Skoda API (vehicle-status): {status_data}")
 
         # check if all values are valid, otherwise use charging_url
-        primary_engine_range = status_data.get('primaryEngineRange', {})
+        electric_engine_range = {}
+        if 'primaryEngineRange' in status_data and status_data['primaryEngineRange']['engineType'] == "electric":
+            electric_engine_range = status_data['primaryEngineRange']
+        elif 'secondaryEngineRange' in status_data and status_data['secondaryEngineRange']['engineType'] == "electric":
+            electric_engine_range = status_data['secondaryEngineRange']
+
         required_keys = ['currentSoCInPercent', 'remainingRangeInKm']
-        if not all(k in primary_engine_range for k in required_keys) or 'carCapturedTimestamp' not in status_data:
+        if not all(k in electric_engine_range for k in required_keys) or 'carCapturedTimestamp' not in status_data:
             self.log.info("vehicle-status did not contain all values, trying charging_url")
             response = await self.session.get(charging_url, headers=self.headers)
 
@@ -259,8 +264,8 @@ class skoda:
                 status_data['status']['battery'].get('remainingCruisingRangeInMeters', 1000) / 1000
             )
         else:
-            soc = status_data['primaryEngineRange']['currentSoCInPercent']
-            range_km = status_data['primaryEngineRange']['remainingRangeInKm']
+            soc = electric_engine_range['currentSoCInPercent']
+            range_km = electric_engine_range['remainingRangeInKm']
 
         timestamp = status_data['carCapturedTimestamp'].split('.')[0]
         if not timestamp.endswith('Z'):
