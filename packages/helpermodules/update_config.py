@@ -55,14 +55,6 @@ log = logging.getLogger(__name__)
 
 NO_MODULE = {"type": None, "configuration": {}}
 
-# Default colors
-COLOR_CHARGEPOINT = "#007bff"  # Default color for charge points: blue
-COLOR_VEHICLE = "#17a2b8"  # Default color for vehicles: teal
-COLOR_INVERTER = "#28a745"  # Default color for inverters: green
-COLOR_COUNTER = "#dc3545"  # Default color for counters: red
-COLOR_BATTERY = "#ffc107"  # Default color for batteries: yellow
-COLOR_UNKNOWN = "#000000"  # Default color for unknown components: black
-
 
 class UpdateConfig:
 
@@ -2638,71 +2630,81 @@ class UpdateConfig:
         self._append_datastore_version(101)
 
     def upgrade_datastore_102(self) -> None:
+        DEFAULT_COLORS = {
+            "CHARGEPOINT": "#007bff",
+            "VEHICLE": "#17a2b8",
+            "INVERTER": "#28a745",
+            "COUNTER": "#dc3545",
+            "BATTERY": "#ffc107",
+            "UNKNOWN": "#000000"
+        }
+
+        def _add_colors_to_log(file):
+            colors = {}
+            with open(file, "r+") as jsonFile:
+                content_raw = jsonFile.read()
+                content = json.loads(content_raw)
+                if "colors" in content:
+                    return
+                for key in content["names"].keys():
+                    if "bat" in key:
+                        colors[key] = DEFAULT_COLORS["BATTERY"]
+                    elif "counter" in key:
+                        colors[key] = DEFAULT_COLORS["COUNTER"]
+                    elif "cp" in key:
+                        colors[key] = DEFAULT_COLORS["CHARGEPOINT"]
+                    elif "ev" in key:
+                        colors[key] = DEFAULT_COLORS["VEHICLE"]
+                    elif "inverter" in key:
+                        colors[key] = DEFAULT_COLORS["INVERTER"]
+                    else:
+                        colors[key] = DEFAULT_COLORS["UNKNOWN"]
+                content["colors"] = colors
+                jsonFile.seek(0)
+                jsonFile.write(json.dumps(content))
+                jsonFile.truncate()
+
         def add_colors_to_logs():
             files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
             files.extend(glob.glob(str(self.base_path / "data" / "monthly_log") + "/*"))
             files.sort()
             with ProcessPoolExecutor() as executor:
-                executor.map(self.process_file, files)
+                executor.map(_add_colors_to_log, files)
 
         def upgrade(topic: str, payload) -> Optional[dict]:
             # add vehicle color to vehicle topics
             if re.search("^openWB/vehicle/[0-9]+/name$", topic) is not None:
-                log.debug(f"Received vehicle name topic {topic}")
+                log.debug(f"Received vehicle name topic '{topic}'")
                 vehicle_color_topic = topic.replace("/name", "/color")
-                log.debug(f"Checking for vehicle color topic {vehicle_color_topic}")
+                log.debug(f"Checking for vehicle color topic '{vehicle_color_topic}'")
                 if vehicle_color_topic not in self.all_received_topics:
-                    log.debug(f"Adding vehicle color topic {vehicle_color_topic} with value '{COLOR_VEHICLE}'")
-                    return {vehicle_color_topic: COLOR_VEHICLE}
+                    log.debug(f"Adding vehicle color topic '{vehicle_color_topic}'"
+                              f" with value: '{DEFAULT_COLORS['VEHICLE']}'")
+                    return {vehicle_color_topic: DEFAULT_COLORS['VEHICLE']}
             # add property "color" to charge points
             if re.search("^openWB/chargepoint/[0-9]+/config$", topic) is not None:
                 config = decode_payload(payload)
-                log.debug(f"Received charge point config topic {topic} with payload {payload}")
+                log.debug(f"Received charge point config topic '{topic}' with payload: {payload}")
                 if "color" not in config:
-                    config.update({"color": COLOR_CHARGEPOINT})
-                    log.debug(f"Added color to charge point config {config}")
+                    config.update({"color": DEFAULT_COLORS['CHARGEPOINT']})
+                    log.debug(f"Added color to charge point config: {config}")
                     return {topic: config}
             # add property "color" to components
             if re.search("^openWB/system/device/[0-9]+/component/[0-9]+/config$", topic) is not None:
                 config = decode_payload(payload)
-                log.debug(f"Received component config topic {topic} with payload {payload}")
+                log.debug(f"Received component config topic '{topic}' with payload: {payload}")
                 if "color" not in config:
                     if "counter" in config.get("type").lower():
-                        config.update({"color": COLOR_COUNTER})
+                        config.update({"color": DEFAULT_COLORS['COUNTER']})
                     elif "bat" in config.get("type").lower():
-                        config.update({"color": COLOR_BATTERY})
+                        config.update({"color": DEFAULT_COLORS['BATTERY']})
                     elif "inverter" in config.get("type").lower():
-                        config.update({"color": COLOR_INVERTER})
+                        config.update({"color": DEFAULT_COLORS['INVERTER']})
                     else:
-                        log.warning(f"Unknown component type {config.get('type')} for topic {topic}.")
-                        config.update({"color": COLOR_UNKNOWN})
-                    log.debug(f"Updated component config with color {config}")
+                        log.warning(f"Unknown component type '{config.get('type')}' for topic '{topic}'.")
+                        config.update({"color": DEFAULT_COLORS['UNKNOWN']})
+                    log.debug(f"Updated component config with color: {config}")
                     return {topic: config}
         self._loop_all_received_topics(upgrade)
         add_colors_to_logs()
-        self.__update_topic("openWB/system/datastore_version", 103)
-
-    def process_file(self, file):
-        colors = {}
-        with open(file, "r+") as jsonFile:
-            content_raw = jsonFile.read()
-            content = json.loads(content_raw)
-            if "colors" in content:
-                return
-            for key in content["names"].keys():
-                if "bat" in key:
-                    colors[key] = COLOR_BATTERY
-                elif "counter" in key:
-                    colors[key] = COLOR_COUNTER
-                elif "cp" in key:
-                    colors[key] = COLOR_CHARGEPOINT
-                elif "ev" in key:
-                    colors[key] = COLOR_VEHICLE
-                elif "inverter" in key:
-                    colors[key] = COLOR_INVERTER
-                else:
-                    colors[key] = COLOR_UNKNOWN
-            content["colors"] = colors
-            jsonFile.seek(0)
-            jsonFile.write(json.dumps(content))
-            jsonFile.truncate()
+        self._append_datastore_version(102)
