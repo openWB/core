@@ -133,9 +133,9 @@ class ChargepointModule(AbstractChargepoint):
                                                  charge_state=False,
                                                  imported=self.old_chargepoint_state.imported,
                                                  exported=self.old_chargepoint_state.exported,
-                                                 currents=self.old_chargepoint_state.currents,
+                                                 currents=[0]*3,
                                                  phases_in_use=self.old_chargepoint_state.phases_in_use,
-                                                 power=self.old_chargepoint_state.power)
+                                                 power=0)
 
         store_state(chargepoint_state)
         self.old_chargepoint_state = chargepoint_state
