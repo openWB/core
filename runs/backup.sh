@@ -21,7 +21,7 @@ DB_FILES=(
 DB_TIMEOUT=5
 
 useExtendedFilename=$1
-FILENAMESUFFIX=".tar.gz"
+FILENAMESUFFIX=".openwb-backup"
 
 generate_filename() {
 	# generate filename
@@ -30,7 +30,7 @@ generate_filename() {
 	if ((useExtendedFilename == 1)); then
 		# only use characters supported in most OS!
 		# for Win see https://learn.microsoft.com/en-us/rest/api/storageservices/naming-and-referencing-shares--directories--files--and-metadata
-		FILENAME="openWB_backup_$(date +"%Y-%m-%d_%H-%M-%S")"
+		FILENAME="$(date +"%Y-%m-%d_%H-%M-%S")"
 	else
 		FILENAME="backup"
 	fi
