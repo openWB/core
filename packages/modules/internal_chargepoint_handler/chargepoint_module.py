@@ -129,7 +129,7 @@ class ChargepointModule(AbstractChargepoint):
                 current_commit=self.current_commit
             )
         if self.client_error_context.error_counter_exceeded():
-            chargepoint_state = ChargepointState(plug_state=False,
+            chargepoint_state = ChargepointState(plug_state=self.old_plug_state,
                                                  charge_state=False,
                                                  imported=self.old_chargepoint_state.imported,
                                                  exported=self.old_chargepoint_state.exported,

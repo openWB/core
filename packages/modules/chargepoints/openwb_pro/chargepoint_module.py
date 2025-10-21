@@ -70,9 +70,10 @@ class ChargepointModule(AbstractChargepoint):
                     self.store.set(chargepoint_state)
             except Exception as e:
                 if self.client_error_context.error_counter_exceeded():
-                    chargepoint_state = ChargepointState(plug_state=False, charge_state=False, imported=None,
-                                                         # bei im-/exported None werden keine Werte gepublished
-                                                         exported=None, phases_in_use=0, power=0, currents=[0]*3)
+                    chargepoint_state = ChargepointState(
+                        plug_state=self.old_plug_state, charge_state=False, imported=None,
+                        # bei im-/exported None werden keine Werte gepublished
+                        exported=None, phases_in_use=0, power=0, currents=[0]*3)
                     self.store.set(chargepoint_state)
                     raise e
 
@@ -120,6 +121,7 @@ class ChargepointModule(AbstractChargepoint):
 
             self.validate_values(chargepoint_state)
             self.client_error_context.reset_error_counter()
+            self.old_plug_state = chargepoint_state.plug_state
             return chargepoint_state
 
     def validate_values(self, chargepoint_state: ChargepointState) -> None:
