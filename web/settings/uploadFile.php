@@ -21,11 +21,11 @@ function check_gzip() {
 // quick check for file contents
 function check_restore_file_contents() {
 	$output = null;
-	$result = exec("tar --list --file=\"" . $_FILES["file"]["tmp_name"] . "\" | grep -c \"^\(mosquitto/\|mosquitto_local/\|GIT_HASH\|GIT_BRANCH\|SHA256SUM\|backup.log\)$\"", $output);
+	$result = exec("tar --list --file=\"" . $_FILES["file"]["tmp_name"] . "\" | egrep -c \"^(mosquitto/.+|mosquitto_local/.+|GIT_HASH|GIT_BRANCH|SHA256SUM|backup.log)$\"", $output);
 	if ($result === false || $result != "6") {
 		exit_with_error("Prüfung des Archivinhalts fehlgeschlagen! Das Archiv ist unvollständig.");
 	}
-	$result = exec("tar --list --file=\"" . $_FILES["file"]["tmp_name"] . "\" | grep -c \"^openWB/.*\"", $output);
+	$result = exec("tar --list --file=\"" . $_FILES["file"]["tmp_name"] . "\" | grep -c \"^openWB/\"", $output);
 	if ($result === false || $result <= 4) {
 		exit_with_error("Prüfung des Archivinhalts fehlgeschlagen! Das Archiv ist unvollständig.");
 	}
