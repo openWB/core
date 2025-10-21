@@ -27,6 +27,7 @@ class ChargepointModule(AbstractChargepoint):
         self.client_error_context = ErrorTimerContext(
             f"openWB/set/chargepoint/{self.config.id}/get/error_timestamp", CP_ERROR, hide_exception=True)
         self.store = get_chargepoint_value_store(self.config.id)
+        self.old_plug_state = False
 
     def set_current(self, current: float) -> None:
         if self.client_error_context.error_counter_exceeded():
@@ -114,6 +115,7 @@ class ChargepointModule(AbstractChargepoint):
                             self.fault_state.error(received_topics[f"{topic_prefix}fault_str"])
                         elif received_topics[f"{topic_prefix}fault_state"] == 1:
                             self.fault_state.warning(received_topics[f"{topic_prefix}fault_str"])
+                        self.old_plug_state = chargepoint_state.plug_state
                     except KeyError:
                         raise KeyError("Es wurden nicht alle notwendigen Daten empfangen.")
                 else:
@@ -121,6 +123,15 @@ class ChargepointModule(AbstractChargepoint):
                                              "Daten nach dem Start oder Ladepunkt nicht erreichbar.")
 
                 self.client_error_context.reset_error_counter()
+            if self.client_error_context.error_counter_exceeded():
+                chargepoint_state = ChargepointState(plug_state=self.old_plug_state,
+                                                     charge_state=False,
+                                                     imported=None,
+                                                     exported=None,
+                                                     currents=[0]*3,
+                                                     phases_in_use=0,
+                                                     power=0)
+                self.store.set(chargepoint_state)
 
     def switch_phases(self, phases_to_use: int, duration: int) -> None:
         with SingleComponentUpdateContext(self.fault_state, update_always=False):

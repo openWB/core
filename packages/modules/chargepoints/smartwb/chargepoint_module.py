@@ -21,6 +21,7 @@ class ChargepointModule(AbstractChargepoint):
         self.client_error_context = ErrorTimerContext(
             f"openWB/set/chargepoint/{self.config.id}/get/error_timestamp", CP_ERROR, hide_exception=True)
         self.session = req.get_http_session()
+        self.old_plug_state = False
 
     def set_current(self, current: float) -> None:
         if self.client_error_context.error_counter_exceeded():
@@ -90,8 +91,16 @@ class ChargepointModule(AbstractChargepoint):
                     max_evse_current=max_evse_current
                 )
 
-                self.store.set(chargepoint_state)
                 self.client_error_context.reset_error_counter()
+                self.old_plug_state = chargepoint_state.plug_state
+            if self.client_error_context.error_counter_exceeded():
+                chargepoint_state = ChargepointState(plug_state=self.old_plug_state,
+                                                     charge_state=False,
+                                                     imported=None,
+                                                     exported=None,
+                                                     currents=[0]*3,
+                                                     phases_in_use=0,
+                                                     power=0)
 
     def clear_rfid(self) -> None:
         with SingleComponentUpdateContext(self.fault_state):

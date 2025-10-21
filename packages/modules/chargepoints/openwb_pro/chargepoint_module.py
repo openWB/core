@@ -37,6 +37,7 @@ class ChargepointModule(AbstractChargepoint):
         self.__session = req.get_http_session()
         self.client_error_context = ErrorTimerContext(
             f"openWB/set/chargepoint/{self.config.id}/get/error_timestamp", CP_ERROR, hide_exception=True)
+        self.old_plug_state = False
 
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
             self.__session.post(
