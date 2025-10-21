@@ -610,7 +610,8 @@ class SetData:
                         "/get/yearly_exported" in msg.topic or
                         "/get/energy" in msg.topic):
                     self._validate_value(msg, float, [(0, float("inf"))])
-                elif "/get/exported" in msg.topic:
+                elif ("/get/exported" in msg.topic or
+                      "/get/imported" in msg.topic):
                     self._validate_value(msg, float, [(0, float("inf"))])
                 elif "/get/power" in msg.topic:
                     self._validate_value(msg, float)
