@@ -30,7 +30,7 @@ generate_filename() {
 	if ((useExtendedFilename == 1)); then
 		# only use characters supported in most OS!
 		# for Win see https://learn.microsoft.com/en-us/rest/api/storageservices/naming-and-referencing-shares--directories--files--and-metadata
-		FILENAME="$(date +"%Y-%m-%d_%H-%M-%S")"
+		FILENAME="$(date +"%Y-%m-%d_%H-%M-%S")_$(<"$OPENWBBASEDIR"/web/version)"
 	else
 		FILENAME="backup"
 	fi
