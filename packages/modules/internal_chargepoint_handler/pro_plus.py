@@ -42,7 +42,7 @@ class ProPlus(ChargepointModule):
                 return self.old_chargepoint_state
         except Exception as e:
             if self.client_error_context.error_counter_exceeded():
-                chargepoint_state = ChargepointState(plug_state=False, charge_state=False, imported=None,
+                chargepoint_state = ChargepointState(plug_state=self.old_chargepoint_state.plug_state, charge_state=False, imported=None,
                                                      # bei im-/exported None werden keine Werte gepublished
                                                      exported=None, phases_in_use=0, power=0, currents=[0]*3)
                 store_state(chargepoint_state)

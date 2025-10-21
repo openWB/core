@@ -35,6 +35,7 @@ class ChargepointModule(AbstractChargepoint):
         self.config = config
         self.fault_state = FaultState(ComponentInfo(self.config.id, "Ladepunkt", "chargepoint"))
         self.version: Optional[bool] = None
+        self.old_plug_state: bool = False
         with SingleComponentUpdateContext(self.fault_state):
             self.delay_second_cp(self.CP1_DELAY_STARTUP)
             self.store = get_chargepoint_value_store(self.config.id)
@@ -99,10 +100,16 @@ class ChargepointModule(AbstractChargepoint):
                         )
                         self.store.set(chargepoint_state)
                         self.client_error_context.reset_error_counter()
+                        self.old_plug_state = chargepoint_state.plug_state
                 except Exception:
                     if self.client_error_context.error_counter_exceeded():
                         run_command(f"{Path(__file__).resolve().parents[3]}/modules/chargepoints/"
                                     "openwb_series2_satellit/restart_protoss_satellite")
+                        chargepoint_state = ChargepointState(
+                            plug_state=self.old_plug_state, charge_state=False, imported=None,
+                            # bei im-/exported None werden keine Werte gepublished
+                            exported=None, phases_in_use=0, power=0, currents=[0]*3)
+                        self.store.set(chargepoint_state)
                 except AttributeError:
                     self._create_client()
                     self._validate_version()
