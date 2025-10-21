@@ -42,6 +42,29 @@ class Optional(OcppMixin):
     def et_provider_available(self) -> bool:
         return self.et_module is not None
 
+    def et_charging_is_allowed(self, selected_hours: list[int]) -> bool:
+        """ prüft, ob das strompreisbasiertes Laden aktiviert und ein günstiger Zeitpunkt ist.
+
+        Parameter
+        ---------
+        selected_hours: list[int]
+            Liste der ausgewählten günstigen Zeitslots (Unix-Timestamps)
+
+        Return
+        ------
+        True: Der aktuelle Zeitpunkt liegt in einem ausgewählten günstigen Zeitslot
+        False: Der aktuelle Zeitpunkt liegt in keinem günstigen Zeitslot
+        """
+        try:
+            if self.et_provider_available():
+                return self.__get_current_timeslot_start(self.data.et.get.prices) in selected_hours
+            else:
+                log.info("Prüfe strompreisbasiertes Laden: Nicht konfiguriert")
+                return False
+        except Exception as e:
+            log.exception(f"Fehler im Optional-Modul: {e}")
+            return False
+
     def et_charging_allowed(self, max_price: float) -> bool:
         """ prüft, ob der aktuelle Strompreis niedriger oder gleich der festgelegten Preisgrenze ist.
 
@@ -83,9 +106,9 @@ class Optional(OcppMixin):
         else:
             raise Exception("Kein Anbieter für strompreisbasiertes Laden konfiguriert.")
 
-    def __get_current_timeslot_start(self, prices: dict[str, float]) -> float:
+    def __get_current_timeslot_start(self, prices: dict[str, float]) -> int:
         timestamp, first = self.__get_first_entry(prices)
-        return timestamp
+        return int(timestamp)
 
     def et_get_current_price(self, prices: dict[str, float]) -> float:
         timestamp, first = self.__get_first_entry(prices)
@@ -121,7 +144,7 @@ class Optional(OcppMixin):
                     int(timestamp) >= int(first_timeslot_start) and
                     # ends before plan target time
                     int(timestamp) + price_timeslot_seconds <= int(first_timeslot_start) + remaining_time
-                    )
+                )
             }
             now = int(timecheck.create_timestamp())
             ordered_by_date_reverse = reversed(sorted(price_candidates.items(), key=lambda x: x[0]))
@@ -129,7 +152,7 @@ class Optional(OcppMixin):
             selected_time_slots = {int(i[0]): float(i[1])
                                    for i in ordered_by_price[:1 + ceil(duration/price_timeslot_seconds)]}
             selected_lenght = price_timeslot_seconds * (
-                        len(selected_time_slots)-1) - (int(now) - min(selected_time_slots))
+                len(selected_time_slots)-1) - (int(now) - min(selected_time_slots))
             return sorted(selected_time_slots.keys()
                           if not (min(selected_time_slots) > now or duration <= selected_lenght)
                           else [timestamp[0] for timestamp in iter(selected_time_slots.items())][:-1]

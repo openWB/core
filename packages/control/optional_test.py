@@ -241,3 +241,144 @@ def test_et_charging_allowed_exception(monkeypatch):
     monkeypatch.setattr(opt, "et_get_current_price", Mock(side_effect=Exception))
     result = opt.et_charging_allowed(0.15)
     assert result is False
+
+
+@pytest.mark.parametrize(
+    "now_ts, provider_available, price_list, selected_hours , expected",
+    [
+        pytest.param(
+            1698224400, False, {}, [],
+            False, id="no charge if provider not available"
+        ),
+        pytest.param(
+            1698224400, True, {
+                # first hour
+                "1698224400": IGNORED,
+                "1698225300": IGNORED,
+                "1698226200": EXPENSIVE,
+                "1698227100": CHEAP,  # current quarter hour
+                # second hour
+                "1698228000": EXPENSIVE,
+                "1698228900": EXPENSIVE,
+                "1698229800": CHEAP,
+                "1698230700": EXPENSIVE,
+                # third hour
+                "1698231600": CHEAP,
+                "1698232500": CHEAP,
+                "1698233400": CHEAP,
+                "1698234300": EXPENSIVE,
+                # fourth hour
+                "1698235200": CHEAP,
+                "1698236100": EXPENSIVE,
+                "1698237000": EXPENSIVE,
+                "1698237900": EXPENSIVE,
+                # fifth hour
+                "1698238800": EXPENSIVE,
+                "1698239700": EXPENSIVE,
+                "1698240600": EXPENSIVE,  # last before plan target
+                "1698241500": IGNORED, },
+            [1698227100, 1698231600,  1698232500, 1698233400, 1698235200],
+            False, id="no charge if provider available but before cheapest slot"
+        ),
+        pytest.param(
+            1698224400, True, {
+                # first hour
+                "1698224400": IGNORED,
+                "1698225300": IGNORED,
+                "1698226200": EXPENSIVE,
+                "1698227100": CHEAP,  # current quarter hour
+                # second hour
+                "1698228000": EXPENSIVE,
+                "1698228900": EXPENSIVE,
+                "1698229800": CHEAP,
+                "1698230700": EXPENSIVE,
+                # third hour
+                "1698231600": CHEAP,
+                "1698232500": CHEAP,
+                "1698233400": CHEAP,
+                "1698234300": EXPENSIVE,
+                # fourth hour
+                "1698235200": CHEAP,
+                "1698236100": EXPENSIVE,
+                "1698237000": EXPENSIVE,
+                "1698237900": EXPENSIVE,
+                # fifth hour
+                "1698238800": EXPENSIVE,
+                "1698239700": EXPENSIVE,
+                "1698240600": EXPENSIVE,  # last before plan target
+                "1698241500": IGNORED, }, [],
+            False, id="no charge if provider no charge times list"
+        ),
+        pytest.param(
+            1698224400, True, {
+                # second hour
+                "1698228000": EXPENSIVE,
+                "1698228900": EXPENSIVE,
+                "1698229800": CHEAP,
+                "1698230700": EXPENSIVE,
+                # third hour
+                "1698231600": CHEAP,
+                "1698232500": CHEAP,
+                "1698233400": CHEAP,
+                "1698234300": EXPENSIVE,
+                # fourth hour
+                "1698235200": CHEAP,
+                "1698236100": EXPENSIVE,
+                "1698237000": EXPENSIVE,
+                "1698237900": EXPENSIVE,
+                # fifth hour
+                "1698238800": EXPENSIVE,
+                "1698239700": EXPENSIVE,
+                "1698240600": EXPENSIVE,  # last before plan target
+                "1698241500": IGNORED, },
+            [1698227100, 1698231600,  1698232500, 1698233400, 1698235200],
+            False, id="no charge if current time in expensive hour"
+        ),
+        pytest.param(
+            1698227100, True, {
+                # first hour
+                "1698227100": CHEAP,  # current quarter hour
+                # second hour
+                "1698228000": EXPENSIVE,
+                "1698228900": EXPENSIVE,
+                "1698229800": CHEAP,
+                "1698230700": EXPENSIVE,
+                # third hour
+                "1698231600": CHEAP,
+                "1698232500": CHEAP,
+                "1698233400": CHEAP,
+                "1698234300": EXPENSIVE,
+                # fourth hour
+                "1698235200": CHEAP,
+                "1698236100": EXPENSIVE,
+                "1698237000": EXPENSIVE,
+                "1698237900": EXPENSIVE,
+                # fifth hour
+                "1698238800": EXPENSIVE,
+                "1698239700": EXPENSIVE,
+                "1698240600": EXPENSIVE,  # last before plan target
+                "1698241500": IGNORED, },
+            [1698227100, 1698231600,  1698232500, 1698233400, 1698235200],
+            True, id="charge if provider available and matching time slot start"
+        ),
+    ]
+)
+def test_et_charging_available(now_ts, provider_available, price_list, selected_hours, expected, monkeypatch):
+    monkeypatch.setattr(
+        timecheck,
+        "create_timestamp",
+        Mock(return_value=now_ts)
+    )
+    opt = Optional()
+    opt.data.et.get.prices = price_list
+    monkeypatch.setattr(opt, "et_provider_available", Mock(return_value=provider_available))
+    result = opt.et_charging_is_allowed(selected_hours)
+    assert result == expected
+
+
+def test_et_charging_available_exception(monkeypatch):
+    opt = Optional()
+    monkeypatch.setattr(opt, "et_provider_available", Mock(return_value=True))
+    opt.data.et.get.prices = {}  # empty prices list raises exception
+    result = opt.et_charging_is_allowed([])
+    assert result is False
