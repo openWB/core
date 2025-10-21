@@ -5,7 +5,7 @@ import pytest
 
 ONE_HOUR_SECONDS = 3600
 IGNORED = 0.0001
-CHEEP = 0.0002
+CHEAP = 0.0002
 EXPENSIVE = 0.0003
 
 
@@ -45,26 +45,26 @@ EXPENSIVE = 0.0003
                 # first hour
                 "1698224400": IGNORED,
                 "1698225300": IGNORED,
-                "1698226200": EXPENSIVE,  # current quarert hour
-                "1698227100": CHEEP,
+                "1698226200": EXPENSIVE,  # current quarter hour
+                "1698227100": CHEAP,
                 # second hour
                 "1698228000": EXPENSIVE,
                 "1698228900": EXPENSIVE,
-                "1698229800": CHEEP,
+                "1698229800": CHEAP,
                 "1698230700": EXPENSIVE,
                 # third hour
-                "1698231600": CHEEP,
-                "1698232500": CHEEP,
-                "1698233400": CHEEP,
+                "1698231600": CHEAP,
+                "1698232500": CHEAP,
+                "1698233400": CHEAP,
                 "1698234300": EXPENSIVE,
                 # fourth hour
-                "1698235200": CHEEP,
+                "1698235200": CHEAP,
                 "1698236100": EXPENSIVE,
                 "1698237000": EXPENSIVE,
                 "1698237900": EXPENSIVE,
                 # fifth hour
-                "1698238800": CHEEP,
-                "1698239700": CHEEP,  # last before plan target
+                "1698238800": CHEAP,
+                "1698239700": CHEAP,  # last before plan target
                 "1698240600": IGNORED,
                 "1698241500": IGNORED,
             },
@@ -81,25 +81,25 @@ EXPENSIVE = 0.0003
                 "1698224400": IGNORED,
                 "1698225300": IGNORED,
                 "1698226200": EXPENSIVE,
-                "1698227100": CHEEP,  # current quarert hour
+                "1698227100": CHEAP,  # current quarter hour
                 # second hour
                 "1698228000": EXPENSIVE,
                 "1698228900": EXPENSIVE,
-                "1698229800": CHEEP,
+                "1698229800": CHEAP,
                 "1698230700": EXPENSIVE,
                 # third hour
-                "1698231600": CHEEP,
-                "1698232500": CHEEP,
-                "1698233400": CHEEP,
+                "1698231600": CHEAP,
+                "1698232500": CHEAP,
+                "1698233400": CHEAP,
                 "1698234300": EXPENSIVE,
                 # fourth hour
-                "1698235200": CHEEP,
+                "1698235200": CHEAP,
                 "1698236100": EXPENSIVE,
                 "1698237000": EXPENSIVE,
                 "1698237900": EXPENSIVE,
                 # fifth hour
-                "1698238800": CHEEP,
-                "1698239700": CHEEP,
+                "1698238800": CHEAP,
+                "1698239700": CHEAP,
                 "1698240600": EXPENSIVE,  # last before plan target
                 "1698241500": IGNORED,
             },
@@ -116,25 +116,25 @@ EXPENSIVE = 0.0003
                 "1698224400": IGNORED,
                 "1698225300": IGNORED,
                 "1698226200": EXPENSIVE,
-                "1698227100": CHEEP,  # current quarert hour
+                "1698227100": CHEAP,  # current quarert hour
                 # second hour
                 "1698228000": EXPENSIVE,
                 "1698228900": EXPENSIVE,
-                "1698229800": CHEEP,
+                "1698229800": CHEAP,
                 "1698230700": EXPENSIVE,
                 # third hour
-                "1698231600": CHEEP,
-                "1698232500": CHEEP,
-                "1698233400": CHEEP,
+                "1698231600": CHEAP,
+                "1698232500": CHEAP,
+                "1698233400": CHEAP,
                 "1698234300": EXPENSIVE,
                 # fourth hour
-                "1698235200": CHEEP,
+                "1698235200": CHEAP,
                 "1698236100": EXPENSIVE,
                 "1698237000": EXPENSIVE,
                 "1698237900": EXPENSIVE,
                 # fifth hour
-                "1698238800": CHEEP,
-                "1698239700": CHEEP,
+                "1698238800": CHEAP,
+                "1698239700": CHEAP,
                 "1698240600": EXPENSIVE,  # last before plan target
                 "1698241500": IGNORED,
             },
@@ -152,19 +152,19 @@ EXPENSIVE = 0.0003
                 "1698224400": IGNORED,
                 "1698225300": IGNORED,
                 "1698226200": EXPENSIVE,
-                "1698227100": CHEEP,  # current quarert hour
+                "1698227100": CHEAP,  # current quarter hour
                 # second hour
                 "1698228000": EXPENSIVE,
                 "1698228900": EXPENSIVE,
-                "1698229800": CHEEP,
+                "1698229800": CHEAP,
                 "1698230700": EXPENSIVE,
                 # third hour
-                "1698231600": CHEEP,
-                "1698232500": CHEEP,
-                "1698233400": CHEEP,
+                "1698231600": CHEAP,
+                "1698232500": CHEAP,
+                "1698233400": CHEAP,
                 "1698234300": EXPENSIVE,
                 # fourth hour
-                "1698235200": CHEEP,
+                "1698235200": CHEAP,
                 "1698236100": EXPENSIVE,
                 "1698237000": EXPENSIVE,
                 "1698237900": EXPENSIVE,

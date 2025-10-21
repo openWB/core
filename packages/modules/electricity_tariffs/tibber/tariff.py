@@ -6,7 +6,6 @@ from modules.common.component_state import TariffState
 from modules.common import req
 from modules.electricity_tariffs.tibber.config import TibberTariffConfiguration
 from modules.electricity_tariffs.tibber.config import TibberTariff
-import logging
 import json
 
 
@@ -14,7 +13,6 @@ import json
 # Demo Home-ID: 96a14971-525a-4420-aae9-e5aedaa129ff
 
 AS_EURO_PER_Wh = 1000
-log = logging.getLogger(__name__)
 
 
 def _get_sorted_price_data(response_json: dict, day: str) -> dict[str, float]:
@@ -49,12 +47,10 @@ def fetch_prices(config: TibberTariffConfiguration) -> dict[str, float]:
     data = json.dumps(payload)
     response = req.get_http_session().post('https://api.tibber.com/v1-beta/gql', headers=headers, data=data, timeout=6)
     response_json = response.json()
-    log.debug(json.dumps(response_json))
     if response_json.get("errors") is None:
         today_prices = _get_sorted_price_data(response_json, 'today')
         tomorrow_prices = _get_sorted_price_data(response_json, 'tomorrow')
         sorted_market_prices = {**today_prices, **tomorrow_prices}
-        log.debug(f"tibber response: {sorted_market_prices}")
         return sorted_market_prices
     else:
         error = response_json['errors'][0]['message']
