@@ -32,7 +32,8 @@ class MqttInverter(AbstractInverter):
         topic_prefix = f"openWB/mqtt/pv/{self.component_config.id}/get/"
         power = received_topics[f"{topic_prefix}power"]
 
-        if received_topics.get(f"{topic_prefix}exported") is None or received_topics.get(f"{topic_prefix}imported") is None:
+        if (received_topics.get(f"{topic_prefix}exported") is None or
+                received_topics.get(f"{topic_prefix}imported") is None):
             imported, exported = self.sim_counter.sim_count(power)
         if received_topics.get(f"{topic_prefix}exported"):
             exported = received_topics[f"{topic_prefix}exported"]
