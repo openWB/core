@@ -17,6 +17,7 @@ from modules.common.configurable_tariff import ConfigurableElectricityTariff
 from modules.common.configurable_monitoring import ConfigurableMonitoring
 
 log = logging.getLogger(__name__)
+AS_EURO_PER_KWH = 1000.0  # Umrechnung von €/Wh in €/kWh
 
 
 class Optional(OcppMixin):
@@ -41,7 +42,7 @@ class Optional(OcppMixin):
     def et_provider_available(self) -> bool:
         return self.et_module is not None
 
-    def et_charging_allowed(self, max_price: float):
+    def et_charging_allowed(self, max_price: float) -> bool:
         """ prüft, ob der aktuelle Strompreis niedriger oder gleich der festgelegten Preisgrenze ist.
 
         Return
@@ -51,7 +52,11 @@ class Optional(OcppMixin):
         """
         try:
             if self.et_provider_available():
-                return self.et_get_current_price(prices=self.data.et.get.prices) <= max_price
+                current_price = self.et_get_current_price(prices=self.data.et.get.prices)
+                log.info("Prüfe strompreisbasiertes Laden mit Preisgrenze %.5f €/kWh, aktueller Preis: %.5f €/kWh",
+                         max_price * AS_EURO_PER_KWH,
+                         current_price*AS_EURO_PER_KWH)
+                return current_price <= max_price
             else:
                 return True
         except KeyError:
