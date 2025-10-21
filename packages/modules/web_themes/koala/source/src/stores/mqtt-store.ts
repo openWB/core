@@ -2759,7 +2759,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
-   * Get grid power identified from root of component hierarchy
+   * Get daily grid energy imported identified from root of component hierarchy
    * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
    * @returns string | number | ValueObject | undefined
    */
@@ -2786,8 +2786,8 @@ export const useMqttStore = defineStore('mqtt', () => {
     };
   });
 
-   /**
-   * Get daily grid energy identified from root of component hierarchy
+  /**
+   * Get daily grid energy exported identified from root of component hierarchy
    * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
    * @returns string | number | ValueObject | undefined
    */
@@ -2905,7 +2905,11 @@ export const useMqttStore = defineStore('mqtt', () => {
   const pvDailyExported = computed(() => {
     return (returnType: string = 'textValue') => {
       const energy =
-        (getValue.value('openWB/pv/get/daily_exported', undefined, 0) as number) || 0;
+        (getValue.value(
+          'openWB/pv/get/daily_exported',
+          undefined,
+          0,
+        ) as number) || 0;
       const valueObject = getValueObject.value(energy, 'Wh');
       if (returnType in valueObject) {
         return valueObject[returnType as keyof ValueObject];

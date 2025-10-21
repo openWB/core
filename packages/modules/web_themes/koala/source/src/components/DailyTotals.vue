@@ -15,16 +15,28 @@
       >
         <div class="row no-wrap items-center justify-between">
           <!-- Banner left side: icon + title + arrow/dash + power value-->
-          <div class="row no-wrap items-center" :class="screenWidthMd ? 'text-caption' : 'text-body2'">
+          <div
+            class="row no-wrap items-center"
+            :class="screenWidthMd ? 'text-caption' : 'text-body2'"
+          >
             <img
               :src="item.icon"
               :alt="item.title"
               class="icon q-mr-sm"
               :style="{ width: iconSize + 'px', height: iconSize + 'px' }"
             />
-            <div v-if="!screenWidthXs" :class="screenWidthMd ? 'spacer-component-label' : 'spacer-component-label-soc'">
+            <div
+              v-if="!screenWidthXs"
+              :class="
+                screenWidthMd
+                  ? 'spacer-component-label'
+                  : 'spacer-component-label-soc'
+              "
+            >
               <span class="text-weight-bold">{{ item.title }}</span>
-              <span v-if="item.id === 'battery' && !screenWidthMd">&nbsp;-&nbsp;{{ item.soc }}%</span>
+              <span v-if="item.id === 'battery' && !screenWidthMd"
+                >&nbsp;-&nbsp;{{ item.soc }}%</span
+              >
             </div>
             <div v-if="!screenWidthSm" class="row items-center">
               <q-icon
@@ -46,7 +58,10 @@
             </div>
           </div>
           <!-- Banner right side: energy description  + energy values -->
-          <div class="row no-wrap" :class="screenWidthMd ? 'text-caption' : 'text-body2'">
+          <div
+            class="row no-wrap"
+            :class="screenWidthMd ? 'text-caption' : 'text-body2'"
+          >
             <!-- Battery -->
             <div v-if="item.id === 'battery'" class="row">
               <div class="column text-right">
@@ -75,18 +90,12 @@
               <span class="spacer-energy-value">{{ item.today.yield }}</span>
             </div>
             <!-- House -->
-            <div
-              v-else-if="item.id === 'house'"
-              class="row text-right"
-            >
+            <div v-else-if="item.id === 'house'" class="row text-right">
               <span class="q-mr-sm text-weight-bold">Energie:</span>
               <span class="spacer-energy-value">{{ item.today.energy }}</span>
             </div>
             <!-- Chargepoints -->
-            <div
-              v-else-if="item.id === 'chargepoint'"
-              class="row text-right"
-            >
+            <div v-else-if="item.id === 'chargepoint'" class="row text-right">
               <span class="q-mr-sm text-weight-bold">Geladen:</span>
               <span class="spacer-energy-value">{{ item.today.charged }}</span>
             </div>

@@ -101,4 +101,3 @@ watch(
   color: var(--q-carousel-control);
 }
 </style>
-
