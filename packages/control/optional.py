@@ -82,27 +82,30 @@ class Optional(OcppMixin):
                 return current_price <= max_price
             else:
                 return True
-        except KeyError:
-            log.exception("Fehler beim strompreisbasierten Laden")
-            self.et_get_prices()
-        except Exception:
-            log.exception("Fehler im Optional-Modul")
+        except KeyError as e:
+            log.exception("Fehler beim strompreisbasierten Laden: %s", e)
+            return False
+        except Exception as e:
+            log.exception("Fehler im Optional-Modul: %s", e)
             return False
 
     def __get_first_entry(self, prices: dict[str, float]) -> tuple[str, float]:
         if self.et_provider_available():
             prices = self.data.et.get.prices
-            timestamp, first = next(iter(prices.items()))
-            price_timeslot_seconds = self.__calculate_price_timeslot_length(prices)
-            now = int(timecheck.create_timestamp())
-            prices = {
-                price[0]: price[1]
-                for price in prices.items()
-                if int(price[0]) > now - (price_timeslot_seconds - 1)
-            }
-            self.data.et.get.prices = prices
-            timestamp, first = next(iter(prices.items()))
-            return timestamp, first
+            if prices is None or len(prices) == 0:
+                raise Exception("Keine Preisdaten für strompreisbasiertes Laden vorhanden.")
+            else:
+                timestamp, first = next(iter(prices.items()))
+                price_timeslot_seconds = self.__calculate_price_timeslot_length(prices)
+                now = int(timecheck.create_timestamp())
+                prices = {
+                    price[0]: price[1]
+                    for price in prices.items()
+                    if int(price[0]) > now - (price_timeslot_seconds - 1)
+                }
+                self.data.et.get.prices = prices
+                timestamp, first = next(iter(prices.items()))
+                return timestamp, first
         else:
             raise Exception("Kein Anbieter für strompreisbasiertes Laden konfiguriert.")
 
@@ -171,15 +174,15 @@ class Optional(OcppMixin):
                 if self.data.et.get.fault_state != 0 or self.data.et.get.fault_str != NO_ERROR:
                     Pub().pub("openWB/set/optional/et/get/fault_state", 0)
                     Pub().pub("openWB/set/optional/et/get/fault_str", NO_ERROR)
-        except Exception:
-            log.exception("Fehler im Optional-Modul")
+        except Exception as e:
+            log.exception("Fehler im Optional-Modul: %s", e)
 
     def ocpp_transfer_meter_values(self):
         try:
             if self.data.ocpp.active:
                 thread_handler(Thread(target=self._transfer_meter_values, args=(), name="OCPP Client"))
-        except Exception:
-            log.exception("Fehler im OCPP-Optional-Modul")
+        except Exception as e:
+            log.exception("Fehler im OCPP-Optional-Modul: %s", e)
 
     def _transfer_meter_values(self):
         for cp in data.data.cp_data.values():
