@@ -5,8 +5,8 @@ from typing import Dict
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
 from modules.common import req
-from modules.electricity_tariffs.awattar.config import AwattarTariffConfiguration
-from modules.electricity_tariffs.awattar.config import AwattarTariff
+from modules.electricity_tariffs.dynamic_tariffs.awattar.config import AwattarTariffConfiguration
+from modules.electricity_tariffs.dynamic_tariffs.awattar.config import AwattarTariff
 
 
 @dataclass

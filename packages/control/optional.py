@@ -188,8 +188,8 @@ class Optional(OcppMixin):
             else:
                 # Wenn kein Modul konfiguriert ist, Fehlerstatus zurücksetzen.
                 if self.data.et.get.fault_state != 0 or self.data.et.get.fault_str != NO_ERROR:
-                    Pub().pub("openWB/set/optional/et/get/fault_state", 0)
-                    Pub().pub("openWB/set/optional/et/get/fault_str", NO_ERROR)
+                    Pub().pub("openWB/set/optional/et/dynamic/get/fault_state", 0)
+                    Pub().pub("openWB/set/optional/et/dynamic/get/fault_str", NO_ERROR)
         except Exception as e:
             log.exception("Fehler im Optional-Modul: %s", e)
 

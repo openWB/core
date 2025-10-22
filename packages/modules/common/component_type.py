@@ -7,7 +7,7 @@ class ComponentType(Enum):
     BAT = "bat"
     CHARGEPOINT = "cp"
     COUNTER = "counter"
-    ELECTRICITY_TARIFF = "electricity_tariff"
+    DYNAMIC_TARIFF = "dynamic_tariff"
     INVERTER = "inverter"
     IO = "io"
 
@@ -32,8 +32,8 @@ def type_to_topic_mapping(component_type: str) -> str:
         return "counter"
     elif "inverter" in component_type:
         return "pv"
-    elif ComponentType.ELECTRICITY_TARIFF.value in component_type:
-        return "optional/et"
+    elif ComponentType.DYNAMIC_TARIFF.value in component_type:
+        return "optional/et/dynamic"
     elif ComponentType.IO.value in component_type:
         return "io/states"
     else:

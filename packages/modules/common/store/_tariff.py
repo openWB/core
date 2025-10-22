@@ -19,7 +19,7 @@ class TariffValueStoreBroker(ValueStore[TariffState]):
     def update(self):
         try:
             prices = self.state.prices
-            pub_to_broker("openWB/set/optional/et/get/prices", prices)
+            pub_to_broker("openWB/set/optional/et/dynamic/get/prices", prices)
             log.debug(f"published prices list to MQTT having {len(prices)} entries")
         except Exception as e:
             raise FaultState.from_exception(e)

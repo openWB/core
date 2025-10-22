@@ -712,18 +712,18 @@ class SubData:
                         run_command([
                             str(Path(__file__).resolve().parents[2] / "runs" / "update_local_display.sh")
                         ], process_exception=True)
-                elif re.search("/optional/et/", msg.topic) is not None:
-                    if re.search("/optional/et/get/prices", msg.topic) is not None:
+                elif re.search("/optional/et/dynamic/", msg.topic) is not None:
+                    if re.search("/optional/et/dynamic/get/prices", msg.topic) is not None:
                         var.data.et.get.prices = decode_payload(msg.payload)
-                    elif re.search("/optional/et/get/", msg.topic) is not None:
+                    elif re.search("/optional/et/dynamic/get/", msg.topic) is not None:
                         self.set_json_payload_class(var.data.et.get, msg)
-                    elif re.search("/optional/et/provider$", msg.topic) is not None:
+                    elif re.search("/optional/et/dynamic/provider$", msg.topic) is not None:
                         config_dict = decode_payload(msg.payload)
                         if config_dict["type"] is None:
                             var.et_module = None
                         else:
                             mod = importlib.import_module(
-                                f".electricity_tariffs.{config_dict['type']}.tariff", "modules")
+                                f".electricity_tariffs.dynamic_tariffs.{config_dict['type']}.tariff", "modules")
                             config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
                             var.et_module = ConfigurableElectricityTariff(config, mod.create_electricity_tariff)
                             var.et_get_prices()

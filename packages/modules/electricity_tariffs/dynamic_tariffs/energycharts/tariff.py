@@ -8,8 +8,8 @@ from helpermodules import timecheck
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
-from modules.electricity_tariffs.energycharts.config import EnergyChartsTariffConfiguration
-from modules.electricity_tariffs.energycharts.config import EnergyChartsTariff
+from modules.electricity_tariffs.dynamic_tariffs.energycharts.config import EnergyChartsTariffConfiguration
+from modules.electricity_tariffs.dynamic_tariffs.energycharts.config import EnergyChartsTariff
 
 MAX_RETRIES = 10
 MAX_DELAY = 10

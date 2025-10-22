@@ -47,7 +47,7 @@ class FaultState(Exception):
                           self.fault_str + ", Traceback: \n" +
                           traceback.format_exc())
             topic = component_type.type_to_topic_mapping(self.component_info.type)
-            if self.component_info.type == component_type.ComponentType.ELECTRICITY_TARIFF.value:
+            if self.component_info.type == component_type.ComponentType.DYNAMIC_TARIFF.value:
                 topic_prefix = f"openWB/set/{topic}"
             else:
                 topic_prefix = f"openWB/set/{topic}/{self.component_info.id}"
