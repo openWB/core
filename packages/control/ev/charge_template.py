@@ -611,7 +611,7 @@ class ChargeTemplate:
                                        datetime.datetime.fromtimestamp(hour).strftime('%-H:%M')
                                        for hour in (sorted(hour_list)
                                                     if not data.data.optional_data.et_charging_is_allowed(hour_list)
-                                                    else sorted(hour_list)[1:])])
+                                                    else (sorted(hour_list)[1:] if len(hour_list) > 1 else []))])
                             + ".")
 
                 def end_of_today_timestamp() -> int:
