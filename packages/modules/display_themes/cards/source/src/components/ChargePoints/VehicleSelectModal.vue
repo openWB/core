@@ -4,7 +4,7 @@ import { useMqttStore } from "@/stores/mqtt.js";
 export default {
   name: "VehicleSelectModal",
   props: {
-    modelValue: { required: true, type: Boolean, default: false },
+    modelValue: { required: true, type: Boolean },
     chargePointId: {
       type: Number,
       required: true,

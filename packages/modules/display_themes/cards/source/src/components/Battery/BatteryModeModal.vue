@@ -38,7 +38,7 @@ import { useMqttStore } from "@/stores/mqtt.js";
 export default {
   name: "BatteryModeModal",
   props: {
-    modelValue: { type: Boolean, required: false, default: false },
+    modelValue: { required: true, type: Boolean },
   },
   emits: ["update:modelValue"],
   data() {
