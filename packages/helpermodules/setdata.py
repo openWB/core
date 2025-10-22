@@ -847,15 +847,15 @@ class SetData:
             enthält Topic und Payload
         """
         try:
-            if "openWB/set/optional/et/dynamic/get/prices" in msg.topic:
+            if "openWB/set/optional/ep/tariff/get/prices" in msg.topic:
                 self._validate_value(msg, "json")
             elif "openWB/set/optional/et/get/next_query_time" in msg.topic:
                 self._validate_value(msg, float)
-            elif "openWB/set/optional/et/dynamic/get/fault_state" in msg.topic:
+            elif "openWB/set/optional/ep/tariff/get/fault_state" in msg.topic:
                 self._validate_value(msg, int, [(0, 2)])
-            elif "openWB/set/optional/et/dynamic/get/fault_str" in msg.topic:
+            elif "openWB/set/optional/ep/tariff/get/fault_str" in msg.topic:
                 self._validate_value(msg, str)
-            elif ("openWB/set/optional/et/dynamic/provider" in msg.topic or
+            elif ("openWB/set/optional/ep/tariff/provider" in msg.topic or
                   "openWB/set/optional/ocpp/config" in msg.topic):
                 self._validate_value(msg, "json")
             elif "openWB/set/optional/monitoring" in msg.topic:

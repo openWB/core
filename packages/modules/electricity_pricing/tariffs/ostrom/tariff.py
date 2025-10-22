@@ -6,8 +6,8 @@ from typing import Dict
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
-from modules.electricity_tariffs.dynamic_tariffs.ostrom.config import OstromTariffConfiguration
-from modules.electricity_tariffs.dynamic_tariffs.ostrom.config import OstromTariff
+from modules.electricity_pricing.tariffs.ostrom.config import OstromTariffConfiguration
+from modules.electricity_pricing.tariffs.ostrom.config import OstromTariff
 
 
 def fetch_prices(config: OstromTariffConfiguration) -> Dict[int, float]:

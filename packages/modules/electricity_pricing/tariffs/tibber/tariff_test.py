@@ -1,8 +1,8 @@
 from unittest.mock import Mock
 from datetime import datetime
 from helpermodules import timecheck
-from modules.electricity_tariffs.dynamic_tariffs.tibber.config import TibberTariffConfiguration
-from modules.electricity_tariffs.dynamic_tariffs.tibber.tariff import fetch_prices
+from modules.electricity_pricing.tariffs.tibber.config import TibberTariffConfiguration
+from modules.electricity_pricing.tariffs.tibber.tariff import fetch_prices
 import pytest
 
 

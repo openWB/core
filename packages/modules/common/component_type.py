@@ -33,7 +33,7 @@ def type_to_topic_mapping(component_type: str) -> str:
     elif "inverter" in component_type:
         return "pv"
     elif ComponentType.DYNAMIC_TARIFF.value in component_type:
-        return "optional/et/dynamic"
+        return "optional/ep/dynamic"
     elif ComponentType.IO.value in component_type:
         return "io/states"
     else:

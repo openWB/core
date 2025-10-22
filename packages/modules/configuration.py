@@ -15,7 +15,7 @@ def pub_configurable():
     _pub_configurable_backup_clouds()
     _pub_configurable_web_themes()
     _pub_configurable_display_themes()
-    _pub_configurable_dynamic_tariffs()
+    _pub_configurable_tariffs()
     _pub_configurable_soc_modules()
     _pub_configurable_devices_components()
     _pub_configurable_chargepoints()
@@ -109,38 +109,38 @@ def _pub_configurable_display_themes() -> None:
         log.exception("Fehler im configuration-Modul")
 
 
-def _pub_configurable_dynamic_tariffs() -> None:
+def _pub_configurable_tariffs() -> None:
     try:
-        dynamic_tariffs: List[Dict] = []
-        path_list = Path(_get_packages_path()/"modules"/"electricity_tariffs"/"dynamic_tariffs").glob('**/tariff.py')
+        tariffs: List[Dict] = []
+        path_list = Path(_get_packages_path()/"modules"/"electricity_pricing"/"tariffs").glob('**/tariff.py')
         for path in path_list:
             try:
                 if path.name.endswith("_test.py"):
                     # Tests überspringen
                     continue
                 dev_defaults = importlib.import_module(
-                    f".electricity_tariffs.dynamic_tariffs.{path.parts[-2]}.tariff",
+                    f".electricity_pricing.tariffs.{path.parts[-2]}.tariff",
                     "modules").device_descriptor.configuration_factory()
-                dynamic_tariffs.append({
+                tariffs.append({
                     "value": dev_defaults.type,
                     "text": dev_defaults.name,
                     "defaults": dataclass_utils.asdict(dev_defaults)
                 })
             except Exception:
                 log.exception("Fehler im configuration-Modul")
-        dynamic_tariffs = sorted(dynamic_tariffs, key=lambda d: d['text'].upper())
+        tariffs = sorted(tariffs, key=lambda d: d['text'].upper())
         # "leeren" Eintrag an erster Stelle einfügen
-        dynamic_tariffs.insert(0,
-                               {
-                                   "value": None,
-                                   "text": "- kein Anbieter -",
+        tariffs.insert(0,
+                       {
+                           "value": None,
+                           "text": "- kein Anbieter -",
                                    "defaults": {
-                                           "type": None,
-                                           "configuration": {}
+                                       "type": None,
+                                       "configuration": {}
                                    }
-                               })
+                       })
 
-        Pub().pub("openWB/set/system/configurable/dynamic_tariffs", dynamic_tariffs)
+        Pub().pub("openWB/set/system/configurable/tariffs", tariffs)
     except Exception:
         log.exception("Fehler im configuration-Modul")
 

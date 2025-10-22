@@ -314,10 +314,10 @@ class UpdateConfig:
         "^openWB/set/log/request",
         "^openWB/set/log/data",
 
-        "^openWB/optional/et/dynamic/get/fault_state$",
-        "^openWB/optional/et/dynamic/get/fault_str$",
-        "^openWB/optional/et/dynamic/get/prices$",
-        "^openWB/optional/et/dynamic/provider$",
+        "^openWB/optional/ep/tariff/get/fault_state$",
+        "^openWB/optional/ep/tariff/get/fault_str$",
+        "^openWB/optional/ep/tariff/get/prices$",
+        "^openWB/optional/ep/tariff/provider$",
         "^openWB/optional/int_display/active$",
         "^openWB/optional/int_display/detected$",
         "^openWB/optional/int_display/on_if_plugged_in$",
@@ -474,7 +474,7 @@ class UpdateConfig:
         "^openWB/system/configurable/chargepoints$",
         "^openWB/system/configurable/chargepoints_internal$",
         "^openWB/system/configurable/devices_components$",
-        "^openWB/system/configurable/dynamic_tariffs$",
+        "^openWB/system/configurable/tariffs$",
         "^openWB/system/configurable/display_themes$",
         "^openWB/system/configurable/io_actions$",
         "^openWB/system/configurable/io_devices$",
@@ -573,7 +573,7 @@ class UpdateConfig:
         ("openWB/graph/config/duration", 120),
         ("openWB/internal_chargepoint/0/data/parent_cp", None),
         ("openWB/internal_chargepoint/1/data/parent_cp", None),
-        ("openWB/optional/et/dynamic/provider", NO_MODULE),
+        ("openWB/optional/ep/tariff/provider", NO_MODULE),
         ("openWB/optional/int_display/active", True),
         ("openWB/optional/int_display/detected", True),
         ("openWB/optional/int_display/on_if_plugged_in", True),
@@ -2091,7 +2091,7 @@ class UpdateConfig:
                     configuration_payload.update({"official": True})
                     return {topic: configuration_payload}
             # add "official" flag to selected electricity tariff provider
-            if re.search("openWB/optional/et/dynamic/provider", topic) is not None:
+            if re.search("openWB/optional/ep/tariff/provider", topic) is not None:
                 configuration_payload = decode_payload(payload)
                 official_providers = ["awattar", "energycharts", "rabot", "tibber", "voltego"]
                 if configuration_payload.get("type") in official_providers:

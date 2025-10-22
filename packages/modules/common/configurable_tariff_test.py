@@ -4,7 +4,7 @@ import pytest
 
 from modules.common.component_state import TariffState
 from modules.common.configurable_tariff import ConfigurableElectricityTariff
-from modules.electricity_tariffs.dynamic_tariffs.awattar.config import AwattarTariff
+from modules.electricity_pricing.tariffs.awattar.config import AwattarTariff
 
 
 @pytest.mark.parametrize(
