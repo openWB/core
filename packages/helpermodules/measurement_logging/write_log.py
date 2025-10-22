@@ -204,7 +204,8 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
             grid_price = prices.grid
         prices_dict = {"grid": grid_price,
                        "pv": prices.pv,
-                       "bat": prices.bat}
+                       "bat": prices.bat,
+                       "cp": prices.cp}
     except Exception:
         log.exception("Fehler im Werte-Logging-Modul für Preise")
         prices_dict = {}
