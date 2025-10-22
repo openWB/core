@@ -4,6 +4,7 @@ import logging
 from math import ceil
 from threading import Thread
 from typing import List
+from datetime import datetime
 
 from control import data
 from control.ocpp import OcppMixin
@@ -138,18 +139,23 @@ class Optional(OcppMixin):
         try:
             prices = self.data.et.get.prices
             price_timeslot_seconds = self.__calculate_price_timeslot_length(prices)
-            first_timeslot_start = self.__get_current_timeslot_start(prices)
+            now = int(timecheck.create_timestamp())
             price_candidates = {
                 timestamp: price
                 for timestamp, price in prices.items()
                 if (
                     # is current timeslot or futur
-                    int(timestamp) >= int(first_timeslot_start) and
+                    int(timestamp) + price_timeslot_seconds > now and
                     # ends before plan target time
-                    int(timestamp) + price_timeslot_seconds <= int(first_timeslot_start) + remaining_time
+                    not int(timestamp) >= now + remaining_time
                 )
             }
-            now = int(timecheck.create_timestamp())
+            log.debug("%s Preis-Kandidaten für %s bis %s = von %s bis %s",
+                      len(price_candidates),
+                      datetime.fromtimestamp(now),
+                      datetime.fromtimestamp(now + remaining_time),
+                      datetime.fromtimestamp(int(min(price_candidates))),
+                      datetime.fromtimestamp(int(max(price_candidates))+price_timeslot_seconds))
             ordered_by_date_reverse = reversed(sorted(price_candidates.items(), key=lambda x: x[0]))
             ordered_by_price = sorted(ordered_by_date_reverse, key=lambda x: x[1])
             selected_time_slots = {int(i[0]): float(i[1])

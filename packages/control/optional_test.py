@@ -6,7 +6,7 @@ import pytest
 ONE_HOUR_SECONDS = 3600
 IGNORED = 0.0001
 CHEAP = 0.0002
-EXPENSIVE = 0.0003
+EXPENSIVE = 0.3000
 
 
 @pytest.mark.no_mock_full_hour
@@ -135,11 +135,14 @@ EXPENSIVE = 0.0003
                 # fifth hour
                 "1698238800": CHEAP,
                 "1698239700": CHEAP,
-                "1698240600": EXPENSIVE,  # last before plan target
-                "1698241500": IGNORED,
+                "1698240600": EXPENSIVE,
+                "1698241500": EXPENSIVE,  # last before plan target
+                # sixth hour
+                "1698242400": IGNORED,
+                "1698243300": IGNORED,
             },
             [1698227100, 1698229800, 1698231600, 1698232500,
-             1698233400, 1698235200, 1698238800, 1698239700, 1698240600],
+             1698233400, 1698235200, 1698238800, 1698239700, 1698241500],
             id="select additional if time elapsed in current slot makes selection too short"
         ),
         pytest.param(
@@ -151,8 +154,8 @@ EXPENSIVE = 0.0003
                 # first hour
                 "1698224400": IGNORED,
                 "1698225300": IGNORED,
-                "1698226200": EXPENSIVE,
-                "1698227100": CHEAP,  # current quarter hour
+                "1698226200": EXPENSIVE,  # current quarter hour
+                "1698227100": CHEAP,
                 # second hour
                 "1698228000": EXPENSIVE,
                 "1698228900": EXPENSIVE,
@@ -172,10 +175,48 @@ EXPENSIVE = 0.0003
                 "1698238800": EXPENSIVE,
                 "1698239700": EXPENSIVE,
                 "1698240600": EXPENSIVE,  # last before plan target
+                "1698241500": EXPENSIVE,
+                # sixth hour
+                "1698242400": IGNORED,
+                "1698243300": IGNORED,
+            },
+            [1698227100, 1698229800, 1698231600, 1698232500, 1698233400, 1698235200, 1698239700, 1698240600],
+            id="order in time sequence equal prices"
+        ),
+        pytest.param(
+            "quarter_hour",
+            1698226600,
+            2 * ONE_HOUR_SECONDS,
+            4 * ONE_HOUR_SECONDS,
+            {
+                # first hour
+                "1698224400": IGNORED,
+                "1698225300": IGNORED,
+                "1698226200": EXPENSIVE,  # current quarter hour
+                "1698227100": .07,
+                # second hour
+                "1698228000": EXPENSIVE,
+                "1698228900": .08,
+                "1698229800": .05,
+                "1698230700": .04,
+                # third hour
+                "1698231600": .03,
+                "1698232500": .02,
+                "1698233400": .01,
+                "1698234300": EXPENSIVE,
+                # fourth hour
+                "1698235200": .04,
+                "1698236100": EXPENSIVE,
+                "1698237000": EXPENSIVE,
+                "1698237900": EXPENSIVE,
+                # fifth hour
+                "1698238800": EXPENSIVE,
+                "1698239700": EXPENSIVE,  # last before plan target
+                "1698240600": EXPENSIVE,
                 "1698241500": IGNORED,
             },
-            [1698227100, 1698229800, 1698231600, 1698232500, 1698233400, 1698235200, 1698238800, 1698239700],
-            id="select latest if most expensive candidates have same price"
+            [1698227100, 1698228900, 1698229800, 1698230700, 1698231600, 1698232500, 1698233400, 1698235200],
+            id="order in time sequence reverse"
         ),
     ],
 )
@@ -344,6 +385,33 @@ def test_et_charging_allowed_exception(monkeypatch):
                 "1698238800": EXPENSIVE,
                 "1698239700": EXPENSIVE,
                 "1698240600": EXPENSIVE,  # last before plan target
+                "1698241500": IGNORED, },
+            [1698227100, 1698231600,  1698232500, 1698233400, 1698235200],
+            True, id="charge if provider available and matching time slot start"
+        ),
+        pytest.param(
+            1698227100, True, {
+                # first hour
+                "1698227100": IGNORED,  # current quarter hour
+                # second hour
+                "1698228000": IGNORED,
+                "1698228900": IGNORED,
+                "1698229800": IGNORED,
+                "1698230700": IGNORED,
+                # third hour
+                "1698231600": IGNORED,
+                "1698232500": IGNORED,
+                "1698233400": IGNORED,
+                "1698234300": IGNORED,
+                # fourth hour
+                "1698235200": IGNORED,
+                "1698236100": IGNORED,
+                "1698237000": IGNORED,
+                "1698237900": IGNORED,
+                # fifth hour
+                "1698238800": IGNORED,
+                "1698239700": IGNORED,
+                "1698240600": IGNORED,  # last before plan target
                 "1698241500": IGNORED, },
             [1698227100, 1698231600,  1698232500, 1698233400, 1698235200],
             True, id="charge if provider available and matching time slot start"
