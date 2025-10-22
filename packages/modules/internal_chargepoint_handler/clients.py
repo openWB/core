@@ -45,16 +45,16 @@ class ClientHandler(SeriesHardwareCheckMixin):
 
     def _evse_factory(self, client: Union[ModbusSerialClient_, ModbusTcpClient_], evse_ids: List[int]) -> evse.Evse:
         for modbus_id in evse_ids:
-            evse_client = evse.Evse(modbus_id, client)
-            with client:
-                try:
+            try:
+                evse_client = evse.Evse(modbus_id, client)
+                with client:
                     if evse_client.get_firmware_version() > EVSE_MIN_FIRMWARE:
                         log.debug(client)
                         with ModifyLoglevelContext(log, logging.DEBUG):
                             log.debug("Modbus-ID der EVSE an LP"+str(self.local_charge_point_num)+": "+str(modbus_id))
                         return evse_client
-                except Exception:
-                    pass
+            except Exception:
+                pass
         else:
             return None
 
