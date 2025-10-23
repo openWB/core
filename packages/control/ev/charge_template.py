@@ -550,9 +550,12 @@ class ChargeTemplate:
         if plan.limit.selected != "soc":
             soc_request_interval_offset = 0
         log.debug("Verwendeter Plan: "+str(plan.name))
-        if limit.selected == "soc" and soc >= limit.soc_limit and soc >= limit.soc_scheduled:
+        if (limit.selected == "soc" and
+            (soc > limit.soc_limit if (plan.bidi_charging_enabled and bidi_state == BidiState.BIDI_CAPABLE)
+             else soc >= limit.soc_limit) and
+                soc >= limit.soc_scheduled):
             message = self.SCHEDULED_CHARGING_REACHED_LIMIT_SOC
-        elif limit.selected == "soc" and limit.soc_scheduled <= soc < limit.soc_limit:
+        elif limit.selected == "soc" and limit.soc_scheduled <= soc <= limit.soc_limit:
             if plan.bidi_charging_enabled and bidi_state == BidiState.BIDI_CAPABLE:
                 message = self.SCHEDULED_CHARGING_BIDI
                 current = min_current
@@ -634,7 +637,7 @@ class ChargeTemplate:
         return 0, "stop", "Keine Ladung, da der Lademodus Stop aktiv ist."
 
     def bidi_charging_allowed(self, selected_plan: int, soc: float):
-        # Wenn zu über den Limit-SoC geladen wurde, darf nur noch bidirektional entladen werden.
+        # Wenn über den Limit-SoC geladen wurde, darf nur noch bidirektional entladen werden.
         for plan in self.data.chargemode.scheduled_charging.plans:
             if plan.id == selected_plan:
-                return soc <= plan.limit.soc_limit
+                return soc < plan.limit.soc_limit
