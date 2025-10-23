@@ -43,12 +43,12 @@ def data_module() -> None:
         pytest.param({"0": TimeChargingPlan(id=0, limit=Limit(selected="soc"))}, None, 0,
                      TimeChargingPlan(id=0, limit=Limit(selected="soc")),
                      (16, "time_charging", None, 0, 1), id="plan active, soc is not defined"),
-        pytest.param({"0": TimeChargingPlan(id=0, limit=Limit(selected="amount"))}, 0, 1500,
-                     TimeChargingPlan(id=0, limit=Limit(selected="amount")),
+        pytest.param({"0": TimeChargingPlan(id=0, limit=Limit(selected="amount", amount=1000))}, 0, 1500,
+                     TimeChargingPlan(id=0, limit=Limit(selected="amount", amount=1000)),
                      (0, "stop", ChargeTemplate.TIME_CHARGING_AMOUNT_REACHED, 0, 1),
                      id="plan active, used_amount_time_charging is reached"),
-        pytest.param({"0": TimeChargingPlan(id=0, limit=Limit(selected="amount"))}, 0, 500,
-                     TimeChargingPlan(id=0, limit=Limit(selected="amount")),
+        pytest.param({"0": TimeChargingPlan(id=0, limit=Limit(selected="amount", amount=1000))}, 0, 500,
+                     TimeChargingPlan(id=0, limit=Limit(selected="amount", amount=1000)),
                      (16, "time_charging", None, 0, 1),
                      id="plan active, used_amount_time_charging is not reached"),
         pytest.param({"0": TimeChargingPlan(id=0)}, 0, 0,  None,
@@ -91,6 +91,7 @@ def test_instant_charging(selected: str, current_soc: float, used_amount: float,
     data.data.optional_data.data.et.active = False
     ct = ChargeTemplate()
     ct.data.chargemode.instant_charging.limit.selected = selected
+    ct.data.chargemode.instant_charging.limit.amount = 1000
 
     # execution
     ret = ct.instant_charging(current_soc, used_amount, ChargingType.AC.value)
@@ -124,6 +125,7 @@ def test_pv_charging(min_soc: int,
     ct.data.chargemode.pv_charging.phases_to_use = 0
     ct.data.chargemode.pv_charging.phases_to_use_min_soc = 3
     ct.data.chargemode.pv_charging.limit.selected = limit_selected
+    ct.data.chargemode.pv_charging.limit.amount = 1000
     ct.data.chargemode.pv_charging.limit.soc = 90
     data.data.bat_all_data.data.config.configured = True
 
