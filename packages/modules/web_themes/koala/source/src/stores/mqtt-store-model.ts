@@ -5,6 +5,7 @@ export interface ThemeConfiguration {
   vehicle_card_view_breakpoint: number;
   chargePoint_table_search_input_field: boolean;
   vehicle_table_search_input_field: boolean;
+  top_carousel_slide_order: Array<string>;
 }
 
 export interface ConnectionOptions {
