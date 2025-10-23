@@ -1,7 +1,10 @@
+from typing import Dict
 from unittest.mock import Mock
-from control.optional import Optional
-from helpermodules import timecheck
 import pytest
+from helpermodules import timecheck
+from control.optional import Optional
+from datetime import datetime, timedelta
+
 
 ONE_HOUR_SECONDS = 3600
 IGNORED = 0.0001
@@ -229,7 +232,7 @@ def test_et_get_loading_hours(granularity,
                               monkeypatch):
     # setup
     opt = Optional()
-    opt.data.et.get.prices = price_list
+    opt.data.electricity_pricing.prices = price_list
     mock_et_provider_available = Mock(return_value=True)
     monkeypatch.setattr(opt, "et_provider_available", mock_et_provider_available)
     monkeypatch.setattr(
@@ -259,7 +262,7 @@ def test_et_charging_allowed(monkeypatch, provider_available, current_price, max
     monkeypatch.setattr(opt, "et_provider_available", Mock(return_value=provider_available))
     if provider_available:
         monkeypatch.setattr(opt, "et_get_current_price", Mock(return_value=current_price))
-    result = opt.et_is_charging_allowed_price_threshold(max_price)
+    result = opt.ep_is_charging_allowed_price_threshold(max_price)
     assert result == expected
 
 
@@ -267,7 +270,7 @@ def test_et_charging_allowed_exception(monkeypatch):
     opt = Optional()
     monkeypatch.setattr(opt, "et_provider_available", Mock(return_value=True))
     monkeypatch.setattr(opt, "et_get_current_price", Mock(side_effect=Exception))
-    result = opt.et_is_charging_allowed_price_threshold(0.15)
+    result = opt.ep_is_charging_allowed_price_threshold(0.15)
     assert result is False
 
 
@@ -425,17 +428,18 @@ def test_et_charging_available(now_ts, provider_available, price_list, selected_
         Mock(return_value=now_ts)
     )
     opt = Optional()
-    opt.data.et.get.prices = price_list
+    opt.data.electricity_pricing.prices = price_list
     monkeypatch.setattr(opt, "et_provider_available", Mock(return_value=provider_available))
-    result = opt.et_is_charging_allowed_hours_list(selected_hours)
+    result = opt.ep_is_charging_allowed_hours_list(selected_hours)
     assert result == expected
 
 
 def test_et_charging_available_exception(monkeypatch):
     opt = Optional()
     monkeypatch.setattr(opt, "et_provider_available", Mock(return_value=True))
-    opt.data.et.get.prices = {}  # empty prices list raises exception
-    result = opt.et_is_charging_allowed_hours_list([])
+
+    opt.data.electricity_pricing.prices = {}  # empty prices list raises exception
+    result = opt.ep_is_charging_allowed_hours_list([])
     assert result is False
 
 
@@ -477,3 +481,54 @@ def test_et_price_update_required(monkeypatch, prices, next_query_time, current_
 
     # evaluation
     assert result == expected
+
+
+def make_prices(count, step, base):
+    start = datetime(2025, 10, 22, 12, 0)
+    return {int((start + timedelta(minutes=step*i)).timestamp()): base+i for i in range(count)}
+
+
+@pytest.mark.parametrize("flexible_tariff, grid_fee, expected_prices", [
+    pytest.param(make_prices(4, 15, 10), make_prices(12, 5, 1), {1761127200: 11,
+                                                                 1761127500: 12,
+                                                                 1761127800: 13,
+                                                                 1761128100: 15,
+                                                                 1761128400: 16,
+                                                                 1761128700: 17,
+                                                                 1761129000: 19,
+                                                                 1761129300: 20,
+                                                                 1761129600: 21,
+                                                                 1761129900: 23,
+                                                                 1761130200: 24,
+                                                                 1761130500: 25},
+                 id="grid_fee_finer"),  # grid_fee: 12x5min, flexible_tariff: 4x15min
+    pytest.param(make_prices(12, 5, 1), make_prices(4, 14, 10), {1761127200: 11,
+                                                                 1761127500: 12,
+                                                                 1761127800: 13,
+                                                                 1761128100: 15,
+                                                                 1761128400: 16,
+                                                                 1761128700: 17,
+                                                                 1761129000: 19,
+                                                                 1761129300: 20,
+                                                                 1761129600: 21,
+                                                                 1761129900: 23,
+                                                                 1761130200: 24,
+                                                                 1761130500: 25},
+                 id="flexible tariff finer"),  # flexible_tariff: 12x5min, grid_fee: 4x14min
+    pytest.param(make_prices(4, 15, 1), make_prices(4, 15, 10), {1761127200: 11,
+                                                                 1761128100: 13,
+                                                                 1761129000: 15,
+                                                                 1761129900: 17},
+                 id="same resolution"),  # flexible_tariff & grid_fee: 4x15min
+])
+def test_sum_prices(flexible_tariff: Dict[int, float],
+                    grid_fee: Dict[int, float],
+                    expected_prices: Dict[int, float]):
+    opt = Optional()
+    opt.flexible_tariff_module = Mock()
+    opt.data.electricity_pricing.flexible_tariff.get.prices = flexible_tariff
+    opt.grid_fee_module = Mock()
+    opt.data.electricity_pricing.grid_fee.get.prices = grid_fee
+    summed = opt.sum_prices()
+    for timestamp, price in summed.items():
+        assert price == expected_prices[timestamp]

@@ -14,7 +14,7 @@ from helpermodules.pub import Pub
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
-from modules.electricity_pricing.tariffs.voltego.config import VoltegoTariff, VoltegoToken
+from modules.electricity_pricing.flexible_tariffs.voltego.config import VoltegoTariff, VoltegoToken
 
 log = logging.getLogger(__name__)
 

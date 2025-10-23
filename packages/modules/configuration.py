@@ -110,39 +110,43 @@ def _pub_configurable_display_themes() -> None:
 
 
 def _pub_configurable_tariffs() -> None:
-    try:
-        tariffs: List[Dict] = []
-        path_list = Path(_get_packages_path()/"modules"/"electricity_pricing"/"tariffs").glob('**/tariff.py')
-        for path in path_list:
-            try:
-                if path.name.endswith("_test.py"):
-                    # Tests überspringen
-                    continue
-                dev_defaults = importlib.import_module(
-                    f".electricity_pricing.tariffs.{path.parts[-2]}.tariff",
-                    "modules").device_descriptor.configuration_factory()
-                tariffs.append({
-                    "value": dev_defaults.type,
-                    "text": dev_defaults.name,
-                    "defaults": dataclass_utils.asdict(dev_defaults)
-                })
-            except Exception:
-                log.exception("Fehler im configuration-Modul")
-        tariffs = sorted(tariffs, key=lambda d: d['text'].upper())
-        # "leeren" Eintrag an erster Stelle einfügen
-        tariffs.insert(0,
-                       {
-                           "value": None,
-                           "text": "- kein Anbieter -",
-                                   "defaults": {
-                                       "type": None,
-                                       "configuration": {}
-                                   }
-                       })
+    def pub(source: str):
+        try:
+            tariffs: List[Dict] = []
+            path_list = Path(_get_packages_path()/"modules"/"electricity_pricing" /
+                             f"{source}").glob('**/tariff.py')
+            for path in path_list:
+                try:
+                    if path.name.endswith("_test.py"):
+                        # Tests überspringen
+                        continue
+                    dev_defaults = importlib.import_module(
+                        f".electricity_pricing.{source}.{path.parts[-2]}.tariff",
+                        "modules").device_descriptor.configuration_factory()
+                    tariffs.append({
+                        "value": dev_defaults.type,
+                        "text": dev_defaults.name,
+                        "defaults": dataclass_utils.asdict(dev_defaults)
+                    })
+                except Exception:
+                    log.exception("Fehler im configuration-Modul")
+            tariffs = sorted(tariffs, key=lambda d: d['text'].upper())
+            # "leeren" Eintrag an erster Stelle einfügen
+            tariffs.insert(0,
+                           {
+                               "value": None,
+                               "text": "- kein Anbieter -",
+                               "defaults": {
+                                   "type": None,
+                                   "configuration": {}
+                               }
+                           })
 
-        Pub().pub("openWB/set/system/configurable/tariffs", tariffs)
-    except Exception:
-        log.exception("Fehler im configuration-Modul")
+            Pub().pub(f"openWB/set/system/configurable/{source}", tariffs)
+        except Exception:
+            log.exception("Fehler im configuration-Modul")
+    pub("flexible_tariffs")
+    pub("grid_fees")
 
 
 def _pub_configurable_soc_modules() -> None:

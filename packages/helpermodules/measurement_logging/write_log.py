@@ -199,7 +199,7 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
     try:
         prices = data.data.general_data.data.prices
         try:
-            grid_price = data.data.optional_data.et_get_current_price()
+            grid_price = data.data.optional_data.ep_get_current_price()
         except Exception:
             grid_price = prices.grid
         prices_dict = {"grid": grid_price,

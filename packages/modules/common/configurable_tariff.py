@@ -14,13 +14,12 @@ ONE_HOUR_SECONDS: int = 3600
 log = logging.getLogger(__name__)
 
 
-class ConfigurableElectricityTariff(Generic[T_TARIFF_CONFIG]):
+class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
     def __init__(self,
                  config: T_TARIFF_CONFIG,
                  component_initializer: Callable[[], float]) -> None:
         self.config = config
-        self.store = store.get_electricity_tariff_value_store()
-        self.fault_state = FaultState(ComponentInfo(None, self.config.name, ComponentType.DYNAMIC_TARIFF.value))
+
         # nach Init auf NO_ERROR setzen, damit der Fehlerstatus beim Modulwechsel gelöscht wird
         self.fault_state.no_error()
         self.fault_state.store_error()
@@ -76,3 +75,21 @@ class ConfigurableElectricityTariff(Generic[T_TARIFF_CONFIG]):
                         'Die Preisliste startet nicht mit der aktuellen Stunde. '
                         f'Eintrag {timestamp} wurden entfernt. rest: {tariff_state.prices}')
         return tariff_state
+
+
+class ConfigurableFlexibleTariff(ConfigurableTariff):
+    def __init__(self,
+                 config: T_TARIFF_CONFIG,
+                 component_initializer: Callable[[], float]) -> None:
+        self.store = store.get_flexible_tariff_value_store()
+        self.fault_state = FaultState(ComponentInfo(None, config.name, ComponentType.FLEXIBLE_TARIFF.value))
+        super().__init__(config, component_initializer)
+
+
+class ConfigurableGridFee(ConfigurableTariff):
+    def __init__(self,
+                 config: T_TARIFF_CONFIG,
+                 component_initializer: Callable[[], float]) -> None:
+        self.store = store.get_grid_fee_value_store()
+        self.fault_state = FaultState(ComponentInfo(None, config.name, ComponentType.GRID_FEE.value))
+        super().__init__(config, component_initializer)

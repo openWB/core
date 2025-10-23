@@ -6,8 +6,8 @@ from typing import Dict
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
-from modules.electricity_pricing.tariffs.groupe_e.config import GroupeETariffConfiguration
-from modules.electricity_pricing.tariffs.groupe_e.config import GroupeETariff
+from modules.electricity_pricing.flexible_tariffs.groupe_e.config import GroupeETariffConfiguration
+from modules.electricity_pricing.flexible_tariffs.groupe_e.config import GroupeETariff
 
 
 # Extract timestamp from power price entry

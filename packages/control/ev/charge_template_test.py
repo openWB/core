@@ -88,7 +88,6 @@ def test_time_charging(plans: Dict[int, TimeChargingPlan], soc: float, used_amou
 def test_instant_charging(selected: str, current_soc: float, used_amount: float,
                           expected: Tuple[int, str, Optional[str]]):
     # setup
-    data.data.optional_data.data.et.active = False
     ct = ChargeTemplate()
     ct.data.chargemode.instant_charging.limit.selected = selected
     ct.data.chargemode.instant_charging.limit.amount = 1000

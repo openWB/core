@@ -6,8 +6,8 @@ from typing import Dict
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
-from modules.electricity_pricing.tariffs.ekz.config import EkzTariffConfiguration
-from modules.electricity_pricing.tariffs.ekz.config import EkzTariff
+from modules.electricity_pricing.flexible_tariffs.ekz.config import EkzTariffConfiguration
+from modules.electricity_pricing.flexible_tariffs.ekz.config import EkzTariff
 
 
 # Extract timestamp from power price entry

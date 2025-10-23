@@ -292,8 +292,8 @@ class ChargeTemplate:
                 current = 0
                 sub_mode = "stop"
                 message = self.AMOUNT_REACHED
-            elif data.data.optional_data.et_provider_available():
-                if data.data.optional_data.et_is_charging_allowed_price_threshold(eco_charging.max_price):
+            elif data.data.optional_data.ep_provider_available():
+                if data.data.optional_data.ep_is_charging_allowed_price_threshold(eco_charging.max_price):
                     sub_mode = "instant_charging"
                     message = self.CHARGING_PRICE_LOW
                     phases = max_phases_hw
@@ -604,7 +604,7 @@ class ChargeTemplate:
             if plan.et_active:
                 def get_hours_message() -> str:
                     def is_loading_hour(hour: int) -> bool:
-                        return data.data.optional_data.et_is_charging_allowed_hours_list(hour)
+                        return data.data.optional_data.ep_is_charging_allowed_hours_list(hour)
                     return ("Geladen wird "+("jetzt und "
                                              if is_loading_hour(hour_list)
                                              else '') +
@@ -622,11 +622,11 @@ class ChargeTemplate:
 
                 def tomorrow(timestamp: int) -> str:
                     return 'morgen ' if end_of_today_timestamp() < timestamp else ''
-                hour_list = data.data.optional_data.et_get_loading_hours(
+                hour_list = data.data.optional_data.ep_get_loading_hours(
                     selected_plan.duration, selected_plan.remaining_time)
 
                 log.debug(f"Günstige Ladezeiten: {hour_list}")
-                if data.data.optional_data.et_is_charging_allowed_hours_list(hour_list):
+                if data.data.optional_data.ep_is_charging_allowed_hours_list(hour_list):
                     message = self.SCHEDULED_CHARGING_CHEAP_HOUR.format(get_hours_message())
                     current = plan_current
                     submode = "instant_charging"

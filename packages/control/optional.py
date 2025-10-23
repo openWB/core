@@ -1,5 +1,6 @@
 """Optionale Module
 """
+from datetime import timedelta
 import logging
 from math import ceil
 import random
@@ -15,7 +16,7 @@ from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 from helpermodules.utils import thread_handler
-from modules.common.configurable_tariff import ConfigurableElectricityTariff
+from modules.common.configurable_tariff import ConfigurableFlexibleTariff, ConfigurableGridFee
 from modules.common.configurable_monitoring import ConfigurableMonitoring
 
 log = logging.getLogger(__name__)
@@ -27,8 +28,8 @@ class Optional(OcppMixin):
     def __init__(self):
         try:
             self.data = OptionalData()
-            # guarded et_module stored in a private attribute
-            self.et_module: TypingOptional[ConfigurableElectricityTariff] = None
+            self.flexible_tariff_module: ConfigurableFlexibleTariff = None
+            self.grid_fee_module: ConfigurableGridFee = None
             self.monitoring_module: ConfigurableMonitoring = None
             self.data.dc_charging = hardware_configuration.get_hardware_configuration_setting("dc_charging")
             Pub().pub("openWB/optional/dc_charging", self.data.dc_charging)
@@ -40,13 +41,13 @@ class Optional(OcppMixin):
             self.monitoring_module.start_monitoring()
 
     def monitoring_stop(self):
-        if self.mon_module is not None:
-            self.mon_module.stop_monitoring()
+        if self.monitoring_module is not None:
+            self.monitoring_module.stop_monitoring()
 
-    def et_provider_available(self) -> bool:
-        return self.et_module is not None
+    def ep_provider_available(self) -> bool:
+        return self.flexible_tariff_module is not None or self.grid_fee_module is not None
 
-    def et_is_charging_allowed_hours_list(self, selected_hours: list[int]) -> bool:
+    def ep_is_charging_allowed_hours_list(self, selected_hours: list[int]) -> bool:
         """ prüft, ob das strompreisbasiertes Laden aktiviert und ein günstiger Zeitpunkt ist.
 
         Parameter
@@ -60,8 +61,8 @@ class Optional(OcppMixin):
         False: Der aktuelle Zeitpunkt liegt in keinem günstigen Zeitslot
         """
         try:
-            if self.et_provider_available():
-                return self.__get_current_timeslot_start(self.data.et.get.prices) in selected_hours
+            if self.ep_provider_available():
+                return self.__get_current_timeslot_start(self.data.electricity_pricing.prices) in selected_hours
             else:
                 log.info("Prüfe strompreisbasiertes Laden: Nicht konfiguriert")
                 return False
@@ -69,7 +70,7 @@ class Optional(OcppMixin):
             log.exception(f"Fehler im Optional-Modul: {e}")
             return False
 
-    def et_is_charging_allowed_price_threshold(self, max_price: float) -> bool:
+    def ep_is_charging_allowed_price_threshold(self, max_price: float) -> bool:
         """ prüft, ob der aktuelle Strompreis niedriger oder gleich der festgelegten Preisgrenze ist.
 
         Return
@@ -78,8 +79,8 @@ class Optional(OcppMixin):
         False: Preis liegt darüber
         """
         try:
-            if self.et_provider_available():
-                current_price = self.et_get_current_price(prices=self.data.et.get.prices)
+            if self.ep_provider_available():
+                current_price = self.ep_get_current_price(prices=self.data.electricity_pricing.prices)
                 log.info("Prüfe strompreisbasiertes Laden mit Preisgrenze %.5f €/kWh, aktueller Preis: %.5f €/kWh",
                          max_price * AS_EURO_PER_KWH,
                          current_price * AS_EURO_PER_KWH
@@ -95,8 +96,8 @@ class Optional(OcppMixin):
             return False
 
     def __get_first_entry(self, prices: dict[str, float]) -> tuple[str, float]:
-        if self.et_provider_available():
-            prices = self.data.et.get.prices
+        if self.ep_provider_available():
+            prices = self.data.electricity_pricing.prices
             if prices is None or len(prices) == 0:
                 raise Exception("Keine Preisdaten für strompreisbasiertes Laden vorhanden.")
             else:
@@ -108,7 +109,7 @@ class Optional(OcppMixin):
                     for price in prices.items()
                     if int(price[0]) > now - (price_timeslot_seconds - 1)
                 }
-                self.data.et.get.prices = prices
+                self.data.electricity_pricing.prices = prices
                 timestamp, first = next(iter(prices.items()))
                 return timestamp, first
         else:
@@ -118,7 +119,7 @@ class Optional(OcppMixin):
         timestamp, first = self.__get_first_entry(prices)
         return int(timestamp)
 
-    def et_get_current_price(self, prices: dict[str, float]) -> float:
+    def ep_get_current_price(self, prices: dict[str, float]) -> float:
         timestamp, first = self.__get_first_entry(prices)
         return first
 
@@ -126,7 +127,7 @@ class Optional(OcppMixin):
         first_timestamps = list(prices.keys())[:2]
         return int(first_timestamps[1]) - int(first_timestamps[0])
 
-    def et_get_loading_hours(self, duration: float, remaining_time: float) -> List[int]:
+    def ep_get_loading_hours(self, duration: float, remaining_time: float) -> List[int]:
         """
         Parameter
         ---------
@@ -138,10 +139,10 @@ class Optional(OcppMixin):
         ------
         list: Key des Dictionary (Unix-Sekunden der günstigen Zeit-Slots)
         """
-        if self.et_provider_available() is False:
+        if self.ep_provider_available() is False:
             raise Exception("Kein Anbieter für strompreisbasiertes Laden konfiguriert.")
         try:
-            prices = self.data.et.get.prices
+            prices = self.data.electricity_pricing.prices
             price_timeslot_seconds = self.__calculate_price_timeslot_length(prices)
             now = int(timecheck.create_timestamp())
             price_candidates = {
@@ -178,18 +179,32 @@ class Optional(OcppMixin):
             log.exception("Fehler im Optional-Modul: %s", e)
             return []
 
-    def et_get_prices(self):
+    def ep_get_prices(self):
         try:
-            if self.et_module and self.et_price_update_required():
-                thread_handler(Thread(target=self.et_module.update, args=(),
-                                      name="electricity tariff in optional"))
-                self.data.et.get.next_query_time = None
-                Pub().pub("openWB/set/optional/et/get/next_query_time", None)
+            if self.et_price_update_required() is False:
+                return
+            if self.flexible_tariff_module:
+                thread_handler(Thread(target=self.flexible_tariff_module.update, args=(), name="flexible tariff"))
             else:
                 # Wenn kein Modul konfiguriert ist, Fehlerstatus zurücksetzen.
-                if self.data.et.get.fault_state != 0 or self.data.et.get.fault_str != NO_ERROR:
-                    Pub().pub("openWB/set/optional/ep/tariff/get/fault_state", 0)
-                    Pub().pub("openWB/set/optional/ep/tariff/get/fault_str", NO_ERROR)
+                if (self.data.electricity_pricing.flexible_tariff.get.fault_state != 0 or
+                        self.data.electricity_pricing.flexible_tariff.get.fault_str != NO_ERROR):
+                    self.data.electricity_pricing.flexible_tariff.get.fault_state = 0
+                    self.data.electricity_pricing.flexible_tariff.get.fault_str = NO_ERROR
+                    Pub().pub("openWB/set/optional/ep/flexible_tariff/get/fault_state", 0)
+                    Pub().pub("openWB/set/optional/ep/flexible_tariff/get/fault_str", NO_ERROR)
+            if self.grid_fee_module:
+                thread_handler(Thread(target=self.grid_fee_module.update, args=(), name="grid fee"))
+            else:
+                # Wenn kein Modul konfiguriert ist, Fehlerstatus zurücksetzen.
+                if (self.data.electricity_pricing.grid_fee.get.fault_state != 0 or
+                        self.data.electricity_pricing.grid_fee.get.fault_str != NO_ERROR):
+                    self.data.electricity_pricing.grid_fee.get.fault_state = 0
+                    self.data.electricity_pricing.grid_fee.get.fault_str = NO_ERROR
+                    Pub().pub("openWB/set/optional/ep/grid_fee/get/fault_state", 0)
+                    Pub().pub("openWB/set/optional/ep/grid_fee/get/fault_str", NO_ERROR)
+            self.data.electricity_pricing.prices = self.sum_prices()
+            Pub().pub("openWB/set/optional/ep/prices", self.data.electricity_pricing.prices)
         except Exception as e:
             log.exception("Fehler im Optional-Modul: %s", e)
 
@@ -230,6 +245,53 @@ class Optional(OcppMixin):
                     f'{datetime.fromtimestamp(self.data.et.get.next_query_time).strftime("%Y%m%d-%H:%M:%S")}.')
                 return False
         return False
+
+    def sum_prices(self):
+        if self.flexible_tariff_module is None and self.grid_fee_module is not None:
+            return self.data.electricity_pricing.grid_fee.get.prices
+        if self.grid_fee_module is None and self.flexible_tariff_module is not None:
+            return self.data.electricity_pricing.flexible_tariff.get.prices
+        # Sortiere Keys
+        grid_fee_prices = self.data.electricity_pricing.grid_fee.get.prices
+        electricity_tariff_prices = self.data.electricity_pricing.flexible_tariff.get.prices
+        grid_fee_keys = sorted(grid_fee_prices.keys())
+        electricity_tariff_keys = sorted(electricity_tariff_prices.keys())
+        # Typische Schrittweite bestimmen (Median der Deltas)
+
+        def median_delta(keys):
+            if len(keys) < 2:
+                return timedelta.max
+            deltas = [(keys[i+1] - keys[i]) for i in range(len(keys)-1)]
+            deltas.sort()
+            return timedelta(seconds=deltas[len(deltas)//2])
+        grid_fee_delta = median_delta(grid_fee_keys)
+        electricity_tariff_delta = median_delta(electricity_tariff_keys)
+        # Feinere und gröbere Auflösung bestimmen
+        if grid_fee_delta < electricity_tariff_delta:
+            fine_dict, coarse_dict = grid_fee_prices, electricity_tariff_prices
+        else:
+            fine_dict, coarse_dict = electricity_tariff_prices, grid_fee_prices
+        # Intervallgrenzen für das gröbere Dict
+        coarse_keys = sorted(coarse_dict.keys())
+        intervalle = []
+        for i, start in enumerate(coarse_keys):
+            if i+1 < len(coarse_keys):
+                ende = coarse_keys[i+1]
+            else:
+                ende = max(fine_dict.keys()) + 1
+            intervalle.append((start, ende))
+        # Für jeden feinen Zeitstempel das passende grobe Intervall suchen und addieren
+        result = {}
+        for ts_fine, preis_fine in fine_dict.items():
+            coarse_value = None
+            for start, ende in intervalle:
+                if start <= ts_fine < ende:
+                    coarse_value = coarse_dict[start]
+                    break
+            if coarse_value is None:
+                raise ValueError(f"Kein passendes Intervall für {ts_fine}")
+            result[ts_fine] = preis_fine + coarse_value
+        return result
 
     def ocpp_transfer_meter_values(self):
         try:

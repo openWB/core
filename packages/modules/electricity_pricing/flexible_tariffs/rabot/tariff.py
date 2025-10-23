@@ -14,7 +14,7 @@ from helpermodules.pub import Pub
 from modules.common import configurable_tariff, req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
-from modules.electricity_pricing.tariffs.rabot.config import RabotTariff, RabotToken
+from modules.electricity_pricing.flexible_tariffs.rabot.config import RabotTariff, RabotToken
 
 log = logging.getLogger(__name__)
 
@@ -88,7 +88,7 @@ def create_electricity_tariff(config: RabotTariff):
 
     def updater():
         return TariffState(prices=fetch(config))
-    return configurable_tariff.ConfigurableElectricityTariff(config=config, component_updater=updater)
+    return configurable_tariff.ConfigurableFlexibleTariff(config=config, component_updater=updater)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=RabotTariff)

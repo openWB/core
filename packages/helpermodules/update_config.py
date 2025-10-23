@@ -314,10 +314,14 @@ class UpdateConfig:
         "^openWB/set/log/request",
         "^openWB/set/log/data",
 
-        "^openWB/optional/ep/tariff/get/fault_state$",
-        "^openWB/optional/ep/tariff/get/fault_str$",
-        "^openWB/optional/ep/tariff/get/prices$",
-        "^openWB/optional/ep/tariff/provider$",
+        "^openWB/optional/ep/flexible_tariff/get/fault_state$",
+        "^openWB/optional/ep/flexible_tariff/get/fault_str$",
+        "^openWB/optional/ep/flexible_tariff/get/prices$",
+        "^openWB/optional/ep/flexible_tariff/provider$",
+        "^openWB/optional/ep/grid_fee/get/fault_state$",
+        "^openWB/optional/ep/grid_fee/get/fault_str$",
+        "^openWB/optional/ep/grid_fee/get/prices$",
+        "^openWB/optional/ep/grid_fee/provider$",
         "^openWB/optional/int_display/active$",
         "^openWB/optional/int_display/detected$",
         "^openWB/optional/int_display/on_if_plugged_in$",
@@ -573,7 +577,8 @@ class UpdateConfig:
         ("openWB/graph/config/duration", 120),
         ("openWB/internal_chargepoint/0/data/parent_cp", None),
         ("openWB/internal_chargepoint/1/data/parent_cp", None),
-        ("openWB/optional/ep/tariff/provider", NO_MODULE),
+        ("openWB/optional/ep/flexible_tariff/provider", NO_MODULE),
+        ("openWB/optional/ep/grid_fee/provider", NO_MODULE),
         ("openWB/optional/int_display/active", True),
         ("openWB/optional/int_display/detected", True),
         ("openWB/optional/int_display/on_if_plugged_in", True),
@@ -2091,7 +2096,7 @@ class UpdateConfig:
                     configuration_payload.update({"official": True})
                     return {topic: configuration_payload}
             # add "official" flag to selected electricity tariff provider
-            if re.search("openWB/optional/ep/tariff/provider", topic) is not None:
+            if re.search("openWB/optional/ep/flexible_tariff/provider", topic) is not None:
                 configuration_payload = decode_payload(payload)
                 official_providers = ["awattar", "energycharts", "rabot", "tibber", "voltego"]
                 if configuration_payload.get("type") in official_providers:

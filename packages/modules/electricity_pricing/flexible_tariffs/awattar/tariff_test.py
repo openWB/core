@@ -1,5 +1,5 @@
-from modules.electricity_pricing.tariffs.awattar.config import AwattarTariffConfiguration
-from modules.electricity_pricing.tariffs.awattar.tariff import fetch_prices
+from modules.electricity_pricing.flexible_tariffs.awattar.config import AwattarTariffConfiguration
+from modules.electricity_pricing.flexible_tariffs.awattar.tariff import fetch_prices
 
 
 def test_fetch_prices(requests_mock):
