@@ -528,7 +528,7 @@ class Chargepoint(ChargepointRfidMixin):
             # bis der Algorithmus eine Umschaltung vorgibt, zB weil der gewählte Lademodus eine
             # andere Phasenzahl benötigt oder bei PV-Laden die automatische Umschaltung aktiv ist.
             if self.data.get.charge_state:
-                phases = self.data.set.phases_to_use
+                phases = self.data.get.phases_in_use
             else:
                 if ((not charging_ev.ev_template.data.prevent_phase_switch or
                         self.data.set.log.imported_since_plugged == 0) and
