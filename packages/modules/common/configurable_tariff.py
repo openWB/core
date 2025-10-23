@@ -11,6 +11,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 
 
 T_TARIFF_CONFIG = TypeVar("T_TARIFF_CONFIG")
+TARIFF_UPDATE_HOUR = 14  # latest expected time for daily tariff update
 ONE_HOUR_SECONDS: int = 3600
 log = logging.getLogger(__name__)
 
@@ -41,23 +42,26 @@ class ConfigurableElectricityTariff(Generic[T_TARIFF_CONFIG]):
 
     def __query_et_provider_data_once_per_day(self):
         def is_tomorrow(last_timestamp: str) -> bool:
-            return self.__day_of(date=datetime.now()) < self.__day_of(datetime.fromtimestamp(int(last_timestamp)))
+            return (self.__day_of(date=datetime.now()) < self.__day_of(datetime.fromtimestamp(int(last_timestamp)))
+                    or self.__day_of(date=datetime.now()).hour < TARIFF_UPDATE_HOUR)
         if datetime.now() > self.__next_query_time:
             log.info(f'Wartezeit {self.__next_query_time.strftime("%Y%m%d-%H:%M:%S")}'
                      ' abgelaufen, Strompreise werden abgefragt')
             try:
                 new_tariff_state = self._component_updater()
-                if (0 < len(new_tariff_state.prices) and is_tomorrow(max(new_tariff_state.prices))):
+                if 0 < len(new_tariff_state.prices):
                     self.__tariff_state = new_tariff_state
-                    self.__calulate_next_query_time()
-                else:
-                    log.info('Keine Daten für morgen erhalten, weiterer Versuch in 5 Minuten')
+                    if is_tomorrow(self.__get_last_entry_time_stamp()):
+                        self.__calulate_next_query_time()
+                        log.info('Nächster Abruf der Strompreise frühestens'
+                                 f' {self.__next_query_time.strftime("%Y%m%d-%H:%M:%S")}.')
+                    else:
+                        log.info('Keine Daten für morgen erhalten, weiterer Versuch in 5 Minuten')
             except Exception as e:
                 log.warning(f'Fehler beim Abruf der Strompreise: {e}, nächster Versuch in 5 Minuten.')
                 self.fault_state.warning(
                     f'Fehler beim Abruf der Strompreise: {e}, nächster Versuch in 5 Minuten.'
                 )
-            log.info(f'Nächster Abruf der Strompreise frühestens {self.__next_query_time.strftime("%Y%m%d-%H:%M:%S")}.')
 
     def __day_of(self, date: datetime) -> datetime:
         return date.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -90,16 +94,14 @@ class ConfigurableElectricityTariff(Generic[T_TARIFF_CONFIG]):
         self.store.update()
 
     def __calulate_next_query_time(self) -> None:
-        self.__next_query_time = datetime.now().replace(
-            hour=14, minute=0, second=0
+        self.__next_query_time = datetime.fromtimestamp(int(max(self.__tariff_state.prices))).replace(
+            hour=TARIFF_UPDATE_HOUR, minute=0, second=0
         ) + timedelta(
-            # aktually ET providers issue next day prices up to half an hour earlier then 14:00
+            # aktually ET providers issue next day prices up to half an hour earlier then TARIFF_UPDATE_HOURE:00
             # reduce serverload on their site by trying early and randomizing query time
             minutes=random.randint(-30, -10),
             seconds=random.randint(0, 59)
         )
-        if datetime.now() > self.__next_query_time:
-            self.__next_query_time += timedelta(days=1)
 
     def __calculate_price_timeslot_length(self) -> int:
         first_timestamps = list(self.__tariff_state.prices.keys())[:2]

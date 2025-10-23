@@ -150,7 +150,7 @@ class Optional(OcppMixin):
                     not int(timestamp) >= now + remaining_time
                 )
             }
-            log.debug("%s Preis-Kandidaten %s für %s Sekunden zwischen %s und %s  von %s bis %s",
+            log.debug("%s Preis-Kandidaten in %s Sekunden zwischen %s Uhr und %s Uhr von %s Uhr bis %s Uhr",
                       len(price_candidates),
                       duration,
                       datetime.fromtimestamp(now),
@@ -162,7 +162,7 @@ class Optional(OcppMixin):
             selected_time_slots = {int(i[0]): float(i[1])
                                    for i in ordered_by_price[:1 + ceil(duration/price_timeslot_seconds)]}
             selected_lenght = (
-                price_timeslot_seconds * (len(selected_time_slots)-1) - 
+                price_timeslot_seconds * (len(selected_time_slots)-1) -
                 (int(now) - min(selected_time_slots))
             )
             return sorted(selected_time_slots.keys()
