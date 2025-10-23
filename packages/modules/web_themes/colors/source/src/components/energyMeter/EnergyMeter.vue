@@ -57,7 +57,6 @@
 						:y-scale="yScale"
 						:height="height"
 						:margin="margin"
-						:config="globalConfig"
 					/>
 				</g>
 			</svg>
@@ -69,12 +68,7 @@
 import { scaleBand, scaleLinear } from 'd3'
 import { max } from 'd3'
 import type { PowerItem } from '@/assets/js/types'
-import {
-	sourceSummary,
-	historicSummary,
-	energyMeterNeedsRedraw,
-	usageSummary,
-} from '@/assets/js/model'
+import { registry, energyMeterNeedsRedraw } from '@/assets/js/model'
 import EMBarGraph from './EMBarGraph.vue'
 import EMYAxis from './EMYAxis.vue'
 import EMLabels from './EMLabels.vue'
@@ -91,6 +85,7 @@ import { graphData, noData } from '@/components/powerGraph/model'
 import { computed } from 'vue'
 import { chargePoints } from '../chargePointList/model'
 import { shDevices } from '../smartHome/model'
+import { counters } from '../counterList/model'
 
 //state
 const width = 500
@@ -104,9 +99,6 @@ const margin = {
 const axisFontsize = 12
 // computed
 const plotdata = computed(() => {
-	let sources = Object.values(sourceSummary)
-	let usage = usageDetails.value
-	const historic = historicSummary.items
 	let result: PowerItem[] = []
 	if (globalConfig.debug) {
 		printDebugOutput()
@@ -114,88 +106,59 @@ const plotdata = computed(() => {
 	if (energyMeterNeedsRedraw.value == true) {
 		energyMeterNeedsRedraw.value = false
 	}
-	switch (graphData.graphMode) {
-		default:
-		case 'live':
-		case 'today':
-			result = sources.concat(usage)
-			break
-		case 'day':
-		case 'month':
-		case 'year':
-			if (Object.values(historic).length == 0) {
-				noData.value = true
-			} else {
-				noData.value = false
-				result = [
-					historic.evuIn,
-					historic.pv,
-					historic.evuOut,
-					historic.batOut,
-					historic.charging,
-				]
-				if (Object.values(chargePoints).length > 1) {
-					Object.keys(chargePoints).forEach((id) => {
-						if (historic['cp' + id]) {
-							result.push(historic['cp' + id])
-						}
-					})
-				}
-
-				result.push(historic.devices)
-				shDevices.forEach((dev, id) => {
-					if (dev.showInGraph && historic['sh' + id]) {
-						result.push(historic['sh' + id])
-					}
-				})
-				result = result.concat([historic.batIn, historic.house])
-			}
+	if (registry.items.size == 0) {
+		noData.value = true
+	} else {
+		noData.value = false
+		result = [
+			registry.getItem('evuIn'),
+			registry.getItem('pv'),
+			registry.getItem('evuOut'),
+			registry.getItem('batOut'),
+			registry.getItem('charging'),
+		]
+		Object.values(chargePoints).forEach((cp) => {
+			result.push(cp)
+		})
 	}
-	return result.filter((row) => row.energy && row.energy > 0)
+	result.push(registry.getItem('devices')!)
+	shDevices.forEach((dev) => {
+		if (dev.showInGraph) {
+			result.push(dev)
+		}
+	})
+	result.push(registry.getItem('counters'))
+	counters.forEach((ctr) => {
+		if (ctr.showInGraph) {
+			result.push(ctr)
+		}
+	})
+	result = result.concat([registry.getItem('batIn'), registry.getItem('house')])
+	return result.filter(
+		(row) => row[graphScope.value].energy && row[graphScope.value].energy > 0,
+	)
 })
 const xScale = computed(() => {
 	return scaleBand()
 		.range([0, width - margin.left - margin.right])
-		.domain(plotdata.value.map((d) => d.name))
+		.domain(plotdata.value.map((d, index) => index.toString()))
 		.padding(0.4)
 })
 const yScale = computed(() => {
 	return scaleLinear()
 		.range([height - margin.bottom - margin.top, 15])
-		.domain([0, max(plotdata.value, (d: PowerItem) => d.energy) as number])
+		.domain([
+			0,
+			max(
+				plotdata.value,
+				(d: PowerItem) => d![graphScope.value]!.energy! as number,
+			) ?? 0,
+		])
 })
+const graphScope = computed(() => (graphData.usePastData ? 'past' : 'now'))
 const heading = 'Energie'
-
-const usageDetails = computed(
-	() => {
-		const cpcount = Object.values(chargePoints).length
-		const shcount = [...shDevices.values()].filter(
-			(dev) => dev.configured,
-		).length
-		let usg = usageSummary
-		return [
-			...[usg.evuOut, usg.charging].concat(
-				cpcount > 1
-					? Object.values(chargePoints).map((cp) => cp.toPowerItem())
-					: [],
-			),
-			...[usg.devices]
-				.concat(
-					shcount > 1
-						? [...shDevices.values()].filter(
-								(row) => row.configured && row.showInGraph,
-							)
-						: [],
-				)
-				.concat([usageSummary.batIn, usageSummary.house]),
-		]
-	},
-	//}
-)
 function printDebugOutput() {
-	console.debug(['source summary:', sourceSummary])
-	console.debug(['usage details:', usageDetails.value])
-	console.debug(['historic summary:', historicSummary])
+	console.debug(['all items:', registry])
 }
 function zoomGraph() {
 	globalConfig.zoomedWidget = 2

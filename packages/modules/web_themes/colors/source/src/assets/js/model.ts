@@ -11,6 +11,8 @@ import { reactive, ref } from 'vue'
 import { GlobalData } from './themeConfig'
 import { type PowerItem, type ItemProps, PowerItemType } from './types'
 import { PvSystem } from './types'
+import { graphData } from '@/components/powerGraph/model'
+//import { Counter } from '@/components/counterList/model'
 
 export const masterData: { [key: string]: ItemProps } = reactive({
 	evuIn: { name: 'Netz', color: 'var(--color-evu)', icon: '\uf275' },
@@ -27,46 +29,92 @@ export const masterData: { [key: string]: ItemProps } = reactive({
 	},
 	charging: { name: 'Laden', color: 'var(--color-charging)', icon: '\uf5e7' },
 	devices: { name: 'Geräte', color: 'var(--color-devices)', icon: '\uf1e6' },
+	counters: { name: 'Zähler', color: 'var(--color-counters)', icon: '\uf0eb' },
 	batIn: { name: '> Bat', color: 'var(--color-battery)', icon: '\uf061\uf5df' },
 	house: { name: 'Haus', color: 'var(--color-house)', icon: '\uf015' },
-	cp1: { name: 'Ladepunkt', color: 'var(--color-cp1)', icon: 'Ladepunkt' },
-	cp2: { name: 'Ladepunkt', color: 'var(--color-cp2)', icon: 'Ladepunkt' },
-	cp3: { name: 'Ladepunkt', color: 'var(--color-cp3)', icon: 'Ladepunkt' },
-	cp4: { name: 'Ladepunkt', color: 'var(--color-cp4)', icon: 'Ladepunkt' },
-	cp5: { name: 'Ladepunkt', color: 'var(--color-cp5)', icon: 'Ladepunkt' },
-	cp6: { name: 'Ladepunkt', color: 'var(--color-cp6)', icon: 'Ladepunkt' },
-	cp7: { name: 'Ladepunkt', color: 'var(--color-cp7)', icon: 'Ladepunkt' },
-	cp8: { name: 'Ladepunkt', color: 'var(--color-cp8)', icon: 'Ladepunkt' },
-	sh1: { name: 'Gerät', color: 'var(--color-sh1)', icon: 'Gerät' },
-	sh2: { name: 'Gerät', color: 'var(--color-sh2)', icon: 'Gerät' },
-	sh3: { name: 'Gerät', color: 'var(--color-sh3)', icon: 'Gerät' },
-	sh4: { name: 'Gerät', color: 'var(--color-sh4)', icon: 'Gerät' },
-	sh5: { name: 'Gerät', color: 'var(--color-sh5)', icon: 'Gerät' },
-	sh6: { name: 'Gerät', color: 'var(--color-sh6)', icon: 'Gerät' },
-	sh7: { name: 'Gerät', color: 'var(--color-sh7)', icon: 'Gerät' },
-	sh8: { name: 'Gerät', color: 'var(--color-sh8)', icon: 'Gerät' },
-	sh9: { name: 'Gerät', color: 'var(--color-sh9)', icon: 'Gerät' },
-	pv1: { name: 'PV', color: 'var(--color-pv1)', icon: 'Wechselrichter' },
-	pv2: { name: 'PV', color: 'var(--color-pv2)', icon: 'Wechselrichter' },
-	pv3: { name: 'PV', color: 'var(--color-pv3)', icon: 'Wechselrichter' },
-	pv4: { name: 'PV', color: 'var(--color-pv4)', icon: 'Wechselrichter' },
-	pv5: { name: 'PV', color: 'var(--color-pv5)', icon: 'Wechselrichter' },
-	pv6: { name: 'PV', color: 'var(--color-pv6)', icon: 'Wechselrichter' },
-	pv7: { name: 'PV', color: 'var(--color-pv7)', icon: 'Wechselrichter' },
-	pv8: { name: 'PV', color: 'var(--color-pv8)', icon: 'Wechselrichter' },
-	pv9: { name: 'PV', color: 'var(--color-pv9)', icon: 'Wechselrichter' },
-	bat1: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
-	bat2: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
-	bat3: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
-	bat4: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
-	bat5: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
-	bat6: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
-	bat7: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
-	bat8: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
-	bat9: { name: 'Speicher', color: 'var(--color-battery)', icon: 'Speicher' },
 })
-class HistoricSummary {
-	private _items: { [key: string]: PowerItem } = {}
+export const colormap: Map<string, string[]> = new Map([
+	[
+		'pv',
+		[
+			'var(--color-pv1)',
+			'var(--color-pv2)',
+			'var(--color-pv3)',
+			'var(--color-pv4)',
+			'var(--color-pv5)',
+			'var(--color-pv6)',
+			'var(--color-pv7)',
+			'var(--color-pv8)',
+			'var(--color-pv9)	',
+		],
+	],
+	[
+		'bat',
+		[
+			'var(--color-bat1)',
+			'var(--color-bat2)',
+			'var(--color-bat3)',
+			'var(--color-bat4)',
+			'var(--color-bat5)',
+			'var(--color-bat6)',
+			'var(--color-bat7)',
+			'var(--color-bat8)',
+			'var(--color-bat9)	',
+		],
+	],
+	[
+		'cp',
+		[
+			'var(--color-cp1)',
+			'var(--color-cp2)',
+			'var(--color-cp3)',
+			'var(--color-cp4)',
+			'var(--color-cp5)',
+			'var(--color-cp6)',
+			'var(--color-cp7)',
+			'var(--color-cp8)	',
+		],
+	],
+	[
+		'counter',
+		[
+			'var(--color-ctr1)',
+			'var(--color-ctr2)',
+			'var(--color-ctr3)',
+			'var(--color-ctr4)',
+			'var(--color-ctr5)',
+			'var(--color-ctr6)',
+			'var(--color-ctr7)',
+			'var(--color-ctr8)',
+			'var(--color-ctr9)',
+			'var(--color-ctr10)	',
+		],
+	],
+	[
+		'sh',
+		[
+			'var(--color-sh1)',
+			'var(--color-sh2)',
+			'var(--color-sh3)',
+			'var(--color-sh4)',
+			'var(--color-sh5)',
+			'var(--color-sh6)',
+			'var(--color-sh7)',
+			'var(--color-sh8)',
+			'var(--color-sh9)	',
+		],
+	],
+])
+
+export function getColor(category: string, index: number): string {
+	if (colormap.has(category)) {
+		const colors = colormap.get(category)!
+		return colors[index % colors.length]
+	}
+	return 'var(--color-charging)'
+}
+class ItemList {
+	private _items: Map<string, PowerItem> = new Map()
 	constructor() {
 		this.addItem('evuIn')
 		this.addItem('pv')
@@ -74,19 +122,45 @@ class HistoricSummary {
 		this.addItem('evuOut')
 		this.addItem('charging')
 		this.addItem('devices')
+		this.addItem('counters')
 		this.addItem('batIn')
 		this.addItem('house')
 	}
 	get items() {
 		return this._items
 	}
+	get usageSummary(): PowerItem[] {
+		return [
+			this._items.get('evuOut')!,
+			this._items.get('charging')!,
+			this._items.get('devices')!,
+			this._items.get('counters')!,
+			this._items.get('batIn')!,
+			this._items.get('house')!,
+		]
+	}
+	get sourceSummary() {
+		return [
+			this._items.get('evuIn')!,
+			this._items.get('pv')!,
+			this._items.get('batOut')!,
+		]
+	}
 	keys() {
-		return Object.keys(this._items)
+		return Array.from(this._items.keys())
 	}
 	values() {
-		return Object.values(this._items)
+		return Array.from(this._items.values())
 	}
-	addItem(key: string, type?: PowerItemType, useColor?: string) {
+	getItem(key: string): PowerItem {
+		return this._items.get(key)!
+	}
+	addItem(
+		key: string,
+		type?: PowerItemType,
+		template?: PowerItem,
+		useColor?: string,
+	) {
 		let itemType: PowerItemType
 		if (type) {
 			itemType = type
@@ -110,6 +184,9 @@ class HistoricSummary {
 				case 'devices':
 					itemType = PowerItemType.device
 					break
+				case 'counters':
+					itemType = PowerItemType.counter
+					break
 				case 'batIn':
 					itemType = PowerItemType.battery
 					break
@@ -120,65 +197,145 @@ class HistoricSummary {
 					itemType = PowerItemType.counter
 			}
 		}
-		this._items[key] = useColor
-			? createPowerItem(key, itemType, useColor)
-			: createPowerItem(key, itemType)
+		this._items.set(
+			key,
+			useColor
+				? createPowerItem(key, itemType, useColor)
+				: createPowerItem(key, itemType),
+		)
+		if (template) {
+			this._items.get(key)!.name = template.name
+			this._items.get(key)!.icon = template.icon
+			this._items.get(key)!.color = template.color
+		}
+	}
+	duplicateItem(key: string, source: PowerItem) {
+		let p: PowerItem = createPowerItem(key, source.type)
+		p = { ...source }
+		this._items.set(key, p)
+	}
+	getPower(cat: string) {
+		return this._items.get(cat)!.power
+	}
+	setPower(cat: string, val: number) {
+		if (!this.items.has(cat)) {
+			console.error(`item ${cat} not found in item list`)
+		}
+		this._items.get(cat)!.power = val
+	}
+	getEnergy(cat: string) {
+		if (!this.items.has(cat)) {
+			this.addItem(cat)
+		}
+		if (graphData.usePastData) {
+			return this._items.get(cat)!.past.energy
+		} else {
+			return this._items.get(cat)!.now.energy
+		}
 	}
 	setEnergy(cat: string, val: number) {
-		if (!this.keys().includes(cat)) {
-			this.addItem(cat)
+		if (!this.items.has(cat)) {
+			console.error(`item ${cat} not found in item list`)
 		}
-		this._items[cat].energy = val
+		if (graphData.usePastData) {
+			this._items.get(cat)!.past.energy = val
+		} else {
+			this._items.get(cat)!.now.energy = val
+		}
 	}
 	setEnergyPv(cat: string, val: number) {
-		if (!this.keys().includes(cat)) {
+		if (!this.items.has(cat)) {
 			this.addItem(cat)
 		}
-		this._items[cat].energyPv = val
+		if (graphData.usePastData) {
+			this._items.get(cat)!.past.energyPv = val
+		} else {
+			this._items.get(cat)!.now.energyPv = val
+		}
 	}
 	setEnergyBat(cat: string, val: number) {
-		if (!this.keys().includes(cat)) {
+		if (!this.items.has(cat)) {
 			this.addItem(cat)
 		}
-		this._items[cat].energyBat = val
+		if (graphData.usePastData) {
+			this._items.get(cat)!.past.energyBat = val
+		} else {
+			this._items.get(cat)!.now.energyBat = val
+		}
 	}
 	setPvPercentage(cat: string, val: number) {
-		if (!this.keys().includes(cat)) {
-			this.addItem(cat)
+		if (!this.items.has(cat)) {
+			console.error(`item ${cat} not found in item list`)
 		}
-		this._items[cat].pvPercentage = val <= 100 ? val : 100
+		if (graphData.usePastData) {
+			this._items.get(cat)!.past.pvPercentage = val <= 100 ? val : 100
+		} else {
+			this._items.get(cat)!.now.pvPercentage = val <= 100 ? val : 100
+		}
 	}
-	calculateHouseEnergy() {
-		this._items.house.energy =
-			this._items.evuIn.energy +
-			this._items.pv.energy +
-			this._items.batOut.energy -
-			this._items.evuOut.energy -
-			this._items.batIn.energy -
-			this._items.charging.energy -
-			this._items.devices.energy
+	calculatePvPercentage(cat: string) {
+		if (!this.items.has(cat)) {
+			console.error(`item ${cat} not found in item list`)
+		}
+		this._items.get(cat)![graphData.graphScope].pvPercentage = Math.round(
+			((this.items.get(cat)![graphData.graphScope].energyPv +
+				this.items.get(cat)![graphData.graphScope].energyBat) /
+				this.items.get(cat)![graphData.graphScope].energy) *
+				100,
+		)
+	}
+
+	calculateHouseEnergy(past = false) {
+		if (past) {
+			this._items.get('house')!.past.energy =
+				this._items.get('evuIn')!.past.energy +
+				this._items.get('pv')!.past.energy +
+				this._items.get('batOut')!.past.energy -
+				this._items.get('evuOut')!.past.energy -
+				this._items.get('batIn')!.past.energy -
+				this._items.get('charging')!.past.energy -
+				this._items.get('devices')!.past.energy -
+				this._items.get('counters')!.past.energy
+		} else {
+			this._items.get('house')!.now.energy =
+				this._items.get('evuIn')!.now.energy +
+				this._items.get('pv')!.now.energy +
+				this._items.get('batOut')!.now.energy -
+				this._items.get('evuOut')!.now.energy -
+				this._items.get('batIn')!.now.energy -
+				this._items.get('charging')!.now.energy -
+				this._items.get('devices')!.now.energy -
+				this._items.get('counters')!.now.energy
+		}
 	}
 }
-export let historicSummary = reactive(new HistoricSummary())
-export function resetHistoricSummary() {
-	historicSummary = new HistoricSummary()
+export const registry = reactive(new ItemList())
+export function resetHistoricData() {
+	registry.values().forEach((item) => {
+		item.past.energy = 0
+		item.past.energyPv = 0
+		item.past.energyBat = 0
+		item.past.pvPercentage = 0
+	})
 }
 export const sourceSummary: { [key: string]: PowerItem } = reactive({
 	evuIn: createPowerItem('evuIn', PowerItemType.counter),
 	pv: createPowerItem('pv', PowerItemType.pvSummary),
 	batOut: createPowerItem('batOut', PowerItemType.batterySummary),
 })
-export const usageSummary: { [key: string]: PowerItem } = reactive({
+/* export const usageSummary: { [key: string]: PowerItem } = reactive({
 	evuOut: createPowerItem('evuOut', PowerItemType.counter),
 	charging: createPowerItem('charging', PowerItemType.chargeSummary),
 	devices: createPowerItem('devices', PowerItemType.deviceSummary),
+	counters: createPowerItem('counters', PowerItemType.counterSummary),
 	batIn: createPowerItem('batIn', PowerItemType.batterySummary),
 	house: createPowerItem('house', PowerItemType.house),
-})
+}) */
 export const globalData = reactive(new GlobalData())
 export const etPriceList = ref('')
 export const energyMeterNeedsRedraw = ref(false)
-function createPowerItem(
+
+export function createPowerItem(
 	key: string,
 	type: PowerItemType,
 	useColor?: string,
@@ -187,10 +344,18 @@ function createPowerItem(
 		name: masterData[key] ? masterData[key].name : 'item',
 		type: type,
 		power: 0,
-		energy: 0,
-		energyPv: 0,
-		energyBat: 0,
-		pvPercentage: 0,
+		now: {
+			energy: 0,
+			energyPv: 0,
+			energyBat: 0,
+			pvPercentage: 0,
+		},
+		past: {
+			energy: 0,
+			energyPv: 0,
+			energyBat: 0,
+			pvPercentage: 0,
+		},
 		color: useColor
 			? useColor
 			: masterData[key]
@@ -202,8 +367,10 @@ function createPowerItem(
 	return p
 }
 export function correctHouseConsumption() {
-	usageSummary.house.power =
-		usageSummary.house.power - usageSummary.devices.power
+	registry.setPower(
+		'house',
+		registry.getItem('house')!.power - registry.getItem('devices')!.power,
+	)
 }
 
 export const currentTime = ref(new Date())
@@ -220,6 +387,7 @@ function assignPvSystemColors() {
 		(a, b) => a.id - b.id,
 	)
 	pvSystemsSorted.forEach((system, index) => {
-		system.color = masterData['pv' + (index + 1)].color
+		//system.color = masterData['pv' + (index + 1)].color
+		system.color = getColor('pv', index)
 	})
 }

@@ -165,14 +165,15 @@ body>.container-fluid {
 	--color-switchRed: #d12020;
 	--color-switchGreen: #4db662;
 	--color-switchBlue: steelblue;
-	--color-cp0: #6baed6;
-	--color-cp1: #4292c6;
-	--color-cp2: #2171b5;
-	--color-cp3: #9ecae1;
-	--color-cp4: #c6dbef;
-	--color-cp5: #deebf7;
-	--color-cp6: #08519c;
-	--color-cp7: #6baed6;
+	--color-cp1: #1f78b4;
+	--color-cp2: #6baed6;
+	--color-cp3: #4292c6;
+	--color-cp4: #2171b5;
+	--color-cp5: #9ecae1;
+	--color-cp6: #c6dbef;
+	--color-cp7: #deebf7;
+	--color-cp8: #08519c;
+	--color-cp9: #6baed6;
 	--color-evu: firebrick;
 	--color-pv: #33a02c;
 	--color-house: #7f7f7f;
@@ -189,6 +190,20 @@ body>.container-fluid {
 	--color-pv7: #006d2c;
 	--color-pv8: #00441b;
 	--color-pv9: #33a02c;
+	/* --color-counters: #cab2d6; */
+	/* --color-counters: #a00dd8; */
+	--color-counters: chocolate;
+
+	--color-ctr1: chocolate;
+	--color-ctr2: peru;
+	--color-ctr3: sienna;
+	--color-ctr4: sandybrown;
+	--color-ctr5: #bb6528;
+	--color-ctr6: #b5651d;
+	--color-ctr7: #c19a6b;
+	--color-ctr8: #987654;
+	--color-ctr9: #f4a460;
+
 	--font-normal: 1.4rem;
 	--font-large: 1.6rem;
 	--font-medium: 1.2rem;

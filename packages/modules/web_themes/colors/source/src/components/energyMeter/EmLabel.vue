@@ -2,7 +2,7 @@
 	<g :id="'barlabel-' + props.item.name">
 		<!-- Energy -->
 		<text
-			:x="(props.xScale(item.name) as number) + props.xScale.bandwidth() / 2"
+			:x="(props.xScale(props.id) as number) + props.xScale.bandwidth() / 2"
 			:y="labelY"
 			:font-size="labelfontsize"
 			text-anchor="middle"
@@ -10,7 +10,7 @@
 		>
 			{{
 				formatWattH(
-					item.energy,
+					item[graphScope].energy,
 					globalConfig.decimalPlaces,
 					//graphData.graphMode == 'year',
 					false,
@@ -19,8 +19,8 @@
 		</text>
 		<!-- Autarchy / Self consumption -->
 		<text
-			:x="(props.xScale(item.name) as number) + props.xScale.bandwidth() / 2"
-			:y="props.yScale(item.energy) - 10"
+			:x="(props.xScale(props.id) as number) + props.xScale.bandwidth() / 2"
+			:y="props.yScale(item[graphScope].energy) - 10"
 			:font-size="labelfontsize - 2"
 			text-anchor="middle"
 			:fill="subColor()"
@@ -29,7 +29,7 @@
 		</text>
 		<!-- Name-Icon -->
 		<text
-			:x="(props.xScale(item.name) as number) + props.xScale.bandwidth() / 2"
+			:x="(props.xScale(props.id) as number) + props.xScale.bandwidth() / 2"
 			:y="props.height - props.margin.bottom - 5"
 			:font-size="labelfontsize"
 			text-anchor="middle"
@@ -47,8 +47,10 @@ import * as d3 from 'd3'
 import type { MarginType, PowerItem } from '@/assets/js/types'
 import { globalConfig } from '@/assets/js/themeConfig'
 import { formatWattH } from '@/assets/js/helpers'
+import { graphData } from '../powerGraph/model'
 
 const props = defineProps<{
+	id: string
 	item: PowerItem
 	xScale: d3.ScaleBand<string>
 	yScale: d3.ScaleLinear<number, number, never>
@@ -60,8 +62,8 @@ const props = defineProps<{
 }>()
 const labelY = computed(() =>
 	props.autarchy
-		? props.yScale(props.item.energy) - 25
-		: props.yScale(props.item.energy) - 10,
+		? props.yScale(props.item[graphScope.value].energy) - 25
+		: props.yScale(props.item[graphScope.value].energy) - 10,
 )
 
 const labelfontsize = computed(() => {
@@ -100,6 +102,7 @@ const maxTextLength = computed(() => {
 	}
 	return textLength
 })
+const graphScope = computed(() => (graphData.usePastData ? 'past' : 'now'))
 function truncateCategory(id: string, name: string) {
 	if (name.length > maxTextLength.value) {
 		return name.substring(0, maxTextLength.value) + '.'

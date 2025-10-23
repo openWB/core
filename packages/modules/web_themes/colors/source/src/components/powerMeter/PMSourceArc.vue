@@ -3,7 +3,6 @@
 		:upper-arc="true"
 		:plotdata="plotdata"
 		:radius="props.radius"
-		:show-labels="props.showLabels"
 		:categories-to-show="categoriesToShow"
 	/>
 </template>
@@ -11,7 +10,7 @@
 <script setup lang="ts">
 import { globalConfig } from '@/assets/js/themeConfig'
 import { PowerItemType } from '@/assets/js/types'
-import { pvSystems, sourceSummary } from '@/assets/js/model'
+import { pvSystems, registry } from '@/assets/js/model'
 import { computed, watchEffect } from 'vue'
 import { batteries } from '../batteryList/model'
 import PMArc from './PMArc.vue'
@@ -22,16 +21,27 @@ const props = defineProps<{
 	cornerRadius: number
 	circleGapSize: number
 	emptyPower: number
-	showLabels: boolean
 }>()
 const categoriesToShow = [PowerItemType.inverter, PowerItemType.battery]
 
 //  computed:
 const emptyPowerItem = computed(() => {
 	return {
-		name: '',
+		name: 'empty',
 		type: PowerItemType.counter,
 		power: props.emptyPower,
+		now: {
+			energy: 0,
+			energyPv: 0,
+			energyBat: 0,
+			pvPercentage: 0,
+		},
+		past: {
+			energy: 0,
+			energyPv: 0,
+			energyBat: 0,
+			pvPercentage: 0,
+		},
 		energy: 0,
 		energyPv: 0,
 		energyBat: 0,
@@ -42,7 +52,7 @@ const emptyPowerItem = computed(() => {
 	}
 })
 const plotdata = computed(() => {
-	return [sourceSummary.evuIn].concat(
+	return [registry.getItem('evuIn')].concat(
 		invertersToShow.value,
 		batteriesToShow.value,
 		emptyPowerItem.value,
@@ -53,7 +63,7 @@ const invertersToShow = computed(() =>
 		? [...pvSystems.value.values()].sort((a, b) => {
 				return a.power - b.power
 			})
-		: [sourceSummary.pv],
+		: [registry.getItem('pv')],
 )
 const batteriesToShow = computed(() => {
 	return batteries.value.size > 1
@@ -62,14 +72,14 @@ const batteriesToShow = computed(() => {
 				.sort((a, b) => {
 					return a.power - b.power
 				})
-		: [sourceSummary.batOut]
+		: [registry.getItem('batOut')]
 })
 
 watchEffect(() => {
 	let currentMax =
-		sourceSummary.pv.power +
-		sourceSummary.evuIn.power +
-		sourceSummary.batOut.power
+		registry.getPower('pv') +
+		registry.getPower('evuIn') +
+		registry.getPower('batOut')
 	if (currentMax > globalConfig.maxPower) {
 		globalConfig.maxPower = currentMax
 	}

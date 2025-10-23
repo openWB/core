@@ -3,19 +3,12 @@ import { extent, scaleBand, scaleTime, scaleUtc, zoomIdentity } from 'd3'
 import { mqttSubscribe, mqttUnsubscribe } from '../../assets/js/mqttClient'
 import { sendCommand } from '@/assets/js/sendMessages'
 import { globalConfig } from '@/assets/js/themeConfig'
-import {
-	energyMeterNeedsRedraw,
-	historicSummary,
-	usageSummary,
-} from '@/assets/js/model'
+import { energyMeterNeedsRedraw, registry } from '@/assets/js/model'
 import { shDevices } from '../smartHome/model'
-import { chargePoints } from '../chargePointList/model'
 
 export const width = 500
 export const height = 500
 export const margin = { top: 15, right: 20, bottom: 10, left: 25 }
-
-export const consumerCategories = ['charging', 'house', 'batIn', 'devices']
 
 export interface GraphDataItem {
 	[key: string]: number
@@ -68,6 +61,12 @@ export class GraphData {
 	}
 	set graphMode(mode: string) {
 		this._graphMode = mode
+	}
+	get usePastData() {
+		return this.graphMode != 'live' && this.graphMode != 'today'
+	}
+	get graphScope() {
+		return this.usePastData ? 'past' : 'now'
 	}
 }
 
@@ -325,119 +324,87 @@ export function initGraph(reloadOnly: boolean = false) {
 export function setGraphMode(mode: string) {
 	graphData.graphMode = mode
 }
-export function calculateAutarchy(cat: string, values: GraphDataItem) {
-	if (values[cat] > 0) {
-		historicSummary.items[cat].energyPv +=
-			((1000 / 12) * (values[cat] * (values.pv - values.evuOut))) /
-			(values.pv - values.evuOut + values.evuIn + values.batOut)
-		historicSummary.items[cat].energyBat +=
-			((1000 / 12) * (values[cat] * values.batOut)) /
-			(values.pv - values.evuOut + values.evuIn + values.batOut)
-	}
-}
-export function calculateMonthlyAutarchy(cat: string, values: GraphDataItem) {
-	if (values[cat] > 0) {
-		historicSummary.items[cat].energyPv +=
-			(1000 * (values[cat] * (values.pv - values.evuOut))) /
-			(values.pv - values.evuOut + values.evuIn + values.batOut)
-		historicSummary.items[cat].energyBat +=
-			(1000 * (values[cat] * values.batOut)) /
-			(values.pv - values.evuOut + values.evuIn + values.batOut)
-	}
-}
-const noAutarchyCalculation = ['evuIn', 'pv', 'batOut', 'evuOut']
 export const noData = ref(false)
 
 export function updateEnergyValues(
 	totals: RawDayGraphDataItem,
 	gridCounters: string[],
 ) {
-	if (Object.entries(totals).length > 0) {
+	if (Object.entries(totals).length == 0) {
+		noData.value = true
+	} else {
 		noData.value = false
 		Object.entries(totals.counter).forEach(([id, values]) => {
 			if (gridCounters.length == 0 || gridCounters.includes(id)) {
-				historicSummary.items.evuIn.energy += values.energy_imported
-				historicSummary.items.evuOut.energy += values.energy_exported
+				registry.setEnergy('evuIn', values.energy_imported)
+				registry.setEnergy('evuOut', values.energy_exported)
 			}
 		})
-		historicSummary.items.pv.energy = totals.pv.all.energy_exported
+		registry.setEnergy('pv', totals.pv.all.energy_exported)
 		if (totals.bat.all) {
-			historicSummary.items.batIn.energy = totals.bat.all.energy_imported
-			historicSummary.items.batOut.energy = totals.bat.all.energy_exported
+			registry.setEnergy('batIn', totals.bat.all.energy_imported)
+			registry.setEnergy('batOut', totals.bat.all.energy_exported)
 		}
 		Object.entries(totals.cp).forEach(([id, values]) => {
 			if (id == 'all') {
-				historicSummary.setEnergy('charging', values.energy_imported)
-				if (values.energy_imported_pv != undefined) {
-					historicSummary.setEnergyPv('charging', values.energy_imported_pv)
-					historicSummary.setEnergyBat('charging', values.energy_imported_bat)
-				}
+				updatePvValues(values, 'charging')
 			} else {
-				historicSummary.setEnergy(id, values.energy_imported)
+				updatePvValues(values, id)
 			}
 		})
-		historicSummary.setEnergy('devices', 0)
+		registry.setEnergy('devices', 0)
+		let devicesPvEnergy = 0
+		let devicesBatEnergy = 0
+
 		Object.entries(totals.sh).forEach(([id, values]) => {
-			historicSummary.setEnergy(id, values.energy_imported)
-			const idNumber = id.substring(2)
-			//if (!shDevices[+idNumber].countAsHouse) {
-			if (!shDevices.get(+idNumber)!.countAsHouse) {
-				historicSummary.items.devices.energy += values.energy_imported
+			registry.setEnergy(id, values.energy_imported)
+			registry.calculatePvPercentage(id)
+			if (!shDevices.get(id)!.countAsHouse) {
+				registry.setEnergy(
+					'devices',
+					registry.getEnergy('devices') + values.energy_imported,
+				)
+				devicesPvEnergy += registry.getItem(id)![graphData.graphScope].energyPv
+				devicesBatEnergy +=
+					registry.getItem(id)![graphData.graphScope].energyBat
 			}
 		})
+		registry.setEnergyPv('devices', devicesPvEnergy)
+		registry.setEnergyBat('devices', devicesBatEnergy)
+		registry.calculatePvPercentage('devices')
+
+		//
+		registry.setEnergy('counters', 0)
+		let counterEnergy = 0
+		let counterPvEnergy = 0
+		let counterBatEnergy = 0
+		Object.entries(totals.counter).forEach(([id, values]) => {
+			if (!values.grid) {
+				updatePvValues(values, id)
+				counterEnergy += values.energy_imported
+				counterPvEnergy += values.energy_imported_pv
+				counterBatEnergy += values.energy_imported_bat
+			}
+		})
+		registry.setEnergy('counters', counterEnergy)
+		registry.setEnergyPv('counters', counterPvEnergy)
+		registry.setEnergyBat('counters', counterBatEnergy)
+		registry.calculatePvPercentage('counters')
+
+		registry.setEnergy('house', 0)
 		if (totals.hc && totals.hc.all) {
-			historicSummary.setEnergy('house', totals.hc.all.energy_imported)
+			registry.setEnergy('house', totals.hc.all.energy_imported)
 			if (totals.hc.all.energy_imported_pv != undefined) {
-				historicSummary.setEnergyPv('house', totals.hc.all.energy_imported_pv)
-				historicSummary.setEnergyBat('house', totals.hc.all.energy_imported_bat)
+				registry.setEnergyPv('house', totals.hc.all.energy_imported_pv)
+				registry.setEnergyBat('house', totals.hc.all.energy_imported_bat)
 			}
 		} else {
-			historicSummary.calculateHouseEnergy()
+			registry.calculateHouseEnergy()
 		}
-		historicSummary.keys().forEach((cat) => {
-			if (!noAutarchyCalculation.includes(cat)) {
-				historicSummary.setPvPercentage(
-					cat,
-					Math.round(
-						((historicSummary.items[cat].energyPv +
-							historicSummary.items[cat].energyBat) /
-							historicSummary.items[cat].energy) *
-							100,
-					),
-				)
-				if (consumerCategories.includes(cat)) {
-					usageSummary[cat].energy = historicSummary.items[cat].energy
-					usageSummary[cat].energyPv = historicSummary.items[cat].energyPv
-					usageSummary[cat].energyBat = historicSummary.items[cat].energyBat
-					usageSummary[cat].pvPercentage =
-						historicSummary.items[cat].pvPercentage
-				}
-			}
-		})
-		if (graphData.graphMode == 'today') {
-			Object.values(chargePoints).forEach((cp) => {
-				const hcp = historicSummary.items['cp' + cp.id]
-				if (hcp) {
-					cp.energyPv = hcp.energyPv
-					cp.energyBat = hcp.energyBat
-					cp.pvPercentage = hcp.pvPercentage
-				}
-			})
-			shDevices.forEach((device) => {
-				const hDevice = historicSummary.items['sh' + device.id]
-				if (hDevice) {
-					device.energy = hDevice.energy
-					device.energyPv = hDevice.energyPv
-					device.energyBat = hDevice.energyBat
-					device.pvPercentage = hDevice.pvPercentage
-				}
-			})
-		}
-	} else {
-		noData.value = true
 	}
 	energyMeterNeedsRedraw.value = true
 }
+
 export const xScale = computed(() => {
 	const e = extent(graphData.data, (d) => new Date(d.date))
 	if (e[0] && e[1]) {
@@ -448,25 +415,18 @@ export const xScale = computed(() => {
 		return scaleTime().range([0, 0])
 	}
 })
-
+function updatePvValues(values: GraphDataItem, id: string) {
+	registry.setEnergy(id, values.energy_imported)
+	registry.setEnergyPv(id, values.energy_imported_pv)
+	registry.setEnergyBat(id, values.energy_imported_bat)
+	registry.calculatePvPercentage(id)
+}
 function resetPvValues() {
-	historicSummary.keys().forEach((cat) => {
-		if (consumerCategories.includes(cat)) {
-			usageSummary[cat].energy = historicSummary.items[cat].energy
-			usageSummary[cat].energyPv = 0
-			usageSummary[cat].energyBat = 0
-			usageSummary[cat].pvPercentage = 0
-		}
-	})
-	Object.values(chargePoints).forEach((cp) => {
-		cp.energyPv = 0
-		cp.energyBat = 0
-		cp.pvPercentage = 0
-	})
-	shDevices.forEach((device) => {
-		device.energyPv = 0
-		device.energyBat = 0
-		device.pvPercentage = 0
+	registry.items.forEach((item) => {
+		//item.now.energy = item.past.energy
+		item.now.energyPv = 0
+		item.now.energyBat = 0
+		item.now.pvPercentage = 0
 	})
 }
 
