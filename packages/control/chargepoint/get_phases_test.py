@@ -152,7 +152,7 @@ cases_set_phases = [
     SetPhasesParams(name="Switch phases", phases=1, phases_in_use=3, prevent_phase_switch=False,
                     imported_since_plugged=1, phase_switch_supported=True, expected_phases=1),
     SetPhasesParams(name="Phase switch not supported by cp", phases=1, phases_in_use=3, prevent_phase_switch=False,
-                    imported_since_plugged=1, phase_switch_supported=False, expected_phases=1)
+                    imported_since_plugged=1, phase_switch_supported=False, expected_phases=3)
 ]
 
 
