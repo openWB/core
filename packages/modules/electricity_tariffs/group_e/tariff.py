@@ -6,8 +6,8 @@ from typing import Dict
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
-from modules.electricity_tariffs.groupe_e.config import GroupeETariffConfiguration
-from modules.electricity_tariffs.groupe_e.config import GroupeETariff
+from modules.electricity_tariffs.group_e.config import GroupeETariffConfiguration
+from modules.electricity_tariffs.group_e.config import GroupeETariff
 
 
 # Combine power and grid prices, convert to kWh
