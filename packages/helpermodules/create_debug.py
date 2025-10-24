@@ -351,9 +351,7 @@ debug_file = ramdisk_dir / 'debug.log'
 
 def filter_log_file(log_name, pattern, num_results=10):
     log_files = [f"{ramdisk_dir}/{log_name}.log.{i}" for i in range(5, 0, -1)]
-    print(log_files)
     log_files.append(f"{ramdisk_dir}/{log_name}.log")
-    print(log_files)
     lines = []
     try:
         for log_file in log_files:
