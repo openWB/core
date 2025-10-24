@@ -528,7 +528,7 @@ class Chargepoint(ChargepointRfidMixin):
             # bis der Algorithmus eine Umschaltung vorgibt, zB weil der gewählte Lademodus eine
             # andere Phasenzahl benötigt oder bei PV-Laden die automatische Umschaltung aktiv ist.
             if self.data.get.charge_state:
-                phases = self.data.set.phases_to_use
+                phases = self.data.get.phases_in_use
             else:
                 if ((not charging_ev.ev_template.data.prevent_phase_switch or
                         self.data.set.log.imported_since_plugged == 0) and
@@ -576,18 +576,17 @@ class Chargepoint(ChargepointRfidMixin):
         if phases != self.data.get.phases_in_use:
             # Wenn noch kein Eintrag im Protokoll erstellt wurde, wurde noch nicht geladen und die Phase kann noch
             # umgeschaltet werden.
-            if self.data.set.log.imported_since_plugged != 0:
-                if charging_ev.ev_template.data.prevent_phase_switch:
-                    log.info(f"Phasenumschaltung an Ladepunkt {self.num} nicht möglich, da bei EV"
-                             f"{charging_ev.num} nach Ladestart nicht mehr umgeschaltet werden darf.")
-                    if self.data.get.phases_in_use != 0:
-                        phases = self.data.get.phases_in_use
-                    else:
-                        phases = self.data.control_parameter.phases
-                elif self.hw_supports_phase_switch() is False:
-                    # sonst passt die Phasenzahl nicht bei Autos, die eine Phase weg schalten.
-                    log.info(f"Phasenumschaltung an Ladepunkt {self.num} wird durch die Hardware nicht unterstützt.")
-                    phases = phases
+            if self.data.set.log.imported_since_plugged != 0 and charging_ev.ev_template.data.prevent_phase_switch:
+                log.info(f"Phasenumschaltung an Ladepunkt {self.num} nicht möglich, da bei EV"
+                         f"{charging_ev.num} nach Ladestart nicht mehr umgeschaltet werden darf.")
+                if self.data.get.phases_in_use != 0:
+                    phases = self.data.get.phases_in_use
+                else:
+                    phases = self.data.control_parameter.phases
+            elif self.hw_supports_phase_switch() is False:
+                # sonst passt die Phasenzahl nicht bei Autos, die eine Phase weg schalten.
+                log.info(f"Phasenumschaltung an Ladepunkt {self.num} wird durch die Hardware nicht unterstützt.")
+                phases = self.data.get.phases_in_use
         if phases != self.data.control_parameter.phases:
             self.data.control_parameter.phases = phases
         self.data.control_parameter.template_phases = template_phases

@@ -20,7 +20,7 @@
     class="q-mt-md"
   />
 
-  <div class="text-subtitle2 q-mt-sm q-mr-sm">Anzahl Phasen</div>
+  <div class="text-subtitle2 q-mt-sm q-mr-sm">Anzahl Phasen bei Überschuss</div>
   <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
     <q-btn-group class="col">
       <q-btn
