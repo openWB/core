@@ -32,30 +32,10 @@ def readApi() -> list[tuple[str, float]]:
     return list(map(transformPrices, power_raw))
 
 
-# Aggregate 15min prices to hourly prices by taking the maximum price in each hour
-def aggregatePrices(quarterlyPrices) -> list[tuple[str, float]]:
-    hourlyPrices = []
-    currentHourPrices = []
-    currentTimestamp = 0
-    for p in quarterlyPrices:
-        time = datetime.fromtimestamp(int(p[0]))
-        if time.minute == 0:
-            if len(currentHourPrices) > 0:
-                hourlyPrices.append((currentTimestamp, max(currentHourPrices)))
-                currentHourPrices = []
-            currentTimestamp = p[0]
-        else:
-            currentHourPrices.append(p[1])
-    if len(currentHourPrices) > 0:
-        hourlyPrices.append((currentTimestamp, max(currentHourPrices)))
-    return hourlyPrices
-
-
 def fetch_prices(config: GroupeETariffConfiguration) -> Dict[str, float]:
     # Fetch electricity prices from EKZ API
     pricelist = readApi()
-    hourly_list = aggregatePrices(pricelist)
-    prices: Dict[str, float] = dict(hourly_list)
+    prices: Dict[str, float] = dict(pricelist)
     return prices
 
 
