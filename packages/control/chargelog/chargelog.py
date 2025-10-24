@@ -180,8 +180,9 @@ def save_data(chargepoint, charging_ev, immediately: bool = True):
         imported_at_mode_switch notiert. Sonst schon, damit zwischen save_data und dem nächsten collect_data keine
         Daten verloren gehen.
     """
-    new_entry = _create_entry(chargepoint, charging_ev, immediately)
-    write_new_entry(new_entry)
+    if chargepoint.data.set.log.imported_since_mode_switch != 0:
+        new_entry = _create_entry(chargepoint, charging_ev, immediately)
+        write_new_entry(new_entry)
 
 
 def _create_entry(chargepoint, charging_ev, immediately: bool = True):
