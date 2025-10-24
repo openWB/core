@@ -351,9 +351,7 @@ debug_file = ramdisk_dir / 'debug.log'
 
 def filter_log_file(log_name, pattern, num_results=10):
     log_files = [f"{ramdisk_dir}/{log_name}.log.{i}" for i in range(5, 0, -1)]
-    print(log_files)
     log_files.append(f"{ramdisk_dir}/{log_name}.log")
-    print(log_files)
     lines = []
     try:
         for log_file in log_files:
@@ -414,7 +412,7 @@ def create_debug_log(input_data):
     try:
         broker = BrokerContent()
         debug_email = input_data.get('email', '')
-        ticketnumber = input_data.get('ticketnumber', '')
+        ticketnumber = input_data.get('ticketNumber', '')
         subject = input_data.get('subject', '')
         header = (f"{input_data['message']}\n{debug_email}\n{input_data['serialNumber']}\n"
                   f"{input_data['installedComponents']}\n{input_data['vehicles']}\n")
