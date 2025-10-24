@@ -133,24 +133,10 @@ class Chargepoint(ChargepointRfidMixin):
         """ prüft, ob Autolock nicht aktiv ist oder ob die Sperrung durch einen dem LP zugeordneten ID-Tag aufgehoben
         werden kann.
         """
-        message = None
         state = self.template.is_locked_by_autolock(self.data.get.charge_state)
-        if not state:
-            state = True
-        else:
-            # Darf Autolock durch Tag überschrieben werden?
-            if data.data.optional_data.data.rfid.active:
-                if self.data.get.rfid is None and self.data.set.rfid is None:
-                    state = False
-                    message = ("Keine Ladung, da der Ladepunkt durch Sperren nach Uhrzeit gesperrt ist und erst "
-                               "per ID-Tag freigeschaltet werden muss.")
-                else:
-                    state = True
-                    message = None
-            else:
-                state = False
-                message = "Keine Ladung, da Sperren nach Uhrzeit aktiv ist."
-        return state, message
+        charging_allowed = not state
+        message = None if charging_allowed else "Keine Ladung, da Sperren nach Uhrzeit (Komplettsperrung) aktiv ist."
+        return charging_allowed, message
 
     def _is_manual_lock_inactive(self) -> Tuple[bool, Optional[str]]:
         # Die Pro schickt je nach Timing auch nach Abstecken noch ein paar Zyklen den Tag. Dann darf der Ladepunkt
