@@ -414,7 +414,7 @@ def create_debug_log(input_data):
     try:
         broker = BrokerContent()
         debug_email = input_data.get('email', '')
-        ticketnumber = input_data.get('ticketnumber', '')
+        ticketnumber = input_data.get('ticketNumber', '')
         subject = input_data.get('subject', '')
         header = (f"{input_data['message']}\n{debug_email}\n{input_data['serialNumber']}\n"
                   f"{input_data['installedComponents']}\n{input_data['vehicles']}\n")
