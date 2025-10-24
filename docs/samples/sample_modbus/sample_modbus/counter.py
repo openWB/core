@@ -28,6 +28,7 @@ class SampleCounter(AbstractCounter):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self):
+        unit = self.component_config.configuration.modbus_id
         power = self.client.read_holding_registers(reg, ModbusDataType.INT_32, unit=unit)
         imported, exported = self.sim_counter.sim_count(power)
 
