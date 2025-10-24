@@ -36,7 +36,6 @@ from control.ev.ev import Ev
 from control import phase_switch
 from control.chargepoint.chargepoint_state import CHARGING_STATES, ChargepointState
 from control.text import BidiState
-from helpermodules.broker import BrokerClient
 from helpermodules.phase_mapping import convert_single_evu_phase_to_cp_phase
 from helpermodules.pub import Pub
 from helpermodules import timecheck
@@ -844,7 +843,7 @@ class Chargepoint(ChargepointRfidMixin):
         return charging_ev
 
     def update_charge_template(self, charge_template: ChargeTemplate) -> None:
-        if data.data.general_data.data.temporary_charge_templates:
+        if data.data.general_data.data.temporary_charge_templates_active:
             # Prüfen, ob ein temporäres Ladeprofil aktiv ist und dieses übernehmen
             Pub().pub(f"openWB/set/chargepoint/{self.num}/set/charge_template",
                       dataclasses.asdict(charge_template.data))

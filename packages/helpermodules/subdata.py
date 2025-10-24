@@ -9,7 +9,7 @@ import re
 import subprocess
 import paho.mqtt.client as mqtt
 
-from control import bat_all, bat, counter, counter_all, data, general, io_device, optional, pv, pv_all
+from control import bat_all, bat, counter, counter_all, general, io_device, optional, pv, pv_all
 from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_all import AllChargepoints
 from control.chargepoint.chargepoint_data import Log
@@ -338,17 +338,7 @@ class SubData:
                 if "ct"+index not in var:
                     var["ct"+index] = ChargeTemplate()
                 var["ct"+index].data = dataclass_from_dict(ChargeTemplateData, decode_payload(msg.payload))
-                for vehicle in self.ev_data.values():
-                    if vehicle.data.charge_template == int(index):
-                        for cp in self.cp_data.values():
-                            if ((cp.chargepoint.data.set.charging_ev != -1 and
-                                    cp.chargepoint.data.set.charging_ev == vehicle.num) or
-                                    cp.chargepoint.data.config.ev == vehicle.num):
-                                if decode_payload(msg.payload) == "":
-                                    Pub().pub(f"openWB/chargepoint/{cp.chargepoint.num}/set/charge_template", "")
-                                elif self.general_data.data.temporary_charge_templates:
-                                    Pub().pub(
-                                        f"openWB/chargepoint/{cp.chargepoint.num}/set/charge_template", decode_payload(msg.payload))
+
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
@@ -411,9 +401,6 @@ class SubData:
                             var["cp"+index].chargepoint.data.set.log = dataclass_from_dict(
                                 Log, decode_payload(msg.payload))
                         elif "charge_template" in msg.topic:
-                            if self.general_data.data.temporary_charge_templates:
-                                payload = decode_payload(msg.payload)
-                                Pub().pub(f'openWB/vehicle/template/{payload["id"]}/charge_template', payload)
                             var["cp"+index].chargepoint.data.set.charge_template = ChargeTemplate()
                             var["cp"+index].chargepoint.data.set.charge_template.data = dataclass_from_dict(
                                 ChargeTemplateData, decode_payload(msg.payload))
