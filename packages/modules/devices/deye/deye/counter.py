@@ -66,9 +66,10 @@ class DeyeCounter(AbstractCounter):
             powers=powers,
             power=power,
             imported=imported,
-            exported=exported,
-            frequency=frequency
+            exported=exported
         )
+        if 'frequency' in locals():
+            counter_state.frequency = frequency
         self.store.set(counter_state)
 
 
