@@ -12,7 +12,7 @@ import traceback
 from pathlib import Path
 
 import paho.mqtt.client as mqtt
-from control.chargelog import chargelog
+from control.chargelog.process_chargelog import get_log_data
 from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
 
@@ -719,7 +719,7 @@ class Command:
         pub_user_message(payload, connection_id, "Systembericht wurde versandt.", MessageType.SUCCESS)
 
     def getChargeLog(self, connection_id: str, payload: dict) -> None:
-        Pub().pub(f'openWB/set/log/{connection_id}/data', chargelog.get_log_data(payload["data"]))
+        Pub().pub(f'openWB/set/log/{connection_id}/data', get_log_data(payload["data"]))
 
     def getDailyLog(self, connection_id: str, payload: dict) -> None:
         Pub().pub(f'openWB/set/log/daily/{payload["data"]["date"]}',
