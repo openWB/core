@@ -192,6 +192,77 @@ class ModbusClient:
     def write_single_coil(self, address: int, value: Any, **kwargs):
         self._delegate.write_coil(address, value, **kwargs)
 
+    def __read_bulk(self,
+                    read_register_method: Callable,
+                    start_address: int,
+                    count: int,
+                    mapping: list[tuple[int, Union[ModbusDataType, Iterable[ModbusDataType]]]],
+                    byteorder: Endian = Endian.Big, wordorder: Endian = Endian.Big, **kwargs):
+        """
+        Liest einen Registerbereich und gibt ein dict mit reg als Key und dekodiertem Wert als Value zurück.
+        mapping: Liste von Tupeln (reg, ModbusDataType)
+        """
+        if self.is_socket_open() is False:
+            self.connect()
+        try:
+            response = read_register_method(start_address, count, **kwargs)
+            if response.isError():
+                raise Exception(__name__+" "+str(response))
+            decoder = BinaryPayloadDecoder.fromRegisters(response.registers, byteorder, wordorder)
+            results = {}
+            for register_address, data_type in mapping:
+                multiple_register_requested = isinstance(data_type, Iterable)
+                if not multiple_register_requested:
+                    data_type = [data_type]
+                offset = register_address - start_address
+                decoder.reset()
+                decoder.skip_bytes(offset * 2)
+                val = [struct.unpack(">e", struct.pack(">H", decoder.decode_16bit_uint())) if t ==
+                       ModbusDataType.FLOAT_16 else getattr(decoder, t.decoding_method)() for t in data_type]
+                results[register_address] = val if multiple_register_requested else val[0]
+            return results
+        except pymodbus.exceptions.ConnectionException as e:
+            self.close()
+            e.args += (NO_CONNECTION.format(self.address, self.port),)
+            raise e
+        except pymodbus.exceptions.ModbusIOException as e:
+            self.close()
+            e.args += (NO_VALUES.format(self.address, self.port),)
+            raise e
+        except Exception as e:
+            self.close()
+            raise Exception(__name__+" "+str(type(e))+" " + str(e)) from e
+
+    def read_input_registers_bulk(self,
+                                  start_address: int,
+                                  count: int,
+                                  mapping: list[tuple[int, Union[ModbusDataType, Iterable[ModbusDataType]]]],
+                                  byteorder: Endian = Endian.Big,
+                                  wordorder: Endian = Endian.Big,
+                                  **kwargs):
+        return self.__read_bulk(self._delegate.read_input_registers,
+                                start_address,
+                                count,
+                                mapping,
+                                byteorder,
+                                wordorder,
+                                **kwargs)
+
+    def read_holding_registers_bulk(self,
+                                    start_address: int,
+                                    count: int,
+                                    mapping: list[tuple[int, Union[ModbusDataType, Iterable[ModbusDataType]]]],
+                                    byteorder: Endian = Endian.Big,
+                                    wordorder: Endian = Endian.Big,
+                                    **kwargs):
+        return self.__read_bulk(self._delegate.read_holding_registers,
+                                start_address,
+                                count,
+                                mapping,
+                                byteorder,
+                                wordorder,
+                                **kwargs)
+
 
 class ModbusTcpClient_(ModbusClient):
     def __init__(self,
