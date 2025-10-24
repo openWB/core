@@ -69,6 +69,7 @@ class Algorithm:
                             cp.data.set.charge_template,
                             cp.data.control_parameter,
                             cp.num,
+                            cp.data.get.evse_current,
                             cp.data.get.currents,
                             cp.data.get.power,
                             cp.template.data.max_current_single_phase,
