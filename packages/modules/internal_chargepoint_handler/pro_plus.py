@@ -1,4 +1,5 @@
 import requests
+from helpermodules.subdata import SubData
 from modules.chargepoints.openwb_pro.chargepoint_module import ChargepointModule
 from modules.chargepoints.openwb_pro.config import OpenWBPro, OpenWBProConfiguration
 from modules.common.component_state import ChargepointState
@@ -18,6 +19,9 @@ class ProPlus(ChargepointModule):
         self.store_internal = get_internal_chargepoint_value_store(local_charge_point_num)
         self.store = get_chargepoint_value_store(hierarchy_id)
         self.old_chargepoint_state = None
+        self.version = SubData.system_data["system"].data["version"]
+        self.current_branch = SubData.system_data["system"].data["current_branch"]
+        self.current_commit = SubData.system_data["system"].data["current_commit"]
 
         super().__init__(OpenWBPro(configuration=OpenWBProConfiguration(ip_address="192.168.192.50")))
         self.set_internal_context_handlers(hierarchy_id, internal_cp)
@@ -35,6 +39,9 @@ class ProPlus(ChargepointModule):
             if chargepoint_state is not None and last_tag is not None and last_tag != "":
                 chargepoint_state.rfid = last_tag
             if chargepoint_state is not None:
+                chargepoint_state.version = self.version,
+                chargepoint_state.current_branch = self.current_branch,
+                chargepoint_state.current_commit = self.current_commit
                 store_state(chargepoint_state)
                 return chargepoint_state
             else:
