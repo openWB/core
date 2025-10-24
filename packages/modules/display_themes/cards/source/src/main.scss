@@ -22,6 +22,12 @@ body {
   scrollbar-color: color('primary-70') transparent;
 }
 
+.large-button {
+  height: 3.5rem !important;
+  font-size: 1.5rem !important;
+  padding: 0.75rem 1.5rem !important;
+}
+
 /* width */
 ::-webkit-scrollbar {
   width: 4px;
