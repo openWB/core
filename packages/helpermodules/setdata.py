@@ -485,7 +485,8 @@ class SetData:
                         self._validate_value(msg, float, [(0, 0), (6, 32), (0, 450)])
                     else:
                         self._validate_value(msg, float, [(6, 32), (0, 0)])
-                elif "/control_parameter/phases" in msg.topic:
+                elif ("/control_parameter/phases" in msg.topic or
+                      "/control_parameter/template_phases" in msg.topic):
                     self._validate_value(msg, int, [(0, 3)])
                 elif "/control_parameter/failed_phase_switches" in msg.topic:
                     self._validate_value(msg, int, [(0, 4)])
@@ -550,7 +551,7 @@ class SetData:
         elif ("/get/evse_current" in msg.topic or
               "/get/max_evse_current" in msg.topic):
             # AC-EVSE: 0, 6-32, 600-3200, DC-EVSE 0-500
-            self._validate_value(msg, float, [(0, 3200)])
+            self._validate_value(msg, float, [(-3200, 3200)])
         elif ("/get/version" in msg.topic or
               "/get/current_branch" in msg.topic or
               "/get/current_commit" in msg.topic):

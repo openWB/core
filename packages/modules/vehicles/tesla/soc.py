@@ -19,7 +19,13 @@ log = logging.getLogger(__name__)
 def fetch(vehicle_config: TeslaSoc, vehicle_update_data: VehicleUpdateData) -> CarState:
     vehicle_config.configuration.token = api.validate_token(vehicle_config.configuration.token)
     if vehicle_update_data.charge_state is False:
-        _wake_up_car(vehicle_config)
+        try:
+            _wake_up_car(vehicle_config)
+        except Exception as e:
+            log.warning(
+                f"Fehler beim Aufwecken des Fahrzeugs: {e}\n"
+                "Der abgerufene SoC-Wert ist möglicherweise veraltet."
+            )
     soc, range, soc_timestamp = api.request_soc_range(
         vehicle=vehicle_config.configuration.tesla_ev_num, token=vehicle_config.configuration.token)
     return CarState(soc=soc, range=range, soc_timestamp=soc_timestamp)
@@ -36,10 +42,10 @@ def _wake_up_car(vehicle_config: TeslaSoc):
             break
         counter = counter+1
         time.sleep(5)
-        log.debug("Loop: "+str(counter)+", State: "+str(state))
-    log.info("Status nach Aufwecken: "+str(state))
+        log.debug(f"Loop: {counter}, State: {state}")
+    log.info(f"Status nach Aufwecken: {state}")
     if state != "online":
-        raise Exception("EV konnte nicht geweckt werden.")
+        raise Exception(f"EV konnte nicht geweckt werden. Status: {state}")
 
 
 def create_vehicle(vehicle_config: TeslaSoc, vehicle: int):
@@ -55,10 +61,10 @@ def read_legacy(id: int,
                 tesla_ev_num: int,
                 charge_state: bool):
 
-    log.debug('SoC-Module tesla num: ' + str(id))
-    log.debug('SoC-Module tesla token_file: ' + str(token_file))
-    log.debug('SoC-Module tesla tesla_ev_num: ' + str(tesla_ev_num))
-    log.debug('SoC-Module tesla charge_state: ' + str(charge_state))
+    log.debug(f"SoC-Module tesla num: {id}")
+    log.debug(f"SoC-Module tesla token_file: {token_file}")
+    log.debug(f"SoC-Module tesla tesla_ev_num: {tesla_ev_num}")
+    log.debug(f"SoC-Module tesla charge_state: {charge_state}")
 
     with open(token_file, "r") as f:
         token = json.load(f)

@@ -23,6 +23,7 @@ class ControlParameter:
     state: ChargepointState = field(default=ChargepointState.NO_CHARGING_ALLOWED,
                                     metadata={"topic": "control_parameter/state"})
     submode: Chargemode_enum = field(default=Chargemode_enum.STOP, metadata={"topic": "control_parameter/submode"})
+    template_phases: int = field(default=None, metadata={"topic": "control_parameter/template_phases"})
     timestamp_charge_start: Optional[float] = field(
         default=None, metadata={"topic": "control_parameter/timestamp_charge_start"})
     timestamp_chargemode_changed: Optional[float] = field(

@@ -106,6 +106,7 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/control_parameter/required_currents$",
         "^openWB/chargepoint/[0-9]+/control_parameter/state$",
         "^openWB/chargepoint/[0-9]+/control_parameter/submode$",
+        "^openWB/chargepoint/[0-9]+/control_parameter/template_phases$",
         "^openWB/chargepoint/[0-9]+/control_parameter/timestamp_charge_start$",
         "^openWB/chargepoint/[0-9]+/control_parameter/timestamp_chargemode_changed$",
         "^openWB/chargepoint/[0-9]+/control_parameter/timestamp_last_phase_switch$",
@@ -712,6 +713,10 @@ class UpdateConfig:
                 getattr(self, f"upgrade_datastore_{version}")()
             except AttributeError:
                 log.error(f"missing upgrade function! '{version}'")
+            except Exception:
+                log.exception("Fehler bei der Aktualisierung des Brokers.")
+                pub_system_message(
+                    {}, "Fehler bei der Aktualisierung der Konfiguration des Brokers.", MessageType.ERROR)
 
     def _loop_all_received_topics(self, callback) -> None:
         modified_topics = {}
@@ -2322,6 +2327,8 @@ class UpdateConfig:
         self.__update_topic("openWB/system/datastore_version", 86)
 
     def upgrade_datastore_86(self) -> None:
+        if "openWB/bat/get/power_limit_controllable" not in self.all_received_topics:
+            self.__update_topic("openWB/bat/get/power_limit_controllable", False)
         if "openWB/bat/config/bat_control_permitted" not in self.all_received_topics.keys():
             self.__update_topic("openWB/bat/config/bat_control_permitted", False)
             if decode_payload(self.all_received_topics["openWB/bat/get/power_limit_controllable"]) is True:

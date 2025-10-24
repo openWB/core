@@ -233,6 +233,11 @@ class HandlerAlgorithm:
 
     @__with_handler_lock(error_threshold=60)
     def handler_random_nightly(self):
+        log.warning("Display wird neu geladen.")  # nur zur Info im Log
+        # chromium neu starten, um größere Auswirkungen eines Speicherlecks zu vermeiden
+        run_command.run_command([
+            str(Path(__file__).resolve().parents[1] / "runs" / "update_local_display.sh"), "1"
+        ], process_exception=True)
         try:
             data.data.system_data["system"].thread_backup_and_send_to_cloud()
         except Exception:
@@ -247,6 +252,7 @@ class HandlerAlgorithm:
                 for cp in data.data.cp_data.values():
                     calculate_charge_cost(cp)
             data.data.optional_data.et_get_prices()
+            logger.clear_in_memory_log_handler(None)
         except Exception:
             log.exception("Fehler im Main-Modul")
 
@@ -268,6 +274,7 @@ def schedule_jobs():
 
 try:
     log.debug("Start openWB2.service")
+    old_memory_usage = 0
     loadvars_ = loadvars.Loadvars()
     data.data_init(loadvars_.event_module_update_completed)
     update_config.UpdateConfig().update()

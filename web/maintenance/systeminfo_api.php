@@ -315,7 +315,7 @@ function getServiceStatus($services)
 function getTopProcesses($order, $limit)
 {
 	// ps gibt: PID, Benutzer, CPU-Auslastung, Speicher, Befehl
-	$data = ['comm', 'pid', '%cpu', '%mem'];
+	$data = ['comm', 'pid', '%cpu', '%mem', 'command'];
 	$index = array_search($order, $data);
 	if ($index === false) {
 		return [];
@@ -329,10 +329,11 @@ function getTopProcesses($order, $limit)
 	for ($i = 1; $i < count($output); $i++) {
 		// Spalten trennen (mehrere Leerzeichen)
 		$cols = preg_split('/\s+/', trim($output[$i]), 5);
-		if (count($cols) === 4) {
+		if (count($cols) === 5) {
 			$result[$cols[0] . ' (' . $cols[1] . ')'] = [
 				'value' => (float)$cols[$index],
-				'unit' => '%'
+				'unit' => '%',
+				'details' => $cols[4]
 			];
 		}
 	}
