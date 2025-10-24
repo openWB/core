@@ -338,18 +338,17 @@ class SubData:
                 if "ct"+index not in var:
                     var["ct"+index] = ChargeTemplate()
                 var["ct"+index].data = dataclass_from_dict(ChargeTemplateData, decode_payload(msg.payload))
-                # Temporäres ChargeTemplate aktualisieren, wenn persistentes geändert wird
                 for vehicle in self.ev_data.values():
                     if vehicle.data.charge_template == int(index):
                         for cp in self.cp_data.values():
-                            if (((cp.chargepoint.data.set.charging_ev != -1 and
+                            if ((cp.chargepoint.data.set.charging_ev != -1 and
                                     cp.chargepoint.data.set.charging_ev == vehicle.num) or
-                                    cp.chargepoint.data.config.ev == vehicle.num) and
-                                    cp.chargepoint.data.get.plug_state is False):
+                                    cp.chargepoint.data.config.ev == vehicle.num):
                                 if decode_payload(msg.payload) == "":
                                     Pub().pub(f"openWB/chargepoint/{cp.chargepoint.num}/set/charge_template", "")
-                                else:
-                                    cp.chargepoint.update_charge_template(var["ct"+index])
+                                elif self.general_data.data.temporary_charge_templates:
+                                    Pub().pub(
+                                        f"openWB/chargepoint/{cp.chargepoint.num}/set/charge_template", decode_payload(msg.payload))
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
