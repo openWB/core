@@ -139,7 +139,13 @@ Die IP des "Plug'n'Play" Netzwerkes (Standard `192.168.193.250`) sollte in diese
 
 #### 4.1.2 Rechtemanagement
 
-Für den Mosquitto Broker gibt es das [Dynamic Security Plugin](https://mosquitto.org/documentation/dynamic-security/). Dieses erlaubt eine sehr feine Rechteverwaltung auf Basis von Clients, Rollen und ACLs. Die komplette Konfiguration erfolgt ebenfalls zur Laufzeit per MQTT. Es wird empfohlen, dafür Programm `mosquitto_ctrl` auf der Kommandozeile zu verwenden, es ist aber auch möglich, Einstellungen direkt über Topics zu setzen.
+Für den Mosquitto Broker gibt es das [Dynamic Security Plugin](https://mosquitto.org/documentation/dynamic-security/). Dieses erlaubt eine sehr feine Rechteverwaltung auf Basis von Clients, Rollen und ACLs. Die komplette Konfiguration erfolgt ebenfalls zur Laufzeit per MQTT. Es wird empfohlen, dafür das Programm `mosquitto_ctrl` auf der Kommandozeile zu verwenden, es ist aber auch möglich, Einstellungen direkt über Topics zu setzen.
+
+#### 4.1.3 Zurücksetzen eines Kennwortes
+
+Es muss zwingend für den Administrator/Hauptbenutzer die Möglichkeit geben, den Zugang bei einem vergessenen Kennwort wieder herzustellen. Im einfachsten Fall könnte das, wie bei vielen Lösungen üblich, über eine hinterlegte E-Mail Adresse erfolgen, an die ein Code gesendet wird.
+
+Im Besten Fall lässt sich diese Option pro angelegtem Benutzer (de-)aktivieren.
 
 ### 4.2 Startseite
 
