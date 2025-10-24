@@ -15,6 +15,7 @@ from modules.devices.idm.idm.config import IDMCounterSetup
 class KwargsDict(TypedDict):
     device_id: int
     client: ModbusTcpClient_
+    modbus_id: int
 
 
 class IDMCounter(AbstractCounter):
@@ -25,12 +26,13 @@ class IDMCounter(AbstractCounter):
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
         self.client: ModbusTcpClient_ = self.kwargs['client']
+        self.modbus_id: int = self.kwargs['modbus_id']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self):
-        unit = self.component_config.configuration.modbus_id
+        unit = self.modbus_id
         power = self.client.read_input_registers(4122, ModbusDataType.FLOAT_32,
                                                  wordorder=Endian.Little, unit=unit) * 1000
         imported, exported = self.sim_counter.sim_count(power)
