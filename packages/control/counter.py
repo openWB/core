@@ -386,25 +386,24 @@ class Counter:
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")
 
-    def calc_switch_off_threshold(self, chargepoint: Chargepoint) -> Tuple[float, float]:
+    def calc_switch_off_threshold(self, chargepoint: Chargepoint) -> float:
         pv_config = data.data.general_data.data.chargemode_config.pv_charging
         control_parameter = chargepoint.data.control_parameter
         if chargepoint.data.set.charge_template.data.chargemode.pv_charging.feed_in_limit:
             # Der EVU-Überschuss muss ggf um die Einspeisegrenze bereinigt werden.
             # Wnn die Leistung nicht Einspeisegrenze + Einschaltschwelle erreicht, darf die Ladung nicht pulsieren.
             # Abschaltschwelle um Einschaltschwelle reduzieren.
-            feed_in_yield = (-data.data.general_data.data.chargemode_config.pv_charging.feed_in_yield
-                             + pv_config.switch_on_threshold*control_parameter.phases)
+            threshold = (-data.data.general_data.data.chargemode_config.pv_charging.feed_in_yield
+                         + pv_config.switch_on_threshold*control_parameter.phases)
         else:
-            feed_in_yield = 0
-        threshold = pv_config.switch_off_threshold + feed_in_yield
-        return threshold, feed_in_yield
+            threshold = pv_config.switch_off_threshold
+        return threshold
 
     def calc_switch_off(self, chargepoint: Chargepoint) -> Tuple[float, float]:
         switch_off_power = self.calc_surplus() - self.data.set.released_surplus
-        threshold, feed_in_yield = self.calc_switch_off_threshold(chargepoint)
+        threshold = self.calc_switch_off_threshold(chargepoint)
         log.debug(f'LP{chargepoint.num} Switch-Off-Threshold prüfen: {switch_off_power}W, Schwelle: {threshold}W, '
-                  f'freigegebener Überschuss {self.data.set.released_surplus}W, Einspeisegrenze {feed_in_yield}W')
+                  f'freigegebener Überschuss {self.data.set.released_surplus}W')
         return switch_off_power, threshold
 
     def switch_off_check_threshold(self, chargepoint: Chargepoint) -> bool:

@@ -134,7 +134,7 @@ class SurplusControlled:
                 if cp.chargemode_changed or cp.submode_changed:
                     if (control_parameter.state in CHARGING_STATES):
                         if cp.data.set.charging_ev_data.ev_template.data.prevent_charge_stop is False:
-                            threshold = evu_counter.calc_switch_off_threshold(cp)[0]
+                            threshold = evu_counter.calc_switch_off_threshold(cp)
                             if evu_counter.calc_raw_surplus() - cp.data.set.required_power < threshold:
                                 control_parameter.required_currents = [0]*3
                                 control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
