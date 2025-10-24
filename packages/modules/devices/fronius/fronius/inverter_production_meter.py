@@ -12,7 +12,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount import SimCounter
 from modules.common.store import get_inverter_value_store
 from modules.devices.fronius.fronius.config import FroniusConfiguration, MeterLocation
-from modules.devices.fronius.fronius.config import FroniusProductionCountSetup
+from modules.devices.fronius.fronius.config import FroniusProductionMeterSetup
 
 log = logging.getLogger(__name__)
 
@@ -22,8 +22,8 @@ class KwargsDict(TypedDict):
     device_config: FroniusConfiguration
 
 
-class FroniusProductionCount(AbstractInverter):
-    def __init__(self, component_config: FroniusProductionCountSetup, **kwargs: Any) -> None:
+class FroniusProductionMeter(AbstractInverter):
+    def __init__(self, component_config: FroniusProductionMeterSetup, **kwargs: Any) -> None:
         self.component_config = component_config
         self.kwargs: KwargsDict = kwargs
 
@@ -110,4 +110,4 @@ class FroniusProductionCount(AbstractInverter):
         )
 
 
-component_descriptor = ComponentDescriptor(configuration_factory=FroniusProductionCountSetup)
+component_descriptor = ComponentDescriptor(configuration_factory=FroniusProductionMeterSetup)

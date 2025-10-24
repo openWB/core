@@ -6,7 +6,7 @@ from packages.conftest import hierarchy_standard
 from control import bat_all
 from control.bat import Bat
 
-from control.bat_all import BatAll, BatPowerLimitMode, BatPowerLimitCondition
+from control.bat_all import BatAll, BatPowerLimitMode
 from control import data
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_all import AllChargepointData, AllChargepoints, AllGet
@@ -163,29 +163,26 @@ def default_chargepoint_factory() -> List[Chargepoint]:
 class PowerLimitParams:
     name: str
     expected_power_limit_bat: Optional[float]
-    power_limit_mode: str = BatPowerLimitMode.MODE_NO_DISCHARGE.value
-    power_limit_condition: str = BatPowerLimitCondition.VEHICLE_CHARGING.value
+    power_limit_mode: str = BatPowerLimitMode.NO_LIMIT.value
     cps: List[Chargepoint] = field(default_factory=default_chargepoint_factory)
     power_limit_controllable: bool = True
     bat_power: float = -10
     evu_power: float = 200
-    bat_control_activated: bool = True
 
 
 cases = [
-    PowerLimitParams("Begrenzung immer, Speicher nicht regelbar", None, power_limit_controllable=False,
-                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
-    PowerLimitParams("Begrenzung immer, Speichersteuerung deaktiviert", None, bat_control_activated=False,
-                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
+    PowerLimitParams("keine Begrenzung", None),
     PowerLimitParams("Begrenzung immer, keine LP im Sofortladen", None, cps=[],
-                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
+                     power_limit_mode=BatPowerLimitMode.LIMIT_STOP.value),
+    PowerLimitParams("Begrenzung immer, Speicher nicht regelbar", None, power_limit_controllable=False,
+                     power_limit_mode=BatPowerLimitMode.LIMIT_STOP.value),
     PowerLimitParams("Begrenzung immer, Speicher lädt", None, bat_power=100,
-                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
+                     power_limit_mode=BatPowerLimitMode.LIMIT_STOP.value),
     PowerLimitParams("Begrenzung immer,Einspeisung", None, evu_power=-110,
-                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
-    PowerLimitParams("Begrenzung immer", 0, power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
+                     power_limit_mode=BatPowerLimitMode.LIMIT_STOP.value),
+    PowerLimitParams("Begrenzung immer", 0, power_limit_mode=BatPowerLimitMode.LIMIT_STOP.value),
     PowerLimitParams("Begrenzung Hausverbrauch", -456,
-                     power_limit_mode=BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION.value),
+                     power_limit_mode=BatPowerLimitMode.LIMIT_TO_HOME_CONSUMPTION.value),
 ]
 
 
@@ -193,9 +190,7 @@ cases = [
 def test_get_power_limit(params: PowerLimitParams, data_, monkeypatch):
     b_all = BatAll()
     b_all.data.config.bat_control_permitted = True
-    b_all.data.config.bat_control_activated = params.bat_control_activated
     b_all.data.config.power_limit_mode = params.power_limit_mode
-    b_all.data.config.power_limit_condition = params.power_limit_condition
     b_all.data.get.power_limit_controllable = params.power_limit_controllable
     b_all.data.get.power = params.bat_power
     data.data.counter_all_data = hierarchy_standard()
