@@ -843,20 +843,11 @@ class Chargepoint(ChargepointRfidMixin):
         Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/charging_ev_prev", vehicle)
         return charging_ev
 
-    def _clear_template_topics(self, topic: str) -> None:
-        def on_connect(client, userdata, flags, rc):
-            client.subscribe(topic, 2)
-
-        def __get_payload(client, userdata, msg):
-            received_topics.append(msg.topic)
-        received_topics = []
-        BrokerClient("processBrokerBranch", on_connect, __get_payload).start_finite_loop()
-        for topic in received_topics:
-            Pub().pub(topic, "")
-
     def update_charge_template(self, charge_template: ChargeTemplate) -> None:
-        Pub().pub(f"openWB/set/chargepoint/{self.num}/set/charge_template",
-                  dataclasses.asdict(charge_template.data))
+        if data.data.general_data.data.temporary_charge_templates:
+            # Prüfen, ob ein temporäres Ladeprofil aktiv ist und dieses übernehmen
+            Pub().pub(f"openWB/set/chargepoint/{self.num}/set/charge_template",
+                      dataclasses.asdict(charge_template.data))
 
     def _pub_connected_vehicle(self, vehicle: Ev):
         """ published die Daten, die zur Anzeige auf der Hauptseite benötigt werden.

@@ -100,6 +100,7 @@ class GeneralData:
     http_api: bool = field(
         default=False, metadata={"topic": "http_api"})
     mqtt_bridge: bool = False
+    temporary_charge_templates: bool = False
     prices: Prices = field(default_factory=prices_factory)
     range_unit: str = "km"
 

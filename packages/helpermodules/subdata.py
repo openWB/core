@@ -9,7 +9,7 @@ import re
 import subprocess
 import paho.mqtt.client as mqtt
 
-from control import bat_all, bat, counter, counter_all, general, io_device, optional, pv, pv_all
+from control import bat_all, bat, counter, counter_all, data, general, io_device, optional, pv, pv_all
 from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_all import AllChargepoints
 from control.chargepoint.chargepoint_data import Log
@@ -411,6 +411,9 @@ class SubData:
                             var["cp"+index].chargepoint.data.set.log = dataclass_from_dict(
                                 Log, decode_payload(msg.payload))
                         elif "charge_template" in msg.topic:
+                            if self.general_data.data.temporary_charge_templates:
+                                payload = decode_payload(msg.payload)
+                                Pub().pub(f'openWB/vehicle/template/{payload["id"]}/charge_template', payload)
                             var["cp"+index].chargepoint.data.set.charge_template = ChargeTemplate()
                             var["cp"+index].chargepoint.data.set.charge_template.data = dataclass_from_dict(
                                 ChargeTemplateData, decode_payload(msg.payload))
