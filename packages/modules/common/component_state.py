@@ -232,7 +232,8 @@ class ChargepointState:
 @auto_str
 class TariffState:
     def __init__(self,
-                 prices: Optional[Dict[int, float]] = None) -> None:
+                 prices: Optional[Dict[str, float]] = None
+                 ) -> None:
         self.prices = prices
 
 

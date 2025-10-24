@@ -218,6 +218,7 @@ class HandlerAlgorithm:
                     general_internal_chargepoint_handler.internal_chargepoint_handler.heartbeat = False
             with ChangedValuesContext(loadvars_.event_module_update_completed):
                 sub.system_data["system"].update_ip_address()
+            data.data.optional_data.et_get_prices()
         except Exception:
             log.exception("Fehler im Main-Modul")
 
@@ -251,7 +252,6 @@ class HandlerAlgorithm:
             with ChangedValuesContext(loadvars_.event_module_update_completed):
                 for cp in data.data.cp_data.values():
                     calculate_charge_cost(cp)
-            data.data.optional_data.et_get_prices()
             logger.clear_in_memory_log_handler(None)
         except Exception:
             log.exception("Fehler im Main-Modul")
