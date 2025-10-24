@@ -196,3 +196,51 @@ Der Display-Wrapper sowie die dadurch eingebundenen Display Themes müssen sich 
 In manchen Situationen kann es sinnvoll sein, dass ein Client nur einen Teil eines größeren JSON Topics schreiben (ggf. auch lesen?) kann. Ein Fall wären z.B. die Lade-Profile, wo vermutlich "Priorität" und "Standard nach Abstecken" für einen normalen Anwender nicht änderbar sein sollten, andere Daten wie "Lademodus" hingegen schon.
 
 Es müsste evaluiert werden, welche JSON Objekte im Hinblick auf ein Rechtemanagement aufzuteilen sind und dafür eine Lösung geschaffen werden. Primäres Ziel sollte es sein, dass nicht auch noch im Backend eine Benutzerverwaltung implementiert werden muss, sondern ausschließlich mit dem Rechtemanagement im Broker gearbeitet werden kann. Ansonsten müssten zwei Bereiche immer synchron gehalten werden, was früher oder später vermutlich zu Problemen führen wird.
+
+## 5. Besprechungen und Anpassungen
+
+### 5.1 Meeting 23.10.2025
+
+#### 5.1.1 Notizen
+
+- vollumfängliche Umsetzung zeitlich problematisch (für Verkauf auch nicht erforderlich, einfache Umsetzung gefragt)
+- 1\. step -> in jedem theme Anpassungen für optionale Nutzerverwaltung nötig (electron supporten)
+- Security Plugin sichten
+- Benutzer / ACL für Rechteinfo
+- MQTT-basierte Sicherung (Backend erstmal außen vor lassen)
+- **nur topic-basierte Rechte** im 1. step
+- zuerst eine Login-Seite davor (self signed Zert.)
+- Benutzerverwaltung komplett An/Aus schaltbar (Bestandsuser sollen so weiterarbeiten können, wie bisher)
+- Button "Benutzer Wechsel / Logout"
+- Displayseite mit Anmeldung am MQTT-Broker erforderlich (unterschiedlich bei primary / secondary)
+- Benutzerpasswort zurücksetzen -> link an Lutz -> Github
+
+#### 5.1.2 Ausarbeitung
+
+1. Das Projekt wird in mehrere Schritte aufgeteilt, da die Umsetzung zeitkritisch ist und für den weiteren Verkauf nur eine teilweise umgesetzte Absicherung notwendig ist. Für WEGs ist eine Rechtevergabe für Ladepunkte und Fahrzeuge sowie Absicherung der anderen Einstellungen erforderlich, für den weiteren Vertrieb nach Österreich ein Kennwortschutz für die Einstellungen des Lastmanagements (inkl. I/O-Geräten und Aktionen).
+
+2. Im ersten Schritt sollen folgende Punkte umgesetzt werden:
+
+- Die Benutzerverwaltung soll komplett optional sein, damit Bestandsuser sich nicht umgewöhnen müssen.
+- Rechtevergabe je Topic/Topic-Baum mittels des Dynamic Security Plugins für den Mosquitto Broker.
+- Keine weiteren Einschränkungen im Backend
+- Von den unter "4.1.1 Grundlegende Voraussetzungen" aufgeführten Punkten wird nur "4.1.1.1 Verschlüsselter Zugang" umgesetzt.
+- Keine Anpassung nach Punkten 4.2, 4.3, 4.4 und 4.5. Dadurch müssen alle Themes und die Einstellungen so erweitert werden, dass ein An-/Abmelden möglich ist. Hier müssen die Display-Themes besonders betrachtet werden, da am Display keine interaktive Anmeldung möglich ist und zwischen dem Betrieb auf primary/secondary unterschieden werden muss.
+- In den Einstellungen soll die ACL des angemeldeten Benutzers verwendet werden, um nur lesbare Einstellungen bzw. welche komplett ohne Zugriffsrechte anders darzustellen.
+- Benutzer sollen bei einem vergessenen Passwort die Möglichkeit bekommen, sich über eine "Passwort vergessen" Funktion wieder anmelden zu können.
+
+#### 5.1.3 Einschätzung
+
+Die Benutzerverwaltung komplett abzuschalten halte ich nicht für sinnvoll. Hier sollte genau definiert werden, was dadurch erreicht werden soll. Wenn kein Rechtemanagement erforderlich ist, kann das durch einen einzelnen Benutzer mit sämtlichen Rechten erreicht werden. Das ist auch bei anderen im Heimbereich etablierten Produkten (z.B. FritzBox) seit Jahren Standard.
+
+Die Rechtevergabe ausschließlich über Topics zu regeln, wird in vielen Bereichen funktionieren, hat jedoch gerade bei größeren JSON-Objekten in den Topics seine Grenzen. Im einem der nächsten Schritte sollte die Rechtevergabe erweitert werden oder komplexe JSON-Objekte bei Bedarf aufgeteilt werden.
+
+Anpassungen im Backend sind für Teilbereiche nicht zu vermeiden. Bereits jetzt absehbar sind notwendige Änderungen bei der Aufbereitung der Diagrammdaten sowie Verarbeitung von "Commands". Bei den Diagrammen müssen Komponenten und Fahrzeuge, für welche keine Leseberechtigungen existieren, herausgefiltert werden. Sämtliche "Commands" werden an ein Topic gesendet, sodass eine Gültigkeitsprüfung nicht im Broker erfolgen kann. Diese beiden Punkte gehören meiner Meinung nach bereits in den ersten Schritt der Umsetzung.
+
+Den weggelassenen Punkt "4.1.1.3 Hostname und IP anpassbar" sehe ich gerade bei größeren Installationen (WEGs) kritisch. Zumindest der Hostname sollte individuell zu vergeben sein, um die Wallboxen besser identifizieren zu können und Namenskonflikte zu vermeiden. Der Aufwand dafür ist sehr gering, da bereits ein Skript unter "runs" vorhanden ist. Es muss lediglich im UI eingebunden werden.
+
+Weglassen der Punkte 4.2, 4.3, 4.4 und 4.5 schafft weitere notwendige Schnittstellen zwischen den einzelnen Projekten. Eine Weitergabe der Anmeldedaten über GET-Parameter einer URL ist nicht sinnvoll, da dadurch diese im Klartext einsehbar sind. Es ist nicht auszuschließen, dass ein Anwender sich mehrfach anmelden muss, wenn er z.B. von einem Theme zu den Einstellungen oder wieder zurück wechselt.
+
+Ob es anhand einer ausgelesenen ACL des Dynamic Security Plugins möglich ist, Eingabefelder entsprechend zu kennzeichnen, muss noch evaluiert werden. Die Rechte des angemeldeten Benutzers setzen sich aus mehreren Ebenen (Gruppe, Benutzer, Rolle) zusammen. Das kann sehr schnell komplex werden.
+
+Für die "Passwort vergessen" Funktion sind "Best Practices" einzuhalten, um keine unnötigen Angriffsflächen zu ermöglichen. In der aktuellen Umsetzung auf [GitHub openWB/forgot_password](https://github.com/openWB/forgot_password/tree/cbaa33cfb24fd5c4f55330c6f0010abf3962e48f) (Stand 24.10.2025, Commit cbaa33c vom 01.10.2025 19:29) werden die Zugangsdaten an unseren Server geschickt. Die Zugangsdaten dürfen niemals die openWB verlassen und ein Kennwort nicht im Klartext gespeichert werden. Die Funktionalität des Servers muss sich darauf beschränken, Daten von der openWB per Mail an den Benutzer zu senden.
