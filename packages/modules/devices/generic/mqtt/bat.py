@@ -34,8 +34,8 @@ class MqttBat(AbstractBat):
         currents = parse_received_topics("currents")
         power = received_topics[f"{topic_prefix}power"]
         soc = received_topics[f"{topic_prefix}soc"]
-        if (received_topics.get(f"{topic_prefix}imported") and
-                received_topics.get(f"{topic_prefix}exported")):
+        if (received_topics.get(f"{topic_prefix}imported") is not None and
+                received_topics.get(f"{topic_prefix}exported") is not None):
             imported = received_topics[f"{topic_prefix}imported"]
             exported = received_topics[f"{topic_prefix}exported"]
         else:
