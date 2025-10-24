@@ -86,7 +86,7 @@ def create_device(device_config: Fronius):
             counter_s0=create_counter_s0_component,
             inverter=create_inverter_component,
             inverter_secondary=create_inverter_secondary_component,
-            inverter_counter_production=create_inverter_production_meter_component,
+            inverter_production_meter=create_inverter_production_meter_component,
         ),
         component_updater=MultiComponentUpdater(update_components)
     )
