@@ -112,3 +112,18 @@ class FroniusSecondaryInverterSetup(ComponentSetup[FroniusSecondaryInverterConfi
                  id: int = 0,
                  configuration: FroniusSecondaryInverterConfiguration = None) -> None:
         super().__init__(name, type, id, configuration or FroniusSecondaryInverterConfiguration())
+
+
+class FroniusProductionMeterConfiguration:
+    def __init__(self, meter_id: int = 0, variant: int = 0):
+        self.meter_id = meter_id
+        self.variant = variant
+
+
+class FroniusProductionMeterSetup(ComponentSetup[FroniusProductionMeterConfiguration]):
+    def __init__(self,
+                 name: str = "Fronius Erzeugerzähler",
+                 type: str = "inverter_production_meter",
+                 id: int = 0,
+                 configuration: FroniusProductionMeterConfiguration = None) -> None:
+        super().__init__(name, type, id, configuration or FroniusProductionMeterConfiguration())
