@@ -15,7 +15,7 @@ def addPrices(power: dict, grid: dict) -> tuple[str, float]:
     timestamp = str(int(datetime.strptime(power['start_timestamp'], "%Y-%m-%dT%H:%M:%S%z")
                     .astimezone(tz.tzutc()).timestamp()))
     power_price = power['electricity'][1]['value']
-    grid_price = grid['grid'][0]['value']
+    grid_price = grid['grid'][1]['value']
     return (timestamp, (power_price+grid_price)/1000)
 
 
