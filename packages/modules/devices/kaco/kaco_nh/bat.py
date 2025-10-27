@@ -14,6 +14,7 @@ from modules.devices.kaco.kaco_nh.config import KacoNHConfiguration
 
 class KwargsDict(TypedDict):
     device_config: KacoNHConfiguration
+    device_id: int
 
 
 class KacoNHBat(AbstractBat):
@@ -22,6 +23,7 @@ class KacoNHBat(AbstractBat):
         self.kwargs: KwargsDict = kwargs
 
     def initialize(self) -> None:
+        self.__device_id: int = self.kwargs['device_id']
         self.device_config: KacoNHConfiguration = self.kwargs['device_config']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)

@@ -16,7 +16,8 @@ log = logging.getLogger(__name__)
 def create_device(device_config: KacoNH):
     def create_bat_component(component_config: KacoNHBatSetup):
         return KacoNHBat(component_config=component_config,
-                         device_config=device_config.configuration)
+                         device_config=device_config.configuration,
+                         device_id=device_config.id)
 
     def create_counter_component(component_config: KacoNHCounterSetup):
         return KacoNHCounter(component_config=component_config,

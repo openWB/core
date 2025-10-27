@@ -11,7 +11,7 @@ class KacoNHConfiguration:
                  serial_number: Optional[str] = None):
         self.ip_address = ip_address
         self.port = port
-        self.serial = serial_number
+        self.serial_number = serial_number
 
 
 class KacoNH:
