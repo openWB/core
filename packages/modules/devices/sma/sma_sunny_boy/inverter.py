@@ -84,10 +84,7 @@ class SmaSunnyBoyInverter(AbstractInverter):
             dc_power = power_total
             # Der Data-Manager/Cluster-Controller bietet keine Modbus-Register mit Phasenströmen an.
             # Daher die Phasenströme berechnen (es wird davon ausgegangen, dass eine symmetrische Erzeugung erfolgt)
-            current_L1 = (power_total / 3 / 230) * -1
-            current_L2 = (power_total / 3 / 230) * -1
-            current_L3 = (power_total / 3 / 230) * -1
-            currents = [current_L1, current_L2, current_L3]
+            currents = [(power_total / 3 / 230) * -1] * 3
         else:
             raise ValueError("Unbekannte Version "+str(self.component_config.configuration.version))
         if power_total == self.SMA_INT32_NAN or power_total == self.SMA_NAN:
