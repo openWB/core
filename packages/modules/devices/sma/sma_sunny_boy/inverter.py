@@ -59,7 +59,10 @@ class SmaSunnyBoyInverter(AbstractInverter):
                         self.tcp_client.read_holding_registers(30961, ModbusDataType.INT_32, unit=unit))
 
             currents = self.tcp_client.read_holding_registers(30977, [ModbusDataType.INT_32]*3, unit=unit)
-            currents = [current / -1000 if current != self.SMA_INT32_NAN else 0 for current in currents]
+            if all(c == self.SMA_INT32_NAN for c in currents):
+                currents = None
+            else:
+                currents = [current / -1000 if current != self.SMA_INT32_NAN else 0 for current in currents]
         elif self.component_config.configuration.version == SmaInverterVersion.core2:
             # AC Wirkleistung über alle Phasen (W) [Pac]
             power_total = self.tcp_client.read_holding_registers(40084, ModbusDataType.INT_16, unit=unit) * 10
@@ -78,9 +81,7 @@ class SmaSunnyBoyInverter(AbstractInverter):
         else:
             raise ValueError("Unbekannte Version "+str(self.component_config.configuration.version))
         if power_total == self.SMA_INT32_NAN or power_total == self.SMA_NAN:
-            power_total = 0
-            # Bei keiner AC Wirkleistung müssen auch die Ströme der Phasen 0 sein.
-            currents = [0, 0, 0]
+            raise ValueError(f'Wechselrichter lieferte nicht plausiblen Leistungswert: {power_total}.')
 
         if energy == self.SMA_UINT32_NAN:
             raise ValueError(
