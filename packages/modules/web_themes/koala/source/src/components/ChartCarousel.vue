@@ -81,7 +81,20 @@ const componentMap = {
 const chartCarouselItems = computed(() => {
   const slideOrder = mqttStore.themeConfiguration?.top_carousel_slide_order;
   if (!slideOrder || slideOrder.length === 0) {
-    return [];
+    return [
+      {
+        name: 'flow_diagram',
+        component: EnergyFlowChart,
+      },
+      {
+        name: 'history_chart',
+        component: HistoryChart,
+      },
+      {
+        name: 'daily_totals',
+        component: DailyTotals,
+      },
+    ];
   }
   return slideOrder
     .map((name) => ({
