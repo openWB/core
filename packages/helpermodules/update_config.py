@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 97
+    DATASTORE_VERSION = 98
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -215,6 +215,7 @@ class UpdateConfig:
         "^openWB/general/grid_protection_timestamp$",
         "^openWB/general/grid_protection_random_stop$",
         "^openWB/general/range_unit$",
+        "^openWB/general/temporary_charge_templates_active$",
         "^openWB/general/notifications/selected$",
         "^openWB/general/notifications/configuration$",
         "^openWB/general/notifications/start_charging$",
@@ -565,6 +566,7 @@ class UpdateConfig:
         ("openWB/general/prices/grid", Prices().grid),
         ("openWB/general/prices/pv", Prices().pv),
         ("openWB/general/range_unit", "km"),
+        ("openWB/general/temporary_charge_templates_active", False),
         ("openWB/general/web_theme", dataclass_utils.asdict(StandardLegacyWebTheme())),
         ("openWB/graph/config/duration", 120),
         ("openWB/internal_chargepoint/0/data/parent_cp", None),
@@ -2350,9 +2352,6 @@ class UpdateConfig:
         self.__update_topic("openWB/system/datastore_version", 88)
 
     def upgrade_datastore_88(self) -> None:
-        pub_system_message({}, "Änderungen, die du auf der Hauptseite vornimmst, gelten nur vorübergehend, bis das "
-                           "Fahrzeug abgesteckt wird. \nDie dauerhaften Einstellungen aus dem Einstellungsmenü werden "
-                           "danach automatisch wieder aktiviert.", MessageType.INFO)
         pub_system_message({}, "Es gibt ein neues Theme: das Koala-Theme! Smarthpone-optimiert und mit "
                            "Energiefluss-Diagramm & Karten-Ansicht der Ladepunkte", MessageType.INFO)
         self.__update_topic("openWB/system/datastore_version", 89)
@@ -2562,6 +2561,19 @@ class UpdateConfig:
         self.__update_topic("openWB/system/datastore_version", 96)
 
     def upgrade_datastore_96(self) -> None:
+        version = decode_payload(self.all_received_topics.get("openWB/system/version", "2.1.9")).split("-")[0]
+        major, minor, feature = (int(x) for x in version.split("."))
+        if (2, 1, 7) <= (major, minor, feature) <= (2, 1, 8):
+            self.__update_topic("openWB/general/temporary_charge_templates_active", True)
+            pub_system_message(
+                {},
+                "Die temporären Ladeeinstellungen können ab jetzt benutzerdefiniert unter Einstellungen -> Allgemein"
+                " -> Darstellung & Bedienung angewendet werden.",
+                MessageType.INFO,
+            )
+        self.__update_topic("openWB/system/datastore_version", 97)
+
+    def upgrade_datastore_97(self) -> None:
         def upgrade(topic: str, payload) -> None:
             if re.search("openWB/system/device/[0-9]+", topic) is not None:
                 payload = decode_payload(payload)
@@ -2570,4 +2582,4 @@ class UpdateConfig:
                     payload["configuration"].update({"phase": 1})
                 Pub().pub(topic, payload)
         self._loop_all_received_topics(upgrade)
-        self.__update_topic("openWB/system/datastore_version", 97)
+        self.__update_topic("openWB/system/datastore_version", 98)

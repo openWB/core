@@ -1,14 +1,10 @@
 #!/usr/bin/python3
 import sys
-import os
-import time
 from pymodbus.client.sync import ModbusTcpClient
 import logging
 
 log = logging.getLogger(__name__)
 
-named_tuple = time.localtime()  # getstruct_time
-time_string = time.strftime("%m/%d/%Y, %H:%M:%S viessmann on.py", named_tuple)
 devicenumber = str(sys.argv[1])
 ipadr = str(sys.argv[2])
 uberschuss = int(sys.argv[3])
@@ -24,21 +20,14 @@ uberschuss = int(sys.argv[3])
 # coils read write boolean
 # register start 00000
 #
-file_string = '/var/www/html/openWB/ramdisk/smarthome_device_' + str(devicenumber) + '_viessmann.log'
-file_stringpv = '/var/www/html/openWB/ramdisk/smarthome_device_' + str(devicenumber) + '_pv'
-if os.path.isfile(file_string):
-    f = open(file_string, 'a')
-else:
-    f = open(file_string, 'w')
-log.debug('%s devicenr %s ipadr %s ueberschuss %6d try to connect (modbus)' %
-          (time_string, devicenumber, ipadr, uberschuss), file=f)
+log.debug(
+    f"[Viessmann {devicenumber}] devicenr {devicenumber} ipadr {ipadr} "
+    f"ueberschuss {uberschuss:6d} try to connect (modbus)")
 client = ModbusTcpClient(ipadr, port=502)
 rq = client.write_coil(16, True, unit=1)
-log.debug(rq, file=f)
+log.debug(f"[Viessmann {devicenumber}] Modbus write_coil response: {rq}")
 client.close()
-log.debug('%s devicenr %s ipadr %s Einmalige Warmwasseraufbereitung aktiviert CO-17 = 1' %
-          (time_string, devicenumber, ipadr), file=f)
-f.close()
-f = open(file_stringpv, 'w')
-f.write(str(1))
-f.close()
+log.debug(
+    f"[Viessmann {devicenumber}] devicenr {devicenumber} ipadr {ipadr} "
+    "Einmalige Warmwasseraufbereitung aktiviert CO-17 = 1")
+log.debug(f"[Viessmann {devicenumber}] PV-Modus gesetzt: 1")
