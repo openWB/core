@@ -69,7 +69,8 @@
 					<PMLabel
 						v-if="
 							topVehicles[0] != undefined &&
-							vehicles[topVehicles[0]] != undefined
+							vehicles[topVehicles[0]] != undefined &&
+							vehicles[topVehicles[0]].isSocConfigured
 						"
 						:x="-width / 2 - margin / 4 + 10"
 						:y="-height / 2 + margin + 5"
@@ -88,7 +89,8 @@
 					<PMLabel
 						v-if="
 							topVehicles[1] != undefined &&
-							vehicles[topVehicles[1]] != undefined
+							vehicles[topVehicles[1]] != undefined &&
+							vehicles[topVehicles[1]].isSocConfigured
 						"
 						:x="width / 2 + margin / 4 - 10"
 						:y="-height / 2 + margin + 5"
