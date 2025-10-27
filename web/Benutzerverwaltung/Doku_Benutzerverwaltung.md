@@ -161,8 +161,8 @@ Der unter 2.2 aufgeführte "Theme-Wrapper" (Punkt 3.) muss im Zuge einer Benutze
 
 Oben wurde angesprochen, dass jedes Theme für die Links zu Status, Einstellungen etc. selbst verantwortlich ist. Es muss also in jedem Theme ein gewisser Anteil Code zwingend enthalten sein. Dabei stelle ich mir die Frage, ob das nicht einheitlich gelöst werden kann.
 
-|                                                                                              ![](Theme-Bereiche.png)                                                                                               |
-|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
+| ![](Theme-Bereiche.png) |
+| :---: |
 | *Abbildung 1: Die farblich markierten Bereiche im Koala Theme zeigen, welche Funktionen einheitlich umgesetzt werden sollten (grün) und welche individuell vom Theme gestaltet werden (gelb).* |
 
 Am Beispiel des Koala Themes habe ich in Abbildung 1 zwei Bereiche eingefärbt. Grün hinterlegt ist die Funktionalität, welche in jedem Theme aktuell selbst umgesetzt werden muss. Der gelbe Bereich hingegen ist individuell vom jeweiligen Theme gestaltet.
@@ -197,11 +197,25 @@ In manchen Situationen kann es sinnvoll sein, dass ein Client nur einen Teil ein
 
 Es müsste evaluiert werden, welche JSON Objekte im Hinblick auf ein Rechtemanagement aufzuteilen sind und dafür eine Lösung geschaffen werden.  Primäres Ziel sollte es sein, dass nicht auch noch im Backend eine Benutzerverwaltung implementiert werden muss, sondern ausschließlich mit dem Rechtemanagement im Broker gearbeitet werden kann. Ansonsten müssten zwei Bereiche immer synchron gehalten werden, wa
 
-## 5. Besprechungen und Anpassungen
+## 5. Evaluierung "Dynamic Security Plugin" für Mosquitto
 
-### 5.1 Meeting 23.10.2025
+Das Plugin ist bereits mit den installierten Debian-Paketen auf dem Pi vorhanden wird in die `mosquitto.conf` eingebunden und aktiviert. Obwohl in der Dokumentation aufgeführt wird, dass die Parameter `plugin` und `plugin_opt_*` je Listener (`per_listener_settings = true`) definiert werden können, wird dies in der [Doku des Plugins](https://mosquitto.org/documentation/dynamic-security/#installation) nicht empfohlen. In einem Issue auf GitHub wurde das Problem mit einer älteren Version 2.0.13 diskutiert. Als Ergebnis der Diskussion erzeugt die mehrfache Definition des Plugins jetzt eine Warnmeldung, dass diese Konstellation nicht unterstützt wird und es zu Effekten wie doppelten Einträgen in der Konfigurationsdatei kommen kann.
 
-#### 5.1.1 Notizen
+Aktuell wird `per_listener_settings` in openWB verwendet, um für alle Ports außer `localhost:1884` (Brücke zum internen Broker) die jetzige ACL zu aktivieren. Die Brückendefinition müsste also um Anmeldedaten erweitert werden, um auf `per_listener_settings = false` umstellen zu können.
+
+In dem aktuell installierten Debian Bullseye ist die veraltete Version 2.0.11 (aus 2021!) enthalten, aktuell ist 2.0.22. Ein aktuelles Paket kann aus dem offiziellen [Repo](https://repo.mosquitto.org/debian) geladen werden. Das ist auch dringend zu empfehlen, weil in der Zwischenzeit reichlich Bugs behoben und besonders auch beim Dynamic Security Plugin Verbesserungen umgesetzt wurden.
+
+Auch in der aktuellen Version 2.0.22 unterstützt das Plugin nicht die Syntax, welche bei der aktuellen Date-ACL verwendet werden kann. Dort gibt es Platzhalter, die durch die Client-ID oder den Username ersetzt werden. openWB verwendet diese Syntax (Client-ID) für die Nachrichten, welche rechts in den Einstellungen bei der "Glocke" angezeigt werden. So kann jeder Client gezielt Nachrichten für seine Aktivitäten erhalten. Das Feature wurde für die kommende Version 2.1 bereits umgesetzt, jedoch gibt es noch keinen Termin für das Release.
+
+Das Plugin kann zwar Befehle über spezielle MQTT-Topics entgegennehmen, der Zugriff darf aber nicht für normale Clients aktiviert werden. Eine Freigabe hätte den vollen Zugang inkl. Benutzerverwaltung zur Folge. Die gesetzten Rechte werden **nicht** im Broker lesbar zur Verfügung gestellt. Eine Auswertung zur Laufzeit, wie es bei der Darstellung einzelner Eingabefelder angedacht war, erfordert also eine andere Datenquelle. Das gilt natürlich dann auch explizit für ein GUI zur Benutzerverwaltung. Es sind also zwei Datenbestände synchron zu halten, was ggf. mal zu Inkonsistenzen führen kann, wenn sich ein Bug einschleicht. Die festgelegten Zugriffsrechte des Plugins werden im JSON-Format gespeichert. Die Datei kann leicht in das Backup integriert werden.
+
+Bei einer ersten Testinstallation kam es mit der Version 2.0.22 zu Warnungen, dass die Zugriffsrechte der `mosquitto.acl` nicht korrekt gesetzt sind. Falls diese doch für den weiteren Betrieb benötigt wird, müssen die Berechtigungen auf `mosquitto:mosquitto` sowie `0600` angepasst werden.
+
+## Besprechungen und Anpassungen
+
+### 1 Meeting 23.10.2025
+
+#### 1.1 Notizen
 
 - vollumfängliche Umsetzung zeitlich problematisch (für Verkauf auch nicht erforderlich, einfache Umsetzung gefragt)
 - 1\. step -> in jedem theme Anpassungen für optionale Nutzerverwaltung nötig (electron supporten)
