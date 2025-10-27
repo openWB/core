@@ -148,7 +148,6 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 					currentItem.evuIn +
 					currentItem.batOut)
 		}
-		//console.log(registry.items.get(id)![graphData.graphScope])
 	})
 
 	// Counters

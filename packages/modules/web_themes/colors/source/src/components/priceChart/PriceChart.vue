@@ -1,9 +1,8 @@
 <template>
 	<p class="providername ms-1">Anbieter: {{ etData.etProvider }}</p>
-	<hr />
 	<div class="container">
 		<figure id="pricechart" class="p-0 m-0">
-			<svg viewBox="0 0 400 300">
+			<svg viewBox="0 0 400 260">
 				<g
 					:id="chartId"
 					:origin="draw"
@@ -12,7 +11,8 @@
 			</svg>
 		</figure>
 	</div>
-	<div v-if="chargepoint != undefined" class="p-3">
+	<div class="chargeDuration p-0 m-0">Ladezeit: {{ charge_duration }}</div>
+	<div v-if="chargepoint != undefined" class="p-3 pb-1 rangeInputContainer">
 		<RangeInput
 			id="pricechart_local"
 			v-model="maxPrice"
@@ -35,7 +35,7 @@
 		</button>
 	</div>
 	<div v-if="chargepoint != undefined" class="d-flex justify-content-end">
-		<span class="me-3 pt-0" @click="setMaxPrice">
+		<span class="me-3 pt-2 pb-3" @click="setMaxPrice">
 			<button
 				type="button"
 				class="btn btn-secondary confirmButton"
@@ -280,6 +280,15 @@ const prices = computed(() => {
 	})
 	return result.sort((a, b) => a - b)
 })
+
+const charge_duration = computed(() => {
+	const minutesPerSegment = 15
+	const activeSegmentCount = prices.value.filter(
+		(p) => p <= maxPrice.value,
+	).length
+	return `${Math.floor((activeSegmentCount * minutesPerSegment) / 60)}h ${(activeSegmentCount * minutesPerSegment) % 60}min`
+})
+
 function priceDown() {
 	let lastValue = prices.value[0]
 	for (let p of prices.value) {
@@ -332,8 +341,20 @@ onMounted(() => {
 	color: var(--color-bg);
 	border: 0;
 	font-size: var(--font-settings-button);
+	padding-left: 12px;
+	padding-right: 12px;
 }
 .confirmButton {
 	font-size: var(--font-settings-button);
+}
+.chargeDuration {
+	color: var(--color-charging);
+	font-size: var(--font-settings);
+	text-align: center;
+	margin-top: -10px;
+	margin-bottom: 10px;
+}
+.rangeInputContainer {
+	font-size: var(--font-settings);
 }
 </style>
