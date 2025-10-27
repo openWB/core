@@ -2575,7 +2575,7 @@ class UpdateConfig:
 
     def upgrade_datastore_97(self) -> None:
         def upgrade(topic: str, payload) -> None:
-            if re.search("openWB/system/device/[0-9]+", topic) is not None:
+            if re.search("openWB/system/device/[0-9]+/config$", topic) is not None:
                 payload = decode_payload(payload)
                 # add phase
                 if payload.get("type") == "shelly" and "phase" not in payload["configuration"]:
