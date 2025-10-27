@@ -60,10 +60,14 @@ const plotdata = computed(() => {
 })
 const invertersToShow = computed(() =>
 	pvSystems.value.size > 1
-		? [...pvSystems.value.values()].sort((a, b) => {
-				return a.power - b.power
-			})
-		: [registry.getItem('pv')],
+		? [...pvSystems.value.values()]
+				.filter((a) => a.power < 0)
+				.sort((a, b) => {
+					return a.power - b.power
+				})
+		: registry.getItem('pv').power > 0
+			? [registry.getItem('pv')]
+			: [],
 )
 const batteriesToShow = computed(() => {
 	return batteries.value.size > 1

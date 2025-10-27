@@ -9,7 +9,7 @@
 
 <script setup lang="ts">
 import { PowerItemType, type PowerItem } from '@/assets/js/types'
-import { registry } from '@/assets/js/model'
+import { pvSystems, registry } from '@/assets/js/model'
 import { batteries } from '../batteryList/model'
 import { shDevices } from '../smartHome/model'
 import { counters } from '../counterList/model'
@@ -58,6 +58,7 @@ const plotdata = computed(() =>
 		devicesToShow.value,
 		countersToShow.value,
 		batteriesToShow.value,
+		invertersToShow.value,
 		registry.getItem('house'),
 		emptyPowerItem.value,
 	),
@@ -129,6 +130,17 @@ const countersToShow = computed(() =>
 					return b.power - a.power
 				})
 		: [],
+)
+const invertersToShow = computed(() =>
+	pvSystems.value.size > 1
+		? [...pvSystems.value.values()]
+				.filter((a) => a.power > 0)
+				.sort((a, b) => {
+					return a.power - b.power
+				})
+		: registry.getItem('pv').power < 0
+			? [registry.getItem('pv')]
+			: [],
 )
 </script>
 
