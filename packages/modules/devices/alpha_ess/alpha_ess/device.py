@@ -61,7 +61,12 @@ def create_device(device_config: AlphaEss):
                 device_config.configuration.ip_address, device_config.configuration.port)
 
     def error_handler():
-        run_command((f"{Path(__file__).resolve().parents[4]}/modules/common/restart_protoss_admin 192.168.193.125"))
+        if device_config.configuration.source == 0:
+            run_command([f"{Path(__file__).resolve().parents[4]}/modules/common/restart_protoss_admin",
+                        "192.168.193.125"])
+        else:
+            run_command([f"{Path(__file__).resolve().parents[4]}/modules/common/restart_protoss_admin",
+                         device_config.configuration.ip_address])
 
     return ConfigurableDevice(
         device_config=device_config,

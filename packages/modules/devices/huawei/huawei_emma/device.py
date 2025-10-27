@@ -54,7 +54,8 @@ def create_device(device_config: Huawei_Emma):
                                   device_config.configuration.port)
 
     def error_handler():
-        run_command(f"{Path(__file__).resolve().parents[4]}/modules/common/restart_protoss_admin")
+        run_command([f"{Path(__file__).resolve().parents[4]}/modules/common/restart_protoss_admin",
+                    device_config.configuration.ip_address])
 
     return ConfigurableDevice(
         device_config=device_config,
