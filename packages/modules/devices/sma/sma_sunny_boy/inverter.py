@@ -69,10 +69,8 @@ class SmaSunnyBoyInverter(AbstractInverter):
             # Power
             dc_power = self.tcp_client.read_holding_registers(40101, ModbusDataType.UINT_32, unit=unit) * 100
             # Phasenstöme
-            current_L1 = self.tcp_client.read_holding_registers(30977, ModbusDataType.INT_32, unit=unit) * -1
-            current_L2 = self.tcp_client.read_holding_registers(30979, ModbusDataType.INT_32, unit=unit) * -1
-            current_L3 = self.tcp_client.read_holding_registers(30981, ModbusDataType.INT_32, unit=unit) * -1
-            currents = [current_L1 / 1000, current_L2 / 1000, current_L3 / 1000]
+            currents = [self.tcp_client.read_holding_registers(r, ModbusDataType.INT_32, unit=unit) / -1000
+                                for r in (30977, 30979, 30981)]
         elif self.component_config.configuration.version == SmaInverterVersion.datamanager:
             # AC Wirkleistung über alle Phasen (W) [Pac]
             power_total = self.tcp_client.read_holding_registers(30775, ModbusDataType.INT_32, unit=unit)
