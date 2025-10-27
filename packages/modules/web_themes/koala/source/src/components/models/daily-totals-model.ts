@@ -14,4 +14,10 @@ export interface DailyTotalsItem {
     energy?: string;
   };
   backgroundColor: string;
+  // optional placeholders for table layout columns
+  gap?: string;
+  rightLabel?: string;
+  rightValue?: string;
+  arrow?: string;
 }
+

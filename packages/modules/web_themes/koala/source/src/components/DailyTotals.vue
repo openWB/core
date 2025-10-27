@@ -1,192 +1,216 @@
 <template>
-  <div class="q-pa-md flex justify-center items-center container">
-    <div class="full-width banner-container">
-      <div class="flex justify-between text-subtitle1 text-weight-bold">
-        <div v-if="!$q.platform.is.mobile">Aktuelle Leistung</div>
+  <div class="q-pa-md flex column items-center justify-center container">
+    <div class="centered-panel">
+      <div class="flex justify-between text-subtitle1 text-weight-bold full-width">
+        <div v-if="currentPowerVisible">Aktuelle Leistung</div>
         <div>Tageswerte</div>
       </div>
-      <q-banner
-        v-for="item in dailyTotalsItems"
-        :key="item.id"
-        class="full-width banner"
-        rounded
+      <q-table
+        flat
+        :rows="rows"
+        :columns="columns"
+        row-key="id"
+        hide-header
+        hide-bottom
         dense
-        :style="{ backgroundColor: item.backgroundColor }"
+        separator="none"
+        class="banner-table theme-text"
       >
-        <div class="row no-wrap items-center justify-between">
-          <!-- Banner left side: icon + title + arrow/dash + power value-->
-          <div
-            class="row no-wrap items-center"
-            :class="screenWidthMd ? 'text-caption' : 'text-body2'"
+        <!-- Color each row like a banner -->
+        <template #body="props">
+          <q-tr
+            :props="props"
+            :style="{ '--row-bg': props.row.backgroundColor }"
           >
-            <img
-              :src="item.icon"
-              :alt="item.title"
-              class="icon q-mr-sm"
-              :style="{ width: iconSize + 'px', height: iconSize + 'px' }"
-            />
-            <div
-              v-if="!screenWidthXs"
-              :class="
-                screenWidthMd
-                  ? 'spacer-component-label'
-                  : 'spacer-component-label-soc'
-              "
+            <q-td key="icon" :props="props">
+              <img
+                :src="props.row.icon"
+                :alt="props.row.title"
+                class="icon"
+                :style="{ width: iconSize + 'px', height: iconSize + 'px' }"
+              />
+            </q-td>
+
+            <q-td
+              key="title"
+              :props="props"
+              class="text-body2 text-weight-bold"
             >
-              <span class="text-weight-bold">{{ item.title }}</span>
-              <span v-if="item.id === 'battery' && !screenWidthMd"
-                >&nbsp;-&nbsp;{{ item.soc }}%</span
+              {{ props.row.title }}
+            </q-td>
+
+            <q-td
+              v-if="socValueVisible"
+              key="soc"
+              :props="props"
+              class="text-right"
+            >
+              <span v-if="props.row.id === 'battery'"
+                >{{ props.row.soc }}%</span
               >
-            </div>
-            <div v-if="!screenWidthSm" class="row items-center">
+            </q-td>
+
+            <q-td v-if="currentPowerVisible" key="arrow" :props="props">
               <q-icon
                 :name="
-                  item.id === 'house'
+                  props.row.id === 'house'
                     ? 'horizontal_rule'
-                    : arrowDirection(item.id).noCurrent
+                    : arrowDirection(props.row.id).noCurrent
                       ? 'horizontal_rule'
                       : 'double_arrow'
                 "
-                :class="{ 'rotate-180': arrowDirection(item.id).rotate180 }"
-                class="q-mx-sm"
+                :class="{
+                  'rotate-180': arrowDirection(props.row.id).rotate180,
+                }"
               />
-              <div class="spacer-power-value">
-                <span>
-                  {{ String(item.power).replace('-', '') }}
-                </span>
-              </div>
-            </div>
-          </div>
-          <!-- Banner right side: energy description  + energy values -->
-          <div
-            class="row no-wrap"
-            :class="screenWidthMd ? 'text-caption' : 'text-body2'"
-          >
-            <!-- Battery -->
-            <div v-if="item.id === 'battery'" class="row">
-              <div class="column text-right">
-                <span class="text-weight-bold">Geladen:</span>
-                <span class="text-weight-bold">Entladen:</span>
-              </div>
-              <div class="column text-right q-ml-sm spacer-energy-value">
-                <span>{{ item.today.charged }}</span>
-                <span>{{ item.today.discharged }}</span>
-              </div>
-            </div>
-            <!-- Grid -->
-            <div v-else-if="item.id === 'grid'" class="row">
-              <div class="column text-right">
-                <span class="text-weight-bold">Bezug:</span>
-                <span class="text-weight-bold">Einspeisung:</span>
-              </div>
-              <div class="column text-right q-ml-sm spacer-energy-value">
-                <span>{{ item.today.imported }}</span>
-                <span>{{ item.today.exported }}</span>
-              </div>
-            </div>
-            <!-- PV -->
-            <div v-else-if="item.id === 'pv'" class="row text-right">
-              <span class="q-mr-sm text-weight-bold">Ertrag:</span>
-              <span class="spacer-energy-value">{{ item.today.yield }}</span>
-            </div>
-            <!-- House -->
-            <div v-else-if="item.id === 'house'" class="row text-right">
-              <span class="q-mr-sm text-weight-bold">Energie:</span>
-              <span class="spacer-energy-value">{{ item.today.energy }}</span>
-            </div>
-            <!-- Chargepoints -->
-            <div v-else-if="item.id === 'chargepoint'" class="row text-right">
-              <span class="q-mr-sm text-weight-bold">Geladen:</span>
-              <span class="spacer-energy-value">{{ item.today.charged }}</span>
-            </div>
-          </div>
-        </div>
-      </q-banner>
+            </q-td>
+
+            <q-td
+              v-if="currentPowerVisible"
+              key="power"
+              :props="props"
+              class="text-right text-body2"
+            >
+              {{ String(props.row.power).replace('-', '') }}
+            </q-td>
+
+            <!-- Gap column stretches -->
+            <q-td key="gap" :props="props"></q-td>
+
+            <q-td
+              key="rightLabel"
+              :props="props"
+              class="text-right text-weight-bold"
+            >
+              <template v-if="props.row.id === 'battery'">
+                <div>Geladen:</div>
+                <div>Entladen:</div>
+              </template>
+              <template v-else-if="props.row.id === 'grid'">
+                <div>Bezug:</div>
+                <div>Einspeisung:</div>
+              </template>
+              <template v-else-if="props.row.id === 'pv'">
+                <div>Ertrag:</div>
+              </template>
+              <template v-else-if="props.row.id === 'house'">
+                <div>Energie:</div>
+              </template>
+              <template v-else-if="props.row.id === 'chargepoint'">
+                <div>Geladen:</div>
+              </template>
+            </q-td>
+
+            <q-td key="rightValue" :props="props" class="text-right">
+              <template v-if="props.row.id === 'battery'">
+                <div>{{ props.row.today.charged }}</div>
+                <div>{{ props.row.today.discharged }}</div>
+              </template>
+              <template v-else-if="props.row.id === 'grid'">
+                <div>{{ props.row.today.imported }}</div>
+                <div>{{ props.row.today.exported }}</div>
+              </template>
+              <template v-else-if="props.row.id === 'pv'">
+                <div>{{ props.row.today.yield }}</div>
+              </template>
+              <template v-else-if="props.row.id === 'house'">
+                <div>{{ props.row.today.energy }}</div>
+              </template>
+              <template v-else-if="props.row.id === 'chargepoint'">
+                <div>{{ props.row.today.charged }}</div>
+              </template>
+            </q-td>
+          </q-tr>
+        </template>
+      </q-table>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useMqttStore } from 'src/stores/mqtt-store';
-import type { DailyTotalsItem } from 'src/components/models/daily-totals-model';
 import { useQuasar } from 'quasar';
+import { useMqttStore } from 'src/stores/mqtt-store';
+import type { QTableColumn } from 'quasar';
+import type { DailyTotalsItem } from 'src/components/models/daily-totals-model';
 
 const $q = useQuasar();
-
-const screenWidthXs = computed(() => $q.screen.width <= 380);
-const screenWidthSm = computed(() => $q.screen.width <= 500);
-const screenWidthMd = computed(() => $q.screen.width <= 700);
-
-const iconSize = computed(() => {
-  if (screenWidthSm.value) return 24;
-  return 28;
-});
-
 const mqttStore = useMqttStore();
 
-// Battery
-const batteryPower = computed(() => ({
-  value: mqttStore.batteryTotalPower('value') as number,
-  textValue: mqttStore.batteryTotalPower('textValue') as string,
-}));
-const batterySoC = computed(() => mqttStore.batterySocTotal);
-const batteryDailyExported = computed(
-  () => mqttStore.batteryDailyExportedTotal('textValue') as string,
-);
-const batteryDailyImported = computed(
-  () => mqttStore.batteryDailyImportedTotal('textValue') as string,
-);
+const iconSize = computed(() => ($q.screen.width <= 500 ? 24 : 28));
 
-// PV
-const pvPower = computed(() => ({
-  value: mqttStore.getPvPower('value') as number,
-  textValue: mqttStore.getPvPower('textValue') as string,
-}));
-const pvEnergyToday = computed(
-  () => mqttStore.pvDailyExported('textValue') as string,
-);
+const columns: QTableColumn<DailyTotalsItem>[] = [
+  {
+    name: 'icon',
+    label: '',
+    field: 'icon',
+    align: 'left',
+    style: 'width:32px;',
+  },
+  {
+    name: 'title',
+    label: '',
+    field: 'title',
+    align: 'left',
+    style: 'width: 11ch;',
+  },
+  {
+    name: 'soc',
+    label: '',
+    field: 'soc',
+    align: 'right',
+    style: 'width: 6ch;',
+  },
+  {
+    name: 'arrow',
+    label: '',
+    field: 'arrow',
+    align: 'center',
+    style: 'width: 24px;',
+  },
+  {
+    name: 'power',
+    label: '',
+    field: 'power',
+    align: 'right',
+    style: 'width: 8ch;',
+  },
+  {
+    name: 'gap',
+    label: '',
+    field: 'gap',
+    align: 'left',
+    style: 'width: auto;',
+  },
+  {
+    name: 'rightLabel',
+    label: '',
+    field: 'rightLabel',
+    align: 'right',
+    style: 'width: 12ch',
+  },
+  {
+    name: 'rightValue',
+    label: '',
+    field: 'rightValue',
+    align: 'right',
+    style: 'width: 10ch;',
+  },
+];
 
-// Grid
-const gridPower = computed(() => ({
-  value: mqttStore.getGridPower('value') as number,
-  textValue: mqttStore.getGridPower('textValue') as string,
-}));
-const gridEnergyToday = computed(
-  () => mqttStore.gridDailyImported('textValue') as string,
-);
-const gridEnergyExportedToday = computed(
-  () => mqttStore.gridDailyExported('textValue') as string,
-);
+const currentPowerVisible = computed(() => $q.screen.width >= 500);
+const socValueVisible = computed(() => $q.screen.width >= 700);
 
-// Home
-const homePower = computed(() => ({
-  value: mqttStore.getHomePower('value') as number,
-  textValue: mqttStore.getHomePower('textValue') as string,
-}));
-const homeDailyYield = computed(
-  () => mqttStore.homeDailyYield('textValue') as string,
-);
-
-// ChargePoints
-const chargePointPower = computed(() => ({
-  value: mqttStore.chargePointSumPower('value') as number,
-  textValue: mqttStore.chargePointSumPower('textValue') as string,
-}));
-const chargePointDailyImported = computed(
-  () => mqttStore.chargePointDailyImported('textValue') as string,
-);
-
-const dailyTotalsItems = computed((): DailyTotalsItem[] => [
+const rows = computed((): DailyTotalsItem[] => [
   {
     id: 'grid',
     title: 'Netz',
     icon: 'icons/owbGrid.svg',
-    power: gridPower.value.textValue,
-    powerValue: gridPower.value.value,
+    power: mqttStore.getGridPower('textValue') as string,
+    powerValue: mqttStore.getGridPower('value') as number,
     today: {
-      imported: gridEnergyToday.value,
-      exported: gridEnergyExportedToday.value,
+      imported: mqttStore.gridDailyImported('textValue') as string,
+      exported: mqttStore.gridDailyExported('textValue') as string,
     },
     backgroundColor: 'rgb(213,187,192)',
   },
@@ -194,12 +218,12 @@ const dailyTotalsItems = computed((): DailyTotalsItem[] => [
     id: 'battery',
     title: 'Speicher',
     icon: 'icons/owbBattery.svg',
-    soc: batterySoC.value,
-    power: batteryPower.value.textValue,
-    powerValue: batteryPower.value.value,
+    soc: mqttStore.batterySocTotal as number,
+    power: mqttStore.batteryTotalPower('textValue') as string,
+    powerValue: mqttStore.batteryTotalPower('value') as number,
     today: {
-      charged: batteryDailyImported.value,
-      discharged: batteryDailyExported.value,
+      charged: mqttStore.batteryDailyImportedTotal('textValue') as string,
+      discharged: mqttStore.batteryDailyExportedTotal('textValue') as string,
     },
     backgroundColor: 'rgb(199,163,136)',
   },
@@ -207,33 +231,35 @@ const dailyTotalsItems = computed((): DailyTotalsItem[] => [
     id: 'pv',
     title: 'PV',
     icon: 'icons/owbPV.svg',
-    power: pvPower.value.textValue,
-    powerValue: pvPower.value.value,
-    today: { yield: pvEnergyToday.value },
+    power: mqttStore.getPvPower('textValue') as string,
+    powerValue: mqttStore.getPvPower('value') as number,
+    today: { yield: mqttStore.pvDailyExported('textValue') as string },
     backgroundColor: 'rgb(179,204,188)',
   },
   {
     id: 'house',
     title: 'Haus',
     icon: 'icons/owbHouse.svg',
-    power: homePower.value.textValue,
-    powerValue: homePower.value.value,
-    today: { energy: homeDailyYield.value },
+    power: mqttStore.getHomePower('textValue') as string,
+    powerValue: mqttStore.getHomePower('value') as number,
+    today: { energy: mqttStore.homeDailyYield('textValue') as string },
     backgroundColor: 'rgb(186,186,191)',
   },
   {
     id: 'chargepoint',
     title: 'Ladepunkte',
     icon: 'icons/owbChargePoint.svg',
-    power: chargePointPower.value.textValue,
-    powerValue: chargePointPower.value.value,
-    today: { charged: chargePointDailyImported.value },
+    power: mqttStore.chargePointSumPower('textValue') as string,
+    powerValue: mqttStore.chargePointSumPower('value') as number,
+    today: {
+      charged: mqttStore.chargePointDailyImported('textValue') as string,
+    },
     backgroundColor: 'rgb(177,192,214)',
   },
 ]);
 
 const getArrowDirection = computed(() =>
-  dailyTotalsItems.value.map((item) => {
+  rows.value.map((item) => {
     let rotate = false;
     let noCurrent = false;
     if (item.powerValue === 0) noCurrent = true;
@@ -247,8 +273,8 @@ const getArrowDirection = computed(() =>
 );
 
 const arrowDirection = (itemId: string) =>
-  getArrowDirection.value.find((c) => c.id === itemId) ??
-  ({ rotate180: false, noCurrent: false } as const);
+  getArrowDirection.value.find((component) => component.id === itemId) ??
+  ({ rotate180: false, noCurrent: false });
 </script>
 
 <style scoped>
@@ -257,21 +283,35 @@ const arrowDirection = (itemId: string) =>
   overflow-y: auto;
 }
 
-.banner-container {
+.centered-panel {
   max-width: 600px;
-  height: 100%;
+  width: 100%;
 }
 
-.banner {
+.banner-table :deep(.q-table__middle table) {
+  border-collapse: separate;
+  border-spacing: 0 3px; /* <-- vertical gap between “cards” */
+}
+
+/* draw a rounded, colored card behind each row */
+.banner-table :deep(tbody tr) {
+  position: relative;
+}
+.banner-table :deep(tbody tr)::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--row-bg);
   border-radius: 8px;
-  padding: 3px 8px;
-  margin-bottom: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.20);
+}
+
+.banner-table :deep(.q-table__container),
+.banner-table :deep(.q-table__middle) {
+  background: var(--q-background-2) !important;
 }
 
 .icon {
-  width: 28px;
-  height: 28px;
   filter: brightness(0.4);
 }
 .body--dark .icon {
@@ -280,22 +320,5 @@ const arrowDirection = (itemId: string) =>
 
 .rotate-180 {
   transform: rotate(180deg);
-}
-
-.spacer-energy-value {
-  min-width: 10ch;
-}
-
-.spacer-component-label {
-  min-width: 11ch;
-}
-
-.spacer-component-label-soc {
-  min-width: 14ch;
-}
-
-.spacer-power-value {
-  min-width: 8ch;
-  text-align: right;
 }
 </style>
