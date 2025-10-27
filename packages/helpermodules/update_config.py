@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 97
+    DATASTORE_VERSION = 98
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -2572,3 +2572,14 @@ class UpdateConfig:
                 MessageType.INFO,
             )
         self.__update_topic("openWB/system/datastore_version", 97)
+
+    def upgrade_datastore_97(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/system/device/[0-9]+/config$", topic) is not None:
+                payload = decode_payload(payload)
+                # add phase
+                if payload.get("type") == "shelly" and "phase" not in payload["configuration"]:
+                    payload["configuration"].update({"phase": 1})
+                Pub().pub(topic, payload)
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 98)
