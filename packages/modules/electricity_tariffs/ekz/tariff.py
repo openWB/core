@@ -10,13 +10,10 @@ from modules.electricity_tariffs.ekz.config import EkzTariffConfiguration
 from modules.electricity_tariffs.ekz.config import EkzTariff
 
 
-# Combine power and grid prices, convert to kWh
-def addPrices(power: dict, grid: dict) -> tuple[str, float]:
-    timestamp = str(int(datetime.strptime(power['start_timestamp'], "%Y-%m-%dT%H:%M:%S%z")
-                    .astimezone(tz.tzutc()).timestamp()))
-    power_price = power['electricity'][1]['value']
-    grid_price = grid['grid'][1]['value']
-    return (timestamp, (power_price+grid_price)/1000)
+# Extract timestamp from power price entry
+def timestamp(power):
+    return str(int(datetime.strptime(power['start_timestamp'], "%Y-%m-%dT%H:%M:%S%z")
+                   .astimezone(tz.tzutc()).timestamp()))
 
 
 # Read prices from EKZ API
@@ -25,23 +22,24 @@ def readApi() -> list[tuple[str, float]]:
     tariff_power = "electricity_dynamic"
     tariff_grid = "grid_400D_inclFees"
     utcnow = datetime.now(timezone.utc)
-    startDate = quote(utcnow.strftime("%Y-%m-%dT%H:00:00Z"))
-    endDate = quote((utcnow + timedelta(days=2)).strftime("%Y-%m-%dT%H:00:00Z"))
+    startDate = utcnow.strftime("%Y-%m-%dT%H:00:00Z")
+    endDate = (utcnow + timedelta(days=2)).strftime("%Y-%m-%dT%H:00:00Z")
     session = req.get_http_session()
     power_raw = session.get(
         url=endpoint +
-        f"?tariff_name={tariff_power}&start_timestamp={startDate}&end_timestamp={endDate}",
+        f"?tariff_name={tariff_power}&start_timestamp={quote(startDate)}&end_timestamp={quote(endDate)}",
         ).json()["prices"]
     grid_raw = session.get(
         url=endpoint +
-        f"?tariff_name={tariff_grid}&start_timestamp={startDate}&end_timestamp={endDate}",
+        f"?tariff_name={tariff_grid}&start_timestamp={quote(startDate)}&end_timestamp={quote(endDate)}",
         ).json()["prices"]
-    return list(map(addPrices, power_raw, grid_raw))
+    return [(timestamp(power), (power['electricity'][1]['value']+grid['grid'][1]['value'])/1000)
+            for power, grid in zip(power_raw, grid_raw)]
 
 
+# Fetch electricity prices from EKZ API
+# API Reference: https://api.tariffs.ekz.ch/swagger
 def fetch_prices(config: EkzTariffConfiguration) -> Dict[str, float]:
-    # Fetch electricity prices from EKZ API
-    # API Reference: https://api.tariffs.ekz.ch/swagger
     pricelist = readApi()
     prices: Dict[str, float] = dict(pricelist)
     return prices

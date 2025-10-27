@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
 from dateutil import tz
 from urllib.parse import quote
 from typing import Dict
@@ -10,30 +10,29 @@ from modules.electricity_tariffs.groupe_e.config import GroupeETariffConfigurati
 from modules.electricity_tariffs.groupe_e.config import GroupeETariff
 
 
-# Combine power and grid prices, convert to kWh
-def transformPrices(power: dict) -> tuple[str, float]:
-    timestamp = str(int(datetime.strptime(power['start_timestamp'], "%Y-%m-%dT%H:%M:%S%z")
-                    .astimezone(tz.tzutc()).timestamp()))
-    power_price = power['vario_plus']
-    return (timestamp, power_price/100000)
+# Extract timestamp from power price entry
+def timestamp(power):
+    return str(int(datetime.strptime(power['start_timestamp'], "%Y-%m-%dT%H:%M:%S%z")
+                   .astimezone(tz.tzutc()).timestamp()))
 
 
 # Read prices from Groupe E API
 def readApi() -> list[tuple[str, float]]:
     endpoint = "https://api.tariffs.groupe-e.ch/v1/tariffs"
-    utcnow = datetime.now(timezone.utc)
-    startDate = quote(utcnow.strftime("%Y-%m-%dT%H:00:00+02:00"))
-    endDate = quote((utcnow + timedelta(days=2)).strftime("%Y-%m-%dT%H:00:00+02:00"))
+    tariffName = "vario_plus"
+    startDate = datetime.now().strftime("%Y-%m-%dT%H:00:00+01:00")
+    endDate = (datetime.now() + timedelta(days=2)).strftime("%Y-%m-%dT%H:00:00+01:00")
     session = req.get_http_session()
-    power_raw = session.get(
+    prices_raw = session.get(
         url=endpoint +
-        f"?start_timestamp={startDate}&end_timestamp={endDate}",
+        f"?start_timestamp={ quote(startDate) }&end_timestamp={ quote(endDate) }",
         ).json()
-    return list(map(transformPrices, power_raw))
+    return [(timestamp(power), (power[tariffName]/100000))
+            for power in prices_raw]
 
 
+# Fetch prices and return as a dictionary
 def fetch_prices(config: GroupeETariffConfiguration) -> Dict[str, float]:
-    # Fetch electricity prices from EKZ API
     pricelist = readApi()
     prices: Dict[str, float] = dict(pricelist)
     return prices
