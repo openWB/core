@@ -1,0 +1,15 @@
+# openwb-version:1
+[Unit]
+Description="openWB mqtt simpleAPI"
+After=mosquitto.service
+
+[Service]
+User=openwb
+WorkingDirectory=/var/www/html/openWB
+ExecStart=/var/www/html/openWB/packages/helpermodules/simpleAPI_mqtt.py --config /var/www/html/openWB/data/config/simpleAPI_mqtt_config.json
+Restart=always
+# extend timeout to 15min for long running atreboot
+TimeoutStartSec=900
+
+[Install]
+WantedBy=multi-user.target
