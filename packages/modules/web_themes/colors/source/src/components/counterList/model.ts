@@ -1,4 +1,5 @@
 import { registry } from '@/assets/js/model'
+import { savePrefs } from '@/assets/js/themeConfig'
 import {
 	PowerItemType,
 	type EnergyData,
@@ -28,9 +29,16 @@ export class Counter implements PowerItem {
 	type = PowerItemType.counter
 	color = 'var(--color-ctr7)'
 	icon = 'Zähler'
-	showInGraph = true
+	_showInGraph = false
 	constructor(index: number) {
 		this.id = index
+	}
+	get showInGraph() {
+		return this._showInGraph
+	}
+	set showInGraph(value: boolean) {
+		this._showInGraph = value
+		savePrefs()
 	}
 }
 
@@ -45,9 +53,9 @@ export function addCounter(index: number, counterType: string, grid = false) {
 				counters.get(index)!.color = grid
 					? 'var(--color-evu)'
 					: 'var(--color-ctr' + (counters.size - 1) + ')'
-				if (grid) {
+				/* if (grid) {
 					counters.get(index)!.showInGraph = false
-				}
+				} */
 				break
 			case 'inverter':
 				counters.get(index)!.color = 'var(--color-pv)'

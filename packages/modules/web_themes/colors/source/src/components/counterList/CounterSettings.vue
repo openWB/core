@@ -15,9 +15,11 @@
 		</div>
 	</div>
 </template>
+
 <script setup lang="ts">
 import { counters } from '../counterList/model'
 </script>
+
 <style scoped>
 .settingstitle {
 	font-weight: bold;

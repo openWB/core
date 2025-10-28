@@ -120,9 +120,11 @@ const plotdata = computed(() => {
 			registry.getItem('batOut'),
 			registry.getItem('charging'),
 		]
-		Object.values(chargePoints).forEach((cp) => {
-			result.push(cp)
-		})
+		if (Object.values(chargePoints).length > 1) {
+			Object.values(chargePoints).forEach((cp) => {
+				result.push(cp)
+			})
+		}
 	}
 	result.push(registry.getItem('devices'))
 	shDevices.forEach((dev) => {
