@@ -1,7 +1,9 @@
 <template>
   <div class="q-pa-md flex column items-center justify-center container">
     <div class="centered-panel">
-      <div class="flex justify-between text-subtitle1 text-weight-bold full-width">
+      <div
+        class="flex justify-between text-subtitle1 text-weight-bold full-width"
+      >
         <div v-if="currentPowerVisible">Aktuelle Leistung</div>
         <div>Tageswerte</div>
       </div>
@@ -82,7 +84,9 @@
               :props="props"
               class="text-right text-weight-bold"
             >
-              <template v-if="props.row.id === 'battery'">
+              <template
+                v-if="['battery', 'chargepoint'].includes(props.row.id)"
+              >
                 <div>Geladen:</div>
                 <div>Entladen:</div>
               </template>
@@ -96,29 +100,27 @@
               <template v-else-if="props.row.id === 'house'">
                 <div>Energie:</div>
               </template>
-              <template v-else-if="props.row.id === 'chargepoint'">
-                <div>Geladen:</div>
-              </template>
             </q-td>
 
-            <q-td key="rightValue" :props="props" class="text-right">
-              <template v-if="props.row.id === 'battery'">
-                <div>{{ props.row.today.charged }}</div>
-                <div>{{ props.row.today.discharged }}</div>
-              </template>
-              <template v-else-if="props.row.id === 'grid'">
-                <div>{{ props.row.today.imported }}</div>
-                <div>{{ props.row.today.exported }}</div>
-              </template>
-              <template v-else-if="props.row.id === 'pv'">
-                <div>{{ props.row.today.yield }}</div>
-              </template>
-              <template v-else-if="props.row.id === 'house'">
-                <div>{{ props.row.today.energy }}</div>
-              </template>
-              <template v-else-if="props.row.id === 'chargepoint'">
-                <div>{{ props.row.today.charged }}</div>
-              </template>
+            <q-td key="rightValue" :props="props">
+              <div
+                v-if="
+                  ['battery', 'grid', 'house', 'chargepoint'].includes(
+                    props.row.id,
+                  )
+                "
+              >
+                {{ props.row.today.imported }}
+              </div>
+              <div
+                v-if="
+                  ['battery', 'grid', 'pv', 'chargepoint'].includes(
+                    props.row.id,
+                  )
+                "
+              >
+                {{ props.row.today.exported }}
+              </div>
             </q-td>
           </q-tr>
         </template>
@@ -201,8 +203,18 @@ const columns: QTableColumn<DailyTotalsItem>[] = [
 const currentPowerVisible = computed(() => $q.screen.width >= 500);
 const socValueVisible = computed(() => $q.screen.width >= 700);
 
-const rows = computed((): DailyTotalsItem[] => [
-  {
+const batteryConfigured = computed(() => mqttStore.batteryConfigured);
+
+const pvConfigured = computed(() => mqttStore.getPvConfigured);
+
+const chargePointConfigured = computed(() => {
+  return mqttStore.chargePointIds.length > 0;
+});
+
+const rows = computed((): DailyTotalsItem[] => {
+  const components: DailyTotalsItem[] = [];
+
+  components.push({
     id: 'grid',
     title: 'Netz',
     icon: 'icons/owbGrid.svg',
@@ -213,50 +225,63 @@ const rows = computed((): DailyTotalsItem[] => [
       exported: mqttStore.gridDailyExported('textValue') as string,
     },
     backgroundColor: 'rgb(213,187,192)',
-  },
-  {
-    id: 'battery',
-    title: 'Speicher',
-    icon: 'icons/owbBattery.svg',
-    soc: mqttStore.batterySocTotal as number,
-    power: mqttStore.batteryTotalPower('textValue') as string,
-    powerValue: mqttStore.batteryTotalPower('value') as number,
-    today: {
-      charged: mqttStore.batteryDailyImportedTotal('textValue') as string,
-      discharged: mqttStore.batteryDailyExportedTotal('textValue') as string,
-    },
-    backgroundColor: 'rgb(199,163,136)',
-  },
-  {
-    id: 'pv',
-    title: 'PV',
-    icon: 'icons/owbPV.svg',
-    power: mqttStore.getPvPower('textValue') as string,
-    powerValue: mqttStore.getPvPower('value') as number,
-    today: { yield: mqttStore.pvDailyExported('textValue') as string },
-    backgroundColor: 'rgb(179,204,188)',
-  },
-  {
+  });
+
+  if (batteryConfigured.value) {
+    components.push({
+      id: 'battery',
+      title: 'Speicher',
+      icon: 'icons/owbBattery.svg',
+      soc: mqttStore.batterySocTotal as number,
+      power: mqttStore.batteryTotalPower('textValue') as string,
+      powerValue: mqttStore.batteryTotalPower('value') as number,
+      today: {
+        imported: mqttStore.batteryDailyImportedTotal('textValue') as string,
+        exported: mqttStore.batteryDailyExportedTotal('textValue') as string,
+      },
+      backgroundColor: 'rgb(199,163,136)',
+    });
+  }
+
+  if (pvConfigured.value) {
+    components.push({
+      id: 'pv',
+      title: 'PV',
+      icon: 'icons/owbPV.svg',
+      power: mqttStore.getPvPower('textValue') as string,
+      powerValue: mqttStore.getPvPower('value') as number,
+      today: { exported: mqttStore.pvDailyExported('textValue') as string },
+      backgroundColor: 'rgb(179,204,188)',
+    });
+  }
+
+  components.push({
     id: 'house',
     title: 'Haus',
     icon: 'icons/owbHouse.svg',
     power: mqttStore.getHomePower('textValue') as string,
     powerValue: mqttStore.getHomePower('value') as number,
-    today: { energy: mqttStore.homeDailyYield('textValue') as string },
+    today: { imported: mqttStore.homeDailyYield('textValue') as string },
     backgroundColor: 'rgb(186,186,191)',
-  },
-  {
-    id: 'chargepoint',
-    title: 'Ladepunkte',
-    icon: 'icons/owbChargePoint.svg',
-    power: mqttStore.chargePointSumPower('textValue') as string,
-    powerValue: mqttStore.chargePointSumPower('value') as number,
-    today: {
-      charged: mqttStore.chargePointDailyImported('textValue') as string,
-    },
-    backgroundColor: 'rgb(177,192,214)',
-  },
-]);
+  });
+
+  if (chargePointConfigured.value) {
+    components.push({
+      id: 'chargepoint',
+      title: 'Ladepunkte',
+      icon: 'icons/owbChargePoint.svg',
+      power: mqttStore.chargePointSumPower('textValue') as string,
+      powerValue: mqttStore.chargePointSumPower('value') as number,
+      today: {
+        imported: mqttStore.chargePointDailyImported('textValue') as string,
+        exported: mqttStore.chargePointDailyExported('textValue') as string,
+      },
+      backgroundColor: 'rgb(177,192,214)',
+    });
+  }
+
+  return components;
+});
 
 const getArrowDirection = computed(() =>
   rows.value.map((item) => {
@@ -273,8 +298,10 @@ const getArrowDirection = computed(() =>
 );
 
 const arrowDirection = (itemId: string) =>
-  getArrowDirection.value.find((component) => component.id === itemId) ??
-  ({ rotate180: false, noCurrent: false });
+  getArrowDirection.value.find((component) => component.id === itemId) ?? {
+    rotate180: false,
+    noCurrent: false,
+  };
 </script>
 
 <style scoped>
@@ -303,7 +330,7 @@ const arrowDirection = (itemId: string) =>
   inset: 0;
   background: var(--row-bg);
   border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.20);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 .banner-table :deep(.q-table__container),

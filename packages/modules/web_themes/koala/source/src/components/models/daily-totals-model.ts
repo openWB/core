@@ -6,12 +6,8 @@ export interface DailyTotalsItem {
   power: string;
   powerValue: number;
   today: {
-    charged?: string;
-    discharged?: string;
-    yield?: string;
     imported?: string;
     exported?: string;
-    energy?: string;
   };
   backgroundColor: string;
   // optional placeholders for table layout columns

@@ -728,7 +728,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
-   * Get daily energy sum total for all charge points
+   * Get daily imported energy sum total for all charge points
    * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
    * @returns string | number | ValueObject
    */
@@ -737,6 +737,30 @@ export const useMqttStore = defineStore('mqtt', () => {
       const energy =
         (getValue.value(
           'openWB/chargepoint/get/daily_imported',
+          undefined,
+          0,
+        ) as number) || 0;
+      const valueObject = getValueObject.value(energy, 'Wh');
+      if (Object.hasOwn(valueObject, returnType)) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject;
+      }
+      console.error('returnType not found!', returnType, energy);
+    };
+  });
+
+  /**
+   * Get daily exported energy sum total for all charge points
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject
+   */
+  const chargePointDailyExported = computed(() => {
+    return (returnType: string = 'textValue') => {
+      const energy =
+        (getValue.value(
+          'openWB/chargepoint/get/daily_exported',
           undefined,
           0,
         ) as number) || 0;
@@ -2988,6 +3012,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointChargeState,
     chargePointSumPower,
     chargePointDailyImported,
+    chargePointDailyExported,
     chargePointPower,
     chargePointEnergyCharged,
     chargePointEnergyChargedPlugged,
