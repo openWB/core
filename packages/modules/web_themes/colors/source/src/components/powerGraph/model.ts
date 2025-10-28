@@ -5,6 +5,7 @@ import { sendCommand } from '@/assets/js/sendMessages'
 import { globalConfig } from '@/assets/js/themeConfig'
 import { energyMeterNeedsRedraw, registry } from '@/assets/js/model'
 import { shDevices } from '../smartHome/model'
+import { counters } from '../counterList/model'
 
 export const width = 500
 export const height = 500
@@ -379,7 +380,11 @@ export function updateEnergyValues(
 		let counterPvEnergy = 0
 		let counterBatEnergy = 0
 		Object.entries(totals.counter).forEach(([id, values]) => {
-			if (!values.grid) {
+			if (
+				!values.grid &&
+				counters.get(+id.slice(7)) &&
+				counters.get(+id.slice(7))!.showInGraph
+			) {
 				updatePvValues(values, id)
 				counterEnergy += values.energy_imported
 				counterPvEnergy += values.energy_imported_pv

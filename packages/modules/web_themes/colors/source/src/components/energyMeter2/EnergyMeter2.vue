@@ -132,7 +132,9 @@ const plotdata = computed(() => {
 			result.push(dev)
 		}
 	})
-	result.push(registry.getItem('counters'))
+
+	//result.push(registry.getItem('counters'))
+
 	counters.forEach((ctr) => {
 		if (ctr.showInGraph) {
 			result.push(ctr)
