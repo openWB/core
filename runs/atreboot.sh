@@ -222,6 +222,7 @@ chmod 666 "$LOGFILE"
 		sudo ln -s "${OPENWBBASEDIR}/data/config/openwb-simpleAPI.service" /etc/systemd/system/openwb-simpleAPI.service
 		sudo systemctl daemon-reload
 		sudo systemctl enable openwb-simpleAPI
+		sudo systemctl restart openwb-simpleAPI
 		echo "openwb-simpleAPI.service definition updated."
 	fi
 

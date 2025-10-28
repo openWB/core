@@ -7,30 +7,35 @@ Listens to openWB/* topics and republishes them under openWB/simpleAPI/*
 with JSON/tuple expansion and ID simplification.
 """
 
-import argparse
 import json
 import logging
+from logging.handlers import RotatingFileHandler
 import time
 import sys
 import ssl
 from typing import Dict, Any, Optional
 from pathlib import Path
-import paho.mqtt.client as mqtt  # type: ignore
+import paho.mqtt.client as mqtt
 import re
+
+FORMAT_STR_SHORT = '%(asctime)s - %(message)s'
+RAMDISK_PATH = str(Path(__file__).resolve().parents[1]) + '/ramdisk/'
+
+log = logging.getLogger("simpleAPI")
+log.propagate = False
+file_handler = RotatingFileHandler(RAMDISK_PATH + 'simple_api.log', maxBytes=500000, backupCount=1)  # 0.5 MB
+file_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
+log.addHandler(file_handler)
+
+CONFIG_FILE_PATH = "/var/www/html/openWB/data/config/simpleAPI_mqtt_config.json"
 
 
 class SimpleMQTTDaemon:
     """Main daemon class for SimpleMQTT API transformation."""
 
-    def __init__(self, host: str = "localhost", port: int = 1883,
-                 username: Optional[str] = None, password: Optional[str] = None,
-                 use_tls: bool = False, config_file: Optional[str] = None):
+    def __init__(self, config_file: str):
         """Initialize the daemon with MQTT connection parameters."""
-        self.host = host
-        self.port = port
-        self.username = username
-        self.password = password
-        self.use_tls = use_tls
+        self._load_config_file(config_file)
 
         # Cache for tracking value changes
         self.value_cache: Dict[str, Any] = {}
@@ -47,57 +52,45 @@ class SimpleMQTTDaemon:
         self.client.on_message = self._on_message
         self.client.on_disconnect = self._on_disconnect
 
-        # Setup logging
-        self._setup_logging()
-
-        # Load additional config from file if provided
-        if config_file:
-            self._load_config_file(config_file)
-
-    def _setup_logging(self):
-        """Configure logging for the daemon."""
-        logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s - %(levelname)s - %(message)s',
-            handlers=[logging.StreamHandler(sys.stdout)]
-        )
-        self.logger = logging.getLogger(__name__)
-
     def _load_config_file(self, config_file: str):
         """Load configuration from JSON file."""
         try:
             config_path = Path(config_file)
             if not config_path.exists():
-                self.logger.error(f"Configuration file not found: {config_file}")
+                log.error(f"Configuration file not found: {config_file}")
                 sys.exit(1)
 
             with open(config_file, 'r') as f:
                 config = json.load(f)
 
             # Override instance variables with config file values
-            self.host = config.get('host', self.host)
-            self.port = config.get('port', self.port)
-            self.username = config.get('username', self.username)
-            self.password = config.get('password', self.password)
-            self.use_tls = config.get('use_tls', self.use_tls)
+            try:
+                self.host = config['host']
+                self.port = config['port']
+                self.username = config['username']
+                self.password = config['password']
+                self.use_tls = config['use_tls']
+            except KeyError as e:
+                log.exception(f"Missing required config parameter: {e}")
+                sys.exit(1)
 
             # Set log level if specified in config
             log_level = config.get('log_level', 'INFO')
             numeric_level = getattr(logging, log_level.upper(), logging.INFO)
-            logging.getLogger().setLevel(numeric_level)
+            log.setLevel(numeric_level)
 
-            self.logger.info(f"Loaded configuration from {config_file}")
+            log.info(f"Loaded configuration from {config_file}")
         except json.JSONDecodeError as e:
-            self.logger.error(f"Invalid JSON in config file {config_file}: {e}")
+            log.error(f"Invalid JSON in config file {config_file}: {e}")
             sys.exit(1)
         except Exception as e:
-            self.logger.error(f"Failed to load config file {config_file}: {e}")
+            log.error(f"Failed to load config file {config_file}: {e}")
             sys.exit(1)
 
     def _on_connect(self, client, userdata, flags, rc):
         """Callback for successful MQTT connection."""
         if rc == 0:
-            self.logger.info(f"Connected to MQTT broker at {self.host}:{self.port}")
+            log.info(f"Connected to MQTT broker at {self.host}:{self.port}")
             # Subscribe to specific openWB component topics
             client.subscribe("openWB/bat/#", qos=0)
             client.subscribe("openWB/pv/#", qos=0)
@@ -107,18 +100,18 @@ class SimpleMQTTDaemon:
             # Subscribe to simpleAPI set topics for write operations
             client.subscribe("openWB/simpleAPI/set/#", qos=0)
 
-            self.logger.info(
+            log.info(
                 "Subscribed to openWB component topics (bat, pv, chargepoint, counter) and simpleAPI set topics")
         else:
-            self.logger.error(f"Failed to connect to MQTT broker. Return code: {rc}")
+            log.error(f"Failed to connect to MQTT broker. Return code: {rc}")
 
     def _on_disconnect(self, client, userdata, rc):
         """Callback for MQTT disconnection."""
         if rc != 0:
-            self.logger.warning(f"Unexpected MQTT disconnection (code: {rc}). Attempting to reconnect...")
+            log.warning(f"Unexpected MQTT disconnection (code: {rc}). Attempting to reconnect...")
             self._reconnect()
         else:
-            self.logger.info("Clean MQTT disconnection")
+            log.info("Clean MQTT disconnection")
 
     def _reconnect(self):
         """Attempt to reconnect to MQTT broker with delay."""
@@ -128,18 +121,18 @@ class SimpleMQTTDaemon:
         while reconnect_attempts < max_attempts:
             try:
                 reconnect_attempts += 1
-                self.logger.info(f"Reconnection attempt {reconnect_attempts}/{max_attempts} in 10 seconds...")
+                log.info(f"Reconnection attempt {reconnect_attempts}/{max_attempts} in 10 seconds...")
                 time.sleep(10)
 
                 self.client.reconnect()
-                self.logger.info("Successfully reconnected to MQTT broker")
+                log.info("Successfully reconnected to MQTT broker")
                 break
 
             except Exception as e:
-                self.logger.error(f"Reconnection attempt {reconnect_attempts} failed: {e}")
+                log.error(f"Reconnection attempt {reconnect_attempts} failed: {e}")
 
         if reconnect_attempts >= max_attempts:
-            self.logger.critical("Maximum reconnection attempts exceeded. Exiting.")
+            log.critical("Maximum reconnection attempts exceeded. Exiting.")
             sys.exit(1)
 
     def _on_message(self, client, userdata, msg):
@@ -148,7 +141,7 @@ class SimpleMQTTDaemon:
             topic = msg.topic
             payload = msg.payload.decode('utf-8')
 
-            self.logger.debug(f"Received: {topic} = {payload}")
+            log.debug(f"Received: {topic} = {payload}")
 
             # Handle write operations (simpleAPI set topics)
             if topic.startswith('openWB/simpleAPI/set/'):
@@ -167,7 +160,7 @@ class SimpleMQTTDaemon:
             self._transform_and_publish(topic, payload)
 
         except Exception as e:
-            self.logger.error(f"Error processing message {msg.topic}: {e}")
+            log.error(f"Error processing message {msg.topic}: {e}")
 
     def _transform_and_publish(self, original_topic: str, payload: str):
         """Transform original topic to simpleAPI format and publish if value changed."""
@@ -183,7 +176,7 @@ class SimpleMQTTDaemon:
                 self._publish_if_changed(topic, value)
 
         except Exception as e:
-            self.logger.error(f"Error transforming topic {original_topic}: {e}")
+            log.error(f"Error transforming topic {original_topic}: {e}")
 
     def _parse_payload(self, payload: str) -> Any:
         """Parse payload as JSON, tuple, or raw value."""
@@ -194,7 +187,7 @@ class SimpleMQTTDaemon:
             try:
                 return json.loads(payload)
             except json.JSONDecodeError as e:
-                self.logger.warning(f"Invalid JSON payload: {payload} - {e}")
+                log.warning(f"Invalid JSON payload: {payload} - {e}")
                 return payload
 
         # Try to parse as Python literal (for tuples/lists)
@@ -203,7 +196,7 @@ class SimpleMQTTDaemon:
                 import ast
                 return ast.literal_eval(payload)
             except (ValueError, SyntaxError) as e:
-                self.logger.warning(f"Invalid literal payload: {payload} - {e}")
+                log.warning(f"Invalid literal payload: {payload} - {e}")
                 return payload
 
         # Try to parse as number
@@ -310,9 +303,9 @@ class SimpleMQTTDaemon:
 
         try:
             self.client.publish(topic, str_value, qos=0, retain=True)
-            self.logger.debug(f"Published: {topic} = {str_value}")
+            log.debug(f"Published: {topic} = {str_value}")
         except Exception as e:
-            self.logger.error(f"Failed to publish {topic}: {e}")
+            log.error(f"Failed to publish {topic}: {e}")
 
     def _cache_charge_template(self, topic: str, payload: str):
         """Cache charge_template configurations for write operations."""
@@ -325,23 +318,23 @@ class SimpleMQTTDaemon:
                 chargepoint_id = match.group(1)
                 charge_template = json.loads(payload)
                 self.charge_template_cache[chargepoint_id] = charge_template
-                self.logger.debug(f"Cached charge_template for chargepoint {chargepoint_id}")
+                log.debug(f"Cached charge_template for chargepoint {chargepoint_id}")
 
         except json.JSONDecodeError as e:
-            self.logger.warning(f"Failed to parse charge_template JSON for {topic}: {e}")
+            log.warning(f"Failed to parse charge_template JSON for {topic}: {e}")
         except Exception as e:
-            self.logger.error(f"Error caching charge_template for {topic}: {e}")
+            log.error(f"Error caching charge_template for {topic}: {e}")
 
     def _handle_write_operation(self, topic: str, payload: str):
         """Handle write operations from simpleAPI set topics."""
         try:
-            self.logger.info(f"Write operation: {topic} = {payload}")
+            log.info(f"Write operation: {topic} = {payload}")
 
             # Parse the set topic to extract operation details
             topic_parts = topic.replace('openWB/simpleAPI/set/', '').split('/')
 
             if len(topic_parts) < 2:
-                self.logger.error(f"Invalid set topic format: {topic}")
+                log.error(f"Invalid set topic format: {topic}")
                 return
 
             operation = topic_parts[0]
@@ -351,10 +344,10 @@ class SimpleMQTTDaemon:
             elif operation == 'bat_mode':
                 self._handle_bat_mode_operation(payload)
             else:
-                self.logger.error(f"Unknown operation: {operation}")
+                log.error(f"Unknown operation: {operation}")
 
         except Exception as e:
-            self.logger.error(f"Error handling write operation {topic}: {e}")
+            log.error(f"Error handling write operation {topic}: {e}")
 
     def _handle_chargepoint_operation(self, topic_parts: list, payload: str):
         """Handle chargepoint-specific write operations."""
@@ -369,13 +362,13 @@ class SimpleMQTTDaemon:
                 chargepoint_id = str(self.lowest_ids['chargepoint'])
                 parameter = topic_parts[1]
             else:
-                self.logger.error("No chargepoint ID found and no lowest ID available")
+                log.error("No chargepoint ID found and no lowest ID available")
                 return
         else:
-            self.logger.error(f"Invalid chargepoint topic format: {'/'.join(topic_parts)}")
+            log.error(f"Invalid chargepoint topic format: {'/'.join(topic_parts)}")
             return
 
-        self.logger.debug(f"Chargepoint operation: ID={chargepoint_id}, parameter={parameter}, value={payload}")
+        log.debug(f"Chargepoint operation: ID={chargepoint_id}, parameter={parameter}, value={payload}")
 
         if parameter == 'chargemode':
             self._set_chargemode(chargepoint_id, payload)
@@ -390,14 +383,14 @@ class SimpleMQTTDaemon:
         elif parameter == 'chargepoint_lock':
             self._set_chargepoint_lock(chargepoint_id, payload)
         else:
-            self.logger.error(f"Unknown chargepoint parameter: {parameter}")
+            log.error(f"Unknown chargepoint parameter: {parameter}")
 
     def _get_charge_template(self, chargepoint_id: str) -> Optional[Dict[str, Any]]:
         """Get charge_template for a chargepoint, either from cache or request it."""
         if chargepoint_id in self.charge_template_cache:
             return self.charge_template_cache[chargepoint_id].copy()
 
-        self.logger.warning(f"No cached charge_template for chargepoint {chargepoint_id}")
+        log.warning(f"No cached charge_template for chargepoint {chargepoint_id}")
         return None
 
     def _set_chargemode(self, chargepoint_id: str, mode: str):
@@ -412,14 +405,14 @@ class SimpleMQTTDaemon:
         }
 
         if mode not in mode_mapping:
-            self.logger.error(f"Invalid chargemode: {mode}")
+            log.error(f"Invalid chargemode: {mode}")
             return
 
         internal_mode = mode_mapping[mode]
         charge_template = self._get_charge_template(chargepoint_id)
 
         if charge_template is None:
-            self.logger.error(f"No charge_template available for chargepoint {chargepoint_id}")
+            log.error(f"No charge_template available for chargepoint {chargepoint_id}")
             return
 
         # Modify the chargemode.selected value
@@ -428,7 +421,7 @@ class SimpleMQTTDaemon:
         # Publish the modified template
         target_topic = f"openWB/set/chargepoint/{chargepoint_id}/set/charge_template"
         self._publish_json(target_topic, charge_template)
-        self.logger.info(f"Set chargemode to {mode} ({internal_mode}) for chargepoint {chargepoint_id}")
+        log.info(f"Set chargemode to {mode} ({internal_mode}) for chargepoint {chargepoint_id}")
 
     def _set_chargecurrent(self, chargepoint_id: str, current: str):
         """Set charge current for instant charging."""
@@ -443,10 +436,10 @@ class SimpleMQTTDaemon:
 
             target_topic = f"openWB/set/chargepoint/{chargepoint_id}/set/charge_template"
             self._publish_json(target_topic, charge_template)
-            self.logger.info(f"Set charge current to {current_value}A for chargepoint {chargepoint_id}")
+            log.info(f"Set charge current to {current_value}A for chargepoint {chargepoint_id}")
 
         except ValueError:
-            self.logger.error(f"Invalid current value: {current}")
+            log.error(f"Invalid current value: {current}")
 
     def _set_minimal_pv_soc(self, chargepoint_id: str, soc: str):
         """Set minimal EV SoC for PV charging."""
@@ -461,10 +454,10 @@ class SimpleMQTTDaemon:
 
             target_topic = f"openWB/set/chargepoint/{chargepoint_id}/set/charge_template"
             self._publish_json(target_topic, charge_template)
-            self.logger.info(f"Set minimal PV SoC to {soc_value}% for chargepoint {chargepoint_id}")
+            log.info(f"Set minimal PV SoC to {soc_value}% for chargepoint {chargepoint_id}")
 
         except ValueError:
-            self.logger.error(f"Invalid SoC value: {soc}")
+            log.error(f"Invalid SoC value: {soc}")
 
     def _set_minimal_permanent_current(self, chargepoint_id: str, current: str):
         """Set minimal permanent current for PV charging."""
@@ -479,10 +472,10 @@ class SimpleMQTTDaemon:
 
             target_topic = f"openWB/set/chargepoint/{chargepoint_id}/set/charge_template"
             self._publish_json(target_topic, charge_template)
-            self.logger.info(f"Set minimal permanent current to {current_value}A for chargepoint {chargepoint_id}")
+            log.info(f"Set minimal permanent current to {current_value}A for chargepoint {chargepoint_id}")
 
         except ValueError:
-            self.logger.error(f"Invalid current value: {current}")
+            log.error(f"Invalid current value: {current}")
 
     def _set_max_price_eco(self, chargepoint_id: str, price: str):
         """Set maximum price for ECO charging."""
@@ -497,10 +490,10 @@ class SimpleMQTTDaemon:
 
             target_topic = f"openWB/set/chargepoint/{chargepoint_id}/set/charge_template"
             self._publish_json(target_topic, charge_template)
-            self.logger.info(f"Set max ECO price to {price_value} for chargepoint {chargepoint_id}")
+            log.info(f"Set max ECO price to {price_value} for chargepoint {chargepoint_id}")
 
         except ValueError:
-            self.logger.error(f"Invalid price value: {price}")
+            log.error(f"Invalid price value: {price}")
 
     def _set_chargepoint_lock(self, chargepoint_id: str, lock_state: str):
         """Set chargepoint lock state."""
@@ -509,31 +502,31 @@ class SimpleMQTTDaemon:
             target_topic = f"openWB/set/chargepoint/{chargepoint_id}/set/manual_lock"
 
             self.client.publish(target_topic, str(lock_value).lower(), qos=0, retain=True)
-            self.logger.info(f"Set chargepoint {chargepoint_id} lock to {lock_value}")
+            log.info(f"Set chargepoint {chargepoint_id} lock to {lock_value}")
 
         except Exception as e:
-            self.logger.error(f"Error setting chargepoint lock: {e}")
+            log.error(f"Error setting chargepoint lock: {e}")
 
     def _handle_bat_mode_operation(self, payload: str):
         """Handle battery mode operation."""
         valid_modes = ['min_soc_bat_mode', 'ev_mode', 'bat_mode']
 
         if payload not in valid_modes:
-            self.logger.error(f"Invalid bat_mode: {payload}. Valid values: {valid_modes}")
+            log.error(f"Invalid bat_mode: {payload}. Valid values: {valid_modes}")
             return
 
         target_topic = "openWB/set/general/chargemode_config/pv_charging/bat_mode"
         self.client.publish(target_topic, payload, qos=0, retain=True)
-        self.logger.info(f"Set bat_mode to {payload}")
+        log.info(f"Set bat_mode to {payload}")
 
     def _publish_json(self, topic: str, data: Dict[str, Any]):
         """Publish JSON data to a topic."""
         try:
             json_payload = json.dumps(data)
             self.client.publish(topic, json_payload, qos=0, retain=True)
-            self.logger.debug(f"Published JSON to {topic}")
+            log.debug(f"Published JSON to {topic}")
         except Exception as e:
-            self.logger.error(f"Failed to publish JSON to {topic}: {e}")
+            log.error(f"Failed to publish JSON to {topic}: {e}")
 
     def connect(self):
         """Establish connection to MQTT broker."""
@@ -553,7 +546,7 @@ class SimpleMQTTDaemon:
             return True
 
         except Exception as e:
-            self.logger.error(f"Failed to connect to MQTT broker: {e}")
+            log.error(f"Failed to connect to MQTT broker: {e}")
             return False
 
     def run(self):
@@ -561,43 +554,18 @@ class SimpleMQTTDaemon:
         if not self.connect():
             sys.exit(1)
 
-        self.logger.info("SimpleMQTT API Daemon started")
+        log.info("SimpleMQTT API Daemon started")
 
         try:
             self.client.loop_forever()
         except KeyboardInterrupt:
-            self.logger.info("Received interrupt signal, shutting down...")
+            log.info("Received interrupt signal, shutting down...")
             self.client.disconnect()
             sys.exit(0)
 
 
 def main():
-    """Main entry point with command line argument parsing."""
-    parser = argparse.ArgumentParser(description="SimpleMQTT API Daemon")
-    parser.add_argument("--host", default="localhost", help="MQTT broker host")
-    parser.add_argument("--port", type=int, default=1883, help="MQTT broker port")
-    parser.add_argument("--username", help="MQTT username")
-    parser.add_argument("--password", help="MQTT password")
-    parser.add_argument("--tls", action="store_true", help="Use TLS/SSL")
-    parser.add_argument("--config", help="Configuration file path")
-    parser.add_argument("--debug", action="store_true", help="Enable debug logging")
-
-    args = parser.parse_args()
-
-    # Set debug logging if requested
-    if args.debug:
-        logging.getLogger().setLevel(logging.DEBUG)
-
-    # Create and run daemon
-    daemon = SimpleMQTTDaemon(
-        host=args.host,
-        port=args.port,
-        username=args.username,
-        password=args.password,
-        use_tls=args.tls,
-        config_file=args.config
-    )
-
+    daemon = SimpleMQTTDaemon(config_file=CONFIG_FILE_PATH)
     daemon.run()
 
 

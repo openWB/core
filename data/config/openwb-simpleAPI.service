@@ -6,7 +6,7 @@ After=mosquitto.service
 [Service]
 User=openwb
 WorkingDirectory=/var/www/html/openWB
-ExecStart=/var/www/html/openWB/packages/helpermodules/simpleAPI_mqtt.py --config /var/www/html/openWB/data/config/simpleAPI_mqtt_config.json
+ExecStart=/var/www/html/openWB/simpleAPI/simpleAPI_mqtt.py
 Restart=always
 # extend timeout to 15min for long running atreboot
 TimeoutStartSec=900
