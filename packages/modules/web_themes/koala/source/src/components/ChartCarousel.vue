@@ -22,7 +22,7 @@
     </q-carousel-slide>
 
     <template v-slot:control>
-      <q-carousel-control position="bottom-right">
+      <q-carousel-control position="bottom-left">
         <q-btn
           v-if="currentSlide === 'history_chart'"
           size="sm"
@@ -30,6 +30,8 @@
           label="Legend ein/aus"
           @click="toggleLegend"
         />
+      </q-carousel-control>
+      <q-carousel-control position="bottom-right">
         <q-btn
           push
           round
