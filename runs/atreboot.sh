@@ -211,6 +211,20 @@ chmod 666 "$LOGFILE"
 		sudo reboot now &
 	fi
 
+	# check for openwb-simpleAPI service definition
+	if find /etc/systemd/system/ -maxdepth 1 -name openwb-simpleAPI.service -type l | grep -q "."; then
+		echo "openwb-simpleAPI.service definition is already a symlink"
+	else
+		if find /etc/systemd/system/ -maxdepth 1 -name openwb-simpleAPI.service -type f | grep -q "."; then
+			echo "openwb-simpleAPI.service definition is a regular file, deleting file"
+			sudo rm "/etc/systemd/system/openwb-simpleAPI.service"
+		fi
+		sudo ln -s "${OPENWBBASEDIR}/data/config/openwb-simpleAPI.service" /etc/systemd/system/openwb-simpleAPI.service
+		sudo systemctl daemon-reload
+		sudo systemctl enable openwb-simpleAPI
+		echo "openwb-simpleAPI.service definition updated."
+	fi
+
 	# check for remote support service definition
 	if [ ! -f "/etc/systemd/system/openwbRemoteSupport.service" ]; then
 		echo "openwbRemoteSupport service missing, installing service"
