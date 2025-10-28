@@ -3,8 +3,10 @@
 import logging
 from math import ceil
 from threading import Thread
-from typing import List
+from typing import List, Optional
 from datetime import datetime
+import traceback
+import uuid
 
 from control import data
 from control.ocpp import OcppMixin
@@ -24,13 +26,61 @@ AS_EURO_PER_KWH = 1000.0  # Umrechnung von €/Wh in €/kWh
 class Optional(OcppMixin):
     def __init__(self):
         try:
+            # unique instance id for tracing/logging
+            self.instance_id = str(uuid.uuid4())
             self.data = OptionalData()
-            self.et_module: ConfigurableElectricityTariff = None
+            # guarded et_module stored in a private attribute
+            self._et_module: Optional[ConfigurableElectricityTariff] = None
             self.monitoring_module: ConfigurableMonitoring = None
             self.data.dc_charging = hardware_configuration.get_hardware_configuration_setting("dc_charging")
             Pub().pub("openWB/optional/dc_charging", self.data.dc_charging)
+
+            # Log instance creation with non-None fields
+            active_fields = {
+                "data": bool(self.data),
+                "et_module": bool(self.et_module),
+                "monitoring_module": bool(self.monitoring_module),
+                "dc_charging": bool(self.data.dc_charging),
+            }
+            # log creation of Et factory for debugging, include limited stack trace
+            stack = traceback.format_list(traceback.extract_stack(limit=15)[:-1])
+            # remove internal newlines in each stack entry so each entry is a single line
+            sanitized = [s.replace("\n", "").strip() for s in stack]
+            log.info("Optional instance created: %s - Active fields: %s, Call stack:\n  %s",
+                     self.instance_id,
+                     {k: v for k, v in active_fields.items() if v},
+                     "\n  ".join(sanitized))
         except Exception:
             log.exception("Fehler im Optional-Modul")
+
+    @property
+    def et_module(self) -> Optional[ConfigurableElectricityTariff]:
+        """Getter for the electricity tariff module (may be None)."""
+        return self._et_module
+
+    @et_module.setter
+    def et_module(self, value: Optional[ConfigurableElectricityTariff]):
+        """Setter with basic type-guarding and logging.
+
+        Accepts either None or a ConfigurableElectricityTariff instance. Logs when set/cleared.
+        """
+        if self._et_module and (value is None or self._et_module.config.name == value.config.name):
+            # log creation of Et factory for debugging, include limited stack trace
+            stack = traceback.format_list(traceback.extract_stack(limit=15)[:-1])
+            # remove internal newlines in each stack entry so each entry is a single line
+            sanitized = [s.replace("\n", "").strip() for s in stack]
+            log.debug("Replacing existing et_module on Optional %s not allowed!\nCall stack:\n  %s",
+                      self.instance_id, "\n  ".join(sanitized))
+        else:
+            if value is not None and not isinstance(value, ConfigurableElectricityTariff):
+                raise TypeError("et_module must be a ConfigurableElectricityTariff instance or None")
+            self._et_module = value
+            if value is not None:
+                log.info("et_module set on Optional %s: %s", getattr(
+                    self, "instance_id", "unknown"), value.config.name)
+                self.et_get_prices()
+            else:
+                log.info("et_module cleared on Optional %s", getattr(self, "instance_id", "unknown"))
 
     def monitoring_start(self):
         if self.monitoring_module is not None:
@@ -63,7 +113,7 @@ class Optional(OcppMixin):
                 log.info("Prüfe strompreisbasiertes Laden: Nicht konfiguriert")
                 return False
         except Exception as e:
-            log.exception(f"Fehler im Optional-Modul: {e}")
+            log.exception(f"Fehler im Optional-Modul {self.instance_id}: {e}")
             return False
 
     def et_charging_allowed(self, max_price: float) -> bool:
@@ -77,24 +127,27 @@ class Optional(OcppMixin):
         try:
             if self.et_provider_available():
                 current_price = self.et_get_current_price(prices=self.data.et.get.prices)
-                log.info("Prüfe strompreisbasiertes Laden mit Preisgrenze %.5f €/kWh, aktueller Preis: %.5f €/kWh",
+                log.info("Prüfe strompreisbasiertes Laden mit Preisgrenze %.5f €/kWh, aktueller Preis: %.5f €/kWh" +
+                         " Optinal instance: %s",
                          max_price * AS_EURO_PER_KWH,
-                         current_price*AS_EURO_PER_KWH)
+                         current_price * AS_EURO_PER_KWH,
+                         self.instance_id)
                 return current_price <= max_price
             else:
                 return True
         except KeyError as e:
-            log.exception("Fehler beim strompreisbasierten Laden: %s", e)
+            log.exception("Fehler beim strompreisbasierten Laden: %s, Optinal instance %s", e, self.instance_id)
             return False
         except Exception as e:
-            log.exception("Fehler im Optional-Modul: %s", e)
+            log.exception("Fehler im Optional-Modul: %s, Optinal instance %s", e, self.instance_id)
             return False
 
     def __get_first_entry(self, prices: dict[str, float]) -> tuple[str, float]:
         if self.et_provider_available():
             prices = self.data.et.get.prices
             if prices is None or len(prices) == 0:
-                raise Exception("Keine Preisdaten für strompreisbasiertes Laden vorhanden.")
+                raise Exception("Keine Preisdaten für strompreisbasiertes Laden vorhanden, Optinal instance %s.",
+                                self.instance_id)
             else:
                 timestamp, first = next(iter(prices.items()))
                 price_timeslot_seconds = self.__calculate_price_timeslot_length(prices)
@@ -177,7 +230,8 @@ class Optional(OcppMixin):
     def et_get_prices(self):
         try:
             if self.et_module:
-                thread_handler(Thread(target=self.et_module.update, args=(), name="electricity tariff"))
+                thread_handler(Thread(target=self.et_module.update, args=(),
+                                      name=f"electricity tariff in optional {self.instance_id}"))
             else:
                 # Wenn kein Modul konfiguriert ist, Fehlerstatus zurücksetzen.
                 if self.data.et.get.fault_state != 0 or self.data.et.get.fault_str != NO_ERROR:
