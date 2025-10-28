@@ -253,7 +253,7 @@ class Counter:
 
     def get_usable_surplus(self, feed_in_yield: float) -> float:
         # verbleibender EVU-Überschuss unter Berücksichtigung der Einspeisegrenze und Speicherleistung
-        return (-self.calc_surplus() - self.data.set.released_surplus +
+        return (-self.calc_surplus() + self.data.set.released_surplus -
                 self.data.set.reserved_surplus - feed_in_yield)
 
     SWITCH_ON_FALLEN_BELOW = "Einschaltschwelle während der Wartezeit unterschritten."
