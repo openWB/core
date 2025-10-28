@@ -1,4 +1,4 @@
-# openwb-version:2
+# openwb-version:3
 # allow publishing set topics
 topic write openWB/set/#
 # allow clearing system messages
@@ -11,3 +11,5 @@ topic read openWB/#
 topic read openWB-remote/#
 # allow brach "others" for devices other than openWB
 topic readwrite others/#
+# allow read write access for simpleAPI
+topic readwrite openWB/simpleAPI/#
