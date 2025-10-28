@@ -320,20 +320,20 @@ const arrowDirection = (itemId: string) =>
 
 .banner-table :deep(.q-table__middle table) {
   border-collapse: separate;
-  border-spacing: 0 3px; /* <-- vertical gap between “cards” */
+  border-spacing: 0 3px; /* vertical gap between "cards" */
 }
 
-/* draw a rounded, colored card behind each row */
 .banner-table :deep(tbody tr) {
-  position: relative;
-}
-.banner-table :deep(tbody tr)::before {
-  content: '';
-  position: absolute;
-  inset: 0;
   background: var(--row-bg);
-  border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.banner-table :deep(tbody td:first-child) {
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+}
+.banner-table :deep(tbody td:last-child) {
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
 }
 
 .banner-table :deep(.q-table__container),
