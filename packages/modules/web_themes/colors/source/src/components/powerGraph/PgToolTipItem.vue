@@ -3,9 +3,9 @@
 		<rect
 			rx="5"
 			:width="boxwidth"
-			:height="height"
+			:height="height()"
 			fill="var(--color-bg)"
-			opacity="80%"
+			opacity="90%"
 			stroke="var(--color-menu)"
 		/>
 		<text
@@ -33,7 +33,7 @@
 			/>
 			<PgToolTipLine cat="pv" :indent="5" :power="entry.pv" :width="boxwidth" />
 			<PgToolTipLine
-				v-for="pv in pvs"
+				v-for="pv in pvs()"
 				:key="pv.id"
 				cat="pv"
 				:name="pv.name"
@@ -54,7 +54,7 @@
 				:width="boxwidth"
 			/>
 			<PgToolTipLine
-				v-for="cp in cps"
+				v-for="cp in cps()"
 				:key="cp.id"
 				cat="charging"
 				:name="cp.name"
@@ -69,11 +69,26 @@
 				:width="boxwidth"
 			/>
 			<PgToolTipLine
-				v-for="dev in devs"
+				v-for="dev in devs()"
 				:key="dev.id"
 				cat="devices"
 				:name="dev.name"
 				:power="dev.power"
+				:indent="10"
+				:width="boxwidth"
+			/>
+			<PgToolTipLine
+				cat="counters"
+				:indent="5"
+				:power="entry.counters"
+				:width="boxwidth"
+			/>
+			<PgToolTipLine
+				v-for="ctr in counters()"
+				:key="ctr.id"
+				cat="counters"
+				:name="ctr.name"
+				:power="ctr.power"
 				:indent="10"
 				:width="boxwidth"
 			/>
@@ -98,7 +113,6 @@ import { itemNames, type GraphDataItem } from './model'
 import type { ScaleTime } from 'd3'
 import { timeFormat } from 'd3'
 import PgToolTipLine from './PgToolTipLine.vue'
-import { computed } from 'vue'
 
 const props = defineProps<{
 	entry: GraphDataItem
@@ -106,12 +120,14 @@ const props = defineProps<{
 	xScale: ScaleTime<number, number>
 }>()
 
-const linecount = computed(
-	() => Object.values(props.entry).filter((v) => v > 0).length,
-)
-const height = computed(() => linecount.value * 16)
-const pvs = computed(() =>
-	Object.entries(props.entry)
+//function linecount() {
+//	return Object.values(props.entry).filter((v) => v > 0).length
+//}
+function height() {
+	return Object.values(props.entry).filter((v) => v > 0).length * 18 + 40
+}
+function pvs() {
+	return Object.entries(props.entry)
 		.filter(([k, v]) => k.startsWith('pv') && k.length > 2 && v > 0)
 		.map(([k, v]) => {
 			return {
@@ -121,11 +137,10 @@ const pvs = computed(() =>
 					: 'Wechselr.',
 				id: k,
 			}
-		}),
-)
-
-const cps = computed(() =>
-	Object.entries(props.entry)
+		})
+}
+function cps() {
+	return Object.entries(props.entry)
 		.filter(([k, v]) => k.startsWith('cp') && k.length > 2 && v > 0)
 		.map(([k, v]) => {
 			return {
@@ -135,10 +150,10 @@ const cps = computed(() =>
 					: 'Ladep.',
 				id: k,
 			}
-		}),
-)
-const devs = computed(() =>
-	Object.entries(props.entry)
+		})
+}
+function devs() {
+	return Object.entries(props.entry)
 		.filter(([k, v]) => k.startsWith('sh') && k.length > 2 && v > 0)
 		.map(([k, v]) => {
 			return {
@@ -148,9 +163,21 @@ const devs = computed(() =>
 					: 'Gerät',
 				id: k,
 			}
-		}),
-)
-
+		})
+}
+function counters() {
+	return Object.entries(props.entry)
+		.filter(([k, v]) => k.startsWith('counter') && k.length > 2 && v > 0)
+		.map(([k, v]) => {
+			return {
+				power: v,
+				name: itemNames.value.get(k)
+					? trimName(itemNames.value.get(k)!)
+					: 'Zähler',
+				id: k,
+			}
+		})
+}
 function trimName(name: string) {
 	if (name.length > 6) {
 		return name.slice(0, 6) + '...'

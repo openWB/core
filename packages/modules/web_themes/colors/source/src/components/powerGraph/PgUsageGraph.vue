@@ -41,17 +41,17 @@ const props = defineProps<{
 const keys = computed(() => {
 	if (!globalConfig.showInverters) {
 		return [
-			['house', 'charging', 'devices', 'batIn'],
-			['charging', 'devices', 'batIn', 'house'],
-			['devices', 'batIn', 'charging', 'house'],
-			['batIn', 'charging', 'house', 'devices'],
+			['house', 'charging', 'devices', 'counters', 'batIn'],
+			['charging', 'devices', 'counters', 'batIn', 'house'],
+			['devices', 'counters', 'batIn', 'charging', 'house'],
+			['batIn', 'charging', 'house', 'devices', 'counters'],
 		]
 	} else {
 		return [
-			['house', 'charging', 'devices', 'batIn', 'evuOut'],
-			['charging', 'devices', 'batIn', 'house', 'evuOut'],
-			['devices', 'batIn', 'charging', 'house', 'evuOut'],
-			['batIn', 'charging', 'house', 'devices', 'evuOut'],
+			['house', 'charging', 'devices', 'counters', 'batIn', 'evuOut'],
+			['charging', 'devices', 'counters', 'batIn', 'house', 'evuOut'],
+			['devices', 'counters', 'batIn', 'charging', 'house', 'evuOut'],
+			['batIn', 'charging', 'house', 'devices', 'counters', 'evuOut'],
 		]
 	}
 })
@@ -72,6 +72,7 @@ const colors: { [key: string]: string } = {
 	sh3: 'var(--color-sh3)',
 	sh4: 'var(--color-sh4)',
 	devices: 'var(--color-devices)',
+	counters: 'var(--color-counters)',
 }
 var paths: Selection<SVGPathElement, [number, number][], BaseType, never>
 var rects: Selection<SVGRectElement, [number, number], BaseType, never>
@@ -162,7 +163,7 @@ const keysToUse = computed(() => {
 const vrange = computed(() => {
 	let result = extent(
 		graphData.data,
-		(d) => d.house + d.charging + d.batIn + d.devices + d.evuOut,
+		(d) => d.house + d.charging + d.batIn + d.devices + d.counters + d.evuOut,
 	)
 	if (result[0] != undefined && result[1] != undefined) {
 		if (graphData.graphMode == 'year') {

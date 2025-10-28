@@ -10,22 +10,19 @@
 						:corner-radius="cornerRadius"
 						:circle-gap-size="circleGapSize"
 						:empty-power="emptyPower"
-						:show-labels="globalConfig.showPmLabels"
 					/>
-
 					<PMUsageArc
 						:radius="radius"
 						:corner-radius="cornerRadius"
 						:circle-gap-size="circleGapSize"
 						:empty-power="emptyPower"
-						:show-labels="globalConfig.showPmLabels"
 					/>
 
 					<!-- Show the values for the different categories -->
 					<PMLabel
 						:x="0"
 						:y="(-height / 10) * 2"
-						:data="sourceSummary.pv"
+						:data="registry.getItem('pv')"
 						:props="masterData.pv"
 						:anchor="'middle'"
 						:config="globalConfig"
@@ -33,7 +30,7 @@
 					<PMLabel
 						:x="0"
 						:y="(-height / 10) * 3"
-						:data="sourceSummary.evuIn"
+						:data="registry.getItem('evuIn')"
 						:props="masterData.evuIn"
 						:anchor="'middle'"
 						:config="globalConfig"
@@ -41,7 +38,7 @@
 					<PMLabel
 						:x="0"
 						:y="-height / 10"
-						:data="sourceSummary.batOut"
+						:data="registry.getItem('batOut')"
 						:props="masterData.batOut"
 						:anchor="'middle'"
 						:config="globalConfig"
@@ -50,7 +47,7 @@
 						v-if="etData.active"
 						:x="0"
 						:y="-height / 10"
-						:data="sourceSummary.batOut"
+						:data="registry.getItem('batOut')"
 						:props="masterData.batOut"
 						:anchor="'middle'"
 						:config="globalConfig"
@@ -72,7 +69,8 @@
 					<PMLabel
 						v-if="
 							topVehicles[0] != undefined &&
-							vehicles[topVehicles[0]] != undefined
+							vehicles[topVehicles[0]] != undefined &&
+							vehicles[topVehicles[0]].isSocConfigured
 						"
 						:x="-width / 2 - margin / 4 + 10"
 						:y="-height / 2 + margin + 5"
@@ -91,7 +89,8 @@
 					<PMLabel
 						v-if="
 							topVehicles[1] != undefined &&
-							vehicles[topVehicles[1]] != undefined
+							vehicles[topVehicles[1]] != undefined &&
+							vehicles[topVehicles[1]].isSocConfigured
 						"
 						:x="width / 2 + margin / 4 - 10"
 						:y="-height / 2 + margin + 5"
@@ -113,7 +112,7 @@
 						:x="-width / 2 - margin / 4 + 10"
 						:y="height / 2 - margin + 15"
 						:labeltext="'Speicher: ' + globalData.batterySoc + '%'"
-						:labelcolor="usageSummary.batIn.color"
+						:labelcolor="registry.getItem('batIn')!.color"
 						:anchor="'start'"
 						:config="globalConfig"
 					/>
@@ -173,12 +172,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { globalConfig } from '@/assets/js/themeConfig'
-import {
-	globalData,
-	sourceSummary,
-	usageSummary,
-	masterData,
-} from '@/assets/js/model'
+import { globalData, registry, masterData } from '@/assets/js/model'
 import {
 	chargePoints,
 	vehicles,
@@ -215,7 +209,7 @@ const radius = computed(() => {
 })
 const currentConsumptionString = computed(() => {
 	let consumptionLabel = ''
-	let sourcesToDisplay = Object.values(sourceSummary).filter((v) => v.power > 0)
+	let sourcesToDisplay = registry.sourceSummary.filter((v) => v.power > 0)
 	if (sourcesToDisplay.length == 1 && sourcesToDisplay[0].name == 'PV') {
 		consumptionLabel = 'Aktueller Verbrauch: '
 	} else {
@@ -225,19 +219,20 @@ const currentConsumptionString = computed(() => {
 	return (
 		consumptionLabel +
 		formatWatt(
-			usageSummary.house.power +
-				usageSummary.charging.power +
-				usageSummary.devices.power +
-				usageSummary.batIn.power,
+			registry.getPower('house') +
+				registry.getPower('charging') +
+				registry.getPower('devices') +
+				registry.getPower('batIn') +
+				registry.getPower('counters'),
 			globalConfig.decimalPlaces,
 		)
 	)
 })
 const maxPowerString = computed(() => {
 	let currentPower =
-		sourceSummary.pv.power +
-		sourceSummary.evuIn.power +
-		sourceSummary.batOut.power
+		registry.getPower('pv') +
+		registry.getPower('evuIn') +
+		registry.getPower('batOut')
 	return globalConfig.maxPower > currentPower
 		? formatWatt(globalConfig.maxPower, globalConfig.decimalPlaces)
 		: formatWatt(currentPower, globalConfig.decimalPlaces)
@@ -251,19 +246,20 @@ const emptyPower = computed(() => {
 	if (globalConfig.showRelativeArcs) {
 		result =
 			globalConfig.maxPower -
-			(sourceSummary.pv.power +
-				sourceSummary.evuIn.power +
-				sourceSummary.batOut.power)
+			(registry.getPower('pv') +
+				registry.getPower('evuIn') +
+				registry.getPower('batOut'))
 	}
 	return result < 0 ? 0 : result
 })
 const valuesToDisplay = computed(() => {
 	return [
-		usageSummary.evuOut,
-		usageSummary.charging,
-		usageSummary.devices,
-		usageSummary.batIn,
-		usageSummary.house,
+		registry.getItem('evuOut'),
+		registry.getItem('charging'),
+		registry.getItem('devices'),
+		registry.getItem('counters'),
+		registry.getItem('batIn'),
+		registry.getItem('house'),
 	].filter((x) => x.power > 0)
 })
 const scheme = computed(() => schemes[valuesToDisplay.value.length - 1])
@@ -281,7 +277,6 @@ const currentPrice = computed(() => {
 	return Math.round(p * 10) / 10
 })
 function toggleInfo() {
-	//showLabels.value = !showLabels.value
 	globalConfig.showPmLabels = !globalConfig.showPmLabels
 }
 </script>

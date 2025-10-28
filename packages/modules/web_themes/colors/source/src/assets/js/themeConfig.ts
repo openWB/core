@@ -8,7 +8,7 @@ import { computed, reactive } from 'vue'
 import { select } from 'd3'
 import { ChargeMode, type ChargeModeInfo } from './types'
 import { addShDevice, shDevices } from '@/components/smartHome/model'
-import { sourceSummary } from './model'
+import { registry } from './model'
 import {
 	sourceGraphIsNotInitialized,
 	usageGraphIsNotInitialized,
@@ -211,7 +211,7 @@ export class Config {
 		savePrefs()
 	}
 	setSslPrefs(on: boolean) {
-		this.sslPrefs = on
+		this._sslPrefs = on
 	}
 	get debug() {
 		return this._debug
@@ -441,9 +441,9 @@ export function toggleFixArcs() {
 }
 export function resetArcs() {
 	globalConfig.maxPower =
-		sourceSummary.evuIn.power +
-		sourceSummary.pv.power +
-		sourceSummary.batOut.power
+		registry.getPower('evuIn') +
+		registry.getPower('pv') +
+		registry.getPower('batOut')
 	savePrefs()
 }
 export function switchDecimalPlaces() {
@@ -478,7 +478,7 @@ export const infotext: { [key: string]: string } = {
 		'Ladepriorität bei PV-Produktion. Bevorzung von Fahzeugen, Speicher, oder Fahrzeugen bis zum eingestellten Mindest-Ladestand. Die Einstellung ist für alle Ladepunkte gleich.',
 }
 interface Preferences {
-	hideSH?: number[]
+	hideSH?: string[]
 	showLG?: boolean
 	displayM?: string
 	stackO?: number
