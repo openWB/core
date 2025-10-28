@@ -89,9 +89,9 @@ def test_query_et_provider_data_once_per_day_param(
             return lambda: tariff_state_factory()
 
         tariff = ConfigurableElectricityTariff(config, component_initializer)
-    tariff._ConfigurableElectricityTariff__next_query_time = datetime.now() - timedelta(
-        days=1
-    )
+
+    monkeypatch.setattr("modules.common.configurable_tariff.next_query_time",
+                        (datetime.now() - timedelta(days=1)))
     tariff._ConfigurableElectricityTariff__tariff_state = DummyTariffState(
         {str(int(datetime.now().timestamp())): 1.0}
     )

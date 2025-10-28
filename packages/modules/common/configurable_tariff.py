@@ -14,13 +14,18 @@ T_TARIFF_CONFIG = TypeVar("T_TARIFF_CONFIG")
 TARIFF_UPDATE_HOUR = 14  # latest expected time for daily tariff update
 ONE_HOUR_SECONDS: int = 3600
 log = logging.getLogger(__name__)
+'''
+next_query_time is defined outside of class ConfigurableElectricityTariff because
+for an unknown reason defining it as a class variable does not keep its value.
+'''
+next_query_time: datetime = datetime.fromtimestamp(1)
 
 
 class ConfigurableElectricityTariff(Generic[T_TARIFF_CONFIG]):
     def __init__(self,
                  config: T_TARIFF_CONFIG,
                  component_initializer: Callable[[], float]) -> None:
-        self.__next_query_time = datetime.fromtimestamp(1)
+        # unique instance id for tracing/logging
         self.__tariff_state: TariffState = None
         self.config = config
         self.store = store.get_electricity_tariff_value_store()
@@ -44,21 +49,26 @@ class ConfigurableElectricityTariff(Generic[T_TARIFF_CONFIG]):
         def is_tomorrow(last_timestamp: str) -> bool:
             return (self.__day_of(date=datetime.now()) < self.__day_of(datetime.fromtimestamp(int(last_timestamp)))
                     or self.__day_of(date=datetime.now()).hour < TARIFF_UPDATE_HOUR)
-        if datetime.now() > self.__next_query_time:
-            log.info(f'Wartezeit {self.__next_query_time.strftime("%Y%m%d-%H:%M:%S")}'
-                     ' abgelaufen, Strompreise werden abgefragt')
+        global next_query_time
+        if datetime.now() > next_query_time:
+            log.info(f'Wartezeit {next_query_time.strftime("%Y%m%d-%H:%M:%S")}'
+                     ' abgelaufen, Strompreise werden abgefragt'
+                     )
             try:
                 new_tariff_state = self._component_updater()
                 if 0 < len(new_tariff_state.prices):
                     self.__tariff_state = new_tariff_state
                     if is_tomorrow(self.__get_last_entry_time_stamp()):
-                        self.__calulate_next_query_time()
+                        next_query_time = self.__calulate_next_query_time()
                         log.info('Nächster Abruf der Strompreise frühestens'
-                                 f' {self.__next_query_time.strftime("%Y%m%d-%H:%M:%S")}.')
+                                 f' {next_query_time.strftime("%Y%m%d-%H:%M:%S")}.'
+                                 )
                     else:
-                        log.info('Keine Daten für morgen erhalten, weiterer Versuch in 5 Minuten')
+                        log.info('Keine Daten für morgen erhalten, weiterer Versuch in 5 Minuten'
+                                 )
             except Exception as e:
-                log.warning(f'Fehler beim Abruf der Strompreise: {e}, nächster Versuch in 5 Minuten.')
+                log.warning(f'Fehler beim Abruf der Strompreise: {e}, nächster Versuch in 5 Minuten.'
+                            )
                 self.fault_state.warning(
                     f'Fehler beim Abruf der Strompreise: {e}, nächster Versuch in 5 Minuten.'
                 )
@@ -69,12 +79,12 @@ class ConfigurableElectricityTariff(Generic[T_TARIFF_CONFIG]):
     def __next_query_message(self) -> str:
         tomorrow = (
             ''
-            if self.__day_of(datetime.now()) == self.__day_of(self.__next_query_time)
+            if self.__day_of(datetime.now()) == self.__day_of(next_query_time)
             else 'morgen '
         )
         return (
-            f'frühestens {tomorrow}{self.__next_query_time.strftime("%H:%M")}'
-            if datetime.now() < self.__next_query_time
+            f'frühestens {tomorrow}{next_query_time.strftime("%H:%M")}'
+            if datetime.now() < next_query_time
             else "im nächsten Regelzyklus"
         )
 
@@ -93,8 +103,8 @@ class ConfigurableElectricityTariff(Generic[T_TARIFF_CONFIG]):
         self.store.set(self.__tariff_state)
         self.store.update()
 
-    def __calulate_next_query_time(self) -> None:
-        self.__next_query_time = datetime.fromtimestamp(int(max(self.__tariff_state.prices))).replace(
+    def __calulate_next_query_time(self) -> datetime:
+        return datetime.fromtimestamp(int(max(self.__tariff_state.prices))).replace(
             hour=TARIFF_UPDATE_HOUR, minute=0, second=0
         ) + timedelta(
             # aktually ET providers issue next day prices up to half an hour earlier then TARIFF_UPDATE_HOURE:00
