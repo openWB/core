@@ -34,6 +34,7 @@
             </q-td>
 
             <q-td
+              v-if="componentNameVisible"
               key="title"
               :props="props"
               class="text-body2 text-weight-bold"
@@ -147,21 +148,21 @@ const columns: QTableColumn<DailyTotalsItem>[] = [
     label: '',
     field: 'icon',
     align: 'left',
-    style: 'width:32px;',
+    style: 'width: 32px;',
   },
   {
     name: 'title',
     label: '',
     field: 'title',
     align: 'left',
-    style: 'width: 11ch;',
+    style: 'width: 80px;',
   },
   {
     name: 'soc',
     label: '',
     field: 'soc',
     align: 'right',
-    style: 'width: 6ch;',
+    style: 'width: 6px;',
   },
   {
     name: 'arrow',
@@ -175,7 +176,7 @@ const columns: QTableColumn<DailyTotalsItem>[] = [
     label: '',
     field: 'power',
     align: 'right',
-    style: 'width: 8ch;',
+    style: 'width: 20px;',
   },
   {
     name: 'gap',
@@ -189,17 +190,19 @@ const columns: QTableColumn<DailyTotalsItem>[] = [
     label: '',
     field: 'rightLabel',
     align: 'right',
-    style: 'width: 12ch',
+    style: 'width: 100px',
   },
   {
     name: 'rightValue',
     label: '',
     field: 'rightValue',
     align: 'right',
-    style: 'width: 10ch;',
+    style: 'width: 70px;',
   },
 ];
 
+
+const componentNameVisible = computed(() => $q.screen.width >= 375); // for narrower mobile screens
 const currentPowerVisible = computed(() => $q.screen.width >= 500);
 const socValueVisible = computed(() => $q.screen.width >= 700);
 
