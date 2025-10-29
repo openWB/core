@@ -57,7 +57,7 @@ class Sdm630_72(Sdm):
             powers=resp[SdmRegister.POWER_L1],
             power_factors=resp[SdmRegister.POWER_FACTOR_L1],
             frequency=frequency,
-            serial_number=self.get_serial_number()
+            serial_number=self.serial_number
         )
         check_meter_values(counter_state, self.fault_state)
         return counter_state
@@ -93,7 +93,7 @@ class Sdm120(Sdm):
             powers=[resp[SdmRegister.POWER_L1], 0, 0],
             power_factors=[resp[SdmRegister.POWER_FACTOR_L1], 0, 0],
             frequency=frequency,
-            serial_number=self.get_serial_number()
+            serial_number=self.serial_number
         )
         check_meter_values(counter_state, self.fault_state)
         return counter_state
