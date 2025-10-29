@@ -48,6 +48,7 @@ class SolaredgeCounter(AbstractCounter):
             (self.registers.power_factors, [ModbusDataType.INT_16]*3),
             (self.registers.power_factors_scale, ModbusDataType.INT_16),
             (self.registers.frequency, ModbusDataType.INT_16),
+            (self.registers.frequency_scale, ModbusDataType.INT_16),
             (self.registers.imported, ModbusDataType.UINT_32),
             (self.registers.exported, ModbusDataType.UINT_32),
             (self.registers.imp_exp_scale, ModbusDataType.INT_16),
