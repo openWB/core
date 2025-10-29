@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from enum import IntEnum
 from typing import TypedDict, Any
 from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
@@ -15,7 +16,21 @@ class KwargsDict(TypedDict):
     client: ModbusTcpClient_
 
 
+class Register(IntEnum):
+    CURRENT_L1 = 0x06
+    POWER = 0x0C
+    DC_POWER = 0x48
+    EXPORTED = 0x4A
+
+
 class SampleInverter(AbstractInverter):
+    REG_MAPPING = (
+        (Register.CURRENT_L1, [ModbusDataType.FLOAT_32]*3),
+        (Register.POWER, [ModbusDataType.FLOAT_32]*3),
+        (Register.DC_POWER, ModbusDataType.FLOAT_32),
+        (Register.EXPORTED, ModbusDataType.FLOAT_32),
+    )
+
     def __init__(self, component_config: SampleInverterSetup, **kwargs: Any) -> None:
         self.component_config = component_config
         self.kwargs: KwargsDict = kwargs
@@ -29,6 +44,20 @@ class SampleInverter(AbstractInverter):
 
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
+        # Modbus-Bulk reader, liest einen Block von Registern und gibt ein Dictionary mit den Werten zurück
+        # read_input_registers_bulk benötigit als Parameter das Startregister, die Anzahl der Register,
+        # Register-Mapping und die Modbus-ID
+        resp = self.client.read_input_registers_bulk(
+            Register.CURRENT_L1, 70, mapping=self.REG_MAPPING, unit=self.id)
+        inverter_state = InverterState(
+            power=resp[Register.POWER],
+            currents=resp[Register.CURRENT_L1],
+            dc_power=resp[Register.DC_POWER],
+            exported=resp[Register.EXPORTED],
+        )
+        self.store.set(inverter_state)
+
+        # Einzelregister lesen (dauert länger, bei sehr weit >100 auseinanderliegenden Registern sinnvoll)
         power = self.client.read_holding_registers(reg, ModbusDataType.INT_32, unit=unit)
         exported = self.sim_counter.sim_count(power)[1]
 
