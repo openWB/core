@@ -61,6 +61,8 @@ from helpermodules.utils.json_file_handler import write_and_check
 # }
 log = logging.getLogger("chargelog")
 
+MEASUREMENT_LOGGING_INTERVAL = 300  # in Sekunden
+
 
 def collect_data(chargepoint):
     """
@@ -318,7 +320,7 @@ def calculate_charged_energy_by_source(cp, processed_entries, reference_entries,
             charged_energy = (reference_entries[-1]["cp"][f"cp{cp.num}"]["imported"] -
                               reference_entries[0]["cp"][f"cp{cp.num}"]["imported"])
         elif reference == ReferenceTime.END:
-            if (timecheck.create_timestamp() - cp.data.set.log.timestamp_start_charging) < 300:
+            if (timecheck.create_timestamp()-cp.data.set.log.timestamp_start_charging) < MEASUREMENT_LOGGING_INTERVAL:
                 charged_energy = cp.data.set.log.imported_since_mode_switch
             else:
                 log.debug(f"cp.data.get.imported {cp.data.get.imported}")
@@ -351,7 +353,7 @@ def _get_reference_position(cp, create_log_entry: bool) -> ReferenceTime:
     else:
         # Wenn der Ladevorgang erst innerhalb des letzten 5 Min Intervalls gestartet wurde,
         # ist das das erste Zwischenergebnis.
-        if (timecheck.create_timestamp() - cp.data.set.log.timestamp_start_charging) < 300:
+        if (timecheck.create_timestamp() - cp.data.set.log.timestamp_start_charging) < MEASUREMENT_LOGGING_INTERVAL:
             return ReferenceTime.START
         else:
             return ReferenceTime.MIDDLE
