@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch, MagicMock
-from soc import fetch_soc, HaVehicleSocSetup, HaVehicleSocConfiguration
+from modules.vehicles.homeassistant.soc import fetch_soc, HaVehicleSocSetup, HaVehicleSocConfiguration
 
 
 class TestSoc(unittest.TestCase):
