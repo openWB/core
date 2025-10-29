@@ -1,16 +1,17 @@
+import copy
 import datetime
 from enum import Enum
 import json
 import logging
 import os
 import pathlib
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from control import data
 from dataclass_utils import asdict
-from helpermodules.measurement_logging.process_log import (CalculationType, analyse_percentage,
-                                                           get_log_from_date_until_now, process_entry)
-from helpermodules.measurement_logging.write_log import LegacySmartHomeLogData, LogType, create_entry
+from helpermodules.measurement_logging.process_log import (
+    FILE_ERRORS, CalculationType, _analyse_energy_source,
+    _process_entries, analyse_percentage, get_log_from_date_until_now, get_totals)
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 from helpermodules.utils.json_file_handler import write_and_check
@@ -59,6 +60,8 @@ from helpermodules.utils.json_file_handler import write_and_check
 #     }
 # }
 log = logging.getLogger("chargelog")
+
+MEASUREMENT_LOGGING_INTERVAL = 300  # in Sekunden
 
 
 def collect_data(chargepoint):
@@ -218,7 +221,7 @@ def _create_entry(chargepoint, charging_ev, immediately: bool = True):
         # power calculation needs to be fixed if useful:
         # log_data.imported_since_mode_switch / (duration / 3600)
         power = get_value_or_default(lambda: round(log_data.imported_since_mode_switch / (time_charged / 3600), 2))
-    calculate_charge_cost(chargepoint, True)
+    calc_energy_costs(chargepoint, True)
     energy_source = get_value_or_default(lambda: analyse_percentage(get_log_from_date_until_now(
         log_data.timestamp_mode_switch)["totals"])["energy_source"])
     costs = round(log_data.costs, 2)
@@ -235,7 +238,7 @@ def _create_entry(chargepoint, charging_ev, immediately: bool = True):
         "vehicle":
         {
             "id": get_value_or_default(lambda: log_data.ev),
-            "name": get_value_or_default(lambda: _get_ev_name(log_data.ev)),
+            "name": get_value_or_default(lambda: data.data.ev_data[f"ev{log_data.ev}"].data.name, ""),
             "chargemode": get_value_or_default(lambda: log_data.chargemode_log_entry),
             "prio": get_value_or_default(lambda: log_data.prio),
             "rfid": get_value_or_default(lambda: log_data.rfid),
@@ -289,161 +292,47 @@ def write_new_entry(new_entry):
     log.debug(f"Neuer Ladelog-Eintrag: {new_entry}")
 
 
-def _get_ev_name(ev: int) -> str:
+def calc_energy_costs(cp, create_log_entry: bool = False):
+    if cp.data.set.log.imported_since_plugged != 0 and cp.data.set.log.imported_since_mode_switch != 0:
+        processed_entries, reference_entries = _get_reference_entries()
+        charged_energy_by_source = calculate_charged_energy_by_source(
+            cp, processed_entries, reference_entries, create_log_entry)
+        _add_charged_energy_by_source(cp, charged_energy_by_source)
+        log.debug(f"charged_energy_by_source {charged_energy_by_source} "
+                  f"total charged_energy_by_source {cp.data.set.log.charged_energy_by_source}")
+        costs = _calc_costs(charged_energy_by_source, reference_entries[-1]["prices"])
+        cp.data.set.log.costs += costs
+        Pub().pub(f"openWB/set/chargepoint/{cp.num}/set/log", asdict(cp.data.set.log))
+
+
+def calculate_charged_energy_by_source(cp, processed_entries, reference_entries, create_log_entry: bool = False):
     try:
-        return data.data.ev_data[f"ev{ev}"].data.name
-    except Exception:
-        return ""
-
-
-def get_log_data(request: Dict):
-    """ json-Objekt mit gefilterten Logdaten erstellen
-
-    Parameter
-    ---------
-    request: dict
-        Infos zum Request: Monat, Jahr, Filter
-    """
-    log_data = {"entries": [], "totals": {}}
-    try:
-        # Datei einlesen
-        filepath = str(_get_parent_file() / "data" / "charge_log" /
-                       (str(request["year"]) + str(request["month"]) + ".json"))
-        try:
-            with open(filepath, "r", encoding="utf-8") as json_file:
-                charge_log = json.load(json_file)
-        except FileNotFoundError:
-            log.debug("Kein Ladelog für %s gefunden!" % (str(request)))
-            return log_data
-        # Liste mit gefilterten Einträgen erstellen
-        for entry in charge_log:
-            if len(entry) > 0:
-                if (
-                    "id" in request["filter"]["chargepoint"] and
-                    len(request["filter"]["chargepoint"]["id"]) > 0 and
-                    entry["chargepoint"]["id"] not in request["filter"]["chargepoint"]["id"]
-                ):
-                    log.debug(
-                        "Verwerfe Eintrag wegen Ladepunkt ID: %s != %s" %
-                        (str(entry["chargepoint"]["id"]), str(request["filter"]["chargepoint"]["id"]))
-                    )
-                    continue
-                if (
-                    "id" in request["filter"]["vehicle"] and
-                    len(request["filter"]["vehicle"]["id"]) > 0 and
-                    entry["vehicle"]["id"] not in request["filter"]["vehicle"]["id"]
-                ):
-                    log.debug(
-                        "Verwerfe Eintrag wegen Fahrzeug ID: %s != %s" %
-                        (str(entry["vehicle"]["id"]), str(request["filter"]["vehicle"]["id"]))
-                    )
-                    continue
-                if (
-                    "tag" in request["filter"]["vehicle"] and
-                    len(request["filter"]["vehicle"]["tag"]) > 0 and
-                    entry["vehicle"]["rfid"] not in request["filter"]["vehicle"]["tag"]
-                ):
-                    log.debug(
-                        "Verwerfe Eintrag wegen ID Tag: %s != %s" %
-                        (str(entry["vehicle"]["rfid"]), str(request["filter"]["vehicle"]["tag"]))
-                    )
-                    continue
-                if (
-                    "chargemode" in request["filter"]["vehicle"] and
-                    len(request["filter"]["vehicle"]["chargemode"]) > 0 and
-                    entry["vehicle"]["chargemode"] not in request["filter"]["vehicle"]["chargemode"]
-                ):
-                    log.debug(
-                        "Verwerfe Eintrag wegen Lademodus: %s != %s" %
-                        (str(entry["vehicle"]["chargemode"]), str(request["filter"]["vehicle"]["chargemode"]))
-                    )
-                    continue
-                if (
-                    "prio" in request["filter"]["vehicle"] and
-                    request["filter"]["vehicle"]["prio"] is not entry["vehicle"]["prio"]
-                ):
-                    log.debug(
-                        "Verwerfe Eintrag wegen Priorität: %s != %s" %
-                        (str(entry["vehicle"]["prio"]), str(request["filter"]["vehicle"]["prio"]))
-                    )
-                    continue
-
-                # wenn wir hier ankommen, passt der Eintrag zum Filter
-                log_data["entries"].append(entry)
-            log_data["totals"] = get_totals_of_filtered_log_data(log_data)
-    except Exception:
-        log.exception("Fehler im Ladelog-Modul")
-    return log_data
-
-
-def get_totals_of_filtered_log_data(log_data: Dict) -> Dict:
-    def get_sum(entry_name: str) -> float:
-        sum = 0
-        try:
-            for entry in log_data["entries"]:
-                sum += entry["data"][entry_name]
-            return sum
-        except Exception:
-            return None
-    if len(log_data["entries"]) > 0:
-        # Summen bilden
-        duration_sum = "00:00"
-        try:
-            for entry in log_data["entries"]:
-                duration_sum = timecheck.duration_sum(
-                    duration_sum, entry["time"]["time_charged"])
-        except Exception:
-            duration_sum = None
-        range_charged_sum = get_sum("range_charged")
-        mode_sum = get_sum("imported_since_mode_switch")
-        power_sum = get_sum("power")
-        costs_sum = get_sum("costs")
-        power_sum = power_sum / len(log_data["entries"])
-        return {
-            "time_charged": duration_sum,
-            "range_charged": range_charged_sum,
-            "imported_since_mode_switch": mode_sum,
-            "power": power_sum,
-            "costs": costs_sum,
-        }
-
-
-def calculate_charge_cost(cp, create_log_entry: bool = False):
-    content = get_todays_daily_log()
-    try:
-        if cp.data.set.log.imported_since_plugged != 0 and cp.data.set.log.imported_since_mode_switch != 0:
-            reference = _get_reference_position(cp, create_log_entry)
-            reference_time = get_reference_time(cp, reference)
-            reference_entry = _get_reference_entry(content["entries"], reference_time)
-            energy_entry = process_entry(reference_entry,
-                                         create_entry(LogType.DAILY, LegacySmartHomeLogData(), reference_entry),
-                                         CalculationType.ENERGY)
-            energy_source_entry = analyse_percentage(energy_entry)
-            log.debug(f"reference {reference}, reference_time {reference_time}, "
-                      f"cp.data.set.log.imported_since_mode_switch {cp.data.set.log.imported_since_mode_switch}, "
-                      f"cp.data.set.log.timestamp_start_charging {cp.data.set.log.timestamp_start_charging}")
-            log.debug(f"energy_source_entry {energy_source_entry}")
-            if reference == ReferenceTime.START:
+        reference = _get_reference_position(cp, create_log_entry)
+        absolut_energy_source = processed_entries["totals"]["cp"][f"cp{cp.num}"]
+        relative_energy_source = get_relative_energy_source(absolut_energy_source)
+        log.debug(f"reference {reference}, "
+                  f"cp.data.set.log.imported_since_mode_switch {cp.data.set.log.imported_since_mode_switch}, "
+                  f"cp.data.set.log.timestamp_start_charging {cp.data.set.log.timestamp_start_charging}")
+        log.debug(f"energy_source_entry {relative_energy_source}")
+        if reference == ReferenceTime.START:
+            charged_energy = cp.data.set.log.imported_since_mode_switch
+        elif reference == ReferenceTime.MIDDLE:
+            charged_energy = (reference_entries[-1]["cp"][f"cp{cp.num}"]["imported"] -
+                              reference_entries[0]["cp"][f"cp{cp.num}"]["imported"])
+        elif reference == ReferenceTime.END:
+            if (timecheck.create_timestamp()-cp.data.set.log.timestamp_start_charging) < MEASUREMENT_LOGGING_INTERVAL:
                 charged_energy = cp.data.set.log.imported_since_mode_switch
-            elif reference == ReferenceTime.MIDDLE:
-                charged_energy = (content["entries"][-1]["cp"][f"cp{cp.num}"]["imported"] -
-                                  energy_source_entry["cp"][f"cp{cp.num}"]["imported"])
-            elif reference == ReferenceTime.END:
-                # timestamp_before_full_hour, dann gibt es schon ein Zwischenergebnis
-                if timecheck.create_unix_timestamp_current_full_hour() <= cp.data.set.log.timestamp_start_charging:
-                    charged_energy = cp.data.set.log.imported_since_mode_switch
-                else:
-                    log.debug(f"cp.data.get.imported {cp.data.get.imported}")
-                    charged_energy = cp.data.get.imported - \
-                        energy_entry["cp"][f"cp{cp.num}"]["imported"]
             else:
-                raise TypeError(f"Unbekannter Referenz-Zeitpunkt {reference}")
-            log.debug(f'power source {energy_source_entry["energy_source"]}')
-            log.debug(f"charged_energy {charged_energy}")
-            costs = _calc(energy_source_entry["energy_source"], charged_energy)
-            cp.data.set.log.costs += costs
-            log.debug(f"current costs {costs}, total costs {cp.data.set.log.costs}")
-            Pub().pub(f"openWB/set/chargepoint/{cp.num}/set/log", asdict(cp.data.set.log))
+                log.debug(f"cp.data.get.imported {cp.data.get.imported}")
+                charged_energy = cp.data.get.imported - \
+                    reference_entries[-1]["cp"][f"cp{cp.num}"]["imported"]
+        else:
+            raise TypeError(f"Unbekannter Referenz-Zeitpunkt {reference}")
+        log.debug(f'power source {relative_energy_source}')
+        log.debug(f"charged_energy {charged_energy}")
+        return _get_charged_energy_by_source(
+            relative_energy_source, charged_energy)
+
     except Exception:
         log.exception(f"Fehler beim Berechnen der Ladekosten für Ladepunkt {cp.num}")
 
@@ -454,53 +343,41 @@ class ReferenceTime(Enum):
     END = 2
 
 
+ENERGY_SOURCES = ("bat", "cp", "grid", "pv")
+
+
 def _get_reference_position(cp, create_log_entry: bool) -> ReferenceTime:
-    # Referenz-Zeitpunkt ermitteln (angesteckt oder letzte volle Stunde)
-    # Wurde innerhalb der letzten Stunde angesteckt?
     if create_log_entry:
-        # Ladekosten für angefangene Stunde ermitteln
+        # Ladekosten in einem angebrochenen 5 Min Intervall ermitteln
         return ReferenceTime.END
     else:
-        # Wenn der Ladevorgang erst innerhalb der letzten Stunde gestartet wurde, ist das das erste Zwischenergebnis.
-        one_hour_back = timecheck.create_timestamp() - 3600
-        if (one_hour_back - cp.data.set.log.timestamp_start_charging) < 0:
+        # Wenn der Ladevorgang erst innerhalb des letzten 5 Min Intervalls gestartet wurde,
+        # ist das das erste Zwischenergebnis.
+        if (timecheck.create_timestamp() - cp.data.set.log.timestamp_start_charging) < MEASUREMENT_LOGGING_INTERVAL:
             return ReferenceTime.START
         else:
             return ReferenceTime.MIDDLE
 
 
-def get_reference_time(cp, reference_position):
-    if reference_position == ReferenceTime.START:
-        return cp.data.set.log.timestamp_start_charging
-    elif reference_position == ReferenceTime.MIDDLE:
-        return timecheck.create_timestamp() - 3540
-    elif reference_position == ReferenceTime.END:
-        # Wenn der Ladevorgang erst innerhalb der letzten Stunde gestartet wurde.
-        if timecheck.create_unix_timestamp_current_full_hour() <= cp.data.set.log.timestamp_start_charging:
-            return cp.data.set.log.timestamp_start_charging
+def _get_reference_entries() -> Tuple[List[Dict], List]:
+    processed_entries = {}
+    reference_entries = []
+    try:
+        entries = get_todays_daily_log()["entries"]
+        if len(entries) >= 2:
+            reference_entries = [entries[-2], entries[-1]]
         else:
-            return timecheck.create_unix_timestamp_current_full_hour() + 60
-    else:
-        raise TypeError(f"Unbekannter Referenz-Zeitpunkt {reference_position}")
-
-
-def _get_reference_entry(entries: List[Dict], reference_time: float) -> Dict:
-    for entry in reversed(entries):
-        if entry["timestamp"] <= reference_time:
-            return entry
-    else:
-        # Tagesumbruch
-        content = _get_yesterdays_daily_log()
-        if content:
-            for entry in reversed(content["entries"]):
-                if entry["timestamp"] < reference_time:
-                    return entry
-        else:
-            return {}
-
-
-def _get_yesterdays_daily_log():
-    return get_daily_log((datetime.datetime.today()-datetime.timedelta(days=1)).strftime("%Y%m%d"))
+            date_day_before = (datetime.datetime.now() + datetime.timedelta(days=-1)).strftime("%Y%m%d")
+            entries_day_before = get_daily_log(date_day_before)["entries"]
+            reference_entries = [entries_day_before[-1], entries[0]]
+        processed_entries["entries"] = copy.deepcopy(reference_entries)
+        processed_entries["entries"] = _process_entries(processed_entries["entries"], CalculationType.ENERGY)
+        processed_entries["totals"] = get_totals(processed_entries["entries"], False)
+        processed_entries = _analyse_energy_source(processed_entries)
+    except Exception:
+        log.exception("Fehler beim Zusammenstellen der zwei letzten Logeinträge")
+    finally:
+        return processed_entries, reference_entries
 
 
 def get_todays_daily_log():
@@ -512,25 +389,47 @@ def get_daily_log(day):
     try:
         with open(filepath, "r", encoding="utf-8") as json_file:
             return json.load(json_file)
-    except FileNotFoundError:
+    except FILE_ERRORS:
         return []
 
 
-def _calc(energy_source: Dict[str, float], charged_energy_last_hour: float) -> float:
-    prices = data.data.general_data.data.prices
+def _calc_costs(charged_energy_by_source: Dict[str, float], costs: Dict[str, float]) -> float:
 
-    bat_costs = prices.bat * charged_energy_last_hour * energy_source["bat"]
-    cp_costs = prices.cp * charged_energy_last_hour * energy_source["cp"]
-    try:
-        grid_costs = data.data.optional_data.et_get_current_price() * charged_energy_last_hour * energy_source["grid"]
-    except Exception:
-        grid_costs = prices.grid * charged_energy_last_hour * energy_source["grid"]
-    pv_costs = prices.pv * charged_energy_last_hour * energy_source["pv"]
+    bat_costs = costs["bat"] * charged_energy_by_source["bat"]
+    cp_costs = costs["cp"] * charged_energy_by_source["cp"]
+    grid_costs = costs["grid"] * charged_energy_by_source["grid"]
+    pv_costs = costs["pv"] * charged_energy_by_source["pv"]
 
     log.debug(
-        f'Ladepreis für die letzte Stunde: {bat_costs}€ Speicher ({energy_source["bat"]}%), {grid_costs}€ Netz '
-        f'({energy_source["grid"]}%), {pv_costs}€ Pv ({energy_source["pv"]}%)')
+        f'Ladepreis nach Energiequelle: {bat_costs}€ Speicher ({charged_energy_by_source["bat"]/1000}kWh), '
+        f'{grid_costs}€ Netz ({charged_energy_by_source["grid"]/1000}kWh),'
+        f' {pv_costs}€ Pv ({charged_energy_by_source["pv"]/1000}kWh), '
+        f'{cp_costs}€ Ladepunkte ({charged_energy_by_source["cp"]/1000}kWh)')
     return round(bat_costs + cp_costs + grid_costs + pv_costs, 4)
+
+
+def _get_charged_energy_by_source(energy_source, charged_energy) -> Dict[str, float]:
+    charged_energy_by_source = {}
+    for source in ENERGY_SOURCES:
+        charged_energy_by_source[source] = energy_source[source] * charged_energy
+    return charged_energy_by_source
+
+
+def _add_charged_energy_by_source(cp, charged_energy_by_source):
+    for source in ENERGY_SOURCES:
+        cp.data.set.log.charged_energy_by_source[source] += charged_energy_by_source[source]
+
+
+def get_relative_energy_source(absolut_energy_source: Dict[str, float]) -> Dict[str, float]:
+    if absolut_energy_source["energy_imported"] == 0:
+        return {source: 0 for source in ENERGY_SOURCES}
+    else:
+        relative_energy_source = {}
+        for source in ENERGY_SOURCES:
+            for absolute_source, value in absolut_energy_source.items():
+                if source in absolute_source:
+                    relative_energy_source[source] = value / absolut_energy_source["energy_imported"]
+    return relative_energy_source
 
 
 def _get_parent_file() -> pathlib.Path:
