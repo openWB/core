@@ -16,4 +16,3 @@ export interface DailyTotalsItem {
   rightValue?: string;
   arrow?: string;
 }
-
