@@ -69,6 +69,7 @@ def collect_data(chargepoint):
         Ladepunkt, dessen Logdaten gesammelt werden
     """
     try:
+        now = timecheck.create_timestamp()
         log_data = chargepoint.data.set.log
         charging_ev = chargepoint.data.set.charging_ev_data
         if chargepoint.data.get.plug_state:
@@ -83,12 +84,12 @@ def collect_data(chargepoint):
                 log_data.imported_at_mode_switch = chargepoint.data.get.imported
                 log.debug(f"imported_at_mode_switch {chargepoint.data.get.imported}")
             if log_data.timestamp_mode_switch is None:
-                log_data.timestamp_mode_switch = timecheck.create_timestamp()
+                log_data.timestamp_mode_switch = now
             if chargepoint.data.get.charge_state:
                 if log_data.timestamp_start_charging is None:
-                    log_data.timestamp_start_charging = timecheck.create_timestamp()
+                    log_data.timestamp_start_charging = now
                 if log_data.begin is None:
-                    log_data.begin = timecheck.create_timestamp()
+                    log_data.begin = now
                     if charging_ev.soc_module:
                         log_data.range_at_start = charging_ev.data.get.range
                         log_data.soc_at_start = charging_ev.data.get.soc
@@ -107,9 +108,9 @@ def collect_data(chargepoint):
                                                               charging_ev.ev_template.data.average_consump * 100)
             else:
                 if log_data.timestamp_start_charging is not None:
-                    log_data.time_charged += timecheck.create_timestamp() - log_data.timestamp_start_charging
+                    log_data.time_charged += now - log_data.timestamp_start_charging
                     log_data.timestamp_start_charging = None
-                    log_data.end = timecheck.create_timestamp()
+                    log_data.end = now
             Pub().pub(f"openWB/set/chargepoint/{chargepoint.num}/set/log", asdict(log_data))
     except Exception:
         log.exception("Fehler im Ladelog-Modul")
