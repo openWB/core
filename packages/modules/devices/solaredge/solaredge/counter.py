@@ -54,6 +54,7 @@ class SolaredgeCounter(AbstractCounter):
         )
         resp = self.__tcp_client.read_holding_registers_bulk(
             self.registers.currents, 52, mapping=reg_mapping, unit=self.component_config.configuration.modbus_id)
+        log.debug(f"resp counter: {resp}")
 
         counter_state = CounterState(
             imported=scale_registers(resp[self.registers.imported], resp[self.registers.imp_exp_scale]),
