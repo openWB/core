@@ -1,8 +1,13 @@
 <template>
-  <div class="q-pa-md flex column items-center justify-center container">
+  <div
+    class="q-pa-md flex column items-center justify-center container"
+    ref="rootRef"
+    :style="{ '--row-h': rowHeight + 'px' }"
+  >
     <div class="centered-panel">
       <div
         class="flex justify-between text-subtitle1 text-weight-bold full-width"
+        ref="titleRef"
       >
         <div v-if="currentPowerVisible">Aktuelle Leistung</div>
         <div>Tageswerte</div>
@@ -18,7 +23,6 @@
         separator="none"
         class="banner-table theme-text"
       >
-        <!-- Color each row like a banner -->
         <template #body="props">
           <q-tr
             :props="props"
@@ -131,7 +135,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import {
+  computed,
+  ref,
+  onMounted,
+  onBeforeUnmount,
+  nextTick,
+  watch,
+} from 'vue';
 import { useQuasar } from 'quasar';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import type { QTableColumn } from 'quasar';
@@ -148,71 +159,56 @@ const columns: QTableColumn<DailyTotalsItem>[] = [
     label: '',
     field: 'icon',
     align: 'left',
-    style: 'width: 32px;',
+    style: 'width:32px;',
   },
   {
     name: 'title',
     label: '',
     field: 'title',
     align: 'left',
-    style: 'width: 80px;',
+    style: 'width:80px;',
   },
-  {
-    name: 'soc',
-    label: '',
-    field: 'soc',
-    align: 'right',
-    style: 'width: 6px;',
-  },
+  { name: 'soc', label: '', field: 'soc', align: 'right', style: 'width:6px;' },
   {
     name: 'arrow',
     label: '',
     field: 'arrow',
     align: 'center',
-    style: 'width: 24px;',
+    style: 'width:24px;',
   },
   {
     name: 'power',
     label: '',
     field: 'power',
     align: 'right',
-    style: 'width: 20px;',
+    style: 'width:20px;',
   },
-  {
-    name: 'gap',
-    label: '',
-    field: 'gap',
-    align: 'left',
-    style: 'width: auto;',
-  },
+  { name: 'gap', label: '', field: 'gap', align: 'left', style: 'width:auto;' },
   {
     name: 'rightLabel',
     label: '',
     field: 'rightLabel',
     align: 'right',
-    style: 'width: 100px',
+    style: 'width:100px;',
   },
   {
     name: 'rightValue',
     label: '',
     field: 'rightValue',
     align: 'right',
-    style: 'width: 70px;',
+    style: 'width:70px;',
   },
 ];
 
-
-const componentNameVisible = computed(() => $q.screen.width >= 375); // for narrower mobile screens
+const componentNameVisible = computed(() => $q.screen.width >= 375);
 const currentPowerVisible = computed(() => $q.screen.width >= 500);
 const socValueVisible = computed(() => $q.screen.width >= 700);
 
 const batteryConfigured = computed(() => mqttStore.batteryConfigured);
-
 const pvConfigured = computed(() => mqttStore.getPvConfigured);
-
-const chargePointConfigured = computed(() => {
-  return mqttStore.chargePointIds.length > 0;
-});
+const chargePointConfigured = computed(
+  () => mqttStore.chargePointIds.length > 0,
+);
 
 const rows = computed((): DailyTotalsItem[] => {
   const components: DailyTotalsItem[] = [];
@@ -301,10 +297,67 @@ const getArrowDirection = computed(() =>
 );
 
 const arrowDirection = (itemId: string) =>
-  getArrowDirection.value.find((component) => component.id === itemId) ?? {
+  getArrowDirection.value.find((c) => c.id === itemId) ?? {
     rotate180: false,
     noCurrent: false,
   };
+
+const rootRef = ref<HTMLElement | null>(null);
+const titleRef = ref<HTMLElement | null>(null);
+const rowHeight = ref(44);
+
+let slideElement: HTMLElement | null = null;
+let slideObserver: ResizeObserver | null = null;
+
+function getSlideElement(): HTMLElement | null {
+  return rootRef.value?.closest('.q-carousel__slide') as HTMLElement | null;
+}
+
+const calculateRowHeight = () => {
+  nextTick(() => {
+    const slide = slideElement ?? getSlideElement();
+    if (!slide) return;
+    const style = window.getComputedStyle(slide);
+    const paddings =
+      parseFloat(style.paddingTop || '0') +
+      parseFloat(style.paddingBottom || '0');
+    const totalHeight = slide.clientHeight - paddings;
+    const titleHeight = titleRef.value?.offsetHeight ?? 0;
+    const verticalGaps = (rows.value.length - 1) * 3;
+    const safetyPadding = 12;
+    const availableHeight = Math.max(
+      0,
+      totalHeight - titleHeight - verticalGaps - safetyPadding,
+    );
+    const rowCount = Math.max(1, rows.value.length);
+    const ROW_MIN = 36;
+    const ROW_MAX = 65;
+    rowHeight.value = Math.max(
+      ROW_MIN,
+      Math.min(ROW_MAX, Math.floor(availableHeight / rowCount)),
+    );
+  });
+};
+
+onMounted(() => {
+  slideElement = getSlideElement();
+  // Observe slide size changes (e.g. viewport resize, fullscreen, layout shifts)
+  if (slideElement) {
+    slideObserver = new ResizeObserver(calculateRowHeight);
+    slideObserver.observe(slideElement);
+  }
+  // Fallback: also listen to window resize
+  window.addEventListener('resize', calculateRowHeight, { passive: true });
+  calculateRowHeight();
+});
+
+onBeforeUnmount(() => {
+  slideObserver?.disconnect();
+  slideObserver = null;
+  window.removeEventListener('resize', calculateRowHeight);
+});
+// Recompute when number of rows changes (components shown/hidden)
+watch(rows, calculateRowHeight, { deep: true });
 </script>
 
 <style scoped>
@@ -320,11 +373,12 @@ const arrowDirection = (itemId: string) =>
 
 .banner-table :deep(.q-table__middle table) {
   border-collapse: separate;
-  border-spacing: 0 3px; /* vertical gap between "cards" */
+  border-spacing: 0 3px; /* vertical gap between “cards” */
 }
 
 .banner-table :deep(tbody tr) {
   background: var(--row-bg);
+  height: var(--row-h);
 }
 
 .banner-table :deep(tbody td:first-child) {
