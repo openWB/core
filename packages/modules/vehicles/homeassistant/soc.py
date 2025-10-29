@@ -31,7 +31,7 @@ def extract_to_epoch(input_string: Union[str, int, float]) -> float:
 
 
 def fetch_soc(config: HaVehicleSocSetup) -> CarState:
-    url = config.configuration.url
+    url = config.configuration.url+"/api/states/"+config.configuration.entity_id
     if url is None or url == "":
         raise ValueError("Keine URL zum Abrufen der Daten definiert. Bitte in der Konfiguration aktualisieren.")
     response = req.get_http_session().get(url, timeout=10,
@@ -56,11 +56,15 @@ def create_vehicle(vehicle_config: HaVehicleSocSetup, vehicle: int):
 
 def json_update(charge_point: int,
                 url: str,
-                token: str
+                token: str,
+                entity_id: str
                 ):
-    log.debug(f'homeassistant-soc: charge_point={charge_point} url="{url}" token="{token}"')
+    log.debug(f'homeassistant-soc: charge_point={charge_point} url="{url}" token="{token}" '
+              f'entity_id="{entity_id}"')
     store.get_car_value_store(charge_point).store.set(
-        fetch_soc(HaVehicleSocSetup(configuration=HaVehicleSocConfiguration(url=url, token=token))))
+        fetch_soc(HaVehicleSocSetup(configuration=HaVehicleSocConfiguration(url=url,
+                                                                            token=token,
+                                                                            entity_id=entity_id))))
 
 
 def main(argv: List[str]):

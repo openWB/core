@@ -7,10 +7,12 @@ class HaVehicleSocConfiguration:
     def __init__(
             self,
             url: Optional[str] = None,
-            token: Optional[str] = None
+            token: Optional[str] = None,
+            entity_id: Optional[str] = None
             ):
         self.url = url
         self.token = token
+        self.entity_id = entity_id
 
 
 @auto_str

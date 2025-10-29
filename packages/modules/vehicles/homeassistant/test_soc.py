@@ -25,7 +25,8 @@ class TestSoc(unittest.TestCase):
                     "user_id": None
                 }
             },
-            "url": "http://1.1.1.1:4711/api/states/sensor.ioniq_ev_battery_level",
+            "url": "http://1.1.1.1:4711",
+            "entity_id": "sensor.ioniq_ev_battery_level",
             "token": "testtoken",
             "expected_soc": 84,
             "expected_range": None,
@@ -41,7 +42,8 @@ class TestSoc(unittest.TestCase):
 
             vehicle_config = HaVehicleSocSetup(configuration=HaVehicleSocConfiguration(
                 url=case['url'],
-                token=case['token']
+                token=case['token'],
+                entity_id=case['entity_id']
             ))
             car_state = fetch_soc(vehicle_config)
 
