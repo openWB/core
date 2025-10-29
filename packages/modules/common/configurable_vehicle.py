@@ -89,9 +89,6 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                 # Die Pro liefert manchmal den SoC nicht, bis nach dem Anstecken das SoC-Update getriggert wird.
                 # Wenn Sie dann doch noch den alten SoC liefert, darf dieser nicht verworfen werden.
                 self.store.set(car_state)
-            elif vehicle_update_data.last_soc_timestamp > 1e10:
-                # car_state ist in ms geschrieben, dieser kann überschrieben werden
-                self.store.set(car_state)
             else:
                 log.debug("Not updating SoC, because timestamp is older.")
             self.calculated_soc_state.last_imported = vehicle_update_data.imported
