@@ -406,15 +406,15 @@ class SetData:
             enthält Topic und Payload
         """
         try:
-            if "charge_template" in msg.topic:
+            if (re.search("/vehicle/template/charge_template/[0-9]+$", msg.topic) is not None or
+                    re.search("/chargepoint/[0-9]+/set/charge_template$", msg.topic) is not None):
                 self._validate_value(msg, "json")
                 if data.data.general_data.data.temporary_charge_templates_active is False:
-                    if "openWB/set/chargepoint/" in msg.topic and "/set/charge_template" in msg.topic:
+                    if re.search("/chargepoint/[0-9]+/set/charge_template$", msg.topic) is not None:
                         payload = decode_payload(msg.payload)
                         Pub().pub(f"openWB/vehicle/template/charge_template/{payload['id']}", payload)
                     else:
                         get_index(msg.topic)
-
                         for vehicle in data.data.ev_data.values():
                             if vehicle.data.charge_template == int(get_index(msg.topic)):
                                 for cp in data.data.cp_data.values():
