@@ -153,12 +153,17 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 	// Counters
 	currentItem.counters = 0
 	Object.entries(currentRow.counter).forEach(([id, values]) => {
+		console.log(id)
+		console.log(registry.keys())
 		if (!values.grid) {
-			currentItem.counters += values.power_imported ?? 0
+			 
 			currentItem[id] = values.power_imported ?? 0
 			if (!registry.keys().includes(id)) {
 				registry.duplicateItem(id, counters.get(+id.slice(7))!)
-				registry.items.get(id)!.showInGraph = true
+				//registry.items.get(id)!.showInGraph = true
+			}
+			if (registry.items.get(id)!.showInGraph) {
+				currentItem.counters += values.power_imported ?? 0
 			}
 		}
 	})
