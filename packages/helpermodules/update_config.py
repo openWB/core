@@ -2575,7 +2575,7 @@ class UpdateConfig:
         version_str = decode_payload(
             self.all_received_topics.get("openWB/system/version", "2.1.9"))
         if '-' in version_str:
-            version, version_suffix = version.split('-', 1)
+            version, version_suffix = version_str.split('-', 1)
         else:
             version = version_str
             version_suffix = None
