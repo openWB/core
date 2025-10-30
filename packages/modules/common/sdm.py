@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 from enum import IntEnum
+import time
+from typing import List, Tuple
 
 from modules.common import modbus
 from modules.common.abstract_counter import AbstractCounter
@@ -15,6 +17,11 @@ class Sdm(AbstractCounter):
         self.id = modbus_id
         with client:
             self.serial_number = str(self.client.read_holding_registers(0xFC00, ModbusDataType.UINT_32, unit=self.id))
+
+    def get_imported(self) -> float:
+        # smarthome legacy
+        time.sleep(0.1)
+        return self.client.read_input_registers(0x0048, ModbusDataType.FLOAT_32, unit=self.id) * 1000
 
 
 class SdmRegister(IntEnum):
@@ -41,6 +48,13 @@ class Sdm630_72(Sdm):
     def __init__(self, modbus_id: int, client: modbus.ModbusTcpClient_, fault_state: FaultState) -> None:
         super().__init__(modbus_id, client)
         self.fault_state = fault_state
+
+    def get_power(self) -> Tuple[List[float], float]:
+        # smarthome legacy
+        time.sleep(0.1)
+        powers = self.client.read_input_registers(0x0C, [ModbusDataType.FLOAT_32]*3, unit=self.id)
+        power = sum(powers)
+        return powers, power
 
     def get_counter_state(self) -> CounterState:
         resp = self.client.read_input_registers_bulk(
@@ -77,6 +91,12 @@ class Sdm120(Sdm):
     def __init__(self, modbus_id: int, client: modbus.ModbusTcpClient_, fault_state: FaultState) -> None:
         super().__init__(modbus_id, client)
         self.fault_state = fault_state
+
+    def get_power(self) -> Tuple[List[float], float]:
+        # smarthome legacy
+        time.sleep(0.1)
+        power = self.client.read_input_registers(0x0C, ModbusDataType.FLOAT_32, unit=self.id)
+        return [power, 0, 0], power
 
     def get_counter_state(self) -> CounterState:
         resp = self.client.read_input_registers_bulk(
