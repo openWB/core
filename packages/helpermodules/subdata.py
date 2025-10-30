@@ -357,8 +357,7 @@ class SubData:
                     for vehicle in self.ev_data.values():
                         if vehicle.data.charge_template == int(index):
                             for cp in self.cp_data.values():
-                                if ((cp.chargepoint.data.set.charging_ev != -1 and
-                                        cp.chargepoint.data.set.charging_ev == vehicle.num) or
+                                if (cp.chargepoint.data.set.charging_ev == vehicle.num or
                                         cp.chargepoint.data.config.ev == vehicle.num):
                                     # UI sendet immer alle Topics, auch nicht geänderte. Damit die temporären Topics
                                     # nicht mehrfach gepbulished werden, muss das publishen der temporären Topics 1:1
