@@ -2575,16 +2575,11 @@ class UpdateConfig:
         version_str = decode_payload(
             self.all_received_topics.get("openWB/system/version", "2.1.9"))
         if '-' in version_str:
-            version, version_suffix = version_str.split('-', 1)
+            version = version_str.split('-', 1)[0]
         else:
             version = version_str
-            version_suffix = None
         major, minor, feature = (int(x) for x in version.split("."))
-        if version_suffix is not None and version_suffix.split(".")[0] == "Patch":
-            patch = version_suffix.split(".")[1]
-        else:
-            patch = 0
-        if (major, minor, feature) == (2, 1, 8) and patch <= 3:
+        if (major, minor, feature) == (2, 1, 8):
             self.__update_topic("openWB/general/temporary_charge_templates_active", True)
         pub_system_message(
             {},
