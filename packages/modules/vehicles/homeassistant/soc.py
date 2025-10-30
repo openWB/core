@@ -31,12 +31,19 @@ def extract_to_epoch(input_string: Union[str, int, float]) -> float:
 
 
 def fetch_soc(config: HaVehicleSocSetup) -> CarState:
-    url = config.configuration.url+"/api/states/"+config.configuration.entity_id
+    url = config.configuration.url
+    entity_id = config.configuration.entity_id
+    token = config.configuration.token
     if url is None or url == "":
-        raise ValueError("Keine URL zum Abrufen der Daten definiert. Bitte in der Konfiguration aktualisieren.")
+        raise ValueError("Keine URL zum Abrufen der Daten definiert. Bitte Konfiguration anpassen.")
+    if entity_id is None or entity_id == "":
+        raise ValueError("Keine Entitäts-ID definiert. Bitte Konfiguration anpassen.")
+    if token is None or token == "":
+        raise ValueError("Kein Token definiert. Bitte Konfiguration anpassen.")
+    url = url + "/api/states/" + entity_id
     response = req.get_http_session().get(url, timeout=10,
                                           headers={
-                                              "authorization": "Bearer " + config.configuration.token,
+                                              "authorization": "Bearer " + token,
                                               "content-type": "application/json"}
                                           )
     response.raise_for_status()
