@@ -46,7 +46,6 @@ def fetch_soc(config: HaVehicleSocSetup) -> CarState:
                                               "authorization": "Bearer " + token,
                                               "content-type": "application/json"}
                                           )
-    response.raise_for_status()
     json = response.json()
     soc = float(json['state'])
     soc_timestamp = extract_to_epoch(json['last_changed'])
