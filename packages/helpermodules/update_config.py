@@ -2572,10 +2572,15 @@ class UpdateConfig:
         self.__update_topic("openWB/system/datastore_version", 98)
 
     def upgrade_datastore_98(self) -> None:
-        version, version_suffix = decode_payload(
-            self.all_received_topics.get("openWB/system/version", "2.1.9")).split("-")
+        version_str = decode_payload(
+            self.all_received_topics.get("openWB/system/version", "2.1.9"))
+        if '-' in version_str:
+            version, version_suffix = version.split('-', 1)
+        else:
+            version = version_str
+            version_suffix = None
         major, minor, feature = (int(x) for x in version.split("."))
-        if version_suffix.split(".")[0] == "Patch":
+        if version_suffix is not None and version_suffix.split(".")[0] == "Patch":
             patch = version_suffix.split(".")[1]
         else:
             patch = 0
