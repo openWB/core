@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch, MagicMock
-from soc import initialize_vehicle, fetch_soc, JsonSocSetup, JsonSocConfiguration
+from modules.vehicles.json.soc import initialize_vehicle, fetch_soc, JsonSocSetup, JsonSocConfiguration
 
 
 class TestSoc(unittest.TestCase):
