@@ -315,7 +315,18 @@ class SubData:
                             Pub().pub("openWB/system/subdata_initialized", True)
                         self.event_soc.set()
                     else:
+                        # temporäres ChargeTemplate aktualisieren, wenn dem Fahrzeug ein anderes Ladeprofil zugeordnet
+                        # wird
                         self.set_json_payload_class(var["ev"+index].data, msg)
+                        if re.search("/vehicle/[0-9]+/charge_template$", msg.topic) is not None:
+                            charge_template_id = int(decode_payload(msg.payload))
+                            if var["ev"+index].data.charge_template != charge_template_id:
+                                ev_id = get_index(msg.topic)
+                                for cp in self.cp_data.values():
+                                    if (cp.chargepoint.data.set.charging_ev == ev_id or
+                                            cp.chargepoint.data.config.ev == ev_id):
+                                        cp.chargepoint.update_charge_template(
+                                            self.ev_charge_template_data[f"ct{charge_template_id}"])
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
@@ -337,8 +348,25 @@ class SubData:
                         var.pop("ct"+index)
                 if "ct"+index not in var:
                     var["ct"+index] = ChargeTemplate()
-                var["ct"+index].data = dataclass_from_dict(ChargeTemplateData, decode_payload(msg.payload))
-
+                new_charge_template = dataclass_from_dict(ChargeTemplateData, decode_payload(msg.payload))
+                template_changed = new_charge_template != var["ct"+index].data
+                var["ct"+index].data = new_charge_template
+                if template_changed and self.general_data.data.temporary_charge_templates_active:
+                    # Temporäres ChargeTemplate aktualisieren, wenn persistentes geändert wird
+                    for vehicle in self.ev_data.values():
+                        if vehicle.data.charge_template == int(index):
+                            for cp in self.cp_data.values():
+                                if (cp.chargepoint.data.set.charging_ev == vehicle.num or
+                                        cp.chargepoint.data.config.ev == vehicle.num):
+                                    # UI sendet immer alle Topics, auch nicht geänderte. Damit die temporären Topics
+                                    # nicht mehrfach gepbulished werden, muss das publishen der temporären Topics 1:1
+                                    # erfolgen.
+                                    if re.search("/vehicle/template/charge_template/[0-9]+$", msg.topic) is not None:
+                                        if decode_payload(msg.payload) == "":
+                                            Pub().pub(
+                                                f"openWB/chargepoint/{cp.chargepoint.num}/set/charge_template", "")
+                                        else:
+                                            cp.chargepoint.update_charge_template(var["ct"+index])
         except Exception:
             log.exception("Fehler im subdata-Modul")
 

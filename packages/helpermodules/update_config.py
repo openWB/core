@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 98
+    DATASTORE_VERSION = 99
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -2560,19 +2560,6 @@ class UpdateConfig:
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 96)
 
-    def upgrade_datastore_96(self) -> None:
-        version = decode_payload(self.all_received_topics.get("openWB/system/version", "2.1.9")).split("-")[0]
-        major, minor, feature = (int(x) for x in version.split("."))
-        if (2, 1, 7) <= (major, minor, feature) <= (2, 1, 8):
-            self.__update_topic("openWB/general/temporary_charge_templates_active", True)
-            pub_system_message(
-                {},
-                "Die temporären Ladeeinstellungen können ab jetzt benutzerdefiniert unter Einstellungen -> Allgemein"
-                " -> Darstellung & Bedienung angewendet werden.",
-                MessageType.INFO,
-            )
-        self.__update_topic("openWB/system/datastore_version", 97)
-
     def upgrade_datastore_97(self) -> None:
         def upgrade(topic: str, payload) -> None:
             if re.search("openWB/system/device/[0-9]+/config$", topic) is not None:
@@ -2583,3 +2570,21 @@ class UpdateConfig:
                 Pub().pub(topic, payload)
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 98)
+
+    def upgrade_datastore_98(self) -> None:
+        version_str = decode_payload(
+            self.all_received_topics.get("openWB/system/version", "2.1.9"))
+        if '-' in version_str:
+            version = version_str.split('-', 1)[0]
+        else:
+            version = version_str
+        major, minor, feature = (int(x) for x in version.split("."))
+        if (major, minor, feature) == (2, 1, 8):
+            self.__update_topic("openWB/general/temporary_charge_templates_active", True)
+        pub_system_message(
+            {},
+            "Die temporären Ladeeinstellungen können ab jetzt benutzerdefiniert unter Einstellungen -> Allgemein"
+            " -> Darstellung & Bedienung angewendet werden.",
+            MessageType.INFO,
+        )
+        self.__update_topic("openWB/system/datastore_version", 99)
