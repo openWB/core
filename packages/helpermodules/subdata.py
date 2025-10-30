@@ -323,8 +323,7 @@ class SubData:
                             if var["ev"+index].data.charge_template != charge_template_id:
                                 ev_id = get_index(msg.topic)
                                 for cp in self.cp_data.values():
-                                    if ((cp.chargepoint.data.set.charging_ev != -1 and
-                                         cp.chargepoint.data.set.charging_ev == ev_id) or
+                                    if (cp.chargepoint.data.set.charging_ev == ev_id or
                                             cp.chargepoint.data.config.ev == ev_id):
                                         cp.chargepoint.update_charge_template(
                                             self.ev_charge_template_data[f"ct{charge_template_id}"])
