@@ -2171,6 +2171,16 @@ export const useMqttStore = defineStore('mqtt', () => {
     };
   });
 
+  function addScheduledChargingPlanForChargePoint(chargePointId: number) {
+  const templateId = chargePointConnectedVehicleChargeTemplate(chargePointId).value?.id;
+  if (templateId !== undefined) {
+    sendSystemCommand('addChargeTemplateSchedulePlan', { template: templateId });
+  } else {
+    console.warn('Kein Template für ChargePoint gefunden:', chargePointId);
+  }
+}
+
+
   /**
    * Get time charging plan/s data identified by the charge point id
    * @param chargePointId charge point id
@@ -2910,6 +2920,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointConnectedVehicleSoc,
     vehicleActivePlan,
     vehicleChargeTarget,
+    addScheduledChargingPlanForChargePoint,
     vehicleScheduledChargingPlans,
     vehicleScheduledChargingPlanActive,
     vehicleScheduledChargingPlanEtActive,
