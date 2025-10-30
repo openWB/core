@@ -1,6 +1,16 @@
 <template>
   <q-card class="rounded-borders-md">
     <q-card-section>
+      <div class="row no-wrap">
+        <div class="text-h6 ellipsis" :title="planName.value">
+          {{ planName.value }}
+        </div>
+        <q-space />
+        <q-btn icon="close" flat round dense v-close-popup />
+      </div>
+    </q-card-section>
+    <q-separator />
+    <q-card-section>
       <div class="row items-center q-mb-sm">
         <q-input v-model="planName.value" label="Plan Name" class="col" />
       </div>
@@ -157,6 +167,17 @@
           />
         </q-btn-group>
       </div>
+      <div
+        class="row q-mt-md"
+      >
+        <q-btn
+          size="sm"
+          class="col"
+          color="primary"
+          @click="removeScheduledChargingPlan(plan.id)"
+          >Plan löschen</q-btn
+        >
+      </div>
     </q-card-section>
   </q-card>
 </template>
@@ -298,6 +319,18 @@ const planNumPhasesPv = computed(() =>
     props.plan.id,
   ),
 );
+
+const removeScheduledChargingPlan = (planId) => {
+  mqttStore.removeScheduledChargingPlanForChargePoint(
+    props.chargePointId,
+    planId,
+  );
+  //charge mode set back to instant_charging in backend when a plan is removed
+  //set timeout workaround
+  setTimeout(() => {
+    mqttStore.chargePointConnectedVehicleChargeMode(props.chargePointId).value = 'scheduled_charging';
+  }, 200);
+};
 </script>
 
 <style scoped>

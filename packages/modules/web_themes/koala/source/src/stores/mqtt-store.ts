@@ -2180,6 +2180,15 @@ export const useMqttStore = defineStore('mqtt', () => {
   }
 }
 
+  function removeScheduledChargingPlanForChargePoint(chargePointId: number, planId: number) {
+  const templateId = chargePointConnectedVehicleChargeTemplate(chargePointId).value?.id;
+  if (templateId !== undefined) {
+    sendSystemCommand('removeChargeTemplateSchedulePlan', { template: templateId, plan: planId });
+  } else {
+    console.warn('Kein Template für ChargePoint gefunden:', chargePointId);
+  }
+}
+
 
   /**
    * Get time charging plan/s data identified by the charge point id
@@ -2921,6 +2930,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     vehicleActivePlan,
     vehicleChargeTarget,
     addScheduledChargingPlanForChargePoint,
+    removeScheduledChargingPlanForChargePoint,
     vehicleScheduledChargingPlans,
     vehicleScheduledChargingPlanActive,
     vehicleScheduledChargingPlanEtActive,
