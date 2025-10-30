@@ -120,4 +120,11 @@ class ConfigurableDevice(Generic[T_COMPONENT, T_DEVICE_CONFIG, T_COMPONENT_CONFI
         for component in self.components.values():
             if hasattr(component, "initialized") and component.initialized:
                 initialized_components.append(component)
+            else:
+                try:
+                    component.initialize()
+                    component.initialized = True
+                    initialized_components.append(component)
+                except Exception:
+                    log.exception(f"Initialisierung der Komponente {component} fehlgeschlagen")
         self.__component_updater(initialized_components, self.error_handler)

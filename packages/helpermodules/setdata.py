@@ -21,6 +21,8 @@ import dataclass_utils
 log = logging.getLogger(__name__)
 mqtt_log = logging.getLogger("mqtt")
 
+TIMESTAMP_2100 = 4102441200  # 01.01.2100 00:00:00
+
 
 class SetData:
     def __init__(self,
@@ -386,7 +388,7 @@ class SetData:
                 self._validate_value(msg, int, [(0, float("inf"))])
             elif ("/get/soc_request_timestamp" in msg.topic or
                   "/get/soc_timestamp" in msg.topic):
-                self._validate_value(msg, float)
+                self._validate_value(msg, float, [(0, TIMESTAMP_2100)])
             elif "/get/soc" in msg.topic:
                 self._validate_value(msg, float, [(0, 100)])
             elif "/get/range" in msg.topic:
@@ -406,15 +408,15 @@ class SetData:
             enthält Topic und Payload
         """
         try:
-            if "charge_template" in msg.topic:
+            if (re.search("/vehicle/template/charge_template/[0-9]+$", msg.topic) is not None or
+                    re.search("/chargepoint/[0-9]+/set/charge_template$", msg.topic) is not None):
                 self._validate_value(msg, "json")
                 if data.data.general_data.data.temporary_charge_templates_active is False:
-                    if "openWB/set/chargepoint/" in msg.topic and "/set/charge_template" in msg.topic:
+                    if re.search("/chargepoint/[0-9]+/set/charge_template$", msg.topic) is not None:
                         payload = decode_payload(msg.payload)
                         Pub().pub(f"openWB/vehicle/template/charge_template/{payload['id']}", payload)
                     else:
                         get_index(msg.topic)
-
                         for vehicle in data.data.ev_data.values():
                             if vehicle.data.charge_template == int(get_index(msg.topic)):
                                 for cp in data.data.cp_data.values():
@@ -579,7 +581,7 @@ class SetData:
             self._validate_value(msg, str)
         elif ("/get/error_timestamp" in msg.topic or
                 "/get/rfid_timestamp" in msg.topic):
-            self._validate_value(msg, float)
+            self._validate_value(msg, float, [(0, TIMESTAMP_2100)])
         elif ("/get/fault_str" in msg.topic or
                 "/get/state_str" in msg.topic or
                 "/get/heartbeat" in msg.topic or
@@ -758,7 +760,7 @@ class SetData:
                     "openWB/set/general/mqtt_bridge" in msg.topic):
                 self._validate_value(msg, bool)
             elif "openWB/set/general/grid_protection_timestamp" in msg.topic:
-                self._validate_value(msg, float)
+                self._validate_value(msg, float, [(0, TIMESTAMP_2100)])
             elif "openWB/set/general/grid_protection_random_stop" in msg.topic:
                 self._validate_value(msg, int, [(0, 90)])
             elif "openWB/set/general/notifications/selected" in msg.topic:
@@ -811,7 +813,7 @@ class SetData:
             elif "get/fault_str" in msg.topic:
                 self._validate_value(msg, str)
             elif "/timestamp" in msg.topic:
-                self._validate_value(msg, float)
+                self._validate_value(msg, float, [(0, TIMESTAMP_2100)])
             else:
                 self.__unknown_topic(msg)
         except Exception:
@@ -1051,7 +1053,7 @@ class SetData:
                 elif "/config" in msg.topic:
                     self._validate_value(msg, "json")
                 elif "/error_timestamp" in msg.topic:
-                    self._validate_value(msg, float, [(0, float("inf"))])
+                    self._validate_value(msg, float, [(0, TIMESTAMP_2100)])
                 elif "/get/fault_state" in msg.topic:
                     self._validate_value(msg, int, [(0, 2)])
                 elif "/get/fault_str" in msg.topic:

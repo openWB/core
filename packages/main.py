@@ -19,7 +19,7 @@ import schedule
 import time
 from threading import Event, Thread, enumerate
 import traceback
-from control.chargelog.chargelog import calculate_charge_cost
+from control.chargelog.chargelog import calc_energy_costs, calculate_charged_energy_by_source
 
 from control import data, prepare, process
 from control.algorithm import algorithm
@@ -182,6 +182,8 @@ class HandlerAlgorithm:
                 totals = save_log(LogType.DAILY)
                 update_daily_yields(totals)
                 update_pv_monthly_yearly_yields()
+                for cp in data.data.cp_data.values():
+                    calc_energy_costs(cp)
                 data.data.general_data.grid_protection()
                 data.data.optional_data.ocpp_transfer_meter_values()
                 data.data.counter_all_data.validate_hierarchy()
@@ -250,7 +252,7 @@ class HandlerAlgorithm:
         try:
             with ChangedValuesContext(loadvars_.event_module_update_completed):
                 for cp in data.data.cp_data.values():
-                    calculate_charge_cost(cp)
+                    calculate_charged_energy_by_source(cp)
             data.data.optional_data.et_get_prices()
             logger.clear_in_memory_log_handler(None)
         except Exception:

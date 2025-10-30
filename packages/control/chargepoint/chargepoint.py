@@ -234,7 +234,9 @@ class Chargepoint(ChargepointRfidMixin):
                     log.debug("/set/manual_lock True")
                 # Ev wurde noch nicht aktualisiert.
                 # Ladeprofil aus den Einstellungen laden.
-                self.update_charge_template(data.data.ev_data["ev"+str(self.data.set.charging_ev_prev)].charge_template)
+                if data.data.general_data.data.temporary_charge_templates_active:
+                    self.update_charge_template(
+                        data.data.ev_data["ev"+str(self.data.set.charging_ev_prev)].charge_template)
                 chargelog.save_and_reset_data(self, data.data.ev_data["ev"+str(self.data.set.charging_ev_prev)])
                 self.data.set.charging_ev_prev = -1
                 Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/charging_ev_prev",
@@ -842,10 +844,9 @@ class Chargepoint(ChargepointRfidMixin):
         return charging_ev
 
     def update_charge_template(self, charge_template: ChargeTemplate) -> None:
-        if data.data.general_data.data.temporary_charge_templates_active:
-            # Prüfen, ob ein temporäres Ladeprofil aktiv ist und dieses übernehmen
-            Pub().pub(f"openWB/set/chargepoint/{self.num}/set/charge_template",
-                      dataclasses.asdict(charge_template.data))
+        # Prüfen, ob ein temporäres Ladeprofil aktiv ist und dieses übernehmen
+        Pub().pub(f"openWB/set/chargepoint/{self.num}/set/charge_template",
+                  dataclasses.asdict(charge_template.data))
 
     def _pub_connected_vehicle(self, vehicle: Ev):
         """ published die Daten, die zur Anzeige auf der Hauptseite benötigt werden.

@@ -64,17 +64,25 @@ class ConnectedVehicle:
     soc: ConnectedSoc = field(default_factory=connected_soc_factory)
 
 
+def empty_enery_source_dict_factory():
+    return {'bat': 0, 'cp': 0, 'grid': 0, 'pv': 0}
+
+
 @dataclass
 class Log:
+    begin: Optional[float] = None
     chargemode_log_entry: str = "_"
+    charged_energy_by_source: Dict[str, float] = field(default_factory=empty_enery_source_dict_factory)
     costs: float = 0
+    end: Optional[float] = None
     imported_at_mode_switch: float = 0
     imported_at_plugtime: float = 0
     imported_since_mode_switch: float = 0
     imported_since_plugged: float = 0
     range_charged: float = 0
-    time_charged: str = "00:00"
+    time_charged: float = 0
     timestamp_start_charging: Optional[float] = None
+    timestamp_mode_switch: Optional[float] = None
     ev: int = -1
     prio: bool = False
     rfid: Optional[str] = None
