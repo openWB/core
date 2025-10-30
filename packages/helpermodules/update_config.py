@@ -2591,13 +2591,12 @@ class UpdateConfig:
         )
         self.__update_topic("openWB/system/datastore_version", 99)
 
-    def upgrade_datastore_100(self) -> None:
-        if "openWB/general/chargemode_config/pv_charging/max_bat_soc" not in self.all_received_topics:
-            # bei Aktualisierung den max_bat_soc auf min_bat_soc setzen
-            # Regelung verhält sich dadurch wie bisher konfiguriert
-            # max_bat_soc kann nicht kleiner als min_bat_soc werden
-            min_bat_soc = decode_payload(self.all_received_topics[
-                "openWB/general/chargemode_config/pv_charging/min_bat_soc"])
+    def upgrade_datastore_99(self) -> None:
+        # bei Aktualisierung den max_bat_soc auf min_bat_soc setzen
+        # Regelung verhält sich dadurch wie bisher konfiguriert
+        # max_bat_soc kann nicht kleiner als min_bat_soc werden
+        min_bat_soc = decode_payload(self.all_received_topics[
+            "openWB/general/chargemode_config/pv_charging/min_bat_soc"])
 
-            self.__update_topic("openWB/general/chargemode_config/pv_charging/max_bat_soc", min_bat_soc)
+        self.__update_topic("openWB/general/chargemode_config/pv_charging/max_bat_soc", min_bat_soc)
         self.__update_topic("openWB/system/datastore_version", 100)
