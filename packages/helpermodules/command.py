@@ -489,18 +489,20 @@ class Command:
                              MessageType.ERROR)
 
     def _get_charge_template_by_source(self, payload: dict) -> ChargeTemplate:
-        """ gibt das ChargeTemplate-Objekt zurück, je nachdem ob es sich um ein temporäres Template handelt oder nicht.
+        """ gibt das ChargeTemplate-Objekt zurück, je nachdem ob es sich um das persistente Ladeprofil oder das
+        Ladeprofil des Ladepunkts handelt.
         """
-        if payload["data"]["changed_in_theme"] == True:
+        if payload["data"]["changed_in_theme"]:
             charge_template = data.data.cp_data[f"cp{payload['data']['chargepoint']}"].data.set.charge_template
         else:
             charge_template = data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}']
         return charge_template
 
     def _pub_charge_template_to_source(self, payload: dict, charge_template: ChargeTemplate) -> None:
-        """ veröffentlicht das ChargeTemplate-Objekt, je nachdem ob es sich um ein temporäres Template handelt oder nicht.
+        """ veröffentlicht das ChargeTemplate-Objekt, je nachdem ob es sich um das persistente Ladeprofil oder das
+        Ladeprofil des Ladepunkts handelt.
         """
-        if payload["data"]["changed_in_theme"] == True:
+        if payload["data"]["changed_in_theme"]:
             Pub().pub(
                 f'openWB/set/chargepoint/{payload["data"]["chargepoint"]}/set/charge_template',
                 dataclass_utils.asdict(charge_template.data))
