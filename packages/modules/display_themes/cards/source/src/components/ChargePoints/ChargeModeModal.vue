@@ -4,7 +4,7 @@ import { useMqttStore } from "@/stores/mqtt.js";
 export default {
   name: "ChargeModeModal",
   props: {
-    modelValue: { required: true, type: Boolean, default: false },
+    modelValue: { required: true, type: Boolean },
     chargePointId: {
       type: Number,
       required: true,
@@ -138,11 +138,3 @@ export default {
   </i-modal>
   <!-- end charge mode only-->
 </template>
-
-<style scoped>
-.large-button {
-  height: 3.5rem;
-  font-size: 1.5rem;
-  padding: 0.75rem 1.5rem;
-}
-</style>

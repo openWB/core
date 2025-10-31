@@ -289,12 +289,6 @@ export default {
   cursor: pointer;
 }
 
-.large-button {
-  height: 3.75rem;
-  font-size: 1.5rem;
-  padding: 0.75rem 1.5rem;
-}
-
 .button-group-wrapper {
   display: flex;
   flex-direction: column;
