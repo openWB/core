@@ -828,7 +828,7 @@ class SubData:
                     decode_payload(msg.payload))
             elif re.search("^.+/device/[0-9]+/error_timestamp$", msg.topic) is not None:
                 index = get_index(msg.topic)
-                var["device"+index].client_error_context.error_timestamp = decode_payload(msg.payload)
+                var["device"+index].error_timestamp = decode_payload(msg.payload)
             elif re.search("^.+/device/[0-9]+/component/[0-9]+/config$", msg.topic) is not None:
                 index = get_index(msg.topic)
                 index_second = get_second_index(msg.topic)
