@@ -104,7 +104,7 @@ def test_query_et_provider_data_once_per_day_param(
         tariff, "_ConfigurableElectricityTariff__calulate_next_query_time", lambda: None
     )
     with patch("modules.common.configurable_tariff.log") as mock_log:
-        tariff._ConfigurableElectricityTariff__query_et_provider_data_once_per_day()
+        tariff._ConfigurableElectricityTariff__query_et_provider_data_once_per_day(TariffState())
         assert getattr(mock_log, expected_log_method).called == expected_log_call
 
 
