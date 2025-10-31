@@ -131,8 +131,8 @@ const yScale = computed(() => {
 const keysToUse = computed(() => {
 	if (
 		graphData.graphMode != 'today' &&
-		graphData.graphMode != 'day' &&
-		graphData.graphMode != 'live'
+		graphData.graphMode != 'day' //&&
+		//graphData.graphMode != 'live'
 	) {
 		return keys.value[props.stackOrder]
 	} else {

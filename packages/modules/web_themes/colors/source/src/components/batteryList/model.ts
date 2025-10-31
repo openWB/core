@@ -4,7 +4,6 @@
  * Copyright (c) 2022 Claus Hagen
  */
 
-import { getColor } from '@/assets/js/model'
 import {
 	PowerItemType,
 	type EnergyData,

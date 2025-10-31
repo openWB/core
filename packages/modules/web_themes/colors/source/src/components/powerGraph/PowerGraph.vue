@@ -59,7 +59,8 @@
 							(graphData.graphMode == 'day' ||
 								graphData.graphMode == 'today' ||
 								graphData.graphMode == 'live') &&
-							Object.values(vehicles).filter((v) => v.visible).length > 0
+							vehicles[topVehicles[0]] != undefined &&
+							vehicles[topVehicles[0]].isSocConfigured
 						"
 						:width="width - margin.left - 2 * margin.right"
 						:height="(height - margin.top - margin.bottom) / 2"
@@ -71,7 +72,8 @@
 							(graphData.graphMode == 'day' ||
 								graphData.graphMode == 'today' ||
 								graphData.graphMode == 'live') &&
-							Object.values(vehicles).filter((v) => v.visible).length > 1
+							vehicles[topVehicles[1]] != undefined &&
+							vehicles[topVehicles[1]].isSocConfigured
 						"
 						:width="width - margin.left - 2 * margin.right"
 						:height="(height - margin.top - margin.bottom) / 2"
@@ -108,14 +110,30 @@
 					:margin="margin"
 					:data="graphData.data"
 				></PgToolTips>
-				<g id="button" type="button" @click="changeStackOrder">
+				<g
+					id="button"
+					type="button"
+					class="restackbutton"
+					@click="changeStackOrder"
+				>
+					<rect
+						:x="width - 32"
+						:y="height - 32"
+						width="30"
+						height="30"
+						rx="4"
+						ry="4"
+						fill="var(--color-bg)"
+						stroke="var(--color-menu)"
+						stroke-width="1"
+					></rect>
 					<text
-						:x="width - 10"
+						:x="width - 17"
 						:y="height - 10"
 						color="var(--color-menu)"
-						text-anchor="end"
+						text-anchor="middle"
 					>
-						<tspan fill="var(--color-menu)" class="fas fa-lg">
+						<tspan fill="var(--color-menu)" class="fas fa-xl">
 							{{ '\uf0dc' }}
 						</tspan>
 					</text>
@@ -145,6 +163,7 @@ import {
 	mytransform,
 } from './model'
 import { globalConfig, widescreen } from '@/assets/js/themeConfig'
+import { topVehicles } from '../chargePointList/model'
 import PgSoc from './PgSoc.vue'
 import PgSocAxis from './PgSocAxis.vue'
 import { vehicles } from '../chargePointList/model'
@@ -239,5 +258,8 @@ onMounted(() => {
 <style scoped>
 .fa-magnifying-glass {
 	color: var(--color-menu);
+}
+.restackbutton {
+	padding: 5px;
 }
 </style>
