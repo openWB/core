@@ -250,9 +250,6 @@ class HandlerAlgorithm:
         """ Handler, der jede Stunde aufgerufen wird und die Aufgaben ausführt, die nur jede Stunde ausgeführt werden müssen.
         """
         try:
-            with ChangedValuesContext(loadvars_.event_module_update_completed):
-                for cp in data.data.cp_data.values():
-                    calculate_charged_energy_by_source(cp)
             data.data.optional_data.et_get_prices()
             logger.clear_in_memory_log_handler(None)
         except Exception:
