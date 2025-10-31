@@ -39,6 +39,7 @@
         v-model="planCurrent.value"
       />
       <q-input
+        v-if="planDcChargingEnabled"
         v-model="planDcPower.value"
         label="Ladeleistung (DC) (kW)"
         class="col q-mb-md"
@@ -357,6 +358,10 @@ const planBidiPower = computed(() =>
     props.chargePointId,
     props.plan.id,
   ),
+);
+
+const planDcChargingEnabled = computed(() =>
+  mqttStore.dcChargingEnabled
 );
 
 const planDcPower = computed(() =>

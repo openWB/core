@@ -2069,6 +2069,33 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
+   * Get or set the weekly days array for time charging plan identified by the time charging plan id
+   * @param chargePointId charge point id
+   * @param planId time charging plan id
+   * @returns boolean[] | undefined
+   */
+  const vehicleTimeChargingPlanDcCurrent = (
+    chargePointId: number,
+    planId: number,
+  ) => {
+    return computed({
+      get() {
+        const plans = vehicleTimeChargingPlans.value(chargePointId);
+        const plan = plans.find((p) => p.id === planId);
+        return plan?.dc_current;
+      },
+      set(newValue: boolean[]) {
+        updateTimeChargingPlanSubtopic(
+          chargePointId,
+          planId,
+          'dc_current',
+          newValue,
+        );
+      },
+    });
+  };
+
+  /**
    * Get the charge point connected vehicle config identified by the charge point id
    * @param chargePointId charge point id
    * @returns ChargePointConnectedVehicleConfig
@@ -3444,6 +3471,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     vehicleTimeChargingPlanOnceDateEnd,
     vehicleTimeChargingPlanPhases,
     vehicleTimeChargingPlanWeeklyDays,
+    vehicleTimeChargingPlanDcCurrent,
     chargePointConnectedVehicleSocType,
     chargePointConnectedVehicleSocManual,
     // Battery data

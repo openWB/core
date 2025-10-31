@@ -45,6 +45,12 @@
         unit="A"
         v-model="planCurrent.value"
       />
+      <q-input
+        v-if="planDcChargingEnabled"
+        v-model="planDcCurrent.value"
+        label="Ladeleistung (DC) (kW)"
+        class="col q-mb-sm"
+      />
 
       <div class="text-subtitle2 q-mb-sm">Begrenzung</div>
       <q-btn-group class="full-width">
@@ -267,9 +273,23 @@ const selectedWeekDays = computed<boolean[]>({
     ).value = newValue;
   },
 });
+
 const planNumPhases = computed(() =>
   mqttStore.vehicleTimeChargingPlanPhases(props.chargePointId, props.plan.id),
 );
+
+const planDcChargingEnabled = computed(() =>
+  mqttStore.dcChargingEnabled
+);
+
+const planDcCurrent = computed(() =>
+  mqttStore.vehicleTimeChargingPlanDcCurrent(
+    props.chargePointId,
+    props.plan.id,
+  ),
+);
+
+// v-if="planDcChargingEnabled"
 
 const removeTimeChargingPlan = (planId: number) => {
   mqttStore.removeTimeChargingPlanForChargePoint(props.chargePointId, planId);
