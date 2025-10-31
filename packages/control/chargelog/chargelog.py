@@ -91,8 +91,6 @@ def collect_data(chargepoint):
             if chargepoint.data.get.charge_state:
                 if log_data.timestamp_start_charging is None:
                     log_data.timestamp_start_charging = now
-                if log_data.begin is None:
-                    log_data.begin = now
                     if charging_ev.soc_module:
                         log_data.range_at_start = charging_ev.data.get.range
                         log_data.soc_at_start = charging_ev.data.get.soc

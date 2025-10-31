@@ -70,7 +70,6 @@ def empty_enery_source_dict_factory():
 
 @dataclass
 class Log:
-    begin: Optional[float] = None
     chargemode_log_entry: str = "_"
     charged_energy_by_source: Dict[str, float] = field(default_factory=empty_enery_source_dict_factory)
     costs: float = 0
