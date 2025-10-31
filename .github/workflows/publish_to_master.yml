@@ -1,0 +1,64 @@
+
+
+
+name: Publish to master
+on:
+  push:
+    paths:
+      - packages/modules/display_themes/cards/source/**
+      - packages/modules/display_themes/colors/source/**
+      - packages/modules/web_themes/colors/source/**
+      - packages/modules/web_themes/koala/source/**
+
+
+jobs:
+  build-and-push-themes:
+    runs-on: ubuntu-latest
+    env:
+      THEME_BASES: |
+        packages/modules/display_themes/cards/source
+        packages/modules/display_themes/colors/source
+        packages/modules/web_themes/colors/source
+        packages/modules/web_themes/koala/source
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            packages/modules/display_themes/cards/source/package-lock.json
+            packages/modules/display_themes/colors/source/package-lock.json
+            packages/modules/web_themes/colors/source/package-lock.json
+            packages/modules/web_themes/koala/source/package-lock.json
+
+      - name: Installiere Abhängigkeiten und baue alle Themes
+        run: |
+          for base in $THEME_BASES; do
+            echo "Installiere und baue Theme: $base"
+            cd "$base"
+            npm ci || npm install
+            npm run build
+            cd -
+          done
+
+      - name: Commit und Push gebaute Themes
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add packages/modules/web_themes/koala/web
+          git add packages/modules/web_themes/colors/web
+          git add packages/modules/display_themes/cards/web
+          git add packages/modules/display_themes/colors/web
+          if ! git diff --cached --quiet; then
+            git commit -m "Build Web Themes"
+            git push
+          else
+            echo "No changes to commit."
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
