@@ -24,26 +24,37 @@
       </div>
       <div class="row items-center q-mb-md">
         <q-input
-          v-model="planTime.value"
+          v-model="planStartTime.value"
           type="time"
-          label="Ziel-Uhrzeit"
+          label="Ladebeginn"
+          class="col"
+        />
+        <q-input
+          v-model="planEndTime.value"
+          type="time"
+          label="Ladeende"
           class="col"
         />
       </div>
+
       <SliderStandard
-        class="q-mb-md"
-        title="Ladestrom (AC)"
+        class="q-mb-sm"
+        title="Ladestrom"
         :min="6"
         :max="32"
         unit="A"
         v-model="planCurrent.value"
       />
-      <q-input
-        v-model="planDcPower.value"
-        label="Ladeleistung (DC) (kW)"
-        class="col q-mb-md"
-      />
+
+      <div class="text-subtitle2 q-mb-sm">Begrenzung</div>
       <q-btn-group class="full-width">
+        <q-btn
+          size="sm"
+          class="flex-grow"
+          :color="planLimitSelected.value === 'none' ? 'primary' : 'grey'"
+          @click="planLimitSelected.value = 'none'"
+          label="Aus"
+        />
         <q-btn
           size="sm"
           class="flex-grow"
@@ -61,21 +72,13 @@
       </q-btn-group>
       <div v-if="planLimitSelected.value === 'soc'" class="q-mt-md">
         <SliderStandard
-          title="EV-SoC"
-          :min="5"
-          :max="100"
-          :step="5"
-          unit="%"
-          v-model="planSocScheduled.value"
-          class="q-mt-sm"
-        />
-        <SliderStandard
-          title="Fahrzeug-SoC mit Überschuss"
+          title="Ziel-SoC für das Fahrzeug"
           :min="5"
           :max="100"
           :step="5"
           unit="%"
           v-model="planSocLimit.value"
+          class="q-mt-sm"
         />
       </div>
       <q-input
@@ -84,25 +87,6 @@
         label="Energiemenge (kWh)"
         class="col"
       />
-
-      <div v-if="planLimitSelected.value === 'soc'" class="row items-center">
-        <div class="text-subtitle2 q-mr-sm">Bidirektionales Überschussladen</div>
-        <ToggleStandard
-          v-model="planBidiEnabled.value"
-          :size="'sm'"
-          color="positive"
-        />
-
-      </div>
-       <q-input
-        v-if="planLimitSelected.value === 'soc'"
-        v-model="planBidiPower.value"
-        label="Ladeleistung (kW)"
-        class="col"
-      />
-
-
-
 
       <div class="q-mb-md">
         <div class="text-subtitle2 q-mb-sm q-mt-sm">Wiederholungen</div>
@@ -126,16 +110,20 @@
             label="Wöchentlich"
           />
         </q-btn-group>
-
         <div v-if="planFrequency.value === 'once'" class="q-mt-sm">
           <q-input
-            v-model="planOnceDate.value"
+            v-model="planOnceDateStart.value"
             type="date"
-            label="Datum"
+            label="Gültig ab"
             :min="new Date().toISOString().split('T')[0]"
           />
+          <q-input
+            v-model="planOnceDateEnd.value"
+            type="date"
+            label="Gültig bis"
+            :min="planOnceDateStart.value"
+          />
         </div>
-        <!-- Weekly buttons -->
         <div
           v-if="planFrequency.value === 'weekly'"
           class="q-mt-sm row items-center q-gutter-sm justify-center no-wrap"
@@ -154,15 +142,8 @@
           </div>
         </div>
       </div>
-      <div class="row items-center">
-        <div class="text-subtitle2 q-mr-sm">Strompreisbasiert laden</div>
-        <ToggleStandard
-          v-model="planEtActive.value"
-          :size="'sm'"
-          color="positive"
-        />
-      </div>
-      <div class="text-subtitle2 q-mt-sm q-mr-sm">Anzahl Phasen Zielladen</div>
+
+      <div class="text-subtitle2 q-mt-sm q-mr-sm">Anzahl Phasen</div>
       <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
         <q-btn-group class="col">
           <q-btn
@@ -176,30 +157,12 @@
           />
         </q-btn-group>
       </div>
-      <div class="text-subtitle2 q-mt-sm q-mr-sm">
-        Anzahl Phasen bei PV-Überschuss
-      </div>
-      <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
-        <q-btn-group class="col">
-          <q-btn
-            v-for="option in phaseOptions"
-            :key="option.value"
-            :color="planNumPhasesPv.value === option.value ? 'primary' : 'grey'"
-            :label="option.label"
-            size="sm"
-            class="col"
-            @click="planNumPhasesPv.value = option.value"
-          />
-        </q-btn-group>
-      </div>
-      <div
-        class="row q-mt-md"
-      >
+      <div class="row q-mt-md">
         <q-btn
           size="sm"
           class="col"
           color="primary"
-          @click="removeScheduledChargingPlan(plan.id)"
+          @click="removeTimeChargingPlan(plan.id)"
           >Plan löschen</q-btn
         >
       </div>
@@ -209,26 +172,25 @@
 
 <script setup lang="ts">
 import { useMqttStore } from 'src/stores/mqtt-store';
-import { useQuasar } from 'quasar';
+//import { useQuasar } from 'quasar';
 import SliderStandard from './SliderStandard.vue';
 import ToggleStandard from './ToggleStandard.vue';
+import { type TimeChargingPlan } from '../stores/mqtt-store-model';
 import { computed } from 'vue';
-import { type ScheduledChargingPlan } from '../stores/mqtt-store-model';
 
 const props = defineProps<{
   chargePointId: number;
-  plan: ScheduledChargingPlan;
+  plan: TimeChargingPlan;
 }>();
 
 const mqttStore = useMqttStore();
-const $q = useQuasar();
+// const $q = useQuasar();
 
 const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
 const phaseOptions = [
   { value: 1, label: '1' },
   { value: 3, label: 'Maximum' },
-  { value: 0, label: 'Automatik' },
 ];
 
 const selectDay = (index: number) => {
@@ -237,144 +199,83 @@ const selectDay = (index: number) => {
   selectedWeekDays.value = newArray;
 };
 
-const planActive = computed(() =>
-  mqttStore.vehicleScheduledChargingPlanActive(
-    props.chargePointId,
-    props.plan.id,
-  ),
-);
-
-const planEtActive = computed(() =>
-  mqttStore.vehicleScheduledChargingPlanEtActive(
-    props.chargePointId,
-    props.plan.id,
-  ),
-);
-
-const planCurrent = computed(() =>
-  mqttStore.vehicleScheduledChargingPlanCurrent(
-    props.chargePointId,
-    props.plan.id,
-  ),
-);
-
-const planLimitSelected = computed(() =>
-  mqttStore.vehicleScheduledChargingPlanLimitSelected(
-    props.chargePointId,
-    props.plan.id,
-  ),
-);
-
-const planLimitAmount = computed(() =>
-  mqttStore.vehicleScheduledChargingPlanEnergyAmount(
-    props.chargePointId,
-    props.plan.id,
-  ),
-);
-
+// Hier die Computed Properties für die Felder (Backend-Anbindung folgt später)
 const planName = computed(() =>
-  mqttStore.vehicleScheduledChargingPlanName(
+  mqttStore.vehicleTimeChargingPlanName(props.chargePointId, props.plan.id),
+);
+const planActive = computed(() =>
+  mqttStore.vehicleTimeChargingPlanActive(props.chargePointId, props.plan.id),
+);
+const planCurrent = computed(() =>
+  mqttStore.vehicleTimeChargingPlanCurrent(props.chargePointId, props.plan.id),
+);
+const planLimitSelected = computed(() =>
+  mqttStore.vehicleTimeChargingPlanLimitSelected(
     props.chargePointId,
     props.plan.id,
   ),
 );
-
-const planTime = computed(() =>
-  mqttStore.vehicleScheduledChargingPlanTime(
+const planLimitAmount = computed(() =>
+  mqttStore.vehicleTimeChargingPlanEnergyAmount(
     props.chargePointId,
     props.plan.id,
   ),
 );
-
+const planSocLimit = computed(() =>
+  mqttStore.vehicleTimeChargingPlanSocLimit(props.chargePointId, props.plan.id),
+);
+const planStartTime = computed(() =>
+  mqttStore.vehicleTimeChargingPlanStartTime(
+    props.chargePointId,
+    props.plan.id,
+  ),
+);
+const planEndTime = computed(() =>
+  mqttStore.vehicleTimeChargingPlanEndTime(props.chargePointId, props.plan.id),
+);
 const planFrequency = computed(() =>
-  mqttStore.vehicleScheduledChargingPlanFrequencySelected(
+  mqttStore.vehicleTimeChargingPlanFrequencySelected(
     props.chargePointId,
     props.plan.id,
   ),
 );
-
-const planOnceDate = computed(() =>
-  mqttStore.vehicleScheduledChargingPlanOnceDate(
+const planOnceDateStart = computed(() =>
+  mqttStore.vehicleTimeChargingPlanOnceDateStart(
     props.chargePointId,
     props.plan.id,
   ),
 );
-
+const planOnceDateEnd = computed(() =>
+  mqttStore.vehicleTimeChargingPlanOnceDateEnd(
+    props.chargePointId,
+    props.plan.id,
+  ),
+);
 const selectedWeekDays = computed<boolean[]>({
   get() {
     return (
-      mqttStore.vehicleScheduledChargingPlanWeeklyDays(
+      mqttStore.vehicleTimeChargingPlanWeeklyDays(
         props.chargePointId,
         props.plan.id,
       ).value ?? Array(7).fill(false)
     );
   },
   set(newValue: boolean[]) {
-    mqttStore.vehicleScheduledChargingPlanWeeklyDays(
+    mqttStore.vehicleTimeChargingPlanWeeklyDays(
       props.chargePointId,
       props.plan.id,
     ).value = newValue;
   },
 });
-
-const planSocLimit = computed(() =>
-  mqttStore.vehicleScheduledChargingPlanSocLimit(
-    props.chargePointId,
-    props.plan.id,
-  ),
-);
-
-const planSocScheduled = computed(() =>
-  mqttStore.vehicleScheduledChargingPlanSocScheduled(
-    props.chargePointId,
-    props.plan.id,
-  ),
-);
-
 const planNumPhases = computed(() =>
-  mqttStore.vehicleScheduledChargingPlanPhases(
-    props.chargePointId,
-    props.plan.id,
-  ),
+  mqttStore.vehicleTimeChargingPlanPhases(props.chargePointId, props.plan.id),
 );
 
-const planNumPhasesPv = computed(() =>
-  mqttStore.vehicleScheduledChargingPlanPhasesPv(
-    props.chargePointId,
-    props.plan.id,
-  ),
-);
-
-const planBidiEnabled = computed(() =>
-  mqttStore.vehicleScheduledChargingPlanBidiEnabled(
-    props.chargePointId,
-    props.plan.id,
-  ),
-);
-
-const planBidiPower = computed(() =>
-  mqttStore.vehicleScheduledChargingPlanBidiPower(
-    props.chargePointId,
-    props.plan.id,
-  ),
-);
-
-const planDcPower = computed(() =>
-    mqttStore.vehicleScheduledChargingPlanDcPower(
-      props.chargePointId,
-      props.plan.id,
-    ),
-  );
-
-const removeScheduledChargingPlan = (planId) => {
-  mqttStore.removeScheduledChargingPlanForChargePoint(
-    props.chargePointId,
-    planId,
-  );
-  //charge mode set back to instant_charging in backend when a plan is removed
-  //set timeout workaround
+const removeTimeChargingPlan = (planId: number) => {
+  mqttStore.removeTimeChargingPlanForChargePoint(props.chargePointId, planId);
   setTimeout(() => {
-    mqttStore.chargePointConnectedVehicleChargeMode(props.chargePointId).value = 'scheduled_charging';
+    mqttStore.chargePointConnectedVehicleChargeMode(props.chargePointId).value =
+      'time_charging';
   }, 200);
 };
 </script>
@@ -384,7 +285,6 @@ const removeScheduledChargingPlan = (planId) => {
   min-width: 100px !important;
   font-size: 10px !important;
 }
-
 .flex-grow {
   flex-grow: 1;
 }
