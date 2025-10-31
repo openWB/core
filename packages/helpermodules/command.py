@@ -16,7 +16,7 @@ from control.chargelog.process_chargelog import get_log_data
 from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
 
-from control.ev.charge_template import get_new_charge_template
+from control.ev.charge_template import ChargeTemplate, get_new_charge_template
 from control.ev.ev_template import EvTemplateData
 from helpermodules import pub
 from helpermodules.abstract_plans import AutolockPlan, ScheduledChargingPlan, TimeChargingPlan
@@ -488,13 +488,36 @@ class Command:
             pub_user_message(payload, connection_id, "Lade-Profil mit ID 0 darf nicht gelöscht werden.",
                              MessageType.ERROR)
 
+    def _get_charge_template_by_source(self, payload: dict) -> ChargeTemplate:
+        """ gibt das ChargeTemplate-Objekt zurück, je nachdem ob es sich um das persistente Ladeprofil oder das
+        Ladeprofil des Ladepunkts handelt.
+        """
+        if payload["data"]["changed_in_theme"]:
+            charge_template = data.data.cp_data[f"cp{payload['data']['chargepoint']}"].data.set.charge_template
+        else:
+            charge_template = data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}']
+        return charge_template
+
+    def _pub_charge_template_to_source(self, payload: dict, charge_template: ChargeTemplate) -> None:
+        """ veröffentlicht das ChargeTemplate-Objekt, je nachdem ob es sich um das persistente Ladeprofil oder das
+        Ladeprofil des Ladepunkts handelt.
+        """
+        if payload["data"]["changed_in_theme"]:
+            Pub().pub(
+                f'openWB/set/chargepoint/{payload["data"]["chargepoint"]}/set/charge_template',
+                dataclass_utils.asdict(charge_template.data))
+        else:
+            Pub().pub(
+                f'openWB/set/vehicle/template/charge_template/{payload["data"]["template"]}',
+                dataclass_utils.asdict(charge_template.data))
+
     def addChargeTemplateSchedulePlan(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neuer Zielladen-Plan erstellt werden soll.
         """
+        charge_template = self._get_charge_template_by_source(payload)
         # check if "payload" contains "data.copy"
         if "data" in payload and "copy" in payload["data"]:
-            for plan in data.data.ev_charge_template_data[
-                    f'ct{payload["data"]["template"]}'].data.chargemode.scheduled_charging.plans:
+            for plan in charge_template.data.chargemode.scheduled_charging.plans:
                 if plan.id == payload["data"]["copy"]:
                     new_charge_template_schedule_plan = copy.deepcopy(plan)
                     break
@@ -503,12 +526,8 @@ class Command:
             new_charge_template_schedule_plan = ScheduledChargingPlan()
         new_id = self.max_id_charge_template_scheduled_plan + 1
         new_charge_template_schedule_plan.id = new_id
-        data.data.ev_charge_template_data[
-            f'ct{payload["data"]["template"]}'].data.chargemode.scheduled_charging.plans.append(
-            new_charge_template_schedule_plan)
-        Pub().pub(
-            f'openWB/set/vehicle/template/charge_template/{payload["data"]["template"]}',
-            dataclass_utils.asdict(data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data))
+        charge_template.data.chargemode.scheduled_charging.plans.append(new_charge_template_schedule_plan)
+        self._pub_charge_template_to_source(payload, charge_template)
         self.max_id_charge_template_scheduled_plan = new_id
         Pub().pub(
             "openWB/set/command/max_id/charge_template_scheduled_plan", new_id)
@@ -521,21 +540,17 @@ class Command:
     def removeChargeTemplateSchedulePlan(self, connection_id: str, payload: dict) -> None:
         """ löscht einen Zielladen-Plan.
         """
+        charge_template = self._get_charge_template_by_source(payload)
         if self.max_id_charge_template_scheduled_plan < payload["data"]["plan"]:
             log.error(
                 payload, connection_id,
                 f'Die ID \'{payload["data"]["plan"]}\' ist größer als die maximal vergebene '
                 f'ID \'{self.max_id_charge_template_scheduled_plan}\'.', MessageType.ERROR)
-        for plan in data.data.ev_charge_template_data[
-                f'ct{payload["data"]["template"]}'].data.chargemode.scheduled_charging.plans:
+        for plan in charge_template.data.chargemode.scheduled_charging.plans:
             if plan.id == payload["data"]["plan"]:
-                data.data.ev_charge_template_data[
-                    f'ct{payload["data"]["template"]}'].data.chargemode.scheduled_charging.plans.remove(
-                    plan)
+                charge_template.data.chargemode.scheduled_charging.plans.remove(plan)
                 break
-        Pub().pub(
-            f'openWB/vehicle/template/charge_template/{payload["data"]["template"]}',
-            dataclass_utils.asdict(data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data))
+        self._pub_charge_template_to_source(payload, charge_template)
         pub_user_message(
             payload, connection_id,
             f'Zielladen-Plan mit ID \'{payload["data"]["plan"]}\' von Profil '
@@ -545,9 +560,10 @@ class Command:
     def addChargeTemplateTimeChargingPlan(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neuer Zeitladen-Plan erstellt werden soll.
         """
+        charge_template = self._get_charge_template_by_source(payload)
         # check if "payload" contains "data.copy"
         if "data" in payload and "copy" in payload["data"]:
-            for plan in data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data.time_charging.plans:
+            for plan in charge_template.data.time_charging.plans:
                 if plan.id == payload["data"]["copy"]:
                     new_time_charging_plan = copy.deepcopy(plan)
                     break
@@ -556,11 +572,8 @@ class Command:
             new_time_charging_plan = TimeChargingPlan()
         new_id = self.max_id_charge_template_time_charging_plan + 1
         new_time_charging_plan.id = new_id
-        data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data.time_charging.plans.append(
-            new_time_charging_plan)
-        Pub().pub(
-            f'openWB/set/vehicle/template/charge_template/{payload["data"]["template"]}',
-            dataclass_utils.asdict(data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data))
+        charge_template.data.time_charging.plans.append(new_time_charging_plan)
+        self._pub_charge_template_to_source(payload, charge_template)
         self.max_id_charge_template_time_charging_plan = new_id
         Pub().pub(
             "openWB/set/command/max_id/charge_template_time_charging_plan", new_id)
@@ -572,17 +585,15 @@ class Command:
     def removeChargeTemplateTimeChargingPlan(self, connection_id: str, payload: dict) -> None:
         """ löscht einen Zeitladen-Plan.
         """
+        charge_template = self._get_charge_template_by_source(payload)
         if self.max_id_charge_template_time_charging_plan < payload["data"]["plan"]:
             log.error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.",
                       MessageType.ERROR)
-        for plan in data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data.time_charging.plans:
+        for plan in charge_template.data.time_charging.plans:
             if plan.id == payload["data"]["plan"]:
-                data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data.time_charging.plans.remove(
-                    plan)
+                charge_template.data.time_charging.plans.remove(plan)
                 break
-        Pub().pub(
-            f'openWB/vehicle/template/charge_template/{payload["data"]["template"]}',
-            dataclass_utils.asdict(data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}'].data))
+        self._pub_charge_template_to_source(payload, charge_template)
         pub_user_message(
             payload, connection_id,
             f'Zeitladen-Plan mit ID \'{payload["data"]["plan"]}\' zu Profil '

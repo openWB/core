@@ -273,10 +273,10 @@ const planNumPhases = computed(() =>
 
 const removeTimeChargingPlan = (planId: number) => {
   mqttStore.removeTimeChargingPlanForChargePoint(props.chargePointId, planId);
-  setTimeout(() => {
-    mqttStore.chargePointConnectedVehicleChargeMode(props.chargePointId).value =
-      'time_charging';
-  }, 200);
+  // setTimeout(() => {
+  //   mqttStore.chargePointConnectedVehicleChargeMode(props.chargePointId).value =
+  //     'time_charging';
+  // }, 200);
 };
 </script>
 

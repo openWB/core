@@ -72,10 +72,12 @@ const addScheduledChargingPlan = () => {
   mqttStore.addScheduledChargingPlanForChargePoint(props.chargePointId);
   //charge mode set back to instant_charging in backend when a new plan is added
   //settimeout workaround
-  setTimeout(() => {
-    mqttStore.chargePointConnectedVehicleChargeMode(props.chargePointId).value =
-      'scheduled_charging';
-  }, 200);
+
+
+  // setTimeout(() => {
+  //   mqttStore.chargePointConnectedVehicleChargeMode(props.chargePointId).value =
+  //     'scheduled_charging';
+  // }, 200);
 };
 
 const openPlanDialog = (plan) => {

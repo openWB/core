@@ -1691,7 +1691,8 @@ export const useMqttStore = defineStore('mqtt', () => {
       chargePointConnectedVehicleChargeTemplate(chargePointId).value?.id;
     if (templateId !== undefined) {
       sendSystemCommand('addChargeTemplateTimeChargingPlan', {
-        template: templateId, chargepoint: chargePointId,
+        template: templateId,
+        chargepoint: chargePointId,
         changed_in_theme: true,
       });
     }
@@ -1707,10 +1708,12 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointId: number,
     planId: number,
   ) => {
+    const templateId =
+      chargePointConnectedVehicleChargeTemplate(chargePointId).value?.id;
     sendSystemCommand('removeChargeTemplateTimeChargingPlan', {
-      template:
-        chargePointConnectedVehicleChargeTemplate(chargePointId).value?.id,
-      plan: planId, chargepoint: chargePointId,
+      template: templateId,
+      plan: planId,
+      chargepoint: chargePointId,
       changed_in_theme: true,
     });
   };
@@ -2552,7 +2555,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     if (templateId !== undefined) {
       sendSystemCommand('addChargeTemplateSchedulePlan', {
         template: templateId,
-        chargePoint: chargePointId,
+        chargepoint: chargePointId,
         changed_in_theme: true,
       });
     } else {
@@ -2567,10 +2570,11 @@ export const useMqttStore = defineStore('mqtt', () => {
     const templateId =
       chargePointConnectedVehicleChargeTemplate(chargePointId).value?.id;
     if (templateId !== undefined) {
+      //debugger;
       sendSystemCommand('removeChargeTemplateSchedulePlan', {
         template: templateId,
         plan: planId,
-        chargePoint: chargePointId,
+        chargepoint: chargePointId,
         changed_in_theme: true,
       });
     } else {

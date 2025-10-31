@@ -373,9 +373,10 @@ const removeScheduledChargingPlan = (planId) => {
   );
   //charge mode set back to instant_charging in backend when a plan is removed
   //set timeout workaround
-  setTimeout(() => {
-    mqttStore.chargePointConnectedVehicleChargeMode(props.chargePointId).value = 'scheduled_charging';
-  }, 200);
+
+  // setTimeout(() => {
+  //   mqttStore.chargePointConnectedVehicleChargeMode(props.chargePointId).value = 'scheduled_charging';
+  // }, 200);
 };
 </script>
 
