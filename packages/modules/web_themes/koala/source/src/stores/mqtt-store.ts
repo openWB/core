@@ -1659,6 +1659,21 @@ export const useMqttStore = defineStore('mqtt', () => {
     });
   };
 
+  /** * Get the charge point connected vehicle bidi enabled state from vehicle template identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns boolean
+   */
+  const chargePointConnectedVehicleBidiEnabled = (chargePointId: number) => {
+    return computed(() => {
+      const connectedVehicleEvTemplateId =
+        chargePointConnectedVehicleConfig(chargePointId).value.ev_template;
+      return getValue.value(
+        `openWB/vehicle/template/ev_template/${connectedVehicleEvTemplateId}`,
+        'bidi',
+      ) as boolean;
+    });
+  };
+
   /**
    * Get or set the plan name for time charging plan identified by the time charging plan id
    * @param chargePointId charge point id
@@ -3423,6 +3438,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointConnectedVehiclePriority,
     chargePointConnectedVehicleTimeCharging,
     chargePointConnectedVehicleChargeTemplate,
+    chargePointConnectedVehicleBidiEnabled,
     // vehicle data
     vehicleList,
     chargePointConnectedVehicleConfig,

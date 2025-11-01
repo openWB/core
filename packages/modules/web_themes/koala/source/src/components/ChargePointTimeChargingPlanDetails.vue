@@ -278,9 +278,7 @@ const planNumPhases = computed(() =>
   mqttStore.vehicleTimeChargingPlanPhases(props.chargePointId, props.plan.id),
 );
 
-const planDcChargingEnabled = computed(() =>
-  mqttStore.dcChargingEnabled
-);
+const planDcChargingEnabled = computed(() => mqttStore.dcChargingEnabled);
 
 const planDcCurrent = computed(() =>
   mqttStore.vehicleTimeChargingPlanDcCurrent(
@@ -289,14 +287,8 @@ const planDcCurrent = computed(() =>
   ),
 );
 
-// v-if="planDcChargingEnabled"
-
 const removeTimeChargingPlan = (planId: number) => {
   mqttStore.removeTimeChargingPlanForChargePoint(props.chargePointId, planId);
-  // setTimeout(() => {
-  //   mqttStore.chargePointConnectedVehicleChargeMode(props.chargePointId).value =
-  //     'time_charging';
-  // }, 200);
 };
 </script>
 

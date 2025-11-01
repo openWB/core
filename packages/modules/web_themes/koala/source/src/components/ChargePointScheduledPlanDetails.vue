@@ -86,25 +86,32 @@
         class="col"
       />
 
-      <div v-if="planLimitSelected.value === 'soc'" class="row items-center">
-        <div class="text-subtitle2 q-mr-sm">Bidirektionales Überschussladen</div>
+      <div
+        v-if="
+          planLimitSelected.value === 'soc' &&
+          chargePointConnectedVehicleBidiEnabled
+        "
+        class="row items-center"
+      >
+        <div class="text-subtitle2 q-mr-sm">
+          Bidirektionales Überschussladen
+        </div>
         <ToggleStandard
           v-model="planBidiEnabled.value"
           :size="'sm'"
           color="positive"
         />
-
       </div>
-       <q-input
-        v-if="planLimitSelected.value === 'soc'"
+      <q-input
+        v-if="
+          planLimitSelected.value === 'soc' &&
+          chargePointConnectedVehicleBidiEnabled &&
+          planBidiEnabled.value
+        "
         v-model="planBidiPower.value"
-        label="Ladeleistung (kW)"
+        label="Bidirektionales Ladeleistung (kW)"
         class="col"
       />
-
-
-
-
       <div class="q-mb-md">
         <div class="text-subtitle2 q-mb-sm q-mt-sm">Wiederholungen</div>
         <q-btn-group spread>
@@ -127,7 +134,6 @@
             label="Wöchentlich"
           />
         </q-btn-group>
-
         <div v-if="planFrequency.value === 'once'" class="q-mt-sm">
           <q-input
             v-model="planOnceDate.value"
@@ -193,9 +199,7 @@
           />
         </q-btn-group>
       </div>
-      <div
-        class="row q-mt-md"
-      >
+      <div class="row q-mt-md">
         <q-btn
           size="sm"
           class="col"
@@ -360,28 +364,25 @@ const planBidiPower = computed(() =>
   ),
 );
 
-const planDcChargingEnabled = computed(() =>
-  mqttStore.dcChargingEnabled
+const chargePointConnectedVehicleBidiEnabled = computed(
+  () =>
+    mqttStore.chargePointConnectedVehicleBidiEnabled(props.chargePointId).value,
 );
 
+const planDcChargingEnabled = computed(() => mqttStore.dcChargingEnabled);
+
 const planDcPower = computed(() =>
-    mqttStore.vehicleScheduledChargingPlanDcPower(
-      props.chargePointId,
-      props.plan.id,
-    ),
-  );
+  mqttStore.vehicleScheduledChargingPlanDcPower(
+    props.chargePointId,
+    props.plan.id,
+  ),
+);
 
 const removeScheduledChargingPlan = (planId) => {
   mqttStore.removeScheduledChargingPlanForChargePoint(
     props.chargePointId,
     planId,
   );
-  //charge mode set back to instant_charging in backend when a plan is removed
-  //set timeout workaround
-
-  // setTimeout(() => {
-  //   mqttStore.chargePointConnectedVehicleChargeMode(props.chargePointId).value = 'scheduled_charging';
-  // }, 200);
 };
 </script>
 
