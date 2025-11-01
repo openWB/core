@@ -203,7 +203,7 @@
         <q-btn
           size="sm"
           class="col"
-          color="primary"
+          color="negative"
           @click="removeScheduledChargingPlan(plan.id)"
           >Plan löschen</q-btn
         >
@@ -225,6 +225,7 @@ const props = defineProps<{
   plan: ScheduledChargingPlan;
 }>();
 
+const emit = defineEmits(['close']);
 const mqttStore = useMqttStore();
 const $q = useQuasar();
 
@@ -383,6 +384,7 @@ const removeScheduledChargingPlan = (planId) => {
     props.chargePointId,
     planId,
   );
+  emit('close');
 };
 </script>
 

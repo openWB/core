@@ -167,7 +167,7 @@
         <q-btn
           size="sm"
           class="col"
-          color="primary"
+          color="negative"
           @click="removeTimeChargingPlan(plan.id)"
           >Plan löschen</q-btn
         >
@@ -178,7 +178,6 @@
 
 <script setup lang="ts">
 import { useMqttStore } from 'src/stores/mqtt-store';
-//import { useQuasar } from 'quasar';
 import SliderStandard from './SliderStandard.vue';
 import ToggleStandard from './ToggleStandard.vue';
 import { type TimeChargingPlan } from '../stores/mqtt-store-model';
@@ -190,7 +189,7 @@ const props = defineProps<{
 }>();
 
 const mqttStore = useMqttStore();
-// const $q = useQuasar();
+const emit = defineEmits(['close']);
 
 const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
@@ -286,6 +285,7 @@ const planDcPower = computed(() =>
 
 const removeTimeChargingPlan = (planId: number) => {
   mqttStore.removeTimeChargingPlanForChargePoint(props.chargePointId, planId);
+  emit('close');
 };
 </script>
 
