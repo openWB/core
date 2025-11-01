@@ -47,7 +47,7 @@
       />
       <q-input
         v-if="planDcChargingEnabled"
-        v-model="planDcCurrent.value"
+        v-model="planDcPower.value"
         label="Ladeleistung (DC) (kW)"
         class="col q-mb-sm"
       />
@@ -280,11 +280,8 @@ const planNumPhases = computed(() =>
 
 const planDcChargingEnabled = computed(() => mqttStore.dcChargingEnabled);
 
-const planDcCurrent = computed(() =>
-  mqttStore.vehicleTimeChargingPlanDcCurrent(
-    props.chargePointId,
-    props.plan.id,
-  ),
+const planDcPower = computed(() =>
+  mqttStore.vehicleTimeChargingPlanDcPower(props.chargePointId, props.plan.id),
 );
 
 const removeTimeChargingPlan = (planId: number) => {

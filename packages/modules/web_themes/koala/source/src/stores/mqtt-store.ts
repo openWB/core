@@ -2089,7 +2089,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param planId time charging plan id
    * @returns boolean[] | undefined
    */
-  const vehicleTimeChargingPlanDcCurrent = (
+  const vehicleTimeChargingPlanDcPower = (
     chargePointId: number,
     planId: number,
   ) => {
@@ -2097,14 +2097,18 @@ export const useMqttStore = defineStore('mqtt', () => {
       get() {
         const plans = vehicleTimeChargingPlans.value(chargePointId);
         const plan = plans.find((p) => p.id === planId);
-        return plan?.dc_current;
+        const current = plan?.dc_current;
+        const power = convertDcCurrentToPower(current);
+        const valueObject = getValueObject.value(power, 'W', '', true);
+        return valueObject.scaledValue;
       },
-      set(newValue: boolean[]) {
+      set(newValue) {
+        const current = convertPowerToDcCurrent(newValue);
         updateTimeChargingPlanSubtopic(
           chargePointId,
           planId,
           'dc_current',
-          newValue,
+          current,
         );
       },
     });
@@ -3193,17 +3197,18 @@ export const useMqttStore = defineStore('mqtt', () => {
       get() {
         const plans = vehicleScheduledChargingPlans.value(chargePointId);
         const plan = plans.find((p) => p.id === planId);
-        const dcCurrent = plan?.dc_current;
-        const valueObject = getValueObject.value(dcCurrent, 'W', '', true);
+        const current = plan?.dc_current;
+        const power = convertDcCurrentToPower(current);
+        const valueObject = getValueObject.value(power, 'W', '', true);
         return valueObject.scaledValue;
       },
       set(newValue: number) {
-        const watts = Math.round(newValue * 1000);
+        const current = convertPowerToDcCurrent(newValue);
         updateScheduledChargingPlanSubtopic(
           chargePointId,
           planId,
           'dc_current',
-          watts,
+          current,
         );
       },
     });
@@ -3487,7 +3492,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     vehicleTimeChargingPlanOnceDateEnd,
     vehicleTimeChargingPlanPhases,
     vehicleTimeChargingPlanWeeklyDays,
-    vehicleTimeChargingPlanDcCurrent,
+    vehicleTimeChargingPlanDcPower,
     chargePointConnectedVehicleSocType,
     chargePointConnectedVehicleSocManual,
     // Battery data
