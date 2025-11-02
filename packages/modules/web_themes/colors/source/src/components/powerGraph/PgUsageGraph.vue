@@ -107,7 +107,6 @@ const draw = computed(() => {
 		yAxis.selectAll('.tick line').attr('stroke', 'var(--color-bg)')
 	}
 	yAxis.select('.domain').attr('stroke', 'var(--color-bg)')
-
 	return 'pgUsageGraph.vue'
 })
 //const stackGen = computed(() => stack().keys(keys[props.stackOrder].concat(['cp3'])))

@@ -23,6 +23,9 @@
 				>
 					<span class="fa-solid fa-lg ps-1 fa-magnifying-glass" />
 				</span>
+				<span type="button" class="ms-1 p-0 pt-1" @click="changeStackOrder">
+					<span class="fa-solid fa-lg ps-1 fa-sort" />
+				</span>
 			</div>
 		</template>
 
@@ -92,6 +95,7 @@
 						:margin="margin"
 						:order="2"
 					/>
+
 					<PgSocAxis
 						v-if="
 							graphData.graphMode == 'day' ||
@@ -110,34 +114,6 @@
 					:margin="margin"
 					:data="graphData.data"
 				></PgToolTips>
-				<g
-					id="button"
-					type="button"
-					class="restackbutton"
-					@click="changeStackOrder"
-				>
-					<rect
-						:x="width - 32"
-						:y="height - 32"
-						width="30"
-						height="30"
-						rx="4"
-						ry="4"
-						fill="var(--color-bg)"
-						stroke="var(--color-menu)"
-						stroke-width="1"
-					></rect>
-					<text
-						:x="width - 17"
-						:y="height - 10"
-						color="var(--color-menu)"
-						text-anchor="middle"
-					>
-						<tspan fill="var(--color-menu)" class="fas fa-xl">
-							{{ '\uf0dc' }}
-						</tspan>
-					</text>
-				</g>
 			</svg>
 		</figure>
 	</WBWidget>
@@ -259,7 +235,7 @@ onMounted(() => {
 .fa-magnifying-glass {
 	color: var(--color-menu);
 }
-.restackbutton {
-	padding: 5px;
+.fa-sort {
+	color: var(--color-menu);
 }
 </style>
