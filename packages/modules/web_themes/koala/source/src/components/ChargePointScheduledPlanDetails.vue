@@ -31,7 +31,7 @@
         />
       </div>
       <SliderStandard
-        class="q-mb-md"
+        class="q-mb-sm"
         :title="planDcChargingEnabled ? 'Ladestrom (AC)' : 'Ladestrom'"
         :min="6"
         :max="32"
@@ -187,7 +187,7 @@
           />
         </q-btn-group>
       </div>
-      <div class="text-subtitle2 q-mt-sm q-mr-sm">
+      <div class="text-subtitle2 q-mt-md q-mr-sm">
         Anzahl Phasen bei PV-Überschuss
       </div>
       <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">

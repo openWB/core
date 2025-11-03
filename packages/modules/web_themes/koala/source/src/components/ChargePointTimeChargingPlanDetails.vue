@@ -95,7 +95,7 @@
       />
 
       <div class="q-mb-md">
-        <div class="text-subtitle2 q-mb-sm q-mt-sm">Wiederholungen</div>
+        <div class="text-subtitle2 q-mb-sm q-mt-md">Wiederholungen</div>
         <q-btn-group spread>
           <q-btn
             size="sm"
