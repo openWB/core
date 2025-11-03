@@ -32,7 +32,7 @@
       </div>
       <SliderStandard
         class="q-mb-md"
-        title="Ladestrom (AC)"
+        :title="planDcChargingEnabled ? 'Ladestrom (AC)' : 'Ladestrom'"
         :min="6"
         :max="32"
         unit="A"
