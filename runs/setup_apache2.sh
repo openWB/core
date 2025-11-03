@@ -95,14 +95,14 @@ updateFile "${OPENWBBASEDIR}/data/config/apache/apache-proplus.conf" "/etc/apach
 disableSite default-ssl
 # enable openwb ssl site
 enableSite apache-openwb-ssl
-# check if https only access is configured
+# check if unencrypted access is configured
 allowUnencryptedAccess=$(mosquitto_sub -t "openWB/general/allow_unencrypted_access" -p 1886 -C 1 -W 1 --quiet)
 if [[ $allowUnencryptedAccess == "true" ]]; then
-	echo "https only is disabled"
+	echo "WARNING: unencrypted access is enabled!"
 	disableSite apache-redirect-ssl
 	enableSite 000-default
 else
-	echo "https only is enabled"
+	echo "unencrypted access is disabled"
 	disableSite 000-default
 	enableSite apache-redirect-ssl
 fi
