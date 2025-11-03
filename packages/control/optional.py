@@ -51,11 +51,10 @@ class Optional(OcppMixin):
                 raise TypeError("et_module must be a ConfigurableElectricityTariff instance or None")
             self._et_module = value
             if value is not None:
-                log.info("et_module set on Optional %s: %s", getattr(
-                    self, "instance_id", "unknown"), value.config.name)
+                log.info("et_module set on Optional: %s", value.config.name)
                 self.et_get_prices()
             else:
-                log.info("et_module cleared on Optional %s", getattr(self, "instance_id", "unknown"))
+                log.info("et_module cleared in Optional")
 
     def monitoring_start(self):
         if self.monitoring_module is not None:
