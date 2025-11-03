@@ -199,7 +199,7 @@
           />
         </q-btn-group>
       </div>
-      <div class="row q-mt-md">
+      <div class="row q-mt-lg">
         <q-btn
           size="sm"
           class="col"
