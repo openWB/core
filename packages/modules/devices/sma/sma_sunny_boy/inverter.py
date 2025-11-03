@@ -81,8 +81,9 @@ class SmaSunnyBoyInverter(AbstractInverter):
         else:
             raise ValueError("Unbekannte Version "+str(self.component_config.configuration.version))
         if power_total == self.SMA_INT32_NAN or power_total == self.SMA_NAN:
-            raise ValueError(f'Wechselrichter lieferte nicht plausiblen Leistungswert: {power_total}.')
-
+            power_total = 0
+            # WR geht nachts in Standby und gibt einen NaN-Wert für die Leistung aus.
+            currents = [0, 0, 0]
         if energy == self.SMA_UINT32_NAN:
             raise ValueError(
                 f'Wechselrichter lieferte nicht plausiblen Zählerstand: {energy}. '
