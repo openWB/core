@@ -27,7 +27,7 @@
           v-model="planStartTime.value"
           type="time"
           label="Ladebeginn"
-          class="col"
+          class="col q-mr-md"
         />
         <q-input
           v-model="planEndTime.value"
