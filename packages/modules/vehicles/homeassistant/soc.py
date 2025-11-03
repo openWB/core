@@ -57,7 +57,8 @@ def create_vehicle(vehicle_config: HaVehicleSocSetup, vehicle: int):
         return fetch_soc(vehicle_config)
     return ConfigurableVehicle(vehicle_config=vehicle_config,
                                component_updater=updater,
-                               vehicle=vehicle)
+                               vehicle=vehicle,
+                               calc_while_charging=vehicle_config.configuration.calculate_soc)
 
 
 def json_update(charge_point: int,
