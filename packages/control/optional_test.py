@@ -259,7 +259,7 @@ def test_et_charging_allowed(monkeypatch, provider_available, current_price, max
     monkeypatch.setattr(opt, "et_provider_available", Mock(return_value=provider_available))
     if provider_available:
         monkeypatch.setattr(opt, "et_get_current_price", Mock(return_value=current_price))
-    result = opt.et_charging_allowed(max_price)
+    result = opt.et_is_charging_allowed_price_threshold(max_price)
     assert result == expected
 
 
@@ -267,7 +267,7 @@ def test_et_charging_allowed_exception(monkeypatch):
     opt = Optional()
     monkeypatch.setattr(opt, "et_provider_available", Mock(return_value=True))
     monkeypatch.setattr(opt, "et_get_current_price", Mock(side_effect=Exception))
-    result = opt.et_charging_allowed(0.15)
+    result = opt.et_is_charging_allowed_price_threshold(0.15)
     assert result is False
 
 
@@ -427,7 +427,7 @@ def test_et_charging_available(now_ts, provider_available, price_list, selected_
     opt = Optional()
     opt.data.et.get.prices = price_list
     monkeypatch.setattr(opt, "et_provider_available", Mock(return_value=provider_available))
-    result = opt.et_charging_is_allowed(selected_hours)
+    result = opt.et_is_charging_allowed_hours_list(selected_hours)
     assert result == expected
 
 
@@ -435,5 +435,5 @@ def test_et_charging_available_exception(monkeypatch):
     opt = Optional()
     monkeypatch.setattr(opt, "et_provider_available", Mock(return_value=True))
     opt.data.et.get.prices = {}  # empty prices list raises exception
-    result = opt.et_charging_is_allowed([])
+    result = opt.et_is_charging_allowed_hours_list([])
     assert result is False

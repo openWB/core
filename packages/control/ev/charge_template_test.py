@@ -380,7 +380,7 @@ def test_scheduled_charging_calc_current_electricity_tariff(
     mock_et_get_loading_hours = Mock(return_value=loading_hours)
     monkeypatch.setattr(data.data.optional_data, "et_get_loading_hours", mock_et_get_loading_hours)
     mock_is_list_valid = Mock(return_value=is_loading_hour)
-    monkeypatch.setattr(data.data.optional_data, "et_charging_is_allowed", mock_is_list_valid)
+    monkeypatch.setattr(data.data.optional_data, "et_is_charging_allowed_hours_list", mock_is_list_valid)
 
     # execution
     ret = ct.scheduled_charging_calc_current(

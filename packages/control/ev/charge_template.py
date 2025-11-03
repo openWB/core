@@ -293,7 +293,7 @@ class ChargeTemplate:
                 sub_mode = "stop"
                 message = self.AMOUNT_REACHED
             elif data.data.optional_data.et_provider_available():
-                if data.data.optional_data.et_charging_allowed(eco_charging.max_price):
+                if data.data.optional_data.et_is_charging_allowed_price_threshold(eco_charging.max_price):
                     sub_mode = "instant_charging"
                     message = self.CHARGING_PRICE_LOW
                     phases = max_phases_hw
@@ -603,14 +603,16 @@ class ChargeTemplate:
             # ist.
             if plan.et_active:
                 def get_hours_message() -> str:
+                    def is_loading_hour(hour: int) -> bool:
+                        return data.data.optional_data.et_is_charging_allowed_hours_list(hour)
                     return ("Geladen wird "+("jetzt und "
-                                             if data.data.optional_data.et_charging_is_allowed(hour_list)
+                                             if is_loading_hour(hour_list)
                                              else '') +
                             "zu folgenden Uhrzeiten: " +
                             ", ".join([tomorrow(hour) +
                                        datetime.datetime.fromtimestamp(hour).strftime('%-H:%M')
                                        for hour in (sorted(hour_list)
-                                                    if not data.data.optional_data.et_charging_is_allowed(hour_list)
+                                                    if not is_loading_hour(hour_list)
                                                     else (sorted(hour_list)[1:] if len(hour_list) > 1 else []))])
                             + ".")
 
@@ -624,7 +626,7 @@ class ChargeTemplate:
                     selected_plan.duration, selected_plan.remaining_time)
 
                 log.debug(f"Günstige Ladezeiten: {hour_list}")
-                if data.data.optional_data.et_charging_is_allowed(hour_list):
+                if data.data.optional_data.et_is_charging_allowed_hours_list(hour_list):
                     message = self.SCHEDULED_CHARGING_CHEAP_HOUR.format(get_hours_message())
                     current = plan_current
                     submode = "instant_charging"

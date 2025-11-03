@@ -68,7 +68,7 @@ class Optional(OcppMixin):
     def et_provider_available(self) -> bool:
         return self.et_module is not None
 
-    def et_charging_is_allowed(self, selected_hours: list[int]) -> bool:
+    def et_is_charging_allowed_hours_list(self, selected_hours: list[int]) -> bool:
         """ prüft, ob das strompreisbasiertes Laden aktiviert und ein günstiger Zeitpunkt ist.
 
         Parameter
@@ -91,7 +91,7 @@ class Optional(OcppMixin):
             log.exception(f"Fehler im Optional-Modul: {e}")
             return False
 
-    def et_charging_allowed(self, max_price: float) -> bool:
+    def et_is_charging_allowed_price_threshold(self, max_price: float) -> bool:
         """ prüft, ob der aktuelle Strompreis niedriger oder gleich der festgelegten Preisgrenze ist.
 
         Return
