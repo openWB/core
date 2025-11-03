@@ -85,7 +85,7 @@ def test_calc_charge_cost_reference_start(mock_data, monkeypatch):
 def test_calc_charge_cost_reference_end(mock_data, monkeypatch):
     cp = Chargepoint(4, None)
     cp.data.set.log.imported_since_plugged = cp.data.set.log.imported_since_mode_switch = 3950
-    cp.data.set.log.timestamp_start_charging = 1652682600  # 8:30
+    cp.data.set.log.timestamp_mode_switch = 1652682600  # 8:30
     cp.data.get.imported = 4100
     cp.data.set.log.charged_energy_by_source = {'grid': 1243, 'pv': 386, 'bat': 671, 'cp': 0.0}
     daily_log = mock_daily_log(monkeypatch)
