@@ -99,6 +99,8 @@ class GeneralData:
         default=None, metadata={"topic": "grid_protection_timestamp"})
     http_api: bool = field(
         default=False, metadata={"topic": "http_api"})
+    allow_unencrypted_access: bool = field(
+        default=False, metadata={"topic": "allow_unencrypted_access"})
     mqtt_bridge: bool = False
     temporary_charge_templates_active: bool = False
     prices: Prices = field(default_factory=prices_factory)
