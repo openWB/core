@@ -351,6 +351,24 @@ chmod 666 "$LOGFILE"
 		sudo cp "${OPENWBBASEDIR}/data/config/mosquitto/openwb.conf" "/etc/mosquitto/conf.d/openwb.conf"
 		restartService=1
 	fi
+	allowUnencryptedAccess=$(mosquitto_sub -t "openWB/general/allow_unencrypted_access" -p 1886 -C 1 -W 1 --quiet)
+	if [[ $allowUnencryptedAccess == "true" ]]; then
+		if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/openwb_insecure.conf" "/etc/mosquitto/conf.d/openwb_insecure.conf"; then
+			echo "mosquitto openwb_insecure.conf already up to date"
+		else
+			echo "updating mosquitto openwb_insecure.conf"
+			sudo cp "${OPENWBBASEDIR}/data/config/mosquitto/openwb_insecure.conf" "/etc/mosquitto/conf.d/openwb_insecure.conf"
+			restartService=1
+		fi
+	else
+		if [ -f "/etc/mosquitto/conf.d/openwb_insecure.conf" ]; then
+			echo "removing mosquitto openwb_insecure.conf"
+			sudo rm "/etc/mosquitto/conf.d/openwb_insecure.conf"
+			restartService=1
+		else
+			echo "mosquitto openwb_insecure.conf not present, no action needed"
+		fi
+	fi
 	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto.acl" "/etc/mosquitto/mosquitto.acl"; then
 		echo "mosquitto acl already up to date"
 	else
