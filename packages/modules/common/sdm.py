@@ -35,11 +35,13 @@ class SdmRegister(IntEnum):
 
 
 class Sdm630_72(Sdm):
-    REG_MAPPING = (
+    REG_MAPPING_BULK_1 = (
         (SdmRegister.VOLTAGE_L1, [ModbusDataType.FLOAT_32]*3),
         (SdmRegister.CURRENT_L1, [ModbusDataType.FLOAT_32]*3),
         (SdmRegister.POWER_L1, [ModbusDataType.FLOAT_32]*3),
-        (SdmRegister.POWER_FACTOR_L1, [ModbusDataType.FLOAT_32]*3),
+        (SdmRegister.POWER_FACTOR_L1, [ModbusDataType.FLOAT_32]*3)
+    )
+    REG_MAPPING_BULK_2 = (
         (SdmRegister.FREQUENCY, ModbusDataType.FLOAT_32),
         (SdmRegister.IMPORTED, ModbusDataType.FLOAT_32),
         (SdmRegister.EXPORTED, ModbusDataType.FLOAT_32),
@@ -57,8 +59,14 @@ class Sdm630_72(Sdm):
         return powers, power
 
     def get_counter_state(self) -> CounterState:
-        resp = self.client.read_input_registers_bulk(
-            SdmRegister.VOLTAGE_L1, 76, mapping=self.REG_MAPPING, unit=self.id)
+        # entgegen der Doku können nicht bei allen SDM72 80 Register auf einmal gelesen werden,
+        # manche können auch nur 50
+        bulk_1 = self.client.read_input_registers_bulk(
+            SdmRegister.VOLTAGE_L1, 38, mapping=self.REG_MAPPING_BULK_1, unit=self.id)
+        time.sleep(0.1)
+        bulk_2 = self.client.read_input_registers_bulk(
+            SdmRegister.FREQUENCY, 8, mapping=self.REG_MAPPING_BULK_2, unit=self.id)
+        resp = {**bulk_1, **bulk_2}
         frequency = resp[SdmRegister.FREQUENCY]
         if frequency > 100:
             frequency = frequency / 10
@@ -78,11 +86,13 @@ class Sdm630_72(Sdm):
 
 
 class Sdm120(Sdm):
-    REG_MAPPING = (
+    REG_MAPPING_BULK_1 = (
         (SdmRegister.VOLTAGE_L1, ModbusDataType.FLOAT_32),
         (SdmRegister.CURRENT_L1, ModbusDataType.FLOAT_32),
         (SdmRegister.POWER_L1, ModbusDataType.FLOAT_32),
-        (SdmRegister.POWER_FACTOR_L1, ModbusDataType.FLOAT_32),
+        (SdmRegister.POWER_FACTOR_L1, ModbusDataType.FLOAT_32)
+    )
+    REG_MAPPING_BULK_2 = (
         (SdmRegister.FREQUENCY, ModbusDataType.FLOAT_32),
         (SdmRegister.IMPORTED, ModbusDataType.FLOAT_32),
         (SdmRegister.EXPORTED, ModbusDataType.FLOAT_32),
@@ -99,8 +109,13 @@ class Sdm120(Sdm):
         return [power, 0, 0], power
 
     def get_counter_state(self) -> CounterState:
-        resp = self.client.read_input_registers_bulk(
-            SdmRegister.VOLTAGE_L1, 76, mapping=self.REG_MAPPING, unit=self.id)
+        # beim SDM120 steht nichts von Bulk-Reads in der Doku, daher auch auf 50 Register limitiert
+        bulk_1 = self.client.read_input_registers_bulk(
+            SdmRegister.VOLTAGE_L1, 32, mapping=self.REG_MAPPING_BULK_1, unit=self.id)
+        time.sleep(0.1)
+        bulk_2 = self.client.read_input_registers_bulk(
+            SdmRegister.FREQUENCY, 8, mapping=self.REG_MAPPING_BULK_2, unit=self.id)
+        resp = {**bulk_1, **bulk_2}
         frequency = resp[SdmRegister.FREQUENCY]
         if frequency > 100:
             frequency = frequency / 10
