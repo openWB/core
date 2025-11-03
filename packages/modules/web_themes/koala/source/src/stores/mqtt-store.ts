@@ -1935,14 +1935,20 @@ export const useMqttStore = defineStore('mqtt', () => {
       get() {
         const plans = vehicleTimeChargingPlans.value(chargePointId);
         const plan = plans.find((p) => p.id === planId);
-        return plan?.limit?.amount;
+        const amount = plan?.limit?.amount;
+        if (amount === undefined) {
+          return;
+        }
+        const valueObject = getValueObject.value(amount, 'Wh', '', true);
+        return valueObject.scaledValue;
       },
       set(newValue: number) {
+        const amountKiloWattHours = newValue * 1000;
         updateTimeChargingPlanSubtopic(
           chargePointId,
           planId,
           'limit.amount',
-          newValue,
+          amountKiloWattHours,
         );
       },
     });
@@ -2875,11 +2881,12 @@ export const useMqttStore = defineStore('mqtt', () => {
         return valueObject.scaledValue;
       },
       set(newValue: number) {
+        const amountKiloWattHours = newValue * 1000;
         updateScheduledChargingPlanSubtopic(
           chargePointId,
           planId,
           'limit.amount',
-          newValue,
+          amountKiloWattHours,
         );
       },
     });
