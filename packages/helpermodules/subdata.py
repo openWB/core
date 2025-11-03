@@ -621,6 +621,34 @@ class SubData:
                             MessageType.SUCCESS
                         )
                     self.set_json_payload_class(var.data, msg)
+                elif "openWB/general/allow_unencrypted_access" == msg.topic:
+                    allow_unencrypted_access = decode_payload(msg.payload)
+                    log.warning(f"Topic: 'allow_unencrypted_access' Payload: {allow_unencrypted_access}")
+                    log.warning(f"Aktuelle Einstellung: {self.general_data.data.allow_unencrypted_access}")
+                    log.warning("Event subdata_initialized: "
+                                f"{self.event_subdata_initialized.is_set()}")
+                    if (
+                        self.event_subdata_initialized.is_set() and
+                        self.general_data.data.allow_unencrypted_access != allow_unencrypted_access
+                    ):
+                        log.warning("Änderung der Einstellung 'allow_unencrypted_access' erkannt.")
+                        run_command([
+                            str(Path(__file__).resolve().parents[2] / "runs" / "setup_apache2.sh")
+                        ], process_exception=True)
+                        log.warning("Apache2-Konfiguration wurde angepasst.")
+                        run_command([
+                            str(Path(__file__).resolve().parents[2] / "runs" / "setup_mosquitto.sh"),
+                            "0"  # kein Neustart im laufenden Betrieb!
+                        ], process_exception=True)
+                        log.warning("Mosquitto-Konfiguration wurde angepasst.")
+                        pub_system_message(
+                            msg.payload,
+                            f"Unsichere Verbindungen wurden {'' if allow_unencrypted_access else 'de'}aktiviert.<br />"
+                            "Bitte die openWB <a href=\"/openWB/web/settings/#/System/SystemConfiguration\">"
+                            "neu starten</a>, damit die Änderungen wirksam werden.",
+                            MessageType.WARNING
+                        )
+                    self.set_json_payload_class(var.data, msg)
                 else:
                     self.set_json_payload_class(var.data, msg)
         except Exception:
