@@ -250,6 +250,7 @@ class HandlerAlgorithm:
                 data.data.general_data.grid_protection()
                 data.data.optional_data.ocpp_transfer_meter_values()
                 data.data.counter_all_data.validate_hierarchy()
+                data.data.optional_data.et_get_prices()
         except Exception:
             log.exception("Fehler im Main-Modul")
 
@@ -283,7 +284,6 @@ class HandlerAlgorithm:
                     general_internal_chargepoint_handler.internal_chargepoint_handler.heartbeat = False
             with ChangedValuesContext(loadvars_.event_module_update_completed):
                 sub.system_data["system"].update_ip_address()
-            data.data.optional_data.et_get_prices()
         except Exception:
             log.exception("Fehler im Main-Modul")
 
