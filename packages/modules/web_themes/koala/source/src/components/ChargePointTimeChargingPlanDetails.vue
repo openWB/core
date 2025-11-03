@@ -14,7 +14,7 @@
       <div class="row items-center q-mb-sm">
         <q-input v-model="planName.value" label="Plan Name" class="col" />
       </div>
-      <div class="row items-center">
+      <div class="row items-center justify-between">
         <div class="text-subtitle2 q-mr-sm">Aktiv</div>
         <ToggleStandard
           v-model="planActive.value"
