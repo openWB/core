@@ -200,6 +200,7 @@ class UpdateConfig:
         "^openWB/counter/[0-9]+/config/max_currents$",
         "^openWB/counter/[0-9]+/config/max_total_power$",
 
+        "^openWB/general/allow_unencrypted_access$",
         "^openWB/general/extern$",
         "^openWB/general/extern_display_mode$",
         "^openWB/general/charge_log_data_config$",
@@ -531,6 +532,7 @@ class UpdateConfig:
         ("openWB/vehicle/template/ev_template/0", asdict(EvTemplateData(name="Standard-Fahrzeug-Profil",
                                                                         min_current=10))),
         ("openWB/vehicle/template/charge_template/0", get_charge_template_default()),
+        ("openWB/general/allow_unencrypted_access", False),
         ("openWB/general/charge_log_data_config", get_default_charge_log_columns()),
         ("openWB/general/chargemode_config/pv_charging/bat_mode", BatConsiderationMode.EV_MODE.value),
         ("openWB/general/chargemode_config/pv_charging/bat_power_discharge", 1000),
