@@ -41,9 +41,13 @@
       <q-input
         v-if="planDcChargingEnabled"
         v-model="planDcPower.value"
-        label="Ladeleistung (DC) (kW)"
+        label="Ladeleistung (DC)"
         class="col q-mb-md"
-      />
+      >
+        <template v-slot:append>
+          <div class="text-body2">kW</div>
+        </template>
+      </q-input>
       <q-btn-group class="full-width">
         <q-btn
           size="sm"
