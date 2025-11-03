@@ -4,7 +4,7 @@
     align="center"
     class="cursor-pointer"
     :color="planActive.value ? 'positive' : 'negative'"
-    @click="planActive.value = !planActive.value"
+    @click="$emit('editPlan', plan)"
   >
     <div class="column">
       <div class="plan-name">{{ plan.name }}</div>
