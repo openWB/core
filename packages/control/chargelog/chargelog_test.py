@@ -53,7 +53,7 @@ def mock_daily_log(monkeypatch):
 def test_calc_charge_cost_reference_middle(mock_data, monkeypatch):
     cp = Chargepoint(4, None)
     cp.data.set.log.imported_since_plugged = cp.data.set.log.imported_since_mode_switch = 3950
-    cp.data.set.log.timestamp_start_charging = 1652682600  # 8:30
+    cp.data.set.log.timestamp_mode_switch = 1652682600  # 8:30
     cp.data.get.imported = 4050
     cp.data.set.log.charged_energy_by_source = {'bat': 100, 'cp': 0, 'grid': 100, 'pv': 100}
     daily_log = mock_daily_log(monkeypatch)
@@ -69,7 +69,7 @@ def test_calc_charge_cost_reference_middle(mock_data, monkeypatch):
 def test_calc_charge_cost_reference_start(mock_data, monkeypatch):
     cp = Chargepoint(4, None)
     cp.data.set.log.imported_since_plugged = cp.data.set.log.imported_since_mode_switch = 100
-    cp.data.set.log.timestamp_start_charging = 1652683230  # 8:40:30
+    cp.data.set.log.timestamp_mode_switch = 1652683230  # 8:40:30
     cp.data.get.imported = 4100
     cp.data.set.log.charged_energy_by_source = {'bat': 0, 'cp': 0, 'grid': 0, 'pv': 0}
     daily_log = mock_daily_log(monkeypatch)
@@ -100,7 +100,7 @@ def test_calc_charge_cost_reference_end(mock_data, monkeypatch):
 def test_calc_charge_cost_reference_middle_day_change(mock_data, monkeypatch):
     cp = Chargepoint(4, None)
     cp.data.set.log.imported_since_plugged = cp.data.set.log.imported_since_mode_switch = 3950
-    cp.data.set.log.timestamp_start_charging = 1652682600  # 8:30
+    cp.data.set.log.timestamp_mode_switch = 1652682600  # 8:30
     cp.data.get.imported = 4050
     cp.data.set.log.charged_energy_by_source = {'bat': 100, 'cp': 0, 'grid': 100, 'pv': 100}
     yesterday_daily_log = {"entries": [{'bat': {'all': {'exported': 2000, 'imported': 2000, 'soc': 100},
