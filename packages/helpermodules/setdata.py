@@ -746,7 +746,8 @@ class SetData:
                 self._validate_value(msg, int, [(5, 60)])
             elif "openWB/set/general/chargemode_config/pv_charging/control_range" in msg.topic:
                 self._validate_value(msg, int, collection=list)
-            elif "openWB/set/general/chargemode_config/pv_charging/min_bat_soc" in msg.topic:
+            elif ("openWB/set/general/chargemode_config/pv_charging/min_bat_soc" in msg.topic or
+                    "openWB/set/general/chargemode_config/pv_charging/max_bat_soc" in msg.topic):
                 self._validate_value(msg, int, [(0, 100)])
             elif ("openWB/set/general/chargemode_config/pv_charging/bat_power_discharge" in msg.topic or
                     "openWB/set/general/chargemode_config/pv_charging/bat_power_reserve" in msg.topic):
