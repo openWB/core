@@ -5,7 +5,6 @@
   <div class="row q-mb-md justify-end">
     <q-btn
       round
-      outline
       size="sm"
       color="primary"
       icon="add"
