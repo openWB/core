@@ -39,7 +39,7 @@
         class="full-width"
         :charge-point-id="props.chargePointId"
         :plan="plan"
-        @edit="openPlanDialog(plan)"
+        @edit-plan="openPlanDialog(plan)"
       />
     </div>
 

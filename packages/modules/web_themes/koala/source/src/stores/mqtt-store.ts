@@ -1675,7 +1675,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
-   * Get or set the plan name for time charging plan identified by the time charging plan id
+   * Get or set the plan name for the time charging plan identified by the time charging plan id
    * @param chargePointId charge point id
    * @param planId time charging plan id
    * @returns string | undefined
@@ -1687,7 +1687,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleTimeChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plane) => plane.id === planId);
         return plan?.name;
       },
       set(newValue: string) {
@@ -1787,7 +1787,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
-   * Get or set the start time for a time charging plan
+   * Get or set the start time for the time charging plan identified by the time charge plan id
    * @param chargePointId charge point id
    * @param planId time charging plan id
    * @returns string | undefined
@@ -1799,7 +1799,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleTimeChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plane) => plane.id === planId);
         return plan?.time?.[0];
       },
       set(newValue: string) {
@@ -1814,7 +1814,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
-   * Get or set the start time for a time charging plan
+   * Get or set the start time for the time charging plan identified by the time charge plan id
    * @param chargePointId charge point id
    * @param planId time charging plan id
    * @returns string | undefined
@@ -1826,7 +1826,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleTimeChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plane) => plane.id === planId);
         return plan?.time?.[1];
       },
       set(newValue: string) {
@@ -1841,7 +1841,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
-   * Get or set the current for time charging plan identified by the time charging plan id
+   * Get or set the current for the time charging plan identified by the time charging plan id
    * @param chargePointId charge point id
    * @param planId time charging plan id
    * @returns number | undefined
@@ -1853,7 +1853,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleTimeChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plane) => plane.id === planId);
         return plan?.current;
       },
       set(newValue: number) {
@@ -1868,7 +1868,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
-   * Get or set the limit selected mode for time charging plan identified by the time charging plan id
+   * Get or set the limit selected mode for the time charging plan identified by the time charging plan id
    * @param chargePointId charge point id
    * @param planId time charging plan id
    * @returns string | undefined
@@ -1880,7 +1880,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleTimeChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plane) => plane.id === planId);
         return plan?.limit?.selected;
       },
       set(newValue: string) {
@@ -1895,7 +1895,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
-   * Get or set the SoC limit for time charging plan identified by the time charging plan id
+   * Get or set the SoC limit for the time charging plan identified by the time charging plan id
    * @param chargePointId charge point id
    * @param planId time charging plan id
    * @returns number | undefined
@@ -1907,7 +1907,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleTimeChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plane) => plane.id === planId);
         return plan?.limit?.soc;
       },
       set(newValue: number) {
@@ -1922,7 +1922,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
-   * Get or set the energy amount limit for time charging plan identified by the time charging plan id
+   * Get or set the energy amount limit for the time charging plan identified by the time charging plan id
    * @param chargePointId charge point id
    * @param planId time charging plan id
    * @returns number | undefined
@@ -1934,7 +1934,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleTimeChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plane) => plane.id === planId);
         const amount = plan?.limit?.amount;
         if (amount === undefined) {
           return;
@@ -1955,7 +1955,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
-   * Get or set the frequency mode for time charging plan identified by the time charging plan id
+   * Get or set the frequency mode for the time charging plan identified by the time charging plan id
    * @param chargePointId charge point id
    * @param planId time charging plan id
    * @returns string | undefined
@@ -1967,7 +1967,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleTimeChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plane) => plane.id === planId);
         return plan?.frequency?.selected;
       },
       set(newValue: string) {
@@ -1982,7 +1982,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
-   * Get or set the "Gültig ab" date for time charging plan (once)
+   * Get or set the "valid from" date for the time charging plan identified by the time charging plan id (once)
    * @param chargePointId charge point id
    * @param planId time charging plan id
    * @returns string | undefined
@@ -1994,7 +1994,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleTimeChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plane) => plane.id === planId);
         return plan?.frequency?.once?.[0];
       },
       set(newValue: string) {
@@ -2009,7 +2009,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
-   * Get or set the "Gültig bis" date for time charging plan (once)
+   * Get or set the "valid to" date for the time charging plan identified by the time charging plan id (once)
    * @param chargePointId charge point id
    * @param planId time charging plan id
    * @returns string | undefined
@@ -2021,7 +2021,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleTimeChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plane) => plane.id === planId);
         return plan?.frequency?.once?.[1];
       },
       set(newValue: string) {
@@ -2036,7 +2036,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
-   * Get or set the number of phases for time charging plan
+   * Get or set the number of phases for the time charging plan identified by the time charging plan id
    * @param chargePointId charge point id
    * @param planId time charging plan id
    * @returns number | undefined
@@ -2048,7 +2048,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleTimeChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plane) => plane.id === planId);
         return plan?.phases_to_use;
       },
       set(newValue: number) {
@@ -2063,7 +2063,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
-   * Get or set the weekly days array for time charging plan identified by the time charging plan id
+   * Get or set the weekly days array for the time charging plan identified by the time charging plan id
    * @param chargePointId charge point id
    * @param planId time charging plan id
    * @returns boolean[] | undefined
@@ -2075,7 +2075,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed<boolean[]>({
       get() {
         const plans = vehicleTimeChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plane) => plane.id === planId);
         return plan?.frequency?.weekly ?? Array(7).fill(false);
       },
       set(newValue: boolean[]) {
@@ -2090,7 +2090,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
-   * Get or set the weekly days array for time charging plan identified by the time charging plan id
+   * Get or set the DC charging power for the time charging plan identified by the time charging plan id
    * @param chargePointId charge point id
    * @param planId time charging plan id
    * @returns boolean[] | undefined
@@ -2102,7 +2102,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleTimeChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plane) => plane.id === planId);
         const current = plan?.dc_current;
         const power = convertDcCurrentToPower(current);
         const valueObject = getValueObject.value(power, 'W', '', true);
@@ -2622,7 +2622,6 @@ export const useMqttStore = defineStore('mqtt', () => {
     const templateId =
       chargePointConnectedVehicleChargeTemplate(chargePointId).value?.id;
     if (templateId !== undefined) {
-      //debugger;
       sendSystemCommand('removeChargeTemplateSchedulePlan', {
         template: templateId,
         plan: planId,
@@ -2905,7 +2904,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleScheduledChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plan) => plan.id === planId);
         return plan?.name;
       },
       set(newValue: string) {
@@ -2932,7 +2931,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleScheduledChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plan) => plan.id === planId);
         return plan?.time;
       },
       set(newValue: string) {
@@ -2959,7 +2958,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleScheduledChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plan) => plan.id === planId);
         return plan?.frequency.selected;
       },
       set(newValue: 'once' | 'daily' | 'weekly') {
@@ -2986,7 +2985,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleScheduledChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plan) => plan.id === planId);
         return plan?.frequency.once;
       },
       set(newValue: string) {
@@ -3013,7 +3012,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleScheduledChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plan) => plan.id === planId);
         return plan?.frequency.weekly;
       },
       set(newValue: boolean[]) {
@@ -3040,7 +3039,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleScheduledChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plan) => plan.id === planId);
         return plan?.limit.soc_limit;
       },
       set(newValue: number) {
@@ -3067,7 +3066,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleScheduledChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plan) => plan.id === planId);
         return plan?.limit.soc_scheduled;
       },
       set(newValue: number) {
@@ -3093,7 +3092,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleScheduledChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plan) => plan.id === planId);
         return plan?.phases_to_use;
       },
       set(newValue: number) {
@@ -3119,7 +3118,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleScheduledChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plan) => plan.id === planId);
         return plan?.phases_to_use_pv;
       },
       set(newValue: number) {
@@ -3146,7 +3145,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleScheduledChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plan) => plan.id === planId);
         return plan?.bidi_charging_enabled;
       },
       set(newValue: boolean) {
@@ -3173,7 +3172,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleScheduledChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plan) => plan.id === planId);
         const power = plan?.bidi_power;
         const valueObject = getValueObject.value(power, 'W', '', true);
         return valueObject.scaledValue;
@@ -3203,7 +3202,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleScheduledChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plan) => plan.id === planId);
         const current = plan?.dc_current;
         const power = convertDcCurrentToPower(current);
         const valueObject = getValueObject.value(power, 'W', '', true);

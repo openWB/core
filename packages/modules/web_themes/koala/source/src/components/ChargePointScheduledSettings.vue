@@ -28,7 +28,7 @@
         class="full-width"
         :charge-point-id="props.chargePointId"
         :plan="plan"
-        @edit="openPlanDialog(plan)"
+        @edit-plan="openPlanDialog(plan)"
       />
     </div>
     <q-dialog
@@ -49,7 +49,6 @@
 <script setup lang="ts">
 import { useMqttStore } from 'src/stores/mqtt-store';
 import ChargePointScheduledPlanButton from './ChargePointScheduledPlanButton.vue';
-//import ChargePointScheduledPlanHeader from './ChargePointScheduledPlanHeader.vue';
 import ChargePointScheduledPlanDetails from './ChargePointScheduledPlanDetails.vue';
 import { computed, ref } from 'vue';
 import { Screen } from 'quasar';
