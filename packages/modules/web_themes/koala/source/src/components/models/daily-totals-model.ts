@@ -9,7 +9,6 @@ export interface DailyTotalsItem {
     imported?: string;
     exported?: string;
   };
-  backgroundColor: string;
   // optional placeholders for table layout columns
   gap?: string;
   rightLabel?: string;
