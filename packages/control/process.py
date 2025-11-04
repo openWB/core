@@ -31,7 +31,7 @@ class Process:
             for cp in data.data.cp_data.values():
                 try:
                     control_parameter = cp.data.control_parameter
-                    if cp.data.set.current != 0:
+                    if control_parameter.state != ChargepointState.NO_CHARGING_ALLOWED or cp.data.set.current != 0:
                         # Ladelog-Daten müssen vor dem Setzen des Stroms gesammelt werden,
                         # damit bei Phasenumschaltungs-empfindlichen EV sicher noch nicht geladen wurde.
                         chargelog.collect_data(cp)

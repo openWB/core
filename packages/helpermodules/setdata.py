@@ -499,6 +499,8 @@ class SetData:
                     self._validate_value(msg, int)
                 elif "/set/log" in msg.topic:
                     self._validate_value(msg, "json")
+                elif "/set/ev_prev" in msg.topic:
+                    self._validate_value(msg, int, [(0, float("inf"))])
                 elif "/config/ev" in msg.topic:
                     self._validate_value(
                         msg, int, [(0, float("inf"))], pub_json=True)
