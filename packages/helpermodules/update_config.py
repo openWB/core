@@ -2606,8 +2606,10 @@ class UpdateConfig:
     def upgrade_datastore_100(self) -> None:
         def upgrade(topic: str, payload) -> Optional[dict]:
             if "openWB/general/chargemode_config/retry_failed_phase_switches" == topic:
-                return {"openWB/general/chargemode_config/pv_charging/retry_failed_phase_switches": payload}
+                return {"openWB/general/chargemode_config/pv_charging/retry_failed_phase_switches":
+                        decode_payload(payload)}
             if "openWB/general/chargemode_config/phase_switch_delay" == topic:
-                return {"openWB/general/chargemode_config/pv_charging/phase_switch_delay": payload}
+                return {"openWB/general/chargemode_config/pv_charging/phase_switch_delay":
+                        decode_payload(payload)}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 101)
