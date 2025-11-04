@@ -6,10 +6,12 @@ from typing import Optional
 class HaVehicleSocConfiguration:
     def __init__(
             self,
+            calculate_soc: bool = False,
             url: Optional[str] = None,
             token: Optional[str] = None,
             entity_id: Optional[str] = None
             ):
+        self.calculate_soc = calculate_soc
         self.url = url
         self.token = token
         self.entity_id = entity_id
