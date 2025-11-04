@@ -1,6 +1,6 @@
 <template>
   <div
-    class="q-pa-md flex column items-center justify-center container"
+    class="flex column items-center justify-center container"
     ref="rootRef"
     :style="{ '--row-h': rowHeight + 'px' }"
   >
@@ -103,7 +103,7 @@
                 <div>Ertrag:</div>
               </template>
               <template v-else-if="props.row.id === 'house'">
-                <div>Energie:</div>
+                <div>Verbrauch:</div>
               </template>
             </q-td>
 
@@ -151,7 +151,7 @@ import type { DailyTotalsItem } from 'src/components/models/daily-totals-model';
 const $q = useQuasar();
 const mqttStore = useMqttStore();
 
-const iconSize = computed(() => ($q.screen.width <= 500 ? 24 : 28));
+const iconSize = ref(28);
 
 const columns: QTableColumn<DailyTotalsItem>[] = [
   {
@@ -210,8 +210,32 @@ const chargePointConfigured = computed(
   () => mqttStore.chargePointIds.length > 0,
 );
 
+const tableBackgroundColors = {
+  grid: {
+    light: '#d5bbc0',
+    dark: '#a13a41',
+  },
+  battery: {
+    light: '#c7a388',
+    dark: '#b97a1f',
+  },
+  pv: {
+    light: '#b3ccbc',
+    dark: '#27623a',
+  },
+  house: {
+    light: '#bababf',
+    dark: '#6e6e6e',
+  },
+  chargepoint: {
+    light: '#b1c0d6',
+    dark: '#254a8c',
+  },
+};
+
 const rows = computed((): DailyTotalsItem[] => {
   const components: DailyTotalsItem[] = [];
+  const isDark = $q.dark.isActive;
 
   components.push({
     id: 'grid',
@@ -223,7 +247,7 @@ const rows = computed((): DailyTotalsItem[] => {
       imported: mqttStore.gridDailyImported('textValue') as string,
       exported: mqttStore.gridDailyExported('textValue') as string,
     },
-    backgroundColor: 'rgb(213,187,192)',
+    backgroundColor: isDark ? tableBackgroundColors.grid.dark : tableBackgroundColors.grid.light,
   });
 
   if (batteryConfigured.value) {
@@ -238,7 +262,7 @@ const rows = computed((): DailyTotalsItem[] => {
         imported: mqttStore.batteryDailyImportedTotal('textValue') as string,
         exported: mqttStore.batteryDailyExportedTotal('textValue') as string,
       },
-      backgroundColor: 'rgb(199,163,136)',
+      backgroundColor: isDark ? tableBackgroundColors.battery.dark : tableBackgroundColors.battery.light,
     });
   }
 
@@ -250,7 +274,7 @@ const rows = computed((): DailyTotalsItem[] => {
       power: mqttStore.getPvPower('textValue') as string,
       powerValue: mqttStore.getPvPower('value') as number,
       today: { exported: mqttStore.pvDailyExported('textValue') as string },
-      backgroundColor: 'rgb(179,204,188)',
+      backgroundColor: isDark ? tableBackgroundColors.pv.dark : tableBackgroundColors.pv.light,
     });
   }
 
@@ -261,7 +285,7 @@ const rows = computed((): DailyTotalsItem[] => {
     power: mqttStore.getHomePower('textValue') as string,
     powerValue: mqttStore.getHomePower('value') as number,
     today: { imported: mqttStore.homeDailyYield('textValue') as string },
-    backgroundColor: 'rgb(186,186,191)',
+    backgroundColor: isDark ? tableBackgroundColors.house.dark : tableBackgroundColors.house.light,
   });
 
   if (chargePointConfigured.value) {
@@ -275,7 +299,7 @@ const rows = computed((): DailyTotalsItem[] => {
         imported: mqttStore.chargePointDailyImported('textValue') as string,
         exported: mqttStore.chargePointDailyExported('textValue') as string,
       },
-      backgroundColor: 'rgb(177,192,214)',
+      backgroundColor: isDark ? tableBackgroundColors.chargepoint.dark : tableBackgroundColors.chargepoint.light,
     });
   }
 
