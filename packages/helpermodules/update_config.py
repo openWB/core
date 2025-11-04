@@ -589,6 +589,8 @@ class UpdateConfig:
         ("openWB/optional/rfid/active", False),
         ("openWB/system/backup_cloud/config", NO_MODULE),
         ("openWB/system/backup_cloud/backup_before_update", True),
+        ("openWB/system/current_branch", None),
+        ("openWB/system/current_commit", None),
         ("openWB/system/installAssistantDone", False),
         ("openWB/system/dataprotection_acknowledged", False),
         ("openWB/system/datastore_version", DATASTORE_VERSION),
