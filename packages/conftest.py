@@ -22,6 +22,11 @@ from modules.common.component_state import ChargepointState
 from modules.common.store._api import LoggingValueStore
 
 
+def pytest_configure(config):
+    config.addinivalue_line("markers", "no_mock_full_hour: mark test to disable full_hour mocking.")
+    config.addinivalue_line("markers", "no_mock_quarter_hour: mark test to disable quarter_hour mocking.")
+
+
 @pytest.fixture(autouse=True)
 def mock_open_file(monkeypatch) -> None:
     mock_config = Mock(return_value={"dc_charging": False, "openwb-version": 1, "max_c_socket": 32})
@@ -35,8 +40,10 @@ def mock_today(monkeypatch) -> None:
     datetime_mock.today.return_value = datetime.datetime(2022, 5, 16, 8, 40, 52)
     datetime_mock.now.return_value = datetime.datetime(2022, 5, 16, 8, 40, 52)
     monkeypatch.setattr(datetime, "datetime", datetime_mock)
-    mock_today_timestamp = Mock(return_value=1652683252)
-    monkeypatch.setattr(timecheck, "create_timestamp", mock_today_timestamp)
+    now_timestamp = Mock(return_value=1652683252)
+    monkeypatch.setattr(timecheck, "create_timestamp", now_timestamp)
+    full_hour_timestamp = Mock(return_value=int(datetime.datetime(2022, 5, 16, 8, 0, 0).timestamp()))
+    monkeypatch.setattr(timecheck, "create_unix_timestamp_current_full_hour", full_hour_timestamp)
 
 
 @pytest.fixture(autouse=True)

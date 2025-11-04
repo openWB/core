@@ -3,7 +3,8 @@
 import logging
 from math import ceil
 from threading import Thread
-from typing import List
+from typing import List, Optional
+from datetime import datetime
 
 from control import data
 from control.ocpp import OcppMixin
@@ -11,24 +12,49 @@ from control.optional_data import OptionalData
 from helpermodules import hardware_configuration
 from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
-from helpermodules.timecheck import create_unix_timestamp_current_full_hour
+from helpermodules import timecheck
 from helpermodules.utils import thread_handler
 from modules.common.configurable_tariff import ConfigurableElectricityTariff
 from modules.common.configurable_monitoring import ConfigurableMonitoring
 
 log = logging.getLogger(__name__)
+AS_EURO_PER_KWH = 1000.0  # Umrechnung von €/Wh in €/kWh
 
 
 class Optional(OcppMixin):
     def __init__(self):
         try:
             self.data = OptionalData()
-            self.et_module: ConfigurableElectricityTariff = None
+            # guarded et_module stored in a private attribute
+            self._et_module: Optional[ConfigurableElectricityTariff] = None
             self.monitoring_module: ConfigurableMonitoring = None
             self.data.dc_charging = hardware_configuration.get_hardware_configuration_setting("dc_charging")
             Pub().pub("openWB/optional/dc_charging", self.data.dc_charging)
         except Exception:
             log.exception("Fehler im Optional-Modul")
+
+    @property
+    def et_module(self) -> Optional[ConfigurableElectricityTariff]:
+        """Getter for the electricity tariff module (may be None)."""
+        return self._et_module
+
+    @et_module.setter
+    def et_module(self, value: Optional[ConfigurableElectricityTariff]):
+        """Setter with basic type-guarding and logging.
+
+        Accepts either None or a ConfigurableElectricityTariff instance. Logs when set/cleared.
+        """
+        if self._et_module and (value is None or self._et_module.config.name == value.config.name):
+            log.debug("Replacing existing et_module on Optional not allowed!")
+        else:
+            if value is not None and not isinstance(value, ConfigurableElectricityTariff):
+                raise TypeError("et_module must be a ConfigurableElectricityTariff instance or None")
+            self._et_module = value
+            if value is not None:
+                log.info("et_module set on Optional: %s", value.config.name)
+                self.et_get_prices()
+            else:
+                log.info("et_module cleared in Optional")
 
     def monitoring_start(self):
         if self.monitoring_module is not None:
@@ -41,7 +67,30 @@ class Optional(OcppMixin):
     def et_provider_available(self) -> bool:
         return self.et_module is not None
 
-    def et_charging_allowed(self, max_price: float):
+    def et_is_charging_allowed_hours_list(self, selected_hours: list[int]) -> bool:
+        """ prüft, ob das strompreisbasiertes Laden aktiviert und ein günstiger Zeitpunkt ist.
+
+        Parameter
+        ---------
+        selected_hours: list[int]
+            Liste der ausgewählten günstigen Zeitslots (Unix-Timestamps)
+
+        Return
+        ------
+        True: Der aktuelle Zeitpunkt liegt in einem ausgewählten günstigen Zeitslot
+        False: Der aktuelle Zeitpunkt liegt in keinem günstigen Zeitslot
+        """
+        try:
+            if self.et_provider_available():
+                return self.__get_current_timeslot_start(self.data.et.get.prices) in selected_hours
+            else:
+                log.info("Prüfe strompreisbasiertes Laden: Nicht konfiguriert")
+                return False
+        except Exception as e:
+            log.exception(f"Fehler im Optional-Modul: {e}")
+            return False
+
+    def et_is_charging_allowed_price_threshold(self, max_price: float) -> bool:
         """ prüft, ob der aktuelle Strompreis niedriger oder gleich der festgelegten Preisgrenze ist.
 
         Return
@@ -51,24 +100,52 @@ class Optional(OcppMixin):
         """
         try:
             if self.et_provider_available():
-                if self.et_get_current_price() <= max_price:
-                    return True
-                else:
-                    return False
+                current_price = self.et_get_current_price(prices=self.data.et.get.prices)
+                log.info("Prüfe strompreisbasiertes Laden mit Preisgrenze %.5f €/kWh, aktueller Preis: %.5f €/kWh",
+                         max_price * AS_EURO_PER_KWH,
+                         current_price * AS_EURO_PER_KWH
+                         )
+                return current_price <= max_price
             else:
                 return True
-        except KeyError:
-            log.exception("Fehler beim strompreisbasierten Laden")
-            self.et_get_prices()
-        except Exception:
-            log.exception("Fehler im Optional-Modul")
+        except KeyError as e:
+            log.exception("Fehler beim strompreisbasierten Laden: %s", e)
+            return False
+        except Exception as e:
+            log.exception("Fehler im Optional-Modul: %s", e)
             return False
 
-    def et_get_current_price(self):
+    def __get_first_entry(self, prices: dict[str, float]) -> tuple[str, float]:
         if self.et_provider_available():
-            return self.data.et.get.prices[str(int(create_unix_timestamp_current_full_hour()))]
+            prices = self.data.et.get.prices
+            if prices is None or len(prices) == 0:
+                raise Exception("Keine Preisdaten für strompreisbasiertes Laden vorhanden.")
+            else:
+                timestamp, first = next(iter(prices.items()))
+                price_timeslot_seconds = self.__calculate_price_timeslot_length(prices)
+                now = int(timecheck.create_timestamp())
+                prices = {
+                    price[0]: price[1]
+                    for price in prices.items()
+                    if int(price[0]) > now - (price_timeslot_seconds - 1)
+                }
+                self.data.et.get.prices = prices
+                timestamp, first = next(iter(prices.items()))
+                return timestamp, first
         else:
             raise Exception("Kein Anbieter für strompreisbasiertes Laden konfiguriert.")
+
+    def __get_current_timeslot_start(self, prices: dict[str, float]) -> int:
+        timestamp, first = self.__get_first_entry(prices)
+        return int(timestamp)
+
+    def et_get_current_price(self, prices: dict[str, float]) -> float:
+        timestamp, first = self.__get_first_entry(prices)
+        return first
+
+    def __calculate_price_timeslot_length(self, prices: dict) -> int:
+        first_timestamps = list(prices.keys())[:2]
+        return int(first_timestamps[1]) - int(first_timestamps[0])
 
     def et_get_loading_hours(self, duration: float, remaining_time: float) -> List[int]:
         """
@@ -76,47 +153,71 @@ class Optional(OcppMixin):
         ---------
         duration: float
             benötigte Ladezeit
-
+        remaining_time: float
+            Restzeit bis Termin (von wo an gerechnet???)
         Return
         ------
-        list: Key des Dictionary (Unix-Sekunden der günstigen Stunden)
+        list: Key des Dictionary (Unix-Sekunden der günstigen Zeit-Slots)
         """
         if self.et_provider_available() is False:
             raise Exception("Kein Anbieter für strompreisbasiertes Laden konfiguriert.")
         try:
             prices = self.data.et.get.prices
-            prices_in_scheduled_time = {}
-            i = 0
-            for timestamp, price in prices.items():
-                if i < ceil((duration+remaining_time)/3600):
-                    prices_in_scheduled_time.update({timestamp: price})
-                    i += 1
-                else:
-                    break
-            ordered = sorted(prices_in_scheduled_time.items(), key=lambda x: x[1])
-            return [int(i[0]) for i in ordered][:ceil(duration/3600)]
-        except Exception:
-            log.exception("Fehler im Optional-Modul")
+            price_timeslot_seconds = self.__calculate_price_timeslot_length(prices)
+            now = int(timecheck.create_timestamp())
+            price_candidates = {
+                timestamp: price
+                for timestamp, price in prices.items()
+                if (
+                    # is current timeslot or futur
+                    int(timestamp) + price_timeslot_seconds > now and
+                    # ends before plan target time
+                    not int(timestamp) >= now + remaining_time
+                )
+            }
+            log.debug("%s Preis-Kandidaten in %s Sekunden zwischen %s Uhr und %s Uhr von %s Uhr bis %s Uhr",
+                      len(price_candidates),
+                      duration,
+                      datetime.fromtimestamp(now),
+                      datetime.fromtimestamp(now + remaining_time),
+                      datetime.fromtimestamp(int(min(price_candidates))),
+                      datetime.fromtimestamp(int(max(price_candidates))+price_timeslot_seconds))
+            ordered_by_date_reverse = reversed(sorted(price_candidates.items(), key=lambda x: x[0]))
+            ordered_by_price = sorted(ordered_by_date_reverse, key=lambda x: x[1])
+            selected_time_slots = {int(i[0]): float(i[1])
+                                   for i in ordered_by_price[:1 + ceil(duration/price_timeslot_seconds)]}
+            selected_lenght = (
+                price_timeslot_seconds * (len(selected_time_slots)-1) -
+                (int(now) - min(selected_time_slots))
+            )
+            return sorted(selected_time_slots.keys()
+                          if not (min(selected_time_slots) > now or duration <= selected_lenght)
+                          else [timestamp[0] for timestamp in iter(selected_time_slots.items())][:-1]
+                          )
+            # if sum() sorted([int(i[0]) for i in ordered_by_price][:ceil(duration/price_timeslot_seconds)])
+        except Exception as e:
+            log.exception("Fehler im Optional-Modul: %s", e)
             return []
 
     def et_get_prices(self):
         try:
             if self.et_module:
-                thread_handler(Thread(target=self.et_module.update, args=(), name="electricity tariff"))
+                thread_handler(Thread(target=self.et_module.update, args=(),
+                                      name="electricity tariff in optional"))
             else:
                 # Wenn kein Modul konfiguriert ist, Fehlerstatus zurücksetzen.
                 if self.data.et.get.fault_state != 0 or self.data.et.get.fault_str != NO_ERROR:
                     Pub().pub("openWB/set/optional/et/get/fault_state", 0)
                     Pub().pub("openWB/set/optional/et/get/fault_str", NO_ERROR)
-        except Exception:
-            log.exception("Fehler im Optional-Modul")
+        except Exception as e:
+            log.exception("Fehler im Optional-Modul: %s", e)
 
     def ocpp_transfer_meter_values(self):
         try:
             if self.data.ocpp.active:
                 thread_handler(Thread(target=self._transfer_meter_values, args=(), name="OCPP Client"))
-        except Exception:
-            log.exception("Fehler im OCPP-Optional-Modul")
+        except Exception as e:
+            log.exception("Fehler im OCPP-Optional-Modul: %s", e)
 
     def _transfer_meter_values(self):
         for cp in data.data.cp_data.values():

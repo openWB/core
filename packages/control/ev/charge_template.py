@@ -293,7 +293,7 @@ class ChargeTemplate:
                 sub_mode = "stop"
                 message = self.AMOUNT_REACHED
             elif data.data.optional_data.et_provider_available():
-                if data.data.optional_data.et_charging_allowed(eco_charging.max_price):
+                if data.data.optional_data.et_is_charging_allowed_price_threshold(eco_charging.max_price):
                     sub_mode = "instant_charging"
                     message = self.CHARGING_PRICE_LOW
                     phases = max_phases_hw
@@ -498,28 +498,34 @@ class ChargeTemplate:
             duration = missing_amount/(current * phases*230) * 3600
         return duration, missing_amount
 
-    SCHEDULED_REACHED_LIMIT_SOC = ("Kein Zielladen, da noch Zeit bis zum Zieltermin ist. "
-                                   "Kein Zielladen mit Überschuss, da das SoC-Limit für Überschuss-Laden " +
-                                   "erreicht wurde. ")
-    SCHEDULED_CHARGING_REACHED_LIMIT_SOC = ("Kein Zielladen, da das Limit für Fahrzeug Laden mit Überschuss (SoC-Limit)"
-                                            " sowie der Fahrzeug-SoC (Ziel-SoC) bereits erreicht wurde. ")
-    SCHEDULED_CHARGING_REACHED_AMOUNT = "Kein Zielladen, da die Energiemenge bereits erreicht wurde. "
+    SCHEDULED_REACHED_MAX_SOC = ("Zielladen ausstehend, da noch Zeit bis zum Zieltermin ist. "
+                                 "Kein Zielladen mit Überschuss, da das SoC-Limit für Überschuss-Laden " +
+                                 "erreicht wurde. ")
+    SCHEDULED_CHARGING_REACHED_MAX_AND_LIMIT_SOC = (
+        "Zielladen abgeschlossen, da das Limit für Fahrzeug Laden mit Überschuss (SoC-Limit)"
+        " sowie der Fahrzeug-SoC (Ziel-SoC) bereits erreicht wurde. ")
+    SCHEDULED_CHARGING_REACHED_AMOUNT = "Zielladen abgeschlossen, da die Energiemenge bereits erreicht wurde. "
     SCHEDULED_CHARGING_REACHED_SCHEDULED_SOC = ("Falls vorhanden wird mit EVU-Überschuss geladen, da der Ziel-Soc "
                                                 "für Zielladen bereits erreicht wurde. ")
     SCHEDULED_CHARGING_BIDI = ("Der Ziel-Soc für Zielladen wurde bereits erreicht. Das Auto wird "
                                "bidirektional ge-/entladen, sodass möglichst weder Bezug noch "
                                "Einspeisung erfolgt. ")
-    SCHEDULED_CHARGING_NO_PLANS_CONFIGURED = "Keine Ladung, da keine Ziel-Termine konfiguriert sind."
+    SCHEDULED_CHARGING_NO_PLANS_CONFIGURED = "Kein Zielladen, da keine Ziel-Termine konfiguriert sind."
     SCHEDULED_CHARGING_NO_DATE_PENDING = "Kein Zielladen, da kein Ziel-Termin ansteht. "
-    SCHEDULED_CHARGING_USE_PV = "Laden startet {}. Falls vorhanden, wird mit Überschuss geladen. "
+    SCHEDULED_CHARGING_USE_PV = "Zielladen startet {}. Falls vorhanden, wird mit Überschuss geladen. "
     SCHEDULED_CHARGING_MAX_CURRENT = "Zielladen mit {}A. Der Ladestrom wurde erhöht, um das Ziel zu erreichen. "
     SCHEDULED_CHARGING_LIMITED_BY_SOC = 'einen SoC von {}%'
     SCHEDULED_CHARGING_LIMITED_BY_AMOUNT = '{}kWh geladene Energie'
     SCHEDULED_CHARGING_IN_TIME = ('Zielladen mit mindestens {}A, um {} um {} zu erreichen. Falls vorhanden wird '
                                   'zusätzlich EVU-Überschuss geladen. ')
     SCHEDULED_CHARGING_CHEAP_HOUR = "Zielladen, da ein günstiger Zeitpunkt zum preisbasierten Laden ist. {}"
-    SCHEDULED_CHARGING_EXPENSIVE_HOUR = ("Zielladen ausstehend, da jetzt kein günstiger Zeitpunkt zum preisbasierten "
-                                         "Laden ist. {} Falls vorhanden, wird mit Überschuss geladen. ")
+    SCHEDULED_CHARGING_EXPENSIVE_HOUR = (
+        "Zielladen ausstehend, da jetzt kein günstiger Zeitpunkt zum preisbasierten "
+        "Laden ist. {} Falls vorhanden, wird mit Überschuss geladen. ")
+    SCHEDULED_CHARGING_EXPENSIVE_HOUR_REACHED_MAX_SOC = (
+        "Zielladen ausstehend, da jetzt kein günstiger Zeitpunkt zum preisbasierten "
+        "Laden ist. {} " +
+        "Kein Zielladen mit Überschuss, da das SoC-Limit für Überschuss-Laden erreicht wurde.")
 
     def scheduled_charging_calc_current(self,
                                         selected_plan: Optional[SelectedPlan],
@@ -554,7 +560,7 @@ class ChargeTemplate:
             (soc > limit.soc_limit if (plan.bidi_charging_enabled and bidi_state == BidiState.BIDI_CAPABLE)
              else soc >= limit.soc_limit) and
                 soc >= limit.soc_scheduled):
-            message = self.SCHEDULED_CHARGING_REACHED_LIMIT_SOC
+            message = self.SCHEDULED_CHARGING_REACHED_MAX_AND_LIMIT_SOC
         elif limit.selected == "soc" and limit.soc_scheduled <= soc <= limit.soc_limit:
             if plan.bidi_charging_enabled and bidi_state == BidiState.BIDI_CAPABLE:
                 message = self.SCHEDULED_CHARGING_BIDI
@@ -596,29 +602,46 @@ class ChargeTemplate:
             # Wenn dynamische Tarife aktiv sind, prüfen, ob jetzt ein günstiger Zeitpunkt zum Laden
             # ist.
             if plan.et_active:
+                def get_hours_message() -> str:
+                    def is_loading_hour(hour: int) -> bool:
+                        return data.data.optional_data.et_is_charging_allowed_hours_list(hour)
+                    return ("Geladen wird "+("jetzt und "
+                                             if is_loading_hour(hour_list)
+                                             else '') +
+                            "zu folgenden Uhrzeiten: " +
+                            ", ".join([tomorrow(hour) +
+                                       datetime.datetime.fromtimestamp(hour).strftime('%-H:%M')
+                                       for hour in (sorted(hour_list)
+                                                    if not is_loading_hour(hour_list)
+                                                    else (sorted(hour_list)[1:] if len(hour_list) > 1 else []))])
+                            + ".")
+
+                def end_of_today_timestamp() -> int:
+                    return datetime.datetime.now().replace(
+                        hour=23, minute=59, second=59, microsecond=999000).timestamp()
+
+                def tomorrow(timestamp: int) -> str:
+                    return 'morgen ' if end_of_today_timestamp() < timestamp else ''
                 hour_list = data.data.optional_data.et_get_loading_hours(
                     selected_plan.duration, selected_plan.remaining_time)
-                hours_message = ("Geladen wird zu folgenden Uhrzeiten: " +
-                                 ", ".join([datetime.datetime.fromtimestamp(hour).strftime('%-H:%M')
-                                           for hour in sorted(hour_list)])
-                                 + ".")
+
                 log.debug(f"Günstige Ladezeiten: {hour_list}")
-                if timecheck.is_list_valid(hour_list):
-                    message = self.SCHEDULED_CHARGING_CHEAP_HOUR.format(hours_message)
+                if data.data.optional_data.et_is_charging_allowed_hours_list(hour_list):
+                    message = self.SCHEDULED_CHARGING_CHEAP_HOUR.format(get_hours_message())
                     current = plan_current
                     submode = "instant_charging"
                 elif ((limit.selected == "soc" and soc <= limit.soc_limit) or
                       (limit.selected == "amount" and used_amount < limit.amount)):
-                    message = self.SCHEDULED_CHARGING_EXPENSIVE_HOUR.format(hours_message)
+                    message = self.SCHEDULED_CHARGING_EXPENSIVE_HOUR.format(get_hours_message())
                     current = min_current
                     submode = "pv_charging"
                     phases = plan.phases_to_use_pv
                 else:
-                    message = self.SCHEDULED_REACHED_LIMIT_SOC
+                    message = self.SCHEDULED_CHARGING_EXPENSIVE_HOUR_REACHED_MAX_SOC.format(get_hours_message())
             else:
                 # Wenn SoC-Limit erreicht wurde, soll nicht mehr mit Überschuss geladen werden
                 if limit.selected == "soc" and soc >= limit.soc_limit:
-                    message = self.SCHEDULED_REACHED_LIMIT_SOC
+                    message = self.SCHEDULED_REACHED_MAX_SOC
                 else:
                     now = datetime.datetime.today()
                     start_time = now + datetime.timedelta(seconds=selected_plan.remaining_time)
