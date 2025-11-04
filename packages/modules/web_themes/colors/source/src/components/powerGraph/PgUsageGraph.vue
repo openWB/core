@@ -107,7 +107,6 @@ const draw = computed(() => {
 		yAxis.selectAll('.tick line').attr('stroke', 'var(--color-bg)')
 	}
 	yAxis.select('.domain').attr('stroke', 'var(--color-bg)')
-
 	return 'pgUsageGraph.vue'
 })
 //const stackGen = computed(() => stack().keys(keys[props.stackOrder].concat(['cp3'])))
@@ -131,8 +130,8 @@ const yScale = computed(() => {
 const keysToUse = computed(() => {
 	if (
 		graphData.graphMode != 'today' &&
-		graphData.graphMode != 'day' &&
-		graphData.graphMode != 'live'
+		graphData.graphMode != 'day' //&&
+		//graphData.graphMode != 'live'
 	) {
 		return keys.value[props.stackOrder]
 	} else {

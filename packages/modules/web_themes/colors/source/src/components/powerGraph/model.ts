@@ -5,6 +5,7 @@ import { sendCommand } from '@/assets/js/sendMessages'
 import { globalConfig } from '@/assets/js/themeConfig'
 import { energyMeterNeedsRedraw, registry } from '@/assets/js/model'
 import { shDevices } from '../smartHome/model'
+import { counters } from '../counterList/model'
 
 export const width = 500
 export const height = 500
@@ -164,6 +165,7 @@ export const dayGraph = reactive({
 				this.date.getDate().toString().padStart(2, '0')
 
 			this.topic = 'openWB/log/daily/' + dateString
+			console.log(`Request data at ${Date.now()}`)
 			mqttSubscribe(this.topic)
 			if (erase) {
 				graphData.data = []
@@ -345,6 +347,7 @@ export function updateEnergyValues(
 			registry.setEnergy('batIn', totals.bat.all.energy_imported)
 			registry.setEnergy('batOut', totals.bat.all.energy_exported)
 		}
+		// Chargepoints
 		Object.entries(totals.cp).forEach(([id, values]) => {
 			if (id == 'all') {
 				updatePvValues(values, 'charging')
@@ -352,6 +355,7 @@ export function updateEnergyValues(
 				updatePvValues(values, id)
 			}
 		})
+		// Devices
 		registry.setEnergy('devices', 0)
 		let devicesPvEnergy = 0
 		let devicesBatEnergy = 0
@@ -373,13 +377,17 @@ export function updateEnergyValues(
 		registry.setEnergyBat('devices', devicesBatEnergy)
 		registry.calculatePvPercentage('devices')
 
-		//
+		// Counters
 		registry.setEnergy('counters', 0)
 		let counterEnergy = 0
 		let counterPvEnergy = 0
 		let counterBatEnergy = 0
 		Object.entries(totals.counter).forEach(([id, values]) => {
-			if (!values.grid) {
+			if (
+				!values.grid &&
+				counters.get(+id.slice(7)) &&
+				counters.get(+id.slice(7))!.showInGraph
+			) {
 				updatePvValues(values, id)
 				counterEnergy += values.energy_imported
 				counterPvEnergy += values.energy_imported_pv
@@ -391,6 +399,7 @@ export function updateEnergyValues(
 		registry.setEnergyBat('counters', counterBatEnergy)
 		registry.calculatePvPercentage('counters')
 
+		// house
 		registry.setEnergy('house', 0)
 		if (totals.hc && totals.hc.all) {
 			registry.setEnergy('house', totals.hc.all.energy_imported)
@@ -436,7 +445,7 @@ export const xScaleMonth = computed(() => {
 		return scaleBand<number>()
 			.domain(Array.from({ length: e[1] }, (v, k) => k + 1))
 			.paddingInner(0.4)
-			.range([0, width - margin.left - 2])
+			.range([0, width - margin.left - 20])
 	} else {
 		return scaleBand<number>().range([0, 0])
 	}

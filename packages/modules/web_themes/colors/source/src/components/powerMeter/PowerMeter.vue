@@ -257,10 +257,12 @@ const valuesToDisplay = computed(() => {
 		registry.getItem('evuOut'),
 		registry.getItem('charging'),
 		registry.getItem('devices'),
-		registry.getItem('counters'),
 		registry.getItem('batIn'),
 		registry.getItem('house'),
-	].filter((x) => x.power > 0)
+		registry.getItem('counters'),
+	]
+		.filter((x) => x.power > 0)
+		.slice(0, 5)
 })
 const scheme = computed(() => schemes[valuesToDisplay.value.length - 1])
 function labelCoordinates(item: number) {

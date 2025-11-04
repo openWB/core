@@ -4,7 +4,6 @@
  * Copyright (c) 2022 Claus Hagen
  */
 
-import { getColor } from '@/assets/js/model'
 import {
 	PowerItemType,
 	type EnergyData,
@@ -60,7 +59,7 @@ export const batterySummary = reactive(new BatterySummary())
 export const batteries = ref(new Map<number, Battery>())
 export const addBattery = (index: number) => {
 	batteries.value.set(index, new Battery(index))
-	batteries.value.get(index)!.color = getColor('bat', batteries.value.size)
+	//batteries.value.get(index)!.color = getColor('bat', batteries.value.size)
 	//masterData['bat' + batteries.value.size].color
 }
 

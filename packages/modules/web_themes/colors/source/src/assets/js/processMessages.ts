@@ -30,6 +30,7 @@ import {
 } from '@/components/counterList/model'
 import { mqttClientId } from './mqttClient'
 import { add } from '@/components/mqttViewer/model'
+import { globalConfig } from './themeConfig'
 
 const topicsToSubscribe = [
 	'openWB/counter/#',
@@ -120,13 +121,7 @@ function processGlobalCounterMessages(topic: string, message: string) {
 		if (hierarchy.length) {
 			resetChargePoints()
 			resetBatteries()
-
-			for (const element of hierarchy) {
-				if (element.id == 0) {
-					globalData.evuId = element.id
-					// console.info('EVU counter is ' + globalData.evuId)
-				}
-			}
+			globalData.evuId = hierarchy[0].id
 			processHierarchy(hierarchy[0])
 		}
 	} else if (topic.match(/^openwb\/counter\/set\/home_consumption$/i)) {
@@ -145,6 +140,9 @@ function processHierarchy(hierarchy: Hierarchy) {
 		case 'counter':
 			// console.info('counter in hierachy: ' + hierarchy.id)
 			addCounter(hierarchy.id, hierarchy.type, hierarchy.id == globalData.evuId)
+			if (globalConfig.countersToShow.includes(hierarchy.id)) {
+				counters.get(hierarchy.id)!.showInGraph = true
+			}
 			break
 		case 'cp':
 			addChargePoint(hierarchy.id)

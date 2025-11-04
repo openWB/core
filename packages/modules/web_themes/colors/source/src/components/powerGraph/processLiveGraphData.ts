@@ -1,5 +1,6 @@
 import { globalData } from '../../assets/js/model'
 import { chargePoints } from '../chargePointList/model'
+import { counters } from '../counterList/model'
 import {
 	type GraphDataItem,
 	type RawGraphDataItem,
@@ -145,8 +146,10 @@ function extractValues(data: RawGraphDataItem): GraphDataItem {
 			const found = key.match(re_ctr)
 			if (found && found[1]) {
 				const id = 'ctr' + found[1]
-				values[id] = +(data[key] ?? 0)
-				values['counters'] += +(data[key] ?? 0)
+				if (counters.get(+found[1])?.showInGraph) {
+					values[id] = +(data[key] ?? 0)
+					values['counters'] += +(data[key] ?? 0)
+				}
 			}
 		})
 	values.selfUsage = values.pv - values.evuOut
