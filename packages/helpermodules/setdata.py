@@ -844,7 +844,7 @@ class SetData:
         try:
             if "openWB/set/optional/et/get/prices" in msg.topic:
                 self._validate_value(msg, "json")
-            elif "openWB/set/optional/et/get/price" in msg.topic:
+            elif "openWB/set/optional/et/get/next_query_time" in msg.topic:
                 self._validate_value(msg, float)
             elif "openWB/set/optional/et/get/fault_state" in msg.topic:
                 self._validate_value(msg, int, [(0, 2)])
