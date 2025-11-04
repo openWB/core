@@ -10,6 +10,7 @@ from modules.display_themes.cards.config import CardsDisplayTheme
 class EtGet:
     fault_state: int = 0
     fault_str: str = NO_ERROR
+    next_query_time: Optional[float] = None
     prices: Dict = field(default_factory=empty_dict_factory)
 
 
