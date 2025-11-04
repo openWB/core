@@ -6,8 +6,8 @@ from typing import Dict
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
-from modules.electricity_tariffs.ekz.config import EkzTariffConfiguration
-from modules.electricity_tariffs.ekz.config import EkzTariff
+from modules.electricity_tariffs.dynamic_tariffs.ekz.config import EkzTariffConfiguration
+from modules.electricity_tariffs.dynamic_tariffs.ekz.config import EkzTariff
 
 
 # Extract timestamp from power price entry
@@ -28,11 +28,11 @@ def readApi() -> list[tuple[str, float]]:
     power_raw = session.get(
         url=endpoint +
         f"?tariff_name={tariff_power}&start_timestamp={quote(startDate)}&end_timestamp={quote(endDate)}",
-        ).json()["prices"]
+    ).json()["prices"]
     grid_raw = session.get(
         url=endpoint +
         f"?tariff_name={tariff_grid}&start_timestamp={quote(startDate)}&end_timestamp={quote(endDate)}",
-        ).json()["prices"]
+    ).json()["prices"]
     return [(timestamp(power), (power['electricity'][1]['value']+grid['grid'][1]['value'])/1000)
             for power, grid in zip(power_raw, grid_raw)]
 
