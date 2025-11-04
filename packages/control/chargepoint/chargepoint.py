@@ -382,7 +382,7 @@ class Chargepoint(ChargepointRfidMixin):
         if phase_switch_required:
             # Umschaltung fehlgeschlagen
             if self.data.set.phases_to_use != self.data.get.phases_in_use:
-                if data.data.general_data.data.chargemode_config.retry_failed_phase_switches:
+                if data.data.general_data.data.chargemode_config.pv_charging.retry_failed_phase_switches:
                     if self.data.control_parameter.failed_phase_switches > self.MAX_FAILED_PHASE_SWITCHES:
                         phase_switch_required = False
                         self.set_state_and_log(
@@ -911,9 +911,9 @@ class Chargepoint(ChargepointRfidMixin):
                  self.data.set.log.imported_since_plugged == 0))
 
     def failed_phase_switches_reached(self) -> bool:
-        if ((data.data.general_data.data.chargemode_config.retry_failed_phase_switches and
+        if ((data.data.general_data.data.chargemode_config.pv_charging.retry_failed_phase_switches and
              self.data.control_parameter.failed_phase_switches > self.MAX_FAILED_PHASE_SWITCHES) or
-            (data.data.general_data.data.chargemode_config.retry_failed_phase_switches is False and
+            (data.data.general_data.data.chargemode_config.pv_charging.retry_failed_phase_switches is False and
              self.data.control_parameter.failed_phase_switches == 1)):
             self.set_state_and_log(
                 "Keine Phasenumschaltung, da die maximale Anzahl an Fehlversuchen erreicht wurde. ")
