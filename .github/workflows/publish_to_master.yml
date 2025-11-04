@@ -1,64 +1,89 @@
-
-
-
 name: Publish to master
 on:
   push:
     paths:
-      - packages/modules/display_themes/cards/source/**
-      - packages/modules/display_themes/colors/source/**
-      - packages/modules/web_themes/colors/source/**
-      - packages/modules/web_themes/koala/source/**
-
+      - 'packages/modules/*_themes/*/source/**'
+    branches:
+      - master
 
 jobs:
   build-and-push-themes:
     runs-on: ubuntu-latest
-    env:
-      THEME_BASES: |
-        packages/modules/display_themes/cards/source
-        packages/modules/display_themes/colors/source
-        packages/modules/web_themes/colors/source
-        packages/modules/web_themes/koala/source
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js 24
+      - name: Discover theme bases
+        id: discover
+        run: |
+          # Find directories matching packages/modules/*_themes/* that contain a source/ subdir
+          mapfile -d $'\0' found < <(find packages/modules -type d -path 'packages/modules/*_themes/*' -print0)
+          theme_bases=()
+          for d in "${found[@]}"; do
+            # trim trailing NUL if any
+            d="${d%$'\0'}"
+            if [ -d "$d/source" ]; then
+              theme_bases+=("$d")
+            fi
+          done
+
+          # Prepare newline-separated THEME_BASES output
+          echo "theme_bases<<EOF" >> $GITHUB_OUTPUT
+          for b in "${theme_bases[@]}"; do
+            printf "%s\n" "$b"
+          done >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          # Prepare newline-separated cache paths (package-lock.json)
+          cache_paths=""
+          for b in "${theme_bases[@]}"; do
+            cache_paths="${cache_paths}${b}/source/package-lock.json\n"
+          done
+          cache_paths=${cache_paths%\\n}
+          echo "cache_paths<<EOF" >> $GITHUB_OUTPUT
+          printf "%b" "$cache_paths" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Setup Node.js v24
         uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: |
-            packages/modules/display_themes/cards/source/package-lock.json
-            packages/modules/display_themes/colors/source/package-lock.json
-            packages/modules/web_themes/colors/source/package-lock.json
-            packages/modules/web_themes/koala/source/package-lock.json
+          cache-dependency-path: ${{ steps.discover.outputs.cache_paths }}
 
-      - name: Installiere Abhängigkeiten und baue alle Themes
+      - name: Install dependencies and build all themes
         run: |
-          for base in $THEME_BASES; do
-            echo "Installiere und baue Theme: $base"
-            cd "$base"
-            npm ci || npm install
-            npm run build
-            cd -
+          theme_bases_str="${{ steps.discover.outputs.theme_bases }}"
+          # read into array splitting on newline
+          IFS=$'\n' read -r -d '' -a THEME_BASES <<< "$theme_bases_str"$'\0' || true
+          for base in "${THEME_BASES[@]}"; do
+            echo "Install and build Theme: $base"
+            if [ -d "$base/source" ]; then
+              cd "$base/source"
+              npm install
+              npm run build --if-present
+              cd -
+            else
+              echo "Skipping $base - no source directory"
+            fi
           done
 
-      - name: Commit und Push gebaute Themes
+      - name: Commit and push built themes
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git add packages/modules/web_themes/koala/web
-          git add packages/modules/web_themes/colors/web
-          git add packages/modules/display_themes/cards/web
-          git add packages/modules/display_themes/colors/web
+          theme_bases_str="${{ steps.discover.outputs.theme_bases }}"
+          IFS=$'\n' read -r -d '' -a THEME_BASES <<< "$theme_bases_str"$'\0' || true
+          for base in "${THEME_BASES[@]}"; do
+            if [ -d "$base/web" ]; then
+              git add "$base/web"
+            fi
+          done
           if ! git diff --cached --quiet; then
-            git commit -m "Build Web Themes"
+            git commit -m "Build Themes"
             git push
           else
             echo "No changes to commit."
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
