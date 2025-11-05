@@ -16,6 +16,7 @@ from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 from helpermodules.utils import thread_handler
+from helpermodules.utils._thread_handler import joined_thread_handler
 from modules.common.configurable_tariff import ConfigurableFlexibleTariff, ConfigurableGridFee
 from modules.common.configurable_monitoring import ConfigurableMonitoring
 
@@ -183,8 +184,9 @@ class Optional(OcppMixin):
         try:
             if self.et_price_update_required() is False:
                 return
+            threads = []
             if self.flexible_tariff_module:
-                thread_handler(Thread(target=self.flexible_tariff_module.update, args=(), name="flexible tariff"))
+                threads.append(Thread(target=self.flexible_tariff_module.update, args=(), name="flexible tariff"))
             else:
                 # Wenn kein Modul konfiguriert ist, Fehlerstatus zurücksetzen.
                 if (self.data.electricity_pricing.flexible_tariff.get.fault_state != 0 or
@@ -194,7 +196,7 @@ class Optional(OcppMixin):
                     Pub().pub("openWB/set/optional/ep/flexible_tariff/get/fault_state", 0)
                     Pub().pub("openWB/set/optional/ep/flexible_tariff/get/fault_str", NO_ERROR)
             if self.grid_fee_module:
-                thread_handler(Thread(target=self.grid_fee_module.update, args=(), name="grid fee"))
+                threads.append(Thread(target=self.grid_fee_module.update, args=(), name="grid fee"))
             else:
                 # Wenn kein Modul konfiguriert ist, Fehlerstatus zurücksetzen.
                 if (self.data.electricity_pricing.grid_fee.get.fault_state != 0 or
@@ -203,6 +205,7 @@ class Optional(OcppMixin):
                     self.data.electricity_pricing.grid_fee.get.fault_str = NO_ERROR
                     Pub().pub("openWB/set/optional/ep/grid_fee/get/fault_state", 0)
                     Pub().pub("openWB/set/optional/ep/grid_fee/get/fault_str", NO_ERROR)
+            joined_thread_handler(threads, None)
             self.data.electricity_pricing.prices = self.sum_prices()
             Pub().pub("openWB/set/optional/ep/prices", self.data.electricity_pricing.prices)
         except Exception as e:
