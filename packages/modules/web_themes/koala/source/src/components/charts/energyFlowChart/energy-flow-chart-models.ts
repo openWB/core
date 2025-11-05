@@ -15,6 +15,7 @@ export interface ComponentClass {
   valueLabel: string;
   animated?: boolean;
   animatedReverse?: boolean;
+  powerCategory?: string;
 }
 
 export interface ComponentPosition {

@@ -246,6 +246,33 @@ const chargePointSumCharging = computed(
   () => Number(chargePointSumPower.value.value) > 0,
 );
 
+///////////////////// Set animation speed //////////////////////////
+
+const powerCategory = (power: number) => {
+  if (Math.abs(power) >= 5000) return 'large';
+  if (Math.abs(power) >= 1500) return 'medium';
+  return 'small';
+};
+
+const pvPowerCategory = computed(() => powerCategory(pvPower.value.value));
+const batteryPowerCategory = computed(() =>
+  powerCategory(batteryPower.value.value),
+);
+const gridPowerCategory = computed(() => powerCategory(gridPower.value.value));
+const homePowerCategory = computed(() => powerCategory(homePower.value.value));
+const chargePoint1PowerCategory = computed(() =>
+  powerCategory(chargePoint1Power.value.value),
+);
+const chargePoint2PowerCategory = computed(() =>
+  powerCategory(chargePoint2Power.value.value),
+);
+const chargePoint3PowerCategory = computed(() =>
+  powerCategory(chargePoint3Power.value.value),
+);
+const chargePointSumPowerCategory = computed(() =>
+  powerCategory(chargePointSumPower.value.value),
+);
+
 ///////////////////////// Diagram components /////////////////////////
 
 const svgComponents = computed((): FlowComponent[] => {
@@ -262,6 +289,7 @@ const svgComponents = computed((): FlowComponent[] => {
           : '',
       animated: gridConsumption.value,
       animatedReverse: gridFeedIn.value,
+      powerCategory: gridPowerCategory.value,
     },
     position: { row: 0, column: 0 },
     label: ['EVU', absoluteValueObject(gridPower.value).textValue],
@@ -275,6 +303,7 @@ const svgComponents = computed((): FlowComponent[] => {
       valueLabel: '',
       animated: homeProduction.value,
       animatedReverse: homeConsumption.value,
+      powerCategory: homePowerCategory.value,
     },
     position: { row: 0, column: 2 },
     label: ['Haus', absoluteValueObject(homePower.value).textValue],
@@ -289,6 +318,7 @@ const svgComponents = computed((): FlowComponent[] => {
         valueLabel: 'fill-success',
         animated: pvProduction.value,
         animatedReverse: pvConsumption.value,
+        powerCategory: pvPowerCategory.value,
       },
       position: { row: 1, column: 0 },
       label: ['PV', absoluteValueObject(pvPower.value).textValue],
@@ -304,6 +334,7 @@ const svgComponents = computed((): FlowComponent[] => {
         valueLabel: '',
         animated: batteryDischarging.value,
         animatedReverse: batteryCharging.value,
+        powerCategory: batteryPowerCategory.value,
       },
       position: { row: 1, column: 2 },
       label: ['Speicher', absoluteValueObject(batteryPower.value).textValue],
@@ -322,6 +353,7 @@ const svgComponents = computed((): FlowComponent[] => {
           valueLabel: '',
           animated: chargePoint1Discharging.value,
           animatedReverse: chargePoint1Charging.value,
+          powerCategory: chargePoint1PowerCategory.value,
         },
         position: {
           row: 2,
@@ -344,6 +376,7 @@ const svgComponents = computed((): FlowComponent[] => {
               'fill-' + chargePoint1ConnectedVehicleChargeMode.value.class,
             animated: chargePoint1Discharging.value,
             animatedReverse: chargePoint1Charging.value,
+            powerCategory: chargePoint1PowerCategory.value,
           },
           position: {
             row: 3,
@@ -367,6 +400,7 @@ const svgComponents = computed((): FlowComponent[] => {
             valueLabel: '',
             animated: chargePoint2Discharging.value,
             animatedReverse: chargePoint2Charging.value,
+            powerCategory: chargePoint2PowerCategory.value,
           },
           position: {
             row: 2,
@@ -390,6 +424,7 @@ const svgComponents = computed((): FlowComponent[] => {
               'fill-' + chargePoint2ConnectedVehicleChargeMode.value.class,
             animated: chargePoint2Discharging.value,
             animatedReverse: chargePoint2Charging.value,
+            powerCategory: chargePoint2PowerCategory.value,
           },
           position: {
             row: 3,
@@ -413,6 +448,7 @@ const svgComponents = computed((): FlowComponent[] => {
             valueLabel: '',
             animated: chargePoint3Discharging.value,
             animatedReverse: chargePoint3Charging.value,
+            powerCategory: chargePoint3PowerCategory.value,
           },
           position: { row: 2, column: 2 },
           label: [
@@ -433,6 +469,7 @@ const svgComponents = computed((): FlowComponent[] => {
               'fill-' + chargePoint3ConnectedVehicleChargeMode.value.class,
             animated: chargePoint3Discharging.value,
             animatedReverse: chargePoint3Charging.value,
+            powerCategory: chargePoint3PowerCategory.value,
           },
           position: {
             row: 3,
@@ -455,6 +492,7 @@ const svgComponents = computed((): FlowComponent[] => {
           valueLabel: '',
           animated: chargePointSumDischarging.value,
           animatedReverse: chargePointSumCharging.value,
+          powerCategory: chargePointSumPowerCategory.value,
         },
         position: { row: 2, column: 1 },
         label: [
@@ -558,6 +596,7 @@ const svgRectWidth = computed(
             component.class.base,
             { animated: component.class.animated },
             { animatedReverse: component.class.animatedReverse },
+            component.class.powerCategory,
           ]"
           :d="
             component.class.base !== 'vehicle'
@@ -713,13 +752,11 @@ const svgRectWidth = computed(
   user-select: none;
 }
 
-/* ------ */
 svg {
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
-/* ------ */
 
 path {
   fill: none;
@@ -735,13 +772,41 @@ path {
 path.animated {
   stroke: var(--q-white);
   stroke-dasharray: 5;
-  animation: dash 1s linear infinite;
+  animation: dash 3.5s linear infinite;
 }
 
 path.animatedReverse {
   stroke: var(--q-white);
   stroke-dasharray: 5;
-  animation: dashReverse 1s linear infinite;
+  animation: dashReverse 3.5s linear infinite;
+}
+
+path.medium.animated,
+path.medium.animatedReverse {
+  animation-duration: 1.5s;
+}
+
+path.large.animated,
+path.large.animatedReverse {
+  animation-duration: 0.6s;
+}
+
+@keyframes dash {
+  from {
+    stroke-dashoffset: 10;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes dashReverse {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: 10;
+  }
 }
 
 path.animated.grid {
@@ -807,24 +872,6 @@ rect {
 .body--dark {
   image {
     filter: brightness(1); /* white icons in dark theme */
-  }
-}
-
-@keyframes dash {
-  from {
-    stroke-dashoffset: 20;
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-@keyframes dashReverse {
-  from {
-    stroke-dashoffset: 0;
-  }
-  to {
-    stroke-dashoffset: 20;
   }
 }
 
