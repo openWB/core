@@ -10,13 +10,11 @@
 			<WbBadge v-if="etData.active" bgcolor="var(--color-charging)">{{
 				etData.etCurrentPriceString
 			}}</WbBadge>
-			<WbBadge v-if="etData.active" bgcolor="var(--color-menu)">{{
-				etData.etProvider
-			}}</WbBadge>
 		</template>
+		<div class="subtitle">{{ etData.etProvider }}</div>
 		<div class="grapharea">
-			<figure id="pricechart" class="p-1 m-0 pricefigure">
-				<svg viewBox="0 0 400 280">
+			<figure id="pricechart" class="p-0 m-0 pricefigure">
+				<svg viewBox="0 0 380 280">
 					<g
 						:id="chartId"
 						:origin="draw"
@@ -292,5 +290,11 @@ onMounted(() => {
 
 .pricefigure {
 	justify-self: stretch;
+}
+.subtitle {
+	color: var(--color-axis);
+	font-size: 12px;
+	grid-column: span 12;
+	justify-self: start;
 }
 </style>

@@ -3,6 +3,10 @@ from modules.common.fault_state import FaultState
 from modules.common.store import ValueStore
 from modules.common.store._api import LoggingValueStore
 from modules.common.store._broker import pub_to_broker
+import logging
+
+
+log = logging.getLogger(__name__)
 
 
 class TariffValueStoreBroker(ValueStore[TariffState]):
@@ -14,7 +18,9 @@ class TariffValueStoreBroker(ValueStore[TariffState]):
 
     def update(self):
         try:
-            pub_to_broker("openWB/set/optional/et/get/prices", self.state.prices)
+            prices = self.state.prices
+            pub_to_broker("openWB/set/optional/et/get/prices", prices)
+            log.debug(f"published prices list to MQTT having {len(prices)} entries")
         except Exception as e:
             raise FaultState.from_exception(e)
 

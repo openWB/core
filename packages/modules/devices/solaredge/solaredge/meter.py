@@ -2,7 +2,7 @@
 import logging
 from typing import Iterable, Union, List
 
-from modules.common import modbus
+from modules.common.modbus import ModbusDataType
 from modules.devices.solaredge.solaredge.config import (SolaredgeBatSetup, SolaredgeCounterSetup,
                                                         SolaredgeExternalInverterSetup, SolaredgeInverterSetup)
 log = logging.getLogger(__name__)
@@ -16,25 +16,33 @@ class SolaredgeMeterRegisters:
         # 40206: Total Real Power (sum of active phases)
         # 40207/40208/40209: Real Power by phase
         # 40210: AC Real Power Scale Factor
-        self.powers = 40206
+        self.power = 40206
+        self.powers = 40207
+        self.powers_scale = 40210
         # 40191/40192/40193: AC Current by phase
         # 40194: AC Current Scale Factor
         self.currents = 40191
+        self.currents_scale = 40194
         # 40196/40197/40198: Voltage per phase
         # 40203: AC Voltage Scale Factor
         self.voltages = 40196
+        self.voltages_scale = 40203
         # 40204: AC Frequency
         # 40205: AC Frequency Scale Factor
         self.frequency = 40204
+        self.frequency_scale = 40205
         # 40222/40223/40224: Power factor by phase (unit=%)
         # 40225: AC Power Factor Scale Factor
         self.power_factors = 40222
+        self.power_factors_scale = 40225
         # 40226: Total Exported Real Energy
         # 40228/40230/40232: Total Exported Real Energy Phase (not used)
         # 40234: Total Imported Real Energy
         # 40236/40238/40240: Total Imported Real Energy Phase (not used)
         # 40242: Real Energy Scale Factor
-        self.imp_exp = 40226
+        self.exported = 40226
+        self.imported = 40234
+        self.imp_exp_scale = 40242
         # 40155: C_Option Export + Import, Production, consumption,
         self.option = 40155
         self._update_offset_meter_id(internal_meter_id)
@@ -87,14 +95,14 @@ def _get_synergy_units(component_config: Union[SolaredgeBatSetup,
                                                SolaredgeInverterSetup,
                                                SolaredgeExternalInverterSetup],
                        client) -> int:
-    if client.read_holding_registers(40121, modbus.ModbusDataType.UINT_16,
+    if client.read_holding_registers(40121, ModbusDataType.UINT_16,
                                      unit=component_config.configuration.modbus_id
                                      ) == synergy_unit_identifier:
         # Snyergy-Units vom Haupt-WR des angeschlossenen Meters ermitteln. Es kann mehrere Haupt-WR mit
         # unterschiedlichen Modbus-IDs im Verbund geben.
         log.debug("Synergy Units supported")
         synergy_units = int(client.read_holding_registers(
-            40129, modbus.ModbusDataType.UINT_16,
+            40129, ModbusDataType.UINT_16,
             unit=component_config.configuration.modbus_id)) or 1
         log.debug(
             f"Synergy Units detected for Modbus ID {component_config.configuration.modbus_id}: {synergy_units}")

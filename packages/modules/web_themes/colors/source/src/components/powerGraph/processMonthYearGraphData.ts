@@ -5,22 +5,25 @@ import {
 	setGraphData,
 	updateEnergyValues,
 	graphData,
-	calculateMonthlyAutarchy,
 } from './model'
-import { historicSummary, resetHistoricSummary } from '@/assets/js/model'
+import { registry, resetHistoricData, createPowerItem } from '@/assets/js/model'
 import { itemNames } from './model'
+import { chargePoints } from '../chargePointList/model'
+import { shDevices } from '../smartHome/model'
+import { counters } from '../counterList/model'
+import { PowerItemType, type PowerItem } from '@/assets/js/types'
 
 let columnValues: { [key: string]: number } = {}
 const consumerCategories = ['charging', 'house', 'batIn', 'devices']
-const nonPvCategories = [
+/* const nonPvCategories = [
 	'evuIn',
 	'pv',
 	'batOut',
 	'batIn',
 	'evuOut',
-	'devices',
-	'sh1',
-	'sh2',
+	//'devices',
+	//'sh1',
+	//'sh2',
 	'sh3',
 	'sh4',
 	'sh5',
@@ -29,7 +32,7 @@ const nonPvCategories = [
 	'sh8',
 	'sh9',
 ]
-let gridCounters: string[] = []
+ */ let gridCounters: string[] = []
 
 // methods:
 // Process a new message with monthly graph data. A single message contains all data
@@ -42,11 +45,11 @@ export function processMonthGraphMessages(topic: string, message: string) {
 		totals: energyValues,
 	} = JSON.parse(message)
 	itemNames.value = new Map(Object.entries(itemNames2))
-	resetHistoricSummary()
+	resetHistoricData()
 	gridCounters = []
 	consumerCategories.forEach((cat) => {
-		historicSummary.items[cat].energyPv = 0
-		historicSummary.items[cat].energyBat = 0
+		registry.items.get(cat)!.past.energyPv = 0
+		registry.items.get(cat)!.past.energyBat = 0
 	})
 	if (inputTable.length > 0) {
 		setGraphData(transformDatatable(inputTable))
@@ -64,11 +67,11 @@ export function processYearGraphMessages(topic: string, message: string) {
 		totals: energyValues,
 	} = JSON.parse(message)
 	itemNames.value = new Map(Object.entries(itemNames2))
-	resetHistoricSummary()
+	resetHistoricData()
 	gridCounters = []
 	consumerCategories.forEach((cat) => {
-		historicSummary.items[cat].energyPv = 0
-		historicSummary.items[cat].energyBat = 0
+		registry.items.get(cat)!.past.energyPv = 0
+		registry.items.get(cat)!.past.energyBat = 0
 	})
 	if (inputTable.length > 0) {
 		setGraphData(transformDatatable(inputTable))
@@ -157,8 +160,15 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 	// Charge points
 	Object.entries(inputRow.cp).forEach(([id, values]) => {
 		if (id != 'all') {
-			if (!historicSummary.keys().includes(id)) {
-				historicSummary.addItem(id)
+			if (!registry.keys().includes(id)) {
+				const cp: PowerItem =
+					chargePoints[+id.slice(2)] ??
+					createPowerItem(
+						id,
+						PowerItemType.chargepoint,
+						'var(--color-charging)',
+					)
+				registry.duplicateItem(id, cp)
 			}
 			outputRow[id] = values.energy_imported
 		} else {
@@ -174,8 +184,8 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 	// Devices
 	outputRow.devices = Object.entries(inputRow.sh).reduce<number>(
 		(sum: number, item) => {
-			if (!historicSummary.keys().includes(item[0])) {
-				historicSummary.addItem(item[0])
+			if (!registry.keys().includes(item[0])) {
+				registry.duplicateItem(item[0], shDevices.get(item[0])!)
 			}
 			if (item[1].energy_imported >= 0) {
 				sum += item[1].energy_imported
@@ -188,6 +198,18 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 		},
 		0,
 	)
+	// Counters
+	outputRow.counters = 0
+	Object.entries(inputRow.counter).forEach(([id, values]) => {
+		if (!values.grid) {
+			outputRow.counters += values.power_imported ?? 0
+			outputRow[id] = values.power_imported ?? 0
+			if (!registry.keys().includes(id)) {
+				registry.duplicateItem(id, counters.get(+id.slice(7))!)
+				registry.items.get(id)!.showInGraph = true
+			}
+		}
+	})
 	// House
 	if (inputRow.hc && inputRow.hc.all) {
 		outputRow.house = inputRow.hc.all.energy_imported // (seems this is now centrally computed) - currentItem.devices
@@ -202,20 +224,5 @@ function transformRow(inputRow: RawDayGraphDataItem): GraphDataItem {
 	}
 	// Self usage
 	outputRow.selfUsage = outputRow.pv - outputRow.evuOut
-	// Autarchy
-	const usedEnergy = outputRow.evuIn + outputRow.batOut + outputRow.pv
-	if (usedEnergy > 0) {
-		historicSummary
-			.keys()
-			.filter((key) => !nonPvCategories.includes(key))
-			.forEach((cat) => {
-				calculateMonthlyAutarchy(cat, outputRow)
-			})
-	} else {
-		consumerCategories.map((cat) => {
-			outputRow[cat + 'Pv'] = 0
-			outputRow[cat + 'Bat'] = 0
-		})
-	}
 	return outputRow
 }

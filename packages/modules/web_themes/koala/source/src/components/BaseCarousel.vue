@@ -78,7 +78,7 @@ function measure() {
 
 onMounted(() => {
   measure();
-  window.addEventListener('resize', measure, {passive: true});
+  window.addEventListener('resize', measure, { passive: true });
 });
 
 onBeforeUnmount(() => {
@@ -92,7 +92,9 @@ const groupSize = computed(() => {
   const maxGroup = Math.max(
     1,
     Math.floor(
-      (carouselWidth.value - 2 - (showArrows.value ? carouselPadding.value : 50)) /
+      (carouselWidth.value -
+        2 -
+        (showArrows.value ? carouselPadding.value : 50)) /
         itemWidth.value,
     ),
   );

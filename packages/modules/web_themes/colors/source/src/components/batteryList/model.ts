@@ -4,8 +4,11 @@
  * Copyright (c) 2022 Claus Hagen
  */
 
-import { masterData } from '@/assets/js/model'
-import { PowerItemType, type PowerItem } from '@/assets/js/types'
+import {
+	PowerItemType,
+	type EnergyData,
+	type PowerItem,
+} from '@/assets/js/types'
 import { reactive, ref } from 'vue'
 export class Battery implements PowerItem {
 	id: number
@@ -24,10 +27,18 @@ export class Battery implements PowerItem {
 	imported = 0
 	power = 0
 	soc = 0
-	energy = 0
-	energyPv = 0
-	energyBat = 0
-	pvPercentage = 0
+	now: EnergyData = {
+		energy: 0,
+		energyPv: 0,
+		energyBat: 0,
+		pvPercentage: 0,
+	}
+	past: EnergyData = {
+		energy: 0,
+		energyPv: 0,
+		energyBat: 0,
+		pvPercentage: 0,
+	}
 	showInGraph = true
 	icon = 'Speicher'
 	constructor(index: number) {
@@ -48,8 +59,8 @@ export const batterySummary = reactive(new BatterySummary())
 export const batteries = ref(new Map<number, Battery>())
 export const addBattery = (index: number) => {
 	batteries.value.set(index, new Battery(index))
-	batteries.value.get(index)!.color =
-		masterData['bat' + batteries.value.size].color
+	//batteries.value.get(index)!.color = getColor('bat', batteries.value.size)
+	//masterData['bat' + batteries.value.size].color
 }
 
 export function resetBatteries() {

@@ -40,7 +40,7 @@ from control.counter import get_counter_default_config
 from control.ev.charge_template import EcoCharging, get_charge_template_default
 from control.ev import ev
 from control.ev.ev_template import EvTemplateData
-from control.general import ChargemodeConfig, Prices
+from control.general import Prices, PvCharging
 from control.optional_data import Ocpp
 from modules.common.abstract_vehicle import GeneralVehicleConfig
 from modules.common.component_type import ComponentType
@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 96
+    DATASTORE_VERSION = 101
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -215,6 +215,7 @@ class UpdateConfig:
         "^openWB/general/grid_protection_timestamp$",
         "^openWB/general/grid_protection_random_stop$",
         "^openWB/general/range_unit$",
+        "^openWB/general/temporary_charge_templates_active$",
         "^openWB/general/notifications/selected$",
         "^openWB/general/notifications/configuration$",
         "^openWB/general/notifications/start_charging$",
@@ -229,14 +230,15 @@ class UpdateConfig:
         "^openWB/general/chargemode_config/pv_charging/switch_on_delay$",
         "^openWB/general/chargemode_config/pv_charging/switch_off_threshold$",
         "^openWB/general/chargemode_config/pv_charging/switch_off_delay$",
-        "^openWB/general/chargemode_config/phase_switch_delay$",
+        "^openWB/general/chargemode_config/pv_charging/phase_switch_delay$",
         "^openWB/general/chargemode_config/pv_charging/control_range$",
         "^openWB/general/chargemode_config/pv_charging/min_bat_soc$",
+        "^openWB/general/chargemode_config/pv_charging/max_bat_soc$",
         "^openWB/general/chargemode_config/pv_charging/bat_power_discharge$",
         "^openWB/general/chargemode_config/pv_charging/bat_power_discharge_active$",
         "^openWB/general/chargemode_config/pv_charging/bat_power_reserve$",
         "^openWB/general/chargemode_config/pv_charging/bat_power_reserve_active$",
-        "^openWB/general/chargemode_config/retry_failed_phase_switches$",
+        "^openWB/general/chargemode_config/pv_charging/retry_failed_phase_switches$",
         # obsolet, Daten hieraus müssen nach prices/ überführt werden
         "^openWB/general/price_kwh$",
         "^openWB/general/prices/bat$",
@@ -535,6 +537,7 @@ class UpdateConfig:
         ("openWB/general/chargemode_config/pv_charging/bat_power_discharge", 1000),
         ("openWB/general/chargemode_config/pv_charging/bat_power_discharge_active", True),
         ("openWB/general/chargemode_config/pv_charging/min_bat_soc", 50),
+        ("openWB/general/chargemode_config/pv_charging/max_bat_soc", 70),
         ("openWB/general/chargemode_config/pv_charging/bat_power_reserve", 200),
         ("openWB/general/chargemode_config/pv_charging/bat_power_reserve_active", True),
         ("openWB/general/chargemode_config/pv_charging/control_range", [0, 230]),
@@ -543,9 +546,9 @@ class UpdateConfig:
         ("openWB/general/chargemode_config/pv_charging/switch_on_delay", 30),
         ("openWB/general/chargemode_config/pv_charging/switch_on_threshold", 1500),
         ("openWB/general/chargemode_config/pv_charging/feed_in_yield", 0),
-        ("openWB/general/chargemode_config/phase_switch_delay", 7),
-        ("openWB/general/chargemode_config/retry_failed_phase_switches",
-         ChargemodeConfig().retry_failed_phase_switches),
+        ("openWB/general/chargemode_config/pv_charging/phase_switch_delay", 7),
+        ("openWB/general/chargemode_config/pv_charging/retry_failed_phase_switches",
+         PvCharging().retry_failed_phase_switches),
         ("openWB/general/chargemode_config/unbalanced_load", False),
         ("openWB/general/chargemode_config/unbalanced_load_limit", 18),
         ("openWB/general/control_interval", 10),
@@ -565,6 +568,7 @@ class UpdateConfig:
         ("openWB/general/prices/grid", Prices().grid),
         ("openWB/general/prices/pv", Prices().pv),
         ("openWB/general/range_unit", "km"),
+        ("openWB/general/temporary_charge_templates_active", False),
         ("openWB/general/web_theme", dataclass_utils.asdict(StandardLegacyWebTheme())),
         ("openWB/graph/config/duration", 120),
         ("openWB/internal_chargepoint/0/data/parent_cp", None),
@@ -585,6 +589,8 @@ class UpdateConfig:
         ("openWB/optional/rfid/active", False),
         ("openWB/system/backup_cloud/config", NO_MODULE),
         ("openWB/system/backup_cloud/backup_before_update", True),
+        ("openWB/system/current_branch", None),
+        ("openWB/system/current_commit", None),
         ("openWB/system/installAssistantDone", False),
         ("openWB/system/dataprotection_acknowledged", False),
         ("openWB/system/datastore_version", DATASTORE_VERSION),
@@ -2350,9 +2356,6 @@ class UpdateConfig:
         self.__update_topic("openWB/system/datastore_version", 88)
 
     def upgrade_datastore_88(self) -> None:
-        pub_system_message({}, "Änderungen, die du auf der Hauptseite vornimmst, gelten nur vorübergehend, bis das "
-                           "Fahrzeug abgesteckt wird. \nDie dauerhaften Einstellungen aus dem Einstellungsmenü werden "
-                           "danach automatisch wieder aktiviert.", MessageType.INFO)
         pub_system_message({}, "Es gibt ein neues Theme: das Koala-Theme! Smarthpone-optimiert und mit "
                            "Energiefluss-Diagramm & Karten-Ansicht der Ladepunkte", MessageType.INFO)
         self.__update_topic("openWB/system/datastore_version", 89)
@@ -2560,3 +2563,53 @@ class UpdateConfig:
                     return {topic: payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 96)
+
+    def upgrade_datastore_97(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/system/device/[0-9]+/config$", topic) is not None:
+                payload = decode_payload(payload)
+                # add phase
+                if payload.get("type") == "shelly" and "phase" not in payload["configuration"]:
+                    payload["configuration"].update({"phase": 1})
+                Pub().pub(topic, payload)
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 98)
+
+    def upgrade_datastore_98(self) -> None:
+        version_str = decode_payload(
+            self.all_received_topics.get("openWB/system/version", "2.1.9"))
+        if '-' in version_str:
+            version = version_str.split('-', 1)[0]
+        else:
+            version = version_str
+        major, minor, feature = (int(x) for x in version.split("."))
+        if (major, minor, feature) == (2, 1, 8):
+            self.__update_topic("openWB/general/temporary_charge_templates_active", True)
+        pub_system_message(
+            {},
+            "Die temporären Ladeeinstellungen können ab jetzt benutzerdefiniert unter Einstellungen -> Allgemein"
+            " -> Darstellung & Bedienung angewendet werden.",
+            MessageType.INFO,
+        )
+        self.__update_topic("openWB/system/datastore_version", 99)
+
+    def upgrade_datastore_99(self) -> None:
+        # bei Aktualisierung den max_bat_soc auf min_bat_soc setzen
+        # Regelung verhält sich dadurch wie bisher konfiguriert
+        # max_bat_soc kann nicht kleiner als min_bat_soc werden
+        min_bat_soc = decode_payload(self.all_received_topics[
+            "openWB/general/chargemode_config/pv_charging/min_bat_soc"])
+
+        self.__update_topic("openWB/general/chargemode_config/pv_charging/max_bat_soc", min_bat_soc)
+        self.__update_topic("openWB/system/datastore_version", 100)
+
+    def upgrade_datastore_100(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if "openWB/general/chargemode_config/retry_failed_phase_switches" == topic:
+                return {"openWB/general/chargemode_config/pv_charging/retry_failed_phase_switches":
+                        decode_payload(payload)}
+            if "openWB/general/chargemode_config/phase_switch_delay" == topic:
+                return {"openWB/general/chargemode_config/pv_charging/phase_switch_delay":
+                        decode_payload(payload)}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 101)

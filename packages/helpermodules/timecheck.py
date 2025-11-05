@@ -300,14 +300,14 @@ def duration_sum(first: str, second: str) -> str:
         return "00:00"
 
 
-def __get_timedelta_obj(time: str) -> datetime.timedelta:
+def __get_timedelta_obj(time_str: str) -> datetime.timedelta:
     """ erstellt aus einem String ein timedelta-Objekt.
     Parameter
     ---------
-    time: str
+    time_str: str
         Zeitstrings HH:MM ggf DD:HH:MM
     """
-    time_charged = time.split(":")
+    time_charged = time_str.split(":")
     if len(time_charged) == 2:
         delta = datetime.timedelta(hours=int(time_charged[0]),
                                    minutes=int(time_charged[1]))
@@ -316,7 +316,7 @@ def __get_timedelta_obj(time: str) -> datetime.timedelta:
                                    hours=int(time_charged[1]),
                                    minutes=int(time_charged[2]))
     else:
-        raise Exception("Unknown charge duration: "+time)
+        raise Exception(f"Unknown charge duration: {time_str}")
     return delta
 
 
@@ -336,3 +336,7 @@ def convert_timestamp_delta_to_time_string(timestamp: int, delta: int) -> str:
         return f"{minute_diff} Min."
     elif seconds_diff > 0:
         return f"{seconds_diff} Sek."
+
+
+def convert_to_timestamp(timestring: str) -> int:
+    return int(datetime.datetime.fromisoformat(timestring).timestamp())

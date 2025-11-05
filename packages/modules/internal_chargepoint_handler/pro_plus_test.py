@@ -3,6 +3,7 @@ from typing import Callable, Tuple
 from unittest.mock import Mock
 
 import pytest
+from modules.internal_chargepoint_handler.pro_plus import SubData
 from modules.common.component_state import ChargepointState
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import InternalChargepoint
 from modules.internal_chargepoint_handler.pro_plus import ProPlus
@@ -10,6 +11,8 @@ from modules.internal_chargepoint_handler.pro_plus import ProPlus
 
 @pytest.fixture(autouse=True)
 def setup_pro_plus(monkeypatch) -> Tuple[ProPlus, Mock]:
+    system_data_mock = Mock(data={"version": "1.0.0", "current_branch": "main", "current_commit": "abc123"})
+    monkeypatch.setattr(SubData, "system_data", {"system": system_data_mock})
     pro_plus = ProPlus(0, InternalChargepoint(), 1)
     mock_store_set = Mock()
     monkeypatch.setattr(pro_plus.store, "set", mock_store_set)

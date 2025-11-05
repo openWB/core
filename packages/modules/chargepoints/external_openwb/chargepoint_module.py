@@ -117,7 +117,10 @@ class ChargepointModule(AbstractChargepoint):
                             self.fault_state.warning(received_topics[f"{topic_prefix}fault_str"])
                         self.old_plug_state = chargepoint_state.plug_state
                     except KeyError:
-                        raise KeyError("Es wurden nicht alle notwendigen Daten empfangen.")
+                        if received_topics[f"{topic_prefix}fault_state"] == 2:
+                            self.fault_state.error(received_topics[f"{topic_prefix}fault_str"])
+                        else:
+                            raise KeyError("Es wurden nicht alle notwendigen Daten empfangen.")
                 else:
                     self.fault_state.warning(f"Keine MQTT-Daten für Ladepunkt {self.config.name} empfangen. Noch keine "
                                              "Daten nach dem Start oder Ladepunkt nicht erreichbar.")

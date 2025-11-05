@@ -10,6 +10,7 @@ import re
 import paho.mqtt.client as mqtt
 
 import logging
+from control import data
 from helpermodules import hardware_configuration, subdata
 from helpermodules.broker import BrokerClient
 from helpermodules.pub import Pub, pub_single
@@ -19,6 +20,8 @@ import dataclass_utils
 
 log = logging.getLogger(__name__)
 mqtt_log = logging.getLogger("mqtt")
+
+TIMESTAMP_2100 = 4102441200  # 01.01.2100 00:00:00
 
 
 class SetData:
@@ -385,7 +388,7 @@ class SetData:
                 self._validate_value(msg, int, [(0, float("inf"))])
             elif ("/get/soc_request_timestamp" in msg.topic or
                   "/get/soc_timestamp" in msg.topic):
-                self._validate_value(msg, float)
+                self._validate_value(msg, float, [(0, TIMESTAMP_2100)])
             elif "/get/soc" in msg.topic:
                 self._validate_value(msg, float, [(0, 100)])
             elif "/get/range" in msg.topic:
@@ -405,8 +408,28 @@ class SetData:
             enthält Topic und Payload
         """
         try:
-            if "charge_template" in msg.topic:
+            if (re.search("/vehicle/template/charge_template/[0-9]+$", msg.topic) is not None or
+                    re.search("/chargepoint/[0-9]+/set/charge_template$", msg.topic) is not None):
                 self._validate_value(msg, "json")
+                if data.data.general_data.data.temporary_charge_templates_active is False:
+                    if re.search("/chargepoint/[0-9]+/set/charge_template$", msg.topic) is not None:
+                        payload = decode_payload(msg.payload)
+                        Pub().pub(f"openWB/vehicle/template/charge_template/{payload['id']}", payload)
+                    else:
+                        get_index(msg.topic)
+                        for vehicle in data.data.ev_data.values():
+                            if vehicle.data.charge_template == int(get_index(msg.topic)):
+                                for cp in data.data.cp_data.values():
+                                    if ((cp.data.set.charging_ev != -1 and
+                                            cp.data.set.charging_ev == vehicle.num) or
+                                            cp.data.config.ev == vehicle.num):
+                                        if decode_payload(msg.payload) == "":
+                                            Pub().pub(
+                                                f"openWB/chargepoint/{cp.num}/set/charge_template", "")
+                                        else:
+                                            Pub().pub(
+                                                f"openWB/chargepoint/{cp.num}/set/charge_template",
+                                                decode_payload(msg.payload))
             else:
                 self.__unknown_topic(msg)
         except Exception:
@@ -551,14 +574,14 @@ class SetData:
         elif ("/get/evse_current" in msg.topic or
               "/get/max_evse_current" in msg.topic):
             # AC-EVSE: 0, 6-32, 600-3200, DC-EVSE 0-500
-            self._validate_value(msg, float, [(0, 3200)])
+            self._validate_value(msg, float, [(-3200, 3200)])
         elif ("/get/version" in msg.topic or
               "/get/current_branch" in msg.topic or
               "/get/current_commit" in msg.topic):
             self._validate_value(msg, str)
         elif ("/get/error_timestamp" in msg.topic or
                 "/get/rfid_timestamp" in msg.topic):
-            self._validate_value(msg, float)
+            self._validate_value(msg, float, [(0, TIMESTAMP_2100)])
         elif ("/get/fault_str" in msg.topic or
                 "/get/state_str" in msg.topic or
                 "/get/heartbeat" in msg.topic or
@@ -610,7 +633,8 @@ class SetData:
                         "/get/yearly_exported" in msg.topic or
                         "/get/energy" in msg.topic):
                     self._validate_value(msg, float, [(0, float("inf"))])
-                elif "/get/exported" in msg.topic:
+                elif ("/get/exported" in msg.topic or
+                      "/get/imported" in msg.topic):
                     self._validate_value(msg, float, [(0, float("inf"))])
                 elif "/get/power" in msg.topic:
                     self._validate_value(msg, float)
@@ -707,7 +731,7 @@ class SetData:
             elif "openWB/set/general/chargemode_config/unbalanced_load_limit" in msg.topic:
                 self._validate_value(msg, int, [(10, 32)])
             elif ("openWB/set/general/chargemode_config/unbalanced_load" in msg.topic or
-                  "openWB/set/general/chargemode_config/retry_failed_phase_switches" in msg.topic or
+                  "openWB/set/general/chargemode_config/pv_charging/retry_failed_phase_switches" in msg.topic or
                   "openWB/set/general/chargemode_config/pv_charging/bat_power_discharge_active" in msg.topic or
                     "openWB/set/general/chargemode_config/pv_charging/bat_power_reserve_active" in msg.topic):
                 self._validate_value(msg, bool)
@@ -718,11 +742,12 @@ class SetData:
                 self._validate_value(msg, int, [(0, float("inf"))])
             elif "openWB/set/general/chargemode_config/pv_charging/switch_off_threshold" in msg.topic:
                 self._validate_value(msg, float)
-            elif "openWB/set/general/chargemode_config/phase_switch_delay" in msg.topic:
+            elif "openWB/set/general/chargemode_config/pv_charging/phase_switch_delay" in msg.topic:
                 self._validate_value(msg, int, [(5, 60)])
             elif "openWB/set/general/chargemode_config/pv_charging/control_range" in msg.topic:
                 self._validate_value(msg, int, collection=list)
-            elif "openWB/set/general/chargemode_config/pv_charging/min_bat_soc" in msg.topic:
+            elif ("openWB/set/general/chargemode_config/pv_charging/min_bat_soc" in msg.topic or
+                    "openWB/set/general/chargemode_config/pv_charging/max_bat_soc" in msg.topic):
                 self._validate_value(msg, int, [(0, 100)])
             elif ("openWB/set/general/chargemode_config/pv_charging/bat_power_discharge" in msg.topic or
                     "openWB/set/general/chargemode_config/pv_charging/bat_power_reserve" in msg.topic):
@@ -736,7 +761,7 @@ class SetData:
                     "openWB/set/general/mqtt_bridge" in msg.topic):
                 self._validate_value(msg, bool)
             elif "openWB/set/general/grid_protection_timestamp" in msg.topic:
-                self._validate_value(msg, float)
+                self._validate_value(msg, float, [(0, TIMESTAMP_2100)])
             elif "openWB/set/general/grid_protection_random_stop" in msg.topic:
                 self._validate_value(msg, int, [(0, 90)])
             elif "openWB/set/general/notifications/selected" in msg.topic:
@@ -754,6 +779,8 @@ class SetData:
                 self._validate_value(msg, float, [(0, 99.99)])
             elif "openWB/set/general/range_unit" in msg.topic:
                 self._validate_value(msg, str)
+            elif "openWB/set/general/temporary_charge_templates_active" in msg.topic:
+                self._validate_value(msg, bool)
             elif "openWB/set/general/web_theme" in msg.topic:
                 self._validate_value(msg, "json")
             elif ("openWB/set/general/charge_log_data_config" in msg.topic):
@@ -787,7 +814,7 @@ class SetData:
             elif "get/fault_str" in msg.topic:
                 self._validate_value(msg, str)
             elif "/timestamp" in msg.topic:
-                self._validate_value(msg, float)
+                self._validate_value(msg, float, [(0, TIMESTAMP_2100)])
             else:
                 self.__unknown_topic(msg)
         except Exception:
@@ -1027,7 +1054,7 @@ class SetData:
                 elif "/config" in msg.topic:
                     self._validate_value(msg, "json")
                 elif "/error_timestamp" in msg.topic:
-                    self._validate_value(msg, float, [(0, float("inf"))])
+                    self._validate_value(msg, float, [(0, TIMESTAMP_2100)])
                 elif "/get/fault_state" in msg.topic:
                     self._validate_value(msg, int, [(0, 2)])
                 elif "/get/fault_str" in msg.topic:

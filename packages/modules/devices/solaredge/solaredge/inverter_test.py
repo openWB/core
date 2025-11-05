@@ -9,14 +9,14 @@ from modules.devices.solaredge.solaredge.inverter import SolaredgeInverter
 
 def test_read_state():
     # setup
-    mock_read_holding_registers = Mock(side_effect=[
-        [14152, -1],
-        [8980404, 0],
-        [616, 65535, 65535, -2],
-        [14368, -1]
-    ])
+    mock_read_holding_registers_bulk = Mock(side_effect=[{
+        40083: 14152, 40084: -1,
+        40093: 8980404, 40095: 0,
+        40072: [616, 65535, 65535], 40075: -2,
+        40100: 14368, 40101: -1,
+    }])
     inverter = SolaredgeInverter(SolaredgeInverterSetup(), client=Mock(
-        spec=ModbusTcpClient_, read_holding_registers=mock_read_holding_registers), device_id=1)
+        spec=ModbusTcpClient_, read_holding_registers_bulk=mock_read_holding_registers_bulk), device_id=1)
     inverter.initialize()
 
     # execution

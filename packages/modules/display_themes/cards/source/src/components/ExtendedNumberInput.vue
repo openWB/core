@@ -3,7 +3,7 @@ export default {
   name: "ExtendedNumberInput",
   inheritAttrs: false,
   props: {
-    modelValue: { type: Number, required: true, default: NaN },
+    modelValue: { type: Number, required: true},
     unit: { type: String, default: "" },
     min: { type: Number, default: 0 },
     max: { type: Number, default: 100 },
