@@ -21,7 +21,6 @@ class ChargepointModule(AbstractChargepoint):
         self.client_error_context = ErrorTimerContext(
             f"openWB/set/chargepoint/{self.config.id}/get/error_timestamp", CP_ERROR, hide_exception=True)
         self.session = req.get_http_session()
-        self.old_plug_state = False
 
     def set_current(self, current: float) -> None:
         if self.client_error_context.error_counter_exceeded():
@@ -92,9 +91,8 @@ class ChargepointModule(AbstractChargepoint):
                 )
 
                 self.client_error_context.reset_error_counter()
-                self.old_plug_state = chargepoint_state.plug_state
             if self.client_error_context.error_counter_exceeded():
-                chargepoint_state = ChargepointState(plug_state=self.old_plug_state,
+                chargepoint_state = ChargepointState(plug_state=None,
                                                      charge_state=False,
                                                      imported=None,
                                                      exported=None,

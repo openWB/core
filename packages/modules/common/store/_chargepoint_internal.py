@@ -23,7 +23,8 @@ class InternalChargepointValueStore(ValueStore[ChargepointState]):
         pub_to_broker(f"{topic_prefix}/powers", self.state.powers, 2)
         pub_to_broker(f"{topic_prefix}/phases_in_use", self.state.phases_in_use, 2)
         pub_to_broker(f"{topic_prefix}/charge_state", self.state.charge_state, 2)
-        pub_to_broker(f"{topic_prefix}/plug_state", self.state.plug_state, 2)
+        if self.state.plug_state is not None:
+            pub_to_broker(f"{topic_prefix}/plug_state", self.state.plug_state, 2)
         pub_to_broker(f"{topic_prefix}/vehicle_id", self.state.vehicle_id)
         pub_to_broker(f"{topic_prefix}/rfid", self.state.rfid)
         pub_to_broker(f"{topic_prefix}/serial_number", self.state.serial_number)

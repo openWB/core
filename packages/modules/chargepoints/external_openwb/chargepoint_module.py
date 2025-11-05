@@ -27,7 +27,6 @@ class ChargepointModule(AbstractChargepoint):
         self.client_error_context = ErrorTimerContext(
             f"openWB/set/chargepoint/{self.config.id}/get/error_timestamp", CP_ERROR, hide_exception=True)
         self.store = get_chargepoint_value_store(self.config.id)
-        self.old_plug_state = False
 
     def set_current(self, current: float) -> None:
         if self.client_error_context.error_counter_exceeded():
@@ -115,7 +114,6 @@ class ChargepointModule(AbstractChargepoint):
                             self.fault_state.error(received_topics[f"{topic_prefix}fault_str"])
                         elif received_topics[f"{topic_prefix}fault_state"] == 1:
                             self.fault_state.warning(received_topics[f"{topic_prefix}fault_str"])
-                        self.old_plug_state = chargepoint_state.plug_state
                     except KeyError:
                         if received_topics[f"{topic_prefix}fault_state"] == 2:
                             self.fault_state.error(received_topics[f"{topic_prefix}fault_str"])
@@ -127,7 +125,7 @@ class ChargepointModule(AbstractChargepoint):
 
                 self.client_error_context.reset_error_counter()
             if self.client_error_context.error_counter_exceeded():
-                chargepoint_state = ChargepointState(plug_state=self.old_plug_state,
+                chargepoint_state = ChargepointState(plug_state=None,
                                                      charge_state=False,
                                                      imported=None,
                                                      exported=None,

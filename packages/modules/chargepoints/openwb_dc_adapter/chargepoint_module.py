@@ -47,7 +47,6 @@ class ChargepointModule(AbstractChargepoint):
             raise Exception(
                 "DC-Laden muss durch den Support freigeschaltet werden. Bitte nehme Kontakt mit dem Support auf.")
         self.efficiency = None
-        self.old_plug_state = False
 
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
             with self.client_error_context:
@@ -121,9 +120,8 @@ class ChargepointModule(AbstractChargepoint):
                         json_rsp["state"] == ChargingStatus.UNAVAILABLE_CONN_OBJ.value):
                     raise Exception(f"Ladepunkt nicht verfügbar. Status: {ChargingStatus(json_rsp['state'])}")
                 self.client_error_context.reset_error_counter()
-                self.old_plug_state = chargepoint_state.plug_state
             if self.client_error_context.error_counter_exceeded():
-                chargepoint_state = ChargepointState(plug_state=self.old_plug_state,
+                chargepoint_state = ChargepointState(plug_state=None,
                                                      charge_state=False,
                                                      imported=None,
                                                      exported=None,

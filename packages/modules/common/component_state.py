@@ -177,7 +177,7 @@ class ChargepointState:
                  power: float,
                  currents: List[float],
                  charge_state: bool,
-                 plug_state: bool,
+                 plug_state: Optional[bool],
                  serial_number: str = "",
                  charging_current: Optional[float] = 0,
                  charging_voltage: Optional[float] = 0,
