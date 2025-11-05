@@ -3389,9 +3389,9 @@ const prices = getValue.value('openWB/optional/et/get/prices', undefined, {}) as
 };
 // filter prices to only include those with timestamps that are multiples of 3600 (hourly)
 const filtered: { [key: string]: number } = {};
-Object.entries(prices).forEach(([timestamp, value]) => {
+Object.entries(prices).forEach(([timestamp, price]) => {
 if (parseInt(timestamp) % 3600 === 0) {
-filtered[timestamp] = value;
+filtered[timestamp] = price;
 }
 });
 return filtered;
