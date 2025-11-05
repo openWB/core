@@ -3379,11 +3379,23 @@ export const useMqttStore = defineStore('mqtt', () => {
     );
   });
 
-  const etPrices = computed(() => {
-    return getValue.value('openWB/optional/et/get/prices', undefined, {}) as {
-      [key: string]: number;
-    };
-  });
+/**
+   * Get Energy Tariff prices chart data
+   * @returns { [key: string]: number }
+   */
+const etPrices = computed(() => {
+const prices = getValue.value('openWB/optional/et/get/prices', undefined, {}) as {
+[key: string]: number;
+};
+// filter prices to only include those with timestamps that are multiples of 3600 (hourly)
+const filtered: { [key: string]: number } = {};
+Object.entries(prices).forEach(([timestamp, value]) => {
+if (parseInt(timestamp) % 3600 === 0) {
+filtered[timestamp] = value;
+}
+});
+return filtered;
+});
 
   // exports
   return {
