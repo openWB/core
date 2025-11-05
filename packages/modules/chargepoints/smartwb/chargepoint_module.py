@@ -101,6 +101,7 @@ class ChargepointModule(AbstractChargepoint):
                                                      currents=[0]*3,
                                                      phases_in_use=0,
                                                      power=0)
+            self.store.set(chargepoint_state)
 
     def clear_rfid(self) -> None:
         with SingleComponentUpdateContext(self.fault_state):
