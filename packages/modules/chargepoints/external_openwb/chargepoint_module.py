@@ -124,6 +124,15 @@ class ChargepointModule(AbstractChargepoint):
                                              "Daten nach dem Start oder Ladepunkt nicht erreichbar.")
 
                 self.client_error_context.reset_error_counter()
+            if self.client_error_context.error_counter_exceeded():
+                chargepoint_state = ChargepointState(plug_state=None,
+                                                     charge_state=False,
+                                                     imported=None,
+                                                     exported=None,
+                                                     currents=[0]*3,
+                                                     phases_in_use=0,
+                                                     power=0)
+                self.store.set(chargepoint_state)
 
     def switch_phases(self, phases_to_use: int, duration: int) -> None:
         with SingleComponentUpdateContext(self.fault_state, update_always=False):

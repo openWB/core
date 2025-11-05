@@ -103,6 +103,11 @@ class ChargepointModule(AbstractChargepoint):
                     if self.client_error_context.error_counter_exceeded():
                         run_command(f"{Path(__file__).resolve().parents[3]}/modules/chargepoints/"
                                     "openwb_series2_satellit/restart_protoss_satellite")
+                        chargepoint_state = ChargepointState(
+                            plug_state=None, charge_state=False, imported=None,
+                            # bei im-/exported None werden keine Werte gepublished
+                            exported=None, phases_in_use=0, power=0, currents=[0]*3)
+                        self.store.set(chargepoint_state)
                 except AttributeError:
                     self._create_client()
                     self._validate_version()

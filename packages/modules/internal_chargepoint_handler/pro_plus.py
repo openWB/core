@@ -51,20 +51,25 @@ class ProPlus(ChargepointModule):
                 store_state(self.old_chargepoint_state)
                 return self.old_chargepoint_state
         except Exception as e:
-            if self.client_error_context.error_counter_exceeded():
-                chargepoint_state = ChargepointState(plug_state=False, charge_state=False, imported=None,
+            if self.old_chargepoint_state is None:
+                raise Exception(self.NO_DATA_SINCE_BOOT)
+            elif self.client_error_context.error_counter_exceeded():
+                chargepoint_state = ChargepointState(plug_state=self.old_chargepoint_state.plug_state,
+                                                     charge_state=False,
                                                      # bei im-/exported None werden keine Werte gepublished
-                                                     exported=None, phases_in_use=0, power=0, currents=[0]*3)
+                                                     imported=None,
+                                                     exported=None,
+                                                     phases_in_use=0,
+                                                     power=0,
+                                                     currents=[0]*3)
                 store_state(chargepoint_state)
                 if isinstance(e, (requests.exceptions.ConnectTimeout, requests.exceptions.ConnectionError)):
                     raise Exception(self.NO_CONNECTION_TO_INTERNAL_CP)
                 else:
                     raise e
-            elif self.old_chargepoint_state is not None:
+            else:
                 store_state(self.old_chargepoint_state)
                 return self.old_chargepoint_state
-            else:
-                raise Exception(self.NO_DATA_SINCE_BOOT)
 
     def perform_phase_switch(self, phases_to_use: int, duration: int) -> None:
         super().switch_phases(phases_to_use, duration)
