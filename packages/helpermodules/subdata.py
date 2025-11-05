@@ -716,12 +716,12 @@ class SubData:
                     if re.search("/optional/ep/flexible_tariff/provider$", msg.topic) is not None:
                         config_dict = decode_payload(msg.payload)
                         if config_dict["type"] is None:
-                            var.flexible_tariff_module = None
+                            var._flexible_tariff_module = None
                         else:
                             mod = importlib.import_module(
                                 f".electricity_pricing.flexible_tariffs.{config_dict['type']}.tariff", "modules")
                             config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
-                            var.flexible_tariff_module = ConfigurableFlexibleTariff(
+                            var._flexible_tariff_module = ConfigurableFlexibleTariff(
                                 config, mod.create_electricity_tariff)
                             var.ep_get_prices()
                     elif re.search("/optional/ep/grid_fee/provider$", msg.topic) is not None:
