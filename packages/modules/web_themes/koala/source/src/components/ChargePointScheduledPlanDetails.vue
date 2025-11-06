@@ -61,7 +61,7 @@
           class="flex-grow"
           :color="planLimitSelected.value === 'amount' ? 'primary' : 'grey'"
           @click="planLimitSelected.value = 'amount'"
-          label="Amount"
+          label="Energie"
         />
       </q-btn-group>
       <div v-if="planLimitSelected.value === 'soc'" class="q-mt-md">
@@ -86,9 +86,13 @@
       <q-input
         v-if="planLimitSelected.value === 'amount'"
         v-model="planLimitAmount.value"
-        label="Energiemenge (kWh)"
+        label="Ziel-Energie"
         class="col"
-      />
+      >
+        <template v-slot:append>
+          <div class="text-body2">kWh</div>
+        </template>
+      </q-input>
 
       <div
         v-if="
