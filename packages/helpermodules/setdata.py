@@ -413,21 +413,26 @@ class SetData:
                     if re.search("/chargepoint/[0-9]+/set/charge_template$", msg.topic) is not None:
                         payload = decode_payload(msg.payload)
                         Pub().pub(f"openWB/vehicle/template/charge_template/{payload['id']}", payload)
+                        cp_num = get_index(msg.topic)
                     else:
-                        get_index(msg.topic)
-                        for vehicle in data.data.ev_data.values():
-                            if vehicle.data.charge_template == int(get_index(msg.topic)):
-                                for cp in data.data.cp_data.values():
-                                    if ((cp.data.set.charging_ev != -1 and
-                                            cp.data.set.charging_ev == vehicle.num) or
-                                            cp.data.config.ev == vehicle.num):
-                                        if decode_payload(msg.payload) == "":
-                                            Pub().pub(
-                                                f"openWB/chargepoint/{cp.num}/set/charge_template", "")
-                                        else:
-                                            Pub().pub(
-                                                f"openWB/chargepoint/{cp.num}/set/charge_template",
-                                                decode_payload(msg.payload))
+                        cp_num = None
+                    template_id = int(decode_payload(msg.payload)["id"])
+                    for vehicle in data.data.ev_data.values():
+                        if vehicle.data.charge_template == template_id:
+                            for cp in data.data.cp_data.values():
+                                if cp.num == cp_num:
+                                    # nicht an den Ladepunkt senden, der das Topic gesendet hat
+                                    continue
+                                if ((cp.data.set.charging_ev != -1 and
+                                        cp.data.set.charging_ev == vehicle.num) or
+                                        cp.data.config.ev == vehicle.num):
+                                    if decode_payload(msg.payload) == "":
+                                        Pub().pub(
+                                            f"openWB/chargepoint/{cp.num}/set/charge_template", "")
+                                    else:
+                                        Pub().pub(
+                                            f"openWB/chargepoint/{cp.num}/set/charge_template",
+                                            decode_payload(msg.payload))
             else:
                 self.__unknown_topic(msg)
         except Exception:
