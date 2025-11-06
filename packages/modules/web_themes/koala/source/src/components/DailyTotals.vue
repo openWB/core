@@ -41,7 +41,7 @@
               v-if="componentNameVisible"
               key="title"
               :props="props"
-              class="text-body2 text-weight-bold"
+              class="text-weight-bold"
             >
               {{ props.row.title }}
             </q-td>
@@ -76,7 +76,7 @@
               v-if="currentPowerVisible"
               key="power"
               :props="props"
-              class="text-right text-body2"
+              class="text-right"
             >
               {{ String(props.row.power).replace('-', '') }}
             </q-td>
@@ -433,5 +433,11 @@ watch(rows, calculateRowHeight, { deep: true });
 
 .rotate-180 {
   transform: rotate(180deg);
+}
+
+@media (min-width: 500px) {
+  .banner-table tbody td {
+    font-size: 15px;
+  }
 }
 </style>
