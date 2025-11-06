@@ -132,12 +132,14 @@ class ChargepointModule(AbstractChargepoint):
                         self._create_client()
                         self._validate_version()
 
-    def switch_phases(self, phases_to_use: int, duration: int) -> None:
+    def switch_phases(self, phases_to_use: int) -> None:
         if self.version is not None:
             with SingleComponentUpdateContext(self.fault_state, update_always=False):
                 with self.client_error_context:
                     try:
                         with self._client.client:
+                            self._client.evse_client.set_current(0)
+                            time.sleep(5)
                             if phases_to_use == 1:
                                 self._client.client.delegate.write_register(
                                     0x0001, 256, unit=self.ID_PHASE_SWITCH_UNIT)

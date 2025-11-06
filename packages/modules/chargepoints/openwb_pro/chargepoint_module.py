@@ -1,6 +1,5 @@
 
 import logging
-import time
 
 from helpermodules.utils.error_handling import CP_ERROR, ErrorTimerContext
 from modules.chargepoints.openwb_pro.config import OpenWBPro
@@ -133,14 +132,13 @@ class ChargepointModule(AbstractChargepoint):
         if chargepoint_state.plug_state is False and chargepoint_state.power > 20:
             raise ValueError(self.WRONG_PLUG_STATE)
 
-    def switch_phases(self, phases_to_use: int, duration: int) -> None:
+    def switch_phases(self, phases_to_use: int) -> None:
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
             with self.client_error_context:
                 response = self.__session.get(f'http://{self.config.configuration.ip_address}/connect.php')
                 if response.json()["phases_target"] != phases_to_use:
                     self.__session.post(f'http://{self.config.configuration.ip_address}/connect.php',
                                         data={'phasetarget': str(1 if phases_to_use == 1 else 3)})
-                    time.sleep(duration)
 
     def clear_rfid(self) -> None:
         pass
