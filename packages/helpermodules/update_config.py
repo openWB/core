@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 101
+    DATASTORE_VERSION = 102
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -2564,17 +2564,6 @@ class UpdateConfig:
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 96)
 
-    def upgrade_datastore_97(self) -> None:
-        def upgrade(topic: str, payload) -> None:
-            if re.search("openWB/system/device/[0-9]+/config$", topic) is not None:
-                payload = decode_payload(payload)
-                # add phase
-                if payload.get("type") == "shelly" and "phase" not in payload["configuration"]:
-                    payload["configuration"].update({"phase": 1})
-                Pub().pub(topic, payload)
-        self._loop_all_received_topics(upgrade)
-        self.__update_topic("openWB/system/datastore_version", 98)
-
     def upgrade_datastore_98(self) -> None:
         version_str = decode_payload(
             self.all_received_topics.get("openWB/system/version", "2.1.9"))
@@ -2613,3 +2602,14 @@ class UpdateConfig:
                         decode_payload(payload)}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 101)
+
+    def upgrade_datastore_101(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/system/device/[0-9]+/config$", topic) is not None:
+                payload = decode_payload(payload)
+                # add phase
+                if payload.get("type") == "shelly" and "phase" not in payload["configuration"]:
+                    payload["configuration"].update({"phase": 1})
+                Pub().pub(topic, payload)
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 102)
