@@ -1025,7 +1025,7 @@ class SetData:
             elif "openWB/set/system/time" in msg.topic:
                 self._validate_value(msg, float)
             elif "openWB/set/system/datastore_version" in msg.topic:
-                self._validate_value(msg, int, [(0, UpdateConfig.DATASTORE_VERSION)])
+                self._validate_value(msg, int, [(0, UpdateConfig.DATASTORE_VERSION)], collection=list)
             elif "openWB/set/system/GetRemoteSupport" in msg.topic:
                 # Server-Topic enthält kein json-Payload.
                 payload = msg.payload.decode("utf-8")
