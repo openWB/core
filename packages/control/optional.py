@@ -229,6 +229,7 @@ class Optional(OcppMixin):
                     'Nächster Abruf der Strompreise '
                     f'{datetime.fromtimestamp(self.data.et.get.next_query_time).strftime("%Y%m%d-%H:%M:%S")}.')
                 return False
+        return False
 
     def ocpp_transfer_meter_values(self):
         try:
