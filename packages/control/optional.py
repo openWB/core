@@ -15,7 +15,6 @@ from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 from helpermodules.utils import thread_handler
-from modules.common.component_state import TariffState
 from modules.common.configurable_tariff import ConfigurableElectricityTariff
 from modules.common.configurable_monitoring import ConfigurableMonitoring
 
@@ -227,7 +226,7 @@ class Optional(OcppMixin):
 
         def get_last_entry_time_stamp() -> str:
             last_known_timestamp = "0"
-            if self.data.et is not None:
+            if self.data.et.get.prices is not None:
                 last_known_timestamp = max(self.data.et.get.prices)
             return last_known_timestamp
         if len(self.data.et.get.prices) == 0:
@@ -242,7 +241,7 @@ class Optional(OcppMixin):
             )
             self.data.et.get.next_query_time = next_query_time.timestamp()
             Pub().pub("openWB/set/optional/et/get/next_query_time", self.data.et.get.next_query_time)
-        if is_tomorrow(get_last_entry_time_stamp(self.data.et.get.prices)):
+        if is_tomorrow(get_last_entry_time_stamp()):
             if timecheck.create_timestamp() > self.data.et.get.next_query_time:
                 log.info(
                     f'Wartezeit {datetime.fromtimestamp(self.data.et.get.next_query_time).strftime("%Y%m%d-%H:%M:%S")}'
@@ -250,8 +249,8 @@ class Optional(OcppMixin):
                 return True
             else:
                 log.info(
-                    f'Nächster Abruf der Strompreise {datetime.fromtimestamp(self.data.et.get.next_query_time
-                                                                             ).strftime("%Y%m%d-%H:%M:%S")}.')
+                    'Nächster Abruf der Strompreise '
+                    f'{datetime.fromtimestamp(self.data.et.get.next_query_time).strftime("%Y%m%d-%H:%M:%S")}.')
                 return False
 
     def ocpp_transfer_meter_values(self):
