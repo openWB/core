@@ -4,7 +4,7 @@ import logging
 from math import ceil
 import random
 from threading import Thread
-from typing import List, Optional
+from typing import List, Optional as TypingOptional
 from datetime import datetime, timedelta
 
 from control import data
@@ -28,7 +28,7 @@ class Optional(OcppMixin):
         try:
             self.data = OptionalData()
             # guarded et_module stored in a private attribute
-            self.et_module: Optional[ConfigurableElectricityTariff] = None
+            self.et_module: TypingOptional[ConfigurableElectricityTariff] = None
             self.monitoring_module: ConfigurableMonitoring = None
             self.data.dc_charging = hardware_configuration.get_hardware_configuration_setting("dc_charging")
             Pub().pub("openWB/optional/dc_charging", self.data.dc_charging)
