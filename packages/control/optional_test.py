@@ -437,3 +437,43 @@ def test_et_charging_available_exception(monkeypatch):
     opt.data.et.get.prices = {}  # empty prices list raises exception
     result = opt.et_is_charging_allowed_hours_list([])
     assert result is False
+
+
+@pytest.mark.parametrize(
+    "prices, next_query_time, current_timestamp, expected",
+    [
+        pytest.param(
+            {}, None, 1698224400, True,
+            id="update_required_when_no_prices"
+        ),
+        pytest.param(
+            {"1698224400": 0.1, "1698228000": 0.2}, None, 1698224400, False,
+            id="no_update_required_when_prices_available_and_recent"
+        ),
+        pytest.param(
+            {"1698224400": 0.1, "1698228000": 0.2}, 1698310800, 1698224400, False,
+            id="no_update_required_when_next_query_time_not_reached"
+        ),
+        pytest.param(
+            {"1698224400": 0.1, "1698228000": 0.2}, 1698224000, 1698310800, True,
+            id="update_required_when_next_query_time_passed"
+        ),
+        pytest.param(
+            {"1609459200": 0.1, "1609462800": 0.2}, None, 1698224400, True,
+            id="update_required_when_prices_from_yesterday"
+        ),
+    ]
+)
+def test_et_price_update_required(monkeypatch, prices, next_query_time, current_timestamp, expected):
+    # setup
+    opt = Optional()
+    opt.data.et.get.prices = prices
+    opt.data.et.get.next_query_time = next_query_time
+
+    monkeypatch.setattr(timecheck, "create_timestamp", Mock(return_value=current_timestamp))
+
+    # execution
+    result = opt.et_price_update_required()
+
+    # evaluation
+    assert result == expected
