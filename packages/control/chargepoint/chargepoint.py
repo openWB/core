@@ -792,6 +792,7 @@ class Chargepoint(ChargepointRfidMixin):
             self.update_charge_template(charging_ev.charge_template)
         self.data.set.charging_ev_data = charging_ev
         self.data.config.ev = vehicle
+        Pub().pub(f"openWB/set/chargepoint/{self.num}/config", dataclasses.asdict(self.data.config))
         return charging_ev
 
     def update_charge_template(self, charge_template: ChargeTemplate) -> None:
