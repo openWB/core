@@ -26,8 +26,9 @@
         <q-btn
           v-if="currentSlide === 'history_chart'"
           size="sm"
+          push
           class="q-mr-sm legend-button-text"
-          label="Legend ein/aus"
+          label="Legende"
           @click="toggleLegend"
         />
       </q-carousel-control>
