@@ -58,7 +58,7 @@ class ChargepointModule(AbstractChargepoint):
         self.current_commit = SubData.system_data["system"].data["current_commit"]
 
         if float(run_command.run_command(["cat", "/proc/uptime"]).split(" ")[0]) < 180:
-            self.perform_phase_switch(1, 4)
+            self.perform_phase_switch(1)
             self.old_phases_in_use = 1
         else:
             def on_connect(client, userdata, flags, rc):
