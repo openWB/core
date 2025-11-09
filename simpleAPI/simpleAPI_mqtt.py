@@ -91,6 +91,10 @@ class SimpleMQTTDaemon:
         """Callback for successful MQTT connection."""
         if rc == 0:
             log.info(f"Connected to MQTT broker at {self.host}:{self.port}")
+            
+            # Publish API revision
+            self._publish_revision()
+            
             # Subscribe to specific openWB component topics
             client.subscribe("openWB/bat/#", qos=0)
             client.subscribe("openWB/pv/#", qos=0)
@@ -421,11 +425,87 @@ class SimpleMQTTDaemon:
                 charge_template = json.loads(payload)
                 self.charge_template_cache[chargepoint_id] = charge_template
                 log.debug(f"Cached charge_template for chargepoint {chargepoint_id}")
+                
+                # Publish read topics for charge_template values
+                self._publish_charge_template_read_topics(chargepoint_id, charge_template)
 
         except json.JSONDecodeError as e:
             log.warning(f"Failed to parse charge_template JSON for {topic}: {e}")
         except Exception as e:
             log.error(f"Error caching charge_template for {topic}: {e}")
+
+    def _publish_charge_template_read_topics(self, chargepoint_id: str, charge_template: Dict[str, Any]):
+        """Publish readable topics for charge_template values."""
+        try:
+            chargemode = charge_template.get('chargemode', {})
+            
+            # Extract min_current from pv_charging
+            pv_charging = chargemode.get('pv_charging', {})
+            if 'min_current' in pv_charging:
+                topic = f"openWB/simpleAPI/chargepoint/{chargepoint_id}/minimal_permanent_current"
+                self._publish_if_changed(topic, pv_charging['min_current'])
+                
+                # Also publish for lowest ID if this is it
+                if 'chargepoint' in self.lowest_ids and self.lowest_ids['chargepoint'] == int(chargepoint_id):
+                    simple_topic = "openWB/simpleAPI/chargepoint/minimal_permanent_current"
+                    self._publish_if_changed(simple_topic, pv_charging['min_current'])
+            
+            # Extract min_soc from pv_charging (minimal_pv_soc)
+            if 'min_soc' in pv_charging:
+                topic = f"openWB/simpleAPI/chargepoint/{chargepoint_id}/minimal_pv_soc"
+                self._publish_if_changed(topic, pv_charging['min_soc'])
+                
+                # Also publish for lowest ID if this is it
+                if 'chargepoint' in self.lowest_ids and self.lowest_ids['chargepoint'] == int(chargepoint_id):
+                    simple_topic = "openWB/simpleAPI/chargepoint/minimal_pv_soc"
+                    self._publish_if_changed(simple_topic, pv_charging['min_soc'])
+            
+            # Extract max_price from eco_charging
+            eco_charging = chargemode.get('eco_charging', {})
+            if 'max_price' in eco_charging:
+                topic = f"openWB/simpleAPI/chargepoint/{chargepoint_id}/max_price_eco"
+                self._publish_if_changed(topic, eco_charging['max_price'])
+                
+                # Also publish for lowest ID if this is it
+                if 'chargepoint' in self.lowest_ids and self.lowest_ids['chargepoint'] == int(chargepoint_id):
+                    simple_topic = "openWB/simpleAPI/chargepoint/max_price_eco"
+                    self._publish_if_changed(simple_topic, eco_charging['max_price'])
+            
+            # Extract instant_charging_limit values
+            instant_charging = chargemode.get('instant_charging', {})
+            limit = instant_charging.get('limit', {})
+            
+            if 'selected' in limit:
+                topic = f"openWB/simpleAPI/chargepoint/{chargepoint_id}/instant_charging_limit"
+                self._publish_if_changed(topic, limit['selected'])
+                
+                # Also publish for lowest ID if this is it
+                if 'chargepoint' in self.lowest_ids and self.lowest_ids['chargepoint'] == int(chargepoint_id):
+                    simple_topic = "openWB/simpleAPI/chargepoint/instant_charging_limit"
+                    self._publish_if_changed(simple_topic, limit['selected'])
+            
+            if 'amount' in limit:
+                # Convert from internal value (Wh) to kWh for display
+                amount_kwh = limit['amount'] / 1000
+                topic = f"openWB/simpleAPI/chargepoint/{chargepoint_id}/instant_charging_limit_amount"
+                self._publish_if_changed(topic, amount_kwh)
+                
+                # Also publish for lowest ID if this is it
+                if 'chargepoint' in self.lowest_ids and self.lowest_ids['chargepoint'] == int(chargepoint_id):
+                    simple_topic = "openWB/simpleAPI/chargepoint/instant_charging_limit_amount"
+                    self._publish_if_changed(simple_topic, amount_kwh)
+            
+            if 'soc' in limit:
+                topic = f"openWB/simpleAPI/chargepoint/{chargepoint_id}/instant_charging_limit_soc"
+                self._publish_if_changed(topic, limit['soc'])
+                
+                # Also publish for lowest ID if this is it
+                if 'chargepoint' in self.lowest_ids and self.lowest_ids['chargepoint'] == int(chargepoint_id):
+                    simple_topic = "openWB/simpleAPI/chargepoint/instant_charging_limit_soc"
+                    self._publish_if_changed(simple_topic, limit['soc'])
+                    
+        except Exception as e:
+            log.error(f"Error publishing charge_template read topics: {e}")
 
     def _handle_write_operation(self, topic: str, payload: str):
         """Handle write operations from simpleAPI set topics."""
@@ -765,6 +845,16 @@ class SimpleMQTTDaemon:
             log.debug(f"Published JSON to {topic}")
         except Exception as e:
             log.error(f"Failed to publish JSON to {topic}: {e}")
+
+    def _publish_revision(self):
+        """Publish API revision number."""
+        try:
+            revision_topic = "openWB/simpleAPI/revision"
+            revision_value = "2"
+            self.client.publish(revision_topic, revision_value, qos=0, retain=True)
+            log.info(f"Published API revision: {revision_value}")
+        except Exception as e:
+            log.error(f"Failed to publish revision: {e}")
 
     def connect(self):
         """Establish connection to MQTT broker."""
