@@ -4,13 +4,14 @@ import logging
 from math import ceil
 import random
 from threading import Thread
-from typing import List, Optional as TypingOptional
+from typing import List, Optional as TypingOptional, Union
 from datetime import datetime, timedelta
 
 from control import data
 from control.ocpp import OcppMixin
-from control.optional_data import OptionalData
+from control.optional_data import FlexibleTariff, GridFee, OptionalData
 from helpermodules import hardware_configuration
+from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 from helpermodules.utils import thread_handler
@@ -26,13 +27,46 @@ class Optional(OcppMixin):
     def __init__(self):
         try:
             self.data = OptionalData()
-            self.flexible_tariff_module: TypingOptional[ConfigurableFlexibleTariff] = None
-            self.grid_fee_module: TypingOptional[ConfigurableGridFee] = None
+            self._flexible_tariff_module: TypingOptional[ConfigurableFlexibleTariff] = None
+            self._grid_fee_module: TypingOptional[ConfigurableGridFee] = None
             self.monitoring_module: TypingOptional[ConfigurableMonitoring] = None
             self.data.dc_charging = hardware_configuration.get_hardware_configuration_setting("dc_charging")
             Pub().pub("openWB/optional/dc_charging", self.data.dc_charging)
         except Exception:
             log.exception("Fehler im Optional-Modul")
+
+    @property
+    def flexible_tariff_module(self) -> TypingOptional[ConfigurableFlexibleTariff]:
+        return self._flexible_tariff_module
+
+    @flexible_tariff_module.setter
+    def flexible_tariff_module(self, value: TypingOptional[ConfigurableFlexibleTariff]):
+        self._flexible_tariff_module = value
+        if value is None:
+            self._reset_fault_states(self.data.electricity_pricing.flexible_tariff, "flexible_tariff")
+        else:
+            self.data.electricity_pricing.next_query_time = None
+            Pub().pub("openWB/set/optional/ep/get/next_query_time", None)
+
+    @property
+    def grid_fee_module(self) -> TypingOptional[ConfigurableGridFee]:
+        return self._grid_fee_module
+
+    @grid_fee_module.setter
+    def grid_fee_module(self, value: TypingOptional[ConfigurableGridFee]):
+        self._grid_fee_module = value
+        if value is None:
+            self._reset_fault_states(self.data.electricity_pricing.grid_fee, "grid_fee")
+        else:
+            self.data.electricity_pricing.next_query_time = None
+            Pub().pub("openWB/set/optional/ep/get/next_query_time", None)
+
+    def _reset_fault_states(self, module: Union[FlexibleTariff, GridFee], module_name: str):
+        if (module.get.fault_state != 0 or module.get.fault_str != NO_ERROR):
+            module.get.fault_state = 0
+            module.get.fault_str = NO_ERROR
+            Pub().pub(f"openWB/set/optional/ep/{module_name}/get/fault_state", 0)
+            Pub().pub(f"openWB/set/optional/ep/{module_name}/get/fault_str", NO_ERROR)
 
     def monitoring_start(self):
         if self.monitoring_module is not None:
@@ -190,6 +224,8 @@ class Optional(OcppMixin):
             if self.data.electricity_pricing.prices is not None:
                 last_known_timestamp = max(self.data.electricity_pricing.prices)
             return last_known_timestamp
+        if self.ep_provider_available() is False:
+            return False
         if len(self.data.electricity_pricing.prices) == 0:
             return True
         if self.data.electricity_pricing.next_query_time is None:
@@ -201,7 +237,7 @@ class Optional(OcppMixin):
                 minutes=random.randint(1, 7) * -5
             )
             self.data.electricity_pricing.next_query_time = next_query_time.timestamp()
-            Pub().pub("openWB/set/optional/et/get/next_query_time", self.data.electricity_pricing.next_query_time)
+            Pub().pub("openWB/set/optional/ep/get/next_query_time", self.data.electricity_pricing.next_query_time)
         if is_tomorrow(get_last_entry_time_stamp()):
             if timecheck.create_timestamp() > self.data.electricity_pricing.next_query_time:
                 next_query_formatted = datetime.fromtimestamp(
