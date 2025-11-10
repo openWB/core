@@ -5,6 +5,8 @@ on:
       - 'packages/modules/*_themes/*/source/**'
     branches:
       - master
+      - Beta
+      - Release
 
 jobs:
   build-and-push-themes:
