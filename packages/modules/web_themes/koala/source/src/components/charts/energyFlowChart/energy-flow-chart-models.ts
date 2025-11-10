@@ -28,6 +28,8 @@ export interface FlowComponent {
   class: ComponentClass;
   position: ComponentPosition;
   label: string[];
+  powerValue?: number;
   soc?: number;
   icon: string;
 }
+

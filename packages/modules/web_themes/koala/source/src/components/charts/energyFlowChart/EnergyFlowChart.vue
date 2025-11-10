@@ -273,6 +273,41 @@ const chargePointSumPowerCategory = computed(() =>
   powerCategory(chargePointSumPower.value.value),
 );
 
+const allPowerValues = computed(() => {
+  const values = [
+    Math.abs(Number(gridPower.value.value)),
+    Math.abs(Number(homePower.value.value)),
+    Math.abs(Number(pvPower.value.value)),
+    Math.abs(Number(batteryPower.value.value)),
+    Math.abs(Number(chargePoint1Power.value.value)),
+    Math.abs(Number(chargePoint2Power.value.value)),
+    Math.abs(Number(chargePoint3Power.value.value)),
+    Math.abs(Number(chargePointSumPower.value.value)),
+  ];
+  return values.filter((v) => !isNaN(v) && v !== undefined && v !== null);
+});
+
+const maxCurrentPower = computed(() => {
+  const values = allPowerValues.value;
+  if (values.length === 0) return 1000;
+  return Math.max(...values, 1000);
+});
+
+const getAnimationDuration = (
+  power: number,
+  maxPower = maxCurrentPower.value,
+  minDuration = 0.4,
+  maxDuration = 4.0,
+) => {
+  const absPower = Math.abs(power);
+  console.log('Max Power for Animation Duration:', maxPower);
+  if (absPower >= maxPower) return `${minDuration}s`;
+  if (absPower <= 0) return `${maxDuration}s`;
+  const duration =
+    maxDuration - ((maxDuration - minDuration) * absPower) / maxPower;
+  return `${duration}s`;
+};
+
 ///////////////////////// Diagram components /////////////////////////
 
 const svgComponents = computed((): FlowComponent[] => {
@@ -293,6 +328,7 @@ const svgComponents = computed((): FlowComponent[] => {
     },
     position: { row: 0, column: 0 },
     label: ['EVU', absoluteValueObject(gridPower.value).textValue],
+    powerValue: Number(gridPower.value.value),
     icon: 'icons/owbGrid.svg',
   });
 
@@ -307,6 +343,7 @@ const svgComponents = computed((): FlowComponent[] => {
     },
     position: { row: 0, column: 2 },
     label: ['Haus', absoluteValueObject(homePower.value).textValue],
+    powerValue: Number(homePower.value.value),
     icon: 'icons/owbHouse.svg',
   });
 
@@ -322,6 +359,7 @@ const svgComponents = computed((): FlowComponent[] => {
       },
       position: { row: 1, column: 0 },
       label: ['PV', absoluteValueObject(pvPower.value).textValue],
+      powerValue: Number(pvPower.value.value),
       icon: 'icons/owbPV.svg',
     });
   }
@@ -338,6 +376,7 @@ const svgComponents = computed((): FlowComponent[] => {
       },
       position: { row: 1, column: 2 },
       label: ['Speicher', absoluteValueObject(batteryPower.value).textValue],
+      powerValue: Number(batteryPower.value.value),
       soc: batterySoc.value,
       icon: 'icons/owbBattery.svg',
     });
@@ -363,6 +402,7 @@ const svgComponents = computed((): FlowComponent[] => {
           chargePoint1Name.value,
           absoluteValueObject(chargePoint1Power.value).textValue,
         ],
+        powerValue: Number(chargePoint1Power.value.value),
         icon: 'icons/owbChargePoint.svg',
       });
 
@@ -410,6 +450,7 @@ const svgComponents = computed((): FlowComponent[] => {
             chargePoint2Name.value,
             absoluteValueObject(chargePoint2Power.value).textValue,
           ],
+          powerValue: Number(chargePoint2Power.value.value),
           icon: 'icons/owbChargePoint.svg',
         });
       }
@@ -455,6 +496,7 @@ const svgComponents = computed((): FlowComponent[] => {
             chargePoint3Name.value,
             absoluteValueObject(chargePoint3Power.value).textValue,
           ],
+          powerValue: Number(chargePoint3Power.value.value),
           icon: 'icons/owbChargePoint.svg',
         });
       }
@@ -499,6 +541,7 @@ const svgComponents = computed((): FlowComponent[] => {
           'Ladepunkte',
           absoluteValueObject(chargePointSumPower.value).textValue,
         ],
+        powerValue: Number(chargePointSumPower.value.value),
         icon: 'icons/owbChargePoint.svg',
       });
     }
@@ -596,8 +639,12 @@ const svgRectWidth = computed(
             component.class.base,
             { animated: component.class.animated },
             { animatedReverse: component.class.animatedReverse },
-            component.class.powerCategory,
           ]"
+          :style="{
+            '--animation-duration': getAnimationDuration(
+              component.powerValue || 0,
+            ),
+          }"
           :d="
             component.class.base !== 'vehicle'
               ? `M ${calcFlowLineAnchorX(component.position.column)}, ` +
@@ -772,13 +819,13 @@ path {
 path.animated {
   stroke: var(--q-white);
   stroke-dasharray: 5;
-  animation: dash 3.5s linear infinite;
+  animation: dash var(--animation-duration, 1.5s) linear infinite;
 }
 
 path.animatedReverse {
   stroke: var(--q-white);
   stroke-dasharray: 5;
-  animation: dashReverse 3.5s linear infinite;
+  animation: dashReverse var(--animation-duration, 1.5s) linear infinite;
 }
 
 path.medium.animated,
