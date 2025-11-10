@@ -57,10 +57,12 @@ class SmaSunnyBoyInverter(AbstractInverter):
             # Leistung DC an Eingang 1 und 2
             dc_power = (self.tcp_client.read_holding_registers(30773, ModbusDataType.INT_32, unit=unit) +
                         self.tcp_client.read_holding_registers(30961, ModbusDataType.INT_32, unit=unit))
-            current_L1 = self.tcp_client.read_holding_registers(30977, ModbusDataType.INT_32, unit=unit) * -1
-            current_L2 = self.tcp_client.read_holding_registers(30979, ModbusDataType.INT_32, unit=unit) * -1
-            current_L3 = self.tcp_client.read_holding_registers(30981, ModbusDataType.INT_32, unit=unit) * -1
-            currents = [current_L1 / 1000, current_L2 / 1000, current_L3 / 1000]
+
+            currents = self.tcp_client.read_holding_registers(30977, [ModbusDataType.INT_32]*3, unit=unit)
+            if all(c == self.SMA_INT32_NAN for c in currents):
+                currents = None
+            else:
+                currents = [current / -1000 if current != self.SMA_INT32_NAN else 0 for current in currents]
         elif self.component_config.configuration.version == SmaInverterVersion.core2:
             # AC Wirkleistung über alle Phasen (W) [Pac]
             power_total = self.tcp_client.read_holding_registers(40084, ModbusDataType.INT_16, unit=unit) * 10
@@ -80,9 +82,8 @@ class SmaSunnyBoyInverter(AbstractInverter):
             raise ValueError("Unbekannte Version "+str(self.component_config.configuration.version))
         if power_total == self.SMA_INT32_NAN or power_total == self.SMA_NAN:
             power_total = 0
-            # Bei keiner AC Wirkleistung müssen auch die Ströme der Phasen 0 sein.
+            # WR geht nachts in Standby und gibt einen NaN-Wert für die Leistung aus.
             currents = [0, 0, 0]
-
         if energy == self.SMA_UINT32_NAN:
             raise ValueError(
                 f'Wechselrichter lieferte nicht plausiblen Zählerstand: {energy}. '
@@ -95,10 +96,11 @@ class SmaSunnyBoyInverter(AbstractInverter):
         inverter_state = InverterState(
             power=power_total * -1,
             dc_power=dc_power * -1,
-            currents=currents,
             exported=energy,
             imported=imported
         )
+        if 'currents' in locals():
+            inverter_state.currents = currents
         log.debug("WR {}: {}".format(self.tcp_client.address, inverter_state))
         return inverter_state
 

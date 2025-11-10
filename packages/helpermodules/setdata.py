@@ -10,6 +10,7 @@ import re
 import paho.mqtt.client as mqtt
 
 import logging
+from control import data
 from helpermodules import hardware_configuration, subdata
 from helpermodules.broker import BrokerClient
 from helpermodules.pub import Pub, pub_single
@@ -405,8 +406,33 @@ class SetData:
             enthält Topic und Payload
         """
         try:
-            if "charge_template" in msg.topic:
+            if (re.search("/vehicle/template/charge_template/[0-9]+$", msg.topic) is not None or
+                    re.search("/chargepoint/[0-9]+/set/charge_template$", msg.topic) is not None):
                 self._validate_value(msg, "json")
+                if data.data.general_data.data.temporary_charge_templates_active is False:
+                    if re.search("/chargepoint/[0-9]+/set/charge_template$", msg.topic) is not None:
+                        payload = decode_payload(msg.payload)
+                        Pub().pub(f"openWB/vehicle/template/charge_template/{payload['id']}", payload)
+                        cp_num = get_index(msg.topic)
+                    else:
+                        cp_num = None
+                    template_id = int(decode_payload(msg.payload)["id"])
+                    for vehicle in data.data.ev_data.values():
+                        if vehicle.data.charge_template == template_id:
+                            for cp in data.data.cp_data.values():
+                                if cp.num == cp_num:
+                                    # nicht an den Ladepunkt senden, der das Topic gesendet hat
+                                    continue
+                                if ((cp.data.set.charging_ev != -1 and
+                                        cp.data.set.charging_ev == vehicle.num) or
+                                        cp.data.config.ev == vehicle.num):
+                                    if decode_payload(msg.payload) == "":
+                                        Pub().pub(
+                                            f"openWB/chargepoint/{cp.num}/set/charge_template", "")
+                                    else:
+                                        Pub().pub(
+                                            f"openWB/chargepoint/{cp.num}/set/charge_template",
+                                            decode_payload(msg.payload))
             else:
                 self.__unknown_topic(msg)
         except Exception:
@@ -754,6 +780,8 @@ class SetData:
                 self._validate_value(msg, float, [(0, 99.99)])
             elif "openWB/set/general/range_unit" in msg.topic:
                 self._validate_value(msg, str)
+            elif "openWB/set/general/temporary_charge_templates_active" in msg.topic:
+                self._validate_value(msg, bool)
             elif "openWB/set/general/web_theme" in msg.topic:
                 self._validate_value(msg, "json")
             elif ("openWB/set/general/charge_log_data_config" in msg.topic):
