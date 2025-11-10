@@ -36,11 +36,20 @@ def get_grid_fee_factory() -> GridFee:
 
 
 @dataclass
+class ElectricityPricingGet:
+    next_query_time: Optional[float] = None
+    prices: Dict = field(default_factory=empty_dict_factory)
+
+
+def electricity_pricing_get_factory() -> ElectricityPricingGet:
+    return ElectricityPricingGet()
+
+
+@dataclass
 class ElectricityPricing:
     flexible_tariff: FlexibleTariff = field(default_factory=get_flexible_tariff_factory)
     grid_fee: GridFee = field(default_factory=get_grid_fee_factory)
-    next_query_time: Optional[float] = None
-    prices: Dict = field(default_factory=empty_dict_factory)
+    get: ElectricityPricingGet = field(default_factory=electricity_pricing_get_factory)
 
 
 def ep_factory() -> ElectricityPricing:

@@ -45,7 +45,7 @@ class Optional(OcppMixin):
         if value is None:
             self._reset_fault_states(self.data.electricity_pricing.flexible_tariff, "flexible_tariff")
         else:
-            self.data.electricity_pricing.next_query_time = None
+            self.data.electricity_pricing.get.next_query_time = None
             Pub().pub("openWB/set/optional/ep/get/next_query_time", None)
 
     @property
@@ -58,7 +58,7 @@ class Optional(OcppMixin):
         if value is None:
             self._reset_fault_states(self.data.electricity_pricing.grid_fee, "grid_fee")
         else:
-            self.data.electricity_pricing.next_query_time = None
+            self.data.electricity_pricing.get.next_query_time = None
             Pub().pub("openWB/set/optional/ep/get/next_query_time", None)
 
     def _reset_fault_states(self, module: Union[FlexibleTariff, GridFee], module_name: str):
@@ -94,7 +94,7 @@ class Optional(OcppMixin):
         """
         try:
             if self.ep_provider_available():
-                return self.__get_current_timeslot_start(self.data.electricity_pricing.prices) in selected_hours
+                return self.__get_current_timeslot_start(self.data.electricity_pricing.get.prices) in selected_hours
             else:
                 log.info("Prüfe strompreisbasiertes Laden: Nicht konfiguriert")
                 return False
@@ -112,7 +112,7 @@ class Optional(OcppMixin):
         """
         try:
             if self.ep_provider_available():
-                current_price = self.ep_get_current_price(prices=self.data.electricity_pricing.prices)
+                current_price = self.ep_get_current_price(prices=self.data.electricity_pricing.get.prices)
                 log.info("Prüfe strompreisbasiertes Laden mit Preisgrenze %.5f €/kWh, aktueller Preis: %.5f €/kWh",
                          max_price * AS_EURO_PER_KWH,
                          current_price * AS_EURO_PER_KWH
@@ -129,7 +129,7 @@ class Optional(OcppMixin):
 
     def __get_first_entry(self, prices: dict[str, float]) -> tuple[str, float]:
         if self.ep_provider_available():
-            prices = self.data.electricity_pricing.prices
+            prices = self.data.electricity_pricing.get.prices
             if prices is None or len(prices) == 0:
                 raise Exception("Keine Preisdaten für strompreisbasiertes Laden vorhanden.")
             else:
@@ -141,7 +141,7 @@ class Optional(OcppMixin):
                     for price in prices.items()
                     if int(price[0]) > now - (price_timeslot_seconds - 1)
                 }
-                self.data.electricity_pricing.prices = prices
+                self.data.electricity_pricing.get.prices = prices
                 timestamp, first = next(iter(prices.items()))
                 return timestamp, first
         else:
@@ -174,7 +174,7 @@ class Optional(OcppMixin):
         if self.ep_provider_available() is False:
             raise Exception("Kein Anbieter für strompreisbasiertes Laden konfiguriert.")
         try:
-            prices = self.data.electricity_pricing.prices
+            prices = self.data.electricity_pricing.get.prices
             price_timeslot_seconds = self.__calculate_price_timeslot_length(prices)
             now = int(timecheck.create_timestamp())
             price_candidates = {
@@ -221,32 +221,32 @@ class Optional(OcppMixin):
 
         def get_last_entry_time_stamp() -> str:
             last_known_timestamp = "0"
-            if self.data.electricity_pricing.prices is not None:
-                last_known_timestamp = max(self.data.electricity_pricing.prices)
+            if self.data.electricity_pricing.get.prices is not None:
+                last_known_timestamp = max(self.data.electricity_pricing.get.prices)
             return last_known_timestamp
         if self.ep_provider_available() is False:
             return False
-        if len(self.data.electricity_pricing.prices) == 0:
+        if len(self.data.electricity_pricing.get.prices) == 0:
             return True
-        if self.data.electricity_pricing.next_query_time is None:
-            next_query_time = datetime.fromtimestamp(int(max(self.data.electricity_pricing.prices))).replace(
+        if self.data.electricity_pricing.get.next_query_time is None:
+            next_query_time = datetime.fromtimestamp(float(max(self.data.electricity_pricing.get.prices))).replace(
                 hour=TARIFF_UPDATE_HOUR, minute=0, second=0
             ) + timedelta(
                 # aktually ET providers issue next day prices up to half an hour earlier then 14:00
                 # reduce serverload on their site by trying early and randomizing query time
                 minutes=random.randint(1, 7) * -5
             )
-            self.data.electricity_pricing.next_query_time = next_query_time.timestamp()
-            Pub().pub("openWB/set/optional/ep/get/next_query_time", self.data.electricity_pricing.next_query_time)
+            self.data.electricity_pricing.get.next_query_time = next_query_time.timestamp()
+            Pub().pub("openWB/set/optional/ep/get/next_query_time", self.data.electricity_pricing.get.next_query_time)
         if is_tomorrow(get_last_entry_time_stamp()):
-            if timecheck.create_timestamp() > self.data.electricity_pricing.next_query_time:
+            if timecheck.create_timestamp() > self.data.electricity_pricing.get.next_query_time:
                 next_query_formatted = datetime.fromtimestamp(
-                    self.data.electricity_pricing.next_query_time).strftime("%Y%m%d-%H:%M:%S")
+                    self.data.electricity_pricing.get.next_query_time).strftime("%Y%m%d-%H:%M:%S")
                 log.info(f'Wartezeit {next_query_formatted} abgelaufen, Strompreise werden abgefragt')
                 return True
             else:
                 next_query_formatted = datetime.fromtimestamp(
-                    self.data.electricity_pricing.next_query_time).strftime("%Y%m%d-%H:%M:%S")
+                    self.data.electricity_pricing.get.next_query_time).strftime("%Y%m%d-%H:%M:%S")
                 log.info(f'Nächster Abruf der Strompreise {next_query_formatted}.')
                 return False
         return False
