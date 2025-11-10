@@ -52,7 +52,7 @@
 					:stack-order="globalConfig.usageStackOrder"
 				/>
 				<PgXAxis
-					:width="width - margin.left - margin.right"
+					:width="width"
 					:height="height - margin.top - margin.bottom"
 					:margin="margin"
 				/>
