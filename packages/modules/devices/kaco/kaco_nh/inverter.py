@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from typing import Dict, TypedDict, Any
+from typing import TypedDict, Any
 
 from modules.common import req
 from modules.common.abstract_device import AbstractInverter
@@ -25,7 +25,7 @@ class KacoNHInverter(AbstractInverter):
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
-    def update(self, response: Dict) -> None:
+    def update(self) -> None:
         response = req.get_http_session().get(
             'http://' + self.device_config.ip_address + ':' + str(self.device_config.port) + '/getdevdata.cgi?device=' +
             str(self.component_config.configuration.id) + '&sn=' + self.device_config.serial_number,
