@@ -104,7 +104,7 @@ class skoda:
         payload = {
             'client_id': CLIENT_ID,
             'scope': _scope,
-            'response_type': 'code id_token',
+            'response_type': 'code',
             'nonce': secrets.token_urlsafe(12),
             'redirect_uri': 'myskoda://redirect/login/',
             'state': str(uuid.uuid4()),
@@ -154,11 +154,11 @@ class skoda:
         while (True):
             url = response.headers['Location']
             if (url.split(':')[0] == "myskoda"):
-                if not ('id_token' in url):
-                    self.log.error("Missing id token")
+                if not ('code' in url):
+                    self.log.error("Missing authorization code")
                     return False
                     # Parse query string
-                query_string = url.split('#')[1]
+                query_string = url.split('?')[1]
                 query = {x[0]: x[1] for x in [x.split("=") for x in query_string.split("&")]}
                 break
 
