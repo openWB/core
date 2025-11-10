@@ -105,8 +105,12 @@ class Loadmanagement:
                 log.debug(f"Verbleibende Leistung unter Berücksichtigung der Einspeisegrenze: {raw_power_left}W")
             if sum([c * v for c, v in zip(available_currents, cp_voltages)]) > raw_power_left:
                 for i in range(0, 3):
-                    # Am meisten belastete Phase trägt am meisten zur Leistungsreduktion bei.
-                    currents[i] = available_currents[i] / sum(available_currents) * raw_power_left / cp_voltages[i]
+                    try:
+                        # Am meisten belastete Phase trägt am meisten zur Leistungsreduktion bei.
+                        currents[i] = available_currents[i] / sum(available_currents) * raw_power_left / cp_voltages[i]
+                    except ZeroDivisionError:
+                        # bei einphasig angeschlossenen Wallboxen ist die Spannung der anderen Phasen 0V
+                        currents[i] = 0.0
                 log.debug(f"Leistungsüberschreitung auf {raw_power_left}W korrigieren: {available_currents}")
                 limit = LoadmanagementLimit(LimitingValue.POWER.value.format(get_component_name_by_id(counter.num)),
                                             LimitingValue.POWER)

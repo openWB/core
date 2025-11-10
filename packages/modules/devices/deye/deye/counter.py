@@ -58,6 +58,7 @@ class DeyeCounter(AbstractCounter):
             voltages = [v / 10 for v in self.client.read_holding_registers(644, [ModbusDataType.INT_16]*3, unit=unit)]
             powers = self.client.read_holding_registers(616, [ModbusDataType.INT_16]*3, unit=unit)
             power = sum(powers)
+            frequency = self.client.read_holding_registers(609, ModbusDataType.INT_16, unit=unit) / 100
             imported, exported = self.sim_counter.sim_count(power)
 
         counter_state = CounterState(

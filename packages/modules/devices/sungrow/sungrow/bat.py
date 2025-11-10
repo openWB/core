@@ -46,11 +46,16 @@ class SungrowBat(AbstractBat):
             return RegMode.NEW_REGISTERS
         except Exception:
             pass
-
+        # register 13000 is always available, if unused it contains zero
+        # register type can only be determined if battery power is not zero
+        if self.__tcp_client.read_input_registers(13021, ModbusDataType.UINT_16, unit=unit) == 0:
+            raise ValueError("Speicherleistung aktuell 0kW. Registertyp wird gesetzt sobald "
+                             "Speicher Leistungswerte liefert.")
         try:
-            self.__tcp_client.read_input_registers(13000, ModbusDataType.UINT_16, unit=unit)
-            log.debug("Battery register check: using old_registers (13021 + 13000 bits for sign).")
-            return RegMode.OLD_REGISTERS
+            if self.__tcp_client.read_input_registers(13000, ModbusDataType.UINT_16, unit=unit) != 0:
+                # if battery power is not zero and register 13000 shows status bits, old registers are used
+                log.debug("Battery register check: using old_registers (13021 + 13000 bits for sign).")
+                return RegMode.OLD_REGISTERS
         except Exception:
             pass
 
