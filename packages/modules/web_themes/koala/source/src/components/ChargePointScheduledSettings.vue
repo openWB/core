@@ -1,8 +1,6 @@
 <template>
-  <div class="row justify-between items-center">
-    <div class="text-subtitle2 q-mr-sm q-mt-md">Termine Zielladen:</div>
-  </div>
-  <div class="row q-mb-md justify-end">
+  <div class="row justify-between items-center q-mt-md">
+    <div class="text-subtitle2">Termine Zielladen:</div>
     <q-btn
       round
       size="sm"
@@ -11,7 +9,6 @@
       @click="addScheduledChargingPlan"
     />
   </div>
-
   <div
     v-if="plans.length === 0"
     class="row q-mt-sm q-pa-sm bg-primary text-white no-wrap message-text"
