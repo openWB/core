@@ -272,6 +272,10 @@ class SimpleMQTTDaemon:
             log.debug(f"DEBUG: Found vehicle name pattern, transforming: {simple_base}")
             simple_base = re.sub(r'/get/connected_vehicle/info/name$', '/vehicle_name', simple_base)
             simple_base = re.sub(r'/connected_vehicle/info/name$', '/vehicle_name', simple_base)
+        elif '/connected_vehicle/soc' in simple_base:
+            log.debug(f"DEBUG: Found connected_vehicle soc pattern, transforming: {simple_base}")
+            simple_base = re.sub(r'/get/connected_vehicle/soc$', '/soc', simple_base)
+            simple_base = re.sub(r'/connected_vehicle/soc$', '/soc', simple_base)
         
         # Keep only config topics that are in the allowed list
         if '/config/' in simple_base and not re.search(r'/(chargemode|vehicle_name)$', simple_base):
@@ -306,10 +310,16 @@ class SimpleMQTTDaemon:
         if '/get/' in simple_base:
             simple_base = simple_base.replace('/get/', '/')
             
+            # Special handling for soc-related topics
+            if re.search(r'/soc$', simple_base):
+                simple_base = re.sub(r'/soc$', '/pro_soc', simple_base)
+            elif re.search(r'/soc_timestamp$', simple_base):
+                simple_base = re.sub(r'/soc_timestamp$', '/pro_soc_timestamp', simple_base)
+            
             # Filter out unwanted topics - but exclude already transformed ones
-            if not re.search(r'/(chargemode|vehicle_name)$', simple_base):
+            if not re.search(r'/(chargemode|vehicle_name|soc|pro_soc|pro_soc_timestamp)$', simple_base):
                 unwanted_patterns = [
-                    r'/connected_vehicle/(info|config|soc)/',
+                    r'/connected_vehicle/(info|config)/',
                     r'/max_evse_current$',
                     r'/current_branch$',
                     r'/current_commit$'
@@ -321,7 +331,7 @@ class SimpleMQTTDaemon:
         else:
             # For non-get topics, also filter out remaining connected_vehicle topics
             # but exclude the ones we already transformed
-            if not re.search(r'/(chargemode|vehicle_name)$', simple_base):
+            if not re.search(r'/(chargemode|vehicle_name|soc)$', simple_base):
                 if re.search(r'/connected_vehicle/', simple_base):
                     log.debug(f"DEBUG: Filtering out connected_vehicle topic: {simple_base}")
                     return None
