@@ -32,7 +32,7 @@ class MqttClient
     public function connect()
     {
         // Test-Verbindung mit mosquitto_sub
-        $cmd = $this->buildMosquittoCommand('sub', 'test/connection', '', ['-C', '1', '-W', '1']);
+        $cmd = $this->buildMosquittoCommand('sub', 'test/connection', '', 1);
         $result = shell_exec($cmd . ' 2>&1');
 
         // Wenn kein Fehler zurückkommt, ist die Verbindung OK
@@ -44,7 +44,7 @@ class MqttClient
      */
     public function getValue($topic)
     {
-        $cmd = $this->buildMosquittoCommand('sub', $topic, '', ['-C', '1', '-W', '1']); // Timeout auf 1 Sekunde reduziert
+        $cmd = $this->buildMosquittoCommand('sub', $topic, '', 1);
         $output = shell_exec($cmd . ' 2>/dev/null');
         $value = trim($output ?? '');
 
@@ -61,26 +61,10 @@ class MqttClient
     public function getMultipleValues($topics)
     {
         $results = [];
-        
-        // Alle Topics in einem mosquitto_sub Aufruf mit kurzem Timeout
-        $topicList = implode(' -t ', array_map('escapeshellarg', $topics));
-        
-        $cmd = sprintf(
-            "mosquitto_sub -h %s -p %d -t %s -C %d -W 1 -v 2>/dev/null",
-            escapeshellarg($this->server),
-            $this->port,
-            $topicList,
-            count($topics)
-        );
-        
-        // Username/Passwort hinzufügen falls konfiguriert
-        if (!empty($this->username)) {
-            $cmd .= sprintf(" -u %s", escapeshellarg($this->username));
-        }
-        if (!empty($this->password)) {
-            $cmd .= sprintf(" -P %s", escapeshellarg($this->password));
-        }
-        
+
+        $cmd = $this->buildMosquittoCommand('sub', $topics, '', count($topics));
+        $cmd .= ' 2>/dev/null';
+
         $output = shell_exec($cmd);
         $lines = explode("\n", trim($output ?? ''));
 
@@ -114,7 +98,7 @@ class MqttClient
     /**
      * Mosquitto-Kommando erstellen
      */
-    private function buildMosquittoCommand($type, $topic, $message = '', $extraArgs = [])
+    private function buildMosquittoCommand($type, $topics, $message = '', $count = null, $timeout = 1, $extraArgs = [])
     {
         $binary = $type === 'sub' ? 'mosquitto_sub' : 'mosquitto_pub';
 
@@ -132,10 +116,28 @@ class MqttClient
         if (!empty($this->password)) {
             $cmd .= sprintf(" -P %s", escapeshellarg($this->password));
         }
-        
-        // Topic hinzufügen
-        $cmd .= sprintf(" -t %s", escapeshellarg($topic));
-        
+
+        // Topic(s) hinzufügen
+        if (is_array($topics)) {
+            foreach ($topics as $topic) {
+                $cmd .= sprintf(" -t %s", escapeshellarg($topic));
+            }
+        } else {
+            $cmd .= sprintf(" -t %s", escapeshellarg($topics));
+        }
+
+        // Count und Timeout für subscribe
+        if ($type === 'sub') {
+            // Ausgabe des Topics erzwingen
+            $cmd .= " -v";
+            if ($count !== null) {
+                $cmd .= sprintf(" -C %d", intval($count));
+            }
+            if ($timeout !== null) {
+                $cmd .= sprintf(" -W %d", intval($timeout));
+            }
+        }
+
         // Message für publish
         if ($type === 'pub' && $message !== '') {
             $cmd .= sprintf(" -m %s", escapeshellarg($message));
@@ -156,21 +158,10 @@ class MqttClient
     {
         // MQTT Wildcard verwenden um alle Topics zu finden
         $pattern = "openWB/{$type}/+/get/imported";
-        
-        $cmd = sprintf(
-            "mosquitto_sub -h %s -p %d -t %s -C 100 -W 1 -v 2>/dev/null",
-            escapeshellarg($this->server),
-            $this->port,
-            escapeshellarg($pattern)
-        );
-        
-        if (!empty($this->username)) {
-            $cmd .= sprintf(" -u %s", escapeshellarg($this->username));
-        }
-        if (!empty($this->password)) {
-            $cmd .= sprintf(" -P %s", escapeshellarg($this->password));
-        }
-        
+
+        $cmd = $this->buildMosquittoCommand('sub', $pattern, '');
+        $cmd .= ' 2>/dev/null';
+
         $output = shell_exec($cmd);
         $ids = [];
 
