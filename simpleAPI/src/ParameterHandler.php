@@ -2,6 +2,8 @@
 
 namespace SimpleAPI;
 
+use Exception;
+
 /**
  * Handler für das Lesen und Schreiben von Parametern über MQTT
  */
