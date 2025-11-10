@@ -10,7 +10,6 @@ from modules.display_themes.cards.config import CardsDisplayTheme
 class PricingGet:
     fault_state: int = 0
     fault_str: str = NO_ERROR
-    next_query_time: Optional[float] = None
     prices: Dict = field(default_factory=empty_dict_factory)
 
 
@@ -40,6 +39,7 @@ def get_grid_fee_factory() -> GridFee:
 class ElectricityPricing:
     flexible_tariff: FlexibleTariff = field(default_factory=get_flexible_tariff_factory)
     grid_fee: GridFee = field(default_factory=get_grid_fee_factory)
+    next_query_time: Optional[float] = None
     prices: Dict = field(default_factory=empty_dict_factory)
 
 

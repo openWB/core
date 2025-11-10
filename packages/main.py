@@ -151,6 +151,7 @@ class HandlerAlgorithm:
                         control.calc_current()
                         proc.process_algorithm_results()
                         data.data.graph_data.pub_graph_data()
+                        loadvars_.ep_get_prices()
                     self.interval_counter = 1
                 else:
                     self.interval_counter = self.interval_counter + 1
@@ -187,7 +188,7 @@ class HandlerAlgorithm:
                 data.data.general_data.grid_protection()
                 data.data.optional_data.ocpp_transfer_meter_values()
                 data.data.counter_all_data.validate_hierarchy()
-                data.data.optional_data.ep_get_prices()
+                loadvars_.ep_get_prices()
         except Exception:
             log.exception("Fehler im Main-Modul")
 

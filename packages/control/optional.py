@@ -1,6 +1,5 @@
 """Optionale Module
 """
-from datetime import timedelta
 import logging
 from math import ceil
 import random
@@ -12,11 +11,9 @@ from control import data
 from control.ocpp import OcppMixin
 from control.optional_data import OptionalData
 from helpermodules import hardware_configuration
-from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 from helpermodules.utils import thread_handler
-from helpermodules.utils._thread_handler import joined_thread_handler
 from modules.common.configurable_tariff import ConfigurableFlexibleTariff, ConfigurableGridFee
 from modules.common.configurable_monitoring import ConfigurableMonitoring
 
@@ -29,9 +26,9 @@ class Optional(OcppMixin):
     def __init__(self):
         try:
             self.data = OptionalData()
-            self.flexible_tariff_module: ConfigurableFlexibleTariff = None
-            self.grid_fee_module: ConfigurableGridFee = None
-            self.monitoring_module: ConfigurableMonitoring = None
+            self.flexible_tariff_module: TypingOptional[ConfigurableFlexibleTariff] = None
+            self.grid_fee_module: TypingOptional[ConfigurableGridFee] = None
+            self.monitoring_module: TypingOptional[ConfigurableMonitoring] = None
             self.data.dc_charging = hardware_configuration.get_hardware_configuration_setting("dc_charging")
             Pub().pub("openWB/optional/dc_charging", self.data.dc_charging)
         except Exception:
@@ -180,37 +177,6 @@ class Optional(OcppMixin):
             log.exception("Fehler im Optional-Modul: %s", e)
             return []
 
-    def ep_get_prices(self):
-        try:
-            if self.et_price_update_required() is False:
-                return
-            threads = []
-            if self.flexible_tariff_module:
-                threads.append(Thread(target=self.flexible_tariff_module.update, args=(), name="flexible tariff"))
-            else:
-                # Wenn kein Modul konfiguriert ist, Fehlerstatus zurücksetzen.
-                if (self.data.electricity_pricing.flexible_tariff.get.fault_state != 0 or
-                        self.data.electricity_pricing.flexible_tariff.get.fault_str != NO_ERROR):
-                    self.data.electricity_pricing.flexible_tariff.get.fault_state = 0
-                    self.data.electricity_pricing.flexible_tariff.get.fault_str = NO_ERROR
-                    Pub().pub("openWB/set/optional/ep/flexible_tariff/get/fault_state", 0)
-                    Pub().pub("openWB/set/optional/ep/flexible_tariff/get/fault_str", NO_ERROR)
-            if self.grid_fee_module:
-                threads.append(Thread(target=self.grid_fee_module.update, args=(), name="grid fee"))
-            else:
-                # Wenn kein Modul konfiguriert ist, Fehlerstatus zurücksetzen.
-                if (self.data.electricity_pricing.grid_fee.get.fault_state != 0 or
-                        self.data.electricity_pricing.grid_fee.get.fault_str != NO_ERROR):
-                    self.data.electricity_pricing.grid_fee.get.fault_state = 0
-                    self.data.electricity_pricing.grid_fee.get.fault_str = NO_ERROR
-                    Pub().pub("openWB/set/optional/ep/grid_fee/get/fault_state", 0)
-                    Pub().pub("openWB/set/optional/ep/grid_fee/get/fault_str", NO_ERROR)
-            joined_thread_handler(threads, None)
-            self.data.electricity_pricing.prices = self.sum_prices()
-            Pub().pub("openWB/set/optional/ep/prices", self.data.electricity_pricing.prices)
-        except Exception as e:
-            log.exception("Fehler im Optional-Modul: %s", e)
-
     def et_price_update_required(self) -> bool:
         def is_tomorrow(last_timestamp: str) -> bool:
             return (day_of(date=datetime.now()) < day_of(datetime.fromtimestamp(int(last_timestamp)))
@@ -221,80 +187,33 @@ class Optional(OcppMixin):
 
         def get_last_entry_time_stamp() -> str:
             last_known_timestamp = "0"
-            if self.data.et.get.prices is not None:
-                last_known_timestamp = max(self.data.et.get.prices)
+            if self.data.electricity_pricing.prices is not None:
+                last_known_timestamp = max(self.data.electricity_pricing.prices)
             return last_known_timestamp
-        if len(self.data.et.get.prices) == 0:
+        if len(self.data.electricity_pricing.prices) == 0:
             return True
-        if self.data.et.get.next_query_time is None:
-            next_query_time = datetime.fromtimestamp(int(max(self.data.et.get.prices))).replace(
+        if self.data.electricity_pricing.next_query_time is None:
+            next_query_time = datetime.fromtimestamp(int(max(self.data.electricity_pricing.prices))).replace(
                 hour=TARIFF_UPDATE_HOUR, minute=0, second=0
             ) + timedelta(
                 # aktually ET providers issue next day prices up to half an hour earlier then 14:00
                 # reduce serverload on their site by trying early and randomizing query time
                 minutes=random.randint(1, 7) * -5
             )
-            self.data.et.get.next_query_time = next_query_time.timestamp()
-            Pub().pub("openWB/set/optional/et/get/next_query_time", self.data.et.get.next_query_time)
+            self.data.electricity_pricing.next_query_time = next_query_time.timestamp()
+            Pub().pub("openWB/set/optional/et/get/next_query_time", self.data.electricity_pricing.next_query_time)
         if is_tomorrow(get_last_entry_time_stamp()):
-            if timecheck.create_timestamp() > self.data.et.get.next_query_time:
-                log.info(
-                    f'Wartezeit {datetime.fromtimestamp(self.data.et.get.next_query_time).strftime("%Y%m%d-%H:%M:%S")}'
-                    ' abgelaufen, Strompreise werden abgefragt')
+            if timecheck.create_timestamp() > self.data.electricity_pricing.next_query_time:
+                next_query_formatted = datetime.fromtimestamp(
+                    self.data.electricity_pricing.next_query_time).strftime("%Y%m%d-%H:%M:%S")
+                log.info(f'Wartezeit {next_query_formatted} abgelaufen, Strompreise werden abgefragt')
                 return True
             else:
-                log.info(
-                    'Nächster Abruf der Strompreise '
-                    f'{datetime.fromtimestamp(self.data.et.get.next_query_time).strftime("%Y%m%d-%H:%M:%S")}.')
+                next_query_formatted = datetime.fromtimestamp(
+                    self.data.electricity_pricing.next_query_time).strftime("%Y%m%d-%H:%M:%S")
+                log.info(f'Nächster Abruf der Strompreise {next_query_formatted}.')
                 return False
         return False
-
-    def sum_prices(self):
-        if self.flexible_tariff_module is None and self.grid_fee_module is not None:
-            return self.data.electricity_pricing.grid_fee.get.prices
-        if self.grid_fee_module is None and self.flexible_tariff_module is not None:
-            return self.data.electricity_pricing.flexible_tariff.get.prices
-        # Sortiere Keys
-        grid_fee_prices = self.data.electricity_pricing.grid_fee.get.prices
-        electricity_tariff_prices = self.data.electricity_pricing.flexible_tariff.get.prices
-        grid_fee_keys = sorted(grid_fee_prices.keys())
-        electricity_tariff_keys = sorted(electricity_tariff_prices.keys())
-        # Typische Schrittweite bestimmen (Median der Deltas)
-
-        def median_delta(keys):
-            if len(keys) < 2:
-                return timedelta.max
-            deltas = [(keys[i+1] - keys[i]) for i in range(len(keys)-1)]
-            deltas.sort()
-            return timedelta(seconds=deltas[len(deltas)//2])
-        grid_fee_delta = median_delta(grid_fee_keys)
-        electricity_tariff_delta = median_delta(electricity_tariff_keys)
-        # Feinere und gröbere Auflösung bestimmen
-        if grid_fee_delta < electricity_tariff_delta:
-            fine_dict, coarse_dict = grid_fee_prices, electricity_tariff_prices
-        else:
-            fine_dict, coarse_dict = electricity_tariff_prices, grid_fee_prices
-        # Intervallgrenzen für das gröbere Dict
-        coarse_keys = sorted(coarse_dict.keys())
-        intervalle = []
-        for i, start in enumerate(coarse_keys):
-            if i+1 < len(coarse_keys):
-                ende = coarse_keys[i+1]
-            else:
-                ende = max(fine_dict.keys()) + 1
-            intervalle.append((start, ende))
-        # Für jeden feinen Zeitstempel das passende grobe Intervall suchen und addieren
-        result = {}
-        for ts_fine, preis_fine in fine_dict.items():
-            coarse_value = None
-            for start, ende in intervalle:
-                if start <= ts_fine < ende:
-                    coarse_value = coarse_dict[start]
-                    break
-            if coarse_value is None:
-                raise ValueError(f"Kein passendes Intervall für {ts_fine}")
-            result[ts_fine] = preis_fine + coarse_value
-        return result
 
     def ocpp_transfer_meter_values(self):
         try:

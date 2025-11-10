@@ -716,14 +716,18 @@ class SubData:
                     if re.search("/optional/ep/flexible_tariff/provider$", msg.topic) is not None:
                         config_dict = decode_payload(msg.payload)
                         if config_dict["type"] is None:
-                            var._flexible_tariff_module = None
+                            var.flexible_tariff_module = None
                         else:
                             mod = importlib.import_module(
                                 f".electricity_pricing.flexible_tariffs.{config_dict['type']}.tariff", "modules")
                             config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
-                            var._flexible_tariff_module = ConfigurableFlexibleTariff(
+                            var.flexible_tariff_module = ConfigurableFlexibleTariff(
                                 config, mod.create_electricity_tariff)
                             var.ep_get_prices()
+                    elif re.search("/optional/ep/flexible_tariff/get/prices", msg.topic) is not None:
+                        var.data.electricity_pricing.flexible_tariff.get.prices = decode_payload(msg.payload)
+                    elif re.search("/optional/ep/flexible_tariff/get/", msg.topic) is not None:
+                        self.set_json_payload_class(var.data.electricity_pricing.flexible_tariff.get, msg)
                     elif re.search("/optional/ep/grid_fee/provider$", msg.topic) is not None:
                         config_dict = decode_payload(msg.payload)
                         if config_dict["type"] is None:
@@ -734,8 +738,16 @@ class SubData:
                             config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
                             var.grid_fee_module = ConfigurableGridFee(config, mod.create_electricity_tariff)
                             var.ep_get_prices()
-                    else:
-                        self.set_json_payload_class(var.data.electricity_pricing, msg)
+                    elif re.search("/optional/ep/grid_fee/get/prices", msg.topic) is not None:
+                        var.data.electricity_pricing.grid_fee.get.prices = decode_payload(msg.payload)
+                    elif re.search("/optional/ep/grid_fee/get/", msg.topic) is not None:
+                        self.set_json_payload_class(var.data.electricity_pricing.grid_fee.get, msg)
+                elif re.search("/optional/ep/prices", msg.topic) is not None:
+                    var.data.electricity_pricing.prices = decode_payload(msg.payload)
+                elif re.search("/optional/ep/", msg.topic) is not None:
+                    self.set_json_payload_class(var.data.electricity_pricing, msg)
+                elif "module_update_completed" in msg.topic:
+                    self.event_module_update_completed.set()
                 elif re.search("/optional/ocpp/", msg.topic) is not None:
                     config_dict = decode_payload(msg.payload)
                     var.data.ocpp = dataclass_from_dict(Ocpp, config_dict)
