@@ -20,12 +20,12 @@ return [
     'auth' => [
         'enabled' => false,
         'require_https' => false,
-        
+
         // Gültige Tokens
         'tokens' => [
             // 'your-secret-token-here'
         ],
-        
+
         // Benutzer (Username => Passwort/Hash)
         'users' => [
             // 'admin' => password_hash('admin123', PASSWORD_DEFAULT),

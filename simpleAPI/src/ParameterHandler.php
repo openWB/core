@@ -22,47 +22,47 @@ class ParameterHandler
         switch ($param) {
             case 'get_chargepoint_all':
                 return $this->getChargepointAll($id);
-            
+
             case 'get_chargepoint_voltage_p1':
                 return $this->getChargepointVoltage($id, 1);
-            
+
             case 'get_chargepoint_voltage_p2':
                 return $this->getChargepointVoltage($id, 2);
-            
+
             case 'get_chargepoint_voltage_p3':
                 return $this->getChargepointVoltage($id, 3);
-            
+
             case 'get_chargepoint_voltages':
                 return $this->getChargepointVoltages($id);
-            
+
             case 'get_chargepoint_current_p1':
                 return $this->getChargepointCurrent($id, 1);
-            
+
             case 'get_chargepoint_current_p2':
                 return $this->getChargepointCurrent($id, 2);
-            
+
             case 'get_chargepoint_current_p3':
                 return $this->getChargepointCurrent($id, 3);
-            
+
             case 'get_chargepoint_currents':
                 return $this->getChargepointCurrents($id);
-            
+
             case 'get_chargepoint_power':
                 return $this->getChargepointPower($id);
-            
+
             case 'get_chargepoint_powers':
                 return $this->getChargepointPowers($id);
-            
+
             case 'battery':
                 return $this->getBattery($id);
-            
+
             case 'pv':
                 return $this->getPv($id);
-            
+
             case 'get_counter':
                 return $this->getCounter($id);
-                
-            // Chargepoint - Einzelwerte
+
+                // Chargepoint - Einzelwerte
             case 'get_chargepoint_imported':
                 return $this->getChargepointImported($id);
             case 'get_chargepoint_exported':
@@ -83,8 +83,8 @@ class ParameterHandler
                 return $this->getChargepointChargeState($id);
             case 'get_chargepoint_chargemode':
                 return $this->getChargepointChargemode($id);
-                
-            // Counter - Einzelwerte
+
+                // Counter - Einzelwerte
             case 'get_counter_voltage_p1':
                 return $this->getCounterVoltageP1($id);
             case 'get_counter_voltage_p2':
@@ -121,8 +121,8 @@ class ParameterHandler
                 return $this->getCounterFaultStr($id);
             case 'get_counter_fault_state':
                 return $this->getCounterFaultState($id);
-                
-            // Battery - Zusätzliche Einzelwerte
+
+                // Battery - Zusätzliche Einzelwerte
             case 'get_battery':
                 return $this->getBattery($id);
             case 'get_battery_power':
@@ -145,8 +145,8 @@ class ParameterHandler
                 return $this->getBatteryFaultState($id);
             case 'get_battery_power_limit_controllable':
                 return $this->getBatteryPowerLimitControllable($id);
-                
-            // PV - Zusätzliche Einzelwerte
+
+                // PV - Zusätzliche Einzelwerte
             case 'get_pv':
                 return $this->getPv($id);
             case 'get_pv_power':
@@ -165,7 +165,7 @@ class ParameterHandler
                 return $this->getPvFaultStr($id);
             case 'get_pv_fault_state':
                 return $this->getPvFaultState($id);
-            
+
             default:
                 return null;
         }
@@ -206,12 +206,12 @@ class ParameterHandler
     private function getChargepointAll($id)
     {
         $prefix = "openWB/chargepoint/{$id}/get/";
-        
+
         // Alle benötigten Topics in einem Aufruf abfragen
         $topics = [
             $prefix . 'power',
             $prefix . 'voltages',
-            $prefix . 'currents', 
+            $prefix . 'currents',
             $prefix . 'powers',
             $prefix . 'state_str',
             $prefix . 'fault_str',
@@ -227,9 +227,9 @@ class ParameterHandler
             $prefix . 'evse_current',
             "openWB/chargepoint/{$id}/set/charge_template"
         ];
-        
+
         $values = $this->mqttClient->getMultipleValues($topics);
-        
+
         // Arrays parsen
         try {
             $voltages = json_decode($values[$prefix . 'voltages'] ?? '[]', true) ?: [0, 0, 0];
@@ -240,7 +240,7 @@ class ParameterHandler
             $currents = [0, 0, 0];
             $powers = [0, 0, 0];
         }
-        
+
         // Chargemode aus Template extrahieren
         $chargemode = 'stop';
         try {
@@ -249,7 +249,7 @@ class ParameterHandler
         } catch (Exception $e) {
             // Fallback
         }
-        
+
         $data = [
             "chargepoint_{$id}" => [
                 'power' => floatval($values[$prefix . 'power'] ?? 0),
@@ -283,24 +283,24 @@ class ParameterHandler
                 'chargemode' => $chargemode
             ]
         ];
-        
+
         // manual_lock Status auslesen
         $manualLockTopic = "openWB/chargepoint/{$id}/set/manual_lock";
         $manualLock = $this->mqttClient->getValue($manualLockTopic);
         $data["chargepoint_{$id}"]['manual_lock'] = $this->parseBooleanValue($manualLock ?? 'false');
-        
+
         return $data;
     }
-    
+
     /**
      * Boolean-Wert parsen
      */
-    private function parseBooleanValue($value) 
+    private function parseBooleanValue($value)
     {
         if (is_bool($value)) {
             return $value;
         }
-        
+
         $value = strtolower(trim($value, '"'));
         return in_array($value, ['true', '1', 'yes', 'on']);
     }
@@ -313,11 +313,11 @@ class ParameterHandler
         // OpenWB gibt Spannungen als Array zurück: [237.79, 0, 0]
         $topic = "openWB/chargepoint/{$id}/get/voltages";
         $voltagesJson = $this->mqttClient->getValue($topic);
-        
+
         try {
             $voltages = json_decode($voltagesJson, true);
             $voltage = $voltages[$phase - 1] ?? 0; // Array ist 0-basiert, Phase 1-basiert
-            
+
             return [
                 "chargepoint_{$id}" => [
                     "voltage_p{$phase}" => floatval($voltage)
@@ -339,10 +339,10 @@ class ParameterHandler
     {
         $topic = "openWB/chargepoint/{$id}/get/voltages";
         $voltagesJson = $this->mqttClient->getValue($topic);
-        
+
         try {
             $voltages = json_decode($voltagesJson, true);
-            
+
             return [
                 "chargepoint_{$id}" => [
                     'voltages' => [
@@ -369,11 +369,11 @@ class ParameterHandler
         // OpenWB gibt Ströme als Array zurück: [0, 0, 0]
         $topic = "openWB/chargepoint/{$id}/get/currents";
         $currentsJson = $this->mqttClient->getValue($topic);
-        
+
         try {
             $currents = json_decode($currentsJson, true);
             $current = $currents[$phase - 1] ?? 0; // Array ist 0-basiert, Phase 1-basiert
-            
+
             return [
                 "chargepoint_{$id}" => [
                     "current_p{$phase}" => floatval($current)
@@ -395,10 +395,10 @@ class ParameterHandler
     {
         $topic = "openWB/chargepoint/{$id}/get/currents";
         $currentsJson = $this->mqttClient->getValue($topic);
-        
+
         try {
             $currents = json_decode($currentsJson, true);
-            
+
             return [
                 "chargepoint_{$id}" => [
                     'currents' => [
@@ -424,7 +424,7 @@ class ParameterHandler
     {
         $topic = "openWB/chargepoint/{$id}/get/power";
         $power = $this->getNumericValue($topic);
-        
+
         return [
             "chargepoint_{$id}" => [
                 'power' => $power
@@ -439,10 +439,10 @@ class ParameterHandler
     {
         $topic = "openWB/chargepoint/{$id}/get/powers";
         $powersJson = $this->mqttClient->getValue($topic);
-        
+
         try {
             $powers = json_decode($powersJson, true);
-            
+
             return [
                 "chargepoint_{$id}" => [
                     'powers' => [
@@ -467,7 +467,7 @@ class ParameterHandler
     private function getBattery($id)
     {
         $prefix = "openWB/bat/{$id}/get/";
-        
+
         // Alle benötigten Topics in einem Aufruf abfragen
         $topics = [
             $prefix . 'power',
@@ -481,16 +481,16 @@ class ParameterHandler
             $prefix . 'fault_state',
             $prefix . 'power_limit_controllable'
         ];
-        
+
         $values = $this->mqttClient->getMultipleValues($topics);
-        
+
         // Currents Array parsen
         try {
             $currents = json_decode($values[$prefix . 'currents'] ?? '[]', true) ?: [0, 0, 0];
         } catch (Exception $e) {
             $currents = [0, 0, 0];
         }
-        
+
         return [
             "battery_{$id}" => [
                 'power' => floatval($values[$prefix . 'power'] ?? 0),
@@ -517,7 +517,7 @@ class ParameterHandler
     private function getPv($id)
     {
         $prefix = "openWB/pv/{$id}/get/";
-        
+
         // Alle benötigten Topics in einem Aufruf abfragen
         $topics = [
             $prefix . 'power',
@@ -529,16 +529,16 @@ class ParameterHandler
             $prefix . 'fault_str',
             $prefix . 'fault_state'
         ];
-        
+
         $values = $this->mqttClient->getMultipleValues($topics);
-        
+
         // Currents Array parsen
         try {
             $currents = json_decode($values[$prefix . 'currents'] ?? '[]', true) ?: [0, 0, 0];
         } catch (Exception $e) {
             $currents = [0, 0, 0];
         }
-        
+
         return [
             "pv_{$id}" => [
                 'power' => floatval($values[$prefix . 'power'] ?? 0),
@@ -563,12 +563,12 @@ class ParameterHandler
     private function getCounter($id)
     {
         $prefix = "openWB/counter/{$id}/get/";
-        
+
         // Alle benötigten Topics in einem Aufruf abfragen
         $topics = [
             $prefix . 'power',
             $prefix . 'voltages',
-            $prefix . 'currents', 
+            $prefix . 'currents',
             $prefix . 'powers',
             $prefix . 'power_factors',
             $prefix . 'frequency',
@@ -579,9 +579,9 @@ class ParameterHandler
             $prefix . 'fault_str',
             $prefix . 'fault_state'
         ];
-        
+
         $values = $this->mqttClient->getMultipleValues($topics);
-        
+
         // Arrays parsen
         try {
             $voltages = json_decode($values[$prefix . 'voltages'] ?? '[]', true) ?: [0, 0, 0];
@@ -594,7 +594,7 @@ class ParameterHandler
             $powers = [0, 0, 0];
             $power_factors = [0, 0, 0];
         }
-        
+
         return [
             "counter_{$id}" => [
                 'power' => floatval($values[$prefix . 'power'] ?? 0),
@@ -637,49 +637,48 @@ class ParameterHandler
         // Gültige Modi mapping
         $validModes = [
             'instant' => 'instant_charging',
-            'pv' => 'pv_charging', 
+            'pv' => 'pv_charging',
             'eco' => 'eco_charging',
             'stop' => 'stop',
             'target' => 'scheduled_charging'
         ];
-        
+
         if (!isset($validModes[$mode])) {
             return ['success' => false, 'message' => 'Invalid chargemode. Valid modes: ' . implode(', ', array_keys($validModes))];
         }
-        
+
         $selectedMode = $validModes[$mode];
-        
+
         try {
             // 1. Aktuelles Template von /set/charge_template auslesen 
             $templateTopic = "openWB/chargepoint/{$chargepointId}/set/charge_template";
             $templateJson = $this->mqttClient->getValue($templateTopic);
-            
+
             if (!$templateJson) {
                 return ['success' => false, 'message' => 'Could not read current charge template from set topic'];
             }
-            
+
             $template = json_decode($templateJson, true);
             if (!$template) {
                 return ['success' => false, 'message' => 'Invalid charge template format'];
             }
-            
+
             // 2. Chargemode im Template ändern
             if (!isset($template['chargemode'])) {
                 $template['chargemode'] = [];
             }
-            
+
             $template['chargemode']['selected'] = $selectedMode;
-            
+
             // 3. Geändertes Template an /set/charge_template zurückschreiben
             $setTopic = "openWB/set/chargepoint/{$chargepointId}/set/charge_template";
             $newTemplateJson = json_encode($template);
-            
+
             if ($this->mqttClient->setValue($setTopic, $newTemplateJson)) {
                 return ['success' => true, 'message' => "Chargemode set to {$mode} ({$selectedMode})"];
             }
-            
+
             return ['success' => false, 'message' => 'Failed to update charge template'];
-            
         } catch (Exception $e) {
             return ['success' => false, 'message' => 'Error setting chargemode: ' . $e->getMessage()];
         }
@@ -813,20 +812,19 @@ class ParameterHandler
     {
         // Gültige Modi
         $validModes = ['min_soc_bat_mode', 'ev_mode', 'bat_mode'];
-        
+
         if (!in_array($value, $validModes)) {
             return ['success' => false, 'message' => 'Invalid bat_mode. Valid modes: ' . implode(', ', $validModes)];
         }
-        
+
         try {
             $topic = "openWB/set/general/chargemode_config/pv_charging/bat_mode";
-            
+
             if ($this->mqttClient->setValue($topic, $value)) {
                 return ['success' => true, 'message' => "Bat mode set to {$value}"];
             }
-            
+
             return ['success' => false, 'message' => 'Failed to set bat mode'];
-            
         } catch (Exception $e) {
             return ['success' => false, 'message' => 'Error setting bat mode: ' . $e->getMessage()];
         }

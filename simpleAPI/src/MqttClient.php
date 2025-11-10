@@ -13,7 +13,7 @@ class MqttClient
     private $username;
     private $password;
     private $clientid;
-    
+
     // Cache für bekannte IDs
     private static $knownIds = [];
 
@@ -34,7 +34,7 @@ class MqttClient
         // Test-Verbindung mit mosquitto_sub
         $cmd = $this->buildMosquittoCommand('sub', 'test/connection', '', ['-C', '1', '-W', '1']);
         $result = shell_exec($cmd . ' 2>&1');
-        
+
         // Wenn kein Fehler zurückkommt, ist die Verbindung OK
         return !preg_match('/error|failed|unable/i', $result ?? '');
     }
@@ -47,11 +47,11 @@ class MqttClient
         $cmd = $this->buildMosquittoCommand('sub', $topic, '', ['-C', '1', '-W', '1']); // Timeout auf 1 Sekunde reduziert
         $output = shell_exec($cmd . ' 2>/dev/null');
         $value = trim($output ?? '');
-        
+
         if ($value === '') {
             throw new \Exception("No data received for topic: $topic");
         }
-        
+
         return $value;
     }
 
@@ -83,14 +83,14 @@ class MqttClient
         
         $output = shell_exec($cmd);
         $lines = explode("\n", trim($output ?? ''));
-        
+
         foreach ($lines as $line) {
             if (strpos($line, ' ') !== false) {
                 list($topic, $value) = explode(' ', $line, 2);
                 $results[$topic] = $value;
             }
         }
-        
+
         // Nur Topics zurückgeben, die erfolgreich abgerufen wurden
         return $results;
     }
@@ -102,12 +102,12 @@ class MqttClient
     {
         $cmd = $this->buildMosquittoCommand('pub', $topic, $value);
         $result = shell_exec($cmd . ' 2>&1');
-        
+
         // Prüfen ob Fehler aufgetreten sind
         if (preg_match('/error|failed|unable/i', $result ?? '')) {
             throw new \Exception("Failed to publish to topic: $topic - $result");
         }
-        
+
         return true;
     }
 
@@ -117,7 +117,7 @@ class MqttClient
     private function buildMosquittoCommand($type, $topic, $message = '', $extraArgs = [])
     {
         $binary = $type === 'sub' ? 'mosquitto_sub' : 'mosquitto_pub';
-        
+
         $cmd = sprintf(
             "%s -h %s -p %d",
             $binary,
@@ -140,12 +140,12 @@ class MqttClient
         if ($type === 'pub' && $message !== '') {
             $cmd .= sprintf(" -m %s", escapeshellarg($message));
         }
-        
+
         // Extra-Argumente hinzufügen
         foreach ($extraArgs as $arg) {
             $cmd .= " " . $arg;
         }
-        
+
         return $cmd;
     }
 
@@ -173,14 +173,14 @@ class MqttClient
         
         $output = shell_exec($cmd);
         $ids = [];
-        
+
         if ($output) {
             $lines = explode("\n", trim($output));
             foreach ($lines as $line) {
                 if (preg_match("/openWB\/{$type}\/(\d+)\/get\/imported\s+(.+)/", $line, $matches)) {
                     $id = intval($matches[1]);
                     $value = trim($matches[2]);
-                    
+
                     // Nur IDs mit gültigen Werten (nicht null oder leer)
                     if ($value !== '' && $value !== 'null' && is_numeric($value)) {
                         $ids[] = $id;
@@ -188,13 +188,13 @@ class MqttClient
                 }
             }
         }
-        
+
         $ids = array_unique($ids);
-        
+
         if (empty($ids)) {
             throw new \Exception("No {$type} devices found via MQTT wildcard scan");
         }
-        
+
         return $ids;
     }
 
@@ -207,10 +207,10 @@ class MqttClient
         if (isset(self::$knownIds[$type])) {
             return self::$knownIds[$type];
         }
-        
+
         // Alle verfügbaren IDs für diesen Typ finden
         $availableIds = $this->findAvailableIds($type);
-        
+
         if (!empty($availableIds)) {
             // Niedrigste ID zurückgeben
             sort($availableIds, SORT_NUMERIC);
@@ -218,10 +218,10 @@ class MqttClient
             self::$knownIds[$type] = $lowestId;
             return $lowestId;
         }
-        
+
         return null;
     }
-    
+
     /**
      * Verbindung schließen (dummy für Kompatibilität)
      */
