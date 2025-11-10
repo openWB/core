@@ -10,6 +10,7 @@ class MqttClient
 {
     private $server;
     private $port;
+    private $validate_cert;
     private $username;
     private $password;
     private $clientid;
@@ -20,7 +21,8 @@ class MqttClient
     public function __construct($config)
     {
         $this->server = $config['mqtt']['server'] ?? 'localhost';
-        $this->port = $config['mqtt']['port'] ?? 1883;
+        $this->port = $config['mqtt']['port'] ?? 8883;
+        $this->validate_cert = $config['mqtt']['validate_cert'] ?? false;
         $this->username = $config['mqtt']['username'] ?? '';
         $this->password = $config['mqtt']['password'] ?? '';
         $this->clientid = $config['mqtt']['clientid'] ?? 'SimpleAPI_' . uniqid();
@@ -114,7 +116,12 @@ class MqttClient
             escapeshellarg($this->server),
             $this->port
         );
-        
+
+        // Zertifikatsvalidierung deaktivieren falls konfiguriert
+        if (!$this->validate_cert) {
+            $cmd .= " --insecure";
+        }
+
         // Username/Passwort hinzufügen falls konfiguriert
         if (!empty($this->username)) {
             $cmd .= sprintf(" -u %s", escapeshellarg($this->username));
