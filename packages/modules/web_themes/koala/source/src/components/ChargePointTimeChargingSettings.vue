@@ -13,15 +13,13 @@
     class="row justify-between items-center q-mt-md"
   >
     <div class="text-subtitle2">Termine Zeitladen:</div>
-    <div class="row q-mb-md justify-end">
-      <q-btn
-        round
-        size="sm"
-        color="primary"
-        icon="add"
-        @click="addScheduledChargingPlan"
-      />
-    </div>
+    <q-btn
+      round
+      size="sm"
+      color="primary"
+      icon="add"
+      @click="addScheduledChargingPlan"
+    />
   </div>
   <div
     v-if="plans.length === 0 && timeChargingEnabled"
