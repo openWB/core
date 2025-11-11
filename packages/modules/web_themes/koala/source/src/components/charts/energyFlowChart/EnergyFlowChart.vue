@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useMqttStore } from 'src/stores/mqtt-store';
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import type { SvgSize, FlowComponent } from './energy-flow-chart-models';
 import type { ValueObject } from 'src/stores/mqtt-store-model';
 
@@ -248,33 +248,8 @@ const chargePointSumCharging = computed(
 
 ///////////////////// Set animation speed //////////////////////////
 
-const powerCategory = (power: number) => {
-  if (Math.abs(power) >= 5000) return 'large';
-  if (Math.abs(power) >= 1500) return 'medium';
-  return 'small';
-};
-
-const pvPowerCategory = computed(() => powerCategory(pvPower.value.value));
-const batteryPowerCategory = computed(() =>
-  powerCategory(batteryPower.value.value),
-);
-const gridPowerCategory = computed(() => powerCategory(gridPower.value.value));
-const homePowerCategory = computed(() => powerCategory(homePower.value.value));
-const chargePoint1PowerCategory = computed(() =>
-  powerCategory(chargePoint1Power.value.value),
-);
-const chargePoint2PowerCategory = computed(() =>
-  powerCategory(chargePoint2Power.value.value),
-);
-const chargePoint3PowerCategory = computed(() =>
-  powerCategory(chargePoint3Power.value.value),
-);
-const chargePointSumPowerCategory = computed(() =>
-  powerCategory(chargePointSumPower.value.value),
-);
-
-const allPowerValues = computed(() => {
-  const values = [
+const maxSystemPower = computed(() => {
+  const powerValues = [
     Math.abs(Number(gridPower.value.value)),
     Math.abs(Number(homePower.value.value)),
     Math.abs(Number(pvPower.value.value)),
@@ -282,30 +257,64 @@ const allPowerValues = computed(() => {
     Math.abs(Number(chargePoint1Power.value.value)),
     Math.abs(Number(chargePoint2Power.value.value)),
     Math.abs(Number(chargePoint3Power.value.value)),
-    Math.abs(Number(chargePointSumPower.value.value)),
+    // Only take the sum into account if there are more than 3 charging points
+    ...(connectedChargePoints.value.length > 3
+      ? [Math.abs(Number(chargePointSumPower.value.value))]
+      : []),
   ];
-  return values.filter((v) => !isNaN(v) && v !== undefined && v !== null);
+  const filteredPowerValues = powerValues.filter(
+    (value) => !isNaN(value) && value !== undefined && value !== null,
+  );
+  if (filteredPowerValues.length === 0) return 1000;
+  return Math.max(...filteredPowerValues);
 });
 
-const maxCurrentPower = computed(() => {
-  const values = allPowerValues.value;
-  if (values.length === 0) return 1000;
-  return Math.max(...values, 1000);
-});
-
-const getAnimationDuration = (
+const calcDashSpeed = (
   power: number,
-  maxPower = maxCurrentPower.value,
-  minDuration = 0.4,
-  maxDuration = 4.0,
+  maxPower = maxSystemPower.value,
+  minSpeed = 1,
+  maxSpeed = 7,
 ) => {
   const absPower = Math.abs(power);
-  console.log('Max Power for Animation Duration:', maxPower);
-  if (absPower >= maxPower) return `${minDuration}s`;
-  if (absPower <= 0) return `${maxDuration}s`;
-  const duration =
-    maxDuration - ((maxDuration - minDuration) * absPower) / maxPower;
-  return `${duration}s`;
+  if (absPower <= 0) return minSpeed;
+  if (absPower >= maxPower) return maxSpeed;
+  return minSpeed + (maxSpeed - minSpeed) * (absPower / maxPower);
+};
+
+let animationFrameId: number | null = null;
+const dashOffsets = ref<Record<string, number>>({});
+
+// Animation-Loop
+const animateDashes = () => {
+  const frameDuration = 1 / 30; // time per Frame (30 FPS)
+  function step() {
+    svgComponents.value.forEach((component) => {
+      if (component.class.animated || component.class.animatedReverse) {
+        const id = component.id;
+        const path = document.getElementById(`flow-path-${id}`);
+        const dashLength = 10;
+        const speed = calcDashSpeed(component.powerValue || 0);
+        // Update the dash offset
+        const previousOffset = dashOffsets.value[id] ?? 0;
+        // +1 = reverse direction, -1 = normal direction
+        const directionMultiplier = component.class.animatedReverse ? 1 : -1;
+        // How far the dash pattern moves during this frame.. speed: units per second, delta: time elapsed since the last frame (in seconds)
+        const offsetChange = speed * frameDuration * directionMultiplier;
+        // Raw new offset (can be larger than dashLength or smaller than 0)
+        let newOffset = (previousOffset + offsetChange) % dashLength;
+        // In JavaScript, the % operator can return a negative result so if it's negative, shift it back into the [0, dashLength) range
+        if (newOffset < 0) {
+          newOffset += dashLength;
+        }
+        // Store the calculated offset for this path
+        dashOffsets.value[id] = newOffset;
+        // Apply the new offset to the SVG path
+        path.style.strokeDashoffset = `${newOffset}`;
+      }
+    });
+    animationFrameId = requestAnimationFrame(step);
+  }
+  animationFrameId = requestAnimationFrame(step);
 };
 
 ///////////////////////// Diagram components /////////////////////////
@@ -324,7 +333,6 @@ const svgComponents = computed((): FlowComponent[] => {
           : '',
       animated: gridConsumption.value,
       animatedReverse: gridFeedIn.value,
-      powerCategory: gridPowerCategory.value,
     },
     position: { row: 0, column: 0 },
     label: ['EVU', absoluteValueObject(gridPower.value).textValue],
@@ -339,7 +347,6 @@ const svgComponents = computed((): FlowComponent[] => {
       valueLabel: '',
       animated: homeProduction.value,
       animatedReverse: homeConsumption.value,
-      powerCategory: homePowerCategory.value,
     },
     position: { row: 0, column: 2 },
     label: ['Haus', absoluteValueObject(homePower.value).textValue],
@@ -355,7 +362,6 @@ const svgComponents = computed((): FlowComponent[] => {
         valueLabel: 'fill-success',
         animated: pvProduction.value,
         animatedReverse: pvConsumption.value,
-        powerCategory: pvPowerCategory.value,
       },
       position: { row: 1, column: 0 },
       label: ['PV', absoluteValueObject(pvPower.value).textValue],
@@ -372,7 +378,6 @@ const svgComponents = computed((): FlowComponent[] => {
         valueLabel: '',
         animated: batteryDischarging.value,
         animatedReverse: batteryCharging.value,
-        powerCategory: batteryPowerCategory.value,
       },
       position: { row: 1, column: 2 },
       label: ['Speicher', absoluteValueObject(batteryPower.value).textValue],
@@ -392,7 +397,6 @@ const svgComponents = computed((): FlowComponent[] => {
           valueLabel: '',
           animated: chargePoint1Discharging.value,
           animatedReverse: chargePoint1Charging.value,
-          powerCategory: chargePoint1PowerCategory.value,
         },
         position: {
           row: 2,
@@ -416,7 +420,6 @@ const svgComponents = computed((): FlowComponent[] => {
               'fill-' + chargePoint1ConnectedVehicleChargeMode.value.class,
             animated: chargePoint1Discharging.value,
             animatedReverse: chargePoint1Charging.value,
-            powerCategory: chargePoint1PowerCategory.value,
           },
           position: {
             row: 3,
@@ -428,6 +431,7 @@ const svgComponents = computed((): FlowComponent[] => {
           ],
           soc: (chargePoint1ConnectedVehicleSoc.value.value?.soc || 0) / 100,
           icon: 'icons/owbVehicle.svg',
+          powerValue: Number(chargePoint1Power.value.value),
         });
       }
 
@@ -440,7 +444,6 @@ const svgComponents = computed((): FlowComponent[] => {
             valueLabel: '',
             animated: chargePoint2Discharging.value,
             animatedReverse: chargePoint2Charging.value,
-            powerCategory: chargePoint2PowerCategory.value,
           },
           position: {
             row: 2,
@@ -465,7 +468,6 @@ const svgComponents = computed((): FlowComponent[] => {
               'fill-' + chargePoint2ConnectedVehicleChargeMode.value.class,
             animated: chargePoint2Discharging.value,
             animatedReverse: chargePoint2Charging.value,
-            powerCategory: chargePoint2PowerCategory.value,
           },
           position: {
             row: 3,
@@ -477,6 +479,7 @@ const svgComponents = computed((): FlowComponent[] => {
           ],
           soc: (chargePoint2ConnectedVehicleSoc.value.value?.soc || 0) / 100,
           icon: 'icons/owbVehicle.svg',
+          powerValue: Number(chargePoint2Power.value.value),
         });
       }
 
@@ -489,7 +492,6 @@ const svgComponents = computed((): FlowComponent[] => {
             valueLabel: '',
             animated: chargePoint3Discharging.value,
             animatedReverse: chargePoint3Charging.value,
-            powerCategory: chargePoint3PowerCategory.value,
           },
           position: { row: 2, column: 2 },
           label: [
@@ -511,7 +513,6 @@ const svgComponents = computed((): FlowComponent[] => {
               'fill-' + chargePoint3ConnectedVehicleChargeMode.value.class,
             animated: chargePoint3Discharging.value,
             animatedReverse: chargePoint3Charging.value,
-            powerCategory: chargePoint3PowerCategory.value,
           },
           position: {
             row: 3,
@@ -523,6 +524,7 @@ const svgComponents = computed((): FlowComponent[] => {
           ],
           soc: (chargePoint3ConnectedVehicleSoc.value.value?.soc || 0) / 100,
           icon: 'icons/owbVehicle.svg',
+          powerValue: Number(chargePoint3Power.value.value),
         });
       }
     } else {
@@ -534,7 +536,6 @@ const svgComponents = computed((): FlowComponent[] => {
           valueLabel: '',
           animated: chargePointSumDischarging.value,
           animatedReverse: chargePointSumCharging.value,
-          powerCategory: chargePointSumPowerCategory.value,
         },
         position: { row: 2, column: 1 },
         label: [
@@ -548,6 +549,29 @@ const svgComponents = computed((): FlowComponent[] => {
   }
   return components;
 });
+
+onMounted(() => {
+  animateDashes();
+});
+
+onUnmounted(() => {
+  if (animationFrameId !== null) {
+    cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+  }
+});
+
+watch(
+  svgComponents,
+  (components) => {
+    components.forEach((component) => {
+      if (!(component.id in dashOffsets.value)) {
+        dashOffsets.value[component.id] = 0;
+      }
+    });
+  },
+  { immediate: true, deep: true },
+);
 
 const calculatedRows = computed(() => {
   if (connectedChargePoints.value?.length > 0) {
@@ -635,16 +659,12 @@ const svgRectWidth = computed(
         <path
           v-for="component in svgComponents"
           :key="component.id"
+          :id="`flow-path-${component.id}`"
           :class="[
             component.class.base,
             { animated: component.class.animated },
             { animatedReverse: component.class.animatedReverse },
           ]"
-          :style="{
-            '--animation-duration': getAnimationDuration(
-              component.powerValue || 0,
-            ),
-          }"
           :d="
             component.class.base !== 'vehicle'
               ? `M ${calcFlowLineAnchorX(component.position.column)}, ` +
@@ -819,41 +839,11 @@ path {
 path.animated {
   stroke: var(--q-white);
   stroke-dasharray: 5;
-  animation: dash var(--animation-duration, 1.5s) linear infinite;
 }
 
 path.animatedReverse {
   stroke: var(--q-white);
   stroke-dasharray: 5;
-  animation: dashReverse var(--animation-duration, 1.5s) linear infinite;
-}
-
-path.medium.animated,
-path.medium.animatedReverse {
-  animation-duration: 1.5s;
-}
-
-path.large.animated,
-path.large.animatedReverse {
-  animation-duration: 0.6s;
-}
-
-@keyframes dash {
-  from {
-    stroke-dashoffset: 10;
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-@keyframes dashReverse {
-  from {
-    stroke-dashoffset: 0;
-  }
-  to {
-    stroke-dashoffset: 10;
-  }
 }
 
 path.animated.grid {
