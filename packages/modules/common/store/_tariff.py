@@ -70,9 +70,9 @@ class PriceValueStore(ValueStore[TariffState]):
             raise ValueError("Keine Preise für konfigurierten Netzentgelttarif vorhanden.")
         flexible_tariff_prices = {float(k): v for k, v in flexible_tariff_prices.items()}
         grid_fee_prices = {float(k): v for k, v in grid_fee_prices.items()}
-        if flexible_tariff_prices is None and grid_fee_prices is not None:
+        if len(flexible_tariff_prices) == 0 and len(grid_fee_prices) > 0:
             return grid_fee_prices
-        if grid_fee_prices is None and flexible_tariff_prices is not None:
+        if len(grid_fee_prices) == 0 and len(flexible_tariff_prices) > 0:
             return flexible_tariff_prices
 
         grid_fee_keys = sorted(grid_fee_prices.keys())

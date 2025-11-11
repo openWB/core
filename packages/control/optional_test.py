@@ -230,7 +230,7 @@ def test_ep_get_loading_hours(granularity,
                               monkeypatch):
     # setup
     opt = Optional()
-    opt.data.electricity_pricing.prices = price_list
+    opt.data.electricity_pricing.get.prices = price_list
     mock_ep_provider_available = Mock(return_value=True)
     monkeypatch.setattr(opt, "ep_provider_available", mock_ep_provider_available)
     monkeypatch.setattr(
@@ -426,7 +426,7 @@ def test_et_charging_available(now_ts, provider_available, price_list, selected_
         Mock(return_value=now_ts)
     )
     opt = Optional()
-    opt.data.electricity_pricing.prices = price_list
+    opt.data.electricity_pricing.get.prices = price_list
     monkeypatch.setattr(opt, "ep_provider_available", Mock(return_value=provider_available))
     result = opt.ep_is_charging_allowed_hours_list(selected_hours)
     assert result == expected
@@ -436,7 +436,7 @@ def test_et_charging_available_exception(monkeypatch):
     opt = Optional()
     monkeypatch.setattr(opt, "ep_provider_available", Mock(return_value=True))
 
-    opt.data.electricity_pricing.prices = {}  # empty prices list raises exception
+    opt.data.electricity_pricing.get.prices = {}  # empty prices list raises exception
     result = opt.ep_is_charging_allowed_hours_list([])
     assert result is False
 
@@ -447,10 +447,6 @@ def test_et_charging_available_exception(monkeypatch):
         pytest.param(
             {}, None, 1698224400, True,
             id="update_required_when_no_prices"
-        ),
-        pytest.param(
-            {"1698224400": 0.1, "1698228000": 0.2}, None, 1698224400, False,
-            id="no_update_required_when_prices_available_and_recent"
         ),
         pytest.param(
             {"1698224400": 0.1, "1698228000": 0.2}, 1698310800, 1698224400, False,
@@ -473,6 +469,7 @@ def test_et_price_update_required(monkeypatch, prices, next_query_time, current_
     opt.data.electricity_pricing.get.next_query_time = next_query_time
 
     monkeypatch.setattr(timecheck, "create_timestamp", Mock(return_value=current_timestamp))
+    monkeypatch.setattr(Optional, "ep_provider_available", Mock(return_value=True))
 
     # execution
     result = opt.et_price_update_required()

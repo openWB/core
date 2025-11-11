@@ -41,7 +41,9 @@ class Optional(OcppMixin):
 
     @flexible_tariff_module.setter
     def flexible_tariff_module(self, value: TypingOptional[ConfigurableFlexibleTariff]):
-        if self._flexible_tariff_module.config.name == value.config.name:
+        if (value is None or
+                (self._flexible_tariff_module and value and
+                self._flexible_tariff_module.config.name != value.config.name)):
             self.data.electricity_pricing.flexible_tariff.get = PricingGet()
             Pub().pub("openWB/set/optional/ep/flexible_tariff/get/fault_state", 0)
             Pub().pub("openWB/set/optional/ep/flexible_tariff/get/fault_str", NO_ERROR)
@@ -59,7 +61,8 @@ class Optional(OcppMixin):
 
     @grid_fee_module.setter
     def grid_fee_module(self, value: TypingOptional[ConfigurableGridFee]):
-        if self._grid_fee_module.config.name == value.config.name:
+        if (value is None or
+                (self._grid_fee_module and value and self._grid_fee_module.config.name != value.config.name)):
             self.data.electricity_pricing.grid_fee.get = PricingGet()
             Pub().pub("openWB/set/optional/ep/grid_fee/get/fault_state", 0)
             Pub().pub("openWB/set/optional/ep/grid_fee/get/fault_str", NO_ERROR)
@@ -259,44 +262,6 @@ class Optional(OcppMixin):
                 next_query_formatted = datetime.fromtimestamp(
                     self.data.electricity_pricing.get.next_query_time).strftime("%Y%m%d-%H:%M:%S")
                 log.info(f'Nächster Abruf der Strompreise {next_query_formatted}.')
-                return False
-        return False
-
-    def et_price_update_required(self) -> bool:
-        def is_tomorrow(last_timestamp: str) -> bool:
-            return (day_of(date=datetime.now()) < day_of(datetime.fromtimestamp(int(last_timestamp)))
-                    or day_of(date=datetime.now()).hour < TARIFF_UPDATE_HOUR)
-
-        def day_of(date: datetime) -> datetime:
-            return date.replace(hour=0, minute=0, second=0, microsecond=0)
-
-        def get_last_entry_time_stamp() -> str:
-            last_known_timestamp = "0"
-            if self.data.et.get.prices is not None:
-                last_known_timestamp = max(self.data.et.get.prices)
-            return last_known_timestamp
-        if len(self.data.et.get.prices) == 0:
-            return True
-        if self.data.et.get.next_query_time is None:
-            next_query_time = datetime.fromtimestamp(int(max(self.data.et.get.prices))).replace(
-                hour=TARIFF_UPDATE_HOUR, minute=0, second=0
-            ) + timedelta(
-                # aktually ET providers issue next day prices up to half an hour earlier then 14:00
-                # reduce serverload on their site by trying early and randomizing query time
-                minutes=random.randint(1, 7) * -5
-            )
-            self.data.et.get.next_query_time = next_query_time.timestamp()
-            Pub().pub("openWB/set/optional/et/get/next_query_time", self.data.et.get.next_query_time)
-        if is_tomorrow(get_last_entry_time_stamp()):
-            if timecheck.create_timestamp() > self.data.et.get.next_query_time:
-                log.info(
-                    f'Wartezeit {datetime.fromtimestamp(self.data.et.get.next_query_time).strftime("%Y%m%d-%H:%M:%S")}'
-                    ' abgelaufen, Strompreise werden abgefragt')
-                return True
-            else:
-                log.info(
-                    'Nächster Abruf der Strompreise '
-                    f'{datetime.fromtimestamp(self.data.et.get.next_query_time).strftime("%Y%m%d-%H:%M:%S")}.')
                 return False
         return False
 

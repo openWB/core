@@ -859,12 +859,10 @@ class SetData:
                     self._validate_value(msg, int, [(0, 2)])
                 elif re.search(f"{pricing_regex}get/fault_str$", msg.topic) is not None:
                     self._validate_value(msg, str)
-            elif "openWB/set/optional/et/get/prices" in msg.topic:
-                self._validate_value(msg, "json")
-            elif "openWB/set/optional/et/get/next_query_time" in msg.topic:
-                self._validate_value(msg, float)
             elif "openWB/set/optional/ep/get/prices" in msg.topic:
                 self._validate_value(msg, "json")
+            elif "openWB/set/optional/ep/get/next_query_time" in msg.topic:
+                self._validate_value(msg, float)
             elif "module_update_completed" in msg.topic:
                 self._validate_value(msg, bool)
             elif "openWB/set/optional/ocpp/config" in msg.topic:
