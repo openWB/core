@@ -469,8 +469,8 @@ def test_et_charging_available_exception(monkeypatch):
 def test_et_price_update_required(monkeypatch, prices, next_query_time, current_timestamp, expected):
     # setup
     opt = Optional()
-    opt.data.electricity_pricing.prices = prices
-    opt.data.electricity_pricing.next_query_time = next_query_time
+    opt.data.electricity_pricing.get.prices = prices
+    opt.data.electricity_pricing.get.next_query_time = next_query_time
 
     monkeypatch.setattr(timecheck, "create_timestamp", Mock(return_value=current_timestamp))
 

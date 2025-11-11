@@ -63,7 +63,11 @@ class PriceValueStore(ValueStore[TariffState]):
 
     def sum_prices(self):
         flexible_tariff_prices = data.data.optional_data.data.electricity_pricing.flexible_tariff.get.prices
+        if len(flexible_tariff_prices) == 0 and data.data.optional_data.flexible_tariff_module is not None:
+            raise ValueError("Keine Preise für konfigurierten dynamischen Stromtarif vorhanden.")
         grid_fee_prices = data.data.optional_data.data.electricity_pricing.grid_fee.get.prices
+        if len(grid_fee_prices) == 0 and data.data.optional_data.grid_fee_module is not None:
+            raise ValueError("Keine Preise für konfigurierten Netzentgelttarif vorhanden.")
         flexible_tariff_prices = {float(k): v for k, v in flexible_tariff_prices.items()}
         grid_fee_prices = {float(k): v for k, v in grid_fee_prices.items()}
         if flexible_tariff_prices is None and grid_fee_prices is not None:
