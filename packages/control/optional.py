@@ -135,11 +135,11 @@ class Optional(OcppMixin):
             else:
                 timestamp, first = next(iter(prices.items()))
                 price_timeslot_seconds = self.__calculate_price_timeslot_length(prices)
-                now = int(timecheck.create_timestamp())
+                now = timecheck.create_timestamp()
                 prices = {
                     price[0]: price[1]
                     for price in prices.items()
-                    if int(price[0]) > now - (price_timeslot_seconds - 1)
+                    if float(price[0]) > now - (price_timeslot_seconds - 1)
                 }
                 self.data.electricity_pricing.get.prices = prices
                 timestamp, first = next(iter(prices.items()))
@@ -148,16 +148,16 @@ class Optional(OcppMixin):
             raise Exception("Kein Anbieter für strompreisbasiertes Laden konfiguriert.")
 
     def __get_current_timeslot_start(self, prices: dict[str, float]) -> int:
-        timestamp, first = self.__get_first_entry(prices)
-        return int(timestamp)
+        timestamp = self.__get_first_entry(prices)[0]
+        return float(timestamp)
 
     def ep_get_current_price(self, prices: dict[str, float]) -> float:
-        timestamp, first = self.__get_first_entry(prices)
+        first = self.__get_first_entry(prices)[1]
         return first
 
     def __calculate_price_timeslot_length(self, prices: dict) -> int:
         first_timestamps = list(prices.keys())[:2]
-        return int(first_timestamps[1]) - int(first_timestamps[0])
+        return float(first_timestamps[1]) - float(first_timestamps[0])
 
     def ep_get_loading_hours(self, duration: float, remaining_time: float) -> List[int]:
         """
@@ -176,15 +176,15 @@ class Optional(OcppMixin):
         try:
             prices = self.data.electricity_pricing.get.prices
             price_timeslot_seconds = self.__calculate_price_timeslot_length(prices)
-            now = int(timecheck.create_timestamp())
+            now = timecheck.create_timestamp()
             price_candidates = {
                 timestamp: price
                 for timestamp, price in prices.items()
                 if (
                     # is current timeslot or futur
-                    int(timestamp) + price_timeslot_seconds > now and
+                    float(timestamp) + price_timeslot_seconds > now and
                     # ends before plan target time
-                    not int(timestamp) >= now + remaining_time
+                    not float(timestamp) >= now + remaining_time
                 )
             }
             log.debug("%s Preis-Kandidaten in %s Sekunden zwischen %s Uhr und %s Uhr von %s Uhr bis %s Uhr",
@@ -192,15 +192,15 @@ class Optional(OcppMixin):
                       duration,
                       datetime.fromtimestamp(now),
                       datetime.fromtimestamp(now + remaining_time),
-                      datetime.fromtimestamp(int(min(price_candidates))),
-                      datetime.fromtimestamp(int(max(price_candidates))+price_timeslot_seconds))
+                      datetime.fromtimestamp(float(min(price_candidates))),
+                      datetime.fromtimestamp(float(max(price_candidates))+price_timeslot_seconds))
             ordered_by_date_reverse = reversed(sorted(price_candidates.items(), key=lambda x: x[0]))
             ordered_by_price = sorted(ordered_by_date_reverse, key=lambda x: x[1])
-            selected_time_slots = {int(i[0]): float(i[1])
+            selected_time_slots = {float(i[0]): float(i[1])
                                    for i in ordered_by_price[:1 + ceil(duration/price_timeslot_seconds)]}
             selected_lenght = (
                 price_timeslot_seconds * (len(selected_time_slots)-1) -
-                (int(now) - min(selected_time_slots))
+                (float(now) - min(selected_time_slots))
             )
             return sorted(selected_time_slots.keys()
                           if not (min(selected_time_slots) > now or duration <= selected_lenght)
@@ -213,7 +213,7 @@ class Optional(OcppMixin):
 
     def et_price_update_required(self) -> bool:
         def is_tomorrow(last_timestamp: str) -> bool:
-            return (day_of(date=datetime.now()) < day_of(datetime.fromtimestamp(int(last_timestamp)))
+            return (day_of(date=datetime.now()) < day_of(datetime.fromtimestamp(float(last_timestamp)))
                     or day_of(date=datetime.now()).hour < TARIFF_UPDATE_HOUR)
 
         def day_of(date: datetime) -> datetime:
@@ -238,6 +238,7 @@ class Optional(OcppMixin):
             )
             self.data.electricity_pricing.get.next_query_time = next_query_time.timestamp()
             Pub().pub("openWB/set/optional/ep/get/next_query_time", self.data.electricity_pricing.get.next_query_time)
+            return True
         if is_tomorrow(get_last_entry_time_stamp()):
             if timecheck.create_timestamp() > self.data.electricity_pricing.get.next_query_time:
                 next_query_formatted = datetime.fromtimestamp(
