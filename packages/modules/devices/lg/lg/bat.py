@@ -26,9 +26,12 @@ class LgBat(AbstractBat):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self, response) -> None:
-        power = float(response["statistics"]["batconv_power"])
-        if response["direction"]["is_battery_discharging_"] == "1":
-            power = power * -1
+        if 'batconv_power' in response['statistics']:
+            power = float(response["statistics"]["batconv_power"])
+            if response["direction"]["is_battery_discharging_"] == "1":
+                power = power * -1
+        else:
+            power = float(response["statistics"]["batt_conv_power_01kW"]) * -100  # Home 15
         try:
             soc = float(response["statistics"]["bat_user_soc"])
         except ValueError:
