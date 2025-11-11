@@ -8,9 +8,13 @@ from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.solarmax.solarmax import inverter
+from modules.devices.solarmax.solarmax.inverter import SolarmaxInverter
 from modules.devices.solarmax.solarmax.bat import SolarmaxBat
-from modules.devices.solarmax.solarmax.config import (
-    Solarmax, SolarmaxBatSetup, SolarmaxConfiguration, SolarmaxInverterSetup)
+from modules.devices.solarmax.solarmax.counter_maxstorage import SolarmaxMsCounter
+from modules.devices.solarmax.solarmax.inverter_maxstorage import SolarmaxMsInverter
+from modules.devices.solarmax.solarmax.config import (Solarmax, SolarmaxConfiguration,
+                                                      SolarmaxBatSetup, SolarmaxMsCounterSetup,
+                                                      SolarmaxInverterSetup, SolarmaxMsInverterSetup)
 
 log = logging.getLogger(__name__)
 
@@ -24,9 +28,18 @@ def create_device(device_config: Solarmax):
 
     def create_inverter_component(component_config: SolarmaxInverterSetup):
         nonlocal client
-        return inverter.SolarmaxInverter(component_config, device_id=device_config.id, client=client)
+        return SolarmaxInverter(component_config, device_id=device_config.id, client=client)
 
-    def update_components(components: Iterable[Union[SolarmaxBat, inverter.SolarmaxInverter]]):
+    def create_inverter_ms_component(component_config: SolarmaxMsInverterSetup):
+        nonlocal client
+        return SolarmaxMsInverter(component_config, device_id=device_config.id, client=client)
+
+    def create_counter_ms_component(component_config: SolarmaxMsCounterSetup):
+        nonlocal client
+        return SolarmaxMsCounter(component_config, device_id=device_config.id, client=client)
+
+    def update_components(components: Iterable[Union[SolarmaxBat, SolarmaxInverter,
+                                                     SolarmaxMsCounter, SolarmaxMsInverter]]):
         nonlocal client
         with client:
             for component in components:
