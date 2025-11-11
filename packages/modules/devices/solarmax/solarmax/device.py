@@ -56,6 +56,9 @@ def create_device(device_config: Solarmax):
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
             inverter=create_inverter_component,
+            counter_maxstorage=create_counter_ms_component,
+            inverter_maxstorage=create_inverter_ms_component,
+
         ),
         component_updater=MultiComponentUpdater(update_components)
     )
