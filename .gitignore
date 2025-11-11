@@ -14,7 +14,7 @@ data/log/*
 data/charge_log/*
 data/daily_log/*
 data/monthly_log/*
-data/backup/*.tar.gz
+data/backup/*.openwb-backup
 data/restore/*.tar.gz
 data/data_migration/*.tar.gz
 ramdisk/*
