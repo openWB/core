@@ -2622,7 +2622,7 @@ class UpdateConfig:
 
     def upgrade_datastore_102(self) -> None:
         def upgrade(topic: str, payload) -> None:
-            if "openWB/optional/et/provider"== topic:
+            if "openWB/optional/et/provider" == topic:
                 return {"openWB/optional/ep/flexible_tariff/provider": decode_payload(payload)}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 103)
