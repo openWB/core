@@ -28,20 +28,43 @@ class Optional(OcppMixin):
         try:
             self.data = OptionalData()
             # guarded et_module stored in a private attribute
-            self.et_module: TypingOptional[ConfigurableElectricityTariff] = None
+            self._et_module: TypingOptional[ConfigurableElectricityTariff] = None
             self.monitoring_module: ConfigurableMonitoring = None
             self.data.dc_charging = hardware_configuration.get_hardware_configuration_setting("dc_charging")
             Pub().pub("openWB/optional/dc_charging", self.data.dc_charging)
         except Exception:
             log.exception("Fehler im Optional-Modul")
 
+    @property
+    def et_module(self) -> TypingOptional[ConfigurableElectricityTariff]:
+        """Getter for the electricity tariff module (may be None)."""
+        return self._et_module
+
+    @et_module.setter
+    def et_module(self, value: TypingOptional[ConfigurableElectricityTariff]):
+        """Setter with basic type-guarding and logging.
+
+        Accepts either None or a ConfigurableElectricityTariff instance. Logs when set/cleared.
+        """
+        if self._et_module and (value is None or self._et_module.config.name == value.config.name):
+            log.debug("Replacing existing et_module on Optional not allowed!")
+        else:
+            if value is not None and not isinstance(value, ConfigurableElectricityTariff):
+                raise TypeError("et_module must be a ConfigurableElectricityTariff instance or None")
+            self._et_module = value
+            if value is not None:
+                log.info("et_module set on Optional: %s", value.config.name)
+                self.et_get_prices()
+            else:
+                log.info("et_module cleared in Optional")
+
     def monitoring_start(self):
         if self.monitoring_module is not None:
             self.monitoring_module.start_monitoring()
 
     def monitoring_stop(self):
-        if self.mon_module is not None:
-            self.mon_module.stop_monitoring()
+        if self.monitoring_module is not None:
+            self.monitoring_module.stop_monitoring()
 
     def et_provider_available(self) -> bool:
         return self.et_module is not None
