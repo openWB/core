@@ -72,7 +72,7 @@ class SolarmaxBat(AbstractBat):
             self.__tcp_client.write_registers(141, [power_value], data_type=ModbusDataType.INT_16, unit=unit)
 
     def power_limit_controllable(self) -> bool:
-        return True
+        return self.component_config.configuration.power_limit_controllable
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=SolarmaxBatSetup)

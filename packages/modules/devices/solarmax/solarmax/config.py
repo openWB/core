@@ -24,8 +24,8 @@ class Solarmax:
 
 
 class SolarmaxMsCounterConfiguration:
-    def __init__(self):
-        pass
+    def __init__(self, modbus_id: int = 1):
+        self.modbus_id = modbus_id
 
 
 class SolarmaxMsCounterSetup(ComponentSetup[SolarmaxMsCounterConfiguration]):
@@ -38,8 +38,9 @@ class SolarmaxMsCounterSetup(ComponentSetup[SolarmaxMsCounterConfiguration]):
 
 
 class SolarmaxBatConfiguration:
-    def __init__(self, modbus_id: int = 1):
+    def __init__(self, modbus_id: int = 1, power_limit_controllable: bool = False):
         self.modbus_id = modbus_id
+        self.power_limit_controllable = power_limit_controllable
 
 
 class SolarmaxBatSetup(ComponentSetup[SolarmaxBatConfiguration]):
@@ -58,7 +59,7 @@ class SolarmaxMsInverterConfiguration:
 
 class SolarmaxMsInverterSetup(ComponentSetup[SolarmaxMsInverterConfiguration]):
     def __init__(self,
-                 name: str = "Solarmax MAX.STORAGE / MAX.STORAGE UltimateWechselrichter",
+                 name: str = "Solarmax MAX.STORAGE / MAX.STORAGE Ultimate Wechselrichter",
                  type: str = "inverter_maxstorage",
                  id: int = 0,
                  configuration: SolarmaxMsInverterConfiguration = None) -> None:
