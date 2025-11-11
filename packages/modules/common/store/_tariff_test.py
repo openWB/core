@@ -11,7 +11,7 @@ from modules.common.store._tariff import PriceValueStore
 
 
 def make_prices(count, step, base):
-    start = datetime.datetime(2025, 10, 22, 12, 0)
+    start = datetime.datetime.fromtimestamp(1761127200.0)  # 2025-10-22 12:00
     # json.loads macht keys immer zu str
     return {str((start + timedelta(minutes=step*i)).timestamp()): base+i for i in range(count)}
 
