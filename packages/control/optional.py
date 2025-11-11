@@ -43,15 +43,11 @@ class Optional(OcppMixin):
     def flexible_tariff_module(self, value: TypingOptional[ConfigurableFlexibleTariff]):
         if (value is None or
                 (self._flexible_tariff_module and value and
-                self._flexible_tariff_module.config.name != value.config.name)):
+                 self._flexible_tariff_module.config.name != value.config.name)):
             self.data.electricity_pricing.flexible_tariff.get = PricingGet()
-            Pub().pub("openWB/set/optional/ep/flexible_tariff/get/fault_state", 0)
-            Pub().pub("openWB/set/optional/ep/flexible_tariff/get/fault_str", NO_ERROR)
-            Pub().pub("openWB/set/optional/ep/flexible_tariff/get/prices", {})
+            self._reset_state(self.data.electricity_pricing.flexible_tariff, "flexible_tariff")
         self._flexible_tariff_module = value
-        if value is None:
-            self._reset_fault_states(self.data.electricity_pricing.flexible_tariff, "flexible_tariff")
-        else:
+        if value:
             self.data.electricity_pricing.get.next_query_time = None
             Pub().pub("openWB/set/optional/ep/get/next_query_time", None)
 
@@ -64,22 +60,20 @@ class Optional(OcppMixin):
         if (value is None or
                 (self._grid_fee_module and value and self._grid_fee_module.config.name != value.config.name)):
             self.data.electricity_pricing.grid_fee.get = PricingGet()
-            Pub().pub("openWB/set/optional/ep/grid_fee/get/fault_state", 0)
-            Pub().pub("openWB/set/optional/ep/grid_fee/get/fault_str", NO_ERROR)
-            Pub().pub("openWB/set/optional/ep/grid_fee/get/prices", {})
+            self._reset_state(self.data.electricity_pricing.grid_fee, "grid_fee")
         self._grid_fee_module = value
-        if value is None:
-            self._reset_fault_states(self.data.electricity_pricing.grid_fee, "grid_fee")
-        else:
+        if value:
             self.data.electricity_pricing.get.next_query_time = None
             Pub().pub("openWB/set/optional/ep/get/next_query_time", None)
 
-    def _reset_fault_states(self, module: Union[FlexibleTariff, GridFee], module_name: str):
+    def _reset_state(self, module: Union[FlexibleTariff, GridFee], module_name: str):
         if (module.get.fault_state != 0 or module.get.fault_str != NO_ERROR):
             module.get.fault_state = 0
             module.get.fault_str = NO_ERROR
             Pub().pub(f"openWB/set/optional/ep/{module_name}/get/fault_state", 0)
             Pub().pub(f"openWB/set/optional/ep/{module_name}/get/fault_str", NO_ERROR)
+        Pub().pub(f"openWB/set/optional/ep/{module_name}/get/prices", {})
+        Pub().pub("openWB/set/optional/ep/get/prices", {})
 
     def monitoring_start(self):
         if self.monitoring_module is not None:
@@ -107,7 +101,7 @@ class Optional(OcppMixin):
         """
         try:
             if self.ep_provider_available():
-                return self.__get_current_timeslot_start(self.data.electricity_pricing.get.prices) in selected_hours
+                return self.__get_current_timeslot_start() in selected_hours
             else:
                 log.info("Prüfe strompreisbasiertes Laden: Nicht konfiguriert")
                 return False
@@ -125,7 +119,7 @@ class Optional(OcppMixin):
         """
         try:
             if self.ep_provider_available():
-                current_price = self.ep_get_current_price(prices=self.data.electricity_pricing.get.prices)
+                current_price = self.ep_get_current_price()
                 log.info("Prüfe strompreisbasiertes Laden mit Preisgrenze %.5f €/kWh, aktueller Preis: %.5f €/kWh",
                          max_price * AS_EURO_PER_KWH,
                          current_price * AS_EURO_PER_KWH
@@ -140,7 +134,7 @@ class Optional(OcppMixin):
             log.exception("Fehler im Optional-Modul: %s", e)
             return False
 
-    def __get_first_entry(self, prices: dict[str, float]) -> tuple[str, float]:
+    def __get_first_entry(self) -> tuple[str, float]:
         if self.ep_provider_available():
             prices = self.data.electricity_pricing.get.prices
             if prices is None or len(prices) == 0:
@@ -160,12 +154,12 @@ class Optional(OcppMixin):
         else:
             raise Exception("Kein Anbieter für strompreisbasiertes Laden konfiguriert.")
 
-    def __get_current_timeslot_start(self, prices: dict[str, float]) -> int:
-        timestamp = self.__get_first_entry(prices)[0]
+    def __get_current_timeslot_start(self) -> int:
+        timestamp = self.__get_first_entry()[0]
         return float(timestamp)
 
-    def ep_get_current_price(self, prices: dict[str, float]) -> float:
-        first = self.__get_first_entry(prices)[1]
+    def ep_get_current_price(self) -> float:
+        first = self.__get_first_entry()[1]
         return first
 
     def __calculate_price_timeslot_length(self, prices: dict) -> int:
