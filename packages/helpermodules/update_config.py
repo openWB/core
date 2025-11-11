@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 102
+    DATASTORE_VERSION = 103
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -2619,3 +2619,10 @@ class UpdateConfig:
                 Pub().pub(topic, payload)
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 102)
+
+    def upgrade_datastore_102(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if "openWB/optional/et/provider"== topic:
+                return {"openWB/optional/ep/flexible_tariff/provider": decode_payload(payload)}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 103)
