@@ -863,6 +863,8 @@ class SetData:
                 self._validate_value(msg, "json")
             elif "openWB/set/optional/ep/get/next_query_time" in msg.topic:
                 self._validate_value(msg, float)
+            elif "openWB/set/optional/ep/configured" in msg.topic:
+                self._validate_value(msg, bool)
             elif "module_update_completed" in msg.topic:
                 self._validate_value(msg, bool)
             elif "openWB/set/optional/ocpp/config" in msg.topic:

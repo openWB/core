@@ -50,6 +50,7 @@ class Optional(OcppMixin):
         if value:
             self.data.electricity_pricing.get.next_query_time = None
             Pub().pub("openWB/set/optional/ep/get/next_query_time", None)
+        self._set_ep_configured()
 
     @property
     def grid_fee_module(self) -> TypingOptional[ConfigurableGridFee]:
@@ -65,6 +66,15 @@ class Optional(OcppMixin):
         if value:
             self.data.electricity_pricing.get.next_query_time = None
             Pub().pub("openWB/set/optional/ep/get/next_query_time", None)
+        self._set_ep_configured()
+
+    def _set_ep_configured(self):
+        if self._grid_fee_module or self._flexible_tariff_module:
+            self.data.electricity_pricing.configured = True
+            Pub().pub("openWB/set/optional/ep/configured", True)
+        else:
+            self.data.electricity_pricing.configured = False
+            Pub().pub("openWB/set/optional/ep/configured", False)
 
     def _reset_state(self, module: Union[FlexibleTariff, GridFee], module_name: str):
         if (module.get.fault_state != 0 or module.get.fault_str != NO_ERROR):
@@ -83,9 +93,6 @@ class Optional(OcppMixin):
         if self.monitoring_module is not None:
             self.monitoring_module.stop_monitoring()
 
-    def ep_provider_available(self) -> bool:
-        return self.flexible_tariff_module is not None or self.grid_fee_module is not None
-
     def ep_is_charging_allowed_hours_list(self, selected_hours: list[int]) -> bool:
         """ prüft, ob das strompreisbasiertes Laden aktiviert und ein günstiger Zeitpunkt ist.
 
@@ -100,7 +107,7 @@ class Optional(OcppMixin):
         False: Der aktuelle Zeitpunkt liegt in keinem günstigen Zeitslot
         """
         try:
-            if self.ep_provider_available():
+            if self.data.electricity_pricing.configured:
                 return self.__get_current_timeslot_start() in selected_hours
             else:
                 log.info("Prüfe strompreisbasiertes Laden: Nicht konfiguriert")
@@ -118,7 +125,7 @@ class Optional(OcppMixin):
         False: Preis liegt darüber
         """
         try:
-            if self.ep_provider_available():
+            if self.data.electricity_pricing.configured:
                 current_price = self.ep_get_current_price()
                 log.info("Prüfe strompreisbasiertes Laden mit Preisgrenze %.5f €/kWh, aktueller Preis: %.5f €/kWh",
                          max_price * AS_EURO_PER_KWH,
@@ -135,7 +142,7 @@ class Optional(OcppMixin):
             return False
 
     def __get_first_entry(self) -> tuple[str, float]:
-        if self.ep_provider_available():
+        if self.data.electricity_pricing.configured:
             prices = self.data.electricity_pricing.get.prices
             if prices is None or len(prices) == 0:
                 raise Exception("Keine Preisdaten für strompreisbasiertes Laden vorhanden.")
@@ -178,7 +185,7 @@ class Optional(OcppMixin):
         ------
         list: Key des Dictionary (Unix-Sekunden der günstigen Zeit-Slots)
         """
-        if self.ep_provider_available() is False:
+        if self.data.electricity_pricing.configured is False:
             raise Exception("Kein Anbieter für strompreisbasiertes Laden konfiguriert.")
         try:
             prices = self.data.electricity_pricing.get.prices
@@ -231,7 +238,8 @@ class Optional(OcppMixin):
             if self.data.electricity_pricing.get.prices is not None:
                 last_known_timestamp = max(self.data.electricity_pricing.get.prices)
             return last_known_timestamp
-        if self.ep_provider_available() is False:
+        self._set_ep_configured()
+        if self.data.electricity_pricing.configured is False:
             return False
         if len(self.data.electricity_pricing.get.prices) == 0:
             return True

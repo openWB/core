@@ -744,6 +744,8 @@ class SubData:
                     var.data.electricity_pricing.get.prices = decode_payload(msg.payload)
                 elif re.search("/optional/ep/get/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.electricity_pricing.get, msg)
+                elif re.search("/optional/ep/", msg.topic) is not None:
+                    self.set_json_payload_class(var.data.electricity_pricing, msg)
                 elif "module_update_completed" in msg.topic:
                     self.event_module_update_completed.set()
                 elif re.search("/optional/ocpp/", msg.topic) is not None:

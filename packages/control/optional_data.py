@@ -47,6 +47,7 @@ def electricity_pricing_get_factory() -> ElectricityPricingGet:
 
 @dataclass
 class ElectricityPricing:
+    configured: bool = False
     flexible_tariff: FlexibleTariff = field(default_factory=get_flexible_tariff_factory)
     grid_fee: GridFee = field(default_factory=get_grid_fee_factory)
     get: ElectricityPricingGet = field(default_factory=electricity_pricing_get_factory)
