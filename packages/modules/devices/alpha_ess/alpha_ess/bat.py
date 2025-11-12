@@ -61,10 +61,9 @@ class AlphaEssBat(AbstractBat):
         unit = self.__modbus_id
 
         if power_limit is None:
-            if self.last_mode is not None:
-                # Kein Powerlimit gefordert, externe Steuerung deaktivieren
-                log.debug("Keine Batteriesteuerung gefordert, deaktiviere externe Steuerung.")
-                self.__tcp_client.write_registers(2127, [0], data_type=ModbusDataType.UINT_16, unit=unit)
+            # Kein Powerlimit gefordert, externe Steuerung deaktivieren
+            log.debug("Keine Batteriesteuerung gefordert, deaktiviere externe Steuerung.")
+            self.__tcp_client.write_registers(2127, [0], data_type=ModbusDataType.UINT_16, unit=unit)
         elif power_limit <= 0:
             # AlphaESS kann die Entladung nur über den SoC verhindern (komplette Entladesperre)
             # Netzladung mit geringen Ziel SoC verhindert auch Entladung (Default 10%)
