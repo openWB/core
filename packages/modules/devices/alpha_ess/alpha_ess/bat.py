@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import TypedDict, Any
+from typing import TypedDict, Any, Optional
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
@@ -56,6 +56,30 @@ class AlphaEssBat(AbstractBat):
             exported=exported
         )
         self.store.set(bat_state)
+
+    def set_power_limit(self, power_limit: Optional[int]) -> None:
+        unit = self.__modbus_id
+
+        if power_limit is None:
+            if self.last_mode is not None:
+                # Kein Powerlimit gefordert, externe Steuerung deaktivieren
+                log.debug("Keine Batteriesteuerung gefordert, deaktiviere externe Steuerung.")
+                self.__tcp_client.write_registers(2127, [0], data_type=ModbusDataType.UINT_16, unit=unit)
+        elif power_limit <= 0:
+            # AlphaESS kann die Entladung nur über den SoC verhindern (komplette Entladesperre)
+            # Netzladung mit geringen Ziel SoC verhindert auch Entladung (Default 10%)
+            # Zeiten für Netzladung müssen im Wechselrichter aktiviert werden
+            log.debug("Aktive Batteriesteuerung vorhanden. Setze externe Steuerung.")
+            self.__tcp_client.write_registers(2127, [1], data_type=ModbusDataType.UINT_16, unit=unit)
+            self.__tcp_client.write_registers(2133, [10], data_type=ModbusDataType.UINT_16, unit=unit)
+        else:
+            # Aktive Ladung
+            log.debug("Aktive Batteriesteuerung vorhanden. Setze externe Steuerung.")
+            self.__tcp_client.write_registers(2127, [1], data_type=ModbusDataType.UINT_16, unit=unit)
+            self.__tcp_client.write_registers(2133, [100], data_type=ModbusDataType.UINT_16, unit=unit)
+
+    def power_limit_controllable(self) -> bool:
+        return True
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=AlphaEssBatSetup)
