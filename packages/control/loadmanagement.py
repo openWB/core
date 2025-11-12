@@ -6,6 +6,7 @@ from control import data
 from control.chargepoint.chargepoint import Chargepoint
 from control.counter import Counter
 from control.limiting_value import LimitingValue, LoadmanagementLimit
+from helpermodules.phase_handling import voltages_mean
 from modules.common.utils.component_parser import get_component_name_by_id
 
 
@@ -35,7 +36,7 @@ class Loadmanagement:
         limit = new_limit if new_limit.limiting_value is not None else limit
 
         available_currents, new_limit = self._limit_by_power(
-            counter, available_currents, cp.data.get.voltages, counter.data.set.raw_power_left, feed_in)
+            counter, available_currents, voltages_mean(cp.data.get.voltages), counter.data.set.raw_power_left, feed_in)
         limit = new_limit if new_limit.limiting_value is not None else limit
 
         if f"counter{counter.num}" == data.data.counter_all_data.get_evu_counter_str():
@@ -47,7 +48,7 @@ class Loadmanagement:
 
     def get_available_currents_surplus(self,
                                        missing_currents: List[float],
-                                       cp_voltages: List[float],
+                                       cp_voltage: float,
                                        counter: Counter,
                                        cp: Chargepoint,
                                        feed_in: int = 0) -> Tuple[List[float], LoadmanagementLimit]:
@@ -61,7 +62,7 @@ class Loadmanagement:
         limit = new_limit if new_limit.limiting_value is not None else limit
 
         available_currents, new_limit = self._limit_by_power(
-            counter, available_currents, cp_voltages, counter.data.set.surplus_power_left, feed_in)
+            counter, available_currents, cp_voltage, counter.data.set.surplus_power_left, feed_in)
         limit = new_limit if new_limit.limiting_value is not None else limit
 
         if f"counter{counter.num}" == data.data.counter_all_data.get_evu_counter_str():
@@ -94,20 +95,22 @@ class Loadmanagement:
     def _limit_by_power(self,
                         counter: Counter,
                         available_currents: List[float],
-                        cp_voltages: List[float],
+                        cp_voltage: float,
                         raw_power_left: Optional[float],
                         feed_in: Optional[float]) -> Tuple[List[float], LoadmanagementLimit]:
+        # Mittelwert der Spannungen verwenden, um Phasenverdrehung zu kompensieren
+        # (Probleme bei einphasig angeschlossenen Wallboxen)
         currents = available_currents.copy()
         limit = LoadmanagementLimit(None, None)
         if raw_power_left:
             if feed_in:
                 raw_power_left = raw_power_left - feed_in
                 log.debug(f"Verbleibende Leistung unter Berücksichtigung der Einspeisegrenze: {raw_power_left}W")
-            if sum([c * v for c, v in zip(available_currents, cp_voltages)]) > raw_power_left:
+            if sum([c * cp_voltage for c in available_currents]) > raw_power_left:
                 for i in range(0, 3):
                     try:
                         # Am meisten belastete Phase trägt am meisten zur Leistungsreduktion bei.
-                        currents[i] = available_currents[i] / sum(available_currents) * raw_power_left / cp_voltages[i]
+                        currents[i] = available_currents[i] / sum(available_currents) * raw_power_left / cp_voltage
                     except ZeroDivisionError:
                         # bei einphasig angeschlossenen Wallboxen ist die Spannung der anderen Phasen 0V
                         currents[i] = 0.0

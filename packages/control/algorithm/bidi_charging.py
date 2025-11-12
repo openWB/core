@@ -2,6 +2,7 @@ import logging
 from control import data
 from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE
 from control.algorithm.filter_chargepoints import get_chargepoints_by_mode
+from helpermodules.phase_handling import voltages_mean
 
 log = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ class Bidi:
                         for index in range(0, 3):
                             missing_currents[index] = cp.check_min_max_current(missing_currents[index],
                                                                                cp.data.get.phases_in_use)
-                    grid_counter.update_surplus_values_left(missing_currents, cp.data.get.voltages)
+                    grid_counter.update_surplus_values_left(missing_currents, voltages_mean(cp.data.get.voltages))
                     cp.data.set.current = missing_currents[0]
                     log.info(f"LP{cp.num}: Stromstärke {missing_currents}A")
                     preferenced_cps.pop(0)

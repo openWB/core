@@ -4,7 +4,7 @@ from typing import Optional
 
 from control import data
 from helpermodules import compatibility
-from helpermodules.phase_mapping import convert_cp_currents_to_evu_currents
+from helpermodules.phase_handling import convert_cp_currents_to_evu_currents
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentType
 from modules.common.fault_state import FaultState

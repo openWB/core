@@ -9,6 +9,7 @@ TEMPDIR=$(mktemp -d --tmpdir openwb_backup_XXXXXX)
 LOGDIR="$OPENWBBASEDIR/data/log"
 LOGFILE="$LOGDIR/backup.log"
 HOMEDIR="/home/openwb"
+KEYFILE="backup.key"
 VAR_LIB="/var/lib"
 
 # Mosquitto DB files to monitor
@@ -21,7 +22,7 @@ DB_FILES=(
 DB_TIMEOUT=5
 
 useExtendedFilename=$1
-FILENAMESUFFIX=".tar.gz"
+FILENAMESUFFIX=".openwb-backup"
 
 generate_filename() {
 	# generate filename
@@ -30,7 +31,7 @@ generate_filename() {
 	if ((useExtendedFilename == 1)); then
 		# only use characters supported in most OS!
 		# for Win see https://learn.microsoft.com/en-us/rest/api/storageservices/naming-and-referencing-shares--directories--files--and-metadata
-		FILENAME="openWB_backup_$(date +"%Y-%m-%d_%H-%M-%S")"
+		FILENAME="$(date +"%Y-%m-%d_%H-%M-%S")_$(<"$OPENWBBASEDIR"/web/version)"
 	else
 		FILENAME="backup"
 	fi
@@ -245,6 +246,20 @@ create_archive() {
 		gzip --verbose --suffix "$FILENAMESUFFIX" "$BACKUPFILE"
 	}
 
+	encrypt_backup() {
+		# encrypt backup file with gpg
+		if [[ -f "$HOMEDIR/$KEYFILE" ]]; then
+			echo "encrypting backup file"
+			gpg --batch --yes --passphrase-file "$HOMEDIR/$KEYFILE" \
+				--symmetric --cipher-algo AES256 "$BACKUPFILE$FILENAMESUFFIX"
+			echo "removing unencrypted backup file"
+			rm -v "$BACKUPFILE$FILENAMESUFFIX"
+			FILENAMESUFFIX="$FILENAMESUFFIX.gpg"
+		else
+			echo "No key found at '$HOMEDIR/$KEYFILE', skipping encryption!"
+		fi
+	}
+
 	fix_permissions() {
 		echo "setting permissions of new backup file"
 		sudo chown openwb:www-data "$BACKUPFILE$FILENAMESUFFIX"
@@ -254,6 +269,7 @@ create_archive() {
 	create_backup
 	calculate_checksums
 	cleanup_and_compress
+	encrypt_backup
 	fix_permissions
 }
 

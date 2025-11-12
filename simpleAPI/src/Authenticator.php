@@ -56,7 +56,7 @@ class Authenticator
     private function checkBearerToken()
     {
         $headers = $this->getAuthorizationHeader();
-        
+
         if (!$headers) {
             return false;
         }
@@ -113,7 +113,7 @@ class Authenticator
     private function validateToken($token)
     {
         $validTokens = $this->config['auth']['tokens'] ?? [];
-        
+
         foreach ($validTokens as $validToken) {
             if (hash_equals($validToken, $token)) {
                 return true;
@@ -129,7 +129,7 @@ class Authenticator
     private function validateCredentials($username, $password)
     {
         $users = $this->config['auth']['users'] ?? [];
-        
+
         if (!isset($users[$username])) {
             return false;
         }
@@ -160,10 +160,10 @@ class Authenticator
         } elseif (function_exists('apache_request_headers')) {
             $requestHeaders = apache_request_headers();
             $requestHeaders = array_combine(
-                array_map('ucwords', array_keys($requestHeaders)), 
+                array_map('ucwords', array_keys($requestHeaders)),
                 array_values($requestHeaders)
             );
-            
+
             if (isset($requestHeaders['Authorization'])) {
                 $headers = trim($requestHeaders['Authorization']);
             }
@@ -178,7 +178,7 @@ class Authenticator
     private function isHttps()
     {
         return (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ||
-               $_SERVER['SERVER_PORT'] == 443 ||
-               (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+            $_SERVER['SERVER_PORT'] == 443 ||
+            (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
     }
 }
