@@ -623,7 +623,7 @@ class ChargeTemplate:
                 def tomorrow(timestamp: int) -> str:
                     return 'morgen ' if end_of_today_timestamp() < timestamp else ''
                 hour_list = data.data.optional_data.et_get_loading_hours(
-                    selected_plan.duration, selected_plan.remaining_time)
+                    selected_plan.duration, selected_plan.duration + selected_plan.remaining_time)
 
                 log.debug(f"Günstige Ladezeiten: {hour_list}")
                 if data.data.optional_data.et_is_charging_allowed_hours_list(hour_list):
