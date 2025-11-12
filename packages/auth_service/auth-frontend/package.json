@@ -1,0 +1,45 @@
+{
+	"name": "openwb-auth-frontend",
+	"version": "0.0.1",
+	"description": "Authentication frontend for openWB",
+	"productName": "openWB Auth Frontend",
+	"author": "Lutz Bender <github@lutz-bender.de>",
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"lint": "eslint -c ./eslint.config.js \"./src*/**/*.{ts,js,cjs,mjs,vue}\"",
+		"format": "prettier --write \"**/*.{js,ts,vue,scss,html,md,json}\" --ignore-path .gitignore",
+		"test": "echo \"No test specified\" && exit 0",
+		"dev": "quasar dev",
+		"build": "quasar build",
+		"postinstall": "quasar prepare"
+	},
+	"dependencies": {
+		"axios": "^1.2.1",
+		"@quasar/extras": "^1.16.4",
+		"quasar": "^2.16.0",
+		"vue": "^3.5.22",
+		"vue-router": "^4.0.12"
+	},
+	"devDependencies": {
+		"@eslint/js": "^9.14.0",
+		"eslint": "^9.14.0",
+		"eslint-plugin-vue": "^10.4.0",
+		"globals": "^16.4.0",
+		"vue-tsc": "^3.0.7",
+		"@vue/eslint-config-typescript": "^14.4.0",
+		"vite-plugin-checker": "^0.11.0",
+		"vue-eslint-parser": "^10.2.0",
+		"@vue/eslint-config-prettier": "^10.1.0",
+		"prettier": "^3.3.3",
+		"@types/node": "^20.5.9",
+		"@quasar/app-vite": "^2.1.0",
+		"autoprefixer": "^10.4.2",
+		"typescript": "^5.9.2"
+	},
+	"engines": {
+		"node": "^28 || ^26 || ^24 || ^22 || ^20",
+		"npm": ">= 6.13.4",
+		"yarn": ">= 1.21.1"
+	}
+}
