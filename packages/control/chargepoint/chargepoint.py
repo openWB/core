@@ -36,7 +36,7 @@ from control.ev.ev import Ev
 from control import phase_switch
 from control.chargepoint.chargepoint_state import CHARGING_STATES, ChargepointState
 from control.text import BidiState
-from helpermodules.phase_mapping import convert_single_evu_phase_to_cp_phase
+from helpermodules.phase_handling import convert_single_evu_phase_to_cp_phase
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 from helpermodules.utils import thread_handler

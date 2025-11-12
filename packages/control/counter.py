@@ -17,7 +17,7 @@ from control.chargepoint.chargepoint_state import ChargepointState
 from dataclass_utils.factories import currents_list_factory, voltages_list_factory
 from helpermodules import timecheck
 from helpermodules.constants import NO_ERROR
-from helpermodules.phase_mapping import convert_cp_currents_to_evu_currents
+from helpermodules.phase_handling import convert_cp_currents_to_evu_currents
 from modules.common.fault_state import FaultStateLevel
 from modules.common.utils.component_parser import get_component_name_by_id
 
@@ -194,17 +194,19 @@ class Counter:
         else:
             self.data.set.raw_power_left = None
 
-    def update_values_left(self, diffs, cp_voltages: List[float]) -> None:
+    def update_values_left(self, diffs, cp_voltage: float) -> None:
+        # Mittelwert der Spannungen verwenden, um Phasenverdrehung zu kompensieren
+        # (Probleme bei einphasig angeschlossenen Wallboxen)
         self.data.set.raw_currents_left = list(map(operator.sub, self.data.set.raw_currents_left, diffs))
         if self.data.set.raw_power_left:
-            self.data.set.raw_power_left -= sum([c * v for c, v in zip(diffs, cp_voltages)])
+            self.data.set.raw_power_left -= sum([c * cp_voltage for c in diffs])
         log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
                   f'{self.data.set.raw_power_left}W verbleibende Leistung')
 
-    def update_surplus_values_left(self, diffs, cp_voltages: List[float]) -> None:
+    def update_surplus_values_left(self, diffs, cp_voltage: float) -> None:
         self.data.set.raw_currents_left = list(map(operator.sub, self.data.set.raw_currents_left, diffs))
         if self.data.set.surplus_power_left:
-            self.data.set.surplus_power_left -= sum([c * v for c, v in zip(diffs, cp_voltages)])
+            self.data.set.surplus_power_left -= sum([c * cp_voltage for c in diffs])
         log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
                   f'{self.data.set.surplus_power_left}W verbleibender Überschuss')
 
