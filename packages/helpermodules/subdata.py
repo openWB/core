@@ -887,6 +887,18 @@ class SubData:
                 user = splitted[2] if len(splitted) > 2 else "getsupport"
                 run_command([str(Path(__file__).resolve().parents[2] / "runs" / "start_remote_support.sh"),
                              token, port, user], process_exception=True)
+            elif "openWB/system/backup_password" in msg.topic:
+                if self.event_subdata_initialized.is_set():
+                    key_file = Path.home() / "backup.key"
+                    payload = decode_payload(msg.payload)
+                    if payload is None or payload == "":
+                        # delete key file
+                        if key_file.exists():
+                            key_file.unlink()
+                    else:
+                        # write key file
+                        with key_file.open("w") as file:
+                            file.write(payload)
             elif "openWB/system/backup_cloud/config" in msg.topic:
                 config_dict = decode_payload(msg.payload)
                 if config_dict["type"] is None:
