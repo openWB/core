@@ -61,7 +61,7 @@ class SigenergyBat(AbstractBat):
             log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt und nicht entladen")
             if self.last_mode != 'stop':
                 # Entladesperre auch bei 100% SoC
-                self.__tcp_client.write_registers(40049, [1000], data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_registers(40048, [1000], data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = 'stop'
 
     def power_limit_controllable(self) -> bool:
