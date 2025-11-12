@@ -1020,7 +1020,8 @@ class SetData:
                     "openWB/set/system/usage_terms_acknowledged" in msg.topic or
                     "openWB/set/system/update_config_completed" in msg.topic):
                 self._validate_value(msg, bool)
-            elif "openWB/set/system/version" in msg.topic:
+            elif ("openWB/set/system/version" in msg.topic or
+                    "openWB/set/system/backup_password" in msg.topic):
                 self._validate_value(msg, str)
             elif "openWB/set/system/time" in msg.topic:
                 self._validate_value(msg, float)
