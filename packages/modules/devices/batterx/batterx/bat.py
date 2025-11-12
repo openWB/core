@@ -64,7 +64,7 @@ class BatterXBat(AbstractBat):
                 self.last_mode = None
         elif power_limit <= 0:
             # BatterX kann Entladung nur komplett sperren
-            log.debug("Aktive Batteriesteuerung vorhanden. Setze externe Steuerung.")
+            log.debug("Aktive Batteriesteuerung angestoßen. Setze Entladesperre.")
             if self.last_mode != 'stop':
                 # Battery Charge AC - OFF
                 req.get_http_session().get(
@@ -79,7 +79,7 @@ class BatterXBat(AbstractBat):
                 self.last_mode = 'stop'
         else:
             # Aktive Ladung
-            log.debug("Aktive Batteriesteuerung vorhanden. Setze externe Steuerung.")
+            log.debug("Aktive Batteriesteuerung angestoßen. Setze aktive Ladung.")
             if self.last_mode != 'charge':
                 # Battery Charge AC - ON
                 req.get_http_session().get(
