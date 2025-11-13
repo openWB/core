@@ -311,7 +311,7 @@ LOADING_HOURS_TOMORROW = [datetime.datetime(
                          14,
                          "instant_charging",
                          ChargeTemplate.SCHEDULED_CHARGING_CHEAP_HOUR.format(
-                             "Geladen wird jetzt und zu folgenden Uhrzeiten: morgen 8:00."),
+                             "Geladen wird jetzt sowie morgen 8:00."),
                          3),
                      id="cheap_hour_charge_with_instant_charging"),
         pytest.param(True, 79, 80, 70, LOADING_HOURS_TODAY,
@@ -319,7 +319,7 @@ LOADING_HOURS_TOMORROW = [datetime.datetime(
                          14,
                          "instant_charging",
                          ChargeTemplate.SCHEDULED_CHARGING_CHEAP_HOUR.format(
-                             "Geladen wird jetzt und zu folgenden Uhrzeiten: ."),
+                             "Geladen wird jetzt."),
                          3),
                      id="SOC limit reached but scheduled SOC not, no further loading hours"),
         pytest.param(False, 79, 80, 90, LOADING_HOURS_TODAY,
@@ -327,7 +327,7 @@ LOADING_HOURS_TOMORROW = [datetime.datetime(
                          6,
                          "pv_charging",
                          ChargeTemplate.SCHEDULED_CHARGING_EXPENSIVE_HOUR.format(
-                             "Geladen wird zu folgenden Uhrzeiten: 8:00."),
+                             "Geladen wird heute 8:00."),
                          0),
                      id="expensive_hour_charge_with_pv"),
         pytest.param(False, 79, 80, 70, LOADING_HOURS_TODAY,
@@ -335,7 +335,7 @@ LOADING_HOURS_TOMORROW = [datetime.datetime(
                          0,
                          "stop",
                          ChargeTemplate.SCHEDULED_CHARGING_EXPENSIVE_HOUR_REACHED_MAX_SOC.format(
-                             "Geladen wird zu folgenden Uhrzeiten: 8:00."),
+                             "Geladen wird heute 8:00."),
                          3),
                      id="expensive_hour_no_charge_with_pv "),
         pytest.param(False, 79, 80, 70, LOADING_HOURS_TODAY + LOADING_HOURS_TOMORROW,
@@ -343,7 +343,7 @@ LOADING_HOURS_TOMORROW = [datetime.datetime(
                          0,
                          "stop",
                          ChargeTemplate.SCHEDULED_CHARGING_EXPENSIVE_HOUR_REACHED_MAX_SOC.format(
-                             "Geladen wird zu folgenden Uhrzeiten: 8:00, morgen 8:00."),
+                             "Geladen wird heute 8:00 sowie morgen 8:00."),
                          3),
                      id="expensive_hour_no_charge_with_pv scheduled for tomorrow"),
         pytest.param(False, 79, 60, 80, LOADING_HOURS_TODAY,
