@@ -161,7 +161,12 @@ class SimpleAPI
             'minimal_permanent_current',
             'max_price_eco',
             'chargepoint_lock',
-            'bat_mode'
+            'bat_mode',
+            'instant_charging_limit',
+            'instant_charging_amount',
+            'instant_charging_soc',
+            'vehicle',
+            'manual_soc'
         ];
 
         foreach ($writeableKeys as $key) {
@@ -433,7 +438,12 @@ class SimpleAPI
             'minimal_permanent_current',
             'max_price_eco',
             'chargepoint_lock',
-            'bat_mode'
+            'bat_mode',
+            'instant_charging_limit',
+            'instant_charging_amount',
+            'instant_charging_soc',
+            'vehicle',
+            'manual_soc'
         ];
 
         return in_array($param, $chargepointParameters) || strpos($param, 'chargepoint') !== false;
@@ -449,6 +459,16 @@ class SimpleAPI
                 return "Chargemode for chargepoint {$chargepointId} set to {$value}.";
             case 'chargecurrent':
                 return "Chargecurrent for chargepoint {$chargepointId} set to {$value}A";
+            case 'instant_charging_limit':
+                return "Instant charging limit for chargepoint {$chargepointId} set to {$value}.";
+            case 'instant_charging_amount':
+                return "Instant charging amount for chargepoint {$chargepointId} set to {$value}kWh.";
+            case 'instant_charging_soc':
+                return "Instant charging SoC for chargepoint {$chargepointId} set to {$value}%.";
+            case 'vehicle':
+                return "Vehicle {$value} assigned to chargepoint {$chargepointId}.";
+            case 'manual_soc':
+                return "Manual SoC set to {$value}% for chargepoint {$chargepointId}.";
             default:
                 return "Parameter {$param} set to {$value}.";
         }
