@@ -100,7 +100,8 @@ function processCounterMessages(topic: string, message: string) {
 	if (id != undefined) {
 		if (id == globalData.evuId) {
 			processEvuMessages(topic, message)
-		} else if (!counters.has(id)) {
+		}
+		if (!counters.has(id)) {
 			console.warn('Invalid counter index: ' + id)
 		} else if (topic.match(/^openWB\/counter\/[0-9]+\/get\/power$/i)) {
 			counters.get(id)!.power = +message
