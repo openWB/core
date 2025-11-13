@@ -217,6 +217,7 @@ class SimpleAPI
             'get_chargepoint_connected_vehicle_name',
             'get_chargepoint_charge_template_name',
             'get_chargepoint_charge_template_min_current',
+            'get_chargepoint_instant_charging_current',
             'get_chargepoint_soc',
             'get_chargepoint_state_str',
             'get_chargepoint_fault_str',
