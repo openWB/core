@@ -627,8 +627,8 @@ class ChargeTemplate:
                     loading_message = "Geladen wird "+("jetzt"
                                                        if is_loading_hour(hour_list)
                                                        else '')
-                    loading_message += ((" und " if  is_loading_hour(hour_list) else "") +
-                        f"heute {convert_loading_hours_to_string(loading_times_today)}"
+                    loading_message += ((" und " if is_loading_hour(hour_list) else "") +
+                                        f"heute {convert_loading_hours_to_string(loading_times_today)}"
                                         if 0 < len(loading_times_today)
                                         else '')
                     loading_message += (" sowie "
