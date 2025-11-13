@@ -99,6 +99,8 @@ class ParameterHandler
                 return $this->getChargepointChargeTemplateMinCurrent($id);
             case 'get_chargepoint_instant_charging_current':
                 return $this->getChargepointInstantChargingCurrent($id);
+            case 'get_chargepoint_pv_charging_min_current':
+                return $this->getChargepointPvChargingMinCurrent($id);
             case 'get_chargepoint_soc':
                 return $this->getChargepointSoc($id);
             case 'get_chargepoint_state_str':
@@ -1070,6 +1072,27 @@ class ParameterHandler
             return ["chargepoint_{$id}" => ['instant_charging_current' => floatval($instantCurrent)]];
         } catch (Exception $e) {
             return ["chargepoint_{$id}" => ['instant_charging_current' => 0]];
+        }
+    }
+
+    /**
+     * Chargepoint PV Charging Min Current
+     */
+    private function getChargepointPvChargingMinCurrent($id)
+    {
+        try {
+            $topic = "openWB/chargepoint/{$id}/set/charge_template";
+            $value = $this->mqttClient->getValue($topic);
+            $template = json_decode($value ?? '{}', true) ?: [];
+            
+            $pvMinCurrent = 0;
+            if (isset($template['chargemode']['pv_charging']['min_current'])) {
+                $pvMinCurrent = $template['chargemode']['pv_charging']['min_current'];
+            }
+            
+            return ["chargepoint_{$id}" => ['pv_charging_min_current' => floatval($pvMinCurrent)]];
+        } catch (Exception $e) {
+            return ["chargepoint_{$id}" => ['pv_charging_min_current' => 0]];
         }
     }
 
