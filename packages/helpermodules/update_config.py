@@ -1,3 +1,4 @@
+from concurrent.futures import ProcessPoolExecutor
 import copy
 from dataclasses import asdict
 import datetime
@@ -57,7 +58,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 101
+    DATASTORE_VERSION = 102
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -360,6 +361,7 @@ class UpdateConfig:
         "^openWB/vehicle/[0-9]+/charge_template$",
         "^openWB/vehicle/[0-9]+/ev_template$",
         "^openWB/vehicle/[0-9]+/name$",
+        "^openWB/vehicle/[0-9]+/color$",
         "^openWB/vehicle/[0-9]+/info$",
         "^openWB/vehicle/[0-9]+/soc_module/calculated_soc_state$",
         "^openWB/vehicle/[0-9]+/soc_module/config$",
@@ -523,6 +525,7 @@ class UpdateConfig:
         ("openWB/counter/config/consider_less_charging", counter_all.Config().consider_less_charging),
         ("openWB/counter/config/home_consumption_source_id", counter_all.Config().home_consumption_source_id),
         ("openWB/vehicle/0/name", "Standard-Fahrzeug"),
+        ("openWB/vehicle/0/color", "#17a2b8"),
         ("openWB/vehicle/0/info", {"manufacturer": None, "model": None}),
         ("openWB/vehicle/0/charge_template", ev.Ev(0).charge_template.data.id),
         ("openWB/vehicle/0/soc_module/config", NO_MODULE),
@@ -2625,3 +2628,83 @@ class UpdateConfig:
                 Pub().pub(topic, payload)
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(101)
+
+    def upgrade_datastore_102(self) -> None:
+        DEFAULT_COLORS = {
+            "CHARGEPOINT": "#007bff",
+            "VEHICLE": "#17a2b8",
+            "INVERTER": "#28a745",
+            "COUNTER": "#dc3545",
+            "BATTERY": "#ffc107",
+            "UNKNOWN": "#000000"
+        }
+
+        def _add_colors_to_log(file):
+            colors = {}
+            with open(file, "r+") as jsonFile:
+                content_raw = jsonFile.read()
+                content = json.loads(content_raw)
+                if "colors" in content:
+                    return
+                for key in content["names"].keys():
+                    if "bat" in key:
+                        colors[key] = DEFAULT_COLORS["BATTERY"]
+                    elif "counter" in key:
+                        colors[key] = DEFAULT_COLORS["COUNTER"]
+                    elif "cp" in key:
+                        colors[key] = DEFAULT_COLORS["CHARGEPOINT"]
+                    elif "ev" in key:
+                        colors[key] = DEFAULT_COLORS["VEHICLE"]
+                    elif "inverter" in key:
+                        colors[key] = DEFAULT_COLORS["INVERTER"]
+                    else:
+                        colors[key] = DEFAULT_COLORS["UNKNOWN"]
+                content["colors"] = colors
+                jsonFile.seek(0)
+                jsonFile.write(json.dumps(content))
+                jsonFile.truncate()
+
+        def add_colors_to_logs():
+            files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
+            files.extend(glob.glob(str(self.base_path / "data" / "monthly_log") + "/*"))
+            files.sort()
+            with ProcessPoolExecutor() as executor:
+                executor.map(_add_colors_to_log, files)
+
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            # add vehicle color to vehicle topics
+            if re.search("^openWB/vehicle/[0-9]+/name$", topic) is not None:
+                log.debug(f"Received vehicle name topic '{topic}'")
+                vehicle_color_topic = topic.replace("/name", "/color")
+                log.debug(f"Checking for vehicle color topic '{vehicle_color_topic}'")
+                if vehicle_color_topic not in self.all_received_topics:
+                    log.debug(f"Adding vehicle color topic '{vehicle_color_topic}'"
+                              f" with value: '{DEFAULT_COLORS['VEHICLE']}'")
+                    return {vehicle_color_topic: DEFAULT_COLORS['VEHICLE']}
+            # add property "color" to charge points
+            if re.search("^openWB/chargepoint/[0-9]+/config$", topic) is not None:
+                config = decode_payload(payload)
+                log.debug(f"Received charge point config topic '{topic}' with payload: {payload}")
+                if "color" not in config:
+                    config.update({"color": DEFAULT_COLORS['CHARGEPOINT']})
+                    log.debug(f"Added color to charge point config: {config}")
+                    return {topic: config}
+            # add property "color" to components
+            if re.search("^openWB/system/device/[0-9]+/component/[0-9]+/config$", topic) is not None:
+                config = decode_payload(payload)
+                log.debug(f"Received component config topic '{topic}' with payload: {payload}")
+                if "color" not in config:
+                    if "counter" in config.get("type").lower():
+                        config.update({"color": DEFAULT_COLORS['COUNTER']})
+                    elif "bat" in config.get("type").lower():
+                        config.update({"color": DEFAULT_COLORS['BATTERY']})
+                    elif "inverter" in config.get("type").lower():
+                        config.update({"color": DEFAULT_COLORS['INVERTER']})
+                    else:
+                        log.warning(f"Unknown component type '{config.get('type')}' for topic '{topic}'.")
+                        config.update({"color": DEFAULT_COLORS['UNKNOWN']})
+                    log.debug(f"Updated component config with color: {config}")
+                    return {topic: config}
+        self._loop_all_received_topics(upgrade)
+        add_colors_to_logs()
+        self._append_datastore_version(102)
