@@ -1,7 +1,6 @@
 from datetime import timedelta
 from control import data
 from modules.common.component_state import TariffState
-from modules.common.fault_state import FaultState
 from modules.common.store import ValueStore
 from modules.common.store._api import LoggingValueStore
 from modules.common.store._broker import pub_to_broker
@@ -19,12 +18,9 @@ class FlexibleTariffValueStore(ValueStore[TariffState]):
         self.state = state
 
     def update(self):
-        try:
-            prices = self.state.prices
-            pub_to_broker("openWB/set/optional/ep/flexible_tariff/get/prices", prices)
-            log.debug(f"published prices list to MQTT having {len(prices)} entries")
-        except Exception as e:
-            raise FaultState.from_exception(e)
+        prices = self.state.prices
+        pub_to_broker("openWB/set/optional/ep/flexible_tariff/get/prices", prices)
+        log.debug(f"published prices list to MQTT having {len(prices)} entries")
 
 
 def get_flexible_tariff_value_store() -> ValueStore[TariffState]:
@@ -39,12 +35,9 @@ class GridFeeValueStore(ValueStore[TariffState]):
         self.state = state
 
     def update(self):
-        try:
-            prices = self.state.prices
-            pub_to_broker("openWB/set/optional/ep/grid_fee/get/prices", prices)
-            log.debug(f"published grid tariff prices list to MQTT having {len(prices)} entries")
-        except Exception as e:
-            raise FaultState.from_exception(e)
+        prices = self.state.prices
+        pub_to_broker("openWB/set/optional/ep/grid_fee/get/prices", prices)
+        log.debug(f"published grid tariff prices list to MQTT having {len(prices)} entries")
 
 
 def get_grid_fee_value_store() -> ValueStore[TariffState]:
@@ -56,10 +49,7 @@ class PriceValueStore(ValueStore[TariffState]):
         pass
 
     def update(self):
-        try:
-            pub_to_broker("openWB/set/optional/ep/get/prices", self.sum_prices())
-        except Exception as e:
-            raise FaultState.from_exception(e)
+        pub_to_broker("openWB/set/optional/ep/get/prices", self.sum_prices())
 
     def sum_prices(self):
         flexible_tariff_prices = data.data.optional_data.data.electricity_pricing.flexible_tariff.get.prices
