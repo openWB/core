@@ -161,7 +161,12 @@ class SimpleAPI
             'minimal_permanent_current',
             'max_price_eco',
             'chargepoint_lock',
-            'bat_mode'
+            'bat_mode',
+            'instant_charging_limit',
+            'instant_charging_amount',
+            'instant_charging_soc',
+            'vehicle',
+            'manual_soc'
         ];
 
         foreach ($writeableKeys as $key) {
@@ -198,6 +203,22 @@ class SimpleAPI
             // Chargepoint - Status & Energie
             'get_chargepoint_imported',
             'get_chargepoint_exported',
+            'get_chargepoint_daily_imported',
+            'get_chargepoint_daily_exported',
+            'get_chargepoint_frequency',
+            'get_chargepoint_rfid',
+            'get_chargepoint_rfid_timestamp',
+            'get_chargepoint_evse_current',
+            'get_chargepoint_power_factors',
+            'get_chargepoint_power_factor_p1',
+            'get_chargepoint_power_factor_p2',
+            'get_chargepoint_power_factor_p3',
+            'get_chargepoint_config_name',
+            'get_chargepoint_connected_vehicle_name',
+            'get_chargepoint_charge_template_name',
+            'get_chargepoint_charge_template_min_current',
+            'get_chargepoint_instant_charging_current',
+            'get_chargepoint_pv_charging_min_current',
             'get_chargepoint_soc',
             'get_chargepoint_state_str',
             'get_chargepoint_fault_str',
@@ -395,6 +416,7 @@ class SimpleAPI
             'get_chargepoint_voltages',
             'get_chargepoint_currents',
             'get_chargepoint_powers',
+            'get_chargepoint_power_factors',
             'get_counter_voltages',
             'get_counter_currents',
             'get_counter_powers',
@@ -418,7 +440,12 @@ class SimpleAPI
             'minimal_permanent_current',
             'max_price_eco',
             'chargepoint_lock',
-            'bat_mode'
+            'bat_mode',
+            'instant_charging_limit',
+            'instant_charging_amount',
+            'instant_charging_soc',
+            'vehicle',
+            'manual_soc'
         ];
 
         return in_array($param, $chargepointParameters) || strpos($param, 'chargepoint') !== false;
@@ -434,6 +461,16 @@ class SimpleAPI
                 return "Chargemode for chargepoint {$chargepointId} set to {$value}.";
             case 'chargecurrent':
                 return "Chargecurrent for chargepoint {$chargepointId} set to {$value}A";
+            case 'instant_charging_limit':
+                return "Instant charging limit for chargepoint {$chargepointId} set to {$value}.";
+            case 'instant_charging_amount':
+                return "Instant charging amount for chargepoint {$chargepointId} set to {$value}kWh.";
+            case 'instant_charging_soc':
+                return "Instant charging SoC for chargepoint {$chargepointId} set to {$value}%.";
+            case 'vehicle':
+                return "Vehicle {$value} assigned to chargepoint {$chargepointId}.";
+            case 'manual_soc':
+                return "Manual SoC set to {$value}% for chargepoint {$chargepointId}.";
             default:
                 return "Parameter {$param} set to {$value}.";
         }

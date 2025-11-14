@@ -69,6 +69,38 @@ class ParameterHandler
                 return $this->getChargepointImported($id);
             case 'get_chargepoint_exported':
                 return $this->getChargepointExported($id);
+            case 'get_chargepoint_daily_imported':
+                return $this->getChargepointDailyImported($id);
+            case 'get_chargepoint_daily_exported':
+                return $this->getChargepointDailyExported($id);
+            case 'get_chargepoint_frequency':
+                return $this->getChargepointFrequency($id);
+            case 'get_chargepoint_rfid':
+                return $this->getChargepointRfid($id);
+            case 'get_chargepoint_rfid_timestamp':
+                return $this->getChargepointRfidTimestamp($id);
+            case 'get_chargepoint_evse_current':
+                return $this->getChargepointEvseCurrent($id);
+            case 'get_chargepoint_power_factors':
+                return $this->getChargepointPowerFactors($id);
+            case 'get_chargepoint_power_factor_p1':
+                return $this->getChargepointPowerFactor($id, 1);
+            case 'get_chargepoint_power_factor_p2':
+                return $this->getChargepointPowerFactor($id, 2);
+            case 'get_chargepoint_power_factor_p3':
+                return $this->getChargepointPowerFactor($id, 3);
+            case 'get_chargepoint_config_name':
+                return $this->getChargepointConfigName($id);
+            case 'get_chargepoint_connected_vehicle_name':
+                return $this->getChargepointConnectedVehicleName($id);
+            case 'get_chargepoint_charge_template_name':
+                return $this->getChargepointChargeTemplateName($id);
+            case 'get_chargepoint_charge_template_min_current':
+                return $this->getChargepointChargeTemplateMinCurrent($id);
+            case 'get_chargepoint_instant_charging_current':
+                return $this->getChargepointInstantChargingCurrent($id);
+            case 'get_chargepoint_pv_charging_min_current':
+                return $this->getChargepointPvChargingMinCurrent($id);
             case 'get_chargepoint_soc':
                 return $this->getChargepointSoc($id);
             case 'get_chargepoint_state_str':
@@ -194,6 +226,16 @@ class ParameterHandler
                     return $this->setChargepointLock($chargepointId, $value);
                 case 'bat_mode':
                     return $this->setBatMode($value);
+                case 'instant_charging_limit':
+                    return $this->setInstantChargingLimit($chargepointId, $value);
+                case 'instant_charging_amount':
+                    return $this->setInstantChargingAmount($chargepointId, $value);
+                case 'instant_charging_soc':
+                    return $this->setInstantChargingSoc($chargepointId, $value);
+                case 'vehicle':
+                    return $this->setVehicle($chargepointId, $value);
+                case 'manual_soc':
+                    return $this->setManualSoc($chargepointId, $value);
                 default:
                     return ['success' => false, 'message' => 'Unknown write parameter'];
             }
@@ -805,6 +847,725 @@ class ParameterHandler
             return ['success' => true, 'message' => "Chargepoint lock set to {$lockValue} for chargepoint {$chargepointId}"];
         }
         return ['success' => false, 'message' => 'Failed to set chargepoint lock'];
+    }
+
+    /**
+     * Chargepoint Daily Imported
+     */
+    private function getChargepointDailyImported($id)
+    {
+        try {
+            $topic = "openWB/chargepoint/{$id}/get/daily_imported";
+            $value = $this->mqttClient->getValue($topic);
+            return ["chargepoint_{$id}" => ['daily_imported' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["chargepoint_{$id}" => ['daily_imported' => 0]];
+        }
+    }
+
+    /**
+     * Chargepoint Daily Exported
+     */
+    private function getChargepointDailyExported($id)
+    {
+        try {
+            $topic = "openWB/chargepoint/{$id}/get/daily_exported";
+            $value = $this->mqttClient->getValue($topic);
+            return ["chargepoint_{$id}" => ['daily_exported' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["chargepoint_{$id}" => ['daily_exported' => 0]];
+        }
+    }
+
+    /**
+     * Chargepoint Frequency
+     */
+    private function getChargepointFrequency($id)
+    {
+        try {
+            $topic = "openWB/chargepoint/{$id}/get/frequency";
+            $value = $this->mqttClient->getValue($topic);
+            return ["chargepoint_{$id}" => ['frequency' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["chargepoint_{$id}" => ['frequency' => 0]];
+        }
+    }
+
+    /**
+     * Chargepoint RFID
+     */
+    private function getChargepointRfid($id)
+    {
+        try {
+            $topic = "openWB/chargepoint/{$id}/get/rfid";
+            $value = $this->mqttClient->getValue($topic);
+            return ["chargepoint_{$id}" => ['rfid' => strval($value ?? '')]];
+        } catch (Exception $e) {
+            return ["chargepoint_{$id}" => ['rfid' => '']];
+        }
+    }
+
+    /**
+     * Chargepoint RFID Timestamp
+     */
+    private function getChargepointRfidTimestamp($id)
+    {
+        try {
+            $topic = "openWB/chargepoint/{$id}/get/rfid_timestamp";
+            $value = $this->mqttClient->getValue($topic);
+            return ["chargepoint_{$id}" => ['rfid_timestamp' => intval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["chargepoint_{$id}" => ['rfid_timestamp' => 0]];
+        }
+    }
+
+    /**
+     * Chargepoint EVSE Current
+     */
+    private function getChargepointEvseCurrent($id)
+    {
+        try {
+            $topic = "openWB/chargepoint/{$id}/get/evse_current";
+            $value = $this->mqttClient->getValue($topic);
+            return ["chargepoint_{$id}" => ['evse_current' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["chargepoint_{$id}" => ['evse_current' => 0]];
+        }
+    }
+
+    /**
+     * Chargepoint Power Factors (alle Phasen)
+     */
+    private function getChargepointPowerFactors($id)
+    {
+        try {
+            $topic = "openWB/chargepoint/{$id}/get/power_factors";
+            $value = $this->mqttClient->getValue($topic);
+            $powerFactors = json_decode($value ?? '[]', true) ?: [0, 0, 0];
+            
+            return [
+                "chargepoint_{$id}" => [
+                    'power_factors' => [
+                        floatval($powerFactors[0] ?? 0),
+                        floatval($powerFactors[1] ?? 0),
+                        floatval($powerFactors[2] ?? 0)
+                    ]
+                ]
+            ];
+        } catch (Exception $e) {
+            return [
+                "chargepoint_{$id}" => [
+                    'power_factors' => [0, 0, 0]
+                ]
+            ];
+        }
+    }
+
+    /**
+     * Chargepoint Power Factor einzelne Phase
+     */
+    private function getChargepointPowerFactor($id, $phase)
+    {
+        try {
+            $topic = "openWB/chargepoint/{$id}/get/power_factors";
+            $value = $this->mqttClient->getValue($topic);
+            $powerFactors = json_decode($value ?? '[]', true) ?: [0, 0, 0];
+            
+            return [
+                "chargepoint_{$id}" => [
+                    "power_factor_p{$phase}" => floatval($powerFactors[$phase - 1] ?? 0)
+                ]
+            ];
+        } catch (Exception $e) {
+            return [
+                "chargepoint_{$id}" => [
+                    "power_factor_p{$phase}" => 0
+                ]
+            ];
+        }
+    }
+
+    /**
+     * Chargepoint Config Name
+     */
+    private function getChargepointConfigName($id)
+    {
+        try {
+            $topic = "openWB/chargepoint/{$id}/config";
+            $value = $this->mqttClient->getValue($topic);
+            $config = json_decode($value ?? '{}', true) ?: [];
+            
+            return ["chargepoint_{$id}" => ['config_name' => strval($config['name'] ?? '')]];
+        } catch (Exception $e) {
+            return ["chargepoint_{$id}" => ['config_name' => '']];
+        }
+    }
+
+    /**
+     * Chargepoint Connected Vehicle Name
+     */
+    private function getChargepointConnectedVehicleName($id)
+    {
+        try {
+            $topic = "openWB/chargepoint/{$id}/get/connected_vehicle/info";
+            $value = $this->mqttClient->getValue($topic);
+            $info = json_decode($value ?? '{}', true) ?: [];
+            
+            return ["chargepoint_{$id}" => ['connected_vehicle_name' => strval($info['name'] ?? '')]];
+        } catch (Exception $e) {
+            return ["chargepoint_{$id}" => ['connected_vehicle_name' => '']];
+        }
+    }
+
+    /**
+     * Chargepoint Charge Template Name
+     */
+    private function getChargepointChargeTemplateName($id)
+    {
+        try {
+            $topic = "openWB/chargepoint/{$id}/set/charge_template";
+            $value = $this->mqttClient->getValue($topic);
+            $template = json_decode($value ?? '{}', true) ?: [];
+            
+            return ["chargepoint_{$id}" => ['charge_template_name' => strval($template['name'] ?? '')]];
+        } catch (Exception $e) {
+            return ["chargepoint_{$id}" => ['charge_template_name' => '']];
+        }
+    }
+
+    /**
+     * Chargepoint Charge Template Min Current
+     */
+    private function getChargepointChargeTemplateMinCurrent($id)
+    {
+        try {
+            $topic = "openWB/chargepoint/{$id}/set/charge_template";
+            $value = $this->mqttClient->getValue($topic);
+            $template = json_decode($value ?? '{}', true) ?: [];
+            
+            $minCurrent = 0;
+            if (isset($template['chargemode']['pv_charging']['min_current'])) {
+                $minCurrent = $template['chargemode']['pv_charging']['min_current'];
+            }
+            
+            return ["chargepoint_{$id}" => ['charge_template_min_current' => floatval($minCurrent)]];
+        } catch (Exception $e) {
+            return ["chargepoint_{$id}" => ['charge_template_min_current' => 0]];
+        }
+    }
+
+    /**
+     * Chargepoint Instant Charging Current
+     */
+    private function getChargepointInstantChargingCurrent($id)
+    {
+        try {
+            $topic = "openWB/chargepoint/{$id}/set/charge_template";
+            $value = $this->mqttClient->getValue($topic);
+            $template = json_decode($value ?? '{}', true) ?: [];
+            
+            $instantCurrent = 0;
+            if (isset($template['chargemode']['instant_charging']['current'])) {
+                $instantCurrent = $template['chargemode']['instant_charging']['current'];
+            }
+            
+            return ["chargepoint_{$id}" => ['instant_charging_current' => floatval($instantCurrent)]];
+        } catch (Exception $e) {
+            return ["chargepoint_{$id}" => ['instant_charging_current' => 0]];
+        }
+    }
+
+    /**
+     * Chargepoint PV Charging Min Current
+     */
+    private function getChargepointPvChargingMinCurrent($id)
+    {
+        try {
+            $topic = "openWB/chargepoint/{$id}/set/charge_template";
+            $value = $this->mqttClient->getValue($topic);
+            $template = json_decode($value ?? '{}', true) ?: [];
+            
+            $pvMinCurrent = 0;
+            if (isset($template['chargemode']['pv_charging']['min_current'])) {
+                $pvMinCurrent = $template['chargemode']['pv_charging']['min_current'];
+            }
+            
+            return ["chargepoint_{$id}" => ['pv_charging_min_current' => floatval($pvMinCurrent)]];
+        } catch (Exception $e) {
+            return ["chargepoint_{$id}" => ['pv_charging_min_current' => 0]];
+        }
+    }
+
+    /**
+     * Chargepoint Imported
+     */
+    private function getChargepointImported($id)
+    {
+        try {
+            $topic = "openWB/chargepoint/{$id}/get/imported";
+            $value = $this->mqttClient->getValue($topic);
+            return ["chargepoint_{$id}" => ['imported' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["chargepoint_{$id}" => ['imported' => 0]];
+        }
+    }
+
+    /**
+     * Chargepoint Exported
+     */
+    private function getChargepointExported($id)
+    {
+        try {
+            $topic = "openWB/chargepoint/{$id}/get/exported";
+            $value = $this->mqttClient->getValue($topic);
+            return ["chargepoint_{$id}" => ['exported' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["chargepoint_{$id}" => ['exported' => 0]];
+        }
+    }
+
+    /**
+     * Chargepoint SoC
+     */
+    private function getChargepointSoc($id)
+    {
+        try {
+            $topic = "openWB/chargepoint/{$id}/get/soc";
+            $value = $this->mqttClient->getValue($topic);
+            return ["chargepoint_{$id}" => ['soc' => intval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["chargepoint_{$id}" => ['soc' => 0]];
+        }
+    }
+
+    /**
+     * Chargepoint State String
+     */
+    private function getChargepointStateStr($id)
+    {
+        try {
+            $topic = "openWB/chargepoint/{$id}/get/state_str";
+            $value = $this->mqttClient->getValue($topic);
+            return ["chargepoint_{$id}" => ['state_str' => strval($value ?? '')]];
+        } catch (Exception $e) {
+            return ["chargepoint_{$id}" => ['state_str' => '']];
+        }
+    }
+
+    /**
+     * Chargepoint Fault String
+     */
+    private function getChargepointFaultStr($id)
+    {
+        try {
+            $topic = "openWB/chargepoint/{$id}/get/fault_str";
+            $value = $this->mqttClient->getValue($topic);
+            return ["chargepoint_{$id}" => ['fault_str' => strval($value ?? '')]];
+        } catch (Exception $e) {
+            return ["chargepoint_{$id}" => ['fault_str' => '']];
+        }
+    }
+
+    /**
+     * Chargepoint Fault State
+     */
+    private function getChargepointFaultState($id)
+    {
+        try {
+            $topic = "openWB/chargepoint/{$id}/get/fault_state";
+            $value = $this->mqttClient->getValue($topic);
+            return ["chargepoint_{$id}" => ['fault_state' => intval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["chargepoint_{$id}" => ['fault_state' => 0]];
+        }
+    }
+
+    /**
+     * Chargepoint Phases in Use
+     */
+    private function getChargepointPhasesInUse($id)
+    {
+        try {
+            $topic = "openWB/chargepoint/{$id}/get/phases_in_use";
+            $value = $this->mqttClient->getValue($topic);
+            return ["chargepoint_{$id}" => ['phases_in_use' => intval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["chargepoint_{$id}" => ['phases_in_use' => 0]];
+        }
+    }
+
+    /**
+     * Chargepoint Plug State
+     */
+    private function getChargepointPlugState($id)
+    {
+        try {
+            $topic = "openWB/chargepoint/{$id}/get/plug_state";
+            $value = $this->mqttClient->getValue($topic);
+            return ["chargepoint_{$id}" => ['plug_state' => boolval($value ?? false)]];
+        } catch (Exception $e) {
+            return ["chargepoint_{$id}" => ['plug_state' => false]];
+        }
+    }
+
+    /**
+     * Chargepoint Charge State
+     */
+    private function getChargepointChargeState($id)
+    {
+        try {
+            $topic = "openWB/chargepoint/{$id}/get/charge_state";
+            $value = $this->mqttClient->getValue($topic);
+            return ["chargepoint_{$id}" => ['charge_state' => boolval($value ?? false)]];
+        } catch (Exception $e) {
+            return ["chargepoint_{$id}" => ['charge_state' => false]];
+        }
+    }
+
+    /**
+     * Chargepoint Chargemode
+     */
+    private function getChargepointChargemode($id)
+    {
+        try {
+            $topic = "openWB/chargepoint/{$id}/get/chargemode";
+            $value = $this->mqttClient->getValue($topic);
+            return ["chargepoint_{$id}" => ['chargemode' => strval($value ?? '')]];
+        } catch (Exception $e) {
+            return ["chargepoint_{$id}" => ['chargemode' => '']];
+        }
+    }
+
+    /**
+     * Instant Charging Limit setzen
+     */
+    private function setInstantChargingLimit($chargepointId, $value)
+    {
+        $validLimits = ['none', 'amount', 'soc'];
+        
+        if (!in_array($value, $validLimits)) {
+            return ['success' => false, 'message' => 'Invalid instant_charging_limit. Valid values: ' . implode(', ', $validLimits)];
+        }
+
+        try {
+            $templateTopic = "openWB/chargepoint/{$chargepointId}/set/charge_template";
+            $templateJson = $this->mqttClient->getValue($templateTopic);
+            if (!$templateJson) {
+                return ['success' => false, 'message' => 'Could not read current charge template'];
+            }
+            
+            $template = json_decode($templateJson, true);
+            if (!$template || !isset($template['chargemode']['instant_charging'])) {
+                return ['success' => false, 'message' => 'Invalid charge template format or missing instant_charging'];
+            }
+            
+            $template['chargemode']['instant_charging']['limit']['selected'] = $value;
+            $setTopic = "openWB/set/chargepoint/{$chargepointId}/set/charge_template";
+            $newTemplateJson = json_encode($template);
+            
+            if ($this->mqttClient->setValue($setTopic, $newTemplateJson)) {
+                return ['success' => true, 'message' => "Instant charging limit set to {$value} for chargepoint {$chargepointId}"];
+            }
+            return ['success' => false, 'message' => 'Failed to update charge template'];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error setting instant charging limit: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Instant Charging Amount setzen (kWh -> Wh)
+     */
+    private function setInstantChargingAmount($chargepointId, $value)
+    {
+        $amount = floatval($value);
+        if ($amount < 0) {
+            return ['success' => false, 'message' => 'Amount must be >= 0'];
+        }
+        
+        // kWh zu Wh konvertieren
+        $amountWh = intval($amount * 1000);
+
+        try {
+            $templateTopic = "openWB/chargepoint/{$chargepointId}/set/charge_template";
+            $templateJson = $this->mqttClient->getValue($templateTopic);
+            if (!$templateJson) {
+                return ['success' => false, 'message' => 'Could not read current charge template'];
+            }
+            
+            $template = json_decode($templateJson, true);
+            if (!$template || !isset($template['chargemode']['instant_charging'])) {
+                return ['success' => false, 'message' => 'Invalid charge template format or missing instant_charging'];
+            }
+            
+            $template['chargemode']['instant_charging']['limit']['amount'] = $amountWh;
+            $setTopic = "openWB/set/chargepoint/{$chargepointId}/set/charge_template";
+            $newTemplateJson = json_encode($template);
+            
+            if ($this->mqttClient->setValue($setTopic, $newTemplateJson)) {
+                return ['success' => true, 'message' => "Instant charging amount set to {$value}kWh ({$amountWh}Wh) for chargepoint {$chargepointId}"];
+            }
+            return ['success' => false, 'message' => 'Failed to update charge template'];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error setting instant charging amount: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Instant Charging SoC setzen
+     */
+    private function setInstantChargingSoc($chargepointId, $value)
+    {
+        $soc = intval($value);
+        if ($soc < 0 || $soc > 100) {
+            return ['success' => false, 'message' => 'SoC must be between 0 and 100'];
+        }
+
+        try {
+            $templateTopic = "openWB/chargepoint/{$chargepointId}/set/charge_template";
+            $templateJson = $this->mqttClient->getValue($templateTopic);
+            if (!$templateJson) {
+                return ['success' => false, 'message' => 'Could not read current charge template'];
+            }
+            
+            $template = json_decode($templateJson, true);
+            if (!$template || !isset($template['chargemode']['instant_charging'])) {
+                return ['success' => false, 'message' => 'Invalid charge template format or missing instant_charging'];
+            }
+            
+            $template['chargemode']['instant_charging']['limit']['soc'] = $soc;
+            $setTopic = "openWB/set/chargepoint/{$chargepointId}/set/charge_template";
+            $newTemplateJson = json_encode($template);
+            
+            if ($this->mqttClient->setValue($setTopic, $newTemplateJson)) {
+                return ['success' => true, 'message' => "Instant charging SoC set to {$soc}% for chargepoint {$chargepointId}"];
+            }
+            return ['success' => false, 'message' => 'Failed to update charge template'];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error setting instant charging SoC: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Fahrzeug für Chargepoint setzen
+     */
+    private function setVehicle($chargepointId, $value)
+    {
+        $vehicleId = intval($value);
+        if ($vehicleId < 0) {
+            return ['success' => false, 'message' => 'Vehicle ID must be >= 0'];
+        }
+
+        try {
+            $topic = "openWB/set/chargepoint/{$chargepointId}/config/ev";
+            
+            if ($this->mqttClient->setValue($topic, strval($vehicleId))) {
+                return ['success' => true, 'message' => "Vehicle {$vehicleId} assigned to chargepoint {$chargepointId}"];
+            }
+            return ['success' => false, 'message' => 'Failed to set vehicle'];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error setting vehicle: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Manuellen SoC für Fahrzeug setzen
+     */
+    private function setManualSoc($chargepointId, $value)
+    {
+        $soc = intval($value);
+        if ($soc < 0 || $soc > 100) {
+            return ['success' => false, 'message' => 'Manual SoC must be between 0 and 100'];
+        }
+
+        try {
+            // Erst die Fahrzeug-ID vom Chargepoint ermitteln
+            $configTopic = "openWB/chargepoint/{$chargepointId}/config";
+            $configJson = $this->mqttClient->getValue($configTopic);
+            if (!$configJson) {
+                return ['success' => false, 'message' => 'Could not read chargepoint config'];
+            }
+            
+            $config = json_decode($configJson, true);
+            if (!$config || !isset($config['ev'])) {
+                return ['success' => false, 'message' => 'No vehicle assigned to chargepoint'];
+            }
+            
+            $vehicleId = $config['ev'];
+            $topic = "openWB/set/vehicle/{$vehicleId}/soc_module/calculated_soc_state/manual_soc";
+            
+            if ($this->mqttClient->setValue($topic, strval($soc))) {
+                return ['success' => true, 'message' => "Manual SoC set to {$soc}% for vehicle {$vehicleId} (chargepoint {$chargepointId})"];
+            }
+            return ['success' => false, 'message' => 'Failed to set manual SoC'];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error setting manual SoC: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Instant Charging Limit setzen
+     */
+    private function setInstantChargingLimit($chargepointId, $value)
+    {
+        $validLimits = ['none', 'amount', 'soc'];
+        
+        if (!in_array($value, $validLimits)) {
+            return ['success' => false, 'message' => 'Invalid instant_charging_limit. Valid values: ' . implode(', ', $validLimits)];
+        }
+
+        try {
+            $templateTopic = "openWB/chargepoint/{$chargepointId}/set/charge_template";
+            $templateJson = $this->mqttClient->getValue($templateTopic);
+            if (!$templateJson) {
+                return ['success' => false, 'message' => 'Could not read current charge template'];
+            }
+            
+            $template = json_decode($templateJson, true);
+            if (!$template || !isset($template['chargemode']['instant_charging'])) {
+                return ['success' => false, 'message' => 'Invalid charge template format or missing instant_charging'];
+            }
+            
+            $template['chargemode']['instant_charging']['limit']['selected'] = $value;
+            $setTopic = "openWB/set/chargepoint/{$chargepointId}/set/charge_template";
+            $newTemplateJson = json_encode($template);
+            
+            if ($this->mqttClient->setValue($setTopic, $newTemplateJson)) {
+                return ['success' => true, 'message' => "Instant charging limit set to {$value} for chargepoint {$chargepointId}"];
+            }
+            return ['success' => false, 'message' => 'Failed to update charge template'];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error setting instant charging limit: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Instant Charging Amount setzen (kWh -> Wh)
+     */
+    private function setInstantChargingAmount($chargepointId, $value)
+    {
+        $amount = floatval($value);
+        if ($amount < 0) {
+            return ['success' => false, 'message' => 'Amount must be >= 0'];
+        }
+        
+        // kWh zu Wh konvertieren
+        $amountWh = intval($amount * 1000);
+
+        try {
+            $templateTopic = "openWB/chargepoint/{$chargepointId}/set/charge_template";
+            $templateJson = $this->mqttClient->getValue($templateTopic);
+            if (!$templateJson) {
+                return ['success' => false, 'message' => 'Could not read current charge template'];
+            }
+            
+            $template = json_decode($templateJson, true);
+            if (!$template || !isset($template['chargemode']['instant_charging'])) {
+                return ['success' => false, 'message' => 'Invalid charge template format or missing instant_charging'];
+            }
+            
+            $template['chargemode']['instant_charging']['limit']['amount'] = $amountWh;
+            $setTopic = "openWB/set/chargepoint/{$chargepointId}/set/charge_template";
+            $newTemplateJson = json_encode($template);
+            
+            if ($this->mqttClient->setValue($setTopic, $newTemplateJson)) {
+                return ['success' => true, 'message' => "Instant charging amount set to {$value}kWh ({$amountWh}Wh) for chargepoint {$chargepointId}"];
+            }
+            return ['success' => false, 'message' => 'Failed to update charge template'];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error setting instant charging amount: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Instant Charging SoC setzen
+     */
+    private function setInstantChargingSoc($chargepointId, $value)
+    {
+        $soc = intval($value);
+        if ($soc < 0 || $soc > 100) {
+            return ['success' => false, 'message' => 'SoC must be between 0 and 100'];
+        }
+
+        try {
+            $templateTopic = "openWB/chargepoint/{$chargepointId}/set/charge_template";
+            $templateJson = $this->mqttClient->getValue($templateTopic);
+            if (!$templateJson) {
+                return ['success' => false, 'message' => 'Could not read current charge template'];
+            }
+            
+            $template = json_decode($templateJson, true);
+            if (!$template || !isset($template['chargemode']['instant_charging'])) {
+                return ['success' => false, 'message' => 'Invalid charge template format or missing instant_charging'];
+            }
+            
+            $template['chargemode']['instant_charging']['limit']['soc'] = $soc;
+            $setTopic = "openWB/set/chargepoint/{$chargepointId}/set/charge_template";
+            $newTemplateJson = json_encode($template);
+            
+            if ($this->mqttClient->setValue($setTopic, $newTemplateJson)) {
+                return ['success' => true, 'message' => "Instant charging SoC set to {$soc}% for chargepoint {$chargepointId}"];
+            }
+            return ['success' => false, 'message' => 'Failed to update charge template'];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error setting instant charging SoC: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Fahrzeug für Chargepoint setzen
+     */
+    private function setVehicle($chargepointId, $value)
+    {
+        $vehicleId = intval($value);
+        if ($vehicleId < 0) {
+            return ['success' => false, 'message' => 'Vehicle ID must be >= 0'];
+        }
+
+        try {
+            $topic = "openWB/set/chargepoint/{$chargepointId}/config/ev";
+            
+            if ($this->mqttClient->setValue($topic, strval($vehicleId))) {
+                return ['success' => true, 'message' => "Vehicle {$vehicleId} assigned to chargepoint {$chargepointId}"];
+            }
+            return ['success' => false, 'message' => 'Failed to set vehicle'];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error setting vehicle: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Manuellen SoC für Fahrzeug setzen
+     */
+    private function setManualSoc($chargepointId, $value)
+    {
+        $soc = intval($value);
+        if ($soc < 0 || $soc > 100) {
+            return ['success' => false, 'message' => 'Manual SoC must be between 0 and 100'];
+        }
+
+        try {
+            // Erst die Fahrzeug-ID vom Chargepoint ermitteln
+            $configTopic = "openWB/chargepoint/{$chargepointId}/config";
+            $configJson = $this->mqttClient->getValue($configTopic);
+            if (!$configJson) {
+                return ['success' => false, 'message' => 'Could not read chargepoint config'];
+            }
+            
+            $config = json_decode($configJson, true);
+            if (!$config || !isset($config['ev'])) {
+                return ['success' => false, 'message' => 'No vehicle assigned to chargepoint'];
+            }
+            
+            $vehicleId = $config['ev'];
+            $topic = "openWB/set/vehicle/{$vehicleId}/soc_module/calculated_soc_state/manual_soc";
+            
+            if ($this->mqttClient->setValue($topic, strval($soc))) {
+                return ['success' => true, 'message' => "Manual SoC set to {$soc}% for vehicle {$vehicleId} (chargepoint {$chargepointId})"];
+            }
+            return ['success' => false, 'message' => 'Failed to set manual SoC'];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error setting manual SoC: ' . $e->getMessage()];
+        }
     }
 
     /**
