@@ -464,6 +464,8 @@ def test_et_charging_available_exception(monkeypatch):
 def test_et_price_update_required(monkeypatch, prices, next_query_time, current_timestamp, expected):
     # setup
     opt = Optional()
+    opt._flexible_tariff_module = Mock()
+    opt._grid_fee_module = Mock()
     opt.data.electricity_pricing.get.prices = prices
     opt.data.electricity_pricing.get.next_query_time = next_query_time
 
