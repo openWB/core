@@ -504,7 +504,7 @@ class BrokerContent:
         client.subscribe("openWB/counter/#", 2)
         client.subscribe("openWB/pv/#", 2)
         client.subscribe("openWB/bat/#", 2)
-        client.subscribe("openWB/optional/et/provider", 2)
+        client.subscribe("openWB/optional/ep/flexible_tariff/provider", 2)
 
     def __on_connect_bridges(self, client, userdata, flags, rc):
         client.subscribe("openWB/system/mqtt/#", 2)

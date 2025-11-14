@@ -3,8 +3,8 @@ from helpermodules import timecheck
 import pytest
 
 from modules.common.component_state import TariffState
-from modules.common.configurable_tariff import ConfigurableElectricityTariff
-from modules.electricity_tariffs.awattar.config import AwattarTariff
+from modules.common.configurable_tariff import ConfigurableFlexibleTariff
+from modules.electricity_pricing.flexible_tariffs.awattar.config import AwattarTariff
 
 
 @pytest.mark.parametrize(
@@ -87,7 +87,7 @@ def test_remove_outdated_prices(
     now: int, tariff_state: TariffState, expected: TariffState, monkeypatch
 ):
     # setup
-    tariff = ConfigurableElectricityTariff(AwattarTariff(), Mock())
+    tariff = ConfigurableFlexibleTariff(AwattarTariff(), Mock())
     time_slot_seconds = [int(timestamp) for timestamp in tariff_state.prices.keys()][:2]
 
     # Montag 16.05.2022, 8:40:52  "05/16/2022, 08:40:52" Unix: 1652683252
@@ -104,7 +104,7 @@ def test_remove_outdated_prices(
 
 def test_accept_no_prices_at_start(monkeypatch):
     # setup
-    tariff = ConfigurableElectricityTariff(
+    tariff = ConfigurableFlexibleTariff(
         AwattarTariff(),
         Mock(
             return_value=TariffState(
