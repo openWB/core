@@ -1,8 +1,8 @@
 from unittest.mock import Mock
 from datetime import datetime
 from helpermodules import timecheck
-from modules.electricity_tariffs.tibber.config import TibberTariffConfiguration
-from modules.electricity_tariffs.tibber.tariff import fetch_prices
+from modules.electricity_pricing.flexible_tariffs.tibber.config import TibberTariffConfiguration
+from modules.electricity_pricing.flexible_tariffs.tibber.tariff import fetch_prices
 import pytest
 
 
@@ -41,7 +41,7 @@ SAMPLE_DATA_TODAY = {
                     {"total": 1.1332, "startsAt": "2023-10-27T21:00:00.000+02:00"},
                     {"total": 0.8015, "startsAt": "2023-10-27T22:00:00.000+02:00"},
                     {"total": 0.7698, "startsAt": "2023-10-27T23:00:00.000+02:00"}
-                    ], "tomorrow": []}}}}}}
+                ], "tomorrow": []}}}}}}
 
 EXPECTED_PRICES_TODAY = {
     '1698357600': 0.0008724,

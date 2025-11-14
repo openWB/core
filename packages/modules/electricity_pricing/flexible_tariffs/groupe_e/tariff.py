@@ -6,8 +6,8 @@ from typing import Dict
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
-from modules.electricity_tariffs.groupe_e.config import GroupeETariffConfiguration
-from modules.electricity_tariffs.groupe_e.config import GroupeETariff
+from modules.electricity_pricing.flexible_tariffs.groupe_e.config import GroupeETariffConfiguration
+from modules.electricity_pricing.flexible_tariffs.groupe_e.config import GroupeETariff
 
 
 # Extract timestamp from power price entry
@@ -26,7 +26,7 @@ def readApi() -> list[tuple[str, float]]:
     prices_raw = session.get(
         url=endpoint +
         f"?start_timestamp={ quote(startDate) }&end_timestamp={ quote(endDate) }",
-        ).json()
+    ).json()
     return [(timestamp(power), (power[tariffName]/100000))
             for power in prices_raw]
 

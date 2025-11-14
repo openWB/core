@@ -847,16 +847,27 @@ class SetData:
             enthält Topic und Payload
         """
         try:
-            if "openWB/set/optional/et/get/prices" in msg.topic:
+            pricing_regex = "openWB/set/optional/ep/(flexible_tariff|grid_fee)/"
+            if re.search(pricing_regex, msg.topic) is not None:
+                if re.search(f"{pricing_regex}provider$", msg.topic) is not None:
+                    self._validate_value(msg, "json")
+                elif re.search(f"{pricing_regex}get/prices$", msg.topic) is not None:
+                    self._validate_value(msg, "json")
+                elif re.search(f"{pricing_regex}get/price$", msg.topic) is not None:
+                    self._validate_value(msg, float)
+                elif re.search(f"{pricing_regex}get/fault_state$", msg.topic) is not None:
+                    self._validate_value(msg, int, [(0, 2)])
+                elif re.search(f"{pricing_regex}get/fault_str$", msg.topic) is not None:
+                    self._validate_value(msg, str)
+            elif "openWB/set/optional/ep/get/prices" in msg.topic:
                 self._validate_value(msg, "json")
-            elif "openWB/set/optional/et/get/next_query_time" in msg.topic:
+            elif "openWB/set/optional/ep/get/next_query_time" in msg.topic:
                 self._validate_value(msg, float)
-            elif "openWB/set/optional/et/get/fault_state" in msg.topic:
-                self._validate_value(msg, int, [(0, 2)])
-            elif "openWB/set/optional/et/get/fault_str" in msg.topic:
-                self._validate_value(msg, str)
-            elif ("openWB/set/optional/et/provider" in msg.topic or
-                  "openWB/set/optional/ocpp/config" in msg.topic):
+            elif "openWB/set/optional/ep/configured" in msg.topic:
+                self._validate_value(msg, bool)
+            elif "module_update_completed" in msg.topic:
+                self._validate_value(msg, bool)
+            elif "openWB/set/optional/ocpp/config" in msg.topic:
                 self._validate_value(msg, "json")
             elif "openWB/set/optional/monitoring" in msg.topic:
                 self._validate_value(msg, "json")

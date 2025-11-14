@@ -14,7 +14,7 @@ from helpermodules.pub import Pub
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
-from modules.electricity_tariffs.voltego.config import VoltegoTariff, VoltegoToken
+from modules.electricity_pricing.flexible_tariffs.voltego.config import VoltegoTariff, VoltegoToken
 
 log = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ def _refresh_token(config: VoltegoTariff):
     config.configuration.token = VoltegoToken(access_token=response["access_token"],
                                               expires_in=response["expires_in"],
                                               created_at=timecheck.create_timestamp())
-    Pub().pub("openWB/set/optional/et/provider", asdict(config))
+    Pub().pub("openWB/set/optional/et/dynamic/provider", asdict(config))
 
 
 def fetch(config: VoltegoTariff) -> None:

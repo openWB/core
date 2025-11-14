@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 import logging
 
-from modules.electricity_tariffs.octopusenergy.config import OctopusEnergyTariffConfiguration, OctopusEnergyTariff
+from modules.electricity_pricing.flexible_tariffs.octopusenergy.config import (OctopusEnergyTariffConfiguration,
+                                                                               OctopusEnergyTariff)
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
