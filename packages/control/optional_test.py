@@ -231,8 +231,7 @@ def test_ep_get_loading_hours(granularity,
     # setup
     opt = Optional()
     opt.data.electricity_pricing.get.prices = price_list
-    mock_ep_provider_available = Mock(return_value=True)
-    monkeypatch.setattr(opt, "ep_provider_available", mock_ep_provider_available)
+    opt.data.electricity_pricing.configured = True
     monkeypatch.setattr(
         timecheck,
         "create_timestamp",
@@ -257,7 +256,7 @@ def test_ep_get_loading_hours(granularity,
 )
 def test_et_charging_allowed(monkeypatch, provider_available, current_price, max_price, expected):
     opt = Optional()
-    monkeypatch.setattr(opt, "ep_provider_available", Mock(return_value=provider_available))
+    opt.data.electricity_pricing.configured = provider_available
     if provider_available:
         monkeypatch.setattr(opt, "ep_get_current_price", Mock(return_value=current_price))
     result = opt.ep_is_charging_allowed_price_threshold(max_price)
@@ -266,7 +265,7 @@ def test_et_charging_allowed(monkeypatch, provider_available, current_price, max
 
 def test_et_charging_allowed_exception(monkeypatch):
     opt = Optional()
-    monkeypatch.setattr(opt, "ep_provider_available", Mock(return_value=True))
+    opt.data.electricity_pricing.configured = True
     monkeypatch.setattr(opt, "ep_get_current_price", Mock(side_effect=Exception))
     result = opt.ep_is_charging_allowed_price_threshold(0.15)
     assert result is False
@@ -427,14 +426,14 @@ def test_et_charging_available(now_ts, provider_available, price_list, selected_
     )
     opt = Optional()
     opt.data.electricity_pricing.get.prices = price_list
-    monkeypatch.setattr(opt, "ep_provider_available", Mock(return_value=provider_available))
+    opt.data.electricity_pricing.configured = provider_available
     result = opt.ep_is_charging_allowed_hours_list(selected_hours)
     assert result == expected
 
 
 def test_et_charging_available_exception(monkeypatch):
     opt = Optional()
-    monkeypatch.setattr(opt, "ep_provider_available", Mock(return_value=True))
+    opt.data.electricity_pricing.configured = True
 
     opt.data.electricity_pricing.get.prices = {}  # empty prices list raises exception
     result = opt.ep_is_charging_allowed_hours_list([])
@@ -469,7 +468,7 @@ def test_et_price_update_required(monkeypatch, prices, next_query_time, current_
     opt.data.electricity_pricing.get.next_query_time = next_query_time
 
     monkeypatch.setattr(timecheck, "create_timestamp", Mock(return_value=current_timestamp))
-    monkeypatch.setattr(Optional, "ep_provider_available", Mock(return_value=True))
+    opt.data.electricity_pricing.configured = True
 
     # execution
     result = opt.et_price_update_required()
