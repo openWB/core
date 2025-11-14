@@ -11,6 +11,7 @@ DB_PATH = os.environ.get("AUTH_DB", "./auth.db")
 def init_db():
     db_connection = sqlite3.connect(DB_PATH)
     db_cursor = db_connection.cursor()
+    # Alle TIMESTAMP-Spalten werden als UTC gespeichert!
     db_cursor.executescript("""
     CREATE TABLE IF NOT EXISTS users (
         email TEXT PRIMARY KEY,
@@ -20,7 +21,7 @@ def init_db():
         role TEXT NOT NULL DEFAULT 'viewer',
         disabled INTEGER NOT NULL DEFAULT 0,
         comment TEXT,
-        password_token TEXT,
+        password_token_hash TEXT,
         password_token_expires_at TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
