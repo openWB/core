@@ -603,27 +603,44 @@ class ChargeTemplate:
             # ist.
             if plan.et_active:
                 def get_hours_message() -> str:
+                    def end_of_today_timestamp() -> int:
+                        return datetime.datetime.now().replace(
+                            hour=23, minute=59, second=59, microsecond=999000).timestamp()
+
                     def is_loading_hour(hour: int) -> bool:
                         return data.data.optional_data.et_is_charging_allowed_hours_list(hour)
-                    return ("Geladen wird "+("jetzt und "
-                                             if is_loading_hour(hour_list)
-                                             else '') +
-                            "zu folgenden Uhrzeiten: " +
-                            ", ".join([tomorrow(hour) +
-                                       datetime.datetime.fromtimestamp(hour).strftime('%-H:%M')
-                                       for hour in (sorted(hour_list)
-                                                    if not is_loading_hour(hour_list)
-                                                    else (sorted(hour_list)[1:] if len(hour_list) > 1 else []))])
-                            + ".")
 
-                def end_of_today_timestamp() -> int:
-                    return datetime.datetime.now().replace(
-                        hour=23, minute=59, second=59, microsecond=999000).timestamp()
+                    def convert_loading_hours_to_string(hour_list: List[int]) -> str:
+                        if 1 < len(hour_list):
+                            times_string = ", ".join(hour.strftime('%-H:%M') for hour in hour_list[:-1])
+                            return times_string + " und " + hour_list[-1].strftime('%-H:%M')
+                        else:
+                            return ", ".join(hour.strftime('%-H:%M') for hour in hour_list)
+                    midnight = end_of_today_timestamp()
+                    loading_times_today = [datetime.datetime.fromtimestamp(hour)
+                                           for hour in sorted(hour_list) if hour <= midnight]
+                    loading_times_today = (loading_times_today[1:]
+                                           if is_loading_hour(hour_list) else loading_times_today)
+                    loading_times_tomorrow = [datetime.datetime.fromtimestamp(hour)
+                                              for hour in sorted(hour_list) if hour > midnight]
 
-                def tomorrow(timestamp: int) -> str:
-                    return 'morgen ' if end_of_today_timestamp() < timestamp else ''
+                    loading_message = "Geladen wird "+("jetzt"
+                                                       if is_loading_hour(hour_list)
+                                                       else '')
+                    loading_message += ((" und " if is_loading_hour(hour_list) else "") +
+                                        f"heute {convert_loading_hours_to_string(loading_times_today)}"
+                                        if 0 < len(loading_times_today)
+                                        else '')
+                    loading_message += (" sowie "
+                                        if 0 < len(loading_times_tomorrow)
+                                        else '')
+                    loading_message += (f"morgen {convert_loading_hours_to_string(loading_times_tomorrow)}"
+                                        if 0 < len(loading_times_tomorrow)
+                                        else '')
+                    return loading_message + '.'
+
                 hour_list = data.data.optional_data.et_get_loading_hours(
-                    selected_plan.duration, selected_plan.remaining_time)
+                    selected_plan.duration, selected_plan.duration + selected_plan.remaining_time)
 
                 log.debug(f"Günstige Ladezeiten: {hour_list}")
                 if data.data.optional_data.et_is_charging_allowed_hours_list(hour_list):
