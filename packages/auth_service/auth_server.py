@@ -2,8 +2,9 @@
 # auth_server.py — Flask Auth-Service mit JWT, Refresh-Rotation, DynSec-Integration, SQlite
 # Python 3.11
 
-from typing import Optional
-from flask import Flask, request, jsonify, make_response
+from datetime import datetime, timedelta
+from typing import Optional, Union
+from flask import Flask, request, jsonify, make_response, Response
 import os
 import sqlite3
 from passlib.hash import bcrypt
@@ -20,7 +21,8 @@ MOSQ_ADMIN_USER = os.environ.get("MOSQ_ADMIN_USER", "admin")
 MOSQ_ADMIN_PASS = os.environ.get("MOSQ_ADMIN_PASS", "changeme")
 MOSQ_ROLE = os.environ.get("MOSQ_ROLE", "user")
 TLS_ONLY = os.environ.get("TLS_ONLY", "1") == "1"  # wenn True cookies mit Secure setzen
-COOKIE_NAME = "mqtt_auth"
+COOKIE_NAME = "openwb_auth"
+TOKEN_SERVER_URL = os.environ.get("TOKEN_SERVER_URL", "https://openwb.de/forgotpassword/send_token.php")
 
 # ----------------------
 # Flask App
@@ -31,19 +33,25 @@ app = Flask(__name__)
 # ----------------------
 # DB Hilfsfunktionen
 # ----------------------
-def db_connect():
+def db_connect() -> sqlite3.Connection:
     db_connection = sqlite3.connect(DB_PATH, detect_types=sqlite3.PARSE_DECLTYPES)
     db_connection.row_factory = sqlite3.Row
     return db_connection
 
 
+def db_timestamp_to_epoch_seconds(ts: Optional[datetime]) -> Optional[int]:
+    if ts is None:
+        return None
+    return int(ts.timestamp())
+
+
 # ----------------------
 # Nutzer-Logik
 # ----------------------
-def get_user(email):
+def get_user(email: str) -> Optional[sqlite3.Row]:
     db_connection = db_connect()
     cur = db_connection.execute(
-        "SELECT email, password_hash, first_name, last_name, role, disabled, comment FROM users WHERE email = ?",
+        "SELECT * FROM users WHERE email = ?",
         (email,)
     )
     row = cur.fetchone()
@@ -51,27 +59,27 @@ def get_user(email):
     return row
 
 
-def verify_user_password(email, password):
+def verify_user_password(email: str, password: str) -> bool:
     row = get_user(email)
-    if not row or row["disabled"]:
-        return False
-    try:
-        return bcrypt.verify(password, row["password_hash"])
-    except Exception:
-        return False
+    return row and not row["disabled"] and bcrypt.verify(password, row["password_hash"])
 
 
-def verify_user_role(email, role="admin"):
+def verify_user_token(email: str, token: str) -> bool:
     row = get_user(email)
-    if row and not row["disabled"] and row["role"] == role:
-        return True
-    return False
+    return row and not row["disabled"] and bcrypt.verify(token, row["password_token_hash"]) and \
+        row["password_token_expires_at"] and row["password_token_expires_at"] > datetime.now()
+
+
+def verify_user_role(email: str, role: str = "admin") -> bool:
+    row = get_user(email)
+    return row and not row["disabled"] and row["role"] == role
 
 
 # ----------------------
 # Auth-Hilfsfunktion
 # ----------------------
-def get_authenticated_email(required_role: Optional[str] = None):
+def get_authenticated_email(
+        required_role: Optional[str] = None) -> tuple[Optional[str], Optional[tuple[Response, int]]]:
     """
     Prüft das Auth-Cookie und optional die Rolle.
     Rückgabe: (email, None) bei Erfolg oder (None, (jsonify..., status)) bei Fehler.
@@ -184,11 +192,11 @@ def get_authenticated_email(required_role: Optional[str] = None):
 # ----------------------
 # Web API Endpoints (Login / Refresh / MQTT credentials / Logout / Health)
 # ----------------------
-def set_cookie(resp, name, value, expires=None):
+def set_cookie(resp: Response, key: str, value, expires: Optional[Union[str, datetime, int, float]] = None) -> None:
     resp.set_cookie(
-        name,
+        key,
         value,
-        httponly=False,
+        httponly=True,
         secure=TLS_ONLY,
         samesite="Strict",
         expires=expires
@@ -196,7 +204,7 @@ def set_cookie(resp, name, value, expires=None):
 
 
 @app.post("/api/login")
-def web_login():
+def web_login() -> Response:
     data: dict = request.get_json(force=True)
     email: Optional[str] = data.get("email")
     password: Optional[str] = data.get("password")
@@ -212,7 +220,7 @@ def web_login():
 
 
 @app.post("/api/logout")
-def logout():
+def logout() -> Response:
     resp = make_response(jsonify(success=True))
     # Cookie löschen
     set_cookie(resp, COOKIE_NAME, "", expires=0)
@@ -220,7 +228,7 @@ def logout():
 
 
 @app.get("/api/health")
-def health():
+def health() -> Response:
     return jsonify(status="ok")
 
 
@@ -233,12 +241,12 @@ def health():
 # User-Create Endpoint
 # ----------------------
 @app.post("/admin/create_user")
-def admin_create_user():
+def admin_create_user() -> Response:
     # Auth prüfen
     _, err = get_authenticated_email(required_role="admin")
     if err:
         return err
-    data = request.get_json(force=True)
+    data: dict = request.get_json(force=True)
     email = data.get("email")
     password = data.get("password")
     first_name = data.get("first_name")
@@ -267,12 +275,12 @@ def admin_create_user():
 # User-Update Endpoint
 # ----------------------
 @app.post("/admin/update_user")
-def admin_update_user():
+def admin_update_user() -> Response:
     # Auth prüfen
     _, err = get_authenticated_email(required_role="admin")
     if err:
         return err
-    data = request.get_json(force=True)
+    data: dict = request.get_json(force=True)
     email = data.get("email")
     first_name = data.get("first_name")
     last_name = data.get("last_name")
@@ -300,12 +308,12 @@ def admin_update_user():
 # User-Delete Endpoint
 # ----------------------
 @app.post("/admin/delete_user")
-def admin_delete_user():
+def admin_delete_user() -> Response:
     # Auth prüfen
     _, err = get_authenticated_email(required_role="admin")
     if err:
         return err
-    data = request.get_json(force=True)
+    data: dict = request.get_json(force=True)
     email = data.get("email")
     if not email:
         return jsonify(error="email required"), 400
@@ -326,12 +334,12 @@ def admin_delete_user():
 # User-Password Endpoint
 # ----------------------
 @app.post("/admin/update_password")
-def admin_update_password():
+def admin_update_password() -> Response:
     # Auth prüfen
     _, err = get_authenticated_email(required_role="admin")
     if err:
         return err
-    data = request.get_json(force=True)
+    data: dict = request.get_json(force=True)
     email = data.get("email")
     password = data.get("password")
     if not email or not password:
@@ -348,23 +356,25 @@ def admin_update_password():
     conn.close()
     if modified == 0:
         return jsonify(error=f"user with email '{email}' not found"), 409
-    return jsonify(success=True, email=email)
+    return jsonify(success=True)
 
 
 # ----------------------
 # Get-Users Endpoint
 # ----------------------
 @app.get("/admin/get_users")
-def admin_get_users():
+def admin_get_users() -> Response:
     # Auth prüfen
-    email, err = get_authenticated_email(required_role="admin")
+    _, err = get_authenticated_email(required_role="admin")
     if err:
         return err
     conn = db_connect()
     cur = conn.execute("SELECT email, first_name, last_name, comment, role, disabled, created_at FROM users")
     users = [dict(row) for row in cur.fetchall()]
+    for user in users:
+        user["created_at"] = db_timestamp_to_epoch_seconds(user["created_at"])
     conn.close()
-    return jsonify(users=users, requested_by=email)
+    return jsonify(users=users)
 
 
 # ----------------------
@@ -375,6 +385,7 @@ if __name__ == "__main__":
     host = os.environ.get("LISTEN_HOST", "127.0.0.1")
     port = int(os.environ.get("LISTEN_PORT", "3000"))
     debug = os.environ.get("AUTH_DEBUG", "0") == "1"
+    print(f"Starting Auth-Service on {host}:{port} (Debug={debug})")
     # Starte mit waitress, falls verfügbar; sonst Fallback auf Flask-Dev-Server
     try:
         from waitress import serve
