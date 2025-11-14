@@ -1,6 +1,5 @@
 from helpermodules import compatibility
 from modules.common.component_state import BatState
-from modules.common.fault_state import FaultState
 from modules.common.store import ValueStore
 from modules.common.store._api import LoggingValueStore
 from modules.common.store._broker import pub_to_broker
@@ -12,13 +11,10 @@ class BatteryValueStoreRamdisk(ValueStore[BatState]):
         self.num = component_num
 
     def set(self, bat_state: BatState):
-        try:
-            files.battery.power.write(bat_state.power)
-            files.battery.soc.write(bat_state.soc)
-            files.battery.energy_imported.write(bat_state.imported)
-            files.battery.energy_exported.write(bat_state.exported)
-        except Exception as e:
-            raise FaultState.from_exception(e)
+        files.battery.power.write(bat_state.power)
+        files.battery.soc.write(bat_state.soc)
+        files.battery.energy_imported.write(bat_state.imported)
+        files.battery.energy_exported.write(bat_state.exported)
 
 
 class BatteryValueStoreBroker(ValueStore[BatState]):
@@ -29,15 +25,12 @@ class BatteryValueStoreBroker(ValueStore[BatState]):
         self.state = bat_state
 
     def update(self):
-        try:
-            pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/currents", self.state.currents, 2)
-            pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/power", self.state.power, 2)
-            pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/soc", self.state.soc, 0)
-            if self.state.imported is not None and self.state.exported is not None:
-                pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/imported", self.state.imported, 2)
-                pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/exported", self.state.exported, 2)
-        except Exception as e:
-            raise FaultState.from_exception(e)
+        pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/currents", self.state.currents, 2)
+        pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/power", self.state.power, 2)
+        pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/soc", self.state.soc, 0)
+        if self.state.imported is not None and self.state.exported is not None:
+            pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/imported", self.state.imported, 2)
+            pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/exported", self.state.exported, 2)
 
 
 class PurgeBatteryState:
