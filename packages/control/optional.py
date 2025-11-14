@@ -2,9 +2,10 @@
 """
 import logging
 from math import ceil
+import random
 from threading import Thread
-from typing import List, Optional
-from datetime import datetime
+from typing import List, Optional as TypingOptional
+from datetime import datetime, timedelta
 
 from control import data
 from control.ocpp import OcppMixin
@@ -19,6 +20,7 @@ from modules.common.configurable_monitoring import ConfigurableMonitoring
 
 log = logging.getLogger(__name__)
 AS_EURO_PER_KWH = 1000.0  # Umrechnung von €/Wh in €/kWh
+TARIFF_UPDATE_HOUR = 14  # latest expected time for daily tariff update
 
 
 class Optional(OcppMixin):
@@ -26,7 +28,7 @@ class Optional(OcppMixin):
         try:
             self.data = OptionalData()
             # guarded et_module stored in a private attribute
-            self._et_module: Optional[ConfigurableElectricityTariff] = None
+            self._et_module: TypingOptional[ConfigurableElectricityTariff] = None
             self.monitoring_module: ConfigurableMonitoring = None
             self.data.dc_charging = hardware_configuration.get_hardware_configuration_setting("dc_charging")
             Pub().pub("openWB/optional/dc_charging", self.data.dc_charging)
@@ -34,12 +36,12 @@ class Optional(OcppMixin):
             log.exception("Fehler im Optional-Modul")
 
     @property
-    def et_module(self) -> Optional[ConfigurableElectricityTariff]:
+    def et_module(self) -> TypingOptional[ConfigurableElectricityTariff]:
         """Getter for the electricity tariff module (may be None)."""
         return self._et_module
 
     @et_module.setter
-    def et_module(self, value: Optional[ConfigurableElectricityTariff]):
+    def et_module(self, value: TypingOptional[ConfigurableElectricityTariff]):
         """Setter with basic type-guarding and logging.
 
         Accepts either None or a ConfigurableElectricityTariff instance. Logs when set/cleared.
@@ -61,8 +63,8 @@ class Optional(OcppMixin):
             self.monitoring_module.start_monitoring()
 
     def monitoring_stop(self):
-        if self.mon_module is not None:
-            self.mon_module.stop_monitoring()
+        if self.monitoring_module is not None:
+            self.monitoring_module.stop_monitoring()
 
     def et_provider_available(self) -> bool:
         return self.et_module is not None
@@ -201,9 +203,11 @@ class Optional(OcppMixin):
 
     def et_get_prices(self):
         try:
-            if self.et_module:
+            if self.et_module and self.et_price_update_required():
                 thread_handler(Thread(target=self.et_module.update, args=(),
                                       name="electricity tariff in optional"))
+                self.data.et.get.next_query_time = None
+                Pub().pub("openWB/set/optional/et/get/next_query_time", None)
             else:
                 # Wenn kein Modul konfiguriert ist, Fehlerstatus zurücksetzen.
                 if self.data.et.get.fault_state != 0 or self.data.et.get.fault_str != NO_ERROR:
@@ -211,6 +215,44 @@ class Optional(OcppMixin):
                     Pub().pub("openWB/set/optional/et/get/fault_str", NO_ERROR)
         except Exception as e:
             log.exception("Fehler im Optional-Modul: %s", e)
+
+    def et_price_update_required(self) -> bool:
+        def is_tomorrow(last_timestamp: str) -> bool:
+            return (day_of(date=datetime.now()) < day_of(datetime.fromtimestamp(int(last_timestamp)))
+                    or day_of(date=datetime.now()).hour < TARIFF_UPDATE_HOUR)
+
+        def day_of(date: datetime) -> datetime:
+            return date.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        def get_last_entry_time_stamp() -> str:
+            last_known_timestamp = "0"
+            if self.data.et.get.prices is not None:
+                last_known_timestamp = max(self.data.et.get.prices)
+            return last_known_timestamp
+        if len(self.data.et.get.prices) == 0:
+            return True
+        if self.data.et.get.next_query_time is None:
+            next_query_time = datetime.fromtimestamp(int(max(self.data.et.get.prices))).replace(
+                hour=TARIFF_UPDATE_HOUR, minute=0, second=0
+            ) + timedelta(
+                # aktually ET providers issue next day prices up to half an hour earlier then 14:00
+                # reduce serverload on their site by trying early and randomizing query time
+                minutes=random.randint(1, 7) * -5
+            )
+            self.data.et.get.next_query_time = next_query_time.timestamp()
+            Pub().pub("openWB/set/optional/et/get/next_query_time", self.data.et.get.next_query_time)
+        if is_tomorrow(get_last_entry_time_stamp()):
+            if timecheck.create_timestamp() > self.data.et.get.next_query_time:
+                log.info(
+                    f'Wartezeit {datetime.fromtimestamp(self.data.et.get.next_query_time).strftime("%Y%m%d-%H:%M:%S")}'
+                    ' abgelaufen, Strompreise werden abgefragt')
+                return True
+            else:
+                log.info(
+                    'Nächster Abruf der Strompreise '
+                    f'{datetime.fromtimestamp(self.data.et.get.next_query_time).strftime("%Y%m%d-%H:%M:%S")}.')
+                return False
+        return False
 
     def ocpp_transfer_meter_values(self):
         try:
