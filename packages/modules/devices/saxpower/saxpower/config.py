@@ -24,6 +24,20 @@ class Saxpower:
         self.configuration = configuration or SaxpowerConfiguration()
 
 
+class SaxpowerCounterConfiguration:
+    def __init__(self):
+        pass
+
+
+class SaxpowerCounterSetup(ComponentSetup[SaxpowerCounterConfiguration]):
+    def __init__(self,
+                 name: str = "Saxpower Zähler",
+                 type: str = "counter",
+                 id: int = 0,
+                 configuration: SaxpowerCounterConfiguration = None) -> None:
+        super().__init__(name, type, id, configuration or SaxpowerCounterConfiguration())
+
+
 class SaxpowerBatConfiguration:
     def __init__(self):
         pass
