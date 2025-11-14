@@ -8,8 +8,9 @@ from flask import Flask, request, jsonify, make_response, Response
 import os
 import sqlite3
 from passlib.hash import bcrypt
+from secrets import token_urlsafe
 # import secrets
-# import requests
+import requests
 # import time
 
 # ----------------------
@@ -231,6 +232,143 @@ def logout() -> Response:
 def health() -> Response:
     return jsonify(status="ok")
 
+
+# ----------------------
+# User Endpoints
+# ----------------------
+
+
+# ----------------------
+# User-Me Endpoint
+# ----------------------
+@app.get("/user/me")
+def user_me() -> Response:
+    email, err = get_authenticated_email()
+    if err:
+        return err
+    row = get_user(email)
+    if not row or row["disabled"]:
+        return jsonify(error="user not found"), 404
+    user_info = {
+        "email": row["email"],
+        "first_name": row["first_name"],
+        "last_name": row["last_name"],
+        "role": row["role"],
+        "comment": row["comment"],
+        "created_at": db_timestamp_to_epoch_seconds(row["created_at"]),
+        "token_expires_at": db_timestamp_to_epoch_seconds(row["password_token_expires_at"])
+    }
+    return jsonify(user=user_info)
+
+
+# ----------------------
+# User-Update-Password Endpoint
+# ----------------------
+@app.post("/user/update_password")
+def user_update_password() -> Response:
+    data: dict = request.get_json(force=True)
+    old_password = data.get("old_password")
+    new_password = data.get("new_password")
+    email = data.get("email")
+    token_used = False
+    if old_password is None or new_password is None:
+        return jsonify(error="old_password and new_password required"), 400
+    # check for passwort token
+    if not verify_user_token(email, old_password):
+        email, err = get_authenticated_email()
+        if err:
+            return err
+        if not verify_user_password(email, old_password):
+            return jsonify(error="invalid old_password or token"), 401
+    else:
+        token_used = True
+    pw_hash = bcrypt.hash(new_password)
+    conn = db_connect()
+    conn.execute(
+        "UPDATE users SET password_hash = ?, password_token_hash = NULL, password_token_expires_at = NULL "
+        "WHERE email = ?",
+        (pw_hash, email)
+    )
+    conn.commit()
+    conn.close()
+
+    resp = make_response(jsonify(success=True, token_used=token_used))
+    # Cookie setzen
+    set_cookie(resp, COOKIE_NAME, f"{email}:{new_password}", expires=None)
+    return resp
+
+
+# ----------------------
+# User-Create-Password-Token Endpoint
+# ----------------------
+@app.post("/user/create_password_token")
+def user_generate_token() -> Response:
+    timeout = 10  # seconds
+    data: dict = request.get_json(force=True)
+    email = data.get("email")
+    # create random token
+    token = token_urlsafe(6)
+    token_hash = bcrypt.hash(token)
+    expires_at = datetime.now() + timedelta(hours=1)
+    conn = db_connect()
+    conn.execute(
+        "UPDATE users SET password_token_hash = ?, password_token_expires_at = ? "
+        "WHERE email = ?",
+        (token_hash, expires_at, email)
+    )
+    conn.commit()
+    conn.close()
+    # send token to user via email gateway
+    error = None
+    try:
+        payload = {"email": email, "token": token}
+        print(f"Sending token to {TOKEN_SERVER_URL}: {payload}")
+        headers = {
+            'Content-Type': 'application/json',
+            'User-Agent': 'Token-Client/1.0',
+            'charset': 'utf-8'
+        }
+        resp = requests.post(
+            url=TOKEN_SERVER_URL,
+            json=payload,
+            headers=headers,
+            timeout=timeout
+        )
+    except requests.exceptions.Timeout:
+        error = f"Error: request timed out after {timeout}s"
+    except requests.exceptions.ConnectionError:
+        error = f"Error: connection to {TOKEN_SERVER_URL} failed"
+    except requests.RequestException as e:
+        error = f"HTTP-Error: {e}"
+    print(f"{resp.status_code}: {resp.text}")
+    if resp.status_code != 200:
+        error = f"Error: server returned status {resp.status_code}"
+    if error is not None:
+        return jsonify(error=error), 500
+    return jsonify(success=True, token=token, expires_at=expires_at.isoformat())
+
+
+# ----------------------
+# User-Update Endpoint
+# ----------------------
+@app.post("/user/update")
+def user_update() -> Response:
+    email, err = get_authenticated_email()
+    if err:
+        return err
+    data: dict = request.get_json(force=True)
+    first_name = data.get("first_name")
+    last_name = data.get("last_name")
+    comment = data.get("comment")
+    conn = db_connect()
+    conn.execute(
+        "UPDATE users SET first_name = ?, last_name = ?, comment = ? "
+        "WHERE email = ?",
+        (first_name, last_name, comment, email)
+    )
+    conn.commit()
+    conn.close()
+    return jsonify(success=True)
 
 # ----------------------
 # Admin Endpoints
