@@ -4,8 +4,8 @@ from helpermodules import timecheck
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
 from modules.common import req
-from modules.electricity_tariffs.tibber.config import TibberTariffConfiguration
-from modules.electricity_tariffs.tibber.config import TibberTariff
+from modules.electricity_pricing.flexible_tariffs.tibber.config import TibberTariffConfiguration
+from modules.electricity_pricing.flexible_tariffs.tibber.config import TibberTariff
 import json
 
 

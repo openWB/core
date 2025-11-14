@@ -1,8 +1,8 @@
-from typing import Optional, List, Dict
+from typing import List, Dict
 
 
 class FixedHoursTariffConfiguration:
-    def __init__(self, default_price: Optional[float] = None, tariffs: List[Dict[str, any]] = []) -> None:
+    def __init__(self, default_price: float = 0, tariffs: List[Dict[str, any]] = []) -> None:
         self.default_price = default_price
         self.tariffs = tariffs
         '''

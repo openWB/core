@@ -14,7 +14,7 @@ from helpermodules.pub import Pub
 from modules.common import configurable_tariff, req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
-from modules.electricity_tariffs.rabot.config import RabotTariff, RabotToken
+from modules.electricity_pricing.flexible_tariffs.rabot.config import RabotTariff, RabotToken
 
 log = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ def _refresh_token(config: RabotTariff):
     config.configuration.token = RabotToken(access_token=response["access_token"],
                                             expires_in=response["expires_in"],
                                             created_at=timecheck.create_timestamp())
-    Pub().pub("openWB/set/optional/et/provider", asdict(config))
+    Pub().pub("openWB/set/optional/et/dynamic/provider", asdict(config))
 
 
 def fetch(config: RabotTariff) -> None:
@@ -88,7 +88,7 @@ def create_electricity_tariff(config: RabotTariff):
 
     def updater():
         return TariffState(prices=fetch(config))
-    return configurable_tariff.ConfigurableElectricityTariff(config=config, component_updater=updater)
+    return configurable_tariff.ConfigurableFlexibleTariff(config=config, component_updater=updater)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=RabotTariff)

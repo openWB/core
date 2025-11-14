@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 101
+    DATASTORE_VERSION = 102
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -314,10 +314,14 @@ class UpdateConfig:
         "^openWB/set/log/request",
         "^openWB/set/log/data",
 
-        "^openWB/optional/et/get/fault_state$",
-        "^openWB/optional/et/get/fault_str$",
-        "^openWB/optional/et/get/prices$",
-        "^openWB/optional/et/provider$",
+        "^openWB/optional/ep/flexible_tariff/get/fault_state$",
+        "^openWB/optional/ep/flexible_tariff/get/fault_str$",
+        "^openWB/optional/ep/flexible_tariff/get/prices$",
+        "^openWB/optional/ep/flexible_tariff/provider$",
+        "^openWB/optional/ep/grid_fee/get/fault_state$",
+        "^openWB/optional/ep/grid_fee/get/fault_str$",
+        "^openWB/optional/ep/grid_fee/get/prices$",
+        "^openWB/optional/ep/grid_fee/provider$",
         "^openWB/optional/int_display/active$",
         "^openWB/optional/int_display/detected$",
         "^openWB/optional/int_display/on_if_plugged_in$",
@@ -475,7 +479,8 @@ class UpdateConfig:
         "^openWB/system/configurable/chargepoints$",
         "^openWB/system/configurable/chargepoints_internal$",
         "^openWB/system/configurable/devices_components$",
-        "^openWB/system/configurable/electricity_tariffs$",
+        "^openWB/system/configurable/flexible_tariffs$",
+        "^openWB/system/configurable/grid_fees$",
         "^openWB/system/configurable/display_themes$",
         "^openWB/system/configurable/io_actions$",
         "^openWB/system/configurable/io_devices$",
@@ -574,7 +579,8 @@ class UpdateConfig:
         ("openWB/graph/config/duration", 120),
         ("openWB/internal_chargepoint/0/data/parent_cp", None),
         ("openWB/internal_chargepoint/1/data/parent_cp", None),
-        ("openWB/optional/et/provider", NO_MODULE),
+        ("openWB/optional/ep/flexible_tariff/provider", NO_MODULE),
+        ("openWB/optional/ep/grid_fee/provider", NO_MODULE),
         ("openWB/optional/int_display/active", True),
         ("openWB/optional/int_display/detected", True),
         ("openWB/optional/int_display/on_if_plugged_in", True),
@@ -2103,7 +2109,7 @@ class UpdateConfig:
                     configuration_payload.update({"official": True})
                     return {topic: configuration_payload}
             # add "official" flag to selected electricity tariff provider
-            if re.search("openWB/optional/et/provider", topic) is not None:
+            if re.search("openWB/optional/ep/flexible_tariff/provider", topic) is not None:
                 configuration_payload = decode_payload(payload)
                 official_providers = ["awattar", "energycharts", "rabot", "tibber", "voltego"]
                 if configuration_payload.get("type") in official_providers:
@@ -2625,3 +2631,10 @@ class UpdateConfig:
                 Pub().pub(topic, payload)
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(101)
+
+    def upgrade_datastore_102(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if "openWB/optional/et/provider" == topic:
+                return {"openWB/optional/ep/flexible_tariff/provider": decode_payload(payload)}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 102)
