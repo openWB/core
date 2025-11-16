@@ -165,7 +165,6 @@ export const dayGraph = reactive({
 				this.date.getDate().toString().padStart(2, '0')
 
 			this.topic = 'openWB/log/daily/' + dateString
-			console.log(`Request data at ${Date.now()}`)
 			mqttSubscribe(this.topic)
 			if (erase) {
 				graphData.data = []
