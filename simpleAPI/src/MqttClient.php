@@ -52,6 +52,12 @@ class MqttClient
             throw new \Exception("No data received for topic: $topic");
         }
 
+        // Bei mosquitto_sub mit -v wird das Format "topic value" ausgegeben
+        // Wir müssen das Topic-Präfix entfernen
+        if (strpos($value, $topic . ' ') === 0) {
+            $value = substr($value, strlen($topic . ' '));
+        }
+
         return $value;
     }
 
