@@ -3,12 +3,10 @@ import { etData } from './model'
 
 export function processEtProviderMessages(topic: string, message: string) {
 	if (topic == 'openWB/optional/ep/configured') {
+		etData.active = message == 'true'
+	} else if (topic == 'openWB/optional/ep/flexible_tariff/provider') {
 		const data = JSON.parse(message)
-		if (data.type == null) {
-			etData.active = false
-		} else {
-			etData.active = true
-		}
+		etData.etProvider = data.name
 		if (data.configuration && data.configuration.country != null) {
 			globalData.country = data.configuration.country
 		}

@@ -48,12 +48,14 @@ export function addCounter(index: number, counterType: string, grid = false) {
 	if (!counters.has(index)) {
 		counters.set(index, new Counter(index))
 		counters.get(index)!.counterType = counterType
-		counters.get(index)!.grid = grid
 		switch (counterType) {
 			case 'counter':
 				counters.get(index)!.color = grid
 					? 'var(--color-evu)'
 					: 'var(--color-ctr' + (counters.size - 1) + ')'
+				/* if (grid) {
+					counters.get(index)!.showInGraph = false
+				} */
 				break
 			case 'inverter':
 				counters.get(index)!.color = 'var(--color-pv)'

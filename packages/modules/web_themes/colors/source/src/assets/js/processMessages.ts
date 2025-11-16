@@ -39,7 +39,7 @@ const topicsToSubscribe = [
 	'openWB/chargepoint/#',
 	'openWB/vehicle/#',
 	'openWB/general/chargemode_config/pv_charging/#',
-	'openWB/optional/et/#',
+	'openWB/optional/ep/#',
 	'openWB/system/#',
 	'openWB/LegacySmartHome/#',
 	'openWB/command/' + mqttClientId() + '/#',
@@ -85,7 +85,7 @@ function processMqttMessage(topic: string, payload: Buffer) {
 		processMonthGraphMessages(topic, message)
 	} else if (topic.match(/^openwb\/log\/yearly\//i)) {
 		processYearGraphMessages(topic, message)
-	} else if (topic.match(/^openwb\/optional\/et\//i)) {
+	} else if (topic.match(/^openwb\/optional\/ep\//i)) {
 		processEtProviderMessages(topic, message)
 	} else if (topic.match(/^openwb\/system\//i)) {
 		processSystemMessages(topic, message)
@@ -100,8 +100,7 @@ function processCounterMessages(topic: string, message: string) {
 	if (id != undefined) {
 		if (id == globalData.evuId) {
 			processEvuMessages(topic, message)
-		}
-		if (!counters.has(id)) {
+		} else if (!counters.has(id)) {
 			console.warn('Invalid counter index: ' + id)
 		} else if (topic.match(/^openWB\/counter\/[0-9]+\/get\/power$/i)) {
 			counters.get(id)!.power = +message
