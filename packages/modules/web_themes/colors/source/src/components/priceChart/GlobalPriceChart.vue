@@ -11,7 +11,6 @@
 				etData.etCurrentPriceString
 			}}</WbBadge>
 		</template>
-		<div class="subtitle">{{ etData.etProvider }}</div>
 		<div class="grapharea">
 			<figure id="pricechart" class="p-0 m-0 pricefigure">
 				<svg viewBox="0 0 380 280">
