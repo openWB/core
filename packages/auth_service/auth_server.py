@@ -3,6 +3,8 @@
 # Python 3.11
 
 from datetime import datetime, timedelta
+from random import randrange
+from time import sleep
 from typing import Optional, Union
 from flask import Flask, request, jsonify, make_response, Response
 import os
@@ -40,10 +42,10 @@ def db_connect() -> sqlite3.Connection:
     return db_connection
 
 
-def db_timestamp_to_epoch_seconds(ts: Optional[datetime]) -> Optional[int]:
-    if ts is None:
+def db_timestamp_to_epoch_seconds(timestamp: Optional[datetime]) -> Optional[int]:
+    if timestamp is None:
         return None
-    return int(ts.timestamp())
+    return int(timestamp.timestamp())
 
 
 # ----------------------
@@ -51,11 +53,11 @@ def db_timestamp_to_epoch_seconds(ts: Optional[datetime]) -> Optional[int]:
 # ----------------------
 def get_user(email: str) -> Optional[sqlite3.Row]:
     db_connection = db_connect()
-    cur = db_connection.execute(
+    db_cursor = db_connection.execute(
         "SELECT * FROM users WHERE email = ?",
         (email,)
     )
-    row = cur.fetchone()
+    row = db_cursor.fetchone()
     db_connection.close()
     return row
 
@@ -214,10 +216,10 @@ def web_login() -> Response:
     if not verify_user_password(email, password):
         return jsonify(error="invalid credentials"), 401
 
-    resp = make_response(jsonify(success=True))
+    response = make_response(jsonify(success=True))
     # Cookie setzen
-    set_cookie(resp, COOKIE_NAME, f"{email}:{password}", expires=None)
-    return resp
+    set_cookie(response, COOKIE_NAME, f"{email}:{password}", expires=None)
+    return response
 
 
 @app.post("/api/logout")
@@ -283,19 +285,19 @@ def user_update_password() -> Response:
     else:
         token_used = True
     pw_hash = bcrypt.hash(new_password)
-    conn = db_connect()
-    conn.execute(
+    db_connection = db_connect()
+    db_connection.execute(
         "UPDATE users SET password_hash = ?, password_token_hash = NULL, password_token_expires_at = NULL "
         "WHERE email = ?",
         (pw_hash, email)
     )
-    conn.commit()
-    conn.close()
+    db_connection.commit()
+    db_connection.close()
 
-    resp = make_response(jsonify(success=True, token_used=token_used))
+    response = make_response(jsonify(success=True, token_used=token_used))
     # Cookie setzen
-    set_cookie(resp, COOKIE_NAME, f"{email}:{new_password}", expires=None)
-    return resp
+    set_cookie(response, COOKIE_NAME, f"{email}:{new_password}", expires=None)
+    return response
 
 
 # ----------------------
@@ -306,32 +308,50 @@ def user_generate_token() -> Response:
     timeout = 10  # seconds
     data: dict = request.get_json(force=True)
     email = data.get("email")
-    # create random token
+    if not email:
+        return jsonify(error="email required"), 400
     token = token_urlsafe(6)
     token_hash = bcrypt.hash(token)
     expires_at = datetime.now() + timedelta(hours=1)
-    conn = db_connect()
-    conn.execute(
+
+    db_connection = db_connect()
+    db_cursor = db_connection.execute(
         "UPDATE users SET password_token_hash = ?, password_token_expires_at = ? "
         "WHERE email = ?",
         (token_hash, expires_at, email)
     )
-    conn.commit()
-    conn.close()
+    affected_rows = db_cursor.rowcount
+    db_connection.commit()
+    db_connection.close()
+
+    if affected_rows == 0:
+        print(f"Password token requested for unknown email: {email}")
+        # report success even if email not found to avoid user enumeration
+        sleep(randrange(5, 25) * 0.1)  # künstliche Verzögerung
+        return jsonify(success=True,)
+
     # send token to user via email gateway
     error = None
     try:
-        payload = {"email": email, "token": token}
-        print(f"Sending token to {TOKEN_SERVER_URL}: {payload}")
-        headers = {
-            'Content-Type': 'application/json',
-            'User-Agent': 'Token-Client/1.0',
-            'charset': 'utf-8'
+        payload = {
+            "email": email,
+            "subject": "openWB Passwort-Reset",
+            "message": "Hallo,\n\n"
+                       "Du hast in einer openWB ein Passwort-Reset angefordert.\n"
+                       "Bitte verwende den folgenden Token, um Dein Passwort zurückzusetzen:\n\n"
+                       f"Token: {token}\n\n"
+                       "Dieser Token ist 1 Stunde gültig.\n\n"
+                       "Falls Du kein Passwort-Reset angefordert hast, kannst Du diese Nachricht ignorieren."
         }
-        resp = requests.post(
+        print(f"Sending token to {TOKEN_SERVER_URL}: {payload}")
+        response = requests.post(
             url=TOKEN_SERVER_URL,
             json=payload,
-            headers=headers,
+            headers={
+                'Content-Type': 'application/json',
+                'User-Agent': 'Token-Client/1.0',
+                'charset': 'utf-8'
+            },
             timeout=timeout
         )
     except requests.exceptions.Timeout:
@@ -340,12 +360,10 @@ def user_generate_token() -> Response:
         error = f"Error: connection to {TOKEN_SERVER_URL} failed"
     except requests.RequestException as e:
         error = f"HTTP-Error: {e}"
-    print(f"{resp.status_code}: {resp.text}")
-    if resp.status_code != 200:
-        error = f"Error: server returned status {resp.status_code}"
-    if error is not None:
-        return jsonify(error=error), 500
-    return jsonify(success=True, token=token, expires_at=expires_at.isoformat())
+    print(f"{response.status_code}: {response.text}")
+    if error is not None or response.status_code != 200:
+        return jsonify(error=error or f"Error: server returned status {response.status_code}"), 500
+    return jsonify(success=True,)
 
 
 # ----------------------
@@ -353,21 +371,21 @@ def user_generate_token() -> Response:
 # ----------------------
 @app.post("/user/update")
 def user_update() -> Response:
-    email, err = get_authenticated_email()
-    if err:
-        return err
+    email, error = get_authenticated_email()
+    if error:
+        return error
     data: dict = request.get_json(force=True)
     first_name = data.get("first_name")
     last_name = data.get("last_name")
     comment = data.get("comment")
-    conn = db_connect()
-    conn.execute(
+    db_connection = db_connect()
+    db_connection.execute(
         "UPDATE users SET first_name = ?, last_name = ?, comment = ? "
         "WHERE email = ?",
         (first_name, last_name, comment, email)
     )
-    conn.commit()
-    conn.close()
+    db_connection.commit()
+    db_connection.close()
     return jsonify(success=True)
 
 # ----------------------
@@ -381,9 +399,9 @@ def user_update() -> Response:
 @app.post("/admin/create_user")
 def admin_create_user() -> Response:
     # Auth prüfen
-    _, err = get_authenticated_email(required_role="admin")
-    if err:
-        return err
+    _, error = get_authenticated_email(required_role="admin")
+    if error:
+        return error
     data: dict = request.get_json(force=True)
     email = data.get("email")
     password = data.get("password")
@@ -394,18 +412,18 @@ def admin_create_user() -> Response:
     if not email or not password:
         return jsonify(error="email and password required"), 400
     pw_hash = bcrypt.hash(password)
-    conn = db_connect()
+    db_connection = db_connect()
     try:
-        conn.execute(
+        db_connection.execute(
             "INSERT INTO users (email, password_hash, first_name, last_name, role, disabled, comment) "
             "VALUES (?, ?, ?, ?, ?, 0, ?)",
             (email, pw_hash, first_name, last_name, role, comment)
         )
-        conn.commit()
+        db_connection.commit()
     except sqlite3.IntegrityError:
         return jsonify(error=f"user with email '{email}' already exists"), 409
     finally:
-        conn.close()
+        db_connection.close()
     return jsonify(success=True, email=email)
 
 
@@ -427,18 +445,18 @@ def admin_update_user() -> Response:
     comment = data.get("comment")
     if not email:
         return jsonify(error="email required"), 400
-    conn = db_connect()
+    db_connection = db_connect()
     try:
-        conn.execute(
+        db_connection.execute(
             "UPDATE users SET first_name = ?, last_name = ?, role = ?, disabled = ?, comment = ? "
             "WHERE email = ?",
             (first_name, last_name, role, disabled, comment, email)
         )
-        conn.commit()
+        db_connection.commit()
     except sqlite3.IntegrityError:
         return jsonify(error=f"user with email '{email}' already exists"), 409
     finally:
-        conn.close()
+        db_connection.close()
     return jsonify(success=True, email=email)
 
 
@@ -448,22 +466,22 @@ def admin_update_user() -> Response:
 @app.post("/admin/delete_user")
 def admin_delete_user() -> Response:
     # Auth prüfen
-    _, err = get_authenticated_email(required_role="admin")
-    if err:
-        return err
+    _, error = get_authenticated_email(required_role="admin")
+    if error:
+        return error
     data: dict = request.get_json(force=True)
     email = data.get("email")
     if not email:
         return jsonify(error="email required"), 400
-    conn = db_connect()
-    cur = conn.execute(
+    db_connection = db_connect()
+    db_cursor = db_connection.execute(
         "DELETE FROM users WHERE email = ?",
         (email,)
     )
-    deleted = cur.rowcount
-    conn.commit()
-    conn.close()
-    if deleted == 0:
+    deleted_rows = db_cursor.rowcount
+    db_connection.commit()
+    db_connection.close()
+    if deleted_rows == 0:
         return jsonify(error="user not found"), 404
     return jsonify(success=True, email=email)
 
@@ -474,25 +492,25 @@ def admin_delete_user() -> Response:
 @app.post("/admin/update_password")
 def admin_update_password() -> Response:
     # Auth prüfen
-    _, err = get_authenticated_email(required_role="admin")
-    if err:
-        return err
+    _, error = get_authenticated_email(required_role="admin")
+    if error:
+        return error
     data: dict = request.get_json(force=True)
     email = data.get("email")
     password = data.get("password")
     if not email or not password:
         return jsonify(error="email and password required"), 400
     pw_hash = bcrypt.hash(password)
-    conn = db_connect()
-    cur = conn.execute(
+    db_connection = db_connect()
+    db_cursor = db_connection.execute(
         "UPDATE users SET password_hash = ? "
         "WHERE email = ?",
         (pw_hash, email)
     )
-    modified = cur.rowcount
-    conn.commit()
-    conn.close()
-    if modified == 0:
+    modified_rows = db_cursor.rowcount
+    db_connection.commit()
+    db_connection.close()
+    if modified_rows == 0:
         return jsonify(error=f"user with email '{email}' not found"), 409
     return jsonify(success=True)
 
@@ -503,15 +521,18 @@ def admin_update_password() -> Response:
 @app.get("/admin/get_users")
 def admin_get_users() -> Response:
     # Auth prüfen
-    _, err = get_authenticated_email(required_role="admin")
-    if err:
-        return err
-    conn = db_connect()
-    cur = conn.execute("SELECT email, first_name, last_name, comment, role, disabled, created_at FROM users")
-    users = [dict(row) for row in cur.fetchall()]
+    _, error = get_authenticated_email(required_role="admin")
+    if error:
+        return error
+    db_connection = db_connect()
+    db_cursor = db_connection.execute(
+        "SELECT email, first_name, last_name, comment, role, disabled, created_at "
+        "FROM users"
+    )
+    users = [dict(row) for row in db_cursor.fetchall()]
     for user in users:
         user["created_at"] = db_timestamp_to_epoch_seconds(user["created_at"])
-    conn.close()
+    db_connection.close()
     return jsonify(users=users)
 
 
