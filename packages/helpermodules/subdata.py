@@ -27,7 +27,7 @@ from helpermodules.utils import ProcessingCounter
 from helpermodules.utils.run_command import run_command
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
 from helpermodules.pub import Pub
-from dataclass_utils import dataclass_from_dict
+from dataclass_utils import asdict, dataclass_from_dict
 from modules.common.abstract_vehicle import CalculatedSocState, GeneralVehicleConfig
 from modules.common.configurable_backup_cloud import ConfigurableBackupCloud
 from modules.common.configurable_tariff import ConfigurableFlexibleTariff, ConfigurableGridFee
@@ -473,7 +473,8 @@ class SubData:
         index = get_index(msg.topic)
         payload = decode_payload(msg.payload)
         if (var["cp"+index].chargepoint.chargepoint_module is None or
-                payload != var["cp"+index].chargepoint.chargepoint_module.config):
+                payload["configuration"] != asdict(var["cp"+index
+                                                       ].chargepoint.chargepoint_module.config.configuration)):
             mod = importlib.import_module(
                 ".chargepoints."+payload["type"]+".chargepoint_module", "modules")
             config = dataclass_from_dict(mod.chargepoint_descriptor.configuration_factory, payload)

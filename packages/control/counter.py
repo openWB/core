@@ -479,8 +479,9 @@ class Counter:
             if chargepoint.data.control_parameter.timestamp_switch_on_off is not None:
                 chargepoint.data.control_parameter.timestamp_switch_on_off = None
                 evu_counter = data.data.counter_all_data.get_evu_counter()
-                # Wenn bereits geladen wird, freigegebene Leistung freigeben. Wenn nicht geladen wird, reservierte
-                # Leistung freigeben.
+                # Wenn bereits geladen wird, lief die Abschaltverzögerung -> Leistung, die nach Abschalten frei
+                # geworden wäre, nicht mehr zum zur Verfügung stehenden Überschuss zählen.
+                # Wenn nicht geladen wird, reservierte Leistung freigeben.
                 pv_config = data.data.general_data.data.chargemode_config.pv_charging
                 if not chargepoint.data.get.charge_state:
                     evu_counter.data.set.reserved_surplus -= (pv_config.switch_on_threshold

@@ -128,7 +128,7 @@ class UpdateSoc:
                                  soc_from_cp=soc_from_cp,
                                  timestamp_soc_from_cp=timestamp_soc_from_cp,
                                  last_soc_timestamp=soc_timestamp,
-                                 last_soc=ev.data.get.soc)
+                                 last_soc=ev.data.get.soc if ev.data.get.soc is not None else soc_from_cp)
 
     def _filter_failed_store_threads(self, threads_store: List[Thread]) -> List[Thread]:
         ev_data = copy.deepcopy(subdata.SubData.ev_data)

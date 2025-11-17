@@ -201,20 +201,15 @@ class Chargepoint(ChargepointRfidMixin):
             Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/ocpp_transaction_id", None)
         self.reset_control_parameter_at_charge_stop()
         data.data.counter_all_data.get_evu_counter().reset_switch_on_off(self)
-        # Abstecken
         if self.data.get.plug_state is False:
             self.data.control_parameter = control_parameter_factory()
-            # Standardprofil nach Abstecken laden
             if self.data.set.charge_template.data.load_default:
                 self.data.config.ev = 0
                 Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/config/ev", 0)
-            # Ladepunkt nach Abstecken sperren
             if self.template.data.disable_after_unplug:
                 self.data.set.manual_lock = True
                 Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/manual_lock", True)
                 log.debug("/set/manual_lock True")
-            # Ev wurde noch nicht aktualisiert.
-            # Ladeprofil aus den Einstellungen laden.
             if data.data.general_data.data.temporary_charge_templates_active:
                 self.update_charge_template(
                     data.data.ev_data["ev"+str(self.data.config.ev)].charge_template)
