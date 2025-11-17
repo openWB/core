@@ -262,6 +262,8 @@ class ParameterHandler
             $prefix . 'fault_state',
             $prefix . 'imported',
             $prefix . 'exported',
+            $prefix . 'daily_imported',
+            $prefix . 'daily_exported',
             $prefix . 'phases_in_use',
             $prefix . 'plug_state',
             $prefix . 'charge_state',
@@ -269,6 +271,15 @@ class ParameterHandler
             $prefix . 'soc_timestamp',
             $prefix . 'vehicle_id',
             $prefix . 'evse_current',
+            $prefix . 'frequency',
+            $prefix . 'power_factors',
+            $prefix . 'rfid',
+            $prefix . 'rfid_timestamp',
+            $prefix . 'config/name',
+            $prefix . 'connected_vehicle/info/name',
+            $prefix . 'charge_template/name',
+            $prefix . 'charge_template/chargemode/instant_charging/current',
+            $prefix . 'charge_template/chargemode/pv_charging/min_current',
             "openWB/chargepoint/{$id}/set/charge_template"
         ];
 
@@ -279,17 +290,33 @@ class ParameterHandler
             $voltages = json_decode($values[$prefix . 'voltages'] ?? '[]', true) ?: [0, 0, 0];
             $currents = json_decode($values[$prefix . 'currents'] ?? '[]', true) ?: [0, 0, 0];
             $powers = json_decode($values[$prefix . 'powers'] ?? '[]', true) ?: [0, 0, 0];
+            $powerFactors = json_decode($values[$prefix . 'power_factors'] ?? '[]', true) ?: [0, 0, 0];
         } catch (Exception $e) {
             $voltages = [0, 0, 0];
             $currents = [0, 0, 0];
             $powers = [0, 0, 0];
+            $powerFactors = [0, 0, 0];
         }
 
-        // Chargemode aus Template extrahieren
+        // Chargemode und min_current aus Template extrahieren
         $chargemode = 'stop';
+        $minCurrent = 0;
         try {
             $template = json_decode($values["openWB/chargepoint/{$id}/set/charge_template"] ?? '{}', true);
             $chargemode = $template['chargemode']['selected'] ?? 'stop';
+            // min_current aus dem entsprechenden Lademodus extrahieren
+            switch ($chargemode) {
+                case 'instant_charging':
+                    $minCurrent = $template['chargemode']['instant_charging']['current'] ?? 0;
+                    break;
+                case 'pv_charging':
+                case 'eco_charging':
+                    $minCurrent = $template['chargemode']['pv_charging']['min_current'] ?? 0;
+                    break;
+                case 'scheduled_charging':
+                    $minCurrent = $template['chargemode']['scheduled_charging']['current'] ?? 0;
+                    break;
+            }
         } catch (Exception $e) {
             // Fallback
         }
@@ -317,6 +344,8 @@ class ParameterHandler
                 'fault_state' => intval($values[$prefix . 'fault_state'] ?? 0),
                 'imported' => floatval($values[$prefix . 'imported'] ?? 0),
                 'exported' => floatval($values[$prefix . 'exported'] ?? 0),
+                'daily_imported' => floatval($values[$prefix . 'daily_imported'] ?? 0),
+                'daily_exported' => floatval($values[$prefix . 'daily_exported'] ?? 0),
                 'phases_in_use' => intval($values[$prefix . 'phases_in_use'] ?? 1),
                 'plug_state' => $this->parseBooleanValue($values[$prefix . 'plug_state'] ?? 'false'),
                 'charge_state' => $this->parseBooleanValue($values[$prefix . 'charge_state'] ?? 'false'),
@@ -324,6 +353,20 @@ class ParameterHandler
                 'soc_timestamp' => $values[$prefix . 'soc_timestamp'] ?? null,
                 'vehicle_id' => $values[$prefix . 'vehicle_id'] ?? null,
                 'evse_current' => floatval($values[$prefix . 'evse_current'] ?? 0),
+                'frequency' => floatval($values[$prefix . 'frequency'] ?? 0),
+                'power_factors' => [
+                    floatval($powerFactors[0] ?? 0),
+                    floatval($powerFactors[1] ?? 0),
+                    floatval($powerFactors[2] ?? 0)
+                ],
+                'rfid' => $values[$prefix . 'rfid'] ?? null,
+                'rfid_timestamp' => $values[$prefix . 'rfid_timestamp'] ?? null,
+                'config_name' => $values[$prefix . 'config/name'] ?? null,
+                'connected_vehicle_name' => $values[$prefix . 'connected_vehicle/info/name'] ?? null,
+                'charge_template_name' => $values[$prefix . 'charge_template/name'] ?? null,
+                'min_current' => floatval($minCurrent),
+                'instant_charging_current' => floatval($values[$prefix . 'charge_template/chargemode/instant_charging/current'] ?? 0),
+                'pv_charging_min_current' => floatval($values[$prefix . 'charge_template/chargemode/pv_charging/min_current'] ?? 0),
                 'chargemode' => $chargemode
             ]
         ];
