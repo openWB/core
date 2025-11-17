@@ -91,13 +91,18 @@ def collect_data(chargepoint):
             if chargepoint.data.get.charge_state:
                 if log_data.timestamp_start_charging is None:
                     log_data.timestamp_start_charging = now
-                    if charging_ev.soc_module:
-                        log_data.range_at_start = charging_ev.data.get.range
-                        log_data.soc_at_start = charging_ev.data.get.soc
                     if chargepoint.data.control_parameter.submode == "time_charging":
                         log_data.chargemode_log_entry = "time_charging"
                     else:
                         log_data.chargemode_log_entry = chargepoint.data.control_parameter.chargemode.value
+                if charging_ev.soc_module:
+                    if log_data.range_at_start is None:
+                        # manche Vehicle-Module liefern erstmal None
+                        log_data.range_at_start = charging_ev.data.get.range
+                    if (log_data.soc_at_start is None and
+                            chargepoint.data.set.plug_time < charging_ev.data.get.soc_timestamp):
+                        # SoC muss nach dem Anstecken aktualisiert worden sein
+                        log_data.soc_at_start = charging_ev.data.get.soc
                 log_data.ev = chargepoint.data.set.charging_ev_data.num
                 log_data.prio = chargepoint.data.control_parameter.prio
                 log_data.rfid = chargepoint.data.set.rfid
@@ -105,8 +110,7 @@ def collect_data(chargepoint):
                     lambda: chargepoint.data.get.imported - log_data.imported_at_mode_switch)
                 # log.debug(f"imported_since_mode_switch {log_data.imported_since_mode_switch} "
                 #           f"counter {chargepoint.data.get.imported}")
-                log_data.range_charged = get_value_or_default(lambda: log_data.imported_since_mode_switch /
-                                                              charging_ev.ev_template.data.average_consump * 100)
+                log_data.range_charged = _get_range_charged(log_data, charging_ev)
             else:
                 if log_data.timestamp_start_charging is not None:
                     log_data.time_charged += now - log_data.timestamp_start_charging
@@ -173,6 +177,16 @@ def get_value_or_default(func, default: Optional[Any] = None):
         return default
 
 
+def _get_range_charged(log_data, charging_ev) -> float:
+    if log_data.range_at_start is not None:
+        return get_value_or_default(lambda: round(
+            charging_ev.data.get.range - log_data.range_at_start, 2))
+    else:
+        return get_value_or_default(lambda: round(
+            (log_data.imported_since_mode_switch * charging_ev.ev_template.data.efficiency /
+             charging_ev.ev_template.data.average_consump), 2))
+
+
 def save_data(chargepoint, charging_ev, immediately: bool = True):
     """ json-Objekt für den Log-Eintrag erstellen, an die Datei anhängen und die Daten, die sich auf den Ladevorgang
     beziehen, löschen.
@@ -201,13 +215,7 @@ def _create_entry(chargepoint, charging_ev, immediately: bool = True):
         chargepoint.data.get.imported - log_data.imported_at_plugtime, 2))
     log_data.imported_since_mode_switch = get_value_or_default(lambda: round(
         chargepoint.data.get.imported - log_data.imported_at_mode_switch, 2))
-    if log_data.range_at_start is not None:
-        log_data.range_charged = get_value_or_default(lambda: round(
-            charging_ev.data.get.range - log_data.range_at_start, 2))
-    else:
-        log_data.range_charged = get_value_or_default(lambda: round(
-            (log_data.imported_since_mode_switch * charging_ev.ev_template.data.efficiency /
-             charging_ev.ev_template.data.average_consump), 2))
+    log_data.range_charged = _get_range_charged(log_data, charging_ev)
     power = 0
     if log_data.timestamp_start_charging:
         time_charged = get_value_or_default(lambda: log_data.time_charged +
