@@ -87,7 +87,6 @@ class CpTemplate:
         message: str
             Status-Text
         """
-        num = -1
         message = None
         try:
             if data.data.optional_data.data.rfid.active and (rfid is not None or vehicle_id is not None):
@@ -103,4 +102,4 @@ class CpTemplate:
         except Exception:
             log.exception(
                 "Fehler in der Ladepunkt-Profil Klasse")
-            return num, "Keine Ladung, da ein interner Fehler aufgetreten ist: " + traceback.format_exc()
+            return assigned_ev, "Keine Ladung, da ein interner Fehler aufgetreten ist: " + traceback.format_exc()

@@ -57,7 +57,7 @@ class Algorithm:
         """
         for cp in data.data.cp_data.values():
             try:
-                if cp.data.set.charging_ev != -1:
+                if cp.data.control_parameter.required_current != 0:
                     charging_ev = cp.data.set.charging_ev_data
                     control_parameter = cp.data.control_parameter
                     if cp.cp_state_hw_support_phase_switch() and control_parameter.template_phases == 0:

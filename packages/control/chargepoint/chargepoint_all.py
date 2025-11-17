@@ -47,13 +47,12 @@ class AllChargepoints:
                     control_parameter = chargepoint.data.control_parameter
                     if (not chargepoint.data.get.plug_state or
                             # Kein EV, das Laden soll
-                            chargepoint.data.set.charging_ev == -1 or
                             # Kein EV, das auf das Ablaufen der Einschalt- oder Phasenumschaltverzögerung wartet
-                            (chargepoint.data.set.charging_ev != -1 and
-                                control_parameter.state != ChargepointState.PERFORMING_PHASE_SWITCH and
+                            (control_parameter.state != ChargepointState.PERFORMING_PHASE_SWITCH and
                                 control_parameter.state != ChargepointState.PHASE_SWITCH_DELAY and
                                 control_parameter.state != ChargepointState.SWITCH_OFF_DELAY and
-                                control_parameter.state != ChargepointState.SWITCH_ON_DELAY)):
+                                control_parameter.state != ChargepointState.SWITCH_ON_DELAY and
+                                control_parameter.state != ChargepointState.NO_CHARGING_ALLOWED)):
                         continue
                     else:
                         break

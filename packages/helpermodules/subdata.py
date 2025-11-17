@@ -27,7 +27,7 @@ from helpermodules.utils import ProcessingCounter
 from helpermodules.utils.run_command import run_command
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
 from helpermodules.pub import Pub
-from dataclass_utils import dataclass_from_dict
+from dataclass_utils import asdict, dataclass_from_dict
 from modules.common.abstract_vehicle import CalculatedSocState, GeneralVehicleConfig
 from modules.common.configurable_backup_cloud import ConfigurableBackupCloud
 from modules.common.configurable_tariff import ConfigurableFlexibleTariff, ConfigurableGridFee
@@ -439,13 +439,8 @@ class SubData:
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.get.connected_vehicle, msg)
                         elif (re.search("/chargepoint/[0-9]+/get/soc$", msg.topic) is not None and
                               decode_payload(msg.payload) != var["cp"+index].chargepoint.data.get.soc):
-                            # Wenn das Auto noch nicht zugeordnet ist, wird der SoC nach der Zuordnung aktualisiert
-                            if var["cp"+index].chargepoint.data.set.charging_ev > -1:
-                                Pub().pub(f'openWB/set/vehicle/{var["cp"+index].chargepoint.data.set.charging_ev}'
-                                          '/get/force_soc_update', True)
-                            elif var["cp"+index].chargepoint.data.set.charging_ev_prev > -1:
-                                Pub().pub(f'openWB/set/vehicle/{var["cp"+index].chargepoint.data.set.charging_ev_prev}'
-                                          '/get/force_soc_update', True)
+                            Pub().pub(f'openWB/set/vehicle/{var["cp"+index].chargepoint.data.config.ev}'
+                                      '/get/force_soc_update', True)
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.get, msg)
                         elif (re.search("/chargepoint/[0-9]+/get/error_timestamp$", msg.topic) is not None and
                               hasattr(var[f"cp{index}"].chargepoint.chargepoint_module, "client_error_context")):
@@ -478,7 +473,8 @@ class SubData:
         index = get_index(msg.topic)
         payload = decode_payload(msg.payload)
         if (var["cp"+index].chargepoint.chargepoint_module is None or
-                payload != var["cp"+index].chargepoint.chargepoint_module.config):
+                payload["configuration"] != asdict(var["cp"+index
+                                                       ].chargepoint.chargepoint_module.config.configuration)):
             mod = importlib.import_module(
                 ".chargepoints."+payload["type"]+".chargepoint_module", "modules")
             config = dataclass_from_dict(mod.chargepoint_descriptor.configuration_factory, payload)

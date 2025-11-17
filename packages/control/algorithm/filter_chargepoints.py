@@ -25,7 +25,7 @@ def get_chargepoints_by_mode(mode_tuple: Tuple[Optional[str], str, bool]) -> Lis
     # enthält alle LP, auf die das Tupel zutrifft
     valid_chargepoints = []
     for cp in data.data.cp_data.values():
-        if cp.data.set.charging_ev != -1:
+        if cp.data.control_parameter.required_current != 0:
             if ((cp.data.control_parameter.prio == prio) and
                 (cp.data.control_parameter.chargemode == mode or
                     mode is None) and
