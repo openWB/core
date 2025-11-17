@@ -278,8 +278,6 @@ class ParameterHandler
             $prefix . 'config/name',
             $prefix . 'connected_vehicle/info/name',
             $prefix . 'charge_template/name',
-            $prefix . 'charge_template/chargemode/instant_charging/current',
-            $prefix . 'charge_template/chargemode/pv_charging/min_current',
             "openWB/chargepoint/{$id}/set/charge_template"
         ];
 
@@ -301,17 +299,24 @@ class ParameterHandler
         // Chargemode und min_current aus Template extrahieren
         $chargemode = 'stop';
         $minCurrent = 0;
+        $instantChargingCurrent = 0;
+        $pvChargingMinCurrent = 0;
         try {
             $template = json_decode($values["openWB/chargepoint/{$id}/set/charge_template"] ?? '{}', true);
             $chargemode = $template['chargemode']['selected'] ?? 'stop';
+            
+            // Alle relevanten Ströme aus dem Template extrahieren
+            $instantChargingCurrent = $template['chargemode']['instant_charging']['current'] ?? 0;
+            $pvChargingMinCurrent = $template['chargemode']['pv_charging']['min_current'] ?? 0;
+            
             // min_current aus dem entsprechenden Lademodus extrahieren
             switch ($chargemode) {
                 case 'instant_charging':
-                    $minCurrent = $template['chargemode']['instant_charging']['current'] ?? 0;
+                    $minCurrent = $instantChargingCurrent;
                     break;
                 case 'pv_charging':
                 case 'eco_charging':
-                    $minCurrent = $template['chargemode']['pv_charging']['min_current'] ?? 0;
+                    $minCurrent = $pvChargingMinCurrent;
                     break;
                 case 'scheduled_charging':
                     $minCurrent = $template['chargemode']['scheduled_charging']['current'] ?? 0;
@@ -365,8 +370,8 @@ class ParameterHandler
                 'connected_vehicle_name' => $values[$prefix . 'connected_vehicle/info/name'] ?? null,
                 'charge_template_name' => $values[$prefix . 'charge_template/name'] ?? null,
                 'min_current' => floatval($minCurrent),
-                'instant_charging_current' => floatval($values[$prefix . 'charge_template/chargemode/instant_charging/current'] ?? 0),
-                'pv_charging_min_current' => floatval($values[$prefix . 'charge_template/chargemode/pv_charging/min_current'] ?? 0),
+                'instant_charging_current' => floatval($instantChargingCurrent),
+                'pv_charging_min_current' => floatval($pvChargingMinCurrent),
                 'chargemode' => $chargemode
             ]
         ];
