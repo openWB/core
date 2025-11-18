@@ -5,7 +5,7 @@ from typing import Iterable, Union
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
-from modules.common.modbus import ModbusTcpClient_
+from modules.common.modbus import ModbusUdpClient_
 from modules.devices.victron.victron.bat import VictronBat
 from modules.devices.victron.victron.config import Victron, VictronBatSetup, VictronCounterSetup, VictronInverterSetup
 from modules.devices.victron.victron.counter import VictronCounter
@@ -38,7 +38,7 @@ def create_device(device_config: Victron):
 
     def initializer():
         nonlocal client
-        client = ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
+        client = ModbusUdpClient_(device_config.configuration.ip_address, device_config.configuration.port)
 
     return ConfigurableDevice(
         device_config=device_config,
