@@ -69,7 +69,7 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 	currentItem.evuOut = 0
 	currentItem.evuIn = 0
 	currentItem.counters = 0
-	
+
 	Object.entries(currentRow.counter).forEach(([id, values]) => {
 		if (values.grid) {
 			currentItem.evuOut += values.power_exported
@@ -82,14 +82,12 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 				registry.duplicateItem(id, counters.get(+id.slice(7))!)
 				//registry.items.get(id)!.showInGraph = true
 			}
-			const item : Counter = registry.items.get(id) as Counter
+			const item: Counter = registry.items.get(id) as Counter
 			if (item._showInGraph) {
 				currentItem.counters += values.power_imported ?? 0
 				currentItem[id] = values.power_imported ?? 0
-			
 			}
 		}
-
 	})
 	if (currentItem.evuOut == 0 && currentItem.evuIn == 0) {
 		// legacy mode
@@ -171,8 +169,8 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 			currentItem[id] = values.power_imported ?? 0
 			if (!registry.keys().includes(id)) {
 				registry.duplicateItem(id, counters.get(+id.slice(7))!)
-	 */			//registry.items.get(id)!.showInGraph = true
-			/* }
+	 */ //registry.items.get(id)!.showInGraph = true
+	/* }
 			const item : Counter = registry.items.get(id) as Counter
 			if (item._showInGraph) {
 				currentItem.counters += values.power_imported ?? 0

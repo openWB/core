@@ -3,15 +3,19 @@
 		<span class="settingstitle mb-3">Zähler in den Diagrammen anzeigen:</span>
 		<div v-for="(element, idx) in counters.values()" :key="idx">
 			<input
+				v-if="!element.grid"
 				:id="'check' + idx"
 				v-model="element.showInGraph"
 				class="form-check-input mb-3"
 				type="checkbox"
 				:value="element"
 			/>
-			<label class="form-check-label px-2" :for="'check' + idx">{{
-				element.name
-			}}</label>
+			<label
+				v-if="!element.grid"
+				class="form-check-label px-2"
+				:for="'check' + idx"
+				>{{ element.name }}</label
+			>
 		</div>
 	</div>
 </template>
