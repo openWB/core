@@ -1,4 +1,0 @@
-Flask==3.1.2
-passlib==1.7.4
-Requests==2.32.5
-waitress==3.0.2
