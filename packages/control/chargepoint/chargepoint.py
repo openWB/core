@@ -663,7 +663,6 @@ class Chargepoint(ChargepointRfidMixin):
                         self.get_max_phase_hw(),
                         self.hw_supports_phase_switch(),
                         self.template.data.charging_type,
-                        self.data.control_parameter.timestamp_chargemode_changed or create_timestamp(),
                         self.data.set.log.imported_since_plugged,
                         self.hw_bidi_capable(),
                         self.data.get.phases_in_use)
