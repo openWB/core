@@ -6,28 +6,25 @@ from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
-from modules.common.simcount import SimCounter
 from modules.common.store import get_inverter_value_store
-from modules.devices.zcs.zcs.config import ZCSInverterSetup
+from modules.devices.azzurro_zcs.azzurro_zcs_3p.config import ZCSPvInverterSetup
 
 log = logging.getLogger(__name__)
 
 
 class KwargsDict(TypedDict):
-    device_id: int
     client: ModbusTcpClient_
+    modbus_id: int
 
 
-class ZCSInverter(AbstractInverter):
-    def __init__(self, component_config: ZCSInverterSetup, **kwargs: Any) -> None:
+class ZCSPvInverter(AbstractInverter):
+    def __init__(self, component_config: ZCSPvInverterSetup, **kwargs: Any) -> None:
         self.component_config = component_config
         self.kwargs: KwargsDict = kwargs
-        self.__modbus_id = component_config.configuration.modbus_id
 
     def initialize(self) -> None:
-        self.__device_id: int = self.kwargs['device_id']
+        self.__modbus_id: int = self.kwargs['modbus_id']
         self.client: ModbusTcpClient_ = self.kwargs['client']
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
@@ -44,14 +41,13 @@ class ZCSInverter(AbstractInverter):
             ]
         except Exception:
             log.debug("Modbus could not be read.")
-        
+
         inverter_state = InverterState(
             currents=currents,
             power=power,
             exported=exported
-            # dc_power=dc_power
         )
         self.store.set(inverter_state)
 
 
-component_descriptor = ComponentDescriptor(configuration_factory=ZCSInverterSetup)
+component_descriptor = ComponentDescriptor(configuration_factory=ZCSPvInverterSetup)

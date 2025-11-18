@@ -28,9 +28,8 @@ class CHINT:
 
 @auto_str
 class CHINTCounterConfiguration:
-    def __init__(self, modbus_id: int = 1, invert: bool = False):
+    def __init__(self, modbus_id: int = 1):
         self.modbus_id = modbus_id
-        self.invert = invert
 
 
 @auto_str

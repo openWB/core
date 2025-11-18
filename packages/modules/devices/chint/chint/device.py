@@ -17,8 +17,7 @@ def create_device(device_config: CHINT):
 
     def create_counter_component(component_config: CHINTCounterSetup):
         nonlocal client
-        return CHINTCounter(component_config=component_config,
-                            device_id=device_config.id, client=client)
+        return CHINTCounter(component_config=component_config, client=client)
 
     def update_components(components: Iterable[Union[CHINTCounter]]):
         with client:
