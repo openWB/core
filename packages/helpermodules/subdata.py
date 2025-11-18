@@ -480,7 +480,8 @@ class SubData:
             config = dataclass_from_dict(mod.chargepoint_descriptor.configuration_factory, payload)
             var["cp"+index].chargepoint.chargepoint_module = mod.ChargepointModule(config)
             self.set_internal_chargepoint_configured()
-        if payload["type"] == "internal_openwb":
+        if (payload["type"] == "internal_openwb" and
+                payload["type"] != var["cp"+index].chargepoint.chargepoint_module.config.type):
             log.debug("Neustart des Handlers für den internen Ladepunkt.")
             self.event_stop_internal_chargepoint.set()
             self.event_start_internal_chargepoint.set()
