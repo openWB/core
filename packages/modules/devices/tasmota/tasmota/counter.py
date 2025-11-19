@@ -50,26 +50,30 @@ class TasmotaCounter(AbstractCounter):
             power_factors[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Factor'])
             imported = float(response['StatusSNS']['ENERGY']['Total']*1000)
             _, exported = self.sim_counter.sim_count(power)
-
-            counter_state = CounterState(
-                power=power,
-                voltages=voltages,
-                currents=currents,
-                powers=powers,
-                power_factors=power_factors,
-                imported=imported,
-                exported=exported
-            )
-        else:
+        elif 'Itron' in response['StatusSNS']:
             power = float(response['StatusSNS']['Itron']['Power'])
             imported = float(response['StatusSNS']['Itron']['E_in']*1000)
             exported = float(response['StatusSNS']['Itron']['E_out']*1000)
+        elif 'MT681' in response['StatusSNS']:
+            power = float(response['StatusSNS']['MT681']['Watt_summe'])
+            imported = float(response['StatusSNS']['MT681']['Total_in']*1000)
+            exported = float(response['StatusSNS']['MT681']['Total_out']*1000)
+        else:
+            raise ValueError("Nicht unterstützter Tasmota Zählertyp. Bitte an den Support wenden.")
 
-            counter_state = CounterState(
-                power=power,
-                imported=imported,
-                exported=exported
-            )
+        counter_state = CounterState(
+            power=power,
+            imported=imported,
+            exported=exported
+        )
+        if 'voltages' in locals():
+            counter_state.voltages = voltages
+        if 'currents' in locals():
+            counter_state.currents = currents
+        if 'powers' in locals():
+            counter_state.powers = powers
+        if 'power_factors' in locals():
+            counter_state.power_factors = power_factors
 
         self.store.set(counter_state)
 
