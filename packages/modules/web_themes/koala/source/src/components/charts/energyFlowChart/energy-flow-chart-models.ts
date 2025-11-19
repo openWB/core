@@ -12,6 +12,7 @@ export interface SvgSize {
 
 export interface ComponentClass {
   base: string;
+  animationId?: string;
   valueLabel: string;
   animated?: boolean;
   animatedReverse?: boolean;
