@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { useMqttStore } from 'src/stores/mqtt-store';
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch } from 'vue';
 import type { SvgSize, FlowComponent } from './energy-flow-chart-models';
 import type { ValueObject } from 'src/stores/mqtt-store-model';
+import { useEnergyFlowTransition } from 'src/composables/useEnergyFlowTransition';
 
 const mqttStore = useMqttStore();
 
@@ -269,53 +270,53 @@ const maxSystemPower = computed(() => {
   return Math.max(...filteredPowerValues);
 });
 
-const calcDashSpeed = (
-  power: number,
-  maxPower = maxSystemPower.value,
-  minSpeed = 0.04,
-  maxSpeed = 0.5,
-) => {
-  const absPower = Math.abs(power);
-  if (absPower <= 0) return minSpeed;
-  if (absPower >= maxPower) return maxSpeed;
-  return minSpeed + (maxSpeed - minSpeed) * (absPower / maxPower);
-};
+function calculateDuration(power: number, maxPower: number): number {
+  const minDuration = 0.4;
+  const maxDuration = 4.0;
+  const absPower = Math.abs(power || 0);
 
-let animationFrameId: number | null = null;
-const dashOffsets = ref<Record<string, number>>({});
-
-// Animation-Loop
-const animateDashes = () => {
-  const frameDuration = 1 / 2; // time per Frame (2 FPS)
-  function step() {
-    svgComponents.value.forEach((component) => {
-      if (component.class.animated || component.class.animatedReverse) {
-        const id = component.id;
-        const path = document.getElementById(`flow-path-${id}`);
-        const dashLength = 10;
-        const speed = calcDashSpeed(component.powerValue || 0);
-        // Update the dash offset
-        const previousOffset = dashOffsets.value[id] ?? 0;
-        // +1 = reverse direction, -1 = normal direction
-        const directionMultiplier = component.class.animatedReverse ? 1 : -1;
-        // How far the dash pattern moves during this frame.. speed: units per second, delta: time elapsed since the last frame (in seconds)
-        const offsetChange = speed * frameDuration * directionMultiplier;
-        // Raw new offset (can be larger than dashLength or smaller than 0)
-        let newOffset = (previousOffset + offsetChange) % dashLength;
-        // In JavaScript, the % operator can return a negative result so if it's negative, shift it back into the [0, dashLength) range
-        if (newOffset < 0) {
-          newOffset += dashLength;
-        }
-        // Store the calculated offset for this path
-        dashOffsets.value[id] = newOffset;
-        // Apply the new offset to the SVG path
-        path.style.strokeDashoffset = `${newOffset}`;
-      }
-    });
-    animationFrameId = requestAnimationFrame(step);
+  let duration: number;
+  if (absPower >= maxPower) {
+    duration = minDuration;
+  } else if (absPower > 0) {
+    duration = maxDuration - (maxDuration - minDuration) * (absPower / maxPower);
+  } else {
+    duration = maxDuration;
   }
-  animationFrameId = requestAnimationFrame(step);
-};
+  // duration in seconds, rounded to 1 decimal place
+  return Math.round(duration * 10) / 10;
+}
+
+// animation durations by component.id
+const animationDurations = computed<Record<string, number>>(() => {
+  const maxPower = maxSystemPower.value;
+
+  const cp1 = Number(chargePoint1Power.value.value);
+  const cp2 = Number(chargePoint2Power.value.value);
+  const cp3 = Number(chargePoint3Power.value.value);
+  const cpSum = Number(chargePointSumPower.value.value);
+
+  const gridVal = Number(gridPower.value.value);
+  const homeVal = Number(homePower.value.value);
+  const pvVal = Number(pvPower.value.value);
+  const batVal = Number(batteryPower.value.value);
+
+  return {
+    grid: calculateDuration(gridVal, maxPower),
+    home: calculateDuration(homeVal, maxPower),
+    pv: calculateDuration(pvVal, maxPower),
+    battery: calculateDuration(batVal, maxPower),
+
+    'charge-point-1': calculateDuration(cp1, maxPower),
+    'charge-point-2': calculateDuration(cp2, maxPower),
+    'charge-point-3': calculateDuration(cp3, maxPower),
+    'charge-point-sum': calculateDuration(cpSum, maxPower),
+
+    'vehicle-1': calculateDuration(cp1, maxPower),
+    'vehicle-2': calculateDuration(cp2, maxPower),
+    'vehicle-3': calculateDuration(cp3, maxPower),
+  };
+});
 
 ///////////////////////// Diagram components /////////////////////////
 
@@ -550,29 +551,6 @@ const svgComponents = computed((): FlowComponent[] => {
   return components;
 });
 
-onMounted(() => {
-  animateDashes();
-});
-
-onUnmounted(() => {
-  if (animationFrameId !== null) {
-    cancelAnimationFrame(animationFrameId);
-    animationFrameId = null;
-  }
-});
-
-watch(
-  svgComponents,
-  (components) => {
-    components.forEach((component) => {
-      if (!(component.id in dashOffsets.value)) {
-        dashOffsets.value[component.id] = 0;
-      }
-    });
-  },
-  { immediate: true, deep: true },
-);
-
 const calculatedRows = computed(() => {
   if (connectedChargePoints.value?.length > 0) {
     return connectedChargePoints.value.length > 3 ? 3 : 4;
@@ -645,6 +623,41 @@ const svgRectWidth = computed(
       svgSize.value.numColumns) /
     svgSize.value.numColumns,
 );
+
+// Hook up the chained-transition controllers.
+// One controller per possible flow-path ID.
+const FLOW_IDS = [
+  'grid',
+  'home',
+  'pv',
+  'battery',
+  'charge-point-1',
+  'charge-point-2',
+  'charge-point-3',
+  'charge-point-sum',
+  'vehicle-1',
+  'vehicle-2',
+  'vehicle-3',
+] as const;
+
+FLOW_IDS.forEach((id) => {
+  const isActive = computed(() => {
+    const component = svgComponents.value.find((component) => component.id === id);
+    return !!component && (component.class.animated || component.class.animatedReverse);
+  });
+
+  const duration = computed(() => {
+    const duration = animationDurations.value[id];
+    return duration ?? 4.0;
+  });
+
+  const reverse = computed(() => {
+    const component = svgComponents.value.find((component) => component.id === id);
+    return !!component?.class.animatedReverse;
+  });
+
+  useEnergyFlowTransition(id, isActive, duration, reverse);
+});
 </script>
 
 <template>
@@ -836,20 +849,9 @@ path {
   transition: stroke 0.5s;
 }
 
-path.animated {
-  stroke: var(--q-white);
-  stroke-dasharray: 5;
-}
-
-path.animatedReverse {
-  stroke: var(--q-white);
-  stroke-dasharray: 5;
-}
-
 path.animated.grid {
   stroke: var(--q-negative);
 }
-
 path.animatedReverse.grid {
   stroke: var(--q-positive);
 }
@@ -866,6 +868,11 @@ path.animatedReverse.grid {
   }
 }
 
+path.animated.home,
+path.animatedReverse.home {
+  stroke: var(--q-flow-home-stroke);
+}
+
 path.animated.pv,
 path.animatedReverse.pv {
   stroke: var(--q-positive);
@@ -877,7 +884,9 @@ path.animatedReverse.battery {
 }
 
 path.animated.charge-point,
-path.animatedReverse.charge-point {
+path.animated.charge-point-sum,
+path.animatedReverse.charge-point,
+path.animatedReverse.charge-point-sum {
   stroke: var(--q-primary);
 }
 
