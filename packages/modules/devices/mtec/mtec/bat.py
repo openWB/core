@@ -36,12 +36,12 @@ class MTecBat(AbstractBat):
         generation = self.component_config.configuration.generation
 
         if generation == 2:
-            power = self.client.read_holding_registers(40258, ModbusDataType.INT_32, unit=unit) * -1
+            power = self.client.read_holding_registers(40258, ModbusDataType.INT_32, device_id=unit) * -1
             # soc unit 0.01%
-            soc = self.client.read_holding_registers(43000, ModbusDataType.UINT_16, unit=unit) / 100
+            soc = self.client.read_holding_registers(43000, ModbusDataType.UINT_16, device_id=unit) / 100
         else:
-            power = self.client.read_holding_registers(30258, ModbusDataType.INT_32, unit=unit) * -1
-            soc = self.client.read_holding_registers(33000, ModbusDataType.UINT_16, unit=unit) / 100
+            power = self.client.read_holding_registers(30258, ModbusDataType.INT_32, device_id=unit) * -1
+            soc = self.client.read_holding_registers(33000, ModbusDataType.UINT_16, device_id=unit) / 100
         imported, exported = self.sim_counter.sim_count(power)
 
         bat_state = BatState(

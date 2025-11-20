@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import sys
 import logging
-from pymodbus.client.sync import ModbusTcpClient
+from pymodbus.client import ModbusTcpClient
 
 log = logging.getLogger("DAC")
 bp = '/var/www/html/openWB/ramdisk/smarthome_device_'
@@ -18,7 +18,7 @@ log.info('on devicenr %d ipadr %s dactyp %d' % (devicenumber, ipadr, dactyp))
 if dactyp == 2:
     client = ModbusTcpClient(ipadr, port=port)
     # DO1 einschalten um SGready zu aktivieren
-    rq = client.write_coil(0, True, unit=1)
+    rq = client.write_coil(0, True, device_id=1)
 pvmodus = 1
 with open(file_stringpv, 'w') as f:
     f.write(str(pvmodus))

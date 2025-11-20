@@ -35,9 +35,9 @@ class Evse:
         self.id = modbus_id
         with client:
             time.sleep(0.1)
-            self.version = self.client.read_holding_registers(1005, ModbusDataType.UINT_16, unit=self.id)
+            self.version = self.client.read_holding_registers(1005, ModbusDataType.UINT_16, device_id=self.id)
             time.sleep(0.1)
-            self.max_current = self.client.read_holding_registers(2007, ModbusDataType.UINT_16, unit=self.id)
+            self.max_current = self.client.read_holding_registers(2007, ModbusDataType.UINT_16, device_id=self.id)
             with ModifyLoglevelContext(log, logging.DEBUG):
                 log.debug(f"Firmware-Version der EVSE: {self.version}")
             if self.version < 17:
@@ -50,7 +50,7 @@ class Evse:
     def get_plug_charge_state(self) -> Tuple[bool, bool, float]:
         time.sleep(0.1)
         raw_set_current, _, state_number = self.client.read_holding_registers(
-            1000, [ModbusDataType.UINT_16]*3, unit=self.id)
+            1000, [ModbusDataType.UINT_16]*3, device_id=self.id)
         # remove leading zeros
         self.evse_current = int(raw_set_current)
         log.debug("Gesetzte Stromstärke EVSE: "+str(self.evse_current) +
@@ -78,7 +78,7 @@ class Evse:
 
     def is_precise_current_active(self) -> bool:
         time.sleep(0.1)
-        value = self.client.read_holding_registers(2005, ModbusDataType.UINT_16, unit=self.id)
+        value = self.client.read_holding_registers(2005, ModbusDataType.UINT_16, device_id=self.id)
         with ModifyLoglevelContext(log, logging.DEBUG):
             if value & self.PRECISE_CURRENT_BIT:
                 log.debug("Angabe der Ströme in 0,01A-Schritten ist aktiviert.")
@@ -89,23 +89,23 @@ class Evse:
 
     def activate_precise_current(self) -> None:
         time.sleep(0.1)
-        value = self.client.read_holding_registers(2005, ModbusDataType.UINT_16, unit=self.id)
+        value = self.client.read_holding_registers(2005, ModbusDataType.UINT_16, device_id=self.id)
         if value & self.PRECISE_CURRENT_BIT:
             return
         else:
             with ModifyLoglevelContext(log, logging.DEBUG):
                 log.debug("Bit zur Angabe der Ströme in 0,1A-Schritten wird gesetzt.")
-            self.client.write_registers(2005, value ^ self.PRECISE_CURRENT_BIT, unit=self.id)
+            self.client.write_registers(2005, value ^ self.PRECISE_CURRENT_BIT, device_id=self.id)
             # Zeit zum Verarbeiten geben
             time.sleep(1)
 
     def deactivate_precise_current(self) -> None:
         time.sleep(0.1)
-        value = self.client.read_holding_registers(2005, ModbusDataType.UINT_16, unit=self.id)
+        value = self.client.read_holding_registers(2005, ModbusDataType.UINT_16, device_id=self.id)
         if value & self.PRECISE_CURRENT_BIT:
             with ModifyLoglevelContext(log, logging.DEBUG):
                 log.debug("Bit zur Angabe der Ströme in 0,1A-Schritten wird zurueckgesetzt.")
-            self.client.write_registers(2005, value ^ self.PRECISE_CURRENT_BIT, unit=self.id)
+            self.client.write_registers(2005, value ^ self.PRECISE_CURRENT_BIT, device_id=self.id)
         else:
             return
 
@@ -113,4 +113,4 @@ class Evse:
         time.sleep(0.1)
         formatted_current = round(current*100) if self._precise_current else round(current)
         if self.evse_current != formatted_current:
-            self.client.write_registers(1000, formatted_current, unit=self.id)
+            self.client.write_registers(1000, formatted_current, device_id=self.id)

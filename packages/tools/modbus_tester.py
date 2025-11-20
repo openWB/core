@@ -30,14 +30,14 @@ try:
     client = modbus.ModbusTcpClient_(host, port=port)
     if func == 4:
         if length > 1:
-            resp = client.read_input_registers(start, [modbus.ModbusDataType[data_type]]*length, unit=slave_id)
+            resp = client.read_input_registers(start, [modbus.ModbusDataType[data_type]]*length, device_id=slave_id)
         else:
-            resp = client.read_input_registers(start, modbus.ModbusDataType[data_type], unit=slave_id)
+            resp = client.read_input_registers(start, modbus.ModbusDataType[data_type], device_id=slave_id)
     elif func == 3:
         if length > 1:
-            resp = client.read_holding_registers(start, [modbus.ModbusDataType[data_type]]*length, unit=slave_id)
+            resp = client.read_holding_registers(start, [modbus.ModbusDataType[data_type]]*length, device_id=slave_id)
         else:
-            resp = client.read_holding_registers(start, modbus.ModbusDataType[data_type], unit=slave_id)
+            resp = client.read_holding_registers(start, modbus.ModbusDataType[data_type], device_id=slave_id)
     else:
         print("unsupported function code: " + str(func))
         exit(1)

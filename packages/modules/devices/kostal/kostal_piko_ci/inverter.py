@@ -29,10 +29,10 @@ class KostalPikoCiInverter(AbstractInverter):
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
 
-        power = self.client.read_holding_registers(172, ModbusDataType.FLOAT_32, unit=unit) * -1
+        power = self.client.read_holding_registers(172, ModbusDataType.FLOAT_32, device_id=unit) * -1
         currents = [self.client.read_holding_registers(
-            reg, ModbusDataType.FLOAT_32, unit=unit) for reg in [154, 160, 166]]
-        exported = self.client.read_holding_registers(320, ModbusDataType.FLOAT_32, unit=unit)
+            reg, ModbusDataType.FLOAT_32, device_id=unit) for reg in [154, 160, 166]]
+        exported = self.client.read_holding_registers(320, ModbusDataType.FLOAT_32, device_id=unit)
 
         inverter_state = InverterState(
             power=power,

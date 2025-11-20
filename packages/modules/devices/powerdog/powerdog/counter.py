@@ -38,13 +38,13 @@ class PowerdogCounter(AbstractCounter):
         with self.__tcp_client:
             if self.component_config.configuration.position_evu:
                 export_power = self.__tcp_client.read_input_registers(
-                    40000, ModbusDataType.INT_32, unit=self.__modbus_id) * -1
+                    40000, ModbusDataType.INT_32, device_id=self.__modbus_id) * -1
                 import_power = self.__tcp_client.read_input_registers(
-                    40024, ModbusDataType.INT_32, unit=self.__modbus_id)
+                    40024, ModbusDataType.INT_32, device_id=self.__modbus_id)
                 power = export_power + import_power
             else:
                 home_consumption = self.__tcp_client.read_input_registers(
-                    40026, ModbusDataType.INT_32, unit=self.__modbus_id)
+                    40026, ModbusDataType.INT_32, device_id=self.__modbus_id)
                 power = home_consumption + inverter_power
                 log.debug("Powerdog Hausverbrauch[W]: " + str(home_consumption))
 

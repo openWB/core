@@ -33,19 +33,19 @@ class SolaxInverter(AbstractInverter):
         unit = self.device_config.configuration.modbus_id
 
         if SolaxVersion(self.device_config.configuration.version) == SolaxVersion.G2:
-            power = self.__tcp_client.read_input_registers(0x0413, ModbusDataType.UINT_16, unit=unit) * -1
+            power = self.__tcp_client.read_input_registers(0x0413, ModbusDataType.UINT_16, device_id=unit) * -1
             exported = self.__tcp_client.read_input_registers(
-                0x0423, ModbusDataType.UINT_32, wordorder=Endian.Little, unit=unit) * 100
+                0x0423, ModbusDataType.UINT_32, wordorder=Endian.Little, device_id=unit) * 100
         elif SolaxVersion(self.device_config.configuration.version) == SolaxVersion.G3:
-            power_temp = self.__tcp_client.read_input_registers(0x000A, [ModbusDataType.UINT_16] * 2, unit=unit)
+            power_temp = self.__tcp_client.read_input_registers(0x000A, [ModbusDataType.UINT_16] * 2, device_id=unit)
             power = sum(power_temp) * -1
             exported = self.__tcp_client.read_input_registers(
-                0x0052, ModbusDataType.UINT_32, wordorder=Endian.Little, unit=unit) * 100
+                0x0052, ModbusDataType.UINT_32, wordorder=Endian.Little, device_id=unit) * 100
         else:
-            power_temp = self.__tcp_client.read_input_registers(0x0410, [ModbusDataType.UINT_16] * 2, unit=unit)
+            power_temp = self.__tcp_client.read_input_registers(0x0410, [ModbusDataType.UINT_16] * 2, device_id=unit)
             power = sum(power_temp) * -1
             exported = self.__tcp_client.read_input_registers(
-                0x042B, ModbusDataType.UINT_32, wordorder=Endian.Little, unit=unit) * 100
+                0x042B, ModbusDataType.UINT_32, wordorder=Endian.Little, device_id=unit) * 100
 
         inverter_state = InverterState(
             power=power,

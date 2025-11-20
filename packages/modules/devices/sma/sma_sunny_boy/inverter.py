@@ -47,39 +47,39 @@ class SmaSunnyBoyInverter(AbstractInverter):
 
         if self.component_config.configuration.version == SmaInverterVersion.default:
             # AC Wirkleistung über alle Phasen (W) [Pac]
-            power_total = self.tcp_client.read_holding_registers(30775, ModbusDataType.INT_32, unit=unit)
+            power_total = self.tcp_client.read_holding_registers(30775, ModbusDataType.INT_32, device_id=unit)
             # Gesamtertrag (Wh) [E-Total]
-            energy = self.tcp_client.read_holding_registers(30529, ModbusDataType.UINT_32, unit=unit)
+            energy = self.tcp_client.read_holding_registers(30529, ModbusDataType.UINT_32, device_id=unit)
             # Bei Hybrid Wechselrichtern treten Abweichungen auf, die in der Nacht
             # immer wieder Generatorleistung anzeigen (0-50 Watt). Um dies zu verhindern, schauen wir uns
             # zunächst an, ob vom DC Teil überhaupt Leistung kommt. Ist dies nicht der Fall, können wir power
             # gleich auf 0 setzen.
             # Leistung DC an Eingang 1 und 2
-            dc_power = (self.tcp_client.read_holding_registers(30773, ModbusDataType.INT_32, unit=unit) +
-                        self.tcp_client.read_holding_registers(30961, ModbusDataType.INT_32, unit=unit))
+            dc_power = (self.tcp_client.read_holding_registers(30773, ModbusDataType.INT_32, device_id=unit) +
+                        self.tcp_client.read_holding_registers(30961, ModbusDataType.INT_32, device_id=unit))
 
-            currents = self.tcp_client.read_holding_registers(30977, [ModbusDataType.INT_32]*3, unit=unit)
+            currents = self.tcp_client.read_holding_registers(30977, [ModbusDataType.INT_32]*3, device_id=unit)
             if all(c == self.SMA_INT32_NAN for c in currents):
                 currents = None
             else:
                 currents = [current / -1000 if current != self.SMA_INT32_NAN else 0 for current in currents]
         elif self.component_config.configuration.version == SmaInverterVersion.core2:
             # AC Wirkleistung über alle Phasen (W) [Pac]
-            power_total = self.tcp_client.read_holding_registers(40084, ModbusDataType.INT_16, unit=unit) * 10
+            power_total = self.tcp_client.read_holding_registers(40084, ModbusDataType.INT_16, device_id=unit) * 10
             # Gesamtertrag (Wh) [E-Total] SF=2!
-            energy = self.tcp_client.read_holding_registers(40094, ModbusDataType.UINT_32, unit=unit) * 100
+            energy = self.tcp_client.read_holding_registers(40094, ModbusDataType.UINT_32, device_id=unit) * 100
             # Power
-            dc_power = self.tcp_client.read_holding_registers(40101, ModbusDataType.UINT_32, unit=unit) * 100
+            dc_power = self.tcp_client.read_holding_registers(40101, ModbusDataType.UINT_32, device_id=unit) * 100
             # Phasenstöme
-            current_L1 = self.tcp_client.read_holding_registers(30977, ModbusDataType.INT_32, unit=unit) * -1
-            current_L2 = self.tcp_client.read_holding_registers(30979, ModbusDataType.INT_32, unit=unit) * -1
-            current_L3 = self.tcp_client.read_holding_registers(30981, ModbusDataType.INT_32, unit=unit) * -1
+            current_L1 = self.tcp_client.read_holding_registers(30977, ModbusDataType.INT_32, device_id=unit) * -1
+            current_L2 = self.tcp_client.read_holding_registers(30979, ModbusDataType.INT_32, device_id=unit) * -1
+            current_L3 = self.tcp_client.read_holding_registers(30981, ModbusDataType.INT_32, device_id=unit) * -1
             currents = [current_L1 / 1000, current_L2 / 1000, current_L3 / 1000]
         elif self.component_config.configuration.version == SmaInverterVersion.datamanager:
             # AC Wirkleistung über alle Phasen (W) [Pac]
-            power_total = self.tcp_client.read_holding_registers(30775, ModbusDataType.INT_32, unit=unit)
+            power_total = self.tcp_client.read_holding_registers(30775, ModbusDataType.INT_32, device_id=unit)
             # Total eingespeiste Energie auf allen Außenleitern (Wh) [E-Total]
-            energy = self.tcp_client.read_holding_registers(30513, ModbusDataType.UINT_64, unit=unit)
+            energy = self.tcp_client.read_holding_registers(30513, ModbusDataType.UINT_64, device_id=unit)
             # DC-Power = power_total - Cluster-Controller gibt in Register 30775 immer korrekte Werte aus,
             # daher ist wie bei SmaInverterVersion.default keine Prüfung auf DC-Leistung notwendig.
             # Aus kompatibilitätsgründen wird dc_power auf den Wert der AC-Wirkleistung gesetzt.

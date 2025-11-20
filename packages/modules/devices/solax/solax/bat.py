@@ -33,8 +33,8 @@ class SolaxBat(AbstractBat):
         unit = self.device_config.configuration.modbus_id
 
         # kein Speicher für Versionen G2 und G4
-        power = self.__tcp_client.read_input_registers(0x0016, ModbusDataType.INT_16, unit=unit)
-        soc = self.__tcp_client.read_input_registers(0x001C, ModbusDataType.UINT_16, unit=unit)
+        power = self.__tcp_client.read_input_registers(0x0016, ModbusDataType.INT_16, device_id=unit)
+        soc = self.__tcp_client.read_input_registers(0x001C, ModbusDataType.UINT_16, device_id=unit)
 
         imported, exported = self.sim_counter.sim_count(power)
         bat_state = BatState(

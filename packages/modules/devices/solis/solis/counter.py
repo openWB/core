@@ -34,11 +34,11 @@ class SolisCounter:
         if self.version == SolisVersion.inverter:
             register_offset = -1
 
-        power = self.client.read_input_registers(3263 + register_offset, ModbusDataType.INT_32, unit=unit) * -1
-        powers = self.client.read_input_registers(3257 + register_offset, [ModbusDataType.INT_32]*3, unit=unit)
-        frequency = self.client.read_input_registers(3282 + register_offset, ModbusDataType.UINT_16, unit=unit) / 100
-        imported = self.client.read_input_registers(3283 + register_offset, ModbusDataType.UINT_32, unit=unit) * 10
-        exported = self.client.read_input_registers(3285 + register_offset, ModbusDataType.UINT_32, unit=unit) * 10
+        power = self.client.read_input_registers(3263 + register_offset, ModbusDataType.INT_32, device_id=unit) * -1
+        powers = self.client.read_input_registers(3257 + register_offset, [ModbusDataType.INT_32]*3, device_id=unit)
+        frequency = self.client.read_input_registers(3282 + register_offset, ModbusDataType.UINT_16, device_id=unit) / 100
+        imported = self.client.read_input_registers(3283 + register_offset, ModbusDataType.UINT_32, device_id=unit) * 10
+        exported = self.client.read_input_registers(3285 + register_offset, ModbusDataType.UINT_32, device_id=unit) * 10
 
         counter_state = CounterState(
             imported=imported,

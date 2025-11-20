@@ -31,8 +31,8 @@ class MTecCounter(AbstractCounter):
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
 
-        power = self.client.read_holding_registers(11000, ModbusDataType.INT_32, unit=unit) * -1
-        powers = self.client.read_holding_registers(10994, [ModbusDataType.INT_32]*3, unit=unit)
+        power = self.client.read_holding_registers(11000, ModbusDataType.INT_32, device_id=unit) * -1
+        powers = self.client.read_holding_registers(10994, [ModbusDataType.INT_32]*3, device_id=unit)
         powers = [value * -1 for value in powers]
         imported, exported = self.sim_counter.sim_count(power)
 

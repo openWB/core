@@ -50,7 +50,7 @@ class SampleBat(AbstractBat):
         # read_input_registers_bulk benötigit als Parameter das Startregister, die Anzahl der Register,
         # Register-Mapping und die Modbus-ID
         resp = self.client.read_input_registers_bulk(
-            Register.CURRENT_L1, 70, mapping=self.REG_MAPPING, unit=self.id)
+            Register.CURRENT_L1, 70, mapping=self.REG_MAPPING, device_id=self.id)
         bat_state = BatState(
             power=resp[Register.POWER],
             soc=resp[Register.SOC],
@@ -60,8 +60,8 @@ class SampleBat(AbstractBat):
         self.store.set(bat_state)
 
         # Einzelregister lesen (dauert länger, bei sehr weit >100 auseinanderliegenden Registern sinnvoll)
-        power = self.client.read_holding_registers(reg, ModbusDataType.INT_32, unit=unit)
-        soc = self.client.read_holding_registers(reg, ModbusDataType.INT_32, unit=unit)
+        power = self.client.read_holding_registers(reg, ModbusDataType.INT_32, device_id=unit)
+        soc = self.client.read_holding_registers(reg, ModbusDataType.INT_32, device_id=unit)
         imported, exported = self.sim_counter.sim_count(power)
 
         bat_state = BatState(

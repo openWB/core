@@ -33,15 +33,15 @@ class ThermiaCounter(AbstractCounter):
     def update(self):
         with self.client:
             voltages = [val / 100 for val in self.client.read_input_registers(
-                72, [ModbusDataType.INT_16] * 3, unit=self.modbus_id)]
+                72, [ModbusDataType.INT_16] * 3, device_id=self.modbus_id)]
             powers = [val / 1 for val in self.client.read_input_registers(
-                78, [ModbusDataType.INT_16] * 3, unit=self.modbus_id)]
+                78, [ModbusDataType.INT_16] * 3, device_id=self.modbus_id)]
             power = sum(powers)
             currents = [(val / 100) for val in self.client.read_input_registers(
-                69, [ModbusDataType.INT_16] * 3, unit=self.modbus_id)]
+                69, [ModbusDataType.INT_16] * 3, device_id=self.modbus_id)]
             imported = self.client.read_input_registers(
                 83, ModbusDataType.INT_32, wordorder=Endian.Little,
-                unit=self.modbus_id) * 100
+                device_id=self.modbus_id) * 100
             exported = 0
 
         counter_state = CounterState(

@@ -30,7 +30,7 @@ class SigenergyInverter:
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
 
-        power = self.client.read_holding_registers(30035, ModbusDataType.INT_32, unit=unit) * -1
+        power = self.client.read_holding_registers(30035, ModbusDataType.INT_32, device_id=unit) * -1
         _, exported = self.sim_counter.sim_count(power)
 
         inverter_state = InverterState(

@@ -29,9 +29,9 @@ class SiemensSentronBat(AbstractBat):
 
     def update(self) -> None:
         with self.__tcp_client:
-            power = self.__tcp_client.read_holding_registers(65, ModbusDataType.FLOAT_32, unit=self.__modbus_id) * -1
-            imported = self.__tcp_client.read_holding_registers(801, ModbusDataType.FLOAT_64, unit=self.__modbus_id)
-            exported = self.__tcp_client.read_holding_registers(809, ModbusDataType.FLOAT_64, unit=self.__modbus_id)
+            power = self.__tcp_client.read_holding_registers(65, ModbusDataType.FLOAT_32, device_id=self.__modbus_id) * -1
+            imported = self.__tcp_client.read_holding_registers(801, ModbusDataType.FLOAT_64, device_id=self.__modbus_id)
+            exported = self.__tcp_client.read_holding_registers(809, ModbusDataType.FLOAT_64, device_id=self.__modbus_id)
 
         bat_state = BatState(
             imported=imported,

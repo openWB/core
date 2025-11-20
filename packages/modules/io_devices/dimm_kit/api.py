@@ -45,28 +45,28 @@ def create_io(config: IoLan):
             # the values are reported as integers in range of 0-1024
             analog_input={
                 pin.name: client.read_input_registers(
-                    pin.value, ModbusDataType.UINT_16, unit=config.configuration.modbus_id
+                    pin.value, ModbusDataType.UINT_16, device_id=config.configuration.modbus_id
                 ) * 5 for pin in AnalogInputMapping},
             digital_input={
                 pin.name: client.read_coils(
-                    pin.value, 1, unit=config.configuration.modbus_id
+                    pin.value, 1, device_id=config.configuration.modbus_id
                 ) for pin in DigitalInputMapping},
             digital_output={
                 pin.name: client.read_coils(
-                    pin.value, 1, unit=config.configuration.modbus_id
+                    pin.value, 1, device_id=config.configuration.modbus_id
                 ) for pin in DigitalOutputMapping})
 
     def write(analog_output: Optional[Dict[str, int]], digital_output: Optional[Dict[str, bool]]) -> None:
         nonlocal client
         for i, value in digital_output.items():
             client.write_single_coil(DigitalOutputMapping[i].value, 1 if value is True else 0,
-                                     unit=config.configuration.modbus_id)
+                                     device_id=config.configuration.modbus_id)
 
     def initializer():
         nonlocal client
         client = ModbusTcpClient_(config.configuration.host, config.configuration.port)
         for output, value in config.output["digital"].items():
-            client.write_single_coil(DigitalOutputMapping[output].value, value, unit=config.configuration.modbus_id)
+            client.write_single_coil(DigitalOutputMapping[output].value, value, device_id=config.configuration.modbus_id)
     return ConfigurableIo(config=config, component_reader=read, component_writer=write, initializer=initializer)
 
 

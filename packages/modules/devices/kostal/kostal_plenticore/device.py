@@ -54,7 +54,7 @@ def create_device(device_config: KostalPlenticore):
         nonlocal client, endianess
         client = ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
         endianess = Endian.Big if client.read_holding_registers(
-            5, ModbusDataType.UINT_16, unit=device_config.configuration.modbus_id) else Endian.Little
+            5, ModbusDataType.UINT_16, device_id=device_config.configuration.modbus_id) else Endian.Little
 
     return ConfigurableDevice(
         device_config=device_config,

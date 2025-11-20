@@ -29,16 +29,16 @@ class DeyeInverter(AbstractInverter):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.device_type = DeviceType(self.client.read_holding_registers(
-            0, ModbusDataType.INT_16, unit=self.component_config.configuration.modbus_id))
+            0, ModbusDataType.INT_16, device_id=self.component_config.configuration.modbus_id))
 
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
 
         if self.device_type == DeviceType.SINGLE_PHASE_STRING or self.device_type == DeviceType.SINGLE_PHASE_HYBRID:
-            power = sum(self.client.read_holding_registers(186, [ModbusDataType.INT_16]*4, unit=unit)) * -1
+            power = sum(self.client.read_holding_registers(186, [ModbusDataType.INT_16]*4, device_id=unit)) * -1
 
         else:  # THREE_PHASE_LV (0x0500, 0x0005), THREE_PHASE_HV (0x0006)
-            power = sum(self.client.read_holding_registers(672, [ModbusDataType.INT_16]*2, unit=unit)) * -1
+            power = sum(self.client.read_holding_registers(672, [ModbusDataType.INT_16]*2, device_id=unit)) * -1
 
             if self.device_type == DeviceType.THREE_PHASE_HV:
                 power = power * 10

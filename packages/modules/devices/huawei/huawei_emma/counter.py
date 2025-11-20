@@ -31,9 +31,9 @@ class Huawei_EmmaCounter(AbstractCounter):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> None:
-        currents = self.client.read_holding_registers(31651, [ModbusDataType.INT_32]*3, unit=self.modbus_id)
+        currents = self.client.read_holding_registers(31651, [ModbusDataType.INT_32]*3, device_id=self.modbus_id)
         currents = [val * 0.1 for val in currents]
-        power = self.client.read_holding_registers(31657, ModbusDataType.INT_32, unit=self.modbus_id)
+        power = self.client.read_holding_registers(31657, ModbusDataType.INT_32, device_id=self.modbus_id)
 
         imported, exported = self.sim_counter.sim_count(power)
 

@@ -28,10 +28,10 @@ class FoxEssInverter(AbstractInverter):
         unit = self.component_config.configuration.modbus_id
         # PV1 + PV2 Power
         power = sum([self.client.read_holding_registers(
-            reg, ModbusDataType.INT_16, unit=unit)
+            reg, ModbusDataType.INT_16, device_id=unit)
             for reg in [31002, 31005]]) * -1
         # Gesamt Produktion Wechselrichter unsigned integer in kWh * 0,1
-        exported = self.client.read_holding_registers(32000, ModbusDataType.UINT_32, unit=unit) * 100
+        exported = self.client.read_holding_registers(32000, ModbusDataType.UINT_32, device_id=unit) * 100
 
         inverter_state = InverterState(
             power=power,

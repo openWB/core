@@ -31,7 +31,7 @@ class NibeCounter(AbstractCounter):
 
     def update(self):
         unit = self.component_config.configuration.modbus_id
-        power = self.client.read_input_registers(2166, ModbusDataType.UINT_32, wordorder=Endian.Little, unit=unit)
+        power = self.client.read_input_registers(2166, ModbusDataType.UINT_32, wordorder=Endian.Little, device_id=unit)
         imported, exported = self.sim_counter.sim_count(power)
 
         counter_state = CounterState(

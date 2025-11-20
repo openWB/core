@@ -31,7 +31,7 @@ class SolaredgeMeterRegisters:
         # 40205: AC Frequency Scale Factor
         self.frequency = 40204
         self.frequency_scale = 40205
-        # 40222/40223/40224: Power factor by phase (unit=%)
+        # 40222/40223/40224: Power factor by phase (device_id=%)
         # 40225: AC Power Factor Scale Factor
         self.power_factors = 40222
         self.power_factors_scale = 40225
@@ -96,14 +96,14 @@ def _get_synergy_units(component_config: Union[SolaredgeBatSetup,
                                                SolaredgeExternalInverterSetup],
                        client) -> int:
     if client.read_holding_registers(40121, ModbusDataType.UINT_16,
-                                     unit=component_config.configuration.modbus_id
+                                     device_id=component_config.configuration.modbus_id
                                      ) == synergy_unit_identifier:
         # Snyergy-Units vom Haupt-WR des angeschlossenen Meters ermitteln. Es kann mehrere Haupt-WR mit
         # unterschiedlichen Modbus-IDs im Verbund geben.
         log.debug("Synergy Units supported")
         synergy_units = int(client.read_holding_registers(
             40129, ModbusDataType.UINT_16,
-            unit=component_config.configuration.modbus_id)) or 1
+            device_id=component_config.configuration.modbus_id)) or 1
         log.debug(
             f"Synergy Units detected for Modbus ID {component_config.configuration.modbus_id}: {synergy_units}")
     else:

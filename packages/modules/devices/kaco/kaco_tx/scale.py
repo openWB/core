@@ -21,7 +21,7 @@ def scale_registers(registers: List[Number]) -> List[float]:
 def create_scaled_reader(client: ModbusTcpClient_, modbus_id: int, type: ModbusDataType):
     def scaled_reader(address: int, count: int):
         return scale_registers(
-            client.read_holding_registers(address, [type] * count + [ModbusDataType.INT_16], unit=modbus_id)
+            client.read_holding_registers(address, [type] * count + [ModbusDataType.INT_16], device_id=modbus_id)
         )
 
     return scaled_reader

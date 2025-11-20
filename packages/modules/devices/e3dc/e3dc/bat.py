@@ -16,9 +16,9 @@ log = logging.getLogger(__name__)
 
 def read_bat(client: modbus.ModbusTcpClient_, modbus_id: int) -> Tuple[int, int]:
     # 40082 SoC
-    soc = client.read_holding_registers(40082, ModbusDataType.INT_16, unit=modbus_id)
+    soc = client.read_holding_registers(40082, ModbusDataType.INT_16, device_id=modbus_id)
     # 40069 Speicherleistung
-    power = client.read_holding_registers(40069, ModbusDataType.INT_32, wordorder=Endian.Little, unit=modbus_id)
+    power = client.read_holding_registers(40069, ModbusDataType.INT_32, wordorder=Endian.Little, device_id=modbus_id)
     return soc, power
 
 

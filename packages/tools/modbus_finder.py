@@ -53,12 +53,12 @@ try:
 
     print("Address;INT_16;UINT_16;INT_32;UINT_32")
     for address in range(start, end):
-        resp_INT_16 = try_read(function, address=address, types=modbus.ModbusDataType.INT_16, unit=slave_id)
-        resp_UINT_16 = try_read(function, address=address, types=modbus.ModbusDataType.UINT_16, unit=slave_id)
+        resp_INT_16 = try_read(function, address=address, types=modbus.ModbusDataType.INT_16, device_id=slave_id)
+        resp_UINT_16 = try_read(function, address=address, types=modbus.ModbusDataType.UINT_16, device_id=slave_id)
         resp_INT_32 = try_read(function, address=address, types=modbus.ModbusDataType.INT_32, wordorder=Endian.Little,
-                               unit=slave_id)
+                               device_id=slave_id)
         resp_UINT_32 = try_read(function, address=address, types=modbus.ModbusDataType.UINT_32, wordorder=Endian.Little,
-                                unit=slave_id)
+                                device_id=slave_id)
         print(f"{address};{resp_INT_16};{resp_UINT_16};{resp_INT_32};{resp_UINT_32}")
 except Exception as e:
     print("Exception " + str(e))

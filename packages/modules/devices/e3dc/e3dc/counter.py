@@ -27,7 +27,7 @@ def read_counter(client: modbus.ModbusTcpClient_, modbus_id: int) -> Tuple[int, 
     # bei den meisten e3dc auf 40128
     # farm haben typ 5, normale e3dc haben nur typ 1 und keinen typ 5
     # bei farm ist typ 1 vorhanden aber liefert immer 0
-    meters = list(map(int, client.read_holding_registers(40104, [ModbusDataType.INT_16] * 28, unit=modbus_id)))
+    meters = list(map(int, client.read_holding_registers(40104, [ModbusDataType.INT_16] * 28, device_id=modbus_id)))
     log.debug("meters: %s", meters)
     try:
         powers = get_meter_phases(5, meters)

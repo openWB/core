@@ -29,12 +29,12 @@ class FoxEssBat(AbstractBat):
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
 
-        power = self.client.read_holding_registers(31036, ModbusDataType.INT_16, unit=unit) * -1
-        soc = self.client.read_holding_registers(31038, ModbusDataType.UINT_16, unit=unit)
+        power = self.client.read_holding_registers(31036, ModbusDataType.INT_16, device_id=unit) * -1
+        soc = self.client.read_holding_registers(31038, ModbusDataType.UINT_16, device_id=unit)
         # Geladen in kWh * 0,1
-        imported = self.client.read_holding_registers(32003, ModbusDataType.UINT_32, unit=unit) * 100
+        imported = self.client.read_holding_registers(32003, ModbusDataType.UINT_32, device_id=unit) * 100
         # Entladen in kWh * 0,1
-        exported = self.client.read_holding_registers(32006, ModbusDataType.UINT_32, unit=unit) * 100
+        exported = self.client.read_holding_registers(32006, ModbusDataType.UINT_32, device_id=unit) * 100
 
         bat_state = BatState(
             power=power,

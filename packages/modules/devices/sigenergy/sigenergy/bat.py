@@ -33,9 +33,9 @@ class SigenergyBat(AbstractBat):
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
 
-        power = self.client.read_holding_registers(30037, ModbusDataType.INT_32, unit=unit)
+        power = self.client.read_holding_registers(30037, ModbusDataType.INT_32, device_id=unit)
         # soc unit 0.1%
-        soc = self.client.read_holding_registers(30014, ModbusDataType.UINT_16, unit=unit) / 10
+        soc = self.client.read_holding_registers(30014, ModbusDataType.UINT_16, device_id=unit) / 10
         imported, exported = self.sim_counter.sim_count(power)
 
         bat_state = BatState(

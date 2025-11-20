@@ -34,19 +34,19 @@ class AlphaEssCounter(AbstractCounter):
         time.sleep(0.1)
         if self.__device_config.source == 0 and self.__device_config.version == 0:
             power, exported, imported = self.__tcp_client.read_holding_registers(
-                0x6, [modbus.ModbusDataType.INT_32] * 3, unit=self.__modbus_id)
+                0x6, [modbus.ModbusDataType.INT_32] * 3, device_id=self.__modbus_id)
             exported *= 10
             imported *= 10
             currents = [val / 230 for val in self.__tcp_client.read_holding_registers(
-                0x0000, [ModbusDataType.INT_32]*3, unit=self.__modbus_id)]
+                0x0000, [ModbusDataType.INT_32]*3, device_id=self.__modbus_id)]
         else:
-            power = self.__tcp_client.read_holding_registers(0x0021, ModbusDataType.INT_32, unit=self.__modbus_id)
+            power = self.__tcp_client.read_holding_registers(0x0021, ModbusDataType.INT_32, device_id=self.__modbus_id)
             exported, imported = [
                 val * 10 for val in self.__tcp_client.read_holding_registers(
-                    0x0010, [ModbusDataType.INT_32] * 2, unit=self.__modbus_id
+                    0x0010, [ModbusDataType.INT_32] * 2, device_id=self.__modbus_id
                 )]
             currents = [val / 1000 for val in self.__tcp_client.read_holding_registers(
-                0x0017, [ModbusDataType.INT_16]*3, unit=self.__modbus_id)]
+                0x0017, [ModbusDataType.INT_16]*3, device_id=self.__modbus_id)]
 
         counter_state = CounterState(
             currents=currents,

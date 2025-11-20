@@ -37,11 +37,11 @@ class HuaweiCounter(AbstractCounter):
     def update(self) -> None:
         if self.type == HuaweiType.SDongle:
             time.sleep(1)
-        currents = self.client.read_holding_registers(37107, [ModbusDataType.INT_32]*3, unit=self.modbus_id)
+        currents = self.client.read_holding_registers(37107, [ModbusDataType.INT_32]*3, device_id=self.modbus_id)
         currents = [val / -100 for val in currents]
         if self.type == HuaweiType.SDongle:
             time.sleep(1)
-        power = self.client.read_holding_registers(37113, ModbusDataType.INT_32, unit=self.modbus_id) * -1
+        power = self.client.read_holding_registers(37113, ModbusDataType.INT_32, device_id=self.modbus_id) * -1
 
         imported, exported = self.sim_counter.sim_count(power)
 

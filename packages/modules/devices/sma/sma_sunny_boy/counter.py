@@ -32,8 +32,8 @@ class SmaSunnyBoyCounter(AbstractCounter):
     def update(self):
         unit = self.component_config.configuration.modbus_id
 
-        imp = self.__tcp_client.read_holding_registers(30865, ModbusDataType.UINT_32, unit=unit)
-        exp = self.__tcp_client.read_holding_registers(30867, ModbusDataType.UINT_32, unit=unit)
+        imp = self.__tcp_client.read_holding_registers(30865, ModbusDataType.UINT_32, device_id=unit)
+        exp = self.__tcp_client.read_holding_registers(30867, ModbusDataType.UINT_32, device_id=unit)
         if imp > 5:
             power = imp
         else:

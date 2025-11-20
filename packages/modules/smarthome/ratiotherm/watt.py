@@ -2,7 +2,7 @@
 import sys
 import os
 from pymodbus.payload import BinaryPayloadBuilder, Endian
-from pymodbus.client.sync import ModbusTcpClient
+from pymodbus.client import ModbusTcpClient
 import logging
 from smarthome.smartret import writeret
 
@@ -82,7 +82,7 @@ if count5 == 0:
         builder.add_16bit_int(neupower)
         pay = builder.to_registers()
         client = ModbusTcpClient(ipadr, port=502)
-        client.write_register(100, pay[0], unit=1)
+        client.write_register(100, pay[0], device_id=1)
         if count1 < 3:
             log.info(" watt devicenr %d ipadr %s written %6d %#4X"
                      % (devicenumber, ipadr, pay[0], pay[0]))

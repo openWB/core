@@ -54,7 +54,7 @@ class SampleCounter(AbstractCounter):
         # read_input_registers_bulk benötigit als Parameter das Startregister, die Anzahl der Register,
         # Register-Mapping und die Modbus-ID
         resp = self.client.read_input_registers_bulk(
-            Register.VOLTAGE_L1, 76, mapping=self.REG_MAPPING, unit=self.id)
+            Register.VOLTAGE_L1, 76, mapping=self.REG_MAPPING, device_id=self.id)
         counter_state = CounterState(
             imported=resp[Register.IMPORTED],
             exported=resp[Register.EXPORTED],
@@ -68,7 +68,7 @@ class SampleCounter(AbstractCounter):
         self.store.set(counter_state)
 
         # Einzelregister lesen (dauert länger, bei sehr weit >100 auseinanderliegenden Registern sinnvoll)
-        power = self.client.read_holding_registers(reg, ModbusDataType.INT_32, unit=unit)
+        power = self.client.read_holding_registers(reg, ModbusDataType.INT_32, device_id=unit)
         imported, exported = self.sim_counter.sim_count(power)
 
         counter_state = CounterState(

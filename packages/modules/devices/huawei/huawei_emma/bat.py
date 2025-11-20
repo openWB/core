@@ -31,8 +31,8 @@ class Huawei_EmmaBat(AbstractBat):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> None:
-        power = self.client.read_holding_registers(30360, ModbusDataType.INT_32, unit=self.modbus_id)
-        soc = self.client.read_holding_registers(30368, ModbusDataType.UINT_16, unit=self.modbus_id) * 0.01
+        power = self.client.read_holding_registers(30360, ModbusDataType.INT_32, device_id=self.modbus_id)
+        soc = self.client.read_holding_registers(30368, ModbusDataType.UINT_16, device_id=self.modbus_id) * 0.01
 
         imported, exported = self.sim_counter.sim_count(power)
         bat_state = BatState(

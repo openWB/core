@@ -32,16 +32,16 @@ class SunnyBoyBat(AbstractBat):
     def read(self) -> BatState:
         unit = self.component_config.configuration.modbus_id
 
-        soc = self.__tcp_client.read_holding_registers(30845, ModbusDataType.UINT_32, unit=unit)
-        imp = self.__tcp_client.read_holding_registers(31393, ModbusDataType.INT_32, unit=unit)
-        exp = self.__tcp_client.read_holding_registers(31395, ModbusDataType.INT_32, unit=unit)
+        soc = self.__tcp_client.read_holding_registers(30845, ModbusDataType.UINT_32, device_id=unit)
+        imp = self.__tcp_client.read_holding_registers(31393, ModbusDataType.INT_32, device_id=unit)
+        exp = self.__tcp_client.read_holding_registers(31395, ModbusDataType.INT_32, device_id=unit)
         if imp > 5:
             power = imp
         else:
             power = exp * -1
 
-        exported = self.__tcp_client.read_holding_registers(31401, ModbusDataType.UINT_64, unit=unit)
-        imported = self.__tcp_client.read_holding_registers(31397, ModbusDataType.UINT_64, unit=unit)
+        exported = self.__tcp_client.read_holding_registers(31401, ModbusDataType.UINT_64, device_id=unit)
+        imported = self.__tcp_client.read_holding_registers(31397, ModbusDataType.UINT_64, device_id=unit)
 
         if exported == self.SMA_UINT_64_NAN or imported == self.SMA_UINT_64_NAN:
             raise ValueError(f'Batterie lieferte nicht plausible Werte. Export: {exported}, Import: {imported}. ',

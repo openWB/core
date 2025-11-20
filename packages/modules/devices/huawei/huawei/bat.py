@@ -37,10 +37,10 @@ class HuaweiBat(AbstractBat):
     def update(self) -> None:
         if self.type == HuaweiType.SDongle:
             time.sleep(1)
-        power = self.client.read_holding_registers(37765, ModbusDataType.INT_32, unit=self.modbus_id)
+        power = self.client.read_holding_registers(37765, ModbusDataType.INT_32, device_id=self.modbus_id)
         if self.type == HuaweiType.SDongle:
             time.sleep(1)
-        soc = self.client.read_holding_registers(37760, ModbusDataType.INT_16, unit=self.modbus_id) / 10
+        soc = self.client.read_holding_registers(37760, ModbusDataType.INT_16, device_id=self.modbus_id) / 10
 
         imported, exported = self.sim_counter.sim_count(power)
         bat_state = BatState(

@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 
 
 def read_inverter(client: modbus.ModbusTcpClient_, modbus_id: int) -> int:
-    pv = int(client.read_holding_registers(40067, ModbusDataType.INT_32, wordorder=Endian.Little, unit=modbus_id) * -1)
+    pv = int(client.read_holding_registers(40067, ModbusDataType.INT_32, wordorder=Endian.Little, device_id=modbus_id) * -1)
     return pv
 
 

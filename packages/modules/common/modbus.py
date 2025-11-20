@@ -11,7 +11,7 @@ import time
 from typing import Any, Callable, Iterable, Optional, Union, overload, List
 
 import pymodbus
-from pymodbus.client.sync import ModbusTcpClient, ModbusSerialClient
+from pymodbus.client import ModbusTcpClient, ModbusSerialClient
 from pymodbus.constants import Endian
 from pymodbus.payload import BinaryPayloadDecoder
 from pymodbus.transaction import ModbusSocketFramer

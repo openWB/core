@@ -29,23 +29,23 @@ class SofarCounter(AbstractCounter):
     def update(self):
         # 0x0485 ActivePower_output_total Int16 in kW accuracy 0,01 discharge + charge -
         # 0x0488 ActivePower_PCC_total Int16 0,01 kW
-        power = self.client.read_holding_registers(0x0488, ModbusDataType.INT_16, unit=self.__modbus_id) * -10
+        power = self.client.read_holding_registers(0x0488, ModbusDataType.INT_16, device_id=self.__modbus_id) * -10
         # 0x0484 Frequency_Grid UInt16 in Hz accuracy 0,01
         frequency = self.client.read_holding_registers(
-            0x0484, ModbusDataType.UINT_16, unit=self.__modbus_id) / 100
+            0x0484, ModbusDataType.UINT_16, device_id=self.__modbus_id) / 100
         try:
             powers = [
-                self.client.read_holding_registers(0x0493, ModbusDataType.INT_16, unit=self.__modbus_id) * -10,
-                self.client.read_holding_registers(0x049E, ModbusDataType.INT_16, unit=self.__modbus_id) * -10,
-                self.client.read_holding_registers(0x04A9, ModbusDataType.INT_16, unit=self.__modbus_id) * -10]
+                self.client.read_holding_registers(0x0493, ModbusDataType.INT_16, device_id=self.__modbus_id) * -10,
+                self.client.read_holding_registers(0x049E, ModbusDataType.INT_16, device_id=self.__modbus_id) * -10,
+                self.client.read_holding_registers(0x04A9, ModbusDataType.INT_16, device_id=self.__modbus_id) * -10]
         except Exception:
             powers = None
         # 0x0692 Energy_Selling_Total UInt32 in kwH accuracy 0,01 LSB
         # 0x0693 Energy_Selling_Total UInt32 in kwH accuracy 0,01
-        exported = self.client.read_holding_registers(0x0692, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
+        exported = self.client.read_holding_registers(0x0692, ModbusDataType.UINT_32, device_id=self.__modbus_id) * 100
         # 0x068E Energy_Purchase_Total UInt32 in kwH accuracy 0,01 LSB
         # 0x068F Energy_Purchase_Total UInt32 in kwH accuracy 0,01
-        imported = self.client.read_holding_registers(0x068E, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
+        imported = self.client.read_holding_registers(0x068E, ModbusDataType.UINT_32, device_id=self.__modbus_id) * 100
 
         counter_state = CounterState(
             imported=imported,

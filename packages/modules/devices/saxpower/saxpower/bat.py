@@ -34,7 +34,7 @@ class SaxpowerBat(AbstractBat):
     def update(self) -> None:
         with self.__tcp_client:
             # Die beiden Register müssen zwingend zusammen ausgelesen werden, sonst scheitert die zweite Abfrage.
-            soc, power = self.__tcp_client.read_holding_registers(46, [ModbusDataType.INT_16]*2, unit=self.__modbus_id)
+            soc, power = self.__tcp_client.read_holding_registers(46, [ModbusDataType.INT_16]*2, device_id=self.__modbus_id)
             power = power * -1 + 16384
 
         imported, exported = self.sim_counter.sim_count(power)

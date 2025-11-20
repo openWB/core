@@ -42,18 +42,18 @@ class GoodWeBat(AbstractBat):
             if battery_index == 1:
                 if self.version == GoodWeVersion.V_1_7:
                     power = self.__tcp_client.read_holding_registers(
-                        35183, ModbusDataType.INT_16, unit=self.__modbus_id)*-1
+                        35183, ModbusDataType.INT_16, device_id=self.__modbus_id)*-1
                 else:
                     power = self.__tcp_client.read_holding_registers(
-                        35182, ModbusDataType.INT_32, unit=self.__modbus_id)*-1
-                soc = self.__tcp_client.read_holding_registers(37007, ModbusDataType.UINT_16, unit=self.__modbus_id)
+                        35182, ModbusDataType.INT_32, device_id=self.__modbus_id)*-1
+                soc = self.__tcp_client.read_holding_registers(37007, ModbusDataType.UINT_16, device_id=self.__modbus_id)
                 imported = self.__tcp_client.read_holding_registers(
-                    35206, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
+                    35206, ModbusDataType.UINT_32, device_id=self.__modbus_id) * 100
                 exported = self.__tcp_client.read_holding_registers(
-                    35209, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
+                    35209, ModbusDataType.UINT_32, device_id=self.__modbus_id) * 100
             else:
-                power = self.__tcp_client.read_holding_registers(35264, ModbusDataType.INT_32, unit=self.__modbus_id)*-1
-                soc = self.__tcp_client.read_holding_registers(39005, ModbusDataType.UINT_16, unit=self.__modbus_id)
+                power = self.__tcp_client.read_holding_registers(35264, ModbusDataType.INT_32, device_id=self.__modbus_id)*-1
+                soc = self.__tcp_client.read_holding_registers(39005, ModbusDataType.UINT_16, device_id=self.__modbus_id)
                 imported, exported = self.sim_counter.sim_count(power)
 
         bat_state = BatState(

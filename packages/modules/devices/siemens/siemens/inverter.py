@@ -33,7 +33,7 @@ class SiemensInverter(AbstractInverter):
 
     def update(self) -> None:
         with self.__tcp_client:
-            power = self.__tcp_client.read_holding_registers(16, ModbusDataType.INT_32, unit=self.__modbus_id) * -1
+            power = self.__tcp_client.read_holding_registers(16, ModbusDataType.INT_32, device_id=self.__modbus_id) * -1
 
         _, exported = self.sim_counter.sim_count(power)
         inverter_state = InverterState(

@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import sys
 import os
-from pymodbus.client.sync import ModbusTcpClient
+from pymodbus.client import ModbusTcpClient
 import logging
 from smarthome.smartret import writeret
 
@@ -86,23 +86,23 @@ if count5 == 0:
         if dactyp == 0:
             # 10 Volts are 1000
             ausgabe = int((neupower * 1000) / maxpower)
-            rq = client.write_register(1, ausgabe, unit=1)
+            rq = client.write_register(1, ausgabe, device_id=1)
         elif dactyp == 1:
             # 10 Volts are 4000
             ausgabe = int((neupower * 4000) / maxpower)
-            rq = client.write_register(0x01f4, ausgabe, unit=1)
+            rq = client.write_register(0x01f4, ausgabe, device_id=1)
         elif dactyp == 2:
             ausgabe = int((neupower * 4095) / maxpower)
             if ausgabe < 370:
                 ausgabe = 370
             #  ausgabe nicht kleiner 0,9V sonst Leistungsregelung der WP aus
-            rq = client.write_register(0, ausgabe, unit=1)
+            rq = client.write_register(0, ausgabe, device_id=1)
         elif dactyp == 3:
             ausgabe = int(((neupower * (4095-820)) / maxpower)+820)
             if ausgabe <= 820:
                 ausgabe = 0
             #  ausgabe nicht kleiner 4ma sonst Leistungsregelung der WP aus
-            rq = client.write_register(0x01f4, ausgabe, unit=1)
+            rq = client.write_register(0x01f4, ausgabe, device_id=1)
         else:
             pass
         if count1 < 3:

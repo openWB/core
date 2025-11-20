@@ -27,11 +27,11 @@ class UPowerInverter(AbstractInverter):
 
     def update(self) -> None:
         if self.version == UPowerVersion.GEN_1:
-            power = self.client.read_holding_registers(11028, ModbusDataType.UINT_32, unit=self.__modbus_id) * -1
-            exported = self.client.read_holding_registers(11020, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
+            power = self.client.read_holding_registers(11028, ModbusDataType.UINT_32, device_id=self.__modbus_id) * -1
+            exported = self.client.read_holding_registers(11020, ModbusDataType.UINT_32, device_id=self.__modbus_id) * 100
         else:
-            power = self.client.read_holding_registers(1220, ModbusDataType.UINT_16, unit=self.__modbus_id) * -1
-            exported = self.client.read_holding_registers(1006, ModbusDataType.UINT_32, unit=self.__modbus_id) * 10
+            power = self.client.read_holding_registers(1220, ModbusDataType.UINT_16, device_id=self.__modbus_id) * -1
+            exported = self.client.read_holding_registers(1006, ModbusDataType.UINT_32, device_id=self.__modbus_id) * 10
 
         inverter_state = InverterState(
             power=power,

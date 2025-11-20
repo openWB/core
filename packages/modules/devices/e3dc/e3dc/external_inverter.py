@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 def read_external_inverter(client: modbus.ModbusTcpClient_, modbus_id: int) -> int:
     pv_external = int(client.read_holding_registers(
-        40075, ModbusDataType.INT_32, wordorder=Endian.Little, unit=modbus_id))
+        40075, ModbusDataType.INT_32, wordorder=Endian.Little, device_id=modbus_id))
     return pv_external
 
 

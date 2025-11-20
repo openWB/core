@@ -30,12 +30,12 @@ class Huawei_SmartloggerCounter(AbstractCounter):
 
     def update(self) -> None:
         modbus_id = self.component_config.configuration.modbus_id
-        power = self.client.read_holding_registers(32278, ModbusDataType.INT_32, unit=modbus_id)
+        power = self.client.read_holding_registers(32278, ModbusDataType.INT_32, device_id=modbus_id)
         currents = [val / 10 for val in self.client.read_holding_registers(
-            32272, [ModbusDataType.INT_32] * 3, unit=modbus_id)]
+            32272, [ModbusDataType.INT_32] * 3, device_id=modbus_id)]
         voltages = [val / 100 for val in self.client.read_holding_registers(
-            32260, [ModbusDataType.INT_32] * 3, unit=modbus_id)]
-        powers = self.client.read_holding_registers(32335, [ModbusDataType.INT_32] * 3, unit=modbus_id)
+            32260, [ModbusDataType.INT_32] * 3, device_id=modbus_id)]
+        powers = self.client.read_holding_registers(32335, [ModbusDataType.INT_32] * 3, device_id=modbus_id)
         imported, exported = self.sim_counter.sim_count(power)
         counter_state = CounterState(
             currents=currents,

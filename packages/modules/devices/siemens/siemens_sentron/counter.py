@@ -29,16 +29,16 @@ class SiemensSentronCounter(AbstractCounter):
 
     def update(self) -> None:
         with self.__tcp_client:
-            imported = self.__tcp_client.read_holding_registers(801, ModbusDataType.FLOAT_64, unit=self.__modbus_id)
-            exported = self.__tcp_client.read_holding_registers(809, ModbusDataType.FLOAT_64, unit=self.__modbus_id)
-            power = self.__tcp_client.read_holding_registers(65, ModbusDataType.FLOAT_32, unit=self.__modbus_id)
-            powers = self.__tcp_client.read_holding_registers(25, [ModbusDataType.FLOAT_32] * 3, unit=self.__modbus_id)
-            frequency = self.__tcp_client.read_holding_registers(55, ModbusDataType.FLOAT_32, unit=self.__modbus_id)
+            imported = self.__tcp_client.read_holding_registers(801, ModbusDataType.FLOAT_64, device_id=self.__modbus_id)
+            exported = self.__tcp_client.read_holding_registers(809, ModbusDataType.FLOAT_64, device_id=self.__modbus_id)
+            power = self.__tcp_client.read_holding_registers(65, ModbusDataType.FLOAT_32, device_id=self.__modbus_id)
+            powers = self.__tcp_client.read_holding_registers(25, [ModbusDataType.FLOAT_32] * 3, device_id=self.__modbus_id)
+            frequency = self.__tcp_client.read_holding_registers(55, ModbusDataType.FLOAT_32, device_id=self.__modbus_id)
             currents = self.__tcp_client.read_holding_registers(
-                13, [ModbusDataType.FLOAT_32] * 3, unit=self.__modbus_id)
-            voltages = self.__tcp_client.read_holding_registers(1, [ModbusDataType.FLOAT_32] * 3, unit=self.__modbus_id)
+                13, [ModbusDataType.FLOAT_32] * 3, device_id=self.__modbus_id)
+            voltages = self.__tcp_client.read_holding_registers(1, [ModbusDataType.FLOAT_32] * 3, device_id=self.__modbus_id)
             power_factors = self.__tcp_client.read_holding_registers(
-                37, [ModbusDataType.FLOAT_32] * 3, unit=self.__modbus_id)
+                37, [ModbusDataType.FLOAT_32] * 3, device_id=self.__modbus_id)
 
         counter_state = CounterState(
             imported=imported,

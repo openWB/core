@@ -123,7 +123,7 @@ class SunnyBoySmartEnergyBat(AbstractBat):
         values = {}
         for key in register_names:
             address, data_type = self.REGISTERS[key]
-            values[key] = self.__tcp_client.read_holding_registers(address, data_type, unit=unit)
+            values[key] = self.__tcp_client.read_holding_registers(address, data_type, device_id=unit)
         log.debug(f"Bat raw values {self.__tcp_client.address}: {values}")
         return values
 
@@ -131,7 +131,7 @@ class SunnyBoySmartEnergyBat(AbstractBat):
         for key, value in values_to_write.items():
             address, data_type = self.REGISTERS[key]
             encoded_value = self._encode_value(value, data_type)
-            self.__tcp_client.write_registers(address, encoded_value, unit=unit)
+            self.__tcp_client.write_registers(address, encoded_value, device_id=unit)
             log.debug(f"Neuer Wert {encoded_value} in Register {address} geschrieben.")
 
     def _encode_value(self, value: Union[int, float], data_type: ModbusDataType) -> list:

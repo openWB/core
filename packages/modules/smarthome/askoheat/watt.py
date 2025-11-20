@@ -3,7 +3,7 @@ import sys
 import os
 import struct
 import codecs
-from pymodbus.client.sync import ModbusTcpClient
+from pymodbus.client import ModbusTcpClient
 import logging
 from smarthome.smartlog import initlog
 from smarthome.smartret import writeret
@@ -32,7 +32,7 @@ client = ModbusTcpClient(ipadr, port=502)
 start = 110
 # test
 # start = 3522
-resp = client.read_input_registers(start, 1, unit=1)
+resp = client.read_input_registers(start, 1, device_id=1)
 value1 = resp.registers[0]
 all = format(value1, '04x')
 aktpower = int(struct.unpack('>h', codecs.decode(all, 'hex'))[0])
@@ -40,7 +40,7 @@ aktpower = int(struct.unpack('>h', codecs.decode(all, 'hex'))[0])
 start = 638
 #  test
 # start = 3522
-resp = client.read_input_registers(start, 1, unit=1)
+resp = client.read_input_registers(start, 1, device_id=1)
 value1 = resp.registers[0]
 all = format(value1, '04x')
 temp0 = int(struct.unpack('>h', codecs.decode(all, 'hex'))[0])
@@ -95,7 +95,7 @@ if count5 == 0:
                  (devicenumber, ipadr, neupower, pvmodus, modbuswrite))
     # modbus write
     if modbuswrite == 1:
-        rq = client.write_register(201, neupower, unit=1)
+        rq = client.write_register(201, neupower, device_id=1)
         if count1 < 3:
             log.info("watt devicenr %d ipadr %s device written by modbus " %
                      (devicenumber, ipadr))

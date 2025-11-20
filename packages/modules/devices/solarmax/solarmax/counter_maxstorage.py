@@ -33,7 +33,7 @@ class SolarmaxMsCounter(AbstractCounter):
 
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
-        power = self.client.read_input_registers(118, ModbusDataType.INT_32, unit=unit, wordorder=Endian.Little) * -1
+        power = self.client.read_input_registers(118, ModbusDataType.INT_32, device_id=unit, wordorder=Endian.Little) * -1
         imported, exported = self.sim_counter.sim_count(power)
 
         counter_state = CounterState(

@@ -5,7 +5,7 @@ import time
 import json
 import struct
 import codecs
-from pymodbus.client.sync import ModbusTcpClient
+from pymodbus.client import ModbusTcpClient
 import logging
 
 log = logging.getLogger(__name__)
@@ -48,7 +48,7 @@ if count5 == 0:
     # aktuelle Leistung lesen
     client = ModbusTcpClient(ipadr, port=502)
     start = 2322
-    resp = client.read_input_registers(start, 2, unit=1)
+    resp = client.read_input_registers(start, 2, device_id=1)
     value1 = resp.registers[0]
     all = format(value1, '04x')
     aktpower = int(struct.unpack('>h', codecs.decode(all, 'hex'))[0])
@@ -91,7 +91,7 @@ if count5 == 0:
                          modbuswrite), file=f)
     # modbus write
     if modbuswrite == 1:
-        client.write_registers(33409, [neupower], unit=1)
+        client.write_registers(33409, [neupower], device_id=1)
         if count1 < 3:
             with open(file_string, 'a') as f:
                 log.debug('%s devicenr %s ipadr %s device written by modbus ' %

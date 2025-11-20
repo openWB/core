@@ -31,10 +31,10 @@ class KostalPikoCiCounter(AbstractCounter):
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
 
-        power = self.client.read_holding_registers(252, ModbusDataType.FLOAT_32, unit=unit)
+        power = self.client.read_holding_registers(252, ModbusDataType.FLOAT_32, device_id=unit)
         powers = [self.client.read_holding_registers(
-            reg, ModbusDataType.FLOAT_32, unit=unit) for reg in [224, 234, 244]]
-        frequency = self.client.read_holding_registers(220, ModbusDataType.FLOAT_32, unit=unit)
+            reg, ModbusDataType.FLOAT_32, device_id=unit) for reg in [224, 234, 244]]
+        frequency = self.client.read_holding_registers(220, ModbusDataType.FLOAT_32, device_id=unit)
         imported, exported = self.sim_counter.sim_count(power)
 
         counter_state = CounterState(

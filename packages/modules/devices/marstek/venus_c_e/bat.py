@@ -28,11 +28,11 @@ class VenusCEBat(AbstractBat):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def _read_reg(self, addr: int, type_: ModbusDataType) -> Union[int, float]:
-        return self.client.read_holding_registers(addr, type_, unit=self.component_config.configuration.modbus_id)
+        return self.client.read_holding_registers(addr, type_, device_id=self.component_config.configuration.modbus_id)
 
     def _write_reg(self, addr: int, val: int) -> None:
         # Marstek Venus does not work with write_registers!
-        self.client._delegate.write_register(addr, val, unit=self.component_config.configuration.modbus_id)
+        self.client._delegate.write_register(addr, val, device_id=self.component_config.configuration.modbus_id)
 
     def update(self) -> None:
         power = -self._read_reg(32202, ModbusDataType.INT_32)

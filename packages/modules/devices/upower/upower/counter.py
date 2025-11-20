@@ -30,20 +30,20 @@ class UPowerCounter(AbstractCounter):
 
     def update(self):
         if self.version == UPowerVersion.GEN_1:
-            power = self.client.read_holding_registers(1000, ModbusDataType.INT_32, unit=self.__modbus_id) * -1
-            frequency = self.client.read_holding_registers(11015, ModbusDataType.UINT_16, unit=self.__modbus_id)
+            power = self.client.read_holding_registers(1000, ModbusDataType.INT_32, device_id=self.__modbus_id) * -1
+            frequency = self.client.read_holding_registers(11015, ModbusDataType.UINT_16, device_id=self.__modbus_id)
 
             powers = [-value for value in self.client.read_holding_registers(
-                10994, [ModbusDataType.INT_32] * 3, unit=self.__modbus_id)]
-            exported = self.client.read_holding_registers(31102, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
-            imported = self.client.read_holding_registers(31104, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
+                10994, [ModbusDataType.INT_32] * 3, device_id=self.__modbus_id)]
+            exported = self.client.read_holding_registers(31102, ModbusDataType.UINT_32, device_id=self.__modbus_id) * 100
+            imported = self.client.read_holding_registers(31104, ModbusDataType.UINT_32, device_id=self.__modbus_id) * 100
         else:
-            power = self.client.read_holding_registers(1219, ModbusDataType.INT_16, unit=self.__modbus_id) * -10
+            power = self.client.read_holding_registers(1219, ModbusDataType.INT_16, device_id=self.__modbus_id) * -10
             frequency = self.client.read_holding_registers(
-                1759, ModbusDataType.UINT_16, unit=self.__modbus_id) / 100
+                1759, ModbusDataType.UINT_16, device_id=self.__modbus_id) / 100
 
             powers = [-10 * value for value in self.client.read_holding_registers(
-                1750, [ModbusDataType.INT_16] * 3, unit=self.__modbus_id
+                1750, [ModbusDataType.INT_16] * 3, device_id=self.__modbus_id
             )]
             imported, exported = self.sim_counter.sim_count(power)
 

@@ -30,15 +30,15 @@ class ZCSBat(AbstractBat):
         # 0x020D Battery charge-discharge power Int16 -10-10 kW accuracy 0,01 kW pos charge, neg discharge
         # 0x020E Battery voltage Cell UInt16 0-100 V accuracy 0,1 V
         # 0x020F Battery charge-discharge current Int -100-100 A accuracy 0,01A
-        power = self.client.read_input_registers(0x020D, ModbusDataType.INT_16, unit=self.__modbus_id)
+        power = self.client.read_input_registers(0x020D, ModbusDataType.INT_16, device_id=self.__modbus_id)
         # 0x0210 SoC UInt16 0-100 %
-        soc = self.client.read_input_registers(0x0210, ModbusDataType.UINT_16, unit=self.__modbus_id)
+        soc = self.client.read_input_registers(0x0210, ModbusDataType.UINT_16, device_id=self.__modbus_id)
         # 0x0227 Total energy charging battery low UInt16 in kWh LSB
         imported = self.client.read_input_registers(
-            0x0227, ModbusDataType.UINT_16, unit=self.__modbus_id) * 100
+            0x0227, ModbusDataType.UINT_16, device_id=self.__modbus_id) * 100
         # 0x0229 Total energy discharging battery low UInt16 in kWh LSB
         exported = self.client.read_input_registers(
-            0x0229, ModbusDataType.UINT_16, unit=self.__modbus_id) * 100
+            0x0229, ModbusDataType.UINT_16, device_id=self.__modbus_id) * 100
 
         bat_state = BatState(
             power=power,

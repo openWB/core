@@ -32,8 +32,8 @@ class TesvoltBat(AbstractBat):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> None:
-        soc = self.__tcp_client.read_input_registers(1056, ModbusDataType.INT_32, unit=25) / 10
-        power = self.__tcp_client.read_input_registers(1012, ModbusDataType.INT_32, unit=25) * -1
+        soc = self.__tcp_client.read_input_registers(1056, ModbusDataType.INT_32, device_id=25) / 10
+        power = self.__tcp_client.read_input_registers(1012, ModbusDataType.INT_32, device_id=25) * -1
         imported, exported = self.sim_counter.sim_count(power)
 
         bat_state = BatState(

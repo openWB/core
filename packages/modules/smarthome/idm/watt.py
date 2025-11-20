@@ -5,7 +5,7 @@ import struct
 import logging
 from pymodbus.constants import Endian
 from pymodbus.payload import BinaryPayloadBuilder
-from pymodbus.client.sync import ModbusTcpClient
+from pymodbus.client import ModbusTcpClient
 from smarthome.smartlog import initlog
 from smarthome.smartret import writeret
 devicenumber = int(sys.argv[1])
@@ -47,9 +47,9 @@ client = ModbusTcpClient(ipadr, port=502)
 #  prod
 start = 4122
 if navvers == "2":
-    rr = client.read_input_registers(start, 2, unit=1)
+    rr = client.read_input_registers(start, 2, device_id=1)
 else:
-    rr = client.read_holding_registers(start, 2, unit=1)
+    rr = client.read_holding_registers(start, 2, device_id=1)
 raw = struct.pack('>HH', rr.getRegister(1), rr.getRegister(0))
 lkw = float(struct.unpack('>f', raw)[0])
 aktpower = int(lkw*1000)
@@ -124,11 +124,11 @@ if count5 == 0:
                  % (devicenumber, ipadr, neupower, pvmodus, modbuswrite))
     # modbus write
     if modbuswrite == 1:
-        client.write_registers(74, regnew, unit=1)
+        client.write_registers(74, regnew, device_id=1)
         if count1 < 3:
             log.info("devicenr %d ipadr %s device written by modbus " %
                      (devicenumber, ipadr))
-    client.write_registers(78, pvwnew, unit=1)
+    client.write_registers(78, pvwnew, device_id=1)
 else:
     if pvmodus == 99:
         pvmodus = 0

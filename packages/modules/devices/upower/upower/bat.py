@@ -30,18 +30,18 @@ class UPowerBat(AbstractBat):
 
     def update(self) -> None:
         if self.version == UPowerVersion.GEN_1:
-            power = self.client.read_input_registers(30258, ModbusDataType.INT_32, unit=self.__modbus_id) * -1
-            soc = self.client.read_input_registers(33000, ModbusDataType.UINT_16, unit=self.__modbus_id)
+            power = self.client.read_input_registers(30258, ModbusDataType.INT_32, device_id=self.__modbus_id) * -1
+            soc = self.client.read_input_registers(33000, ModbusDataType.UINT_16, device_id=self.__modbus_id)
             imported = self.client.read_input_registers(
-                31108, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
+                31108, ModbusDataType.UINT_32, device_id=self.__modbus_id) * 100
             exported = self.client.read_input_registers(
-                31110, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
+                31110, ModbusDataType.UINT_32, device_id=self.__modbus_id) * 100
         else:
             # 1221 Total Bat Power
             # 1427 Battery 1 current power
             # Bat 1 (additional batteries offset by 50)
-            power = self.client.read_input_registers(1427, ModbusDataType.INT_16, unit=self.__modbus_id)
-            soc = self.client.read_input_registers(1402, ModbusDataType.UINT_16, unit=self.__modbus_id) / 10
+            power = self.client.read_input_registers(1427, ModbusDataType.INT_16, device_id=self.__modbus_id)
+            soc = self.client.read_input_registers(1402, ModbusDataType.UINT_16, device_id=self.__modbus_id) / 10
             imported, exported = self.sim_counter.sim_count(power)
 
         bat_state = BatState(

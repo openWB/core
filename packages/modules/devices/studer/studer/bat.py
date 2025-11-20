@@ -29,10 +29,10 @@ class StuderBat(AbstractBat):
         unit = self.component_config.configuration.modbus_id
 
         with self.__tcp_client:
-            power = self.__tcp_client.read_input_registers(6, ModbusDataType.FLOAT_32, unit=unit)
-            imported = self.__tcp_client.read_input_registers(14, ModbusDataType.FLOAT_32, unit=unit) * 48
-            exported = self.__tcp_client.read_input_registers(16, ModbusDataType.FLOAT_32, unit=unit) * 48
-            soc = self.__tcp_client.read_input_registers(4, ModbusDataType.FLOAT_32, unit=unit)
+            power = self.__tcp_client.read_input_registers(6, ModbusDataType.FLOAT_32, device_id=unit)
+            imported = self.__tcp_client.read_input_registers(14, ModbusDataType.FLOAT_32, device_id=unit) * 48
+            exported = self.__tcp_client.read_input_registers(16, ModbusDataType.FLOAT_32, device_id=unit) * 48
+            soc = self.__tcp_client.read_input_registers(4, ModbusDataType.FLOAT_32, device_id=unit)
 
         bat_state = BatState(
             power=power,

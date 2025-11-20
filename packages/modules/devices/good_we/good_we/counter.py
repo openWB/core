@@ -39,28 +39,28 @@ class GoodWeCounter(AbstractCounter):
         with self.__tcp_client:
             if self.firmware < 9:
                 power = self.__tcp_client.read_holding_registers(
-                    36008, ModbusDataType.INT_16, unit=self.__modbus_id) * -1
+                    36008, ModbusDataType.INT_16, device_id=self.__modbus_id) * -1
                 powers = [
                     val * -1 for val in self.__tcp_client.read_holding_registers(
-                        36005, [ModbusDataType.INT_16]*3, unit=self.__modbus_id)]
+                        36005, [ModbusDataType.INT_16]*3, device_id=self.__modbus_id)]
             else:
                 power = self.__tcp_client.read_holding_registers(
-                    36025, ModbusDataType.INT_32, unit=self.__modbus_id) * -1
+                    36025, ModbusDataType.INT_32, device_id=self.__modbus_id) * -1
                 powers = [
                     val * -1 for val in self.__tcp_client.read_holding_registers(
-                        36019, [ModbusDataType.INT_32]*3, unit=self.__modbus_id)]
+                        36019, [ModbusDataType.INT_32]*3, device_id=self.__modbus_id)]
 
             power_factors = [
                 val / 1000 for val in self.__tcp_client.read_holding_registers(
-                    36010, [ModbusDataType.INT_16]*3, unit=self.__modbus_id)]
+                    36010, [ModbusDataType.INT_16]*3, device_id=self.__modbus_id)]
             frequency = self.__tcp_client.read_holding_registers(
-                36014, ModbusDataType.UINT_16, unit=self.__modbus_id) / 100
+                36014, ModbusDataType.UINT_16, device_id=self.__modbus_id) / 100
 
             if self.version == GoodWeVersion.V_1_7:
                 exported = self.__tcp_client.read_holding_registers(
-                    36015, ModbusDataType.FLOAT_32, unit=self.__modbus_id)
+                    36015, ModbusDataType.FLOAT_32, device_id=self.__modbus_id)
                 imported = self.__tcp_client.read_holding_registers(
-                    36017, ModbusDataType.FLOAT_32, unit=self.__modbus_id)
+                    36017, ModbusDataType.FLOAT_32, device_id=self.__modbus_id)
             else:
                 # v1.0 und v1.1 liefern keine Werte zurueck obwohl Register laut Doku gleich
                 # Alternative Register für die BTC Serie liefern statische Werte

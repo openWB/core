@@ -33,8 +33,8 @@ class AmpereInverter(AbstractInverter):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> None:
-        pv1_power = self.client.read_holding_registers(519, ModbusDataType.INT_16, unit=self.modbus_id) * -1
-        pv2_power = self.client.read_holding_registers(522, ModbusDataType.INT_16, unit=self.modbus_id) * -1
+        pv1_power = self.client.read_holding_registers(519, ModbusDataType.INT_16, device_id=self.modbus_id) * -1
+        pv2_power = self.client.read_holding_registers(522, ModbusDataType.INT_16, device_id=self.modbus_id) * -1
 
         power = pv1_power + pv2_power
 

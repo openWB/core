@@ -29,14 +29,14 @@ class QCellsInverter(AbstractInverter):
 
     def update(self) -> None:
         power_string1 = (self.client.read_input_registers(
-            0x0003, ModbusDataType.INT_16, unit=self.__modbus_id) / 10) * \
-            (self.client.read_input_registers(0x0005, ModbusDataType.INT_16, unit=self.__modbus_id) / 10)
+            0x0003, ModbusDataType.INT_16, device_id=self.__modbus_id) / 10) * \
+            (self.client.read_input_registers(0x0005, ModbusDataType.INT_16, device_id=self.__modbus_id) / 10)
         power_string2 = (self.client.read_input_registers(
-            0x0004, ModbusDataType.INT_16, unit=self.__modbus_id) / 10) * \
-            (self.client.read_input_registers(0x0006, ModbusDataType.INT_16, unit=self.__modbus_id) / 10)
+            0x0004, ModbusDataType.INT_16, device_id=self.__modbus_id) / 10) * \
+            (self.client.read_input_registers(0x0006, ModbusDataType.INT_16, device_id=self.__modbus_id) / 10)
         power = (power_string1 + power_string2) * -1
         exported = self.client.read_input_registers(0x0094, ModbusDataType.UINT_32, wordorder=Endian.Little,
-                                                    unit=self.__modbus_id) * 100
+                                                    device_id=self.__modbus_id) * 100
 
         inverter_state = InverterState(
             power=power,

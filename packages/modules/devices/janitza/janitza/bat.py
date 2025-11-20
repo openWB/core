@@ -31,7 +31,7 @@ class JanitzaBat(AbstractBat):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self):
-        power = self.__tcp_client.read_holding_registers(19026, ModbusDataType.FLOAT_32, unit=self.__modbus_id) * -1
+        power = self.__tcp_client.read_holding_registers(19026, ModbusDataType.FLOAT_32, device_id=self.__modbus_id) * -1
         imported, exported = self.sim_counter.sim_count(power)
 
         bat_state = BatState(

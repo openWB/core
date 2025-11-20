@@ -32,12 +32,12 @@ class ZCSPvInverter(AbstractInverter):
         power = exported = 0
         currents = None
         try:
-            power = self.client.read_holding_registers(0x0485, ModbusDataType.INT_16, unit=self.__modbus_id)*10
-            exported = self.client.read_holding_registers(0x0684, ModbusDataType.UINT_32, unit=self.__modbus_id)*10
+            power = self.client.read_holding_registers(0x0485, ModbusDataType.INT_16, device_id=self.__modbus_id)*10
+            exported = self.client.read_holding_registers(0x0684, ModbusDataType.UINT_32, device_id=self.__modbus_id)*10
             currents = [
-                self.client.read_holding_registers(0x48E, ModbusDataType.INT_16, unit=self.__modbus_id)*0.01,
-                self.client.read_holding_registers(0x499, ModbusDataType.INT_16, unit=self.__modbus_id)*0.01,
-                self.client.read_holding_registers(0x4A4, ModbusDataType.INT_16, unit=self.__modbus_id)*0.01
+                self.client.read_holding_registers(0x48E, ModbusDataType.INT_16, device_id=self.__modbus_id)*0.01,
+                self.client.read_holding_registers(0x499, ModbusDataType.INT_16, device_id=self.__modbus_id)*0.01,
+                self.client.read_holding_registers(0x4A4, ModbusDataType.INT_16, device_id=self.__modbus_id)*0.01
             ]
         except Exception:
             log.debug("Modbus could not be read.")

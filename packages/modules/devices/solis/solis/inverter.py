@@ -30,11 +30,11 @@ class SolisInverter:
         unit = self.component_config.configuration.modbus_id
 
         if self.version == SolisVersion.inverter:
-            power = self.client.read_input_registers(3004, ModbusDataType.UINT_32, unit=unit) * -1
-            exported = self.client.read_input_registers(3008, ModbusDataType.UINT_32, unit=unit) * 1000
+            power = self.client.read_input_registers(3004, ModbusDataType.UINT_32, device_id=unit) * -1
+            exported = self.client.read_input_registers(3008, ModbusDataType.UINT_32, device_id=unit) * 1000
         elif self.version == SolisVersion.hybrid:
-            power = self.client.read_input_registers(33057, ModbusDataType.UINT_32, unit=unit) * -1
-            exported = self.client.read_input_registers(33029, ModbusDataType.UINT_32, unit=unit) * 1000
+            power = self.client.read_input_registers(33057, ModbusDataType.UINT_32, device_id=unit) * -1
+            exported = self.client.read_input_registers(33029, ModbusDataType.UINT_32, device_id=unit) * 1000
 
         inverter_state = InverterState(
             power=power,

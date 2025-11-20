@@ -30,30 +30,30 @@ class CHINTCounter(AbstractCounter):
     def update(self):
         powers = voltages = currents = power_factors = None
         imported_ep = exported_ep = power = frequency = 0
-        irat = self.client.read_holding_registers(0x0006, ModbusDataType.INT_16, unit=self.__modbus_id)
-        urat = self.client.read_holding_registers(0x0007, ModbusDataType.INT_16, unit=self.__modbus_id)
+        irat = self.client.read_holding_registers(0x0006, ModbusDataType.INT_16, device_id=self.__modbus_id)
+        urat = self.client.read_holding_registers(0x0007, ModbusDataType.INT_16, device_id=self.__modbus_id)
         power_ratio = urat*0.1*irat*0.1
 
-        frequency = self.client.read_holding_registers(0x2044, ModbusDataType.FLOAT_32, unit=self.__modbus_id)/100
+        frequency = self.client.read_holding_registers(0x2044, ModbusDataType.FLOAT_32, device_id=self.__modbus_id)/100
         power = self.client.read_holding_registers(0x2012,
-                                                   ModbusDataType.FLOAT_32, unit=self.__modbus_id) * power_ratio
-        powers = [self.client.read_holding_registers(reg, ModbusDataType.FLOAT_32, unit=self.__modbus_id) * power_ratio
+                                                   ModbusDataType.FLOAT_32, device_id=self.__modbus_id) * power_ratio
+        powers = [self.client.read_holding_registers(reg, ModbusDataType.FLOAT_32, device_id=self.__modbus_id) * power_ratio
                   for reg in [0x2014, 0x2016, 0x2018]]
         voltage_ratio = urat*0.1*0.1
         voltages = [self.client.read_holding_registers(
-            reg, ModbusDataType.FLOAT_32, unit=self.__modbus_id) * voltage_ratio
+            reg, ModbusDataType.FLOAT_32, device_id=self.__modbus_id) * voltage_ratio
             for reg in [0x2006, 0x2008, 0x200A]]
         current_ratio = irat*0.001
         currents = [self.client.read_holding_registers(
-            reg, ModbusDataType.FLOAT_32, unit=self.__modbus_id) * current_ratio
+            reg, ModbusDataType.FLOAT_32, device_id=self.__modbus_id) * current_ratio
             for reg in [0x200C, 0x200E, 0x2010]]
-        power_factors = [self.client.read_holding_registers(reg, ModbusDataType.FLOAT_32, unit=self.__modbus_id) * 0.001
+        power_factors = [self.client.read_holding_registers(reg, ModbusDataType.FLOAT_32, device_id=self.__modbus_id) * 0.001
                          for reg in [0x202C, 0x202E, 0x2030]]
         ep_ratio = irat * urat * 100
         imported_ep = self.client.read_holding_registers(0x401E,
-                                                         ModbusDataType.FLOAT_32, unit=self.__modbus_id) * ep_ratio
+                                                         ModbusDataType.FLOAT_32, device_id=self.__modbus_id) * ep_ratio
         exported_ep = self.client.read_holding_registers(0x4028,
-                                                         ModbusDataType.FLOAT_32, unit=self.__modbus_id) * ep_ratio
+                                                         ModbusDataType.FLOAT_32, device_id=self.__modbus_id) * ep_ratio
 
         counter_state = CounterState(
             currents=currents,

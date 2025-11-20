@@ -36,7 +36,7 @@ class PowerdogInverter(AbstractInverter):
 
     def update(self) -> float:
         with self.__tcp_client:
-            power = self.__tcp_client.read_input_registers(40002, ModbusDataType.INT_32, unit=self.__modbus_id) * -1
+            power = self.__tcp_client.read_input_registers(40002, ModbusDataType.INT_32, device_id=self.__modbus_id) * -1
 
         _, exported = self.sim_counter.sim_count(power)
         inverter_state = InverterState(

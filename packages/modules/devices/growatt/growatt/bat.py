@@ -32,28 +32,28 @@ class GrowattBat(AbstractBat):
     def update(self) -> None:
         if self.version == GrowattVersion.max_series:
             power_in = self.client.read_input_registers(
-                1011, ModbusDataType.UINT_32, unit=self.__modbus_id) * 0.1
+                1011, ModbusDataType.UINT_32, device_id=self.__modbus_id) * 0.1
             power_out = self.client.read_input_registers(
-                1009, ModbusDataType.UINT_32, unit=self.__modbus_id) * -0.1
+                1009, ModbusDataType.UINT_32, device_id=self.__modbus_id) * -0.1
             power = power_in + power_out
 
-            soc = self.client.read_input_registers(1014, ModbusDataType.UINT_16, unit=self.__modbus_id)
+            soc = self.client.read_input_registers(1014, ModbusDataType.UINT_16, device_id=self.__modbus_id)
             imported = self.client.read_input_registers(
-                1058, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
+                1058, ModbusDataType.UINT_32, device_id=self.__modbus_id) * 100
             exported = self.client.read_input_registers(
-                1054, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
+                1054, ModbusDataType.UINT_32, device_id=self.__modbus_id) * 100
         else:
             power_in = self.client.read_input_registers(
-                3180, ModbusDataType.UINT_32, unit=self.__modbus_id) * -0.1
+                3180, ModbusDataType.UINT_32, device_id=self.__modbus_id) * -0.1
             power_out = self.client.read_input_registers(
-                3178, ModbusDataType.UINT_32, unit=self.__modbus_id) * 0.1
+                3178, ModbusDataType.UINT_32, device_id=self.__modbus_id) * 0.1
             power = power_in + power_out
 
-            soc = self.client.read_input_registers(3171, ModbusDataType.UINT_16, unit=self.__modbus_id)
+            soc = self.client.read_input_registers(3171, ModbusDataType.UINT_16, device_id=self.__modbus_id)
             imported = self.client.read_input_registers(
-                3131, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
+                3131, ModbusDataType.UINT_32, device_id=self.__modbus_id) * 100
             exported = self.client.read_input_registers(
-                3127, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
+                3127, ModbusDataType.UINT_32, device_id=self.__modbus_id) * 100
 
         bat_state = BatState(
             power=power,

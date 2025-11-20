@@ -142,16 +142,16 @@ class ChargepointModule(AbstractChargepoint):
                             time.sleep(5)
                             if phases_to_use == 1:
                                 self._client.client.delegate.write_register(
-                                    0x0001, 256, unit=self.ID_PHASE_SWITCH_UNIT)
+                                    0x0001, 256, device_id=self.ID_PHASE_SWITCH_UNIT)
                                 time.sleep(1)
                                 self._client.client.delegate.write_register(
-                                    0x0001, 512, unit=self.ID_PHASE_SWITCH_UNIT)
+                                    0x0001, 512, device_id=self.ID_PHASE_SWITCH_UNIT)
                             else:
                                 self._client.client.delegate.write_register(
-                                    0x0002, 512, unit=self.ID_PHASE_SWITCH_UNIT)
+                                    0x0002, 512, device_id=self.ID_PHASE_SWITCH_UNIT)
                                 time.sleep(1)
                                 self._client.client.delegate.write_register(
-                                    0x0002, 256, unit=self.ID_PHASE_SWITCH_UNIT)
+                                    0x0002, 256, device_id=self.ID_PHASE_SWITCH_UNIT)
                     except AttributeError:
                         self._create_client()
                         self._validate_version()

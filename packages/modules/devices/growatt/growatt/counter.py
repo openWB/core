@@ -31,40 +31,40 @@ class GrowattCounter(AbstractCounter):
 
     def update(self) -> None:
         if self.version == GrowattVersion.max_series:
-            power_in = self.client.read_input_registers(1021, ModbusDataType.UINT_32, unit=self.__modbus_id) * 0.1
-            power_out = self.client.read_input_registers(1029, ModbusDataType.UINT_32, unit=self.__modbus_id) * -0.1
+            power_in = self.client.read_input_registers(1021, ModbusDataType.UINT_32, device_id=self.__modbus_id) * 0.1
+            power_out = self.client.read_input_registers(1029, ModbusDataType.UINT_32, device_id=self.__modbus_id) * -0.1
             power = power_in + power_out
 
             powers = [
                 self.client.read_input_registers(
-                    40, ModbusDataType.INT_32, unit=self.__modbus_id) / 10,
+                    40, ModbusDataType.INT_32, device_id=self.__modbus_id) / 10,
                 self.client.read_input_registers(
-                    44, ModbusDataType.INT_32, unit=self.__modbus_id) / 10,
+                    44, ModbusDataType.INT_32, device_id=self.__modbus_id) / 10,
                 self.client.read_input_registers(
-                    48, ModbusDataType.INT_32, unit=self.__modbus_id) / 10]
+                    48, ModbusDataType.INT_32, device_id=self.__modbus_id) / 10]
 
             # Einheit 0.1 kWh
-            exported = self.client.read_input_registers(1050, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
-            imported = self.client.read_input_registers(1046, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
+            exported = self.client.read_input_registers(1050, ModbusDataType.UINT_32, device_id=self.__modbus_id) * 100
+            imported = self.client.read_input_registers(1046, ModbusDataType.UINT_32, device_id=self.__modbus_id) * 100
 
         # TL-X Dokumentation hat die gleichen Register wie die MAX Serie,
         # zusätzlich sind aber auch unten abweichende enthalten
         else:
-            power_in = self.client.read_input_registers(3041, ModbusDataType.UINT_32, unit=self.__modbus_id) * 0.1
-            power_out = self.client.read_input_registers(3043, ModbusDataType.UINT_32, unit=self.__modbus_id) * -0.1
+            power_in = self.client.read_input_registers(3041, ModbusDataType.UINT_32, device_id=self.__modbus_id) * 0.1
+            power_out = self.client.read_input_registers(3043, ModbusDataType.UINT_32, device_id=self.__modbus_id) * -0.1
             power = power_in + power_out
 
             powers = [
                 self.client.read_input_registers(
-                    3028, ModbusDataType.INT_32, unit=self.__modbus_id) / 10,
+                    3028, ModbusDataType.INT_32, device_id=self.__modbus_id) / 10,
                 self.client.read_input_registers(
-                    3032, ModbusDataType.INT_32, unit=self.__modbus_id) / 10,
+                    3032, ModbusDataType.INT_32, device_id=self.__modbus_id) / 10,
                 self.client.read_input_registers(
-                    3036, ModbusDataType.INT_32, unit=self.__modbus_id) / 10]
+                    3036, ModbusDataType.INT_32, device_id=self.__modbus_id) / 10]
 
             # Einheit 0.1 kWh
-            exported = self.client.read_input_registers(3073, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
-            imported = self.client.read_input_registers(3069, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
+            exported = self.client.read_input_registers(3073, ModbusDataType.UINT_32, device_id=self.__modbus_id) * 100
+            imported = self.client.read_input_registers(3069, ModbusDataType.UINT_32, device_id=self.__modbus_id) * 100
 
         counter_state = CounterState(
             imported=imported,

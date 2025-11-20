@@ -29,8 +29,8 @@ class SigenergyCounter:
     def update(self):
         unit = self.component_config.configuration.modbus_id
 
-        powers = self.client.read_holding_registers(30052, [ModbusDataType.INT_32]*3, unit=unit)
-        power = self.client.read_holding_registers(30005, ModbusDataType.INT_32, unit=unit)
+        powers = self.client.read_holding_registers(30052, [ModbusDataType.INT_32]*3, device_id=unit)
+        power = self.client.read_holding_registers(30005, ModbusDataType.INT_32, device_id=unit)
         imported, exported = self.sim_counter.sim_count(power)
 
         counter_state = CounterState(

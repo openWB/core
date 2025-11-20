@@ -33,16 +33,16 @@ class JanitzaCounter(AbstractCounter):
 
     def update(self) -> None:
         with self.__tcp_client:
-            power = self.__tcp_client.read_holding_registers(19026, ModbusDataType.FLOAT_32, unit=self.__modbus_id)
+            power = self.__tcp_client.read_holding_registers(19026, ModbusDataType.FLOAT_32, device_id=self.__modbus_id)
             powers = self.__tcp_client.read_holding_registers(
-                19020, [ModbusDataType.FLOAT_32] * 3, unit=self.__modbus_id)
+                19020, [ModbusDataType.FLOAT_32] * 3, device_id=self.__modbus_id)
             currents = self.__tcp_client.read_holding_registers(
-                19012, [ModbusDataType.FLOAT_32] * 3, unit=self.__modbus_id)
+                19012, [ModbusDataType.FLOAT_32] * 3, device_id=self.__modbus_id)
             voltages = self.__tcp_client.read_holding_registers(
-                19000, [ModbusDataType.FLOAT_32] * 3, unit=self.__modbus_id)
+                19000, [ModbusDataType.FLOAT_32] * 3, device_id=self.__modbus_id)
             power_factors = self.__tcp_client.read_holding_registers(
-                19044, [ModbusDataType.FLOAT_32] * 3, unit=self.__modbus_id)
-            frequency = self.__tcp_client.read_holding_registers(19050, ModbusDataType.FLOAT_32, unit=self.__modbus_id)
+                19044, [ModbusDataType.FLOAT_32] * 3, device_id=self.__modbus_id)
+            frequency = self.__tcp_client.read_holding_registers(19050, ModbusDataType.FLOAT_32, device_id=self.__modbus_id)
 
         imported, exported = self.sim_counter.sim_count(power)
 

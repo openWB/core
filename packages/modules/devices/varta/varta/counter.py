@@ -31,7 +31,7 @@ class VartaCounter(AbstractCounter):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self):
-        power = self.client.read_holding_registers(1078, ModbusDataType.INT_16, unit=self.__modbus_id) * -1
+        power = self.client.read_holding_registers(1078, ModbusDataType.INT_16, device_id=self.__modbus_id) * -1
         imported, exported = self.sim_counter.sim_count(power)
 
         counter_state = CounterState(

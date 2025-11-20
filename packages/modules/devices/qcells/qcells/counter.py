@@ -29,22 +29,22 @@ class QCellsCounter(AbstractCounter):
 
     def update(self) -> None:
         power = self.client.read_input_registers(0x0046, ModbusDataType.INT_32, wordorder=Endian.Little,
-                                                 unit=self.__modbus_id) * -1
+                                                 device_id=self.__modbus_id) * -1
         frequency = self.client.read_input_registers(
-            0x0007, ModbusDataType.UINT_16, unit=self.__modbus_id) / 100
+            0x0007, ModbusDataType.UINT_16, device_id=self.__modbus_id) / 100
         try:
             powers = [-value for value in self.client.read_input_registers(
-                0x0082, [ModbusDataType.INT_32] * 3, wordorder=Endian.Little, unit=self.__modbus_id
+                0x0082, [ModbusDataType.INT_32] * 3, wordorder=Endian.Little, device_id=self.__modbus_id
             )]
         except Exception:
             powers = None
         try:
             voltages = [self.client.read_input_registers(
-                0x006A, ModbusDataType.UINT_16, unit=self.__modbus_id
+                0x006A, ModbusDataType.UINT_16, device_id=self.__modbus_id
             ) / 10, self.client.read_input_registers(
-                0x006E, ModbusDataType.UINT_16, unit=self.__modbus_id
+                0x006E, ModbusDataType.UINT_16, device_id=self.__modbus_id
             ) / 10, self.client.read_input_registers(
-                0x0072, ModbusDataType.UINT_16, unit=self.__modbus_id
+                0x0072, ModbusDataType.UINT_16, device_id=self.__modbus_id
             ) / 10]
             if voltages[0] < 1:
                 voltages[0] = 230
@@ -57,7 +57,7 @@ class QCellsCounter(AbstractCounter):
         exported, imported = [value * 10
                               for value in self.client.read_input_registers(
                                   0x0048, [ModbusDataType.UINT_32] * 2,
-                                  wordorder=Endian.Little, unit=self.__modbus_id
+                                  wordorder=Endian.Little, device_id=self.__modbus_id
                               )]
 
         counter_state = CounterState(

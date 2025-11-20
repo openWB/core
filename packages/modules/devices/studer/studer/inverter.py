@@ -40,7 +40,7 @@ class StuderInverter(AbstractInverter):
             power = 0
             for i in range(1, vc_count+1):
                 mb_unit_dev = mb_unit+i
-                power += self.__tcp_client.read_input_registers(mb_register, ModbusDataType.FLOAT_32, unit=mb_unit_dev)
+                power += self.__tcp_client.read_input_registers(mb_register, ModbusDataType.FLOAT_32, device_id=mb_unit_dev)
             power = power * -1000
 
             if vc_type == 'VS':
@@ -51,7 +51,7 @@ class StuderInverter(AbstractInverter):
             for i in range(1, vc_count + 1):
                 mb_unit_dev = mb_unit + i
                 exported += self.__tcp_client.read_input_registers(mb_register, ModbusDataType.FLOAT_32,
-                                                                   unit=mb_unit_dev)
+                                                                   device_id=mb_unit_dev)
             exported = exported * 1000000
 
         inverter_state = InverterState(

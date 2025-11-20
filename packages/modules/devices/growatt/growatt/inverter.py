@@ -32,14 +32,14 @@ class GrowattInverter(AbstractInverter):
     def update(self) -> None:
         if self.version == GrowattVersion.max_series:
             power = self.client.read_input_registers(
-                1, ModbusDataType.UINT_32, unit=self.__modbus_id) / -10
+                1, ModbusDataType.UINT_32, device_id=self.__modbus_id) / -10
             exported = self.client.read_input_registers(
-                91, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
+                91, ModbusDataType.UINT_32, device_id=self.__modbus_id) * 100
         else:
             power = self.client.read_input_registers(
-                3001, ModbusDataType.UINT_32, unit=self.__modbus_id) / -10
+                3001, ModbusDataType.UINT_32, device_id=self.__modbus_id) / -10
             exported = self.client.read_input_registers(
-                3053, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
+                3053, ModbusDataType.UINT_32, device_id=self.__modbus_id) * 100
 
         inverter_state = InverterState(
             power=power,

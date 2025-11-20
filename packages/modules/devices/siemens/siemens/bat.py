@@ -33,8 +33,8 @@ class SiemensBat(AbstractBat):
 
     def update(self) -> None:
         with self.__tcp_client:
-            power = self.__tcp_client.read_holding_registers(6, ModbusDataType.INT_32, unit=self.__modbus_id) * -1
-            soc = int(self.__tcp_client.read_holding_registers(8, ModbusDataType.INT_32, unit=self.__modbus_id))
+            power = self.__tcp_client.read_holding_registers(6, ModbusDataType.INT_32, device_id=self.__modbus_id) * -1
+            soc = int(self.__tcp_client.read_holding_registers(8, ModbusDataType.INT_32, device_id=self.__modbus_id))
 
         imported, exported = self.sim_counter.sim_count(power)
         bat_state = BatState(

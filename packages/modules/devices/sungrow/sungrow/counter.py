@@ -36,42 +36,42 @@ class SungrowCounter(AbstractCounter):
         unit = self.device_config.configuration.modbus_id
         if self.device_config.configuration.version in (Version.SH, Version.SH_winet_dongle):
             power = self.__tcp_client.read_input_registers(13009, ModbusDataType.INT_32,
-                                                           wordorder=Endian.Little, unit=unit) * -1
+                                                           wordorder=Endian.Little, device_id=unit) * -1
             try:
                 powers = self.__tcp_client.read_input_registers(5602, [ModbusDataType.INT_32] * 3,
-                                                                wordorder=Endian.Little, unit=unit)
+                                                                wordorder=Endian.Little, device_id=unit)
             except Exception:
                 powers = None
                 self.fault_state.no_error(self.fault_text)
         else:
             if pv_power != 0:
                 power = self.__tcp_client.read_input_registers(5082, ModbusDataType.INT_32,
-                                                               wordorder=Endian.Little, unit=unit)
+                                                               wordorder=Endian.Little, device_id=unit)
             else:
                 power = self.__tcp_client.read_input_registers(5090, ModbusDataType.INT_32,
-                                                               wordorder=Endian.Little, unit=unit)
+                                                               wordorder=Endian.Little, device_id=unit)
             try:
                 powers = self.__tcp_client.read_input_registers(5084, [ModbusDataType.INT_32] * 3,
-                                                                wordorder=Endian.Little, unit=unit)
+                                                                wordorder=Endian.Little, device_id=unit)
             except Exception:
                 powers = None
                 self.fault_state.no_error(self.fault_text)
 
-        frequency = self.__tcp_client.read_input_registers(5035, ModbusDataType.UINT_16, unit=unit) / 10
+        frequency = self.__tcp_client.read_input_registers(5035, ModbusDataType.UINT_16, device_id=unit) / 10
         if self.device_config.configuration.version == Version.SH_winet_dongle:
             # On WiNet-S, the frequency accuracy is higher by one place
             frequency /= 10
 
-        power_factor = self.__tcp_client.read_input_registers(5034, ModbusDataType.INT_16, unit=unit) / 1000
+        power_factor = self.__tcp_client.read_input_registers(5034, ModbusDataType.INT_16, device_id=unit) / 1000
 
         if self.device_config.configuration.version == Version.SH:
             # SH (LAN) provides accurate values from meter
             voltages = self.__tcp_client.read_input_registers(5740, [ModbusDataType.UINT_16] * 3,
-                                                              wordorder=Endian.Little, unit=unit)
+                                                              wordorder=Endian.Little, device_id=unit)
         else:
             # These are actually output voltages of the inverter:
             voltages = self.__tcp_client.read_input_registers(5018, [ModbusDataType.UINT_16] * 3,
-                                                              wordorder=Endian.Little, unit=unit)
+                                                              wordorder=Endian.Little, device_id=unit)
 
         voltages = [value / 10 for value in voltages]
 

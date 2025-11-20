@@ -29,13 +29,13 @@ class DeyeCounter(AbstractCounter):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.device_type = DeviceType(self.client.read_holding_registers(
-            0, ModbusDataType.INT_16, unit=self.component_config.configuration.modbus_id))
+            0, ModbusDataType.INT_16, device_id=self.component_config.configuration.modbus_id))
 
     def update(self):
         unit = self.component_config.configuration.modbus_id
 
         if self.device_type == DeviceType.SINGLE_PHASE_STRING or self.device_type == DeviceType.SINGLE_PHASE_HYBRID:
-            frequency = self.client.read_holding_registers(79, ModbusDataType.INT_16, unit=unit) / 100
+            frequency = self.client.read_holding_registers(79, ModbusDataType.INT_16, device_id=unit) / 100
 
             if self.device_type == DeviceType.SINGLE_PHASE_HYBRID:
                 powers = [0]*3
@@ -46,19 +46,19 @@ class DeyeCounter(AbstractCounter):
 
             elif self.device_type == DeviceType.SINGLE_PHASE_STRING:
                 currents = [
-                    c / 100 for c in self.client.read_holding_registers(76, [ModbusDataType.INT_16]*3, unit=unit)]
+                    c / 100 for c in self.client.read_holding_registers(76, [ModbusDataType.INT_16]*3, device_id=unit)]
                 voltages = [
-                    v / 10 for v in self.client.read_holding_registers(70, [ModbusDataType.INT_16]*3, unit=unit)]
+                    v / 10 for v in self.client.read_holding_registers(70, [ModbusDataType.INT_16]*3, device_id=unit)]
                 powers = [currents[i] * voltages[i] for i in range(0, 3)]
                 power = sum(powers)
                 imported, exported = self.sim_counter.sim_count(power)
 
         else:  # THREE_PHASE_LV (0x0500, 0x0005), THREE_PHASE_HV (0x0006)
-            currents = [c / 100 for c in self.client.read_holding_registers(613, [ModbusDataType.INT_16]*3, unit=unit)]
-            voltages = [v / 10 for v in self.client.read_holding_registers(644, [ModbusDataType.INT_16]*3, unit=unit)]
-            powers = self.client.read_holding_registers(616, [ModbusDataType.INT_16]*3, unit=unit)
+            currents = [c / 100 for c in self.client.read_holding_registers(613, [ModbusDataType.INT_16]*3, device_id=unit)]
+            voltages = [v / 10 for v in self.client.read_holding_registers(644, [ModbusDataType.INT_16]*3, device_id=unit)]
+            powers = self.client.read_holding_registers(616, [ModbusDataType.INT_16]*3, device_id=unit)
             power = sum(powers)
-            frequency = self.client.read_holding_registers(609, ModbusDataType.INT_16, unit=unit) / 100
+            frequency = self.client.read_holding_registers(609, ModbusDataType.INT_16, device_id=unit) / 100
             imported, exported = self.sim_counter.sim_count(power)
 
         counter_state = CounterState(

@@ -31,8 +31,8 @@ class Huawei_EmmaInverter(AbstractInverter):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> None:
-        power = self.client.read_holding_registers(30354, ModbusDataType.INT_32, unit=self.modbus_id) * -1
-        exported = self.client.read_holding_registers(30348, ModbusDataType.UINT_64, unit=self.modbus_id) * 10
+        power = self.client.read_holding_registers(30354, ModbusDataType.INT_32, device_id=self.modbus_id) * -1
+        exported = self.client.read_holding_registers(30348, ModbusDataType.UINT_64, device_id=self.modbus_id) * 10
 
         inverter_state = InverterState(
             power=power,

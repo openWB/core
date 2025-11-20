@@ -34,8 +34,8 @@ class Huawei_SmartloggerInverter(AbstractInverter):
 
     def update(self) -> None:
         modbus_id = self.component_config.configuration.modbus_id
-        power = self.client.read_holding_registers(32080, ModbusDataType.INT_32, unit=modbus_id) * -1
-        exported = self.client.read_holding_registers(32106, ModbusDataType.INT_32, unit=modbus_id) * 10
+        power = self.client.read_holding_registers(32080, ModbusDataType.INT_32, device_id=modbus_id) * -1
+        exported = self.client.read_holding_registers(32106, ModbusDataType.INT_32, device_id=modbus_id) * 10
         inverter_state = InverterState(
             power=power,
             exported=exported

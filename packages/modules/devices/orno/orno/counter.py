@@ -26,9 +26,9 @@ class OrnoCounter(AbstractCounter):
 
     def update(self):
         power = self.client.read_holding_registers(
-            0x141, ModbusDataType.INT_32, unit=self.component_config.configuration.modbus_id)
+            0x141, ModbusDataType.INT_32, device_id=self.component_config.configuration.modbus_id)
         imported = self.client.read_holding_registers(
-            0xA001, ModbusDataType.INT_32, unit=self.component_config.configuration.modbus_id) * 10
+            0xA001, ModbusDataType.INT_32, device_id=self.component_config.configuration.modbus_id) * 10
 
         counter_state = CounterState(
             imported=imported,
