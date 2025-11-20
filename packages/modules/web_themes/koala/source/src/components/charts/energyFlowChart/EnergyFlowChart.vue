@@ -3,7 +3,6 @@ import { useMqttStore } from 'src/stores/mqtt-store';
 import { ref, computed, watch } from 'vue';
 import type { SvgSize, FlowComponent } from './energy-flow-chart-models';
 import type { ValueObject } from 'src/stores/mqtt-store-model';
-import { useEnergyFlowTransition } from 'src/composables/useEnergyFlowTransition';
 
 const mqttStore = useMqttStore();
 
@@ -270,51 +269,42 @@ const maxSystemPower = computed(() => {
   return Math.max(...filteredPowerValues);
 });
 
-function calculateDuration(power: number, maxPower: number): number {
+function calcDuration(power: number, maxPower: number) {
   const minDuration = 0.4;
   const maxDuration = 4.0;
   const absPower = Math.abs(power || 0);
-
-  let duration: number;
-  if (absPower >= maxPower) {
-    duration = minDuration;
-  } else if (absPower > 0) {
-    duration = maxDuration - (maxDuration - minDuration) * (absPower / maxPower);
-  } else {
-    duration = maxDuration;
-  }
-  // duration in seconds, rounded to 1 decimal place
-  return Math.round(duration * 10) / 10;
+  if (absPower >= maxPower) return `${minDuration}s`;
+  if (absPower > 0)
+    return `${maxDuration - (maxDuration - minDuration) * (absPower / maxPower)}s`;
+  return `${maxDuration}s`;
 }
 
-// animation durations by component.id
-const animationDurations = computed<Record<string, number>>(() => {
+const animationDurations = computed(() => {
   const maxPower = maxSystemPower.value;
-
-  const cp1 = Number(chargePoint1Power.value.value);
-  const cp2 = Number(chargePoint2Power.value.value);
-  const cp3 = Number(chargePoint3Power.value.value);
-  const cpSum = Number(chargePointSumPower.value.value);
-
-  const gridVal = Number(gridPower.value.value);
-  const homeVal = Number(homePower.value.value);
-  const pvVal = Number(pvPower.value.value);
-  const batVal = Number(batteryPower.value.value);
-
   return {
-    grid: calculateDuration(gridVal, maxPower),
-    home: calculateDuration(homeVal, maxPower),
-    pv: calculateDuration(pvVal, maxPower),
-    battery: calculateDuration(batVal, maxPower),
-
-    'charge-point-1': calculateDuration(cp1, maxPower),
-    'charge-point-2': calculateDuration(cp2, maxPower),
-    'charge-point-3': calculateDuration(cp3, maxPower),
-    'charge-point-sum': calculateDuration(cpSum, maxPower),
-
-    'vehicle-1': calculateDuration(cp1, maxPower),
-    'vehicle-2': calculateDuration(cp2, maxPower),
-    'vehicle-3': calculateDuration(cp3, maxPower),
+    grid: calcDuration(Number(gridPower.value.value), maxPower),
+    home: calcDuration(Number(homePower.value.value), maxPower),
+    pv: calcDuration(Number(pvPower.value.value), maxPower),
+    battery: calcDuration(Number(batteryPower.value.value), maxPower),
+    chargePoint1: calcDuration(
+      Number(chargePoint1Power.value.value),
+      maxPower,
+    ),
+    chargePoint2: calcDuration(
+      Number(chargePoint2Power.value.value),
+      maxPower,
+    ),
+    chargePoint3: calcDuration(
+      Number(chargePoint3Power.value.value),
+      maxPower,
+    ),
+    chargePointSum: calcDuration(
+      Number(chargePointSumPower.value.value),
+      maxPower,
+    ),
+    vehicle1: calcDuration(Number(chargePoint1Power.value.value), maxPower),
+    vehicle2: calcDuration(Number(chargePoint2Power.value.value), maxPower),
+    vehicle3: calcDuration(Number(chargePoint3Power.value.value), maxPower),
   };
 });
 
@@ -395,6 +385,7 @@ const svgComponents = computed((): FlowComponent[] => {
         id: 'charge-point-1',
         class: {
           base: 'charge-point',
+          animationId: 'charge-point-1',
           valueLabel: '',
           animated: chargePoint1Discharging.value,
           animatedReverse: chargePoint1Charging.value,
@@ -417,6 +408,7 @@ const svgComponents = computed((): FlowComponent[] => {
           id: 'vehicle-1',
           class: {
             base: 'vehicle',
+            animationId: 'vehicle-1',
             valueLabel:
               'fill-' + chargePoint1ConnectedVehicleChargeMode.value.class,
             animated: chargePoint1Discharging.value,
@@ -442,6 +434,7 @@ const svgComponents = computed((): FlowComponent[] => {
           id: 'charge-point-2',
           class: {
             base: 'charge-point',
+            animationId: 'charge-point-2',
             valueLabel: '',
             animated: chargePoint2Discharging.value,
             animatedReverse: chargePoint2Charging.value,
@@ -465,6 +458,7 @@ const svgComponents = computed((): FlowComponent[] => {
           id: 'vehicle-2',
           class: {
             base: 'vehicle',
+            animationId: 'vehicle-2',
             valueLabel:
               'fill-' + chargePoint2ConnectedVehicleChargeMode.value.class,
             animated: chargePoint2Discharging.value,
@@ -490,6 +484,7 @@ const svgComponents = computed((): FlowComponent[] => {
           id: 'charge-point-3',
           class: {
             base: 'charge-point',
+            animationId: 'charge-point-3',
             valueLabel: '',
             animated: chargePoint3Discharging.value,
             animatedReverse: chargePoint3Charging.value,
@@ -510,6 +505,7 @@ const svgComponents = computed((): FlowComponent[] => {
           id: 'vehicle-3',
           class: {
             base: 'vehicle',
+            animationId: 'vehicle-3',
             valueLabel:
               'fill-' + chargePoint3ConnectedVehicleChargeMode.value.class,
             animated: chargePoint3Discharging.value,
@@ -534,6 +530,7 @@ const svgComponents = computed((): FlowComponent[] => {
         id: 'charge-point-sum',
         class: {
           base: 'charge-point',
+          animationId: 'charge-point-sum',
           valueLabel: '',
           animated: chargePointSumDischarging.value,
           animatedReverse: chargePointSumCharging.value,
@@ -623,41 +620,6 @@ const svgRectWidth = computed(
       svgSize.value.numColumns) /
     svgSize.value.numColumns,
 );
-
-// Hook up the chained-transition controllers.
-// One controller per possible flow-path ID.
-const FLOW_IDS = [
-  'grid',
-  'home',
-  'pv',
-  'battery',
-  'charge-point-1',
-  'charge-point-2',
-  'charge-point-3',
-  'charge-point-sum',
-  'vehicle-1',
-  'vehicle-2',
-  'vehicle-3',
-] as const;
-
-FLOW_IDS.forEach((id) => {
-  const isActive = computed(() => {
-    const component = svgComponents.value.find((component) => component.id === id);
-    return !!component && (component.class.animated || component.class.animatedReverse);
-  });
-
-  const duration = computed(() => {
-    const duration = animationDurations.value[id];
-    return duration ?? 4.0;
-  });
-
-  const reverse = computed(() => {
-    const component = svgComponents.value.find((component) => component.id === id);
-    return !!component?.class.animatedReverse;
-  });
-
-  useEnergyFlowTransition(id, isActive, duration, reverse);
-});
 </script>
 
 <template>
@@ -675,6 +637,7 @@ FLOW_IDS.forEach((id) => {
           :id="`flow-path-${component.id}`"
           :class="[
             component.class.base,
+            component.class.animationId,
             { animated: component.class.animated },
             { animatedReverse: component.class.animatedReverse },
           ]"
@@ -849,11 +812,99 @@ path {
   transition: stroke 0.5s;
 }
 
+/* Basis for all animated lines */
+path.animated {
+  animation-name: dash;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  stroke-dasharray: 5;
+}
+path.animatedReverse {
+  animation-name: dashReverse;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  stroke-dasharray: 5;
+}
+
 path.animated.grid {
   stroke: var(--q-negative);
+  animation-duration: v-bind('animationDurations.grid');
 }
 path.animatedReverse.grid {
   stroke: var(--q-positive);
+  animation-duration: v-bind('animationDurations.grid');
+}
+
+path.animated.home,
+path.animatedReverse.home {
+  stroke: var(--q-flow-home-stroke);
+  animation-duration: v-bind('animationDurations.home');
+}
+
+path.animated.pv,
+path.animatedReverse.pv {
+  stroke: var(--q-positive);
+  animation-duration: v-bind('animationDurations.pv');
+}
+
+path.animated.battery,
+path.animatedReverse.battery {
+  stroke: var(--q-warning);
+  animation-duration: v-bind('animationDurations.battery');
+}
+
+path.animated.charge-point-1,
+path.animatedReverse.charge-point-1 {
+  stroke: var(--q-primary);
+  animation-duration: v-bind('animationDurations.chargePoint1');
+}
+path.animated.charge-point-2,
+path.animatedReverse.charge-point-2 {
+  stroke: var(--q-primary);
+  animation-duration: v-bind('animationDurations.chargePoint2');
+}
+path.animated.charge-point-3,
+path.animatedReverse.charge-point-3 {
+  stroke: var(--q-primary);
+  animation-duration: v-bind('animationDurations.chargePoint3');
+}
+path.animated.charge-point-sum,
+path.animatedReverse.charge-point-sum {
+  stroke: var(--q-primary);
+  animation-duration: v-bind('animationDurations.chargePointSum');
+}
+
+path.animated.vehicle-1,
+path.animatedReverse.vehicle-1 {
+  stroke: var(--q-accent);
+  animation-duration: v-bind('animationDurations.vehicle1');
+}
+path.animated.vehicle-2,
+path.animatedReverse.vehicle-2 {
+  stroke: var(--q-accent);
+  animation-duration: v-bind('animationDurations.vehicle2');
+}
+path.animated.vehicle-3,
+path.animatedReverse.vehicle-3 {
+  stroke: var(--q-accent);
+  animation-duration: v-bind('animationDurations.vehicle3');
+}
+
+@keyframes dash {
+  from {
+    stroke-dashoffset: 10;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes dashReverse {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: 10;
+  }
 }
 
 :root {
@@ -866,33 +917,6 @@ path.animatedReverse.grid {
   path.home {
     stroke: var(--q-white);
   }
-}
-
-path.animated.home,
-path.animatedReverse.home {
-  stroke: var(--q-flow-home-stroke);
-}
-
-path.animated.pv,
-path.animatedReverse.pv {
-  stroke: var(--q-positive);
-}
-
-path.animated.battery,
-path.animatedReverse.battery {
-  stroke: var(--q-warning);
-}
-
-path.animated.charge-point,
-path.animated.charge-point-sum,
-path.animatedReverse.charge-point,
-path.animatedReverse.charge-point-sum {
-  stroke: var(--q-primary);
-}
-
-path.animated.vehicle,
-path.animatedReverse.vehicle {
-  stroke: var(--q-accent);
 }
 
 circle {
