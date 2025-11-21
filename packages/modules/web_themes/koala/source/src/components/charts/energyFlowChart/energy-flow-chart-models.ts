@@ -12,6 +12,7 @@ export interface SvgSize {
 
 export interface ComponentClass {
   base: string;
+  animationId?: string;
   valueLabel: string;
   animated?: boolean;
   animatedReverse?: boolean;
@@ -28,6 +29,8 @@ export interface FlowComponent {
   class: ComponentClass;
   position: ComponentPosition;
   label: string[];
+  powerValue?: number;
   soc?: number;
   icon: string;
 }
+

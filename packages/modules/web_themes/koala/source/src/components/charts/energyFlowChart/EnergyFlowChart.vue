@@ -248,30 +248,65 @@ const chargePointSumCharging = computed(
 
 ///////////////////// Set animation speed //////////////////////////
 
-const powerCategory = (power: number) => {
-  if (Math.abs(power) >= 5000) return 'large';
-  if (Math.abs(power) >= 1500) return 'medium';
-  return 'small';
-};
+const maxSystemPower = computed(() => {
+  const powerValues = [
+    Math.abs(Number(gridPower.value.value)),
+    Math.abs(Number(homePower.value.value)),
+    Math.abs(Number(pvPower.value.value)),
+    Math.abs(Number(batteryPower.value.value)),
+    Math.abs(Number(chargePoint1Power.value.value)),
+    Math.abs(Number(chargePoint2Power.value.value)),
+    Math.abs(Number(chargePoint3Power.value.value)),
+    // Only take the sum into account if there are more than 3 charging points
+    ...(connectedChargePoints.value.length > 3
+      ? [Math.abs(Number(chargePointSumPower.value.value))]
+      : []),
+  ];
+  const filteredPowerValues = powerValues.filter(
+    (value) => !isNaN(value) && value !== undefined && value !== null,
+  );
+  if (filteredPowerValues.length === 0) return 1000;
+  return Math.max(...filteredPowerValues);
+});
 
-const pvPowerCategory = computed(() => powerCategory(pvPower.value.value));
-const batteryPowerCategory = computed(() =>
-  powerCategory(batteryPower.value.value),
-);
-const gridPowerCategory = computed(() => powerCategory(gridPower.value.value));
-const homePowerCategory = computed(() => powerCategory(homePower.value.value));
-const chargePoint1PowerCategory = computed(() =>
-  powerCategory(chargePoint1Power.value.value),
-);
-const chargePoint2PowerCategory = computed(() =>
-  powerCategory(chargePoint2Power.value.value),
-);
-const chargePoint3PowerCategory = computed(() =>
-  powerCategory(chargePoint3Power.value.value),
-);
-const chargePointSumPowerCategory = computed(() =>
-  powerCategory(chargePointSumPower.value.value),
-);
+function calcDuration(power: number, maxPower: number) {
+  const minDuration = 0.4;
+  const maxDuration = 4.0;
+  const absPower = Math.abs(power || 0);
+  if (absPower >= maxPower) return `${minDuration}s`;
+  if (absPower > 0)
+    return `${maxDuration - (maxDuration - minDuration) * (absPower / maxPower)}s`;
+  return `${maxDuration}s`;
+}
+
+const animationDurations = computed(() => {
+  const maxPower = maxSystemPower.value;
+  return {
+    grid: calcDuration(Number(gridPower.value.value), maxPower),
+    home: calcDuration(Number(homePower.value.value), maxPower),
+    pv: calcDuration(Number(pvPower.value.value), maxPower),
+    battery: calcDuration(Number(batteryPower.value.value), maxPower),
+    chargePoint1: calcDuration(
+      Number(chargePoint1Power.value.value),
+      maxPower,
+    ),
+    chargePoint2: calcDuration(
+      Number(chargePoint2Power.value.value),
+      maxPower,
+    ),
+    chargePoint3: calcDuration(
+      Number(chargePoint3Power.value.value),
+      maxPower,
+    ),
+    chargePointSum: calcDuration(
+      Number(chargePointSumPower.value.value),
+      maxPower,
+    ),
+    vehicle1: calcDuration(Number(chargePoint1Power.value.value), maxPower),
+    vehicle2: calcDuration(Number(chargePoint2Power.value.value), maxPower),
+    vehicle3: calcDuration(Number(chargePoint3Power.value.value), maxPower),
+  };
+});
 
 ///////////////////////// Diagram components /////////////////////////
 
@@ -289,10 +324,10 @@ const svgComponents = computed((): FlowComponent[] => {
           : '',
       animated: gridConsumption.value,
       animatedReverse: gridFeedIn.value,
-      powerCategory: gridPowerCategory.value,
     },
     position: { row: 0, column: 0 },
     label: ['EVU', absoluteValueObject(gridPower.value).textValue],
+    powerValue: Number(gridPower.value.value),
     icon: 'icons/owbGrid.svg',
   });
 
@@ -303,10 +338,10 @@ const svgComponents = computed((): FlowComponent[] => {
       valueLabel: '',
       animated: homeProduction.value,
       animatedReverse: homeConsumption.value,
-      powerCategory: homePowerCategory.value,
     },
     position: { row: 0, column: 2 },
     label: ['Haus', absoluteValueObject(homePower.value).textValue],
+    powerValue: Number(homePower.value.value),
     icon: 'icons/owbHouse.svg',
   });
 
@@ -318,10 +353,10 @@ const svgComponents = computed((): FlowComponent[] => {
         valueLabel: 'fill-success',
         animated: pvProduction.value,
         animatedReverse: pvConsumption.value,
-        powerCategory: pvPowerCategory.value,
       },
       position: { row: 1, column: 0 },
       label: ['PV', absoluteValueObject(pvPower.value).textValue],
+      powerValue: Number(pvPower.value.value),
       icon: 'icons/owbPV.svg',
     });
   }
@@ -334,10 +369,10 @@ const svgComponents = computed((): FlowComponent[] => {
         valueLabel: '',
         animated: batteryDischarging.value,
         animatedReverse: batteryCharging.value,
-        powerCategory: batteryPowerCategory.value,
       },
       position: { row: 1, column: 2 },
       label: ['Speicher', absoluteValueObject(batteryPower.value).textValue],
+      powerValue: Number(batteryPower.value.value),
       soc: batterySoc.value,
       icon: 'icons/owbBattery.svg',
     });
@@ -350,10 +385,10 @@ const svgComponents = computed((): FlowComponent[] => {
         id: 'charge-point-1',
         class: {
           base: 'charge-point',
+          animationId: 'charge-point-1',
           valueLabel: '',
           animated: chargePoint1Discharging.value,
           animatedReverse: chargePoint1Charging.value,
-          powerCategory: chargePoint1PowerCategory.value,
         },
         position: {
           row: 2,
@@ -363,6 +398,7 @@ const svgComponents = computed((): FlowComponent[] => {
           chargePoint1Name.value,
           absoluteValueObject(chargePoint1Power.value).textValue,
         ],
+        powerValue: Number(chargePoint1Power.value.value),
         icon: 'icons/owbChargePoint.svg',
       });
 
@@ -372,11 +408,11 @@ const svgComponents = computed((): FlowComponent[] => {
           id: 'vehicle-1',
           class: {
             base: 'vehicle',
+            animationId: 'vehicle-1',
             valueLabel:
               'fill-' + chargePoint1ConnectedVehicleChargeMode.value.class,
             animated: chargePoint1Discharging.value,
             animatedReverse: chargePoint1Charging.value,
-            powerCategory: chargePoint1PowerCategory.value,
           },
           position: {
             row: 3,
@@ -388,6 +424,7 @@ const svgComponents = computed((): FlowComponent[] => {
           ],
           soc: (chargePoint1ConnectedVehicleSoc.value.value?.soc || 0) / 100,
           icon: 'icons/owbVehicle.svg',
+          powerValue: Number(chargePoint1Power.value.value),
         });
       }
 
@@ -397,10 +434,10 @@ const svgComponents = computed((): FlowComponent[] => {
           id: 'charge-point-2',
           class: {
             base: 'charge-point',
+            animationId: 'charge-point-2',
             valueLabel: '',
             animated: chargePoint2Discharging.value,
             animatedReverse: chargePoint2Charging.value,
-            powerCategory: chargePoint2PowerCategory.value,
           },
           position: {
             row: 2,
@@ -410,6 +447,7 @@ const svgComponents = computed((): FlowComponent[] => {
             chargePoint2Name.value,
             absoluteValueObject(chargePoint2Power.value).textValue,
           ],
+          powerValue: Number(chargePoint2Power.value.value),
           icon: 'icons/owbChargePoint.svg',
         });
       }
@@ -420,11 +458,11 @@ const svgComponents = computed((): FlowComponent[] => {
           id: 'vehicle-2',
           class: {
             base: 'vehicle',
+            animationId: 'vehicle-2',
             valueLabel:
               'fill-' + chargePoint2ConnectedVehicleChargeMode.value.class,
             animated: chargePoint2Discharging.value,
             animatedReverse: chargePoint2Charging.value,
-            powerCategory: chargePoint2PowerCategory.value,
           },
           position: {
             row: 3,
@@ -436,6 +474,7 @@ const svgComponents = computed((): FlowComponent[] => {
           ],
           soc: (chargePoint2ConnectedVehicleSoc.value.value?.soc || 0) / 100,
           icon: 'icons/owbVehicle.svg',
+          powerValue: Number(chargePoint2Power.value.value),
         });
       }
 
@@ -445,16 +484,17 @@ const svgComponents = computed((): FlowComponent[] => {
           id: 'charge-point-3',
           class: {
             base: 'charge-point',
+            animationId: 'charge-point-3',
             valueLabel: '',
             animated: chargePoint3Discharging.value,
             animatedReverse: chargePoint3Charging.value,
-            powerCategory: chargePoint3PowerCategory.value,
           },
           position: { row: 2, column: 2 },
           label: [
             chargePoint3Name.value,
             absoluteValueObject(chargePoint3Power.value).textValue,
           ],
+          powerValue: Number(chargePoint3Power.value.value),
           icon: 'icons/owbChargePoint.svg',
         });
       }
@@ -465,11 +505,11 @@ const svgComponents = computed((): FlowComponent[] => {
           id: 'vehicle-3',
           class: {
             base: 'vehicle',
+            animationId: 'vehicle-3',
             valueLabel:
               'fill-' + chargePoint3ConnectedVehicleChargeMode.value.class,
             animated: chargePoint3Discharging.value,
             animatedReverse: chargePoint3Charging.value,
-            powerCategory: chargePoint3PowerCategory.value,
           },
           position: {
             row: 3,
@@ -481,6 +521,7 @@ const svgComponents = computed((): FlowComponent[] => {
           ],
           soc: (chargePoint3ConnectedVehicleSoc.value.value?.soc || 0) / 100,
           icon: 'icons/owbVehicle.svg',
+          powerValue: Number(chargePoint3Power.value.value),
         });
       }
     } else {
@@ -489,16 +530,17 @@ const svgComponents = computed((): FlowComponent[] => {
         id: 'charge-point-sum',
         class: {
           base: 'charge-point',
+          animationId: 'charge-point-sum',
           valueLabel: '',
           animated: chargePointSumDischarging.value,
           animatedReverse: chargePointSumCharging.value,
-          powerCategory: chargePointSumPowerCategory.value,
         },
         position: { row: 2, column: 1 },
         label: [
           'Ladepunkte',
           absoluteValueObject(chargePointSumPower.value).textValue,
         ],
+        powerValue: Number(chargePointSumPower.value.value),
         icon: 'icons/owbChargePoint.svg',
       });
     }
@@ -592,11 +634,12 @@ const svgRectWidth = computed(
         <path
           v-for="component in svgComponents"
           :key="component.id"
+          :id="`flow-path-${component.id}`"
           :class="[
             component.class.base,
+            component.class.animationId,
             { animated: component.class.animated },
             { animatedReverse: component.class.animatedReverse },
-            component.class.powerCategory,
           ]"
           :d="
             component.class.base !== 'vehicle'
@@ -769,26 +812,82 @@ path {
   transition: stroke 0.5s;
 }
 
+/* Basis for all animated lines */
 path.animated {
-  stroke: var(--q-white);
+  animation-name: dash;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
   stroke-dasharray: 5;
-  animation: dash 3.5s linear infinite;
 }
-
 path.animatedReverse {
-  stroke: var(--q-white);
+  animation-name: dashReverse;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
   stroke-dasharray: 5;
-  animation: dashReverse 3.5s linear infinite;
 }
 
-path.medium.animated,
-path.medium.animatedReverse {
-  animation-duration: 1.5s;
+path.animated.grid {
+  stroke: var(--q-negative);
+  animation-duration: v-bind('animationDurations.grid');
+}
+path.animatedReverse.grid {
+  stroke: var(--q-positive);
+  animation-duration: v-bind('animationDurations.grid');
 }
 
-path.large.animated,
-path.large.animatedReverse {
-  animation-duration: 0.6s;
+path.animated.home,
+path.animatedReverse.home {
+  stroke: var(--q-flow-home-stroke);
+  animation-duration: v-bind('animationDurations.home');
+}
+
+path.animated.pv,
+path.animatedReverse.pv {
+  stroke: var(--q-positive);
+  animation-duration: v-bind('animationDurations.pv');
+}
+
+path.animated.battery,
+path.animatedReverse.battery {
+  stroke: var(--q-warning);
+  animation-duration: v-bind('animationDurations.battery');
+}
+
+path.animated.charge-point-1,
+path.animatedReverse.charge-point-1 {
+  stroke: var(--q-primary);
+  animation-duration: v-bind('animationDurations.chargePoint1');
+}
+path.animated.charge-point-2,
+path.animatedReverse.charge-point-2 {
+  stroke: var(--q-primary);
+  animation-duration: v-bind('animationDurations.chargePoint2');
+}
+path.animated.charge-point-3,
+path.animatedReverse.charge-point-3 {
+  stroke: var(--q-primary);
+  animation-duration: v-bind('animationDurations.chargePoint3');
+}
+path.animated.charge-point-sum,
+path.animatedReverse.charge-point-sum {
+  stroke: var(--q-primary);
+  animation-duration: v-bind('animationDurations.chargePointSum');
+}
+
+path.animated.vehicle-1,
+path.animatedReverse.vehicle-1 {
+  stroke: var(--q-accent);
+  animation-duration: v-bind('animationDurations.vehicle1');
+}
+path.animated.vehicle-2,
+path.animatedReverse.vehicle-2 {
+  stroke: var(--q-accent);
+  animation-duration: v-bind('animationDurations.vehicle2');
+}
+path.animated.vehicle-3,
+path.animatedReverse.vehicle-3 {
+  stroke: var(--q-accent);
+  animation-duration: v-bind('animationDurations.vehicle3');
 }
 
 @keyframes dash {
@@ -799,7 +898,6 @@ path.large.animatedReverse {
     stroke-dashoffset: 0;
   }
 }
-
 @keyframes dashReverse {
   from {
     stroke-dashoffset: 0;
@@ -807,14 +905,6 @@ path.large.animatedReverse {
   to {
     stroke-dashoffset: 10;
   }
-}
-
-path.animated.grid {
-  stroke: var(--q-negative);
-}
-
-path.animatedReverse.grid {
-  stroke: var(--q-positive);
 }
 
 :root {
@@ -827,26 +917,6 @@ path.animatedReverse.grid {
   path.home {
     stroke: var(--q-white);
   }
-}
-
-path.animated.pv,
-path.animatedReverse.pv {
-  stroke: var(--q-positive);
-}
-
-path.animated.battery,
-path.animatedReverse.battery {
-  stroke: var(--q-warning);
-}
-
-path.animated.charge-point,
-path.animatedReverse.charge-point {
-  stroke: var(--q-primary);
-}
-
-path.animated.vehicle,
-path.animatedReverse.vehicle {
-  stroke: var(--q-accent);
 }
 
 circle {
