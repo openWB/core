@@ -1,0 +1,6 @@
+-u admin
+-P openwb
+-h localhost
+-p 8883
+--cafile /etc/mosquitto/certs/openwb.pem
+--insecure
