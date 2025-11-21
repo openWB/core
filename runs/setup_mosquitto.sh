@@ -1,6 +1,7 @@
 #!/bin/bash
 OPENWBBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 automaticServiceRestart=${1:-0}
+resetDynamicSecurity=${2:-0}
 
 versionMatch() {
 	file=$1
@@ -41,50 +42,87 @@ waitForServiceStop() {
 # check for mosquitto configuration
 echo "check mosquitto installation..."
 restartService=0
+SRC="${OPENWBBASEDIR}/data/config/mosquitto/public"
 
 echo "mosquitto main configuration..."
-if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto.conf" "/etc/mosquitto/mosquitto.conf"; then
+if versionMatch "${SRC}/mosquitto.conf" "/etc/mosquitto/mosquitto.conf"; then
 	echo "mosquitto.conf already up to date"
 else
 	echo "updating mosquitto.conf"
-	sudo cp "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto.conf" "/etc/mosquitto/mosquitto.conf"
+	sudo cp "${SRC}/mosquitto.conf" "/etc/mosquitto/mosquitto.conf"
 	restartService=1
 fi
 
 echo "mosquitto openwb configuration..."
-if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/openwb.conf" "/etc/mosquitto/conf.d/openwb.conf"; then
+if versionMatch "${SRC}/openwb.conf" "/etc/mosquitto/conf.d/openwb.conf"; then
 	echo "mosquitto openwb.conf already up to date"
 else
 	echo "updating mosquitto openwb.conf"
-	sudo cp "${OPENWBBASEDIR}/data/config/mosquitto/openwb.conf" "/etc/mosquitto/conf.d/openwb.conf"
+	sudo cp "${SRC}/openwb.conf" "/etc/mosquitto/conf.d/openwb.conf"
 	restartService=1
 fi
 
-allowUnencryptedAccess=$(mosquitto_sub -t "openWB/general/allow_unencrypted_access" -p 1886 -C 1 -W 1 --quiet)
-if [[ $allowUnencryptedAccess == "true" ]]; then
-	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/openwb_insecure.conf" "/etc/mosquitto/conf.d/openwb_insecure.conf"; then
-		echo "mosquitto openwb_insecure.conf already up to date"
+userManagementActive=$(mosquitto_sub -t "openWB/general/user_management_active" -p 1886 -C 1 -W 1 --quiet)
+if [[ $userManagementActive == "true" ]]; then
+	echo "mosquitto user management enabled, disabling unencrypted access"
+	allowUnencryptedAccess="false"
+	if versionMatch "${SRC}/openwb-user-management.conf" "/etc/mosquitto/conf.d/openwb-user-management.conf"; then
+		echo "mosquitto openwb-user-management.conf already up to date"
 	else
-		echo "updating mosquitto openwb_insecure.conf"
-		sudo cp "${OPENWBBASEDIR}/data/config/mosquitto/openwb_insecure.conf" "/etc/mosquitto/conf.d/openwb_insecure.conf"
+		echo "updating mosquitto openwb-user-management.conf"
+		sudo cp "${SRC}/openwb-user-management.conf" "/etc/mosquitto/conf.d/openwb-user-management.conf"
+		restartService=1
+	fi
+	if [ -f "/var/lib/mosquitto/dynamic_security.json" ] && ((resetDynamicSecurity == 0)); then
+		echo "dynamic security configuration found, no action needed"
+	else
+		echo "creating initial dynamic security configuration with default user 'admin' and password 'openwb'"
+		sudo mosquitto_ctrl dynsec init /var/lib/mosquitto/dynamic_security.json admin openwb
+		sudo chown mosquitto:mosquitto /var/lib/mosquitto/dynamic_security.json
+		cp "${SRC}/mosquitto_ctrl" /home/openwb/.config/mosquitto_ctrl
+		restartService=1
+	fi
+	if [ -f "/etc/mosquitto/conf.d/openwb-default-acl.conf" ]; then
+		echo "removing mosquitto openwb-default-acl.conf"
+		sudo rm "/etc/mosquitto/conf.d/openwb-default-acl.conf"
+		restartService=1
+	else
+		echo "mosquitto openwb-default-acl.conf not present, no action needed"
+	fi
+	if [ -f "/etc/mosquitto/conf.d/openwb-unsecure.conf" ]; then
+		echo "removing mosquitto openwb-unsecure.conf"
+		sudo rm "/etc/mosquitto/conf.d/openwb-unsecure.conf"
+		restartService=1
+	else
+		echo "mosquitto openwb-unsecure.conf not present, no action needed"
+	fi
+else
+	allowUnencryptedAccess=$(mosquitto_sub -t "openWB/general/allow_unencrypted_access" -p 1886 -C 1 -W 1 --quiet)
+fi
+if [[ $allowUnencryptedAccess == "true" ]]; then
+	if versionMatch "${SRC}/openwb-unsecure.conf" "/etc/mosquitto/conf.d/openwb-unsecure.conf"; then
+		echo "mosquitto openwb-unsecure.conf already up to date"
+	else
+		echo "updating mosquitto openwb-unsecure.conf"
+		sudo cp "${SRC}/openwb-unsecure.conf" "/etc/mosquitto/conf.d/openwb-unsecure.conf"
 		restartService=1
 	fi
 else
-	if [ -f "/etc/mosquitto/conf.d/openwb_insecure.conf" ]; then
-		echo "removing mosquitto openwb_insecure.conf"
-		sudo rm "/etc/mosquitto/conf.d/openwb_insecure.conf"
+	if [ -f "/etc/mosquitto/conf.d/openwb-unsecure.conf" ]; then
+		echo "removing mosquitto openwb-unsecure.conf"
+		sudo rm "/etc/mosquitto/conf.d/openwb-unsecure.conf"
 		restartService=1
 	else
-		echo "mosquitto openwb_insecure.conf not present, no action needed"
+		echo "mosquitto openwb-unsecure.conf not present, no action needed"
 	fi
 fi
 
 echo "mosquitto acl configuration..."
-if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto.acl" "/etc/mosquitto/mosquitto.acl"; then
+if versionMatch "${SRC}/mosquitto.acl" "/etc/mosquitto/mosquitto.acl"; then
 	echo "mosquitto acl already up to date"
 else
 	echo "updating mosquitto acl"
-	sudo cp "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto.acl" "/etc/mosquitto/mosquitto.acl"
+	sudo cp "${SRC}/mosquitto.acl" "/etc/mosquitto/mosquitto.acl"
 	restartService=1
 fi
 
@@ -106,30 +144,31 @@ fi
 
 #check for mosquitto_local instance
 # restartService=0  # if we restart mosquitto, we need to restart mosquitto_local as well
+SRC="${OPENWBBASEDIR}/data/config/mosquitto/local"
 echo "mosquitto_local instance..."
-if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto_local_init" "/etc/init.d/mosquitto_local"; then
+if versionMatch "${SRC}/mosquitto_local_init" "/etc/init.d/mosquitto_local"; then
 	echo "mosquitto_local service definition already up to date"
 else
 	echo "updating mosquitto_local service definition"
-	sudo cp "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto_local_init" /etc/init.d/mosquitto_local
+	sudo cp "${SRC}/mosquitto_local_init" /etc/init.d/mosquitto_local
 	sudo chown root:root /etc/init.d/mosquitto_local
 	sudo chmod 755 /etc/init.d/mosquitto_local
 	sudo systemctl daemon-reload
 	sudo systemctl enable mosquitto_local
 	restartService=1
 fi
-if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto_local.conf" "/etc/mosquitto/mosquitto_local.conf"; then
+if versionMatch "${SRC}/mosquitto_local.conf" "/etc/mosquitto/mosquitto_local.conf"; then
 	echo "mosquitto_local.conf already up to date"
 else
 	echo "updating mosquitto_local.conf"
-	sudo cp -a "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto_local.conf" "/etc/mosquitto/mosquitto_local.conf"
+	sudo cp -a "${SRC}/mosquitto_local.conf" "/etc/mosquitto/mosquitto_local.conf"
 	restartService=1
 fi
-if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/openwb_local.conf" "/etc/mosquitto/conf_local.d/openwb_local.conf"; then
+if versionMatch "${SRC}/openwb_local.conf" "/etc/mosquitto/conf_local.d/openwb_local.conf"; then
 	echo "mosquitto openwb_local.conf already up to date"
 else
 	echo "updating mosquitto openwb_local.conf"
-	sudo cp -a "${OPENWBBASEDIR}/data/config/mosquitto/openwb_local.conf" "/etc/mosquitto/conf_local.d/"
+	sudo cp -a "${SRC}/openwb_local.conf" "/etc/mosquitto/conf_local.d/"
 	restartService=1
 fi
 if ((restartService == 1 && automaticServiceRestart == 1)); then

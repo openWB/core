@@ -727,7 +727,8 @@ class SetData:
             elif ("openWB/set/general/http_api" in msg.topic or
                   "openWB/set/general/modbus_control" in msg.topic or
                   "openWB/set/general/extern" in msg.topic or
-                  "openWB/set/general/allow_unencrypted_access" in msg.topic):
+                  "openWB/set/general/allow_unencrypted_access" in msg.topic or
+                  "openWB/set/general/user_management_active" in msg.topic):
                 self._validate_value(msg, bool)
             elif "openWB/set/general/control_interval" in msg.topic:
                 self._validate_value(msg, int, [(10, 10), (20, 20), (60, 60)])
