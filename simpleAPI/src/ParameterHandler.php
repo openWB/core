@@ -303,6 +303,10 @@ class ParameterHandler
         $chargeTemplateName = null;
         $connectedVehicleName = null;
         $configName = null;
+        $instantChargingLimit = 'none';
+        $instantChargingAmount = 0;
+        $instantChargingSoc = 0;
+        $maxPriceEco = 0;
         
         try {
             $template = json_decode($values["openWB/chargepoint/{$id}/set/charge_template"] ?? '{}', true);
@@ -312,6 +316,14 @@ class ParameterHandler
             // Alle relevanten Ströme aus dem Template extrahieren
             $instantChargingCurrent = $template['chargemode']['instant_charging']['current'] ?? 0;
             $pvChargingMinCurrent = $template['chargemode']['pv_charging']['min_current'] ?? 0;
+            
+            // Instant Charging Limit-Parameter extrahieren
+            $instantChargingLimit = $template['chargemode']['instant_charging']['limit']['selected'] ?? 'none';
+            $instantChargingAmount = $template['chargemode']['instant_charging']['limit']['amount'] ?? 0;
+            $instantChargingSoc = $template['chargemode']['instant_charging']['limit']['soc'] ?? 0;
+            
+            // ECO Charging max_price extrahieren
+            $maxPriceEco = isset($template['chargemode']['eco_charging']['max_price']) ? number_format((float)$template['chargemode']['eco_charging']['max_price'], 4, '.', '') : '0.0000';
             
             // min_current aus dem entsprechenden Lademodus extrahieren
             switch ($chargemode) {
@@ -392,6 +404,10 @@ class ParameterHandler
                 'min_current' => floatval($minCurrent),
                 'instant_charging_current' => floatval($instantChargingCurrent),
                 'pv_charging_min_current' => floatval($pvChargingMinCurrent),
+                'instant_charging_limit' => $instantChargingLimit,
+                'instant_charging_amount' => intval($instantChargingAmount),
+                'instant_charging_soc' => intval($instantChargingSoc),
+                'max_price_eco' => floatval($maxPriceEco),
                 'chargemode' => $chargemode
             ]
         ];
