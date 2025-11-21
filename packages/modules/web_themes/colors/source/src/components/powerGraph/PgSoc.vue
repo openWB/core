@@ -1,5 +1,5 @@
 <template>
-	<svg x="0" :width="props.width">
+	<svg x="0" :width="props.width" class="PGSoc">
 		<g>
 			<path
 				:id="'soc-' + vID"
@@ -179,7 +179,7 @@ const autozoom = computed(() => {
 					yScale.value(
 						props.order == 2
 							? d.batSoc
-							: props.order == 1
+							: props.order == 0
 								? d['soc' + topVehicles.value[0]]
 								: d['soc' + topVehicles.value[1]!],
 					) ?? yScale.value(0),

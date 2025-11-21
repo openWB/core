@@ -425,9 +425,7 @@ class SetData:
                                 if cp.num == cp_num:
                                     # nicht an den Ladepunkt senden, der das Topic gesendet hat
                                     continue
-                                if ((cp.data.set.charging_ev != -1 and
-                                        cp.data.set.charging_ev == vehicle.num) or
-                                        cp.data.config.ev == vehicle.num):
+                                if cp.data.config.ev == vehicle.num:
                                     if decode_payload(msg.payload) == "":
                                         Pub().pub(
                                             f"openWB/chargepoint/{cp.num}/set/charge_template", "")
@@ -472,12 +470,8 @@ class SetData:
             elif re.search("chargepoint/[0-9]+/config$", msg.topic) is not None:
                 self._validate_value(msg, "json")
             elif subdata.SubData.cp_data.get(f"cp{get_index(msg.topic)}"):
-                if ("/set/charging_ev" in msg.topic or
-                        "/set/charging_ev_prev" in msg.topic or
-                        "/set/ev_prev" in msg.topic):
-                    self._validate_value(msg, int, [(-1, float("inf"))])
-                elif ("/set/current" in msg.topic or
-                      "/set/current_prev" in msg.topic):
+                if ("/set/current" in msg.topic or
+                        "/set/current_prev" in msg.topic):
                     if hardware_configuration.get_hardware_configuration_setting("dc_charging"):
                         self._validate_value(msg, float, [(float("-inf"), 0), (0, 0), (6, 32), (0, 450)])
                     else:
@@ -503,6 +497,8 @@ class SetData:
                     self._validate_value(msg, int)
                 elif "/set/log" in msg.topic:
                     self._validate_value(msg, "json")
+                elif "/set/ev_prev" in msg.topic:
+                    self._validate_value(msg, int, [(0, float("inf"))])
                 elif "/config/ev" in msg.topic:
                     self._validate_value(
                         msg, int, [(0, float("inf"))], pub_json=True)

@@ -1,4 +1,5 @@
 <template>
+	<p class="providername ms-1">Anbieter: {{ etData.etProvider }}</p>
 	<div class="container">
 		<figure id="pricechart" class="p-0 m-0">
 			<svg viewBox="0 0 400 260">

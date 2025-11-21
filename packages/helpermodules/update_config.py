@@ -143,7 +143,6 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/get/connected_vehicle/config$",
         "^openWB/chargepoint/[0-9]+/get/rfid$",
         "^openWB/chargepoint/[0-9]+/get/rfid_timestamp$",
-        "^openWB/chargepoint/[0-9]+/set/charging_ev$",
         "^openWB/chargepoint/[0-9]+/set/charge_template$",
         "^openWB/chargepoint/[0-9]+/set/current$",
         "^openWB/chargepoint/[0-9]+/set/energy_to_charge$",
@@ -154,7 +153,6 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/set/rfid$",
         "^openWB/chargepoint/[0-9]+/set/log$",
         "^openWB/chargepoint/[0-9]+/set/phases_to_use$",
-        "^openWB/chargepoint/[0-9]+/set/charging_ev_prev$",
         "^openWB/chargepoint/[0-9]+/set/ocpp_transaction_id$",
         "^openWB/chargepoint/[0-9]+/set/ocpp_transaction_active$",
 

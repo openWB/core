@@ -277,6 +277,7 @@ class ParameterHandler
             $prefix . 'rfid_timestamp',
             $prefix . 'connected_vehicle/info',
             "openWB/chargepoint/{$id}/config",
+
             "openWB/chargepoint/{$id}/set/charge_template"
         ];
 
