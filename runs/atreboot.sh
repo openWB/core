@@ -189,16 +189,16 @@ chmod 666 "$LOGFILE"
 		sudo reboot now &
 	fi
 
-	# check for openwb Auth service definition
-	if find /etc/systemd/system/ -maxdepth 1 -name openwbAuthServer.service -type l | grep -q "."; then
-		echo "openwbAuthServer.service definition is already a symlink"
-	else
-		sudo ln -s "${OPENWBBASEDIR}/data/config/openwbAuthServer.service" /etc/systemd/system/openwbAuthServer.service
-		sudo systemctl daemon-reload
-		sudo systemctl enable openwbAuthServer
-		echo "openwbAuthServer.service definition updated. restarting service..."
-		sudo systemctl restart openwbAuthServer
-	fi
+	# # check for openwb Auth service definition
+	# if find /etc/systemd/system/ -maxdepth 1 -name openwbAuthServer.service -type l | grep -q "."; then
+	# 	echo "openwbAuthServer.service definition is already a symlink"
+	# else
+	# 	sudo ln -s "${OPENWBBASEDIR}/data/config/openwbAuthServer.service" /etc/systemd/system/openwbAuthServer.service
+	# 	sudo systemctl daemon-reload
+	# 	sudo systemctl enable openwbAuthServer
+	# 	echo "openwbAuthServer.service definition updated. restarting service..."
+	# 	sudo systemctl restart openwbAuthServer
+	# fi
 
 	# check for openwb-simpleAPI service definition
 	if find /etc/systemd/system/ -maxdepth 1 -name openwb-simpleAPI.service -type l | grep -q "."; then
