@@ -649,6 +649,26 @@ class SubData:
                             MessageType.WARNING
                         )
                     self.set_json_payload_class(var.data, msg)
+                elif "openWB/general/user_management_active" == msg.topic:
+                    user_management_active = decode_payload(msg.payload)
+                    if (
+                        self.event_subdata_initialized.is_set() and
+                        self.general_data.data.user_management_active != user_management_active
+                    ):
+                        log.warning("Änderung der Einstellung 'user_management_active' erkannt.")
+                        run_command([
+                            str(Path(__file__).resolve().parents[2] / "runs" / "setup_mosquitto.sh"),
+                            "0"  # kein Neustart im laufenden Betrieb!
+                        ], process_exception=True)
+                        log.warning("Mosquitto-Konfiguration wurde angepasst.")
+                        pub_system_message(
+                            msg.payload,
+                            f"Benutzerverwaltung wurde {'' if user_management_active else 'de'}aktiviert.<br />"
+                            "Bitte die openWB <a href=\"/openWB/web/settings/#/System/SystemConfiguration\">"
+                            "neu starten</a>, damit die Änderungen wirksam werden.",
+                            MessageType.SUCCESS
+                        )
+                    self.set_json_payload_class(var.data, msg)
                 else:
                     self.set_json_payload_class(var.data, msg)
         except Exception:
