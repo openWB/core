@@ -195,8 +195,7 @@ def test_calculate_duration(selected: str,
     "end_time_mock, expected_plan_num",
     [
         pytest.param([1000, 1500, 2000], 0, id="nächster Zieltermin Plan 0"),
-        pytest.param([-100, 1000, 2000], 1, id="Plan 0 abgelaufen, Plan 1 innerhalb der nächsten 12h"),
-        pytest.param([-100, 45000, 50000], 0, id="Plan 0 abgelaufen, Plan 1 nicht innerhalb der nächsten 12h"),
+        pytest.param([-100, 45000, 50000], 0, id="Plan 0 abgelaufen, nächster Tag"),
         pytest.param([1500, 2000, 1000], 2, id="nächster Zieltermin Plan 2"),
         pytest.param([None]*3, 0, id="kein Plan"),
     ])
@@ -217,7 +216,7 @@ def test_scheduled_charging_recent_plan(end_time_mock,
 
     # execution
     selected_plan = ct._find_recent_plan(
-        plans, 60, EvTemplate(), 200, 3, True, ChargingType.AC.value, 1652688000, control_parameter, 0, False)
+        plans, 60, EvTemplate(), 200, 3, True, ChargingType.AC.value, control_parameter, 0, False)
 
     # evaluation
     if selected_plan:

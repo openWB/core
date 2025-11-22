@@ -309,6 +309,8 @@ class ChargeTemplate:
             log.exception("Fehler im ev-Modul "+str(self.data.id))
             return 0, "stop", "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc(), 0
 
+    BUFFER = -1200  # nach mehr als 20 Min Überschreitung wird der Termin als verpasst angesehen
+
     def _find_recent_plan(self,
                           plans: List[ScheduledChargingPlan],
                           soc: float,
@@ -317,7 +319,6 @@ class ChargeTemplate:
                           max_hw_phases: int,
                           phase_switch_supported: bool,
                           charging_type: str,
-                          chargemode_switch_timestamp: float,
                           control_parameter: ControlParameter,
                           soc_request_interval_offset: int,
                           hw_bidi: bool):
@@ -329,7 +330,7 @@ class ChargeTemplate:
                                      f"oder im Plan {p.name} als Begrenzung Energie einstellen.")
                 try:
                     plans_diff_end_date.append(
-                        {p.id: timecheck.check_end_time(p, chargemode_switch_timestamp)})
+                        {p.id: timecheck.check_end_time(p, self.BUFFER)})
                     log.debug(f"Verbleibende Zeit bis zum Zieltermin [s]: {plans_diff_end_date}")
                 except Exception:
                     log.exception("Fehler im ev-Modul "+str(self.data.id))
@@ -341,10 +342,7 @@ class ChargeTemplate:
                 if len(sorted_plans) == 1:
                     plan_dict = sorted_plans[0]
                 elif (len(sorted_plans) > 1 and
-                      list(sorted_plans[0].values())[0] < 0 and
-                      list(sorted_plans[1].values())[0] < 43200):
-                    # wenn der erste Plan in der Liste in der Vergangenheit liegt, dann den zweiten nehmen, wenn dessen
-                    # Zielzeit weniger als 12 h entfernt ist.
+                      list(sorted_plans[0].values())[0] < self.BUFFER):
                     plan_dict = sorted_plans[1]
                 else:
                     plan_dict = sorted_plans[0]
@@ -375,7 +373,6 @@ class ChargeTemplate:
                            max_hw_phases: int,
                            phase_switch_supported: bool,
                            charging_type: str,
-                           chargemode_switch_timestamp: float,
                            control_parameter: ControlParameter,
                            soc_request_interval_offset: int,
                            bidi_state: BidiState) -> Optional[SelectedPlan]:
@@ -390,7 +387,6 @@ class ChargeTemplate:
                                            max_hw_phases,
                                            phase_switch_supported,
                                            charging_type,
-                                           chargemode_switch_timestamp,
                                            control_parameter,
                                            soc_request_interval_offset,
                                            bidi_state)
