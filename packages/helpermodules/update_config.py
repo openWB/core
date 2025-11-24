@@ -2636,3 +2636,22 @@ class UpdateConfig:
                 return {"openWB/optional/ep/flexible_tariff/provider": decode_payload(payload)}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 102)
+
+    def upgrade_datastore_103(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/system/device/[0-9]+", topic) is not None:
+                payload = decode_payload(payload)
+                index = get_index(topic)
+                if payload.get("type") == "victron":
+                    for component_topic, component_payload in self.all_received_topics.items():
+                        if re.search(f"openWB/system/device/{index}/component/[0-9]+/config$",
+                                     component_topic) is not None:
+                            config_payload = decode_payload(component_payload)
+                            if (config_payload["type"] == "bat" and
+                                    config_payload["configuration"].get("vebus_id") is None):
+                                config_payload["configuration"].update({
+                                    "vebus_id": 228,
+                                })
+                                return {component_topic: config_payload}
+        self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/system/datastore_version", 103)
