@@ -75,12 +75,12 @@ if [[ $userManagementActive == "true" ]]; then
 		sudo cp "${SRC}/openwb-user-management.conf" "/etc/mosquitto/conf.d/openwb-user-management.conf"
 		restartService=1
 	fi
-	if [ -f "/var/lib/mosquitto/dynamic_security.json" ] && ((resetDynamicSecurity == 0)); then
-		echo "dynamic security configuration found, no action needed"
+	if [ -f "/var/lib/mosquitto/dynamic-security.json" ] && ((resetDynamicSecurity == 0)); then
+		echo "dynamic security configuration found an reset not forced, no action needed"
 	else
 		echo "creating initial dynamic security configuration with default user 'admin' and password 'openwb'"
-		sudo mosquitto_ctrl dynsec init /var/lib/mosquitto/dynamic_security.json admin openwb
-		sudo chown mosquitto:mosquitto /var/lib/mosquitto/dynamic_security.json
+		sudo cp "${SRC}/default-dynamic-security.json" /var/lib/mosquitto/dynamic-security.json
+		sudo chown mosquitto:mosquitto /var/lib/mosquitto/dynamic-security.json
 		cp "${SRC}/mosquitto_ctrl" /home/openwb/.config/mosquitto_ctrl
 		restartService=1
 	fi
