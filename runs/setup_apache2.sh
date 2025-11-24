@@ -6,7 +6,7 @@ versionMatch() {
 	file=$1
 	target=$2
 	currentVersion=$(grep -o "openwb-version:[0-9]\+" "$file" | grep -o "[0-9]\+$")
-	installedVersion=$(grep -o "openwb-version:[0-9]\+" "$target" | grep -o "[0-9]\+$")
+	installedVersion=$(sudo grep -o "openwb-version:[0-9]\+" "$target" | grep -o "[0-9]\+$")
 	if ((currentVersion == installedVersion)); then
 		return 0
 	else
