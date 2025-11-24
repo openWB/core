@@ -72,9 +72,7 @@ disableSite() {
 # check apache modules
 echo "checking required apache modules..."
 enableModule headers
-enableModule rewrite
 enableModule ssl
-enableModule proxy_http
 enableModule proxy_wstunnel
 
 # default site (http and https)
@@ -100,11 +98,13 @@ allowUnencryptedAccess=$(mosquitto_sub -t "openWB/general/allow_unencrypted_acce
 if [[ $allowUnencryptedAccess == "true" ]]; then
 	echo "WARNING: unencrypted access is enabled!"
 	disableSite apache-redirect-ssl
+	disableModule rewrite
 	enableSite 000-default
 else
 	echo "unencrypted access is disabled"
 	disableSite 000-default
 	enableSite apache-redirect-ssl
+	enableModule rewrite
 fi
 
 # enable http api ssl site if configured
@@ -123,10 +123,12 @@ if lsusb | grep -q 'RTL8153'; then
 	echo "second network for pro plus detected"
 	# enable pro+ specific configurations
 	enableSite apache-proplus
+	enableModule proxy_http
 else
 	echo "no second network for pro plus detected"
 	# disable all pro+ specific configurations
 	disableSite apache-proplus
+	disableModule proxy_http
 fi
 
 # restart apache if required
