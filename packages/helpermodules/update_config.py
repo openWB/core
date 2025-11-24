@@ -60,8 +60,10 @@ class UpdateConfig:
     DATASTORE_VERSION = 96
 
     valid_topic = [
+        "^openWB/bat/config/bat_control_activated$",
         "^openWB/bat/config/bat_control_permitted$",
         "^openWB/bat/config/configured$",
+        "^openWB/bat/config/power_limit_condition$",
         "^openWB/bat/config/power_limit_mode$",
         "^openWB/bat/set/charging_power_left$",
         "^openWB/bat/set/regulate_up$",

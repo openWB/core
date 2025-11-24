@@ -69,7 +69,6 @@ class Config:
                                        metadata={"topic": "config/bat_control_condition"})
     manual_mode: str = field(default=BatChargeMode.BAT_SELF_REGULATION.value,
                              metadata={"topic": "config/manual_mode"})
-    vehicle_mode_force_pv: bool = field(default=False, metadata={"topic": "config/vehicle_mode_force_pv"})
 
 
 def config_factory() -> Config:
