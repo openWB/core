@@ -2644,7 +2644,7 @@ class UpdateConfig:
                 index = get_index(topic)
                 if payload.get("type") == "victron":
                     for component_topic, component_payload in self.all_received_topics.items():
-                        if re.search(f"openWB/system/device/{index}/component/[0-9]+/config",
+                        if re.search(f"openWB/system/device/{index}/component/[0-9]+/config$",
                                      component_topic) is not None:
                             config_payload = decode_payload(component_payload)
                             if (config_payload["type"] == "bat" and
