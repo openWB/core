@@ -4,7 +4,7 @@ return [
     // MQTT Broker Konfiguration
     'mqtt' => [
         'server' => 'localhost',
-        'port' => 8883,
+        'port' => 1884,
         'validate_cert' => false,
         'username' => '',
         'password' => '',
