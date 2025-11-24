@@ -21,7 +21,7 @@ class MqttClient
     public function __construct($config)
     {
         $this->server = $config['mqtt']['server'] ?? 'localhost';
-        $this->port = $config['mqtt']['port'] ?? 8883;
+        $this->port = $config['mqtt']['port'] ?? 1884;
         $this->validate_cert = $config['mqtt']['validate_cert'] ?? false;
         $this->username = $config['mqtt']['username'] ?? '';
         $this->password = $config['mqtt']['password'] ?? '';
