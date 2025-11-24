@@ -275,9 +275,9 @@ class ParameterHandler
             $prefix . 'power_factors',
             $prefix . 'rfid',
             $prefix . 'rfid_timestamp',
-            $prefix . 'config/name',
-            $prefix . 'connected_vehicle/info/name',
-            $prefix . 'charge_template/name',
+            $prefix . 'connected_vehicle/info',
+            "openWB/chargepoint/{$id}/config",
+
             "openWB/chargepoint/{$id}/set/charge_template"
         ];
 
@@ -301,13 +301,37 @@ class ParameterHandler
         $minCurrent = 0;
         $instantChargingCurrent = 0;
         $pvChargingMinCurrent = 0;
+        $chargeTemplateName = null;
+        $connectedVehicleName = null;
+        $configName = null;
+        $instantChargingLimit = 'none';
+        $instantChargingAmount = 0;
+        $instantChargingSoc = 0;
+        $maxPriceEco = 0;
+        
         try {
             $template = json_decode($values["openWB/chargepoint/{$id}/set/charge_template"] ?? '{}', true);
             $chargemode = $template['chargemode']['selected'] ?? 'stop';
+            $chargeTemplateName = $template['name'] ?? null;
             
             // Alle relevanten Ströme aus dem Template extrahieren
             $instantChargingCurrent = $template['chargemode']['instant_charging']['current'] ?? 0;
             $pvChargingMinCurrent = $template['chargemode']['pv_charging']['min_current'] ?? 0;
+            
+            // Instant Charging Limit-Parameter extrahieren
+            $instantChargingLimit = $template['chargemode']['instant_charging']['limit']['selected'] ?? 'none';
+            $instantChargingAmount = $template['chargemode']['instant_charging']['limit']['amount'] ?? 0;
+            $instantChargingSoc = $template['chargemode']['instant_charging']['limit']['soc'] ?? 0;
+            
+            // ECO Charging max_price extrahieren
+            $maxPriceEco = isset($template['chargemode']['eco_charging']['max_price']) ? number_format((float)$template['chargemode']['eco_charging']['max_price'], 4, '.', '') : '0.0000';
+            
+            // SoC und Range aus connected_vehicle extrahieren
+            $connectedVehicleSocTopic = "openWB/chargepoint/{$id}/get/connected_vehicle/soc";
+            $connectedVehicleSocValue = $this->mqttClient->getValue($connectedVehicleSocTopic);
+            $connectedVehicleSocData = json_decode($connectedVehicleSocValue ?? '{}', true);
+            $soc = $connectedVehicleSocData['soc'] ?? 0;
+            $rangeCharged = $connectedVehicleSocData['range_charged'] ?? 0;
             
             // min_current aus dem entsprechenden Lademodus extrahieren
             switch ($chargemode) {
@@ -322,6 +346,22 @@ class ParameterHandler
                     $minCurrent = $template['chargemode']['scheduled_charging']['current'] ?? 0;
                     break;
             }
+        } catch (Exception $e) {
+            // Fallback
+        }
+
+        // Connected Vehicle Name aus JSON extrahieren
+        try {
+            $connectedVehicleInfo = json_decode($values[$prefix . 'connected_vehicle/info'] ?? '{}', true);
+            $connectedVehicleName = $connectedVehicleInfo['name'] ?? null;
+        } catch (Exception $e) {
+            // Fallback
+        }
+
+        // Config Name aus JSON extrahieren
+        try {
+            $configInfo = json_decode($values["openWB/chargepoint/{$id}/config"] ?? '{}', true);
+            $configName = $configInfo['name'] ?? null;
         } catch (Exception $e) {
             // Fallback
         }
@@ -354,7 +394,7 @@ class ParameterHandler
                 'phases_in_use' => intval($values[$prefix . 'phases_in_use'] ?? 1),
                 'plug_state' => $this->parseBooleanValue($values[$prefix . 'plug_state'] ?? 'false'),
                 'charge_state' => $this->parseBooleanValue($values[$prefix . 'charge_state'] ?? 'false'),
-                'soc' => floatval($values[$prefix . 'soc'] ?? 0),
+                'pro_soc' => floatval($values[$prefix . 'soc'] ?? 0),
                 'soc_timestamp' => $values[$prefix . 'soc_timestamp'] ?? null,
                 'vehicle_id' => $values[$prefix . 'vehicle_id'] ?? null,
                 'evse_current' => floatval($values[$prefix . 'evse_current'] ?? 0),
@@ -366,12 +406,18 @@ class ParameterHandler
                 ],
                 'rfid' => $values[$prefix . 'rfid'] ?? null,
                 'rfid_timestamp' => $values[$prefix . 'rfid_timestamp'] ?? null,
-                'config_name' => $values[$prefix . 'config/name'] ?? null,
-                'connected_vehicle_name' => $values[$prefix . 'connected_vehicle/info/name'] ?? null,
-                'charge_template_name' => $values[$prefix . 'charge_template/name'] ?? null,
+                'config_name' => $configName,
+                'connected_vehicle_name' => $connectedVehicleName,
+                'charge_template_name' => $chargeTemplateName,
                 'min_current' => floatval($minCurrent),
                 'instant_charging_current' => floatval($instantChargingCurrent),
                 'pv_charging_min_current' => floatval($pvChargingMinCurrent),
+                'instant_charging_limit' => $instantChargingLimit,
+                'instant_charging_amount' => intval($instantChargingAmount),
+                'instant_charging_soc' => intval($instantChargingSoc),
+                'max_price_eco' => floatval($maxPriceEco),
+                'soc' => floatval($soc),
+                'range_charged' => floatval($rangeCharged),
                 'chargemode' => $chargemode
             ]
         ];
