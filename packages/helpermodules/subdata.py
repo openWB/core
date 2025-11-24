@@ -623,10 +623,6 @@ class SubData:
                     self.set_json_payload_class(var.data, msg)
                 elif "openWB/general/allow_unencrypted_access" == msg.topic:
                     allow_unencrypted_access = decode_payload(msg.payload)
-                    log.warning(f"Topic: 'allow_unencrypted_access' Payload: {allow_unencrypted_access}")
-                    log.warning(f"Aktuelle Einstellung: {self.general_data.data.allow_unencrypted_access}")
-                    log.warning("Event subdata_initialized: "
-                                f"{self.event_subdata_initialized.is_set()}")
                     if (
                         self.event_subdata_initialized.is_set() and
                         self.general_data.data.allow_unencrypted_access != allow_unencrypted_access
