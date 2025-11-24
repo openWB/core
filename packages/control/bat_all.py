@@ -312,7 +312,7 @@ class BatAll:
     def get_charge_mode_vehicle_charge(self):
         chargepoint_by_chargemodes = get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_CHARGING)
         # Falls Fahrzeuge in aktivem Lademodus sind und Laden
-        # und Speicher entladen wird und kein EVU-Überschuss vorhanden ist 
+        # und Speicher entladen wird und kein EVU-Überschuss vorhanden ist
         if (len(chargepoint_by_chargemodes) > 0 and
                 data.data.cp_all_data.data.get.power > 100 and
                 self.data.get.power <= 0 and
@@ -341,7 +341,7 @@ class BatAll:
         return charge_mode
 
     def get_power_limit(self):
-        # Falls kein steuerbarer Speicher installiert ist, der Disclaimer nicht akzeptiert wurde 
+        # Falls kein steuerbarer Speicher installiert ist, der Disclaimer nicht akzeptiert wurde
         # oder die aktive Speichersteuerung deaktiviert wurde
         if (self.data.get.power_limit_controllable is False or
                 self.data.config.bat_control_permitted is False or
@@ -367,7 +367,7 @@ class BatAll:
             elif self.data.config.bat_control_condition == BatPowerLimitCondition.SCHEDULED.value:
                 log.debug("Aktive Speichersteuerung: Vorhersagebasiertes Zielladen.")
                 pass
-            
+
         # calculate power_limit
         if charge_mode == BatChargeMode.BAT_SELF_REGULATION:
             self.data.set.power_limit = None
