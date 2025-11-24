@@ -664,8 +664,7 @@ class Chargepoint(ChargepointRfidMixin):
                         self.hw_supports_phase_switch(),
                         self.template.data.charging_type,
                         self.data.set.log.imported_since_plugged,
-                        self.hw_bidi_capable(),
-                        self.data.get.phases_in_use)
+                        self.hw_bidi_capable())
                     required_phases = self.get_phases_by_selected_chargemode(template_phases)
                     required_phases = self.set_phases(required_phases, template_phases)
                     self._pub_connected_vehicle(charging_ev)

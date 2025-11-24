@@ -417,7 +417,7 @@ class ChargeTemplate:
                              control_parameter_phases: int,
                              soc_request_interval_offset: int,
                              bidi_state: BidiState) -> SelectedPlan:
-        bidi = BidiState.BIDI_CAPABLE and plan.bidi_charging_enabled
+        bidi = bidi_state == BidiState.BIDI_CAPABLE and plan.bidi_charging_enabled
         if bidi:
             duration, missing_amount = self._calculate_duration(
                 plan, soc, ev_template.data.battery_capacity,
