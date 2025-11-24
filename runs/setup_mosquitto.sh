@@ -63,6 +63,8 @@ else
 fi
 
 userManagementActive=$(mosquitto_sub -t "openWB/general/user_management_active" -p 1886 -C 1 -W 1 --quiet)
+allowUnencryptedAccess=$(mosquitto_sub -t "openWB/general/allow_unencrypted_access" -p 1886 -C 1 -W 1 --quiet)
+echo "mosquitto settings: user_management_active=$userManagementActive, allow_unencrypted_access=$allowUnencryptedAccess"
 if [[ $userManagementActive == "true" ]]; then
 	echo "mosquitto user management enabled, disabling unencrypted access"
 	allowUnencryptedAccess="false"
@@ -89,31 +91,37 @@ if [[ $userManagementActive == "true" ]]; then
 	else
 		echo "mosquitto openwb-default-acl.conf not present, no action needed"
 	fi
-	if [ -f "/etc/mosquitto/conf.d/openwb-unsecure.conf" ]; then
-		echo "removing mosquitto openwb-unsecure.conf"
-		sudo rm "/etc/mosquitto/conf.d/openwb-unsecure.conf"
+	if [ -f "/etc/mosquitto/conf.d/openwb-unsecure-acl.conf" ]; then
+		echo "removing mosquitto openwb-unsecure-acl.conf"
+		sudo rm "/etc/mosquitto/conf.d/openwb-unsecure-acl.conf"
 		restartService=1
 	else
-		echo "mosquitto openwb-unsecure.conf not present, no action needed"
+		echo "mosquitto openwb-unsecure-acl.conf not present, no action needed"
 	fi
 else
-	allowUnencryptedAccess=$(mosquitto_sub -t "openWB/general/allow_unencrypted_access" -p 1886 -C 1 -W 1 --quiet)
+	if versionMatch "${SRC}/openwb-default-acl.conf" "/etc/mosquitto/conf.d/openwb-default-acl.conf"; then
+		echo "mosquitto openwb-default-acl.conf already up to date"
+	else
+		echo "updating mosquitto openwb-default-acl.conf"
+		sudo cp "${SRC}/openwb-default-acl.conf" "/etc/mosquitto/conf.d/openwb-default-acl.conf"
+		restartService=1
+	fi
 fi
 if [[ $allowUnencryptedAccess == "true" ]]; then
-	if versionMatch "${SRC}/openwb-unsecure.conf" "/etc/mosquitto/conf.d/openwb-unsecure.conf"; then
-		echo "mosquitto openwb-unsecure.conf already up to date"
+	if versionMatch "${SRC}/openwb-unsecure-acl.conf" "/etc/mosquitto/conf.d/openwb-unsecure-acl.conf"; then
+		echo "mosquitto openwb-unsecure-acl.conf already up to date"
 	else
-		echo "updating mosquitto openwb-unsecure.conf"
-		sudo cp "${SRC}/openwb-unsecure.conf" "/etc/mosquitto/conf.d/openwb-unsecure.conf"
+		echo "updating mosquitto openwb-unsecure-acl.conf"
+		sudo cp "${SRC}/openwb-unsecure-acl.conf" "/etc/mosquitto/conf.d/openwb-unsecure-acl.conf"
 		restartService=1
 	fi
 else
-	if [ -f "/etc/mosquitto/conf.d/openwb-unsecure.conf" ]; then
-		echo "removing mosquitto openwb-unsecure.conf"
-		sudo rm "/etc/mosquitto/conf.d/openwb-unsecure.conf"
+	if [ -f "/etc/mosquitto/conf.d/openwb-unsecure-acl.conf" ]; then
+		echo "removing mosquitto openwb-unsecure-acl.conf"
+		sudo rm "/etc/mosquitto/conf.d/openwb-unsecure-acl.conf"
 		restartService=1
 	else
-		echo "mosquitto openwb-unsecure.conf not present, no action needed"
+		echo "mosquitto openwb-unsecure-acl.conf not present, no action needed"
 	fi
 fi
 
