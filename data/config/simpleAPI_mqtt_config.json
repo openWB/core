@@ -1,9 +1,9 @@
 {
   "host": "localhost",
-  "port": 8883,
+  "port": 1884,
   "username": null,
   "password": null,
-  "use_tls": true,
+  "use_tls": false,
   "validate_cert": false,
   "qos": 0,
   "retain": true,
