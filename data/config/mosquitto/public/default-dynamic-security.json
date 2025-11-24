@@ -1,0 +1,118 @@
+{
+	"defaultACLAccess":	{
+		"publishClientSend":	false,
+		"publishClientReceive":	true,
+		"subscribe":	false,
+		"unsubscribe":	true
+	},
+	"clients":	[{
+			"username":	"admin",
+			"textname":	"Administrator",
+			"roles":	[{
+					"rolename":	"dynsec_admin"
+				}, {
+					"rolename":	"full_access"
+				}],
+			"password":	"Yamo/Sa9TbMaYSGBPtJCglEuGFrY5CWQrToXwqUhRPOkcepwUoMgoFqaFpkhoKxpEc+Q5KofojN61BZrB9DBQQ==",
+			"salt":	"dExADR+vHv85IcDI",
+			"iterations":	101
+		}],
+	"groups":	[{
+			"groupname":	"anonymous",
+			"textname":	"Anonyme Benutzer",
+			"roles":	[{
+					"rolename":	"full_access"
+				}],
+			"clients":	[]
+		}],
+	"anonymousGroup":	"anonymous",
+	"roles":	[{
+			"rolename":	"dynsec_admin",
+			"textname": "Dynamic Security Administrator",
+			"acls":	[{
+					"acltype":	"publishClientSend",
+					"topic":	"$CONTROL/dynamic-security/#",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"publishClientReceive",
+					"topic":	"$CONTROL/dynamic-security/#",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"publishClientReceive",
+					"topic":	"$SYS/#",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"publishClientReceive",
+					"topic":	"#",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribePattern",
+					"topic":	"$CONTROL/dynamic-security/#",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribePattern",
+					"topic":	"$SYS/#",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribePattern",
+					"topic":	"#",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"unsubscribePattern",
+					"topic":	"#",
+					"priority":	0,
+					"allow":	true
+				}]
+		}, {
+			"rolename":	"full_access",
+			"textname":	"Voller Zugriff",
+			"acls":	[{
+					"acltype":	"publishClientSend",
+					"topic":	"openWB/set/#",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"publishClientSend",
+					"topic":	"openWB/system/messages/#",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"publishClientSend",
+					"topic":	"openWB/command/+/messages/#",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"publishClientSend",
+					"topic":	"others/#",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"publishClientSend",
+					"topic":	"openWB/simpleAPI/set/#",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribePattern",
+					"topic":	"openWB/#",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribePattern",
+					"topic":	"openWB-remote/#",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribePattern",
+					"topic":	"others/#",
+					"priority":	0,
+					"allow":	true
+				}]
+		}]
+}
