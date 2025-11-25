@@ -42,6 +42,7 @@ class ChargepointModule(AbstractChargepoint):
                 f"openWB/set/chargepoint/{self.config.id}/get/error_timestamp", CP_ERROR, hide_exception=True)
             self._create_client()
             self._validate_version()
+        self.old_phases_in_use = 3
 
     def delay_second_cp(self, delay: float):
         if self.config.configuration.duo_num == 0:
@@ -82,12 +83,15 @@ class ChargepointModule(AbstractChargepoint):
                         if self.version is False:
                             self._validate_version()
 
-                        currents = counter_state.currents
-                        phases_in_use = sum(1 for current in currents if current > 3)
+                        phases_in_use = sum(1 for current in counter_state.currents if current > 3)
+                        if phases_in_use == 0:
+                            phases_in_use = self.old_phases_in_use
+                        else:
+                            self.old_phases_in_use = phases_in_use
 
                         chargepoint_state = ChargepointState(
                             power=counter_state.power,
-                            currents=currents,
+                            currents=counter_state.currents,
                             imported=counter_state.imported,
                             exported=0,
                             voltages=counter_state.voltages,
@@ -106,7 +110,7 @@ class ChargepointModule(AbstractChargepoint):
                         chargepoint_state = ChargepointState(
                             plug_state=None, charge_state=False, imported=None,
                             # bei im-/exported None werden keine Werte gepublished
-                            exported=None, phases_in_use=0, power=0, currents=[0]*3)
+                            exported=None, phases_in_use=self.old_phases_in_use, power=0, currents=[0]*3)
                         self.store.set(chargepoint_state)
                 except AttributeError:
                     self._create_client()
