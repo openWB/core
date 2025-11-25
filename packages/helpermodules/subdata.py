@@ -627,16 +627,8 @@ class SubData:
                         self.event_subdata_initialized.is_set() and
                         self.general_data.data.allow_unencrypted_access != allow_unencrypted_access
                     ):
-                        log.warning("Änderung der Einstellung 'allow_unencrypted_access' erkannt.")
-                        run_command([
-                            str(Path(__file__).resolve().parents[2] / "runs" / "setup_apache2.sh")
-                        ], process_exception=True)
-                        log.warning("Apache2-Konfiguration wurde angepasst.")
-                        run_command([
-                            str(Path(__file__).resolve().parents[2] / "runs" / "setup_mosquitto.sh"),
-                            "0"  # kein Neustart im laufenden Betrieb!
-                        ], process_exception=True)
-                        log.warning("Mosquitto-Konfiguration wurde angepasst.")
+                        log.warning("Änderung der Einstellung 'allow_unencrypted_access' erkannt. "
+                                    "Konfiguration von Apache2 und Mosquitto wird beim nächsten Neustart angepasst.")
                         pub_system_message(
                             msg.payload,
                             f"Unsichere Verbindungen wurden {'' if allow_unencrypted_access else 'de'}aktiviert.<br />"
@@ -651,18 +643,14 @@ class SubData:
                         self.event_subdata_initialized.is_set() and
                         self.general_data.data.user_management_active != user_management_active
                     ):
-                        log.warning("Änderung der Einstellung 'user_management_active' erkannt.")
-                        run_command([
-                            str(Path(__file__).resolve().parents[2] / "runs" / "setup_mosquitto.sh"),
-                            "0"  # kein Neustart im laufenden Betrieb!
-                        ], process_exception=True)
-                        log.warning("Mosquitto-Konfiguration wurde angepasst.")
+                        log.warning("Änderung der Einstellung 'user_management_active' erkannt. "
+                                    "Konfiguration von Mosquitto wird beim nächsten Neustart angepasst.")
                         pub_system_message(
                             msg.payload,
                             f"Benutzerverwaltung wurde {'' if user_management_active else 'de'}aktiviert.<br />"
                             "Bitte die openWB <a href=\"/openWB/web/settings/#/System/SystemConfiguration\">"
                             "neu starten</a>, damit die Änderungen wirksam werden.",
-                            MessageType.SUCCESS
+                            MessageType.WARNING
                         )
                     self.set_json_payload_class(var.data, msg)
                 else:
