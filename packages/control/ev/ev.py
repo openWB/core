@@ -120,10 +120,8 @@ class Ev:
                              max_phases_hw: int,
                              phase_switch_supported: bool,
                              charging_type: str,
-                             chargemode_switch_timestamp: float,
                              imported_since_plugged: float,
-                             bidi: BidiState,
-                             phases_in_use: int) -> Tuple[bool, Optional[str], str, float, int]:
+                             bidi: BidiState) -> Tuple[bool, Optional[str], str, float, int]:
         """ ermittelt, ob und mit welchem Strom das EV geladen werden soll (unabhängig vom Lastmanagement)
 
         Parameter
@@ -166,7 +164,6 @@ class Ev:
                         max_phases_hw,
                         phase_switch_supported,
                         charging_type,
-                        chargemode_switch_timestamp,
                         control_parameter,
                         soc_request_interval_offset,
                         bidi)
@@ -397,7 +394,6 @@ class Ev:
     def _remaining_phase_switch_time(self, control_parameter: ControlParameter,
                                      waiting_time: float,
                                      buffer: float) -> float:
-
         if control_parameter.timestamp_phase_switch_buffer_start is None:
             control_parameter.timestamp_phase_switch_buffer_start = timecheck.create_timestamp()
         # Wenn der Puffer seit der letzen Umschaltung abgelaufen ist, warte noch die Umschaltverzögerung ab. ODER

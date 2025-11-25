@@ -37,6 +37,9 @@ def fetch_prices(config: AwattarTariffConfiguration) -> Dict[int, float]:
     prices: Dict[int, float] = {}
     for data in raw_prices:
         formatted_price = data["marketprice"]/1000000  # €/MWh -> €/Wh
+        if config.net is False:
+            formatted_price = formatted_price + (formatted_price * config.proportional / 100) + config.fix
+            formatted_price = formatted_price * (1 + config.tax / 100)
         timestamp = data["start_timestamp"]/1000  # Epoch from ms in s
         prices.update({str(int(timestamp)): formatted_price})
     return prices

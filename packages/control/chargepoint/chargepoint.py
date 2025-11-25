@@ -663,10 +663,8 @@ class Chargepoint(ChargepointRfidMixin):
                         self.get_max_phase_hw(),
                         self.hw_supports_phase_switch(),
                         self.template.data.charging_type,
-                        self.data.control_parameter.timestamp_chargemode_changed or create_timestamp(),
                         self.data.set.log.imported_since_plugged,
-                        self.hw_bidi_capable(),
-                        self.data.get.phases_in_use)
+                        self.hw_bidi_capable())
                     required_phases = self.get_phases_by_selected_chargemode(template_phases)
                     required_phases = self.set_phases(required_phases, template_phases)
                     self._pub_connected_vehicle(charging_ev)
@@ -781,13 +779,13 @@ class Chargepoint(ChargepointRfidMixin):
         if self.data.config.ev != vehicle:
             Pub().pub(f"openWB/set/vehicle/{charging_ev.num}/get/force_soc_update", True)
             log.debug("SoC nach EV-Wechsel")
+            Pub().pub(f"openWB/set/chargepoint/{self.num}/config", dataclasses.asdict(self.data.config))
         # wenn vorher kein anderes Fahrzeug zugeordnet war, Ladeprofil nicht zurücksetzen
         if (self.data.config.ev != vehicle or
                 (self.data.set.charge_template.data.id != charging_ev.charge_template.data.id)):
             self.update_charge_template(charging_ev.charge_template)
         self.data.set.charging_ev_data = charging_ev
         self.data.config.ev = vehicle
-        Pub().pub(f"openWB/set/chargepoint/{self.num}/config", dataclasses.asdict(self.data.config))
         return charging_ev
 
     def update_charge_template(self, charge_template: ChargeTemplate) -> None:

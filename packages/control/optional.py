@@ -142,12 +142,19 @@ class Optional(OcppMixin):
             return False
 
     def __get_first_entry(self) -> tuple[str, float]:
+        prices = self.data.electricity_pricing.get.prices
+        if prices is None or len(prices) == 0:
+            raise Exception("Keine Preisdaten für strompreisbasiertes Laden vorhanden.")
+        else:
+            timestamp, first = next(iter(prices.items()))
+            return timestamp, first
+
+    def remove_outdated_prices(self):
         if self.data.electricity_pricing.configured:
             prices = self.data.electricity_pricing.get.prices
             if prices is None or len(prices) == 0:
-                raise Exception("Keine Preisdaten für strompreisbasiertes Laden vorhanden.")
+                log.debug("Keine Preisdaten für strompreisbasiertes Laden vorhanden.")
             else:
-                timestamp, first = next(iter(prices.items()))
                 price_timeslot_seconds = self.__calculate_price_timeslot_length(prices)
                 now = timecheck.create_timestamp()
                 prices = {
@@ -156,18 +163,18 @@ class Optional(OcppMixin):
                     if float(price[0]) > now - (price_timeslot_seconds - 1)
                 }
                 self.data.electricity_pricing.get.prices = prices
-                timestamp, first = next(iter(prices.items()))
-                return timestamp, first
-        else:
-            raise Exception("Kein Anbieter für strompreisbasiertes Laden konfiguriert.")
+                Pub().pub("openWB/set/optional/ep/get/prices", prices)
 
     def __get_current_timeslot_start(self) -> int:
         timestamp = self.__get_first_entry()[0]
         return float(timestamp)
 
     def ep_get_current_price(self) -> float:
-        first = self.__get_first_entry()[1]
-        return first
+        if self.data.electricity_pricing.configured:
+            first = self.__get_first_entry()[1]
+            return first
+        else:
+            raise Exception("Kein Anbieter für strompreisbasiertes Laden konfiguriert.")
 
     def __calculate_price_timeslot_length(self, prices: dict) -> int:
         first_timestamps = list(prices.keys())[:2]
