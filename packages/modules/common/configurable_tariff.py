@@ -68,12 +68,15 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
             self.fault_state.error("no prices to show")
         else:
             now = timecheck.create_timestamp()
+            removed = False
             for timestamp in list(tariff_state.prices.keys()):
                 if int(timestamp) < now - (timeslot_length_seconds - 1):  # keep current time slot
                     tariff_state.prices.pop(timestamp)
-                    log.debug(
-                        'Die Preisliste startet nicht mit der aktuellen Stunde. '
-                        f'Eintrag {timestamp} wurden entfernt. rest: {tariff_state.prices}')
+                    removed = True
+            if removed:
+                log.debug(
+                    'Die Preisliste startet nicht mit der aktuellen Stunde. '
+                    f'Abgelaufene Eintraäge wurden entfernt: {tariff_state.prices}')
         return tariff_state
 
 
