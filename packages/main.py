@@ -188,6 +188,7 @@ class HandlerAlgorithm:
                 data.data.optional_data.ocpp_transfer_meter_values()
                 data.data.counter_all_data.validate_hierarchy()
                 loadvars_.ep_get_prices()
+                data.data.optional_data.remove_outdated_prices()
         except Exception:
             log.exception("Fehler im Main-Modul")
 
