@@ -667,7 +667,7 @@ class SetData:
                     "openWB/set/bat/set/regulate_up" in msg.topic):
                 self._validate_value(msg, bool)
             elif (re.search("openWB/set/bat/[0-9]+/get/max_charge_power$", msg.topic) is not None or
-                re.search("openWB/set/bat/[0-9]+/get/max_discharge_power$", msg.topic) is not None):
+                  re.search("openWB/set/bat/[0-9]+/get/max_discharge_power$", msg.topic) is not None):
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif ("openWB/set/bat/config/price_limit" in msg.topic or
                   "openWB/set/bat/config/charge_limit" in msg.topic):
