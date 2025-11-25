@@ -60,11 +60,19 @@ class UpdateConfig:
     DATASTORE_VERSION = 96
 
     valid_topic = [
+        "^openWB/bat/[0-9]+/get/max_charge_power$",
+        "^openWB/bat/[0-9]+/get/max_discharge_power$",
+        "^openWB/bat/[0-9]+/get/min_bat_soc$",
+        "^openWB/bat/config/manual_mode$",
+        "^openWB/bat/config/price_limit_activated$",
+        "^openWB/bat/config/price_limit$",
+        "^openWB/bat/config/price_charge_activated$",
+        "^openWB/bat/config/charge_limit$",
         "^openWB/bat/config/bat_control_activated$",
         "^openWB/bat/config/bat_control_permitted$",
         "^openWB/bat/config/configured$",
-        "^openWB/bat/config/power_limit_condition$",
         "^openWB/bat/config/power_limit_mode$",
+        "^openWB/bat/config/power_limit_condition$",
         "^openWB/bat/set/charging_power_left$",
         "^openWB/bat/set/regulate_up$",
         "^openWB/bat/get/fault_state$",
