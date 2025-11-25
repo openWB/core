@@ -42,6 +42,7 @@
 import { computed } from 'vue'
 import * as d3 from 'd3'
 import type { PowerItem } from '@/assets/js/types'
+import { graphData } from '../powerGraph/model'
 
 const props = defineProps<{
 	id: string
@@ -50,12 +51,14 @@ const props = defineProps<{
 	xScale: d3.ScaleLinear<number, number, never>
 	itemHeight: number
 }>()
-const barlength = computed(() => props.xScale(props.item.energy))
+const barlength = computed(() =>
+	props.xScale(props.item[graphData.graphScope].energy),
+)
 
 const pvBarheight = computed(() => {
 	let result = 0
-	if (props.item.energyPv > 0) {
-		result = props.xScale(props.item.energyPv)
+	if (props.item[graphData.graphScope].energyPv > 0) {
+		result = props.xScale(props.item[graphData.graphScope].energyPv)
 	}
 	if (result > barlength.value) {
 		result = barlength.value
@@ -64,8 +67,8 @@ const pvBarheight = computed(() => {
 })
 const batBarheight = computed(() => {
 	let result = 0
-	if (props.item.energyBat > 0) {
-		result = props.xScale(props.item.energyBat)
+	if (props.item[graphData.graphScope].energyBat > 0) {
+		result = props.xScale(props.item[graphData.graphScope].energyBat)
 	}
 	if (result > barlength.value) {
 		result = barlength.value

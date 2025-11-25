@@ -199,12 +199,14 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
     try:
         prices = data.data.general_data.data.prices
         try:
-            grid_price = data.data.optional_data.et_get_current_price()
+            grid_price = data.data.optional_data.ep_get_current_price()
         except Exception:
+            log.exception("Fehler im Werte-Logging-Modul für aktuellen Netzpreis, nutze hinterlegten Netzpreis")
             grid_price = prices.grid
         prices_dict = {"grid": grid_price,
                        "pv": prices.pv,
-                       "bat": prices.bat}
+                       "bat": prices.bat,
+                       "cp": prices.cp}
     except Exception:
         log.exception("Fehler im Werte-Logging-Modul für Preise")
         prices_dict = {}

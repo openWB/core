@@ -7,23 +7,54 @@ from modules.display_themes.cards.config import CardsDisplayTheme
 
 
 @dataclass
-class EtGet:
+class PricingGet:
     fault_state: int = 0
     fault_str: str = NO_ERROR
     prices: Dict = field(default_factory=empty_dict_factory)
 
 
-def get_factory() -> EtGet:
-    return EtGet()
+def get_factory() -> PricingGet:
+    return PricingGet()
 
 
 @dataclass
-class Et:
-    get: EtGet = field(default_factory=get_factory)
+class FlexibleTariff:
+    get: PricingGet = field(default_factory=get_factory)
 
 
-def et_factory() -> Et:
-    return Et()
+def get_flexible_tariff_factory() -> FlexibleTariff:
+    return FlexibleTariff()
+
+
+@dataclass
+class GridFee:
+    get: PricingGet = field(default_factory=get_factory)
+
+
+def get_grid_fee_factory() -> GridFee:
+    return GridFee()
+
+
+@dataclass
+class ElectricityPricingGet:
+    next_query_time: Optional[float] = None
+    prices: Dict = field(default_factory=empty_dict_factory)
+
+
+def electricity_pricing_get_factory() -> ElectricityPricingGet:
+    return ElectricityPricingGet()
+
+
+@dataclass
+class ElectricityPricing:
+    configured: bool = False
+    flexible_tariff: FlexibleTariff = field(default_factory=get_flexible_tariff_factory)
+    grid_fee: GridFee = field(default_factory=get_grid_fee_factory)
+    get: ElectricityPricingGet = field(default_factory=electricity_pricing_get_factory)
+
+
+def ep_factory() -> ElectricityPricing:
+    return ElectricityPricing()
 
 
 @dataclass
@@ -83,7 +114,7 @@ def ocpp_factory() -> Ocpp:
 
 @dataclass
 class OptionalData:
-    et: Et = field(default_factory=et_factory)
+    electricity_pricing: ElectricityPricing = field(default_factory=ep_factory)
     int_display: InternalDisplay = field(default_factory=int_display_factory)
     led: Led = field(default_factory=led_factory)
     rfid: Rfid = field(default_factory=rfid_factory)

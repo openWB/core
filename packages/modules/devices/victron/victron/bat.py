@@ -50,6 +50,7 @@ class VictronBat(AbstractBat):
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
         modbus_id = self.component_config.configuration.modbus_id
+        vebus_id = self.component_config.configuration.vebus_id
 
         # Wenn Victron Dynamic ESS aktiv, erfolgt keine weitere Regelung in openWB
         dynamic_ess_mode = self.__tcp_client.read_holding_registers(5400, ModbusDataType.UINT_16, unit=modbus_id)
@@ -61,26 +62,27 @@ class VictronBat(AbstractBat):
             log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
             if self.last_mode is not None:
                 # ESS Mode 1 für Selbstregelung mit Phasenkompensation setzen
-                self.__tcp_client.write_registers(39, [0], data_type=ModbusDataType.UINT_16, unit=228)
                 self.__tcp_client.write_registers(2902, [1], data_type=ModbusDataType.UINT_16, unit=modbus_id)
+                self.__tcp_client.write_registers(39, [0], data_type=ModbusDataType.UINT_16, unit=vebus_id)
                 self.last_mode = None
         elif power_limit == 0:
             log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt und nicht entladen")
             if self.last_mode != 'stop':
                 # ESS Mode 3 für externe Steuerung und keine Entladung
                 self.__tcp_client.write_registers(2902, [3], data_type=ModbusDataType.UINT_16, unit=modbus_id)
-                self.__tcp_client.write_registers(39, [1], data_type=ModbusDataType.UINT_16, unit=228)
+                self.__tcp_client.write_registers(39, [1], data_type=ModbusDataType.UINT_16, unit=vebus_id)
                 self.last_mode = 'stop'
         elif power_limit < 0:
             if self.last_mode != 'discharge':
                 # ESS Mode 3 für externe Steuerung und auf L1 wird entladen
                 self.__tcp_client.write_registers(2902, [3], data_type=ModbusDataType.UINT_16, unit=modbus_id)
-                self.__tcp_client.write_registers(39, [0], data_type=ModbusDataType.UINT_16, unit=228)
+                self.__tcp_client.write_registers(39, [0], data_type=ModbusDataType.UINT_16, unit=vebus_id)
                 self.last_mode = 'discharge'
             # Die maximale Entladeleistung begrenzen auf 5000W
             power_value = int(min(power_limit, 5000))
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_value} W entladen")
-            self.__tcp_client.write_registers(37, [power_value & 0xFFFF], data_type=ModbusDataType.INT_16, unit=228)
+            self.__tcp_client.write_registers(
+                37, [power_value & 0xFFFF], data_type=ModbusDataType.INT_16, unit=vebus_id)
 
     def power_limit_controllable(self) -> bool:
         return True

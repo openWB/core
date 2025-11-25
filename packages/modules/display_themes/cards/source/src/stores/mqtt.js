@@ -390,6 +390,9 @@ export const useMqttStore = defineStore("mqtt", {
     getBatterySocChartData(state) {
       return state.getChartData("openWB/bat/get/soc");
     },
+    getBatteryMode(state) {
+      return state.topics["openWB/general/chargemode_config/pv_charging/bat_mode"];
+    },
     getPvConfigured(state) {
       return state.getValueBool("openWB/pv/config/configured");
     },
@@ -944,16 +947,15 @@ export const useMqttStore = defineStore("mqtt", {
     /* electricity tariff provider */
     getEtConfigured(state){
       if (
-        state.topics["openWB/optional/et/provider"] !==
+        state.topics["openWB/optional/ep/configured"] !==
         undefined
       ) {
-        return state.topics["openWB/optional/et/provider"]
-          .type !== null;
+        return state.topics["openWB/optional/ep/configured"];
       }
       return false;
     },
     getEtPrices(state) {
-      return state.topics["openWB/optional/et/get/prices"];
+      return state.topics["openWB/optional/ep/get/prices"];
     },
   },
   actions: {

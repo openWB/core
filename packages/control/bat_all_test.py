@@ -80,6 +80,7 @@ class Params:
     expected_charging_power_left: float
     expected_regulate_up: bool
     power_limit: Optional[float] = None
+    hysteresis_discharge: Optional[bool] = False
 
 
 cases = [
@@ -128,6 +129,14 @@ cases = [
            "Speicher-Sperre aktiv"),
            PvCharging(bat_mode="min_soc_bat_mode", bat_power_discharge=500, bat_power_discharge_active=True),
            400, 90, 0, False, 600),
+    Params(("Mindest-SoC, Hysterese, EV-Vorrang, keine Speichernutzung"),
+           PvCharging(bat_mode="min_soc_bat_mode"), 400, 60, 400, False, hysteresis_discharge=False),
+    Params(("Mindest-SoC, Hysterese, Speicherentladung, Speichernutzung erlaubt"),
+           PvCharging(bat_mode="min_soc_bat_mode", bat_power_discharge=500, bat_power_discharge_active=True),
+           400, 60, 900, False, hysteresis_discharge=True),
+    Params(("Mindest-SoC, Hysterese, Speicherentladung, Speichernutzung erlaubt, Speicher-Sperre aktiv"),
+           PvCharging(bat_mode="min_soc_bat_mode", bat_power_discharge=500, bat_power_discharge_active=True),
+           400, 60, 0, False, 600, hysteresis_discharge=True),
 ]
 
 
@@ -138,6 +147,7 @@ def test_get_charging_power_left(params: Params, caplog, data_, monkeypatch):
     b_all.data.get.power = params.power
     b_all.data.get.soc = params.soc
     b_all.data.set.power_limit = params.power_limit
+    b_all.data.set.hysteresis_discharge = params.hysteresis_discharge
     b = Bat(0)
     b.data.get.power = params.power
     data.data.bat_data["bat0"] = b

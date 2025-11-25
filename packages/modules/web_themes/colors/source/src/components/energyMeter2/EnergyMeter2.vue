@@ -66,14 +66,8 @@
 <script setup lang="ts">
 import { scaleBand, scaleLinear } from 'd3'
 import { max } from 'd3'
-import { PowerItemType, type PowerItem } from '@/assets/js/types'
-import {
-	sourceSummary,
-	historicSummary,
-	energyMeterNeedsRedraw,
-	usageSummary,
-	pvSystems,
-} from '@/assets/js/model'
+import { type PowerItem } from '@/assets/js/types'
+import { registry, energyMeterNeedsRedraw } from '@/assets/js/model'
 import BarGraph from './BarGraph.vue'
 //import EMYAxis from './EMYAxis.vue'
 import EnergyLabels from './EnergyLabels.vue'
@@ -90,7 +84,7 @@ import { graphData, noData } from '@/components/powerGraph/model'
 import { computed } from 'vue'
 import { chargePoints } from '../chargePointList/model'
 import { shDevices } from '../smartHome/model'
-import { batteries } from '../batteryList/model'
+import { counters } from '../counterList/model'
 
 //state
 const width = 500
@@ -108,60 +102,64 @@ const height = computed(() => {
 const axisFontsize = 12
 // computed
 const plotdata = computed(() => {
-	let sources = Object.values(sourceSummary)
-	let usage = usageDetails.value
-	const historic = historicSummary.items
 	let result: PowerItem[] = []
-
 	if (globalConfig.debug) {
 		printDebugOutput()
 	}
 	if (energyMeterNeedsRedraw.value == true) {
 		energyMeterNeedsRedraw.value = false
 	}
-	switch (graphData.graphMode) {
-		default:
-		case 'live':
-		case 'today':
-			result = addSourceDetails(sources).concat(usage)
-			break
-		case 'day':
-		case 'month':
-		case 'year':
-			if (Object.values(historic).length == 0) {
-				noData.value = true
-			} else {
-				noData.value = false
-				result = [
-					historic.evuIn,
-					historic.pv,
-					historic.evuOut,
-					historic.batOut,
-					historic.charging,
-				]
-				if (Object.values(chargePoints).length > 1) {
-					Object.keys(chargePoints).forEach((id) => {
-						if (historic['cp' + id]) {
-							result.push(historic['cp' + id])
-						}
-					})
-				}
-
-				result.push(historic.devices)
-				shDevices.forEach((dev, id) => {
-					if (dev.showInGraph && historic['sh' + id]) {
-						result.push(historic['sh' + id])
-					}
-				})
-				result = result.concat([historic.batIn, historic.house])
-			}
+	if (registry.items.size == 0) {
+		noData.value = true
+	} else {
+		noData.value = false
+		result = [
+			registry.getItem('evuIn'),
+			registry.getItem('pv'),
+			registry.getItem('evuOut'),
+			registry.getItem('batOut'),
+			registry.getItem('charging'),
+		]
+		if (Object.values(chargePoints).length > 1) {
+			Object.values(chargePoints).forEach((cp) => {
+				result.push(cp)
+			})
+		}
 	}
-	return result.filter((row) => row.energy && row.energy > 0)
+	result.push(registry.getItem('devices'))
+	shDevices.forEach((dev) => {
+		if (dev.showInGraph) {
+			result.push(dev)
+		}
+	})
+
+	//result.push(registry.getItem('counters'))
+
+	counters.forEach((ctr) => {
+		if (ctr.showInGraph) {
+			result.push(ctr)
+		}
+	})
+	result = result.concat([registry.getItem('batIn'), registry.getItem('house')])
+	return result.filter(
+		(row) =>
+			row[graphData.graphScope].energy && row[graphData.graphScope].energy > 0,
+	)
 })
+
 const xScale = computed(() => {
 	return scaleLinear()
 		.range([0, width - margin.left - margin.right])
-		.domain([0, max(plotdata.value, (d: PowerItem) => d.energy) as number])
+		.domain([
+			0,
+			max(
+				plotdata.value,
+				(d: PowerItem) =>
+					(graphData.graphMode == 'live' || graphData.graphMode == 'today'
+						? d![graphData.graphScope].energy!
+						: d![graphData.graphScope].energy!) as number,
+			) ?? 0,
+		])
 })
 const yScale = computed(() => {
 	return scaleBand()
@@ -170,73 +168,8 @@ const yScale = computed(() => {
 		.padding(0.1)
 })
 const heading = 'Energie'
-
-const usageDetails = computed(
-	() => {
-		const cpcount = Object.values(chargePoints).length
-		const shcount = [...shDevices.values()].filter(
-			(dev) => dev.configured,
-		).length
-		let usg = usageSummary
-		return [
-			...[usg.evuOut, usg.charging].concat(
-				cpcount > 1
-					? Object.values(chargePoints).map((cp) => cp.toPowerItem())
-					: [],
-			),
-			...[usg.devices]
-				.concat(
-					shcount > 1
-						? [...shDevices.values()].filter(
-								(row) => row.configured && row.showInGraph,
-							)
-						: [],
-				)
-				.concat([usageSummary.batIn, usageSummary.house]),
-		]
-	},
-	//}
-)
-function addSourceDetails(sources: PowerItem[]): PowerItem[] {
-	let idx = 0
-	if (pvSystems.value.size > 1) {
-		pvSystems.value.forEach((inv) => {
-			sources.splice(2 + idx++, 0, {
-				name: inv.name,
-				type: PowerItemType.inverter,
-				power: inv.power,
-				energy: inv.energy,
-				energyPv: 0,
-				energyBat: 0,
-				pvPercentage: 0,
-				color: inv.color,
-				icon: inv.name,
-				showInGraph: true,
-			})
-		})
-	}
-	if (batteries.value.size > 1) {
-		batteries.value.forEach((bat) => {
-			sources.splice(3 + idx++, 0, {
-				name: bat.name,
-				type: PowerItemType.battery,
-				power: bat.power,
-				energy: bat.dailyYieldExport,
-				energyPv: 0,
-				energyBat: 0,
-				pvPercentage: 0,
-				color: bat.color,
-				icon: bat.name,
-				showInGraph: true,
-			})
-		})
-	}
-	return sources
-}
 function printDebugOutput() {
-	console.debug(['source summary:', sourceSummary])
-	console.debug(['usage details:', usageDetails.value])
-	console.debug(['historic summary:', historicSummary])
+	console.debug(['all items:', registry])
 }
 function zoomGraph() {
 	globalConfig.zoomedWidget = 2

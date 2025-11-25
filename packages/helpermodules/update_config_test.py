@@ -45,6 +45,7 @@ def test_upgrade_datastore_94(index_test_template, expected_index):
     with open(Path(__file__).resolve().parents[0]/"upgrade_datastore_94.json", "r") as f:
         test_data = f.read()
     update_con.all_received_topics.update(json.loads(test_data)[index_test_template])
+    update_con.all_received_topics["openWB/system/datastore_version"] = list(range(93))
 
     update_con.upgrade_datastore_94()
 

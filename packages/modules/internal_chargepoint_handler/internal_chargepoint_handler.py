@@ -68,7 +68,7 @@ class UpdateState:
 
     def __thread_phase_switch(self, phases_to_use: int) -> None:
         self.phase_switch_thread = Thread(
-            target=self.cp_module.perform_phase_switch, args=(phases_to_use, 5),
+            target=self.cp_module.perform_phase_switch, args=(phases_to_use,),
             name=f"perform phase switch {self.cp_module.local_charge_point_num}")
         self.phase_switch_thread.start()
         log.debug("Thread zur Phasenumschaltung an LP"+str(self.cp_module.local_charge_point_num)+" gestartet.")

@@ -54,11 +54,13 @@
 		</div>
 		<!-- Car information-->
 		<template #footer>
-			<VehicleData
-				v-if="!configmode"
-				:chargepoint="props.chargepoint"
-				:full-width="props.fullWidth"
-			/>
+			<div class="mb-3">
+				<VehicleData
+					v-if="!configmode"
+					:chargepoint="props.chargepoint"
+					:full-width="props.fullWidth"
+				/>
+			</div>
 		</template>
 	</WBWidget>
 	<WbWidgetFlex v-else :full-width="props.fullWidth">

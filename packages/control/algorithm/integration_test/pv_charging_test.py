@@ -295,10 +295,13 @@ def test_phase_switch_1p_3p(all_cp_pv_charging_1p, monkeypatch):
     data.data.counter_data["counter0"].data.set.raw_power_left = cases_phase_switch[1].raw_power_left
     data.data.counter_data["counter0"].data.set.raw_currents_left = cases_phase_switch[1].raw_currents_left_counter0
     data.data.counter_data["counter6"].data.set.raw_currents_left = cases_phase_switch[1].raw_currents_left_counter6
+    data.data.cp_data["cp3"].data.get.charge_state = True
     data.data.cp_data["cp3"].data.get.currents = [32, 0, 0]
     data.data.cp_data["cp3"].data.get.power = 7360
     data.data.cp_data["cp3"].data.control_parameter.timestamp_last_phase_switch = 1652682252
+    data.data.cp_data["cp4"].data.get.charge_state = False
     data.data.cp_data["cp4"].data.get.currents = [0, 0, 0]
+    data.data.cp_data["cp5"].data.get.charge_state = False
     data.data.cp_data["cp5"].data.get.currents = [0, 0, 0]
     for i in range(3, 6):
         data.data.cp_data[f"cp{i}"].data.control_parameter.template_phases = 0

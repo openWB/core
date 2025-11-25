@@ -1,4 +1,4 @@
-import { masterData, usageSummary } from '@/assets/js/model'
+import { registry } from '@/assets/js/model'
 import { shDevices, addShDevice } from './model'
 
 export function processSmarthomeMessages(topic: string, message: string) {
@@ -17,11 +17,11 @@ function processSmarthomeConfigMessages(topic: string, message: string) {
 		// console.warn('Smarthome: Missing index in ' + topic)
 		return
 	}
-	if (!shDevices.has(index)) {
+	if (!shDevices.has('sh' + index)) {
 		// console.warn('Invalid sh device id received: ' + index)
-		addShDevice(index)
+		addShDevice('sh' + index)
 	}
-	const dev = shDevices.get(index)!
+	const dev = shDevices.get('sh' + index)!
 	if (
 		topic.match(
 			/^openWB\/LegacySmarthome\/config\/get\/Devices\/[0-9]+\/device_configured$/i,
@@ -38,8 +38,8 @@ function processSmarthomeConfigMessages(topic: string, message: string) {
 		dev.name = message.toString()
 		dev.icon = message.toString()
 
-		masterData['sh' + index].name = message.toString()
-		masterData['sh' + index].icon = message.toString()
+		//masterData['sh' + index].name = message.toString()
+		//masterData['sh' + index].icon = message.toString()
 	} else if (
 		topic.match(
 			/^openWB\/LegacySmarthome\/config\/set\/Devices\/[0-9]+\/mode$/i,
@@ -75,11 +75,11 @@ function processSmarthomeDeviceMessages(topic: string, message: string) {
 		console.warn('Smarthome: Missing index in ' + topic)
 		return
 	}
-	if (!shDevices.has(index)) {
+	if (!shDevices.has('sh' + index)) {
 		// console.warn('Invalid sh device id received: ' + index)
-		addShDevice(index)
+		addShDevice('sh' + index)
 	}
-	const dev = shDevices.get(index)!
+	const dev = shDevices.get('sh' + index)!
 	if (topic.match(/^openWB\/LegacySmarthome\/Devices\/[0-9]+\/Watt$/i)) {
 		dev.power = +message
 		updateShSummary('power')
@@ -135,14 +135,20 @@ function processSmarthomeDeviceMessages(topic: string, message: string) {
 function updateShSummary(cat: string) {
 	switch (cat) {
 		case 'power':
-			usageSummary['devices'].power = [...shDevices.values()]
-				.filter((dev) => dev.configured && !dev.countAsHouse)
-				.reduce((sum, consumer) => sum + consumer.power, 0)
+			registry.setPower(
+				'devices',
+				[...shDevices.values()]
+					.filter((dev) => dev.configured && !dev.countAsHouse)
+					.reduce((sum, consumer) => sum + consumer.power, 0),
+			)
 			break
 		case 'energy':
-			usageSummary['devices'].energy = [...shDevices.values()]
-				.filter((dev) => dev.configured && !dev.countAsHouse)
-				.reduce((sum, consumer) => sum + consumer.energy, 0)
+			registry.setEnergy(
+				'devices',
+				[...shDevices.values()]
+					.filter((dev) => dev.configured && !dev.countAsHouse)
+					.reduce((sum, consumer) => sum + consumer.now.energy, 0),
+			)
 			break
 		default:
 			console.error('Unknown category')
