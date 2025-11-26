@@ -202,6 +202,7 @@ class Chargepoint(ChargepointRfidMixin):
         self.reset_control_parameter_at_charge_stop()
         data.data.counter_all_data.get_evu_counter().reset_switch_on_off(self)
         if self.data.get.plug_state is False:
+            chargelog.save_and_reset_data(self, data.data.ev_data["ev"+str(self.data.config.ev)])
             self.data.control_parameter = control_parameter_factory()
             if self.data.set.charge_template.data.load_default:
                 self.data.config.ev = 0
@@ -213,7 +214,6 @@ class Chargepoint(ChargepointRfidMixin):
             if data.data.general_data.data.temporary_charge_templates_active:
                 self.update_charge_template(
                     data.data.ev_data["ev"+str(self.data.config.ev)].charge_template)
-            chargelog.save_and_reset_data(self, data.data.ev_data["ev"+str(self.data.config.ev)])
             self.data.set.rfid = None
             Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/rfid", None)
             self.data.set.plug_time = None
