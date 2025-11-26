@@ -1,4 +1,5 @@
 import logging
+from dataclasses import asdict
 from typing import Optional
 
 from control import data
@@ -65,6 +66,9 @@ class ChargepointRfidMixin:
                                 if self.template.data.disable_after_unplug:
                                     self.data.set.manual_lock = True
                                     Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/manual_lock", True)
+                                if self.template.data.load_default:
+                                    self.data.config.ev = 0
+                                    Pub().pub(f"openWB/set/chargepoint/{self.num}/config", asdict(self.data.config))
                                 Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp", None)
                                 msg = ("Es ist in den letzten 5 Minuten kein EV angesteckt worden, dem "
                                        f"der ID-Tag {rfid} zugeordnet werden kann. Daher wird dieser verworfen.")
