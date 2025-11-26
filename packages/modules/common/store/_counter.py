@@ -1,6 +1,6 @@
 import logging
 from operator import add
-from typing import Optional
+from typing import Dict, Optional
 
 from control import data
 from helpermodules import compatibility
@@ -71,53 +71,83 @@ class PurgeCounterState:
         if self.add_child_values:
             self.currents = state.currents if state.currents else [0.0]*3
             self.power = state.power
+            self.imported = state.imported
+            self.exported = state.exported
             self.incomplete_currents = False
-
-            def add_current_power(element):
-                if hasattr(element, "currents") and element.currents is not None:
-                    if sum(element.currents) == 0 and element.power != 0:
-                        self.currents = [0, 0, 0]
-                        self.incomplete_currents = True
-                    else:
-                        self.currents = list(map(add, self.currents, element.currents))
-                else:
-                    self.currents = [0, 0, 0]
-                    self.incomplete_currents = True
-                self.power += element.power
-
             counter_all = data.data.counter_all_data
             elements = counter_all.get_elements_for_downstream_calculation(self.delegate.delegate.num)
-            for element in elements:
-                try:
-                    if element["type"] == ComponentType.CHARGEPOINT.value:
-                        chargepoint = data.data.cp_data[f"cp{element['id']}"]
-                        chargepoint_state = chargepoint.chargepoint_module.store.delegate.state
-                        try:
-                            self.currents = list(map(add,
-                                                     self.currents,
-                                                     convert_cp_currents_to_evu_currents(
-                                                         chargepoint.data.config.phase_1,
-                                                         chargepoint_state.currents)))
-                        except KeyError:
-                            raise KeyError("Für den virtuellen Zähler muss der Anschluss der Phasen von Ladepunkt"
-                                           f" {chargepoint.data.config.name} an die Phasen des EVU Zählers "
-                                           "angegeben werden.")
-                        self.power += chargepoint_state.power
-                    else:
-                        component = get_component_obj_by_id(element['id'])
-                        add_current_power(component.store.delegate.delegate.state)
-                except Exception:
-                    log.exception(f"Fehler beim Hinzufügen der Werte für Element {element}")
-
-            imported, exported = self.sim_counter.sim_count(self.power)
-            if self.incomplete_currents:
-                self.currents = None
-            return CounterState(currents=self.currents,
-                                power=self.power,
-                                exported=exported,
-                                imported=imported)
+            if len(elements) == 0:
+                return self.calc_uncounted_consumption(state)
+            else:
+                return self.calc_consumers(elements)
         else:
             return state
+
+    def _add_values(self, element, calc_imported_exported: bool):
+        if hasattr(element, "currents") and element.currents is not None:
+            if sum(element.currents) == 0 and element.power != 0:
+                self.currents = [0, 0, 0]
+                self.incomplete_currents = True
+            else:
+                self.currents = list(map(add, self.currents, element.currents))
+        else:
+            self.currents = [0, 0, 0]
+            self.incomplete_currents = True
+        if calc_imported_exported:
+            if hasattr(element, "imported") and element.imported is not None:
+                self.imported += element.imported
+            if element.exported is not None:
+                self.exported += element.exported
+        self.power += element.power
+
+    def calc_consumers(self, elements: Dict, calc_imported_exported: bool = True) -> CounterState:
+        for element in elements:
+            try:
+                if element["type"] == ComponentType.CHARGEPOINT.value:
+                    chargepoint = data.data.cp_data[f"cp{element['id']}"]
+                    chargepoint_state = chargepoint.chargepoint_module.store.delegate.state
+                    try:
+                        self.currents = list(map(add,
+                                                 self.currents,
+                                                 convert_cp_currents_to_evu_currents(
+                                                     chargepoint.data.config.phase_1,
+                                                     chargepoint_state.currents)))
+                    except KeyError:
+                        raise KeyError("Für den virtuellen Zähler muss der Anschluss der Phasen von Ladepunkt"
+                                       f" {chargepoint.data.config.name} an die Phasen des EVU Zählers "
+                                       "angegeben werden.")
+                    self.power += chargepoint_state.power
+                else:
+                    component = get_component_obj_by_id(element['id'])
+                    self._add_values(component.store.delegate.delegate.state)
+            except Exception:
+                log.exception(f"Fehler beim Hinzufügen der Werte für Element {element}")
+
+        if calc_imported_exported:
+            self.imported, self.exported = self.sim_counter.sim_count(self.power)
+        if self.incomplete_currents:
+            self.currents = None
+        return CounterState(currents=self.currents,
+                            power=self.power,
+                            exported=self.exported,
+                            imported=self.imported)
+
+    def calc_uncounted_consumption(self) -> CounterState:
+        parent_id = data.data.counter_all_data.get_parent_of_element(self.delegate.delegate.num)
+        parent_component = get_component_obj_by_id(parent_id)
+        if "counter" not in parent_component.component_config.type:
+            raise Exception("Die übergeordnete Komponente des virtuellen Zählers muss ein Zähler sein.")
+        if parent_component.store.add_child_values:
+            raise Exception("Der übergeordnete Zähler des virtuellen Zählers darf nicht auch ein virtueller Zähler sein.")
+        elements = data.data.counter_all_data.get_elements_for_downstream_calculation(parent_id)
+        counter_state_consumers = self.calc_consumers(elements, calc_imported_exported=True)
+        parent_counter_get = data.data.counter_data[f"counter{parent_id}"].data.get
+        return CounterState(
+            currents=[parent_counter_get.currents[i] - counter_state_consumers.currents[i] for i in range(0, 3)],
+            power=parent_counter_get.power - counter_state_consumers.power,
+            exported=parent_counter_get.exported - counter_state_consumers.exported,
+            imported=parent_counter_get.imported - counter_state_consumers.imported
+        )
 
 
 def get_counter_value_store(component_num: int,
