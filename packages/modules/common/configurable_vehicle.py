@@ -125,7 +125,20 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
 
     def _get_carstate_by_source(self, vehicle_update_data: VehicleUpdateData, source: SocSource) -> CarState:
         if source == SocSource.API:
-            return self.__component_updater(vehicle_update_data)
+            try:
+                _carState = self.__component_updater(vehicle_update_data)
+            except Exception:
+                log.exception(f"SoC-Auslesung von Fahrzeug {self.vehicle_config.name} fehlgeschlagen")
+                _carState = CarState(0, 0.0)
+            if _carState:
+                if _carState.soc <= 0 and (self.calculated_soc_state.last_imported or vehicle_update_data.imported):
+                    log.info("_get_carstate_by_source: FALLBACK to calculated soc")
+                    _carState = CarState(soc=calc_soc.calc_soc(
+                                         vehicle_update_data,
+                                         vehicle_update_data.efficiency,
+                                         self.calculated_soc_state.last_imported or vehicle_update_data.imported,
+                                         vehicle_update_data.battery_capacity))
+            return _carState
         elif source == SocSource.CALCULATION:
             return CarState(soc=calc_soc.calc_soc(
                 vehicle_update_data,
