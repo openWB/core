@@ -201,7 +201,7 @@ class Chargepoint(ChargepointRfidMixin):
             Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/ocpp_transaction_id", None)
         self.reset_control_parameter_at_charge_stop()
         data.data.counter_all_data.get_evu_counter().reset_switch_on_off(self)
-        if self.data.get.plug_state is False:
+        if self.data.get.plug_state is False and self.data.set.plug_state_prev is True:
             chargelog.save_and_reset_data(self, data.data.ev_data["ev"+str(self.data.config.ev)])
             self.data.control_parameter = control_parameter_factory()
             if self.data.set.charge_template.data.load_default:
@@ -776,16 +776,16 @@ class Chargepoint(ChargepointRfidMixin):
                       " verwendet.")
             charging_ev = ev_list["ev0"]
             vehicle = 0
-        if self.data.config.ev != vehicle:
-            Pub().pub(f"openWB/set/vehicle/{charging_ev.num}/get/force_soc_update", True)
-            log.debug("SoC nach EV-Wechsel")
-            Pub().pub(f"openWB/set/chargepoint/{self.num}/config", dataclasses.asdict(self.data.config))
         # wenn vorher kein anderes Fahrzeug zugeordnet war, Ladeprofil nicht zurücksetzen
         if (self.data.config.ev != vehicle or
                 (self.data.set.charge_template.data.id != charging_ev.charge_template.data.id)):
             self.update_charge_template(charging_ev.charge_template)
+        if self.data.config.ev != vehicle:
+            Pub().pub(f"openWB/set/vehicle/{charging_ev.num}/get/force_soc_update", True)
+            log.debug("SoC nach EV-Wechsel")
+            self.data.config.ev = vehicle
+            Pub().pub(f"openWB/set/chargepoint/{self.num}/config", dataclasses.asdict(self.data.config))
         self.data.set.charging_ev_data = charging_ev
-        self.data.config.ev = vehicle
         return charging_ev
 
     def update_charge_template(self, charge_template: ChargeTemplate) -> None:
