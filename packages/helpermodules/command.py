@@ -23,6 +23,7 @@ from helpermodules.abstract_plans import AutolockPlan, ScheduledChargingPlan, Ti
 from helpermodules.utils.run_command import run_command
 # ToDo: move to module commands if implemented
 from modules.backup_clouds.onedrive.api import generateMSALAuthCode, retrieveMSALTokens
+from modules.io_devices.eebus.api import create_pub_cert_ski
 
 from helpermodules.broker import BrokerClient
 from helpermodules.data_migration.data_migration import MigrateData
@@ -923,6 +924,9 @@ class Command:
             return
         result = retrieveMSALTokens(cloud_backup_config.config)
         pub_user_message(payload, connection_id, result["message"], result["MessageType"])
+
+    def createEebusCert(self, connection_id: str, payload: dict) -> None:
+        create_pub_cert_ski(payload["data"]["io_device"])
 
     def factoryReset(self, connection_id: str, payload: dict) -> None:
         Path(Path(__file__).resolve().parents[2] / 'data' / 'restore' / 'factory_reset').touch()

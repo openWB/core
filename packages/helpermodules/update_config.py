@@ -282,10 +282,6 @@ class UpdateConfig:
         "^openWB/internal_chargepoint/[0-1]/get/rfid$",
         "^openWB/internal_chargepoint/[0-1]/get/rfid_timestamp$",
 
-        "^openWB/io/states/[0-9]+/get/digital_input$",
-        "^openWB/io/states/[0-9]+/get/analog_input$",
-        "^openWB/io/states/[0-9]+/set/digital_output$",
-        "^openWB/io/states/[0-9]+/set/analog_output$",
         "^openWB/io/action/[0-9]+/config$",
         "^openWB/io/action/[0-9]+/timestamp$",
 

@@ -13,9 +13,9 @@ from helpermodules.pub import Pub
 from helpermodules.utils._thread_handler import joined_thread_handler
 from modules.common.abstract_io import AbstractIoDevice
 from modules.common.fault_state_level import FaultStateLevel
-from modules.io_actions.controllable_consumers.dimming.api import Dimming
+from modules.io_actions.controllable_consumers.dimming.api_io import DimmingIo
 from modules.io_actions.controllable_consumers.dimming_direct_control.api import DimmingDirectControl
-from modules.io_actions.generator_systems.stepwise_control.api import StepwiseControl
+from modules.io_actions.generator_systems.stepwise_control.api_io import StepwiseControlIo
 
 log = logging.getLogger(__name__)
 
@@ -77,13 +77,13 @@ class Process:
                             data.data.io_states[f"io_states{d['id']}"].data.set.digital_output[d["digital_output"]] = (
                                 action.dimming_via_direct_control() is None  # active output (True) if no dimming
                             )
-                if isinstance(action, Dimming):
+                if isinstance(action, DimmingIo):
                     for d in action.config.configuration.devices:
                         if d["type"] == "io":
                             data.data.io_states[f"io_states{d['id']}"].data.set.digital_output[d["digital_output"]] = (
                                 not action.dimming_active()  # active output (True) if no dimming
                             )
-                if isinstance(action, StepwiseControl):
+                if isinstance(action, StepwiseControlIo):
                     # check if passthrough is enabled
                     if action.config.configuration.passthrough_enabled:
                         # find output pattern by value
@@ -99,7 +99,8 @@ class Process:
                     modules_threads.append(
                         Thread(
                             target=io.write,
-                            args=(None, data.data.io_states[f"io_states{io.config.id}"].data.set.digital_output,),
+                            args=(data.data.io_states[f"io_states{io.config.id}"].data.set.analog_output,
+                                  data.data.io_states[f"io_states{io.config.id}"].data.set.digital_output,),
                             name=f"set output io{io.config.id}"))
             if modules_threads:
                 joined_thread_handler(modules_threads, 3)
