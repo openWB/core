@@ -145,7 +145,6 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/get/rfid_timestamp$",
         "^openWB/chargepoint/[0-9]+/set/charge_template$",
         "^openWB/chargepoint/[0-9]+/set/current$",
-        "^openWB/chargepoint/[0-9]+/set/energy_to_charge$",
         "^openWB/chargepoint/[0-9]+/set/manual_lock$",
         "^openWB/chargepoint/[0-9]+/set/charge_state_prev$",
         "^openWB/chargepoint/[0-9]+/set/plug_state_prev$",

@@ -8,11 +8,9 @@ import pathlib
 from typing import Any, Dict, List, Optional, Tuple
 
 from control import data
-from dataclass_utils import asdict
 from helpermodules.measurement_logging.process_log import (
     FILE_ERRORS, CalculationType, _analyse_energy_source,
     _process_entries, analyse_percentage, get_log_from_date_until_now, get_totals)
-from helpermodules.pub import Pub
 from helpermodules import timecheck
 from helpermodules.utils.json_file_handler import write_and_check
 
@@ -116,7 +114,6 @@ def collect_data(chargepoint):
                     log_data.time_charged += now - log_data.timestamp_start_charging
                     log_data.timestamp_start_charging = None
                     log_data.end = now
-            Pub().pub(f"openWB/set/chargepoint/{chargepoint.num}/set/log", asdict(log_data))
     except Exception:
         log.exception("Fehler im Ladelog-Modul")
 
@@ -299,7 +296,6 @@ def calc_energy_costs(cp, create_log_entry: bool = False):
                   f"total charged_energy_by_source {cp.data.set.log.charged_energy_by_source}")
         costs = _calc_costs(charged_energy_by_source, reference_entries[-1]["prices"])
         cp.data.set.log.costs += costs
-        Pub().pub(f"openWB/set/chargepoint/{cp.num}/set/log", asdict(cp.data.set.log))
 
 
 def calculate_charged_energy_by_source(cp, processed_entries, reference_entries, create_log_entry: bool = False):
