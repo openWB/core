@@ -66,7 +66,7 @@ class ChargepointRfidMixin:
                                 if self.template.data.disable_after_unplug:
                                     self.data.set.manual_lock = True
                                     Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/manual_lock", True)
-                                if self.template.data.load_default:
+                                if self.data.set.charging_ev_data.charge_template.data.load_default:
                                     self.data.config.ev = 0
                                     Pub().pub(f"openWB/set/chargepoint/{self.num}/config", asdict(self.data.config))
                                 Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp", None)
