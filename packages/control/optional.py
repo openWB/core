@@ -150,25 +150,25 @@ class Optional(OcppMixin):
             return timestamp, first
 
     def remove_outdated_prices(self):
-        def remove(price_data: Dict):
+        def remove(price_data: Dict) -> Dict:
             price_timeslot_seconds = self.__calculate_price_timeslot_length(price_data)
             now = timecheck.create_timestamp()
-            price_data = {
+            return {
                 price[0]: price[1]
                 for price in price_data.items()
                 if float(price[0]) > now - (price_timeslot_seconds - 1)
             }
+
         if self.data.electricity_pricing.configured:
-            self.data.electricity_pricing.get.prices = remove(self.data.electricity_pricing.get.prices)
-            Pub().pub("openWB/set/optional/ep/get/prices", self.data.electricity_pricing.get.prices)
+            ep = self.data.electricity_pricing
+            ep.get.prices = remove(ep.get.prices)
+            Pub().pub("openWB/set/optional/ep/get/prices", ep.get.prices)
             if self._flexible_tariff_module:
-                remove(self.data.electricity_pricing.flexible_tariff.get.prices)
-                Pub().pub("openWB/set/optional/ep/flexible_tariff/get/prices",
-                          self.data.electricity_pricing.flexible_tariff.get.prices)
+                ep.flexible_tariff.get.prices = remove(ep.flexible_tariff.get.prices)
+                Pub().pub("openWB/set/optional/ep/flexible_tariff/get/prices", ep.flexible_tariff.get.prices)
             if self._grid_fee_module:
-                remove(self.data.electricity_pricing.grid_fee.get.prices)
-                Pub().pub("openWB/set/optional/ep/grid_fee/get/prices",
-                          self.data.electricity_pricing.grid_fee.get.prices)
+                ep.grid_fee.get.prices = remove(ep.grid_fee.get.prices)
+                Pub().pub("openWB/set/optional/ep/grid_fee/get/prices", ep.grid_fee.get.prices)
 
     def __get_current_timeslot_start(self) -> int:
         timestamp = self.__get_first_entry()[0]
