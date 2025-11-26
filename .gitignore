@@ -10,6 +10,7 @@
 .vscode/*
 __pycache__/
 node_modules/
+data/config/eebus/certs/*
 data/log/*
 data/charge_log/*
 data/daily_log/*
