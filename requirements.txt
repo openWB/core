@@ -24,3 +24,4 @@ ocpp==1.0.0
 websockets==12.0
 pycarwings3==0.7.14
 asyncio==3.4.3
+urllib3==1.26.5
