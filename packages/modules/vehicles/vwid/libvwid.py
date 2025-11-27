@@ -13,9 +13,9 @@ from random import randint, random
 import re
 from urllib.parse import parse_qs, urljoin, urlparse
 
-from aiohttp import ClientTimeout, client_exceptions, ClientSession
-from aiohttp.hdrs import METH_GET, METH_POST, METH_PUT
-from bs4 import BeautifulSoup
+import aiohttp
+# from aiohttp.hdrs import METH_GET, METH_POST, METH_PUT
+import bs4
 import jwt
 
 ANDROID_PACKAGE_NAME = "com.volkswagen.weconnect"
@@ -624,7 +624,7 @@ class Connection:
 
     def extract_form_data(self, page_content, form_id):
         """Extract form data from a page."""
-        soup = BeautifulSoup(page_content, "html.parser")
+        soup = bs4.BeautifulSoup(page_content, "html.parser")
         form = soup.find("form", id=form_id)
         if form is None:
             _LOGGER.debug(f"Form with ID '{form_id}' not found.")
@@ -636,7 +636,7 @@ class Connection:
 
     def extract_state_token(self, page_content):
         """Extract state token from a page."""
-        soup = BeautifulSoup(page_content, "html.parser")
+        soup = bs4.BeautifulSoup(page_content, "html.parser")
         state_input = soup.select_one('input[name="state"]')
         if not state_input or not state_input.get("value"):
             _LOGGER.debug("State token not found.")
@@ -727,7 +727,7 @@ class Connection:
             if mailform:
                 _LOGGER.debug("Legacy authentication found., client=" + str(client))
                 mailform["email"] = self._session_auth_username
-                pe_url = auth_issuer + BeautifulSoup(
+                pe_url = auth_issuer + bs4.BeautifulSoup(
                     authorization_page, "html.parser"
                 ).find("form", id="emailPasswordForm").get("action")
 
@@ -740,7 +740,7 @@ class Connection:
                 )
 
                 # Extract password form data
-                response_soup = BeautifulSoup(response_text, "html.parser")
+                response_soup = bs4.BeautifulSoup(response_text, "html.parser")
                 pw_form, post_action, client_id = self.extract_password_form_data(
                     response_soup
                 )
@@ -870,7 +870,7 @@ class Connection:
                 method,
                 url,
                 headers=self._session_headers,
-                timeout=ClientTimeout(total=TIMEOUT.seconds),
+                timeout=aiohttp.ClientTimeout(total=TIMEOUT.seconds),
                 cookies=self._jarCookie,
                 raise_for_status=False,
                 **kwargs,
@@ -930,7 +930,7 @@ class Connection:
                 if return_raw:
                     res = response
                 return res
-        except client_exceptions.ClientResponseError as httperror:
+        except aiohttp.client_exceptions.ClientResponseError as httperror:
             # Update service status
             await self.update_service_status(url, httperror.code)
             raise httperror from None
@@ -942,8 +942,8 @@ class Connection:
     async def get(self, url, vin="", tries=0):
         """Perform a get query."""
         try:
-            return await self._request(METH_GET, url)
-        except client_exceptions.ClientResponseError as error:
+            return await self._request(aiohttp.hdrs.METH_GET, url)
+        except aiohttp.client_exceptions.ClientResponseError as error:
             if error.status == 400:
                 _LOGGER.error(
                     'Got HTTP 400 "Bad Request" from server, this request might be malformed or not implemented'
@@ -978,10 +978,10 @@ class Connection:
         try:
             if data:
                 return await self._request(
-                    METH_POST, url, return_raw=return_raw, **data
+                    aiohttp.hdrs.METH_POST, url, return_raw=return_raw, **data
                 )
-            return await self._request(METH_POST, url, return_raw=return_raw)
-        except client_exceptions.ClientResponseError as error:
+            return await self._request(aiohttp.hdrs.METH_POST, url, return_raw=return_raw)
+        except aiohttp.client_exceptions.ClientResponseError as error:
             if error.status == 429 and tries < MAX_RETRIES_ON_RATE_LIMIT:
                 delay = randint(1, 3 + tries * 2)
                 _LOGGER.debug(
@@ -997,9 +997,9 @@ class Connection:
         """Perform a put query."""
         try:
             if data:
-                return await self._request(METH_PUT, url, return_raw=return_raw, **data)
-            return await self._request(METH_PUT, url, return_raw=return_raw)
-        except client_exceptions.ClientResponseError as error:
+                return await self._request(aiohttp.hdrs.METH_PUT, url, return_raw=return_raw, **data)
+            return await self._request(aiohttp.hdrs.METH_PUT, url, return_raw=return_raw)
+        except aiohttp.client_exceptions.ClientResponseError as error:
             if error.status == 429 and tries < MAX_RETRIES_ON_RATE_LIMIT:
                 delay = randint(1, 3 + tries * 2)
                 _LOGGER.debug(
@@ -1408,7 +1408,7 @@ class vwid:
 
     async def get_status(self):
         global connection
-        async with ClientSession(headers={'Connection': 'keep-alive'}) as session:
+        async with aiohttp.ClientSession(headers={'Connection': 'keep-alive'}) as session:
             _now = datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
             data = {}
             data['charging'] = {}
