@@ -514,7 +514,7 @@ function handleMessage(mqttTopic, mqttPayload) {
 	else if (mqttTopic.match(/^openWB\/vehicle\//i)) { processVehicleMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openWB\/general\/chargemode_config\/pv_charging\//i)) { processPvConfigMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openWB\/graph\//i)) { processGraphMessages(mqttTopic, mqttPayload); }
-	else if (mqttTopic.match(/^openWB\/optional\/et\//i)) { processETProviderMessages(mqttTopic, mqttPayload); }
+	else if (mqttTopic.match(/^openWB\/optional\/ep\//i)) { processETProviderMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openWB\/optional\//i)) { processOptionalMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openWB\/LegacySmartHome\//i)) { processSmartHomeDeviceMessages(mqttTopic, mqttPayload); }
 } // end handleMessage
@@ -1169,7 +1169,7 @@ function processGraphMessages(mqttTopic, mqttPayload) {
 } // end processGraphMessages
 
 function processETProviderMessages(mqttTopic, mqttPayload) {
-	// processes mqttTopic for topic openWB/optional/et
+	// processes mqttTopic for topic openWB/optional/ep
 	if (mqttTopic == 'openWB/optional/ep/configured') {
 		const configured = JSON.parse(mqttPayload);
 		if (configured) {
