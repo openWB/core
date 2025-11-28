@@ -1419,39 +1419,41 @@ class vwid:
             data['charging']['batteryStatus']['value']['carCapturedTimestamp'] = _now
 
             if 'connection' not in globals() or connection is None:
+                connection = {}
+            if self.username not in connection or connection[self.username] != self.username:
                 _LOGGER.debug("create new connection")
-                connection = Connection(session, self.username, self.password)
-                connection._session_tokens['identity'] = {}
-                connection._session_tokens['Legacy'] = {}
+                connection[self.username] = Connection(session, self.username, self.password)
+                connection[self.username]._session_tokens['identity'] = {}
+                connection[self.username]._session_tokens['Legacy'] = {}
                 for token in self.tokens:
-                    connection._session_tokens['identity'][token] = self.tokens[token]
-                    connection._session_tokens['Legacy'][token] = self.tokens[token]
+                    connection[self.username]._session_tokens['identity'][token] = self.tokens[token]
+                    connection[self.username]._session_tokens['Legacy'][token] = self.tokens[token]
                 _conn_reuse = False
             else:
                 _LOGGER.debug("reuse existing connection")
-                connection._session = session
+                connection[self.username]._session = session
                 _conn_reuse = True
             try:
                 if not _conn_reuse:
-                    _doLogin_result = await connection.doLogin()
+                    _doLogin_result = await connection[self.username].doLogin()
                     _LOGGER.debug("after 1st doLogin, result=" + str(_doLogin_result))
                     if _doLogin_result:
                         _update_result = True
                 else:
-                    _update_result = await connection.update()
+                    _update_result = await connection[self.username].update()
                     _LOGGER.debug("after 1st connection.update without doLogin, result=" + str(_update_result))
                     if not _update_result:
-                        _doLogin_result = await connection.doLogin()
+                        _doLogin_result = await connection[self.username].doLogin()
                         _LOGGER.debug("after 2nd doLogin, result=" + str(_doLogin_result))
                         if _doLogin_result:
-                            _update_result = await connection.update()
+                            _update_result = await connection[self.username].update()
                             _LOGGER.debug("after 2nd connection.update, result=" + str(_update_result))
                         else:
                             _LOGGER.debug("retry doLogin failed, exit")
                             return data
                 if _update_result:
                     _LOGGER.debug("update/doLogin look OK, get results")
-                    for vehicle in connection.vehicles:
+                    for vehicle in connection[self.username].vehicles:
                         _LOGGER.debug("vehicle loop: " + str(vehicle) + ", self.vin=" + str(self.vin))
                         if str(vehicle) == str(self.vin):
                             _LOGGER.debug("vehicle loop match: " + str(vehicle) + ", self.vin=" + str(self.vin))
@@ -1468,8 +1470,8 @@ class vwid:
                             data['charging']['batteryStatus']['value']['cruisingRangeElectric_km'] = str(range)
                             data['charging']['batteryStatus']['value']['carCapturedTimestamp'] = str(tsxx)
                             _LOGGER.debug("return data =" + to_json(data, indent=4))
-                            for token in connection._session_tokens['identity']:
-                                self.tokens[token] = connection._session_tokens['identity'][token]
+                            for token in connection[self.username]._session_tokens['identity']:
+                                self.tokens[token] = connection[self.username]._session_tokens['identity'][token]
                             return data
                 else:
                     _LOGGER.warning("get_status rsp. update failed, return soc 0")
