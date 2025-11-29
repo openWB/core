@@ -14,7 +14,7 @@ class StandardLegacyWebThemeConfiguration:
 @auto_str
 class StandardLegacyWebTheme:
     def __init__(self,
-                 name: str = "Standard",
+                 name: str = "Classic",
                  type: str = "standard_legacy",
                  official: bool = True,
                  configuration: StandardLegacyWebThemeConfiguration = None) -> None:
