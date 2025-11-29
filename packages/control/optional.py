@@ -162,13 +162,10 @@ class Optional(OcppMixin):
         if self.data.electricity_pricing.configured:
             ep = self.data.electricity_pricing
             ep.get.prices = remove(ep.get.prices)
-            Pub().pub("openWB/set/optional/ep/get/prices", ep.get.prices)
             if self._flexible_tariff_module:
                 ep.flexible_tariff.get.prices = remove(ep.flexible_tariff.get.prices)
-                Pub().pub("openWB/set/optional/ep/flexible_tariff/get/prices", ep.flexible_tariff.get.prices)
             if self._grid_fee_module:
                 ep.grid_fee.get.prices = remove(ep.grid_fee.get.prices)
-                Pub().pub("openWB/set/optional/ep/grid_fee/get/prices", ep.grid_fee.get.prices)
 
     def __get_current_timeslot_start(self) -> int:
         timestamp = self.__get_first_entry()[0]
@@ -264,7 +261,6 @@ class Optional(OcppMixin):
                 minutes=random.randint(1, 7) * -5
             )
             self.data.electricity_pricing.get.next_query_time = next_query_time.timestamp()
-            Pub().pub("openWB/set/optional/ep/get/next_query_time", self.data.electricity_pricing.get.next_query_time)
             return True
         if is_tomorrow(get_last_entry_time_stamp()):
             if timecheck.create_timestamp() > self.data.electricity_pricing.get.next_query_time:
@@ -281,7 +277,7 @@ class Optional(OcppMixin):
 
     def ocpp_transfer_meter_values(self):
         try:
-            if self.data.ocpp.active:
+            if self.data.ocpp.config.active:
                 thread_handler(Thread(target=self._transfer_meter_values, args=(), name="OCPP Client"))
         except Exception as e:
             log.exception("Fehler im OCPP-Optional-Modul: %s", e)
@@ -296,7 +292,6 @@ class Optional(OcppMixin):
                                            cp.chargepoint_module.config.type,
                                            cp.data.get.serial_number)
                     self.data.ocpp.boot_notification_sent = True
-                    Pub().pub("openWB/set/optional/ocpp/boot_notification_sent", True)
                 if cp.data.set.ocpp_transaction_id is not None:
                     self.send_heart_beat(cp.data.config.ocpp_chargebox_id, cp.chargepoint_module.fault_state)
                     self.transfer_values(cp.data.config.ocpp_chargebox_id,
