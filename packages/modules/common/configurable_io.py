@@ -1,6 +1,7 @@
 import logging
 from typing import Dict, Optional, TypeVar, Generic, Callable, Union
 
+from helpermodules import timecheck
 from helpermodules.pub import Pub
 from modules.common import store
 from modules.common.abstract_io import AbstractIoDevice
@@ -19,23 +20,47 @@ class ConfigurableIo(Generic[T_IO_CONFIG], AbstractIoDevice):
                  config: T_IO_CONFIG,
                  component_reader: Callable[[], IoState],
                  component_writer: Callable[[Dict[int, Union[float, int]]], Optional[IoState]],
-                 initializer: Callable = lambda: None) -> None:
+                 initializer: Callable = lambda: None,
+                 error_handler: Callable = lambda: None) -> None:
         self.config = config
+        self.__error_handler = error_handler
         self.fault_state = FaultState(ComponentInfo(self.config.id, self.config.name,
                                       ComponentType.IO.value))
         self.store = store.get_io_value_store(self.config.id)
         self.set_manual: Dict = {"analog_output": {}, "digital_output": {}}
+        self.error_timestamp = None
         with SingleComponentUpdateContext(self.fault_state):
             self.component_reader = component_reader
             self.component_writer = component_writer
             initializer()
 
+    def error_handler(self) -> None:
+        error_timestamp_topic = f"openWB/set/system/device/{self.config.id}/error_timestamp"
+        if self.error_timestamp is None:
+            self.error_timestamp = timecheck.create_timestamp()
+            Pub().pub(error_timestamp_topic, self.error_timestamp)
+            log.debug(
+                f"Fehler bei Gerät {self.config.name} aufgetreten, Fehlerzeitstempel: {self.error_timestamp}")
+        if timecheck.check_timestamp(self.error_timestamp, 60) is False:
+            try:
+                self.__error_handler()
+            except Exception:
+                log.exception(f"Fehlerbehandlung für Gerät {self.config.name} fehlgeschlagen")
+            else:
+                log.debug(f"Fehlerbehandlung für Gerät {self.config.name} wurde durchgeführt.")
+
+            self.error_timestamp = None
+            Pub().pub(error_timestamp_topic, self.error_timestamp)
+
     def read(self):
         if hasattr(self, "component_reader"):
             # Wenn beim Initialisieren etwas schief gelaufen ist, ursprüngliche Fehlermeldung beibehalten
-            with SingleComponentUpdateContext(self.fault_state):
-                io_state = self.component_reader()
-                self.store.set(io_state)
+            try:
+                with SingleComponentUpdateContext(self.fault_state, reraise=True):
+                    io_state = self.component_reader()
+                    self.store.set(io_state)
+            except Exception:
+                self.error_handler()
 
     def update_manual_output(self, manual: Dict[str, bool], output: Dict[str, bool], string: str, topic_suffix: str):
         if len(manual) > 0:
@@ -48,12 +73,16 @@ class ConfigurableIo(Generic[T_IO_CONFIG], AbstractIoDevice):
     def write(self, analog_output, digital_output):
         if hasattr(self, "component_writer"):
             # Wenn beim Initialisieren etwas schief gelaufen ist, ursprüngliche Fehlermeldung beibehalten
-            with SingleComponentUpdateContext(self.fault_state):
-                self.update_manual_output(self.set_manual["analog_output"], analog_output, "analoge", "analog_output")
-                self.update_manual_output(self.set_manual["digital_output"],
-                                          digital_output, "digitale", "digital_output")
-                if ((analog_output and self.store.delegate.state.analog_output != analog_output) or
-                        (digital_output and self.store.delegate.state.digital_output != digital_output)):
-                    io_state = self.component_writer(analog_output, digital_output)
-                    if io_state is not None:
-                        self.store.set(io_state)
+            try:
+                with SingleComponentUpdateContext(self.fault_state, update_always=False, reraise=True):
+                    self.update_manual_output(self.set_manual["analog_output"],
+                                              analog_output, "analoge", "analog_output")
+                    self.update_manual_output(self.set_manual["digital_output"],
+                                              digital_output, "digitale", "digital_output")
+                    if ((analog_output and self.store.delegate.state.analog_output != analog_output) or
+                            (digital_output and self.store.delegate.state.digital_output != digital_output)):
+                        io_state = self.component_writer(analog_output, digital_output)
+                        if io_state is not None:
+                            self.store.set(io_state)
+            except Exception:
+                self.error_handler()

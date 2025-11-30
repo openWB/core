@@ -121,17 +121,13 @@ def collect_data(chargepoint):
         log.exception("Fehler im Ladelog-Modul")
 
 
-def save_interim_data(chargepoint, charging_ev, immediately: bool = True):
+def save_interim_data(chargepoint, charging_ev):
     try:
         log_data = chargepoint.data.set.log
         # Es wurde noch nie ein Auto zugeordnet
         if log_data.imported_since_mode_switch == 0:
             # Die Daten wurden schon erfasst.
             return
-        if not immediately:
-            if chargepoint.data.get.power != 0:
-                # Das Fahrzeug hat die Ladung noch nicht beendet. Der Logeintrag wird später erstellt.
-                return
         save_data(chargepoint, charging_ev)
         chargepoint.reset_log_data_chargemode_switch()
     except Exception:

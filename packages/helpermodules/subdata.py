@@ -132,7 +132,6 @@ class SubData:
             ("openWB/general/#", 2),
             ("openWB/graph/#", 2),
             ("openWB/internal_io/#", 2),
-            ("openWB/io/#", 2),
             ("openWB/optional/#", 2),
             ("openWB/counter/#", 2),
             ("openWB/command/command_completed", 2),
@@ -148,6 +147,7 @@ class SubData:
             ("openWB/system/device/+/config", 2),
             ("openWB/system/io/#", 2),
             ("openWB/LegacySmartHome/Status/wattnichtHaus", 2),
+            ("openWB/io/#", 2),
         ])
         self.processing_counter.add_task()
         Pub().pub("openWB/system/subdata_initialized", True)
@@ -677,7 +677,8 @@ class SubData:
                         mod = importlib.import_module(
                             f".io_actions.{payload['group']}.{payload['type']}.api", "modules")
                         config = dataclass_from_dict(mod.device_descriptor.configuration_factory, payload)
-                        var.actions[f"io_action{index}"] = mod.create_action(config)
+                        var.actions[f"io_action{index}"] = mod.create_action(
+                            config, self.system_data[f"io{config.configuration.io_device}"].config.type)
                 elif re.search("/io/action/[0-9]+/timestamp", msg.topic) is not None:
                     index = get_index(msg.topic)
                     self.set_json_payload_class(var.actions[f"io_action{index}"], msg)
