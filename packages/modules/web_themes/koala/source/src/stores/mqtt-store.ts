@@ -3288,6 +3288,38 @@ export const useMqttStore = defineStore('mqtt', () => {
     return undefined;
   });
 
+
+  /**
+   * Get all counter ids from component hierarchy
+   * @returns number[]
+   */
+  const getAllCounterIds = computed(() => {
+    const hierarchy = getValue.value('openWB/counter/get/hierarchy') as
+      | Hierarchy[]
+      | undefined;
+    const getCounterIds = (
+      nodes: Hierarchy[] | undefined,
+      allCounters: number[] = [],
+    ): number[] => {
+      if (!nodes) return allCounters;
+      nodes.forEach((node) => {
+        if (node.type === 'counter') allCounters.push(node.id);
+        allCounters = getCounterIds(node.children, allCounters);
+      });
+      return allCounters;
+    };
+    return getCounterIds(hierarchy);
+  });
+
+  /**
+   * Get all secondary counter ids from all configured counters excluding the grid counter
+   * @returns number[]
+   */
+  const getSecondaryCounterIds = computed(() => {
+    const rootCounter = getGridId.value;
+    return getAllCounterIds.value.filter((id) => id !== rootCounter);
+  });
+
   /**
    * Get the power meter(counter) name identified by the Grid ID
    * @param counterId counter ID
@@ -3670,6 +3702,8 @@ export const useMqttStore = defineStore('mqtt', () => {
     batteryMode,
     // Grid data
     getGridId,
+    getAllCounterIds,
+    getSecondaryCounterIds,
     getComponentName,
     getGridPower,
     gridDailyImported,
