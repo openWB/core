@@ -131,6 +131,7 @@ if versionMatch "${SRC}/mosquitto.acl" "/etc/mosquitto/mosquitto.acl"; then
 else
 	echo "updating mosquitto acl"
 	sudo cp "${SRC}/mosquitto.acl" "/etc/mosquitto/mosquitto.acl"
+	sudo chown mosquitto:mosquitto "/etc/mosquitto/mosquitto.acl"
 	restartService=1
 fi
 
