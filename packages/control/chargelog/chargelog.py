@@ -178,13 +178,17 @@ def get_value_or_default(func, default: Optional[Any] = None):
 
 
 def _get_range_charged(log_data, charging_ev) -> float:
-    if log_data.range_at_start is not None:
-        return get_value_or_default(lambda: round(
-            charging_ev.data.get.range - log_data.range_at_start, 2))
-    else:
-        return get_value_or_default(lambda: round(
-            (log_data.imported_since_mode_switch * charging_ev.ev_template.data.efficiency /
-             charging_ev.ev_template.data.average_consump), 2))
+    try:
+        if log_data.range_at_start is not None:
+            return get_value_or_default(lambda: round(
+                charging_ev.data.get.range - log_data.range_at_start, 2))
+        else:
+            return get_value_or_default(lambda: round(
+                (log_data.imported_since_mode_switch * charging_ev.ev_template.data.efficiency /
+                 charging_ev.ev_template.data.average_consump), 2))
+    except Exception:
+        log.exception("Fehler beim Berechnen der geladenen Reichweite")
+        return None
 
 
 def save_data(chargepoint, charging_ev):
