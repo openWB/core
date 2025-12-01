@@ -23,7 +23,9 @@ batterx_component_classes = Union[bat.BatterXBat, counter.BatterXCounter,
 
 def create_device(device_config: BatterX):
     def create_bat_component(component_config: BatterXBatSetup):
-        return bat.BatterXBat(component_config=component_config, device_id=device_config.id)
+        return bat.BatterXBat(component_config=component_config,
+                              device_id=device_config.id,
+                              ip_address=device_config.configuration.ip_address)
 
     def create_counter_component(component_config: BatterXCounterSetup):
         return counter.BatterXCounter(component_config=component_config, device_id=device_config.id)

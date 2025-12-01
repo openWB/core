@@ -26,7 +26,7 @@ def test_meter(params: Params):
     registers = SolaredgeMeterRegisters(params.meter_id, params.synergy_units)
 
     # assert
-    assert registers.powers == params.expected_power_register
+    assert registers.power == params.expected_power_register
 
 
 Params = NamedTuple("Params", [("configured_meter_ids", List[int])])
@@ -61,5 +61,5 @@ def test_set_component_registers_assigns_effective_meter_regs(params: Params):
     _set_registers(components_list, synergy_units=1, modbus_id=1)
 
     # evaluation
-    assert components_list[0].registers.powers == 40206
-    assert components_list[1].registers.powers == 40380
+    assert components_list[0].registers.power == 40206
+    assert components_list[1].registers.power == 40380

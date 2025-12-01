@@ -32,7 +32,7 @@ Hagen */
 			</InfoItem>
 			<InfoItem heading="Geliefert" class="grid-right grid-col-4">
 				<span>
-					{{ formatWattH(sourceSummary.batOut.energy) }}
+					{{ formatWattH(registry.getEnergy('batOut')!) }}
 				</span>
 			</InfoItem>
 		</div>
@@ -51,7 +51,7 @@ Hagen */
 import WbWidgetFlex from '../shared/WbWidgetFlex.vue'
 import InfoItem from '../shared/InfoItem.vue'
 import BatterySymbol from '../shared/BatterySymbol.vue'
-import { globalData, sourceSummary, usageSummary } from '@/assets/js/model'
+import { registry, globalData } from '@/assets/js/model'
 import { computed } from 'vue'
 import { formatWatt, formatWattH } from '@/assets/js/helpers'
 import { batteries } from './model'
@@ -59,19 +59,19 @@ import BLBattery from './BLBattery.vue'
 import WbBadge from '../shared/WbBadge.vue'
 
 const batteryState = computed(() => {
-	if (sourceSummary.batOut.power > 0) {
-		return `Liefert (${formatWatt(sourceSummary.batOut.power)})`
-	} else if (usageSummary.batIn.power > 0) {
-		return `Lädt (${formatWatt(usageSummary.batIn.power)})`
+	if (registry.getPower('batOut') > 0) {
+		return `Liefert (${formatWatt(registry.getPower('batOut'))})`
+	} else if (registry.getPower('batIn') > 0) {
+		return `Lädt (${formatWatt(registry.getPower('batIn'))})`
 	} else {
 		return `Bereit:`
 	}
 })
 
 const statusbg = computed(() => {
-	return sourceSummary.batOut.power > 0
+	return registry.getPower('batOut') > 0
 		? 'var(--color-pv)'
-		: usageSummary.batIn.power > 0
+		: registry.getPower('batIn') > 0
 			? 'var(--color-battery)'
 			: 'var(--color-menu)'
 })

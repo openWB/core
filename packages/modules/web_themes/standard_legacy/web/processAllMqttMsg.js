@@ -514,7 +514,7 @@ function handleMessage(mqttTopic, mqttPayload) {
 	else if (mqttTopic.match(/^openWB\/vehicle\//i)) { processVehicleMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openWB\/general\/chargemode_config\/pv_charging\//i)) { processPvConfigMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openWB\/graph\//i)) { processGraphMessages(mqttTopic, mqttPayload); }
-	else if (mqttTopic.match(/^openWB\/optional\/et\//i)) { processETProviderMessages(mqttTopic, mqttPayload); }
+	else if (mqttTopic.match(/^openWB\/optional\/ep\//i)) { processETProviderMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openWB\/optional\//i)) { processOptionalMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openWB\/LegacySmartHome\//i)) { processSmartHomeDeviceMessages(mqttTopic, mqttPayload); }
 } // end handleMessage
@@ -1169,16 +1169,15 @@ function processGraphMessages(mqttTopic, mqttPayload) {
 } // end processGraphMessages
 
 function processETProviderMessages(mqttTopic, mqttPayload) {
-	// processes mqttTopic for topic openWB/optional/et
-	if (mqttTopic == 'openWB/optional/et/provider') {
-		data = JSON.parse(mqttPayload);
-		if (data.type) {
-			$('.et-name').text(data.name);
+	// processes mqttTopic for topic openWB/optional/ep
+	if (mqttTopic == 'openWB/optional/ep/configured') {
+		const configured = JSON.parse(mqttPayload);
+		if (configured) {
 			$('.et-configured').removeClass('hide');
 		} else {
 			$('.et-configured').addClass('hide');
 		}
-	} else if (mqttTopic == 'openWB/optional/et/get/prices') {
+	} else if (mqttTopic == 'openWB/optional/ep/get/prices') {
 		electricityPriceList = JSON.parse(mqttPayload);
 		var currentPrice = electricityPriceList[Object.keys(electricityPriceList)[0]] * 100000;
 		$('.et-current-price').text(currentPrice.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 }) + ' ct/kWh');

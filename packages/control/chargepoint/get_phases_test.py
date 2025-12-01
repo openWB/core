@@ -152,7 +152,7 @@ cases_set_phases = [
     SetPhasesParams(name="Switch phases", phases=1, phases_in_use=3, prevent_phase_switch=False,
                     imported_since_plugged=1, phase_switch_supported=True, expected_phases=1),
     SetPhasesParams(name="Phase switch not supported by cp", phases=1, phases_in_use=3, prevent_phase_switch=False,
-                    imported_since_plugged=1, phase_switch_supported=False, expected_phases=1)
+                    imported_since_plugged=1, phase_switch_supported=False, expected_phases=3)
 ]
 
 
@@ -160,7 +160,7 @@ cases_set_phases = [
 def test_set_phases(monkeypatch, cp: Chargepoint, params: SetPhasesParams):
     # setup
     mock_phase_switch_supported = Mock(name="phase_switch_supported", return_value=params.phase_switch_supported)
-    monkeypatch.setattr(Chargepoint, "cp_ev_support_phase_switch", mock_phase_switch_supported)
+    monkeypatch.setattr(Chargepoint, "hw_supports_phase_switch", mock_phase_switch_supported)
     cp.data.get.phases_in_use = params.phases_in_use
     cp.data.set.log.imported_since_plugged = params.imported_since_plugged
     charging_ev_data = cp.data.set.charging_ev_data
@@ -168,7 +168,7 @@ def test_set_phases(monkeypatch, cp: Chargepoint, params: SetPhasesParams):
     cp.data.control_parameter.phases = params.phases_in_use
 
     # execution
-    phases = cp.set_phases(params.phases)
+    phases = cp.set_phases(params.phases, 3)
 
     # evaluation
     assert phases == params.expected_phases

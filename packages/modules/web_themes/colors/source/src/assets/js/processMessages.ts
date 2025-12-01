@@ -1,13 +1,6 @@
 import { mqttRegister, mqttSubscribe, mqttUnsubscribe } from './mqttClient'
 import { PvSystem, type Hierarchy } from './types'
-import {
-	addPvSystem,
-	// correctHouseConsumption,
-	globalData,
-	pvSystems,
-	sourceSummary,
-	usageSummary,
-} from './model'
+import { addPvSystem, registry, globalData, pvSystems } from './model'
 import { processLiveGraphMessages } from '../../components/powerGraph/processLiveGraphData'
 import { processDayGraphMessages } from '../../components/powerGraph/processDayGraphData'
 import { processMonthGraphMessages } from '../../components/powerGraph/processMonthYearGraphData'
@@ -30,9 +23,14 @@ import {
 	processVehicleTemplateMessages,
 } from '@/components/chargePointList/processMessages'
 import { processSmarthomeMessages } from '@/components/smartHome/processMessages'
-import { addCounter, counters } from '@/components/counterList/model'
+import {
+	addCounter,
+	counters,
+	updateCounterSummary,
+} from '@/components/counterList/model'
 import { mqttClientId } from './mqttClient'
 import { add } from '@/components/mqttViewer/model'
+import { globalConfig } from './themeConfig'
 
 const topicsToSubscribe = [
 	'openWB/counter/#',
@@ -41,7 +39,7 @@ const topicsToSubscribe = [
 	'openWB/chargepoint/#',
 	'openWB/vehicle/#',
 	'openWB/general/chargemode_config/pv_charging/#',
-	'openWB/optional/et/#',
+	'openWB/optional/ep/#',
 	'openWB/system/#',
 	'openWB/LegacySmartHome/#',
 	'openWB/command/' + mqttClientId() + '/#',
@@ -87,7 +85,7 @@ function processMqttMessage(topic: string, payload: Buffer) {
 		processMonthGraphMessages(topic, message)
 	} else if (topic.match(/^openwb\/log\/yearly\//i)) {
 		processYearGraphMessages(topic, message)
-	} else if (topic.match(/^openwb\/optional\/et\//i)) {
+	} else if (topic.match(/^openwb\/optional\/ep\//i)) {
 		processEtProviderMessages(topic, message)
 	} else if (topic.match(/^openwb\/system\//i)) {
 		processSystemMessages(topic, message)
@@ -98,40 +96,23 @@ function processMqttMessage(topic: string, payload: Buffer) {
 	}
 }
 function processCounterMessages(topic: string, message: string) {
-	const elements = topic.split('/')
-	const id = +elements[2]
-	if (id == globalData.evuId) {
-		processEvuMessages(topic, message)
-	} else if (elements[3] == 'config') {
-		// console.warn('Ignored counter config message')
-	}
-	if (elements[3] == 'get' && id in counters) {
-		switch (elements[4]) {
-			case 'power':
-				counters[id].power = +message
-				break
-			case 'config':
-				break
-			case 'fault_str':
-				break
-			case 'fault_state':
-				break
-			case 'power_factors':
-				break
-			case 'imported':
-				break
-			case 'exported':
-				break
-			case 'frequency':
-				break
-			case 'daily_imported':
-				counters[id].energy_imported = +message
-				break
-			case 'daily_exported':
-				counters[id].energy_exported = +message
-				break
-			default:
-			// console.warn('Ignored COUNTER message: ' + topic)
+	const id = getIndex(topic)
+	if (id != undefined) {
+		if (id == globalData.evuId) {
+			processEvuMessages(topic, message)
+		} 
+		if (!counters.has(id)) {
+			console.warn('Invalid counter index: ' + id)
+		} else if (topic.match(/^openWB\/counter\/[0-9]+\/get\/power$/i)) {
+			counters.get(id)!.power = +message
+			updateCounterSummary('power')
+		} else if (topic.match(/^openWB\/counter\/[0-9]+\/get\/daily_imported$/i)) {
+			counters.get(id)!.energy_imported = +message
+			counters.get(id)!.now.energy = +message
+		} else if (topic.match(/^openWB\/counter\/[0-9]+\/get\/daily_exported$/i)) {
+			counters.get(id)!.energy_exported = +message
+		} else {
+			//console.info('Ignored COUNTER msg: [' + topic + '] ' + message)
 		}
 	}
 }
@@ -141,22 +122,16 @@ function processGlobalCounterMessages(topic: string, message: string) {
 		if (hierarchy.length) {
 			resetChargePoints()
 			resetBatteries()
-
-			for (const element of hierarchy) {
-				if (element.type == 'counter') {
-					globalData.evuId = element.id
-					// console.info('EVU counter is ' + globalData.evuId)
-				}
-			}
+			globalData.evuId = hierarchy[0].id
 			processHierarchy(hierarchy[0])
 		}
 	} else if (topic.match(/^openwb\/counter\/set\/home_consumption$/i)) {
-		usageSummary.house.power = +message
+		registry.setPower('house', +message)
 		// correctHouseConsumption()
 	} else if (
 		topic.match(/^openwb\/counter\/set\/daily_yield_home_consumption$/i)
 	) {
-		usageSummary.house.energy = +message
+		registry.setEnergy('house', +message)
 	} else {
 		// console.warn('Ignored GLOBAL COUNTER message: ' + topic)
 	}
@@ -165,7 +140,10 @@ function processHierarchy(hierarchy: Hierarchy) {
 	switch (hierarchy.type) {
 		case 'counter':
 			// console.info('counter in hierachy: ' + hierarchy.id)
-			addCounter(hierarchy.id, hierarchy.type)
+			addCounter(hierarchy.id, hierarchy.type, hierarchy.id == globalData.evuId)
+			if (globalConfig.countersToShow.includes(hierarchy.id)) {
+				counters.get(hierarchy.id)!.showInGraph = true
+			}
 			break
 		case 'cp':
 			addChargePoint(hierarchy.id)
@@ -191,13 +169,13 @@ function processPvMessages(topic: string, message: string) {
 		// addPvSystem(index)
 	} else {
 		if (topic == 'openWB/pv/get/power') {
-			sourceSummary.pv.power = -message
+			registry.setPower('pv', -message)
 		} else if (topic == 'openWB/pv/get/daily_exported') {
-			sourceSummary.pv.energy = +message
+			registry.setEnergy('pv', +message)
 		} else if (topic.match(/^openWB\/pv\/[0-9]+\/get\/power$/i)) {
 			pvSystems.value.get(index!)!.power = +message
 		} else if (topic.match(/^openWB\/pv\/[0-9]+\/get\/daily_exported$/i)) {
-			pvSystems.value.get(index!)!.energy = +message
+			pvSystems.value.get(index!)!.now.energy = +message
 		} else if (topic.match(/^openWB\/pv\/[0-9]+\/get\/monthly_exported$/i)) {
 			pvSystems.value.get(index!)!.energy_month = +message
 		} else if (topic.match(/^openWB\/pv\/[0-9]+\/get\/yearly_exported$/i)) {
@@ -228,18 +206,18 @@ function processEvuMessages(topic: string, message: string) {
 	switch (elements[4]) {
 		case 'power':
 			if (+message > 0) {
-				sourceSummary.evuIn.power = +message
-				usageSummary.evuOut.power = 0
+				registry.setPower('evuIn', +message)
+				registry.setPower('evuOut', 0)
 			} else {
-				sourceSummary.evuIn.power = 0
-				usageSummary.evuOut.power = -message
+				registry.setPower('evuIn', 0)
+				registry.setPower('evuOut', -message)
 			}
 			break
 		case 'daily_imported':
-			sourceSummary.evuIn.energy = +message
+			registry.setEnergy('evuIn', +message)
 			break
 		case 'daily_exported':
-			usageSummary.evuOut.energy = +message
+			registry.setEnergy('evuOut', +message)
 			break
 		default:
 	}
@@ -253,8 +231,9 @@ function processSystemMessages(topic: string, message: string) {
 		switch (config.type) {
 			case 'counter':
 			case 'consumption_counter':
-				if (counters[config.id]) {
-					counters[config.id].name = config.name
+				if (counters.get(config.id)!) {
+					counters.get(config.id)!.name = config.name
+					counters.get(config.id)!.icon = config.name
 				}
 				break
 			case 'inverter':

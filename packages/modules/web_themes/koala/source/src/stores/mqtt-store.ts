@@ -728,6 +728,54 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
+   * Get daily imported energy sum total for all charge points
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject
+   */
+  const chargePointDailyImported = computed(() => {
+    return (returnType: string = 'textValue') => {
+      const energy =
+        (getValue.value(
+          'openWB/chargepoint/get/daily_imported',
+          undefined,
+          0,
+        ) as number) || 0;
+      const valueObject = getValueObject.value(energy, 'Wh');
+      if (Object.hasOwn(valueObject, returnType)) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject;
+      }
+      console.error('returnType not found!', returnType, energy);
+    };
+  });
+
+  /**
+   * Get daily exported energy sum total for all charge points
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject
+   */
+  const chargePointDailyExported = computed(() => {
+    return (returnType: string = 'textValue') => {
+      const energy =
+        (getValue.value(
+          'openWB/chargepoint/get/daily_exported',
+          undefined,
+          0,
+        ) as number) || 0;
+      const valueObject = getValueObject.value(energy, 'Wh');
+      if (Object.hasOwn(valueObject, returnType)) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject;
+      }
+      console.error('returnType not found!', returnType, energy);
+    };
+  });
+
+  /**
    * Get the charge point power identified by the charge point id
    * @param chargePointId charge point id
    * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
@@ -1659,6 +1707,106 @@ export const useMqttStore = defineStore('mqtt', () => {
     });
   };
 
+  /** * Get the charge point connected vehicle bidi enabled state from vehicle template identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns boolean
+   */
+  const chargePointConnectedVehicleBidiEnabled = (chargePointId: number) => {
+    return computed(() => {
+      const connectedVehicleEvTemplateId =
+        chargePointConnectedVehicleConfig(chargePointId).value.ev_template;
+      return getValue.value(
+        `openWB/vehicle/template/ev_template/${connectedVehicleEvTemplateId}`,
+        'bidi',
+      ) as boolean;
+    });
+  };
+
+  /**
+   * Get or set the plan name for the time charging plan identified by the time charging plan id
+   * @param chargePointId charge point id
+   * @param planId time charging plan id
+   * @returns string | undefined
+   */
+  const vehicleTimeChargingPlanName = (
+    chargePointId: number,
+    planId: number,
+  ) => {
+    return computed({
+      get() {
+        const plans = vehicleTimeChargingPlans.value(chargePointId);
+        const plan = plans.find((plane) => plane.id === planId);
+        return plan?.name;
+      },
+      set(newValue: string) {
+        updateTimeChargingPlanSubtopic(chargePointId, planId, 'name', newValue);
+      },
+    });
+  };
+
+  /**
+   * Add a new time charging plan for a charge point
+   * @param chargePointId charge point id
+   * @returns void
+   */
+  const addTimeChargingPlanForChargePoint = (chargePointId: number) => {
+    const templateId =
+      chargePointConnectedVehicleChargeTemplate(chargePointId).value?.id;
+    if (templateId !== undefined) {
+      sendSystemCommand('addChargeTemplateTimeChargingPlan', {
+        template: templateId,
+        chargepoint: chargePointId,
+        changed_in_theme: true,
+      });
+    }
+  };
+
+  /**
+   * Remove a time charging plan for a charge point
+   * @param chargePointId charge point id
+   * @param planId time charging plan id
+   * @returns void
+   */
+  const removeTimeChargingPlanForChargePoint = (
+    chargePointId: number,
+    planId: number,
+  ) => {
+    const templateId =
+      chargePointConnectedVehicleChargeTemplate(chargePointId).value?.id;
+    sendSystemCommand('removeChargeTemplateTimeChargingPlan', {
+      template: templateId,
+      plan: planId,
+      chargepoint: chargePointId,
+      changed_in_theme: true,
+    });
+  };
+
+  /**
+   * Helper function to update a subtopic of a time charging plan
+   * @param chargePointId charge point id
+   * @param planId time charging plan id
+   * @param propertyPath path to the property to update
+   * @param newValue new value to set
+   * @returns void
+   */
+  const updateTimeChargingPlanSubtopic = <T>(
+    chargePointId: number,
+    planId: number,
+    propertyPath: string,
+    newValue: T,
+  ): void => {
+    const plans = vehicleTimeChargingPlans.value(chargePointId);
+    const planIndex = plans.findIndex((plan) => plan.id === planId);
+    if (planIndex === -1) return;
+    const objectPath = `time_charging.plans.${planIndex}.${propertyPath}`;
+    updateTopic(
+      `openWB/chargepoint/${chargePointId}/set/charge_template`,
+      newValue,
+      objectPath,
+      true,
+    );
+  };
+
   /**
    * Get or set the active state of the time charging plan identified by the time charge plan id
    * @param chargePointId charge point id
@@ -1676,15 +1824,345 @@ export const useMqttStore = defineStore('mqtt', () => {
         return plan?.active;
       },
       set(newValue: boolean) {
-        const plans = vehicleTimeChargingPlans.value(chargePointId);
-        const planIndex = plans.findIndex((plan) => plan.id === planId);
-        if (planIndex === -1) return;
-        const objectPath = `time_charging.plans.${planIndex}.active`;
-        updateTopic(
-          `openWB/chargepoint/${chargePointId}/set/charge_template`,
+        updateTimeChargingPlanSubtopic(
+          chargePointId,
+          planId,
+          'active',
           newValue,
-          objectPath,
-          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the start time for the time charging plan identified by the time charge plan id
+   * @param chargePointId charge point id
+   * @param planId time charging plan id
+   * @returns string | undefined
+   */
+  const vehicleTimeChargingPlanStartTime = (
+    chargePointId: number,
+    planId: number,
+  ) => {
+    return computed({
+      get() {
+        const plans = vehicleTimeChargingPlans.value(chargePointId);
+        const plan = plans.find((plane) => plane.id === planId);
+        return plan?.time?.[0];
+      },
+      set(newValue: string) {
+        updateTimeChargingPlanSubtopic(
+          chargePointId,
+          planId,
+          'time.0',
+          newValue,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the start time for the time charging plan identified by the time charge plan id
+   * @param chargePointId charge point id
+   * @param planId time charging plan id
+   * @returns string | undefined
+   */
+  const vehicleTimeChargingPlanEndTime = (
+    chargePointId: number,
+    planId: number,
+  ) => {
+    return computed({
+      get() {
+        const plans = vehicleTimeChargingPlans.value(chargePointId);
+        const plan = plans.find((plane) => plane.id === planId);
+        return plan?.time?.[1];
+      },
+      set(newValue: string) {
+        updateTimeChargingPlanSubtopic(
+          chargePointId,
+          planId,
+          'time.1',
+          newValue,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the current for the time charging plan identified by the time charging plan id
+   * @param chargePointId charge point id
+   * @param planId time charging plan id
+   * @returns number | undefined
+   */
+  const vehicleTimeChargingPlanCurrent = (
+    chargePointId: number,
+    planId: number,
+  ) => {
+    return computed({
+      get() {
+        const plans = vehicleTimeChargingPlans.value(chargePointId);
+        const plan = plans.find((plane) => plane.id === planId);
+        return plan?.current;
+      },
+      set(newValue: number) {
+        updateTimeChargingPlanSubtopic(
+          chargePointId,
+          planId,
+          'current',
+          newValue,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the limit selected mode for the time charging plan identified by the time charging plan id
+   * @param chargePointId charge point id
+   * @param planId time charging plan id
+   * @returns string | undefined
+   */
+  const vehicleTimeChargingPlanLimitSelected = (
+    chargePointId: number,
+    planId: number,
+  ) => {
+    return computed({
+      get() {
+        const plans = vehicleTimeChargingPlans.value(chargePointId);
+        const plan = plans.find((plane) => plane.id === planId);
+        return plan?.limit?.selected;
+      },
+      set(newValue: string) {
+        updateTimeChargingPlanSubtopic(
+          chargePointId,
+          planId,
+          'limit.selected',
+          newValue,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the SoC limit for the time charging plan identified by the time charging plan id
+   * @param chargePointId charge point id
+   * @param planId time charging plan id
+   * @returns number | undefined
+   */
+  const vehicleTimeChargingPlanSocLimit = (
+    chargePointId: number,
+    planId: number,
+  ) => {
+    return computed({
+      get() {
+        const plans = vehicleTimeChargingPlans.value(chargePointId);
+        const plan = plans.find((plane) => plane.id === planId);
+        return plan?.limit?.soc;
+      },
+      set(newValue: number) {
+        updateTimeChargingPlanSubtopic(
+          chargePointId,
+          planId,
+          'limit.soc',
+          newValue,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the energy amount limit for the time charging plan identified by the time charging plan id
+   * @param chargePointId charge point id
+   * @param planId time charging plan id
+   * @returns number | undefined
+   */
+  const vehicleTimeChargingPlanEnergyAmount = (
+    chargePointId: number,
+    planId: number,
+  ) => {
+    return computed({
+      get() {
+        const plans = vehicleTimeChargingPlans.value(chargePointId);
+        const plan = plans.find((plane) => plane.id === planId);
+        const amount = plan?.limit?.amount;
+        if (amount === undefined) {
+          return;
+        }
+        const valueObject = getValueObject.value(amount, 'Wh', '', true);
+        return valueObject.scaledValue;
+      },
+      set(newValue: number) {
+        const amountKiloWattHours = newValue * 1000;
+        updateTimeChargingPlanSubtopic(
+          chargePointId,
+          planId,
+          'limit.amount',
+          amountKiloWattHours,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the frequency mode for the time charging plan identified by the time charging plan id
+   * @param chargePointId charge point id
+   * @param planId time charging plan id
+   * @returns string | undefined
+   */
+  const vehicleTimeChargingPlanFrequencySelected = (
+    chargePointId: number,
+    planId: number,
+  ) => {
+    return computed({
+      get() {
+        const plans = vehicleTimeChargingPlans.value(chargePointId);
+        const plan = plans.find((plane) => plane.id === planId);
+        return plan?.frequency?.selected;
+      },
+      set(newValue: string) {
+        updateTimeChargingPlanSubtopic(
+          chargePointId,
+          planId,
+          'frequency.selected',
+          newValue,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the "valid from" date for the time charging plan identified by the time charging plan id (once)
+   * @param chargePointId charge point id
+   * @param planId time charging plan id
+   * @returns string | undefined
+   */
+  const vehicleTimeChargingPlanOnceDateStart = (
+    chargePointId: number,
+    planId: number,
+  ) => {
+    return computed({
+      get() {
+        const plans = vehicleTimeChargingPlans.value(chargePointId);
+        const plan = plans.find((plane) => plane.id === planId);
+        return plan?.frequency?.once?.[0];
+      },
+      set(newValue: string) {
+        updateTimeChargingPlanSubtopic(
+          chargePointId,
+          planId,
+          'frequency.once.0',
+          newValue,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the "valid to" date for the time charging plan identified by the time charging plan id (once)
+   * @param chargePointId charge point id
+   * @param planId time charging plan id
+   * @returns string | undefined
+   */
+  const vehicleTimeChargingPlanOnceDateEnd = (
+    chargePointId: number,
+    planId: number,
+  ) => {
+    return computed({
+      get() {
+        const plans = vehicleTimeChargingPlans.value(chargePointId);
+        const plan = plans.find((plane) => plane.id === planId);
+        return plan?.frequency?.once?.[1];
+      },
+      set(newValue: string) {
+        updateTimeChargingPlanSubtopic(
+          chargePointId,
+          planId,
+          'frequency.once.1',
+          newValue,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the number of phases for the time charging plan identified by the time charging plan id
+   * @param chargePointId charge point id
+   * @param planId time charging plan id
+   * @returns number | undefined
+   */
+  const vehicleTimeChargingPlanPhases = (
+    chargePointId: number,
+    planId: number,
+  ) => {
+    return computed({
+      get() {
+        const plans = vehicleTimeChargingPlans.value(chargePointId);
+        const plan = plans.find((plane) => plane.id === planId);
+        return plan?.phases_to_use;
+      },
+      set(newValue: number) {
+        updateTimeChargingPlanSubtopic(
+          chargePointId,
+          planId,
+          'phases_to_use',
+          newValue,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the weekly days array for the time charging plan identified by the time charging plan id
+   * @param chargePointId charge point id
+   * @param planId time charging plan id
+   * @returns boolean[] | undefined
+   */
+  const vehicleTimeChargingPlanWeeklyDays = (
+    chargePointId: number,
+    planId: number,
+  ) => {
+    return computed<boolean[]>({
+      get() {
+        const plans = vehicleTimeChargingPlans.value(chargePointId);
+        const plan = plans.find((plane) => plane.id === planId);
+        return plan?.frequency?.weekly ?? Array(7).fill(false);
+      },
+      set(newValue: boolean[]) {
+        updateTimeChargingPlanSubtopic(
+          chargePointId,
+          planId,
+          'frequency.weekly',
+          newValue,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the DC charging power for the time charging plan identified by the time charging plan id
+   * @param chargePointId charge point id
+   * @param planId time charging plan id
+   * @returns boolean[] | undefined
+   */
+  const vehicleTimeChargingPlanDcPower = (
+    chargePointId: number,
+    planId: number,
+  ) => {
+    return computed({
+      get() {
+        const plans = vehicleTimeChargingPlans.value(chargePointId);
+        const plan = plans.find((plane) => plane.id === planId);
+        const current = plan?.dc_current;
+        const power = convertDcCurrentToPower(current);
+        const valueObject = getValueObject.value(power, 'W', '', true);
+        return valueObject.scaledValue;
+      },
+      set(newValue) {
+        const current = convertPowerToDcCurrent(newValue);
+        updateTimeChargingPlanSubtopic(
+          chargePointId,
+          planId,
+          'dc_current',
+          current,
         );
       },
     });
@@ -2171,6 +2649,38 @@ export const useMqttStore = defineStore('mqtt', () => {
     };
   });
 
+  function addScheduledChargingPlanForChargePoint(chargePointId: number) {
+    const templateId =
+      chargePointConnectedVehicleChargeTemplate(chargePointId).value?.id;
+    if (templateId !== undefined) {
+      sendSystemCommand('addChargeTemplateSchedulePlan', {
+        template: templateId,
+        chargepoint: chargePointId,
+        changed_in_theme: true,
+      });
+    } else {
+      console.warn('Kein Template für ChargePoint gefunden:', chargePointId);
+    }
+  }
+
+  function removeScheduledChargingPlanForChargePoint(
+    chargePointId: number,
+    planId: number,
+  ) {
+    const templateId =
+      chargePointConnectedVehicleChargeTemplate(chargePointId).value?.id;
+    if (templateId !== undefined) {
+      sendSystemCommand('removeChargeTemplateSchedulePlan', {
+        template: templateId,
+        plan: planId,
+        chargepoint: chargePointId,
+        changed_in_theme: true,
+      });
+    } else {
+      console.warn('Kein Template für ChargePoint gefunden:', chargePointId);
+    }
+  }
+
   /**
    * Get time charging plan/s data identified by the charge point id
    * @param chargePointId charge point id
@@ -2418,11 +2928,12 @@ export const useMqttStore = defineStore('mqtt', () => {
         return valueObject.scaledValue;
       },
       set(newValue: number) {
+        const amountKiloWattHours = newValue * 1000;
         updateScheduledChargingPlanSubtopic(
           chargePointId,
           planId,
           'limit.amount',
-          newValue,
+          amountKiloWattHours,
         );
       },
     });
@@ -2441,7 +2952,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleScheduledChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plan) => plan.id === planId);
         return plan?.name;
       },
       set(newValue: string) {
@@ -2468,7 +2979,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleScheduledChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plan) => plan.id === planId);
         return plan?.time;
       },
       set(newValue: string) {
@@ -2495,7 +3006,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleScheduledChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plan) => plan.id === planId);
         return plan?.frequency.selected;
       },
       set(newValue: 'once' | 'daily' | 'weekly') {
@@ -2522,7 +3033,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleScheduledChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plan) => plan.id === planId);
         return plan?.frequency.once;
       },
       set(newValue: string) {
@@ -2549,7 +3060,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleScheduledChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plan) => plan.id === planId);
         return plan?.frequency.weekly;
       },
       set(newValue: boolean[]) {
@@ -2576,7 +3087,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleScheduledChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plan) => plan.id === planId);
         return plan?.limit.soc_limit;
       },
       set(newValue: number) {
@@ -2603,7 +3114,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleScheduledChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plan) => plan.id === planId);
         return plan?.limit.soc_scheduled;
       },
       set(newValue: number) {
@@ -2629,7 +3140,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleScheduledChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plan) => plan.id === planId);
         return plan?.phases_to_use;
       },
       set(newValue: number) {
@@ -2655,7 +3166,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return computed({
       get() {
         const plans = vehicleScheduledChargingPlans.value(chargePointId);
-        const plan = plans.find((p) => p.id === planId);
+        const plan = plans.find((plan) => plan.id === planId);
         return plan?.phases_to_use_pv;
       },
       set(newValue: number) {
@@ -2664,6 +3175,94 @@ export const useMqttStore = defineStore('mqtt', () => {
           planId,
           'phases_to_use_pv',
           newValue,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the bidirectional charging enabled state for a scheduled charging plan
+   * @param chargePointId charge point id
+   * @param planId scheduled charging plan id
+   * @returns boolean | undefined
+   */
+  const vehicleScheduledChargingPlanBidiEnabled = (
+    chargePointId: number,
+    planId: number,
+  ) => {
+    return computed({
+      get() {
+        const plans = vehicleScheduledChargingPlans.value(chargePointId);
+        const plan = plans.find((plan) => plan.id === planId);
+        return plan?.bidi_charging_enabled;
+      },
+      set(newValue: boolean) {
+        updateScheduledChargingPlanSubtopic(
+          chargePointId,
+          planId,
+          'bidi_charging_enabled',
+          newValue,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the bidirectional charging enabled state for a scheduled charging plan
+   * @param chargePointId charge point id
+   * @param planId scheduled charging plan id
+   * @returns boolean | undefined
+   */
+  const vehicleScheduledChargingPlanBidiPower = (
+    chargePointId: number,
+    planId: number,
+  ) => {
+    return computed({
+      get() {
+        const plans = vehicleScheduledChargingPlans.value(chargePointId);
+        const plan = plans.find((plan) => plan.id === planId);
+        const power = plan?.bidi_power;
+        const valueObject = getValueObject.value(power, 'W', '', true);
+        return valueObject.scaledValue;
+      },
+      set(newValue: number) {
+        const watts = Math.round(newValue * 1000);
+        updateScheduledChargingPlanSubtopic(
+          chargePointId,
+          planId,
+          'bidi_power',
+          watts,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the DC charging power for a scheduled charging plan (plan.dc_current)
+   * @param chargePointId charge point id
+   * @param planId scheduled charging plan id
+   * @returns number | undefined (in kW)
+   */
+  const vehicleScheduledChargingPlanDcPower = (
+    chargePointId: number,
+    planId: number,
+  ) => {
+    return computed({
+      get() {
+        const plans = vehicleScheduledChargingPlans.value(chargePointId);
+        const plan = plans.find((plan) => plan.id === planId);
+        const current = plan?.dc_current;
+        const power = convertDcCurrentToPower(current);
+        const valueObject = getValueObject.value(power, 'W', '', true);
+        return valueObject.scaledValue;
+      },
+      set(newValue: number) {
+        const current = convertPowerToDcCurrent(newValue);
+        updateScheduledChargingPlanSubtopic(
+          chargePointId,
+          planId,
+          'dc_current',
+          current,
         );
       },
     });
@@ -2734,6 +3333,62 @@ export const useMqttStore = defineStore('mqtt', () => {
     };
   });
 
+  /**
+   * Get daily grid energy imported identified from root of component hierarchy
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject | undefined
+   */
+  const gridDailyImported = computed(() => {
+    return (returnType: string = 'textValue') => {
+      const gridId = getGridId.value;
+      if (gridId === undefined) {
+        return '---';
+      }
+      const energy =
+        (getValue.value(
+          `openWB/counter/${gridId}/get/daily_imported`,
+          undefined,
+          0,
+        ) as number) || 0;
+      const valueObject = getValueObject.value(energy, 'Wh');
+      if (returnType in valueObject) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject;
+      }
+      console.error('returnType not found!', returnType, energy);
+    };
+  });
+
+  /**
+   * Get daily grid energy exported identified from root of component hierarchy
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject | undefined
+   */
+  const gridDailyExported = computed(() => {
+    return (returnType: string = 'textValue') => {
+      const gridId = getGridId.value;
+      if (gridId === undefined) {
+        return '---';
+      }
+      const energy =
+        (getValue.value(
+          `openWB/counter/${gridId}/get/daily_exported`,
+          undefined,
+          0,
+        ) as number) || 0;
+      const valueObject = getValueObject.value(energy, 'Wh');
+      if (returnType in valueObject) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject;
+      }
+      console.error('returnType not found!', returnType, energy);
+    };
+  });
+
   ////////////////// Home data //////////////////////////
 
   /**
@@ -2757,6 +3412,30 @@ export const useMqttStore = defineStore('mqtt', () => {
         return valueObject;
       }
       console.error('returnType not found!', returnType, power);
+    };
+  });
+
+  /**
+   * Get daily home energy yield
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject | undefined
+   */
+  const homeDailyYield = computed(() => {
+    return (returnType: string = 'textValue') => {
+      const energy =
+        (getValue.value(
+          'openWB/counter/set/daily_yield_home_consumption',
+          undefined,
+          0,
+        ) as number) || 0;
+      const valueObject = getValueObject.value(energy, 'Wh');
+      if (returnType in valueObject) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject;
+      }
+      console.error('returnType not found!', returnType, energy);
     };
   });
 
@@ -2793,6 +3472,30 @@ export const useMqttStore = defineStore('mqtt', () => {
     };
   });
 
+  /**
+   * Get pv daily exported energy
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject | undefined
+   */
+  const pvDailyExported = computed(() => {
+    return (returnType: string = 'textValue') => {
+      const energy =
+        (getValue.value(
+          'openWB/pv/get/daily_exported',
+          undefined,
+          0,
+        ) as number) || 0;
+      const valueObject = getValueObject.value(energy, 'Wh');
+      if (returnType in valueObject) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject;
+      }
+      console.error('returnType not found!', returnType, energy);
+    };
+  });
+
   ////////////////// Chart //////////////////////////
 
   /**
@@ -2820,16 +3523,16 @@ export const useMqttStore = defineStore('mqtt', () => {
   /* electricity tariff provider */
   const etProviderConfigured = computed(() => {
     return (
-      ((getValue.value(
-        'openWB/optional/et/provider',
-        'type',
-        null,
-      ) as string) || undefined) !== undefined
+      (getValue.value(
+        'openWB/optional/ep/configured',
+        undefined,
+        false,
+      ) as boolean) || false
     );
   });
 
   const etPrices = computed(() => {
-    return getValue.value('openWB/optional/et/get/prices', undefined, {}) as {
+    return getValue.value('openWB/optional/ep/get/prices', undefined, {}) as {
       [key: string]: number;
     };
   });
@@ -2859,6 +3562,8 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointPlugState,
     chargePointChargeState,
     chargePointSumPower,
+    chargePointDailyImported,
+    chargePointDailyExported,
     chargePointPower,
     chargePointEnergyCharged,
     chargePointEnergyChargedPlugged,
@@ -2898,6 +3603,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointConnectedVehiclePriority,
     chargePointConnectedVehicleTimeCharging,
     chargePointConnectedVehicleChargeTemplate,
+    chargePointConnectedVehicleBidiEnabled,
     // vehicle data
     vehicleList,
     chargePointConnectedVehicleConfig,
@@ -2910,6 +3616,8 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointConnectedVehicleSoc,
     vehicleActivePlan,
     vehicleChargeTarget,
+    addScheduledChargingPlanForChargePoint,
+    removeScheduledChargingPlanForChargePoint,
     vehicleScheduledChargingPlans,
     vehicleScheduledChargingPlanActive,
     vehicleScheduledChargingPlanEtActive,
@@ -2925,8 +3633,26 @@ export const useMqttStore = defineStore('mqtt', () => {
     vehicleScheduledChargingPlanSocScheduled,
     vehicleScheduledChargingPlanPhases,
     vehicleScheduledChargingPlanPhasesPv,
+    vehicleScheduledChargingPlanBidiEnabled,
+    vehicleScheduledChargingPlanBidiPower,
+    vehicleScheduledChargingPlanDcPower,
     vehicleTimeChargingPlans,
+    vehicleTimeChargingPlanName,
+    addTimeChargingPlanForChargePoint,
+    removeTimeChargingPlanForChargePoint,
     vehicleTimeChargingPlanActive,
+    vehicleTimeChargingPlanStartTime,
+    vehicleTimeChargingPlanEndTime,
+    vehicleTimeChargingPlanCurrent,
+    vehicleTimeChargingPlanLimitSelected,
+    vehicleTimeChargingPlanSocLimit,
+    vehicleTimeChargingPlanEnergyAmount,
+    vehicleTimeChargingPlanFrequencySelected,
+    vehicleTimeChargingPlanOnceDateStart,
+    vehicleTimeChargingPlanOnceDateEnd,
+    vehicleTimeChargingPlanPhases,
+    vehicleTimeChargingPlanWeeklyDays,
+    vehicleTimeChargingPlanDcPower,
     chargePointConnectedVehicleSocType,
     chargePointConnectedVehicleSocManual,
     // Battery data
@@ -2946,11 +3672,15 @@ export const useMqttStore = defineStore('mqtt', () => {
     getGridId,
     getComponentName,
     getGridPower,
+    gridDailyImported,
+    gridDailyExported,
     // Home data
     getHomePower,
+    homeDailyYield,
     // PV data
     getPvConfigured,
     getPvPower,
+    pvDailyExported,
     // Chart data
     chartData,
     // electricity tariff provider

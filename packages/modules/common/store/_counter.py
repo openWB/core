@@ -4,10 +4,9 @@ from typing import Optional
 
 from control import data
 from helpermodules import compatibility
-from helpermodules.phase_mapping import convert_cp_currents_to_evu_currents
+from helpermodules.phase_handling import convert_cp_currents_to_evu_currents
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentType
-from modules.common.fault_state import FaultState
 from modules.common.simcount._simcounter import SimCounter
 from modules.common.store import ValueStore
 from modules.common.store._api import LoggingValueStore
@@ -20,18 +19,15 @@ log = logging.getLogger(__name__)
 
 class CounterValueStoreRamdisk(ValueStore[CounterState]):
     def set(self, counter_state: CounterState):
-        try:
-            files.evu.voltages.write(counter_state.voltages)
-            if counter_state.currents:
-                files.evu.currents.write(counter_state.currents)
-            files.evu.powers_import.write([int(p) for p in counter_state.powers])
-            files.evu.power_factors.write(counter_state.power_factors)
-            files.evu.energy_import.write(counter_state.imported)
-            files.evu.energy_export.write(counter_state.exported)
-            files.evu.power_import.write(int(counter_state.power))
-            files.evu.frequency.write(counter_state.frequency)
-        except Exception as e:
-            raise FaultState.from_exception(e)
+        files.evu.voltages.write(counter_state.voltages)
+        if counter_state.currents:
+            files.evu.currents.write(counter_state.currents)
+        files.evu.powers_import.write([int(p) for p in counter_state.powers])
+        files.evu.power_factors.write(counter_state.power_factors)
+        files.evu.energy_import.write(counter_state.imported)
+        files.evu.energy_export.write(counter_state.exported)
+        files.evu.power_import.write(int(counter_state.power))
+        files.evu.frequency.write(counter_state.frequency)
 
 
 class CounterValueStoreBroker(ValueStore[CounterState]):

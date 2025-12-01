@@ -1,7 +1,6 @@
 <template>
 	<div class="pricesettings">
 		<div class="grapharea rounded shadow p-2">
-			<span>Anbieter: {{ etData.etProvider }}</span>
 			<figure id="pricechart">
 				<svg viewBox="0 0 400 270">
 					<g

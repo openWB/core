@@ -1,3 +1,4 @@
+import logging
 import pymodbus
 from typing import Any, Optional, Protocol, Tuple, Union
 
@@ -5,6 +6,9 @@ from modules.common.component_state import CounterState, EvseState
 from modules.common.evse import Evse
 from modules.common.fault_state import FaultState
 from modules.common.modbus import ModbusSerialClient_, ModbusTcpClient_
+
+log = logging.getLogger(__name__)
+
 
 EVSE_MIN_FIRMWARE = 7
 
@@ -97,9 +101,7 @@ class SeriesHardwareCheckMixin:
             else:
                 raise Exception(meter_error_msg + OPEN_TICKET)
         elif evse_check_passed and meter_check_passed and meter_error_msg is not None:
-            if meter_error_msg != METER_NO_SERIAL_NUMBER:
-                meter_error_msg += OPEN_TICKET
-            fault_state.warning(meter_error_msg)
+            fault_state.warning(meter_error_msg + OPEN_TICKET)
         if evse_check_passed is False:
             if meter_error_msg is not None:
                 raise Exception(EVSE_BROKEN + " " + meter_error_msg + OPEN_TICKET)
@@ -112,7 +114,7 @@ class SeriesHardwareCheckMixin:
             with self.client:
                 counter_state = self.meter_client.get_counter_state()
             if counter_state.serial_number == "0" or counter_state.serial_number is None:
-                return True, METER_NO_SERIAL_NUMBER, counter_state
+                log.warning(METER_NO_SERIAL_NUMBER)
             return True, _check_meter_values(counter_state), counter_state
         except Exception:
             return False, METER_PROBLEM, None

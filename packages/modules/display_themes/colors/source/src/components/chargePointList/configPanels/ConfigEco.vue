@@ -30,7 +30,7 @@
 		</ConfigItem>
 
 		<!-- Phases -->
-		<ConfigItem title="Anzahl Phasen" icon="fa-plug" :fullwidth="true">
+		<ConfigItem title="Anzahl Phasen bei Überschuss" icon="fa-plug" :fullwidth="true">
 			<RadioInput
 				id="targetPhases"
 				v-model="cp.ecoTargetPhases"

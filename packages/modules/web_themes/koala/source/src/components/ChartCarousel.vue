@@ -1,5 +1,7 @@
 <template>
   <q-carousel
+    v-if="chartCarouselItems.length > 0 && currentSlide"
+    :key="carouselKey"
     v-model="currentSlide"
     v-model:fullscreen="fullscreen"
     swipeable
@@ -13,21 +15,24 @@
   >
     <q-carousel-slide
       v-for="chartComponent in chartCarouselItems"
-      :key="`${chartComponent.name}-${chartComponent.name === 'HistoryChart' ? renderKey : 0}`"
+      :key="`${chartComponent.name}-${chartComponent.name === 'history_chart' ? renderKey : 0}`"
       :name="chartComponent.name"
     >
       <component :is="chartComponent.component" :show-legend="legendVisible" />
     </q-carousel-slide>
 
     <template v-slot:control>
-      <q-carousel-control position="bottom-right">
+      <q-carousel-control position="bottom-left">
         <q-btn
-          v-if="currentSlide === 'HistoryChart'"
+          v-if="currentSlide === 'history_chart'"
           size="sm"
+          push
           class="q-mr-sm legend-button-text"
-          label="Legend ein/aus"
+          label="Legende"
           @click="toggleLegend"
         />
+      </q-carousel-control>
+      <q-carousel-control position="bottom-right">
         <q-btn
           push
           round
@@ -46,7 +51,11 @@ import { ref, computed, watch } from 'vue';
 import { useQuasar } from 'quasar';
 import EnergyFlowChart from './charts/energyFlowChart/EnergyFlowChart.vue';
 import HistoryChart from './charts/historyChart/HistoryChart.vue';
+import DailyTotals from './DailyTotals.vue';
 import { useLocalDataStore } from 'src/stores/localData-store';
+import { useMqttStore } from 'src/stores/mqtt-store';
+
+const mqttStore = useMqttStore();
 
 defineOptions({
   name: 'ChartCarousel',
@@ -59,17 +68,44 @@ const toggleLegend = () => {
 };
 const legendVisible = computed(() => localDataStore.legendVisible);
 const fullscreen = ref(false);
-const chartCarouselItems = [
-  {
-    name: 'EnergyFlowChart',
-    component: EnergyFlowChart,
-  },
-  {
-    name: 'HistoryChart',
-    component: HistoryChart,
-  },
-];
-const currentSlide = ref<string>(chartCarouselItems[0].name);
+
+const carouselKey = computed(() =>
+  chartCarouselItems.value.map((item) => item.name).join('-'),
+);
+
+const currentSlide = ref<string | null>(null);
+
+const componentMap = {
+  flow_diagram: EnergyFlowChart,
+  history_chart: HistoryChart,
+  daily_totals: DailyTotals,
+};
+
+const chartCarouselItems = computed(() => {
+  const slideOrder = mqttStore.themeConfiguration?.top_carousel_slide_order;
+  if (!slideOrder || slideOrder.length === 0) {
+    return [
+      {
+        name: 'flow_diagram',
+        component: EnergyFlowChart,
+      },
+      {
+        name: 'history_chart',
+        component: HistoryChart,
+      },
+      {
+        name: 'daily_totals',
+        component: DailyTotals,
+      },
+    ];
+  }
+  return slideOrder
+    .map((name) => ({
+      name,
+      component: componentMap[name],
+    }))
+    .filter((item) => !!item.component);
+});
 
 watch(
   () => fullscreen.value,
@@ -78,12 +114,22 @@ watch(
     if (
       !isFullscreen &&
       wasFullscreen &&
-      currentSlide.value === 'HistoryChart'
+      currentSlide.value === 'history_chart'
     ) {
       // Force the chart to be recreated by changing its key
       renderKey.value++;
     }
   },
+);
+
+watch(
+  chartCarouselItems,
+  (items) => {
+    if (items.length > 0) {
+      currentSlide.value = items[0].name;
+    }
+  },
+  { immediate: true },
 );
 </script>
 

@@ -11,7 +11,7 @@
     "format": "prettier --write \"**/*.{js,ts,vue,scss,html,md,json}\" --ignore-path .gitignore",
     "test:unit": "vitest run --root src/",
     "dev": "quasar dev",
-    "build": "quasar build"
+    "build": "quasar build -m pwa"
   },
   "dependencies": {
     "@quasar/extras": "^1.17.0",

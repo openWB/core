@@ -27,7 +27,6 @@ def data_() -> None:
     for i in range(3, 6):
         data.data.cp_data[f"cp{i}"].template = CpTemplate()
         data.data.cp_data[f"cp{i}"].data.config.phase_1 = i-2
-        data.data.cp_data[f"cp{i}"].data.set.charging_ev = i
         data.data.cp_data[f"cp{i}"].data.set.charging_ev_data = Ev(i)
         data.data.cp_data[f"cp{i}"].data.set.charging_ev_data.ev_template.data.max_current_single_phase = 32
         data.data.cp_data[f"cp{i}"].data.get.plug_state = True

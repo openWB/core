@@ -8,8 +8,7 @@ from modules.common import hardware_check
 from modules.common.component_state import CounterState, EvseState
 from modules.common.evse import Evse
 from modules.common.hardware_check import (
-    EVSE_BROKEN, LAN_ADAPTER_BROKEN, METER_BROKEN_VOLTAGES, METER_NO_SERIAL_NUMBER,
-    METER_PROBLEM, OPEN_TICKET, USB_ADAPTER_BROKEN,
+    EVSE_BROKEN, LAN_ADAPTER_BROKEN, METER_BROKEN_VOLTAGES, METER_PROBLEM, OPEN_TICKET, USB_ADAPTER_BROKEN,
     SeriesHardwareCheckMixin, _check_meter_values)
 from modules.common.modbus import NO_CONNECTION, ModbusSerialClient_, ModbusTcpClient_
 from modules.conftest import SAMPLE_IP, SAMPLE_PORT
@@ -112,8 +111,7 @@ def test_check_meter_values_voltages(voltages, power, expected_msg, monkeypatch)
 
 @patch('modules.common.hardware_check.ClientHandlerProtocol')
 @pytest.mark.parametrize("serial_number, voltages, expected",
-                         [("0", [230]*3, (True, METER_NO_SERIAL_NUMBER, CounterState)),
-                          (12345, [230]*3, (True, None, CounterState)),
+                         [(12345, [230]*3, (True, None, CounterState)),
                           (Exception(), [230]*3, (False, METER_PROBLEM, None))])
 def test_check_meter(
     MockClientHandlerProtocol: Mock,

@@ -7,8 +7,8 @@
 			<span>Wechselrichter</span>
 		</template>
 		<template #buttons>
-			<WbBadge v-if="sourceSummary.pv.power > 0" bgcolor="var(--color-pv)">
-				{{ formatWatt(sourceSummary.pv.power) }}
+			<WbBadge v-if="registry.getPower('pv') > 0" bgcolor="var(--color-pv)">
+				{{ formatWatt(registry.getPower('pv')) }}
 			</WbBadge>
 		</template>
 		<div
@@ -25,7 +25,7 @@
 import WBWidgetFlex from '../shared/WbWidgetFlex.vue'
 import IlInverter from './IlInverter.vue'
 import WbBadge from '../shared/WbBadge.vue'
-import { pvSystems, sourceSummary } from '@/assets/js/model'
+import { pvSystems, registry } from '@/assets/js/model'
 import { formatWatt } from '@/assets/js/helpers'
 import { computed } from 'vue'
 

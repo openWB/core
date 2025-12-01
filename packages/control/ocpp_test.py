@@ -37,9 +37,9 @@ def test_start_transaction(mock_data, monkeypatch):
 def test_stop_transaction(mock_data, monkeypatch):
     cp = Chargepoint(1, None)
     cp.data.config.ocpp_chargebox_id = "cp1"
+    cp.data.config.ev = 1
     cp.data.get.plug_state = False
     cp.data.set.ocpp_transaction_id = 124
-    cp.data.set.charging_ev_prev = 1
     cp.chargepoint_module = ChargepointModule(Mqtt())
     cp.template = CpTemplate()
 

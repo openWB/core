@@ -26,7 +26,7 @@ class SofarInverter(AbstractInverter):
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
-    def update(self, client: ModbusTcpClient_) -> None:
+    def update(self) -> None:
         # 0x05C4 Power_PV_Total UINT16 in kW accuracy 0,1
         power = self.client.read_holding_registers(0x05C4, ModbusDataType.UINT_16, unit=self.__modbus_id) * -100
         exported = self.client.read_holding_registers(0x0686, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
