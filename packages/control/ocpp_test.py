@@ -13,8 +13,8 @@ from modules.chargepoints.mqtt.config import Mqtt
 @pytest.fixture()
 def mock_data() -> None:
     data.data_init(Mock())
-    data.data.optional_data.data.ocpp.active = True
-    data.data.optional_data.data.ocpp.url = "ws://localhost:9000/"
+    data.data.optional_data.data.ocpp.config.active = True
+    data.data.optional_data.data.ocpp.config.url = "ws://localhost:9000/"
 
 
 def test_start_transaction(mock_data, monkeypatch):
