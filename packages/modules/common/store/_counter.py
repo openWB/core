@@ -140,6 +140,9 @@ class PurgeCounterState:
                             imported=self.imported)
 
     def calc_uncounted_consumption(self) -> CounterState:
+        """Berechnet den nicht-gezählten Verbrauch für einen virtuellen Zähler.
+        Dazu wird der Zählerstand des übergeordneten Zählers herangezogen und davon die
+        Werte aller anderen untergeordneten Komponenten abgezogen."""
         parent_id = data.data.counter_all_data.get_entry_of_parent(self.delegate.delegate.num)["id"]
         parent_component = get_component_obj_by_id(parent_id)
         if "counter" not in parent_component.component_config.type:
