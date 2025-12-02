@@ -99,6 +99,10 @@ if [[ $userManagementActive == "true" ]]; then
 		echo "mosquitto openwb-unsecure-acl.conf not present, no action needed"
 	fi
 else
+	if [ -f "/etc/mosquitto/conf.d/openwb-user-management.conf" ]; then
+		sudo rm "/etc/mosquitto/conf.d/openwb-user-management.conf"
+		restartService=1
+	fi
 	if versionMatch "${SRC}/openwb-default-acl.conf" "/etc/mosquitto/conf.d/openwb-default-acl.conf"; then
 		echo "mosquitto openwb-default-acl.conf already up to date"
 	else
