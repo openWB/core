@@ -99,7 +99,9 @@ class ChargepointModule(AbstractChargepoint):
                             charge_state=evse_state.charge_state,
                             phases_in_use=phases_in_use,
                             serial_number=counter_state.serial_number,
-                            max_evse_current=evse_state.max_current
+                            max_evse_current=evse_state.max_current,
+                            evse_current=evse_state.set_current
+
                         )
                         self.store.set(chargepoint_state)
                         self.client_error_context.reset_error_counter()

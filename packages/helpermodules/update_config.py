@@ -47,7 +47,7 @@ from modules.common.component_type import ComponentType
 from modules.devices.sungrow.sungrow.version import Version
 from modules.display_themes.cards.config import CardsDisplayTheme
 from modules.io_actions.controllable_consumers.ripple_control_receiver.config import RippleControlReceiverSetup
-from modules.web_themes.standard_legacy.config import StandardLegacyWebTheme
+from modules.web_themes.koala.config import KoalaWebTheme
 from modules.devices.good_we.good_we.version import GoodWeVersion
 
 log = logging.getLogger(__name__)
@@ -569,7 +569,7 @@ class UpdateConfig:
         ("openWB/general/prices/pv", Prices().pv),
         ("openWB/general/range_unit", "km"),
         ("openWB/general/temporary_charge_templates_active", False),
-        ("openWB/general/web_theme", dataclass_utils.asdict(StandardLegacyWebTheme())),
+        ("openWB/general/web_theme", dataclass_utils.asdict(KoalaWebTheme())),
         ("openWB/graph/config/duration", 120),
         ("openWB/internal_chargepoint/0/data/parent_cp", None),
         ("openWB/internal_chargepoint/1/data/parent_cp", None),
