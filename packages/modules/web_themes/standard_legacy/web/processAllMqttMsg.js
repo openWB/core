@@ -1173,14 +1173,15 @@ function processETProviderMessages(mqttTopic, mqttPayload) {
 	if (mqttTopic == 'openWB/optional/ep/configured') {
 		const configured = JSON.parse(mqttPayload);
 		if (configured) {
-			$('.et-configured').removeClass('hide');
+			$('.ep-configured').removeClass('hide');
 		} else {
-			$('.et-configured').addClass('hide');
+			$('.ep-configured').addClass('hide');
 		}
 	} else if (mqttTopic == 'openWB/optional/ep/get/prices') {
 		electricityPriceList = JSON.parse(mqttPayload);
+		$('.charge-point-eco-charge-max_price-button').prop('disabled', false);
 		var currentPrice = electricityPriceList[Object.keys(electricityPriceList)[0]] * 100000;
-		$('.et-current-price').text(currentPrice.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 }) + ' ct/kWh');
+		$('.ep-current-price').text(currentPrice.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 }) + ' ct/kWh');
 	}
 }
 
