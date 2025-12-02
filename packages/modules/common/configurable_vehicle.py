@@ -1,5 +1,6 @@
 from enum import Enum
 import logging
+import time
 from typing import Optional, TypeVar, Generic, Callable
 from helpermodules import timecheck
 
@@ -7,16 +8,29 @@ from helpermodules.pub import Pub
 from dataclass_utils import asdict
 from modules.common import store
 from modules.common.abstract_vehicle import CalculatedSocState, GeneralVehicleConfig, VehicleUpdateData
+from modules.common.abstract_vehicle import VehicleFallbackData
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import CarState
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.vehicles.common.calc_soc import calc_soc
 from modules.vehicles.manual.config import ManualSoc
 from modules.vehicles.mqtt.config import MqttSocSetup
+from control import data
+
 
 T_VEHICLE_CONFIG = TypeVar("T_VEHICLE_CONFIG")
 
 log = logging.getLogger(__name__)
+
+
+def get_CarName(vehicle: int) -> str:
+    for ev in data.data.ev_data.values():
+        if int(ev.num) == int(vehicle):
+            _name = ev.data.name
+            break
+    else:
+        _name = "Unknown"
+    return _name
 
 
 class SocSource(Enum):
@@ -124,20 +138,67 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                 return SocSource.CALCULATION
 
     def _get_carstate_by_source(self, vehicle_update_data: VehicleUpdateData, source: SocSource) -> CarState:
+        # global variables used for fallback calculation
+        global vfbd
+
+        _v = self.vehicle  # vehicle id
+        if 'vfbd' not in globals():
+            vfbd = {}
+        if _v not in vfbd:
+            vfbd[_v] = VehicleFallbackData(get_CarName(_v))
+
+        _log = f"carstate: entry: carName: {vfbd[_v].carName}/{self.vehicle_config.name},"
+        _log += f" last_soc_timestamp: {vfbd[_v].last_soc_timestamp}"
+        log.debug(_log)
         if source == SocSource.API:
             try:
+                # check for plug_state from False to True and remember timestamp
+                if vehicle_update_data.plug_state and not vfbd[_v].last_plug_state:
+                    vfbd[_v].last_plugin_timestamp = time.time()
+                vfbd[_v].last_plug_state = vehicle_update_data.plug_state
                 _carState = self.__component_updater(vehicle_update_data)
+                if self.vehicle_config.name == "MQTT":
+                    return _carState
+                if _carState.soc <= 0:
+                    try_calc = True
+                    log.debug("carstate: API exception")
+                else:
+                    try_calc = False
+                    vfbd[_v].last_soc_timestamp = time.time()
+                    log.debug(f"carstate: API successful, last_soc_timestamp: {vfbd[_v].last_soc_timestamp}")
+                log.debug(f"carstate: return: last_soc_timestamp: {vfbd[_v].last_soc_timestamp}")
+                return _carState
             except Exception:
-                log.exception(f"SoC-Auslesung von Fahrzeug {self.vehicle_config.name} fehlgeschlagen")
+                log.info(f"SoC-Auslesung von Fahrzeug {vfbd[_v].carName} fehlgeschlagen")
                 _carState = CarState(0, 0.0)
+                try_calc = True
+                log.debug("carstate: API exception")
             if _carState:
-                if _carState.soc <= 0 and (self.calculated_soc_state.last_imported or vehicle_update_data.imported):
-                    log.info("_get_carstate_by_source: FALLBACK to calculated soc")
+                if try_calc and\
+                  _carState.soc <= 0 and\
+                   vehicle_update_data.plug_state and\
+                   vehicle_update_data.last_soc and\
+                   vfbd[_v].last_soc_timestamp >= vfbd[_v].last_plugin_timestamp and\
+                   (self.calculated_soc_state.last_imported or vehicle_update_data.imported):
+                    log.info(f"SoC FALLBACK: SoC von Fahrzeug {vfbd[_v].carName} wird berechnet")
                     _carState = CarState(soc=calc_soc.calc_soc(
                                          vehicle_update_data,
                                          vehicle_update_data.efficiency,
                                          self.calculated_soc_state.last_imported or vehicle_update_data.imported,
                                          vehicle_update_data.battery_capacity))
+                else:
+                    log.info(f"SoC FALLBACK: SoC von Fahrzeug {vfbd[_v].carName} kann nicht berechnet werden")
+                    log.debug(f"try_calc: {try_calc}, _carState.soc: {_carState.soc}")
+                    log.debug(f"plug_state: {vehicle_update_data.plug_state}")
+                    log.debug(f"last_soc: {vehicle_update_data.last_soc}")
+                    log.debug(f"last_soc_timestamp: {vfbd[_v].last_soc_timestamp}")
+                    _check = vfbd[_v].last_soc_timestamp >= vfbd[_v].last_plugin_timestamp
+                    log.debug(f"timestamp-check: {_check}")
+                    log.debug(f"last_plugin_timestamp: {vfbd[_v].last_plugin_timestamp}")
+                    log.debug(f"self.calculated_soc_state.last_imported: {self.calculated_soc_state.last_imported}")
+                    log.debug(f"vehicle_update_data.imported: {vehicle_update_data.imported}")
+                    _ex = f"SoC von Fahrzeug {vfbd[_v].carName} kann weder ausgelesen noch berechnet werden"
+                    raise Exception(_ex)
             return _carState
         elif source == SocSource.CALCULATION:
             return CarState(soc=calc_soc.calc_soc(
