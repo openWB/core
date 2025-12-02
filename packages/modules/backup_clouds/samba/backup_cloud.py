@@ -59,7 +59,7 @@ def upload_backup(config: SambaBackupCloudConfiguration, backup_filename: str, b
 
                 conn.storeFile(config.smb_share, full_file_path, io.BytesIO(backup_file))
 
-                return  
+                return
             except Exception as error:
                 log.error(str(error).split('\n')[0])
                 log.error("Freigabe oder Unterordner existiert möglicherweise nicht.")
