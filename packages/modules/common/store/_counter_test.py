@@ -148,31 +148,40 @@ def test_calc_uncounted_consumption(monkeypatch):
     - Virtueller Zähler: id=3 (soll nicht-gezählten Verbrauch berechnen)
 
     Hierarchie:
-    Counter 0 (parent, 8000W total)
-    ├── Chargepoint 1 (3000W)
-    ├── Counter 2 (2000W) 
-    └── Virtual Counter 3 (uncounted: 8000 - 3000 - 2000 = 3000W)
+    Counter 0 (parent, 8000W, 1kWh importiert, 0.5kWh exportiert)
+    ├── Chargepoint 1 (3000W, 150Wh importiert, 0Wh exportiert)
+    ├── Counter 2 (2000W, 300Wh importiert, 100Wh exportiert)
+    └── Virtual Counter 3 (uncounted: 8000 - 3000 - 2000 = 3000W, 0.15kWh imp, 0kWh exp)
     """
     # setup
     data.data_init(Mock())
     data.data.counter_all_data = CounterAll()
+    data.data.counter_all_data.data.get.hierarchy = [
+        {
+            "id": 0,
+            "type": "counter",
+            "children": [
+                {"id": 1, "type": "cp", "children": []},
+                {"id": 2, "type": "counter", "children": []},
+                {"id": 3, "type": "counter", "children": []}
+            ]
+        }
+    ]
 
-    # Setup parent counter (id=0) auf übergeordneter Ebene
     data.data.counter_data["counter0"] = Mock(
         spec=Counter,
         data=Mock(
             spec=CounterData,
             get=Mock(
                 spec=Get,
-                power=8000,  # Gesamtverbrauch
+                power=8000,
                 exported=500,
                 imported=1000,
-                currents=[20.0, 22.0, 18.0]  # Gesamtstrom
+                currents=[20.0, 22.0, 18.0]
             )
         )
     )
 
-    # Setup Ladepunkt (id=1) auf gleicher Ebene wie virtueller Zähler
     add_chargepoint(1)
     data.data.cp_data["cp1"].data.get.power = 3000
     data.data.cp_data["cp1"].data.get.currents = [8.0, 9.0, 7.0]
@@ -181,7 +190,6 @@ def test_calc_uncounted_consumption(monkeypatch):
     data.data.cp_data["cp1"].chargepoint_module.store.delegate.state.imported = 150
     data.data.cp_data["cp1"].chargepoint_module.store.delegate.state.exported = 0
 
-    # Setup weiterer Zähler (id=2) auf gleicher Ebene
     data.data.counter_data["counter2"] = Mock(
         spec=Counter,
         data=Mock(
@@ -196,46 +204,10 @@ def test_calc_uncounted_consumption(monkeypatch):
         )
     )
 
-    # Hierarchie: Parent Counter 0 hat Kinder: CP 1, Counter 2, Virtual Counter 3
-    data.data.counter_all_data.data.get.hierarchy = [
-        {
-            "id": 0,
-            "type": "counter",
-            "children": [
-                {"id": 1, "type": "cp", "children": []},
-                {"id": 2, "type": "counter", "children": []},
-                {"id": 3, "type": "counter", "children": []}  # Virtual counter
-            ]
-        }
-    ]
-
-    # Mock für Parent-Lookup
-    def mock_get_parent_of_element(element_id):
-        if element_id == 3:  # Virtual counter
-            return 0  # Parent counter
-        return None
-
-    # Mock für get_elements_for_downstream_calculation
-    def mock_get_elements_for_downstream_calculation(parent_id):
-        if parent_id == 0:  # Parent counter
-            return [
-                {"id": 1, "type": "cp"},
-                {"id": 2, "type": "counter"}
-                # Virtual counter 3 wird nicht in eigene Berechnung einbezogen
-            ]
-        return []
-
-    data.data.counter_all_data.get_parent_of_element = Mock(side_effect=mock_get_parent_of_element)
-    data.data.counter_all_data.get_elements_for_downstream_calculation = Mock(
-        side_effect=mock_get_elements_for_downstream_calculation
-    )
-
-    # Mock parent counter component
     parent_counter_component = Mock()
     parent_counter_component.component_config.type = "counter"
-    parent_counter_component.store.add_child_values = False  # Nicht virtuell
+    parent_counter_component.store.add_child_values = False
 
-    # Mock regular counter component (id=2)
     regular_counter_component = Mock(
         spec=MqttCounter,
         store=Mock(
@@ -264,7 +236,6 @@ def test_calc_uncounted_consumption(monkeypatch):
 
     monkeypatch.setattr(_counter, "get_component_obj_by_id", mock_get_component_obj_by_id)
 
-    # Setup virtual counter (id=3)
     virtual_counter_purge = PurgeCounterState(
         delegate=Mock(delegate=Mock(num=3)),
         add_child_values=True,
@@ -272,7 +243,7 @@ def test_calc_uncounted_consumption(monkeypatch):
     )
 
     # execution
-    result_state = virtual_counter_purge.calc_uncounted_consumption()
+    result_state = virtual_counter_purge.calc_virtual(CounterState())
 
     # evaluation
     # Erwartete Werte: Parent Counter - (Chargepoint + Regular Counter)
@@ -284,8 +255,8 @@ def test_calc_uncounted_consumption(monkeypatch):
     expected_state = CounterState(
         power=3000,
         currents=[7.0, 7.0, 7.0],
-        imported=550,
-        exported=400
+        imported=150,
+        exported=0
     )
 
     assert vars(result_state) == vars(expected_state)

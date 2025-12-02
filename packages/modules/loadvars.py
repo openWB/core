@@ -32,7 +32,7 @@ class Loadvars:
                 self._update_values_of_level_buttom_top(level, not_finished_threads)
                 wait_for_module_update_completed(self.event_module_update_completed, topic)
                 data.data.copy_module_data()
-            self._update_values_virtual_counter_uncounted_consumption(level, not_finished_threads)
+            self._update_values_virtual_counter_uncounted_consumption(not_finished_threads)
             wait_for_module_update_completed(self.event_module_update_completed, topic)
             data.data.copy_module_data()
             wait_for_module_update_completed(self.event_module_update_completed, topic)

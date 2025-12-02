@@ -71,13 +71,13 @@ class PurgeCounterState:
         if self.add_child_values:
             self.currents = state.currents if state.currents else [0.0]*3
             self.power = state.power
-            self.imported = state.imported
-            self.exported = state.exported
+            self.imported = state.imported if state.imported else 0
+            self.exported = state.exported if state.exported else 0
             self.incomplete_currents = False
             counter_all = data.data.counter_all_data
             elements = counter_all.get_elements_for_downstream_calculation(self.delegate.delegate.num)
             if len(elements) == 0:
-                return self.calc_uncounted_consumption(state)
+                return self.calc_uncounted_consumption()
             else:
                 return self.calc_consumers(elements)
         else:
@@ -96,11 +96,11 @@ class PurgeCounterState:
         if calc_imported_exported:
             if hasattr(element, "imported") and element.imported is not None:
                 self.imported += element.imported
-            if element.exported is not None:
+            if hasattr(element, "exported") and element.exported is not None:
                 self.exported += element.exported
         self.power += element.power
 
-    def calc_consumers(self, elements: Dict, calc_imported_exported: bool = True) -> CounterState:
+    def calc_consumers(self, elements: Dict, calc_imported_exported: bool = False) -> CounterState:
         for element in elements:
             try:
                 if element["type"] == ComponentType.CHARGEPOINT.value:
@@ -117,13 +117,20 @@ class PurgeCounterState:
                                        f" {chargepoint.data.config.name} an die Phasen des EVU Zählers "
                                        "angegeben werden.")
                     self.power += chargepoint_state.power
+                    if calc_imported_exported:
+                        self.imported += chargepoint_state.imported
+                        self.exported += chargepoint_state.exported
                 else:
                     component = get_component_obj_by_id(element['id'])
-                    self._add_values(component.store.delegate.delegate.state)
+                    self._add_values(component.store.delegate.delegate.state, calc_imported_exported)
             except Exception:
                 log.exception(f"Fehler beim Hinzufügen der Werte für Element {element}")
 
-        if calc_imported_exported:
+        if calc_imported_exported is False or self.imported is None or self.exported is None:
+            if self.imported is None and calc_imported_exported:
+                log.debug("Mind eine Komponente liefert keinen Zählestand für den Bezug, berechne Zählerstände")
+            if self.exported is None and calc_imported_exported:
+                log.debug("Mind eine Komponente liefert keinen Zählestand für die Einspeisung, berechne Zählerstände")
             self.imported, self.exported = self.sim_counter.sim_count(self.power)
         if self.incomplete_currents:
             self.currents = None
@@ -133,20 +140,27 @@ class PurgeCounterState:
                             imported=self.imported)
 
     def calc_uncounted_consumption(self) -> CounterState:
-        parent_id = data.data.counter_all_data.get_parent_of_element(self.delegate.delegate.num)
+        parent_id = data.data.counter_all_data.get_entry_of_parent(self.delegate.delegate.num)["id"]
         parent_component = get_component_obj_by_id(parent_id)
         if "counter" not in parent_component.component_config.type:
             raise Exception("Die übergeordnete Komponente des virtuellen Zählers muss ein Zähler sein.")
         if parent_component.store.add_child_values:
-            raise Exception("Der übergeordnete Zähler des virtuellen Zählers darf nicht auch ein virtueller Zähler sein.")
+            raise Exception("Der übergeordnete Zähler des virtuellen Zählers darf nicht "
+                            "auch ein virtueller Zähler sein.")
         elements = data.data.counter_all_data.get_elements_for_downstream_calculation(parent_id)
-        counter_state_consumers = self.calc_consumers(elements, calc_imported_exported=True)
+        # entferne den eigenen Zähler aus der Liste
+        elements = [el for el in elements if el["id"] != self.delegate.delegate.num]
+        self.calc_consumers(elements, calc_imported_exported=True)
+        log.debug(f"Erfasster Verbrauch virtueller Zähler {self.delegate.delegate.num}: "
+                  f"{self.currents}A, {self.power}W, {self.exported}Wh, {self.imported}Wh")
         parent_counter_get = data.data.counter_data[f"counter{parent_id}"].data.get
         return CounterState(
-            currents=[parent_counter_get.currents[i] - counter_state_consumers.currents[i] for i in range(0, 3)],
-            power=parent_counter_get.power - counter_state_consumers.power,
-            exported=parent_counter_get.exported - counter_state_consumers.exported,
-            imported=parent_counter_get.imported - counter_state_consumers.imported
+            currents=[parent_counter_get.currents[i] - self.currents[i]
+                      for i in range(0, 3)] if self.currents is not None else None,
+            power=parent_counter_get.power - self.power,
+            exported=0,
+            imported=(parent_counter_get.imported + self.exported - self.imported -
+                      parent_counter_get.exported) if self.imported is not None else None
         )
 
 
