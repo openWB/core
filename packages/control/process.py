@@ -42,11 +42,6 @@ class Process:
                         self._update_state(cp)
                         cp.set_timestamp_charge_start()
                     else:
-                        # LP, an denen nicht geladen werden darf
-                        chargelog.save_interim_data(
-                            cp, data.data.ev_data
-                            ["ev" + str(cp.data.config.ev)],
-                            immediately=False)
                         control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
                     if cp.data.get.state_str is not None:
                         Pub().pub("openWB/set/chargepoint/"+str(cp.num)+"/get/state_str",

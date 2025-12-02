@@ -11,7 +11,7 @@ with ImportErrorContext():
 from dataclass_utils import asdict
 from helpermodules import timecheck
 from helpermodules.pub import Pub
-from modules.common import configurable_tariff, req
+from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
 from modules.electricity_pricing.flexible_tariffs.rabot.config import RabotTariff, RabotToken
@@ -38,7 +38,7 @@ def _refresh_token(config: RabotTariff):
         'scope': 'openid offline_access api:hems',
     }
     response = req.get_http_session().post(
-        'https://test-auth.rabot-charge.de/connect/token?client_id=&client_secret=&username=&password=&scope=*&'
+        'https://auth.rabot-charge.de/connect/token?client_id=&client_secret=&username=&password=&scope=*&'
         + 'grant_type=client_credentials', data=data).json()
     config.configuration.token = RabotToken(access_token=response["access_token"],
                                             expires_in=response["expires_in"],
@@ -49,7 +49,7 @@ def _refresh_token(config: RabotTariff):
 def fetch(config: RabotTariff) -> None:
     def get_raw_prices():
         return req.get_http_session().get(
-            "https://test-api.rabot-charge.de/hems/v1/day-ahead-prices/limited",
+            "https://api.rabot-charge.de/hems/v1/day-ahead-prices/limited",
             headers={"Content-Type": "application/json",
                      "Authorization": f'Bearer {config.configuration.token.access_token}'},
             params={"from": start_date, "tz": timezone}
@@ -88,7 +88,7 @@ def create_electricity_tariff(config: RabotTariff):
 
     def updater():
         return TariffState(prices=fetch(config))
-    return configurable_tariff.ConfigurableFlexibleTariff(config=config, component_updater=updater)
+    return updater
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=RabotTariff)
