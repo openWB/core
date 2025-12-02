@@ -35,9 +35,8 @@ class MqttInverter(AbstractInverter):
         if (received_topics.get(f"{topic_prefix}exported") is None or
                 received_topics.get(f"{topic_prefix}imported") is None):
             imported, exported = self.sim_counter.sim_count(power)
-        if received_topics.get(f"{topic_prefix}exported"):
+        else:
             exported = received_topics[f"{topic_prefix}exported"]
-        if received_topics.get(f"{topic_prefix}imported"):
             imported = received_topics[f"{topic_prefix}imported"]
 
         currents = parse_received_topics("currents")
