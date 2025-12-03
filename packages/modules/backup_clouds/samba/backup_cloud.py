@@ -67,7 +67,6 @@ def upload_backup(config: SambaBackupCloudConfiguration, backup_filename: str, b
         else:
             log.warning("SMB-Verbindungsaufbau über Port 445 nicht möglich.")
     else:
-        log.warning(f"Host {config.smb_server} und/oder Port {SMB_PORT_445} nicht erreichbar.")
 
     # ------------------------------------------------------------
     # 2) Fallback: SMB1 über Port 139
