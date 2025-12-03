@@ -208,6 +208,7 @@ def test_get_power_limit(params: PowerLimitParams, data_, monkeypatch):
     b_all.data.config.power_limit_condition = params.power_limit_condition
     b_all.data.get.power_limit_controllable = params.power_limit_controllable
     b_all.data.get.power = params.bat_power
+    # b_all.data.get.soc = 50.0
     data.data.counter_all_data = hierarchy_standard()
     data.data.counter_all_data.data.set.home_consumption = 456
     data.data.cp_all_data.data.get.power = 1400
@@ -219,6 +220,9 @@ def test_get_power_limit(params: PowerLimitParams, data_, monkeypatch):
     get_evu_counter_mock = Mock(return_value=data.data.counter_data["counter0"])
     monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", get_evu_counter_mock)
     get_controllable_bat_components_mock = Mock(return_value=[MqttBat(MqttBatSetup(id=2), device_id=0)])
+    data.data.bat_data["bat2"].data.get.soc = 50.0
+    data.data.bat_data["bat2"].data.get.max_charge_power = 5000
+    data.data.bat_data["bat2"].data.get.max_discharge_power = 5000
     monkeypatch.setattr(bat_all, "get_controllable_bat_components", get_controllable_bat_components_mock)
 
     data.data.bat_all_data.get_power_limit()

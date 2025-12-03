@@ -58,6 +58,13 @@ class BatChargeMode(Enum):
     BAT_FORCE_DISCHARGE = "bat_force_discharge"  # in DE nicht erlaubt
 
 
+class ManualMode(Enum):
+    MANUAL_DISABLE = "manual_disable"
+    MANUAL_LIMIT = "manual_limit"
+    MANUAL_CHARGE = "manual_charge"
+    MANUAL_DISCHARGE = "manual_discharge"  # in DE nicht erlaubt
+
+
 @dataclass
 class Config:
     configured: bool = field(default=False, metadata={"topic": "config/configured"})
@@ -69,6 +76,8 @@ class Config:
                                        metadata={"topic": "config/bat_control_condition"})
     manual_mode: str = field(default=BatChargeMode.BAT_SELF_REGULATION.value,
                              metadata={"topic": "config/manual_mode"})
+    bat_control_min_soc: str = field(default=10, metadata={"topic": "config/bat_control_min_soc"})
+    bat_control_max_soc: str = field(default=90, metadata={"topic": "config/bat_control_max_soc"})
 
 
 def config_factory() -> Config:
@@ -194,6 +203,87 @@ class BatAll:
                           " begrenzt.")
         return required_power
 
+    def _set_bat_power_active_control(self, power):
+        controllable_bat_components = get_controllable_bat_components()
+        # maximal mögliche Lade- und Entaldeleistung des Systems unter Einbeziehung
+        # der erlaubten Lade-/ Entladeleistung und SoC der regelbaren Speicher ermitteln
+        max_charge_power_total = 0
+        bat_ready_to_charge = 0
+        max_discharge_power_total = 0
+        bat_ready_to_discharge = 0
+        for bat_component in controllable_bat_components:
+            bat_component_data = data.data.bat_data[f"bat{bat_component.component_config.id}"].data
+            if bat_component_data.get.soc < self.data.config.bat_control_max_soc:
+                max_charge_power_total += bat_component_data.get.max_charge_power
+                bat_ready_to_charge += 1
+            if bat_component_data.get.soc > self.data.config.bat_control_min_soc:
+                max_discharge_power_total += bat_component_data.get.max_discharge_power
+                bat_ready_to_discharge += 1
+        log.debug((f"Aktive Speichersteuerung: {power}W auf "
+                   f"{len(controllable_bat_components)} regelbare Speicher verteilen."))
+        log.debug((f"Ladung: {bat_ready_to_charge} Speicher unterhalb des maximalen SoC mit "
+                   f"{max_charge_power_total}W regelbarer Lade-Leistung"))
+        log.debug((f"Entladung: {bat_ready_to_discharge} Speicher oberhalb des minimalen SoC mit "
+                   f"{max_discharge_power_total}W regelbarer Entlade-Leistung"))
+
+        # Leistung an einzelne Speicher übergeben
+        for bat_component in controllable_bat_components:
+            bat_component_data = data.data.bat_data[f"bat{bat_component.component_config.id}"].data
+            # Falls keine leistung übergeben wird greift die Eigenregelung der Speicher
+            if power is None:
+                power_limit = None
+                log.debug(("Aktive Speichersteuerung: Eigenregelung - Speicher "
+                          f"(ID: {bat_component.component_config.id}) auf Eigenregelung gesetzt."))
+            elif power == 0:
+                power_limit = 0
+                log.debug((f"Aktive Speichersteuerung: Kein Laden/Entladen - "
+                           f"Speicher (ID: {bat_component.component_config.id}) auf 0W gesetzt."))
+            elif power < 0:
+                # Eigenregelung aller Speicher, da Entladung nicht möglich
+                if max_discharge_power_total == 0:
+                    power_limit = None
+                    log.debug(("Aktive Speichersteuerung: Entladung - alle Speicher befinden sich unterhalb minimal "
+                               f"SoC. Speicher (ID: {bat_component.component_config.id}) auf Eigenregelung gesetzt."))
+                else:
+                    # unterhalb des minimal SoC greift die Eigenregelung
+                    # das verhindert Tiefenentladung
+                    if bat_component_data.get.soc <= self.data.config.bat_control_min_soc:
+                        power_limit = None
+                        log.debug(("Aktive Speichersteuerung: Entladung - "
+                                   f"Speicher (ID: {bat_component.component_config.id}) "
+                                   "befindet sich unterhalb minimal SoC - auf Eigenregelung gesetzt."))
+                    # setze Entladeleistung als Bruchteil der möglichen Entladeleistung
+                    else:
+                        factor = max(power / max_discharge_power_total, -1)
+                        power_limit = bat_component_data.get.max_discharge_power * factor
+                        log.debug(("Aktive Speichersteuerung: Entladung - "
+                                   f"Speicher (ID: {bat_component.component_config.id}) "
+                                   f"entlädt mit {power_limit} ({factor} x "
+                                   f"{bat_component_data.get.max_discharge_power})"))
+            else:
+                # Eigenregelung aller Speicher, da Ladung nicht möglich
+                if max_charge_power_total == 0:
+                    power_limit = None
+                    log.debug(("Aktive Speichersteuerung: Ladung - alle Speicher befinden sich oberhalb maximal "
+                               f"SoC. Speicher (ID: {bat_component.component_config.id}) auf Eigenregelung gesetzt."))
+                else:
+                    # oberhalb des max_soc soll Speicher nicht entladen wenn andere Speicher laden
+                    if bat_component_data.get.soc >= self.data.config.bat_control_max_soc:
+                        power_limit = 0
+                        log.debug(("Aktive Speichersteuerung: Ladung - "
+                                   f"Speicher (ID: {bat_component.component_config.id}) "
+                                   "befindet sich oberhalb maximal SoC - Speicher sperren."))
+                    else:
+                        factor = min(power / max_charge_power_total, 1)
+                        power_limit = bat_component_data.get.max_charge_power * factor
+                        log.debug(("Aktive Speichersteuerung: Ladung - "
+                                   f"Speicher (ID: {bat_component.component_config.id}) "
+                                   f"lädt mit {power_limit} ({factor} x {bat_component_data.get.max_charge_power})"))
+
+            # power_limit = self._limit_bat_power_discharge(power_limit)
+            data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set.power_limit = power_limit
+            log.debug(f"Power Limit {power_limit}W an Speicher übergeben!")
+
     def setup_bat(self):
         """ prüft, ob mind ein Speicher vorhanden ist und berechnet die Summen-Topics.
         """
@@ -234,9 +324,7 @@ class BatAll:
                 # Speicher sollte weder ge- noch entladen werden.
                 charging_power_left = self.data.get.power
             else:
-                # Speicher soll geladen werden um min SoC zu erreichen
                 if self.data.get.soc < config.min_bat_soc:
-                    self.data.set.hysteresis_discharge = False
                     if self.data.get.power < 0:
                         # Wenn der Speicher entladen wird, darf diese Leistung nicht zum Laden der Fahrzeuge
                         # genutzt werden. Wenn der Speicher schneller regelt als die LP, würde sonst der Speicher
@@ -257,30 +345,10 @@ class BatAll:
                             # Speicher wird geladen
                             charging_power_left = 0
                             self.data.set.regulate_up = True
-                # Speicher zwischen min und max SoC
-                elif int(self.data.get.soc) >= config.min_bat_soc and int(self.data.get.soc) < config.max_bat_soc:
-                    # Speicher soll aktiv weder ge- noch entladen werden.
-                    # Mindest-SoC wird gehalten oder der Speicher mit weiterem vorhanden Überschuss geladen.
-                    if self.data.set.hysteresis_discharge is False:
-                        charging_power_left = self.data.get.power
-                    # Speicher darf wegen Hysterese bis min_bat_soc entladen werden.
-                    else:
-                        if self.data.set.power_limit is None:
-                            if config.bat_power_discharge_active:
-                                # Wenn der Speicher mit mehr als der erlaubten Entladeleistung entladen wird, muss das
-                                # vom Überschuss subtrahiert werden.
-                                charging_power_left = config.bat_power_discharge + self.data.get.power
-                                log.debug(f"Erlaubte Entlade-Leistung nutzen {charging_power_left}W")
-                            else:
-                                # Speicher sollte weder ge- noch entladen werden.
-                                charging_power_left = self.data.get.power
-                        else:
-                            log.debug("Keine erlaubte Entladeleistung freigeben, da der Speicher mit einer vorgegeben "
-                                      "Leistung entladen wird.")
-                            charging_power_left = 0
-                # Speicher oberhalb max SoC. Darf bis min SoC entladen werden.
+                elif int(self.data.get.soc) == config.min_bat_soc:
+                    # Speicher sollte weder ge- noch entladen werden, um den Mindest-SoC zu halten.
+                    charging_power_left = self.data.get.power
                 else:
-                    self.data.set.hysteresis_discharge = True
                     if self.data.set.power_limit is None:
                         if config.bat_power_discharge_active:
                             # Wenn der Speicher mit mehr als der erlaubten Entladeleistung entladen wird, muss das
@@ -334,15 +402,31 @@ class BatAll:
     def get_charge_mode_vehicle_charge(self):
         chargepoint_by_chargemodes = get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_CHARGING)
         # Falls Fahrzeuge in aktivem Lademodus sind und Laden
-        # und Speicher entladen wird und kein EVU-Überschuss vorhanden ist
-        if (len(chargepoint_by_chargemodes) > 0 and
-                data.data.cp_all_data.data.get.power > 100 and
-                self.data.get.power <= 0 and
-                data.data.counter_all_data.get_evu_counter().data.get.power >= -100):
+        # und kein EVU-Überschuss vorhanden ist
+        # und Speicher entladen wird
+
+        # Fahrzeuge laden
+        vehicle_charging = (len(chargepoint_by_chargemodes) > 0 and
+                            data.data.cp_all_data.data.get.power > 100)
+        # Speicher entlädt oder Speicher lädt bei gewollter PV-Ladung
+        bat_power_valid = (self.data.get.power <= 0 or
+                           (self.data.get.power > 0 and
+                            self.data.config.power_limit_mode == BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value))
+        # EVU Bezug vorhanden oder gewollte PV-Ladung aktiv
+        evu_power_valid = (data.data.counter_all_data.get_evu_counter().data.get.power >= -100 or
+                           self.data.config.power_limit_mode == BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value)
+
+        if (
+            vehicle_charging and
+            evu_power_valid and
+            bat_power_valid
+        ):
             charge_mode = BatChargeMode.BAT_USE_LIMIT
             log.debug("Speicher-Entladung beschränken da Fahrzeuge laden.")
         else:
             charge_mode = BatChargeMode.BAT_SELF_REGULATION
+
+            # Debug Informationen
             control_range_low = data.data.general_data.data.chargemode_config.pv_charging.control_range[0]
             control_range_high = data.data.general_data.data.chargemode_config.pv_charging.control_range[1]
             control_range_center = control_range_high - (control_range_high - control_range_low) / 2
@@ -358,9 +442,40 @@ class BatAll:
                 log.debug("Speicher-Leistung nicht begrenzen, da EVU-Überschuss vorhanden ist.")
             else:
                 log.debug("Speicher-Leistung nicht begrenzen.")
-        # Wird nötig für PV Ladung in Speicher - Fahrzeugladung aus Netz
-        # charge_mode = BatChargeMode.BAT_FORCE_CHARGE
         return charge_mode
+
+    def get_charge_mode_manual_charge(self):
+        # EVU Bezug vorhanden oder gewollte PV-Ladung aktiv
+        evu_power_valid = (data.data.counter_all_data.get_evu_counter().data.get.power >= -100 or
+                           self.data.config.power_limit_mode == BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value)
+        bat_power_valid = (self.data.get.power <= 0 or
+                           (self.data.get.power > 0 and
+                            self.data.config.power_limit_mode == BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value))
+        if (evu_power_valid and bat_power_valid):
+            if self.data.config.manual_mode == ManualMode.MANUAL_LIMIT.value:
+                log.debug("Aktive Speichersteuerung: Manueller Modus - Regellimit anwenden.")
+                return BatChargeMode.BAT_USE_LIMIT
+            elif self.data.config.manual_mode == ManualMode.MANUAL_CHARGE.value:
+                log.debug("Aktive Speichersteuerung: Manueller Modus - Speicher laden.")
+                return BatChargeMode.BAT_FORCE_CHARGE
+            elif self.data.config.manual_mode == ManualMode.MANUAL_DISCHARGE.value:
+                log.debug("Aktive Speichersteuerung: Manueller Modus - Speicher entladen.")
+                return BatChargeMode.BAT_FORCE_DISCHARGE
+            else:
+                log.debug("Aktive Speichersteuerung: Manueller Modus - Steuerung Aus.")
+                return BatChargeMode.BAT_SELF_REGULATION
+        # manual_disable and fallback
+        else:
+            if evu_power_valid:
+                log.debug("Aktive Speichersteuerung: Manueller Modus - EVU-Einspeisung vorhanden oder "
+                          "Ladung in Höhe des PV-Ertrags konfiguriert.")
+            if bat_power_valid:
+                log.debug("Aktive Speichersteuerung: Manueller Modus - Speicher entlädt oder "
+                          "Ladung in Höhe des PV-Ertrags konfiguriert.")
+            return BatChargeMode.BAT_SELF_REGULATION
+
+    def get_charge_mode_electricity_tariff(self):
+        pass
 
     def get_power_limit(self):
         # Falls kein steuerbarer Speicher installiert ist, der Disclaimer nicht akzeptiert wurde
@@ -377,22 +492,24 @@ class BatAll:
                 log.debug("Speicher-Leistung nicht begrenzen, da aktive Speichersteuerung deaktiviert wurde.")
         else:
             charge_mode = BatChargeMode.BAT_SELF_REGULATION
-            if self.data.config.bat_control_condition == BatPowerLimitCondition.MANUAL.value:
+            if self.data.config.power_limit_condition == BatPowerLimitCondition.MANUAL.value:
                 log.debug("Aktive Speichersteuerung: Manueller Modus.")
-                charge_mode = BatChargeMode(self.data.config.manual_mode)
-            elif self.data.config.bat_control_condition == BatPowerLimitCondition.VEHICLE_CHARGING.value:
+                charge_mode = self.get_charge_mode_manual_charge()
+            elif self.data.config.power_limit_condition == BatPowerLimitCondition.VEHICLE_CHARGING.value:
                 log.debug("Aktive Speichersteuerung: Wenn Fahrzeuge laden.")
                 charge_mode = self.get_charge_mode_vehicle_charge()
-            elif self.data.config.bat_control_condition == BatPowerLimitCondition.PRICE_LIMIT.value:
+            elif self.data.config.power_limit_condition == BatPowerLimitCondition.PRICE_LIMIT.value:
                 log.debug("Aktive Speichersteuerung: Strompreisbasiert.")
-                pass
-            elif self.data.config.bat_control_condition == BatPowerLimitCondition.SCHEDULED.value:
+                charge_mode = self.get_charge_mode_electricity_tariff()
+            elif self.data.config.power_limit_condition == BatPowerLimitCondition.SCHEDULED.value:
                 log.debug("Aktive Speichersteuerung: Vorhersagebasiertes Zielladen.")
                 pass
 
         # calculate power_limit
+        controllable_bat_components = get_controllable_bat_components()
         if charge_mode == BatChargeMode.BAT_SELF_REGULATION:
             self.data.set.power_limit = None
+            log.debug("Speicher-Leistung nicht begrenzen")
         elif charge_mode == BatChargeMode.BAT_USE_LIMIT:
             if self.data.config.power_limit_mode == BatPowerLimitMode.MODE_NO_DISCHARGE.value:
                 self.data.set.power_limit = 0
@@ -402,22 +519,49 @@ class BatAll:
                 log.debug(f"Speicher-Leistung begrenzen auf {self.data.set.power_limit/1000}kW")
             elif self.data.config.power_limit_mode == BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value:
                 # PV-Ertrag und maximale Ladeleistung Speicher berücksichtigen
-                self.data.set.power_limit = data.data.counter_all_data.data.set.home_consumption * -1
+                # self.data.set.power_limit = data.data.counter_all_data.data.set.home_consumption * -1
+                self.data.set.power_limit = data.data.pv_all_data.data.get.power * -1
                 log.debug(f"Speicher in Höhe des PV-Ertrags laden: {self.data.set.power_limit/1000}kW")
+            # FIXME: Leistung auf einzelne Speicher verteilen
+            # for bat_component in controllable_bat_components:
+            #     if self.data.set.power_limit is None:
+            #         power_limit = None
+            #     else:
+            #         bat_component = data.data.bat_data[f"bat{bat_component.component_config.id}"].data
+            #         max_charge_power = bat_component.get.max_charge_power
+            #         max_discharge_power = bat_component.get.max_discharge_power
+            #         if power_limit < 0:
+            #             power_limit = max(power_limit, max_discharge_power * -1)
+            #         else:
+            #             power_limit = min(power_limit, max_charge_power)
+            #         power_limit = self._limit_bat_power_discharge(power_limit)
+            #     data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set.power_limit = power_limit
         elif charge_mode == BatChargeMode.BAT_FORCE_CHARGE:
             # maximal konfigurierte Ladeleistung des Speichers setzen
-            pass
+            max_charge_power_total = 0
+            for bat_component in controllable_bat_components:
+                bat_component_data = data.data.bat_data[f"bat{bat_component.component_config.id}"].data
+                max_charge_power_total += bat_component_data.get.max_charge_power
+            self.data.set.power_limit = max_charge_power_total
+
+            # for bat_component in controllable_bat_components:
+            #     bat_component.component_config.id
+            #     max_charge = data.data.bat_data[f"bat{bat_component.component_config.id}"].data.get.max_charge_power
+            #     log.debug(f"**MAX CHARGE POWER** {max_charge}W")
+            #     data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set.power_limit = max_charge
         elif charge_mode == BatChargeMode.BAT_FORCE_DISCHARGE:
             # das ist in Deutschland (noch) nicht erlaubt
             pass
-        remaining_power_limit = self.data.set.power_limit
-        for bat_component in get_controllable_bat_components():
-            if self.data.set.power_limit is None:
-                power_limit = None
-            else:
-                power_limit = self._limit_bat_power_discharge(remaining_power_limit)
+        self._set_bat_power_active_control(self.data.set.power_limit)
+        # deprecated
+        # remaining_power_limit = self.data.set.power_limit
+        # for bat_component in get_controllable_bat_components():
+        #     if self.data.set.power_limit is None:
+        #         power_limit = None
+        #     else:
+        #         power_limit = self._limit_bat_power_discharge(remaining_power_limit)
 
-            data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set.power_limit = power_limit
+        #     data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set.power_limit = power_limit
 
 
 def get_controllable_bat_components() -> List:
