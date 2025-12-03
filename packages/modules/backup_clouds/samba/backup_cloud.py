@@ -95,7 +95,7 @@ def upload_backup(config: SambaBackupCloudConfiguration, backup_filename: str, b
         finally:
             conn.close()
     else:
-        log.warning("SMB Verbindungsaufbau über Port 139 fehlgeschlagen.")
+        raise Exception("SMB Verbindungsaufbau über Port 139 fehlgeschlagen.")
 
 
 def create_backup_cloud(config: SambaBackupCloud):
