@@ -118,6 +118,26 @@ const chartRange = computed(
   () => mqttStore.themeConfiguration?.history_chart_range || 3600,
 );
 
+const secondaryCounterDatasets = computed(() =>
+  mqttStore.getSecondaryCounterIds.map((id) => ({
+    label: mqttStore.getComponentName(id),
+    category: 'component',
+    unit: 'kW',
+    borderColor: '#FFA9A8',
+    backgroundColor: 'rgba(255,169,168, 0.2)',
+    data: selectedData.value.map((item) => ({
+      x: item.timestamp * 1000,
+      y: item[`counter${id}-power`] ?? 0,
+    })),
+    borderWidth: 2,
+    pointRadius: 0,
+    pointHoverRadius: 4,
+    pointHitRadius: 5,
+    fill: true,
+    yAxisID: 'y',
+  })),
+);
+
 const chargePointDatasets = computed(() =>
   chargePointIds.value.map((cpId) => ({
     label: `${chargePointNames.value(cpId)}`,
@@ -233,6 +253,7 @@ const lineChartData = computed(() => {
         fill: true,
         yAxisID: 'y',
       },
+      ...secondaryCounterDatasets.value,
       {
         label: 'PV ges.',
         category: 'component',

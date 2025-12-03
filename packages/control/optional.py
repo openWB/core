@@ -4,7 +4,7 @@ import logging
 from math import ceil
 import random
 from threading import Thread
-from typing import List, Optional as TypingOptional, Union
+from typing import Dict, List, Optional as TypingOptional, Union
 from datetime import datetime, timedelta
 
 from control import data
@@ -142,32 +142,44 @@ class Optional(OcppMixin):
             return False
 
     def __get_first_entry(self) -> tuple[str, float]:
-        if self.data.electricity_pricing.configured:
-            prices = self.data.electricity_pricing.get.prices
-            if prices is None or len(prices) == 0:
-                raise Exception("Keine Preisdaten für strompreisbasiertes Laden vorhanden.")
-            else:
-                timestamp, first = next(iter(prices.items()))
-                price_timeslot_seconds = self.__calculate_price_timeslot_length(prices)
-                now = timecheck.create_timestamp()
-                prices = {
-                    price[0]: price[1]
-                    for price in prices.items()
-                    if float(price[0]) > now - (price_timeslot_seconds - 1)
-                }
-                self.data.electricity_pricing.get.prices = prices
-                timestamp, first = next(iter(prices.items()))
-                return timestamp, first
+        prices = self.data.electricity_pricing.get.prices
+        if prices is None or len(prices) == 0:
+            raise Exception("Keine Preisdaten für strompreisbasiertes Laden vorhanden.")
         else:
-            raise Exception("Kein Anbieter für strompreisbasiertes Laden konfiguriert.")
+            timestamp, first = next(iter(prices.items()))
+            return timestamp, first
+
+    def remove_outdated_prices(self):
+        def remove(price_data: Dict) -> Dict:
+            price_timeslot_seconds = self.__calculate_price_timeslot_length(price_data)
+            now = timecheck.create_timestamp()
+            return {
+                price[0]: price[1]
+                for price in price_data.items()
+                if float(price[0]) > now - (price_timeslot_seconds - 1)
+            }
+
+        if self.data.electricity_pricing.configured:
+            ep = self.data.electricity_pricing
+            ep.get.prices = remove(ep.get.prices)
+            Pub().pub("openWB/set/optional/ep/get/prices", ep.get.prices)
+            if self._flexible_tariff_module:
+                ep.flexible_tariff.get.prices = remove(ep.flexible_tariff.get.prices)
+                Pub().pub("openWB/set/optional/ep/flexible_tariff/get/prices", ep.flexible_tariff.get.prices)
+            if self._grid_fee_module:
+                ep.grid_fee.get.prices = remove(ep.grid_fee.get.prices)
+                Pub().pub("openWB/set/optional/ep/grid_fee/get/prices", ep.grid_fee.get.prices)
 
     def __get_current_timeslot_start(self) -> int:
         timestamp = self.__get_first_entry()[0]
         return float(timestamp)
 
     def ep_get_current_price(self) -> float:
-        first = self.__get_first_entry()[1]
-        return first
+        if self.data.electricity_pricing.configured:
+            first = self.__get_first_entry()[1]
+            return first
+        else:
+            raise Exception("Kein Anbieter für strompreisbasiertes Laden konfiguriert.")
 
     def __calculate_price_timeslot_length(self, prices: dict) -> int:
         first_timestamps = list(prices.keys())[:2]

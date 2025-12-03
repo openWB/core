@@ -545,7 +545,12 @@ class SimpleMQTTDaemon:
             'pv': 'pv_charging',
             'eco': 'eco_charging',
             'stop': 'stop',
-            'target': 'scheduled_charging'
+            'target': 'scheduled_charging',
+            # Support full names directly
+            'instant_charging': 'instant_charging',
+            'pv_charging': 'pv_charging',
+            'eco_charging': 'eco_charging',
+            'scheduled_charging': 'scheduled_charging'
         }
 
         if mode not in mode_mapping:
