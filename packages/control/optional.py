@@ -2,14 +2,13 @@
 """
 import logging
 from math import ceil
-import random
 from threading import Thread
 from typing import Dict, List, Optional as TypingOptional, Union
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from control import data
 from control.ocpp import OcppMixin
-from control.optional_data import FlexibleTariff, GridFee, OptionalData, PricingGet
+from control.optional_data import TARIFF_UPDATE_HOUR, FlexibleTariff, GridFee, OptionalData, PricingGet
 from helpermodules import hardware_configuration
 from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
@@ -20,7 +19,6 @@ from modules.common.configurable_monitoring import ConfigurableMonitoring
 
 log = logging.getLogger(__name__)
 AS_EURO_PER_KWH = 1000.0  # Umrechnung von €/Wh in €/kWh
-TARIFF_UPDATE_HOUR = 14  # latest expected time for daily tariff update
 
 
 class Optional(OcppMixin):
@@ -47,9 +45,6 @@ class Optional(OcppMixin):
             self.data.electricity_pricing.flexible_tariff.get = PricingGet()
             self._reset_state(self.data.electricity_pricing.flexible_tariff, "flexible_tariff")
         self._flexible_tariff_module = value
-        if value:
-            self.data.electricity_pricing.get.next_query_time = None
-            Pub().pub("openWB/set/optional/ep/get/next_query_time", None)
         self._set_ep_configured()
 
     @property
@@ -63,9 +58,6 @@ class Optional(OcppMixin):
             self.data.electricity_pricing.grid_fee.get = PricingGet()
             self._reset_state(self.data.electricity_pricing.grid_fee, "grid_fee")
         self._grid_fee_module = value
-        if value:
-            self.data.electricity_pricing.get.next_query_time = None
-            Pub().pub("openWB/set/optional/ep/get/next_query_time", None)
         self._set_ep_configured()
 
     def _set_ep_configured(self):
@@ -84,6 +76,7 @@ class Optional(OcppMixin):
             Pub().pub(f"openWB/set/optional/ep/{module_name}/get/fault_str", NO_ERROR)
         Pub().pub(f"openWB/set/optional/ep/{module_name}/get/prices", {})
         Pub().pub("openWB/set/optional/ep/get/prices", {})
+        Pub().pub("openWB/set/optional/ep/get/next_query_time", None)
 
     def monitoring_start(self):
         if self.monitoring_module is not None:
@@ -256,15 +249,6 @@ class Optional(OcppMixin):
         if len(self.data.electricity_pricing.get.prices) == 0:
             return True
         if self.data.electricity_pricing.get.next_query_time is None:
-            next_query_time = datetime.fromtimestamp(float(max(self.data.electricity_pricing.get.prices))).replace(
-                hour=TARIFF_UPDATE_HOUR, minute=0, second=0
-            ) + timedelta(
-                # aktually ET providers issue next day prices up to half an hour earlier then 14:00
-                # reduce serverload on their site by trying early and randomizing query time
-                minutes=random.randint(1, 7) * -5
-            )
-            self.data.electricity_pricing.get.next_query_time = next_query_time.timestamp()
-            Pub().pub("openWB/set/optional/ep/get/next_query_time", self.data.electricity_pricing.get.next_query_time)
             return True
         if is_tomorrow(get_last_entry_time_stamp()):
             if timecheck.create_timestamp() > self.data.electricity_pricing.get.next_query_time:
