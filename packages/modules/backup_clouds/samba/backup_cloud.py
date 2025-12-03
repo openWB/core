@@ -72,8 +72,7 @@ def upload_backup(config: SambaBackupCloudConfiguration, backup_filename: str, b
     # 2) Fallback: SMB1 über Port 139
     # ------------------------------------------------------------
     if not is_port_open(config.smb_server, SMB_PORT_139):
-        log.warning(f"Host {config.smb_server} und/oder Port {SMB_PORT_139} nicht erreichbar.")
-        return
+        raise Exception((f"Host {config.smb_server} und/oder Port {SMB_PORT_139} und {SMB_PORT_445} nicht erreichbar.")
 
     conn = SMBConnection(
         config.smb_user,
