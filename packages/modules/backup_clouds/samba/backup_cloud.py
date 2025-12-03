@@ -34,9 +34,7 @@ def upload_backup(config: SambaBackupCloudConfiguration, backup_filename: str, b
 
     # Pfad prüfen
     if re.search(r'[\\\:\*\?\"\<\>\|]+', config.smb_path):
-        log.warning("Ungültige Zeichen im Pfad.")
-        log.warning("Sicherung nicht erfolgreich.")
-        return
+        raise Exception("Ungültige Zeichen im Pfad. Sicherung nicht erfolgreich.")
 
     # ------------------------------------------------------------
     # 1) SMB2/3 über Port 445 testen
