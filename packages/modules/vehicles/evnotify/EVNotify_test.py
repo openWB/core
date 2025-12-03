@@ -30,18 +30,18 @@ class TestEVNotify:
         assert self.mock_value_store.set.call_count == 1
         assert self.mock_value_store.set.call_args[0][0].soc == 42.5
 
-#    def test_update_passes_errors_to_context(self, monkeypatch):
-#        # setup
-#        dummy_error = Exception()
-#        self.mock_fetch_soc.side_effect = dummy_error
-#
-#        # execution
-#        create_vehicle(EVNotify(configuration=EVNotifyConfiguration(
-#            1, "someKey", "someToken")), 0).update(VehicleUpdateData())
-#
-#        # evaluation
-#        self.assert_context_manager_called_with(dummy_error)
-#
+    def test_update_passes_errors_to_context(self, monkeypatch):
+        # setup
+        dummy_error = Exception()
+        self.mock_fetch_soc.side_effect = dummy_error
+
+        # execution
+        create_vehicle(EVNotify(configuration=EVNotifyConfiguration(
+            1, "someKey", "someToken")), 0).update(VehicleUpdateData())
+
+        # evaluation
+        self.assert_context_manager_called_with(dummy_error)
+
     def assert_context_manager_called_with(self, error):
         assert self.mock_context_exit.call_count == 1
         assert self.mock_context_exit.call_args[0][1] is error

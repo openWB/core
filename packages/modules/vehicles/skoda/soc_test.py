@@ -36,18 +36,18 @@ class TestSkoda:
         assert call_args.range == 250
         assert call_args.soc_timestamp == 1760822400.0
 
-#    def test_update_passes_errors_to_context(self):
-#        # setup
-#        dummy_error = Exception("API Error")
-#        self.mock_fetch_soc.side_effect = dummy_error
-#        config = Skoda(configuration=SkodaConfiguration(user_id="test_user", password="test_password", vin="test_vin"))
-#
-#        # execution
-#        create_vehicle(config, 1).update(VehicleUpdateData())
-#
-#        # evaluation
-#        self.assert_context_manager_called_with(dummy_error)
-#
+    def test_update_passes_errors_to_context(self):
+        # setup
+        dummy_error = Exception("API Error")
+        self.mock_fetch_soc.side_effect = dummy_error
+        config = Skoda(configuration=SkodaConfiguration(user_id="test_user", password="test_password", vin="test_vin"))
+
+        # execution
+        create_vehicle(config, 1).update(VehicleUpdateData())
+
+        # evaluation
+        self.assert_context_manager_called_with(dummy_error)
+
     def assert_context_manager_called_with(self, error):
         assert self.mock_context_exit.call_count == 1
         assert self.mock_context_exit.call_args[0][1] is error
