@@ -65,7 +65,7 @@ def upload_backup(config: SambaBackupCloudConfiguration, backup_filename: str, b
             finally:
                 conn.close()
         else:
-            log.warning("SMB-Verbindungsaufbau über Port 445 nicht möglich.")
+            raise Exception("SMB-Verbindungsaufbau über Port 445 nicht möglich.")
     else:
 
     # ------------------------------------------------------------
