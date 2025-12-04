@@ -60,7 +60,7 @@ def upgrade_datastore_104(self) -> None:
     """Upgrade-Funktion für Datastore-Version 104: Ergänzt fehlende aWATTar-Konfigurationsparameter"""
     def upgrade(topic: str, payload) -> None:
         """Prüft und migriert ein einzelnes MQTT-Topic"""
-        # zu bearbeitendes Topic finden
+        # Topic finden, das aktualisiert werden soll
         if "openWB/optional/ep/flexible_tariff/provider" == topic:
             provider = decode_payload(payload)
             # Nur für aWATTar-Provider ausführen
