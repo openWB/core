@@ -43,6 +43,10 @@ def fetch_soc(conf: VWId, vehicle: int) -> Union[int, float, str, float]:
         else:
             log.debug(f"vwid.api.fetch_soc: reuse  api for vehicle {vehicle}")
 
+        a.user_id = conf.configuration.user_id
+        a.password = conf.configuration.password
+        a.vin = conf.configuration.vin
+
         # get soc, range from server
         soc, range, soc_ts, soc_tsX = loop.run_until_complete(a._fetch_soc())
 
