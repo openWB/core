@@ -29,18 +29,20 @@ class SolakonOneBat(AbstractBat):
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
 
+        # AC Leistung am Stecker, Batterie aus dem Netz aufladen hat positive Werte, 
+        # Leistung aus der Batterie und/oder aus PV ins Netz abgeben hat negative Werte
         power = self.client.read_holding_registers(39134, ModbusDataType.INT_32, unit=unit) * -1
         soc =   self.client.read_holding_registers(39424, ModbusDataType.INT_16, unit=unit)
-        # Geladen in kWh * 0,1
-        # imported = self.client.read_holding_registers(32003, ModbusDataType.UINT_32, unit=unit) * 100
-        # Entladen in kWh * 0,1
-        # exported = self.client.read_holding_registers(32006, ModbusDataType.UINT_32, unit=unit) * 100
+        # tägliche DC Ladung der Batterie in Wh
+        imported = self.client.read_holding_registers(39607, ModbusDataType.UINT_32, unit=unit) * 10
+        # tägliche DC Entladung der Batterie in Wh
+        exported = self.client.read_holding_registers(39611, ModbusDataType.UINT_32, unit=unit) * 10
 
         bat_state = BatState(
             power=power,
             soc=soc,
-        #     imported=imported,
-        #     exported=exported
+            imported=imported,
+            exported=exported
         )
         self.store.set(bat_state)
 
