@@ -49,7 +49,7 @@ _Bei Fragen programmiert Ihr das SoC-Modul vorerst, wie Ihr es versteht, und ers
 ### Breaking Changes und Ergänzen von neuen Einstellungen
 
 Die Klasse `UpdateConfig` verwaltet automatische Migrationen bei Breaking Changes und neuen Einstellungen. Das System funktioniert folgendermaßen:
-- Für jede notwendige Anpassung wird eine nummerierte Upgrade-Funktion erstellt
+- Für jede notwendige Anpassung wird eine nummerierte Upgrade-Funktion erstellt.
 - Beim Systemstart werden alle noch nicht ausgeführten Upgrade-Funktionen automatisch aufgerufen
 - Die Nummern der bereits ausgeführten Funktionen werden persistent gespeichert, um mehrfache Ausführung zu verhindern. Der aktuelle Migrations-Status wird im MQTT-Topic `openWB/system/datastore_version` veröffentlicht.
 
