@@ -99,7 +99,7 @@ class StepwiseControlEebus(AbstractIoAction):
             return 1
 
 
-def create_action(config: StepwiseControlSetup):
+def create_action(config: StepwiseControlSetup, parent_device_type: str):
     return StepwiseControlEebus(config=config)
 
 

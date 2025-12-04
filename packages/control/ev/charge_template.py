@@ -339,30 +339,28 @@ class ChargeTemplate:
             filtered_plans = [d for d in plans_diff_end_date if list(d.values())[0] is not None]
             if filtered_plans:
                 sorted_plans = sorted(filtered_plans, key=lambda x: list(x.values())[0])
-                if len(sorted_plans) == 1:
-                    plan_dict = sorted_plans[0]
-                elif (len(sorted_plans) > 1 and
-                      list(sorted_plans[0].values())[0] < self.BUFFER):
-                    plan_dict = sorted_plans[1]
+                for plan in sorted_plans:
+                    if self.BUFFER < list(sorted_plans[0].values())[0]:
+                        plan_dict = plan
+                        break
                 else:
-                    plan_dict = sorted_plans[0]
-                if plan_dict:
-                    plan_id = list(plan_dict.keys())[0]
-                    plan_end_time = list(plan_dict.values())[0]
+                    return None
+                plan_id = list(plan_dict.keys())[0]
+                plan_end_time = list(plan_dict.values())[0]
 
-                    for p in plans:
-                        if p.id == plan_id:
-                            plan = p
+                for p in plans:
+                    if p.id == plan_id:
+                        plan = p
 
-                    remaining_time, missing_amount, phases, duration = self._calc_remaining_time(
-                        plan, plan_end_time, soc, ev_template, used_amount, max_hw_phases, phase_switch_supported,
-                        charging_type, control_parameter.phases, soc_request_interval_offset, hw_bidi)
+                remaining_time, missing_amount, phases, duration = self._calc_remaining_time(
+                    plan, plan_end_time, soc, ev_template, used_amount, max_hw_phases, phase_switch_supported,
+                    charging_type, control_parameter.phases, soc_request_interval_offset, hw_bidi)
 
-                    return SelectedPlan(remaining_time=remaining_time,
-                                        duration=duration,
-                                        missing_amount=missing_amount,
-                                        phases=phases,
-                                        plan=plan)
+                return SelectedPlan(remaining_time=remaining_time,
+                                    duration=duration,
+                                    missing_amount=missing_amount,
+                                    phases=phases,
+                                    plan=plan)
             else:
                 return None
 

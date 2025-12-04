@@ -772,13 +772,18 @@ class ParameterHandler
      */
     private function setChargemode($chargepointId, $mode)
     {
-        // Gültige Modi mapping
+        // Gültige Modi mapping (sowohl kurze als auch vollständige Namen)
         $validModes = [
             'instant' => 'instant_charging',
             'pv' => 'pv_charging',
             'eco' => 'eco_charging',
             'stop' => 'stop',
-            'target' => 'scheduled_charging'
+            'target' => 'scheduled_charging',
+            // Vollständige Namen direkt unterstützen
+            'instant_charging' => 'instant_charging',
+            'pv_charging' => 'pv_charging',
+            'eco_charging' => 'eco_charging',
+            'scheduled_charging' => 'scheduled_charging'
         ];
 
         if (!isset($validModes[$mode])) {

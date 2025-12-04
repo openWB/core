@@ -91,6 +91,10 @@ class SimpleMQTTDaemon:
         """Callback for successful MQTT connection."""
         if rc == 0:
             log.info(f"Connected to MQTT broker at {self.host}:{self.port}")
+            
+            # Publish API revision
+            self._publish_revision()
+            
             # Subscribe to specific openWB component topics
             client.subscribe("openWB/bat/#", qos=0)
             client.subscribe("openWB/pv/#", qos=0)
@@ -271,7 +275,11 @@ class SimpleMQTTDaemon:
             log.debug(f"DEBUG: Found vehicle name pattern, transforming: {simple_base}")
             simple_base = re.sub(r'/get/connected_vehicle/info/name$', '/vehicle_name', simple_base)
             simple_base = re.sub(r'/connected_vehicle/info/name$', '/vehicle_name', simple_base)
-
+        elif '/connected_vehicle/soc' in simple_base:
+            log.debug(f"DEBUG: Found connected_vehicle soc pattern, transforming: {simple_base}")
+            simple_base = re.sub(r'/get/connected_vehicle/soc$', '/soc', simple_base)
+            simple_base = re.sub(r'/connected_vehicle/soc$', '/soc', simple_base)
+        
         # Keep only config topics that are in the allowed list
         if '/config/' in simple_base and not re.search(r'/(chargemode|vehicle_name)$', simple_base):
             allowed_config_paths = [
@@ -304,11 +312,17 @@ class SimpleMQTTDaemon:
         # Handle get topics - remove /get/ prefix
         if '/get/' in simple_base:
             simple_base = simple_base.replace('/get/', '/')
-
+            
+            # Special handling for soc-related topics
+            if re.search(r'/soc$', simple_base):
+                simple_base = re.sub(r'/soc$', '/pro_soc', simple_base)
+            elif re.search(r'/soc_timestamp$', simple_base):
+                simple_base = re.sub(r'/soc_timestamp$', '/pro_soc_timestamp', simple_base)
+            
             # Filter out unwanted topics - but exclude already transformed ones
-            if not re.search(r'/(chargemode|vehicle_name)$', simple_base):
+            if not re.search(r'/(chargemode|vehicle_name|soc|pro_soc|pro_soc_timestamp)$', simple_base):
                 unwanted_patterns = [
-                    r'/connected_vehicle/(info|config|soc)/',
+                    r'/connected_vehicle/(info|config)/',
                     r'/max_evse_current$',
                     r'/current_branch$',
                     r'/current_commit$'
@@ -320,7 +334,7 @@ class SimpleMQTTDaemon:
         else:
             # For non-get topics, also filter out remaining connected_vehicle topics
             # but exclude the ones we already transformed
-            if not re.search(r'/(chargemode|vehicle_name)$', simple_base):
+            if not re.search(r'/(chargemode|vehicle_name|soc)$', simple_base):
                 if re.search(r'/connected_vehicle/', simple_base):
                     log.debug(f"DEBUG: Filtering out connected_vehicle topic: {simple_base}")
                     return None
@@ -424,11 +438,87 @@ class SimpleMQTTDaemon:
                 charge_template = json.loads(payload)
                 self.charge_template_cache[chargepoint_id] = charge_template
                 log.debug(f"Cached charge_template for chargepoint {chargepoint_id}")
+                
+                # Publish read topics for charge_template values
+                self._publish_charge_template_read_topics(chargepoint_id, charge_template)
 
         except json.JSONDecodeError as e:
             log.warning(f"Failed to parse charge_template JSON for {topic}: {e}")
         except Exception as e:
             log.error(f"Error caching charge_template for {topic}: {e}")
+
+    def _publish_charge_template_read_topics(self, chargepoint_id: str, charge_template: Dict[str, Any]):
+        """Publish readable topics for charge_template values."""
+        try:
+            chargemode = charge_template.get('chargemode', {})
+            
+            # Extract min_current from pv_charging
+            pv_charging = chargemode.get('pv_charging', {})
+            if 'min_current' in pv_charging:
+                topic = f"openWB/simpleAPI/chargepoint/{chargepoint_id}/minimal_permanent_current"
+                self._publish_if_changed(topic, pv_charging['min_current'])
+                
+                # Also publish for lowest ID if this is it
+                if 'chargepoint' in self.lowest_ids and self.lowest_ids['chargepoint'] == int(chargepoint_id):
+                    simple_topic = "openWB/simpleAPI/chargepoint/minimal_permanent_current"
+                    self._publish_if_changed(simple_topic, pv_charging['min_current'])
+            
+            # Extract min_soc from pv_charging (minimal_pv_soc)
+            if 'min_soc' in pv_charging:
+                topic = f"openWB/simpleAPI/chargepoint/{chargepoint_id}/minimal_pv_soc"
+                self._publish_if_changed(topic, pv_charging['min_soc'])
+                
+                # Also publish for lowest ID if this is it
+                if 'chargepoint' in self.lowest_ids and self.lowest_ids['chargepoint'] == int(chargepoint_id):
+                    simple_topic = "openWB/simpleAPI/chargepoint/minimal_pv_soc"
+                    self._publish_if_changed(simple_topic, pv_charging['min_soc'])
+            
+            # Extract max_price from eco_charging
+            eco_charging = chargemode.get('eco_charging', {})
+            if 'max_price' in eco_charging:
+                topic = f"openWB/simpleAPI/chargepoint/{chargepoint_id}/max_price_eco"
+                self._publish_if_changed(topic, eco_charging['max_price'])
+                
+                # Also publish for lowest ID if this is it
+                if 'chargepoint' in self.lowest_ids and self.lowest_ids['chargepoint'] == int(chargepoint_id):
+                    simple_topic = "openWB/simpleAPI/chargepoint/max_price_eco"
+                    self._publish_if_changed(simple_topic, eco_charging['max_price'])
+            
+            # Extract instant_charging_limit values
+            instant_charging = chargemode.get('instant_charging', {})
+            limit = instant_charging.get('limit', {})
+            
+            if 'selected' in limit:
+                topic = f"openWB/simpleAPI/chargepoint/{chargepoint_id}/instant_charging_limit"
+                self._publish_if_changed(topic, limit['selected'])
+                
+                # Also publish for lowest ID if this is it
+                if 'chargepoint' in self.lowest_ids and self.lowest_ids['chargepoint'] == int(chargepoint_id):
+                    simple_topic = "openWB/simpleAPI/chargepoint/instant_charging_limit"
+                    self._publish_if_changed(simple_topic, limit['selected'])
+            
+            if 'amount' in limit:
+                # Convert from internal value (Wh) to kWh for display
+                amount_kwh = limit['amount'] / 1000
+                topic = f"openWB/simpleAPI/chargepoint/{chargepoint_id}/instant_charging_limit_amount"
+                self._publish_if_changed(topic, amount_kwh)
+                
+                # Also publish for lowest ID if this is it
+                if 'chargepoint' in self.lowest_ids and self.lowest_ids['chargepoint'] == int(chargepoint_id):
+                    simple_topic = "openWB/simpleAPI/chargepoint/instant_charging_limit_amount"
+                    self._publish_if_changed(simple_topic, amount_kwh)
+            
+            if 'soc' in limit:
+                topic = f"openWB/simpleAPI/chargepoint/{chargepoint_id}/instant_charging_limit_soc"
+                self._publish_if_changed(topic, limit['soc'])
+                
+                # Also publish for lowest ID if this is it
+                if 'chargepoint' in self.lowest_ids and self.lowest_ids['chargepoint'] == int(chargepoint_id):
+                    simple_topic = "openWB/simpleAPI/chargepoint/instant_charging_limit_soc"
+                    self._publish_if_changed(simple_topic, limit['soc'])
+                    
+        except Exception as e:
+            log.error(f"Error publishing charge_template read topics: {e}")
 
     def _handle_write_operation(self, topic: str, payload: str):
         """Handle write operations from simpleAPI set topics."""
@@ -545,7 +635,12 @@ class SimpleMQTTDaemon:
             'pv': 'pv_charging',
             'eco': 'eco_charging',
             'stop': 'stop',
-            'target': 'scheduled_charging'
+            'target': 'scheduled_charging',
+            # Support full names directly
+            'instant_charging': 'instant_charging',
+            'pv_charging': 'pv_charging',
+            'eco_charging': 'eco_charging',
+            'scheduled_charging': 'scheduled_charging'
         }
 
         if mode not in mode_mapping:
@@ -771,6 +866,16 @@ class SimpleMQTTDaemon:
             log.debug(f"Published JSON to {topic}")
         except Exception as e:
             log.error(f"Failed to publish JSON to {topic}: {e}")
+
+    def _publish_revision(self):
+        """Publish API revision number."""
+        try:
+            revision_topic = "openWB/simpleAPI/revision"
+            revision_value = "2"
+            self.client.publish(revision_topic, revision_value, qos=0, retain=True)
+            log.info(f"Published API revision: {revision_value}")
+        except Exception as e:
+            log.error(f"Failed to publish revision: {e}")
 
     def connect(self):
         """Establish connection to MQTT broker."""
