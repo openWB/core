@@ -63,7 +63,7 @@ class RippleControlReceiver(AbstractIoAction):
             return 0
 
 
-def create_action(config: RippleControlReceiverSetup):
+def create_action(config: RippleControlReceiverSetup, parent_device_type: str):
     return RippleControlReceiver(config=config)
 
 
