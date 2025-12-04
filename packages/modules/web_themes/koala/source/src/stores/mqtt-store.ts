@@ -3343,14 +3343,14 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @returns string | number | ValueObject | undefined
    */
   const getGridPower = computed(() => {
-    return (returnType: string = 'textValue') => {
-      const gridId = getGridId.value;
-      if (gridId === undefined) {
+    return (returnType: string = 'textValue', counterId?: number) => {
+      const id = counterId ?? getGridId.value;
+      if (id === undefined) {
         return '---';
       }
       const power =
         (getValue.value(
-          `openWB/counter/${gridId}/get/power`,
+          `openWB/counter/${id}/get/power`,
           undefined,
           0,
         ) as number) || 0;

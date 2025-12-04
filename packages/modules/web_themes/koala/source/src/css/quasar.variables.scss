@@ -35,7 +35,19 @@ $brown-text: #524f57;
 $white: #ffffff;
 $grey: #9e9e9e; // Quasar's default grey
 $toggle-off: #e0e0e0;
+$grid-stroke: #a33c42;
+$grid-fill: #efb6bc33;
+$secondary-counter-stroke: #FFA9A8;
+$secondary-counter-fill: #FFA9A833;
+$home-stroke: #949aa1;
+$home-fill: #949aa133;
+$pv-stroke: #66bd7a;
+$pv-fill: #90ee9033;
 $battery: #ba7128;
+$battery-stroke: #ba7128;
+$battery-fill: #ba712833;
+$charge-point-stroke: #5c93d1;
+$charge-point-fill: #5c93d14D;
 // Light theme (default)
 :root {
   --q-primary: #{$primary};
@@ -54,6 +66,20 @@ $battery: #ba7128;
   --q-toggle-off: #{$toggle-off};
   --q-flow-home-stroke: #{$grey};
   --q-battery: #{$battery};
+  --q-grid-fill: #{$grid-fill};
+  --q-grid-stroke: #{$grid-stroke};
+  --q-home-fill: #{$home-fill};
+  --q-home-stroke: #{$home-stroke};
+  --q-secondary-counter-stroke: #{$secondary-counter-stroke};
+  --q-secondary-counter-fill: #{$secondary-counter-fill};
+  --q-pv-stroke: #{$pv-stroke};
+  --q-pv-fill: #{$pv-fill};
+  --q-battery-stroke: #{$battery-stroke};
+  --q-battery-fill: #{$battery-fill};
+  --q-charge-point-stroke: #{$charge-point-stroke};
+  --q-charge-point-fill: #{$charge-point-fill};
+
+
   // Main background
   background-color: var(--q-background-1);
   // Text color
@@ -251,6 +277,9 @@ $dark-tab-icon: #d7d9e0;
   --q-tab-icon: #{$dark-tab-icon};
   --q-flow-home-stroke: #{$grey};
   --q-battery: #{$dark-warning};
+  --q-grid-stroke: #{$grid-stroke};
+  --q-grid-fill: #{$grid-fill};
+
   // Main background
   background-color: $dark-page;
   // Text color

@@ -26,7 +26,14 @@
         <template #body="props">
           <q-tr
             :props="props"
-            :class="props.row.id"
+            @click="
+              props.row.id === 'grid' ? (gridExpanded = !gridExpanded) : null
+            "
+            :class="[
+              props.row.id,
+              String(props.row.id).startsWith('counter-') ? 'grid' : '',
+              props.row.id === 'grid' ? 'cursor-pointer' : '',
+            ]"
           >
             <q-td key="icon" :props="props">
               <img
@@ -43,7 +50,15 @@
               :props="props"
               class="text-weight-bold"
             >
-              {{ props.row.title }}
+              <div class="row items-center no-wrap">
+                <span>{{ props.row.title }}</span>
+                <q-icon
+                  v-if="props.row.id === 'grid' && secondaryCounterConfigured "
+                  class="q-ml-xs"
+                  :name="gridExpanded ? 'expand_less' : 'expand_more'"
+                  size="24px"
+                />
+              </div>
             </q-td>
 
             <q-td
@@ -150,6 +165,7 @@ import type { DailyTotalsItem } from 'src/components/models/daily-totals-model';
 
 const $q = useQuasar();
 const mqttStore = useMqttStore();
+const gridExpanded = ref(false);
 
 const iconSize = ref(28);
 
@@ -206,6 +222,9 @@ const socValueVisible = computed(() => $q.screen.width >= 700);
 
 const batteryConfigured = computed(() => mqttStore.batteryConfigured);
 const pvConfigured = computed(() => mqttStore.getPvConfigured);
+const secondaryCounterConfigured = computed(
+  () => mqttStore.getSecondaryCounterIds.length > 0,
+);
 const chargePointConfigured = computed(
   () => mqttStore.chargePointIds.length > 0,
 );
@@ -224,6 +243,22 @@ const rows = computed((): DailyTotalsItem[] => {
       exported: mqttStore.gridDailyExported('textValue') as string,
     },
   });
+
+  if (gridExpanded.value) {
+    mqttStore.getSecondaryCounterIds.forEach((id) => {
+      components.push({
+        id: `counter-${id}`,
+        title: mqttStore.getComponentName(id),
+        icon: 'icons/owbCounter.svg',
+        power: mqttStore.getGridPower('textValue', id) as string,
+        powerValue: mqttStore.getGridPower('value', id) as number,
+        today: {
+          imported: 'test',
+          exported: 'test2',
+        },
+      });
+    });
+  }
 
   if (batteryConfigured.value) {
     components.push({
@@ -388,16 +423,67 @@ watch(rows, calculateRowHeight, { deep: true });
 .banner-table :deep(.q-table__middle) {
   background: var(--q-background-2) !important;
 }
-
+/* grid */
 .grid {
-  background: #d5bbc0;
+  background: var(--q-grid-fill);
 }
+
+.banner-table :deep(tbody tr.grid) td {
+  border-top: 2px solid var(--q-grid-stroke);
+  border-bottom: 2px solid var(--q-grid-stroke);
+}
+.banner-table :deep(tbody tr.grid) td:first-child {
+  border-left: 2px solid var(--q-grid-stroke);
+}
+.banner-table :deep(tbody tr.grid) td:last-child {
+  border-right: 2px solid var(--q-grid-stroke);
+}
+
 .body--dark .grid {
   background: #a13a41;
 }
 
+/* secondary counter */
+[class^='counter-'],
+[class*=' counter-'] {
+  background: var(--q-secondary-counter-fill);
+}
+
+.banner-table :deep(tbody tr[class*='counter-']) td {
+  border-top: 2px solid var(--q-secondary-counter-stroke);
+  border-bottom: 2px solid var(--q-secondary-counter-stroke);
+}
+.banner-table :deep(tbody tr[class*='counter-']) td:first-child {
+  border-left: 2px solid var(--q-secondary-counter-stroke);
+}
+.banner-table :deep(tbody tr[class*='counter-']) td:last-child {
+  border-right: 2px solid var(--q-secondary-counter-stroke);
+}
+
+
+
+/*  [class^='counter-'] {
+  background: #d5bbc0;
+}
+.body--dark [class^='counter-'] {
+  background: #a13a41;
+} */
+
+
+/* battery */
 .battery {
-  background: #c7a388;
+  background: var(--q-battery-fill);
+}
+
+.banner-table :deep(tbody tr.battery) td {
+  border-top: 2px solid var(--q-battery-stroke);
+  border-bottom: 2px solid var(--q-battery-stroke);
+}
+.banner-table :deep(tbody tr.battery) td:first-child {
+  border-left: 2px solid var(--q-battery-stroke);
+}
+.banner-table :deep(tbody tr.battery) td:last-child {
+  border-right: 2px solid var(--q-battery-stroke);
 }
 .body--dark .battery {
   background: #b97a1f;
