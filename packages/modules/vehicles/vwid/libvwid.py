@@ -1391,11 +1391,14 @@ class Connection:
             return True
 
 
-class vwid:
+class vwid():
+
+    connection = {}
+
     def __init__(self, session):
         self.session = session
-        self.log = logging.getLogger(__name__)
-        self.connection = {}
+        # self.log = logging.getLogger(__name__)
+        # self.connection = {}
 
     def set_vin(self, vin):
         self.vin = vin
@@ -1420,42 +1423,42 @@ class vwid:
                 data['charging']['batteryStatus']['value']['carCapturedTimestamp'] = _now
 
                 try:
-                    _k = str(self.connection.keys())
-                    _LOGGER.debug(f"libvwid.get_status connections at entry: connections.keys={_k}")
-                    if self.username not in self.connection:
-                        _LOGGER.debug(f"create new connection, key={self.username}")
-                        self.connection[self.username] = Connection(session, self.username, self.password)
-                        self._connection = self.connection[self.username]
-                        self.connection[self.username]._session_tokens['identity'] = {}
-                        self.connection[self.username]._session_tokens['Legacy'] = {}
+                    _k = str(vwid.connection.keys())
+                    _LOGGER.info(f"libvwid.get_status connections at entry: vwid.connections.keys={_k}")
+                    if self.username not in vwid.connection:
+                        _LOGGER.info(f"create new connection, key={self.username}")
+                        vwid.connection[self.username] = Connection(session, self.username, self.password)
+                        self._connection = vwid.connection[self.username]
+                        vwid.connection[self.username]._session_tokens['identity'] = {}
+                        vwid.connection[self.username]._session_tokens['Legacy'] = {}
                         for token in self.tokens:
-                            self.connection[self.username]._session_tokens['identity'][token] = self.tokens[token]
-                            self.connection[self.username]._session_tokens['Legacy'][token] = self.tokens[token]
+                            vwid.connection[self.username]._session_tokens['identity'][token] = self.tokens[token]
+                            vwid.connection[self.username]._session_tokens['Legacy'][token] = self.tokens[token]
                         _conn_reuse = False
                     else:
-                        _LOGGER.debug(f"reuse existing connection, key={self.username}")
-                        self.connection[self.username]._session = session
+                        _LOGGER.info(f"reuse existing connection, key={self.username}")
+                        vwid.connection[self.username]._session = session
                         _conn_reuse = True
                     if not _conn_reuse:
-                        _doLogin_result = await self.connection[self.username].doLogin()
+                        _doLogin_result = await vwid.connection[self.username].doLogin()
                         _LOGGER.debug("after 1st doLogin, result=" + str(_doLogin_result))
                         if _doLogin_result:
                             _update_result = True
                     else:
-                        _update_result = await self.connection[self.username].update()
+                        _update_result = await vwid.connection[self.username].update()
                         _LOGGER.debug("after 1st connection.update without doLogin, result=" + str(_update_result))
                         if not _update_result:
-                            _doLogin_result = await self.connection[self.username].doLogin()
+                            _doLogin_result = await vwid.connection[self.username].doLogin()
                             _LOGGER.debug("after 2nd doLogin, result=" + str(_doLogin_result))
                             if _doLogin_result:
-                                _update_result = await self.connection[self.username].update()
+                                _update_result = await vwid.connection[self.username].update()
                                 _LOGGER.debug("after 2nd connection.update, result=" + str(_update_result))
                             else:
-                                _LOGGER.debug("retry doLogin failed, exit")
-                                return data
+                                _LOGGER.error("retry doLogin failed, exit")
+                                raise Exception("Login failed")
                     if _update_result:
                         _LOGGER.debug("update/doLogin look OK, get results")
-                        for vehicle in self.connection[self.username].vehicles:
+                        for vehicle in vwid.connection[self.username].vehicles:
                             _LOGGER.debug("vehicle loop: " + str(vehicle) + ", self.vin=" + str(self.vin))
                             if str(vehicle) == str(self.vin):
                                 _LOGGER.debug("vehicle loop match: " + str(vehicle) + ", self.vin=" + str(self.vin))
@@ -1473,12 +1476,12 @@ class vwid:
                                 data['charging']['batteryStatus']['value']['cruisingRangeElectric_km'] = str(range)
                                 data['charging']['batteryStatus']['value']['carCapturedTimestamp'] = str(tsxx)
                                 _LOGGER.debug("return data =" + to_json(data, indent=4))
-                                for token in self.connection[self.username]._session_tokens['identity']:
+                                for token in vwid.connection[self.username]._session_tokens['identity']:
                                     self.tokens[token] =\
-                                        self.connection[self.username]._session_tokens['identity'][token]
+                                        vwid.connection[self.username]._session_tokens['identity'][token]
                                 return data
                     else:
-                        _LOGGER.warning("get_status rsp. update failed, raise exception")
+                        _LOGGER.error("get_status rsp. update failed, raise exception")
                         raise Exception("get_status: keine Daten empfangen")
                 except Exception as error:
                     _LOGGER.exception("get_status failed 1, raise exception, exception=" + str(error))
