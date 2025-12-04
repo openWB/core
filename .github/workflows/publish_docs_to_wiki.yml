@@ -33,7 +33,7 @@ jobs:
           git init
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git pull https://$USER_TOKEN@github.com/$OWNER/$REPOSITORY_NAME.wiki.git
+          git pull https://$GITHUB_TOKEN@github.com/$OWNER/$REPOSITORY_NAME.wiki.git
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # 4. Synchronize differences between `docs` & `tmp_wiki`
@@ -44,6 +44,6 @@ jobs:
           cd tmp_wiki
           git add .
           git commit -m "Update Wiki content"
-          git push -f --set-upstream https://$USER_TOKEN@github.com/$OWNER/$REPOSITORY_NAME.wiki.git master
+          git push -f --set-upstream https://$GITHUB_TOKEN@github.com/$OWNER/$REPOSITORY_NAME.wiki.git master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
