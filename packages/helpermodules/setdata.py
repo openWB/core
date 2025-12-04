@@ -672,7 +672,8 @@ class SetData:
             elif ("openWB/set/bat/config/price_limit" in msg.topic or
                   "openWB/set/bat/config/charge_limit" in msg.topic):
                 self._validate_value(msg, float, [(0, 99.99)])
-            elif re.search("openWB/set/bat/[0-9]+/get/min_bat_soc$", msg.topic) is not None:
+            elif ("openWB/set/bat/config/bat_control_min_soc" in msg.topic or
+                  "openWB/set/bat/config/bat_control_max_soc" in msg.topic):
                 self._validate_value(msg, int, [(0, 100)])
             elif "openWB/set/bat/set/charging_power_left" in msg.topic:
                 self._validate_value(msg, float)

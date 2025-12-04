@@ -74,7 +74,7 @@ class Config:
                                   metadata={"topic": "config/power_limit_mode"})
     bat_control_condition: str = field(default=BatPowerLimitCondition.VEHICLE_CHARGING.value,
                                        metadata={"topic": "config/bat_control_condition"})
-    manual_mode: str = field(default=BatChargeMode.BAT_SELF_REGULATION.value,
+    manual_mode: str = field(default=ManualMode.MANUAL_DISABLE.value,
                              metadata={"topic": "config/manual_mode"})
     bat_control_min_soc: str = field(default=10, metadata={"topic": "config/bat_control_min_soc"})
     bat_control_max_soc: str = field(default=90, metadata={"topic": "config/bat_control_max_soc"})
