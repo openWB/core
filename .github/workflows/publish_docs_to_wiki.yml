@@ -31,9 +31,11 @@ jobs:
           mkdir tmp_wiki
           cd tmp_wiki
           git init
-          git config user.name $USER_NAME
-          git config user.email $USER_EMAIL
-          git pull https://$USER_TOKEN@github.com/$OWNER/$REPOSITORY_NAME.wiki.git
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git pull https://$GITHUB_TOKEN@github.com/$OWNER/$REPOSITORY_NAME.wiki.git
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # 4. Synchronize differences between `docs` & `tmp_wiki`
       # 5. Push new Wiki content
       - name: Push content to wiki
@@ -42,4 +44,6 @@ jobs:
           cd tmp_wiki
           git add .
           git commit -m "Update Wiki content"
-          git push -f --set-upstream https://$USER_TOKEN@github.com/$OWNER/$REPOSITORY_NAME.wiki.git master
+          git push -f --set-upstream https://$GITHUB_TOKEN@github.com/$OWNER/$REPOSITORY_NAME.wiki.git master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
