@@ -1,7 +1,6 @@
 #!/bin/bash
 OPENWBBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 automaticServiceRestart=${1:-0}
-resetDynamicSecurity=${2:-0}
 
 versionMatch() {
 	file=$1
@@ -75,8 +74,8 @@ if [[ $userManagementActive == "true" ]]; then
 		sudo cp "${SRC}/openwb-user-management.conf" "/etc/mosquitto/conf.d/openwb-user-management.conf"
 		restartService=1
 	fi
-	if [ -f "/var/lib/mosquitto/dynamic-security.json" ] && ((resetDynamicSecurity == 0)); then
-		echo "dynamic security configuration found an reset not forced, no action needed"
+	if [ -f "/var/lib/mosquitto/dynamic-security.json" ]; then
+		echo "dynamic security configuration found, no action needed"
 	else
 		echo "creating initial dynamic security configuration with default user 'admin' and password 'openwb'"
 		sudo cp "${SRC}/default-dynamic-security.json" /var/lib/mosquitto/dynamic-security.json

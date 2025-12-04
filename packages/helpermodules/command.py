@@ -963,6 +963,14 @@ class Command:
                 }
             })
 
+    def resetUserManagement(self, connection_id: str, payload: dict) -> None:
+        log.info("User management reset requested!")
+        parent_file = Path(__file__).resolve().parents[2]
+        run_command([str(parent_file / "runs" / "reset_user_management.sh")])
+        pub_user_message(payload, connection_id,
+                         "Benutzerverwaltung wurde zurückgesetzt.",
+                         MessageType.WARNING)
+
 
 class ErrorHandlingContext:
     def __init__(self, payload: dict, connection_id: str):
