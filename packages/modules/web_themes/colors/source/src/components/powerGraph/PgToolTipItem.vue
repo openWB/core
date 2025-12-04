@@ -167,7 +167,10 @@ function devs() {
 }
 function counters() {
 	return Object.entries(props.entry)
-		.filter(([k, v]) => k.startsWith('counter') && k.length > 2 && v > 0)
+		.filter(
+			([k, v]) =>
+				k.startsWith('counter') && k != 'counters' && k.length > 2 && v > 0,
+		)
 		.map(([k, v]) => {
 			return {
 				power: v,

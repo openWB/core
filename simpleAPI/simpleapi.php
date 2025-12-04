@@ -24,13 +24,13 @@ class SimpleAPI
     {
         // Konfiguration laden
         $this->config = require __DIR__ . '/config/config.php';
-        
+
         // MQTT Client initialisieren
         $this->mqttClient = new MqttClient($this->config);
-        
+
         // Parameter Handler initialisieren
         $this->parameterHandler = new ParameterHandler($this->mqttClient);
-        
+
         // Authenticator initialisieren
         $this->authenticator = new Authenticator($this->config);
     }
@@ -43,7 +43,7 @@ class SimpleAPI
         try {
             // Content-Type setzen
             header('Content-Type: application/json');
-            
+
             // CORS Headers wenn konfiguriert
             if ($this->config['api']['cors_enabled'] ?? false) {
                 header('Access-Control-Allow-Origin: *');
@@ -59,7 +59,7 @@ class SimpleAPI
 
             // Parameter sammeln (GET und POST)
             $params = array_merge($_GET, $_POST);
-            
+
             // Debug-Modus
             if (isset($params['debug']) && $params['debug'] === 'true') {
                 $this->config['debug'] = true;
@@ -79,7 +79,7 @@ class SimpleAPI
             $writeParams = $this->getWriteParameters($params);
             if (!empty($writeParams)) {
                 $result = $this->handleWriteRequest($writeParams, $params);
-                
+
                 // Raw-Output für Schreibvorgänge
                 if (isset($params['raw']) && $params['raw'] === 'true') {
                     if ($result['success']) {
@@ -97,7 +97,7 @@ class SimpleAPI
             $readParams = $this->getReadParameters($params);
             if (!empty($readParams)) {
                 $result = $this->handleReadRequest($readParams, $params);
-                
+
                 // Raw-Ausgabe Validierung
                 if (isset($params['raw']) && $params['raw'] === 'true') {
                     if (count($readParams) > 1) {
@@ -110,7 +110,7 @@ class SimpleAPI
                         ]);
                         return;
                     }
-                    
+
                     // Prüfe ob der Parameter für Raw-Output geeignet ist
                     $paramName = array_keys($readParams)[0];
                     if ($this->isComplexParameter($paramName)) {
@@ -123,7 +123,7 @@ class SimpleAPI
                         ]);
                         return;
                     }
-                    
+
                     // Einzelner Parameter: Raw-Output verwenden
                     echo $this->formatRawOutput($result);
                 } else {
@@ -138,7 +138,6 @@ class SimpleAPI
                 'success' => false,
                 'message' => 'No valid parameters provided'
             ]);
-
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode([
@@ -156,9 +155,18 @@ class SimpleAPI
     {
         $writeParams = [];
         $writeableKeys = [
-            'set_chargemode', 'chargecurrent', 'minimal_pv_soc', 
-            'minimal_permanent_current', 'max_price_eco', 
-            'chargepoint_lock', 'bat_mode'
+            'set_chargemode',
+            'chargecurrent',
+            'minimal_pv_soc',
+            'minimal_permanent_current',
+            'max_price_eco',
+            'chargepoint_lock',
+            'bat_mode',
+            'instant_charging_limit',
+            'instant_charging_amount',
+            'instant_charging_soc',
+            'vehicle',
+            'manual_soc'
         ];
 
         foreach ($writeableKeys as $key) {
@@ -180,37 +188,95 @@ class SimpleAPI
             // Chargepoint - Alle Daten
             'get_chargepoint_all',
             // Chargepoint - Spannungen
-            'get_chargepoint_voltage_p1', 'get_chargepoint_voltage_p2', 'get_chargepoint_voltage_p3', 'get_chargepoint_voltages',
+            'get_chargepoint_voltage_p1',
+            'get_chargepoint_voltage_p2',
+            'get_chargepoint_voltage_p3',
+            'get_chargepoint_voltages',
             // Chargepoint - Ströme  
-            'get_chargepoint_current_p1', 'get_chargepoint_current_p2', 'get_chargepoint_current_p3', 'get_chargepoint_currents',
+            'get_chargepoint_current_p1',
+            'get_chargepoint_current_p2',
+            'get_chargepoint_current_p3',
+            'get_chargepoint_currents',
             // Chargepoint - Leistungen
-            'get_chargepoint_power', 'get_chargepoint_powers',
+            'get_chargepoint_power',
+            'get_chargepoint_powers',
             // Chargepoint - Status & Energie
-            'get_chargepoint_imported', 'get_chargepoint_exported', 'get_chargepoint_soc', 'get_chargepoint_state_str',
-            'get_chargepoint_fault_str', 'get_chargepoint_fault_state', 'get_chargepoint_phases_in_use',
-            'get_chargepoint_plug_state', 'get_chargepoint_charge_state', 'get_chargepoint_chargemode',
+            'get_chargepoint_imported',
+            'get_chargepoint_exported',
+            'get_chargepoint_daily_imported',
+            'get_chargepoint_daily_exported',
+            'get_chargepoint_frequency',
+            'get_chargepoint_rfid',
+            'get_chargepoint_rfid_timestamp',
+            'get_chargepoint_evse_current',
+            'get_chargepoint_power_factors',
+            'get_chargepoint_power_factor_p1',
+            'get_chargepoint_power_factor_p2',
+            'get_chargepoint_power_factor_p3',
+            'get_chargepoint_config_name',
+            'get_chargepoint_connected_vehicle_name',
+            'get_chargepoint_charge_template_name',
+            'get_chargepoint_charge_template_min_current',
+            'get_chargepoint_instant_charging_current',
+            'get_chargepoint_pv_charging_min_current',
+            'get_chargepoint_soc',
+            'get_chargepoint_state_str',
+            'get_chargepoint_fault_str',
+            'get_chargepoint_fault_state',
+            'get_chargepoint_phases_in_use',
+            'get_chargepoint_plug_state',
+            'get_chargepoint_charge_state',
+            'get_chargepoint_chargemode',
             // Counter - Alle Daten  
-            'get_counter', 
+            'get_counter',
             // Counter - Spannungen
-            'get_counter_voltage_p1', 'get_counter_voltage_p2', 'get_counter_voltage_p3', 'get_counter_voltages',
+            'get_counter_voltage_p1',
+            'get_counter_voltage_p2',
+            'get_counter_voltage_p3',
+            'get_counter_voltages',
             // Counter - Ströme
-            'get_counter_current_p1', 'get_counter_current_p2', 'get_counter_current_p3', 'get_counter_currents',
+            'get_counter_current_p1',
+            'get_counter_current_p2',
+            'get_counter_current_p3',
+            'get_counter_currents',
             // Counter - Leistungen
-            'get_counter_power', 'get_counter_powers', 'get_counter_power_factors',
+            'get_counter_power',
+            'get_counter_powers',
+            'get_counter_power_factors',
             // Counter - Energie & Status
-            'get_counter_imported', 'get_counter_exported', 'get_counter_daily_imported', 'get_counter_daily_exported',
-            'get_counter_frequency', 'get_counter_fault_str', 'get_counter_fault_state',
+            'get_counter_imported',
+            'get_counter_exported',
+            'get_counter_daily_imported',
+            'get_counter_daily_exported',
+            'get_counter_frequency',
+            'get_counter_fault_str',
+            'get_counter_fault_state',
             // Battery - Alle Daten
-            'battery', 'get_battery',
+            'battery',
+            'get_battery',
             // Battery - Einzelwerte
-            'get_battery_power', 'get_battery_soc', 'get_battery_currents',
-            'get_battery_imported', 'get_battery_exported', 'get_battery_daily_imported', 'get_battery_daily_exported',
-            'get_battery_fault_str', 'get_battery_fault_state', 'get_battery_power_limit_controllable',
+            'get_battery_power',
+            'get_battery_soc',
+            'get_battery_currents',
+            'get_battery_imported',
+            'get_battery_exported',
+            'get_battery_daily_imported',
+            'get_battery_daily_exported',
+            'get_battery_fault_str',
+            'get_battery_fault_state',
+            'get_battery_power_limit_controllable',
             // PV - Alle Daten
-            'pv', 'get_pv',
+            'pv',
+            'get_pv',
             // PV - Einzelwerte
-            'get_pv_power', 'get_pv_currents', 'get_pv_exported', 'get_pv_daily_exported',
-            'get_pv_monthly_exported', 'get_pv_yearly_exported', 'get_pv_fault_str', 'get_pv_fault_state'
+            'get_pv_power',
+            'get_pv_currents',
+            'get_pv_exported',
+            'get_pv_daily_exported',
+            'get_pv_monthly_exported',
+            'get_pv_yearly_exported',
+            'get_pv_fault_str',
+            'get_pv_fault_state'
         ];
 
         foreach ($readableKeys as $key) {
@@ -229,7 +295,7 @@ class SimpleAPI
     {
         foreach ($writeParams as $param => $value) {
             $chargepointId = $allParams['chargepoint_nr'] ?? null;
-            
+
             // Auto-ID Feature: Niedrigste ID finden wenn keine angegeben
             if ($chargepointId === null && $this->isChargepointParameter($param)) {
                 try {
@@ -249,7 +315,7 @@ class SimpleAPI
             }
 
             $result = $this->parameterHandler->writeParameter($param, $value, $chargepointId);
-            
+
             if (!$result['success']) {
                 return $result;
             }
@@ -258,7 +324,7 @@ class SimpleAPI
         // Erfolgreiche Antwort für ersten Parameter (OpenWB Kompatibilität)
         $firstParam = array_keys($writeParams)[0];
         $firstValue = $writeParams[$firstParam];
-        
+
         return [
             'success' => true,
             'message' => $this->getSuccessMessage($firstParam, $firstValue, $chargepointId ?? null),
@@ -282,7 +348,7 @@ class SimpleAPI
                 if ($id === 'auto' || $id === '') {
                     $type = $this->getTypeFromParameter($param);
                     $id = $this->mqttClient->getLowestId($type);
-                    
+
                     if ($id === null) {
                         continue; // Skip wenn keine ID gefunden
                     }
@@ -297,7 +363,7 @@ class SimpleAPI
                 if (($id === 'auto' || $id === '') && $this->config['debug']) {
                     $result['debug_info'][] = "Auto-ID failed for $param: " . $e->getMessage();
                 }
-                
+
                 // Fallback auf ID 0 für Chargepoints
                 if (strpos($param, 'chargepoint') !== false) {
                     try {
@@ -331,7 +397,7 @@ class SimpleAPI
         } elseif (strpos($param, 'counter') !== false) {
             return 'counter';
         }
-        
+
         return 'chargepoint'; // Fallback
     }
 
@@ -343,11 +409,14 @@ class SimpleAPI
         $complexParameters = [
             'get_chargepoint_all',
             'get_counter',
-            'battery', 'get_battery',
-            'pv', 'get_pv',
+            'battery',
+            'get_battery',
+            'pv',
+            'get_pv',
             'get_chargepoint_voltages',
-            'get_chargepoint_currents', 
+            'get_chargepoint_currents',
             'get_chargepoint_powers',
+            'get_chargepoint_power_factors',
             'get_counter_voltages',
             'get_counter_currents',
             'get_counter_powers',
@@ -355,7 +424,7 @@ class SimpleAPI
             'get_battery_currents',
             'get_pv_currents'
         ];
-        
+
         return in_array($param, $complexParameters);
     }
 
@@ -366,14 +435,19 @@ class SimpleAPI
     {
         $chargepointParameters = [
             'set_chargemode',
-            'chargecurrent', 
+            'chargecurrent',
             'minimal_pv_soc',
             'minimal_permanent_current',
             'max_price_eco',
             'chargepoint_lock',
-            'bat_mode'
+            'bat_mode',
+            'instant_charging_limit',
+            'instant_charging_amount',
+            'instant_charging_soc',
+            'vehicle',
+            'manual_soc'
         ];
-        
+
         return in_array($param, $chargepointParameters) || strpos($param, 'chargepoint') !== false;
     }
 
@@ -387,6 +461,16 @@ class SimpleAPI
                 return "Chargemode for chargepoint {$chargepointId} set to {$value}.";
             case 'chargecurrent':
                 return "Chargecurrent for chargepoint {$chargepointId} set to {$value}A";
+            case 'instant_charging_limit':
+                return "Instant charging limit for chargepoint {$chargepointId} set to {$value}.";
+            case 'instant_charging_amount':
+                return "Instant charging amount for chargepoint {$chargepointId} set to {$value}kWh.";
+            case 'instant_charging_soc':
+                return "Instant charging SoC for chargepoint {$chargepointId} set to {$value}%.";
+            case 'vehicle':
+                return "Vehicle {$value} assigned to chargepoint {$chargepointId}.";
+            case 'manual_soc':
+                return "Manual SoC set to {$value}% for chargepoint {$chargepointId}.";
             default:
                 return "Parameter {$param} set to {$value}.";
         }
@@ -400,12 +484,12 @@ class SimpleAPI
         if (is_array($data)) {
             $firstKey = array_keys($data)[0];
             $firstValue = $data[$firstKey];
-            
+
             if (is_array($firstValue) && count($firstValue) === 1) {
                 return array_values($firstValue)[0];
             }
         }
-        
+
         return $data;
     }
 }

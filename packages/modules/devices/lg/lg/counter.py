@@ -26,10 +26,15 @@ class LgCounter(AbstractCounter):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self, response) -> None:
-        power = float(response["statistics"]["grid_power"])
+        if 'grid_power' in response['statistics']:
+            power = float(response["statistics"]["grid_power"])
+            if response["direction"]["is_grid_selling_"] == "1":
+                power = power*-1
+        else:
+            power = float(response["statistics"]["grid_power_01kW"]) * 100  # Home 15
+
         if response["direction"]["is_grid_selling_"] == "1":
             power = power*-1
-
         imported, exported = self.sim_counter.sim_count(power)
         counter_state = CounterState(
             imported=imported,

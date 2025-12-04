@@ -170,14 +170,17 @@ class SimpleMQTTDaemon:
         """Transform original topic to simpleAPI format and publish if value changed."""
         try:
             log.debug(f"DEBUG: Processing original topic: {original_topic}")
-            
+
             # Parse the payload
             parsed_payload = self._parse_payload(payload)
 
             # Generate transformed topics
             transformed_topics = self._generate_simple_topics(original_topic, parsed_payload)
-            
-            log.debug(f"DEBUG: Generated {len(transformed_topics)} transformed topics: {list(transformed_topics.keys())}")
+
+            log.debug(
+                f"DEBUG: Generated {len(transformed_topics)} transformed topics: "
+                f"{list(transformed_topics.keys())}"
+            )
 
             # Publish each transformed topic if value changed
             for topic, value in transformed_topics.items():
@@ -254,9 +257,9 @@ class SimpleMQTTDaemon:
 
     def _transform_chargepoint_topic(self, simple_base: str) -> Optional[str]:
         """Transform chargepoint topics according to simplified structure."""
-        
+
         log.debug(f"DEBUG: _transform_chargepoint_topic input: {simple_base}")
-        
+
         # FIRST: Handle connected_vehicle transformations (both /get/ and direct)
         # This must happen BEFORE any other filtering
         if '/connected_vehicle/config/chargemode' in simple_base:
@@ -267,7 +270,7 @@ class SimpleMQTTDaemon:
             simple_base = re.sub(r'/connected_vehicle/config/chargemode$', '/chargemode', simple_base)
             log.debug(f"DEBUG: After second regex: {simple_base}")
             if original != simple_base:
-                log.debug(f"DEBUG: Chargemode transformation successful: {original} -> {simple_base}")
+                log.debug(f"DEBUG: Charge mode transformation successful: {original} -> {simple_base}")
         elif '/connected_vehicle/info/name' in simple_base:
             log.debug(f"DEBUG: Found vehicle name pattern, transforming: {simple_base}")
             simple_base = re.sub(r'/get/connected_vehicle/info/name$', '/vehicle_name', simple_base)
@@ -280,32 +283,32 @@ class SimpleMQTTDaemon:
         # Keep only config topics that are in the allowed list
         if '/config/' in simple_base and not re.search(r'/(chargemode|vehicle_name)$', simple_base):
             allowed_config_paths = [
-                'configuration/ip_address', 'configuration/duo_num', 'ev', 'name', 
-                'type', 'template', 'connected_phases', 'phase_1', 
+                'configuration/ip_address', 'configuration/duo_num', 'ev', 'name',
+                'type', 'template', 'connected_phases', 'phase_1',
                 'auto_phase_switch_hw', 'control_pilot_interruption_hw', 'id', 'ocpp_chargebox_id'
             ]
-            
+
             # Extract the config path part
             config_match = re.search(r'/config/(.+)$', simple_base)
             if config_match:
                 config_path = config_match.group(1)
                 if config_path in allowed_config_paths:
                     return simple_base  # Keep this config topic
-            
+
             return None  # Filter out other config topics
-        
+
         # Handle set topics with special mappings
         if '/set/' in simple_base:
             # set/manual_lock -> manual_lock
             simple_base = re.sub(r'/set/manual_lock$', '/manual_lock', simple_base)
-            
+
             # set/current -> evse_current
             simple_base = re.sub(r'/set/current$', '/evse_current', simple_base)
-            
+
             # Filter out all other set topics (like charge_template, log, etc.)
             if '/set/' in simple_base:
                 return None
-        
+
         # Handle get topics - remove /get/ prefix
         if '/get/' in simple_base:
             simple_base = simple_base.replace('/get/', '/')
@@ -324,7 +327,7 @@ class SimpleMQTTDaemon:
                     r'/current_branch$',
                     r'/current_commit$'
                 ]
-                
+
                 for pattern in unwanted_patterns:
                     if re.search(pattern, simple_base):
                         return None
@@ -335,7 +338,7 @@ class SimpleMQTTDaemon:
                 if re.search(r'/connected_vehicle/', simple_base):
                     log.debug(f"DEBUG: Filtering out connected_vehicle topic: {simple_base}")
                     return None
-        
+
         log.debug(f"DEBUG: _transform_chargepoint_topic output: {simple_base}")
         return simple_base
 
@@ -375,7 +378,7 @@ class SimpleMQTTDaemon:
                     final_topic = transformed
                 else:
                     return  # Topic should be filtered out
-            
+
             result[final_topic] = value
 
     def _generate_simplified_topics(self, simple_topic: str, parsed_value: Any) -> Dict[str, Any]:
@@ -394,13 +397,13 @@ class SimpleMQTTDaemon:
             # Check if this is the lowest ID for this component type
             if component_type in self.lowest_ids and self.lowest_ids[component_type] == component_id:
                 simplified_base = f"openWB/simpleAPI/{component_type}/{remaining_path}"
-                
+
                 # Apply chargepoint transformations to simplified topics as well
                 if component_type == 'chargepoint':
                     simplified_base = self._transform_chargepoint_topic(simplified_base)
                     if simplified_base is None:
                         return result
-                
+
                 self._expand_value_to_topics(simplified_base, parsed_value, result)
 
         return result
@@ -524,12 +527,12 @@ class SimpleMQTTDaemon:
             if not payload or payload.strip() == "":
                 log.debug(f"Skipping empty set topic: {topic}")
                 return
-                
+
             log.info(f"Write operation: {topic} = {payload}")
 
             # Parse the set topic to extract operation details
             topic_remainder = topic.replace('openWB/simpleAPI/set/', '')
-            
+
             # Check for instant_charging_limit operations first (can be with or without chargepoint ID)
             if 'instant_charging_limit_soc' in topic_remainder:
                 success = self._handle_instant_charging_limit_soc_operation(payload)
@@ -546,9 +549,9 @@ class SimpleMQTTDaemon:
                 if success:
                     self._clear_set_topic(topic)
                 return
-            
+
             topic_parts = topic_remainder.split('/')
-            
+
             if len(topic_parts) < 1:
                 log.error(f"Invalid set topic format: {topic}")
                 return
@@ -596,7 +599,7 @@ class SimpleMQTTDaemon:
             log.error(f"Invalid chargepoint topic format: {'/'.join(topic_parts)}")
             return False
 
-        log.debug(f"Chargepoint operation: ID={chargepoint_id}, parameter={parameter}, value={payload}")
+        log.debug(f"Charge point operation: ID={chargepoint_id}, parameter={parameter}, value={payload}")
 
         if parameter == 'chargemode':
             self._set_chargemode(chargepoint_id, payload)
@@ -613,7 +616,7 @@ class SimpleMQTTDaemon:
         else:
             log.error(f"Unknown chargepoint parameter: {parameter}")
             return False
-        
+
         return True
 
     def _get_charge_template(self, chargepoint_id: str) -> Optional[Dict[str, Any]]:
@@ -632,7 +635,12 @@ class SimpleMQTTDaemon:
             'pv': 'pv_charging',
             'eco': 'eco_charging',
             'stop': 'stop',
-            'target': 'scheduled_charging'
+            'target': 'scheduled_charging',
+            # Support full names directly
+            'instant_charging': 'instant_charging',
+            'pv_charging': 'pv_charging',
+            'eco_charging': 'eco_charging',
+            'scheduled_charging': 'scheduled_charging'
         }
 
         if mode not in mode_mapping:
@@ -754,26 +762,26 @@ class SimpleMQTTDaemon:
     def _handle_instant_charging_limit_operation(self, payload: str) -> bool:
         """Handle instant charging limit type operation."""
         valid_limits = ['none', 'soc', 'amount']
-        
+
         if payload not in valid_limits:
             log.error(f"Invalid instant_charging_limit: {payload}. Valid values: {valid_limits}")
             return False
-        
+
         # Get chargepoint ID (use lowest if not specified)
         if 'chargepoint' in self.lowest_ids:
             chargepoint_id = str(self.lowest_ids['chargepoint'])
         else:
             log.error("No chargepoint ID found for instant_charging_limit operation")
             return False
-        
+
         charge_template = self._get_charge_template(chargepoint_id)
         if charge_template is None:
             log.error(f"No charge_template available for chargepoint {chargepoint_id}")
             return False
-        
+
         # Modify the instant_charging.limit.selected value
         charge_template['chargemode']['instant_charging']['limit']['selected'] = payload
-        
+
         # Publish the modified template
         target_topic = f"openWB/set/chargepoint/{chargepoint_id}/set/charge_template"
         self._publish_json(target_topic, charge_template)
@@ -790,22 +798,22 @@ class SimpleMQTTDaemon:
         except ValueError:
             log.error(f"Invalid SoC value: {payload}. Must be an integer")
             return False
-        
+
         # Get chargepoint ID (use lowest if not specified)
         if 'chargepoint' in self.lowest_ids:
             chargepoint_id = str(self.lowest_ids['chargepoint'])
         else:
             log.error("No chargepoint ID found for instant_charging_limit_soc operation")
             return False
-        
+
         charge_template = self._get_charge_template(chargepoint_id)
         if charge_template is None:
             log.error(f"No charge_template available for chargepoint {chargepoint_id}")
             return False
-        
+
         # Modify the instant_charging.limit.soc value
         charge_template['chargemode']['instant_charging']['limit']['soc'] = soc_value
-        
+
         # Publish the modified template
         target_topic = f"openWB/set/chargepoint/{chargepoint_id}/set/charge_template"
         self._publish_json(target_topic, charge_template)
@@ -819,32 +827,35 @@ class SimpleMQTTDaemon:
             if amount_value < 1 or amount_value > 50:
                 log.error(f"Invalid amount value: {amount_value}. Must be between 1 and 50")
                 return False
-            
+
             # Convert to internal value (multiply by 1000)
             internal_amount = amount_value * 1000
         except ValueError:
             log.error(f"Invalid amount value: {payload}. Must be an integer")
             return False
-        
+
         # Get chargepoint ID (use lowest if not specified)
         if 'chargepoint' in self.lowest_ids:
             chargepoint_id = str(self.lowest_ids['chargepoint'])
         else:
             log.error("No chargepoint ID found for instant_charging_limit_amount operation")
             return False
-        
+
         charge_template = self._get_charge_template(chargepoint_id)
         if charge_template is None:
             log.error(f"No charge_template available for chargepoint {chargepoint_id}")
             return False
-        
+
         # Modify the instant_charging.limit.amount value
         charge_template['chargemode']['instant_charging']['limit']['amount'] = internal_amount
-        
+
         # Publish the modified template
         target_topic = f"openWB/set/chargepoint/{chargepoint_id}/set/charge_template"
         self._publish_json(target_topic, charge_template)
-        log.info(f"Set instant_charging_limit_amount to {amount_value} kWh ({internal_amount} Wh) for chargepoint {chargepoint_id}")
+        log.info(
+            f"Set instant_charging_limit_amount to {amount_value} kWh "
+            f"({internal_amount} Wh) for chargepoint {chargepoint_id}"
+        )
         return True
 
     def _publish_json(self, topic: str, data: Dict[str, Any]):

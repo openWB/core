@@ -148,8 +148,6 @@ def log_factory() -> Log:
 
 @dataclass
 class Set:
-    charging_ev: int = -1
-    charging_ev_prev: int = -1
     charge_template: ChargeTemplate = field(default_factory=charge_template_factory)
     current: float = 0
     energy_to_charge: float = 0

@@ -27,10 +27,10 @@ from helpermodules.utils import ProcessingCounter
 from helpermodules.utils.run_command import run_command
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
 from helpermodules.pub import Pub
-from dataclass_utils import dataclass_from_dict
+from dataclass_utils import asdict, dataclass_from_dict
 from modules.common.abstract_vehicle import CalculatedSocState, GeneralVehicleConfig
 from modules.common.configurable_backup_cloud import ConfigurableBackupCloud
-from modules.common.configurable_tariff import ConfigurableElectricityTariff
+from modules.common.configurable_tariff import ConfigurableFlexibleTariff, ConfigurableGridFee
 from modules.common.simcount.simcounter_state import SimCounterState
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
     GlobalHandlerData, InternalChargepoint, RfidData)
@@ -132,7 +132,6 @@ class SubData:
             ("openWB/general/#", 2),
             ("openWB/graph/#", 2),
             ("openWB/internal_io/#", 2),
-            ("openWB/io/#", 2),
             ("openWB/optional/#", 2),
             ("openWB/counter/#", 2),
             ("openWB/command/command_completed", 2),
@@ -148,6 +147,7 @@ class SubData:
             ("openWB/system/device/+/config", 2),
             ("openWB/system/io/#", 2),
             ("openWB/LegacySmartHome/Status/wattnichtHaus", 2),
+            ("openWB/io/#", 2),
         ])
         self.processing_counter.add_task()
         Pub().pub("openWB/system/subdata_initialized", True)
@@ -356,8 +356,7 @@ class SubData:
                     for vehicle in self.ev_data.values():
                         if vehicle.data.charge_template == int(index):
                             for cp in self.cp_data.values():
-                                if (cp.chargepoint.data.set.charging_ev == vehicle.num or
-                                        cp.chargepoint.data.config.ev == vehicle.num):
+                                if cp.chargepoint.data.config.ev == vehicle.num:
                                     # UI sendet immer alle Topics, auch nicht geänderte. Damit die temporären Topics
                                     # nicht mehrfach gepbulished werden, muss das publishen der temporären Topics 1:1
                                     # erfolgen.
@@ -439,13 +438,8 @@ class SubData:
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.get.connected_vehicle, msg)
                         elif (re.search("/chargepoint/[0-9]+/get/soc$", msg.topic) is not None and
                               decode_payload(msg.payload) != var["cp"+index].chargepoint.data.get.soc):
-                            # Wenn das Auto noch nicht zugeordnet ist, wird der SoC nach der Zuordnung aktualisiert
-                            if var["cp"+index].chargepoint.data.set.charging_ev > -1:
-                                Pub().pub(f'openWB/set/vehicle/{var["cp"+index].chargepoint.data.set.charging_ev}'
-                                          '/get/force_soc_update', True)
-                            elif var["cp"+index].chargepoint.data.set.charging_ev_prev > -1:
-                                Pub().pub(f'openWB/set/vehicle/{var["cp"+index].chargepoint.data.set.charging_ev_prev}'
-                                          '/get/force_soc_update', True)
+                            Pub().pub(f'openWB/set/vehicle/{var["cp"+index].chargepoint.data.config.ev}'
+                                      '/get/force_soc_update', True)
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.get, msg)
                         elif (re.search("/chargepoint/[0-9]+/get/error_timestamp$", msg.topic) is not None and
                               hasattr(var[f"cp{index}"].chargepoint.chargepoint_module, "client_error_context")):
@@ -478,13 +472,15 @@ class SubData:
         index = get_index(msg.topic)
         payload = decode_payload(msg.payload)
         if (var["cp"+index].chargepoint.chargepoint_module is None or
-                payload != var["cp"+index].chargepoint.chargepoint_module.config):
+                payload["configuration"] != asdict(var["cp"+index
+                                                       ].chargepoint.chargepoint_module.config.configuration)):
             mod = importlib.import_module(
                 ".chargepoints."+payload["type"]+".chargepoint_module", "modules")
             config = dataclass_from_dict(mod.chargepoint_descriptor.configuration_factory, payload)
             var["cp"+index].chargepoint.chargepoint_module = mod.ChargepointModule(config)
             self.set_internal_chargepoint_configured()
-        if payload["type"] == "internal_openwb":
+        if (payload["type"] == "internal_openwb" and
+                payload["type"] != var["cp"+index].chargepoint.chargepoint_module.config.type):
             log.debug("Neustart des Handlers für den internen Ladepunkt.")
             self.event_stop_internal_chargepoint.set()
             self.event_start_internal_chargepoint.set()
@@ -680,7 +676,8 @@ class SubData:
                         mod = importlib.import_module(
                             f".io_actions.{payload['group']}.{payload['type']}.api", "modules")
                         config = dataclass_from_dict(mod.device_descriptor.configuration_factory, payload)
-                        var.actions[f"io_action{index}"] = mod.create_action(config)
+                        var.actions[f"io_action{index}"] = mod.create_action(
+                            config, self.system_data[f"io{config.configuration.io_device}"].config.type)
                 elif re.search("/io/action/[0-9]+/timestamp", msg.topic) is not None:
                     index = get_index(msg.topic)
                     self.set_json_payload_class(var.actions[f"io_action{index}"], msg)
@@ -712,23 +709,42 @@ class SubData:
                         run_command([
                             str(Path(__file__).resolve().parents[2] / "runs" / "update_local_display.sh")
                         ], process_exception=True)
-                elif re.search("/optional/et/", msg.topic) is not None:
-                    if re.search("/optional/et/get/prices", msg.topic) is not None:
-                        var.data.et.get.prices = decode_payload(msg.payload)
-                    elif re.search("/optional/et/get/", msg.topic) is not None:
-                        self.set_json_payload_class(var.data.et.get, msg)
-                    elif re.search("/optional/et/provider$", msg.topic) is not None:
+                elif re.search("/optional/ep/(flexible_tariff|grid_fee)/", msg.topic) is not None:
+                    if re.search("/optional/ep/flexible_tariff/provider$", msg.topic) is not None:
                         config_dict = decode_payload(msg.payload)
                         if config_dict["type"] is None:
-                            var.et_module = None
+                            var.flexible_tariff_module = None
                         else:
                             mod = importlib.import_module(
-                                f".electricity_tariffs.{config_dict['type']}.tariff", "modules")
+                                f".electricity_pricing.flexible_tariffs.{config_dict['type']}.tariff", "modules")
                             config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
-                            var.et_module = ConfigurableElectricityTariff(config, mod.create_electricity_tariff)
-                            var.et_get_prices()
-                    else:
-                        self.set_json_payload_class(var.data.et, msg)
+                            var.flexible_tariff_module = ConfigurableFlexibleTariff(
+                                config, mod.create_electricity_tariff)
+                    elif re.search("/optional/ep/flexible_tariff/get/prices", msg.topic) is not None:
+                        var.data.electricity_pricing.flexible_tariff.get.prices = decode_payload(msg.payload)
+                    elif re.search("/optional/ep/flexible_tariff/get/", msg.topic) is not None:
+                        self.set_json_payload_class(var.data.electricity_pricing.flexible_tariff.get, msg)
+                    elif re.search("/optional/ep/grid_fee/provider$", msg.topic) is not None:
+                        config_dict = decode_payload(msg.payload)
+                        if config_dict["type"] is None:
+                            var.grid_fee_module = None
+                        else:
+                            mod = importlib.import_module(
+                                f".electricity_pricing.grid_fees.{config_dict['type']}.tariff", "modules")
+                            config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
+                            var.grid_fee_module = ConfigurableGridFee(config, mod.create_electricity_tariff)
+                    elif re.search("/optional/ep/grid_fee/get/prices", msg.topic) is not None:
+                        var.data.electricity_pricing.grid_fee.get.prices = decode_payload(msg.payload)
+                    elif re.search("/optional/ep/grid_fee/get/", msg.topic) is not None:
+                        self.set_json_payload_class(var.data.electricity_pricing.grid_fee.get, msg)
+                elif re.search("/optional/ep/get/prices", msg.topic) is not None:
+                    var.data.electricity_pricing.get.prices = decode_payload(msg.payload)
+                elif re.search("/optional/ep/get/", msg.topic) is not None:
+                    self.set_json_payload_class(var.data.electricity_pricing.get, msg)
+                elif re.search("/optional/ep/", msg.topic) is not None:
+                    self.set_json_payload_class(var.data.electricity_pricing, msg)
+                elif "module_update_completed" in msg.topic:
+                    self.event_module_update_completed.set()
                 elif re.search("/optional/ocpp/", msg.topic) is not None:
                     config_dict = decode_payload(msg.payload)
                     var.data.ocpp = dataclass_from_dict(Ocpp, config_dict)
@@ -887,6 +903,18 @@ class SubData:
                 user = splitted[2] if len(splitted) > 2 else "getsupport"
                 run_command([str(Path(__file__).resolve().parents[2] / "runs" / "start_remote_support.sh"),
                              token, port, user], process_exception=True)
+            elif "openWB/system/backup_password" in msg.topic:
+                if self.event_subdata_initialized.is_set():
+                    key_file = Path.home() / "backup.key"
+                    payload = decode_payload(msg.payload)
+                    if payload is None or payload == "":
+                        # delete key file
+                        if key_file.exists():
+                            key_file.unlink()
+                    else:
+                        # write key file
+                        with key_file.open("w") as file:
+                            file.write(payload)
             elif "openWB/system/backup_cloud/config" in msg.topic:
                 config_dict = decode_payload(msg.payload)
                 if config_dict["type"] is None:

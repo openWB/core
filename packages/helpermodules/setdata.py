@@ -425,9 +425,7 @@ class SetData:
                                 if cp.num == cp_num:
                                     # nicht an den Ladepunkt senden, der das Topic gesendet hat
                                     continue
-                                if ((cp.data.set.charging_ev != -1 and
-                                        cp.data.set.charging_ev == vehicle.num) or
-                                        cp.data.config.ev == vehicle.num):
+                                if cp.data.config.ev == vehicle.num:
                                     if decode_payload(msg.payload) == "":
                                         Pub().pub(
                                             f"openWB/chargepoint/{cp.num}/set/charge_template", "")
@@ -472,12 +470,8 @@ class SetData:
             elif re.search("chargepoint/[0-9]+/config$", msg.topic) is not None:
                 self._validate_value(msg, "json")
             elif subdata.SubData.cp_data.get(f"cp{get_index(msg.topic)}"):
-                if ("/set/charging_ev" in msg.topic or
-                        "/set/charging_ev_prev" in msg.topic or
-                        "/set/ev_prev" in msg.topic):
-                    self._validate_value(msg, int, [(-1, float("inf"))])
-                elif ("/set/current" in msg.topic or
-                      "/set/current_prev" in msg.topic):
+                if ("/set/current" in msg.topic or
+                        "/set/current_prev" in msg.topic):
                     if hardware_configuration.get_hardware_configuration_setting("dc_charging"):
                         self._validate_value(msg, float, [(float("-inf"), 0), (0, 0), (6, 32), (0, 450)])
                     else:
@@ -503,6 +497,8 @@ class SetData:
                     self._validate_value(msg, int)
                 elif "/set/log" in msg.topic:
                     self._validate_value(msg, "json")
+                elif "/set/ev_prev" in msg.topic:
+                    self._validate_value(msg, int, [(0, float("inf"))])
                 elif "/config/ev" in msg.topic:
                     self._validate_value(
                         msg, int, [(0, float("inf"))], pub_json=True)
@@ -847,16 +843,27 @@ class SetData:
             enthält Topic und Payload
         """
         try:
-            if "openWB/set/optional/et/get/prices" in msg.topic:
+            pricing_regex = "openWB/set/optional/ep/(flexible_tariff|grid_fee)/"
+            if re.search(pricing_regex, msg.topic) is not None:
+                if re.search(f"{pricing_regex}provider$", msg.topic) is not None:
+                    self._validate_value(msg, "json")
+                elif re.search(f"{pricing_regex}get/prices$", msg.topic) is not None:
+                    self._validate_value(msg, "json")
+                elif re.search(f"{pricing_regex}get/price$", msg.topic) is not None:
+                    self._validate_value(msg, float)
+                elif re.search(f"{pricing_regex}get/fault_state$", msg.topic) is not None:
+                    self._validate_value(msg, int, [(0, 2)])
+                elif re.search(f"{pricing_regex}get/fault_str$", msg.topic) is not None:
+                    self._validate_value(msg, str)
+            elif "openWB/set/optional/ep/get/prices" in msg.topic:
                 self._validate_value(msg, "json")
-            elif "openWB/set/optional/et/get/price" in msg.topic:
+            elif "openWB/set/optional/ep/get/next_query_time" in msg.topic:
                 self._validate_value(msg, float)
-            elif "openWB/set/optional/et/get/fault_state" in msg.topic:
-                self._validate_value(msg, int, [(0, 2)])
-            elif "openWB/set/optional/et/get/fault_str" in msg.topic:
-                self._validate_value(msg, str)
-            elif ("openWB/set/optional/et/provider" in msg.topic or
-                  "openWB/set/optional/ocpp/config" in msg.topic):
+            elif "openWB/set/optional/ep/configured" in msg.topic:
+                self._validate_value(msg, bool)
+            elif "module_update_completed" in msg.topic:
+                self._validate_value(msg, bool)
+            elif "openWB/set/optional/ocpp/config" in msg.topic:
                 self._validate_value(msg, "json")
             elif "openWB/set/optional/monitoring" in msg.topic:
                 self._validate_value(msg, "json")
@@ -1020,12 +1027,13 @@ class SetData:
                     "openWB/set/system/usage_terms_acknowledged" in msg.topic or
                     "openWB/set/system/update_config_completed" in msg.topic):
                 self._validate_value(msg, bool)
-            elif "openWB/set/system/version" in msg.topic:
+            elif ("openWB/set/system/version" in msg.topic or
+                    "openWB/set/system/backup_password" in msg.topic):
                 self._validate_value(msg, str)
             elif "openWB/set/system/time" in msg.topic:
                 self._validate_value(msg, float)
             elif "openWB/set/system/datastore_version" in msg.topic:
-                self._validate_value(msg, int, [(0, UpdateConfig.DATASTORE_VERSION)])
+                self._validate_value(msg, int, [(0, UpdateConfig.DATASTORE_VERSION)], collection=list)
             elif "openWB/set/system/GetRemoteSupport" in msg.topic:
                 # Server-Topic enthält kein json-Payload.
                 payload = msg.payload.decode("utf-8")

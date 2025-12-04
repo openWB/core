@@ -6,6 +6,6 @@ from modules.common.store._chargepoint_internal import get_internal_chargepoint_
 from modules.common.store._counter import get_counter_value_store
 from modules.common.store._inverter import get_inverter_value_store
 from modules.common.store._io import get_io_value_store
-from modules.common.store._tariff import get_electricity_tariff_value_store
+from modules.common.store._tariff import get_flexible_tariff_value_store, get_grid_fee_value_store
 from modules.common.store.ramdisk.io import ramdisk_write, ramdisk_read, ramdisk_read_float, ramdisk_read_int, \
     RAMDISK_PATH

@@ -2,6 +2,7 @@
 """
 import logging
 import datetime
+import re
 from typing import List, Optional, Tuple, TypeVar, Union
 
 from helpermodules.utils.error_handling import ImportErrorContext
@@ -113,18 +114,14 @@ def check_timeframe(plan: Union[AutolockPlan, TimeChargingPlan]) -> bool:
 
 
 def check_end_time(plan: ScheduledChargingPlan,
-                   chargemode_switch_timestamp: Optional[float]) -> Optional[float]:
-    """ prüft, ob der in angegebene Zeitpunkt abzüglich der Dauer jetzt ist.
+                   buffer: Optional[float]) -> Optional[float]:
+    """ gibt die verbleibende Zeit in Sekunden zurück.
 
     Return
     ------
     neg: Zeitpunkt vorbei
     pos: verbleibende Sekunden
     """
-    def missed_date_still_active(remaining_time: float) -> bool:
-        return (chargemode_switch_timestamp and
-                remaining_time.total_seconds() < 0 and
-                end.timestamp() < chargemode_switch_timestamp)
     now = datetime.datetime.today()
     end = datetime.datetime.strptime(plan.time, '%H:%M')
     remaining_time = None
@@ -135,7 +132,7 @@ def check_end_time(plan: ScheduledChargingPlan,
     elif plan.frequency.selected == "daily":
         end = end.replace(now.year, now.month, now.day)
         remaining_time = end - now
-        if missed_date_still_active(remaining_time):
+        if remaining_time.total_seconds() < buffer:
             # Wenn auf Zielladen umgeschaltet wurde und der Termin noch nicht vorbei war, noch auf diesen Termin laden.
             end = end + datetime.timedelta(days=1)
             remaining_time = end - now
@@ -145,17 +142,13 @@ def check_end_time(plan: ScheduledChargingPlan,
         end = end.replace(now.year, now.month, now.day)
         end += datetime.timedelta(days=_get_next_charging_day(plan.frequency.weekly, now.weekday()))
         remaining_time = end - now
-        if missed_date_still_active(remaining_time):
+        if remaining_time.total_seconds() < buffer:
             end = end.replace(now.year, now.month, now.day)
             end += datetime.timedelta(days=_get_next_charging_day(plan.frequency.weekly, now.weekday()+1)+1)
             remaining_time = end - now
     else:
         raise TypeError(f'Unbekannte Häufigkeit {plan.frequency.selected}')
-    if chargemode_switch_timestamp and end.timestamp() < chargemode_switch_timestamp:
-        # Als auf Zielladen umgeschaltet wurde, war der Termin schon vorbei
-        return None
-    else:
-        return remaining_time.total_seconds()
+    return remaining_time.total_seconds()
 
 
 def _get_next_charging_day(weekly: List[bool], weekday: int) -> int:
@@ -340,3 +333,27 @@ def convert_timestamp_delta_to_time_string(timestamp: int, delta: int) -> str:
 
 def convert_to_timestamp(timestring: str) -> int:
     return int(datetime.datetime.fromisoformat(timestring).timestamp())
+
+
+def parse_iso8601_duration(duration: str) -> float:
+    """
+    Parst eine ISO-8601 Duration wie 'PT3723S', 'P1DT2H30M', etc.
+    Gibt ein timedelta zurück.
+    """
+    pattern = re.compile(
+        r'P'                      # beginnt immer mit P
+        r'(?:(?P<days>\d+)D)?'    # Tage
+        r'(?:T'                   # Zeit-Teil beginnt mit T
+        r'(?:(?P<hours>\d+)H)?'   # Stunden
+        r'(?:(?P<minutes>\d+)M)?'  # Minuten
+        r'(?:(?P<seconds>\d+)S)?'  # Sekunden
+        r')?$'
+    )
+
+    match = pattern.fullmatch(duration)
+    if not match:
+        raise ValueError(f"Ungültiges ISO-8601 Duration Format: {duration}")
+
+    parts = {name: int(val) if val else 0 for name, val in match.groupdict().items()}
+    return datetime.timedelta(days=parts["days"], hours=parts["hours"],
+                              minutes=parts["minutes"], seconds=parts["seconds"]).total_seconds()

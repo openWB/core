@@ -11,7 +11,7 @@ import { registry, resetHistoricData } from '@/assets/js/model'
 import { globalConfig } from '@/assets/js/themeConfig'
 import { shDevices } from '../smartHome/model'
 import { itemNames } from './model'
-import { counters } from '../counterList/model'
+import { Counter, counters } from '../counterList/model'
 import { chargePoints } from '../chargePointList/model'
 // methods:
 /* const noAutarchyCalculation = [
@@ -68,12 +68,24 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 	currentItem.date = currentRow.timestamp * 1000
 	currentItem.evuOut = 0
 	currentItem.evuIn = 0
+	currentItem.counters = 0
+
 	Object.entries(currentRow.counter).forEach(([id, values]) => {
 		if (values.grid) {
 			currentItem.evuOut += values.power_exported
 			currentItem.evuIn += values.power_imported
 			if (!gridCounters.includes(id)) {
 				gridCounters.push(id)
+			}
+		} else {
+			if (!registry.keys().includes(id)) {
+				registry.duplicateItem(id, counters.get(+id.slice(7))!)
+				//registry.items.get(id)!.showInGraph = true
+			}
+			const item: Counter = registry.items.get(id) as Counter
+			if (item._showInGraph) {
+				currentItem.counters += values.power_imported ?? 0
+				currentItem[id] = values.power_imported ?? 0
 			}
 		}
 	})
@@ -151,19 +163,20 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 	})
 
 	// Counters
-	currentItem.counters = 0
+	/* currentItem.counters = 0
 	Object.entries(currentRow.counter).forEach(([id, values]) => {
 		if (!values.grid) {
 			currentItem[id] = values.power_imported ?? 0
 			if (!registry.keys().includes(id)) {
 				registry.duplicateItem(id, counters.get(+id.slice(7))!)
-				//registry.items.get(id)!.showInGraph = true
-			}
-			if (registry.items.get(id)!.showInGraph) {
+	 */ //registry.items.get(id)!.showInGraph = true
+	/* }
+			const item : Counter = registry.items.get(id) as Counter
+			if (item._showInGraph) {
 				currentItem.counters += values.power_imported ?? 0
 			}
 		}
-	})
+	}) */
 	// Self Usage
 	currentItem.selfUsage = Math.max(0, currentItem.pv - currentItem.evuOut)
 	// House

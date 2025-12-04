@@ -42,7 +42,11 @@ def create_device(device_config: Avm):
 
     def get_session_id():
         # checking existing sessionID
-        response = req.get_http_session().post(f"http://{device_config.configuration.ip_address}/login_sid.lua")
+        data = {
+            'content-type': 'application/text'
+        }
+        response = req.get_http_session().post(
+            f"http://{device_config.configuration.ip_address}/login_sid.lua", data=data, timeout=5)
         challengeResponse = ET.fromstring(response.content)
         session_id = challengeResponse.find('SID').text
         if session_id != INVALID_SESSIONID:

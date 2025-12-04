@@ -88,7 +88,6 @@ def test_time_charging(plans: Dict[int, TimeChargingPlan], soc: float, used_amou
 def test_instant_charging(selected: str, current_soc: float, used_amount: float,
                           expected: Tuple[int, str, Optional[str]]):
     # setup
-    data.data.optional_data.data.et.active = False
     ct = ChargeTemplate()
     ct.data.chargemode.instant_charging.limit.selected = selected
     ct.data.chargemode.instant_charging.limit.amount = 1000
@@ -196,8 +195,7 @@ def test_calculate_duration(selected: str,
     "end_time_mock, expected_plan_num",
     [
         pytest.param([1000, 1500, 2000], 0, id="nächster Zieltermin Plan 0"),
-        pytest.param([-100, 1000, 2000], 1, id="Plan 0 abgelaufen, Plan 1 innerhalb der nächsten 12h"),
-        pytest.param([-100, 45000, 50000], 0, id="Plan 0 abgelaufen, Plan 1 nicht innerhalb der nächsten 12h"),
+        pytest.param([-100, 45000, 50000], 0, id="Plan 0 abgelaufen, nächster Tag"),
         pytest.param([1500, 2000, 1000], 2, id="nächster Zieltermin Plan 2"),
         pytest.param([None]*3, 0, id="kein Plan"),
     ])
@@ -218,7 +216,7 @@ def test_scheduled_charging_recent_plan(end_time_mock,
 
     # execution
     selected_plan = ct._find_recent_plan(
-        plans, 60, EvTemplate(), 200, 3, True, ChargingType.AC.value, 1652688000, control_parameter, 0, False)
+        plans, 60, EvTemplate(), 200, 3, True, ChargingType.AC.value, control_parameter, 0, False)
 
     # evaluation
     if selected_plan:
@@ -311,7 +309,7 @@ LOADING_HOURS_TOMORROW = [datetime.datetime(
                          14,
                          "instant_charging",
                          ChargeTemplate.SCHEDULED_CHARGING_CHEAP_HOUR.format(
-                             "Geladen wird jetzt und zu folgenden Uhrzeiten: morgen 8:00."),
+                             "Geladen wird jetzt sowie morgen 8:00."),
                          3),
                      id="cheap_hour_charge_with_instant_charging"),
         pytest.param(True, 79, 80, 70, LOADING_HOURS_TODAY,
@@ -319,7 +317,7 @@ LOADING_HOURS_TOMORROW = [datetime.datetime(
                          14,
                          "instant_charging",
                          ChargeTemplate.SCHEDULED_CHARGING_CHEAP_HOUR.format(
-                             "Geladen wird jetzt und zu folgenden Uhrzeiten: ."),
+                             "Geladen wird jetzt."),
                          3),
                      id="SOC limit reached but scheduled SOC not, no further loading hours"),
         pytest.param(False, 79, 80, 90, LOADING_HOURS_TODAY,
@@ -327,7 +325,7 @@ LOADING_HOURS_TOMORROW = [datetime.datetime(
                          6,
                          "pv_charging",
                          ChargeTemplate.SCHEDULED_CHARGING_EXPENSIVE_HOUR.format(
-                             "Geladen wird zu folgenden Uhrzeiten: 8:00."),
+                             "Geladen wird heute 8:00."),
                          0),
                      id="expensive_hour_charge_with_pv"),
         pytest.param(False, 79, 80, 70, LOADING_HOURS_TODAY,
@@ -335,7 +333,7 @@ LOADING_HOURS_TOMORROW = [datetime.datetime(
                          0,
                          "stop",
                          ChargeTemplate.SCHEDULED_CHARGING_EXPENSIVE_HOUR_REACHED_MAX_SOC.format(
-                             "Geladen wird zu folgenden Uhrzeiten: 8:00."),
+                             "Geladen wird heute 8:00."),
                          3),
                      id="expensive_hour_no_charge_with_pv "),
         pytest.param(False, 79, 80, 70, LOADING_HOURS_TODAY + LOADING_HOURS_TOMORROW,
@@ -343,7 +341,7 @@ LOADING_HOURS_TOMORROW = [datetime.datetime(
                          0,
                          "stop",
                          ChargeTemplate.SCHEDULED_CHARGING_EXPENSIVE_HOUR_REACHED_MAX_SOC.format(
-                             "Geladen wird zu folgenden Uhrzeiten: 8:00, morgen 8:00."),
+                             "Geladen wird heute 8:00 sowie morgen 8:00."),
                          3),
                      id="expensive_hour_no_charge_with_pv scheduled for tomorrow"),
         pytest.param(False, 79, 60, 80, LOADING_HOURS_TODAY,
@@ -377,10 +375,10 @@ def test_scheduled_charging_calc_current_electricity_tariff(
     plan.limit.selected = "soc"
     ct.data.chargemode.scheduled_charging.plans = [plan]
     # für Github-Test keinen Zeitstempel verwenden
-    mock_et_get_loading_hours = Mock(return_value=loading_hours)
-    monkeypatch.setattr(data.data.optional_data, "et_get_loading_hours", mock_et_get_loading_hours)
+    mock_ep_get_loading_hours = Mock(return_value=loading_hours)
+    monkeypatch.setattr(data.data.optional_data, "ep_get_loading_hours", mock_ep_get_loading_hours)
     mock_is_list_valid = Mock(return_value=is_loading_hour)
-    monkeypatch.setattr(data.data.optional_data, "et_is_charging_allowed_hours_list", mock_is_list_valid)
+    monkeypatch.setattr(data.data.optional_data, "ep_is_charging_allowed_hours_list", mock_is_list_valid)
 
     # execution
     ret = ct.scheduled_charging_calc_current(
