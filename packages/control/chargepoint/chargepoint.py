@@ -275,6 +275,9 @@ class Chargepoint(ChargepointRfidMixin):
     def reset_log_data_chargemode_switch(self) -> None:
         reset_log = Log()
         # Wenn ein Zwischeneintrag, zB bei Wechsel des Lademodus, erstellt wird, Zählerstände nicht verwerfen.
+        reset_log.exported_at_mode_switch = self.data.get.exported
+        reset_log.exported_at_plugtime = self.data.set.log.exported_at_plugtime
+        reset_log.exported_since_plugged = self.data.set.log.exported_since_plugged
         reset_log.imported_at_mode_switch = self.data.get.imported
         reset_log.imported_at_plugtime = self.data.set.log.imported_at_plugtime
         reset_log.imported_since_plugged = self.data.set.log.imported_since_plugged
