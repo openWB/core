@@ -78,6 +78,8 @@ class Config:
                              metadata={"topic": "config/manual_mode"})
     bat_control_min_soc: str = field(default=10, metadata={"topic": "config/bat_control_min_soc"})
     bat_control_max_soc: str = field(default=90, metadata={"topic": "config/bat_control_max_soc"})
+    bat_control_price_limit: float = field(default=0.30, metadata={"topic": "config/bat_control_price_limit"})
+    bat_control_charge_limit: float = field(default=0.30, metadata={"topic": "config/bat_control_charge_limit"})
 
 
 def config_factory() -> Config:
@@ -401,10 +403,6 @@ class BatAll:
 
     def get_charge_mode_vehicle_charge(self):
         chargepoint_by_chargemodes = get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_CHARGING)
-        # Falls Fahrzeuge in aktivem Lademodus sind und Laden
-        # und kein EVU-Überschuss vorhanden ist
-        # und Speicher entladen wird
-
         # Fahrzeuge laden
         vehicle_charging = (len(chargepoint_by_chargemodes) > 0 and
                             data.data.cp_all_data.data.get.power > 100)
@@ -475,7 +473,17 @@ class BatAll:
             return BatChargeMode.BAT_SELF_REGULATION
 
     def get_charge_mode_electricity_tariff(self):
-        pass
+        if data.data.optional_data.data.electricity_pricing.configured:
+            if data.data.optional_data.ep_is_charging_allowed_price_threshold(
+                    self.data.config.bat_control_charge_limit):
+                return BatChargeMode.BAT_FORCE_CHARGE
+            elif data.data.optional_data.ep_is_charging_allowed_price_threshold(
+                    self.data.config.bat_control_price_limit):
+                return BatChargeMode.BAT_USE_LIMIT
+            else:
+                return BatChargeMode.BAT_SELF_REGULATION
+        else:
+            return BatChargeMode.BAT_SELF_REGULATION
 
     def get_power_limit(self):
         # Falls kein steuerbarer Speicher installiert ist, der Disclaimer nicht akzeptiert wurde
@@ -518,24 +526,8 @@ class BatAll:
                 self.data.set.power_limit = data.data.counter_all_data.data.set.home_consumption * -1
                 log.debug(f"Speicher-Leistung begrenzen auf {self.data.set.power_limit/1000}kW")
             elif self.data.config.power_limit_mode == BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value:
-                # PV-Ertrag und maximale Ladeleistung Speicher berücksichtigen
-                # self.data.set.power_limit = data.data.counter_all_data.data.set.home_consumption * -1
                 self.data.set.power_limit = data.data.pv_all_data.data.get.power * -1
                 log.debug(f"Speicher in Höhe des PV-Ertrags laden: {self.data.set.power_limit/1000}kW")
-            # FIXME: Leistung auf einzelne Speicher verteilen
-            # for bat_component in controllable_bat_components:
-            #     if self.data.set.power_limit is None:
-            #         power_limit = None
-            #     else:
-            #         bat_component = data.data.bat_data[f"bat{bat_component.component_config.id}"].data
-            #         max_charge_power = bat_component.get.max_charge_power
-            #         max_discharge_power = bat_component.get.max_discharge_power
-            #         if power_limit < 0:
-            #             power_limit = max(power_limit, max_discharge_power * -1)
-            #         else:
-            #             power_limit = min(power_limit, max_charge_power)
-            #         power_limit = self._limit_bat_power_discharge(power_limit)
-            #     data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set.power_limit = power_limit
         elif charge_mode == BatChargeMode.BAT_FORCE_CHARGE:
             # maximal konfigurierte Ladeleistung des Speichers setzen
             max_charge_power_total = 0
@@ -543,25 +535,10 @@ class BatAll:
                 bat_component_data = data.data.bat_data[f"bat{bat_component.component_config.id}"].data
                 max_charge_power_total += bat_component_data.get.max_charge_power
             self.data.set.power_limit = max_charge_power_total
-
-            # for bat_component in controllable_bat_components:
-            #     bat_component.component_config.id
-            #     max_charge = data.data.bat_data[f"bat{bat_component.component_config.id}"].data.get.max_charge_power
-            #     log.debug(f"**MAX CHARGE POWER** {max_charge}W")
-            #     data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set.power_limit = max_charge
         elif charge_mode == BatChargeMode.BAT_FORCE_DISCHARGE:
             # das ist in Deutschland (noch) nicht erlaubt
             pass
         self._set_bat_power_active_control(self.data.set.power_limit)
-        # deprecated
-        # remaining_power_limit = self.data.set.power_limit
-        # for bat_component in get_controllable_bat_components():
-        #     if self.data.set.power_limit is None:
-        #         power_limit = None
-        #     else:
-        #         power_limit = self._limit_bat_power_discharge(remaining_power_limit)
-
-        #     data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set.power_limit = power_limit
 
 
 def get_controllable_bat_components() -> List:
