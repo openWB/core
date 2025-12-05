@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 104
+    DATASTORE_VERSION = 105
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -2665,3 +2665,17 @@ class UpdateConfig:
                         return {topic: provider}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(104)
+
+    def upgrade_datastore_105(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if "openWB/general/charge_log_data_config" == topic:
+                config = decode_payload(payload)
+                if config.get("data_exported_since_mode_switch") is None:
+                    config["data_exported_since_mode_switch"] = False
+                if config.get("chargepoint_exported_at_start") is None:
+                    config["chargepoint_exported_at_start"] = False
+                if config.get("chargepoint_exported_at_end") is None:
+                    config["chargepoint_exported_at_end"] = False
+                return {topic: config}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(105)

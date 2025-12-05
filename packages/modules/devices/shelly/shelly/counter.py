@@ -82,6 +82,8 @@ class ShellyCounter(AbstractCounter):
                 power_factors = [0.0, 0.0, 0.0]
                 meters = status['em:0']
                 for i in range(0, 3):
+                    if meters.get(f'{alphabetical_index[i]}_act_power') is None:
+                        continue
                     powers[(i+self.phase-1) % 3] = (float(meters[f'{alphabetical_index[i]}_act_power']) * self.factor
                                                     if meters.get(f'{alphabetical_index[i]}_act_power') else 0)
                     voltages[(i+self.phase-1) % 3] = (float(meters[f'{alphabetical_index[i]}_voltage'])
