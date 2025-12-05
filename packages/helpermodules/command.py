@@ -254,7 +254,6 @@ class Command:
         """
         def setup_added_chargepoint():
             Pub().pub(f'openWB/chargepoint/{new_id}/config', chargepoint_config)
-            Pub().pub(f'openWB/chargepoint/{new_id}/set/manual_lock', False)
             {Pub().pub(f"openWB/chargepoint/{new_id}/get/"+k, v) for (k, v) in asdict(chargepoint.Get()).items()}
             charge_template = SubData.ev_charge_template_data[f"ct{SubData.ev_data['ev0'].data.charge_template}"]
             charge_template = dataclass_utils.asdict(charge_template.data)
