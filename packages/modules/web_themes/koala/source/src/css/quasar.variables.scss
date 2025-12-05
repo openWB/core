@@ -64,8 +64,6 @@ $charge-point-fill: #5c93d14D;
   --q-grey: #{$grey};
   --q-carousel-control: #{$primary};
   --q-toggle-off: #{$toggle-off};
-  --q-flow-home-stroke: #{$grey};
-  --q-battery: #{$battery};
   --q-grid-fill: #{$grid-fill};
   --q-grid-stroke: #{$grid-stroke};
   --q-home-fill: #{$home-fill};
@@ -78,7 +76,6 @@ $charge-point-fill: #5c93d14D;
   --q-battery-fill: #{$battery-fill};
   --q-charge-point-stroke: #{$charge-point-stroke};
   --q-charge-point-fill: #{$charge-point-fill};
-
 
   // Main background
   background-color: var(--q-background-1);
@@ -275,10 +272,18 @@ $dark-tab-icon: #d7d9e0;
   --q-toggle-off: #{$toggle-off};
   --q-list: #{$dark-list};
   --q-tab-icon: #{$dark-tab-icon};
-  --q-flow-home-stroke: #{$grey};
-  --q-battery: #{$dark-warning};
-  --q-grid-stroke: #{$grid-stroke};
   --q-grid-fill: #{$grid-fill};
+  --q-grid-stroke: #{$grid-stroke};
+  --q-home-fill: #{$home-fill};
+  --q-home-stroke: #{$home-stroke};
+  --q-secondary-counter-stroke: #{$secondary-counter-stroke};
+  --q-secondary-counter-fill: #{$secondary-counter-fill};
+  --q-pv-stroke: #{$pv-stroke};
+  --q-pv-fill: #{$pv-fill};
+  --q-battery-stroke: #{$battery-stroke};
+  --q-battery-fill: #{$battery-fill};
+  --q-charge-point-stroke: #{$charge-point-stroke};
+  --q-charge-point-fill: #{$charge-point-fill};
 
   // Main background
   background-color: $dark-page;
