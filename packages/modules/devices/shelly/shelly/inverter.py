@@ -56,7 +56,7 @@ class ShellyInverter(AbstractInverter):
             elif "emeters" in status:
                 meters = status['emeters']  # shellyEM & shelly3EM
                 # shellyEM has one meter, shelly3EM has three meters
-                for i in range(0, 3):
+                for i in range(len(meters)):
                     currents[(i+self.phase-1) % 3] = (float(meters[i]['current']) * self.factor
                                                       if meters[i].get('current') else 0)
                     power = power + (float(meters[i]['power'] * self.factor))
