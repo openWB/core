@@ -170,11 +170,10 @@ class Api:
             log.debug("dataPath=" + str(DATA_PATH))
             DATA_PATH.mkdir(parents=True, exist_ok=True)
         except Exception as e:
-            log.error("init: dataPath creation failed, dataPath: " +
-                      str(DATA_PATH) + ", error=" + str(e))
             if user_id not in self._store:
                 self._store[user_id] = init_store()
-            return 0, 0.0, 0
+            raise Exception("init: dataPath creation failed, dataPath: " +
+                            str(DATA_PATH) + ", error=" + str(e))
 
         # if self._storeFile is None:
         if user_id not in self._primary_vehicle_id:
@@ -185,10 +184,6 @@ class Api:
                 raise RequestFailed("sequence problem: secondary starts without preceding primary")
 
         try:
-            # initialize return values in case we get into trouble
-            soc = 0
-            range = 0.0
-            soc_tsX = 0.0
             self._login_required[user_id] = False
 
             if captcha_token != "SECONDARY":
@@ -236,13 +231,13 @@ class Api:
                         log.info("authenticate via current token set")
                         expires_at = datetime.fromisoformat(self._store[user_id]['expires_at'])
                         self._auth[user_id] = MyBMWAuthentication(
-                                                                  user_id,
-                                                                  password,
-                                                                  Regions.REST_OF_WORLD,
-                                                                  refresh_token=self._store[user_id]['refresh_token'],
-                                                                  access_token=self._store[user_id]['access_token'],
-                                                                  expires_at=expires_at,
-                                                                  hcaptcha_token=captcha_token)
+                            user_id,
+                            password,
+                            Regions.REST_OF_WORLD,
+                            refresh_token=self._store[user_id]['refresh_token'],
+                            access_token=self._store[user_id]['access_token'],
+                            expires_at=expires_at,
+                            hcaptcha_token=captcha_token)
                     else:
                         # no token, authenticate via user_id, password and captcha_token
                         log.info("authenticate via userid, password, captcha token")
@@ -393,10 +388,6 @@ class Api:
             self._auth.pop(user_id, None)
             self._clconf.pop(user_id, None)
             self._account.pop(user_id, None)
-            soc = 0
-            range = 0.0
-            soc_tsX = datetime.timestamp(datetime.now())
-            # raise RequestFailed("SoC Request failed:\n" + str(err))
             raise Exception("SoC Request failed") from err
         return soc, range, soc_tsX
 
