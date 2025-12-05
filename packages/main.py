@@ -3,11 +3,14 @@
 """
 # flake8: noqa: E402
 import logging
+import dataclass_utils
 from helpermodules import logger
 from helpermodules.utils import run_command, thread_handler
 import threading
 import sys
 import functools
+
+from modules.common.abstract_device import AbstractDevice
 
 # als erstes logging initialisieren, damit auch ImportError geloggt werden
 logger.setup_logging()
@@ -303,7 +306,6 @@ try:
     event_global_data_initialized = Event()
     event_command_completed = Event()
     event_command_completed.set()
-    event_subdata_initialized = Event()
     event_update_config_completed = Event()
     event_modbus_server = Event()
     event_jobs_running = Event()
@@ -314,12 +316,11 @@ try:
     prep = prepare.Prepare()
     soc = update_soc.UpdateSoc(event_update_soc)
     set = setdata.SetData(event_ev_template,
-                          event_cp_config, event_soc,
-                          event_subdata_initialized)
+                          event_cp_config, event_soc)
     sub = subdata.SubData(event_ev_template,
                           event_cp_config, loadvars_.event_module_update_completed,
                           event_copy_data, event_global_data_initialized, event_command_completed,
-                          event_subdata_initialized, soc.event_vehicle_update_completed,
+                          soc.event_vehicle_update_completed,
                           general_internal_chargepoint_handler.event_start,
                           general_internal_chargepoint_handler.event_stop,
                           event_update_config_completed,
@@ -348,7 +349,6 @@ try:
     Thread(target=start_modbus_server, args=(event_modbus_server,), name="Modbus Control Server").start()
     # Warten, damit subdata Zeit hat, alle Topics auf dem Broker zu empfangen.
     event_update_config_completed.wait(300)
-    event_subdata_initialized.wait(300)
     Pub().pub("openWB/set/system/boot_done", True)
     Path(Path(__file__).resolve().parents[1]/"ramdisk"/"bootdone").touch()
     schedule_jobs()
