@@ -112,14 +112,14 @@ class SubData:
     def initialize(self):
         try:
             self.internal_broker_client.client.loop_start()
-            log.debug("Warte auf retained Nachrichten ...")
+            log.debug("Warte auf retained Topics ...")
             while self.last_msg_time is None:
                 time.sleep(0.05)
             # quiet time detector: mqtt schickt alle retained messages direkt nach dem subscribe
             while time.time() - self.last_msg_time < QUIET_TIME:
                 time.sleep(0.05)
             self.internal_broker_client.client.loop_stop()
-            log.debug(f"Startup abgeschlossen.")
+            log.debug("Alle retained Topics empfangen.")
             self.initialized = True
         except Exception:
             log.exception("Fehler beim Initialisieren des Subdata-Moduls")
