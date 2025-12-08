@@ -15,11 +15,9 @@ function loadTarget() {
 			return;
 		}
 		if (data["openWB/system/usage_terms_acknowledged"] === false) {
-			addLog("usage terms not accepted, redirecting...");
+			addLog("usage terms not accepted, redirecting to settings...");
 			destination = "settings/";
-			setTimeout(() => {
-				location.href = destination
-			}, 2500);
+			redirect(destination, 2500);
 			return;
 		}
 		const theme = data["openWB/general/web_theme"].type;
@@ -38,9 +36,7 @@ function loadTarget() {
 				if (this.status == 200) {
 					addLog(`theme '${theme}' is valid`)
 					addLog(`all done, starting theme '${theme}' with url '${destination}'`);
-					setTimeout(() => {
-						location.href = destination
-					}, 250);
+					redirect(destination);
 				} else {
 					addLog(`theme '${theme}' not found on server!`);
 				}
@@ -57,6 +53,13 @@ function loadTarget() {
 	} else {
 		console.debug("some topics still missing");
 	}
+}
+
+function redirect(url, delay = 250) {
+	setTimeout(() => {
+		console.debug("redirecting to:", url);
+		location.href = url;
+	}, delay);
 }
 
 function addLog(message) {
