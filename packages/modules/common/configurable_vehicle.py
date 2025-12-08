@@ -134,6 +134,8 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                    vehicle_update_data.last_soc and\
                    vehicle_update_data.soc_timestamp >= vehicle_update_data.plug_time and\
                    (self.calculated_soc_state.last_imported or vehicle_update_data.imported):
+                    _txt1 = "SoC FALLBACK: SoC wird berechnet, da ein Fehler bei der Abfrage aufgetreten ist:"
+                    self.fault_state.warning(f"{_txt1} {e}")
                     _carState = CarState(soc=calc_soc.calc_soc(
                                          vehicle_update_data,
                                          vehicle_update_data.efficiency,
