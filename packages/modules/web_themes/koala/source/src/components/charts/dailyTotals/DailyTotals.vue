@@ -1,7 +1,7 @@
 <template>
   <div class="container" ref="rootRef">
     <div class="centered-panel">
-      <div class="scroll-container">
+      <div class="scroll-container narrow-scrollbar">
         <div
           class="flex justify-between text-subtitle1 text-weight-bold q-mb-xs"
           ref="titleRef"

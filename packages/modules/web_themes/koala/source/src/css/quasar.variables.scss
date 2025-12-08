@@ -216,7 +216,7 @@ $charge-point-fill: #5c93d14D;
   }
 
   // Scrollbar styling für .q-list auto Light Theme
-  .q-list {
+  .q-list, .narrow-scrollbar {
     scrollbar-width: thin;
     scrollbar-color: var(--q-primary) var(--q-background-2);
   }

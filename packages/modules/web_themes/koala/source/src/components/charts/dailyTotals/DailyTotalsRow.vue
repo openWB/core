@@ -178,7 +178,7 @@ const arrowDirection = (id: string) => {
   white-space: nowrap;
 }
 .col-right-value {
-  width: 80px;
+  width: 85px;
   text-align: right;
   white-space: nowrap;
 }
