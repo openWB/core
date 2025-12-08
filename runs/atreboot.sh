@@ -184,6 +184,8 @@ chmod 666 "$LOGFILE"
 		echo "path '/etc/apt/apt.conf.d' is missing! unsupported system!"
 	fi
 	if ((hasInet == 1)); then
+	# remove urllib3 version to avoid conflicts
+		pip uninstall urllib3 -y
 		"${OPENWBBASEDIR}/runs/install_packages.sh"
 	else
 		echo "no internet connection, skipping package installation"
