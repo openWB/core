@@ -9,6 +9,7 @@
           <div v-if="currentPowerVisible">Aktuelle Leistung</div>
           <div>Tageswerte</div>
         </div>
+        <!-- grid -->
         <q-expansion-item
           dense
           expand-separator
@@ -16,100 +17,31 @@
           class="grid q-mb-xs card"
           header-class="cursor-pointer"
         >
-          <!-- grid header -->
           <template #header>
-            <table class="daily-table">
-              <tr :style="{ height: rowHeight + 'px' }">
-                <td class="col-icon">
-                  <img :src="gridData.icon" class="icon" />
-                </td>
-                <td class="col-title text-weight-bold">
-                  <span v-if="componentNameVisible">{{ gridData.title }}</span>
-                </td>
-                <!-- spacing added if battery SOC is visible -->
-                <td :class="socValueVisible ? 'col-soc' : 'col-soc-empty'"></td>
-                <td class="col-arrow">
-                  <q-icon
-                    v-if="currentPowerVisible"
-                    :name="
-                      arrowDirection('grid').noCurrent
-                        ? 'horizontal_rule'
-                        : 'double_arrow'
-                    "
-                    :class="{
-                      'rotate-180': arrowDirection('grid').rotate180,
-                    }"
-                  />
-                </td>
-                <td class="col-power">
-                  <span v-if="currentPowerVisible">
-                    {{ String(gridData.power).replace('-', '') }}
-                  </span>
-                </td>
-                <td class="col-flex"></td>
-                <td class="col-right-label text-weight-bold">
-                  <div>Bezug:</div>
-                  <div>Einspeisung:</div>
-                </td>
-                <td class="col-right-value">
-                  <div>{{ gridData.today.imported }}</div>
-                  <div>{{ gridData.today.exported }}</div>
-                </td>
-              </tr>
-            </table>
+            <DailyTotalsRow
+              :item="gridData"
+              :rowHeight="rowHeight"
+              :componentNameVisible="componentNameVisible"
+              :currentPowerVisible="currentPowerVisible"
+              :socValueVisible="socValueVisible"
+            />
           </template>
-          <!-- secondary counters -->
+          <!-- Secondary Counters -->
           <div
             v-for="item in secondaryCounterData"
             :key="item.id"
             class="counter"
           >
-            <table class="daily-table">
-              <tr :style="{ height: rowHeight + 'px' }">
-                <td class="col-icon">
-                  <img src="icons/owbCounter.svg" class="icon" />
-                </td>
-                <td class="col-title text-weight-bold">
-                  <div v-if="componentNameVisible" class="ellipsis-wrapper">
-                    {{ item.title }}
-                    <q-tooltip>{{ item.title }}</q-tooltip>
-                  </div>
-                </td>
-                <!-- spacing added if battery SOC is visible -->
-                <td :class="socValueVisible ? 'col-soc' : 'col-soc-empty'"></td>
-                <td class="col-arrow">
-                  <q-icon
-                    v-if="currentPowerVisible"
-                    :name="
-                      arrowDirection(item.id).noCurrent
-                        ? 'horizontal_rule'
-                        : 'double_arrow'
-                    "
-                    :class="{
-                      'rotate-180': arrowDirection(item.id).rotate180,
-                    }"
-                  />
-                </td>
-                <td class="col-power">
-                  <span v-if="currentPowerVisible">
-                    {{ String(item.power).replace('-', '') }}
-                  </span>
-                </td>
-                <td class="col-flex"></td>
-                <td class="col-right-label text-weight-bold">
-                  <div>Bezug:</div>
-                  <div>Einspeisung:</div>
-                </td>
-                <td class="col-right-value">
-                  <div>{{ item.today.imported }}</div>
-                  <div>{{ item.today.exported }}</div>
-                </td>
-              </tr>
-            </table>
+            <DailyTotalsRow
+              :item="item"
+              :rowHeight="rowHeight"
+              :componentNameVisible="componentNameVisible"
+              :currentPowerVisible="currentPowerVisible"
+              :socValueVisible="socValueVisible"
+            />
           </div>
         </q-expansion-item>
         <!-- all other components -->
-
         <q-expansion-item
           v-for="item in componentData"
           :key="item.id"
@@ -119,75 +51,46 @@
           header-class="no-pointer"
         >
           <template #header>
-            <table class="daily-table">
-              <tr :style="{ height: rowHeight + 'px' }">
-                <td class="col-icon">
-                  <img :src="item.icon" class="icon" />
-                </td>
-                <td class="col-title text-weight-bold">
-                  <span v-if="componentNameVisible">{{ item.title }}</span>
-                </td>
-                <!-- spacing added if battery SOC is visible -->
-                <td :class="socValueVisible ? 'col-soc' : 'col-soc-empty'">
-                  <span v-if="socValueVisible && item.id === 'battery'">
-                    {{ item.soc }}%
-                  </span>
-                </td>
-                <td class="col-arrow">
-                  <q-icon
-                    v-if="currentPowerVisible"
-                    :name="
-                      item.id === 'house'
-                        ? 'horizontal_rule'
-                        : arrowDirection(item.id).noCurrent
-                          ? 'horizontal_rule'
-                          : 'double_arrow'
-                    "
-                    :class="{
-                      'rotate-180': arrowDirection(item.id).rotate180,
-                    }"
-                  />
-                </td>
-                <td class="col-power">
-                  <span v-if="currentPowerVisible">
-                    {{ String(item.power).replace('-', '') }}
-                  </span>
-                </td>
-                <td class="col-flex"></td>
-                <td class="col-right-label text-weight-bold">
-                  <template
-                    v-if="item.id === 'battery' || item.id === 'chargepoint'"
-                  >
-                    <div>Geladen:</div>
-                    <div>Entladen:</div>
-                  </template>
-                  <template v-else-if="item.id === 'pv'">
-                    <div>Ertrag:</div>
-                  </template>
-                  <template v-else-if="item.id === 'house'">
-                    <div>Verbrauch:</div>
-                  </template>
-                </td>
-                <td class="col-right-value">
-                  <div
-                    v-if="
-                      ['battery', 'grid', 'house', 'chargepoint'].includes(
-                        item.id,
-                      )
-                    "
-                  >
-                    {{ item.today.imported }}
-                  </div>
-                  <div
-                    v-if="
-                      ['battery', 'grid', 'pv', 'chargepoint'].includes(item.id)
-                    "
-                  >
-                    {{ item.today.exported }}
-                  </div>
-                </td>
-              </tr>
-            </table>
+            <DailyTotalsRow
+              :item="item"
+              :rowHeight="rowHeight"
+              :componentNameVisible="componentNameVisible"
+              :currentPowerVisible="currentPowerVisible"
+              :socValueVisible="socValueVisible"
+            >
+              <template #right-label>
+                <template
+                  v-if="item.id === 'battery' || item.id === 'chargepoint'"
+                >
+                  <div>Geladen:</div>
+                  <div>Entladen:</div>
+                </template>
+                <template v-else-if="item.id === 'pv'">
+                  <div>Ertrag:</div>
+                </template>
+                <template v-else-if="item.id === 'house'">
+                  <div>Verbrauch:</div>
+                </template>
+              </template>
+              <template #right-value>
+                <div
+                  v-if="
+                    ['battery', 'grid', 'house', 'chargepoint'].includes(
+                      item.id,
+                    )
+                  "
+                >
+                  {{ item.today.imported }}
+                </div>
+                <div
+                  v-if="
+                    ['battery', 'grid', 'pv', 'chargepoint'].includes(item.id)
+                  "
+                >
+                  {{ item.today.exported }}
+                </div>
+              </template>
+            </DailyTotalsRow>
           </template>
         </q-expansion-item>
       </div>
@@ -206,6 +109,7 @@ import {
 } from 'vue';
 import { useQuasar } from 'quasar';
 import { useMqttStore } from 'src/stores/mqtt-store';
+import DailyTotalsRow from './DailyTotalsRow.vue';
 import type { DailyTotalsItem } from 'src/components/models/daily-totals-model';
 
 const $q = useQuasar();
@@ -310,45 +214,8 @@ const componentData = computed((): DailyTotalsItem[] => {
       },
     });
   }
-
   return components;
 });
-
-const arrowDirection = (id: string) => {
-  let value = 0;
-  switch (id) {
-    case 'grid':
-      value = mqttStore.getCounterPower('value') as number;
-      break;
-    case 'battery':
-      value = mqttStore.batteryTotalPower('value') as number;
-      break;
-    case 'pv':
-      value = mqttStore.getPvPower('value') as number;
-      break;
-    case 'house':
-      value = mqttStore.getHomePower('value') as number;
-      break;
-    case 'chargepoint':
-      value = mqttStore.chargePointSumPower('value') as number;
-      break;
-    default:
-      if (id.startsWith('counter-')) {
-        const counterId = Number(id.replace('counter-', ''));
-        value = mqttStore.getCounterPower('value', counterId) as number;
-      }
-  }
-  const noCurrent = value === 0;
-  let rotate180 = false;
-
-  if (id === 'grid' || id.startsWith('counter-')) {
-    rotate180 = value < 0;
-  } else if (id !== 'house') {
-    rotate180 = value > 0;
-  }
-
-  return { noCurrent, rotate180 };
-};
 
 const rootRef = ref<HTMLElement | null>(null);
 const titleRef = ref<HTMLElement | null>(null);
@@ -450,7 +317,7 @@ watch(
 :deep(.q-expansion-item__toggle-icon) {
   display: none !important;
 }
-/* make padding same as cards inside expansion header */
+/* Remove the padding inside expansion header */
 :deep(.q-expansion-item__container .q-item) {
   padding: 0px 0px !important;
 }
@@ -470,81 +337,18 @@ watch(
   cursor: default !important;
   pointer-events: none;
 }
-.daily-table {
-  width: 100%;
-  min-height: 42px;
-  border-collapse: collapse;
-}
-.daily-table td {
-  padding: 0px 6px !important;
-  white-space: nowrap;
-  vertical-align: middle;
-}
-.daily-table td.col-icon img {
-  width: 28px;
-  display: block;
-  margin: 0 auto;
-}
-.col-icon {
-  width: 32px;
-}
-.col-title {
-  width: 85px;
-  max-width: 85px; /* prevent growing */
-}
-.ellipsis-wrapper {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 85px;
-}
-.col-soc {
-  width: 50px;
-  text-align: right;
-  white-space: nowrap;
-}
-.col-soc-empty {
-  width: 0 !important;
-  padding: 0 !important;
-  border: 0 !important;
-  overflow: hidden !important;
-}
-.col-arrow {
-  width: 24px;
-  text-align: center;
-}
-.col-power {
-  width: 70px;
-  text-align: right;
-  white-space: nowrap;
-}
-/* flexible gap */
-.col-flex {
-  width: auto;
-}
-.col-right-label {
-  width: 100px;
-  text-align: right;
-  white-space: nowrap;
-}
-.col-right-value {
-  width: 80px;
-  text-align: right;
-  white-space: nowrap;
+.card,
+.grid,
+.counter {
+  border-radius: 8px;
 }
 .grid {
   background: var(--q-grid-fill);
   border: 2px solid var(--q-grid-stroke);
 }
 .counter {
-  padding: 0px 0px;
   background: var(--q-secondary-counter-fill);
   border: 2px solid var(--q-secondary-counter-stroke);
-}
-.card,
-.grid,
-.counter {
-  border-radius: 8px;
 }
 .battery {
   background: var(--q-battery-fill);
@@ -562,6 +366,13 @@ watch(
   background: var(--q-charge-point-fill);
   border: 2px solid var(--q-charge-point-stroke);
 }
+.icon {
+  filter: brightness(0.4);
+}
+.rotate-180 {
+  transform: rotate(180deg);
+}
+/* Dark mode overrides */
 .body--dark .grid {
   background: #a13a41 !important;
   border: 2px solid #da959a;
@@ -579,19 +390,7 @@ watch(
 .body--dark .chargepoint {
   background: #254a8c;
 }
-.icon {
-  filter: brightness(0.4);
-}
 .body--dark .icon {
   filter: brightness(1);
-}
-.rotate-180 {
-  transform: rotate(180deg);
-}
-
-@media (max-width: 500px) {
-  .daily-table td {
-    font-size: 13px;
-  }
 }
 </style>
