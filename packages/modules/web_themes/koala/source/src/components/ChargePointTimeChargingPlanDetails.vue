@@ -36,74 +36,8 @@
           class="col"
         />
       </div>
-
-      <SliderStandard
-        class="q-mb-sm"
-        title="Ladestrom"
-        :min="6"
-        :max="32"
-        unit="A"
-        v-model="planCurrent.value"
-      />
-      <q-input
-        v-if="planDcChargingEnabled"
-        v-model="planDcPower.value"
-        label="Ladeleistung (DC)"
-        class="col q-mb-sm"
-      >
-        <template v-slot:append>
-          <div class="text-body2">kW</div>
-        </template>
-      </q-input>
-
-      <div class="text-subtitle2 q-mb-sm">Begrenzung</div>
-      <q-btn-group class="full-width">
-        <q-btn
-          size="sm"
-          class="flex-grow"
-          :color="planLimitSelected.value === 'none' ? 'primary' : 'grey'"
-          @click="planLimitSelected.value = 'none'"
-          label="Aus"
-        />
-        <q-btn
-          size="sm"
-          class="flex-grow"
-          :color="planLimitSelected.value === 'soc' ? 'primary' : 'grey'"
-          @click="planLimitSelected.value = 'soc'"
-          label="SoC"
-        />
-        <q-btn
-          size="sm"
-          class="flex-grow"
-          :color="planLimitSelected.value === 'amount' ? 'primary' : 'grey'"
-          @click="planLimitSelected.value = 'amount'"
-          label="Energie"
-        />
-      </q-btn-group>
-      <div v-if="planLimitSelected.value === 'soc'" class="q-mt-md">
-        <SliderStandard
-          title="Ziel-SoC für das Fahrzeug"
-          :min="5"
-          :max="100"
-          :step="5"
-          unit="%"
-          v-model="planSocLimit.value"
-          class="q-mt-sm"
-        />
-      </div>
-      <q-input
-        v-if="planLimitSelected.value === 'amount'"
-        v-model="planLimitAmount.value"
-        label="Ziel-Energie"
-        class="col"
-      >
-        <template v-slot:append>
-          <div class="text-body2">kWh</div>
-        </template>
-      </q-input>
-
-      <div class="q-mb-md">
-        <div class="text-subtitle2 q-mb-sm q-mt-md">Wiederholungen</div>
+      <div class="q-mb-sm">
+        <div class="text-subtitle2 q-mt-md">Wiederholungen</div>
         <q-btn-group spread>
           <q-btn
             size="sm"
@@ -156,8 +90,25 @@
           </div>
         </div>
       </div>
-
-      <div class="text-subtitle2 q-mt-sm q-mr-sm">Anzahl Phasen</div>
+      <SliderStandard
+        class="q-mb-sm"
+        :title="planDcChargingEnabled ? 'Ladestrom (AC)' : 'Ladestrom'"
+        :min="6"
+        :max="32"
+        unit="A"
+        v-model="planCurrent.value"
+      />
+      <q-input
+        v-if="planDcChargingEnabled"
+        v-model="planDcPower.value"
+        label="Ladeleistung (DC)"
+        class="col q-mb-sm"
+      >
+        <template v-slot:append>
+          <div class="text-body2">kW</div>
+        </template>
+      </q-input>
+      <div class="text-subtitle2 q-mr-sm">Anzahl Phasen</div>
       <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
         <q-btn-group class="col">
           <q-btn
@@ -171,6 +122,51 @@
           />
         </q-btn-group>
       </div>
+      <div class="text-subtitle2 q-mt-sm">Begrenzung</div>
+      <q-btn-group class="full-width">
+        <q-btn
+          size="sm"
+          class="flex-grow"
+          :color="planLimitSelected.value === 'none' ? 'primary' : 'grey'"
+          @click="planLimitSelected.value = 'none'"
+          label="Aus"
+        />
+        <q-btn
+          size="sm"
+          class="flex-grow"
+          :color="planLimitSelected.value === 'soc' ? 'primary' : 'grey'"
+          @click="planLimitSelected.value = 'soc'"
+          label="SoC"
+        />
+        <q-btn
+          size="sm"
+          class="flex-grow"
+          :color="planLimitSelected.value === 'amount' ? 'primary' : 'grey'"
+          @click="planLimitSelected.value = 'amount'"
+          label="Energie"
+        />
+      </q-btn-group>
+      <div v-if="planLimitSelected.value === 'soc'" class="q-mt-md">
+        <SliderStandard
+          title="Ziel-SoC für das Fahrzeug"
+          :min="5"
+          :max="100"
+          :step="5"
+          unit="%"
+          v-model="planSocLimit.value"
+          class="q-mt-sm"
+        />
+      </div>
+      <q-input
+        v-if="planLimitSelected.value === 'amount'"
+        v-model="planLimitAmount.value"
+        label="Ziel-Energie"
+        class="col"
+      >
+        <template v-slot:append>
+          <div class="text-body2">kWh</div>
+        </template>
+      </q-input>
       <div class="row q-mt-lg">
         <q-btn
           size="sm"

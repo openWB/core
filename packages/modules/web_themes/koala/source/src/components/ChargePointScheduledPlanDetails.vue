@@ -30,97 +30,7 @@
           class="col"
         />
       </div>
-      <SliderStandard
-        class="q-mb-sm"
-        :title="planDcChargingEnabled ? 'Ladestrom (AC)' : 'Ladestrom'"
-        :min="6"
-        :max="32"
-        unit="A"
-        v-model="planCurrent.value"
-      />
-      <q-input
-        v-if="planDcChargingEnabled"
-        v-model="planDcPower.value"
-        label="Ladeleistung (DC)"
-        class="col q-mb-md"
-      >
-        <template v-slot:append>
-          <div class="text-body2">kW</div>
-        </template>
-      </q-input>
-      <q-btn-group class="full-width">
-        <q-btn
-          size="sm"
-          class="flex-grow"
-          :color="planLimitSelected.value === 'soc' ? 'primary' : 'grey'"
-          @click="planLimitSelected.value = 'soc'"
-          label="SoC"
-        />
-        <q-btn
-          size="sm"
-          class="flex-grow"
-          :color="planLimitSelected.value === 'amount' ? 'primary' : 'grey'"
-          @click="planLimitSelected.value = 'amount'"
-          label="Energie"
-        />
-      </q-btn-group>
-      <div v-if="planLimitSelected.value === 'soc'" class="q-mt-md">
-        <SliderStandard
-          title="EV-SoC"
-          :min="5"
-          :max="100"
-          :step="5"
-          unit="%"
-          v-model="planSocScheduled.value"
-          class="q-mt-sm"
-        />
-        <SliderStandard
-          title="Fahrzeug-SoC mit Überschuss"
-          :min="5"
-          :max="100"
-          :step="5"
-          unit="%"
-          v-model="planSocLimit.value"
-        />
-      </div>
-      <q-input
-        v-if="planLimitSelected.value === 'amount'"
-        v-model="planLimitAmount.value"
-        label="Ziel-Energie"
-        class="col"
-      >
-        <template v-slot:append>
-          <div class="text-body2">kWh</div>
-        </template>
-      </q-input>
-
-      <div
-        v-if="
-          planLimitSelected.value === 'soc' &&
-          chargePointConnectedVehicleBidiEnabled
-        "
-        class="row items-center justify-between"
-      >
-        <div class="text-subtitle2 q-mr-sm">
-          Bidirektionales Überschussladen
-        </div>
-        <ToggleStandard
-          v-model="planBidiEnabled.value"
-          :size="'sm'"
-          color="positive"
-        />
-      </div>
-      <q-input
-        v-if="
-          planLimitSelected.value === 'soc' &&
-          chargePointConnectedVehicleBidiEnabled &&
-          planBidiEnabled.value
-        "
-        v-model="planBidiPower.value"
-        label="Bidirektionales Ladeleistung (kW)"
-        class="col"
-      />
-      <div class="q-mb-md">
+      <div class="q-mb-sm">
         <div class="text-subtitle2 q-mb-sm q-mt-sm">Wiederholungen</div>
         <q-btn-group spread>
           <q-btn
@@ -169,15 +79,25 @@
           </div>
         </div>
       </div>
-      <div class="row items-center justify-between">
-        <div class="text-subtitle2 q-mr-sm">Strompreisbasiert laden</div>
-        <ToggleStandard
-          v-model="planEtActive.value"
-          :size="'sm'"
-          color="positive"
-        />
-      </div>
-      <div class="text-subtitle2 q-mt-sm q-mr-sm">Anzahl Phasen Zielladen</div>
+      <SliderStandard
+        class="q-mb-sm"
+        :title="planDcChargingEnabled ? 'Ladestrom (AC)' : 'Ladestrom'"
+        :min="6"
+        :max="32"
+        unit="A"
+        v-model="planCurrent.value"
+      />
+      <q-input
+        v-if="planDcChargingEnabled"
+        v-model="planDcPower.value"
+        label="Ladeleistung (DC)"
+        class="col q-mb-md"
+      >
+        <template v-slot:append>
+          <div class="text-body2">kW</div>
+        </template>
+      </q-input>
+      <div class="text-subtitle2 q-mr-sm">Anzahl Phasen Zielladen</div>
       <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
         <q-btn-group class="col">
           <q-btn
@@ -207,7 +127,87 @@
           />
         </q-btn-group>
       </div>
-      <div class="row q-mt-lg">
+      <div class="text-subtitle2 q-mt-sm q-mr-sm">Ziel</div>
+      <q-btn-group class="full-width">
+        <q-btn
+          size="sm"
+          class="flex-grow"
+          :color="planLimitSelected.value === 'soc' ? 'primary' : 'grey'"
+          @click="planLimitSelected.value = 'soc'"
+          label="SoC"
+        />
+        <q-btn
+          size="sm"
+          class="flex-grow"
+          :color="planLimitSelected.value === 'amount' ? 'primary' : 'grey'"
+          @click="planLimitSelected.value = 'amount'"
+          label="Energie"
+        />
+      </q-btn-group>
+      <div v-if="planLimitSelected.value === 'soc'" class="q-mt-md">
+        <SliderStandard
+          title="EV-SoC"
+          :min="5"
+          :max="100"
+          :step="5"
+          unit="%"
+          v-model="planSocScheduled.value"
+          class="q-mt-sm"
+        />
+        <SliderStandard
+          title="Fahrzeug-SoC mit Überschuss"
+          :min="5"
+          :max="100"
+          :step="5"
+          unit="%"
+          v-model="planSocLimit.value"
+        />
+      </div>
+      <q-input
+        v-if="planLimitSelected.value === 'amount'"
+        v-model="planLimitAmount.value"
+        label="Ziel-Energie"
+        class="col"
+      >
+        <template v-slot:append>
+          <div class="text-body2">kWh</div>
+        </template>
+      </q-input>
+      <div
+        v-if="
+          planLimitSelected.value === 'soc' &&
+          chargePointConnectedVehicleBidiEnabled
+        "
+        class="row items-center justify-between"
+      >
+        <div class="text-subtitle2 q-mr-sm">
+          Bidirektionales Überschussladen
+        </div>
+        <ToggleStandard
+          v-model="planBidiEnabled.value"
+          :size="'sm'"
+          color="positive"
+        />
+      </div>
+      <q-input
+        v-if="
+          planLimitSelected.value === 'soc' &&
+          chargePointConnectedVehicleBidiEnabled &&
+          planBidiEnabled.value
+        "
+        v-model="planBidiPower.value"
+        label="Bidirektionales Ladeleistung (kW)"
+        class="col"
+      />
+      <div class="row items-center justify-between">
+        <div class="text-subtitle2 q-mr-sm">Strompreisbasiert laden</div>
+        <ToggleStandard
+          v-model="planEtActive.value"
+          :size="'sm'"
+          color="positive"
+        />
+      </div>
+      <div class="row q-mt-md">
         <q-btn
           size="sm"
           class="col"
