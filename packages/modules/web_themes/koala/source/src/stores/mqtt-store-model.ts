@@ -8,15 +8,6 @@ export interface ThemeConfiguration {
   top_carousel_slide_order: Array<string>;
 }
 
-export interface ConnectionOptions {
-  protocol: string;
-  host: string;
-  port: number;
-  endpoint: string;
-  connectTimeout: number;
-  reconnectPeriod: number;
-}
-
 export interface TopicObject {
   [key: string]: unknown;
 }
