@@ -64,6 +64,7 @@ sleep 2
 SRC="${OPENWBBASEDIR}/data/config/mosquitto/public"
 cp -a "${SRC}/mosquitto.conf" "${SRC}/mosquitto.acl" /etc/mosquitto/
 sudo chown mosquitto:mosquitto /etc/mosquitto/mosquitto.acl
+sudo chmod 700 /etc/mosquitto/mosquitto.acl
 # enable default listeners: local bridge, public secure and unsecure mqtt and ws listeners with acl files
 cp -a "${SRC}/openwb.conf" "${SRC}/openwb-unsecure-acl.conf" "${SRC}/openwb-default-acl.conf" /etc/mosquitto/conf.d/
 sudo cp /etc/ssl/certs/ssl-cert-snakeoil.pem /etc/mosquitto/certs/openwb.pem
