@@ -5,6 +5,7 @@ from typing import Optional
 @dataclass
 class VehicleUpdateData:
     plug_state: bool = False
+    plug_time: float = 0.0
     charge_state: bool = False
     imported: float = 0
     battery_capacity: float = 82
@@ -27,12 +28,3 @@ class GeneralVehicleConfig:
 class CalculatedSocState:
     last_imported: Optional[float] = 0  # don't show in UI
     manual_soc: Optional[int] = None  # don't show in UI
-
-
-# used for fallback to calculation if source API fails
-@dataclass
-class VehicleFallbackData:
-    carName: str = "Unknown"
-    last_plug_state: bool = False
-    last_plugin_timestamp: float = 0
-    last_soc_timestamp: float = 0
