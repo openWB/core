@@ -1,11 +1,10 @@
 import { defineStore } from 'pinia';
 import { ref, computed, ComputedRef } from 'vue';
-import mqtt, { IClientPublishOptions } from 'mqtt';
+import mqtt, { IClientOptions, IClientPublishOptions } from 'mqtt';
 import { QoS } from 'mqtt-packet';
 
 // import all type definitions from the mqtt-store-model
 import type {
-  ConnectionOptions,
   TopicObject,
   TopicList,
   TopicCount,
@@ -31,13 +30,18 @@ import type {
 export const useMqttStore = defineStore('mqtt', () => {
   // local variables
   let mqttClient: mqtt.MqttClient | undefined = undefined;
-  const mqttConnectionOptions: ConnectionOptions = {
+  const mqttConnectionOptions: IClientOptions = {
     protocol: location.protocol == 'https:' ? 'wss' : 'ws',
+    protocolVersion: 5,
     host: location.hostname,
     port: parseInt(location.port) || (location.protocol == 'https:' ? 443 : 80),
-    endpoint: '/ws',
+    path: '/ws',
     connectTimeout: 4000,
     reconnectPeriod: 4000,
+    properties: {
+      requestResponseInformation: true,
+      requestProblemInformation: true,
+    },
   };
 
   // State
@@ -53,9 +57,9 @@ export const useMqttStore = defineStore('mqtt', () => {
    * initialize();
    */
   function initialize() {
-    const { protocol, host, port, endpoint, ...options } =
+    const { protocol, host, port, path, ...options } =
       mqttConnectionOptions;
-    const connectUrl = `${protocol}://${host}:${port}${endpoint}`;
+    const connectUrl = `${protocol}://${host}:${port}${path}`;
     console.debug('connecting to broker:', connectUrl);
     try {
       mqttClient = mqtt.connect(connectUrl, options);
