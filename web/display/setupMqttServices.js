@@ -28,64 +28,106 @@ var data = {};
 var retries = 0;
 
 // Connect Options
-var isSSL = location.protocol == 'https:';
-var port = parseInt(location.port) || (location.protocol == "https:" ? 443 : 80);
-
-var options = {
-	timeout: 5,
-	useSSL: isSSL,
-	// Gets Called if the connection has been established
-	onSuccess: function () {
-		console.debug("connected!");
-		retries = 0;
-		updateProgress();
-		Object.keys(topicsToSubscribe).forEach((topic) => {
-			client.subscribe(topic, { qos: 0 });
-		});
-		Object.keys(primaryTopicsToSubscribe).forEach((topic) => {
-			client.subscribe(topic, { qos: 0 });
-		});
-		Object.keys(secondaryTopicsToSubscribe).forEach((topic) => {
-			client.subscribe(topic, { qos: 0 });
-		});
+var connection = {
+	protocol: location.protocol == "https:" ? "wss" : "ws",
+	protocolVersion: 5,
+	host: location.hostname,
+	port: parseInt(location.port) || (location.protocol == "https:" ? 443 : 80),
+	path: "/ws",
+	connectTimeout: 4000,
+	reconnectPeriod: 4000,
+	properties: {
+		requestResponseInformation: true,
+		requestProblemInformation: true,
 	},
-	// Gets Called if the connection could not be established
-	onFailure: function (message) {
-		console.error("error connecting to broker!");
-		setTimeout(() => {
-			client.connect(options);
-		}, 5000);
-	}
 };
 
-var client_uid = Math.random().toString(36).replace(/[^a-z]+/g, "").substring(0, 5);
-console.debug(`connecting to broker on ${location.hostname}:${port} as client "${client_uid}"`);
-var client = new Messaging.Client(location.hostname, port, client_uid);
+function getCookie(cookieName) {
+	const name = cookieName + "=";
+	const decodedCookies = decodeURIComponent(document.cookie);
+	const cookieArray = decodedCookies.split(';');
+	for (let cookie of cookieArray) {
+		cookie = cookie.trim();
+		if (cookie.indexOf(name) === 0) {
+			return decodeURIComponent(cookie.substring(name.length, cookie.length));
+		}
+	}
+	return null;
+};
 
-console.debug("connecting...");
-client.connect(options);
+function setCookie(cookieName, cookieValue, expireDays = 30, path = "/") {
+	let currentDate = new Date();
+	currentDate.setTime(currentDate.getTime() + (expireDays * 24 * 60 * 60 * 1000));
+	const expires = "expires=" + currentDate.toUTCString();
+	document.cookie = `${cookieName}=${encodeURIComponent(cookieValue)};${expires};path=${path}; SameSite=Lax; Secure`;
+}
+
+function deleteCookie(cookieName, path = "/") {
+	setCookie(cookieName, "", -1, path);
+}
+
+// For testing purposes only, set a test cookie
+// setCookie("mqtt", "unknown:user");
+// setCookie("mqtt", "admin:openwb");
+
+// Connect string, and specify the connection method used through protocol
+// ws not encrypted WebSocket connection
+// wss encrypted WebSocket connection
+const { protocol, host, port, path, ...options } = connection;
+const connectUrl = `${protocol}://${host}:${port}${path}`;
+const [user, pass] = getCookie("mqtt")?.split(":") || [null, null];
+if (!(user && pass)) {
+	console.debug("Anonymous mqtt connection (no cookie set)");
+}
+if (protocol == "wss" && user && pass) {
+	console.debug("Using mqtt credentials from cookie:", user, "/", pass);
+	options.username = user;
+	options.password = pass;
+	if (user === "admin" && pass === "openwb") {
+		console.warn("Using default mqtt credentials!");
+		addLog("Warnung: Es werden die Standard MQTT Anmeldedaten verwendet!", true);
+	}
+}
+console.debug("connecting to broker:", connectUrl);
 timeOfLastMqttMessage = Date.now();
+client = mqtt.connect(connectUrl, options);
 
-// Gets called if the websocket/mqtt connection gets disconnected for any reason
-client.onConnectionLost = function (responseObject) {
-	console.debug("reconnecting...");
-	setTimeout(() => {
-		client.connect(options);
-	}, 2000);
-};
-// Gets called whenever you receive a message
-client.onMessageArrived = function (message) {
-	if (Object.keys(topicsToSubscribe).includes(message.destinationName)) {
-		topicsToSubscribe[message.destinationName] = true;
-	} else if (Object.keys(primaryTopicsToSubscribe).includes(message.destinationName)) {
-		primaryTopicsToSubscribe[message.destinationName] = true;
-	} else if (Object.keys(secondaryTopicsToSubscribe).includes(message.destinationName)) {
-		secondaryTopicsToSubscribe[message.destinationName] = true;
-	}
-	data[message.destinationName] = JSON.parse(message.payloadString);
+client.on("connect", (ack) => {
+	console.debug("connected!", ack);
+	retries = 0;
 	updateProgress();
-	handleMessage(message.destinationName, message.payloadString);
-};
+	Object.keys(topicsToSubscribe).forEach((topic) => {
+		client.subscribe(topic, { qos: 0 });
+	});
+	Object.keys(primaryTopicsToSubscribe).forEach((topic) => {
+		client.subscribe(topic, { qos: 0 });
+	});
+	Object.keys(secondaryTopicsToSubscribe).forEach((topic) => {
+		client.subscribe(topic, { qos: 0 });
+	});
+});
+
+client.on("error", (error) => {
+	console.error("Connection failed", error);
+	addLog("MQTT Verbindung fehlgeschlagen.");
+	addLog("Lösche evtl. vorhandene Anmeldedaten und lade die Seite neu...");
+	deleteCookie("mqtt");
+	location.reload();
+});
+
+// Gets called whenever you receive a message
+client.on("message", (topic, message) => {
+	if (Object.keys(topicsToSubscribe).includes(topic)) {
+		topicsToSubscribe[topic] = true;
+	} else if (Object.keys(primaryTopicsToSubscribe).includes(topic)) {
+		primaryTopicsToSubscribe[topic] = true;
+	} else if (Object.keys(secondaryTopicsToSubscribe).includes(topic)) {
+		secondaryTopicsToSubscribe[topic] = true;
+	}
+	data[topic] = JSON.parse(message);
+	updateProgress();
+	handleMessage(topic, message);
+});
 
 //Creates a new Messaging.Message Object and sends it
 function publish(payload, topic) {

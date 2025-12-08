@@ -114,7 +114,7 @@ function setIframeSource() {
 	}
 }
 
-function addLog(message) {
+function addLog(message, forceDisplay = false) {
 	const logElement = document.getElementById('log');
 	let displayedMessages = logElement.innerHTML.split("\n");
 	if (displayedMessages.length > 25) {
@@ -122,6 +122,9 @@ function addLog(message) {
 	}
 	displayedMessages.push(message);
 	logElement.innerHTML = displayedMessages.join("\n");
+	if (forceDisplay) {
+		logElement.classList.remove("hide");
+	}
 	logElement.scrollTo(0, logElement.scrollHeight); // Scroll to the last element
 }
 
