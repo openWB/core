@@ -1422,70 +1422,68 @@ class vwid():
                 data['charging']['batteryStatus']['value']['cruisingRangeElectric_km'] = str(0)
                 data['charging']['batteryStatus']['value']['carCapturedTimestamp'] = _now
 
-                try:
-                    _k = str(vwid.connection.keys())
-                    _LOGGER.info(f"libvwid.get_status connections at entry: vwid.connections.keys={_k}")
-                    if self.username not in vwid.connection:
-                        _LOGGER.info(f"create new connection, key={self.username}")
-                        vwid.connection[self.username] = Connection(session, self.username, self.password)
-                        self._connection = vwid.connection[self.username]
-                        vwid.connection[self.username]._session_tokens['identity'] = {}
-                        vwid.connection[self.username]._session_tokens['Legacy'] = {}
-                        for token in self.tokens:
-                            vwid.connection[self.username]._session_tokens['identity'][token] = self.tokens[token]
-                            vwid.connection[self.username]._session_tokens['Legacy'][token] = self.tokens[token]
-                        _conn_reuse = False
-                    else:
-                        _LOGGER.info(f"reuse existing connection, key={self.username}")
-                        vwid.connection[self.username]._session = session
-                        _conn_reuse = True
-                    if not _conn_reuse:
+                _k = str(vwid.connection.keys())
+                _LOGGER.info(f"libvwid.get_status connections at entry: vwid.connections.keys={_k}")
+                if self.username not in vwid.connection:
+                    _LOGGER.info(f"create new connection, key={self.username}")
+                    vwid.connection[self.username] = Connection(session, self.username, self.password)
+                    self._connection = vwid.connection[self.username]
+                    vwid.connection[self.username]._session_tokens['identity'] = {}
+                    vwid.connection[self.username]._session_tokens['Legacy'] = {}
+                    for token in self.tokens:
+                        vwid.connection[self.username]._session_tokens['identity'][token] = self.tokens[token]
+                        vwid.connection[self.username]._session_tokens['Legacy'][token] = self.tokens[token]
+                    _conn_reuse = False
+                else:
+                    _LOGGER.info(f"reuse existing connection, key={self.username}")
+                    vwid.connection[self.username]._session = session
+                    _conn_reuse = True
+                if not _conn_reuse:
+                    _doLogin_result = await vwid.connection[self.username].doLogin()
+                    _LOGGER.debug("after 1st doLogin, result=" + str(_doLogin_result))
+                    if _doLogin_result:
+                        _update_result = True
+                else:
+                    _update_result = await vwid.connection[self.username].update()
+                    _LOGGER.debug("after 1st connection.update without doLogin, result=" + str(_update_result))
+                    if not _update_result:
                         _doLogin_result = await vwid.connection[self.username].doLogin()
-                        _LOGGER.debug("after 1st doLogin, result=" + str(_doLogin_result))
+                        _LOGGER.debug("after 2nd doLogin, result=" + str(_doLogin_result))
                         if _doLogin_result:
-                            _update_result = True
+                            _update_result = await vwid.connection[self.username].update()
+                            _LOGGER.debug("after 2nd connection.update, result=" + str(_update_result))
+                        else:
+                            _LOGGER.error(f"retry doLogin for user {self.username} failed, exit")
+                            raise Exception(f"Login für User {self.usename} fehlgeschlagen")
+                if _update_result:
+                    _LOGGER.debug("update/doLogin look OK, get results")
+                    for vehicle in vwid.connection[self.username].vehicles:
+                        _LOGGER.debug("vehicle loop: " + str(vehicle) + ", self.vin=" + str(self.vin))
+                        if str(vehicle) == str(self.vin):
+                            _LOGGER.debug("vehicle loop match: " + str(vehicle) + ", self.vin=" + str(self.vin))
+                            soc = vehicle._states['charging']['batteryStatus']['value']['currentSOC_pct']
+                            range =\
+                                vehicle._states['charging']['batteryStatus']['value']['cruisingRangeElectric_km']
+                            ts = vehicle._states['charging']['batteryStatus']['value']['carCapturedTimestamp']
+                            _LOGGER.debug("vehicle  =" + str(vehicle))
+                            _LOGGER.debug("soc      =" + str(soc))
+                            _LOGGER.debug("range    =" + str(range))
+                            _LOGGER.debug("timestamp=" + str(ts))
+                            tsxx = ts.strftime('%Y-%m-%dT%H:%M:%SZ')
+                            _LOGGER.debug("timestampxx=" + str(tsxx))
+                            data['charging']['batteryStatus']['value']['currentSOC_pct'] = str(soc)
+                            data['charging']['batteryStatus']['value']['cruisingRangeElectric_km'] = str(range)
+                            data['charging']['batteryStatus']['value']['carCapturedTimestamp'] = str(tsxx)
+                            _LOGGER.debug("return data =" + to_json(data, indent=4))
+                            for token in vwid.connection[self.username]._session_tokens['identity']:
+                                self.tokens[token] =\
+                                    vwid.connection[self.username]._session_tokens['identity'][token]
+                            return data
                     else:
-                        _update_result = await vwid.connection[self.username].update()
-                        _LOGGER.debug("after 1st connection.update without doLogin, result=" + str(_update_result))
-                        if not _update_result:
-                            _doLogin_result = await vwid.connection[self.username].doLogin()
-                            _LOGGER.debug("after 2nd doLogin, result=" + str(_doLogin_result))
-                            if _doLogin_result:
-                                _update_result = await vwid.connection[self.username].update()
-                                _LOGGER.debug("after 2nd connection.update, result=" + str(_update_result))
-                            else:
-                                _LOGGER.error("retry doLogin failed, exit")
-                                raise Exception("Login failed")
-                    if _update_result:
-                        _LOGGER.debug("update/doLogin look OK, get results")
-                        for vehicle in vwid.connection[self.username].vehicles:
-                            _LOGGER.debug("vehicle loop: " + str(vehicle) + ", self.vin=" + str(self.vin))
-                            if str(vehicle) == str(self.vin):
-                                _LOGGER.debug("vehicle loop match: " + str(vehicle) + ", self.vin=" + str(self.vin))
-                                soc = vehicle._states['charging']['batteryStatus']['value']['currentSOC_pct']
-                                range =\
-                                    vehicle._states['charging']['batteryStatus']['value']['cruisingRangeElectric_km']
-                                ts = vehicle._states['charging']['batteryStatus']['value']['carCapturedTimestamp']
-                                _LOGGER.debug("vehicle  =" + str(vehicle))
-                                _LOGGER.debug("soc      =" + str(soc))
-                                _LOGGER.debug("range    =" + str(range))
-                                _LOGGER.debug("timestamp=" + str(ts))
-                                tsxx = ts.strftime('%Y-%m-%dT%H:%M:%SZ')
-                                _LOGGER.debug("timestampxx=" + str(tsxx))
-                                data['charging']['batteryStatus']['value']['currentSOC_pct'] = str(soc)
-                                data['charging']['batteryStatus']['value']['cruisingRangeElectric_km'] = str(range)
-                                data['charging']['batteryStatus']['value']['carCapturedTimestamp'] = str(tsxx)
-                                _LOGGER.debug("return data =" + to_json(data, indent=4))
-                                for token in vwid.connection[self.username]._session_tokens['identity']:
-                                    self.tokens[token] =\
-                                        vwid.connection[self.username]._session_tokens['identity'][token]
-                                return data
-                    else:
-                        _LOGGER.error("get_status rsp. update failed, raise exception")
-                        raise Exception("get_status: keine Daten empfangen")
-                except Exception as error:
-                    _LOGGER.exception("get_status failed 1, raise exception, exception=" + str(error))
-                    raise Exception(error)
-        except Exception as error:
-            _LOGGER.exception("get_status failed 0, raise exception=" + str(error))
-            raise Exception(error)
+                        raise Exception(f"Fahrzeug mit VIN {self.vin} nicht gefunden.")
+                else:
+                    _LOGGER.error("get_status update failed, raise exception")
+                    raise Exception(f"Für User {self.username} und VIN {self.vin} wurden keine Daten empfangen.")
+        except Exception as e:
+            _LOGGER.exception("get_status failed 0, raise exception=" + str(e))
+            raise Exception(f"Für User {self.username} und VIN {self.vin} wurden keine Daten empfangen. {e}")
