@@ -340,7 +340,7 @@ class ChargeTemplate:
             if filtered_plans:
                 sorted_plans = sorted(filtered_plans, key=lambda x: list(x.values())[0])
                 for plan in sorted_plans:
-                    if self.BUFFER < list(sorted_plans[0].values())[0]:
+                    if self.BUFFER < list(plan.values())[0]:
                         plan_dict = plan
                         break
                 else:
