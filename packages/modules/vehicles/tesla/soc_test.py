@@ -68,4 +68,3 @@ class TestTesla:
     def assert_context_manager_called_with_substr(self, error):
         assert self.mock_context_exit.call_count == 1
         assert str(error) in str(self.mock_context_exit.call_args[0][1])
-
