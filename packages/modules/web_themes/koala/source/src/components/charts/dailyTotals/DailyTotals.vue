@@ -224,11 +224,8 @@ const titleRef = ref<HTMLElement | null>(null);
 const rowHeight = ref(45); // default / fallback
 
 const totalRowCount = computed(() => {
-  let count = 0;
-  count += 1; // grid header
-  count += secondaryCounterData.value.length; // secondary counters (only when expanded)
-  count += componentData.value.length; // all other components
-  return count;
+  // grid header + secondary counters (only when expanded) + other components
+  return 1 + secondaryCounterData.value.length + componentData.value.length;
 });
 
 let slideElement: HTMLElement | null = null;
