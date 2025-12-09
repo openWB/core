@@ -1,5 +1,5 @@
 <template>
-  <q-card class="rounded-borders-md">
+  <q-card>
     <q-card-section>
       <div class="row no-wrap">
         <div class="text-h6 ellipsis" :title="planName.value">
@@ -26,7 +26,7 @@
         <q-input
           v-model="planTime.value"
           type="time"
-          label="Ziel-Uhrzeit"
+          label="Ziel-Termin"
           class="col"
         />
       </div>
@@ -134,7 +134,7 @@
           class="flex-grow"
           :color="planLimitSelected.value === 'soc' ? 'primary' : 'grey'"
           @click="planLimitSelected.value = 'soc'"
-          label="SoC"
+          label="EV-SoC"
         />
         <q-btn
           size="sm"
@@ -199,7 +199,7 @@
         label="Bidirektionales Ladeleistung (kW)"
         class="col"
       />
-      <div class="row items-center justify-between">
+      <div class="row items-center justify-between q-mb-sm">
         <div class="text-subtitle2 q-mr-sm">Strompreisbasiert laden</div>
         <ToggleStandard
           v-model="planEtActive.value"
@@ -207,6 +207,11 @@
           color="positive"
         />
       </div>
+      <ChargePointMessage
+        :class="isFullscreen ? '' : 'message-dialog'"
+        :fault-message="false"
+        :charge-point-id="props.chargePointId"
+      />
       <div class="row q-mt-md">
         <q-btn
           size="sm"
@@ -226,11 +231,13 @@ import { useQuasar } from 'quasar';
 import SliderStandard from './SliderStandard.vue';
 import ToggleStandard from './ToggleStandard.vue';
 import { computed } from 'vue';
+import ChargePointMessage from './ChargePointMessage.vue';
 import { type ScheduledChargingPlan } from '../stores/mqtt-store-model';
 
 const props = defineProps<{
   chargePointId: number;
   plan: ScheduledChargingPlan;
+  isFullscreen: boolean;
 }>();
 
 const emit = defineEmits(['close']);
@@ -400,6 +407,11 @@ const removeScheduledChargingPlan = (planId) => {
 .q-btn-group .q-btn {
   min-width: 100px !important;
   font-size: 10px !important;
+}
+
+.message-dialog {
+  max-width: 300px;
+  margin: auto;
 }
 
 .flex-grow {

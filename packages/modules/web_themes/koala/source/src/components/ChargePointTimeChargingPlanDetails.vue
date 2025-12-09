@@ -129,14 +129,14 @@
           class="flex-grow"
           :color="planLimitSelected.value === 'none' ? 'primary' : 'grey'"
           @click="planLimitSelected.value = 'none'"
-          label="Aus"
+          label="Keine"
         />
         <q-btn
           size="sm"
           class="flex-grow"
           :color="planLimitSelected.value === 'soc' ? 'primary' : 'grey'"
           @click="planLimitSelected.value = 'soc'"
-          label="SoC"
+          label="EV-SoC"
         />
         <q-btn
           size="sm"
