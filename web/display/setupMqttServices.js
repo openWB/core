@@ -55,16 +55,16 @@ function getCookie(cookieName) {
 	return null;
 };
 
-function setCookie(cookieName, cookieValue, expireDays = 30, path = "/") {
-	let currentDate = new Date();
-	currentDate.setTime(currentDate.getTime() + (expireDays * 24 * 60 * 60 * 1000));
-	const expires = "expires=" + currentDate.toUTCString();
-	document.cookie = `${cookieName}=${encodeURIComponent(cookieValue)};${expires};path=${path}; SameSite=Lax; Secure`;
-}
+// function setCookie(cookieName, cookieValue, expireDays = 30, path = "/") {
+// 	let currentDate = new Date();
+// 	currentDate.setTime(currentDate.getTime() + (expireDays * 24 * 60 * 60 * 1000));
+// 	const expires = "expires=" + currentDate.toUTCString();
+// 	document.cookie = `${cookieName}=${encodeURIComponent(cookieValue)};${expires};path=${path}; SameSite=Lax; Secure`;
+// }
 
-function deleteCookie(cookieName, path = "/") {
-	setCookie(cookieName, "", -1, path);
-}
+// function deleteCookie(cookieName, path = "/") {
+// 	setCookie(cookieName, "", -1, path);
+// }
 
 // For testing purposes only, set a test cookie
 // setCookie("mqtt", "unknown:user");

@@ -14,8 +14,8 @@ var topicsToSubscribe = {
 }
 var secondaryTopicsToSubscribe = {
 	"openWB/internal_chargepoint/global_data": false,
-	"openWB/internal_chargepoint/0/data/parent_cp": false,
-	"openWB/internal_chargepoint/1/data/parent_cp": false,
+	// "openWB/internal_chargepoint/0/data/parent_cp": false,
+	// "openWB/internal_chargepoint/1/data/parent_cp": false,
 };
 
 var data = {};
@@ -49,16 +49,16 @@ function getCookie(cookieName) {
 	return null;
 };
 
-function setCookie(cookieName, cookieValue, expireDays = 30, path = "/") {
-	let currentDate = new Date();
-	currentDate.setTime(currentDate.getTime() + (expireDays * 24 * 60 * 60 * 1000));
-	const expires = "expires=" + currentDate.toUTCString();
-	document.cookie = `${cookieName}=${encodeURIComponent(cookieValue)};${expires};path=${path}; SameSite=Lax; Secure`;
-}
+// function setCookie(cookieName, cookieValue, expireDays = 30, path = "/") {
+// 	let currentDate = new Date();
+// 	currentDate.setTime(currentDate.getTime() + (expireDays * 24 * 60 * 60 * 1000));
+// 	const expires = "expires=" + currentDate.toUTCString();
+// 	document.cookie = `${cookieName}=${encodeURIComponent(cookieValue)};${expires};path=${path}; SameSite=Lax; Secure`;
+// }
 
-function deleteCookie(cookieName, path = "/") {
-	setCookie(cookieName, "", -1, path);
-}
+// function deleteCookie(cookieName, path = "/") {
+// 	setCookie(cookieName, "", -1, path);
+// }
 
 // For testing purposes only, set a test cookie
 // setCookie("mqtt", "unknown:user");
@@ -69,14 +69,15 @@ function deleteCookie(cookieName, path = "/") {
 // wss encrypted WebSocket connection
 const { protocol, host, port, path, ...options } = connection;
 const connectUrl = `${protocol}://${host}:${port}${path}`;
+// Check for default credentials
 const [user, pass] = getCookie("mqtt")?.split(":") || [null, null];
 if (!(user && pass)) {
 	console.debug("Anonymous mqtt connection (no cookie set)");
 }
 if (protocol == "wss" && user && pass) {
-	console.debug("Using mqtt credentials from cookie:", user, "/", pass);
-	options.username = user;
-	options.password = pass;
+	// console.debug("Using mqtt credentials from cookie:", user, "/", pass);
+	// options.username = user;
+	// options.password = pass;
 	if (user === "admin" && pass === "openwb") {
 		console.warn("Using default mqtt credentials!");
 		addLog("Warnung: Es werden die Standard MQTT Anmeldedaten verwendet!");
