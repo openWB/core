@@ -20,15 +20,115 @@
 	"groups":	[{
 			"groupname":	"anonymous",
 			"textname":	"Anonyme Benutzer",
+			"textdescription":	"Diese Gruppe wird für Clients verwendet, die keine Anmeldeinformationen bereitstellen. Das ist z.B. für die Auswahl des eingestellten Themes oder die Darstellung im integrierten Display notwendig.",
 			"roles":	[{
-					"rolename":	"full_access"
+					"rolename":	"basic-display-data"
+				}, {
+					"rolename":	"basic-system-data"
+				}, {
+					"rolename":	"basic-theme-data"
 				}],
 			"clients":	[]
 		}],
 	"anonymousGroup":	"anonymous",
 	"roles":	[{
+			"rolename":	"basic-display-data",
+			"textname":	"Basisdaten für das Display",
+			"textdescription":	"Diese Rolle erlaubt das Auslesen der Display-Einstellungen und wird für das integrierte Display benötigt. Notwendig für die anonyme Gruppe!",
+			"acls":	[{
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/optional/int_display/theme",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/optional/int_display/only_local_charge_points",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/general/extern_display_mode",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/general/internal_chargepoint/global_data",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/general/internal_chargepoint/0/data/parent_cp",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/general/internal_chargepoint/1/data/parent_cp",
+					"priority":	0,
+					"allow":	true
+				}]
+		}, {
+			"rolename":	"basic-system-data",
+			"textname":	"Basisdaten zum System",
+			"textdescription":	"Diese Rolle ermöglicht das Auslesen grundlegender Einstellungen des Systems und wird von mehreren Clients verwendet. Notwendig für die anonyme Gruppe!",
+			"acls":	[{
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/system/version",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/system/boot_done",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/system/update_in_progress",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/system/usage_terms_acknowledged",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/general/extern",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/system/ip_address",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/system/current_branch",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/system/current_commit",
+					"priority":	0,
+					"allow":	true
+				}]
+		}, {
+			"rolename":	"basic-theme-data",
+			"textname":	"Basisdaten zum Laden eines Themes",
+			"textdescription":	"Diese Rolle ermöglicht das Auslesen grundlegender Einstellungen des Systems und wird verwendet, um das konfigurierte Theme zu laden. Notwendig für die anonyme Gruppe!",
+			"acls":	[{
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/general/web_theme",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/internal_chargepoint/global_data",
+					"priority":	0,
+					"allow":	true
+				}]
+		}, {
 			"rolename":	"dynsec_admin",
-			"textname": "Dynamic Security Administrator",
+			"textname":	"Dynamic Security Administrator",
 			"acls":	[{
 					"acltype":	"publishClientSend",
 					"topic":	"$CONTROL/dynamic-security/#",

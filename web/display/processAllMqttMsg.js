@@ -2,20 +2,6 @@
  * Functions to update graph and gui values via MQTT-messages
  */
 
-/** @function reloadDisplay
- * triggers a reload of the current page
- */
-function reloadDisplay() {
-	// wait some seconds to allow other instances receive this message
-	setTimeout(() => {
-		publish("0", "openWB/set/system/reloadDisplay");
-		// wait again to give the broker some time and avoid a reload loop
-		setTimeout(() => {
-			location.reload();
-		}, 2000);
-	}, 2000);
-}
-
 function setIframeSource() {
 	if (allTopicsReceived()) {
 		const startup = document.querySelector("#notReady");
@@ -141,16 +127,5 @@ function handleMessage(topic, payload) {
 	} else {
 		document.getElementById("update").classList.add("hide");
 	}
-	if (topic.match(/^openWB\/system\//i)) { processSystemTopics(topic, payload); }
 	setIframeSource();
 }  // end handleMessage
-
-function processSystemTopics(topic, payload) {
-	// processes topic for topic openWB/system
-	// called by handleMessage
-	if (topic == 'openWB/system/reloadDisplay') {
-		if (payload == '1') {
-			reloadDisplay();
-		}
-	}
-}
