@@ -3,14 +3,11 @@
 """
 # flake8: noqa: E402
 import logging
-import dataclass_utils
 from helpermodules import logger
 from helpermodules.utils import run_command, thread_handler
 import threading
 import sys
 import functools
-
-from modules.common.abstract_device import AbstractDevice
 
 # als erstes logging initialisieren, damit auch ImportError geloggt werden
 logger.setup_logging()
@@ -22,7 +19,7 @@ import schedule
 import time
 from threading import Event, Thread, enumerate
 import traceback
-from control.chargelog.chargelog import calc_energy_costs, calculate_charged_energy_by_source
+from control.chargelog.chargelog import calc_energy_costs
 
 from control import data, prepare, process
 from control.algorithm import algorithm
