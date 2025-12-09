@@ -1411,6 +1411,10 @@ class vwid():
         self.jobs_string = ','.join(jobs)
 
     async def get_status(self):
+        # error codes SOCERR-xx raised:
+        # SOCERR-00: general error
+        # SOCERR-01: login problem, username, password wrong, account locked, etc.
+        # SOCERR-02: vehicle not found in account, VIN wrong?
         try:
             async with aiohttp.ClientSession(headers={'Connection': 'keep-alive'}) as session:
                 _now = datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
@@ -1424,6 +1428,7 @@ class vwid():
 
                 _k = str(vwid.connection.keys())
                 _LOGGER.info(f"libvwid.get_status connections at entry: vwid.connections.keys={_k}")
+                _update_result = False
                 if self.username not in vwid.connection:
                     _LOGGER.info(f"create new connection, key={self.username}")
                     vwid.connection[self.username] = Connection(session, self.username, self.password)
@@ -1443,6 +1448,8 @@ class vwid():
                     _LOGGER.debug("after 1st doLogin, result=" + str(_doLogin_result))
                     if _doLogin_result:
                         _update_result = True
+                    else:
+                        raise Exception(f"SOCERR-01: Login für User {self.username} fehlgeschlagen")
                 else:
                     _update_result = await vwid.connection[self.username].update()
                     _LOGGER.debug("after 1st connection.update without doLogin, result=" + str(_update_result))
@@ -1454,7 +1461,7 @@ class vwid():
                             _LOGGER.debug("after 2nd connection.update, result=" + str(_update_result))
                         else:
                             _LOGGER.error(f"retry doLogin for user {self.username} failed, exit")
-                            raise Exception(f"Login für User {self.usename} fehlgeschlagen")
+                            raise Exception(f"SOCERR-01: Login für User {self.username} fehlgeschlagen")
                 if _update_result:
                     _LOGGER.debug("update/doLogin look OK, get results")
                     for vehicle in vwid.connection[self.username].vehicles:
@@ -1480,10 +1487,17 @@ class vwid():
                                     vwid.connection[self.username]._session_tokens['identity'][token]
                             return data
                     else:
-                        raise Exception(f"Fahrzeug mit VIN {self.vin} nicht gefunden.")
+                        _LOGGER.error(f"SOCERR-02: Fahrzeug mit VIN {self.vin} nicht gefunden")
+                        raise Exception(f"SOCERR-02: Fahrzeug mit VIN {self.vin} nicht gefunden")
                 else:
-                    _LOGGER.error("get_status update failed, raise exception")
-                    raise Exception(f"Für User {self.username} und VIN {self.vin} wurden keine Daten empfangen.")
+                    _t = f"SOCERR-00: Für User {self.username} und VIN {self.vin} wurden keine Daten empfangen."
+                    _LOGGER.error(f"{_t}: get_status update failed")
+                    raise Exception(_t)
         except Exception as e:
-            _LOGGER.exception("get_status failed 0, raise exception=" + str(e))
-            raise Exception(f"Für User {self.username} und VIN {self.vin} wurden keine Daten empfangen. {e}")
+            _LOGGER.exception(f"get_status failed 0, exception={e}")
+            # if exception is a SOCERR reraise it, otherwise raise general SOCERR-00
+            if "SOCERR" in str(e):
+                raise e
+            else:
+                _t = f"SOCERR-00: Für User {self.username} und VIN {self.vin} wurden keine Daten empfangen"
+                raise Exception(f"{_t} {e}")
