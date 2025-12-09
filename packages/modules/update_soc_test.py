@@ -19,10 +19,11 @@ from modules.update_soc import UpdateSoc
 
 
 @pytest.fixture(autouse=True)
-def mock_data() -> None:
+def mock_data(monkeypatch) -> None:
     data.data_init(Mock())
 
-    SubData(*([Mock()]*16))
+    monkeypatch.setattr(SubData, "initialize", lambda x: None)
+    SubData(*([Mock()]*15))
     SubData.cp_data = {"cp0":  Mock(spec=ChargepointStateUpdate, chargepoint=Mock(
         spec=Chargepoint,
         id=id,

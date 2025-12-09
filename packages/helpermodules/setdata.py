@@ -28,18 +28,15 @@ class SetData:
     def __init__(self,
                  event_ev_template: Event,
                  event_cp_config: Event,
-                 event_soc: Event,
-                 event_subdata_initialized: Event):
+                 event_soc: Event):
         self.event_ev_template = event_ev_template
         self.event_cp_config = event_cp_config
         self.event_soc = event_soc
-        self.event_subdata_initialized = event_subdata_initialized
         self.heartbeat = False
 
     def set_data(self):
         self.internal_broker_client = BrokerClient("mqttset", self.on_connect, self.on_message)
-        self.event_subdata_initialized.wait()
-        log.debug("Subdata initialization completed. Starting setdata loop to broker.")
+        log.debug("Starting setdata loop to broker.")
         self.internal_broker_client.start_infinite_loop()
 
     def disconnect(self) -> None:
