@@ -14,7 +14,7 @@
           dense
           expand-separator
           v-model="gridExpanded"
-          class="grid q-mb-xs card"
+          class="grid card"
           header-class="cursor-pointer"
         >
           <template #header>
@@ -24,6 +24,8 @@
               :componentNameVisible="componentNameVisible"
               :currentPowerVisible="currentPowerVisible"
               :socValueVisible="socValueVisible"
+              :secondaryCountersConfigured="secondaryCountersConfigured"
+              :gridExpanded="gridExpanded"
             />
           </template>
           <!-- Secondary Counters -->
@@ -47,7 +49,7 @@
           :key="item.id"
           dense
           expand-separator
-          :class="[item.id, 'q-mb-xs', 'card']"
+          :class="[item.id, 'card']"
           header-class="no-pointer"
         >
           <template #header>
@@ -338,9 +340,9 @@ watch(
   pointer-events: none;
 }
 .card,
-.grid,
-.counter {
+.grid {
   border-radius: 8px;
+  margin-bottom: 2px;
 }
 .grid {
   background: var(--q-grid-fill);
@@ -348,7 +350,10 @@ watch(
 }
 .counter {
   background: var(--q-secondary-counter-fill);
-  border: 2px solid var(--q-secondary-counter-stroke);
+  border-top: 2px solid var(--q-secondary-counter-stroke);
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
 }
 .battery {
   background: var(--q-battery-fill);

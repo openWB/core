@@ -15,9 +15,15 @@
           <template v-else>
             {{ props.item.title }}
           </template>
+          <q-icon
+            v-if="item.id === 'grid' && secondaryCountersConfigured"
+            name="keyboard_arrow_down"
+            :class="[gridExpanded ? 'rotate-180' : '', 'expand-icon']"
+          />
         </div>
       </td>
-      <td :class="props.socValueVisible ? 'col-soc' : 'col-soc-empty'">
+      <!-- spacing added if battery SOC is visible -->
+      <td :class="props.socValueVisible ? 'col-soc' : 'col-soc-spacer'">
         <span v-if="props.socValueVisible && props.item.id === 'battery'">
           {{ props.item.soc }}%
         </span>
@@ -81,6 +87,8 @@ const props = defineProps<{
   componentNameVisible: boolean;
   currentPowerVisible: boolean;
   socValueVisible: boolean;
+  secondaryCountersConfigured?: boolean;
+  gridExpanded?: boolean;
 }>();
 
 const arrowDirection = (id: string) => {
@@ -154,7 +162,7 @@ const arrowDirection = (id: string) => {
   text-align: right;
   white-space: nowrap;
 }
-.col-soc-empty {
+.col-soc-spacer {
   width: 0 !important;
   padding: 0 !important;
   border: 0 !important;
@@ -188,6 +196,11 @@ const arrowDirection = (id: string) => {
 }
 .rotate-180 {
   transform: rotate(180deg);
+}
+.expand-icon {
+  font-size: 20px;
+  margin-left: 8px;
+  cursor: pointer;
 }
 @media (max-width: 500px) {
   .daily-table td {
