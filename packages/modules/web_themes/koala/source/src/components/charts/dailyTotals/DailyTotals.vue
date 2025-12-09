@@ -228,16 +228,15 @@ const totalRowCount = computed(() => {
   return 1 + secondaryCounterData.value.length + componentData.value.length;
 });
 
-let slideElement: HTMLElement | null = null;
-let slideObserver: ResizeObserver | null = null;
+const slideObserver = ref<ResizeObserver | null>(null);
 
-function getSlideElement(): HTMLElement | null {
-  return rootRef.value?.closest('.q-carousel__slide') as HTMLElement | null;
-}
+const slideElement = computed<HTMLElement | null>(() => {
+  return (rootRef.value?.closest('.q-carousel__slide') as HTMLElement | null);
+});
 
 const calculateRowHeight = () => {
   nextTick(() => {
-    const slide = slideElement ?? getSlideElement();
+    const slide = slideElement.value;
     if (!slide) return;
     const style = window.getComputedStyle(slide);
     const paddings =
@@ -266,11 +265,9 @@ const calculateRowHeight = () => {
 };
 
 onMounted(() => {
-  slideElement = getSlideElement();
-
-  if (slideElement) {
-    slideObserver = new ResizeObserver(calculateRowHeight);
-    slideObserver.observe(slideElement);
+  if (slideElement.value) {
+    slideObserver.value = new ResizeObserver(calculateRowHeight);
+    slideObserver.value.observe(slideElement.value);
   }
 
   window.addEventListener('resize', calculateRowHeight, { passive: true });
@@ -278,8 +275,8 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-  slideObserver?.disconnect();
-  slideObserver = null;
+  slideObserver.value?.disconnect();
+  slideObserver.value = null;
   window.removeEventListener('resize', calculateRowHeight);
 });
 
