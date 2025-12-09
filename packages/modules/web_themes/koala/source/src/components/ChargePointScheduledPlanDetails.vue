@@ -199,7 +199,7 @@
         label="Bidirektionales Ladeleistung (kW)"
         class="col"
       />
-      <div class="row items-center justify-between q-mb-sm">
+      <div class="row items-center justify-between">
         <div class="text-subtitle2 q-mr-sm">Strompreisbasiert laden</div>
         <ToggleStandard
           v-model="planEtActive.value"
@@ -207,11 +207,13 @@
           color="positive"
         />
       </div>
-      <ChargePointMessage
-        :class="isFullscreen ? '' : 'message-dialog'"
-        :fault-message="false"
-        :charge-point-id="props.chargePointId"
-      />
+      <div class="q-mt-md">
+        <ChargePointMessage
+          :class="isFullscreen ? '' : 'message-dialog'"
+          :fault-message="false"
+          :charge-point-id="props.chargePointId"
+        />
+      </div>
       <div class="row q-mt-md">
         <q-btn
           size="sm"

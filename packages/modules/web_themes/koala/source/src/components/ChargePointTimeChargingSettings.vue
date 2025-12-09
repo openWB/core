@@ -49,6 +49,7 @@
         v-if="selectedPlan"
         :charge-point-id="props.chargePointId"
         :plan="selectedPlan"
+        :is-fullscreen="isSmallScreen"
         @close="currentPlanDetailsVisible = false"
       />
     </q-dialog>
