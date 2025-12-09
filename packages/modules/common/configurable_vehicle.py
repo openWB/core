@@ -132,7 +132,7 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
             except Exception as e:
                 if vehicle_update_data.plug_state and\
                    vehicle_update_data.last_soc and\
-                   vehicle_update_data.soc_timestamp >= vehicle_update_data.plug_time and\
+                   vehicle_update_data.last_soc_timestamp >= vehicle_update_data.plug_time and\
                    (self.calculated_soc_state.last_imported or vehicle_update_data.imported):
                     _txt1 = "SoC FALLBACK: SoC wird berechnet, da ein Fehler bei der Abfrage aufgetreten ist:"
                     self.fault_state.warning(f"{_txt1} {e}")
@@ -146,7 +146,7 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                         reason = ", weil kein Fahrzeug eingesteckt ist."
                     elif not vehicle_update_data.last_soc:
                         reason = ", weil kein SOC-Wert verfügbar ist."
-                    elif vehicle_update_data.soc_timestamp < vehicle_update_data.plug_time:
+                    elif vehicle_update_data.last_soc_timestamp < vehicle_update_data.plug_time:
                         reason = ", da der SOC-Zeitstempel vor dem Einstecken liegt."
                     elif not (self.calculated_soc_state.last_imported or vehicle_update_data.imported):
                         reason = ", weil Daten zum Berechnen des SOC fehlen."
