@@ -43,7 +43,7 @@
       </td>
       <td class="col-power">
         <span v-if="props.currentPowerVisible">
-          {{ String(props.item.power).replace('-', '') }}
+          {{ props.item.power.replace('-', '') }}
         </span>
       </td>
       <td class="col-flex"></td>
