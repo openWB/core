@@ -15,7 +15,7 @@
           expand-separator
           v-model="gridExpanded"
           class="grid card"
-          header-class="cursor-pointer"
+          :header-class="secondaryCountersConfigured ? 'cursor-pointer' : 'no-pointer'"
         >
           <template #header>
             <DailyTotalsRow
