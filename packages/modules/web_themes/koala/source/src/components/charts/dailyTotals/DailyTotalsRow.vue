@@ -1,6 +1,6 @@
 <template>
   <table class="daily-table">
-    <tr :style="{ height: props.rowHeight + 'px' }">
+    <tr class="row-height">
       <td class="col-icon">
         <img :src="props.item.icon" class="icon" />
       </td>
@@ -76,6 +76,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import type { DailyTotalsItem } from 'src/components/models/daily-totals-model';
 
@@ -90,6 +91,8 @@ const props = defineProps<{
   secondaryCountersConfigured?: boolean;
   gridExpanded?: boolean;
 }>();
+
+const rowHeightCssValue = computed(() => `${props.rowHeight}px`);
 
 const arrowDirection = (id: string) => {
   let value = 0;
@@ -138,6 +141,9 @@ const arrowDirection = (id: string) => {
   padding: 0px 6px !important;
   white-space: nowrap;
   vertical-align: middle;
+}
+.row-height {
+  height: v-bind(rowHeightCssValue);
 }
 .daily-table td.col-icon img {
   width: 28px;
