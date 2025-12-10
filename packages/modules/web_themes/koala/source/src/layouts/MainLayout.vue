@@ -4,6 +4,8 @@
       <q-toolbar>
         <q-btn dense flat round icon="menu" @click="drawer = !drawer" />
         <q-toolbar-title>openWB</q-toolbar-title>
+        <q-space />
+        <user-indicator />
       </q-toolbar>
     </q-header>
 
@@ -124,6 +126,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import UserIndicator from 'src/components/UserIndicator.vue';
 import { useQuasar } from 'quasar';
 const $q = useQuasar();
 
