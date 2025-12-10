@@ -167,13 +167,6 @@
           <div class="text-body2">kWh</div>
         </template>
       </q-input>
-      <div class="q-mt-md">
-        <ChargePointMessage
-          :class="isFullscreen ? '' : 'message-dialog'"
-          :fault-message="false"
-          :charge-point-id="props.chargePointId"
-        />
-      </div>
       <div class="row q-mt-lg">
         <q-btn
           size="sm"
@@ -191,14 +184,12 @@
 import { useMqttStore } from 'src/stores/mqtt-store';
 import SliderStandard from './SliderStandard.vue';
 import ToggleStandard from './ToggleStandard.vue';
-import ChargePointMessage from './ChargePointMessage.vue';
 import { type TimeChargingPlan } from '../stores/mqtt-store-model';
 import { computed } from 'vue';
 
 const props = defineProps<{
   chargePointId: number;
   plan: TimeChargingPlan;
-  isFullscreen: boolean;
 }>();
 
 const mqttStore = useMqttStore();
@@ -306,11 +297,6 @@ const removeTimeChargingPlan = (planId: number) => {
 .q-btn-group .q-btn {
   min-width: 100px !important;
   font-size: 10px !important;
-}
-
-.message-dialog {
-  max-width: 300px;
-  margin: auto;
 }
 
 .flex-grow {
