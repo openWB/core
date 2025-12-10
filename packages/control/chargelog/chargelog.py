@@ -319,16 +319,19 @@ def write_new_entry(new_entry):
 
 
 def calc_energy_costs(cp, create_log_entry: bool = False):
-    if cp.data.set.log.imported_since_plugged != 0 and cp.data.set.log.imported_since_mode_switch != 0:
-        processed_entries, reference_entries = _get_reference_entries()
-        charged_energy_by_source = calculate_charged_energy_by_source(
-            cp, processed_entries, reference_entries, create_log_entry)
-        _add_charged_energy_by_source(cp, charged_energy_by_source)
-        log.debug(f"charged_energy_by_source {charged_energy_by_source} "
-                  f"total charged_energy_by_source {cp.data.set.log.charged_energy_by_source}")
-        costs = _calc_costs(charged_energy_by_source, reference_entries[-1]["prices"])
-        cp.data.set.log.costs += costs
-        Pub().pub(f"openWB/set/chargepoint/{cp.num}/set/log", asdict(cp.data.set.log))
+    try:
+        if cp.data.set.log.imported_since_plugged != 0 and cp.data.set.log.imported_since_mode_switch != 0:
+            processed_entries, reference_entries = _get_reference_entries()
+            charged_energy_by_source = calculate_charged_energy_by_source(
+                cp, processed_entries, reference_entries, create_log_entry)
+            _add_charged_energy_by_source(cp, charged_energy_by_source)
+            log.debug(f"charged_energy_by_source {charged_energy_by_source} "
+                      f"total charged_energy_by_source {cp.data.set.log.charged_energy_by_source}")
+            costs = _calc_costs(charged_energy_by_source, reference_entries[-1]["prices"])
+            cp.data.set.log.costs += costs
+            Pub().pub(f"openWB/set/chargepoint/{cp.num}/set/log", asdict(cp.data.set.log))
+    except Exception:
+        log.exception(f"Fehler beim Berechnen der Ladekosten für Ladepunkt {cp.num}")
 
 
 def calculate_charged_energy_by_source(cp, processed_entries, reference_entries, create_log_entry: bool = False):
