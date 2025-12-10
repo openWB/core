@@ -196,9 +196,11 @@ const arrowDirection = (id: string) => {
   text-align: right;
   white-space: nowrap;
 }
-
 .icon {
   filter: brightness(0.4);
+}
+.body--dark .icon {
+  filter: brightness(1);
 }
 .rotate-180 {
   transform: rotate(180deg);

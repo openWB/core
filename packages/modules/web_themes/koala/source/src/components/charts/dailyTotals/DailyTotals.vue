@@ -365,9 +365,6 @@ watch(
   background: var(--q-charge-point-fill);
   border: 2px solid var(--q-charge-point-stroke);
 }
-.icon {
-  filter: brightness(0.4);
-}
 .rotate-180 {
   transform: rotate(180deg);
 }
@@ -388,8 +385,5 @@ watch(
 }
 .body--dark .chargepoint {
   background: #254a8c;
-}
-.body--dark .icon {
-  filter: brightness(1);
 }
 </style>
