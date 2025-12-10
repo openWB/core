@@ -96,22 +96,28 @@ export const useMqttStore = defineStore('mqtt', () => {
         console.error('Client error', error);
         $q.notify({
           type: 'negative',
-          message: 'Es ist ein Fehler aufgetreten!',
-          caption: error.message,
+          message:
+            'Es ist ein Fehler aufgetreten!' +
+            (error instanceof mqtt.ErrorWithReasonCode ? `(${(error as mqtt.ErrorWithReasonCode).code})` : ''),
+          caption: (error as Error).message,
           progress: true,
         });
-        if ($q.cookies.has('mqtt')) {
-          $q.cookies.remove('mqtt', { path: '/' });
-          console.warn('removed mqtt cookie due to error');
-          $q.notify({
-            type: 'warning',
-            message: 'Die Anmeldeinformationen wurden entfernt.',
-            timeout: 0,
-            closeBtn: 'Seite neu laden',
-            onDismiss: () => {
-              this.router.go(0);
-            },
-          });
+        // handle not authorized error (code 137)
+        if ((error as mqtt.ErrorWithReasonCode).code === 137 && mqttUser != null) {
+          mqttClient.end();
+          if ($q.cookies.has('mqtt')) {
+            $q.cookies.remove('mqtt', { path: '/' });
+            console.warn('removed mqtt cookie due to error');
+            $q.notify({
+              type: 'warning',
+              message: 'Die Anmeldeinformationen wurden entfernt.',
+              timeout: 0,
+              closeBtn: 'Seite neu laden',
+              onDismiss: () => {
+                this.router.go(0);
+              },
+            });
+          }
         }
       });
       mqttClient.on('message', (topic: string, message) => {
