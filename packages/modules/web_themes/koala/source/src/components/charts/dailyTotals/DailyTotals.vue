@@ -15,7 +15,9 @@
           expand-separator
           v-model="gridExpanded"
           class="grid card"
-          :header-class="secondaryCountersConfigured ? 'cursor-pointer' : 'no-pointer'"
+          :header-class="
+            secondaryCountersConfigured ? 'cursor-pointer' : 'no-pointer'
+          "
         >
           <template #header>
             <DailyTotalsRow
@@ -229,9 +231,8 @@ const totalRowCount = computed(() => {
 });
 
 const slideObserver = ref<ResizeObserver | null>(null);
-
 const slideElement = computed<HTMLElement | null>(() => {
-  return (rootRef.value?.closest('.q-carousel__slide') as HTMLElement | null);
+  return rootRef.value?.closest('.q-carousel__slide') as HTMLElement | null;
 });
 
 const calculateRowHeight = () => {
@@ -251,8 +252,8 @@ const calculateRowHeight = () => {
       0,
       totalHeight - titleHeight - verticalGaps - safetyPadding,
     );
-    const ROW_MIN = 32;
-    const ROW_MAX = 70;
+    const ROW_MIN = 42;
+    const ROW_MAX = 75;
     if (totalRowCount.value <= 0) {
       rowHeight.value = ROW_MIN;
       return;
@@ -315,7 +316,7 @@ watch(
 }
 /* Remove the padding inside expansion header */
 :deep(.q-expansion-item__container .q-item) {
-  padding: 0px 0px !important;
+  padding: 0 0 !important;
 }
 /* Remove the padding inside q-item__section */
 :deep(.q-item__section) {
@@ -335,35 +336,35 @@ watch(
 }
 .card,
 .grid {
-  border-radius: 8px;
-  margin-bottom: 2px;
+  border-radius: 0.5rem;
+  margin-bottom: 0.125rem;
 }
 .grid {
   background: var(--q-grid-fill);
-  border: 2px solid var(--q-grid-stroke);
+  border: 0.125rem solid var(--q-grid-stroke);
 }
 .counter {
   background: var(--q-secondary-counter-fill);
-  border-top: 2px solid var(--q-secondary-counter-stroke);
+  border-top: 0.125rem solid var(--q-secondary-counter-stroke);
   border-left: 0;
   border-right: 0;
   border-bottom: 0;
 }
 .battery {
   background: var(--q-battery-fill);
-  border: 2px solid var(--q-battery-stroke);
+  border: 0.125rem solid var(--q-battery-stroke);
 }
 .pv {
   background: var(--q-pv-fill);
-  border: 2px solid var(--q-pv-stroke);
+  border: 0.125rem solid var(--q-pv-stroke);
 }
 .house {
   background: var(--q-home-fill);
-  border: 2px solid var(--q-home-stroke);
+  border: 0.125rem solid var(--q-home-stroke);
 }
 .chargepoint {
   background: var(--q-charge-point-fill);
-  border: 2px solid var(--q-charge-point-stroke);
+  border: 0.125rem solid var(--q-charge-point-stroke);
 }
 .rotate-180 {
   transform: rotate(180deg);

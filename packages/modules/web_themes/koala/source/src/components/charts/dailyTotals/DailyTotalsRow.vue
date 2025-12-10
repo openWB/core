@@ -1,78 +1,85 @@
 <template>
-  <table class="daily-table">
-    <tr class="row-height">
-      <td class="col-icon">
-        <img :src="props.item.icon" class="icon" />
-      </td>
-      <td class="col-title text-weight-bold">
-        <div v-if="componentNameVisible">
-          <template v-if="props.item.id.startsWith('counter-')">
-            <div class="ellipsis-wrapper">
-              {{ props.item.title }}
-              <q-tooltip>{{ props.item.title }}</q-tooltip>
-            </div>
-          </template>
-          <template v-else>
+  <div class="component-container">
+    <!-- Icon -->
+    <div class="col-icon">
+      <img :src="props.item.icon" class="icon" />
+    </div>
+    <!-- Title -->
+    <div class="col-title text-weight-bold">
+      <div v-if="componentNameVisible" class="title-wrapper">
+        <template v-if="props.item.id.startsWith('counter-')">
+          <div class="ellipsis-wrapper">
             {{ props.item.title }}
-          </template>
-          <q-icon
-            v-if="item.id === 'grid' && secondaryCountersConfigured"
-            name="keyboard_arrow_down"
-            :class="[gridExpanded ? 'rotate-180' : '', 'expand-icon']"
-          />
-        </div>
-      </td>
-      <!-- spacing added if battery SOC is visible -->
-      <td :class="props.socValueVisible ? 'col-soc' : 'col-soc-spacer'">
-        <span v-if="props.socValueVisible && props.item.id === 'battery'">
-          {{ props.item.soc }}%
-        </span>
-      </td>
-      <td class="col-arrow">
+            <q-tooltip>{{ props.item.title }}</q-tooltip>
+          </div>
+        </template>
+        <template v-else>
+          {{ props.item.title }}
+        </template>
+        <!-- Expansion chevron icon -->
         <q-icon
-          v-if="props.currentPowerVisible"
-          :name="
-            arrowDirection(props.item.id).noCurrent
+          v-if="props.item.id === 'grid' && secondaryCountersConfigured"
+          name="keyboard_arrow_down"
+          :class="['expand-icon', { 'rotate-180': gridExpanded }]"
+        />
+      </div>
+    </div>
+    <!-- SOC -->
+    <div :class="props.socValueVisible ? 'col-soc' : 'col-soc-spacer'">
+      <span v-if="props.socValueVisible && props.item.id === 'battery'">
+        {{ props.item.soc }}%
+      </span>
+    </div>
+    <!-- Arrow -->
+    <div class="col-arrow">
+      <q-icon
+        v-if="props.currentPowerVisible"
+        :name="
+          item.id === 'house'
+            ? 'horizontal_rule'
+            : arrowDirection(item.id).noCurrent
               ? 'horizontal_rule'
               : 'double_arrow'
+        "
+        :class="{ 'rotate-180': arrowDirection(props.item.id).rotate180 }"
+      />
+    </div>
+    <!-- Power -->
+    <div class="col-power">
+      <span v-if="props.currentPowerVisible">
+        {{ props.item.power.replace('-', '') }}
+      </span>
+    </div>
+
+    <div class="col-flex"></div>
+
+    <!-- Right label -->
+    <div class="col-right-label text-weight-bold">
+      <slot name="right-label" :item="props.item">
+        <template
+          v-if="
+            props.item.id === 'grid' || props.item.id.startsWith('counter-')
           "
-          :class="{
-            'rotate-180': arrowDirection(props.item.id).rotate180,
-          }"
-        />
-      </td>
-      <td class="col-power">
-        <span v-if="props.currentPowerVisible">
-          {{ props.item.power.replace('-', '') }}
-        </span>
-      </td>
-      <td class="col-flex"></td>
-      <td class="col-right-label text-weight-bold">
-        <slot name="right-label" :item="props.item">
-          <template
-            v-if="
-              props.item.id === 'grid' || props.item.id.startsWith('counter-')
-            "
-          >
-            <div>Bezug:</div>
-            <div>Einspeisung:</div>
-          </template>
-        </slot>
-      </td>
-      <td class="col-right-value">
-        <slot name="right-value" :item="props.item">
-          <template
-            v-if="
-              props.item.id === 'grid' || props.item.id.startsWith('counter-')
-            "
-          >
-            <div>{{ props.item.today.imported }}</div>
-            <div>{{ props.item.today.exported }}</div>
-          </template>
-        </slot>
-      </td>
-    </tr>
-  </table>
+        >
+          <div>Bezug:</div>
+          <div>Einspeisung:</div>
+        </template>
+      </slot>
+    </div>
+    <!-- Right value -->
+    <div class="col-right-value">
+      <slot name="right-value" :item="props.item">
+        <template
+          v-if="
+            props.item.id === 'grid' || props.item.id.startsWith('counter-')
+          "
+        >
+          <div>{{ props.item.today.imported }}</div>
+          <div>{{ props.item.today.exported }}</div>
+        </template>
+      </slot>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -121,98 +128,137 @@ const arrowDirection = (id: string) => {
   const noCurrent = value === 0;
   let rotate180 = false;
 
-  if (id === 'grid' || id.startsWith('counter-')) {
-    rotate180 = value < 0;
-  } else if (id !== 'house') {
-    rotate180 = value > 0;
-  }
+  if (id === 'grid' || id.startsWith('counter-')) rotate180 = value < 0;
+  else if (id !== 'house') rotate180 = value > 0;
 
   return { noCurrent, rotate180 };
 };
 </script>
 
 <style scoped>
-.daily-table {
+.component-container {
+  display: flex;
+  align-items: center;
   width: 100%;
-  min-height: 42px;
-  border-collapse: collapse;
-}
-.daily-table td {
-  padding: 0px 6px !important;
-  white-space: nowrap;
-  vertical-align: middle;
-}
-.row-height {
   height: v-bind(rowHeightCssValue);
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  padding-inline: 0.5rem;
 }
-.daily-table td.col-icon img {
-  width: 28px;
-  display: block;
-  margin: 0 auto;
+/* allow columns to shrink properly in flex layout */
+.component-container > div {
+  min-width: 0;
+  flex-shrink: 1;
 }
 .col-icon {
-  width: 32px;
-}
-.col-title {
-  width: 85px;
-  max-width: 85px;
-}
-.ellipsis-wrapper {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 85px;
-}
-.col-soc {
-  width: 50px;
-  text-align: right;
-  white-space: nowrap;
-}
-.col-soc-spacer {
-  width: 0 !important;
-  padding: 0 !important;
-  border: 0 !important;
-  overflow: hidden !important;
-}
-.col-arrow {
-  width: 24px;
-  text-align: center;
-}
-.col-power {
-  width: 70px;
-  text-align: right;
-  white-space: nowrap;
-}
-.col-flex {
-  width: auto;
-}
-.col-right-label {
-  width: 100px;
-  text-align: right;
-  white-space: nowrap;
-}
-.col-right-value {
-  width: 85px;
-  text-align: right;
-  white-space: nowrap;
+  flex: 0 0 2rem;
+  display: flex;
+  justify-content: center;
 }
 .icon {
+  width: 1.75rem;
   filter: brightness(0.4);
 }
 .body--dark .icon {
   filter: brightness(1);
 }
+.col-title {
+  flex: 0 0 5.5rem;
+}
+.title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.ellipsis-wrapper {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.expand-icon {
+  font-size: 1.3rem;
+}
 .rotate-180 {
   transform: rotate(180deg);
 }
-.expand-icon {
-  font-size: 20px;
-  margin-left: 8px;
-  cursor: pointer;
+.col-soc {
+  flex: 0 0 3rem;
+  text-align: right;
+  white-space: nowrap;
 }
-@media (max-width: 500px) {
-  .daily-table td {
-    font-size: 13px;
+.col-soc-spacer {
+  flex: 0 0 0;
+  overflow: hidden;
+}
+.col-arrow {
+  flex: 0 0 1.3rem;
+  text-align: center;
+}
+.col-power {
+  flex: 0 0 4rem;
+  text-align: right;
+  white-space: nowrap;
+}
+/* flexible column before right-side labels */
+.col-flex {
+  flex: 1 1 auto;
+}
+.col-right-label,
+.col-right-value {
+  display: grid;
+  grid-template-rows: auto auto;
+  align-items: center;
+  white-space: nowrap;
+}
+.col-right-label {
+  flex: 0 0 5rem;
+  text-align: right;
+}
+.col-right-value {
+  flex: 0 0 5rem;
+  text-align: right;
+}
+
+@media (max-width: 480px) {
+  .component-container {
+    font-size: 0.85rem;
+    gap: 0.3rem;
+  }
+  .col-title {
+    flex: 0 0 4.2rem;
+  }
+  .col-soc {
+    flex: 0 0 2.3rem;
+  }
+  .col-power {
+    flex: 0 0 3.4rem;
+  }
+  .col-right-label {
+    flex: 0 0 5rem;
+  }
+  .col-right-value {
+    flex: 0 0 5.5rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .component-container {
+    font-size: 0.75rem;
+  }
+  .col-title {
+    flex: 0 0 3.5rem;
+  }
+  .col-soc {
+    flex: 0 0 1.8rem;
+  }
+  .col-power {
+    flex: 0 0 2.8rem;
+  }
+  .col-right-label {
+    flex: 0 0 8rem;
+  }
+  .col-right-value {
+    flex: 0 0 5.5rem;
   }
 }
 </style>
