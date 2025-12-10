@@ -51,7 +51,7 @@ class SolaredgeExternalInverter(AbstractInverter):
             (self.registers.imp_exp_scale, ModbusDataType.INT_16),
         )
         resp = self.__tcp_client.read_holding_registers_bulk(
-            self.registers.currents, 51, mapping=reg_mapping, unit=self.component_config.configuration.modbus_id)
+            self.registers.currents, 52, mapping=reg_mapping, unit=self.component_config.configuration.modbus_id)
 
         factor = self.component_config.configuration.factor
         return InverterState(
