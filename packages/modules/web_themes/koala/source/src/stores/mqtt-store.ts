@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed, ComputedRef } from 'vue';
 import mqtt, { IClientOptions, IClientPublishOptions } from 'mqtt';
 import { QoS } from 'mqtt-packet';
+import { useQuasar } from 'quasar';
 
 // import all type definitions from the mqtt-store-model
 import type {
@@ -28,6 +29,24 @@ import type {
 } from './mqtt-store-model';
 
 export const useMqttStore = defineStore('mqtt', () => {
+  const $q = useQuasar();
+  let mqttUser = null;
+  let mqttPass = null;
+  if ($q.cookies.has('mqtt')) {
+    [mqttUser, mqttPass] = decodeURIComponent($q.cookies.get('mqtt')).split(':') || [null, null];
+    $q.notify({
+      type: 'info',
+      message: 'Anmeldung als Benutzer "' + mqttUser + '"',
+      progress: true,
+    });
+  } else {
+    $q.notify({
+      type: 'warning',
+      message: 'Anonyme Anmeldung!',
+      progress: true,
+    });
+  }
+
   // local variables
   let mqttClient: mqtt.MqttClient | undefined = undefined;
   const mqttConnectionOptions: IClientOptions = {
@@ -36,6 +55,8 @@ export const useMqttStore = defineStore('mqtt', () => {
     host: location.hostname,
     port: parseInt(location.port) || (location.protocol == 'https:' ? 443 : 80),
     path: '/ws',
+    username: mqttUser,
+    password: mqttPass,
     connectTimeout: 4000,
     reconnectPeriod: 4000,
     properties: {
@@ -65,9 +86,33 @@ export const useMqttStore = defineStore('mqtt', () => {
       mqttClient = mqtt.connect(connectUrl, options);
       mqttClient.on('connect', () => {
         console.debug('connected to broker');
+        $q.notify({
+          type: 'positive',
+          message: 'Anmeldung erfolgreich',
+          progress: true,
+        });
       });
       mqttClient.on('error', (error) => {
         console.error('Client error', error);
+        $q.notify({
+          type: 'negative',
+          message: 'Es ist ein Fehler aufgetreten!',
+          caption: error.message,
+          progress: true,
+        });
+        if ($q.cookies.has('mqtt')) {
+          $q.cookies.remove('mqtt', { path: '/' });
+          console.warn('removed mqtt cookie due to error');
+          $q.notify({
+            type: 'warning',
+            message: 'Die Anmeldeinformationen wurden entfernt.',
+            timeout: 0,
+            closeBtn: 'Seite neu laden',
+            onDismiss: () => {
+              this.router.go(0);
+            },
+          });
+        }
       });
       mqttClient.on('message', (topic: string, message) => {
         console.debug(`Received message "${message}" from topic "${topic}"`);
@@ -90,6 +135,12 @@ export const useMqttStore = defineStore('mqtt', () => {
       });
     } catch (error) {
       console.error('error connecting to broker:', error);
+      $q.notify({
+        type: 'negative',
+        message: 'Verbindungsfehler!',
+        caption: (error as Error).message,
+        progress: true,
+      });
     }
   }
 
@@ -223,7 +274,13 @@ export const useMqttStore = defineStore('mqtt', () => {
         } else {
           mqttClient.subscribe(topics, {}, (error) => {
             if (error) {
-              console.error('Subscribe to topics error', error);
+              console.error('Subscribe to topics error', topic, error);
+              $q.notify({
+                type: 'negative',
+                message: `Fehler beim Abonnieren der Daten "${topic}"`,
+                caption: error.message,
+                progress: true,
+              });
             }
           });
         }
@@ -253,7 +310,13 @@ export const useMqttStore = defineStore('mqtt', () => {
         } else {
           mqttClient.unsubscribe(topic, (error) => {
             if (error) {
-              console.error('Unsubscribe error', error);
+              console.error('Unsubscribe error', topic, error);
+              $q.notify({
+                type: 'negative',
+                message: `Fehler beim Abbestellen der Daten "${topic}"`,
+                caption: error.message,
+                progress: true,
+              });
             }
           });
         }
@@ -333,7 +396,13 @@ export const useMqttStore = defineStore('mqtt', () => {
     };
     mqttClient.publish(topic, JSON.stringify(payload), options, (error) => {
       if (error) {
-        console.error('Publish error', error);
+        console.error('Publish error', topic, error);
+        $q.notify({
+          type: 'negative',
+          message: `Fehler beim Senden der Daten "${topic}"`,
+          caption: error.message,
+          progress: true,
+        });
       }
     });
   }
@@ -388,7 +457,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * getWildcardValues('openWB/pv/[0-9]+/config/m,ax_ac_out', true);
    */
   const getWildcardValues = computed(() => {
-    return (baseTopic: string, isRegex: boolean = false): TopicList => {
+    return (baseTopic: string, isRegex: boolean = false, autoSubscribe: boolean = true): TopicList => {
       let baseTopicRegex = baseTopic;
       if (!isRegex) {
         // build a valid regex based on the provided wildcard topic
@@ -400,7 +469,7 @@ export const useMqttStore = defineStore('mqtt', () => {
             .replaceAll('#', '[^#/]+') +
           '$';
         // check if baseTopic is already subscribed
-        if (!Object.keys(subscriptions.value).includes(baseTopic)) {
+        if (!Object.keys(subscriptions.value).includes(baseTopic) && autoSubscribe) {
           console.debug('auto subscription of wildcard topic', baseTopic);
           subscribe(baseTopic);
         }
@@ -569,6 +638,15 @@ export const useMqttStore = defineStore('mqtt', () => {
     return getValue.value('openWB/general/web_theme', 'configuration') as
       | ThemeConfiguration
       | undefined;
+  });
+
+  /**
+   * Check if user management is active
+   * Defaults to true if the value is not set as this may be due to insufficient permissions
+   * @returns boolean
+   */
+  const userManagementActive: ComputedRef<boolean> = computed(() => {
+    return getValue.value('openWB/general/user_management_active', undefined, true) === true;
   });
 
   /**
@@ -1711,7 +1789,8 @@ export const useMqttStore = defineStore('mqtt', () => {
     });
   };
 
-  /** * Get the charge point connected vehicle bidi enabled state from vehicle template identified by the charge point id
+  /**
+   * Get the charge point connected vehicle bidi enabled state from vehicle template identified by the charge point id
    * @param chargePointId charge point id
    * @returns boolean
    */
@@ -2621,6 +2700,8 @@ export const useMqttStore = defineStore('mqtt', () => {
     return (vehicleId: number) => {
       const connectedVehicles = getWildcardValues.value(
         'openWB/chargepoint/+/get/connected_vehicle/info',
+        false,
+        false,
       );
       // find the vehicle id in the connected vehicles
       const vehicleInfo = Object.entries(connectedVehicles)
@@ -3587,6 +3668,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     sendTopicToBroker,
     sendSystemCommand,
     getValue,
+    userManagementActive,
     systemVersion,
     systemIp,
     systemBranch,

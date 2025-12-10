@@ -7,10 +7,10 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "dev": "quasar dev",
     "lint": "eslint --ext .js,.ts,.vue ./",
     "format": "prettier --write \"**/*.{js,ts,vue,scss,html,md,json}\" --ignore-path .gitignore",
     "test:unit": "vitest run --root src/",
-    "dev": "quasar dev",
     "build": "quasar build -m pwa"
   },
   "dependencies": {
