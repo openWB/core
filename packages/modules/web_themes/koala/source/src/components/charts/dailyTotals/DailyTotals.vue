@@ -371,20 +371,20 @@ watch(
 }
 /* Dark mode overrides */
 .body--dark .grid {
-  background: #a13a41 !important;
-  border: 2px solid #da959a;
+  background: var(--q-dark-daily-totals-grid-fill);
+  border: 0.125rem solid var(--q-dark-daily-totals-grid-stroke);
 }
 .body--dark .battery {
-  background: #b97a1f;
-  border: 2px solid #e7c08a;
+  background: var(--q-dark-daily-totals-battery-fill);
+  border: 0.125rem solid var(--q-dark-daily-totals-battery-stroke);
 }
 .body--dark .pv {
-  background: #27623a;
+  background: var(--q-dark-daily-totals-pv-fill);
 }
 .body--dark .house {
-  background: #6e6e6e;
+  background: var(--q-dark-daily-totals-house-fill);
 }
 .body--dark .chargepoint {
-  background: #254a8c;
+  background: var(--q-dark-daily-totals-chargepoint-fill);
 }
 </style>
