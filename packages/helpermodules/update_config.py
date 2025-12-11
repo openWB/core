@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 105
+    DATASTORE_VERSION = 106
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -2679,3 +2679,13 @@ class UpdateConfig:
                 return {topic: config}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(105)
+
+    def upgrade_datastore_106(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/vehicle/[0-9]+/soc_module/config", topic) is not None:
+                config = decode_payload(payload)
+                if config.get("type") == "http" or config.get("type") == "mqtt":
+                    config["configuration"]["calculate_soc"] = False
+                return {topic: config}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(106)

@@ -35,7 +35,10 @@ def fetch_soc(config: HttpSocSetup) -> CarState:
 def create_vehicle(vehicle_config: HttpSocSetup, vehicle: int):
     def updater(vehicle_update_data: VehicleUpdateData) -> CarState:
         return fetch_soc(vehicle_config)
-    return ConfigurableVehicle(vehicle_config=vehicle_config, component_updater=updater, vehicle=vehicle)
+    return ConfigurableVehicle(vehicle_config=vehicle_config,
+                               component_updater=updater,
+                               vehicle=vehicle,
+                               calc_while_charging=vehicle_config.configuration.calculate_soc)
 
 
 def http_update(soc_url: str, range_url: str, charge_point: int):
