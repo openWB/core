@@ -148,7 +148,7 @@
       </q-btn-group>
       <div v-if="planLimitSelected.value === 'soc'" class="q-mt-md">
         <SliderStandard
-          title="Ziel-SoC für das Fahrzeug"
+          title="SoC-Limit für das Fahrzeug"
           :min="5"
           :max="100"
           :step="5"
@@ -160,7 +160,7 @@
       <q-input
         v-if="planLimitSelected.value === 'amount'"
         v-model="planLimitAmount.value"
-        label="Ziel-Energie"
+        label="Energie-Limit"
         class="col"
       >
         <template v-slot:append>
