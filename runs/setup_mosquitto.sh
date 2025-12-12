@@ -61,7 +61,7 @@ else
 	restartService=1
 fi
 
-userManagementActive=$(mosquitto_sub -t "openWB/general/user_management_active" -p 1886 -C 1 -W 1 --quiet)
+userManagementActive=$(mosquitto_sub -t "openWB/system/security/user_management_active" -p 1886 -C 1 -W 1 --quiet)
 allowUnencryptedAccess=$(mosquitto_sub -t "openWB/general/allow_unencrypted_access" -p 1886 -C 1 -W 1 --quiet)
 echo "mosquitto settings: user_management_active=$userManagementActive, allow_unencrypted_access=$allowUnencryptedAccess"
 if [[ $userManagementActive == "true" ]]; then
