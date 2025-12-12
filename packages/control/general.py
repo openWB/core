@@ -101,8 +101,6 @@ class GeneralData:
         default=False, metadata={"topic": "http_api"})
     allow_unencrypted_access: bool = field(
         default=True, metadata={"topic": "allow_unencrypted_access"})
-    user_management_active: bool = field(
-        default=False, metadata={"topic": "user_management_active"})
     mqtt_bridge: bool = False
     temporary_charge_templates_active: bool = False
     prices: Prices = field(default_factory=prices_factory)
