@@ -245,7 +245,6 @@ class Chargepoint(ChargepointRfidMixin):
             else:
                 self.data.control_parameter.chargemode = Chargemode(
                     self.data.set.charge_template.data.chargemode.selected)
-            self.data.control_parameter.prio = self.data.set.charge_template.data.prio
             if self.template.data.charging_type == ChargingType.AC.value:
                 self.data.control_parameter.min_current = self.data.set.charging_ev_data.ev_template.data.min_current
             else:
@@ -710,7 +709,6 @@ class Chargepoint(ChargepointRfidMixin):
                             f"{self.data.set.charge_template.data.chargemode.selected}, Submodus: "
                             f"{self.data.control_parameter.submode}, Phasen: "
                             f"{self.data.control_parameter.phases}"
-                            f", Priorität: {self.data.control_parameter.prio}"
                             f", mittlerer Ist-Strom: {get_medium_charging_current(self.data.get.currents)}")
                 except Exception:
                     log.exception("Fehler im Prepare-Modul für Ladepunkt "+str(self.num))
@@ -828,7 +826,6 @@ class Chargepoint(ChargepointRfidMixin):
                 charge_template=self.data.set.charge_template.data.id,
                 ev_template=vehicle.ev_template.data.id,
                 chargemode=self.data.set.charge_template.data.chargemode.selected,
-                priority=self.data.set.charge_template.data.prio,
                 current_plan=current_plan,
                 average_consumption=vehicle.ev_template.data.average_consump,
                 time_charging_in_use=True if (self.data.control_parameter.submode ==

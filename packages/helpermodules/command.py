@@ -286,10 +286,10 @@ class Command:
         chargepoint_config["id"] = new_id
         chargepoint_config["name"] = f'{chargepoint_config["name"]} {new_id}'
         try:
-            evu_counter = data.data.counter_all_data.get_id_evu_counter()
-            data.data.counter_all_data.hierarchy_add_item_below(
+            evu_counter = SubData.counter_all_data.get_id_evu_counter()
+            SubData.counter_all_data.hierarchy_add_item_below(
                 new_id, ComponentType.CHARGEPOINT, evu_counter)
-            Pub().pub("openWB/set/counter/get/hierarchy", data.data.counter_all_data.data.get.hierarchy)
+            Pub().pub("openWB/set/counter/get/hierarchy", SubData.counter_all_data.data.get.hierarchy)
             setup_added_chargepoint()
         except (TypeError, IndexError):
             if chargepoint_config["type"] == 'internal_openwb' and SubData.general_data.data.extern:
@@ -299,9 +299,9 @@ class Command:
                               "type": ComponentType.CHARGEPOINT.value,
                               "children": []
                               }] +
-                             data.data.counter_all_data.data.get.hierarchy)
+                             SubData.counter_all_data.data.get.hierarchy)
                 Pub().pub("openWB/set/counter/get/hierarchy", hierarchy)
-                data.data.counter_all_data.data.get.hierarchy = hierarchy
+                SubData.counter_all_data.data.get.hierarchy = hierarchy
                 setup_added_chargepoint()
             else:
                 pub_user_message(payload, connection_id,
@@ -350,8 +350,8 @@ class Command:
                 f'Die ID \'{payload["data"]["id"]}\' ist größer als die maximal vergebene '
                 f'ID \'{self.max_id_hierarchy}\'.', MessageType.ERROR)
         ProcessBrokerBranch(f'chargepoint/{payload["data"]["id"]}/').remove_topics()
-        data.data.counter_all_data.hierarchy_remove_item(payload["data"]["id"])
-        Pub().pub("openWB/set/counter/get/hierarchy", data.data.counter_all_data.data.get.hierarchy)
+        SubData.counter_all_data.hierarchy_remove_item(payload["data"]["id"])
+        Pub().pub("openWB/set/counter/get/hierarchy", SubData.counter_all_data.data.get.hierarchy)
         pub_user_message(payload, connection_id,
                          f'Ladepunkt mit ID \'{payload["data"]["id"]}\' gelöscht.', MessageType.SUCCESS)
 
@@ -709,6 +709,9 @@ class Command:
             self.addChargeTemplate("addVehicle", {})
         if self.max_id_ev_template == -1:
             self.addEvTemplate("addVehicle", {})
+        SubData.counter_all_data.loadmanagement_prios_add_item(new_id, ComponentType.VEHICLE)
+        Pub().pub("openWB/set/counter/get/loadmanagement_prios",
+                  SubData.counter_all_data.data.get.loadmanagement_prios)
         pub_user_message(payload, connection_id, f'Neues EV mit ID \'{new_id}\' hinzugefügt.', MessageType.SUCCESS)
 
     def removeVehicle(self, connection_id: str, payload: dict) -> None:
@@ -720,6 +723,9 @@ class Command:
         if payload["data"]["id"] > 0:
             Pub().pub(f'openWB/vehicle/{payload["data"]["id"]}', "")
             ProcessBrokerBranch(f'vehicle/{payload["data"]["id"]}/').remove_topics()
+            SubData.counter_all_data.loadmanagement_prios_remove_item(payload["data"]["id"])
+            Pub().pub("openWB/set/counter/get/loadmanagement_prios",
+                      SubData.counter_all_data.data.get.loadmanagement_prios)
             pub_user_message(
                 payload, connection_id,
                 f'EV mit ID \'{payload["data"]["id"]}\' gelöscht.', MessageType.SUCCESS)

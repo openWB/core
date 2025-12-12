@@ -16,10 +16,12 @@ class MinCurrent:
         pass
 
     def set_min_current(self) -> None:
-        for mode_tuple, counter in common.mode_and_counter_generator(CONSIDERED_CHARGE_MODES_MIN_CURRENT):
-            preferenced_chargepoints = get_chargepoints_by_mode_and_counter(mode_tuple, f"counter{counter.num}")
+        for counter in common.counter_generator():
+            preferenced_chargepoints = get_chargepoints_by_mode_and_counter(CONSIDERED_CHARGE_MODES_MIN_CURRENT,
+                                                                            f"counter{counter.num}",
+                                                                            full_power_considered=False)
             if preferenced_chargepoints:
-                log.info(f"Mode-Tuple {mode_tuple[0]} - {mode_tuple[1]} - {mode_tuple[2]}, Zähler {counter.num}")
+                log.info(f"Zähler {counter.num}, Verbraucher {preferenced_chargepoints}")
                 common.update_raw_data(preferenced_chargepoints, diff_to_zero=True)
                 while len(preferenced_chargepoints):
                     cp = preferenced_chargepoints[0]
@@ -43,7 +45,8 @@ class MinCurrent:
                                 cp.data.control_parameter.min_current,
                                 cp)
                     else:
-                        if mode_tuple in CONSIDERED_CHARGE_MODES_PV_ONLY:
+                        if (cp.data.control_parameter.chargemode,
+                                cp.data.control_parameter.submode) in CONSIDERED_CHARGE_MODES_PV_ONLY:
                             try:
                                 if (cp.data.control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED or
                                         cp.data.control_parameter.state == ChargepointState.SWITCH_ON_DELAY):

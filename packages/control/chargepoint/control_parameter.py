@@ -17,7 +17,6 @@ class ControlParameter:
                                                  "topic": "control_parameter/limit"})
     min_current: int = field(default=6, metadata={"topic": "control_parameter/min_current"})
     phases: int = field(default=0, metadata={"topic": "control_parameter/phases"})
-    prio: bool = field(default=False, metadata={"topic": "control_parameter/prio"})
     required_current: float = field(default=0, metadata={"topic": "control_parameter/required_current"})
     required_currents: List[float] = field(default_factory=currents_list_factory)
     state: ChargepointState = field(default=ChargepointState.NO_CHARGING_ALLOWED,

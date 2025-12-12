@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from typing import Dict, List
 from unittest.mock import Mock
 
 import pytest
@@ -96,44 +96,32 @@ preferenced_cases = [
 
 
 @pytest.mark.parametrize(
-    "set_mode_tuple, required_current_1, mode_tuple_1, mode_tuple_2, expected_valid_chargepoints",
+    "required_current_1, loadmanagement_prios, expected_valid_chargepoints",
     [
-        pytest.param((Chargemode.SCHEDULED_CHARGING, Chargemode.INSTANT_CHARGING, False),
-                     6, (Chargemode.SCHEDULED_CHARGING,
-                         Chargemode.INSTANT_CHARGING, False),
-                     (Chargemode.SCHEDULED_CHARGING,
-                         Chargemode.INSTANT_CHARGING, False),
+        pytest.param(6, [{"type": "ev", "id": "1"}, {"type": "ev", "id": "2"}],
                      [mock_cp1, mock_cp2], id="fits mode"),
-        pytest.param((Chargemode.SCHEDULED_CHARGING, Chargemode.INSTANT_CHARGING, False),
-                     0, (Chargemode.SCHEDULED_CHARGING,
-                         Chargemode.INSTANT_CHARGING, False),
-                     (Chargemode.SCHEDULED_CHARGING,
-                         Chargemode.INSTANT_CHARGING, False),
+        pytest.param(0, [{"type": "ev", "id": "1"}, {"type": "ev", "id": "2"}],
                      [mock_cp2], id="cp1 should not charge"),
-        pytest.param((Chargemode.SCHEDULED_CHARGING, Chargemode.INSTANT_CHARGING, False),
-                     6, (Chargemode.SCHEDULED_CHARGING,
-                         Chargemode.INSTANT_CHARGING, False),
-                     (Chargemode.SCHEDULED_CHARGING,
-                         Chargemode.INSTANT_CHARGING, True),
-                     [mock_cp1], id="cp2 is prioritized")
+        pytest.param(6, [{"type": "ev", "id": "2"}, {"type": "ev", "id": "1"}],
+                     [mock_cp2, mock_cp1], id="cp2 is prioritized")
     ])
-def test_get_chargepoints_by_mode(set_mode_tuple: Tuple[Optional[str], str, bool],
-                                  required_current_1: int,
-                                  mode_tuple_1: Tuple[str, str, bool],
-                                  mode_tuple_2: Tuple[str, str, bool],
+def test_get_chargepoints_by_mode(required_current_1: int,
+                                  loadmanagement_prios: List[Dict],
                                   expected_valid_chargepoints):
     # setup
-    def setup_cp(cp: Chargepoint, required_current: float, mode_tuple: Tuple[str, str, bool]) -> Chargepoint:
+    def setup_cp(cp: Chargepoint, required_current: float) -> Chargepoint:
         cp.data.control_parameter.required_current = required_current
-        cp.data.control_parameter.prio = mode_tuple[2]
-        cp.data.control_parameter.chargemode = mode_tuple[0]
-        cp.data.control_parameter.submode = mode_tuple[1]
+        cp.data.control_parameter.chargemode = Chargemode.SCHEDULED_CHARGING
+        cp.data.control_parameter.submode = Chargemode.INSTANT_CHARGING
         return cp
-    data.data.cp_data = {"cp1": setup_cp(mock_cp1, required_current_1, mode_tuple_1),
-                         "cp2": setup_cp(mock_cp2, 6, mode_tuple_2)}
+    data.data.cp_data = {"cp1": setup_cp(mock_cp1, required_current_1),
+                         "cp2": setup_cp(mock_cp2, 6)}
+    data.data.counter_all_data = CounterAll()
+    data.data.counter_all_data.data.get.loadmanagement_prios = loadmanagement_prios
 
     # evaluation
-    valid_chargepoints = filter_chargepoints.get_chargepoints_by_mode(set_mode_tuple)
+    valid_chargepoints = filter_chargepoints.get_loadmanagement_prios(
+        (Chargemode.SCHEDULED_CHARGING, Chargemode.INSTANT_CHARGING))
 
     # assertion
     assert valid_chargepoints == expected_valid_chargepoints

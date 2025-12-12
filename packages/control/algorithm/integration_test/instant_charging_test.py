@@ -7,6 +7,7 @@ from control.algorithm.integration_test.conftest import ParamsExpectedSetCurrent
 from control.chargemode import Chargemode
 from control import data, loadmanagement
 from control.algorithm.algorithm import Algorithm
+from control.ev.ev import Ev
 from control.limiting_value import LimitingValue
 from dataclass_utils.factories import currents_list_factory
 
@@ -43,6 +44,10 @@ def all_cp_instant_charging_3p():
         control_parameter.chargemode = Chargemode.INSTANT_CHARGING
         data.data.cp_data[f"cp{i}"].data.get.charge_state = True
         data.data.cp_data[f"cp{i}"].data.get.currents = [16]*3
+        data.data.cp_data[f"cp{i}"].data.set.charging_ev_data = Ev(i)
+        data.data.cp_data[f"cp{i}"].data.config.ev = i
+    data.data.counter_all_data.data.get.loadmanagement_prios = [
+        {"type": "ev", "id": 3}, {"type": "ev", "id": 4}, {"type": "ev", "id": 5}]
 
 
 @dataclass
@@ -111,6 +116,7 @@ cases_limit = [
                 expected_raw_power_left=0,
                 expected_raw_currents_left_counter0=[21.53846153846154, 25.23076923076923, 25.23076923076923],
                 expected_raw_currents_left_counter6=[16, 9.23076923076923, 9.23076923076923]),
+
     # limit by unbalanced load
 ]
 
@@ -137,19 +143,19 @@ def test_instant_charging_limit(params: ParamsLimit, all_cp_instant_charging_1p,
 @dataclass
 class ParamsControlParameter(ParamsExpectedSetCurrent, ParamsExpectedCounterSet):
     name: str = ""
-    prio_cp3: bool = False
+    full_power_cp3: bool = False
     submode_cp3: Chargemode = Chargemode.INSTANT_CHARGING
-    prio_cp4: bool = False
+    full_power_cp4: bool = False
     submode_cp4: Chargemode = Chargemode.INSTANT_CHARGING
-    prio_cp5: bool = False
+    full_power_cp5: bool = False
     submode_cp5: Chargemode = Chargemode.INSTANT_CHARGING
 
 
 cases_control_parameter = [
     ParamsControlParameter(name="lift prio cp3",
-                           prio_cp3=True,
-                           prio_cp4=False,
-                           prio_cp5=False,
+                           full_power_cp3=True,
+                           full_power_cp4=False,
+                           full_power_cp5=False,
                            expected_current_cp3=16,
                            expected_current_cp4=8,
                            expected_current_cp5=8,
@@ -157,44 +163,35 @@ cases_control_parameter = [
                            expected_raw_currents_left_counter0=[0]*3,
                            expected_raw_currents_left_counter6=[0]*3),
     ParamsControlParameter(name="drop prio cp4",
-                           prio_cp3=True,
-                           prio_cp4=False,
-                           prio_cp5=True,
-                           expected_current_cp3=15,
+                           full_power_cp3=True,
+                           full_power_cp4=False,
+                           full_power_cp5=True,
+                           expected_current_cp3=16,
                            expected_current_cp4=6,
                            expected_current_cp5=10,
                            expected_raw_power_left=690,
                            expected_raw_currents_left_counter0=[1]*3,
                            expected_raw_currents_left_counter6=[0]*3),
-    ParamsControlParameter(name="lift submode cp4",
+    ParamsControlParameter(name="change submode cp4",
                            submode_cp4=Chargemode.TIME_CHARGING,
-                           expected_current_cp3=13,
-                           expected_current_cp4=10,
-                           expected_current_cp5=6,
+                           expected_current_cp3=16,
+                           expected_current_cp4=8,
+                           expected_current_cp5=8,
                            expected_raw_power_left=2070,
                            expected_raw_currents_left_counter0=[3]*3,
                            expected_raw_currents_left_counter6=[0]*3),
-    # ParamsControlParameter(name="drop submode cp4",
-    # niedrigster instant modus erreicht
-    #                        submode_cp4=Chargemode.PV_CHARGING,
-    #                        expected_current_cp3=16,
-    #                        expected_current_cp4=6,
-    #                        expected_current_cp5=10,
-    #                        expected_raw_power_left=0,
-    #                        expected_raw_currents_left_counter0=[0]*3,
-    #                        expected_raw_currents_left_counter6=[0]*3)
 ]
 
 
 @pytest.mark.parametrize("params", cases_control_parameter, ids=[c.name for c in cases_control_parameter])
 def test_control_parameter_instant_charging(params: ParamsControlParameter, all_cp_instant_charging_3p, monkeypatch):
     # setup
-    data.data.cp_data["cp3"].data.control_parameter.prio = params.prio_cp3
     data.data.cp_data["cp3"].data.control_parameter.submode = params.submode_cp3
-    data.data.cp_data["cp4"].data.control_parameter.prio = params.prio_cp4
+    data.data.cp_data["cp3"].data.set.charging_ev_data.data.full_power = params.full_power_cp3
     data.data.cp_data["cp4"].data.control_parameter.submode = params.submode_cp4
-    data.data.cp_data["cp5"].data.control_parameter.prio = params.prio_cp5
+    data.data.cp_data["cp4"].data.set.charging_ev_data.data.full_power = params.full_power_cp4
     data.data.cp_data["cp5"].data.control_parameter.submode = params.submode_cp5
+    data.data.cp_data["cp5"].data.set.charging_ev_data.data.full_power = params.full_power_cp5
     data.data.counter_data["counter0"].data.set.raw_power_left = 22080
     data.data.counter_data["counter0"].data.set.raw_currents_left = [32]*3
     data.data.counter_data["counter6"].data.set.raw_currents_left = [16]*3

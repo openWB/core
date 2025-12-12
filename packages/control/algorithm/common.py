@@ -2,7 +2,7 @@ import logging
 from typing import Iterable, List, Optional, Tuple
 
 from control import data
-from control.algorithm.filter_chargepoints import get_chargepoints_by_mode
+from control.algorithm.filter_chargepoints import get_loadmanagement_prios
 from control.algorithm.utils import get_medium_charging_current
 from control.chargepoint.chargepoint import Chargepoint
 from control.counter import Counter
@@ -27,20 +27,18 @@ def reset_current():
             log.exception(f"Fehler im Algorithmus-Modul für Ladepunkt{cp.num}")
 
 
-def reset_current_by_chargemode(mode_tuple: Tuple[Optional[str], str, bool]) -> None:
-    for mode in mode_tuple:
-        for cp in get_chargepoints_by_mode(mode):
-            cp.data.set.current = None
+def reset_current_by_chargemode(chargemodes: Tuple[Tuple[Optional[str], str]]) -> None:
+    for cp in get_loadmanagement_prios(chargemodes):
+        cp.data.set.current = None
 
 
-def mode_and_counter_generator(chargemodes: List) -> Iterable[Tuple[Tuple[Optional[str], str, bool], Counter]]:
-    for mode_tuple in chargemodes:
-        levels = data.data.counter_all_data.get_list_of_elements_per_level()
-        for level in reversed(levels):
-            for element in level:
-                if element["type"] == ComponentType.COUNTER.value:
-                    counter = data.data.counter_data[f"counter{element['id']}"]
-                    yield mode_tuple, counter
+def counter_generator() -> Iterable[Counter]:
+    levels = data.data.counter_all_data.get_list_of_elements_per_level()
+    for level in reversed(levels):
+        for element in level:
+            if element["type"] == ComponentType.COUNTER.value:
+                counter = data.data.counter_data[f"counter{element['id']}"]
+                yield counter
 
 
 # tested
@@ -112,13 +110,17 @@ def available_current_for_cp(chargepoint: Chargepoint,
     control_parameter = chargepoint.data.control_parameter
     available_current = float("inf")
     missing_current_cp = control_parameter.required_current - chargepoint.data.set.target_current
-    for i in range(0, 3):
-        if (control_parameter.required_currents[i] != 0 and
-                missing_currents[i] != available_currents[i]):
-            available_current = min(min(missing_current_cp, available_currents[i]/counts[i]), available_current)
-    if available_current == float("inf"):
-        available_current = missing_current_cp
-    return available_current
+
+    if chargepoint.data.set.charging_ev_data.data.full_power:
+        return missing_current_cp
+    else:
+        for i in range(0, 3):
+            if (control_parameter.required_currents[i] != 0 and
+                    missing_currents[i] != available_currents[i]):
+                available_current = min(min(missing_current_cp, available_currents[i]/counts[i]), available_current)
+        if available_current == float("inf"):
+            available_current = missing_current_cp
+        return available_current
 
 
 def update_raw_data(preferenced_chargepoints: List[Chargepoint],

@@ -4,7 +4,7 @@ import pytest
 
 from control import data
 from control.algorithm import surplus_controlled
-from control.algorithm.filter_chargepoints import get_chargepoints_by_chargemodes
+from control.algorithm.filter_chargepoints import get_loadmanagement_prios
 from control.algorithm.surplus_controlled import (CONSIDERED_CHARGE_MODES_PV_ONLY, SurplusControlled,
                                                   limit_adjust_current)
 from control.chargemode import Chargemode
@@ -89,7 +89,7 @@ def test_set_required_current_to_max(phases: int,
                                                                        required_currents=required_currents))
     mock_cp1.template = CpTemplate()
     mock_get_chargepoints_surplus_controlled = Mock(return_value=[mock_cp1])
-    monkeypatch.setattr(surplus_controlled, "get_chargepoints_by_chargemodes",
+    monkeypatch.setattr(surplus_controlled, "get_loadmanagement_prios",
                         mock_get_chargepoints_surplus_controlled)
 
     # execution
@@ -149,7 +149,7 @@ def test_get_chargepoints_submode_pv_charging(submode_1: Chargemode,
                          "cp2": setup_cp(mock_cp2, submode_2)}
 
     # evaluation
-    chargepoints = get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_PV_ONLY)
+    chargepoints = get_loadmanagement_prios(CONSIDERED_CHARGE_MODES_PV_ONLY)
 
     # assertion
     assert chargepoints == expected_chargepoints
