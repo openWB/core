@@ -34,11 +34,6 @@ export const useMqttStore = defineStore('mqtt', () => {
   let mqttPass = null;
   if ($q.cookies.has('mqtt')) {
     [mqttUser, mqttPass] = decodeURIComponent($q.cookies.get('mqtt')).split(':') || [null, null];
-    $q.notify({
-      type: 'info',
-      message: 'Anmeldung als Benutzer "' + mqttUser + '"',
-      progress: true,
-    });
   } else {
     $q.notify({
       type: 'warning',
@@ -88,7 +83,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         console.debug('connected to broker');
         $q.notify({
           type: 'positive',
-          message: 'Anmeldung erfolgreich',
+          message: `Anmeldung ${mqttUser ? 'als Benutzer "' + mqttUser + '" ' : ''}erfolgreich`,
           progress: true,
         });
       });
@@ -281,12 +276,21 @@ export const useMqttStore = defineStore('mqtt', () => {
           mqttClient.subscribe(topics, {}, (error) => {
             if (error) {
               console.error('Subscribe to topics error', topic, error);
-              $q.notify({
-                type: 'negative',
-                message: `Fehler beim Abonnieren der Daten "${topic}"`,
-                caption: error.message,
-                progress: true,
-              });
+              if (mqttUser) {
+                $q.notify({
+                  type: 'negative',
+                  message: `Fehler beim Abonnieren der Daten "${topic}"`,
+                  caption: error.message,
+                  progress: true,
+                });
+              } else {
+                $q.notify({
+                  type: 'warning',
+                  message: 'Fehler beim Abonnieren von Daten. Möglicherweise ist eine Anmeldung erforderlich.',
+                  caption: error.message,
+                  progress: true,
+                });
+              }
             }
           });
         }
@@ -652,8 +656,27 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @returns boolean
    */
   const userManagementActive: ComputedRef<boolean> = computed(() => {
-    return getValue.value('openWB/general/user_management_active', undefined, true) === true;
+    return getValue.value('openWB/system/security/user_management_active', undefined, true) === true;
   });
+
+  /**
+   * Check if anonymous access is allowed
+   * Defaults to false if the value is not set as this may be due to insufficient permissions
+   * @returns boolean
+   */
+  const anonymousAccessAllowed: ComputedRef<boolean> = computed(() => {
+    return getValue.value('openWB/system/security/anonymous_access_allowed', undefined, false) === true;
+  });
+
+  /**
+   * Check if settings are accessible
+   * Defaults to false if the value is not set as this may be due to insufficient permissions
+   * @returns boolean
+   */
+  const settingsAccessible: ComputedRef<boolean> = computed(() => {
+    return getValue.value('openWB/system/security/settings_accessible', undefined, false) === true;
+  });
+
 
   /**
    * Get the system version
@@ -3692,13 +3715,16 @@ export const useMqttStore = defineStore('mqtt', () => {
     sendTopicToBroker,
     sendSystemCommand,
     getValue,
-    userManagementActive,
     systemVersion,
     systemIp,
     systemBranch,
     systemCommit,
     themeConfiguration,
     systemDateTime,
+    // security settings
+    userManagementActive,
+    anonymousAccessAllowed,
+    settingsAccessible,
     // charge point data
     chargePointIds,
     chargePointName,

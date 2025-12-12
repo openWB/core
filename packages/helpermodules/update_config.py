@@ -201,7 +201,6 @@ class UpdateConfig:
         "^openWB/counter/[0-9]+/config/max_total_power$",
 
         "^openWB/general/allow_unencrypted_access$",
-        "^openWB/general/user_management_active$",
         "^openWB/general/extern$",
         "^openWB/general/extern_display_mode$",
         "^openWB/general/charge_log_data_config$",
@@ -505,6 +504,8 @@ class UpdateConfig:
         "^openWB/system/mqtt/valid_partner_ids$",
         "^openWB/system/release_train$",
         "^openWB/system/secondary_auto_update$",
+        "^openWB/system/security/user_management_active$",
+        "^openWB/system/security/anonymous_access_allowed$",
         "^openWB/system/time$",
         "^openWB/system/update_in_progress$",
         "^openWB/system/usage_terms_acknowledged$",
@@ -534,7 +535,6 @@ class UpdateConfig:
                                                                         min_current=10))),
         ("openWB/vehicle/template/charge_template/0", get_charge_template_default()),
         ("openWB/general/allow_unencrypted_access", True),
-        ("openWB/general/user_management_active", False),
         ("openWB/general/charge_log_data_config", get_default_charge_log_columns()),
         ("openWB/general/chargemode_config/pv_charging/bat_mode", BatConsiderationMode.EV_MODE.value),
         ("openWB/general/chargemode_config/pv_charging/bat_power_discharge", 1000),
@@ -605,6 +605,9 @@ class UpdateConfig:
         ("openWB/system/mqtt/valid_partner_ids", []),
         ("openWB/system/release_train", "master"),
         ("openWB/system/secondary_auto_update", True),
+        ("openWB/system/security/user_management_active", False),
+        ("openWB/system/security/anonymous_access_allowed", True),
+        ("openWB/system/security/settings_accessible", True),
         ("openWB/system/serial_number", get_serial_number()),
     )
     invalid_topic = (

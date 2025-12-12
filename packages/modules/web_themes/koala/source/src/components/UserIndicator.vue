@@ -50,7 +50,7 @@
 
           <q-card-actions align="right">
             <q-btn flat label="Anmelden" color="positive" type="submit" />
-            <q-btn flat label="Schließen" color="primary" v-close-popup />
+            <q-btn v-if="anonymousAccessAllowed" flat label="Schließen" color="primary" v-close-popup />
           </q-card-actions>
         </q-form>
       </q-card>
@@ -60,20 +60,23 @@
       <q-icon name="account_circle" size="sm" left />
       {{ username }}
     </q-badge>
-    <q-icon v-if="loggedIn && smallScreen" name="account_circle" size="md" left color="positive">
+    <q-icon v-if="loggedIn && smallScreen" name="account_circle" size="md" left color="primary">
       <q-tooltip>Angemeldet als "{{ username }}"</q-tooltip>
     </q-icon>
     <q-btn v-if="loggedIn" icon="logout" dense flat round @click="showLogoutDialog = true">
       <q-tooltip>Abmelden</q-tooltip>
     </q-btn>
-    <q-btn v-else icon="login" dense flat round @click="showLoginDialog = true">
+    <q-icon v-if="!loggedIn" name="no_accounts" size="md" left>
+      <q-tooltip>Nicht angemeldet</q-tooltip>
+    </q-icon>
+    <q-btn v-if="!loggedIn" icon="login" dense flat round @click="showLoginDialog = true">
       <q-tooltip>Anmelden</q-tooltip>
     </q-btn>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useQuasar, QInput } from 'quasar';
 import { useRouter } from 'vue-router';
 import { useMqttStore } from 'src/stores/mqtt-store';
@@ -93,6 +96,10 @@ const smallScreen = computed(() => {
 
 const userManagementActive = computed(() => {
   return mqttStore.userManagementActive === true;
+});
+
+const anonymousAccessAllowed = computed(() => {
+  return mqttStore.anonymousAccessAllowed === true;
 });
 
 const loggedIn = computed(() => {
@@ -125,6 +132,7 @@ const login = () => {
   }
   const mqttValue = `${user.value}:${password.value}`;
   $q.cookies.set('mqtt', mqttValue, { expires: '30d', path: '/', secure: true, sameSite: 'Lax' });
+  console.log('Set mqtt cookie:', $q.cookies.get('mqtt'));
   showLoginDialog.value = false;
   router.go(0);
 };
@@ -133,4 +141,21 @@ const clearLoginData = () => {
   user.value = '';
   password.value = '';
 };
+
+watch(anonymousAccessAllowed, (newValue) => {
+  console.log('anonymousAccessAllowed changed to:', newValue);
+  console.log('userManagementActive:', userManagementActive.value, 'loggedIn:', loggedIn.value);
+  if (userManagementActive.value && !newValue && !loggedIn.value) {
+    showLoginDialog.value = true;
+  } else {
+    showLoginDialog.value = false;
+  }
+});
+
+onMounted(() => {
+  console.log('UserIndicator mounted. userManagementActive:', userManagementActive.value, 'anonymousAccessAllowed:', anonymousAccessAllowed.value, 'loggedIn:', loggedIn.value);
+  if (userManagementActive.value && !anonymousAccessAllowed.value && !loggedIn.value) {
+    showLoginDialog.value = true;
+  }
+});
 </script>
