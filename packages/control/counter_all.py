@@ -227,7 +227,7 @@ class CounterAll:
         except KeyError:
             # Kein Ladepunkt unter dem Zähler
             pass
-        return self.connected_chargepoints
+        return reversed(self.connected_chargepoints)
 
     def _get_all_cp_connected_to_counter(self, child: Dict) -> None:
         """ Rekursive Funktion, die alle Ladepunkte ermittelt, die an den angegebenen Zähler angeschlossen sind.
