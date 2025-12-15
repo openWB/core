@@ -267,6 +267,7 @@ class Command:
                 self.addChargepointTemplate("addChargepoint", {})
             if self.max_id_vehicle == -1:
                 self.addVehicle("addChargepoint", {})
+            self._add_acl("chargepoint-<id>-access", new_id)
             pub_user_message(payload, connection_id, f'Neuer Ladepunkt mit ID \'{new_id}\' wurde erstellt.',
                              MessageType.SUCCESS)
         new_id = self.max_id_hierarchy + 1
@@ -352,6 +353,7 @@ class Command:
         ProcessBrokerBranch(f'chargepoint/{payload["data"]["id"]}/').remove_topics()
         data.data.counter_all_data.hierarchy_remove_item(payload["data"]["id"])
         Pub().pub("openWB/set/counter/get/hierarchy", data.data.counter_all_data.data.get.hierarchy)
+        self._remove_acl("chargepoint-<id>-access", payload["data"]["id"])
         pub_user_message(payload, connection_id,
                          f'Ladepunkt mit ID \'{payload["data"]["id"]}\' gelöscht.', MessageType.SUCCESS)
 
@@ -709,6 +711,7 @@ class Command:
             self.addChargeTemplate("addVehicle", {})
         if self.max_id_ev_template == -1:
             self.addEvTemplate("addVehicle", {})
+        self._add_acl("vehicle-<id>-access", new_id)
         pub_user_message(payload, connection_id, f'Neues EV mit ID \'{new_id}\' hinzugefügt.', MessageType.SUCCESS)
 
     def removeVehicle(self, connection_id: str, payload: dict) -> None:
@@ -720,6 +723,7 @@ class Command:
         if payload["data"]["id"] > 0:
             Pub().pub(f'openWB/vehicle/{payload["data"]["id"]}', "")
             ProcessBrokerBranch(f'vehicle/{payload["data"]["id"]}/').remove_topics()
+            self._remove_acl("vehicle-<id>-access", payload["data"]["id"])
             pub_user_message(
                 payload, connection_id,
                 f'EV mit ID \'{payload["data"]["id"]}\' gelöscht.', MessageType.SUCCESS)
@@ -970,6 +974,38 @@ class Command:
         pub_user_message(payload, connection_id,
                          "Benutzerverwaltung wurde zurückgesetzt.",
                          MessageType.WARNING)
+
+    def _get_acl_role_data(self, role_template: str, id: int) -> dict:
+        with open(role_template, 'r', encoding='utf-8') as file:
+            role_data = json.loads(file)
+        role_data["rolename"] = role_data["rolename"].replace("<id>", str(id))
+        role_data["textname"] = role_data["textname"].replace("<id>", str(id))
+        role_data["textdescription"] = role_data["textdescription"].replace("<id>", str(id))
+        for acl in role_data["acls"]:
+            acl["topic"] = acl["topic"].replace("<id>", str(id))
+        return role_data
+
+    def _add_acl(self, role_template: str, id: int):
+        role_data = self._get_acl_role_data(role_template, id)
+
+        run_command(["mosquitto_ctrl", "dynsec", "createRole", role_data["rolename"]])
+        for acl in role_data["acls"]:
+            run_command([
+                "mosquitto_ctrl", "dynsec", "addRoleAcl", role_data["rolename"],
+                acl["acltype"], acl["topic"],
+                "allow" if acl["allow"] else "deny",
+                str(acl["priority"])
+            ])
+
+    def _remove_acl(self, role_template: str, id: int):
+        role_data = self._get_acl_role_data(role_template, id)
+
+        run_command(["mosquitto_ctrl", "dynsec", "deleteRole", role_data["rolename"]])
+        for acl in role_data["acls"]:
+            run_command([
+                "mosquitto_ctrl", "dynsec", "removeRoleAcl", role_data["rolename"],
+                acl["acltype"], acl["topic"],
+            ])
 
 
 class ErrorHandlingContext:
