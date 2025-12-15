@@ -45,13 +45,14 @@ def create_io(config: IoLan):
         # the values are reported as integers in range of 0-1024
         time.sleep(0.1)
         analog_read = client.read_input_registers(0x00, [ModbusDataType.UINT_16]*8, unit=config.configuration.modbus_id)
-        analog_input = {getattr(AnalogInputMapping, f'AI{pin+1}'): analog_read[pin] * 5 for pin in range(8)}
+        analog_input = {getattr(AnalogInputMapping, f'AI{pin+1}').name: analog_read[pin] * 5 for pin in range(8)}
         time.sleep(0.1)
         digital_input_read = client.read_coils(0x00, 8, unit=config.configuration.modbus_id)
-        digital_input = {getattr(DigitalInputMapping, f'DI{pin+1}'): digital_input_read[pin] for pin in range(8)}
+        digital_input = {getattr(DigitalInputMapping, f'DI{pin+1}').name: digital_input_read[pin] for pin in range(8)}
         time.sleep(0.1)
         digital_output_read = client.read_coils(0x10, 8, unit=config.configuration.modbus_id)
-        digital_output = {getattr(DigitalOutputMapping, f'DO{pin+1}'): digital_output_read[pin] for pin in range(8)}
+        digital_output = {
+            getattr(DigitalOutputMapping, f'DO{pin+1}').name: digital_output_read[pin] for pin in range(8)}
         return IoState(
             analog_input=analog_input,
             digital_input=digital_input,
