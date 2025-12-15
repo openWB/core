@@ -918,7 +918,8 @@ class ParameterHandler
     private function setMaxPriceEco($chargepointId, $value)
     {
         try {
-            $templateTopic = "openWB/chargepoint/{$chargepointId}/set/charge_template";
+            $value = $value / 100000;
+	    $templateTopic = "openWB/chargepoint/{$chargepointId}/set/charge_template";
             $templateJson = $this->mqttClient->getValue($templateTopic);
             if (!$templateJson) {
                 return ['success' => false, 'message' => 'Could not read current charge template from set topic'];
