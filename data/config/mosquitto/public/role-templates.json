@@ -1,0 +1,64 @@
+{
+	"roles": [		{
+			"rolename": "chargepoint-<id>-access",
+			"textname": "Leserechte für Ladepunkt <id>",
+			"textdescription": "Erlaubt das Empfangen von Ladepunktdaten für Ladepunkt <id>.",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/chargepoint/<id>/#",
+					"priority": 1,
+					"allow": true
+				},
+				{
+					"acltype": "subscribeLiteral",
+					"topic": "openWB/chargepoint/<id>/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "subscribeLiteral",
+					"topic": "openWB/chargepoint/<id>/get/connected_vehicle/#",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "subscribeLiteral",
+					"topic": "openWB/chargepoint/<id>/get/#",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		}, {
+			"rolename": "vehicle-<id>-access",
+			"textname": "Leserechte für Fahrzeug <id>",
+			"textdescription": "Erlaubt das Empfangen von Fahrzeugdaten für Fahrzeug <id>.",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/vehicle/<id>/#",
+					"priority": 1,
+					"allow": true
+				},
+				{
+					"acltype": "subscribeLiteral",
+					"topic": "openWB/vehicle/<id>/name",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "subscribeLiteral",
+					"topic": "openWB/vehicle/<id>/soc_module/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "subscribeLiteral",
+					"topic": "openWB/vehicle/<id>/info",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		}
+	]
+}
