@@ -76,8 +76,7 @@ var topicsToSubscribe = [
 	["openWB/general/chargemode_config/pv_charging/bat_mode", 0],
 
 	// electricity tariff
-	["openWB/optional/et/active", 1], // et provider is configured
-	["openWB/optional/ep/configured", 1], // et provider information
+	["openWB/optional/ep/configured", 1], // ep provider information
 	["openWB/optional/ep/get/prices", 1], // current price list
 	["openWB/optional/dc_charging", 1], // dc charging is configured
 
