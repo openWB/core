@@ -976,8 +976,12 @@ class Command:
                          MessageType.WARNING)
 
     def _get_acl_role_data(self, role_template: str, id: int) -> dict:
-        with open(role_template, 'r', encoding='utf-8') as file:
-            role_data = json.loads(file)
+        with open(Path(__file__).resolve().parents[2] / "data" / "config" / "mosquitto" / "public" / "default-dynamic-security.json", 'r', encoding='utf-8') as file:
+            roles = json.load(file)["roles"]
+        for role in roles:
+            if role["rolename"] == role_template:
+                role_data = role
+                break
         role_data["rolename"] = role_data["rolename"].replace("<id>", str(id))
         role_data["textname"] = role_data["textname"].replace("<id>", str(id))
         role_data["textdescription"] = role_data["textdescription"].replace("<id>", str(id))
