@@ -719,7 +719,7 @@ class SimpleMQTTDaemon:
     def _set_max_price_eco(self, chargepoint_id: str, price: str):
         """Set maximum price for ECO charging."""
         try:
-            price_value = float(price)
+            price_value = float(price) / 100000
             charge_template = self._get_charge_template(chargepoint_id)
 
             if charge_template is None:
