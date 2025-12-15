@@ -98,8 +98,12 @@ const userManagementActive = computed(() => {
   return mqttStore.userManagementActive === true;
 });
 
+const accessAllowed = computed(() => {
+  return mqttStore.accessAllowed === true;
+});
+
 const anonymousAccessAllowed = computed(() => {
-  return mqttStore.anonymousAccessAllowed === true;
+  return accessAllowed.value && !loggedIn.value;
 });
 
 const loggedIn = computed(() => {
