@@ -994,13 +994,7 @@ class Command:
 
     def _remove_acl(self, role_template: str, id: int):
         role_data = self._get_acl_role_data(role_template, id)
-
         run_command(["mosquitto_ctrl", "dynsec", "deleteRole", role_data["rolename"]])
-        for acl in role_data["acls"]:
-            run_command([
-                "mosquitto_ctrl", "dynsec", "removeRoleAcl", role_data["rolename"],
-                acl["acltype"], acl["topic"],
-            ])
 
 
 class ErrorHandlingContext:
