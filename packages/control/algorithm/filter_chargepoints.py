@@ -34,7 +34,7 @@ def get_loadmanagement_prios(chargemodes: Tuple[Tuple[Optional[str], str]],
                                         (cp.data.control_parameter.submode == chargemode[1]) and
                                         cp not in valid and cp not in valid_chargemode):
                                     valid_chargemode.append(cp)
-            valid.extend(_get_preferenced_chargepoint(valid_chargemode))
+            valid.extend(valid_chargemode)
 
     valid = []
     if full_power_considered:
