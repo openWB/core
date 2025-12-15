@@ -263,6 +263,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   function subscribe(
     topics: string[] | string,
     defaultValue: unknown = undefined,
+    silent: boolean = false,
   ): void {
     if (!Array.isArray(topics)) {
       topics = [topics];
@@ -276,20 +277,22 @@ export const useMqttStore = defineStore('mqtt', () => {
           mqttClient.subscribe(topics, {}, (error) => {
             if (error) {
               console.error('Subscribe to topics error', topic, error);
-              if (mqttUser) {
-                $q.notify({
-                  type: 'negative',
-                  message: `Fehler beim Abonnieren der Daten "${topic}"`,
-                  caption: error.message,
-                  progress: true,
-                });
-              } else {
-                $q.notify({
-                  type: 'warning',
-                  message: 'Fehler beim Abonnieren von Daten. Möglicherweise ist eine Anmeldung erforderlich.',
-                  caption: error.message,
-                  progress: true,
-                });
+              if (!silent) {
+                if (mqttUser) {
+                  $q.notify({
+                    type: 'negative',
+                    message: `Fehler beim Abonnieren der Daten "${topic}"`,
+                    caption: error.message,
+                    progress: true,
+                  });
+                } else {
+                  $q.notify({
+                    type: 'warning',
+                    message: 'Fehler beim Abonnieren von Daten. Möglicherweise ist eine Anmeldung erforderlich.',
+                    caption: error.message,
+                    progress: true,
+                  });
+                }
               }
             }
           });
@@ -660,12 +663,12 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
-   * Check if anonymous access is allowed
+   * Check if access is allowed
    * Defaults to false if the value is not set as this may be due to insufficient permissions
    * @returns boolean
    */
-  const anonymousAccessAllowed: ComputedRef<boolean> = computed(() => {
-    return getValue.value('openWB/system/security/anonymous_access_allowed', undefined, false) === true;
+  const accessAllowed: ComputedRef<boolean> = computed(() => {
+    return getValue.value('openWB/system/security/access_allowed', undefined, false) === true;
   });
 
   /**
@@ -744,7 +747,15 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @returns number[]
    */
   const chargePointIds = computed(() => {
-    return getObjectIds.value('cp');
+    return getObjectIds.value('cp').filter((id) => {
+      return chargePointAccessible.value(id);
+    });
+  });
+
+  const chargePointAccessible = computed(() => {
+    return (chargePointId: number) => {
+      return chargePointName.value(chargePointId) !== undefined;
+    };
   });
 
   /**
@@ -3723,10 +3734,11 @@ export const useMqttStore = defineStore('mqtt', () => {
     systemDateTime,
     // security settings
     userManagementActive,
-    anonymousAccessAllowed,
+    accessAllowed,
     settingsAccessible,
     // charge point data
     chargePointIds,
+    chargePointAccessible,
     chargePointName,
     chargePointManualLock,
     chargePointPlugState,
