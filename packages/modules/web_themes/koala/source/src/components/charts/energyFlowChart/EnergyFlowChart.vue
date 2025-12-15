@@ -107,7 +107,7 @@ const chargePoint1Power = computed(() => {
 });
 
 const chargePoint2Power = computed(() => {
-  if (connectedChargePoints.value.length > 0) {
+  if (connectedChargePoints.value.length > 1) {
     return (
       (mqttStore.chargePointPower(
         connectedChargePoints.value[1],
@@ -119,7 +119,7 @@ const chargePoint2Power = computed(() => {
 });
 
 const chargePoint3Power = computed(() => {
-  if (connectedChargePoints.value.length > 0) {
+  if (connectedChargePoints.value.length > 2) {
     return (
       (mqttStore.chargePointPower(
         connectedChargePoints.value[2],
@@ -193,9 +193,12 @@ const chargePoint1ConnectedVehicleSoc = computed(() =>
   mqttStore.chargePointConnectedVehicleSoc(connectedChargePoints.value[0]),
 );
 
-const chargePoint2VehicleConnected = computed(() =>
-  mqttStore.chargePointPlugState(connectedChargePoints.value[1]),
-);
+const chargePoint2VehicleConnected = computed(() => {
+  if (connectedChargePoints.value.length > 1) {
+    return mqttStore.chargePointPlugState(connectedChargePoints.value[1]);
+  }
+  return false;
+});
 
 const chargePoint2ConnectedVehicleChargeMode = computed(() => {
   const mode = mqttStore.chargePointConnectedVehicleChargeMode(
@@ -214,9 +217,12 @@ const chargePoint2ConnectedVehicleSoc = computed(() =>
   mqttStore.chargePointConnectedVehicleSoc(connectedChargePoints.value[1]),
 );
 
-const chargePoint3VehicleConnected = computed(() =>
-  mqttStore.chargePointPlugState(connectedChargePoints.value[2]),
-);
+const chargePoint3VehicleConnected = computed(() => {
+  if (connectedChargePoints.value.length > 2) {
+    return mqttStore.chargePointPlugState(connectedChargePoints.value[2]);
+  }
+  return false;
+});
 
 const chargePoint3ConnectedVehicleChargeMode = computed(() => {
   const mode = mqttStore.chargePointConnectedVehicleChargeMode(
