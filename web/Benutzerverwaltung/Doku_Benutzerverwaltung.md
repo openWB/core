@@ -161,7 +161,7 @@ Der unter 2.2 aufgeführte "Theme-Wrapper" (Punkt 3.) muss im Zuge einer Benutze
 
 Oben wurde angesprochen, dass jedes Theme für die Links zu Status, Einstellungen etc. selbst verantwortlich ist. Es muss also in jedem Theme ein gewisser Anteil Code zwingend enthalten sein. Dabei stelle ich mir die Frage, ob das nicht einheitlich gelöst werden kann.
 
-| ![](Theme-Bereiche.png) |
+| ![Theme-Bereiche](Theme-Bereiche.png) |
 | :---: |
 | *Abbildung 1: Die farblich markierten Bereiche im Koala Theme zeigen, welche Funktionen einheitlich umgesetzt werden sollten (grün) und welche individuell vom Theme gestaltet werden (gelb).* |
 
