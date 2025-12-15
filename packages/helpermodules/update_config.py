@@ -506,7 +506,8 @@ class UpdateConfig:
         "^openWB/system/release_train$",
         "^openWB/system/secondary_auto_update$",
         "^openWB/system/security/user_management_active$",
-        "^openWB/system/security/anonymous_access_allowed$",
+        "^openWB/system/security/access_allowed$",
+        "^openWB/system/security/settings_accessible$",
         "^openWB/system/time$",
         "^openWB/system/update_in_progress$",
         "^openWB/system/usage_terms_acknowledged$",
@@ -608,7 +609,7 @@ class UpdateConfig:
         ("openWB/system/release_train", "master"),
         ("openWB/system/secondary_auto_update", True),
         ("openWB/system/security/user_management_active", False),
-        ("openWB/system/security/anonymous_access_allowed", True),
+        ("openWB/system/security/access_allowed", True),
         ("openWB/system/security/settings_accessible", True),
         ("openWB/system/serial_number", get_serial_number()),
     )
