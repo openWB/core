@@ -1,8 +1,8 @@
 [
 	{
-		"rolename": "chargepoint-<id>-access",
+		"rolename": "charge-point-<id>-access",
 		"textname": "Leserechte für Ladepunkt <id>",
-		"textdescription": "Erlaubt das Empfangen von Ladepunktdaten für Ladepunkt <id>.",
+		"textdescription": "Erlaubt das Empfangen von Daten für Ladepunkt <id>.",
 		"acls": [
 			{
 				"acltype": "publishClientReceive",
@@ -17,22 +17,29 @@
 				"allow": true
 			},
 			{
-				"acltype": "subscribeLiteral",
+				"acltype": "subscribePattern",
 				"topic": "openWB/chargepoint/<id>/get/connected_vehicle/#",
 				"priority": 0,
 				"allow": true
 			},
 			{
-				"acltype": "subscribeLiteral",
+				"acltype": "subscribePattern",
 				"topic": "openWB/chargepoint/<id>/get/#",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "subscribePattern",
+				"topic": "openWB/chargepoint/<id>/set/#",
 				"priority": 0,
 				"allow": true
 			}
 		]
-	}, {
+	},
+	{
 		"rolename": "vehicle-<id>-access",
 		"textname": "Leserechte für Fahrzeug <id>",
-		"textdescription": "Erlaubt das Empfangen von Fahrzeugdaten für Fahrzeug <id>.",
+		"textdescription": "Erlaubt das Empfangen von Daten für Fahrzeug <id>.",
 		"acls": [
 			{
 				"acltype": "publishClientReceive",
@@ -55,6 +62,69 @@
 			{
 				"acltype": "subscribeLiteral",
 				"topic": "openWB/vehicle/<id>/info",
+				"priority": 0,
+				"allow": true
+			}
+		]
+	},
+	{
+		"rolename": "bat-<id>-access",
+		"textname": "Leserechte für Batterie <id>",
+		"textdescription": "Erlaubt das Empfangen von Daten für Batterie <id>.",
+		"acls": [
+			{
+				"acltype": "subscribePattern",
+				"topic": "openWB/bat/<id>/get/+",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "subscribePattern",
+				"topic": "openWB/system/device/+/component/<id>/config",
+				"priority": 0,
+				"allow": true
+			}
+		]
+	},
+	{
+		"rolename": "counter-<id>-access",
+		"textname": "Leserechte für Zähler <id>",
+		"textdescription": "Erlaubt das Empfangen von Daten für Zähler <id>.",
+		"acls": [
+			{
+				"acltype": "subscribePattern",
+				"topic": "openWB/counter/<id>/get/+",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "subscribePattern",
+				"topic": "openWB/system/device/+/component/<id>/config",
+				"priority": 0,
+				"allow": true
+			}
+		]
+	},
+	{
+		"rolename": "inverter-<id>-access",
+		"textname": "Leserechte für Wechselrichter <id>",
+		"textdescription": "Erlaubt das Empfangen von Daten für Wechselrichter <id>.",
+		"acls": [
+			{
+				"acltype": "subscribePattern",
+				"topic": "openWB/inverter/<id>/get/+",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "subscribePattern",
+				"topic": "openWB/inverter/<id>/config",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "subscribePattern",
+				"topic": "openWB/system/device/+/component/<id>/config",
 				"priority": 0,
 				"allow": true
 			}
