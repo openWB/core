@@ -322,7 +322,7 @@
 					"allow":	true
 				}]
 		}, {
-			"rolename": "charge-point-sum-access",
+			"rolename": "chargepoint-sum-access",
 			"textname":	"Leserechte für Ladepunktsummendaten",
 			"textdescription":	"Erlaubt das Empfangen von Daten für die Summe aller Ladepunkte.",
 			"acls":	[{
