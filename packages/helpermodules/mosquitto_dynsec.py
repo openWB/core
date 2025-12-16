@@ -60,7 +60,8 @@ def add_acl_role(role_template: str, id: int, force_rewrite: bool = False):
     role_exists = _acl_role_exists(role_template, id)
     if role_exists and force_rewrite:
         remove_acl_role(role_template, id)
-    if role_exists is False or force_rewrite:
+        role_exists = False
+    if role_exists is False:
         run_command(["mosquitto_ctrl", "dynsec", "createRole", role_data["rolename"]])
         for acl in role_data["acls"]:
             run_command([
@@ -82,7 +83,7 @@ def remove_acl_role(role_template: str, id: int):
 
 
 def check_roles_at_start():
-    flag_path = Path(Path(__file__).resolve().parents[2]/"ramdisk"/"user_manangement")
+    flag_path = Path(Path(__file__).resolve().parents[2]/"ramdisk"/"init_user_manangement")
     if flag_path.is_file():
         with open(flag_path, "r") as file:
             flag = bool(file.read())
@@ -91,3 +92,4 @@ def check_roles_at_start():
                 add_acl_role("chargepoint-<id>-access", cp.chargepoint.num)
             for ev in SubData.ev_data.values():
                 add_acl_role("vehicle-<id>-access", ev.num)
+        flag_path.unlink()
