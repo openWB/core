@@ -3,7 +3,7 @@
 """
 # flake8: noqa: E402
 import logging
-from helpermodules import logger
+from helpermodules import logger, mosquitto_dynsec
 from helpermodules.utils import run_command, thread_handler
 import threading
 import sys
@@ -349,6 +349,8 @@ try:
     # Warten, damit subdata Zeit hat, alle Topics auf dem Broker zu empfangen.
     event_update_config_completed.wait(300)
     event_subdata_initialized.wait(300)
+    # wenn die datei ramdisk/user_manangement exsititert und 1 ist, führ fukntion im Task aus
+    Thread(target=mosquitto_dynsec.check_roles_at_start, args=(), name="check acl roles at start").start()
     Pub().pub("openWB/set/system/boot_done", True)
     Path(Path(__file__).resolve().parents[1]/"ramdisk"/"bootdone").touch()
     schedule_jobs()

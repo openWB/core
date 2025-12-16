@@ -190,4 +190,6 @@ if ((restartService == 1 && automaticServiceRestart == 1)); then
 	sudo systemctl start mosquitto_local
 	echo "done"
 fi
+if ((restartService == 1)); then
+	echo 1 > "${OPENWBBASEDIR}/ramdisk/init_user_management"
 echo "mosquitto done"
