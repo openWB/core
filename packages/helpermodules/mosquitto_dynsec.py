@@ -1,9 +1,12 @@
 from json import load as json_load
-from logging import log
+import logging
 from pathlib import Path
 from typing import TypedDict, Optional
 
+from helpermodules.subdata import SubData
 from helpermodules.utils.run_command import run_command
+
+log = logging.getLogger(__name__)
 
 
 class MosquittoAcl(TypedDict):
@@ -57,7 +60,7 @@ def add_acl_role(role_template: str, id: int, force_rewrite: bool = False):
     role_exists = _acl_role_exists(role_template, id)
     if role_exists and force_rewrite:
         remove_acl_role(role_template, id)
-    if not role_exists:
+    if role_exists is False or force_rewrite:
         run_command(["mosquitto_ctrl", "dynsec", "createRole", role_data["rolename"]])
         for acl in role_data["acls"]:
             run_command([
@@ -76,3 +79,15 @@ def remove_acl_role(role_template: str, id: int):
         run_command(["mosquitto_ctrl", "dynsec", "deleteRole", role_data["rolename"]])
     else:
         log.warning(f"Rolle '{role_data['rolename']}' existiert nicht und kann daher nicht gelöscht werden.")
+
+
+def check_roles_at_start():
+    flag_path = Path(Path(__file__).resolve().parents[2]/"ramdisk"/"user_manangement")
+    if flag_path.is_file():
+        with open(flag_path, "r") as file:
+            flag = bool(file.read())
+        if flag:
+            for cp in SubData.cp_data.values():
+                add_acl_role("chargepoint-<id>-access", cp.chargepoint.num)
+            for ev in SubData.ev_data.values():
+                add_acl_role("vehicle-<id>-access", ev.num)
