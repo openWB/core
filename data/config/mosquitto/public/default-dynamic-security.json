@@ -31,7 +31,7 @@
 			"clients":	[]
 		}],
 	"anonymousGroup":	"anonymous",
-	"roles": [{
+	"roles":	[{
 			"rolename":	"basic-display-data",
 			"textname":	"Basisdaten für das Display",
 			"textdescription":	"Diese Rolle erlaubt das Auslesen der Display-Einstellungen und wird für das integrierte Display benötigt. Notwendig für die anonyme Gruppe!",
@@ -214,6 +214,5 @@
 					"priority":	0,
 					"allow":	true
 				}]
-		}
-	]
+		}]
 }
