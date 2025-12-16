@@ -948,7 +948,8 @@ class SetData:
                     self._validate_value(msg, int, [(0, 2)])
                 elif "/set/error_timer" in msg.topic:
                     self._validate_value(msg, float, [(0, float("inf"))])
-                elif "/get/fault_str" in msg.topic:
+                elif ("/get/fault_str" in msg.topic or
+                      "/get/serial_number" in msg.topic):
                     self._validate_value(msg, str)
                 elif "/get/power" in msg.topic:
                     self._validate_value(
