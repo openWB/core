@@ -83,7 +83,7 @@ def remove_acl_role(role_template: str, id: int):
 
 
 def check_roles_at_start():
-    flag_path = Path(Path(__file__).resolve().parents[2]/"ramdisk"/"init_user_manangement")
+    flag_path = Path(Path(__file__).resolve().parents[2]/"ramdisk"/"init_user_management")
     if flag_path.is_file():
         with open(flag_path, "r") as file:
             flag = bool(file.read())
