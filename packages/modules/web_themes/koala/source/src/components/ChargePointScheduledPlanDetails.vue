@@ -22,14 +22,7 @@
           color="positive"
         />
       </div>
-      <div class="row items-center q-mb-md">
-        <q-input
-          v-model="planTime.value"
-          type="time"
-          label="Ziel-Termin"
-          class="col"
-        />
-      </div>
+      <q-separator />
       <div class="q-mb-sm">
         <div class="text-subtitle2 q-mb-sm q-mt-sm">Wiederholungen</div>
         <q-btn-group spread>
@@ -52,18 +45,10 @@
             label="Wöchentlich"
           />
         </q-btn-group>
-        <div v-if="planFrequency.value === 'once'" class="q-mt-sm">
-          <q-input
-            v-model="planOnceDate.value"
-            type="date"
-            label="Datum"
-            :min="new Date().toISOString().split('T')[0]"
-          />
-        </div>
         <!-- Weekly buttons -->
         <div
           v-if="planFrequency.value === 'weekly'"
-          class="q-mt-sm row items-center q-gutter-sm justify-center no-wrap"
+          class="row items-center q-gutter-sm justify-center no-wrap q-mt-xs"
         >
           <div v-for="(day, index) in weekDays" :key="day">
             <q-btn
@@ -78,9 +63,36 @@
             />
           </div>
         </div>
+        <div class="text-subtitle2 q-mt-sm">Ziel-Termin</div>
+        <div class="row items-center q-mb-md">
+          <q-input
+            v-if="planFrequency.value === 'once'"
+            class="q-mr-lg col"
+            v-model="planOnceDate.value"
+            type="date"
+            label="Ziel-Datum"
+            :min="new Date().toISOString().split('T')[0]"
+          />
+          <q-input
+            v-else
+            class="q-mr-lg col"
+            :model-value="
+              planFrequency.value === 'daily' ? today : firstSelectedWeekday
+            "
+            label="Ziel-Datum"
+            readonly
+          />
+          <q-input
+            v-model="planTime.value"
+            type="time"
+            label="Ziel-Uhrzeit"
+            class="col"
+          />
+        </div>
       </div>
+      <q-separator />
       <SliderStandard
-        class="q-mb-sm"
+        class="q-my-sm"
         :title="planDcChargingEnabled ? 'Ladestrom (AC)' : 'Ladestrom'"
         :min="6"
         :max="32"
@@ -237,19 +249,46 @@ const emit = defineEmits(['close']);
 const mqttStore = useMqttStore();
 const $q = useQuasar();
 
+const formatDateDayMonthYear = (dateString: string): string => {
+  if (!dateString) return '';
+  const [year, month, day] = dateString.split('-');
+  return `${day}.${month}.${year}`;
+};
+const today = formatDateDayMonthYear(new Date().toISOString().split('T')[0]);
 const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-
-const phaseOptions = [
-  { value: 1, label: '1' },
-  { value: 3, label: 'Maximum' },
-  { value: 0, label: 'Automatik' },
-];
 
 const selectDay = (index: number) => {
   const newArray = [...selectedWeekDays.value];
   newArray[index] = !newArray[index];
   selectedWeekDays.value = newArray;
 };
+
+const firstSelectedWeekday = computed(() => {
+  const today = new Date();
+  // 0=Sonntag, ..., 6=Samstag >> 0=Montag, ..., 6=Sonntag
+  const todayIndex = (today.getDay() + 6) % 7;
+  const userSelection = selectedWeekDays.value
+    .map((isSelected, index) => (isSelected ? index : -1))
+    .filter((index) => index !== -1);
+  if (userSelection.length === 0) return '';
+  // For all selected days, calculate the distance to today
+  const daysUntilSelected = userSelection.map((idx) => {
+    let daysUntil = idx - todayIndex;
+    if (daysUntil < 0) daysUntil += 7;
+    return daysUntil;
+  });
+  // Take the smallest distance (this is the next day)
+  const nearestDay = Math.min(...daysUntilSelected);
+  const dateNextDay = new Date(today);
+  dateNextDay.setDate(today.getDate() + nearestDay);
+  return formatDateDayMonthYear(dateNextDay.toISOString().split('T')[0]);
+});
+
+const phaseOptions = [
+  { value: 1, label: '1' },
+  { value: 3, label: 'Maximum' },
+  { value: 0, label: 'Automatik' },
+];
 
 const planActive = computed(() =>
   mqttStore.vehicleScheduledChargingPlanActive(
