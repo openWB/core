@@ -1,6 +1,6 @@
 [
 	{
-		"rolename": "charge-point-<id>-access",
+		"rolename": "chargepoint-<id>-access",
 		"textname": "Leserechte für Ladepunkt <id>",
 		"textdescription": "Erlaubt das Empfangen von Daten für Ladepunkt <id>.",
 		"acls": [
