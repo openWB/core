@@ -978,7 +978,7 @@ class Command:
     def _get_acl_role_data(self, role_template: str, id: int) -> dict:
         with open(Path(__file__).resolve().parents[2] /
                   "data" / "config" / "mosquitto" / "public" / "role-templates.json", 'r', encoding='utf-8') as file:
-            roles = json.load(file)["roles"]
+            roles = json.load(file)
         for role in roles:
             if role["rolename"] == role_template:
                 role_data = role
