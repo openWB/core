@@ -110,6 +110,26 @@
 					"topic":	"openWB/system/current_commit",
 					"priority":	0,
 					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/system/time",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/system/installAssistantDone",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/system/security/user_management_active",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/general/allow_unencrypted_access",
+					"priority":	0,
+					"allow":	true
 				}]
 		}, {
 			"rolename":	"basic-theme-data",
@@ -129,6 +149,7 @@
 		}, {
 			"rolename":	"dynsec_admin",
 			"textname":	"Dynamic Security Administrator",
+			"textdescription":	"Voller Zugriff auf die Dynamic Security Funktionen des Mosquitto Brokers. Wird für die Bearbeitung der Benutzer, Gruppen und Rollen benötigt.",
 			"acls":	[{
 					"acltype":	"publishClientSend",
 					"topic":	"$CONTROL/dynamic-security/#",
@@ -173,6 +194,7 @@
 		}, {
 			"rolename":	"full_access",
 			"textname":	"Voller Zugriff",
+			"textdescription":	"Erlaubt das Senden und Empfangen aller Nachrichten. Identisch mit dem Zugriff ohne aktivierte Benutzerverwaltung.",
 			"acls":	[{
 					"acltype":	"publishClientSend",
 					"topic":	"openWB/set/#",
@@ -211,6 +233,111 @@
 				}, {
 					"acltype":	"subscribePattern",
 					"topic":	"others/#",
+					"priority":	0,
+					"allow":	true
+				}]
+		}, {
+			"rolename": "electricity-price-access",
+			"textname":	"Leserechte für Strompreis",
+			"textdescription":	"Erlaubt das Empfangen von Daten für den Strompreis.",
+			"acls":	[{
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/optional/ep/configured",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/optional/ep/get/prices",
+					"priority":	0,
+					"allow":	true
+				}]
+		}, {
+			"rolename": "graph-access",
+			"textname":	"Leserechte für Diagrammdaten",
+			"textdescription":	"Erlaubt das Empfangen von Daten für die Anzeige der Verlaufsdiagramme.",
+			"acls":	[{
+					"acltype":	"subscribePattern",
+					"topic":	"openWB/graph/+",
+					"priority":	0,
+					"allow":	true
+				}]
+		}, {
+			"rolename": "home-consumption-access",
+			"textname":	"Leserechte für Hausverbrauchsdaten",
+			"textdescription":	"Erlaubt das Empfangen von Daten für den Hausverbrauch.",
+			"acls":	[{
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/counter/set/home_consumption",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/counter/set/daily_yield_home_consumption",
+					"priority":	0,
+					"allow":	true
+				}]
+		}, {
+			"rolename": "pv-sum-access",
+			"textname":	"Leserechte für PV-Summendaten",
+			"textdescription":	"Erlaubt das Empfangen von Daten für die Summe aller PV-Anlagen.",
+			"acls":	[{
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/pv/config/configured",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/pv/get/power",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/pv/get/daily_exported",
+					"priority":	0,
+					"allow":	true
+				}]
+		}, {
+			"rolename": "bat-sum-access",
+			"textname":	"Leserechte für Batteriesummendaten",
+			"textdescription":	"Erlaubt das Empfangen von Daten für die Summe aller Batterien.",
+			"acls":	[{
+					"acltype":	"subscribePattern",
+					"topic":	"openWB/bat/get/+",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/bat/config/configured",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/general/chargemode_config/pv_charging/bat_mode",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"publishClientSend",
+					"topic":	"openWB/set/general/chargemode_config/pv_charging/bat_mode",
+					"priority":	0,
+					"allow":	true
+				}]
+		}, {
+			"rolename": "charge-point-sum-access",
+			"textname":	"Leserechte für Ladepunktsummendaten",
+			"textdescription":	"Erlaubt das Empfangen von Daten für die Summe aller Ladepunkte.",
+			"acls":	[{
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/chargepoint/get/power",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/chargepoint/get/daily_imported",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/chargepoint/get/daily_exported",
 					"priority":	0,
 					"allow":	true
 				}]
