@@ -76,7 +76,7 @@
       <div class="col-auto">
         <q-btn
           v-if="maxPrice.value"
-          class="col-auto q-mr-xs"
+          class="col-auto q-mr-xs disable-zoom"
           label="-1,00"
           color="grey"
           size="sm"
@@ -85,7 +85,7 @@
         />
         <q-btn
           v-if="maxPrice.value"
-          class="col-auto q-mr-xs"
+          class="col-auto q-mr-xs disable-zoom"
           label="-0,10"
           color="grey"
           size="sm"
@@ -94,7 +94,7 @@
         />
         <q-btn
           v-if="maxPrice.value"
-          class="col-auto"
+          class="col-auto disable-zoom"
           label="-0,01"
           color="grey"
           size="sm"
@@ -113,7 +113,7 @@
       <div class="col-auto">
         <q-btn
           v-if="maxPrice.value"
-          class="col-auto q-mr-xs"
+          class="col-auto q-mr-xs disable-zoom"
           label="+0,01"
           color="grey"
           size="sm"
@@ -122,7 +122,7 @@
         />
         <q-btn
           v-if="maxPrice.value"
-          class="col-auto q-mr-xs"
+          class="col-auto q-mr-xs disable-zoom"
           label="+0,10"
           color="grey"
           size="sm"
@@ -131,7 +131,7 @@
         />
         <q-btn
           v-if="maxPrice.value"
-          class="col-auto"
+          class="col-auto disable-zoom"
           label="+1,00"
           color="grey"
           size="sm"
@@ -217,3 +217,9 @@ const maxPrice = computed(() =>
   mqttStore.chargePointConnectedVehicleEcoChargeMaxPrice(props.chargePointId),
 );
 </script>
+
+<style scoped>
+.disable-zoom {
+  touch-action: manipulation;
+}
+</style>
