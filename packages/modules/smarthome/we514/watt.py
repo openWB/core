@@ -33,9 +33,8 @@ TotalEnergy = int(resp.registers[0]) * 10  # Value is in 0.01kWh, need to conver
 resp = client.read_holding_registers(CurrentPowerRegisterAddress, 1, unit=MODBUS_DEVICEID)
 CurrentPower = int(resp.registers[0])
 
-answer = '{"power":' + str(CurrentPower) + ',"powerc":' + str(TotalEnergy) + '} '
-f1 = open('/var/www/html/openWB/ramdisk/smarthome_device_ret' + str(devicenumber), 'w')
-json.dump(answer, f1)
-f1.close()
+answer = {"power": CurrentPower, "powerc": TotalEnergy}
+with open(f'/var/www/html/openWB/ramdisk/smarthome_device_ret{devicenumber}', 'w') as f1:
+    json.dump(answer, f1)
 
 client.close()  # clean disconnect from modbus server

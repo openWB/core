@@ -8,12 +8,13 @@ import { computed, reactive } from 'vue'
 import { select } from 'd3'
 import { ChargeMode, type ChargeModeInfo } from './types'
 import { addShDevice, shDevices } from '@/components/smartHome/model'
-import { sourceSummary } from './model'
+import { registry } from './model'
 import {
 	sourceGraphIsNotInitialized,
 	usageGraphIsNotInitialized,
 } from '@/components/powerGraph/model'
 import { updateServer } from './sendMessages'
+import { counters } from '@/components/counterList/model'
 export class Config {
 	private _showRelativeArcs = false
 	showTodayGraph = true
@@ -50,6 +51,7 @@ export class Config {
 	animationDelay = 100
 	zoomGraph = false
 	zoomedWidget = 1
+	countersToShow: number[] = []
 	constructor() {}
 	get showRelativeArcs() {
 		return this._showRelativeArcs
@@ -211,7 +213,7 @@ export class Config {
 		savePrefs()
 	}
 	setSslPrefs(on: boolean) {
-		this.sslPrefs = on
+		this._sslPrefs = on
 	}
 	get debug() {
 		return this._debug
@@ -441,9 +443,9 @@ export function toggleFixArcs() {
 }
 export function resetArcs() {
 	globalConfig.maxPower =
-		sourceSummary.evuIn.power +
-		sourceSummary.pv.power +
-		sourceSummary.batOut.power
+		registry.getPower('evuIn') +
+		registry.getPower('pv') +
+		registry.getPower('batOut')
 	savePrefs()
 }
 export function switchDecimalPlaces() {
@@ -478,7 +480,8 @@ export const infotext: { [key: string]: string } = {
 		'Ladepriorität bei PV-Produktion. Bevorzung von Fahzeugen, Speicher, oder Fahrzeugen bis zum eingestellten Mindest-Ladestand. Die Einstellung ist für alle Ladepunkte gleich.',
 }
 interface Preferences {
-	hideSH?: number[]
+	hideSH?: string[]
+	showCtr?: string[]
 	showLG?: boolean
 	displayM?: string
 	stackO?: number
@@ -513,6 +516,9 @@ function writeCookie() {
 	prefs.hideSH = [...shDevices.values()]
 		.filter((device) => !device.showInGraph)
 		.map((device) => device.id)
+	prefs.showCtr = [...counters.values()]
+		.filter((ctr) => ctr.showInGraph)
+		.map((ctr) => ctr.id.toString())
 	prefs.showLG = globalConfig.graphPreference == 'live'
 	prefs.displayM = globalConfig.displayMode
 	prefs.stackO = globalConfig.usageStackOrder
@@ -568,6 +574,9 @@ function readCookie() {
 				}
 				shDevices.get(i)!.setShowInGraph(false)
 			})
+		}
+		if (prefs.showCtr !== undefined) {
+			globalConfig.countersToShow = prefs.showCtr.map((i) => +i)
 		}
 		if (prefs.showLG !== undefined) {
 			globalConfig.setGraphPreference(prefs.showLG ? 'live' : 'today')

@@ -33,7 +33,15 @@ def get_common_data():
         ip_address = subdata.SubData.system_data["system"].data["ip_address"]
     except Exception:
         ip_address = None
+    try:
+        updateAvailable = subdata.SubData.system_data["system"].data["current_branch_commit"] and \
+                          subdata.SubData.system_data["system"].data["current_branch_commit"] != \
+                          subdata.SubData.system_data["system"].data["current_commit"]
+    except Exception:
+        updateAvailable = False
 
+    with ErrorHandlingContext():
+        parsed_data += f"Firmware_deprecated: {updateAvailable}\n"
     with ErrorHandlingContext():
         parent_file = Path(__file__).resolve().parents[2]
         with open(f"{parent_file}/web/version", "r") as f:
@@ -103,21 +111,22 @@ def config_and_state():
     if secondary is False:
         with ErrorHandlingContext():
             chargemode_config = data.data.general_data.data.chargemode_config
-            parsed_data += ("\n## General Charge Config/ PV ##\n"
-                            f"Phase_Switch_Delay: {chargemode_config.phase_switch_delay} min\n"
-                            f"Retry_Failed_Phase_Switches: {chargemode_config.retry_failed_phase_switches}\n"
-                            f"Control_Range: {chargemode_config.pv_charging.control_range}W\n"
-                            f"Switch_On_Threshold: {chargemode_config.pv_charging.switch_on_threshold}W\n"
-                            f"Switch_On_Delay: {chargemode_config.pv_charging.switch_on_delay}s\n"
-                            f"Switch_Off_Threshold: {chargemode_config.pv_charging.switch_off_threshold}W\n"
-                            f"Switch_Off_Delay: {chargemode_config.pv_charging.switch_off_delay}s\n"
-                            f"Feed_In_Yield: {chargemode_config.pv_charging.feed_in_yield}W\n"
-                            f"Bat_Mode: {chargemode_config.pv_charging.bat_mode}\n"
-                            f"Min_Bat_SoC: {chargemode_config.pv_charging.min_bat_soc}%\n"
-                            f"Bat_Power_Reserve_Active: {chargemode_config.pv_charging.bat_power_reserve_active}\n"
-                            f"Bat_Power_Reserve: {chargemode_config.pv_charging.bat_power_reserve}W\n"
-                            f"Bat_Power_Discharge_Active: {chargemode_config.pv_charging.bat_power_discharge_active}\n"
-                            f"Bat_Power_Discharge: {chargemode_config.pv_charging.bat_power_discharge}W\n")
+            parsed_data += (
+                "\n## General Charge Config/ PV ##\n"
+                f"Phase_Switch_Delay: {chargemode_config.pv_charging.phase_switch_delay} min\n"
+                f"Retry_Failed_Phase_Switches: {chargemode_config.pv_charging.retry_failed_phase_switches}\n"
+                f"Control_Range: {chargemode_config.pv_charging.control_range}W\n"
+                f"Switch_On_Threshold: {chargemode_config.pv_charging.switch_on_threshold}W\n"
+                f"Switch_On_Delay: {chargemode_config.pv_charging.switch_on_delay}s\n"
+                f"Switch_Off_Threshold: {chargemode_config.pv_charging.switch_off_threshold}W\n"
+                f"Switch_Off_Delay: {chargemode_config.pv_charging.switch_off_delay}s\n"
+                f"Feed_In_Yield: {chargemode_config.pv_charging.feed_in_yield}W\n"
+                f"Bat_Mode: {chargemode_config.pv_charging.bat_mode}\n"
+                f"Min_Bat_SoC: {chargemode_config.pv_charging.min_bat_soc}%\n"
+                f"Bat_Power_Reserve_Active: {chargemode_config.pv_charging.bat_power_reserve_active}\n"
+                f"Bat_Power_Reserve: {chargemode_config.pv_charging.bat_power_reserve}W\n"
+                f"Bat_Power_Discharge_Active: {chargemode_config.pv_charging.bat_power_discharge_active}\n"
+                f"Bat_Power_Discharge: {chargemode_config.pv_charging.bat_power_discharge}W\n")
     if secondary is False:
         with ErrorHandlingContext():
             parsed_data += f"\n## Hierarchy ##\n{get_hierarchy(data.data.counter_all_data.data.get.hierarchy)}\n"
@@ -281,15 +290,28 @@ def get_parsed_cp_data(cp: Chargepoint) -> str:
         except Exception:
             currents = "Keine Daten"
             voltages = "Keine Daten"
+        try:
+            ct_id = cp.data.config.template
+            max_current_single_phase = data.data.cp_template_data.get(f"cpt{ct_id}").data.max_current_single_phase
+            max_current_multi_phases = data.data.cp_template_data.get(f"cpt{ct_id}").data.max_current_multi_phases
+        except Exception:
+            ct_id = None
+            max_current_single_phase = None
+        ev_fn = data.data.ev_data.get(f'ev{cp.data.config.ev}').data.name
 
-        parsed_data += (f"### LP{cp.num} ###\n"
-                        f"CP_Type: {cp.chargepoint_module.config.type}\n"
+        parsed_data += f"### LP{cp.num} ###\n"
+        if cp.chargepoint_module.config.type == "external_openwb":
+            parsed_data += (f"CP_Current_Branch: {cp.data.get.current_branch}\n"
+                            f"CP_Version: {cp.data.get.version}\n")
+        parsed_data += (f"CP_Type: {cp.chargepoint_module.config.type}\n"
                         f"CP_FN: {cp.chargepoint_module.config.name}\n"
                         f"{mode}"
                         f"CP_Phase_Switch_HW: {cp.data.config.auto_phase_switch_hw}\n"
                         f"CP_Control_Pilot_HW: {cp.data.config.control_pilot_interruption_hw}\n"
                         f"CP_IP: {ip}\n"
                         f"CP_Set_Current: {cp.data.set.current} A\n"
+                        f"CPT_Max_Current_Single_Phase: {max_current_single_phase} A\n"
+                        f"CPT_Max_Current_Multi_Phases: {max_current_multi_phases} A\n"
                         f"Meter_Power: {cp.data.get.power} W\n"
                         f"Meter_Voltages: {cp.data.get.voltages} V\n"
                         f"Meter_Currents: {cp.data.get.currents} A\n"
@@ -308,6 +330,10 @@ def get_parsed_cp_data(cp: Chargepoint) -> str:
                         # CP_SW_VERSION: 2.1.7-Patch.2
                         # CP_FIRMWARE: 1.2.3 (bei Pro bzw. Satellit)
                         # CP_SIGNALING_PRO: basic iec61851 iso11518
+                        f"Connected_Vehicle: {ev_fn} (ID: {cp.data.config.ev})\n"
+                        f"Charge_Template: {cp.data.set.charge_template.data.name}"
+                        f"(ID: {cp.data.set.charge_template.data.id})\n"
+                        # f"EV_FN2: {cp.chargepoint_module.get.connected_verhicle.info.name}\n"
                         f"CP_Error_State: {cp.data.get.fault_str}\n"
                         f"Additional_Meter_Voltages: \n{voltages}"
                         f"Additional_Meter_Currents: \n{currents}\n")
@@ -326,9 +352,7 @@ debug_file = ramdisk_dir / 'debug.log'
 
 def filter_log_file(log_name, pattern, num_results=10):
     log_files = [f"{ramdisk_dir}/{log_name}.log.{i}" for i in range(5, 0, -1)]
-    print(log_files)
     log_files.append(f"{ramdisk_dir}/{log_name}.log")
-    print(log_files)
     lines = []
     try:
         for log_file in log_files:
@@ -389,8 +413,12 @@ def create_debug_log(input_data):
     try:
         broker = BrokerContent()
         debug_email = input_data.get('email', '')
+        ticketnumber = input_data.get('ticketNumber', '')
+        subject = input_data.get('subject', '')
         header = (f"{input_data['message']}\n{debug_email}\n{input_data['serialNumber']}\n"
                   f"{input_data['installedComponents']}\n{input_data['vehicles']}\n")
+        if ticketnumber is not None and ticketnumber != "":
+            header += f"Ticketnumber: {ticketnumber}\n"
         with open(debug_file, 'w+') as df:
             write_to_file(df, lambda: "# section: form data #")
             write_to_file(df, lambda: header)
@@ -427,13 +455,17 @@ def create_debug_log(input_data):
         log.info("***** uploading debug log...")
         with open(debug_file, 'rb') as f:
             data = f.read()
-            req.get_http_session().put("https://openwb.de/tools/debug2.php",
+            req.get_http_session().put("https://openwb.de/tools/debug3.php",
                                        data=data,
-                                       params={'debugemail': debug_email},
+                                       params={
+                                           'debugemail': debug_email,
+                                           'ticketnumber': ticketnumber,
+                                           'subject': subject
+                                       },
                                        timeout=10)
 
         log.info("***** cleanup...")
-        os.remove(debug_file)
+        # os.remove(debug_file)
         log.info("***** debug log end")
     except Exception as e:
         log.exception(f"Error creating debug log: {e}")
@@ -472,7 +504,7 @@ class BrokerContent:
         client.subscribe("openWB/counter/#", 2)
         client.subscribe("openWB/pv/#", 2)
         client.subscribe("openWB/bat/#", 2)
-        client.subscribe("openWB/optional/et/provider", 2)
+        client.subscribe("openWB/optional/ep/flexible_tariff/provider", 2)
 
     def __on_connect_bridges(self, client, userdata, flags, rc):
         client.subscribe("openWB/system/mqtt/#", 2)

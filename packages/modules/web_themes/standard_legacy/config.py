@@ -6,7 +6,7 @@ from modules.common.abstract_device import DeviceDescriptor
 @auto_str
 class StandardLegacyWebThemeConfiguration:
     def __init__(self,
-                 history_chart_range: int = 30 * 60 * 1000  # 30 minutes in milliseconds
+                 history_chart_range: int = 60 * 60 * 1000  # 60 minutes in milliseconds
                  ) -> None:
         self.history_chart_range = history_chart_range
 
@@ -14,7 +14,7 @@ class StandardLegacyWebThemeConfiguration:
 @auto_str
 class StandardLegacyWebTheme:
     def __init__(self,
-                 name: str = "Standard",
+                 name: str = "Classic",
                  type: str = "standard_legacy",
                  official: bool = True,
                  configuration: StandardLegacyWebThemeConfiguration = None) -> None:

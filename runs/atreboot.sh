@@ -184,6 +184,8 @@ chmod 666 "$LOGFILE"
 		echo "path '/etc/apt/apt.conf.d' is missing! unsupported system!"
 	fi
 	if ((hasInet == 1)); then
+		# remove urllib3 version to avoid conflicts
+		pip uninstall urllib3 -y
 		"${OPENWBBASEDIR}/runs/install_packages.sh"
 	else
 		echo "no internet connection, skipping package installation"
@@ -209,6 +211,21 @@ chmod 666 "$LOGFILE"
 		sudo systemctl daemon-reload
 		echo "openwb2.service definition updated. rebooting..."
 		sudo reboot now &
+	fi
+
+	# check for openwb-simpleAPI service definition
+	if find /etc/systemd/system/ -maxdepth 1 -name openwb-simpleAPI.service -type l | grep -q "."; then
+		echo "openwb-simpleAPI.service definition is already a symlink"
+	else
+		if find /etc/systemd/system/ -maxdepth 1 -name openwb-simpleAPI.service -type f | grep -q "."; then
+			echo "openwb-simpleAPI.service definition is a regular file, deleting file"
+			sudo rm "/etc/systemd/system/openwb-simpleAPI.service"
+		fi
+		sudo ln -s "${OPENWBBASEDIR}/data/config/openwb-simpleAPI.service" /etc/systemd/system/openwb-simpleAPI.service
+		sudo systemctl daemon-reload
+		sudo systemctl enable openwb-simpleAPI
+		sudo systemctl restart openwb-simpleAPI
+		echo "openwb-simpleAPI.service definition updated."
 	fi
 
 	# check for remote support service definition

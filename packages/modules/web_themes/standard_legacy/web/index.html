@@ -152,12 +152,12 @@
 							<hr class="border-warning">
 							<div class="row">
 								<div class="col font-italic font-weight-bold">
-									Einstellungen:
+									Speicher-Beachtung
 								</div>
 							</div>
 							<div class="row vaRow">
 								<div class="col pr-0">
-									Laden mit Überschuss
+									Überschuss primär für:
 								</div>
 								<div class="col-md-8 btn-group btn-group-toggle bat-consideration-mode"
 									data-toggle="buttons" data-name="bat_consideration_mode"
@@ -211,7 +211,7 @@
 				<div class="card border-danger fill-height">
 					<div class="card-header bg-danger collapsed" data-toggle="collapse" data-target="#cardGrid">
 						<img src="img/icons/electric-tower.svg" alt="electric tower" style="width: 1.1em;">
-						<i class="et-configured fas fa-coins hide"></i>
+						<i class="ep-configured fas fa-coins hide"></i>
 						<i class="grid-exporting fas fa-angle-double-left hide"></i>
 						<i class="grid-importing fas fa-angle-double-right hide"></i>
 						<span class="grid-power">600 W</span>
@@ -239,7 +239,7 @@
 								-- Wh
 							</div>
 						</div>
-						<div class="et-configured hide">
+						<div class="ep-configured hide">
 							<hr class="border-danger">
 							<div class="row">
 								<div class="col font-italic font-weight-bold">
@@ -248,17 +248,9 @@
 							</div>
 							<div class="row">
 								<div class="col pr-0">
-									Anbieter
-								</div>
-								<div class="et-name col pl-0 text-right">
-									--
-								</div>
-							</div>
-							<div class="row">
-								<div class="col pr-0">
 									aktuell
 								</div>
-								<div class="et-current-price col pl-0 text-right">
+								<div class="ep-current-price col pl-0 text-right">
 									-- ct/kWh
 								</div>
 							</div>
@@ -420,7 +412,7 @@
 						</div>
 						<div class="col-3">
 							<span class="charge-point-vehicle-charge-mode">--</span>
-							<span class="et-configured hide">
+							<span class="ep-configured hide">
 								<span class="charge-point-charge-mode-options">
 									<span
 										class="chargemode-options chargemode-option-instant_charging chargemode-option-scheduled_charging">
@@ -500,7 +492,10 @@
 							<!-- Lademodus -->
 							<div class="form-row mb-1">
 								<div class="col">
-									<label class="col-form-label">Lademodus</label>
+									<label class="col-form-label">
+										<i class="fas fa-hexagon-nodes-bolt"></i>
+										Lademodus
+									</label>
 								</div>
 								<div class="col-md-8 btn-group btn-group-toggle charge-point-charge-mode"
 									data-toggle="buttons" data-name="chargemode"
@@ -1018,7 +1013,7 @@
 								<!-- Eco -->
 								<div class="chargemode-options chargemode-option-eco_charging">
 									<h3>Einstellungen für "Eco"</h3>
-									<div class="et et-configured hide">
+									<div class="et ep-configured hide">
 										<div class="charge-point-charge-mode-options mb-0 hide">
 											<div class="form-row mb-1">
 												<div class="col">

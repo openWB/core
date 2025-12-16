@@ -728,6 +728,54 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
+   * Get daily imported energy sum total for all charge points
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject
+   */
+  const chargePointDailyImported = computed(() => {
+    return (returnType: string = 'textValue') => {
+      const energy =
+        (getValue.value(
+          'openWB/chargepoint/get/daily_imported',
+          undefined,
+          0,
+        ) as number) || 0;
+      const valueObject = getValueObject.value(energy, 'Wh');
+      if (Object.hasOwn(valueObject, returnType)) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject;
+      }
+      console.error('returnType not found!', returnType, energy);
+    };
+  });
+
+  /**
+   * Get daily exported energy sum total for all charge points
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject
+   */
+  const chargePointDailyExported = computed(() => {
+    return (returnType: string = 'textValue') => {
+      const energy =
+        (getValue.value(
+          'openWB/chargepoint/get/daily_exported',
+          undefined,
+          0,
+        ) as number) || 0;
+      const valueObject = getValueObject.value(energy, 'Wh');
+      if (Object.hasOwn(valueObject, returnType)) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject;
+      }
+      console.error('returnType not found!', returnType, energy);
+    };
+  });
+
+  /**
    * Get the charge point power identified by the charge point id
    * @param chargePointId charge point id
    * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
@@ -2089,6 +2137,106 @@ export const useMqttStore = defineStore('mqtt', () => {
     });
   };
 
+  /** * Get the charge point connected vehicle bidi enabled state from vehicle template identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns boolean
+   */
+  const chargePointConnectedVehicleBidiEnabled = (chargePointId: number) => {
+    return computed(() => {
+      const connectedVehicleEvTemplateId =
+        chargePointConnectedVehicleConfig(chargePointId).value.ev_template;
+      return getValue.value(
+        `openWB/vehicle/template/ev_template/${connectedVehicleEvTemplateId}`,
+        'bidi',
+      ) as boolean;
+    });
+  };
+
+  /**
+   * Get or set the plan name for the time charging plan identified by the time charging plan id
+   * @param chargePointId charge point id
+   * @param planId time charging plan id
+   * @returns string | undefined
+   */
+  const vehicleTimeChargingPlanName = (
+    chargePointId: number,
+    planId: number,
+  ) => {
+    return computed({
+      get() {
+        const plans = vehicleTimeChargingPlans.value(chargePointId);
+        const plan = plans.find((plane) => plane.id === planId);
+        return plan?.name;
+      },
+      set(newValue: string) {
+        updateTimeChargingPlanSubtopic(chargePointId, planId, 'name', newValue);
+      },
+    });
+  };
+
+  /**
+   * Add a new time charging plan for a charge point
+   * @param chargePointId charge point id
+   * @returns void
+   */
+  const addTimeChargingPlanForChargePoint = (chargePointId: number) => {
+    const templateId =
+      chargePointConnectedVehicleChargeTemplate(chargePointId).value?.id;
+    if (templateId !== undefined) {
+      sendSystemCommand('addChargeTemplateTimeChargingPlan', {
+        template: templateId,
+        chargepoint: chargePointId,
+        changed_in_theme: true,
+      });
+    }
+  };
+
+  /**
+   * Remove a time charging plan for a charge point
+   * @param chargePointId charge point id
+   * @param planId time charging plan id
+   * @returns void
+   */
+  const removeTimeChargingPlanForChargePoint = (
+    chargePointId: number,
+    planId: number,
+  ) => {
+    const templateId =
+      chargePointConnectedVehicleChargeTemplate(chargePointId).value?.id;
+    sendSystemCommand('removeChargeTemplateTimeChargingPlan', {
+      template: templateId,
+      plan: planId,
+      chargepoint: chargePointId,
+      changed_in_theme: true,
+    });
+  };
+
+  /**
+   * Helper function to update a subtopic of a time charging plan
+   * @param chargePointId charge point id
+   * @param planId time charging plan id
+   * @param propertyPath path to the property to update
+   * @param newValue new value to set
+   * @returns void
+   */
+  const updateTimeChargingPlanSubtopic = <T>(
+    chargePointId: number,
+    planId: number,
+    propertyPath: string,
+    newValue: T,
+  ): void => {
+    const plans = vehicleTimeChargingPlans.value(chargePointId);
+    const planIndex = plans.findIndex((plan) => plan.id === planId);
+    if (planIndex === -1) return;
+    const objectPath = `time_charging.plans.${planIndex}.${propertyPath}`;
+    updateTopic(
+      `openWB/chargepoint/${chargePointId}/set/charge_template`,
+      newValue,
+      objectPath,
+      true,
+    );
+  };
+
   /**
    * Get or set the DC charging power for the time charging plan identified by the time charging plan id
    * @param chargePointId charge point id
@@ -3240,6 +3388,38 @@ export const useMqttStore = defineStore('mqtt', () => {
     return undefined;
   });
 
+
+  /**
+   * Get all counter ids from component hierarchy
+   * @returns number[]
+   */
+  const getAllCounterIds = computed(() => {
+    const hierarchy = getValue.value('openWB/counter/get/hierarchy') as
+      | Hierarchy[]
+      | undefined;
+    const getCounterIds = (
+      nodes: Hierarchy[] | undefined,
+      allCounters: number[] = [],
+    ): number[] => {
+      if (!nodes) return allCounters;
+      nodes.forEach((node) => {
+        if (node.type === 'counter') allCounters.push(node.id);
+        allCounters = getCounterIds(node.children, allCounters);
+      });
+      return allCounters;
+    };
+    return getCounterIds(hierarchy);
+  });
+
+  /**
+   * Get all secondary counter ids from all configured counters excluding the grid counter
+   * @returns number[]
+   */
+  const getSecondaryCounterIds = computed(() => {
+    const rootCounter = getGridId.value;
+    return getAllCounterIds.value.filter((id) => id !== rootCounter);
+  });
+
   /**
    * Get the power meter(counter) name identified by the Grid ID
    * @param counterId counter ID
@@ -3258,19 +3438,20 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
-   * Get grid power identified from root of component hierarchy
+   * Get counter power identified by root grid counter in component hierarchy or counterId
    * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @param counterId counter ID
    * @returns string | number | ValueObject | undefined
    */
-  const getGridPower = computed(() => {
-    return (returnType: string = 'textValue') => {
-      const gridId = getGridId.value;
-      if (gridId === undefined) {
+  const getCounterPower = computed(() => {
+    return (returnType: string = 'textValue', counterId?: number) => {
+      const id = counterId ?? getGridId.value;
+      if (id === undefined) {
         return '---';
       }
       const power =
         (getValue.value(
-          `openWB/counter/${gridId}/get/power`,
+          `openWB/counter/${id}/get/power`,
           undefined,
           0,
         ) as number) || 0;
@@ -3282,6 +3463,64 @@ export const useMqttStore = defineStore('mqtt', () => {
         return valueObject;
       }
       console.error('returnType not found!', returnType, power);
+    };
+  });
+
+  /**
+   * Get daily counter energy imported identified by root grid counter in component hierarchy or counterId
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @param counterId counter ID
+   * @returns string | number | ValueObject | undefined
+   */
+  const counterDailyImported = computed(() => {
+    return (returnType: string = 'textValue', counterId?: number ) => {
+      const id = counterId ?? getGridId.value;
+      if (id === undefined) {
+        return '---';
+      }
+      const energy =
+        (getValue.value(
+          `openWB/counter/${id}/get/daily_imported`,
+          undefined,
+          0,
+        ) as number) || 0;
+      const valueObject = getValueObject.value(energy, 'Wh');
+      if (returnType in valueObject) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject;
+      }
+      console.error('returnType not found!', returnType, energy);
+    };
+  });
+
+  /**
+   * Get daily counter energy exported identified by root grid counter in component hierarchy or counterId
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @param counterId counter ID
+   * @returns string | number | ValueObject | undefined
+   */
+  const counterDailyExported = computed(() => {
+    return (returnType: string = 'textValue', counterId?: number) => {
+      const id = counterId ?? getGridId.value;
+      if (id === undefined) {
+        return '---';
+      }
+      const energy =
+        (getValue.value(
+          `openWB/counter/${id}/get/daily_exported`,
+          undefined,
+          0,
+        ) as number) || 0;
+      const valueObject = getValueObject.value(energy, 'Wh');
+      if (returnType in valueObject) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject;
+      }
+      console.error('returnType not found!', returnType, energy);
     };
   });
 
@@ -3308,6 +3547,30 @@ export const useMqttStore = defineStore('mqtt', () => {
         return valueObject;
       }
       console.error('returnType not found!', returnType, power);
+    };
+  });
+
+  /**
+   * Get daily home energy yield
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject | undefined
+   */
+  const homeDailyYield = computed(() => {
+    return (returnType: string = 'textValue') => {
+      const energy =
+        (getValue.value(
+          'openWB/counter/set/daily_yield_home_consumption',
+          undefined,
+          0,
+        ) as number) || 0;
+      const valueObject = getValueObject.value(energy, 'Wh');
+      if (returnType in valueObject) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject;
+      }
+      console.error('returnType not found!', returnType, energy);
     };
   });
 
@@ -3344,6 +3607,30 @@ export const useMqttStore = defineStore('mqtt', () => {
     };
   });
 
+  /**
+   * Get pv daily exported energy
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject | undefined
+   */
+  const pvDailyExported = computed(() => {
+    return (returnType: string = 'textValue') => {
+      const energy =
+        (getValue.value(
+          'openWB/pv/get/daily_exported',
+          undefined,
+          0,
+        ) as number) || 0;
+      const valueObject = getValueObject.value(energy, 'Wh');
+      if (returnType in valueObject) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject;
+      }
+      console.error('returnType not found!', returnType, energy);
+    };
+  });
+
   ////////////////// Chart //////////////////////////
 
   /**
@@ -3371,16 +3658,16 @@ export const useMqttStore = defineStore('mqtt', () => {
   /* electricity tariff provider */
   const etProviderConfigured = computed(() => {
     return (
-      ((getValue.value(
-        'openWB/optional/et/provider',
-        'type',
-        null,
-      ) as string) || undefined) !== undefined
+      (getValue.value(
+        'openWB/optional/ep/configured',
+        undefined,
+        false,
+      ) as boolean) || false
     );
   });
 
   const etPrices = computed(() => {
-    return getValue.value('openWB/optional/et/get/prices', undefined, {}) as {
+    return getValue.value('openWB/optional/ep/get/prices', undefined, {}) as {
       [key: string]: number;
     };
   });
@@ -3410,6 +3697,8 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointPlugState,
     chargePointChargeState,
     chargePointSumPower,
+    chargePointDailyImported,
+    chargePointDailyExported,
     chargePointPower,
     chargePointEnergyCharged,
     chargePointEnergyChargedPlugged,
@@ -3516,13 +3805,19 @@ export const useMqttStore = defineStore('mqtt', () => {
     batteryMode,
     // Grid data
     getGridId,
+    getAllCounterIds,
+    getSecondaryCounterIds,
     getComponentName,
-    getGridPower,
+    getCounterPower,
+    counterDailyImported,
+    counterDailyExported,
     // Home data
     getHomePower,
+    homeDailyYield,
     // PV data
     getPvConfigured,
     getPvPower,
+    pvDailyExported,
     // Chart data
     chartData,
     // electricity tariff provider

@@ -12,7 +12,7 @@ import traceback
 from pathlib import Path
 
 import paho.mqtt.client as mqtt
-from control.chargelog import chargelog
+from control.chargelog.process_chargelog import get_log_data
 from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
 
@@ -23,6 +23,7 @@ from helpermodules.abstract_plans import AutolockPlan, ScheduledChargingPlan, Ti
 from helpermodules.utils.run_command import run_command
 # ToDo: move to module commands if implemented
 from modules.backup_clouds.onedrive.api import generateMSALAuthCode, retrieveMSALTokens
+from modules.io_devices.eebus.api import create_pub_cert_ski
 
 from helpermodules.broker import BrokerClient
 from helpermodules.data_migration.data_migration import MigrateData
@@ -281,6 +282,7 @@ class Command:
                 " versetzen.", MessageType.ERROR)
             return
         chargepoint_config["id"] = new_id
+        chargepoint_config["name"] = f'{chargepoint_config["name"]} {new_id}'
         try:
             evu_counter = data.data.counter_all_data.get_id_evu_counter()
             data.data.counter_all_data.hierarchy_add_item_below(
@@ -352,13 +354,14 @@ class Command:
     def addChargepointTemplate(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neues Ladepunkt-Profil erstellt werden soll.
         """
+        new_id = self.max_id_chargepoint_template + 1
         # check if "payload" contains "data.copy"
         if "data" in payload and "copy" in payload["data"]:
             new_chargepoint_template = asdict(data.data.cp_template_data[f'cpt{payload["data"]["copy"]}'].data).copy()
             new_chargepoint_template["name"] = f'Kopie von {new_chargepoint_template["name"]}'
         else:
             new_chargepoint_template = get_chargepoint_template_default()
-        new_id = self.max_id_chargepoint_template + 1
+            new_chargepoint_template["name"] = f'{new_chargepoint_template["name"]} {new_id}'
         new_chargepoint_template["id"] = new_id
         Pub().pub(f'openWB/set/chargepoint/template/{new_id}', new_chargepoint_template)
         self.max_id_chargepoint_template = self.max_id_chargepoint_template + 1
@@ -461,6 +464,7 @@ class Command:
             new_charge_template = asdict(new_charge_template)
         else:
             new_charge_template = get_new_charge_template()
+            new_charge_template["name"] = f'{new_charge_template["name"]} {new_id}'
         new_charge_template["id"] = new_id
 
         Pub().pub("openWB/set/command/max_id/charge_template", new_id)
@@ -652,13 +656,14 @@ class Command:
     def addEvTemplate(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neues Fahrzeug-Profil erstellt werden soll.
         """
+        new_id = self.max_id_ev_template + 1
         # check if "payload" contains "data.copy"
         if "data" in payload and "copy" in payload["data"]:
             new_ev_template = asdict(data.data.ev_template_data[f"et{payload['data']['copy']}"].data).copy()
             new_ev_template["name"] = f'Kopie von {new_ev_template["name"]}'
         else:
             new_ev_template = dataclass_utils.asdict(EvTemplateData())
-        new_id = self.max_id_ev_template + 1
+            new_ev_template["name"] = f'{new_ev_template["name"]} {new_id}'
         new_ev_template["id"] = new_id
         self.max_id_ev_template = new_id
         Pub().pub(f'openWB/set/vehicle/template/ev_template/{new_id}', new_ev_template)
@@ -687,6 +692,7 @@ class Command:
         """
         new_id = self.max_id_vehicle + 1
         vehicle_default = ev.get_vehicle_default()
+        vehicle_default["name"] = f'{vehicle_default["name"]} {new_id}'
         for default in vehicle_default:
             Pub().pub(f"openWB/set/vehicle/{new_id}/{default}", vehicle_default[default])
         Pub().pub(f"openWB/set/vehicle/{new_id}/soc_module/config", {"type": None, "configuration": {}})
@@ -725,7 +731,7 @@ class Command:
         pub_user_message(payload, connection_id, "Systembericht wurde versandt.", MessageType.SUCCESS)
 
     def getChargeLog(self, connection_id: str, payload: dict) -> None:
-        Pub().pub(f'openWB/set/log/{connection_id}/data', chargelog.get_log_data(payload["data"]))
+        Pub().pub(f'openWB/set/log/{connection_id}/data', get_log_data(payload["data"]))
 
     def getDailyLog(self, connection_id: str, payload: dict) -> None:
         Pub().pub(f'openWB/set/log/daily/{payload["data"]["date"]}',
@@ -918,6 +924,9 @@ class Command:
             return
         result = retrieveMSALTokens(cloud_backup_config.config)
         pub_user_message(payload, connection_id, result["message"], result["MessageType"])
+
+    def createEebusCert(self, connection_id: str, payload: dict) -> None:
+        create_pub_cert_ski(payload["data"]["io_device"])
 
     def factoryReset(self, connection_id: str, payload: dict) -> None:
         Path(Path(__file__).resolve().parents[2] / 'data' / 'restore' / 'factory_reset').touch()

@@ -43,7 +43,8 @@ def create_device(device_config: EvuKitSetup):
         client = modbus.ModbusTcpClient_("192.168.193.15", 8899)
 
     def error_handler():
-        run_command(f"{Path(__file__).resolve().parents[4]}/modules/common/restart_protoss_admin")
+        run_command([f"{Path(__file__).resolve().parents[4]}/modules/common/restart_protoss_admin",
+                     "192.168.193.15"])
 
     return ConfigurableDevice(
         device_config=device_config,

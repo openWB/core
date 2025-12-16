@@ -6,6 +6,7 @@ from control.algorithm.filter_chargepoints import get_chargepoints_by_mode
 from control.algorithm.utils import get_medium_charging_current
 from control.chargepoint.chargepoint import Chargepoint
 from control.counter import Counter
+from helpermodules.phase_handling import voltages_mean
 from helpermodules.timecheck import check_timestamp
 from modules.common.component_type import ComponentType
 
@@ -74,9 +75,13 @@ def set_current_counterdiff(diff_current: float,
         counters = data.data.counter_all_data.get_counters_to_check(chargepoint.num)
         for counter in counters:
             if surplus:
-                data.data.counter_data[counter].update_surplus_values_left(diffs, chargepoint.data.get.voltages)
+                data.data.counter_data[counter].update_surplus_values_left(
+                    diffs,
+                    voltages_mean(chargepoint.data.get.voltages))
             else:
-                data.data.counter_data[counter].update_values_left(diffs, chargepoint.data.get.voltages)
+                data.data.counter_data[counter].update_values_left(
+                    diffs,
+                    voltages_mean(chargepoint.data.get.voltages))
         data.data.io_actions.dimming_set_import_power_left({"type": "cp", "id": chargepoint.num}, sum(diffs)*230)
 
     chargepoint.data.set.current = current
@@ -146,9 +151,11 @@ def update_raw_data(preferenced_chargepoints: List[Chargepoint],
         counters = data.data.counter_all_data.get_counters_to_check(chargepoint.num)
         for counter in counters:
             if surplus:
-                data.data.counter_data[counter].update_surplus_values_left(diffs, chargepoint.data.get.voltages)
+                data.data.counter_data[counter].update_surplus_values_left(
+                    diffs,
+                    voltages_mean(chargepoint.data.get.voltages))
             else:
-                data.data.counter_data[counter].update_values_left(diffs, chargepoint.data.get.voltages)
+                data.data.counter_data[counter].update_values_left(diffs, voltages_mean(chargepoint.data.get.voltages))
         data.data.io_actions.dimming_set_import_power_left({"type": "cp", "id": chargepoint.num}, sum(diffs)*230)
 
 

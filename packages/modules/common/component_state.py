@@ -177,7 +177,7 @@ class ChargepointState:
                  power: float,
                  currents: List[float],
                  charge_state: bool,
-                 plug_state: bool,
+                 plug_state: Optional[bool],
                  serial_number: str = "",
                  charging_current: Optional[float] = 0,
                  charging_voltage: Optional[float] = 0,
@@ -232,7 +232,8 @@ class ChargepointState:
 @auto_str
 class TariffState:
     def __init__(self,
-                 prices: Optional[Dict[int, float]] = None) -> None:
+                 prices: Optional[Dict[str, float]] = None
+                 ) -> None:
         self.prices = prices
 
 

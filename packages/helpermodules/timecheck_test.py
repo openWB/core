@@ -22,9 +22,7 @@ class Params:
 
 @pytest.mark.parametrize("time, selected, date, expected_remaining_time",
                          [pytest.param("9:00", "once", "2022-05-16", 1148, id="once"),
-                          pytest.param("7:55", "once", "2022-05-16", None, id="missed date, plugged before"),
-                          pytest.param("8:05", "once", "2022-05-16", -
-                                       2152, id="once missed date, plugged after"),
+                          pytest.param("8:05", "once", "2022-05-16", -2152, id="once missed date"),
                           pytest.param("12:00", "daily", [], 11948, id="daily today"),
                           pytest.param("2:00", "daily", [], 62348, id="daily  missed today, use next day"),
                           pytest.param("7:55", "weekly", [True, False, False, False,
@@ -45,9 +43,7 @@ def test_check_end_time(time: str,
         setattr(plan.frequency, selected, date)
 
     # execution
-    remaining_time = timecheck.check_end_time(
-        plan,
-        chargemode_switch_timestamp=datetime.datetime.strptime("5/16/2022 8:00", "%m/%d/%Y %H:%M").timestamp())
+    remaining_time = timecheck.check_end_time(plan, 1200)
 
     # evaluation
     assert remaining_time == expected_remaining_time

@@ -1,29 +1,82 @@
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+import random
 from typing import Dict, Optional, Protocol
 
 from dataclass_utils.factories import empty_dict_factory
 from helpermodules.constants import NO_ERROR
+from helpermodules.pub import Pub
 from modules.display_themes.cards.config import CardsDisplayTheme
+
+TARIFF_UPDATE_HOUR = 14  # latest expected time for daily tariff update
 
 
 @dataclass
-class EtGet:
+class PricingGet:
     fault_state: int = 0
     fault_str: str = NO_ERROR
     prices: Dict = field(default_factory=empty_dict_factory)
 
 
-def get_factory() -> EtGet:
-    return EtGet()
+def get_factory() -> PricingGet:
+    return PricingGet()
 
 
 @dataclass
-class Et:
-    get: EtGet = field(default_factory=get_factory)
+class FlexibleTariff:
+    get: PricingGet = field(default_factory=get_factory)
 
 
-def et_factory() -> Et:
-    return Et()
+def get_flexible_tariff_factory() -> FlexibleTariff:
+    return FlexibleTariff()
+
+
+@dataclass
+class GridFee:
+    get: PricingGet = field(default_factory=get_factory)
+
+
+def get_grid_fee_factory() -> GridFee:
+    return GridFee()
+
+
+@dataclass
+class ElectricityPricingGet:
+    next_query_time: Optional[float] = None
+    _prices: Dict = field(default_factory=empty_dict_factory)
+
+    @property
+    def prices(self) -> Dict:
+        return self._prices
+
+    @prices.setter
+    def prices(self, value: Dict):
+        self._prices = value
+        if value:
+            next_query_time = datetime.fromtimestamp(float(max(value))).replace(
+                hour=TARIFF_UPDATE_HOUR, minute=0, second=0
+            ) + timedelta(
+                # actully ET providers issue next day prices up to half an hour earlier then 14:00
+                # reduce serverload on their site by trying early and randomizing query time
+                minutes=random.randint(1, 7) * -5
+            )
+            Pub().pub("openWB/set/optional/ep/get/next_query_time", next_query_time.timestamp())
+
+
+def electricity_pricing_get_factory() -> ElectricityPricingGet:
+    return ElectricityPricingGet()
+
+
+@dataclass
+class ElectricityPricing:
+    configured: bool = False
+    flexible_tariff: FlexibleTariff = field(default_factory=get_flexible_tariff_factory)
+    grid_fee: GridFee = field(default_factory=get_grid_fee_factory)
+    get: ElectricityPricingGet = field(default_factory=electricity_pricing_get_factory)
+
+
+def ep_factory() -> ElectricityPricing:
+    return ElectricityPricing()
 
 
 @dataclass
@@ -83,7 +136,7 @@ def ocpp_factory() -> Ocpp:
 
 @dataclass
 class OptionalData:
-    et: Et = field(default_factory=et_factory)
+    electricity_pricing: ElectricityPricing = field(default_factory=ep_factory)
     int_display: InternalDisplay = field(default_factory=int_display_factory)
     led: Led = field(default_factory=led_factory)
     rfid: Rfid = field(default_factory=rfid_factory)

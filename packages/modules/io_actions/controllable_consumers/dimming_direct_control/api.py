@@ -66,7 +66,7 @@ class DimmingDirectControl(AbstractIoAction):
             raise Exception("Pattern passt nicht zur Dimmung per Direktsteuerung.")
 
 
-def create_action(config: DimmingDirectControlSetup):
+def create_action(config: DimmingDirectControlSetup, parent_device_type: str):
     return DimmingDirectControl(config=config)
 
 

@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 import logging
-from typing import Iterable
+from typing import Iterable, Union
 
 from modules.common import modbus
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.saxpower.saxpower.bat import SaxpowerBat
-from modules.devices.saxpower.saxpower.config import Saxpower, SaxpowerBatSetup
+from modules.devices.saxpower.saxpower.counter import SaxpowerCounter
+from modules.devices.saxpower.saxpower.config import Saxpower, SaxpowerBatSetup, SaxpowerCounterSetup
 
 log = logging.getLogger(__name__)
 
@@ -22,7 +23,13 @@ def create_device(device_config: Saxpower):
                            client=client,
                            modbus_id=device_config.configuration.modbus_id)
 
-    def update_components(components: Iterable[SaxpowerBat]):
+    def create_counter_component(component_config: SaxpowerCounterSetup):
+        return SaxpowerCounter(component_config,
+                               device_id=device_config.id,
+                               client=client,
+                               modbus_id=device_config.configuration.modbus_id)
+
+    def update_components(components: Iterable[Union[SaxpowerBat, SaxpowerCounter]]):
         nonlocal client
         with client:
             for component in components:
@@ -38,6 +45,7 @@ def create_device(device_config: Saxpower):
         initializer=initializer,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
+            counter=create_counter_component
         ),
         component_updater=MultiComponentUpdater(update_components)
     )

@@ -114,7 +114,8 @@
 			/>
 		</div>
 		<!-- ET Information -->
-		<hr class="divider grid-col-12" />
+		<hr v-if="etData.active" class="divider grid-col-12" />
+
 		<InfoItem
 			v-if="etData.active"
 			heading="Strompreis:"

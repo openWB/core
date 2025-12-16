@@ -5,13 +5,15 @@ from typing import Optional
 @dataclass
 class VehicleUpdateData:
     plug_state: bool = False
+    plug_time: float = 0.0
     charge_state: bool = False
     imported: float = 0
     battery_capacity: float = 82
     efficiency: float = 90
     soc_from_cp: Optional[float] = None
     timestamp_soc_from_cp: Optional[int] = None
-    soc_timestamp: Optional[int] = None
+    last_soc_timestamp: Optional[int] = None
+    last_soc: float = None
 
 
 @dataclass
@@ -24,6 +26,5 @@ class GeneralVehicleConfig:
 
 @dataclass
 class CalculatedSocState:
-    imported_start: Optional[float] = 0  # don't show in UI
+    last_imported: Optional[float] = 0  # don't show in UI
     manual_soc: Optional[int] = None  # don't show in UI
-    soc_start: float = 0  # don't show in UI
