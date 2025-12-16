@@ -3,7 +3,7 @@
 """
 # flake8: noqa: E402
 import logging
-from helpermodules import logger, mosquitto_dynsec
+from helpermodules import logger
 from helpermodules.utils import run_command, thread_handler
 import threading
 import sys
@@ -25,6 +25,7 @@ from control import data, prepare, process
 from control.algorithm import algorithm
 from helpermodules import command, setdata, subdata, timecheck, update_config
 from helpermodules.changed_values_handler import ChangedValuesContext
+from helpermodules.mosquitto_dynsec import check_roles_at_start
 from helpermodules.measurement_logging.update_yields import update_daily_yields, update_pv_monthly_yearly_yields
 from helpermodules.measurement_logging.write_log import LogType, save_log
 from helpermodules.modbusserver import start_modbus_server
@@ -350,7 +351,7 @@ try:
     event_update_config_completed.wait(300)
     event_subdata_initialized.wait(300)
     # wenn die datei ramdisk/user_manangement exsititert und 1 ist, führ fukntion im Task aus
-    Thread(target=mosquitto_dynsec.check_roles_at_start, args=(), name="check acl roles at start").start()
+    Thread(target=check_roles_at_start, args=(), name="check acl roles at start").start()
     Pub().pub("openWB/set/system/boot_done", True)
     Path(Path(__file__).resolve().parents[1]/"ramdisk"/"bootdone").touch()
     schedule_jobs()
