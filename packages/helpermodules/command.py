@@ -270,7 +270,7 @@ class Command:
                 self.addChargepointTemplate("addChargepoint", {})
             if self.max_id_vehicle == -1:
                 self.addVehicle("addChargepoint", {})
-            add_acl_role("charge-point-<id>-access", new_id)
+            add_acl_role("chargepoint-<id>-access", new_id)
             pub_user_message(payload, connection_id, f'Neuer Ladepunkt mit ID \'{new_id}\' wurde erstellt.',
                              MessageType.SUCCESS)
         new_id = self.max_id_hierarchy + 1
@@ -354,7 +354,7 @@ class Command:
         ProcessBrokerBranch(f'chargepoint/{payload["data"]["id"]}/').remove_topics()
         data.data.counter_all_data.hierarchy_remove_item(payload["data"]["id"])
         Pub().pub("openWB/set/counter/get/hierarchy", data.data.counter_all_data.data.get.hierarchy)
-        remove_acl_role("charge-point-<id>-access", payload["data"]["id"])
+        remove_acl_role("chargepoint-<id>-access", payload["data"]["id"])
         pub_user_message(payload, connection_id,
                          f'Ladepunkt mit ID \'{payload["data"]["id"]}\' gelöscht.', MessageType.SUCCESS)
 
