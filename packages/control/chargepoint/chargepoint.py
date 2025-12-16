@@ -5,7 +5,6 @@ from helpermodules.utils import thread_handler
 from helpermodules import timecheck
 from helpermodules.pub import Pub
 from helpermodules.phase_handling import convert_single_evu_phase_to_cp_phase
-from helpermodules.phase_mapping import convert_single_evu_phase_to_cp_phase
 from dataclasses import asdict
 import dataclasses
 import logging
@@ -28,9 +27,6 @@ from control.ev.ev import Ev
 from control import phase_switch
 from control.chargepoint.chargepoint_state import CHARGING_STATES, ChargepointState
 from control.text import BidiState
-<< << << < HEAD
-== == == =
->>>>>> > upstream/master
 
 
 def get_chargepoint_config_default() -> dict:
