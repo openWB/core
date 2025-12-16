@@ -29,6 +29,7 @@ from helpermodules.broker import BrokerClient
 from helpermodules.data_migration.data_migration import MigrateData
 from helpermodules.measurement_logging.process_log import get_daily_log, get_monthly_log, get_yearly_log
 from helpermodules.messaging import MessageType, pub_user_message
+from helpermodules.mosquitto_dynsec import add_acl_role, remove_acl_role
 from helpermodules.create_debug import create_debug_log
 from helpermodules.pub import Pub, pub_single
 from helpermodules.subdata import SubData
@@ -202,6 +203,7 @@ class Command:
         Pub().pub(f'openWB/set/io/action/{new_id}/config', device_default)
         self.max_id_io_action = new_id
         Pub().pub("openWB/set/command/max_id/io_action", self.max_id_io_action)
+        add_acl_role("io-action-<id>-access", new_id)
         pub_user_message(
             payload, connection_id,
             f'Neue IO-Aktion vom Typ \'{" / ".join(payload["data"]["type"])}\' mit ID \'{new_id}\' hinzugefügt.',
@@ -210,6 +212,7 @@ class Command:
     def removeIoAction(self, connection_id: str, payload: dict) -> None:
         if self.max_id_io_action >= payload["data"]["id"]:
             ProcessBrokerBranch(f'io/action/{payload["data"]["id"]}/').remove_topics()
+            remove_acl_role("io-action-<id>-access", payload["data"]["id"])
             pub_user_message(payload, connection_id, f'IO-Aktion mit ID \'{payload["data"]["id"]}\' gelöscht.',
                              MessageType.SUCCESS)
         else:
@@ -230,6 +233,7 @@ class Command:
         Pub().pub(f'openWB/set/system/io/{new_id}/config', device_default)
         self.max_id_io_device = new_id
         Pub().pub("openWB/set/command/max_id/io_device", self.max_id_io_device)
+        add_acl_role("io-device-<id>-access", new_id)
         pub_user_message(
             payload, connection_id,
             f'Neues IO-Gerät vom Typ \'{payload["data"]["type"]}\' mit ID \'{new_id}\' hinzugefügt.',
@@ -240,6 +244,7 @@ class Command:
         """
         if self.max_id_io_device >= payload["data"]["id"]:
             ProcessBrokerBranch(f'system/io/{payload["data"]["id"]}/').remove_topics()
+            remove_acl_role("io-device-<id>-access", payload["data"]["id"])
             pub_user_message(payload, connection_id, f'IO-Gerät mit ID \'{payload["data"]["id"]}\' gelöscht.',
                              MessageType.SUCCESS)
         else:
@@ -265,7 +270,7 @@ class Command:
                 self.addChargepointTemplate("addChargepoint", {})
             if self.max_id_vehicle == -1:
                 self.addVehicle("addChargepoint", {})
-            self._add_acl("chargepoint-<id>-access", new_id)
+            add_acl_role("charge-point-<id>-access", new_id)
             pub_user_message(payload, connection_id, f'Neuer Ladepunkt mit ID \'{new_id}\' wurde erstellt.',
                              MessageType.SUCCESS)
         new_id = self.max_id_hierarchy + 1
@@ -349,7 +354,7 @@ class Command:
         ProcessBrokerBranch(f'chargepoint/{payload["data"]["id"]}/').remove_topics()
         data.data.counter_all_data.hierarchy_remove_item(payload["data"]["id"])
         Pub().pub("openWB/set/counter/get/hierarchy", data.data.counter_all_data.data.get.hierarchy)
-        self._remove_acl("chargepoint-<id>-access", payload["data"]["id"])
+        remove_acl_role("charge-point-<id>-access", payload["data"]["id"])
         pub_user_message(payload, connection_id,
                          f'Ladepunkt mit ID \'{payload["data"]["id"]}\' gelöscht.', MessageType.SUCCESS)
 
@@ -638,6 +643,7 @@ class Command:
         self.max_id_hierarchy = self.max_id_hierarchy + 1
         Pub().pub("openWB/set/command/max_id/hierarchy",
                   self.max_id_hierarchy)
+        add_acl_role(f"{general_type.value}-<id>-access", new_id)
         pub_user_message(
             payload, connection_id,
             f'Neue Komponente vom Typ \'{payload["data"]["type"]}\' mit ID \'{new_id}\' hinzugefügt.',
@@ -651,6 +657,8 @@ class Command:
                       "Die ID ist größer als die maximal vergebene ID.", MessageType.ERROR)
         branch = f'system/device/{payload["data"]["deviceId"]}/component/{payload["data"]["id"]}/'
         ProcessBrokerBranch(branch).remove_topics()
+        remove_acl_role(f"{special_to_general_type_mapping(payload['data']['type']).value}-<id>-access",
+                        payload["data"]["id"])
         pub_user_message(
             payload, connection_id,
             f'Komponente mit ID \'{payload["data"]["id"]}\' gelöscht.', MessageType.SUCCESS)
@@ -707,7 +715,7 @@ class Command:
             self.addChargeTemplate("addVehicle", {})
         if self.max_id_ev_template == -1:
             self.addEvTemplate("addVehicle", {})
-        self._add_acl("vehicle-<id>-access", new_id)
+        add_acl_role("vehicle-<id>-access", new_id)
         pub_user_message(payload, connection_id, f'Neues EV mit ID \'{new_id}\' hinzugefügt.', MessageType.SUCCESS)
 
     def removeVehicle(self, connection_id: str, payload: dict) -> None:
@@ -719,7 +727,7 @@ class Command:
         if payload["data"]["id"] > 0:
             Pub().pub(f'openWB/vehicle/{payload["data"]["id"]}', "")
             ProcessBrokerBranch(f'vehicle/{payload["data"]["id"]}/').remove_topics()
-            self._remove_acl("vehicle-<id>-access", payload["data"]["id"])
+            remove_acl_role("vehicle-<id>-access", payload["data"]["id"])
             pub_user_message(
                 payload, connection_id,
                 f'EV mit ID \'{payload["data"]["id"]}\' gelöscht.', MessageType.SUCCESS)
@@ -964,37 +972,6 @@ class Command:
         pub_user_message(payload, connection_id,
                          "Benutzerverwaltung wurde zurückgesetzt.",
                          MessageType.WARNING)
-
-    def _get_acl_role_data(self, role_template: str, id: int) -> dict:
-        with open(Path(__file__).resolve().parents[2] /
-                  "data" / "config" / "mosquitto" / "public" / "role-templates.json", 'r', encoding='utf-8') as file:
-            roles = json.load(file)
-        for role in roles:
-            if role["rolename"] == role_template:
-                role_data = role
-                break
-        role_data["rolename"] = role_data["rolename"].replace("<id>", str(id))
-        role_data["textname"] = role_data["textname"].replace("<id>", str(id))
-        role_data["textdescription"] = role_data["textdescription"].replace("<id>", str(id))
-        for acl in role_data["acls"]:
-            acl["topic"] = acl["topic"].replace("<id>", str(id))
-        return role_data
-
-    def _add_acl(self, role_template: str, id: int):
-        role_data = self._get_acl_role_data(role_template, id)
-
-        run_command(["mosquitto_ctrl", "dynsec", "createRole", role_data["rolename"]])
-        for acl in role_data["acls"]:
-            run_command([
-                "mosquitto_ctrl", "dynsec", "addRoleAcl", role_data["rolename"],
-                acl["acltype"], acl["topic"],
-                "allow" if acl["allow"] else "deny",
-                str(acl["priority"])
-            ])
-
-    def _remove_acl(self, role_template: str, id: int):
-        role_data = self._get_acl_role_data(role_template, id)
-        run_command(["mosquitto_ctrl", "dynsec", "deleteRole", role_data["rolename"]])
 
 
 class ErrorHandlingContext:
