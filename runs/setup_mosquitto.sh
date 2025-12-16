@@ -1,5 +1,6 @@
 #!/bin/bash
 OPENWBBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+USER_MANAGEMENT_INIT_FILE="${OPENWBBASEDIR}/ramdisk/init_user_management"
 automaticServiceRestart=${1:-0}
 
 versionMatch() {
@@ -72,6 +73,7 @@ if [[ $userManagementActive == "true" ]]; then
 	else
 		echo "updating mosquitto openwb-user-management.conf"
 		sudo cp "${SRC}/openwb-user-management.conf" "/etc/mosquitto/conf.d/openwb-user-management.conf"
+		echo 1 > "$USER_MANAGEMENT_INIT_FILE"
 		restartService=1
 	fi
 	if [ -f "/var/lib/mosquitto/dynamic-security.json" ]; then
@@ -81,6 +83,7 @@ if [[ $userManagementActive == "true" ]]; then
 		sudo cp "${SRC}/default-dynamic-security.json" /var/lib/mosquitto/dynamic-security.json
 		sudo chown mosquitto:mosquitto /var/lib/mosquitto/dynamic-security.json
 		cp "${SRC}/mosquitto_ctrl" /home/openwb/.config/mosquitto_ctrl
+		echo 1 > "$USER_MANAGEMENT_INIT_FILE"
 		restartService=1
 	fi
 	if [ -f "/etc/mosquitto/conf.d/openwb-default-acl.conf" ]; then
@@ -190,6 +193,5 @@ if ((restartService == 1 && automaticServiceRestart == 1)); then
 	sudo systemctl start mosquitto_local
 	echo "done"
 fi
-if ((restartService == 1)); then
-	echo 1 > "${OPENWBBASEDIR}/ramdisk/init_user_management"
+
 echo "mosquitto done"
