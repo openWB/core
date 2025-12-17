@@ -8,6 +8,7 @@ sudo apt-get -q -y install \
 	git \
 	mosquitto mosquitto-clients \
 	python3-pip \
+	python3-urllib3 \
 	xserver-xorg x11-xserver-utils openbox-lxde-session lightdm lightdm-autologin-greeter accountsservice \
 	chromium chromium-l10n
 echo "done"

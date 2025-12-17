@@ -118,13 +118,20 @@ const chartRange = computed(
   () => mqttStore.themeConfiguration?.history_chart_range || 3600,
 );
 
+const getGlobalColor = (name: string, fallback?: string) => {
+  const fromRoot = getComputedStyle(document.documentElement)
+    .getPropertyValue(name)
+    .trim();
+  return fromRoot || fallback;
+};
+
 const secondaryCounterDatasets = computed(() =>
   mqttStore.getSecondaryCounterIds.map((id) => ({
     label: mqttStore.getComponentName(id),
     category: 'component',
     unit: 'kW',
-    borderColor: '#FFA9A8',
-    backgroundColor: 'rgba(255,169,168, 0.2)',
+    borderColor: getGlobalColor('--q-secondary-counter-stroke'),
+    backgroundColor: getGlobalColor('--q-secondary-counter-fill'),
     data: selectedData.value.map((item) => ({
       x: item.timestamp * 1000,
       y: item[`counter${id}-power`] ?? 0,
@@ -143,8 +150,8 @@ const chargePointDatasets = computed(() =>
     label: `${chargePointNames.value(cpId)}`,
     category: 'chargepoint',
     unit: 'kW',
-    borderColor: '#4766b5',
-    backgroundColor: 'rgba(71, 102, 181, 0.2)',
+    borderColor: getGlobalColor('--q-charge-point-stroke'),
+    backgroundColor: getGlobalColor('--q-charge-point-fill'),
     data: selectedData.value.map((item) => ({
       x: item.timestamp * 1000,
       y: item[`cp${cpId}-power`] || 0,
@@ -223,8 +230,8 @@ const lineChartData = computed(() => {
         label: gridMeterName.value,
         category: 'component',
         unit: 'kW',
-        borderColor: '#a33c42',
-        backgroundColor: 'rgba(239,182,188, 0.2)',
+        borderColor: getGlobalColor('--q-grid-stroke'),
+        backgroundColor: getGlobalColor('--q-grid-fill'),
         data: selectedData.value.map((item) => ({
           x: item.timestamp * 1000,
           y: item.grid,
@@ -240,8 +247,8 @@ const lineChartData = computed(() => {
         label: 'Hausverbrauch',
         category: 'component',
         unit: 'kW',
-        borderColor: '#949aa1',
-        backgroundColor: 'rgba(148, 154, 161, 0.2)',
+        borderColor: getGlobalColor('--q-home-stroke'),
+        backgroundColor: getGlobalColor('--q-home-fill'),
         data: selectedData.value.map((item) => ({
           x: item.timestamp * 1000,
           y: item['house-power'],
@@ -258,8 +265,8 @@ const lineChartData = computed(() => {
         label: 'PV ges.',
         category: 'component',
         unit: 'kW',
-        borderColor: 'green',
-        backgroundColor: 'rgba(144, 238, 144, 0.2)',
+        borderColor: getGlobalColor('--q-pv-stroke'),
+        backgroundColor: getGlobalColor('--q-pv-fill'),
         data: selectedData.value.map((item) => ({
           x: item.timestamp * 1000,
           y: item['pv-all'],
@@ -275,8 +282,8 @@ const lineChartData = computed(() => {
         label: 'Speicher ges.',
         category: 'component',
         unit: 'kW',
-        borderColor: '#b5a647',
-        backgroundColor: 'rgba(181, 166, 71, 0.2)',
+        borderColor: getGlobalColor('--q-battery-stroke'),
+        backgroundColor: getGlobalColor('--q-battery-fill'),
         data: selectedData.value.map((item) => ({
           x: item.timestamp * 1000,
           y: item['bat-all-power'],

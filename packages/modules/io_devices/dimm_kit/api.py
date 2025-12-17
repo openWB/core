@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import time
 from typing import Dict, Optional
 from modules.common.component_state import IoState
 from modules.common.configurable_io import ConfigurableIo
@@ -40,21 +41,23 @@ def create_io(config: IoLan):
             except socket.timeout:
                 log.exception("Dimm-Kit")
                 raise Exception("Die IP-Adresse ist nicht erreichbar. Bitte überprüfe die Einstellungen.")
+        # analog inputs are configured as 0-5V (AI1-AI4) and 0-25mA (AI5-AI8) as default
+        # the values are reported as integers in range of 0-1024
+        time.sleep(0.1)
+        analog_read = client.read_input_registers(0x00, [ModbusDataType.UINT_16]*8, unit=config.configuration.modbus_id)
+        analog_input = {getattr(AnalogInputMapping, f'AI{pin+1}').name: analog_read[pin] * 5 for pin in range(8)}
+        time.sleep(0.1)
+        digital_input_read = client.read_coils(0x00, 8, unit=config.configuration.modbus_id)
+        digital_input = {getattr(DigitalInputMapping, f'DI{pin+1}').name: digital_input_read[pin] for pin in range(8)}
+        time.sleep(0.1)
+        digital_output_read = client.read_coils(0x10, 8, unit=config.configuration.modbus_id)
+        digital_output = {
+            getattr(DigitalOutputMapping, f'DO{pin+1}').name: digital_output_read[pin] for pin in range(8)}
         return IoState(
-            # analog inputs are configured as 0-5V (AI1-AI4) and 0-25mA (AI5-AI8) as default
-            # the values are reported as integers in range of 0-1024
-            analog_input={
-                pin.name: client.read_input_registers(
-                    pin.value, ModbusDataType.UINT_16, unit=config.configuration.modbus_id
-                ) * 5 for pin in AnalogInputMapping},
-            digital_input={
-                pin.name: client.read_coils(
-                    pin.value, 1, unit=config.configuration.modbus_id
-                ) for pin in DigitalInputMapping},
-            digital_output={
-                pin.name: client.read_coils(
-                    pin.value, 1, unit=config.configuration.modbus_id
-                ) for pin in DigitalOutputMapping})
+            analog_input=analog_input,
+            digital_input=digital_input,
+            digital_output=digital_output
+        )
 
     def write(analog_output: Optional[Dict[str, int]], digital_output: Optional[Dict[str, bool]]) -> None:
         nonlocal client

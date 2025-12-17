@@ -152,16 +152,21 @@ class Optional(OcppMixin):
                 if float(price[0]) > now - (price_timeslot_seconds - 1)
             }
 
-        if self.data.electricity_pricing.configured:
-            ep = self.data.electricity_pricing
-            ep.get.prices = remove(ep.get.prices)
-            Pub().pub("openWB/set/optional/ep/get/prices", ep.get.prices)
-            if self._flexible_tariff_module:
-                ep.flexible_tariff.get.prices = remove(ep.flexible_tariff.get.prices)
-                Pub().pub("openWB/set/optional/ep/flexible_tariff/get/prices", ep.flexible_tariff.get.prices)
-            if self._grid_fee_module:
-                ep.grid_fee.get.prices = remove(ep.grid_fee.get.prices)
-                Pub().pub("openWB/set/optional/ep/grid_fee/get/prices", ep.grid_fee.get.prices)
+        try:
+            if self.data.electricity_pricing.configured:
+                if len(self.data.electricity_pricing.get.prices) == 0:
+                    return
+                ep = self.data.electricity_pricing
+                ep.get.prices = remove(ep.get.prices)
+                Pub().pub("openWB/set/optional/ep/get/prices", ep.get.prices)
+                if self._flexible_tariff_module:
+                    ep.flexible_tariff.get.prices = remove(ep.flexible_tariff.get.prices)
+                    Pub().pub("openWB/set/optional/ep/flexible_tariff/get/prices", ep.flexible_tariff.get.prices)
+                if self._grid_fee_module:
+                    ep.grid_fee.get.prices = remove(ep.grid_fee.get.prices)
+                    Pub().pub("openWB/set/optional/ep/grid_fee/get/prices", ep.grid_fee.get.prices)
+        except Exception:
+            log.exception("Fehler beim Entfernen veralteter Preise")
 
     def __get_current_timeslot_start(self) -> int:
         timestamp = self.__get_first_entry()[0]

@@ -340,7 +340,7 @@ class ChargeTemplate:
             if filtered_plans:
                 sorted_plans = sorted(filtered_plans, key=lambda x: list(x.values())[0])
                 for plan in sorted_plans:
-                    if self.BUFFER < list(sorted_plans[0].values())[0]:
+                    if self.BUFFER < list(plan.values())[0]:
                         plan_dict = plan
                         break
                 else:
@@ -618,19 +618,22 @@ class ChargeTemplate:
                     loading_times_tomorrow = [datetime.datetime.fromtimestamp(hour)
                                               for hour in sorted(hour_list) if hour > midnight]
 
-                    loading_message = "Geladen wird "+("jetzt"
-                                                       if is_loading_hour(hour_list)
-                                                       else '')
-                    loading_message += ((" und " if is_loading_hour(hour_list) else "") +
-                                        f"heute {convert_loading_hours_to_string(loading_times_today)}"
-                                        if 0 < len(loading_times_today)
-                                        else '')
-                    loading_message += (" sowie "
-                                        if 0 < len(loading_times_tomorrow)
-                                        else '')
-                    loading_message += (f"morgen {convert_loading_hours_to_string(loading_times_tomorrow)}"
-                                        if 0 < len(loading_times_tomorrow)
-                                        else '')
+                    parts = []
+
+                    if is_loading_hour(hour_list):
+                        parts.append("jetzt")
+
+                    if 0 < len(loading_times_today):
+                        if parts:
+                            parts.append(" und ")
+                        parts.append(f"heute {convert_loading_hours_to_string(loading_times_today)}")
+
+                    if 0 < len(loading_times_tomorrow):
+                        if parts:
+                            parts.append(" sowie ")
+                        parts.append(f"morgen {convert_loading_hours_to_string(loading_times_tomorrow)}")
+
+                    loading_message = "Geladen wird " + "".join(parts)
                     return loading_message + '.'
 
                 hour_list = data.data.optional_data.ep_get_loading_hours(
