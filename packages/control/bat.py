@@ -21,6 +21,10 @@ class Get:
     fault_str: str = field(default=NO_ERROR, metadata={"topic": "get/fault_str"})
     power: float = field(default=0, metadata={"topic": "get/power"})
     power_limit_controllable: bool = field(default=False, metadata={"topic": "get/power_limit_controllable"})
+    # additional values
+    max_charge_power: float = field(default=0, metadata={"topic": "get/max_charge_power"})
+    max_discharge_power: float = field(default=0, metadata={"topic": "get/max_discharge_power"})
+    capacity: float = field(default=0, metadata={"topic": "get/capacity"})
 
 
 def get_factory() -> Get:

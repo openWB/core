@@ -65,6 +65,15 @@ def scheduled_limit_factory() -> ScheduledLimit:
 
 
 @dataclass
+class BatLimit:
+    soc_limit: int = 70
+
+
+def bat_limit_factory() -> BatLimit:
+    return BatLimit()
+
+
+@dataclass
 class PlanBase:
     active: bool = True
 
@@ -105,3 +114,15 @@ class TimeChargingPlan(TimeframePlan):
 class AutolockPlan(TimeframePlan):
     id: Optional[int] = None
     name: str = "neuer Plan für Sperren nach Uhrzeit"
+
+
+@dataclass
+class ScheduledBatChargingPlan(TimeframePlan):
+    # class TimeChargingPlan(TimeframePlan):
+    id: Optional[int] = None
+    name: str = "neuer Speicher-Zielladen-Plan"
+    limit: BatLimit = field(default_factory=bat_limit_factory)
+    # limit: ScheduledLimit = field(default_factory=scheduled_limit_factory)
+
+    # frequency: FrequencyDate = field(default_factory=frequency_date_factory)
+    # time: str = "07:00"  # ToDo: aktuelle Zeit verwenden

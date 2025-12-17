@@ -6,7 +6,7 @@ import logging
 import subprocess
 from threading import Event
 import time
-from typing import Dict, Optional
+from typing import List, Dict, Optional
 import re
 import traceback
 from pathlib import Path
@@ -19,7 +19,8 @@ from control.chargepoint.chargepoint_template import get_chargepoint_template_de
 from control.ev.charge_template import ChargeTemplate, get_new_charge_template
 from control.ev.ev_template import EvTemplateData
 from helpermodules import pub
-from helpermodules.abstract_plans import AutolockPlan, ScheduledChargingPlan, TimeChargingPlan
+from helpermodules.abstract_plans import (AutolockPlan, ScheduledChargingPlan,
+                                          TimeChargingPlan, ScheduledBatChargingPlan)
 from helpermodules.utils.run_command import run_command
 # ToDo: move to module commands if implemented
 from modules.backup_clouds.onedrive.api import generateMSALAuthCode, retrieveMSALTokens
@@ -53,7 +54,8 @@ class Command:
         "nested payload":
         [("autolock_plan", "openWB/chargepoint/template/[0-9]+$", -1),
          ("charge_template_scheduled_plan", "openWB/vehicle/template/charge_template/[0-9]+$", -1),
-         ("charge_template_time_charging_plan", "openWB/vehicle/template/charge_template/[0-9]+$", -1)],
+         ("charge_template_time_charging_plan", "openWB/vehicle/template/charge_template/[0-9]+$", -1),
+         ("scheduled_bat_charging_plan", "openWB/bat/config", -1)],
         "topic":
         [("mqtt_bridge", "openWB/system/mqtt/bridge", -1),
          ("vehicle", "openWB/vehicle/[0-9]+/name$", 0)],
@@ -599,6 +601,67 @@ class Command:
             payload, connection_id,
             f'Zeitladen-Plan mit ID \'{payload["data"]["plan"]}\' zu Profil '
             f'\'{payload["data"]["template"]}\' gelöscht.', MessageType.SUCCESS)
+
+    # read bat charging plans
+    def _get_bat_charging_plans(self) -> List[ScheduledBatChargingPlan]:
+        # def _get_charge_template_by_source(self, payload: dict) -> ChargeTemplate:
+        """ gibt eine Liste der Speicher-Zielladepläne zurück. """
+        scheduled_bat_charging_plans = data.data.bat_all_data.data.config.scheduled_charging_plans
+
+        # if payload["data"]["changed_in_theme"]:
+        #     charge_template = data.data.cp_data[f"cp{payload['data']['chargepoint']}"].data.set.charge_template
+        # else:
+        #     charge_template = data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}']
+        return scheduled_bat_charging_plans
+
+    # publish bat charging plans
+    def _pub_bat_charging_plans(self, scheduled_bat_charging_plans: List[ScheduledBatChargingPlan]) -> None:
+        """ veröffentlicht die Speicher-Zielladepläne"""
+        Pub().pub(
+            'openWB/set/bat/config/scheduled_charging_plans',
+            dataclass_utils.asdict(scheduled_bat_charging_plans))
+
+    def addBatControlSchedulePlan(self, connection_id: str, payload: dict) -> None:
+        """ sendet das Topic, zu dem ein neuer Speicher-Zielladen-Plan erstellt werden soll.
+        """
+        scheduled_bat_charging_plans = self._get_bat_charging_plans()
+        # check if "payload" contains "data.copy"
+        if "data" in payload and "copy" in payload["data"]:
+            for plan in scheduled_bat_charging_plans:
+                if plan.id == payload["data"]["copy"]:
+                    new_scheduled_bat_charging_plan = copy.deepcopy(plan)
+                    break
+            new_scheduled_bat_charging_plan.name = f'Kopie von {new_scheduled_bat_charging_plan.name}'
+        else:
+            new_scheduled_bat_charging_plan = ScheduledBatChargingPlan()
+
+        new_id = self.max_id_scheduled_bat_charging_plan + 1
+        new_scheduled_bat_charging_plan.id = new_id
+        scheduled_bat_charging_plans.append(new_scheduled_bat_charging_plan)
+        self._pub_bat_charging_plans(scheduled_bat_charging_plans)
+        self.max_id_scheduled_bat_charging_plan = new_id
+        Pub().pub(
+            "openWB/set/command/max_id/scheduled_bat_charging_plan", new_id)
+        pub_user_message(payload, connection_id,
+                         f'Neuer Speicher-Zielladen-Plan mit ID \'{new_id}\' hinzugefügt.', MessageType.SUCCESS)
+
+    # FIXME
+    def removeBatControlSchedulePlan(self, connection_id: str, payload: dict) -> None:
+        """ löscht einen Zeitladen-Plan.
+        """
+        # charge_template = self._get_charge_template_by_source(payload)
+        scheduled_bat_charging_plans = self._get_bat_charging_plans()
+        if self.max_id_charge_template_time_charging_plan < payload["data"]["plan"]:
+            log.error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.",
+                      MessageType.ERROR)
+        for plan in scheduled_bat_charging_plans:
+            if plan.id == payload["data"]["plan"]:
+                scheduled_bat_charging_plans.remove(plan)
+                break
+        self._pub_bat_charging_plans(scheduled_bat_charging_plans)
+        pub_user_message(
+            payload, connection_id,
+            f'Zeitladen-Plan mit ID \'{payload["data"]["plan"]}\' gelöscht.', MessageType.SUCCESS)
 
     def addComponent(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem eine neue Komponente erstellt werden soll.
