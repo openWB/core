@@ -245,17 +245,17 @@ $charge-point-fill: #5c93d14d;
   }
 }
 // Dark Theme Base Colors
-$dark-page: #000000; // This overrides Quasar's default dark page color
+$dark-page: #373736; // This overrides Quasar's default dark page color - outer background
 $dark-primary: #3874db;
-$dark-secondary: #28293d;
+$dark-secondary: #2e2f3c; //cards - tabs background tables
 $dark-accent: #546e7a;
 $dark-positive: #3e8f5e;
 $dark-negative: #c54d57;
 $dark-info: #4b89aa;
 $dark-warning: #d98e44;
-$dark-background-1: #030627;
-$dark-background-2: #010322;
-$dark-list: rgb(40, 42, 62);
+$dark-background-1: #3D3D3C; // app background
+$dark-background-2: #3D3D3C; // app background 2
+$dark-list: rgb(63, 64, 77);
 $dark-carousel: #8b8f9f;
 $dark-tab-icon: #d7d9e0;
 $battery-fill-flow-diagram: #b2885f;
