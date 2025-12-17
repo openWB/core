@@ -245,17 +245,17 @@ $charge-point-fill: #5c93d14d;
   }
 }
 // Dark Theme Base Colors
-$dark-page: #373736; // This overrides Quasar's default dark page color - outer background
+$dark-page: #18191A; // This overrides Quasar's default dark page color - outer background
 $dark-primary: #3874db;
-$dark-secondary: #2e2f3c; //cards - tabs background tables
+$dark-secondary: #3A3B3C; //cards - tabs background tables
 $dark-accent: #546e7a;
 $dark-positive: #3e8f5e;
 $dark-negative: #c54d57;
 $dark-info: #4b89aa;
 $dark-warning: #d98e44;
-$dark-background-1: #3D3D3C; // app background
-$dark-background-2: #3D3D3C; // app background 2
-$dark-list: rgb(63, 64, 77);
+$dark-background-1: #242526; // app background
+$dark-background-2: #242526; // app background 2
+$dark-list: #3A3B3C; // drawer, list background
 $dark-carousel: #8b8f9f;
 $dark-tab-icon: #d7d9e0;
 $battery-fill-flow-diagram: #b2885f;
@@ -315,6 +315,7 @@ $dark-daily-totals-chargepoint-fill: #254a8c;
   // Header colors
   .q-header {
     color: var(--q-white);
+    background-color: var(--q-secondary);
   }
   // Drawer background
   .q-drawer {
@@ -328,7 +329,7 @@ $dark-daily-totals-chargepoint-fill: #254a8c;
   }
   // Tab active background color
   .q-tab--active {
-    background-color: color.scale($dark-secondary, $lightness: 10%);
+    background-color: color.scale($dark-secondary);
   }
   // Carousel control arrows and buttons
   .q-carousel__control {
