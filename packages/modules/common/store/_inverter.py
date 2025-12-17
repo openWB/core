@@ -38,6 +38,8 @@ class InverterValueStoreBroker(ValueStore[InverterState]):
             log.debug("Kein gültiger Zählerstand. Wert wird nicht aktualisiert.")
         if self.state.currents:
             pub_to_broker("openWB/set/pv/" + str(self.num) + "/get/currents", self.state.currents, 1)
+        if self.state.serial_number is not None:
+            pub_to_broker("openWB/set/pv/" + str(self.num) + "/get/serial_number", self.state.serial_number)
 
 
 class PurgeInverterState:

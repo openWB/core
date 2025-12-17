@@ -627,7 +627,8 @@ class SetData:
             elif subdata.SubData.pv_data.get(f"pv{get_index(msg.topic)}"):
                 if "/get/fault_state" in msg.topic:
                     self._validate_value(msg, int, [(0, 2)])
-                elif "/get/fault_str" in msg.topic:
+                elif ("/get/fault_str" in msg.topic or
+                      "/get/serial_number" in msg.topic):
                     self._validate_value(msg, str)
                 elif ("/get/daily_exported" in msg.topic or
                         "/get/monthly_exported" in msg.topic or
@@ -696,7 +697,8 @@ class SetData:
                     self._validate_value(msg, float, [(0, 100)])
                 elif "/get/fault_state" in msg.topic:
                     self._validate_value(msg, int, [(0, 2)])
-                elif "/get/fault_str" in msg.topic:
+                elif ("/get/fault_str" in msg.topic or
+                      "/get/serial_number" in msg.topic):
                     self._validate_value(msg, str)
                 elif "/set/power_limit_controllable" in msg.topic:
                     self._validate_value(msg, bool)
@@ -948,7 +950,8 @@ class SetData:
                     self._validate_value(msg, int, [(0, 2)])
                 elif "/set/error_timer" in msg.topic:
                     self._validate_value(msg, float, [(0, float("inf"))])
-                elif "/get/fault_str" in msg.topic:
+                elif ("/get/fault_str" in msg.topic or
+                      "/get/serial_number" in msg.topic):
                     self._validate_value(msg, str)
                 elif "/get/power" in msg.topic:
                     self._validate_value(
