@@ -80,6 +80,8 @@ class ChargepointRfidMixin:
                 msg = "Identifikation von Fahrzeugen ist nicht aktiviert."
             self.data.get.rfid = None
             Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid", None)
+            self.data.get.rfid_timestamp = None
+            Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp", None)
             self.chargepoint_module.clear_rfid()
             self.set_state_and_log(msg)
 

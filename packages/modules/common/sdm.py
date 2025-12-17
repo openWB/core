@@ -61,6 +61,7 @@ class Sdm630_72(Sdm):
     def get_counter_state(self) -> CounterState:
         # entgegen der Doku können nicht bei allen SDM72 80 Register auf einmal gelesen werden,
         # manche können auch nur 50
+        time.sleep(0.1)
         bulk_1 = self.client.read_input_registers_bulk(
             SdmRegister.VOLTAGE_L1, 38, mapping=self.REG_MAPPING_BULK_1, unit=self.id)
         time.sleep(0.1)
@@ -110,6 +111,7 @@ class Sdm120(Sdm):
 
     def get_counter_state(self) -> CounterState:
         # beim SDM120 steht nichts von Bulk-Reads in der Doku, daher auch auf 50 Register limitiert
+        time.sleep(0.1)
         bulk_1 = self.client.read_input_registers_bulk(
             SdmRegister.VOLTAGE_L1, 32, mapping=self.REG_MAPPING_BULK_1, unit=self.id)
         time.sleep(0.1)

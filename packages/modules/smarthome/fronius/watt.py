@@ -1,11 +1,8 @@
 #!/usr/bin/python3
-import logging
 import sys
 import json
 import jq
 import urllib.request
-
-log = logging.getLogger(__name__)
 
 devicenumber = str(sys.argv[1])
 ipadr = str(sys.argv[2])  # IP-ADresse des Fronius Wechselrichters, mit dem der Zähler kommuniziert
@@ -30,4 +27,7 @@ try:
 except Exception:
     powerc = 0
 
-log.debug("Device" + str(devicenumber) + '{"power":' + str(power) + ',"powerc":' + str(powerc) + '}')
+
+with open('/var/www/html/openWB/ramdisk/smarthome_device_ret' + str(devicenumber), 'w') as f1:
+    answer = '{"power":' + str(power) + ',"powerc":' + str(powerc) + '}'
+    json.dump(answer, f1)

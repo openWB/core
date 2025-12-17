@@ -1,43 +1,41 @@
-from typing import List
-
+import aiohttp
 import logging
+from asyncio import new_event_loop, set_event_loop
+from typing import Union
 
-from helpermodules.cli import run_using_positional_cli_args
-from modules.common import store
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.abstract_vehicle import VehicleUpdateData
 from modules.common.component_state import CarState
 from modules.common.configurable_vehicle import ConfigurableVehicle
-from modules.vehicles.vwid import api
-from modules.vehicles.vwid.config import VWId, VWIdConfiguration
-
+from modules.vehicles.vwid.config import VWId
+from modules.vehicles.vwid import libvwid
+from modules.vehicles.vwgroup.vwgroup import VwGroup
 
 log = logging.getLogger(__name__)
 
 
-def fetch(vehicle_update_data: VehicleUpdateData, config: VWId, vehicle: int) -> CarState:
-    soc, range, soc_ts, soc_tsX = api.fetch_soc(config, vehicle)
-    log.info("Result: soc=" + str(soc)+", range=" + str(range) + "@" + soc_ts)
-    return CarState(soc=soc, range=range, soc_timestamp=soc_tsX)
-
-
 def create_vehicle(vehicle_config: VWId, vehicle: int):
+    def fetch() -> CarState:
+        nonlocal vw_group
+
+        # async method, called from sync fetch_soc, required because libvwid expect async environment
+        async def _fetch_soc() -> Union[int, float, str]:
+            async with aiohttp.ClientSession() as session:
+                return await vw_group.request_data(libvwid.vwid(session))
+
+        loop = new_event_loop()
+        set_event_loop(loop)
+        soc, range, soc_ts, soc_tsX = loop.run_until_complete(_fetch_soc())
+        return CarState(soc=soc, range=range, soc_timestamp=soc_tsX)
+
+    vw_group = VwGroup(vehicle_config, vehicle)
+
     def updater(vehicle_update_data: VehicleUpdateData) -> CarState:
-        return fetch(vehicle_update_data, vehicle_config, vehicle)
+        return fetch()
     return ConfigurableVehicle(vehicle_config=vehicle_config,
                                component_updater=updater,
                                vehicle=vehicle,
                                calc_while_charging=vehicle_config.configuration.calculate_soc)
-
-
-def vwid_update(user_id: str, password: str, vin: str, refreshToken: str, charge_point: int):
-    log.debug("vwid: user_id="+user_id+"vin="+vin+"charge_point="+str(charge_point))
-    store.get_car_value_store(charge_point).store.set(
-        fetch(None, VWId(configuration=VWIdConfiguration(user_id, password, vin, refreshToken)), charge_point))
-
-
-def main(argv: List[str]):
-    run_using_positional_cli_args(vwid_update, argv)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=VWId)

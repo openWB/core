@@ -31,3 +31,5 @@ log.debug(
     f"[Viessmann {devicenumber}] devicenr {devicenumber} ipadr {ipadr} "
     "Einmalige Warmwasseraufbereitung aktiviert CO-17 = 1")
 log.debug(f"[Viessmann {devicenumber}] PV-Modus gesetzt: 1")
+with open('/var/www/html/openWB/ramdisk/smarthome_device_' + str(devicenumber) + '_pv', 'w') as f:
+    f.write(str(1))

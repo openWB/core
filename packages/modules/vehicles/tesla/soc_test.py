@@ -51,7 +51,7 @@ class TestTesla:
 
     def test_update_passes_errors_to_context(self, monkeypatch):
         # setup
-        dummy_error = Exception()
+        dummy_error = Exception("Der SoC kann nicht ausgelesen werden")
         self.mock_request_soc_range.side_effect = dummy_error
 
         # execution
@@ -59,8 +59,12 @@ class TestTesla:
             tesla_ev_num=0, token=self.token)), 0).update(VehicleUpdateData())
 
         # evaluation
-        self.assert_context_manager_called_with(dummy_error)
+        self.assert_context_manager_called_with_substr(dummy_error)
 
     def assert_context_manager_called_with(self, error):
         assert self.mock_context_exit.call_count == 1
         assert self.mock_context_exit.call_args[0][1] is error
+
+    def assert_context_manager_called_with_substr(self, error):
+        assert self.mock_context_exit.call_count == 1
+        assert str(error) in str(self.mock_context_exit.call_args[0][1])

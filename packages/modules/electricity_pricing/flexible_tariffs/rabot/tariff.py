@@ -43,7 +43,7 @@ def _refresh_token(config: RabotTariff):
     config.configuration.token = RabotToken(access_token=response["access_token"],
                                             expires_in=response["expires_in"],
                                             created_at=timecheck.create_timestamp())
-    Pub().pub("openWB/set/optional/et/dynamic/provider", asdict(config))
+    Pub().pub("openWB/set/optional/ep/flexible_tariff/provider", asdict(config))
 
 
 def fetch(config: RabotTariff) -> None:

@@ -1,3 +1,4 @@
+# don't update python distribution packages in here
 typing-extensions==4.4.0
 jq==1.1.3
 paho_mqtt==1.6.1
@@ -24,4 +25,3 @@ ocpp==1.0.0
 websockets==12.0
 pycarwings3==0.7.14
 asyncio==3.4.3
-urllib3==1.26.5
