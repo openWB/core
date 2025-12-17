@@ -324,7 +324,8 @@ class ParameterHandler
             $instantChargingSoc = $template['chargemode']['instant_charging']['limit']['soc'] ?? 0;
             
             // ECO Charging max_price extrahieren
-            $maxPriceEco = isset($template['chargemode']['eco_charging']['max_price']) ? number_format((float)$template['chargemode']['eco_charging']['max_price'], 4, '.', '') : '0.0000';
+            $maxPriceEco = isset($template['chargemode']['eco_charging']['max_price']) ? number_format((float)$template['chargemode']['eco_charging']['max_price'], 6, '.', '') : '0.0000';
+            $maxPriceEco = $maxPriceEco * 100000; 
             
             // SoC und Range aus connected_vehicle extrahieren
             $connectedVehicleSocTopic = "openWB/chargepoint/{$id}/get/connected_vehicle/soc";
