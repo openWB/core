@@ -60,7 +60,7 @@ class KostalPlenticoreBat(AbstractBat):
     # Timeout kann im Kostal UI geändert werden. Standardwert 30s
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
-        unit = self.device_config.configuration.modbus_id
+        unit = self.modbus_id
         log.debug(f'last_mode: {self.last_mode}')
 
         if power_limit is None:
