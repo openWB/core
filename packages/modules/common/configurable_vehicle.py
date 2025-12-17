@@ -1,5 +1,6 @@
 from enum import Enum
 import logging
+# import time
 from typing import Optional, TypeVar, Generic, Callable
 from helpermodules import timecheck
 
@@ -13,6 +14,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.vehicles.common.calc_soc import calc_soc
 from modules.vehicles.manual.config import ManualSoc
 from modules.vehicles.mqtt.config import MqttSocSetup
+
 
 T_VEHICLE_CONFIG = TypeVar("T_VEHICLE_CONFIG")
 
@@ -125,7 +127,34 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
 
     def _get_carstate_by_source(self, vehicle_update_data: VehicleUpdateData, source: SocSource) -> CarState:
         if source == SocSource.API:
-            return self.__component_updater(vehicle_update_data)
+            try:
+                _carState = self.__component_updater(vehicle_update_data)
+            except Exception as e:
+                if vehicle_update_data.plug_state and\
+                   vehicle_update_data.last_soc and\
+                   vehicle_update_data.last_soc_timestamp >= vehicle_update_data.plug_time and\
+                   (self.calculated_soc_state.last_imported or vehicle_update_data.imported):
+                    _txt1 = "SoC FALLBACK: SoC wird berechnet, da ein Fehler bei der Abfrage aufgetreten ist:"
+                    self.fault_state.warning(f"{_txt1} {e}")
+                    _carState = CarState(soc=calc_soc.calc_soc(
+                                         vehicle_update_data,
+                                         vehicle_update_data.efficiency,
+                                         self.calculated_soc_state.last_imported or vehicle_update_data.imported,
+                                         vehicle_update_data.battery_capacity))
+                else:
+                    if not vehicle_update_data.plug_state:
+                        reason = ", weil kein Fahrzeug eingesteckt ist."
+                    elif not vehicle_update_data.last_soc:
+                        reason = ", weil kein SOC-Wert verfügbar ist."
+                    elif vehicle_update_data.last_soc_timestamp < vehicle_update_data.plug_time:
+                        reason = ", da der SOC-Zeitstempel vor dem Einstecken liegt."
+                    elif not (self.calculated_soc_state.last_imported or vehicle_update_data.imported):
+                        reason = ", weil Daten zum Berechnen des SOC fehlen."
+                    else:
+                        reason = ""
+                    _txt1 = "Die Berechnung vom letzten bekannten Soc ist nicht möglich"
+                    raise Exception(f"Der SoC kann nicht ausgelesen werden: {e}. {_txt1}{reason}")
+            return _carState
         elif source == SocSource.CALCULATION:
             return CarState(soc=calc_soc.calc_soc(
                 vehicle_update_data,

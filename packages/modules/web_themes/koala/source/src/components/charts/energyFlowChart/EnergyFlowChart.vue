@@ -49,7 +49,7 @@ const absoluteValueObject = (valueObject: ValueObject): ValueObject => {
 };
 
 const gridPower = computed(
-  () => mqttStore.getGridPower('object') as ValueObject,
+  () => mqttStore.getCounterPower('object') as ValueObject,
 );
 const gridConsumption = computed(() => Number(gridPower.value.value) > 0);
 const gridFeedIn = computed(() => Number(gridPower.value.value) < 0);
@@ -286,18 +286,9 @@ const animationDurations = computed(() => {
     home: calcDuration(Number(homePower.value.value), maxPower),
     pv: calcDuration(Number(pvPower.value.value), maxPower),
     battery: calcDuration(Number(batteryPower.value.value), maxPower),
-    chargePoint1: calcDuration(
-      Number(chargePoint1Power.value.value),
-      maxPower,
-    ),
-    chargePoint2: calcDuration(
-      Number(chargePoint2Power.value.value),
-      maxPower,
-    ),
-    chargePoint3: calcDuration(
-      Number(chargePoint3Power.value.value),
-      maxPower,
-    ),
+    chargePoint1: calcDuration(Number(chargePoint1Power.value.value), maxPower),
+    chargePoint2: calcDuration(Number(chargePoint2Power.value.value), maxPower),
+    chargePoint3: calcDuration(Number(chargePoint3Power.value.value), maxPower),
     chargePointSum: calcDuration(
       Number(chargePointSumPower.value.value),
       maxPower,
@@ -837,7 +828,7 @@ path.animatedReverse.grid {
 
 path.animated.home,
 path.animatedReverse.home {
-  stroke: var(--q-flow-home-stroke);
+  stroke: var(--q-home-stroke);
   animation-duration: v-bind('animationDurations.home');
 }
 
@@ -849,28 +840,28 @@ path.animatedReverse.pv {
 
 path.animated.battery,
 path.animatedReverse.battery {
-  stroke: var(--q-warning);
+  stroke: var(--q-battery-stroke);
   animation-duration: v-bind('animationDurations.battery');
 }
 
 path.animated.charge-point-1,
 path.animatedReverse.charge-point-1 {
-  stroke: var(--q-primary);
+  stroke: var(--q-charge-point-stroke);
   animation-duration: v-bind('animationDurations.chargePoint1');
 }
 path.animated.charge-point-2,
 path.animatedReverse.charge-point-2 {
-  stroke: var(--q-primary);
+  stroke: var(--q-charge-point-stroke);
   animation-duration: v-bind('animationDurations.chargePoint2');
 }
 path.animated.charge-point-3,
 path.animatedReverse.charge-point-3 {
-  stroke: var(--q-primary);
+  stroke: var(--q-charge-point-stroke);
   animation-duration: v-bind('animationDurations.chargePoint3');
 }
 path.animated.charge-point-sum,
 path.animatedReverse.charge-point-sum {
-  stroke: var(--q-primary);
+  stroke: var(--q-charge-point-stroke);
   animation-duration: v-bind('animationDurations.chargePointSum');
 }
 
@@ -909,7 +900,7 @@ path.animatedReverse.vehicle-3 {
 
 :root {
   path.home {
-    stroke: var(--q-grey);
+    stroke: var(--q-home-stroke);
   }
 }
 
@@ -958,7 +949,7 @@ text .fill-success {
 }
 
 text .fill-danger {
-  fill: var(--q-negative);
+  fill: var(--q-grid-stroke);
 }
 
 text .fill-dark {
@@ -966,42 +957,42 @@ text .fill-dark {
 }
 
 .grid text {
-  fill: var(--q-negative);
+  fill: var(--q-grid-stroke);
 }
 
 .grid circle,
 .grid rect {
-  stroke: var(--q-negative);
+  stroke: var(--q-grid-stroke);
 }
 
 .grid circle {
-  fill: color-mix(in srgb, var(--q-negative) 20%, transparent);
+  fill: var(--q-grid-fill);
 }
 
 .pv text {
-  fill: var(--q-positive);
+  fill: var(--q-pv-stroke);
 }
 
 .pv circle,
 .pv rect {
-  stroke: var(--q-positive);
+  stroke: var(--q-pv-stroke);
 }
 
 .pv circle {
-  fill: color-mix(in srgb, var(--q-positive) 30%, transparent);
+  fill: var(--q-pv-fill);
 }
 
 .battery text {
-  fill: var(--q-battery);
+  fill: var(--q-battery-stroke);
 }
 
 .battery circle,
 .battery rect {
-  stroke: var(--q-battery);
+  stroke: var(--q-battery-stroke);
 }
 
 .battery circle:not(.soc) {
-  fill: color-mix(in srgb, var(--q-battery) 50%, transparent);
+  fill: var(--q-battery-fill);
 }
 
 :root {
@@ -1018,24 +1009,24 @@ text .fill-dark {
 
 .home circle,
 .home rect {
-  stroke: var(--q-flow-home-stroke);
+  stroke: var(--q-home-stroke);
 }
 
 .home circle {
-  fill: color-mix(in srgb, var(--q-brown-text) 20%, transparent);
+  fill: var(--q-home-fill);
 }
 
 .charge-point text {
-  fill: var(--q-primary);
+  fill: var(--q-charge-point-stroke);
 }
 
 .charge-point circle,
 .charge-point rect {
-  stroke: var(--q-primary);
+  stroke: var(--q-charge-point-stroke);
 }
 
 .charge-point circle {
-  fill: color-mix(in srgb, var(--q-primary) 30%, transparent);
+  fill: var(--q-charge-point-fill);
 }
 
 .background-circle {
