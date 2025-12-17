@@ -697,7 +697,7 @@ class SetData:
                     self._validate_value(msg, float, [(0, 100)])
                 elif "/get/fault_state" in msg.topic:
                     self._validate_value(msg, int, [(0, 2)])
-                elif ("/get/fault_str" in msg.topicc or
+                elif ("/get/fault_str" in msg.topic or
                       "/get/serial_number" in msg.topic):
                     self._validate_value(msg, str)
                 elif "/set/power_limit_controllable" in msg.topic:
