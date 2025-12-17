@@ -675,8 +675,6 @@ class SetData:
             elif ("openWB/set/bat/config/bat_control_min_soc" in msg.topic or
                   "openWB/set/bat/config/bat_control_max_soc" in msg.topic):
                 self._validate_value(msg, int, [(0, 100)])
-            elif "openWB/set/bat/config/scheduled_charging_plans" in msg.topic:
-                self._validate_value(msg, "json")
             elif "openWB/set/bat/set/charging_power_left" in msg.topic:
                 self._validate_value(msg, float)
             elif "openWB/set/bat/get/soc" in msg.topic:

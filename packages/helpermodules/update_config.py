@@ -71,7 +71,6 @@ class UpdateConfig:
         "^openWB/bat/config/price_limit$",
         "^openWB/bat/config/price_charge_activated$",
         "^openWB/bat/config/charge_limit$",
-        "^openWB/bat/config/scheduled_charging_plans$",
         "^openWB/bat/[0-9]+/get/max_charge_power$",
         "^openWB/bat/[0-9]+/get/max_discharge_power$",
 
@@ -181,7 +180,6 @@ class UpdateConfig:
         "^openWB/command/max_id/io_device$",
         "^openWB/command/max_id/mqtt_bridge$",
         "^openWB/command/max_id/vehicle$",
-        "^openWB/command/max_id/scheduled_bat_charging_plan$",
         "^openWB/command/[A-Za-z0-9_]+/error$",
         "^openWB/command/todo$",
 
@@ -534,7 +532,6 @@ class UpdateConfig:
         ("openWB/bat/config/price_limit_activated", False),
         # "^openWB/bat/config/price_limit$",
         ("openWB/bat/config/price_charge_activated", False),
-        ("openWB/bat/config/scheduled_charging_plans", []),
         # "^openWB/bat/config/charge_limit$",
         # ("openWB/bat/[0-9]+/get/max_charge_power", ),
         # ("openWB/bat/[0-9]+/get/max_discharge_power",),

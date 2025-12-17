@@ -28,8 +28,6 @@ from control.algorithm.filter_chargepoints import get_chargepoints_by_chargemode
 from control.pv import Pv
 from helpermodules.constants import NO_ERROR
 from modules.common.abstract_device import AbstractDevice
-from helpermodules.abstract_plans import ScheduledBatChargingPlan
-from helpermodules import timecheck
 
 log = logging.getLogger(__name__)
 
@@ -82,8 +80,6 @@ class Config:
     bat_control_max_soc: str = field(default=90, metadata={"topic": "config/bat_control_max_soc"})
     price_limit: float = field(default=0.30, metadata={"topic": "config/price_limit"})
     charge_limit: float = field(default=0.30, metadata={"topic": "config/charge_limit"})
-    scheduled_charging_plans: List[ScheduledBatChargingPlan] = field(
-        default_factory=list, metadata={"topic": "config/scheduled_charging_plans"})
 
 
 def config_factory() -> Config:
@@ -101,10 +97,6 @@ class Get:
     imported: float = field(default=0, metadata={"topic": "get/imported"})
     exported: float = field(default=0, metadata={"topic": "get/exported"})
     power: float = field(default=0, metadata={"topic": "get/power"})
-    # additional information
-    max_charge_power: float = field(default=0, metadata={"topic": "get/max_charge_power"})
-    max_discharge_power: float = field(default=0, metadata={"topic": "get/max_discharge_power"})
-    capacity: float = field(default=0, metadata={"topic": "get/capacity"})
 
 
 def get_factory() -> Get:
@@ -223,7 +215,6 @@ class BatAll:
         bat_ready_to_discharge = 0
         for bat_component in controllable_bat_components:
             bat_component_data = data.data.bat_data[f"bat{bat_component.component_config.id}"].data
-            bat_component_data.get
             if bat_component_data.get.soc < self.data.config.bat_control_max_soc:
                 max_charge_power_total += bat_component_data.get.max_charge_power
                 bat_ready_to_charge += 1
@@ -500,22 +491,6 @@ class BatAll:
             return BatChargeMode.BAT_SELF_REGULATION
 
     def get_charge_mode_scheduled(self):
-        try:
-            if self.data.config.scheduled_charging_plans:
-                # ersten aktiven Plan holen bei dem das Zeitfenster passt
-                plan = timecheck.check_plans_timeframe(self.data.config.scheduled_charging_plans)
-                if plan is not None:
-                    pass
-                    # soc überprüfen
-                    # soc = plan.limit.soc_limit
-                    # günstigste stunden ermitteln
-                    # hour_list = data.data.optional_data.ep_get_loading_hours()
-        except Exception:
-            pass
-        # will be less complicated then the vehicle version
-        # plan_data = self._find_recent_plan(self.data.chargemode.scheduled_charging.plans, soc)
-        # hour_list = data.data.optional_data.ep_get_loading_hours(
-        #             selected_plan.duration, selected_plan.duration + selected_plan.remaining_time)
         pass
 
     def get_power_limit(self):
@@ -543,7 +518,7 @@ class BatAll:
                 log.debug("Aktive Speichersteuerung: Strompreisbasiert.")
                 charge_mode = self.get_charge_mode_electricity_tariff()
             elif self.data.config.power_limit_condition == BatPowerLimitCondition.SCHEDULED.value:
-                log.debug("Aktive Speichersteuerung: Zielladen des Speichers.")
+                log.debug("Aktive Speichersteuerung: Vorhersagebasiertes Zielladen.")
                 pass
 
         # calculate power_limit
