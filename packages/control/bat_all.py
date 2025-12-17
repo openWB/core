@@ -78,6 +78,8 @@ class Config:
                              metadata={"topic": "config/manual_mode"})
     bat_control_min_soc: str = field(default=10, metadata={"topic": "config/bat_control_min_soc"})
     bat_control_max_soc: str = field(default=90, metadata={"topic": "config/bat_control_max_soc"})
+    price_limit_activated: bool = field(default=False, metadata={"topic": "config/price_limit_activated"})
+    price_charge_activated: bool = field(default=False, metadata={"topic": "config/price_charge_activated"})
     price_limit: float = field(default=0.30, metadata={"topic": "config/price_limit"})
     charge_limit: float = field(default=0.30, metadata={"topic": "config/charge_limit"})
 
@@ -263,13 +265,6 @@ class BatAll:
                                    f"entlädt mit {power_limit} ({factor} x "
                                    f"{bat_component_data.get.max_discharge_power})"))
             else:
-                # Eigenregelung aller Speicher, da Ladung nicht möglich
-                # if max_charge_power_total == 0:
-                #     power_limit = None
-                #     log.debug(("Aktive Speichersteuerung: Ladung - alle Speicher befinden sich oberhalb maximal "
-                #                f"SoC. Speicher (ID: {bat_component.component_config.id}) auf Eigenregelung gesetzt."))
-                # else:
-
                 # oberhalb des max_soc soll Speicher nicht entladen wenn andere Speicher laden
                 if bat_component_data.get.soc >= self.data.config.bat_control_max_soc:
                     power_limit = 0
@@ -475,13 +470,16 @@ class BatAll:
 
     def get_charge_mode_electricity_tariff(self):
         if data.data.optional_data.data.electricity_pricing.configured:
-            if data.data.optional_data.ep_is_charging_allowed_price_threshold(
-                    self.data.config.charge_limit):
+            self.date
+            if (self.data.config.price_charge_activated and
+                    data.data.optional_data.ep_is_charging_allowed_price_threshold(
+                    self.data.config.charge_limit)):
                 log.debug((f"Aktive Speichersteuerung: Ladung erzwingen. "
                           f"Preislimit: {self.data.config.charge_limit}"))
                 return BatChargeMode.BAT_FORCE_CHARGE
-            elif data.data.optional_data.ep_is_charging_allowed_price_threshold(
-                    self.data.config.price_limit):
+            elif (self.data.config.price_limit_activated and
+                    data.data.optional_data.ep_is_charging_allowed_price_threshold(
+                    self.data.config.price_limit)):
                 log.debug((f"Aktive Speichersteuerung: Ladelimit anwenden. "
                           f"Preislimit: {self.data.config.price_limit}"))
                 return BatChargeMode.BAT_USE_LIMIT
