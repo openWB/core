@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 def fetch(config: RabotTariff) -> None:
     raw_prices = req.get_http_session().get(
-        f"https://rabot.openwb.de/rabot-proxy.php/customers/{config.configuration.consumer_number}"
+        f"https://rabot.openwb.de/rabot-proxy.php/customers/{config.configuration.costumer_number}"
         f"/contracts/{config.configuration.contract_number}/metrics"
     ).json()["data"]["records"]
     prices: Dict[int, float] = {}
