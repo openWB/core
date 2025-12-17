@@ -3,9 +3,9 @@ from typing import Optional
 
 class RabotTariffConfiguration:
     def __init__(self,
-                 costumer_number: Optional[str] = None,
+                 customer_number: Optional[str] = None,
                  contract_number: Optional[str] = None):
-        self.costumer_number = costumer_number
+        self.customer_number = customer_number
         self.contract_number = contract_number
 
 
