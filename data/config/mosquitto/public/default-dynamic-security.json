@@ -250,6 +250,16 @@
 					"topic":	"openWB/optional/ep/get/prices",
 					"priority":	0,
 					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/optional/ep/grid_fee/provider",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/optional/ep/grid_fee/get/prices",
+					"priority":	0,
+					"allow":	true
 				}]
 		}, {
 			"rolename": "graph-access",
@@ -266,6 +276,16 @@
 			"textname":	"Leserechte für Hausverbrauchsdaten",
 			"textdescription":	"Erlaubt das Empfangen von Daten für den Hausverbrauch.",
 			"acls":	[{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/counter/#",
+					"priority": 0,
+					"allow": false
+				}, {
+					"acltype": "publishClientReceive",
+					"topic": "openWB/counter/set/+",
+					"priority": 1,
+					"allow": true
+				}, {
 					"acltype":	"subscribeLiteral",
 					"topic":	"openWB/counter/set/home_consumption",
 					"priority":	0,
@@ -277,14 +297,29 @@
 					"allow":	true
 				}]
 		}, {
-			"rolename": "pv-sum-access",
+			"rolename": "inverter-sum-access",
 			"textname":	"Leserechte für PV-Summendaten",
 			"textdescription":	"Erlaubt das Empfangen von Daten für die Summe aller PV-Anlagen.",
 			"acls":	[{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/pv/#",
+					"priority": 0,
+					"allow": false
+				}, {
+					"acltype": "publishClientReceive",
+					"topic": "openWB/pv/config/configured",
+					"priority": 1,
+					"allow": true
+				}, {
 					"acltype":	"subscribeLiteral",
 					"topic":	"openWB/pv/config/configured",
 					"priority":	0,
 					"allow":	true
+				}, {
+					"acltype": "publishClientReceive",
+					"topic": "openWB/pv/get/+",
+					"priority": 1,
+					"allow": true
 				}, {
 					"acltype":	"subscribeLiteral",
 					"topic":	"openWB/pv/get/power",
@@ -301,23 +336,33 @@
 			"textname":	"Leserechte für Batteriesummendaten",
 			"textdescription":	"Erlaubt das Empfangen von Daten für die Summe aller Batterien.",
 			"acls":	[{
-					"acltype":	"subscribePattern",
-					"topic":	"openWB/bat/get/+",
-					"priority":	0,
-					"allow":	true
+					"acltype": "publishClientReceive",
+					"topic": "openWB/bat/#",
+					"priority": 0,
+					"allow": false
+				}, {
+					"acltype": "publishClientReceive",
+					"topic": "openWB/bat/config/configured",
+					"priority": 1,
+					"allow": true
 				}, {
 					"acltype":	"subscribeLiteral",
 					"topic":	"openWB/bat/config/configured",
 					"priority":	0,
 					"allow":	true
 				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/general/chargemode_config/pv_charging/bat_mode",
+					"acltype": "publishClientReceive",
+					"topic": "openWB/bat/get/+",
+					"priority": 1,
+					"allow": true
+				}, {
+					"acltype":	"subscribePattern",
+					"topic":	"openWB/bat/get/+",
 					"priority":	0,
 					"allow":	true
 				}, {
-					"acltype":	"publishClientSend",
-					"topic":	"openWB/set/general/chargemode_config/pv_charging/bat_mode",
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/general/chargemode_config/pv_charging/bat_mode",
 					"priority":	0,
 					"allow":	true
 				}]
@@ -326,6 +371,16 @@
 			"textname":	"Leserechte für Ladepunktsummendaten",
 			"textdescription":	"Erlaubt das Empfangen von Daten für die Summe aller Ladepunkte.",
 			"acls":	[{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/chargepoint/#",
+					"priority": 0,
+					"allow": false
+				}, {
+					"acltype": "publishClientReceive",
+					"topic": "openWB/chargepoint/get/+",
+					"priority": 1,
+					"allow": true
+				}, {
 					"acltype":	"subscribeLiteral",
 					"topic":	"openWB/chargepoint/get/power",
 					"priority":	0,
