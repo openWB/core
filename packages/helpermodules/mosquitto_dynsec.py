@@ -92,4 +92,15 @@ def check_roles_at_start():
                 add_acl_role("chargepoint-<id>-access", cp.chargepoint.num)
             for ev in SubData.ev_data.values():
                 add_acl_role("vehicle-<id>-access", ev.num)
+            for bat in SubData.bat_data.values():
+                add_acl_role("bat-<id>-access", bat.num)
+            for counter in SubData.counter_data.values():
+                add_acl_role("counter-<id>-access", counter.num)
+            for inverter in SubData.pv_data.values():
+                add_acl_role("inverter-<id>-access", inverter.num)
+            for io_action in SubData.io_actions.actions.values():
+                add_acl_role("io-action-<id>-access", io_action.config.id)
+            for key, value in SubData.system_data.items():
+                if "io" in key:
+                    add_acl_role("io-device-<id>-access", value.config.num)
         flag_path.unlink()
