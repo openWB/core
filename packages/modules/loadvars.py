@@ -155,7 +155,7 @@ class Loadvars:
                 joined_thread_handler(threads_set_values, None)
                 wait_for_module_update_completed(self.event_module_update_completed,
                                                  "openWB/set/optional/ep/module_update_completed")
-                data.data.copy_module_data()
+                data.data.copy_data()
                 self.price_value_store.update()
         except Exception as e:
             log.exception("Fehler im Optional-Modul: %s", e)
