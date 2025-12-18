@@ -973,6 +973,29 @@ class Command:
                          "Benutzerverwaltung wurde zurückgesetzt.",
                          MessageType.WARNING)
 
+    def updateAdminPassword(self, connection_id: str, payload: dict) -> None:
+        """ aktualisiert das Passwort des Admin-Benutzers im User-Management
+        """
+        log.warning("Admin password update requested!")
+        mosquitto_ctrl_config_file = "/home/openwb/.config/mosquitto_ctrl"
+        newPassword = str(payload['data']['newPassword']).strip()
+        if newPassword is None or len(newPassword) == 0:
+            pub_user_message(payload, connection_id,
+                             "Das Admin-Passwort darf nicht leer sein.",
+                             MessageType.ERROR)
+            return
+        with open(mosquitto_ctrl_config_file, "r") as file:
+            lines = file.readlines()
+        with open(mosquitto_ctrl_config_file, "w") as file:
+            for line in lines:
+                if line.startswith("-P "):
+                    file.write(f"-P {payload['data']['newPassword']}\n")
+                else:
+                    file.write(line)
+        pub_user_message(payload, connection_id,
+                         "Admin-Passwort wurde erfolgreich aktualisiert.",
+                         MessageType.SUCCESS)
+
 
 class ErrorHandlingContext:
     def __init__(self, payload: dict, connection_id: str):
