@@ -1108,7 +1108,7 @@ class SetData:
             if "openWB/set/command/max_id" in msg.topic:
                 self._validate_value(msg, int, [(-1, float("inf"))])
             elif "todo" in msg.topic:
-                if subdata.SubData.system_data["system_data"].data["security"]["user_management_active"]:
+                if subdata.SubData.system_data["system"].data["security"]["user_management_active"]:
                     payload = decode_payload(msg.payload)
                     if msg.topic.split("/")[-1] != payload["command"]:
                         log.warning(f'Keine Berechtigung für den Befehl: {payload["command"]}')
