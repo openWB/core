@@ -200,6 +200,9 @@ class ParameterHandler
             case 'get_pv_fault_state':
                 return $this->getPvFaultState($id);
 
+            case 'get_lastlivevaluesjson':
+                return $this->getLastLiveValuesJson();
+
             default:
                 return null;
         }
@@ -1530,5 +1533,25 @@ class ParameterHandler
         } catch (Exception $e) {
             return ['success' => false, 'message' => 'Error setting bat mode: ' . $e->getMessage()];
         }
+    }
+
+    /**
+     * Lese openWB/system/lastlivevaluesJson Topic 1:1 aus
+     */
+    private function getLastLiveValuesJson()
+    {
+        $topic = "openWB/graph/lastlivevaluesJson";
+        $jsonValue = $this->mqttClient->getValue($topic);
+        
+        if ($jsonValue === null) {
+            return [
+                'get_lastlivevaluesjson' => null
+            ];
+        }
+        
+        // JSON-String 1:1 zurückgeben
+        return [
+            'get_lastlivevaluesjson' => $jsonValue
+        ];
     }
 }

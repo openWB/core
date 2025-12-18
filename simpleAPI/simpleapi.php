@@ -276,7 +276,9 @@ class SimpleAPI
             'get_pv_monthly_exported',
             'get_pv_yearly_exported',
             'get_pv_fault_str',
-            'get_pv_fault_state'
+            'get_pv_fault_state',
+            // System - Werte
+            'get_lastlivevaluesjson'
         ];
 
         foreach ($readableKeys as $key) {
@@ -485,9 +487,17 @@ class SimpleAPI
             $firstKey = array_keys($data)[0];
             $firstValue = $data[$firstKey];
 
+            // Für JSON-Strings: direkt den String-Wert zurückgeben
+            if (is_string($firstValue)) {
+                return $firstValue;
+            }
+
             if (is_array($firstValue) && count($firstValue) === 1) {
                 return array_values($firstValue)[0];
             }
+            
+            // Für andere Array-Strukturen: ersten Wert zurückgeben
+            return $firstValue;
         }
 
         return $data;
