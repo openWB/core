@@ -6,6 +6,12 @@
 		"acls": [
 			{
 				"acltype": "publishClientReceive",
+				"topic": "openWB/chargepoint/#",
+				"priority": 0,
+				"allow": false
+			},
+			{
+				"acltype": "publishClientReceive",
 				"topic": "openWB/chargepoint/<id>/#",
 				"priority": 1,
 				"allow": true
@@ -43,6 +49,12 @@
 		"acls": [
 			{
 				"acltype": "publishClientReceive",
+				"topic": "openWB/vehicle/#",
+				"priority": 0,
+				"allow": false
+			},
+			{
+				"acltype": "publishClientReceive",
 				"topic": "openWB/vehicle/<id>/#",
 				"priority": 1,
 				"allow": true
@@ -73,6 +85,18 @@
 		"textdescription": "Erlaubt das Empfangen von Daten für Batterie <id>.",
 		"acls": [
 			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/bat/#",
+				"priority": 0,
+				"allow": false
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/bat/<id>/#",
+				"priority": 1,
+				"allow": true
+			},
+			{
 				"acltype": "subscribePattern",
 				"topic": "openWB/bat/<id>/get/+",
 				"priority": 0,
@@ -91,6 +115,18 @@
 		"textname": "Leserechte für Zähler <id>",
 		"textdescription": "Erlaubt das Empfangen von Daten für Zähler <id>.",
 		"acls": [
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/counter/#",
+				"priority": 0,
+				"allow": false
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/counter/<id>/#",
+				"priority": 1,
+				"allow": true
+			},
 			{
 				"acltype": "subscribePattern",
 				"topic": "openWB/counter/<id>/get/+",
@@ -111,14 +147,26 @@
 		"textdescription": "Erlaubt das Empfangen von Daten für Wechselrichter <id>.",
 		"acls": [
 			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/pv/#",
+				"priority": 0,
+				"allow": false
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/pv/<id>/#",
+				"priority": 1,
+				"allow": true
+			},
+			{
 				"acltype": "subscribePattern",
-				"topic": "openWB/inverter/<id>/get/+",
+				"topic": "openWB/pv/<id>/get/+",
 				"priority": 0,
 				"allow": true
 			},
 			{
 				"acltype": "subscribePattern",
-				"topic": "openWB/inverter/<id>/config",
+				"topic": "openWB/pv/<id>/config",
 				"priority": 0,
 				"allow": true
 			},
