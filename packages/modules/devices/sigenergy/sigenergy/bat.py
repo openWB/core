@@ -55,13 +55,13 @@ class SigenergyBat(AbstractBat):
             log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
             if self.last_mode is not None:
                 # Entladesperre ab 5%, Ansonsten Eigenregelung
-                self.__tcp_client.write_registers(40048, [50], data_type=ModbusDataType.UINT_16, unit=unit)
+                self.client.write_registers(40048, [50], data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = None
         else:
             log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt und nicht entladen")
             if self.last_mode != 'stop':
                 # Entladesperre auch bei 100% SoC
-                self.__tcp_client.write_registers(40048, [1000], data_type=ModbusDataType.UINT_16, unit=unit)
+                self.client.write_registers(40048, [1000], data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = 'stop'
 
     def power_limit_controllable(self) -> bool:

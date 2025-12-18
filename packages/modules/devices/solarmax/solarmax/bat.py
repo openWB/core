@@ -55,7 +55,8 @@ class SolarmaxBat(AbstractBat):
             if self.last_mode is not None:
                 self.__tcp_client.write_registers(142, [0], data_type=ModbusDataType.INT_16, unit=unit)
                 self.last_mode = None
-        elif power_limit == 0:
+        elif power_limit >= 0:
+            # Solarmax kann nicht aktiv laden
             log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt und nicht entladen")
             self.__tcp_client.write_registers(140, [0], data_type=ModbusDataType.INT_16, unit=unit)
             self.__tcp_client.write_registers(141, [0], data_type=ModbusDataType.INT_16, unit=unit)
