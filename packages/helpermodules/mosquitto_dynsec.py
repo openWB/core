@@ -102,5 +102,5 @@ def check_roles_at_start():
                 add_acl_role("io-action-<id>-access", io_action.config.id)
             for key, value in SubData.system_data.items():
                 if "io" in key:
-                    add_acl_role("io-device-<id>-access", value.config.num)
+                    add_acl_role("io-device-<id>-access", value.config.id)
         flag_path.unlink()
