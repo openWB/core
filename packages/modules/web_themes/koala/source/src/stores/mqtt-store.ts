@@ -217,14 +217,15 @@ export const useMqttStore = defineStore('mqtt', () => {
       }, object);
     };
     if (topic in topics.value) {
+      const originalValue = JSON.parse(JSON.stringify(getValue.value(topic)));
       if (objectPath != undefined) {
         setPath(topics.value[topic], objectPath, payload);
       } else {
         topics.value[topic] = payload;
       }
       if (publish) {
-        console.debug('publish topic', topic, topics.value[topic]);
-        sendTopicToBroker(topic, topics.value[topic]);
+        console.debug('publish topic', topic, topics.value[topic], originalValue);
+        sendTopicToBroker(topic, topics.value[topic], originalValue);
       }
     } else {
       console.warn('topic not found', topic);
@@ -392,24 +393,31 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param payload data to send, should be a valid JSON string
    * @param retain send message as retained
    * @param qos quality of service to use (0, 1, 2)
+   * @returns Promise<boolean> success status
    */
-  function doPublish(
+  async function doPublish(
     topic: string,
     payload: unknown,
     retain: boolean = true,
     qos: QoS = 2,
-  ) {
+  ): Promise<boolean> {
     console.debug('doPublish', topic, payload);
     if (!mqttClient) {
       console.error('mqttClient is not initialized');
-      return;
+      return Promise.resolve(false);
     }
     const options: IClientPublishOptions = {
       qos: qos,
       retain: retain,
     };
-    mqttClient.publish(topic, JSON.stringify(payload), options, (error) => {
-      if (error) {
+    // Fehlerbehandlung mit Promise und Rückgabewert
+    try {
+      try {
+        await mqttClient
+          .publishAsync(topic, JSON.stringify(payload), options);
+        console.debug('Publish successful', topic);
+        return true;
+      } catch (error) {
         console.error('Publish error', topic, error);
         $q.notify({
           type: 'negative',
@@ -417,21 +425,44 @@ export const useMqttStore = defineStore('mqtt', () => {
           caption: error.message,
           progress: true,
         });
+        return false;
       }
-    });
+    } catch (error: unknown) {
+      console.error('Publish exception', topic, error);
+      let message = '';
+      if (error instanceof Error) {
+        message = error.message;
+      } else {
+        message = String(error);
+      }
+      $q.notify({
+        type: 'negative',
+        message: `Fehler beim Senden der Daten "${topic}"`,
+        caption: message,
+        progress: true,
+      });
+      return Promise.resolve(false);
+    }
   }
 
   /**
    * replaces "openWB/" with "openWB/set/" and publishes this topic
    * @param topic mqtt topic to send
    * @param payload payload, should be a valid JSON string
+   * @param originalValue original value to restore on failure
+   * @returns Promise<boolean> success status
    */
-  function sendTopicToBroker(topic: string, payload: unknown = undefined) {
+  async function sendTopicToBroker(topic: string, payload: unknown = undefined, originalValue?: unknown): Promise<boolean> {
     const setTopic = topic.replace('openWB/', 'openWB/set/');
     if (payload === undefined) {
       payload = topics.value[topic];
     }
-    doPublish(setTopic, payload);
+    const success = await doPublish(setTopic, payload);
+    if (!success && originalValue !== undefined) {
+      console.warn('restoring original value due to publish failure', topic, originalValue);
+      topics.value[topic] = originalValue;
+    }
+    return success;
   }
 
   /**
