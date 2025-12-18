@@ -21,6 +21,11 @@ export interface TopicCount {
   [key: string]: number;
 }
 
+export interface SystemCommandEvent {
+  command: string;
+  data: unknown;
+}
+
 export interface Hierarchy {
   id: number;
   type: string;
