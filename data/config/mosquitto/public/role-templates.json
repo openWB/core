@@ -135,6 +135,12 @@
 			},
 			{
 				"acltype": "subscribePattern",
+				"topic": "openWB/counter/<id>/config",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "subscribePattern",
 				"topic": "openWB/system/device/+/component/<id>/config",
 				"priority": 0,
 				"allow": true
@@ -173,6 +179,38 @@
 			{
 				"acltype": "subscribePattern",
 				"topic": "openWB/system/device/+/component/<id>/config",
+				"priority": 0,
+				"allow": true
+			}
+		]
+	},
+	{
+		"rolename": "io-action-<id>-access",
+		"textname": "Leserechte für IO-Aktion <id>",
+		"textdescription": "Erlaubt das Empfangen von Daten für IO-Aktion <id>.",
+		"acls": [
+			{
+				"acltype": "subscribePattern",
+				"topic": "openWB/io/action/<id>/config",
+				"priority": 0,
+				"allow": true
+			}
+		]
+	},
+	{
+		"rolename": "io-device-<id>-access",
+		"textname": "Leserechte für IO-Gerät <id>",
+		"textdescription": "Erlaubt das Empfangen von Daten für IO-Gerät <id>.",
+		"acls": [
+			{
+				"acltype": "subscribePattern",
+				"topic": "openWB/system/io/<id>/config",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "subscribePattern",
+				"topic": "openWB/io/states/<id>/get/+",
 				"priority": 0,
 				"allow": true
 			}
