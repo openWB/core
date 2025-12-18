@@ -19,7 +19,7 @@ def fetch(config: RabotTariff) -> None:
     ).json()["data"]["records"]
     prices: Dict[int, float] = {}
     for data in raw_prices:
-        formatted_price = data["value"]/1000  # €/kWh -> €/Wh
+        formatted_price = data["value"] / 100.000  # ct/kWh -> €/Wh
         timestamp = datetime.datetime.strptime(data["moment"], "%Y-%m-%d %H:%M").timestamp()
         prices.update({str(int(timestamp)): formatted_price})
     return prices
