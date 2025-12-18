@@ -212,7 +212,6 @@ client.on("message", (topic, message) => {
 function publish(payload, topic) {
 	console.debug(`publishing message: ${topic} -> ${payload}`);
 	if (topic != undefined) {
-		client.send(message);
 		client.publish(topic, JSON.stringify(payload), { qos: 2, retain: true }, (err) => {
 			if (err) {
 				console.error("error publishing message:", err);
