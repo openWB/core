@@ -1540,7 +1540,7 @@ class ParameterHandler
      */
     private function getLastLiveValuesJson()
     {
-        $topic = "openWB/system/lastlivevaluesJson";
+        $topic = "openWB/graph/lastlivevaluesJson";
         $jsonValue = $this->mqttClient->getValue($topic);
         
         if ($jsonValue === null) {
