@@ -26,6 +26,7 @@ import type {
   TimeChargingPlan,
   VehicleChargeTarget,
   CalculatedSocState,
+  SystemCommandEvent,
 } from './mqtt-store-model';
 
 export const useMqttStore = defineStore('mqtt', () => {
@@ -437,9 +438,10 @@ export const useMqttStore = defineStore('mqtt', () => {
    * Sends a command via broker to the backend
    * @param event Command object to send
    */
-  function sendCommand(event: unknown) {
+  function sendCommand(event: SystemCommandEvent) {
+    console.log('sendCommand', `openWB/set/command/${mqttClient?.options.clientId}/todo/${event.command}`, event);
     doPublish(
-      'openWB/set/command/' + mqttClient?.options.clientId + '/todo',
+      `openWB/set/command/${mqttClient?.options.clientId}/todo/${event.command}`,
       event,
       false,
     );
