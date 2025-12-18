@@ -184,6 +184,18 @@
 		"textdescription": "Erlaubt das Empfangen von Daten für IO-Aktion <id>.",
 		"acls": [
 			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/io/action/#",
+				"priority": 0,
+				"allow": false
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/io/action/<id>/+",
+				"priority": 1,
+				"allow": true
+			},
+			{
 				"acltype": "subscribePattern",
 				"topic": "openWB/io/action/<id>/config",
 				"priority": 0,
@@ -196,6 +208,18 @@
 		"textname": "Leserechte für IO-Gerät <id>",
 		"textdescription": "Erlaubt das Empfangen von Daten für IO-Gerät <id>.",
 		"acls": [
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/io/states/#",
+				"priority": 0,
+				"allow": false
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/io/states/<id>/#",
+				"priority": 1,
+				"allow": true
+			},
 			{
 				"acltype": "subscribePattern",
 				"topic": "openWB/system/io/<id>/config",
