@@ -154,11 +154,10 @@ class Optional(OcppMixin):
 
         try:
             if self.data.electricity_pricing.configured:
-                if len(self.data.electricity_pricing.get.prices) == 0:
-                    return
-                ep = self.data.electricity_pricing
-                ep.get.prices = remove(ep.get.prices)
-                Pub().pub("openWB/set/optional/ep/get/prices", ep.get.prices)
+                if len(self.data.electricity_pricing.get.prices) >= 0:
+                    ep = self.data.electricity_pricing
+                    ep.get.prices = remove(ep.get.prices)
+                    Pub().pub("openWB/set/optional/ep/get/prices", ep.get.prices)
                 if self._flexible_tariff_module:
                     ep.flexible_tariff.get.prices = remove(ep.flexible_tariff.get.prices)
                     Pub().pub("openWB/set/optional/ep/flexible_tariff/get/prices", ep.flexible_tariff.get.prices)
