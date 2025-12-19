@@ -14,7 +14,7 @@ from control import data
 from helpermodules import hardware_configuration, subdata
 from helpermodules.broker import BrokerClient
 from helpermodules.pub import Pub, pub_single
-from helpermodules.utils.topic_parser import decode_payload, get_index, get_index_position
+from helpermodules.utils.topic_parser import decode_payload, get_index, get_index_position, get_second_index
 from helpermodules.update_config import UpdateConfig
 import dataclass_utils
 
@@ -160,7 +160,21 @@ class SetData:
                 else:
                     # aktuelles json-Objekt liegt in subdata
                     index = get_index(msg.topic)
-                    if "ev_template" in msg.topic:
+                    if "time_charging" in msg.topic and "plans" in msg.topic:
+                        event = "time_charging_plan"
+                        try:
+                            template = dataclasses.asdict(copy.deepcopy(
+                                subdata.SubData.ev_charge_template_data["ct"+index]).data)
+                        except IndexError:
+                            template = {}
+                    elif "scheduled_charging" in msg.topic and "plans" in msg.topic:
+                        event = "scheduled_charging_plan"
+                        try:
+                            template = dataclasses.asdict(copy.deepcopy(
+                                subdata.SubData.ev_charge_template_data["ct"+index]).data)
+                        except IndexError:
+                            template = {}
+                    elif "ev_template" in msg.topic:
                         event = self.event_ev_template
                         if "et"+str(index) in subdata.SubData.ev_template_data:
                             template = copy.deepcopy(
@@ -184,11 +198,26 @@ class SetData:
                     else:
                         raise ValueError("Zu "+msg.topic+" konnte kein passendes json-Objekt gefunden werden.")
                     # Wert, der aktualisiert werden soll, erstellen/finden und updaten
-                    if event == self.event_cp_config:
-                        key_list = msg.topic.split("/")[5:]
+                    if event == "scheduled_charging_plan":
+                        for plan in template['chargemode']['scheduled_charging']['plans']:
+                            if plan['id'] == value['id']:
+                                plan.update(value)
+                                break
+                        else:
+                            template['chargemode']['scheduled_charging']['plans'].append(value)
+                    elif event == "time_charging_plan":
+                        for plan in template['time_charging']['plans']:
+                            if plan['id'] == value['id']:
+                                plan.update(value)
+                                break
+                        else:
+                            template['time_charging']['plans'].append(value)
                     else:
-                        key_list = msg.topic.split("/")[6:]
-                    self._change_key(template, key_list, value)
+                        if event == self.event_cp_config:
+                            key_list = msg.topic.split("/")[5:]
+                        else:
+                            key_list = msg.topic.split("/")[6:]
+                        self._change_key(template, key_list, value)
                     # publish
                     index_pos = get_index_position(msg.topic)
                     if event == self.event_cp_config:
@@ -200,7 +229,8 @@ class SetData:
                     topic = topic.replace('set/', '', 1)
                     Pub().pub(topic, template, retain=retain)
                     Pub().pub(msg.topic, "")
-                    event.clear()
+                    if isinstance(event, Event):
+                        event.clear()
             else:
                 Pub().pub(msg.topic, "")
         except Exception:
@@ -408,7 +438,9 @@ class SetData:
             enthält Topic und Payload
         """
         try:
-            if (re.search("/vehicle/template/charge_template/[0-9]+$", msg.topic) is not None or
+            if ("/chargemode/scheduled_charging/plans/" in msg.topic or "/time_charging/plans/" in msg.topic):
+                self._validate_value(msg, "json", pub_json=True)
+            elif (re.search("/vehicle/template/charge_template/[0-9]+$", msg.topic) is not None or
                     re.search("/chargepoint/[0-9]+/set/charge_template$", msg.topic) is not None):
                 self._validate_value(msg, "json")
                 if data.data.general_data.data.temporary_charge_templates_active is False:
