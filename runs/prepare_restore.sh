@@ -42,6 +42,12 @@ declare resultStatus
 			if [[ ! -d "$WORKING_DIR/boot" ]]; then
 				echo "boot file missing; continue anyway"
 			fi
+			if [[ ! -f "$WORKING_DIR/mosquitto_ctrl" ]]; then
+				echo "mosquitto_ctrl file missing; continue anyway"
+			fi
+			if [[ ! -f "$WORKING_DIR/dynamic-security.json" ]]; then
+				echo "dynamic-security.json file missing; continue anyway"
+			fi
 			if ! (cd "$WORKING_DIR" && sudo sha256sum --quiet --check "SHA256SUM"); then
 				resultMessage="Einige Dateien wurden gelöscht oder bearbeitet!"
 				resultStatus=1
