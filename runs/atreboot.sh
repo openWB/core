@@ -351,6 +351,16 @@ chmod 666 "$LOGFILE"
 		sudo cp "${OPENWBBASEDIR}/data/config/mosquitto/openwb.conf" "/etc/mosquitto/conf.d/openwb.conf"
 		restartService=1
 	fi
+	echo "checking for unknown mosquitto configuration files..."
+	# remove files with pattern openwb-*.conf from /etc/mosquitto/conf.d/
+	# there may be obsolete files from other versions, eg. with user management features
+	for file in /etc/mosquitto/conf.d/openwb-*.conf; do
+		if [[ -f "$file" ]]; then
+			echo "removing obsolete mosquitto configuration file '$file'"
+			sudo rm "$file"
+			restartService=1
+		fi
+	done
 	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto.acl" "/etc/mosquitto/mosquitto.acl"; then
 		echo "mosquitto acl already up to date"
 	else
