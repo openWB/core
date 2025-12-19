@@ -112,7 +112,7 @@ client.on("error", (error) => {
 	addLog("MQTT Verbindung fehlgeschlagen.");
 	addLog("Lösche evtl. vorhandene Anmeldedaten und lade die Seite neu...");
 	deleteCookie("mqtt");
-	location.reload();
+	window.location.reload();
 });
 
 // Gets called whenever you receive a message
