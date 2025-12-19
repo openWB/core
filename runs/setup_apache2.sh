@@ -94,7 +94,12 @@ disableSite default-ssl
 # enable openwb ssl site
 enableSite apache-openwb-ssl
 # check if unencrypted access is configured
-allowUnencryptedAccess=$(mosquitto_sub -t "openWB/general/allow_unencrypted_access" -p 1886 -C 1 -W 1 --quiet)
+if allowUnencryptedAccess=$(mosquitto_sub -t "openWB/general/allow_unencrypted_access" -p 1886 -C 1 -W 1 --quiet); then
+	echo "got 'allow unencrypted access' setting: '$allowUnencryptedAccess'"
+else
+	echo "failed getting 'allow unencrypted access' setting! assuming 'true'"
+	allowUnencryptedAccess="true"
+fi
 if [[ $allowUnencryptedAccess == "true" ]]; then
 	echo "WARNING: unencrypted access is enabled!"
 	disableSite apache-redirect-ssl
@@ -108,7 +113,12 @@ else
 fi
 
 # enable http api ssl site if configured
-httpApiEnabled=$(mosquitto_sub -t "openWB/general/http_api" -p 1886 -C 1 -W 1 --quiet)
+if httpApiEnabled=$(mosquitto_sub -t "openWB/general/http_api" -p 1886 -C 1 -W 1 --quiet); then
+	echo "got 'http api enabled' setting: '$httpApiEnabled'"
+else
+	echo "failed getting 'http api enabled' setting! assuming 'false'"
+	httpApiEnabled="false"
+fi
 if [[ $httpApiEnabled == "true" ]]; then
 	echo "http api is enabled"
 	enableSite http-api-ssl
