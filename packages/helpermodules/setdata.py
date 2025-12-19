@@ -14,7 +14,7 @@ from control import data
 from helpermodules import hardware_configuration, subdata
 from helpermodules.broker import BrokerClient
 from helpermodules.pub import Pub, pub_single
-from helpermodules.utils.topic_parser import decode_payload, get_index, get_index_position, get_second_index
+from helpermodules.utils.topic_parser import decode_payload, get_index, get_index_position
 from helpermodules.update_config import UpdateConfig
 import dataclass_utils
 
