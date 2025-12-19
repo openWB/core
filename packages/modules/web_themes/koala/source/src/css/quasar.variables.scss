@@ -46,9 +46,10 @@ $pv-fill: #90ee9033;
 $battery: #ba7128;
 $battery-stroke: #ba7128;
 $battery-fill: #ba712833;
+$battery-fill-flow-diagram: #c6a583;
 $charge-point-stroke: #5c93d1;
 $charge-point-fill: #5c93d14D;
-// Light theme (default)
+// Light theme (default). #c6a583
 :root {
   --q-primary: #{$primary};
   --q-secondary: #{$secondary};
@@ -74,6 +75,7 @@ $charge-point-fill: #5c93d14D;
   --q-pv-fill: #{$pv-fill};
   --q-battery-stroke: #{$battery-stroke};
   --q-battery-fill: #{$battery-fill};
+  --q-battery-fill-flow-diagram: #{$battery-fill-flow-diagram};
   --q-charge-point-stroke: #{$charge-point-stroke};
   --q-charge-point-fill: #{$charge-point-fill};
 
@@ -255,6 +257,7 @@ $dark-background-2: #010322;
 $dark-list: rgb(40, 42, 62);
 $dark-carousel: #8b8f9f;
 $dark-tab-icon: #d7d9e0;
+$battery-fill-flow-diagram: #b2885f;
 $dark-daily-totals-grid-fill: #a13a41;
 $dark-daily-totals-grid-stroke: #da959a;
 $dark-daily-totals-battery-fill: #b97a1f;
@@ -292,6 +295,7 @@ $dark-daily-totals-chargepoint-fill: #254a8c;
   --q-battery-fill: #{$battery-fill};
   --q-charge-point-stroke: #{$charge-point-stroke};
   --q-charge-point-fill: #{$charge-point-fill};
+  --q-battery-fill-flow-diagram: #{$battery-fill-flow-diagram};
   --q-dark-daily-totals-grid-fill: #{$dark-daily-totals-grid-fill};
   --q-dark-daily-totals-grid-stroke: #{$dark-daily-totals-grid-stroke};
   --q-dark-daily-totals-battery-fill: #{$dark-daily-totals-battery-fill};

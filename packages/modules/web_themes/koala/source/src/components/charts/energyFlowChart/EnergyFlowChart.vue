@@ -992,8 +992,9 @@ text .fill-dark {
 }
 
 .battery circle:not(.soc) {
-  fill: var(--q-battery-fill);
+  fill: var(--q-battery-fill-flow-diagram);
 }
+
 
 :root {
   .home text {
