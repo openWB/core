@@ -43,33 +43,39 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import ChargePointScheduledPlanButton from './ChargePointScheduledPlanButton.vue';
 import ChargePointScheduledPlanDetails from './ChargePointScheduledPlanDetails.vue';
-import { computed, ref } from 'vue';
 import { Screen } from 'quasar';
 
 const props = defineProps<{
   chargePointId: number;
 }>();
 
-const isSmallScreen = computed(() => Screen.lt.sm);
-
-const currentPlanDetailsVisible = ref<boolean>(false);
-const selectedPlan = ref(null);
-
 const mqttStore = useMqttStore();
 
+const isSmallScreen = computed(() => Screen.lt.sm);
+
 const plans = computed(() =>
-  mqttStore.vehicleScheduledChargingPlans(props.chargePointId),
+  mqttStore.vehicleScheduledChargingPlans(props.chargePointId)
 );
+
+const selectedPlanId = ref<number | null>(null);
+
+const selectedPlan = computed(() => {
+  if (selectedPlanId.value === null) return null;
+  return plans.value.find(p => p.id === selectedPlanId.value);
+});
+
+const currentPlanDetailsVisible = ref(false);
+
+const openPlanDialog = (plan) => {
+  selectedPlanId.value = plan.id;
+  currentPlanDetailsVisible.value = true;
+};
 
 const addScheduledChargingPlan = () => {
   mqttStore.addScheduledChargingPlanForChargePoint(props.chargePointId);
-};
-
-const openPlanDialog = (plan) => {
-  selectedPlan.value = plan;
-  currentPlanDetailsVisible.value = true;
 };
 </script>
