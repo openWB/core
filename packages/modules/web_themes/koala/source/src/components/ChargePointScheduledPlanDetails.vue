@@ -97,7 +97,7 @@
           <ChargePointScheduledPlanSummary
             :charge-point-id="props.chargePointId"
             :plan="props.plan"
-            :use="'info'"
+            mode="info"
           />
         </div>
       </div>

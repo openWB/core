@@ -9,7 +9,6 @@
     <ChargePointScheduledPlanSummary
       :charge-point-id="props.chargePointId"
       :plan="props.plan"
-      :use="'button'"
     />
   </q-btn>
 </template>

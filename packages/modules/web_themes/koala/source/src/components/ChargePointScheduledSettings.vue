@@ -19,7 +19,7 @@
     Keine Ladeziele festgelegt.
   </div>
   <div v-else>
-    <div v-for="(plan, index) in plans" :key="index" class="row q-mt-sm">
+    <div v-for="plan in plans" :key="plan.id" class="row q-mt-sm">
       <ChargePointScheduledPlanButton
         class="full-width"
         :charge-point-id="props.chargePointId"

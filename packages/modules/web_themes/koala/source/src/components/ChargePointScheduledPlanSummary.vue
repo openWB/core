@@ -1,8 +1,7 @@
 <template>
   <div class="column">
-    <div v-if="use === 'button'" class="plan-name">{{ plan.name }}</div>
-    <div v-if="use === 'info'" class="plan-name">
-      Nächster geplanter Termin:
+    <div class="plan-name">
+      {{ mode === 'button' ? plan.name : 'Nächster geplanter Termin:' }}
     </div>
     <div class="plan-details">
       <div>
@@ -23,21 +22,7 @@
                 : 'Wöchentlich'
           "
         />
-        <div v-if="plan.frequency.selected === 'once'">
-          {{ planOnceDate }}
-        </div>
-        <div v-if="plan.frequency.selected === 'weekly' && use === 'button'">
-          {{ selectedWeekDaysLabels }}
-        </div>
-        <div v-if="plan.frequency.selected === 'weekly' && use === 'info'">
-          {{ firstSelectedWeekday }}
-        </div>
-        <div v-if="plan.frequency.selected === 'daily' && use === 'button'">
-          täglich
-        </div>
-        <div v-if="plan.frequency.selected === 'daily' && use === 'info'">
-          {{ today }}
-        </div>
+        <div>{{ dateLabel }}</div>
       </div>
       <div>
         <q-icon name="schedule" size="sm" />
@@ -72,11 +57,16 @@ import { computed } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import { type ScheduledChargingPlan } from '../stores/mqtt-store-model';
 
-const props = defineProps<{
-  chargePointId: number;
-  plan: ScheduledChargingPlan;
-  use: 'button' | 'info';
-}>();
+const props = withDefaults(
+  defineProps<{
+    chargePointId: number;
+    plan: ScheduledChargingPlan;
+    mode?: 'button' | 'info';
+  }>(),
+  {
+    mode: 'button',
+  },
+);
 
 const mqttStore = useMqttStore();
 
@@ -151,6 +141,22 @@ const planOnceDate = computed(() => {
   if (props.plan.frequency.once === undefined) return '-';
   const date = new Date(props.plan.frequency.once);
   return formatDateDayMonthYear(date.toISOString().split('T')[0]);
+});
+
+const dateLabel = computed(() => {
+  const freq = props.plan.frequency.selected;
+  if (freq === 'once') {
+    return planOnceDate.value;
+  }
+  if (freq === 'daily') {
+    return props.mode === 'button' ? 'täglich' : today;
+  }
+  if (freq === 'weekly') {
+    return props.mode === 'button'
+      ? selectedWeekDaysLabels.value
+      : firstSelectedWeekday.value;
+  }
+  return '';
 });
 
 const planEtActive = computed(() =>
