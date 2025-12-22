@@ -8,7 +8,13 @@
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn flat label="Abmelden" color="negative" v-close-popup @click="logout" />
+          <q-btn
+            flat
+            label="Abmelden"
+            color="negative"
+            v-close-popup
+            @click="logout"
+          />
           <q-btn flat label="Schließen" color="primary" v-close-popup />
         </q-card-actions>
       </q-card>
@@ -29,7 +35,10 @@
               type="text"
               dense
               autofocus
-              :rules="[ value => value && value.length > 0 || 'Benutzername erforderlich']"
+              :rules="[
+                (value) =>
+                  (value && value.length > 0) || 'Benutzername erforderlich',
+              ]"
             >
               <template v-slot:prepend>
                 <q-icon name="account_circle" />
@@ -40,7 +49,10 @@
               label="Passwort"
               type="password"
               dense
-              :rules="[ value => value && value.length > 0 || 'Passwort erforderlich']"
+              :rules="[
+                (value) =>
+                  (value && value.length > 0) || 'Passwort erforderlich',
+              ]"
             >
               <template v-slot:prepend>
                 <q-icon name="key" />
@@ -50,26 +62,58 @@
 
           <q-card-actions align="right">
             <q-btn flat label="Anmelden" color="positive" type="submit" />
-            <q-btn v-if="anonymousAccessAllowed" flat label="Schließen" color="primary" v-close-popup />
+            <q-btn
+              v-if="anonymousAccessAllowed"
+              flat
+              label="Schließen"
+              color="primary"
+              v-close-popup
+            />
           </q-card-actions>
         </q-form>
       </q-card>
     </q-dialog>
 
-    <q-badge v-if="loggedIn && !smallScreen" rounded align="middle" color="primary" class="non-selectable">
+    <q-badge
+      v-if="loggedIn && !smallScreen"
+      rounded
+      align="middle"
+      color="primary"
+      class="non-selectable"
+    >
       <q-icon name="account_circle" size="sm" left />
       {{ username }}
     </q-badge>
-    <q-icon v-if="loggedIn && smallScreen" name="account_circle" size="md" left color="primary">
+    <q-icon
+      v-if="loggedIn && smallScreen"
+      name="account_circle"
+      size="md"
+      left
+      color="primary"
+    >
       <q-tooltip>Angemeldet als "{{ username }}"</q-tooltip>
     </q-icon>
-    <q-btn v-if="loggedIn" icon="logout" dense flat round @click="showLogoutDialog = true">
+    <q-btn
+      v-if="loggedIn"
+      icon="logout"
+      dense
+      flat
+      round
+      @click="showLogoutDialog = true"
+    >
       <q-tooltip>Abmelden</q-tooltip>
     </q-btn>
     <q-icon v-if="!loggedIn" name="no_accounts" size="md" left>
       <q-tooltip>Nicht angemeldet</q-tooltip>
     </q-icon>
-    <q-btn v-if="!loggedIn" icon="login" dense flat round @click="showLoginDialog = true">
+    <q-btn
+      v-if="!loggedIn"
+      icon="login"
+      dense
+      flat
+      round
+      @click="showLoginDialog = true"
+    >
       <q-tooltip>Anmelden</q-tooltip>
     </q-btn>
   </div>
@@ -111,7 +155,7 @@ const loggedIn = computed(() => {
 });
 
 const username = computed(() => {
-  if (loggedIn.value){
+  if (loggedIn.value) {
     return $q.cookies.get('mqtt').split(':')[0];
   }
   return '';
@@ -135,7 +179,12 @@ const login = () => {
     return;
   }
   const mqttValue = `${user.value}:${password.value}`;
-  $q.cookies.set('mqtt', mqttValue, { expires: '30d', path: '/', secure: true, sameSite: 'Lax' });
+  $q.cookies.set('mqtt', mqttValue, {
+    expires: '30d',
+    path: '/',
+    secure: true,
+    sameSite: 'Lax',
+  });
   console.log('Set mqtt cookie:', $q.cookies.get('mqtt'));
   showLoginDialog.value = false;
   router.go(0);
@@ -148,7 +197,12 @@ const clearLoginData = () => {
 
 watch(anonymousAccessAllowed, (newValue) => {
   console.log('anonymousAccessAllowed changed to:', newValue);
-  console.log('userManagementActive:', userManagementActive.value, 'loggedIn:', loggedIn.value);
+  console.log(
+    'userManagementActive:',
+    userManagementActive.value,
+    'loggedIn:',
+    loggedIn.value,
+  );
   if (userManagementActive.value && !newValue && !loggedIn.value) {
     showLoginDialog.value = true;
   } else {
@@ -157,8 +211,19 @@ watch(anonymousAccessAllowed, (newValue) => {
 });
 
 onMounted(() => {
-  console.log('UserIndicator mounted. userManagementActive:', userManagementActive.value, 'anonymousAccessAllowed:', anonymousAccessAllowed.value, 'loggedIn:', loggedIn.value);
-  if (userManagementActive.value && !anonymousAccessAllowed.value && !loggedIn.value) {
+  console.log(
+    'UserIndicator mounted. userManagementActive:',
+    userManagementActive.value,
+    'anonymousAccessAllowed:',
+    anonymousAccessAllowed.value,
+    'loggedIn:',
+    loggedIn.value,
+  );
+  if (
+    userManagementActive.value &&
+    !anonymousAccessAllowed.value &&
+    !loggedIn.value
+  ) {
     showLoginDialog.value = true;
   }
 });
