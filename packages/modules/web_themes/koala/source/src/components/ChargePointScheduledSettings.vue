@@ -58,14 +58,14 @@ const mqttStore = useMqttStore();
 const isSmallScreen = computed(() => Screen.lt.sm);
 
 const plans = computed(() =>
-  mqttStore.vehicleScheduledChargingPlans(props.chargePointId)
+  mqttStore.vehicleScheduledChargingPlans(props.chargePointId),
 );
 
 const selectedPlanId = ref<number | null>(null);
 
 const selectedPlan = computed(() => {
   if (selectedPlanId.value === null) return null;
-  return plans.value.find(p => p.id === selectedPlanId.value);
+  return plans.value.find((plan) => plan.id === selectedPlanId.value);
 });
 
 const currentPlanDetailsVisible = ref(false);

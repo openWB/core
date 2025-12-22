@@ -3288,7 +3288,6 @@ export const useMqttStore = defineStore('mqtt', () => {
     return undefined;
   });
 
-
   /**
    * Get all counter ids from component hierarchy
    * @returns number[]
@@ -3373,7 +3372,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @returns string | number | ValueObject | undefined
    */
   const counterDailyImported = computed(() => {
-    return (returnType: string = 'textValue', counterId?: number ) => {
+    return (returnType: string = 'textValue', counterId?: number) => {
       const id = counterId ?? getGridId.value;
       if (id === undefined) {
         return '---';
