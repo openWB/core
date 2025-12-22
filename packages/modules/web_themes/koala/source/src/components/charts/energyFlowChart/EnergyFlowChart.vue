@@ -995,7 +995,6 @@ text .fill-dark {
   fill: var(--q-battery-fill-flow-diagram);
 }
 
-
 :root {
   .home text {
     fill: var(--q-brown-text); /* Brown text in light theme */
