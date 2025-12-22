@@ -90,9 +90,10 @@ LOG_FILE="$OPENWB_BASE_DIR/data/log/restore.log"
 	else
 		echo "Backup does not contain mosquitto configuration. Skipping restore."
 	fi
-	echo "****************************************"
-	echo "Step 5.3: clean mosquitto configuration, will be recreated on next start"
-	sudo rm -v -f "$MOSQUITTO_CONF_DIR/conf.d/openwb-*.conf"
+	# already done in prepare_restore.sh
+	# echo "****************************************"
+	# echo "Step 5.3: clean mosquitto configuration, will be recreated on next start"
+	# sudo rm -v -f "$MOSQUITTO_CONF_DIR/conf.d/openwb-*.conf"
 	echo "****************************************"
 	echo "Step 6: restore boot file"
 	if [[ -f "${WORKING_DIR}/boot/config.txt" ]]; then
