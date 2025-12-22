@@ -34,7 +34,9 @@ export const useMqttStore = defineStore('mqtt', () => {
   let mqttUser = null;
   let mqttPass = null;
   if ($q.cookies.has('mqtt')) {
-    [mqttUser, mqttPass] = decodeURIComponent($q.cookies.get('mqtt')).split(':') || [null, null];
+    [mqttUser, mqttPass] = decodeURIComponent($q.cookies.get('mqtt')).split(
+      ':',
+    ) || [null, null];
   } else {
     $q.notify({
       type: 'warning',
@@ -74,8 +76,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * initialize();
    */
   function initialize() {
-    const { protocol, host, port, path, ...options } =
-      mqttConnectionOptions;
+    const { protocol, host, port, path, ...options } = mqttConnectionOptions;
     const connectUrl = `${protocol}://${host}:${port}${path}`;
     console.debug('connecting to broker:', connectUrl);
     try {
@@ -94,12 +95,17 @@ export const useMqttStore = defineStore('mqtt', () => {
           type: 'negative',
           message:
             'Es ist ein Fehler aufgetreten!' +
-            (error instanceof mqtt.ErrorWithReasonCode ? `(${(error as mqtt.ErrorWithReasonCode).code})` : ''),
+            (error instanceof mqtt.ErrorWithReasonCode
+              ? `(${(error as mqtt.ErrorWithReasonCode).code})`
+              : ''),
           caption: (error as Error).message,
           progress: true,
         });
         // handle not authorized error (code 137)
-        if ((error as mqtt.ErrorWithReasonCode).code === 137 && mqttUser != null) {
+        if (
+          (error as mqtt.ErrorWithReasonCode).code === 137 &&
+          mqttUser != null
+        ) {
           mqttClient.end();
           if ($q.cookies.has('mqtt')) {
             $q.cookies.remove('mqtt', { path: '/' });
@@ -224,7 +230,12 @@ export const useMqttStore = defineStore('mqtt', () => {
         topics.value[topic] = payload;
       }
       if (publish) {
-        console.debug('publish topic', topic, topics.value[topic], originalValue);
+        console.debug(
+          'publish topic',
+          topic,
+          topics.value[topic],
+          originalValue,
+        );
         sendTopicToBroker(topic, topics.value[topic], originalValue);
       }
     } else {
@@ -290,7 +301,8 @@ export const useMqttStore = defineStore('mqtt', () => {
                 } else {
                   $q.notify({
                     type: 'warning',
-                    message: 'Fehler beim Abonnieren von Daten. Möglicherweise ist eine Anmeldung erforderlich.',
+                    message:
+                      'Fehler beim Abonnieren von Daten. Möglicherweise ist eine Anmeldung erforderlich.',
                     caption: error.message,
                     progress: true,
                   });
@@ -413,8 +425,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     // Fehlerbehandlung mit Promise und Rückgabewert
     try {
       try {
-        await mqttClient
-          .publishAsync(topic, JSON.stringify(payload), options);
+        await mqttClient.publishAsync(topic, JSON.stringify(payload), options);
         console.debug('Publish successful', topic);
         return true;
       } catch (error) {
@@ -452,14 +463,22 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param originalValue original value to restore on failure
    * @returns Promise<boolean> success status
    */
-  async function sendTopicToBroker(topic: string, payload: unknown = undefined, originalValue?: unknown): Promise<boolean> {
+  async function sendTopicToBroker(
+    topic: string,
+    payload: unknown = undefined,
+    originalValue?: unknown,
+  ): Promise<boolean> {
     const setTopic = topic.replace('openWB/', 'openWB/set/');
     if (payload === undefined) {
       payload = topics.value[topic];
     }
     const success = await doPublish(setTopic, payload);
     if (!success && originalValue !== undefined) {
-      console.warn('restoring original value due to publish failure', topic, originalValue);
+      console.warn(
+        'restoring original value due to publish failure',
+        topic,
+        originalValue,
+      );
       topics.value[topic] = originalValue;
     }
     return success;
@@ -470,7 +489,11 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param event Command object to send
    */
   function sendCommand(event: SystemCommandEvent) {
-    console.log('sendCommand', `openWB/set/command/${mqttClient?.options.clientId}/todo/${event.command}`, event);
+    console.log(
+      'sendCommand',
+      `openWB/set/command/${mqttClient?.options.clientId}/todo/${event.command}`,
+      event,
+    );
     doPublish(
       `openWB/set/command/${mqttClient?.options.clientId}/todo/${event.command}`,
       event,
@@ -503,7 +526,11 @@ export const useMqttStore = defineStore('mqtt', () => {
    * getWildcardValues('openWB/pv/[0-9]+/config/m,ax_ac_out', true);
    */
   const getWildcardValues = computed(() => {
-    return (baseTopic: string, isRegex: boolean = false, autoSubscribe: boolean = true): TopicList => {
+    return (
+      baseTopic: string,
+      isRegex: boolean = false,
+      autoSubscribe: boolean = true,
+    ): TopicList => {
       let baseTopicRegex = baseTopic;
       if (!isRegex) {
         // build a valid regex based on the provided wildcard topic
@@ -515,7 +542,10 @@ export const useMqttStore = defineStore('mqtt', () => {
             .replaceAll('#', '[^#/]+') +
           '$';
         // check if baseTopic is already subscribed
-        if (!Object.keys(subscriptions.value).includes(baseTopic) && autoSubscribe) {
+        if (
+          !Object.keys(subscriptions.value).includes(baseTopic) &&
+          autoSubscribe
+        ) {
           console.debug('auto subscription of wildcard topic', baseTopic);
           subscribe(baseTopic);
         }
@@ -692,7 +722,13 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @returns boolean
    */
   const userManagementActive: ComputedRef<boolean> = computed(() => {
-    return getValue.value('openWB/system/security/user_management_active', undefined, true) === true;
+    return (
+      getValue.value(
+        'openWB/system/security/user_management_active',
+        undefined,
+        true,
+      ) === true
+    );
   });
 
   /**
@@ -701,7 +737,13 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @returns boolean
    */
   const accessAllowed: ComputedRef<boolean> = computed(() => {
-    return getValue.value('openWB/system/security/access_allowed', undefined, false) === true;
+    return (
+      getValue.value(
+        'openWB/system/security/access_allowed',
+        undefined,
+        false,
+      ) === true
+    );
   });
 
   /**
@@ -710,9 +752,14 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @returns boolean
    */
   const settingsAccessible: ComputedRef<boolean> = computed(() => {
-    return getValue.value('openWB/system/security/settings_accessible', undefined, false) === true;
+    return (
+      getValue.value(
+        'openWB/system/security/settings_accessible',
+        undefined,
+        false,
+      ) === true
+    );
   });
-
 
   /**
    * Get the system version
