@@ -33,4 +33,3 @@ export interface FlowComponent {
   soc?: number;
   icon: string;
 }
-

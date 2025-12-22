@@ -37,8 +37,8 @@ $grey: #9e9e9e; // Quasar's default grey
 $toggle-off: #e0e0e0;
 $grid-stroke: #a33c42;
 $grid-fill: #efb6bc33;
-$secondary-counter-stroke: #FFA9A8;
-$secondary-counter-fill: #FFA9A833;
+$secondary-counter-stroke: #ffa9a8;
+$secondary-counter-fill: #ffa9a833;
 $home-stroke: #949aa1;
 $home-fill: #949aa133;
 $pv-stroke: #66bd7a;
@@ -48,7 +48,7 @@ $battery-stroke: #ba7128;
 $battery-fill: #ba712833;
 $battery-fill-flow-diagram: #c6a583;
 $charge-point-stroke: #5c93d1;
-$charge-point-fill: #5c93d14D;
+$charge-point-fill: #5c93d14d;
 // Light theme (default)
 :root {
   --q-primary: #{$primary};
@@ -218,7 +218,8 @@ $charge-point-fill: #5c93d14D;
   }
 
   // Scrollbar styling für .q-list auto Light Theme
-  .q-list, .narrow-scrollbar {
+  .q-list,
+  .narrow-scrollbar {
     scrollbar-width: thin;
     scrollbar-color: var(--q-primary) var(--q-background-2);
   }
