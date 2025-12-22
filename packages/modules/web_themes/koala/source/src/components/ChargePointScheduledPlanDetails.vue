@@ -76,17 +76,28 @@
           <q-input
             v-else
             class="q-mr-lg col"
-            :model-value="
-              planFrequency.value === 'daily' ? today : firstSelectedWeekday
-            "
+            :model-value="undefined"
+            type="date"
             label="Ziel-Datum"
             readonly
+            disable
           />
           <q-input
             v-model="planTime.value"
             type="time"
             label="Ziel-Uhrzeit"
             class="col"
+          />
+        </div>
+        <div
+          class="row q-mt-sm q-pa-sm text-white no-wrap items-center bg-primary"
+          style="border-radius: 10px"
+        >
+          <q-icon name="info" size="sm" class="q-mr-xs" />
+          <ChargePointScheduledPlanSummary
+            :charge-point-id="props.chargePointId"
+            :plan="props.plan"
+            mode="info"
           />
         </div>
       </div>
@@ -238,6 +249,7 @@ import { useQuasar } from 'quasar';
 import SliderStandard from './SliderStandard.vue';
 import ToggleStandard from './ToggleStandard.vue';
 import { computed } from 'vue';
+import ChargePointScheduledPlanSummary from './ChargePointScheduledPlanSummary.vue';
 import { type ScheduledChargingPlan } from '../stores/mqtt-store-model';
 
 const props = defineProps<{
@@ -249,12 +261,6 @@ const emit = defineEmits(['close']);
 const mqttStore = useMqttStore();
 const $q = useQuasar();
 
-const formatDateDayMonthYear = (dateString: string): string => {
-  if (!dateString) return '';
-  const [year, month, day] = dateString.split('-');
-  return `${day}.${month}.${year}`;
-};
-const today = formatDateDayMonthYear(new Date().toISOString().split('T')[0]);
 const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
 const selectDay = (index: number) => {
@@ -262,27 +268,6 @@ const selectDay = (index: number) => {
   newArray[index] = !newArray[index];
   selectedWeekDays.value = newArray;
 };
-
-const firstSelectedWeekday = computed(() => {
-  const today = new Date();
-  // 0=Sonntag, ..., 6=Samstag >> 0=Montag, ..., 6=Sonntag
-  const todayIndex = (today.getDay() + 6) % 7;
-  const userSelection = selectedWeekDays.value
-    .map((isSelected, index) => (isSelected ? index : -1))
-    .filter((index) => index !== -1);
-  if (userSelection.length === 0) return '';
-  // For all selected days, calculate the distance to today
-  const daysUntilSelected = userSelection.map((idx) => {
-    let daysUntil = idx - todayIndex;
-    if (daysUntil < 0) daysUntil += 7;
-    return daysUntil;
-  });
-  // Take the smallest distance (this is the next day)
-  const nearestDay = Math.min(...daysUntilSelected);
-  const dateNextDay = new Date(today);
-  dateNextDay.setDate(today.getDate() + nearestDay);
-  return formatDateDayMonthYear(dateNextDay.toISOString().split('T')[0]);
-});
 
 const phaseOptions = [
   { value: 1, label: '1' },
