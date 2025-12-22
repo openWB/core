@@ -83,6 +83,14 @@ if [[ $userManagementActive == "true" ]]; then
 	else
 		echo "updating mosquitto openwb-user-management.conf"
 		sudo cp "${SRC}/openwb-user-management.conf" "/etc/mosquitto/conf.d/openwb-user-management.conf"
+		# set proper plugin path by substitution of placeholder #mosquitto_dynamic_security.so#
+		pluginPath=$(dpkg -L mosquitto | grep "mosquitto_dynamic_security.so" | head -n 1)
+		if [[ -z "$pluginPath" ]]; then
+			echo "error: 'mosquitto_dynamic_security.so' plugin not found!"
+			exit 1
+		else
+			sudo sed -i "s|#mosquitto_dynamic_security.so#|$pluginPath|g" "/etc/mosquitto/conf.d/openwb-user-management.conf"
+		fi
 		echo 1 > "$USER_MANAGEMENT_INIT_FILE"
 		restartService=1
 	fi
