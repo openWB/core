@@ -29,6 +29,7 @@ from helpermodules.broker import BrokerClient
 from helpermodules.data_migration.data_migration import MigrateData
 from helpermodules.measurement_logging.process_log import get_daily_log, get_monthly_log, get_yearly_log
 from helpermodules.messaging import MessageType, pub_user_message
+from helpermodules.mosquitto_dynsec import add_acl_role, remove_acl_role
 from helpermodules.create_debug import create_debug_log
 from helpermodules.pub import Pub, pub_single
 from helpermodules.subdata import SubData
@@ -202,6 +203,7 @@ class Command:
         Pub().pub(f'openWB/set/io/action/{new_id}/config', device_default)
         self.max_id_io_action = new_id
         Pub().pub("openWB/set/command/max_id/io_action", self.max_id_io_action)
+        add_acl_role("io-action-<id>-access", new_id)
         pub_user_message(
             payload, connection_id,
             f'Neue IO-Aktion vom Typ \'{" / ".join(payload["data"]["type"])}\' mit ID \'{new_id}\' hinzugefügt.',
@@ -210,6 +212,7 @@ class Command:
     def removeIoAction(self, connection_id: str, payload: dict) -> None:
         if self.max_id_io_action >= payload["data"]["id"]:
             ProcessBrokerBranch(f'io/action/{payload["data"]["id"]}/').remove_topics()
+            remove_acl_role("io-action-<id>-access", payload["data"]["id"])
             pub_user_message(payload, connection_id, f'IO-Aktion mit ID \'{payload["data"]["id"]}\' gelöscht.',
                              MessageType.SUCCESS)
         else:
@@ -230,6 +233,7 @@ class Command:
         Pub().pub(f'openWB/set/system/io/{new_id}/config', device_default)
         self.max_id_io_device = new_id
         Pub().pub("openWB/set/command/max_id/io_device", self.max_id_io_device)
+        add_acl_role("io-device-<id>-access", new_id)
         pub_user_message(
             payload, connection_id,
             f'Neues IO-Gerät vom Typ \'{payload["data"]["type"]}\' mit ID \'{new_id}\' hinzugefügt.',
@@ -240,6 +244,7 @@ class Command:
         """
         if self.max_id_io_device >= payload["data"]["id"]:
             ProcessBrokerBranch(f'system/io/{payload["data"]["id"]}/').remove_topics()
+            remove_acl_role("io-device-<id>-access", payload["data"]["id"])
             pub_user_message(payload, connection_id, f'IO-Gerät mit ID \'{payload["data"]["id"]}\' gelöscht.',
                              MessageType.SUCCESS)
         else:
@@ -265,6 +270,7 @@ class Command:
                 self.addChargepointTemplate("addChargepoint", {})
             if self.max_id_vehicle == -1:
                 self.addVehicle("addChargepoint", {})
+            add_acl_role("chargepoint-<id>-access", new_id)
             pub_user_message(payload, connection_id, f'Neuer Ladepunkt mit ID \'{new_id}\' wurde erstellt.',
                              MessageType.SUCCESS)
         new_id = self.max_id_hierarchy + 1
@@ -348,6 +354,7 @@ class Command:
         ProcessBrokerBranch(f'chargepoint/{payload["data"]["id"]}/').remove_topics()
         data.data.counter_all_data.hierarchy_remove_item(payload["data"]["id"])
         Pub().pub("openWB/set/counter/get/hierarchy", data.data.counter_all_data.data.get.hierarchy)
+        remove_acl_role("chargepoint-<id>-access", payload["data"]["id"])
         pub_user_message(payload, connection_id,
                          f'Ladepunkt mit ID \'{payload["data"]["id"]}\' gelöscht.', MessageType.SUCCESS)
 
@@ -636,6 +643,7 @@ class Command:
         self.max_id_hierarchy = self.max_id_hierarchy + 1
         Pub().pub("openWB/set/command/max_id/hierarchy",
                   self.max_id_hierarchy)
+        add_acl_role(f"{general_type.value}-<id>-access", new_id)
         pub_user_message(
             payload, connection_id,
             f'Neue Komponente vom Typ \'{payload["data"]["type"]}\' mit ID \'{new_id}\' hinzugefügt.',
@@ -649,6 +657,8 @@ class Command:
                       "Die ID ist größer als die maximal vergebene ID.", MessageType.ERROR)
         branch = f'system/device/{payload["data"]["deviceId"]}/component/{payload["data"]["id"]}/'
         ProcessBrokerBranch(branch).remove_topics()
+        remove_acl_role(f"{special_to_general_type_mapping(payload['data']['type']).value}-<id>-access",
+                        payload["data"]["id"])
         pub_user_message(
             payload, connection_id,
             f'Komponente mit ID \'{payload["data"]["id"]}\' gelöscht.', MessageType.SUCCESS)
@@ -705,6 +715,7 @@ class Command:
             self.addChargeTemplate("addVehicle", {})
         if self.max_id_ev_template == -1:
             self.addEvTemplate("addVehicle", {})
+        add_acl_role("vehicle-<id>-access", new_id)
         pub_user_message(payload, connection_id, f'Neues EV mit ID \'{new_id}\' hinzugefügt.', MessageType.SUCCESS)
 
     def removeVehicle(self, connection_id: str, payload: dict) -> None:
@@ -716,6 +727,7 @@ class Command:
         if payload["data"]["id"] > 0:
             Pub().pub(f'openWB/vehicle/{payload["data"]["id"]}', "")
             ProcessBrokerBranch(f'vehicle/{payload["data"]["id"]}/').remove_topics()
+            remove_acl_role("vehicle-<id>-access", payload["data"]["id"])
             pub_user_message(
                 payload, connection_id,
                 f'EV mit ID \'{payload["data"]["id"]}\' gelöscht.', MessageType.SUCCESS)
@@ -952,6 +964,37 @@ class Command:
                     "bridge": int(received_id[0])
                 }
             })
+
+    def resetUserManagement(self, connection_id: str, payload: dict) -> None:
+        log.info("User management reset requested!")
+        parent_file = Path(__file__).resolve().parents[2]
+        run_command([str(parent_file / "runs" / "reset_user_management.sh")])
+        pub_user_message(payload, connection_id,
+                         "Benutzerverwaltung wurde zurückgesetzt.",
+                         MessageType.WARNING)
+
+    def updateAdminPassword(self, connection_id: str, payload: dict) -> None:
+        """ aktualisiert das Passwort des Admin-Benutzers im User-Management
+        """
+        log.warning("Admin password update requested!")
+        mosquitto_ctrl_config_file = "/home/openwb/.config/mosquitto_ctrl"
+        newPassword = str(payload['data']['newPassword']).strip()
+        if newPassword is None or len(newPassword) == 0:
+            pub_user_message(payload, connection_id,
+                             "Das Admin-Passwort darf nicht leer sein.",
+                             MessageType.ERROR)
+            return
+        with open(mosquitto_ctrl_config_file, "r") as file:
+            lines = file.readlines()
+        with open(mosquitto_ctrl_config_file, "w") as file:
+            for line in lines:
+                if line.startswith("-P "):
+                    file.write(f"-P {payload['data']['newPassword']}\n")
+                else:
+                    file.write(line)
+        pub_user_message(payload, connection_id,
+                         "Admin-Passwort wurde erfolgreich aktualisiert.",
+                         MessageType.SUCCESS)
 
 
 class ErrorHandlingContext:

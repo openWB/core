@@ -206,6 +206,25 @@ create_archive() {
 				"configuration.json" \
 			--directory="/" \
 				"boot/config.txt"
+		
+		if [ -f "$VAR_LIB/mosquitto/dynamic-security.json" ]; then
+			echo "adding mosquitto/dynamic-security.json"
+			sudo tar --verbose --append \
+				--file="$BACKUPFILE" \
+				--directory="$VAR_LIB/mosquitto/" \
+					"dynamic-security.json"
+		else
+			echo "mosquitto/dynamic-security.json not found, skipping"
+		fi
+		if [ -f "$HOMEDIR/.config/mosquitto_ctrl" ]; then
+			echo "adding mosquitto_ctrl file"
+			sudo tar --verbose --append \
+				--file="$BACKUPFILE" \
+				--directory="$HOMEDIR/.config/" \
+					"mosquitto_ctrl"
+		else
+			echo "mosquitto_ctrl file not found, skipping"
+		fi
 	}
 
 	calculate_checksums() {
