@@ -145,6 +145,31 @@
 					"topic":	"openWB/internal_chargepoint/global_data",
 					"priority":	0,
 					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/counter/get/hierarchy",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/optional/dc_charging",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/vehicle/+/name",
+					"priority":	0,
+					"allow":	true
+				}]
+		}, {
+			"rolename":	"basic-user-data",
+			"textname":	"Basisdaten für alle Benutzer",
+			"textdescription":	"Diese Rolle ermöglicht grundlegenden Zugriff auf openWB. Notwendig für alle normalen Benutzer!",
+			"acls":	[{
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/system/security/access_allowed",
+					"priority":	0,
+					"allow":	true
 				}]
 		}, {
 			"rolename":	"dynsec_admin",
