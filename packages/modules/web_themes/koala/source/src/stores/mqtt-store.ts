@@ -2498,7 +2498,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   /**
    * Get the battery name identified by the battery ID
    * @param batteryId battery ID
-   * @returns string
+   * @returns string || undefined
    */
   const batteryName = computed(() => {
     return (batteryId: number): string => {
@@ -2506,7 +2506,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         `openWB/system/device/+/component/${batteryId}/config`,
       ) as { [key: string]: BatteryConfiguration };
       if (Object.keys(configurations).length === 0) {
-        return `Speicher ${batteryId}`;
+        return undefined;
       }
       return Object.values(configurations)[0].name;
     };
@@ -2620,7 +2620,15 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @returns number[]
    */
   const batteryIds = computed(() => {
-    return (getObjectIds.value('bat') as number[]) || [];
+    return (getObjectIds.value('bat').filter((id) => {
+      return batteryAccessible.value(id);
+    }));
+  });
+
+  const batteryAccessible = computed(() => {
+    return (batteryId: number) => {
+      return batteryName.value(batteryId) !== undefined;
+    };
   });
 
   /**
