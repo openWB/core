@@ -17,6 +17,36 @@
 				"allow": true
 			},
 			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/chargepoint/<id>/set/charge_template",
+				"priority": 1,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/chargepoint/<id>/set/manual_lock",
+				"priority": 1,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/chargepoint/<id>/config/ev",
+				"priority": 1,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/command/+/todo/addChargeTemplateSchedulePlan",
+				"priority": 1,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/command/+/todo/addChargeTemplateTimeChargingPlan",
+				"priority": 1,
+				"allow": true
+			},
+			{
 				"acltype": "subscribeLiteral",
 				"topic": "openWB/chargepoint/<id>/config",
 				"priority": 0,
@@ -60,20 +90,32 @@
 				"allow": true
 			},
 			{
-				"acltype": "subscribeLiteral",
-				"topic": "openWB/vehicle/<id>/name",
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/vehicle/<id>/soc_module/calculated_soc_state/manual_soc",
 				"priority": 0,
 				"allow": true
 			},
 			{
-				"acltype": "subscribeLiteral",
-				"topic": "openWB/vehicle/<id>/soc_module/config",
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/mqtt/vehicle/<id>/get/soc",
 				"priority": 0,
 				"allow": true
 			},
 			{
-				"acltype": "subscribeLiteral",
-				"topic": "openWB/vehicle/<id>/info",
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/mqtt/vehicle/<id>/get/soc_timestamp",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/mqtt/vehicle/<id>/get/range",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "subscribePattern",
+				"topic": "openWB/vehicle/<id>/#",
 				"priority": 0,
 				"allow": true
 			}
@@ -117,9 +159,9 @@
 		"acls": [
 			{
 				"acltype": "publishClientReceive",
-				"topic": "openWB/counter/#",
-				"priority": 0,
-				"allow": false
+				"topic": "openWB/counter/get/+",
+				"priority": 1,
+				"allow": true
 			},
 			{
 				"acltype": "publishClientReceive",
