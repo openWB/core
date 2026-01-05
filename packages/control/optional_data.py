@@ -117,6 +117,7 @@ class Ocpp:
     boot_notification_sent: bool = False
     _url: Optional[str] = None
     version: str = "ocpp1.6"
+    dummy_id_tag: Optional[str] = None
 
     @property
     def url(self) -> Optional[str]:

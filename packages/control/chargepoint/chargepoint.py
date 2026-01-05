@@ -197,7 +197,7 @@ class Chargepoint(ChargepointRfidMixin):
                 self.chargepoint_module.fault_state,
                 self.data.get.imported,
                 self.data.set.ocpp_transaction_id,
-                self.data.set.rfid)
+                data.data.optional_data.data.ocpp.dummy_id_tag or self.data.set.rfid)
             Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/ocpp_transaction_id", None)
         self.reset_control_parameter_at_charge_stop()
         data.data.counter_all_data.get_evu_counter().reset_switch_on_off(self)
@@ -739,11 +739,13 @@ class Chargepoint(ChargepointRfidMixin):
             # OCPP Start Transaction nach Anstecken
             if ((self.data.get.plug_state and self.data.set.plug_state_prev is False) or
                     (self.data.set.ocpp_transaction_id is None and self.data.get.charge_state)):
+                id_tag = (data.data.optional_data.data.ocpp.dummy_id_tag or
+                          self.data.set.rfid or self.data.get.rfid or self.data.get.vehicle_id)
                 self.data.set.ocpp_transaction_id = data.data.optional_data.start_transaction(
                     self.data.config.ocpp_chargebox_id,
                     self.chargepoint_module.fault_state,
                     self.num,
-                    self.data.set.rfid or self.data.get.rfid or self.data.get.vehicle_id,
+                    id_tag,
                     self.data.get.imported)
                 Pub().pub("openWB/set/chargepoint/"+str(self.num) +
                           "/set/ocpp_transaction_id", self.data.set.ocpp_transaction_id)
