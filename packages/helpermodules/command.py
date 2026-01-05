@@ -78,7 +78,8 @@ class Command:
         """ ermittelt die maximale ID vom Broker """
         plan_extractors = {
             "autolock_plan": lambda p: p.get("autolock", {}).get("plans", []),
-            "charge_template_scheduled_plan": lambda p: p.get("chargemode", {}).get("scheduled_charging", {}).get("plans", []),
+            "charge_template_scheduled_plan": lambda p: p.get("chargemode", {}).get("scheduled_charging",
+                                                                                    {}).get("plans", []),
             "charge_template_time_charging_plan": lambda p: p.get("time_charging", {}).get("plans", [])
         }
         try:
