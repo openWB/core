@@ -74,7 +74,7 @@ const mqttStore = useMqttStore();
 
 const props = defineProps<{
   vehicleId: number | undefined;
-  chargePointId?: number | undefined;
+  chargePointId?: number;
   socDialogVisible: boolean;
 }>();
 
@@ -100,8 +100,7 @@ const socInputValue = computed({
   get: () => {
     return (
       socValue.value ??
-      mqttStore.vehicleSocManualValue(props.vehicleId, props.chargePointId)
-        .value ??
+      mqttStore.vehicleSocManualValue(props.vehicleId).value ??
       0
     );
   },

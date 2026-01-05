@@ -2620,9 +2620,9 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @returns number[]
    */
   const batteryIds = computed(() => {
-    return (getObjectIds.value('bat').filter((id) => {
+    return getObjectIds.value('bat').filter((id) => {
       return batteryAccessible.value(id);
-    }));
+    });
   });
 
   const batteryAccessible = computed(() => {
@@ -2794,7 +2794,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   /**
    * Get or set the manual SoC by vehicle id
    * @param vehicleId vehicle id
-   * @param chargePointId charge point id
+   * @param chargePointId charge point id, only necessary for updating the charge point connected vehicle soc value
    * @returns number | undefined
    */
   const vehicleSocManualValue = (
@@ -2813,15 +2813,16 @@ export const useMqttStore = defineStore('mqtt', () => {
         doPublish(
           `openWB/set/vehicle/${vehicleId}/soc_module/calculated_soc_state/manual_soc`,
           newValue,
-        );
-        // Also update the charge point connected vehicle soc to prevent long delay in display update
-        if (chargePointId !== undefined) {
-          const cpTopic = `openWB/chargepoint/${chargePointId}/get/connected_vehicle/soc`;
-          const cpSoc = getValue.value(cpTopic) as { soc?: number };
-          if (cpSoc && cpSoc.soc !== undefined) {
-            updateTopic(cpTopic, newValue, 'soc', true);
+        ).then((success) => {
+          // Also update the charge point connected vehicle soc to prevent long delay in display update
+          if (success && chargePointId !== undefined) {
+            const cpTopic = `openWB/chargepoint/${chargePointId}/get/connected_vehicle/soc`;
+            const cpSoc = getValue.value(cpTopic) as { soc?: number };
+            if (cpSoc && cpSoc.soc !== undefined) {
+              updateTopic(cpTopic, newValue, 'soc', false);
+            }
           }
-        }
+        });
       },
     });
   };
