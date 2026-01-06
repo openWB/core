@@ -34,9 +34,8 @@
     <div class="col-arrow">
       <q-icon
         v-if="props.currentPowerVisible"
-        :name=" arrowDirection(item.id).noCurrent
-              ? 'horizontal_rule'
-              : 'double_arrow'
+        :name="
+          arrowDirection(item.id).noCurrent ? 'horizontal_rule' : 'double_arrow'
         "
         :class="{ 'rotate-180': arrowDirection(props.item.id).rotate180 }"
       />
