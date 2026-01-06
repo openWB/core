@@ -8,7 +8,8 @@ from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
 from modules.display_themes.cards.config import CardsDisplayTheme
 
-TARIFF_UPDATE_HOUR = 14  # latest expected time for daily tariff update
+# Stunden für tägliche Tarifaktualisierung, manche Anbieter aktualisieren mehrfach täglich
+TARIFF_UPDATE_HOURS = [2, 8, 14, 20]
 
 
 @dataclass
@@ -53,13 +54,21 @@ class ElectricityPricingGet:
     def prices(self, value: Dict):
         self._prices = value
         if value:
-            next_query_time = datetime.fromtimestamp(float(max(value))).replace(
-                hour=TARIFF_UPDATE_HOUR, minute=0, second=0
-            ) + timedelta(
-                # actully ET providers issue next day prices up to half an hour earlier then 14:00
-                # reduce serverload on their site by trying early and randomizing query time
-                minutes=random.randint(1, 7) * -5
-            )
+            now = datetime.now()
+            current_hour = now.hour
+            next_hour = None
+            for hour in TARIFF_UPDATE_HOURS:
+                if hour > current_hour:
+                    next_hour = hour
+                    break
+            # Wenn keine Stunde heute gefunden, nimm die erste Stunde vom nächsten Tag
+            if next_hour is None:
+                next_hour = TARIFF_UPDATE_HOURS[0]
+                next_query_time = (now + timedelta(days=1)).replace(hour=next_hour, minute=0, second=0, microsecond=0)
+            else:
+                next_query_time = now.replace(hour=next_hour, minute=0, second=0, microsecond=0)
+            # reduce serverload on their site by trying early and randomizing query time
+            next_query_time += timedelta(minutes=random.randint(1, 7) * -5)
             Pub().pub("openWB/set/optional/ep/get/next_query_time", next_query_time.timestamp())
 
 
