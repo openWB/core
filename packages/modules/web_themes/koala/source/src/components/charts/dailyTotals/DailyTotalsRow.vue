@@ -34,10 +34,7 @@
     <div class="col-arrow">
       <q-icon
         v-if="props.currentPowerVisible"
-        :name="
-          item.id === 'house'
-            ? 'horizontal_rule'
-            : arrowDirection(item.id).noCurrent
+        :name=" arrowDirection(item.id).noCurrent
               ? 'horizontal_rule'
               : 'double_arrow'
         "
@@ -129,7 +126,7 @@ const arrowDirection = (id: string) => {
   let rotate180 = false;
 
   if (id === 'grid' || id.startsWith('counter-')) rotate180 = value < 0;
-  else if (id !== 'house') rotate180 = value > 0;
+  else rotate180 = value > 0;
 
   return { noCurrent, rotate180 };
 };
