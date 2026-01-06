@@ -5,68 +5,38 @@
 		"textdescription": "Erlaubt das Empfangen von Daten für Ladepunkt <id>.",
 		"acls": [
 			{
-				"acltype": "publishClientReceive",
-				"topic": "openWB/chargepoint/#",
-				"priority": 0,
-				"allow": false
-			},
-			{
-				"acltype": "publishClientReceive",
-				"topic": "openWB/chargepoint/<id>/#",
-				"priority": 1,
-				"allow": true
-			},
-			{
 				"acltype": "publishClientSend",
 				"topic": "openWB/set/chargepoint/<id>/set/charge_template",
-				"priority": 1,
+				"priority": 0,
 				"allow": true
 			},
 			{
 				"acltype": "publishClientSend",
 				"topic": "openWB/set/chargepoint/<id>/set/manual_lock",
-				"priority": 1,
+				"priority": 0,
 				"allow": true
 			},
 			{
 				"acltype": "publishClientSend",
 				"topic": "openWB/set/chargepoint/<id>/config/ev",
-				"priority": 1,
+				"priority": 0,
 				"allow": true
 			},
 			{
 				"acltype": "publishClientSend",
 				"topic": "openWB/set/command/+/todo/addChargeTemplateSchedulePlan",
-				"priority": 1,
+				"priority": 0,
 				"allow": true
 			},
 			{
 				"acltype": "publishClientSend",
 				"topic": "openWB/set/command/+/todo/addChargeTemplateTimeChargingPlan",
-				"priority": 1,
-				"allow": true
-			},
-			{
-				"acltype": "subscribeLiteral",
-				"topic": "openWB/chargepoint/<id>/config",
 				"priority": 0,
 				"allow": true
 			},
 			{
-				"acltype": "subscribePattern",
-				"topic": "openWB/chargepoint/<id>/get/connected_vehicle/#",
-				"priority": 0,
-				"allow": true
-			},
-			{
-				"acltype": "subscribePattern",
-				"topic": "openWB/chargepoint/<id>/get/#",
-				"priority": 0,
-				"allow": true
-			},
-			{
-				"acltype": "subscribePattern",
-				"topic": "openWB/chargepoint/<id>/set/#",
+				"acltype": "publishClientReceive",
+				"topic": "openWB/chargepoint/<id>/#",
 				"priority": 0,
 				"allow": true
 			}
@@ -77,18 +47,6 @@
 		"textname": "Leserechte für Fahrzeug <id>",
 		"textdescription": "Erlaubt das Empfangen von Daten für Fahrzeug <id>.",
 		"acls": [
-			{
-				"acltype": "publishClientReceive",
-				"topic": "openWB/vehicle/#",
-				"priority": 0,
-				"allow": false
-			},
-			{
-				"acltype": "publishClientReceive",
-				"topic": "openWB/vehicle/<id>/#",
-				"priority": 1,
-				"allow": true
-			},
 			{
 				"acltype": "publishClientSend",
 				"topic": "openWB/set/vehicle/<id>/soc_module/calculated_soc_state/manual_soc",
@@ -114,7 +72,7 @@
 				"allow": true
 			},
 			{
-				"acltype": "subscribePattern",
+				"acltype": "publishClientReceive",
 				"topic": "openWB/vehicle/<id>/#",
 				"priority": 0,
 				"allow": true
@@ -128,24 +86,12 @@
 		"acls": [
 			{
 				"acltype": "publishClientReceive",
-				"topic": "openWB/bat/#",
-				"priority": 0,
-				"allow": false
-			},
-			{
-				"acltype": "publishClientReceive",
-				"topic": "openWB/bat/<id>/#",
-				"priority": 1,
-				"allow": true
-			},
-			{
-				"acltype": "subscribePattern",
 				"topic": "openWB/bat/<id>/get/+",
 				"priority": 0,
 				"allow": true
 			},
 			{
-				"acltype": "subscribePattern",
+				"acltype": "publishClientReceive",
 				"topic": "openWB/system/device/+/component/<id>/config",
 				"priority": 0,
 				"allow": true
@@ -159,24 +105,12 @@
 		"acls": [
 			{
 				"acltype": "publishClientReceive",
-				"topic": "openWB/counter/get/+",
-				"priority": 1,
-				"allow": true
-			},
-			{
-				"acltype": "publishClientReceive",
-				"topic": "openWB/counter/<id>/#",
-				"priority": 1,
-				"allow": true
-			},
-			{
-				"acltype": "subscribePattern",
 				"topic": "openWB/counter/<id>/get/+",
 				"priority": 0,
 				"allow": true
 			},
 			{
-				"acltype": "subscribePattern",
+				"acltype": "publishClientReceive",
 				"topic": "openWB/system/device/+/component/<id>/config",
 				"priority": 0,
 				"allow": true
@@ -190,30 +124,12 @@
 		"acls": [
 			{
 				"acltype": "publishClientReceive",
-				"topic": "openWB/pv/#",
-				"priority": 0,
-				"allow": false
-			},
-			{
-				"acltype": "publishClientReceive",
-				"topic": "openWB/pv/<id>/#",
-				"priority": 1,
-				"allow": true
-			},
-			{
-				"acltype": "subscribePattern",
 				"topic": "openWB/pv/<id>/get/+",
 				"priority": 0,
 				"allow": true
 			},
 			{
-				"acltype": "subscribePattern",
-				"topic": "openWB/pv/<id>/config",
-				"priority": 0,
-				"allow": true
-			},
-			{
-				"acltype": "subscribePattern",
+				"acltype": "publishClientReceive",
 				"topic": "openWB/system/device/+/component/<id>/config",
 				"priority": 0,
 				"allow": true
@@ -227,19 +143,7 @@
 		"acls": [
 			{
 				"acltype": "publishClientReceive",
-				"topic": "openWB/io/action/#",
-				"priority": 0,
-				"allow": false
-			},
-			{
-				"acltype": "publishClientReceive",
 				"topic": "openWB/io/action/<id>/+",
-				"priority": 1,
-				"allow": true
-			},
-			{
-				"acltype": "subscribePattern",
-				"topic": "openWB/io/action/<id>/config",
 				"priority": 0,
 				"allow": true
 			}
@@ -252,25 +156,13 @@
 		"acls": [
 			{
 				"acltype": "publishClientReceive",
-				"topic": "openWB/io/states/#",
+				"topic": "openWB/io/states/<id>/#",
 				"priority": 0,
-				"allow": false
+				"allow": true
 			},
 			{
 				"acltype": "publishClientReceive",
-				"topic": "openWB/io/states/<id>/#",
-				"priority": 1,
-				"allow": true
-			},
-			{
-				"acltype": "subscribePattern",
 				"topic": "openWB/system/io/<id>/config",
-				"priority": 0,
-				"allow": true
-			},
-			{
-				"acltype": "subscribePattern",
-				"topic": "openWB/io/states/<id>/get/+",
 				"priority": 0,
 				"allow": true
 			}

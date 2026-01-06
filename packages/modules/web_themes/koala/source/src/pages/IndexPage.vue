@@ -14,7 +14,7 @@
         <q-tab name="vehicles" title="Fahrzeuge">
           <q-icon name="directions_car" size="md" color="primary" />
         </q-tab>
-        <q-tab v-if="batteryConfigured" name="batteries" title="Speicher">
+        <q-tab v-if="batteryAccessible" name="batteries" title="Speicher">
           <q-icon name="battery_full" size="md" color="primary" />
         </q-tab>
         <!-- <q-tab name="smart-home" title="SmartHome">
@@ -32,7 +32,7 @@
           <VehicleInformation />
         </q-tab-panel>
         <!-- Batteries -->
-        <q-tab-panel v-if="batteryConfigured" name="batteries" class="column">
+        <q-tab-panel v-if="batteryAccessible" name="batteries" class="column">
           <BatteryInformation />
         </q-tab-panel>
         <!-- Smart Home -->
@@ -60,8 +60,8 @@ defineOptions({
 const tab = ref<string>('charge-points');
 const mqttStore = useMqttStore();
 
-const batteryConfigured = computed(() => {
-  return mqttStore.batteryConfigured;
+const batteryAccessible = computed(() => {
+  return mqttStore.batteryConfigured && mqttStore.batteryIds.length > 0;
 });
 </script>
 
