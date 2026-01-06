@@ -2789,13 +2789,15 @@ export const useMqttStore = defineStore('mqtt', () => {
         )
       : list;
     // generate an array of objects, containing vehicle index and name
-    return Object.keys(filteredList).map((key) => {
-      const vehicleIndex = parseInt(key.split('/')[2]);
-      return {
-        id: vehicleIndex,
-        name: filteredList[key],
-      } as Vehicle;
-    }).filter((vehicle) => vehicleInfo.value(vehicle.id) !== undefined);
+    return Object.keys(filteredList)
+      .map((key) => {
+        const vehicleIndex = parseInt(key.split('/')[2]);
+        return {
+          id: vehicleIndex,
+          name: filteredList[key],
+        } as Vehicle;
+      })
+      .filter((vehicle) => vehicleInfo.value(vehicle.id) !== undefined);
   });
 
   /**
