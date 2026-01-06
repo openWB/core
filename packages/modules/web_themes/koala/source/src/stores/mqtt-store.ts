@@ -2750,7 +2750,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         id: vehicleIndex,
         name: filteredList[key],
       } as Vehicle;
-    });
+    }).filter((vehicle) => vehicleInfo.value(vehicle.id) !== undefined);
   });
 
   /**
