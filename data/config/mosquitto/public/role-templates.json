@@ -111,6 +111,12 @@
 			},
 			{
 				"acltype": "publishClientReceive",
+				"topic": "openWB/counter/<id>/config/+",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientReceive",
 				"topic": "openWB/system/device/+/component/<id>/config",
 				"priority": 0,
 				"allow": true
