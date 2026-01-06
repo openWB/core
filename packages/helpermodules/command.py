@@ -872,9 +872,15 @@ class Command:
     def createBackup(self, connection_id: str, payload: dict) -> None:
         pub_user_message(payload, connection_id, "Sicherung wird erstellt...", MessageType.INFO)
         parent_file = Path(__file__).resolve().parents[2]
-        result = run_command(
-            [str(parent_file / "runs" / "backup.sh"),
-             "1" if "use_extended_filename" in payload["data"] and payload["data"]["use_extended_filename"] else "0"])
+        try:
+            result = run_command([
+                str(parent_file / "runs" / "backup.sh"),
+                "1" if "use_extended_filename" in payload["data"] and payload["data"]["use_extended_filename"] else "0"
+            ], process_exception=False)
+        except subprocess.CalledProcessError:
+            pub_user_message(payload, connection_id,
+                             "Fehler beim Erstellen der Sicherung. Bitte Logdatei prüfen.", MessageType.ERROR)
+            return
         file_name = result.rstrip('\n')
         file_link = "/openWB/data/backup/" + file_name
         pub_user_message(payload, connection_id,
