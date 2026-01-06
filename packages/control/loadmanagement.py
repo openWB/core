@@ -137,35 +137,31 @@ class Loadmanagement:
     def _limit_by_dimming_via_direct_control(self,
                                              missing_currents: List[float],
                                              cp: Chargepoint) -> Tuple[List[float], LoadmanagementLimit]:
-        if data.data.io_actions.dimming_via_direct_control({"type": "cp", "id": cp.num}):
+        value, limit = data.data.io_actions.dimming_via_direct_control({"type": "cp", "id": cp.num})
+        if value is not None:
             phases = 3-missing_currents.count(0)
             current_per_phase = 4200 / 230 / phases
             available_currents = [current_per_phase -
                                   cp.data.set.target_current if c > 0 else 0 for c in missing_currents]
             log.debug(f"Dimmung per Direkt-Steuerung: {available_currents}A")
-            limit = LoadmanagementLimit(LimitingValue.DIMMING_VIA_DIRECT_CONTROL.value,
-                                        LimitingValue.DIMMING_VIA_DIRECT_CONTROL)
-            return available_currents, limit
-        else:
-            return missing_currents, LoadmanagementLimit(None, None)
+        return available_currents, limit
 
     def _limit_by_dimming(self,
                           available_currents: List[float],
                           cp: Chargepoint) -> Tuple[List[float], LoadmanagementLimit]:
-        dimming_power_left = data.data.io_actions.dimming_get_import_power_left({"type": "cp", "id": cp.num})
+        dimming_power_left, limit = data.data.io_actions.dimming_get_import_power_left({"type": "cp", "id": cp.num})
         if dimming_power_left:
             if sum(available_currents)*230 > dimming_power_left:
                 phases = 3-available_currents.count(0)
                 overload_per_phase = (sum(available_currents) - dimming_power_left/230)/phases
                 available_currents = [c - overload_per_phase if c > 0 else 0 for c in available_currents]
                 log.debug(f"Reduzierung der Ströme durch die Dimmung: {available_currents}A")
-                return available_currents, LoadmanagementLimit(LimitingValue.DIMMING.value, LimitingValue.DIMMING)
-        return available_currents, LoadmanagementLimit(None, None)
+        return available_currents, limit
 
     def _limit_by_ripple_control_receiver(self,
                                           available_currents: List[float],
                                           cp: Chargepoint) -> Tuple[List[float], LoadmanagementLimit]:
-        value = data.data.io_actions.ripple_control_receiver({"type": "cp", "id": cp.num})
+        value, limit = data.data.io_actions.ripple_control_receiver({"type": "cp", "id": cp.num})
         if value != 1:
             phases = 3-available_currents.count(0)
             if phases > 1:
@@ -177,9 +173,4 @@ class Loadmanagement:
             available_currents = [min(max_current*value - cp.data.set.target_current, c)
                                   if c > 0 else 0 for c in available_currents]
             log.debug(f"Reduzierung durch RSE-Kontakt auf {value*100}%, maximal {max_current*value}A")
-            limit = LoadmanagementLimit(
-                LimitingValue.RIPPLE_CONTROL_RECEIVER.value.format(value*100),
-                LimitingValue.RIPPLE_CONTROL_RECEIVER)
-            return available_currents, limit
-        else:
-            return available_currents, LoadmanagementLimit(None, None)
+        return available_currents, limit
