@@ -108,14 +108,14 @@ def collect_data(chargepoint):
                         log_data.chargemode_log_entry = get_value_or_default(
                             lambda: chargepoint.data.control_parameter.chargemode.value)
 
-                if get_value_or_default(lambda: charging_ev.soc_module) if charging_ev else None:
+                if get_value_or_default(lambda: charging_ev.soc_module if charging_ev else None):
                     if get_value_or_default(lambda: log_data.range_at_start is None):
                         # manche Vehicle-Module liefern erstmal None
                         log_data.range_at_start = get_value_or_default(lambda: charging_ev.data.get.range)
 
                     plug_time = get_value_or_default(lambda: chargepoint.data.set.plug_time, 0)
                     soc_timestamp = get_value_or_default(lambda: charging_ev.data.get.soc_timestamp, 0)
-                    if (get_value_or_default(lambda: log_data.soc_at_start) is None and
+                    if (get_value_or_default(lambda: log_data.soc_at_start is None) and
                             get_value_or_default(lambda: plug_time < soc_timestamp, True)):
                         # SoC muss nach dem Anstecken aktualisiert worden sein
                         log_data.soc_at_start = get_value_or_default(lambda: charging_ev.data.get.soc)
