@@ -1007,6 +1007,24 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
+   * Get charge point charge type (AC/DC) identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns string | undefined
+   */
+  const chargePointChargeType = (chargePointId: number) =>
+    computed(() => {
+      const templateId = getValue.value(
+        `openWB/chargepoint/${chargePointId}/config`,
+        'template',
+      ) as number | undefined;
+      if (templateId === undefined) return undefined;
+      return getValue.value(
+        `openWB/chargepoint/template/${templateId}`,
+        'charging_type',
+      ) as string | undefined;
+    });
+
+  /**
    * Get boolean value for DC charging enabled / disabled
    * @returns boolean
    */
@@ -3606,6 +3624,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointStateMessage,
     chargePointFaultState,
     chargePointFaultMessage,
+    chargePointChargeType,
     dcChargingEnabled,
     chargePointConnectedVehicleInfo,
     chargePointConnectedVehicleForceSocUpdate,
