@@ -147,9 +147,7 @@ defineOptions({
 
 const settingsAccessible = computed(() => mqttStore.settingsAccessible);
 const statusAccessible = computed(() => mqttStore.statusAccessible);
-const chargeLogAccessible = computed(
-  () => mqttStore.chargeLogAccessible
-);
+const chargeLogAccessible = computed(() => mqttStore.chargeLogAccessible);
 const chartAccessible = computed(() => mqttStore.chartAccessible);
 
 const drawer = ref(false);
