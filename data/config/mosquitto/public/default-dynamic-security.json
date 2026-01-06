@@ -412,6 +412,16 @@
 					"allow":	true
 				}, {
 					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/chargepoint/get/imported",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
+					"topic":	"openWB/chargepoint/get/exported",
+					"priority":	0,
+					"allow":	true
+				}, {
+					"acltype":	"subscribeLiteral",
 					"topic":	"openWB/chargepoint/get/daily_imported",
 					"priority":	0,
 					"allow":	true
