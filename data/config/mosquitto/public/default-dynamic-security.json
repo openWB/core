@@ -344,6 +344,106 @@
 			]
 		},
 		{
+			"rolename": "settings-access",
+			"textname": "Zugang zu den Einstellungen",
+			"textdescription": "Erlaubt den Zugang zu den Einstellungen. Für weitere Optionen werden noch zusätzliche Rechte benötigt!",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/settings_accessible",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "status-access",
+			"textname": "Zugang zum Status",
+			"textdescription": "Erlaubt den Zugang zum Status. Für einzelne Karten im Status werden ggf. noch zusätzliche Rechte benötigt!",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/status_accessible",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "charge-log-access",
+			"textname": "Zugang zum Ladeprotokoll",
+			"textdescription": "Erlaubt den Zugang zum Ladeprotokoll.",
+			"acls": [
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/getChargeLog",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/charge_log_accessible",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/log/+/data",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "chart-access",
+			"textname": "Zugang zu den Auswertungen",
+			"textdescription": "Erlaubt den Zugang zu den Tages-, Monats- und Jahres-Auswertungen.",
+			"acls": [
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/getDailyLog",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/getMonthlyLog",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/getYearlyLog",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/chart_accessible",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/log/daily/#",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/log/monthly/#",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/log/yearly/#",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
 			"rolename": "electricity-price-access",
 			"textname": "Leserechte für Strompreis",
 			"textdescription": "Erlaubt das Empfangen von Daten für den Strompreis.",
