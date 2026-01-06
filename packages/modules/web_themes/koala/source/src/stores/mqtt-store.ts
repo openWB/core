@@ -763,6 +763,51 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
+   * Check if status is accessible
+   * Defaults to false if the value is not set as this may be due to insufficient permissions
+   * @returns boolean
+   */
+  const statusAccessible: ComputedRef<boolean> = computed(() => {
+    return (
+      getValue.value(
+        'openWB/system/security/status_accessible',
+        undefined,
+        false,
+      ) === true
+    );
+  });
+
+  /**
+   * Check if charge log is accessible
+   * Defaults to false if the value is not set as this may be due to insufficient permissions
+   * @returns boolean
+   */
+  const chargeLogAccessible: ComputedRef<boolean> = computed(() => {
+    return (
+      getValue.value(
+        'openWB/system/security/charge_log_accessible',
+        undefined,
+        false,
+      ) === true
+    );
+  });
+
+  /**
+   * Check if chart is accessible
+   * Defaults to false if the value is not set as this may be due to insufficient permissions
+   * @returns boolean
+   */
+  const chartAccessible: ComputedRef<boolean> = computed(() => {
+    return (
+      getValue.value(
+        'openWB/system/security/chart_accessible',
+        undefined,
+        false,
+      ) === true
+    );
+  });
+
+  /**
    * Get the system version
    * @returns string | undefined
    */
@@ -3826,6 +3871,9 @@ export const useMqttStore = defineStore('mqtt', () => {
     userManagementActive,
     accessAllowed,
     settingsAccessible,
+    statusAccessible,
+    chargeLogAccessible,
+    chartAccessible,
     // charge point data
     chargePointIds,
     chargePointAccessible,
