@@ -111,7 +111,25 @@
 				},
 				{
 					"acltype": "publishClientReceive",
+					"topic": "openWB/system/dataprotection_acknowledged",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/serial_number",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
 					"topic": "openWB/system/ip_address",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/mac_address",
 					"priority": 0,
 					"allow": true
 				},
@@ -124,6 +142,12 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/current_commit",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/current_branch_commit",
 					"priority": 0,
 					"allow": true
 				},
