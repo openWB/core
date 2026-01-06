@@ -1,435 +1,461 @@
 {
-	"defaultACLAccess":	{
-		"publishClientSend":	false,
-		"publishClientReceive":	true,
-		"subscribe":	false,
-		"unsubscribe":	true
+	"defaultACLAccess": {
+		"publishClientSend": false,
+		"publishClientReceive": false,
+		"subscribe": true,
+		"unsubscribe": true
 	},
-	"clients":	[{
-			"username":	"admin",
-			"textname":	"Administrator",
-			"roles":	[{
-					"rolename":	"dynsec_admin"
-				}, {
-					"rolename":	"full_access"
-				}],
-			"password":	"Yamo/Sa9TbMaYSGBPtJCglEuGFrY5CWQrToXwqUhRPOkcepwUoMgoFqaFpkhoKxpEc+Q5KofojN61BZrB9DBQQ==",
-			"salt":	"dExADR+vHv85IcDI",
-			"iterations":	101
-		}],
-	"groups":	[{
-			"groupname":	"anonymous",
-			"textname":	"Anonyme Benutzer",
-			"textdescription":	"Diese Gruppe wird für Clients verwendet, die keine Anmeldeinformationen bereitstellen. Das ist z.B. für die Auswahl des eingestellten Themes oder die Darstellung im integrierten Display notwendig.",
-			"roles":	[{
-					"rolename":	"basic-display-data"
-				}, {
-					"rolename":	"basic-system-data"
-				}, {
-					"rolename":	"basic-theme-data"
-				}],
-			"clients":	[]
-		}],
-	"anonymousGroup":	"anonymous",
-	"roles":	[{
-			"rolename":	"basic-display-data",
-			"textname":	"Basisdaten für das Display",
-			"textdescription":	"Diese Rolle erlaubt das Auslesen der Display-Einstellungen und wird für das integrierte Display benötigt. Notwendig für die anonyme Gruppe!",
-			"acls":	[{
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/optional/int_display/theme",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/optional/int_display/only_local_charge_points",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/general/extern_display_mode",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/general/internal_chargepoint/global_data",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/general/internal_chargepoint/0/data/parent_cp",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/general/internal_chargepoint/1/data/parent_cp",
-					"priority":	0,
-					"allow":	true
-				}]
-		}, {
-			"rolename":	"basic-system-data",
-			"textname":	"Basisdaten zum System",
-			"textdescription":	"Diese Rolle ermöglicht das Auslesen grundlegender Einstellungen des Systems und wird von mehreren Clients verwendet. Notwendig für die anonyme Gruppe!",
-			"acls":	[{
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/system/version",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/system/boot_done",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/system/update_in_progress",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/system/usage_terms_acknowledged",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/general/extern",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/system/ip_address",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/system/current_branch",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/system/current_commit",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/system/time",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/system/installAssistantDone",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/system/security/user_management_active",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/general/allow_unencrypted_access",
-					"priority":	0,
-					"allow":	true
-				}]
-		}, {
-			"rolename":	"basic-theme-data",
-			"textname":	"Basisdaten zum Laden eines Themes",
-			"textdescription":	"Diese Rolle ermöglicht das Auslesen grundlegender Einstellungen des Systems und wird verwendet, um das konfigurierte Theme zu laden. Notwendig für die anonyme Gruppe!",
-			"acls":	[{
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/general/web_theme",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/internal_chargepoint/global_data",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/counter/get/hierarchy",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/optional/dc_charging",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/vehicle/+/name",
-					"priority":	0,
-					"allow":	true
-				}]
-		}, {
-			"rolename":	"basic-user-data",
-			"textname":	"Basisdaten für alle Benutzer",
-			"textdescription":	"Diese Rolle ermöglicht grundlegenden Zugriff auf openWB. Notwendig für alle normalen Benutzer!",
-			"acls":	[{
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/system/security/access_allowed",
-					"priority":	0,
-					"allow":	true
-				}]
-		}, {
-			"rolename":	"dynsec_admin",
-			"textname":	"Dynamic Security Administrator",
-			"textdescription":	"Voller Zugriff auf die Dynamic Security Funktionen des Mosquitto Brokers. Wird für die Bearbeitung der Benutzer, Gruppen und Rollen benötigt.",
-			"acls":	[{
-					"acltype":	"publishClientSend",
-					"topic":	"$CONTROL/dynamic-security/#",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"publishClientReceive",
-					"topic":	"$CONTROL/dynamic-security/#",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"publishClientReceive",
-					"topic":	"$SYS/#",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"publishClientReceive",
-					"topic":	"#",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribePattern",
-					"topic":	"$CONTROL/dynamic-security/#",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribePattern",
-					"topic":	"$SYS/#",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribePattern",
-					"topic":	"#",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"unsubscribePattern",
-					"topic":	"#",
-					"priority":	0,
-					"allow":	true
-				}]
-		}, {
-			"rolename":	"full_access",
-			"textname":	"Voller Zugriff",
-			"textdescription":	"Erlaubt das Senden und Empfangen aller Nachrichten. Identisch mit dem Zugriff ohne aktivierte Benutzerverwaltung.",
-			"acls":	[{
-					"acltype":	"publishClientSend",
-					"topic":	"openWB/set/#",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"publishClientSend",
-					"topic":	"openWB/system/messages/#",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"publishClientSend",
-					"topic":	"openWB/command/+/messages/#",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"publishClientSend",
-					"topic":	"others/#",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"publishClientSend",
-					"topic":	"openWB/simpleAPI/set/#",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribePattern",
-					"topic":	"openWB/#",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribePattern",
-					"topic":	"openWB-remote/#",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribePattern",
-					"topic":	"others/#",
-					"priority":	0,
-					"allow":	true
-				}]
-		}, {
-			"rolename": "electricity-price-access",
-			"textname":	"Leserechte für Strompreis",
-			"textdescription":	"Erlaubt das Empfangen von Daten für den Strompreis.",
-			"acls":	[{
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/optional/ep/configured",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/optional/ep/get/prices",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/optional/ep/grid_fee/provider",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/optional/ep/grid_fee/get/prices",
-					"priority":	0,
-					"allow":	true
-				}]
-		}, {
-			"rolename": "graph-access",
-			"textname":	"Leserechte für Diagrammdaten",
-			"textdescription":	"Erlaubt das Empfangen von Daten für die Anzeige der Verlaufsdiagramme.",
-			"acls":	[{
-					"acltype":	"subscribePattern",
-					"topic":	"openWB/graph/+",
-					"priority":	0,
-					"allow":	true
-				}]
-		}, {
-			"rolename": "home-consumption-access",
-			"textname":	"Leserechte für Hausverbrauchsdaten",
-			"textdescription":	"Erlaubt das Empfangen von Daten für den Hausverbrauch.",
-			"acls":	[{
+	"clients": [
+		{
+			"username": "admin",
+			"textname": "Administrator",
+			"roles": [
+				{
+					"rolename": "dynsec_admin"
+				},
+				{
+					"rolename": "full_access"
+				}
+			],
+			"password": "Yamo/Sa9TbMaYSGBPtJCglEuGFrY5CWQrToXwqUhRPOkcepwUoMgoFqaFpkhoKxpEc+Q5KofojN61BZrB9DBQQ==",
+			"salt": "dExADR+vHv85IcDI",
+			"iterations": 101
+		}
+	],
+	"groups": [
+		{
+			"groupname": "anonymous",
+			"textname": "Anonyme Benutzer",
+			"textdescription": "Diese Gruppe wird für Clients verwendet, die keine Anmeldeinformationen bereitstellen. Das ist z.B. für die Auswahl des eingestellten Themes oder die Darstellung im integrierten Display notwendig.",
+			"roles": [
+				{
+					"rolename": "basic-display-data"
+				},
+				{
+					"rolename": "basic-system-data"
+				},
+				{
+					"rolename": "basic-theme-data"
+				}
+			],
+			"clients": []
+		}
+	],
+	"anonymousGroup": "anonymous",
+	"roles": [
+		{
+			"rolename": "basic-display-data",
+			"textname": "Basisdaten für das Display",
+			"textdescription": "Diese Rolle erlaubt das Auslesen der Display-Einstellungen und wird für das integrierte Display benötigt. Notwendig für die anonyme Gruppe!",
+			"acls": [
+				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/counter/#",
+					"topic": "openWB/optional/int_display/theme",
 					"priority": 0,
-					"allow": false
-				}, {
-					"acltype": "publishClientReceive",
-					"topic": "openWB/counter/set/+",
-					"priority": 1,
 					"allow": true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/counter/set/home_consumption",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/counter/set/daily_yield_home_consumption",
-					"priority":	0,
-					"allow":	true
-				}]
-		}, {
-			"rolename": "inverter-sum-access",
-			"textname":	"Leserechte für PV-Summendaten",
-			"textdescription":	"Erlaubt das Empfangen von Daten für die Summe aller PV-Anlagen.",
-			"acls":	[{
+				},
+				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/pv/#",
+					"topic": "openWB/optional/int_display/only_local_charge_points",
 					"priority": 0,
-					"allow": false
-				}, {
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/extern_display_mode",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/internal_chargepoint/global_data",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/internal_chargepoint/+/data/parent_cp",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "basic-system-data",
+			"textname": "Basisdaten zum System",
+			"textdescription": "Diese Rolle ermöglicht das Auslesen grundlegender Einstellungen des Systems und wird von mehreren Clients verwendet. Notwendig für die anonyme Gruppe!",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/version",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/boot_done",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/update_in_progress",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/usage_terms_acknowledged",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/ip_address",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/current_branch",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/current_commit",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/time",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/installAssistantDone",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/user_management_active",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/extern",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/allow_unencrypted_access",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "basic-theme-data",
+			"textname": "Basisdaten zum Laden eines Themes",
+			"textdescription": "Diese Rolle ermöglicht das Auslesen grundlegender Einstellungen des Systems und wird verwendet, um das konfigurierte Theme zu laden. Notwendig für die anonyme Gruppe!",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/web_theme",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/internal_chargepoint/global_data",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/counter/get/hierarchy",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/dc_charging",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/vehicle/+/name",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "basic-user-data",
+			"textname": "Basisdaten für alle Benutzer",
+			"textdescription": "Diese Rolle ermöglicht grundlegenden Zugriff auf openWB. Notwendig für alle normalen Benutzer!",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/access_allowed",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "dynsec_admin",
+			"textname": "Dynamic Security Administrator",
+			"textdescription": "Voller Zugriff auf die Dynamic Security Funktionen des Mosquitto Brokers. Wird für die Bearbeitung der Benutzer, Gruppen und Rollen benötigt.",
+			"acls": [
+				{
+					"acltype": "publishClientSend",
+					"topic": "$CONTROL/dynamic-security/#",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "$CONTROL/dynamic-security/#",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "$SYS/#",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "#",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "subscribePattern",
+					"topic": "$CONTROL/dynamic-security/#",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "subscribePattern",
+					"topic": "$SYS/#",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "subscribePattern",
+					"topic": "#",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "unsubscribePattern",
+					"topic": "#",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "full_access",
+			"textname": "Voller Zugriff",
+			"textdescription": "Erlaubt das Senden und Empfangen aller Nachrichten. Identisch mit dem Zugriff ohne aktivierte Benutzerverwaltung.",
+			"acls": [
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/#",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/system/messages/#",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/command/+/messages/#",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "others/#",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/simpleAPI/set/#",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/#",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB-remote/#",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "others/#",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "electricity-price-access",
+			"textname": "Leserechte für Strompreis",
+			"textdescription": "Erlaubt das Empfangen von Daten für den Strompreis.",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/ep/configured",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/ep/get/+",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/ep/grid_fee/provider",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/ep/grid_fee/get/+",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/ep/flexible_tariff/provider",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/ep/flexible_tariff/get/+",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "graph-access",
+			"textname": "Leserechte für Diagrammdaten",
+			"textdescription": "Erlaubt das Empfangen von Daten für die Anzeige der Verlaufsdiagramme.",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/graph/+",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "home-consumption-access",
+			"textname": "Leserechte für Hausverbrauchsdaten",
+			"textdescription": "Erlaubt das Empfangen von Daten für den Hausverbrauch.",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/counter/set/home_consumption",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/counter/set/imported_home_consumption",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/counter/set/daily_yield_home_consumption",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "inverter-sum-access",
+			"textname": "Leserechte für PV-Summendaten",
+			"textdescription": "Erlaubt das Empfangen von Daten für die Summe aller PV-Anlagen.",
+			"acls": [
+				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/pv/config/configured",
-					"priority": 1,
+					"priority": 0,
 					"allow": true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/pv/config/configured",
-					"priority":	0,
-					"allow":	true
-				}, {
+				},
+				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/pv/get/+",
-					"priority": 1,
-					"allow": true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/pv/get/power",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/pv/get/daily_exported",
-					"priority":	0,
-					"allow":	true
-				}]
-		}, {
-			"rolename": "bat-sum-access",
-			"textname":	"Leserechte für Batteriesummendaten",
-			"textdescription":	"Erlaubt das Empfangen von Daten für die Summe aller Batterien.",
-			"acls":	[{
-					"acltype": "publishClientReceive",
-					"topic": "openWB/bat/#",
 					"priority": 0,
-					"allow": false
-				}, {
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "bat-sum-access",
+			"textname": "Leserechte für Batteriesummendaten",
+			"textdescription": "Erlaubt das Empfangen von Daten für die Summe aller Batterien.",
+			"acls": [
+				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/bat/config/configured",
-					"priority": 1,
+					"priority": 0,
 					"allow": true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/bat/config/configured",
-					"priority":	0,
-					"allow":	true
-				}, {
+				},
+				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/bat/get/+",
-					"priority": 1,
-					"allow": true
-				}, {
-					"acltype":	"subscribePattern",
-					"topic":	"openWB/bat/get/+",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/general/chargemode_config/pv_charging/bat_mode",
-					"priority":	0,
-					"allow":	true
-				}]
-		}, {
-			"rolename": "chargepoint-sum-access",
-			"textname":	"Leserechte für Ladepunktsummendaten",
-			"textdescription":	"Erlaubt das Empfangen von Daten für die Summe aller Ladepunkte.",
-			"acls":	[{
-					"acltype": "publishClientReceive",
-					"topic": "openWB/chargepoint/#",
 					"priority": 0,
-					"allow": false
-				}, {
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/chargemode_config/pv_charging/bat_mode",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "chargepoint-sum-access",
+			"textname": "Leserechte für Ladepunktsummendaten",
+			"textdescription": "Erlaubt das Empfangen von Daten für die Summe aller Ladepunkte.",
+			"acls": [
+				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/chargepoint/get/+",
-					"priority": 1,
+					"priority": 0,
 					"allow": true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/chargepoint/get/power",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/chargepoint/get/imported",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/chargepoint/get/exported",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/chargepoint/get/daily_imported",
-					"priority":	0,
-					"allow":	true
-				}, {
-					"acltype":	"subscribeLiteral",
-					"topic":	"openWB/chargepoint/get/daily_exported",
-					"priority":	0,
-					"allow":	true
-				}]
-		}]
+				}
+			]
+		}
+	]
 }
