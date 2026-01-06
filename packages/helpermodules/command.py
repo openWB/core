@@ -76,37 +76,38 @@ class Command:
 
     def _get_max_ids(self) -> None:
         """ ermittelt die maximale ID vom Broker """
+        plan_extractors = {
+            "autolock_plan": lambda p: p.get("autolock", {}).get("plans", []),
+            "charge_template_scheduled_plan": lambda p: p.get("chargemode", {}).get("scheduled_charging",
+                                                                                    {}).get("plans", []),
+            "charge_template_time_charging_plan": lambda p: p.get("time_charging", {}).get("plans", [])
+        }
         try:
             received_topics = ProcessBrokerBranch("").get_max_id()
-            for id_topic, topic_str, default in self.MAX_IDS["nested payload"]:
-                max_id = default
-                for topic, payload in received_topics.items():
-                    if re.search(topic_str, topic) is not None:
-                        if id_topic == "autolock_plan":
-                            for plan in payload["autolock"]["plans"]:
-                                max_id = max(plan["id"], max_id)
-                        elif id_topic == "charge_template_scheduled_plan":
-                            for plan in payload["chargemode"]["scheduled_charging"]["plans"]:
-                                max_id = max(plan["id"], max_id)
-                        elif id_topic == "charge_template_time_charging_plan":
-                            for plan in payload["time_charging"]["plans"]:
-                                max_id = max(plan["id"], max_id)
-                setattr(self, f'max_id_{id_topic}', max_id)
-                Pub().pub("openWB/set/command/max_id/"+id_topic, max_id)
-            for id_topic, topic_str, default in self.MAX_IDS["topic"]:
-                max_id = default
-                for topic in received_topics.keys():
-                    if re.search(topic_str, topic) is not None:
-                        max_id = max(int(get_index(topic)), max_id)
-                setattr(self, f'max_id_{id_topic}', max_id)
-                Pub().pub("openWB/set/command/max_id/"+id_topic, max_id)
-            for id_topic, topic_str, default in self.MAX_IDS["payload"]:
-                max_id = default
-                for topic, payload in received_topics.items():
-                    if re.search(topic_str, topic) is not None:
-                        max_id = max(payload["id"], max_id)
-                setattr(self, f'max_id_{id_topic}', max_id)
-                Pub().pub("openWB/set/command/max_id/"+id_topic, max_id)
+            for max_id_type in self.MAX_IDS.keys():
+                for id_topic, topic_str, default in self.MAX_IDS[max_id_type]:
+                    max_id = default
+                    for topic, payload in received_topics.items():
+                        try:
+                            if max_id_type == "nested payload":
+                                if re.search(topic_str, topic) is not None:
+                                    extractor = plan_extractors.get(id_topic)
+                                    for plan in extractor(payload):
+                                        try:
+                                            max_id = max(plan["id"], max_id)
+                                        except Exception:
+                                            log.exception(f"Fehler beim Ermitteln der maximalen ID für {id_topic} "
+                                                          f"beim {id_topic}")
+                            elif max_id_type == "topic":
+                                if re.search(topic_str, topic) is not None:
+                                    max_id = max(int(get_index(topic)), max_id)
+                            elif max_id_type == "payload":
+                                if re.search(topic_str, topic) is not None:
+                                    max_id = max(payload["id"], max_id)
+                        except Exception:
+                            log.exception(f"Fehler beim Ermitteln der maximalen ID für {id_topic}")
+                    setattr(self, f'max_id_{id_topic}', max_id)
+                    Pub().pub(f"openWB/set/command/max_id/{id_topic}", max_id)
         except Exception:
             log.exception("Fehler im Command-Modul")
 
