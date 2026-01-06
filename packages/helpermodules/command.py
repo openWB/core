@@ -240,6 +240,7 @@ class Command:
         """
         if self.max_id_io_device >= payload["data"]["id"]:
             ProcessBrokerBranch(f'system/io/{payload["data"]["id"]}/').remove_topics()
+            ProcessBrokerBranch(f'io/states/{payload["data"]["id"]}/').remove_topics()
             pub_user_message(payload, connection_id, f'IO-Gerät mit ID \'{payload["data"]["id"]}\' gelöscht.',
                              MessageType.SUCCESS)
         else:
