@@ -13,53 +13,61 @@
       <!-- drawer content -->
       <q-scroll-area class="fit" :horizontal-thumb-style="{ opacity: '0' }">
         <q-list padding>
-          <q-item clickable v-ripple href="/openWB/web/settings/#/Status">
-            <q-item-section avatar>
-              <q-icon name="dashboard" />
-            </q-item-section>
+          <div v-if="statusAccessible">
+            <q-item clickable v-ripple href="/openWB/web/settings/#/Status">
+              <q-item-section avatar>
+                <q-icon name="dashboard" />
+              </q-item-section>
 
-            <q-item-section> Status </q-item-section>
-          </q-item>
+              <q-item-section> Status </q-item-section>
+            </q-item>
 
-          <q-separator />
+            <q-separator />
+          </div>
 
-          <q-item-label header>Auswertungen</q-item-label>
+          <div v-if="chargeLogAccessible || chartAccessible">
+            <q-item-label header>Auswertungen</q-item-label>
 
-          <q-item
-            clickable
-            v-ripple
-            href="/openWB/web/settings/#/Logging/ChargeLog"
-          >
-            <q-item-section avatar>
-              <q-icon name="table_chart" />
-            </q-item-section>
+            <q-item
+              v-if="chargeLogAccessible"
+              clickable
+              v-ripple
+              href="/openWB/web/settings/#/Logging/ChargeLog"
+            >
+              <q-item-section avatar>
+                <q-icon name="table_chart" />
+              </q-item-section>
 
-            <q-item-section> Ladeprotokoll </q-item-section>
-          </q-item>
+              <q-item-section> Ladeprotokoll </q-item-section>
+            </q-item>
 
-          <q-item
-            clickable
-            v-ripple
-            href="/openWB/web/settings/#/Logging/Chart"
-          >
-            <q-item-section avatar>
-              <q-icon name="area_chart" />
-            </q-item-section>
+            <q-item
+              v-if="chartAccessible"
+              clickable
+              v-ripple
+              href="/openWB/web/settings/#/Logging/Chart"
+            >
+              <q-item-section avatar>
+                <q-icon name="area_chart" />
+              </q-item-section>
 
-            <q-item-section> Diagramme </q-item-section>
-          </q-item>
+              <q-item-section> Diagramme </q-item-section>
+            </q-item>
 
-          <q-separator />
+            <q-separator />
+          </div>
 
-          <q-item clickable v-ripple href="/openWB/web/settings/">
-            <q-item-section avatar>
-              <q-icon name="settings" />
-            </q-item-section>
+          <div v-if="settingsAccessible">
+            <q-item clickable v-ripple href="/openWB/web/settings/">
+              <q-item-section avatar>
+                <q-icon name="settings" />
+              </q-item-section>
 
-            <q-item-section> Einstellungen </q-item-section>
-          </q-item>
+              <q-item-section> Einstellungen </q-item-section>
+            </q-item>
 
-          <q-separator />
+            <q-separator />
+          </div>
 
           <q-item-label header>Anzeigeeinstellungen</q-item-label>
 
@@ -125,14 +133,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import UserIndicator from 'src/components/UserIndicator.vue';
+import { useMqttStore } from 'src/stores/mqtt-store';
+const mqttStore = useMqttStore();
+
 import { useQuasar } from 'quasar';
 const $q = useQuasar();
 
 defineOptions({
   name: 'MainLayout',
 });
+
+const settingsAccessible = computed(() => mqttStore.settingsAccessible);
+const statusAccessible = computed(() => mqttStore.statusAccessible);
+const chargeLogAccessible = computed(
+  () => mqttStore.chargeLogAccessible
+);
+const chartAccessible = computed(() => mqttStore.chartAccessible);
 
 const drawer = ref(false);
 const themeMode = ref('auto');
