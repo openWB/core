@@ -6,7 +6,7 @@ pymodbus==2.5.2
 pytest==6.2.5
 requests_mock==1.9.3
 lxml==4.9.1
-aiohttp==3.12.14
+aiohttp==3.13.3
 schedule==1.1.0
 PyJWT==2.6.0
 bs4==0.0.1
