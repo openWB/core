@@ -8,7 +8,7 @@ from datetime import datetime
 
 from control import data
 from control.ocpp import OcppMixin
-from control.optional_data import TARIFF_UPDATE_HOUR, FlexibleTariff, GridFee, OptionalData, PricingGet
+from control.optional_data import FlexibleTariff, GridFee, OptionalData, PricingGet
 from helpermodules import hardware_configuration
 from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
@@ -235,18 +235,6 @@ class Optional(OcppMixin):
             return []
 
     def et_price_update_required(self) -> bool:
-        def is_tomorrow(last_timestamp: str) -> bool:
-            return (day_of(date=datetime.now()) < day_of(datetime.fromtimestamp(float(last_timestamp)))
-                    or day_of(date=datetime.now()).hour < TARIFF_UPDATE_HOUR)
-
-        def day_of(date: datetime) -> datetime:
-            return date.replace(hour=0, minute=0, second=0, microsecond=0)
-
-        def get_last_entry_time_stamp() -> str:
-            last_known_timestamp = "0"
-            if self.data.electricity_pricing.get.prices is not None:
-                last_known_timestamp = max(self.data.electricity_pricing.get.prices)
-            return last_known_timestamp
         self._set_ep_configured()
         if self.data.electricity_pricing.configured is False:
             return False
@@ -254,18 +242,16 @@ class Optional(OcppMixin):
             return True
         if self.data.electricity_pricing.get.next_query_time is None:
             return True
-        if is_tomorrow(get_last_entry_time_stamp()):
-            if timecheck.create_timestamp() > self.data.electricity_pricing.get.next_query_time:
-                next_query_formatted = datetime.fromtimestamp(
-                    self.data.electricity_pricing.get.next_query_time).strftime("%Y%m%d-%H:%M:%S")
-                log.info(f'Wartezeit {next_query_formatted} abgelaufen, Strompreise werden abgefragt')
-                return True
-            else:
-                next_query_formatted = datetime.fromtimestamp(
-                    self.data.electricity_pricing.get.next_query_time).strftime("%Y%m%d-%H:%M:%S")
-                log.info(f'Nächster Abruf der Strompreise {next_query_formatted}.')
-                return False
-        return False
+        if timecheck.create_timestamp() > self.data.electricity_pricing.get.next_query_time:
+            next_query_formatted = datetime.fromtimestamp(
+                self.data.electricity_pricing.get.next_query_time).strftime("%Y%m%d-%H:%M:%S")
+            log.info(f'Wartezeit {next_query_formatted} abgelaufen, Strompreise werden abgefragt')
+            return True
+        else:
+            next_query_formatted = datetime.fromtimestamp(
+                self.data.electricity_pricing.get.next_query_time).strftime("%Y%m%d-%H:%M:%S")
+            log.info(f'Nächster Abruf der Strompreise {next_query_formatted}.')
+            return False
 
     def ocpp_transfer_meter_values(self):
         try:
