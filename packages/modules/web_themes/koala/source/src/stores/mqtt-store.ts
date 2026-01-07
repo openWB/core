@@ -102,9 +102,9 @@ export const useMqttStore = defineStore('mqtt', () => {
           caption: (error as Error).message,
           progress: true,
         });
-        // handle not authorized error (code 137)
+        // handle not authorized error (code 135 or 137)
         if (
-          (error as mqtt.ErrorWithReasonCode).code === 137 &&
+          [135, 137].includes((error as mqtt.ErrorWithReasonCode).code) &&
           mqttUser != null
         ) {
           mqttClient.end();
@@ -277,7 +277,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   function subscribe(
     topics: string[] | string,
     defaultValue: unknown = undefined,
-    silent: boolean = false,
+    silent: boolean = true,
   ): void {
     if (!Array.isArray(topics)) {
       topics = [topics];
