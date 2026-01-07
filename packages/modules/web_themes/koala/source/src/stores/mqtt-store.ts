@@ -114,7 +114,8 @@ export const useMqttStore = defineStore('mqtt', () => {
             $q.notify({
               type: 'warning',
               message: 'Die Anmeldeinformationen wurden entfernt.',
-              timeout: 0,
+              timeout: 2500,
+              progress: true,
               closeBtn: 'Seite neu laden',
               onDismiss: () => {
                 this.router.go(0);
