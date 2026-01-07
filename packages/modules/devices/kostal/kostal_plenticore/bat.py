@@ -35,7 +35,6 @@ class KostalPlenticoreBat(AbstractBat):
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
-        self.last_mode = 'Undefined'
 
     def update(self) -> None:
         power = self.client.read_holding_registers(
@@ -62,26 +61,20 @@ class KostalPlenticoreBat(AbstractBat):
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
         unit = self.modbus_id
-        log.debug(f'last_mode: {self.last_mode}')
 
         if power_limit is None:
-            # Wert wird nur einmal gesetzt damit die Eigenregelung nach Timeout greift
+            # Keine Registeränderung damit nach Timeout eigenständig zurückgesetzt wird
             log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
-            if self.last_mode is not None:
-                self.client.write_registers(1034, [0], data_type=ModbusDataType.FLOAT_32, unit=unit)
-                self.last_mode = None
         elif power_limit == 0:
             # wiederholt auf Stop setzen damit sich Register nicht zurücksetzt
             log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt und nicht entladen")
             self.client.write_registers(1034, [0], data_type=ModbusDataType.FLOAT_32, unit=unit)
-            self.last_mode = 'stop'
         elif power_limit < 0:
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W entladen für den Hausverbrauch")
             # Die maximale Entladeleistung begrenzen auf 7000W
             power_value = int(min(abs(power_limit), 7000)) * -1
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_value} W entladen für den Hausverbrauch")
             self.client.write_registers(1034, [power_value], data_type=ModbusDataType.FLOAT_32, unit=unit)
-            self.last_mode = 'discharge'
 
     def power_limit_controllable(self) -> bool:
         return True
