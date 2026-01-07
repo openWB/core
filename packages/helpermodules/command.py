@@ -323,7 +323,9 @@ class Command:
             for cp in SubData.cp_data.values():
                 if isinstance(cp.chargepoint.chargepoint_module, ChargepointModule):
                     if (cp.chargepoint.chargepoint_module.config.configuration.mode ==
-                            InternalChargepointMode.DUO.value):
+                            InternalChargepointMode.DUO.value or
+                            cp.chargepoint.chargepoint_module.config.configuration.mode ==
+                            InternalChargepointMode.ECO.value):
                         count_duo += 1
                     else:
                         count_series_socket += 1
