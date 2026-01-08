@@ -113,7 +113,7 @@ export interface ChargeTemplateConfiguration {
 }
 export interface ValueObject {
   textValue: string;
-  value: number;
+  value?: number;
   unit: string;
   scaledValue: number;
   scaledUnit: string;
