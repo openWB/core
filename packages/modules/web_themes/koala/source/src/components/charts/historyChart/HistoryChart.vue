@@ -55,7 +55,6 @@ Chart.register(
   Filler,
 );
 
-const legendDisplay = computed(() => props.showLegend);
 const mqttStore = useMqttStore();
 const localDataStore = useLocalDataStore();
 const $q = useQuasar();
@@ -68,6 +67,8 @@ const chartRef = ref<ChartComponentRef | null>(null);
 const chartInstance = computed(() => {
   return (chartRef.value?.chart as Chart) ?? null;
 });
+
+const legendDisplay = computed(() => props.showLegend);
 
 const applyHiddenDatasetsToChart = <TType extends ChartType, TData>(
   chart: Chart<TType, TData>,
@@ -126,23 +127,25 @@ const getGlobalColor = (name: string, fallback?: string) => {
 };
 
 const secondaryCounterDatasets = computed(() =>
-  mqttStore.getSecondaryCounterIds.map((id) => ({
-    label: mqttStore.getComponentName(id),
-    category: 'component',
-    unit: 'kW',
-    borderColor: getGlobalColor('--q-secondary-counter-stroke'),
-    backgroundColor: getGlobalColor('--q-secondary-counter-fill'),
-    data: selectedData.value.map((item) => ({
-      x: item.timestamp * 1000,
-      y: item[`counter${id}-power`] ?? 0,
-    })),
-    borderWidth: 2,
-    pointRadius: 0,
-    pointHoverRadius: 4,
-    pointHitRadius: 5,
-    fill: true,
-    yAxisID: 'y',
-  })),
+  mqttStore.getSecondaryCounterIds.map((id) => {
+    return ({
+      label: mqttStore.getComponentName(id),
+      category: 'component',
+      unit: 'kW',
+      borderColor: getGlobalColor('--q-secondary-counter-stroke'),
+      backgroundColor: getGlobalColor('--q-secondary-counter-fill'),
+      data: selectedData.value.map((item) => ({
+        x: item.timestamp * 1000,
+        y: item[`counter${id}-power`] ?? 0,
+      })),
+      borderWidth: 2,
+      pointRadius: 0,
+      pointHoverRadius: 4,
+      pointHitRadius: 5,
+      fill: true,
+      yAxisID: 'y',
+    });
+  }).filter((dataset) => (dataset.label !== undefined))
 );
 
 const chargePointDatasets = computed(() =>
@@ -223,61 +226,67 @@ const chartLabels = computed(() => {
 });
 
 const lineChartData = computed(() => {
-  return {
-    labels: chartLabels.value,
-    datasets: [
-      {
-        label: gridMeterName.value,
-        category: 'component',
-        unit: 'kW',
-        borderColor: getGlobalColor('--q-grid-stroke'),
-        backgroundColor: getGlobalColor('--q-grid-fill'),
-        data: selectedData.value.map((item) => ({
-          x: item.timestamp * 1000,
-          y: item.grid,
-        })),
-        borderWidth: 2,
-        pointRadius: 0,
-        pointHoverRadius: 4,
-        pointHitRadius: 5,
-        fill: true,
-        yAxisID: 'y',
-      },
-      {
-        label: 'Hausverbrauch',
-        category: 'component',
-        unit: 'kW',
-        borderColor: getGlobalColor('--q-home-stroke'),
-        backgroundColor: getGlobalColor('--q-home-fill'),
-        data: selectedData.value.map((item) => ({
-          x: item.timestamp * 1000,
-          y: item['house-power'],
-        })),
-        borderWidth: 2,
-        pointRadius: 0,
-        pointHoverRadius: 4,
-        pointHitRadius: 5,
-        fill: true,
-        yAxisID: 'y',
-      },
-      ...secondaryCounterDatasets.value,
-      {
-        label: 'PV ges.',
-        category: 'component',
-        unit: 'kW',
-        borderColor: getGlobalColor('--q-pv-stroke'),
-        backgroundColor: getGlobalColor('--q-pv-fill'),
-        data: selectedData.value.map((item) => ({
-          x: item.timestamp * 1000,
-          y: item['pv-all'],
-        })),
-        borderWidth: 2,
-        pointRadius: 0,
-        pointHoverRadius: 4,
-        pointHitRadius: 5,
-        fill: true,
-        yAxisID: 'y',
-      },
+  let datasets = [];
+  if (gridMeterName.value !== undefined) {
+    datasets.push({
+      label: gridMeterName.value,
+      category: 'component',
+      unit: 'kW',
+      borderColor: getGlobalColor('--q-grid-stroke'),
+      backgroundColor: getGlobalColor('--q-grid-fill'),
+      data: selectedData.value.map((item) => ({
+        x: item.timestamp * 1000,
+        y: item.grid,
+      })),
+      borderWidth: 2,
+      pointRadius: 0,
+      pointHoverRadius: 4,
+      pointHitRadius: 5,
+      fill: true,
+      yAxisID: 'y',
+    });
+  }
+  if (mqttStore.getHomePower('value') !== undefined) {
+    datasets.push({
+      label: 'Hausverbrauch',
+      category: 'component',
+      unit: 'kW',
+      borderColor: getGlobalColor('--q-home-stroke'),
+      backgroundColor: getGlobalColor('--q-home-fill'),
+      data: selectedData.value.map((item) => ({
+        x: item.timestamp * 1000,
+        y: item['house-power'],
+      })),
+      borderWidth: 2,
+      pointRadius: 0,
+      pointHoverRadius: 4,
+      pointHitRadius: 5,
+      fill: true,
+      yAxisID: 'y',
+    });
+  }
+  datasets.push(...secondaryCounterDatasets.value);
+  if (mqttStore.getPvConfigured) {
+    datasets.push({
+      label: 'PV ges.',
+      category: 'component',
+      unit: 'kW',
+      borderColor: getGlobalColor('--q-pv-stroke'),
+      backgroundColor: getGlobalColor('--q-pv-fill'),
+      data: selectedData.value.map((item) => ({
+        x: item.timestamp * 1000,
+        y: item['pv-all'],
+      })),
+      borderWidth: 2,
+      pointRadius: 0,
+      pointHoverRadius: 4,
+      pointHitRadius: 5,
+      fill: true,
+      yAxisID: 'y',
+    });
+  }
+  if (mqttStore.batteryConfigured) {
+    datasets.push(
       {
         label: 'Speicher ges.',
         category: 'component',
@@ -312,9 +321,13 @@ const lineChartData = computed(() => {
         fill: false,
         yAxisID: 'y2',
       },
-      ...chargePointDatasets.value,
-      ...vehicleDatasets.value,
-    ],
+    );
+  }
+  datasets.push(...chargePointDatasets.value);
+  datasets.push(...vehicleDatasets.value);
+  return {
+    labels: chartLabels.value,
+    datasets: datasets,
   };
 });
 
