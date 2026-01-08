@@ -3610,10 +3610,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       const configurations = getWildcardValues.value(
         `openWB/system/device/+/component/${componentId}/config`,
       ) as { [key: string]: CounterConfiguration };
-      if (Object.keys(configurations).length === 0) {
-        return `Zähler ${componentId}`;
-      }
-      return Object.values(configurations)[0].name;
+      return Object.values(configurations)[0]?.name || undefined;
     };
   });
 
