@@ -18,6 +18,9 @@ def fetch(config: RabotTariff) -> None:
         timeout=15
     ).json()["data"]["records"]
     prices: Dict[int, float] = {}
+    if len(prices) == 0:
+        raise Exception("Es konnten keine Preise vom Rabot-Server abgerufen werden. Bitte prüfe, ob dein Konto mit"
+                        " einem dynamischen Stromvertrag verknüpft ist.")
     for data in raw_prices:
         formatted_price = data["value"] / 100000  # ct/kWh -> €/Wh
         timestamp = datetime.datetime.strptime(data["moment"], "%Y-%m-%d %H:%M").timestamp()
