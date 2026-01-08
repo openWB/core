@@ -959,7 +959,9 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const chargePointSumPower = computed(() => {
     return (returnType: string = 'textValue') => {
-      const power = getValue.value('openWB/chargepoint/get/power') as (number | undefined);
+      const power = getValue.value('openWB/chargepoint/get/power') as
+        | number
+        | undefined;
       const valueObject = getValueObject.value(power);
       if (Object.hasOwn(valueObject, returnType)) {
         return valueObject[returnType as keyof ValueObject];
@@ -3626,7 +3628,9 @@ export const useMqttStore = defineStore('mqtt', () => {
       const id = counterId ?? getGridId.value;
       let power = undefined;
       if (id !== undefined) {
-        power = getValue.value(`openWB/counter/${id}/get/power`) as number | undefined;
+        power = getValue.value(`openWB/counter/${id}/get/power`) as
+          | number
+          | undefined;
       }
       const valueObject = getValueObject.value(power);
       if (returnType in valueObject) {
@@ -3706,7 +3710,9 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const getHomePower = computed(() => {
     return (returnType: string = 'textValue') => {
-      const power = getValue.value('openWB/counter/set/home_consumption') as (number | undefined);
+      const power = getValue.value('openWB/counter/set/home_consumption') as
+        | number
+        | undefined;
       const valueObject = getValueObject.value(power);
       if (returnType in valueObject) {
         return valueObject[returnType as keyof ValueObject];
