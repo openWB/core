@@ -8,7 +8,7 @@ class InternalChargepointMode(Enum):
     PRO_PLUS = "pro_plus"
     SERIES = "series"
     SOCKET = "socket"
-    ECO = "eco"
+    SE = "se"
 
 
 class InternalOpenWBConfiguration:

@@ -325,7 +325,7 @@ class Command:
                     if (cp.chargepoint.chargepoint_module.config.configuration.mode ==
                             InternalChargepointMode.DUO.value or
                             cp.chargepoint.chargepoint_module.config.configuration.mode ==
-                            InternalChargepointMode.ECO.value):
+                            InternalChargepointMode.SE.value):
                         count_duo += 1
                     else:
                         count_series_socket += 1
