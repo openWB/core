@@ -48,9 +48,8 @@ const absoluteValueObject = (valueObject: ValueObject): ValueObject => {
   return newValueObject;
 };
 
-const gridPower = computed(
-  () => mqttStore.getCounterPower('object') as ValueObject,
-);
+const gridPower = computed(() => mqttStore.getCounterPower('object') as ValueObject);
+const showGridPower = computed(() => { return gridPower.value.value !== undefined; });
 const gridConsumption = computed(() => Number(gridPower.value.value) > 0);
 const gridFeedIn = computed(() => Number(gridPower.value.value) < 0);
 
@@ -66,9 +65,8 @@ const batteryCharging = computed(
 
 const batterySoc = computed(() => Number(mqttStore.batterySocTotal) / 100);
 
-const homePower = computed(
-  () => mqttStore.getHomePower('object') as ValueObject,
-);
+const homePower = computed(() => mqttStore.getHomePower('object') as ValueObject);
+const showHomePower = computed(() => { return homePower.value.value !== undefined; });
 const homeConsumption = computed(() => Number(homePower.value.value) > 0);
 const homeProduction = computed(() => Number(homePower.value.value) < 0);
 
@@ -310,37 +308,41 @@ const animationDurations = computed(() => {
 const svgComponents = computed((): FlowComponent[] => {
   const components: FlowComponent[] = [];
 
-  components.push({
-    id: 'grid',
-    class: {
-      base: 'grid',
-      valueLabel: gridFeedIn.value
-        ? 'fill-success'
-        : gridConsumption.value
-          ? 'fill-danger'
-          : '',
-      animated: gridConsumption.value,
-      animatedReverse: gridFeedIn.value,
-    },
-    position: { row: 0, column: 0 },
-    label: ['EVU', absoluteValueObject(gridPower.value).textValue],
-    powerValue: Number(gridPower.value.value),
-    icon: 'icons/owbGrid.svg',
-  });
+  if (showGridPower.value) {
+    components.push({
+      id: 'grid',
+      class: {
+        base: 'grid',
+        valueLabel: gridFeedIn.value
+          ? 'fill-success'
+          : gridConsumption.value
+            ? 'fill-danger'
+            : '',
+        animated: gridConsumption.value,
+        animatedReverse: gridFeedIn.value,
+      },
+      position: { row: 0, column: 0 },
+      label: ['EVU', absoluteValueObject(gridPower.value).textValue],
+      powerValue: Number(gridPower.value.value),
+      icon: 'icons/owbGrid.svg',
+    });
+  }
 
-  components.push({
-    id: 'home',
-    class: {
-      base: 'home',
-      valueLabel: '',
-      animated: homeProduction.value,
-      animatedReverse: homeConsumption.value,
-    },
-    position: { row: 0, column: 2 },
-    label: ['Haus', absoluteValueObject(homePower.value).textValue],
-    powerValue: Number(homePower.value.value),
-    icon: 'icons/owbHouse.svg',
-  });
+  if (showHomePower.value) {
+    components.push({
+      id: 'home',
+      class: {
+        base: 'home',
+        valueLabel: '',
+        animated: homeProduction.value,
+        animatedReverse: homeConsumption.value,
+      },
+      position: { row: 0, column: 2 },
+      label: ['Haus', absoluteValueObject(homePower.value).textValue],
+      powerValue: Number(homePower.value.value),
+      icon: 'icons/owbHouse.svg',
+    });
+  }
 
   if (mqttStore.getPvConfigured) {
     components.push({
