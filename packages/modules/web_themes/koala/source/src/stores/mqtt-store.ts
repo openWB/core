@@ -959,12 +959,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const chargePointSumPower = computed(() => {
     return (returnType: string = 'textValue') => {
-      const power =
-        (getValue.value(
-          'openWB/chargepoint/get/power',
-          undefined,
-          0,
-        ) as number) || 0;
+      const power = getValue.value('openWB/chargepoint/get/power') as (number | undefined);
       const valueObject = getValueObject.value(power);
       if (Object.hasOwn(valueObject, returnType)) {
         return valueObject[returnType as keyof ValueObject];
@@ -982,10 +977,13 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @returns string | number | ValueObject
    */
   const chargePointDailyImported = computed(() => {
-    return (returnType: string = 'textValue') => {
+    return (
+      returnType: string = 'textValue',
+      id: number | undefined = undefined,
+    ) => {
       const energy =
         (getValue.value(
-          'openWB/chargepoint/get/daily_imported',
+          `openWB/chargepoint/${id !== undefined ? `${id}/` : ''}get/daily_imported`,
           undefined,
           0,
         ) as number) || 0;
@@ -1006,10 +1004,13 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @returns string | number | ValueObject
    */
   const chargePointDailyExported = computed(() => {
-    return (returnType: string = 'textValue') => {
+    return (
+      returnType: string = 'textValue',
+      id: number | undefined = undefined,
+    ) => {
       const energy =
         (getValue.value(
-          'openWB/chargepoint/get/daily_exported',
+          `openWB/chargepoint/${id !== undefined ? `${id}/` : ''}get/daily_exported`,
           undefined,
           0,
         ) as number) || 0;
