@@ -317,7 +317,7 @@ def get_parsed_cp_data(cp: Chargepoint) -> str:
                         f"Meter_Currents: {cp.data.get.currents} A\n"
                         f"Meter_Frequency: {frequency} Hz\n"
                         f"Meter_Serial: {cp.data.get.serial_number}\n"
-                        f"Meter_Imported: {cp.data.get.imported} kWh\n"
+                        f"Meter_Imported: {cp.data.get.imported} Wh\n"
                         f"EVSE_Max_Current: {cp.data.get.max_evse_current} A\n"
                         f"EVSE_Current: {cp.data.get.evse_current} A\n"
                         # EVSE_MODBUS: True / False
@@ -465,7 +465,7 @@ def create_debug_log(input_data):
                                        timeout=10)
 
         log.info("***** cleanup...")
-        # os.remove(debug_file)
+        os.remove(debug_file)
         log.info("***** debug log end")
     except Exception as e:
         log.exception(f"Error creating debug log: {e}")
