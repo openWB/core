@@ -78,6 +78,9 @@ enableModule proxy_wstunnel
 # default site (http and https)
 echo "apache default site..."
 updateFile "${OPENWBBASEDIR}/data/config/apache/000-default.conf" "/etc/apache2/sites-available/000-default.conf"
+echo "apache localhost site..."
+updateFile "${OPENWBBASEDIR}/data/config/apache/localhost.conf" "/etc/apache2/sites-available/localhost.conf"
+# ssl sites
 echo "apache redirect ssl site..."
 updateFile "${OPENWBBASEDIR}/data/config/apache/apache-redirect-ssl.conf" "/etc/apache2/sites-available/apache-redirect-ssl.conf"
 echo "apache default ssl site..."
@@ -89,6 +92,8 @@ updateFile "${OPENWBBASEDIR}/data/config/apache/http-api-ssl.conf" "/etc/apache2
 echo "apache pro plus site..."
 updateFile "${OPENWBBASEDIR}/data/config/apache/apache-proplus.conf" "/etc/apache2/sites-available/apache-proplus.conf"
 
+# enable localhost site
+enableSite localhost
 # disable apache default ssl site
 disableSite default-ssl
 # enable openwb ssl site
