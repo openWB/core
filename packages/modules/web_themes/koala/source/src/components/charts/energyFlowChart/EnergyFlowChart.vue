@@ -48,8 +48,12 @@ const absoluteValueObject = (valueObject: ValueObject): ValueObject => {
   return newValueObject;
 };
 
-const gridPower = computed(() => mqttStore.getCounterPower('object') as ValueObject);
-const showGridPower = computed(() => { return gridPower.value.value !== undefined; });
+const gridPower = computed(
+  () => mqttStore.getCounterPower('object') as ValueObject,
+);
+const showGridPower = computed(() => {
+  return gridPower.value.value !== undefined;
+});
 const gridConsumption = computed(() => Number(gridPower.value.value) > 0);
 const gridFeedIn = computed(() => Number(gridPower.value.value) < 0);
 
@@ -65,8 +69,12 @@ const batteryCharging = computed(
 
 const batterySoc = computed(() => Number(mqttStore.batterySocTotal) / 100);
 
-const homePower = computed(() => mqttStore.getHomePower('object') as ValueObject);
-const showHomePower = computed(() => { return homePower.value.value !== undefined; });
+const homePower = computed(
+  () => mqttStore.getHomePower('object') as ValueObject,
+);
+const showHomePower = computed(() => {
+  return homePower.value.value !== undefined;
+});
 const homeConsumption = computed(() => Number(homePower.value.value) > 0);
 const homeProduction = computed(() => Number(homePower.value.value) < 0);
 
