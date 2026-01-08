@@ -127,25 +127,27 @@ const getGlobalColor = (name: string, fallback?: string) => {
 };
 
 const secondaryCounterDatasets = computed(() =>
-  mqttStore.getSecondaryCounterIds.map((id) => {
-    return ({
-      label: mqttStore.getComponentName(id),
-      category: 'component',
-      unit: 'kW',
-      borderColor: getGlobalColor('--q-secondary-counter-stroke'),
-      backgroundColor: getGlobalColor('--q-secondary-counter-fill'),
-      data: selectedData.value.map((item) => ({
-        x: item.timestamp * 1000,
-        y: item[`counter${id}-power`] ?? 0,
-      })),
-      borderWidth: 2,
-      pointRadius: 0,
-      pointHoverRadius: 4,
-      pointHitRadius: 5,
-      fill: true,
-      yAxisID: 'y',
-    });
-  }).filter((dataset) => (dataset.label !== undefined))
+  mqttStore.getSecondaryCounterIds
+    .map((id) => {
+      return {
+        label: mqttStore.getComponentName(id),
+        category: 'component',
+        unit: 'kW',
+        borderColor: getGlobalColor('--q-secondary-counter-stroke'),
+        backgroundColor: getGlobalColor('--q-secondary-counter-fill'),
+        data: selectedData.value.map((item) => ({
+          x: item.timestamp * 1000,
+          y: item[`counter${id}-power`] ?? 0,
+        })),
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        pointHitRadius: 5,
+        fill: true,
+        yAxisID: 'y',
+      };
+    })
+    .filter((dataset) => dataset.label !== undefined),
 );
 
 const chargePointDatasets = computed(() =>
