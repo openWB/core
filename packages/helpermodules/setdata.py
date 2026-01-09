@@ -105,6 +105,8 @@ class SetData:
                 self.process_internal_chargepoint_topic(msg)
             elif "openWB/set/LegacySmartHome/" in msg.topic:
                 self.process_legacy_smart_home_topic(msg)
+            elif "openWB/set/consumer/" in msg.topic:
+                self.process_consumer_topic(msg)
 
     def _validate_value(self, msg: mqtt.MQTTMessage, data_type, ranges=[], collection=None, pub_json=False,
                         retain: bool = True):
@@ -741,9 +743,12 @@ class SetData:
             elif ("openWB/set/general/chargemode_config/pv_charging/feed_in_yield" in msg.topic or
                     "openWB/set/general/chargemode_config/pv_charging/switch_on_threshold" in msg.topic or
                     "openWB/set/general/chargemode_config/pv_charging/switch_on_delay" in msg.topic or
-                    "openWB/set/general/chargemode_config/pv_charging/switch_off_delay" in msg.topic):
+                    "openWB/set/general/chargemode_config/pv_charging/switch_off_delay" in msg.topic or
+                    "openWB/set/general/consumer/config/switch_on_delay" in msg.topic or
+                    "openWB/set/general/consumer/config/switch_off_delay" in msg.topic):
                 self._validate_value(msg, int, [(0, float("inf"))])
-            elif "openWB/set/general/chargemode_config/pv_charging/switch_off_threshold" in msg.topic:
+            elif ("openWB/set/general/chargemode_config/pv_charging/switch_off_threshold" in msg.topic or
+                    "openWB/set/general/consumer/config/switch_off_threshold" in msg.topic):
                 self._validate_value(msg, float)
             elif "openWB/set/general/chargemode_config/pv_charging/phase_switch_delay" in msg.topic:
                 self._validate_value(msg, int, [(5, 60)])
@@ -912,7 +917,8 @@ class SetData:
                   "openWB/set/counter/set/daily_yield_home_consumption" in msg.topic or
                   "openWB/set/counter/set/disengageable_smarthome_power" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
-            elif "openWB/set/counter/get/hierarchy" in msg.topic:
+            elif ("openWB/set/counter/get/hierarchy" in msg.topic or
+                  "openWB/set/counter/get/loadmanagement_prios" in msg.topic):
                 self._validate_value(msg, None)
             elif "openWB/set/counter/config/home_consumption_source_id" in msg.topic:
                 self._validate_value(msg, int)
@@ -1182,6 +1188,24 @@ class SetData:
                         f"openWB/set/LegacySmartHome/Devices/{index}/Tempc" in msg.topic):
                     self._validate_value(msg, None)
                     # diese topics werden im Smarthomemodul mqtt bearbeitet
+            else:
+                self.__unknown_topic(msg)
+        except Exception:
+            log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
+
+    def process_consumer_topic(self, msg):
+        try:
+            if (re.search("openWB/set/consumer/[0-9]+/module$", msg.topic) is not None or
+                re.search("openWB/set/consumer/[0-9]+/config$", msg.topic) is not None or
+                    re.search("openWB/set/consumer/[0-9]+/extra_meter$", msg.topic) is not None or
+                    re.search("openWB/set/consumer/[0-9]+/usage$", msg.topic) is not None):
+                self._validate_value(msg, "json")
+            elif "openWB/set/consumer/get/power" in msg.topic:
+                self._validate_value(msg, float)
+            elif "openWB/set/consumer/get/fault_state" in msg.topic:
+                self._validate_value(msg, int, [(0, 2)])
+            elif "openWB/set/consumer/get/fault_str" in msg.topic:
+                self._validate_value(msg, str)
             else:
                 self.__unknown_topic(msg)
         except Exception:

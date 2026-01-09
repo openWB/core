@@ -5,8 +5,7 @@ from control import data
 from control.algorithm import common
 from control.algorithm.chargemodes import (CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE, CONSIDERED_CHARGE_MODES_PV_ONLY,
                                            CONSIDERED_CHARGE_MODES_SURPLUS)
-from control.algorithm.filter_chargepoints import (get_chargepoints_by_chargemodes,
-                                                   get_chargepoints_by_mode_and_counter,
+from control.algorithm.filter_chargepoints import (get_chargepoints_by_mode_and_counter, get_loadmanagement_prios,
                                                    get_preferenced_chargepoint_charging)
 from control.algorithm.utils import get_medium_charging_current
 from control.chargepoint.charging_type import ChargingType
@@ -28,28 +27,27 @@ class SurplusControlled:
 
     def set_surplus_current(self) -> None:
         common.reset_current_by_chargemode(CONSIDERED_CHARGE_MODES_SURPLUS)
-        for mode_tuple, counter in common.mode_and_counter_generator(CONSIDERED_CHARGE_MODES_SURPLUS):
+        for counter in common.counter_generator():
             preferenced_chargepoints, preferenced_cps_without_set_current = get_preferenced_chargepoint_charging(
-                get_chargepoints_by_mode_and_counter(mode_tuple, f"counter{counter.num}"))
+                get_chargepoints_by_mode_and_counter(CONSIDERED_CHARGE_MODES_SURPLUS, f"counter{counter.num}"))
             cp_with_feed_in, cp_without_feed_in = self.filter_by_feed_in_limit(preferenced_chargepoints)
             if cp_without_feed_in:
-                self._set(cp_without_feed_in, 0, mode_tuple, counter)
+                self._set(cp_without_feed_in, 0, counter)
             feed_in_yield = data.data.general_data.data.chargemode_config.pv_charging.feed_in_yield
             if cp_with_feed_in:
-                self._set(cp_with_feed_in, feed_in_yield, mode_tuple, counter)
+                self._set(cp_with_feed_in, feed_in_yield, counter)
             if preferenced_cps_without_set_current:
                 for cp in preferenced_cps_without_set_current:
                     cp.data.set.current = cp.data.set.target_current
-        for cp in get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_SURPLUS):
+        for cp in get_loadmanagement_prios(CONSIDERED_CHARGE_MODES_SURPLUS):
             if cp.data.control_parameter.state in CHARGING_STATES:
                 self._fix_deviating_evse_current(cp)
 
     def _set(self,
              chargepoints: List[Chargepoint],
              feed_in_yield: Optional[int],
-             mode_tuple: Tuple[Optional[str], str, bool],
              counter: Counter) -> None:
-        log.info(f"Mode-Tuple {mode_tuple[0]} - {mode_tuple[1]} - {mode_tuple[2]}, Zähler {counter.num}")
+        log.info(f"Zähler {counter.num}, Verbraucher {chargepoints}")
         common.update_raw_data(chargepoints, surplus=True)
         while len(chargepoints):
             cp = chargepoints[0]
@@ -127,7 +125,7 @@ class SurplusControlled:
     def check_submode_pv_charging(self) -> None:
         evu_counter = data.data.counter_all_data.get_evu_counter()
 
-        for cp in get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_PV_ONLY):
+        for cp in get_loadmanagement_prios(CONSIDERED_CHARGE_MODES_PV_ONLY):
             try:
                 def phase_switch_necessary() -> bool:
                     return (cp.cp_state_hw_support_phase_switch() and
@@ -159,8 +157,8 @@ class SurplusControlled:
                 log.exception(f"Fehler in der PV-gesteuerten Ladung bei {cp.num}")
 
     def set_required_current_to_max(self) -> None:
-        for cp in get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_SURPLUS +
-                                                  CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE):
+        for cp in get_loadmanagement_prios(CONSIDERED_CHARGE_MODES_SURPLUS +
+                                           CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE):
             try:
                 charging_ev_data = cp.data.set.charging_ev_data
                 required_currents = cp.data.control_parameter.required_currents

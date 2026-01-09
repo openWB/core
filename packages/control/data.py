@@ -12,6 +12,7 @@ from control.bat_all import BatAll
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_all import AllChargepoints
 from control.chargepoint.chargepoint_template import CpTemplate
+from control.consumer.consumer import Consumer
 from control.pv import Pv
 from control.pv_all import PvAll
 
@@ -33,6 +34,7 @@ log = logging.getLogger(__name__)
 bat_data_lock = Lock()
 bat_all_data_lock = Lock()
 graph_data_lock = Lock()
+consumer_data_lock = Lock()
 counter_data_lock = Lock()
 counter_all_data_lock = Lock()
 cp_data_lock = Lock()
@@ -69,6 +71,7 @@ class Data:
         self.event_module_update_completed = event_module_update_completed
         self._bat_data: Dict[str, Bat] = {}
         self._bat_all_data = BatAll()
+        self._consumer_data: Dict[str, Consumer] = {}
         self._counter_data: Dict[str, Counter] = {}
         self._counter_all_data = CounterAll()
         self._cp_data: Dict[str, Chargepoint] = {}
@@ -120,6 +123,15 @@ class Data:
     @locked(graph_data_lock)
     def graph_data(self, value):
         self._graph_data = value
+
+    @property
+    def consumer_data(self) -> Dict[str, Consumer]:
+        return self._consumer_data
+
+    @consumer_data.setter
+    @locked(consumer_data_lock)
+    def consumer_data(self, value):
+        self._consumer_data = value
 
     @property
     def counter_data(self) -> Dict[str, Counter]:
@@ -271,6 +283,7 @@ class Data:
         log.info(f"general_data\n{self._general_data.data}")
         log.info(f"general_data-display\n{self._general_data.data.extern_display_mode}")
         log.info(f"graph_data\n{self._graph_data.data}")
+        self._print_dictionaries(self._consumer_data)
         self._print_io_actions(self._io_actions)
         self._print_dictionaries(self._io_states)
         log.info(f"optional_data\n{self._optional_data.data}")
@@ -445,6 +458,7 @@ class Data:
                 self.__copy_system_data()
                 self.__copy_module_data()
                 self.graph_data = copy.deepcopy(SubData.graph_data)
+                self.__copy_consumer_data()
             except Exception:
                 log.exception("Fehler im Prepare-Modul")
 
@@ -463,6 +477,16 @@ class Data:
                     self.ev_data[vehicle].data.ev_template)]
             except Exception:
                 log.exception("Fehler im Prepare-Modul für EV "+str(vehicle))
+
+    def __copy_consumer_data(self) -> None:
+        try:
+            for consumer in SubData.consumer_data:
+                self.consumer_data[consumer] = Consumer(SubData.consumer_data[consumer].num)
+                self.consumer_data[consumer].data = copy.deepcopy(SubData.consumer_data[consumer].data)
+                self.consumer_data[consumer].module = SubData.consumer_data[consumer].module
+                self.consumer_data[consumer].extra_meter = SubData.consumer_data[consumer].extra_meter
+        except Exception:
+            log.exception("Fehler im Prepare-Modul beim Kopieren der Verbraucherdaten")
 
 
 class ModuleDataReceivedContext:

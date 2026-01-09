@@ -81,8 +81,20 @@ def prices_factory() -> Prices:
 
 
 @dataclass
+class ConsumerConfig:
+    switch_on_delay: int = field(default=60, metadata={"topic": "switch_on_delay"})
+    switch_off_delay: int = field(default=60, metadata={"topic": "switch_off_delay"})
+    switch_off_threshold: int = field(default=0, metadata={"topic": "power_threshold"})
+
+
+def consumer_config_factory() -> ConsumerConfig:
+    return ConsumerConfig()
+
+
+@dataclass
 class GeneralData:
     chargemode_config: ChargemodeConfig = field(default_factory=chargemode_config_factory)
+    consumer_config: ConsumerConfig = field(default_factory=consumer_config_factory)
     control_interval: int = field(default=10, metadata={"topic": "control_interval"})
     extern_display_mode: str = field(default="primary", metadata={
                                      "topic": "extern_display_mode"})

@@ -5,6 +5,7 @@ from typing import Dict, List
 
 import dataclass_utils
 from helpermodules.pub import Pub
+from packages.control.consumer.consumer_data import GET_DEFAULTS_BY_USAGE
 from modules.io_actions.groups import READABLE_GROUP_NAME, ActionGroup
 import sys
 log = logging.getLogger(__name__)
@@ -23,6 +24,7 @@ def pub_configurable():
     _pub_configurable_io_devices()
     _pub_configurable_io_actions()
     _pub_configurable_monitoring()
+    _pub_configurable_consumers()
 
 
 def _pub_configurable_backup_clouds() -> None:
@@ -399,6 +401,83 @@ def _pub_configurable_monitoring() -> None:
                               }
                           })
         Pub().pub("openWB/set/system/configurable/monitoring", monitoring)
+    except Exception:
+        log.exception("Fehler im configuration-Modul")
+
+
+def _pub_configurable_consumers() -> None:
+    try:
+        consumers = {}
+        path_list = Path(_get_packages_path()/"modules"/"consumer").glob('**/consumer.py')
+
+        def update_nested_dict(dictionary: Dict, update: Dict) -> Dict:
+            for key, value in update.items():
+                if isinstance(value, dict):
+                    dictionary[key] = update_nested_dict(dictionary.get(key, {}), value)
+                else:
+                    dictionary[key] = value
+            return dictionary
+
+        def get_vendor_consumers(vendor: str) -> Dict:
+            consumers = {}
+            path_list = Path(_get_packages_path()/"modules"/"consumers"/vendor).glob('**/consumer.py')
+            for path in path_list:
+                try:
+                    if path.name.endswith("_test.py"):
+                        # Tests überspringen
+                        continue
+                    device_path = path.parts[-2]
+                    dev_defaults = importlib.import_module(
+                        f".consumers.{vendor}.{device_path}.consumer", "modules").device_descriptor.configuration_factory()
+                    usage_defaults = []
+                    for usage_type in dev_defaults.usage:
+                        usage_defaults.append(GET_DEFAULTS_BY_USAGE[usage_type]())
+                    dev_defaults.usage = usage_defaults
+                    consumers.update({
+                        dev_defaults.type: {
+                            "consumer_name": dev_defaults.name,
+                            "defaults": dataclass_utils.asdict(dev_defaults)
+                        }
+                    })
+                except Exception:
+                    log.exception(f"Fehler im configuration-Modul: devices: {path}")
+            return consumers
+
+        def get_vendor_group_name(group: str) -> str:
+            # ToDo: find a better way to lookup the group names in "devices/vendors.py"
+            if group == "generic":
+                return "herstellerunabhängig"
+            if group == "openwb":
+                return "openWB"
+            if group == "vendors":
+                return "andere Hersteller"
+            return group
+
+        vendor_groups = {}
+        path_list = Path(_get_packages_path()/"modules"/"consumers").glob('**/vendor.py')
+        for path in path_list:
+            try:
+                if path.name.endswith("_test.py"):
+                    # Tests überspringen
+                    continue
+                vendor_path = path.parts[-2]
+                vendor_info = importlib.import_module(
+                    f".consumers.{vendor_path}.vendor", "modules").vendor_descriptor.configuration_factory()
+                vendor_groups = update_nested_dict(vendor_groups, {
+                    vendor_info.group: {
+                        "group_name": get_vendor_group_name(vendor_info.group),
+                        "vendors": {
+                            vendor_path: {
+                                "vendor_name": vendor_info.vendor,
+                                "consumers": get_vendor_consumers(vendor_path)
+                            }
+                        }
+                    }
+                })
+            except Exception:
+                log.exception(f"Fehler im configuration-Modul: vendors: {path}")
+
+        Pub().pub("openWB/set/system/configurable/consumers", vendor_groups)
     except Exception:
         log.exception("Fehler im configuration-Modul")
 

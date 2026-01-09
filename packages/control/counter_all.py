@@ -52,6 +52,8 @@ class Set:
 class Get:
     hierarchy: List = field(default_factory=empty_list_factory, metadata={
                             "topic": "get/hierarchy"})
+    loadmanagement_prios: List[Dict] = field(
+        default_factory=empty_list_factory, metadata={"topic": "get/loadmanagement_prios"})
 
 
 def get_factory() -> Get:
@@ -225,7 +227,7 @@ class CounterAll:
         except KeyError:
             # Kein Ladepunkt unter dem Zähler
             pass
-        return self.connected_chargepoints
+        return list(reversed(self.connected_chargepoints))
 
     def _get_all_cp_connected_to_counter(self, child: Dict) -> None:
         """ Rekursive Funktion, die alle Ladepunkte ermittelt, die an den angegebenen Zähler angeschlossen sind.
@@ -480,6 +482,21 @@ class CounterAll:
             pub_system_message({}, ("Es konnte kein Zähler gefunden werden, der als EVU-Zähler an die Spitze des "
                                "Lastmanagements gesetzt werden kann. Bitte zuerst einen EVU-Zähler hinzufügen."),
                                MessageType.ERROR)
+
+    # Lastmanagement-Prioritäten
+    def loadmanagement_prios_add_item(self, new_id: int, new_type: ComponentType) -> None:
+        if new_type == ComponentType.VEHICLE:
+            self.data.get.loadmanagement_prios.append({"id": new_id, "type": new_type.value})
+        else:
+            raise ValueError("Derzeit können nur Fahrzeuge zu den Lastmanagement-Prioritäten hinzugefügt werden.")
+
+    def loadmanagement_prios_remove_item(self, id: int) -> None:
+        for item in self.data.get.loadmanagement_prios:
+            if item["id"] == id:
+                self.data.get.loadmanagement_prios.remove(item)
+                return
+        else:
+            raise IndexError(f"Element {id} konnte nicht in den Lastmanagement-Prioritäten gefunden werden.")
 
 
 def get_max_id_in_hierarchy(current_entry: List, max_id: int) -> int:

@@ -110,7 +110,6 @@ def chargemode_factory() -> Chargemode:
 class ChargeTemplateData:
     id: int = 0
     name: str = "Lade-Profil"
-    prio: bool = False
     load_default: bool = False
     time_charging: TimeCharging = field(default_factory=time_charging_factory)
     chargemode: Chargemode = field(default_factory=chargemode_factory)

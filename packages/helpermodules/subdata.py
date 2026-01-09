@@ -15,6 +15,7 @@ from control.chargepoint.chargepoint_all import AllChargepoints
 from control.chargepoint.chargepoint_data import Log
 from control.chargepoint.chargepoint_state_update import ChargepointStateUpdate
 from control.chargepoint.chargepoint_template import CpTemplate, CpTemplateData
+from control.consumer.consumer import Consumer
 from control.ev.charge_template import ChargeTemplate, ChargeTemplateData
 from control.ev import ev
 from control.ev.ev_template import EvTemplate, EvTemplateData
@@ -69,6 +70,7 @@ class SubData:
     optional_data = optional.Optional()
     system_data = {"system": system.System()}
     graph_data = graph.Graph()
+    consumer_data: Dict[str, Consumer] = {}
 
     def __init__(self,
                  event_ev_template: Event,
@@ -134,6 +136,7 @@ class SubData:
             ("openWB/internal_io/#", 2),
             ("openWB/optional/#", 2),
             ("openWB/counter/#", 2),
+            ("openWB/consumer/#", 2),
             ("openWB/command/command_completed", 2),
             ("openWB/internal_chargepoint/#", 2),
             # MQTT Bridge Topics vor "openWB/system/+" abonnieren, damit sie auch vor
@@ -193,6 +196,8 @@ class SubData:
             self.process_legacy_smarthome_topic(client, self.counter_all_data, msg)
         elif "openWB/command/command_completed" == msg.topic:
             self.event_command_completed.set()
+        elif "openWB/consumer/" in msg.topic:
+            self.process_consumer_topic(client, self.consumer_data, msg)
         else:
             log.warning("unknown subdata-topic: "+str(msg.topic))
 
@@ -1047,5 +1052,45 @@ class SubData:
             if "openWB/LegacySmartHome/Status/wattnichtHaus" == msg.topic:
                 # keine automatische Zuordnung, da das Topic anders heißt als der Wert in der Datenstruktur
                 var.data.set.smarthome_power_excluded_from_home_consumption = decode_payload(msg.payload)
+        except Exception:
+            log.exception("Fehler im subdata-Modul")
+
+    def process_consumer_topic(self, client: mqtt.Client, var: counter_all.CounterAll, msg: mqtt.MQTTMessage):
+        try:
+            index = get_index(msg.topic)
+            if re.search("openWB/consumer/[0-9]+/module", msg.topic) is not None:
+                if decode_payload(msg.payload) == "":
+                    if "consumer"+index in var:
+                        var.pop("consumer"+index)
+                    else:
+                        log.error("Es konnte kein Verbraucher mit der ID " +
+                                  str(index)+" gefunden werden.")
+                else:
+                    if f"consumer{index}" not in var:
+                        var[f"consumer{index}"] = Consumer(index)
+                    consumer_config = decode_payload(msg.payload)
+                    con = importlib.import_module(f".consumers.{consumer_config['vendor']}.{consumer_config['type']}.consumer",
+                                                  "modules")
+                    config = dataclass_from_dict(con.device_descriptor.configuration_factory, consumer_config)
+                    var["consumer"+index].module = con.create_consumer(config)
+                    var["consumer"+index].data.module = config
+            elif re.search("openWB/consumer/[0-9]+/config", msg.topic) is not None:
+                self.set_json_payload_class(var["consumer"+index].data.config, msg)
+            elif re.search("openWB/consumer/[0-9]+/extra_meter", msg.topic) is not None:
+                device_config = decode_payload(msg.payload)
+                var["consumer"+index].data.extra_meter = device_config
+                if device_config["value"] is not None:
+                    dev = importlib.import_module(f".devices.{device_config['vendor']}.{device_config['type']}.device",
+                                                  "modules")
+                    config = dataclass_from_dict(dev.device_descriptor.configuration_factory, device_config)
+                    var["consumer"+index].data.extra_meter = config
+                    var["consumer"+index].extra_meter = (dev.Device if hasattr(dev, "Device")
+                                                         else dev.create_device)(config)
+                    # Durch das erneute Subscribe werden die Komponenten mit dem aktualisierten TCP-Client angelegt.
+                    client.subscribe(f"openWB/consumer/{index}/component/+/config", 2)
+                else:
+                    var["consumer"+index].data.extra_meter = device_config
+            elif re.search("openWB/consumer/[0-9]+/usage", msg.topic) is not None:
+                self.set_json_payload_class(var["consumer"+index].data.usage, msg)
         except Exception:
             log.exception("Fehler im subdata-Modul")
