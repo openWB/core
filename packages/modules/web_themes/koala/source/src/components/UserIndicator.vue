@@ -122,11 +122,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import { useQuasar, QInput } from 'quasar';
-import { useRouter } from 'vue-router';
+// import { useRouter } from 'vue-router';
 import { useMqttStore } from 'src/stores/mqtt-store';
 
 const $q = useQuasar();
-const router = useRouter();
+// const router = useRouter();
 const mqttStore = useMqttStore();
 
 const showLogoutDialog = ref(false);
@@ -166,7 +166,9 @@ const logout = () => {
   if ($q.cookies.has('mqtt')) {
     console.log('Removing mqtt cookie');
     $q.cookies.remove('mqtt', { path: '/' });
-    router.go(0);
+    // not functional in Safari browser?
+    // router.go(0);
+    location.reload();
   } else {
     console.log('No mqtt cookie found to remove');
   }
@@ -187,7 +189,9 @@ const login = () => {
   });
   console.log('Set mqtt cookie:', $q.cookies.get('mqtt'));
   showLoginDialog.value = false;
-  router.go(0);
+  // not functional in Safari browser?
+  // router.go(0);
+  location.reload();
 };
 
 const clearLoginData = () => {
