@@ -118,7 +118,9 @@ export const useMqttStore = defineStore('mqtt', () => {
               progress: true,
               closeBtn: 'Seite neu laden',
               onDismiss: () => {
-                this.router.go(0);
+                // not functional in Safari browser?
+                // this.router.go(0);
+                location.reload();
               },
             });
           }
