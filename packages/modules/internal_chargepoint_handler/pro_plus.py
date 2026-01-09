@@ -26,7 +26,7 @@ class ProPlus(ChargepointModule):
         except KeyError:
             raise KeyError("Warten auf Versionsinformationen")
 
-        super().__init__(OpenWBPro(configuration=OpenWBProConfiguration(ip_address="192.168.192.50")))
+        super().__init__(OpenWBPro(id=hierarchy_id, configuration=OpenWBProConfiguration(ip_address="192.168.192.50")))
         self.set_internal_context_handlers(hierarchy_id, internal_cp)
 
     def get_values(self, phase_switch_cp_active: bool, last_tag: str) -> ChargepointState:
