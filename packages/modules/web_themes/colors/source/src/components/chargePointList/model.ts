@@ -484,19 +484,19 @@ export interface ChargeTimePlan {
 	id: number
 	name: string
 	active: boolean
-	time: string[]
+	time: [string, string]
 	current: number
 	dc_current: number
 	phases_to_use: number
 	limit: {
-		selected: string
-		amount: number
-		soc: number
+		selected: 'none' | 'soc' | 'amount'
+		amount?: number
+		soc?: number
 	}
 	frequency: {
-		once: string[]
-		selected: string
-		weekly: boolean[]
+		selected: 'daily' | 'weekly' | 'once'
+		once?: [string, string]
+		weekly: [boolean, boolean, boolean, boolean, boolean, boolean, boolean]
 	}
 }
 export interface ChargeSchedule {
@@ -509,16 +509,18 @@ export interface ChargeSchedule {
 	phases_to_use: number
 	phases_to_use_pv: number
 	et_active: boolean
+	bidi_charging_enabled: boolean
+	bidi_power: number
 	limit: {
-		selected: string
-		amount: number
-		soc_limit: number
+		selected: 'soc' | 'amount'
+		amount?: number
+		soc_limit?: number
 		soc_scheduled: number
 	}
 	frequency: {
-		once: string
-		selected: string
-		weekly: boolean[]
+		once?: string
+		selected: 'weekly' | 'daily' | 'once'
+		weekly: [boolean, boolean, boolean, boolean, boolean, boolean, boolean]
 	}
 }
 export interface ChargeTemplate {
