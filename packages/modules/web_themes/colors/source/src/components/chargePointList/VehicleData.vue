@@ -23,7 +23,7 @@
 				v-if="chargepoint.isSocManual"
 				class="fa-solid fa-sm fas fa-edit"
 				:style="{ color: 'var(--color-bg)' }"
-				@click="editSoc = !editSoc"
+				@click="toggleSocEditor()"
 			/>
 
 			<i
@@ -99,7 +99,7 @@
 				<span>
 					<RangeInput
 						id="manualSoc"
-						v-model="manualSoc"
+						v-model="tempsoc"
 						:min="0"
 						:max="100"
 						:step="1"
@@ -215,15 +215,7 @@ const chargedRangeString = computed(() => {
 const soc = computed(() => {
 	return props.chargepoint.soc
 })
-const manualSoc = computed({
-	get() {
-		return props.chargepoint.soc
-	},
-	set(s: number) {
-		chargePoints[props.chargepoint.id].soc = s
-	},
-})
-
+const tempsoc = ref(0)
 const currentPrice = computed(() => {
 	const [p] = etData.etPriceList.values()
 	return (Math.round(p * 10) / 10).toFixed(1)
@@ -264,8 +256,17 @@ function loadSoc() {
 	chargePoints[props.chargepoint.id].waitingForSoc = true
 }
 function setSoc() {
-	updateServer('setSoc', manualSoc.value, props.chargepoint.connectedVehicle)
+	//updateServer('setSoc', manualSoc.value, props.chargepoint.connectedVehicle)
+	updateServer('setSoc', tempsoc.value, props.chargepoint.connectedVehicle)
 	editSoc.value = false
+}
+function toggleSocEditor() {
+	if (editSoc.value) {
+		editSoc.value = false
+	} else {
+		tempsoc.value = props.chargepoint.soc
+		editSoc.value = true
+	}
 }
 </script>
 <style scoped>

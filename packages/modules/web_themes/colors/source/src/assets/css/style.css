@@ -226,6 +226,7 @@ body>.container-fluid {
 	--color-fg: black;
 	--color-scale: lightgrey;
 	--color-title: rgba(0, 0, 0, 0.644);
+	--color-config: lightgrey;
 	--padding-widget: 5px;
 	--fontCol: rgba(255, 255, 255, 0.82);
 	--gridCol: rgba(255, 255, 255, 0.82);
@@ -244,6 +245,7 @@ body>.container-fluid {
 	--color-fg: white;
 	--color-scale: steelblue;
 	--color-title: lightgrey;
+	--color-config: steelblue;
 	--padding-widget: 0px;
 }
 
@@ -258,6 +260,7 @@ body>.container-fluid {
 	--color-fg: white;
 	--color-scale: #999999;
 	--color-title: lightgrey;
+	--color-config: #666666;
 	--padding-widget: 0px;
 }
 
