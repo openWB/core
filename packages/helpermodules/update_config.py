@@ -507,10 +507,10 @@ class UpdateConfig:
         "^openWB/system/secondary_auto_update$",
         "^openWB/system/security/user_management_active$",
         "^openWB/system/security/access_allowed$",
-        "^openWB/system/security/settings_accessible$",
-        "^openWB/system/security/status_accessible$",
-        "^openWB/system/security/charge_log_accessible$",
-        "^openWB/system/security/chart_accessible$",
+        "^openWB/system/security/access/settings$",
+        "^openWB/system/security/access/status$",
+        "^openWB/system/security/access/charge_log$",
+        "^openWB/system/security/access/chart$",
         "^openWB/system/time$",
         "^openWB/system/update_in_progress$",
         "^openWB/system/usage_terms_acknowledged$",
@@ -616,10 +616,10 @@ class UpdateConfig:
         # ACLs will restrict access to this topics if user management is active so that the UI can distinguish
         # between "no access" (no topic received) and "access" (topic received)
         ("openWB/system/security/access_allowed", True),
-        ("openWB/system/security/settings_accessible", True),
-        ("openWB/system/security/status_accessible", True),
-        ("openWB/system/security/chart_accessible", True),
-        ("openWB/system/security/charge_log_accessible", True),
+        ("openWB/system/security/access/settings", True),
+        ("openWB/system/security/access/status", True),
+        ("openWB/system/security/access/chart", True),
+        ("openWB/system/security/access/charge_log", True),
         ("openWB/system/serial_number", get_serial_number()),
     )
     invalid_topic = (
