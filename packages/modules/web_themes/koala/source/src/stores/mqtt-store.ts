@@ -89,6 +89,16 @@ export const useMqttStore = defineStore('mqtt', () => {
           message: `Anmeldung ${mqttUser ? 'als Benutzer "' + mqttUser + '" ' : ''}erfolgreich`,
           progress: true,
         });
+        if (mqttUser === 'admin' && mqttPass === 'openwb') {
+          $q.notify({
+            type: 'warning',
+            message:
+              'Es werden die Standardzugangsdaten verwendet! Bitte ändern Sie diese aus Sicherheitsgründen.',
+            closeBtn: 'Ok',
+            timeout: 0,
+            progress: false,
+          });
+        }
       });
       mqttClient.on('error', (error) => {
         console.error('Client error', error);
