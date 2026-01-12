@@ -191,7 +191,6 @@ client.on("connect", (ack) => {
 	}, 200);
 });
 
-
 // Gets Called if the connection could not be established
 client.on("error", (error) => {
 	console.error("Connection failed", error);
@@ -208,7 +207,7 @@ client.on("message", (topic, message) => {
 	handleMessage(topic, message.toString());
 });
 
-//Creates a new Messaging.Message Object and sends it
+// Publishes a message to the broker
 function publish(payload, topic) {
 	console.debug(`publishing message: ${topic} -> ${payload}`);
 	if (topic != undefined) {
