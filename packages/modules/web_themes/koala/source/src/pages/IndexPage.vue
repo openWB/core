@@ -32,7 +32,11 @@
           <VehicleInformation />
         </q-tab-panel>
         <!-- Batteries -->
-        <q-tab-panel v-if="accessBatteryAllowed" name="batteries" class="column">
+        <q-tab-panel
+          v-if="accessBatteryAllowed"
+          name="batteries"
+          class="column"
+        >
           <BatteryInformation />
         </q-tab-panel>
         <!-- Smart Home -->
