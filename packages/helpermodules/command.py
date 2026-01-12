@@ -279,7 +279,7 @@ class Command:
         check_num_msg = self._check_max_num_of_internal_chargepoints(chargepoint_config)
         if check_num_msg is not None:
             pub_user_message(
-                payload, connection_id, f"{check_num_msg} Wenn Sie weitere Ladepunkte anbinden wollen, müssen Sie "
+                payload, connection_id, f"{check_num_msg} Wenn Du weitere Ladepunkte anbinden willst, musst Du "
                 "diese als secondary openWB anbinden. Die weiteren Ladepunkte in den Steuerungsmodus 'secondary'"
                 " versetzen.", MessageType.ERROR)
             return

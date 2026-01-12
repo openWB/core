@@ -74,7 +74,7 @@ export default {
           openWB neu starten...
         </template>
         <i-container>
-          Möchten Sie diese openWB wirklich neu starten?
+          Möchtest Du diese openWB wirklich neu starten?
         </i-container>
         <template #footer>
           <i-container>
