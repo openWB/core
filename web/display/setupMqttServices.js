@@ -130,18 +130,10 @@ client.on("message", (topic, message) => {
 	handleMessage(topic, message);
 });
 
-//Creates a new Messaging.Message Object and sends it
+// Publishes a message to the broker
 function publish(payload, topic) {
-	var message = new Messaging.Message(payload);
-	message.destinationName = topic;
-	message.qos = 2;
-	message.retained = true;
-	client.send(message);
-	var message = new Messaging.Message("local client uid: " + client_uid + " sent: " + topic);
-	message.destinationName = "openWB/set/system/topicSender";
-	message.qos = 2;
-	message.retained = true;
-	client.send(message);
+	client.publish(topic, payload, { qos: 2, retain: true });
+	client.publish("openWB/set/system/topicSender", "local client uid: " + client_uid + " sent: " + topic, { qos: 2, retain: true });
 }
 
 function totalTopicCount() {
