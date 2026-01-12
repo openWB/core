@@ -350,7 +350,7 @@
 			"acls": [
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/system/security/settings_accessible",
+					"topic": "openWB/system/security/access/settings",
 					"priority": 0,
 					"allow": true
 				}
@@ -363,7 +363,7 @@
 			"acls": [
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/system/security/status_accessible",
+					"topic": "openWB/system/security/access/status",
 					"priority": 0,
 					"allow": true
 				}
@@ -382,7 +382,7 @@
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/system/security/charge_log_accessible",
+					"topic": "openWB/system/security/access/charge_log",
 					"priority": 0,
 					"allow": true
 				},
@@ -419,7 +419,7 @@
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/system/security/chart_accessible",
+					"topic": "openWB/system/security/access/chart",
 					"priority": 0,
 					"allow": true
 				},
