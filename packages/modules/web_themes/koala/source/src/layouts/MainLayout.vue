@@ -13,7 +13,7 @@
       <!-- drawer content -->
       <q-scroll-area class="fit" :horizontal-thumb-style="{ opacity: '0' }">
         <q-list padding>
-          <div v-if="statusAccessible">
+          <div v-if="accessStatusAllowed">
             <q-item clickable v-ripple href="/openWB/web/settings/#/Status">
               <q-item-section avatar>
                 <q-icon name="dashboard" />
@@ -25,11 +25,11 @@
             <q-separator />
           </div>
 
-          <div v-if="chargeLogAccessible || chartAccessible">
+          <div v-if="accessChargeLogAllowed || accessChartAllowed">
             <q-item-label header>Auswertungen</q-item-label>
 
             <q-item
-              v-if="chargeLogAccessible"
+              v-if="accessChargeLogAllowed"
               clickable
               v-ripple
               href="/openWB/web/settings/#/Logging/ChargeLog"
@@ -42,7 +42,7 @@
             </q-item>
 
             <q-item
-              v-if="chartAccessible"
+              v-if="accessChartAllowed"
               clickable
               v-ripple
               href="/openWB/web/settings/#/Logging/Chart"
@@ -57,7 +57,7 @@
             <q-separator />
           </div>
 
-          <div v-if="settingsAccessible">
+          <div v-if="accessSettingsAllowed">
             <q-item clickable v-ripple href="/openWB/web/settings/">
               <q-item-section avatar>
                 <q-icon name="settings" />
@@ -145,10 +145,10 @@ defineOptions({
   name: 'MainLayout',
 });
 
-const settingsAccessible = computed(() => mqttStore.settingsAccessible);
-const statusAccessible = computed(() => mqttStore.statusAccessible);
-const chargeLogAccessible = computed(() => mqttStore.chargeLogAccessible);
-const chartAccessible = computed(() => mqttStore.chartAccessible);
+const accessSettingsAllowed = computed(() => mqttStore.accessSettingsAllowed);
+const accessStatusAllowed = computed(() => mqttStore.accessStatusAllowed);
+const accessChargeLogAllowed = computed(() => mqttStore.accessChargeLogAllowed);
+const accessChartAllowed = computed(() => mqttStore.accessChartAllowed);
 
 const drawer = ref(false);
 const themeMode = ref('auto');

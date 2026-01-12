@@ -761,14 +761,14 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
-   * Check if settings are accessible
+   * Check if access to settings is allowed
    * Defaults to false if the value is not set as this may be due to insufficient permissions
    * @returns boolean
    */
-  const settingsAccessible: ComputedRef<boolean> = computed(() => {
+  const accessSettingsAllowed: ComputedRef<boolean> = computed(() => {
     return (
       getValue.value(
-        'openWB/system/security/settings_accessible',
+        'openWB/system/security/access/settings',
         undefined,
         false,
       ) === true
@@ -776,14 +776,14 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
-   * Check if status is accessible
+   * Check if access to status is allowed
    * Defaults to false if the value is not set as this may be due to insufficient permissions
    * @returns boolean
    */
-  const statusAccessible: ComputedRef<boolean> = computed(() => {
+  const accessStatusAllowed: ComputedRef<boolean> = computed(() => {
     return (
       getValue.value(
-        'openWB/system/security/status_accessible',
+        'openWB/system/security/access/status',
         undefined,
         false,
       ) === true
@@ -791,14 +791,14 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
-   * Check if charge log is accessible
+   * Check if access to charge log is allowed
    * Defaults to false if the value is not set as this may be due to insufficient permissions
    * @returns boolean
    */
-  const chargeLogAccessible: ComputedRef<boolean> = computed(() => {
+  const accessChargeLogAllowed: ComputedRef<boolean> = computed(() => {
     return (
       getValue.value(
-        'openWB/system/security/charge_log_accessible',
+        'openWB/system/security/access/charge_log',
         undefined,
         false,
       ) === true
@@ -806,14 +806,14 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
-   * Check if chart is accessible
+   * Check if access to chart is allowed
    * Defaults to false if the value is not set as this may be due to insufficient permissions
    * @returns boolean
    */
-  const chartAccessible: ComputedRef<boolean> = computed(() => {
+  const accessChartAllowed: ComputedRef<boolean> = computed(() => {
     return (
       getValue.value(
-        'openWB/system/security/chart_accessible',
+        'openWB/system/security/access/chart',
         undefined,
         false,
       ) === true
@@ -887,11 +887,16 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const chargePointIds = computed(() => {
     return getObjectIds.value('cp').filter((id) => {
-      return chargePointAccessible.value(id);
+      return accessChargePointAllowed.value(id);
     });
   });
 
-  const chargePointAccessible = computed(() => {
+  /**
+   * Check if access to a specific charge point is allowed
+   * @param chargePointId charge point id
+   * @returns boolean
+   */
+  const accessChargePointAllowed = computed(() => {
     return (chargePointId: number) => {
       return chargePointName.value(chargePointId) !== undefined;
     };
@@ -2682,11 +2687,16 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const batteryIds = computed(() => {
     return getObjectIds.value('bat').filter((id) => {
-      return batteryAccessible.value(id);
+      return accessBatteryAllowed.value(id);
     });
   });
 
-  const batteryAccessible = computed(() => {
+  /**
+   * Check if access to a specific battery data is allowed
+   * @param batteryId battery ID
+   * @returns boolean
+   */
+  const accessBatteryAllowed = computed(() => {
     return (batteryId: number) => {
       return batteryName.value(batteryId) !== undefined;
     };
@@ -3879,13 +3889,13 @@ export const useMqttStore = defineStore('mqtt', () => {
     // security settings
     userManagementActive,
     accessAllowed,
-    settingsAccessible,
-    statusAccessible,
-    chargeLogAccessible,
-    chartAccessible,
+    accessSettingsAllowed,
+    accessStatusAllowed,
+    accessChargeLogAllowed,
+    accessChartAllowed,
     // charge point data
     chargePointIds,
-    chargePointAccessible,
+    accessChargePointAllowed,
     chargePointName,
     chargePointManualLock,
     chargePointPlugState,
