@@ -15,7 +15,10 @@ from modules.common.simcount._simcounter_store import SimCounterStoreBroker, res
 log = logging.getLogger(__name__)
 
 
-def sim_count(power_present: float, topic: str = "", previous_state: SimCounterState = None, component_type: Optional[ComponentType] = None) -> SimCounterState:
+def sim_count(power_present: float,
+              topic: str = "",
+              previous_state: SimCounterState = None,
+              component_type: Optional[ComponentType] = None) -> SimCounterState:
     """ emulate import export
 
     Parameters

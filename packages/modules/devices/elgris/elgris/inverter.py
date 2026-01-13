@@ -3,7 +3,7 @@ from typing import Any, TypedDict
 
 from modules.common.component_state import InverterState
 from modules.devices.elgris.elgris.elgris import Elgris
-from modules.common.store._inverter import get_inverter_value_store
+from modules.common.store._inverter import get_component_value_store
 from modules.devices.elgris.elgris.config import ElgrisInverterSetup
 from modules.common import modbus
 from modules.common.abstract_device import AbstractInverter

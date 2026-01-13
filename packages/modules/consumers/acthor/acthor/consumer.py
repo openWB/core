@@ -30,8 +30,7 @@ class ActhorConsumer(AbstractConsumer):
                "M3": 6000,
                "E2M1": 3500,
                "E2M3": 6500,
-               "M1": 3000,
-               "M3": 3000}
+               "M1": 3000}
     REG_MAPPING = (
         (Register.POWER, [ModbusDataType.INT_16]),
         (Register.TEMP0, [ModbusDataType.INT_16]),

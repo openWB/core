@@ -1,10 +1,9 @@
 import logging
-from typing import Optional
 
 
 from control import data
 from helpermodules import pub
-from helpermodules.utils.topic_parser import get_index, get_second_index
+from helpermodules.utils.topic_parser import get_second_index
 from modules.common.component_type import ComponentType, type_to_topic_mapping
 from modules.common.simcount.simcounter_state import SimCounterState
 

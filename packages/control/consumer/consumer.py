@@ -34,14 +34,15 @@ class Consumer:
                 f"Verbraucher {self.num}: Sollstrom {required_current}, min. Ist-Strom {max(self.data.get.currents)}")
 
     def get_parameter(self):
-        msg = None
         if timecheck.create_timestamp() > self.data.set.timestamp_last_current_set + self.data.usage.min_intervall:
             plan = timecheck.check_plans_timeframe(self.data.usage.plans)
             if plan is not None:
                 if plan.mode == ConsumerMode.SURPLUS:
                     if self.data.usage.type == ConsumerUsage.CONTINUOUS and self.data.usage.wait_for_start_active:
                         if self.data.get.state:
-                            return self.data.usage.min_current, self.data.usage.min_current, self.data.config.connected_phases
+                            return (self.data.usage.min_current,
+                                    self.data.usage.min_current,
+                                    self.data.config.connected_phases)
                         else:
                             # Anlauferkennung
                             pass

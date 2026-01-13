@@ -196,7 +196,8 @@ class Command:
         Pub().pub(f'openWB/set/consumer/{payload["data"]["consumer_id"]}/extra_meter/device/config', device_default)
         pub_user_message(
             payload, connection_id,
-            f'Neues Gerät vom Typ \'{payload["data"]["type"]}\' für Verbraucher \'{payload["data"]["consumer_id"]}\' hinzugefügt.',
+            (f'Neues Gerät vom Typ \'{payload["data"]["type"]}\' für '
+             f'Verbraucher \'{payload["data"]["consumer_id"]}\' hinzugefügt.'),
             MessageType.SUCCESS)
 
     def removeDevice(self, connection_id: str, payload: dict) -> None:
@@ -217,7 +218,8 @@ class Command:
         """
         ProcessBrokerBranch(
             f'openWB/consumer/{payload["data"]["consumer_id"]}/extra_meter/device/').remove_topics()
-        pub_user_message(payload, connection_id, f'Extra Zähler für Verbraucher \'{payload["data"]["consumer_id"]}\' gelöscht.',
+        pub_user_message(payload, connection_id,
+                         f'Extra Zähler für Verbraucher \'{payload["data"]["consumer_id"]}\' gelöscht.',
                          MessageType.SUCCESS)
 
     def addIoAction(self, connection_id: str, payload: dict) -> None:
@@ -678,12 +680,13 @@ class Command:
                                             "modules")
         component_default = dataclass_utils.asdict(component.component_descriptor.configuration_factory())
         component_default["id"] = payload["data"]["consumer_id"]
-        component_default["type"] = f"consumer_{component_default["type"]}"
+        component_default["type"] = f"consumer_{component_default['type']}"
         Pub().pub(f'openWB/set/consumer/{component_default["id"]}/extra_meter/device/component/config',
                   component_default)
         pub_user_message(
             payload, connection_id,
-            f'Neue Komponente vom Typ \'{payload["data"]["type"]}\' für Verbraucher \'{component_default["id"]}\' hinzugefügt.',
+            (f'Neue Komponente vom Typ \'{payload["data"]["type"]}\' für '
+             f'Verbraucher \'{component_default["id"]}\' hinzugefügt.'),
             MessageType.SUCCESS)
 
     def removeComponent(self, connection_id: str, payload: dict) -> None:
@@ -1080,7 +1083,7 @@ class Command:
             f'\'{payload["data"]["template"]}\' hinzugefügt.',
             MessageType.SUCCESS)
 
-    def removeChargeTemplateSchedulePlan(self, connection_id: str, payload: dict) -> None:
+    def removeUsagePlan(self, connection_id: str, payload: dict) -> None:
         """ löscht einen Zielladen-Plan.
         """
         if self.max_id_usage_plan < payload["data"]["plan"]:
@@ -1099,19 +1102,6 @@ class Command:
             f'Zielladen-Plan mit ID \'{payload["data"]["plan"]}\' von Profil '
             f'{payload["data"]["template"]}\' gelöscht.',
             MessageType.SUCCESS)
-
-    def removeDevice(self, connection_id: str, payload: dict) -> None:
-        """ löscht ein Device.
-        """
-        if self.max_id_hierarchy >= payload["data"]["id"]:
-            ProcessBrokerBranch(f'system/device/{payload["data"]["id"]}/').remove_topics()
-            pub_user_message(payload, connection_id, f'Gerät mit ID \'{payload["data"]["id"]}\' gelöscht.',
-                             MessageType.SUCCESS)
-        else:
-            log.error(
-                payload, connection_id,
-                f'Die ID \'{payload["data"]["id"]}\' ist größer als die maximal vergebene ID \'{self.max_id_hierarchy}\'.',
-                MessageType.ERROR)
 
 
 class ErrorHandlingContext:

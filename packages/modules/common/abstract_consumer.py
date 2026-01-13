@@ -1,7 +1,5 @@
 from abc import abstractmethod
-from typing import List, Optional
-
-from control.consumer.consumer_data import ConsumerUsage
+from typing import Optional
 
 
 class AbstractConsumer:

@@ -8,7 +8,7 @@ from modules.common.component_state import BatState
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.simcount._simcounter import SimCounter
-from modules.common.store._battery import get_bat_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.generic.mqtt.config import MqttBatSetup
 
 

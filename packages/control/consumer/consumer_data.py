@@ -1,5 +1,4 @@
 from dataclasses import asdict, dataclass, field
-from enum import Enum
 from typing import Dict, List, Optional, Union
 from control.chargepoint.control_parameter import ControlParameter, control_parameter_factory
 from control.consumer.usage import ConsumerUsage

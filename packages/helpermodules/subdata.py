@@ -1069,8 +1069,9 @@ class SubData:
                     if f"consumer{index}" not in var:
                         var[f"consumer{index}"] = Consumer(index)
                     consumer_config = decode_payload(msg.payload)
-                    con = importlib.import_module(f".consumers.{consumer_config['vendor']}.{consumer_config['type']}.consumer",
-                                                  "modules")
+                    con = importlib.import_module(
+                        f".consumers.{consumer_config['vendor']}.{consumer_config['type']}.consumer",
+                        "modules")
                     config = dataclass_from_dict(con.device_descriptor.configuration_factory, consumer_config)
                     var["consumer"+index].module = con.create_consumer(config)
                     var["consumer"+index].data.module = config

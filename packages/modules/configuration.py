@@ -422,7 +422,6 @@ def _pub_configurable_monitoring() -> None:
 
 def _pub_configurable_consumers() -> None:
     try:
-        consumers = {}
         path_list = Path(_get_packages_path()/"modules"/"consumer").glob('**/consumer.py')
 
         def update_nested_dict(dictionary: Dict, update: Dict) -> Dict:
@@ -443,7 +442,8 @@ def _pub_configurable_consumers() -> None:
                         continue
                     device_path = path.parts[-2]
                     dev_defaults = importlib.import_module(
-                        f".consumers.{vendor}.{device_path}.consumer", "modules").device_descriptor.configuration_factory()
+                        f".consumers.{vendor}.{device_path}.consumer",
+                        "modules").device_descriptor.configuration_factory()
                     usage_defaults = []
                     for usage_type in dev_defaults.usage:
                         usage_defaults.append(GET_DEFAULTS_BY_USAGE[usage_type]())

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from modules.common.component_state import InverterState
-from modules.common.store import get_component_value_store
+from modules.common.store import get_inverter_value_store
 from modules.common.component_type import ComponentDescriptor
 from modules.devices.sma.sma_shm.config import SmaHomeManagerInverterSetup
 from modules.devices.sma.sma_shm.utils import SpeedwireComponent

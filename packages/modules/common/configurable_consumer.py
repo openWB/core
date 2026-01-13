@@ -27,8 +27,8 @@ class ConfigurableConsumer(Generic[T_CONSUMER], AbstractConsumer):
         if self.error_timestamp is None:
             self.error_timestamp = timecheck.create_timestamp()
             Pub().pub(error_timestamp_topic, self.error_timestamp)
-            log.debug(
-                f"Fehler bei Gerät {self.__consumer.config.name} aufgetreten, Fehlerzeitstempel: {self.error_timestamp}")
+            log.debug(f"Fehler bei Gerät {self.__consumer.config.name} aufgetreten, "
+                      f"Fehlerzeitstempel: {self.error_timestamp}")
         if timecheck.check_timestamp(self.error_timestamp, 60) is False:
             try:
                 self.__consumer.error_handler()
