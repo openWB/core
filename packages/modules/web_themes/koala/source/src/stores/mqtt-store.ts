@@ -768,7 +768,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   const accessSettingsAllowed: ComputedRef<boolean> = computed(() => {
     return (
       getValue.value(
-        'openWB/system/security/access/settings',
+        'openWB/system/security/access/Settings',
         undefined,
         false,
       ) === true
@@ -783,7 +783,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   const accessStatusAllowed: ComputedRef<boolean> = computed(() => {
     return (
       getValue.value(
-        'openWB/system/security/access/status',
+        'openWB/system/security/access/Status',
         undefined,
         false,
       ) === true
@@ -798,7 +798,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   const accessChargeLogAllowed: ComputedRef<boolean> = computed(() => {
     return (
       getValue.value(
-        'openWB/system/security/access/charge_log',
+        'openWB/system/security/access/ChargeLog',
         undefined,
         false,
       ) === true
@@ -813,7 +813,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   const accessChartAllowed: ComputedRef<boolean> = computed(() => {
     return (
       getValue.value(
-        'openWB/system/security/access/chart',
+        'openWB/system/security/access/Chart',
         undefined,
         false,
       ) === true
