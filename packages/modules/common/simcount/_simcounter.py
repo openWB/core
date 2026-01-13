@@ -18,6 +18,19 @@ class SimCounter:
         return self.data.imported, self.data.exported
 
 
+class SimCounterConsumer:
+    def __init__(self, consumer_id: int, component_type: ComponentType):
+        self.topic = f"openWB/set/consumer/{consumer_id}/module/"
+        self.component_type = special_to_general_type_mapping(component_type)
+        self.data: Optional[SimCounterState] = None
+
+    def sim_count(self, power: float, dc_power: Optional[float] = None) -> Tuple[float, float]:
+        if self.component_type != ComponentType.INVERTER and dc_power is not None and dc_power == 0:
+            power = 0
+        self.data = sim_count(power, self.topic, self.data, self.component_type)
+        return self.data.imported, self.data.exported
+
+
 class SimCounterChargepoint:
     def __init__(self, chargepoint_id: int):
         self.topic = f"openWB/set/chargepoint/{chargepoint_id}/get/"

@@ -7,7 +7,7 @@ from modules.common.component_state import ConsumerState
 from modules.common.configurable_consumer import ConfigurableConsumer
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
-from modules.common.simcount._simcounter import SimCounter
+from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.common.store._factory import get_component_value_store
 from modules.consumers.acthor.acthor.config import ActhorConfiguration, Acthor
 
@@ -45,7 +45,7 @@ class ActhorConsumer(AbstractConsumer):
 
     def initializer(self):
         self.client = ModbusTcpClient_(self.config.configuration.ip_address, self.config.configuration.port)
-        self.sim_counter = SimCounter(self.config.id, self.config.id, self.component_config.type)
+        self.sim_counter = SimCounterConsumer(self.config.id, self.config.type)
         self.store = get_component_value_store(self.config.type, self.config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.config))
 
