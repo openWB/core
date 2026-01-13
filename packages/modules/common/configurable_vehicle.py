@@ -89,7 +89,7 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                 # Nur wenn der SoC neuer ist als der bisherige, diesen setzen.
                 # Manche Fahrzeuge liefern in Ladepausen zwar einen SoC, aber manchmal einen alten.
                 # Die Pro liefert manchmal den SoC nicht, bis nach dem Anstecken das SoC-Update getriggert wird.
-                # Wenn Sie dann doch noch den alten SoC liefert, darf dieser nicht verworfen werden.
+                # Wenn diese dann doch noch den alten SoC liefert, darf dieser nicht verworfen werden.
                 self.store.set(car_state)
             else:
                 log.debug("Not updating SoC, because timestamp is older.")
