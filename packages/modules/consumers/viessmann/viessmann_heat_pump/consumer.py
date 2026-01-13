@@ -10,7 +10,7 @@ log = logging.getLogger(__name__)
 
 
 class ViessmannHeatPumpConsumer(AbstractConsumer):
-    def __init__(self, config: ViessmannConfiguration) -> None:
+    def __init__(self, config: ViessmannHeatPump) -> None:
         self.config = config
 
     def initializer(self):
@@ -19,14 +19,11 @@ class ViessmannHeatPumpConsumer(AbstractConsumer):
     def error_handler(self) -> None:
         self.initializer()
 
-    def update(self) -> None:
-        pass
-
     def switch_on(self) -> None:
-        self.client.write_coil(16, True, unit=self.config.configuration.modbus_id)
+        self.client.write_single_coil(16, True, unit=self.config.configuration.modbus_id)
 
     def switch_off(self) -> None:
-        self.client.write_coil(16, False, unit=self.config.configuration.modbus_id)
+        self.client.write_single_coil(16, False, unit=self.config.configuration.modbus_id)
 
 
 def create_consumer(config: ViessmannConfiguration):

@@ -185,6 +185,20 @@ class Command:
             f'Neues Gerät vom Typ \'{payload["data"]["type"]}\' mit ID \'{new_id}\' hinzugefügt.',
             MessageType.SUCCESS)
 
+    def addConsumerExtraMeterDevice(self, connection_id: str, payload: dict) -> None:
+        """ sendet das Topic, zu dem ein neues Device erstellt werden soll.
+        """
+        dev = importlib.import_module(f'.devices.{payload["data"]["vendor"]}'
+                                      f'.{payload["data"]["type"]}.device',
+                                      "modules")
+        device_default = dataclass_utils.asdict(dev.device_descriptor.configuration_factory())
+        device_default["id"] = payload["data"]["consumer_id"]
+        Pub().pub(f'openWB/set/consumer/{payload["data"]["consumer_id"]}/extra_meter/device/config', device_default)
+        pub_user_message(
+            payload, connection_id,
+            f'Neues Gerät vom Typ \'{payload["data"]["type"]}\' für Verbraucher \'{payload["data"]["consumer_id"]}\' hinzugefügt.',
+            MessageType.SUCCESS)
+
     def removeDevice(self, connection_id: str, payload: dict) -> None:
         """ löscht ein Device.
         """
@@ -197,6 +211,14 @@ class Command:
                 payload, connection_id,
                 f'Die ID \'{payload["data"]["id"]}\' ist größer als die maximal vergebene ID \'{self.max_id_device}\'.',
                 MessageType.ERROR)
+
+    def removeConsumerExtraMeterDevice(self, connection_id: str, payload: dict) -> None:
+        """ löscht ein Device.
+        """
+        ProcessBrokerBranch(
+            f'openWB/consumer/{payload["data"]["consumer_id"]}/extra_meter/device/').remove_topics()
+        pub_user_message(payload, connection_id, f'Extra Zähler für Verbraucher \'{payload["data"]["consumer_id"]}\' gelöscht.',
+                         MessageType.SUCCESS)
 
     def addIoAction(self, connection_id: str, payload: dict) -> None:
         new_id = self.max_id_io_action + 1
@@ -650,6 +672,20 @@ class Command:
             f'Neue Komponente vom Typ \'{payload["data"]["type"]}\' mit ID \'{new_id}\' hinzugefügt.',
             MessageType.SUCCESS)
 
+    def addConsumerExtraMeterComponent(self, connection_id: str, payload: dict) -> None:
+        component = importlib.import_module(f'.devices.{payload["data"]["deviceVendor"]}'
+                                            f'.{payload["data"]["deviceType"]}.{payload["data"]["type"]}',
+                                            "modules")
+        component_default = dataclass_utils.asdict(component.component_descriptor.configuration_factory())
+        component_default["id"] = payload["data"]["consumer_id"]
+        component_default["type"] = f"consumer_{component_default["type"]}"
+        Pub().pub(f'openWB/set/consumer/{component_default["id"]}/extra_meter/device/component/config',
+                  component_default)
+        pub_user_message(
+            payload, connection_id,
+            f'Neue Komponente vom Typ \'{payload["data"]["type"]}\' für Verbraucher \'{component_default["id"]}\' hinzugefügt.',
+            MessageType.SUCCESS)
+
     def removeComponent(self, connection_id: str, payload: dict) -> None:
         """ löscht eine Komponente.
         """
@@ -661,6 +697,15 @@ class Command:
         pub_user_message(
             payload, connection_id,
             f'Komponente mit ID \'{payload["data"]["id"]}\' gelöscht.', MessageType.SUCCESS)
+
+    def removeConsumerExtraMeterComponent(self, connection_id: str, payload: dict) -> None:
+        """ löscht eine Komponente.
+        """
+        branch = f'openWB/consumer/{payload["data"]["consumer_id"]}/extra_meter/device/component/'
+        ProcessBrokerBranch(branch).remove_topics()
+        pub_user_message(
+            payload, connection_id,
+            f'Komponente für Verbraucher \'{payload["data"]["consumer_id"]}\' gelöscht.', MessageType.SUCCESS)
 
     def addEvTemplate(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neues Fahrzeug-Profil erstellt werden soll.

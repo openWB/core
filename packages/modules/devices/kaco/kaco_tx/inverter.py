@@ -7,7 +7,7 @@ from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType
-from modules.common.store import get_inverter_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.kaco.kaco_tx.config import KacoInverterSetup
 from modules.devices.kaco.kaco_tx.scale import create_scaled_reader
 
@@ -25,7 +25,7 @@ class KacoInverter(AbstractInverter):
 
     def initialize(self) -> None:
         self.__tcp_client = self.kwargs['client']
-        self.store = get_inverter_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self._read_scaled_int16 = create_scaled_reader(
             self.__tcp_client, self.component_config.configuration.modbus_id, ModbusDataType.INT_16

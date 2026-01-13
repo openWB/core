@@ -9,7 +9,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.lovato import Lovato
 from modules.common.sdm import Sdm120
 from modules.common.simcount import SimCounter
-from modules.common.store import get_inverter_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.openwb.openwb_flex.config import PvKitFlexSetup
 from modules.devices.openwb.openwb_flex.versions import kit_inverter_version_factory
 
@@ -32,7 +32,7 @@ class PvKitFlex(AbstractInverter):
         self.__client = factory(self.component_config.configuration.id, self.__tcp_client,  self.fault_state)
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.simulation = {}
-        self.store = get_inverter_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
 
     def update(self) -> None:
         """ liest die Werte des Moduls aus.

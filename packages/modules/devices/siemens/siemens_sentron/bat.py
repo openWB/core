@@ -7,7 +7,7 @@ from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType
-from modules.common.store import get_bat_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.siemens.siemens_sentron.config import SiemensSentronBatSetup
 
 
@@ -24,7 +24,7 @@ class SiemensSentronBat(AbstractBat):
     def initialize(self) -> None:
         self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['client']
         self.__modbus_id: int = self.kwargs['modbus_id']
-        self.store = get_bat_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> None:

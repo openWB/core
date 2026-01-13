@@ -26,7 +26,7 @@ class ElgrisInverter(AbstractInverter):
         self.__modbus_id: int = self.kwargs['modbus_id']
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.elgris = Elgris(self.__modbus_id, self.__tcp_client, self.fault_state)
-        self.store = get_inverter_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
 
     def update(self):
         with self.__tcp_client:

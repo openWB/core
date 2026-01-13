@@ -25,6 +25,7 @@ def pub_configurable():
     _pub_configurable_io_actions()
     _pub_configurable_monitoring()
     _pub_configurable_consumers()
+    _pub_configurable_consumers_extra_meter()
 
 
 def _pub_configurable_backup_clouds() -> None:
@@ -191,6 +192,16 @@ def _pub_configurable_soc_modules() -> None:
 
 
 def _pub_configurable_devices_components() -> None:
+    Pub().pub("openWB/set/system/configurable/devices_components",
+              _get_configurable_devices_components(["*bat*", "*counter*", "*inverter*"]))
+
+
+def _pub_configurable_consumers_extra_meter() -> None:
+    Pub().pub("openWB/set/system/configurable/consumers_extra_meter",
+              _get_configurable_devices_components(["*counter*"]))
+
+
+def _get_configurable_devices_components(component_pattern: List[str]) -> None:
     def update_nested_dict(dictionary: Dict, update: Dict) -> Dict:
         for key, value in update.items():
             if isinstance(value, dict):
@@ -220,7 +231,7 @@ def _pub_configurable_devices_components() -> None:
                 vendor_path = path.parts[-2]
                 vendor_info = importlib.import_module(
                     f".devices.{vendor_path}.vendor", "modules").vendor_descriptor.configuration_factory()
-                vendor_groups = update_nested_dict(vendor_groups, {
+                entry = {
                     vendor_info.group: {
                         "group_name": get_vendor_group_name(vendor_info.group),
                         "vendors": {
@@ -230,7 +241,9 @@ def _pub_configurable_devices_components() -> None:
                             }
                         }
                     }
-                })
+                }
+                if len(entry[vendor_info.group]["vendors"][vendor_path]["devices"]) > 0:
+                    vendor_groups = update_nested_dict(vendor_groups, entry)
             except Exception:
                 log.exception(f"Fehler im configuration-Modul: vendors: {path}")
         return vendor_groups
@@ -246,19 +259,21 @@ def _pub_configurable_devices_components() -> None:
                 device_path = path.parts[-2]
                 dev_defaults = importlib.import_module(
                     f".devices.{vendor}.{device_path}.device", "modules").device_descriptor.configuration_factory()
-                devices.update({
+                entry = {
                     dev_defaults.type: {
                         "device_name": dev_defaults.name,
                         "components": get_device_components(vendor, dev_defaults.type)
                     }
-                })
+                }
+                if len(entry[dev_defaults.type]["components"]) > 0:
+                    devices.update(entry)
             except Exception:
                 log.exception(f"Fehler im configuration-Modul: devices: {path}")
         return devices
 
     def get_device_components(vendor: str, device: str) -> Dict:
         components = {}
-        for pattern in ["*bat*", "*counter*", "*inverter*"]:
+        for pattern in component_pattern:
             path_list = Path(_get_packages_path()/"modules"/"devices"/vendor/device).glob(f'**/{pattern}.py')
             for path in path_list:
                 try:
@@ -278,7 +293,7 @@ def _pub_configurable_devices_components() -> None:
         return components
 
     try:
-        Pub().pub("openWB/set/system/configurable/devices_components", get_vendor_groups())
+        return get_vendor_groups()
     except Exception:
         log.exception("Fehler im configuration-Modul")
 

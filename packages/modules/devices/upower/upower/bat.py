@@ -8,7 +8,7 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount import SimCounter
-from modules.common.store import get_bat_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.upower.upower.config import UPowerBatSetup
 from modules.devices.upower.upower.version import UPowerVersion
 
@@ -24,7 +24,7 @@ class UPowerBat(AbstractBat):
         self.__modbus_id = modbus_id
         self.version = version
         self.client = client
-        self.store = get_bat_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.sim_counter = SimCounter(device_id, self.component_config.id, prefix="speicher")
 

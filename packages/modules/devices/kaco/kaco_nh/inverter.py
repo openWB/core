@@ -6,7 +6,7 @@ from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.store import get_inverter_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.kaco.kaco_nh.config import KacoNHInverterSetup
 from modules.devices.kaco.kaco_nh.config import KacoNHConfiguration
 
@@ -22,7 +22,7 @@ class KacoNHInverter(AbstractInverter):
 
     def initialize(self) -> None:
         self.device_config: KacoNHConfiguration = self.kwargs['device_config']
-        self.store = get_inverter_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> None:

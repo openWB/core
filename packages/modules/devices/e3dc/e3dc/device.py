@@ -17,7 +17,7 @@ from modules.devices.e3dc.e3dc.config import E3dcCounterSetup, E3dcCounterConfig
 from modules.devices.e3dc.e3dc.config import E3dcInverterSetup, E3dcExternalInverterSetup
 from modules.common.store.ramdisk import files
 from modules.common.simcount import sim_count
-from modules.common.store import get_inverter_value_store, get_bat_value_store
+from modules.common.store import get_component_value_store, get_bat_value_store
 from modules.common.component_state import InverterState, BatState
 
 

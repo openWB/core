@@ -483,6 +483,7 @@ class UpdateConfig:
         "^openWB/system/configurable/chargepoints$",
         "^openWB/system/configurable/chargepoints_internal$",
         "^openWB/system/configurable/consumers$",
+        "^openWB/system/configurable/consumers_exta_meter$",
         "^openWB/system/configurable/devices_components$",
         "^openWB/system/configurable/flexible_tariffs$",
         "^openWB/system/configurable/grid_fees$",

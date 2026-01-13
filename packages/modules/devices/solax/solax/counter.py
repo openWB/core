@@ -8,7 +8,7 @@ from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType
-from modules.common.store import get_counter_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.solax.solax.config import SolaxCounterSetup, Solax
 from modules.devices.solax.solax.version import SolaxVersion
 
@@ -26,7 +26,7 @@ class SolaxCounter(AbstractCounter):
     def initialize(self) -> None:
         self.__tcp_client = self.kwargs['client']
         self.device_config = self.kwargs['device_config']
-        self.store = get_counter_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self):

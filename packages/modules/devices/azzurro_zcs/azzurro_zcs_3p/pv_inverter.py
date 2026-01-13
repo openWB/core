@@ -6,7 +6,7 @@ from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
-from modules.common.store import get_inverter_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.azzurro_zcs.azzurro_zcs_3p.config import ZCSPvInverterSetup
 
 log = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ class ZCSPvInverter(AbstractInverter):
     def initialize(self) -> None:
         self.__modbus_id: int = self.kwargs['modbus_id']
         self.client: ModbusTcpClient_ = self.kwargs['client']
-        self.store = get_inverter_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> None:

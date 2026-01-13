@@ -5,7 +5,7 @@ from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.store import get_bat_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.rct.rct.config import RctBatSetup
 from modules.devices.rct.rct.rct_lib import RCT
 
@@ -17,7 +17,7 @@ class RctBat(AbstractBat):
         self.component_config = component_config
 
     def initialize(self) -> None:
-        self.store = get_bat_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self, rct_client: RCT) -> None:

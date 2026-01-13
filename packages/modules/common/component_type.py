@@ -31,6 +31,8 @@ def special_to_general_type_mapping(component_type: str) -> ComponentType:
 def type_to_topic_mapping(component_type: str) -> str:
     if "bat" in component_type:
         return "bat"
+    elif "consumer" in component_type:
+        return "consumer"
     elif "counter" in component_type:
         return "counter"
     elif "inverter" in component_type:

@@ -10,7 +10,7 @@ from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount import SimCounter
-from modules.common.store import get_bat_value_store
+from modules.common.store import get_component_value_store
 
 log = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class BYDBat(AbstractBat):
     def initialize(self) -> None:
         self.device_config: BYD = self.kwargs['device_config']
         self.sim_counter = SimCounter(self.device_config.id, self.component_config.id, prefix="speicher")
-        self.store = get_bat_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> None:

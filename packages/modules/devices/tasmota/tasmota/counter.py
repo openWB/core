@@ -6,7 +6,7 @@ from modules.devices.tasmota.tasmota.config import TasmotaCounterSetup
 from modules.common.abstract_device import AbstractCounter
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.store import get_counter_value_store
+from modules.common.store import get_component_value_store
 from modules.common.simcount import SimCounter
 from modules.common import req
 from modules.common.component_state import CounterState
@@ -30,7 +30,7 @@ class TasmotaCounter(AbstractCounter):
         self.__ip_address: str = self.kwargs['ip_address']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.__phase: int = self.kwargs['phase']
-        self.store = get_counter_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self):

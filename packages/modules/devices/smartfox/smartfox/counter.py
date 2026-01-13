@@ -8,7 +8,7 @@ from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.store import get_counter_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.smartfox.smartfox.config import SmartfoxCounterSetup
 
 log = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ class SmartfoxCounter(AbstractCounter):
 
     def initialize(self) -> None:
         self.ip_address: int = self.kwargs['ip_address']
-        self.store = get_counter_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> None:

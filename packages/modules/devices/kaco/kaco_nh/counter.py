@@ -6,7 +6,7 @@ from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.store import get_counter_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.kaco.kaco_nh.config import KacoNHConfiguration, KacoNHCounterSetup
 
 
@@ -21,7 +21,7 @@ class KacoNHCounter(AbstractCounter):
 
     def initialize(self) -> None:
         self.device_config: KacoNHConfiguration = self.kwargs['device_config']
-        self.store = get_counter_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> None:

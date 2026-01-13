@@ -267,14 +267,15 @@ class EvseState:
 class ConsumerState:
     def __init__(
         self,
-        imported: float = 0,
-        exported: float = 0,
-        power: float = 0,
+        imported: Optional[float] = None,
+        exported: Optional[float] = None,
+        power: Optional[float] = None,
         voltages: Optional[List[Optional[float]]] = None,
         currents: Optional[List[Optional[float]]] = None,
         powers: Optional[List[Optional[float]]] = None,
         set_power: Optional[float] = None,
         state: Optional[bool] = False,
+        temperatures: Optional[List[Optional[float]]] = None,
     ):
         """Args:
             imported: total imported energy in Wh
@@ -292,3 +293,4 @@ class ConsumerState:
         self.power = power
         self.set_power = set_power
         self.state = state
+        self.temperatures = temperatures

@@ -8,7 +8,7 @@ from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType
-from modules.common.store import get_inverter_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.sma.sma_sunny_boy.config import SmaSunnyBoyInverterSetup
 from modules.devices.sma.sma_sunny_boy.inv_version import SmaInverterVersion
 from modules.common.simcount import SimCounter
@@ -35,7 +35,7 @@ class SmaSunnyBoyInverter(AbstractInverter):
 
     def initialize(self) -> None:
         self.tcp_client = self.kwargs['client']
-        self.store = get_inverter_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.sim_counter = SimCounter(self.kwargs['device_id'], self.component_config.id, prefix="Wechselrichter")
 

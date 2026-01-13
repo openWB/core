@@ -4,7 +4,7 @@ from typing import TypedDict, Any, Dict, Union, Optional
 import logging
 
 from modules.devices.sma.sma_sunny_boy.config import SmaSunnyBoySmartEnergyBatSetup
-from modules.common.store import get_bat_value_store
+from modules.common.store import get_component_value_store
 from modules.common.modbus import ModbusTcpClient_, ModbusDataType
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.component_type import ComponentDescriptor
@@ -41,7 +41,7 @@ class SunnyBoySmartEnergyBat(AbstractBat):
 
     def initialize(self) -> None:
         self.__tcp_client: ModbusTcpClient_ = self.kwargs['client']
-        self.store = get_bat_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.last_mode = 'Undefined'
         self.inverter_type = None

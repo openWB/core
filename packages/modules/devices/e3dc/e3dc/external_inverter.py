@@ -8,7 +8,7 @@ from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.modbus import ModbusDataType, Endian
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.store import get_inverter_value_store
+from modules.common.store import get_component_value_store
 from modules.common.simcount._simcounter import SimCounter
 from modules.devices.e3dc.e3dc.config import E3dcExternalInverterSetup
 
@@ -37,7 +37,7 @@ class E3dcExternalInverter(AbstractInverter):
         self.__modbus_id: int = self.kwargs['modbus_id']
         self.client: modbus.ModbusTcpClient_ = self.kwargs['client']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
-        self.store = get_inverter_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> None:

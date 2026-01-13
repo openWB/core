@@ -6,7 +6,7 @@ from helpermodules.cli import run_using_positional_cli_args
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import MultiComponentUpdateContext, SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
-from modules.common.store import get_inverter_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.batterx.batterx import bat, external_inverter
 from modules.devices.batterx.batterx import counter
 from modules.devices.batterx.batterx import inverter

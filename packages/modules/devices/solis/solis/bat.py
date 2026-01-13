@@ -7,7 +7,7 @@ from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
-from modules.common.store import get_bat_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.solis.solis.config import SolisBatSetup
 
 log = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ class SolisBat(AbstractBat):
 
     def initialize(self) -> None:
         self.client: ModbusTcpClient_ = self.kwargs['client']
-        self.store = get_bat_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> None:

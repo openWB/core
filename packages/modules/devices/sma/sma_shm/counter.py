@@ -2,7 +2,7 @@
 from math import copysign
 
 from modules.common.component_state import CounterState
-from modules.common.store import get_counter_value_store
+from modules.common.store import get_component_value_store
 from modules.common.component_type import ComponentDescriptor
 from modules.devices.sma.sma_shm.config import SmaHomeManagerCounterSetup
 from modules.devices.sma.sma_shm.utils import SpeedwireComponent

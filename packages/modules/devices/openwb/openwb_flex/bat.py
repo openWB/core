@@ -11,7 +11,7 @@ from modules.common.mpm3pm import Mpm3pm
 from modules.common.sdm import Sdm120
 from modules.common.sdm import Sdm630_72
 from modules.common.simcount import SimCounter
-from modules.common.store import get_bat_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.openwb.openwb_flex.config import BatKitFlexSetup
 from modules.devices.openwb.openwb_flex.versions import kit_bat_version_factory
 
@@ -33,7 +33,7 @@ class BatKitFlex(AbstractBat):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.__client = factory(self.component_config.configuration.id, self.__tcp_client, self.fault_state)
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
-        self.store = get_bat_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
 
     def update(self):
         # TCP-Verbindung schließen möglichst bevor etwas anderes gemacht wird, um im Fehlerfall zu verhindern,

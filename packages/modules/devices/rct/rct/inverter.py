@@ -3,7 +3,7 @@ from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.store import get_inverter_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.rct.rct.config import RctInverterSetup
 from modules.devices.rct.rct.rct_lib import RCT
 
@@ -13,7 +13,7 @@ class RctInverter(AbstractInverter):
         self.component_config = component_config
 
     def initialize(self) -> None:
-        self.store = get_inverter_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self, rct_client: RCT) -> None:
