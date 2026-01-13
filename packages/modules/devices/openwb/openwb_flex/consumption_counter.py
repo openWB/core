@@ -27,7 +27,7 @@ class ConsumptionCounterFlex(AbstractCounter):
         factory = consumption_counter_factory(self.component_config.configuration.type)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.__client = factory(self.component_config.configuration.id, self.__tcp_client, self.fault_state)
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, self.component_config.type)
         self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 

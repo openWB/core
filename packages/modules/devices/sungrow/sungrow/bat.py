@@ -28,7 +28,7 @@ class SungrowBat(AbstractBat):
     def initialize(self) -> None:
         self.device_config: Sungrow = self.kwargs['device_config']
         self.__tcp_client: ModbusTcpClient_ = self.kwargs['client']
-        self.sim_counter = SimCounter(self.device_config.id, self.component_config.id, prefix="speicher")
+        self.sim_counter = SimCounter(self.device_config.id, self.component_config.id, self.component_config.type)
         self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.last_mode = 'Undefined'

@@ -27,7 +27,7 @@ class SaxpowerBat(AbstractBat):
         self.__device_id: int = self.kwargs['device_id']
         self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['client']
         self.__modbus_id: int = self.kwargs['modbus_id']
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, self.component_config.type)
         self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 

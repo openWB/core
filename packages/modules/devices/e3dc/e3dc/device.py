@@ -139,7 +139,7 @@ def read_legacy_bat(address1: str,
     soc /= len(addresses)
     log.debug("Soc %d power %d pv %d pv_external %d",
               soc, power, pv, pv_external)
-    counter_import, counter_export = sim_count(power, prefix="speicher")
+    counter_import, counter_export = sim_count(power, self.component_config.type)
     get_bat_value_store(1).set(BatState(power=power, soc=soc, imported=counter_import, exported=counter_export))
     # pv_other sagt aus, ob WR definiert ist, und dessen PV Leistung auch gilt
     # wenn 0 gilt nur PV und pv_external aus e3dc
@@ -151,7 +151,7 @@ def read_legacy_bat(address1: str,
     if pv_other:
         pv_total = pv_total + files.pv[0].power.read()
     log.debug("wr update pv_other %s pv_total %d", pv_other, pv_total)
-    _, exported_pv = sim_count(pv_total, prefix="pv")
+    _, exported_pv = sim_count(pv_total, self.component_config.type)
     get_inverter_value_store(num).set(InverterState(exported=exported_pv, power=pv_total))
 
 

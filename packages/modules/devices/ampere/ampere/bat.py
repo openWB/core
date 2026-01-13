@@ -27,7 +27,7 @@ class AmpereBat(AbstractBat):
     def initialize(self) -> None:
         device_id: int = self.kwargs['device_id']
         self.modbus_id: int = self.kwargs['modbus_id']
-        self.sim_counter = SimCounter(device_id, self.component_config.id, prefix="speicher")
+        self.sim_counter = SimCounter(device_id, self.component_config.id, self.component_config.type)
         self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.client = self.kwargs['client']

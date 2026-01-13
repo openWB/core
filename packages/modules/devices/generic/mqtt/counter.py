@@ -22,7 +22,7 @@ class MqttCounter(AbstractCounter):
 
     def initialize(self) -> None:
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.sim_counter = SimCounter(self.kwargs['device_id'], self.component_config.id, prefix="bezug")
+        self.sim_counter = SimCounter(self.kwargs['device_id'], self.component_config.id, self.component_config.type)
         self.store = get_component_value_store(self.component_config.type, self.component_config.id)
 
     def update(self, received_topics: Dict) -> None:

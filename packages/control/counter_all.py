@@ -80,7 +80,7 @@ class CounterAll:
         self.connected_counters = []
         self.connected_chargepoints = []
         self.childless = []
-        self.sim_counter = SimCounter("", "", prefix="bezug")
+        self.sim_counter = SimCounter("", "", self.component_config.type)
         self.sim_counter.topic = "openWB/set/counter/set/"
 
     def get_evu_counter(self) -> Counter:

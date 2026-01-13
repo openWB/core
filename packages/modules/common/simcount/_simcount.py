@@ -4,16 +4,18 @@ Berechnet die importierte und exportierte Leistung, wenn der Zähler / PV-Modul 
 import logging
 import math
 import time
+from typing import Optional
 
 from control import data as data_module
+from modules.common.component_type import ComponentType
 from modules.common.simcount._calculate import calculate_import_export
 from modules.common.simcount.simcounter_state import SimCounterState
-from modules.common.simcount._simcounter_store import get_sim_counter_store, restore_last_energy
+from modules.common.simcount._simcounter_store import SimCounterStoreBroker, restore_last_energy
 
 log = logging.getLogger(__name__)
 
 
-def sim_count(power_present: float, topic: str = "", data: SimCounterState = None, prefix: str = "") -> SimCounterState:
+def sim_count(power_present: float, topic: str = "", previous_state: SimCounterState = None, component_type: Optional[ComponentType] = None) -> SimCounterState:
     """ emulate import export
 
     Parameters
@@ -27,9 +29,8 @@ def sim_count(power_present: float, topic: str = "", data: SimCounterState = Non
     ------
     neuer state
     """
-    store = get_sim_counter_store()
+    store = SimCounterStoreBroker()
     timestamp_present = time.time()
-    previous_state = store.load(prefix, topic) if data is None else data
 
     if math.isnan(power_present):
         raise ValueError("power_present is NaN.")
@@ -37,15 +38,15 @@ def sim_count(power_present: float, topic: str = "", data: SimCounterState = Non
     if isinstance(power_present, (int, float)):
         if previous_state is None:
             log.debug("No previous state found. Starting new simulation.")
-            return store.initialize(prefix, topic, power_present, timestamp_present)
+            return store.initialize(component_type, topic, power_present, timestamp_present)
         else:
             log.debug("Previous state: %s", previous_state)
             if math.isnan(previous_state.imported):
                 log.error("imported is NaN. Reset simcount state.")
-                previous_state.imported = restore_last_energy(topic, "imported")
+                previous_state.imported = restore_last_energy(topic, "imported", component_type)
             if math.isnan(previous_state.exported):
                 log.error("exported is NaN. Reset simcount state.")
-                previous_state.exported = restore_last_energy(topic, "exported")
+                previous_state.exported = restore_last_energy(topic, "exported", component_type)
             control_interval = data_module.data.general_data.data.control_interval
             if 2 * control_interval < timestamp_present - previous_state.timestamp:
                 log.warning("Time difference between previous state and current state is too large. "
@@ -63,5 +64,5 @@ def sim_count(power_present: float, topic: str = "", data: SimCounterState = Non
                 previous_state.exported + exported
             )
             log.debug("imported: %g Wh, exported: %g Wh, new state: %s", imported, exported, current_state)
-            store.save(prefix, topic, current_state)
+            store.save(topic, current_state)
             return current_state

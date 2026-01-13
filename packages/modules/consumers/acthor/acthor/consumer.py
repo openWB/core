@@ -45,7 +45,7 @@ class ActhorConsumer(AbstractConsumer):
 
     def initializer(self):
         self.client = ModbusTcpClient_(self.config.configuration.ip_address, self.config.configuration.port)
-        self.sim_counter = SimCounter(self.config.id, self.config.id, prefix="bezug")
+        self.sim_counter = SimCounter(self.config.id, self.config.id, self.component_config.type)
         self.store = get_component_value_store(self.config.type, self.config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.config))
 

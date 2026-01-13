@@ -129,7 +129,7 @@ def test_calc_virtual(params: Params, monkeypatch):
     params.mock_data()
     purge = PurgeCounterState(delegate=Mock(delegate=Mock(num=0)),
                               add_child_values=True,
-                              simcounter=SimCounter(0, 0, prefix="bezug"))
+                              simcounter=SimCounter(0, 0, self.component_config.type))
     mock_comp_obj = Mock(side_effect=params.mock_comp)
     monkeypatch.setattr(_counter, "get_component_obj_by_id", mock_comp_obj)
 
