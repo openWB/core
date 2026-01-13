@@ -350,7 +350,7 @@
 			"acls": [
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/system/security/access/settings",
+					"topic": "openWB/system/security/access/Settings",
 					"priority": 0,
 					"allow": true
 				}
@@ -363,7 +363,7 @@
 			"acls": [
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/system/security/access/status",
+					"topic": "openWB/system/security/access/Status",
 					"priority": 0,
 					"allow": true
 				}
@@ -382,7 +382,7 @@
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/system/security/access/charge_log",
+					"topic": "openWB/system/security/access/ChargeLog",
 					"priority": 0,
 					"allow": true
 				},
@@ -419,7 +419,7 @@
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/system/security/access/chart",
+					"topic": "openWB/system/security/access/Chart",
 					"priority": 0,
 					"allow": true
 				},
@@ -438,6 +438,279 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/log/yearly/#",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "general-configuration-access",
+			"textname": "Zugang zu den allgemeinen Einstellungen",
+			"textdescription": "Erlaubt den Zugang zu den allgemeinen Einstellungen.",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/access/GeneralConfiguration",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "display-configuration-access",
+			"textname": "Zugang zu den Anzeige-Einstellungen",
+			"textdescription": "Erlaubt den Zugang zu den Anzeige-Einstellungen.",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/access/DisplayConfiguration",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "identification-configuration-access",
+			"textname": "Zugang zu den Identifikationseinstellungen",
+			"textdescription": "Erlaubt den Zugang zu den Identifikationseinstellungen.",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/access/IdentificationConfiguration",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "general-charge-configuration-access",
+			"textname": "Zugang zu den grundlegenden Lade-Einstellungen",
+			"textdescription": "Erlaubt den Zugang zu den grundlegenden Lade-Einstellungen.",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/access/GeneralChargeConfiguration",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "surplus-charge-configuration-access",
+			"textname": "Zugang zu den Einstellungen für PV-Überschussladen",
+			"textdescription": "Erlaubt den Zugang zu den Einstellungen für PV-Überschussladen.",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/access/SurplusChargeConfiguration",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "active-bat-control-configuration-access",
+			"textname": "Zugang zu den Einstellungen für die aktive Batteriesteuerung",
+			"textdescription": "Erlaubt den Zugang zu den Einstellungen für die aktive Batteriesteuerung.",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/access/ActiveBatControlConfiguration",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "hardware-installation-access",
+			"textname": "Zugang zu der Hardware-Installation",
+			"textdescription": "Erlaubt den Zugang zu der Hardware-Installation.",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/access/HardwareInstallation",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "load-management-configuration-access",
+			"textname": "Zugang zu den Einstellungen des Lastmanagements",
+			"textdescription": "Erlaubt den Zugang zu den Einstellungen des Lastmanagements.",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/access/LoadManagementConfiguration",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "charge-point-installation-access",
+			"textname": "Zugang zu der Ladepunkt-Installation",
+			"textdescription": "Erlaubt den Zugang zu der Ladepunkt-Installation.",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/access/ChargePointInstallation",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "vehicle-configuration-access",
+			"textname": "Zugang zu den Fahrzeugeinstellungen",
+			"textdescription": "Erlaubt den Zugang zu den Fahrzeugeinstellungen.",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/access/VehicleConfiguration",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "io-configuration-access",
+			"textname": "Zugang zu den IO-Einstellungen",
+			"textdescription": "Erlaubt den Zugang zu den IO-Einstellungen.",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/access/IOConfiguration",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "legacy-smart-home-configuration-access",
+			"textname": "Zugang zu den Einstellungen für Smart Home Geräte",
+			"textdescription": "Erlaubt den Zugang zu den Einstellungen für Smart Home Geräte.",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/access/LegacySmartHomeConfiguration",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "install-assistant-access",
+			"textname": "Zugang zum Installationsassistenten",
+			"textdescription": "Erlaubt den Zugang zum Installationsassistenten.",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/access/InstallAssistant",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "cloud-configuration-access",
+			"textname": "Zugang zu den Cloud-Einstellungen",
+			"textdescription": "Erlaubt den Zugang zu den Cloud-Einstellungen.",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/access/CloudConfiguration",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "mqtt-bridge-configuration-access",
+			"textname": "Zugang zu den Einstellungen für MQTT-Brücken",
+			"textdescription": "Erlaubt den Zugang zu den Einstellungen für MQTT-Brücken.",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/access/MQTTBridgeConfiguration",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "debug-configuration-access",
+			"textname": "Zugang zur Fehlersuche",
+			"textdescription": "Erlaubt den Zugang zur Fehlersuche.",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/access/DebugConfiguration",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "support-access",
+			"textname": "Zugang zum Support-Bereich",
+			"textdescription": "Erlaubt den Zugang zum Support-Bereich.",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/access/Support",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "data-management-configuration-access",
+			"textname": "Zugang zur Datenverwaltung",
+			"textdescription": "Erlaubt den Zugang zur Datenverwaltung.",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/access/DataManagementConfiguration",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "security-configuration-access",
+			"textname": "Zugang zu den Sicherheitseinstellungen",
+			"textdescription": "Erlaubt den Zugang zu den Sicherheitseinstellungen.",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/access/SecurityConfiguration",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "system-configuration-access",
+			"textname": "Zugang zu den Systemeinstellungen",
+			"textdescription": "Erlaubt den Zugang zu den Systemeinstellungen.",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/access/SystemConfiguration",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "legal-settings-access",
+			"textname": "Zugang zu den rechtlichen Einstellungen",
+			"textdescription": "Erlaubt den Zugang zu den rechtlichen Einstellungen.",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/access/LegalSettings",
 					"priority": 0,
 					"allow": true
 				}
