@@ -93,7 +93,7 @@ export const useMqttStore = defineStore('mqtt', () => {
           $q.notify({
             type: 'warning',
             message:
-              'Es werden die Standardzugangsdaten verwendet! Bitte ändern Sie diese aus Sicherheitsgründen.',
+              'Es werden die Standardzugangsdaten verwendet! Bitte ändere diese aus Sicherheitsgründen.',
             closeBtn: 'Ok',
             timeout: 0,
             progress: false,
