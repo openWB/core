@@ -478,6 +478,7 @@ class CounterAll:
             check_and_add(ComponentType.BAT, data.data.bat_data)
             check_and_add(ComponentType.CHARGEPOINT, data.data.cp_data)
             check_and_add(ComponentType.INVERTER, data.data.pv_data)
+            check_and_add(ComponentType.CONSUMER, data.data.consumer_data)
         except TypeError:
             pub_system_message({}, ("Es konnte kein Zähler gefunden werden, der als EVU-Zähler an die Spitze des "
                                "Lastmanagements gesetzt werden kann. Bitte zuerst einen EVU-Zähler hinzufügen."),

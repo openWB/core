@@ -3,6 +3,7 @@ import logging
 from modules.common.abstract_consumer import AbstractConsumer
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.configurable_consumer import ConfigurableConsumer
+from modules.common.fault_state import ComponentInfo, FaultState
 from modules.consumers.generic.counter.config import CounterConfiguration, Counter
 
 log = logging.getLogger(__name__)
@@ -11,6 +12,9 @@ log = logging.getLogger(__name__)
 class CounterConsumer(AbstractConsumer):
     def __init__(self, config: Counter) -> None:
         self.config = config
+
+    def initializer(self):
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.config))
 
 
 def create_consumer(config: CounterConfiguration):

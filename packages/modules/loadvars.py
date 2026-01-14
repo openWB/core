@@ -69,7 +69,7 @@ class Loadvars:
                         name=f"set values consumer{consumer.num}_extra_meter_device"))
                 else:
                     modules_threads.append(Thread(target=consumer.module.update,
-                                                  args=(), name=f"set values consumer{consumer.module.config.id}"))
+                                                  args=(), name=f"set values consumer{consumer.data.module.id}"))
             except Exception:
                 log.exception(f"Fehler im loadvars-Modul bei Element {consumer.num}")
         return joined_thread_handler(modules_threads, data.data.general_data.data.control_interval/3)
