@@ -1,24 +1,11 @@
 #!/usr/bin/env python3
-import logging
-from modules.common.abstract_consumer import AbstractConsumer
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.configurable_consumer import ConfigurableConsumer
-from modules.common.fault_state import ComponentInfo, FaultState
-from modules.consumers.generic.counter.config import CounterConfiguration, Counter
-
-log = logging.getLogger(__name__)
+from modules.consumers.generic.counter.config import Counter
 
 
-class CounterConsumer(AbstractConsumer):
-    def __init__(self, config: Counter) -> None:
-        self.config = config
-
-    def initializer(self):
-        self.fault_state = FaultState(ComponentInfo.from_component_config(self.config))
-
-
-def create_consumer(config: CounterConfiguration):
-    return ConfigurableConsumer(CounterConsumer(config))
+def create_consumer(config: Counter):
+    return ConfigurableConsumer(consumer_config=config)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=Counter)

@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
 from enum import IntEnum
 import logging
-from modules.common.abstract_consumer import AbstractConsumer
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
 from modules.common.configurable_consumer import ConfigurableConsumer
-from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount._simcounter import SimCounterConsumer
-from modules.common.store._factory import get_component_value_store
-from modules.consumers.acthor.acthor.config import ActhorConfiguration, Acthor
+from modules.consumers.acthor.acthor.config import Acthor
 
 log = logging.getLogger(__name__)
 
@@ -22,56 +19,56 @@ class Register(IntEnum):
     STATUS = 1003
 
 
-class ActhorConsumer(AbstractConsumer):
-    FACTORS = {"9s45": 45000,
-               "9s27": 27000,
-               "9s18": 18000,
-               "9s": 9000,
-               "M3": 6000,
-               "E2M1": 3500,
-               "E2M3": 6500,
-               "M1": 3000}
-    REG_MAPPING = (
-        (Register.POWER, [ModbusDataType.INT_16]),
-        (Register.TEMP0, [ModbusDataType.INT_16]),
-        (Register.TEMP1, [ModbusDataType.INT_16]),
-        (Register.TEMP2, [ModbusDataType.INT_16]),
-        (Register.STATUS, ModbusDataType.INT_16),
-    )
+FACTORS = {"9s45": 45000,
+           "9s27": 27000,
+           "9s18": 18000,
+           "9s": 9000,
+           "M3": 6000,
+           "E2M1": 3500,
+           "E2M3": 6500,
+           "M1": 3000}
+REG_MAPPING = (
+    (Register.POWER, [ModbusDataType.INT_16]),
+    (Register.TEMP0, [ModbusDataType.INT_16]),
+    (Register.TEMP1, [ModbusDataType.INT_16]),
+    (Register.TEMP2, [ModbusDataType.INT_16]),
+    (Register.STATUS, ModbusDataType.INT_16),
+)
 
-    def __init__(self, config: Acthor) -> None:
-        self.config = config
+
+def create_consumer(config: Acthor):
+    client = None
+    sim_counter = None
 
     def initializer(self):
-        self.client = ModbusTcpClient_(self.config.configuration.ip_address, self.config.configuration.port)
-        self.sim_counter = SimCounterConsumer(self.config.id, self.config.type)
-        self.store = get_component_value_store(self.config.type, self.config.id)
-        self.fault_state = FaultState(ComponentInfo.from_component_config(self.config))
+        nonlocal client, sim_counter
+        client = ModbusTcpClient_(config.configuration.ip_address, config.configuration.port)
+        sim_counter = SimCounterConsumer(config.id, config.type)
 
-    def error_handler(self) -> None:
-        self.initializer()
+    def error_handler() -> None:
+        initializer()
 
-    def update(self) -> None:
-        resp = self.client.read_holding_registers_bulk(
-            Register.POWER, 35, mapping=self.REG_MAPPING, unit=self.config.configuration.modbus_id)
+    def update() -> ConsumerState:
+        nonlocal client, sim_counter
+        resp = client.read_holding_registers_bulk(
+            Register.POWER, 35, mapping=REG_MAPPING, unit=config.configuration.modbus_id)
         power = resp[Register.POWER] * \
-            self.FACTORS.get(self.config.configuration.model, 9000)/self.config.configuration.max_power
-        imported, exported = self.sim_counter.sim_count(power)
-        counter_state = ConsumerState(
+            FACTORS.get(config.configuration.model, 9000)/config.configuration.max_power
+        imported, exported = sim_counter.sim_count(power)
+        return ConsumerState(
             power=power,
             imported=imported,
             exported=exported,
             temperatures=[resp[Register.TEMP0]/10, resp[Register.TEMP1]/10, resp[Register.TEMP2]/10]
         )
 
-        self.store.set(counter_state)
-
-    def set_limit(self, power_limit: float) -> None:
-        self.client.write_registers(1000, power_limit, unit=self.config.configuration.modbus_id)
-
-
-def create_consumer(config: ActhorConfiguration):
-    return ConfigurableConsumer(ActhorConsumer(config))
+    def set_limit(power_limit: float) -> None:
+        client.write_registers(1000, power_limit, unit=config.configuration.modbus_id)
+    return ConfigurableConsumer(consumer_config=config,
+                                initializer=initializer,
+                                error_handler=error_handler,
+                                update=update,
+                                set_power_limit=set_limit,)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=Acthor)
