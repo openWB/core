@@ -60,6 +60,18 @@ class Loadvars:
                                        args=(), name=f"set values cp{cp.chargepoint_module.config.id}"))
             except Exception:
                 log.exception(f"Fehler im loadvars-Modul bei Element {cp.num}")
+        for consumer in data.data.consumer_data.values():
+            try:
+                if consumer.extra_meter is not None:
+                    modules_threads.append(Thread(
+                        target=consumer.extra_meter.update,
+                        args=(),
+                        name=f"set values consumer{consumer.num}_extra_meter_device"))
+                else:
+                    modules_threads.append(Thread(target=consumer.module.update,
+                                                  args=(), name=f"set values consumer{consumer.module.config.id}"))
+            except Exception:
+                log.exception(f"Fehler im loadvars-Modul bei Element {consumer.num}")
         return joined_thread_handler(modules_threads, data.data.general_data.data.control_interval/3)
 
     def _update_values_of_level_buttom_top(self, elements, not_finished_threads: List[str]) -> None:

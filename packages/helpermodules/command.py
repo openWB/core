@@ -95,7 +95,7 @@ class Command:
                     for topic, payload in received_topics.items():
                         try:
                             if max_id_type == "nested payload":
-                                if re.search(topic_str, topic) is not None:
+                                if re.search(topic_str, topic) is not None and payload is not None:
                                     extractor = plan_extractors.get(id_topic)
                                     for plan in extractor(payload):
                                         try:
@@ -680,7 +680,6 @@ class Command:
                                             "modules")
         component_default = dataclass_utils.asdict(component.component_descriptor.configuration_factory())
         component_default["id"] = payload["data"]["consumer_id"]
-        component_default["type"] = f"consumer_{component_default['type']}"
         Pub().pub(f'openWB/set/consumer/{component_default["id"]}/extra_meter/device/component/config',
                   component_default)
         pub_user_message(
@@ -1033,17 +1032,28 @@ class Command:
         consumer_default["id"] = new_id
         Pub().pub(f'openWB/set/consumer/{new_id}/module', consumer_default)
         Pub().pub(f"openWB/set/consumer/{new_id}/config", dataclass_utils.asdict(ConsumerConfig()))
-        Pub().pub(f"openWB/set/consumer/{new_id}/extra_meter", {
-            "value": None,
-            "text": "- keine separate Leistungsmessung -",
-            "defaults": {
-                "type": None,
-                "configuration": {}
-            }
-        })
+        Pub().pub(f"openWB/set/consumer/{new_id}/extra_meter/device/config", None)
+        Pub().pub(f"openWB/set/consumer/{new_id}/extra_meter/device/component/config", None)
         Pub().pub(f"openWB/set/consumer/{new_id}/usage", None)
-        self.max_id_hierarchy = self.max_id_hierarchy + 1
-        Pub().pub("openWB/set/command/max_id/hierarchy", self.max_id_hierarchy)
+        self.max_id_hierarchy = new_id
+        Pub().pub("openWB/set/command/max_id/hierarchy", new_id)
+        try:
+            evu_counter = SubData.counter_all_data.get_id_evu_counter()
+            SubData.counter_all_data.hierarchy_add_item_below(
+                new_id, ComponentType.CONSUMER, evu_counter)
+            Pub().pub("openWB/set/counter/get/hierarchy", SubData.counter_all_data.data.get.hierarchy)
+        except (TypeError, IndexError):
+            pub_user_message(payload, connection_id,
+                             "Bitte zuerst einen EVU-Zähler konfigurieren oder in den Steuerungsmodus 'secondary' "
+                             "umschalten.",
+                             MessageType.ERROR)
+        try:
+            SubData.counter_all_data.loadmanagement_prios_add_item(new_id, ComponentType.CONSUMER)
+            Pub().pub("openWB/set/counter/get/loadmanagement_prios", SubData.counter_all_data.data.get.loadmanagement_prios)
+        except (TypeError, IndexError) as e:
+            pub_user_message(payload, connection_id,
+                             str(e),
+                             MessageType.ERROR)
         pub_user_message(
             payload, connection_id,
             f'Neues Gerät vom Typ \'{payload["data"]["type"]}\' mit ID \'{new_id}\' hinzugefügt.',

@@ -4,7 +4,10 @@ from typing import TypeVar, Generic, Any
 from helpermodules import timecheck
 from helpermodules.pub import Pub
 from modules.common.abstract_consumer import AbstractConsumer
+from modules.common.abstract_device import AbstractCounter
 from modules.common.component_context import SingleComponentUpdateContext
+from modules.common.component_type import ComponentType
+from modules.common.store._factory import get_component_value_store
 
 T_CONSUMER = TypeVar("T_CONSUMER")
 
@@ -55,3 +58,9 @@ class ConfigurableConsumer(Generic[T_CONSUMER], AbstractConsumer):
     def switch_off(self) -> None:
         with SingleComponentUpdateContext(self.__consumer.fault_state):
             self.__consumer.switch_off()
+
+
+def dependency_injection_devices_components(component: AbstractCounter):
+    component.sim_counter.component_type = ComponentType.CONSUMER.value
+    component.store = get_component_value_store(ComponentType.CONSUMER, component.component_config.id)
+    component.fault_state.component_info.type = ComponentType.CONSUMER.value

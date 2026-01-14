@@ -12,10 +12,10 @@ def get_component_value_store(component_type: str,
                               add_child_values: bool = False,
                               simcounter: Optional[SimCounter] = None):
     if component_type == ComponentType.BAT.value:
-        return get_bat_value_store(component_num, add_child_values)
+        return get_bat_value_store(component_num)
     elif component_type == ComponentType.CONSUMER.value:
-        return get_consumer_value_store(component_num, add_child_values)
+        return get_consumer_value_store(component_num)
     elif component_type == ComponentType.COUNTER.value:
         return get_counter_value_store(component_num, add_child_values, simcounter)
     elif component_type == ComponentType.INVERTER.value:
-        return get_inverter_value_store(component_num, add_child_values)
+        return get_inverter_value_store(component_num)

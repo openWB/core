@@ -1,6 +1,6 @@
 import inspect
 import logging
-from typing import TypeVar, Generic, Dict, Any, Callable, Iterable, List
+from typing import Optional, TypeVar, Generic, Dict, Any, Callable, Iterable, List
 
 from dataclass_utils import dataclass_from_dict
 from helpermodules import timecheck
@@ -107,13 +107,15 @@ class ConfigurableDevice(Generic[T_COMPONENT, T_DEVICE_CONFIG, T_COMPONENT_CONFI
             self.error_timestamp = None
             Pub().pub(error_timestamp_topic, self.error_timestamp)
 
-    def add_component(self, component_config: T_COMPONENT_CONFIG) -> None:
+    def add_component(self, component_config: T_COMPONENT_CONFIG, component_dependency_injection: Optional[Callable] = None) -> None:
         with SingleComponentUpdateContext(FaultState(ComponentInfo.from_component_config(component_config))):
             component = self.__component_factory(component_config)
             component.initialized = False
             self.components["component" + str(component_config.id)] = component
             component.initialize()
             component.initialized = True
+            if component_dependency_injection is not None:
+                component_dependency_injection(component)
 
     def update(self):
         initialized_components = []

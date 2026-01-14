@@ -1197,15 +1197,29 @@ class SetData:
         try:
             if (re.search("openWB/set/consumer/[0-9]+/module$", msg.topic) is not None or
                 re.search("openWB/set/consumer/[0-9]+/config$", msg.topic) is not None or
-                    re.search("openWB/set/consumer/[0-9]+/extra_meter$", msg.topic) is not None or
+                    re.search("openWB/set/consumer/[0-9]+/extra_meter/device/config$", msg.topic) is not None or
+                    re.search("openWB/set/consumer/[0-9]+/extra_meter/device/component/config$", msg.topic) is not None or
                     re.search("openWB/set/consumer/[0-9]+/usage$", msg.topic) is not None):
                 self._validate_value(msg, "json")
-            elif "openWB/set/consumer/get/power" in msg.topic:
+            elif (re.search("openWB/set/consumer/[0-9]+/get/power", msg.topic) is not None or
+                  re.search("openWB/set/consumer/[0-9]+/get/set_power", msg.topic) is not None):
                 self._validate_value(msg, float)
-            elif "openWB/set/consumer/get/fault_state" in msg.topic:
+            elif (re.search("openWB/set/consumer/[0-9]+/get/currents", msg.topic) is not None or
+                  re.search("openWB/set/consumer/[0-9]+/get/voltages", msg.topic) is not None or
+                  re.search("openWB/set/consumer/[0-9]+/get/powers", msg.topic) is not None or
+                  re.search("openWB/set/consumer/[0-9]+/get/temperatures", msg.topic) is not None):
+                self._validate_value(msg, float, collection=list)
+            elif (re.search("openWB/set/consumer/[0-9]+/get/imported", msg.topic) is not None or
+                  re.search("openWB/set/consumer/[0-9]+/get/exported", msg.topic) is not None or
+                  re.search("openWB/set/consumer/[0-9]+/get/daily_imported", msg.topic) is not None or
+                  re.search("openWB/set/consumer/[0-9]+/get/daily_exported", msg.topic) is not None):
+                self._validate_value(msg, float, [(0, float("inf"))])
+            elif re.search("openWB/set/consumer/[0-9]+/get/fault_state", msg.topic) is not None:
                 self._validate_value(msg, int, [(0, 2)])
-            elif "openWB/set/consumer/get/fault_str" in msg.topic:
+            elif re.search("openWB/set/consumer/[0-9]+/get/fault_str", msg.topic) is not None:
                 self._validate_value(msg, str)
+            elif re.search("openWB/set/consumer/[0-9]+/get/state", msg.topic) is not None:
+                self._validate_value(msg, bool)
             else:
                 self.__unknown_topic(msg)
         except Exception:

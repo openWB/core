@@ -6,9 +6,10 @@ from modules.common.simcount.simcounter_state import SimCounterState
 
 
 class SimCounter:
-    def __init__(self, device_id: int, component_id: int, component_type: ComponentType):
+    def __init__(self, device_id: int, component_id: int, component_type: str):
         self.topic = "openWB/set/system/device/{}/component/{}/".format(device_id, component_id)
-        self.component_type = special_to_general_type_mapping(component_type.value)
+        self.component_type = special_to_general_type_mapping(
+            component_type.value if isinstance(component_type, ComponentType) else component_type)
         self.data: Optional[SimCounterState] = None
 
     def sim_count(self, power: float, dc_power: Optional[float] = None) -> Tuple[float, float]:

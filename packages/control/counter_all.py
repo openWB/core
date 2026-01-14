@@ -485,10 +485,11 @@ class CounterAll:
 
     # Lastmanagement-Prioritäten
     def loadmanagement_prios_add_item(self, new_id: int, new_type: ComponentType) -> None:
-        if new_type == ComponentType.VEHICLE:
+        if new_type == ComponentType.VEHICLE or new_type == ComponentType.CONSUMER:
             self.data.get.loadmanagement_prios.append({"id": new_id, "type": new_type.value})
         else:
-            raise ValueError("Derzeit können nur Fahrzeuge zu den Lastmanagement-Prioritäten hinzugefügt werden.")
+            raise ValueError(
+                "Derzeit können nur Fahrzeuge und Verbraucher zu den Lastmanagement-Prioritäten hinzugefügt werden.")
 
     def loadmanagement_prios_remove_item(self, id: int) -> None:
         for item in self.data.get.loadmanagement_prios:

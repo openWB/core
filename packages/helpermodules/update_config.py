@@ -174,7 +174,10 @@ class UpdateConfig:
 
         "^openWB/consumer/[0-9]+/module$",
         "^openWB/consumer/[0-9]+/config$",
-        "^openWB/consumer/[0-9]+/extra_meter$",
+        "^openWB/consumer/[0-9]+/extra_meter/device/config$",
+        "^openWB/consumer/[0-9]+/extra_meter/device/error_timestamp$",
+        "^openWB/consumer/[0-9]+/extra_meter/device/component/config$",
+        "^openWB/consumer/[0-9]+/extra_meter/device/component/simulation$",
         "^openWB/consumer/[0-9]+/usage$",
 
         "^openWB/counter/config/consider_less_charging$",
@@ -531,7 +534,7 @@ class UpdateConfig:
         ("openWB/chargepoint/get/power", 0),
         ("openWB/chargepoint/template/0", get_chargepoint_template_default()),
         ("openWB/counter/get/hierarchy", []),
-        ("openWB/counter/get/loadmanagement_prios", ["ev0"]),
+        ("openWB/counter/get/loadmanagement_prios", [{"id": 0, "type": "vehicle"}]),
         ("openWB/counter/config/consider_less_charging", counter_all.Config().consider_less_charging),
         ("openWB/counter/config/home_consumption_source_id", counter_all.Config().home_consumption_source_id),
         ("openWB/vehicle/0/name", "Standard-Fahrzeug"),

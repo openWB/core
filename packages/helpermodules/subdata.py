@@ -31,6 +31,7 @@ from helpermodules.pub import Pub
 from dataclass_utils import asdict, dataclass_from_dict
 from modules.common.abstract_vehicle import CalculatedSocState, GeneralVehicleConfig
 from modules.common.configurable_backup_cloud import ConfigurableBackupCloud
+from modules.common.configurable_consumer import dependency_injection_devices_components
 from modules.common.configurable_tariff import ConfigurableFlexibleTariff, ConfigurableGridFee
 from modules.common.simcount.simcounter_state import SimCounterState
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
@@ -1077,20 +1078,52 @@ class SubData:
                     var["consumer"+index].data.module = config
             elif re.search("openWB/consumer/[0-9]+/config", msg.topic) is not None:
                 self.set_json_payload_class(var["consumer"+index].data.config, msg)
-            elif re.search("openWB/consumer/[0-9]+/extra_meter", msg.topic) is not None:
+            elif re.search("openWB/consumer/[0-9]+/extra_meter/device/config", msg.topic) is not None:
                 device_config = decode_payload(msg.payload)
-                var["consumer"+index].data.extra_meter = device_config
-                if device_config["value"] is not None:
+                if device_config is not None:
                     dev = importlib.import_module(f".devices.{device_config['vendor']}.{device_config['type']}.device",
                                                   "modules")
                     config = dataclass_from_dict(dev.device_descriptor.configuration_factory, device_config)
-                    var["consumer"+index].data.extra_meter = config
+                    var["consumer"+index].data.extra_meter.device = config
                     var["consumer"+index].extra_meter = (dev.Device if hasattr(dev, "Device")
                                                          else dev.create_device)(config)
                     # Durch das erneute Subscribe werden die Komponenten mit dem aktualisierten TCP-Client angelegt.
-                    client.subscribe(f"openWB/consumer/{index}/component/+/config", 2)
+                    client.subscribe(f"openWB/consumer/{index}/device/component/config", 2)
                 else:
-                    var["consumer"+index].data.extra_meter = device_config
+                    var["consumer"+index].data.extra_meter.device = device_config
+            elif re.search("openWB/consumer/[0-9]+/extra_meter/device/component/config", msg.topic) is not None:
+                index = get_index(msg.topic)
+                if decode_payload(msg.payload) == "":
+                    if f"component{index}" in var[f"consumer{index}"].extra_meter.components:
+                        var["consumer"+index].extra_meter.components.pop(f"component{index}")
+                        Pub().pub(f"openWB/consumer/{index}/extra_meter/device/component/config", "")
+                else:
+                    # Es darf nicht einfach data["config"] aktualisiert werden, da in der __init__ auch die
+                    # TCP-Verbindung aufgebaut wird, deren IP dann nicht aktualisiert werden würde.
+                    component_config = decode_payload(msg.payload)
+                    if component_config is not None:
+                        component = importlib.import_module(f'.devices.{var["consumer"+index].data.extra_meter.device.vendor}'
+                                                            f'.{var["consumer"+index].data.extra_meter.device.type}'
+                                                            f'.{component_config["type"].replace("consumer_", "")}',
+                                                            "modules")
+                        config = dataclass_from_dict(
+                            component.component_descriptor.configuration_factory, component_config)
+                        var["consumer"+index].extra_meter.add_component(config, dependency_injection_devices_components)
+                        var["consumer"+index].data.extra_meter.component = config
+                        client.subscribe(f"openWB/consumer/{index}/extra_meter/device/component/simulation", 2)
+                        self.processing_counter.add_task()
+                        Pub().pub("openWB/system/subdata_initialized", True)
+                    else:
+                        var["consumer"+index].data.extra_meter.component = component_config
+            elif re.search("openWB/consumer/[0-9]+/extra_meter/device/component/simulation", msg.topic) is not None:
+                index = get_index(msg.topic)
+                index_second = get_second_index(msg.topic)
+                var["consumer"+index].extra_meter.components["component"+index_second].sim_counter.data = dataclass_from_dict(
+                    SimCounterState,
+                    decode_payload(msg.payload))
+            elif re.search("^.+/device/[0-9]+/error_timestamp$", msg.topic) is not None:
+                index = get_index(msg.topic)
+                var["consumer"+index].extra_meter.error_timestamp = decode_payload(msg.payload)
             elif re.search("openWB/consumer/[0-9]+/usage", msg.topic) is not None:
                 self.set_json_payload_class(var["consumer"+index].data.usage, msg)
         except Exception:

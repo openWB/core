@@ -5,7 +5,6 @@ from control.consumer.usage import ConsumerUsage
 from dataclass_utils.factories import empty_list_factory
 from helpermodules.abstract_plans import ContinuousConsumerPlan, SuspendableConsumerPlan
 from helpermodules.constants import NO_ERROR
-from modules.common.abstract_device import AbstractDevice
 from modules.common.consumer_setup import ConsumerSetup
 
 
@@ -125,10 +124,20 @@ def set_factory() -> Set:
 
 
 @dataclass
+class ExtraMeterConfig:
+    device: Optional[Dict] = None
+    component: Optional[Dict] = None
+
+
+def extra_meter_config_factory() -> ExtraMeterConfig:
+    return ExtraMeterConfig()
+
+
+@dataclass
 class ConsumerData:
     module: ConsumerSetup = None
     config: ConsumerConfig = field(default_factory=consumer_config_factory)
-    extra_meter: AbstractDevice = None
+    extra_meter: ExtraMeterConfig = field(default_factory=extra_meter_config_factory)
     usage: Union[MeterOnlyConfig, SuspendableTunableDeviceConfig,
                  SuspendableOnOffDeviceConfig, ContinuousDeviceConfig] = None
     control_parameter: ControlParameter = field(default_factory=control_parameter_factory)
