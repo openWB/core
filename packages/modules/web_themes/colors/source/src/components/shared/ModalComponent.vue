@@ -48,7 +48,7 @@ onMounted(() => {
 
 <style scoped>
 .modal {
-	opacity: 1.0;
+	opacity: 1;
 }
 .modal-dialog {
 	border-radius: 2px;
