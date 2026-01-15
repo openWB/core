@@ -11,10 +11,10 @@
 			"textname": "Administrator",
 			"roles": [
 				{
-					"rolename": "dynsec_admin"
+					"rolename": "dynsec-admin"
 				},
 				{
-					"rolename": "full_access"
+					"rolename": "full-access"
 				}
 			],
 			"password": "Yamo/Sa9TbMaYSGBPtJCglEuGFrY5CWQrToXwqUhRPOkcepwUoMgoFqaFpkhoKxpEc+Q5KofojN61BZrB9DBQQ==",
@@ -234,7 +234,7 @@
 			]
 		},
 		{
-			"rolename": "dynsec_admin",
+			"rolename": "dynsec-admin",
 			"textname": "Dynamic Security Administrator",
 			"textdescription": "Voller Zugriff auf die Dynamic Security Funktionen des Mosquitto Brokers. Wird für die Bearbeitung der Benutzer, Gruppen und Rollen benötigt.",
 			"acls": [
@@ -289,7 +289,7 @@
 			]
 		},
 		{
-			"rolename": "full_access",
+			"rolename": "full-access",
 			"textname": "Voller Zugriff",
 			"textdescription": "Erlaubt das Senden und Empfangen aller Nachrichten. Identisch mit dem Zugriff ohne aktivierte Benutzerverwaltung.",
 			"acls": [
@@ -346,7 +346,7 @@
 		{
 			"rolename": "settings-access",
 			"textname": "Zugang zu den Einstellungen",
-			"textdescription": "Erlaubt den Zugang zu den Einstellungen. Für weitere Optionen werden noch zusätzliche Rechte benötigt!",
+			"textdescription": "Erlaubt den Zugang zu den Einstellungen. Für weitere Optionen werden noch zusätzliche Rollen benötigt!",
 			"acls": [
 				{
 					"acltype": "publishClientReceive",
@@ -449,8 +449,122 @@
 			"textdescription": "Erlaubt den Zugang zu den allgemeinen Einstellungen.",
 			"acls": [
 				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/charge_log_data_config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/control_interval",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/extern",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/grid_protection_configured",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/http_api",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/modbus_control",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/range_unit",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/temporary_charge_templates_active",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/web_theme",
+					"priority": 0,
+					"allow": true
+				},
+				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/access/GeneralConfiguration",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/charge_log_data_config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/control_interval",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/extern",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/grid_protection_configured",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/http_api",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/modbus_control",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/range_unit",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/temporary_charge_templates_active",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/web_theme",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/configurable/web_themes",
 					"priority": 0,
 					"allow": true
 				}
@@ -462,8 +576,92 @@
 			"textdescription": "Erlaubt den Zugang zu den Anzeige-Einstellungen.",
 			"acls": [
 				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/optional/int_display/active",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/optional/int_display/on_if_plugged_in",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/optional/int_display/only_local_charge_points",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/optional/int_display/rotation",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/optional/int_display/standby",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/optional/int_display/theme",
+					"priority": 0,
+					"allow": true
+				},
+				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/access/DisplayConfiguration",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/extern",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/int_display/active",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/int_display/on_if_plugged_in",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/int_display/only_local_charge_points",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/int_display/rotation",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/int_display/standby",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/int_display/theme",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/configurable/display_themes",
 					"priority": 0,
 					"allow": true
 				}
@@ -475,8 +673,98 @@
 			"textdescription": "Erlaubt den Zugang zu den Identifikationseinstellungen.",
 			"acls": [
 				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/optional/rfid/active",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/chargepoint/template/+",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/vehicle/+/tag_id",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/vehicle/template/charge_template/+",
+					"priority": 0,
+					"allow": true
+				},
+				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/access/IdentificationConfiguration",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/chargepoint/+/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/chargepoint/+/get/rfid",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/chargepoint/+/get/vehicle_id",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/chargepoint/+/get/rfid_timestamp",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/chargepoint/+/set/rfid",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/rfid/active",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/chargepoint/template/+",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/vehicle/template/charge_template/+",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/vehicle/+/name",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/vehicle/+/charge_template",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/vehicle/+/tag_id",
 					"priority": 0,
 					"allow": true
 				}
@@ -488,8 +776,116 @@
 			"textdescription": "Erlaubt den Zugang zu den grundlegenden Lade-Einstellungen.",
 			"acls": [
 				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/chargemode_config/unbalanced_load",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/chargemode_config/unbalanced_load_limit",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/prices/bat",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/prices/grid",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/prices/pv",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/optional/ep/flexible_tariff/provider",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/optional/ep/grid_fee/provider",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/optional/ocpp/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/access/GeneralChargeConfiguration",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/chargemode_config/unbalanced_load",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/chargemode_config/unbalanced_load_limit",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/prices/bat",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/prices/grid",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/prices/pv",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/ep/flexible_tariff/provider",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/ep/grid_fee/provider",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/ocpp/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/configurable/flexible_tariffs",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/configurable/grid_fees",
 					"priority": 0,
 					"allow": true
 				}
@@ -501,8 +897,116 @@
 			"textdescription": "Erlaubt den Zugang zu den Einstellungen für PV-Überschussladen.",
 			"acls": [
 				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/chargemode_config/pv_charging/control_range",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/chargemode_config/pv_charging/feed_in_yield",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/chargemode_config/pv_charging/phase_switch_delay",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/chargemode_config/pv_charging/switch_on_threshold",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/chargemode_config/pv_charging/retry_failed_phase_switches",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/chargemode_config/pv_charging/switch_on_delay",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/chargemode_config/pv_charging/switch_off_threshold",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/chargemode_config/pv_charging/switch_off_delay",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/chargemode_config/pv_charging/phases_to_use",
+					"priority": 0,
+					"allow": true
+				},
+				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/access/SurplusChargeConfiguration",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/chargemode_config/pv_charging/control_range",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/chargemode_config/pv_charging/feed_in_yield",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/chargemode_config/pv_charging/phase_switch_delay",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/chargemode_config/pv_charging/switch_on_threshold",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/chargemode_config/pv_charging/retry_failed_phase_switches",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/chargemode_config/pv_charging/switch_on_delay",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/chargemode_config/pv_charging/switch_off_threshold",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/chargemode_config/pv_charging/switch_off_delay",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/chargemode_config/pv_charging/phases_to_use",
 					"priority": 0,
 					"allow": true
 				}
@@ -514,8 +1018,122 @@
 			"textdescription": "Erlaubt den Zugang zu den Einstellungen für die aktive Batteriesteuerung.",
 			"acls": [
 				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/chargemode_config/pv_charging/bat_mode",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/chargemode_config/pv_charging/bat_power_reserve",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/chargemode_config/pv_charging/bat_power_reserve_active",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/chargemode_config/pv_charging/bat_power_discharge",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/chargemode_config/pv_charging/bat_power_discharge_active",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/chargemode_config/pv_charging/min_bat_soc",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/chargemode_config/pv_charging/max_bat_soc",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/bat/config/bat_control_permitted",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/bat/config/power_limit_mode",
+					"priority": 0,
+					"allow": true
+				},
+				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/access/ActiveBatControlConfiguration",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/chargemode_config/pv_charging/bat_mode",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/chargemode_config/pv_charging/bat_power_reserve",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/chargemode_config/pv_charging/bat_power_reserve_active",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/chargemode_config/pv_charging/bat_power_discharge",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/chargemode_config/pv_charging/bat_power_discharge_active",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/chargemode_config/pv_charging/min_bat_soc",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/chargemode_config/pv_charging/max_bat_soc",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/bat/config/bat_control_permitted",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/bat/get/power_limit_controllable",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/bat/config/power_limit_mode",
 					"priority": 0,
 					"allow": true
 				}
@@ -527,8 +1145,38 @@
 			"textdescription": "Erlaubt den Zugang zu der Hardware-Installation.",
 			"acls": [
 				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/system/device/+/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/system/device/+/component/+/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/access/HardwareInstallation",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/device/+/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/device/+/component/+/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/configurable/devices_components",
 					"priority": 0,
 					"allow": true
 				}
@@ -540,8 +1188,104 @@
 			"textdescription": "Erlaubt den Zugang zu den Einstellungen des Lastmanagements.",
 			"acls": [
 				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/counter/config/home_consumption_source_id",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/counter/config/consider_less_charging",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/counter/get/hierarchy",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/counter/+/config/max_power_errorcase",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/counter/+/config/max_currents",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/counter/+/config/max_total_power",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/pv/+/config/max_ac_out",
+					"priority": 0,
+					"allow": true
+				},
+				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/access/LoadManagementConfiguration",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/counter/config/home_consumption_source_id",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/counter/config/consider_less_charging",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/counter/get/hierarchy",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/device/+/component/+/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/counter/+/config/max_power_errorcase",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/counter/+/config/max_currents",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/counter/+/config/max_total_power",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/pv/+/config/max_ac_out",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/chargepoint/+/config",
 					"priority": 0,
 					"allow": true
 				}
@@ -553,8 +1297,62 @@
 			"textdescription": "Erlaubt den Zugang zu der Ladepunkt-Installation.",
 			"acls": [
 				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/chargepoint/+/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/chargepoint/template/+",
+					"priority": 0,
+					"allow": true
+				},
+				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/access/ChargePointInstallation",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/dc_charging",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/ocpp/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/rfid/active",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/chargepoint/+/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/chargepoint/template/+",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/configurable/chargepoints",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/configurable/chargepoints_internal",
 					"priority": 0,
 					"allow": true
 				}
@@ -566,8 +1364,140 @@
 			"textdescription": "Erlaubt den Zugang zu den Fahrzeugeinstellungen.",
 			"acls": [
 				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/vehicle/template/ev_template/+",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/vehicle/template/charge_template/+",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/vehicle/+/name",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/vehicle/+/info",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/vehicle/+/charge_template",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/vehicle/+/ev_template",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/vehicle/+/tag_id",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/vehicle/+/soc_module/general_config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/vehicle/+/soc_module/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/access/VehicleConfiguration",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/dc_charging",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/ep/flexible_tariff/provider",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/rfid/active",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/vehicle/template/ev_template/+",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/vehicle/template/charge_template/+",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/vehicle/+/name",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/vehicle/+/info",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/vehicle/+/charge_template",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/vehicle/+/ev_template",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/vehicle/+/tag_id",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/vehicle/+/soc_module/general_config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/vehicle/+/soc_module/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/configurable/soc_modules",
 					"priority": 0,
 					"allow": true
 				}
@@ -579,8 +1509,56 @@
 			"textdescription": "Erlaubt den Zugang zu den IO-Einstellungen.",
 			"acls": [
 				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/system/io/+/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/io/action/+/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/access/IOConfiguration",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/io/+/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/io/action/+/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/chargepoint/+/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/device/+/component/+/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/configurable/io_devices",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/configurable/io_actions",
 					"priority": 0,
 					"allow": true
 				}
@@ -592,8 +1570,26 @@
 			"textdescription": "Erlaubt den Zugang zu den Einstellungen für Smart Home Geräte.",
 			"acls": [
 				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/LegacySmartHome/config/get/+",
+					"priority": 0,
+					"allow": true
+				},
+				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/access/LegacySmartHomeConfiguration",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/bat/config/configured",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/LegacySmartHome/config/get/+",
 					"priority": 0,
 					"allow": true
 				}
@@ -605,8 +1601,20 @@
 			"textdescription": "Erlaubt den Zugang zum Installationsassistenten.",
 			"acls": [
 				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/system/installAssistantDone",
+					"priority": 0,
+					"allow": true
+				},
+				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/access/InstallAssistant",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/installAssistantDone",
 					"priority": 0,
 					"allow": true
 				}
@@ -618,8 +1626,56 @@
 			"textdescription": "Erlaubt den Zugang zu den Cloud-Einstellungen.",
 			"acls": [
 				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/initCloud",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/connectCloud",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/removeMqttBridge",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/system/mqtt/bridge/+",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/system/mqtt/valid_partner_ids",
+					"priority": 0,
+					"allow": true
+				},
+				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/access/CloudConfiguration",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/dataprotection_acknowledged",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/mqtt/bridge/+",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/mqtt/valid_partner_ids",
 					"priority": 0,
 					"allow": true
 				}
@@ -631,8 +1687,32 @@
 			"textdescription": "Erlaubt den Zugang zu den Einstellungen für MQTT-Brücken.",
 			"acls": [
 				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/addMqttBridge",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/removeMqttBridge",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/system/mqtt/bridge/+",
+					"priority": 0,
+					"allow": true
+				},
+				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/access/MQTTBridgeConfiguration",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/mqtt/bridge/+",
 					"priority": 0,
 					"allow": true
 				}
@@ -644,8 +1724,20 @@
 			"textdescription": "Erlaubt den Zugang zur Fehlersuche.",
 			"acls": [
 				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/system/debug_level",
+					"priority": 0,
+					"allow": true
+				},
+				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/access/DebugConfiguration",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/debug_level",
 					"priority": 0,
 					"allow": true
 				}
@@ -657,8 +1749,68 @@
 			"textdescription": "Erlaubt den Zugang zum Support-Bereich.",
 			"acls": [
 				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/sendDebug",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/systemFetchVersions",
+					"priority": 0,
+					"allow": true
+				},
+				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/access/Support",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/dataprotection_acknowledged",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/serial_number",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/device/+/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/device/+/component/+/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/vehicle/+/name",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/vehicle/+/info",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/current_commit",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/current_branch_commit",
 					"priority": 0,
 					"allow": true
 				}
@@ -670,8 +1822,140 @@
 			"textdescription": "Erlaubt den Zugang zur Datenverwaltung.",
 			"acls": [
 				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/restoreBackup",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/dataMigration",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/factoryReset",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/createBackup",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/createCloudBackup",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/requestMSALAuthCode",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/retrieveMSALTokens",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/system/backup_password",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/system/backup_cloud/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/system/backup_cloud/backup_before_update",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/optional/monitoring/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/system/security/access/DataManagementConfiguration",
+					"topic": "openWB/system/security/access/DataManagement",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/backup_password",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/backup_cloud/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/backup_cloud/backup_before_update",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/monitoring/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/device/+/component/+/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/chargepoint/+/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/vehicle/+/name",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/LegacySmartHome/config/get/Devices/+/device_configured",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/LegacySmartHome/config/get/Devices/+/device_name",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/configurable/backup_clouds",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/configurable/monitoring",
 					"priority": 0,
 					"allow": true
 				}
@@ -683,8 +1967,56 @@
 			"textdescription": "Erlaubt den Zugang zu den Sicherheitseinstellungen.",
 			"acls": [
 				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/resetUserManagement",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/updateAdminPassword",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/allow_unencrypted_access",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/system/security/user_management_active",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "$CONTROL/dynamic-security/v1",
+					"priority": 0,
+					"allow": true
+				},
+				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/access/SecurityConfiguration",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/allow_unencrypted_access",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/user_management_active",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "$CONTROL/dynamic-security/v1/response",
 					"priority": 0,
 					"allow": true
 				}
@@ -696,8 +2028,116 @@
 			"textdescription": "Erlaubt den Zugang zu den Systemeinstellungen.",
 			"acls": [
 				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/systemFetchVersions",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/systemUpdate",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/systemReboot",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/systemShutdown",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/system/secondary_auto_update",
+					"priority": 0,
+					"allow": true
+				},
+				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/access/SystemConfiguration",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/secondary_auto_update",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/current_commit",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/current_branch_commit",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/current_missing_commits",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/available_branches",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/current_branch",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/version",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/serial_number",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/ip_address",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/mac_address",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/chargepoint/+/get/version",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/chargepoint/+/get/current_branch",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/chargepoint/+/config",
 					"priority": 0,
 					"allow": true
 				}
@@ -709,8 +2149,38 @@
 			"textdescription": "Erlaubt den Zugang zu den rechtlichen Einstellungen.",
 			"acls": [
 				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/system/dataprotection_acknowledged",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/system/usage_terms_acknowledged",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/systemShutdown",
+					"priority": 0,
+					"allow": true
+				},
+				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/access/LegalSettings",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/dataprotection_acknowledged",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/usage_terms_acknowledged",
 					"priority": 0,
 					"allow": true
 				}
