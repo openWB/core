@@ -47,6 +47,8 @@ def fetch_prices(config: TibberTariffConfiguration) -> dict[str, float]:
     data = json.dumps(payload)
     response = req.get_http_session().post('https://api.tibber.com/v1-beta/gql', headers=headers, data=data, timeout=6)
     response_json = response.json()
+    if response_json['data']['viewer']['home']['currentSubscription'] is None:
+        raise ValueError("Keine Preisinformationen für das angegebene Zuhause gefunden.")
     if response_json.get("errors") is None:
         today_prices = _get_sorted_price_data(response_json, 'today')
         tomorrow_prices = _get_sorted_price_data(response_json, 'tomorrow')

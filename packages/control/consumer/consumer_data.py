@@ -30,6 +30,7 @@ class SuspendableTunableDeviceConfig:
     min_current: int = 0.5
     min_intervall: int = 60
     plans: List[SuspendableConsumerPlan] = field(default_factory=empty_list_factory)
+    price_limit_active: bool = False
     price_limit: float = 0.07
     type: ConsumerUsage = ConsumerUsage.SUSPENDABLE_TUNABLE
 
@@ -47,6 +48,7 @@ class SuspendableOnOffDeviceConfig:
     min_current: int = 0.5
     min_intervall: int = 60
     plans: List[SuspendableConsumerPlan] = field(default_factory=empty_list_factory)
+    price_limit_active: bool = False
     price_limit: float = 0.07
     type: ConsumerUsage = ConsumerUsage.SUSPENDABLE_ONOFF
 
@@ -60,7 +62,11 @@ class ContinuousDeviceConfig:
     min_current: int = 0.5
     min_intervall: int = 2*60*60
     wait_for_start_active: bool = True
+    wait_for_start_signal: bool = False
+    wait_for_start_test: bool = False
+    wait_for_start_last_test_timestamp: float = 0
     plans: List[ContinuousConsumerPlan] = field(default_factory=empty_list_factory)
+    price_limit_active: bool = False
     price_limit: float = 0.07
     type: ConsumerUsage = ConsumerUsage.CONTINUOUS
 
