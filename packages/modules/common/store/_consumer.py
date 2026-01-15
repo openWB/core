@@ -45,4 +45,4 @@ class PurgeConsumerState:
 
 
 def get_consumer_value_store(component_num: int) -> ValueStore[ConsumerState]:
-    return PurgeConsumerState(LoggingValueStore(ConsumerValueStoreBroker)(component_num))
+    return PurgeConsumerState(LoggingValueStore(ConsumerValueStoreBroker(component_num)))

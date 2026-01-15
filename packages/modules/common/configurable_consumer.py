@@ -19,13 +19,13 @@ log = logging.getLogger(__name__)
 class ConfigurableConsumer(Generic[T_CONSUMER]):
     def __init__(self,
                  consumer_config: T_CONSUMER,
-                 initializer: Callable,
-                 error_handler: Optional[Callable],
-                 update: Optional[Callable],
-                 set_power_limit: Optional[Callable],
-                 switch_on: Optional[Callable],
-                 switch_off: Optional[Callable],) -> None:
-        self.consumer_config = consumer_config
+                 initializer: Optional[Callable] = lambda: None,
+                 error_handler: Optional[Callable] = lambda: None,
+                 update: Optional[Callable] = lambda: None,
+                 set_power_limit: Optional[Callable] = lambda: None,
+                 switch_on: Optional[Callable] = lambda: None,
+                 switch_off: Optional[Callable] = lambda: None,) -> None:
+        self.config = consumer_config
         self.initializer = initializer
         self.error_handler = error_handler
         self.update = update
@@ -80,5 +80,6 @@ class ConfigurableConsumer(Generic[T_CONSUMER]):
 
 def dependency_injection_devices_components(component: AbstractCounter):
     component.sim_counter.component_type = ComponentType.CONSUMER.value
-    component.store = get_component_value_store(ComponentType.CONSUMER, component.component_config.id)
+    component.store = get_component_value_store(ComponentType.CONSUMER.value, component.component_config.id)
     component.fault_state.component_info.type = ComponentType.CONSUMER.value
+    return component

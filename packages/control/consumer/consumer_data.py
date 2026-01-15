@@ -115,6 +115,8 @@ def get_factory() -> Get:
 
 @dataclass
 class Set:
+    set_power: Optional[float] = None
+    state: Optional[bool] = False
     state_str: Optional[str] = None
     timestamp_last_current_set: float = 0
 

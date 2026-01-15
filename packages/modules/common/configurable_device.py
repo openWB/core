@@ -115,7 +115,7 @@ class ConfigurableDevice(Generic[T_COMPONENT, T_DEVICE_CONFIG, T_COMPONENT_CONFI
             component.initialize()
             component.initialized = True
             if component_dependency_injection is not None:
-                component_dependency_injection(component)
+                component = component_dependency_injection(component)
 
     def update(self):
         initialized_components = []

@@ -442,6 +442,7 @@ class CounterAll:
                 check_and_remove("counter", ComponentType.COUNTER, data.data.counter_data)
                 check_and_remove("cp", ComponentType.CHARGEPOINT, data.data.cp_data)
                 check_and_remove("pv", ComponentType.INVERTER, data.data.pv_data)
+                check_and_remove("consumer", ComponentType.CONSUMER, data.data.consumer_data)
 
     def _add_missing_entries(self):
         def check_and_add(type_name: ComponentType, data_structure):

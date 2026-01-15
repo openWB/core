@@ -1078,6 +1078,8 @@ class SubData:
                     var["consumer"+index].data.module = config
             elif re.search("openWB/consumer/[0-9]+/config", msg.topic) is not None:
                 self.set_json_payload_class(var["consumer"+index].data.config, msg)
+            elif re.search("openWB/consumer/[0-9]+/get", msg.topic) is not None:
+                self.set_json_payload_class(var["consumer"+index].data.get, msg)
             elif re.search("openWB/consumer/[0-9]+/extra_meter/device/config", msg.topic) is not None:
                 device_config = decode_payload(msg.payload)
                 if device_config is not None:

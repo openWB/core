@@ -3,8 +3,8 @@ from control.consumer.consumer_data import ConsumerData, ConsumerUsage
 from helpermodules import timecheck
 from helpermodules.abstract_plans import ConsumerMode
 from helpermodules.phase_handling import convert_single_evu_phase_to_cp_phase
-from modules.common.abstract_consumer import AbstractConsumer
 from modules.common.abstract_device import AbstractDevice
+from modules.common.configurable_consumer import ConfigurableConsumer
 
 log = logging.getLogger(__name__)
 
@@ -13,7 +13,7 @@ class Consumer:
     def __init__(self, index: int):
         self.num = index
         self.data: ConsumerData = ConsumerData()
-        self.module: AbstractConsumer = None
+        self.module: ConfigurableConsumer = None
         self.extra_meter: AbstractDevice = None
 
     def set_state_and_log(self, message: str) -> None:

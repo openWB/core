@@ -91,17 +91,19 @@ class Loadvars:
                 elif element["type"] == ComponentType.CONSUMER.value:
                     consumer = data.data.consumer_data[f'{type_to_topic_mapping(element["type"])}{element["id"]}']
                     if consumer.extra_meter is not None:
-                        thread_name = f"set values cp{chargepoint.chargepoint_module.config.id}"
+                        thread_name = f"set values consumer{consumer.num}_extra_meter_device"
                         if thread_name not in not_finished_threads:
                             modules_threads.append(Thread(
                                 target=update_values,
-                                args=(consumer.extra_meter.component["componentNone"],),
-                                name=f"set values consumer{consumer.num}_extra_meter_device"))
-                        else:
+                                args=(consumer.extra_meter.components[f"component{consumer.num}"],),
+                                name=f"update values consumer{consumer.num}_extra_meter_device"))
+                    else:
+                        thread_name = f"set values consumer{consumer.data.module.id}"
+                        if thread_name not in not_finished_threads:
                             modules_threads.append(Thread(
                                 target=update_values,
                                 args=(consumer,),
-                                name=f"set values consumer{consumer.data.module.id}"))
+                                name=f"update values consumer{consumer.data.module.id}"))
                 else:
                     component = get_finished_component_obj_by_id(element["id"], not_finished_threads)
                     if component is None:

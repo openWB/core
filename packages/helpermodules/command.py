@@ -1079,12 +1079,12 @@ class Command:
     def addUsagePlan(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neuer Zielladen-Plan erstellt werden soll.
         """
-        usage = SubData.consumer_data[f'consumer{payload["data"]["id"]}'].data.usage
+        usage = SubData.consumer_data[f'consumer{payload["data"]["consumer_id"]}'].data.usage
         plan = get_plan_class_for_usage(usage.type)()
         new_id = self.max_id_usage_plan + 1
         plan.id = new_id
         usage.plans.append(plan)
-        Pub().pub(f'openWB/set/consumer/{payload["data"]["id"]}/usage', dataclass_utils.asdict(usage))
+        Pub().pub(f'openWB/set/consumer/{payload["data"]["consumer_id"]}/usage', dataclass_utils.asdict(usage))
         self.max_id_usage_plan = new_id
         Pub().pub("openWB/set/command/max_id/usage_plan", new_id)
         pub_user_message(
@@ -1101,12 +1101,12 @@ class Command:
                 payload, connection_id,
                 f'Die ID \'{payload["data"]["plan"]}\' ist größer als die maximal vergebene '
                 f'ID \'{self.max_id_usage_plan}\'.', MessageType.ERROR)
-        usage = SubData.consumer_data[f'consumer{payload["data"]["id"]}'].data.usage
+        usage = SubData.consumer_data[f'consumer{payload["data"]["consumer_id"]}'].data.usage
         for plan in usage.plans:
             if plan.id == payload["data"]["plan"]:
                 usage.plans.remove(plan)
                 break
-        Pub().pub(f'openWB/set/consumer/{payload["data"]["id"]}/usage', dataclass_utils.asdict(usage))
+        Pub().pub(f'openWB/set/consumer/{payload["data"]["consumer_id"]}/usage', dataclass_utils.asdict(usage))
         pub_user_message(
             payload, connection_id,
             f'Zielladen-Plan mit ID \'{payload["data"]["plan"]}\' von Profil '
