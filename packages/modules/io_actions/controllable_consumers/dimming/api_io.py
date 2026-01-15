@@ -1,11 +1,15 @@
 import logging
+from typing import Optional, Tuple
 
 from control import data
+from control.limiting_value import LimitingValue, LoadmanagementLimit
 from helpermodules.logger import ModifyLoglevelContext
 from helpermodules.pub import Pub
 from helpermodules.timecheck import create_timestamp
 from dataclass_utils import asdict
 from modules.common.abstract_io import AbstractIoAction
+from modules.common.utils.component_parser import get_io_name_by_id
+from modules.io_actions.common import check_fault_state_io_device
 from modules.io_actions.controllable_consumers.dimming.config import DimmingSetup
 
 log = logging.getLogger(__name__)
@@ -49,10 +53,11 @@ class DimmingIo(AbstractIoAction):
         log.debug(f"Dimmen: {self.import_power_left}W inkl. Überschuss")
 
         with ModifyLoglevelContext(control_command_log, logging.DEBUG):
-            if data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
-                    self.dimming_input] == self.dimming_value:
+            if self.dimming_active() or check_fault_state_io_device(self.config.configuration.io_device):
                 if self.timestamp is None:
                     Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
+                    if check_fault_state_io_device(self.config.configuration.io_device):
+                        control_command_log.info("Fehler des IO-Geräts: Dimmen aktiviert für Failsafe-Modus.")
                     control_command_log.info("Dimmen aktiviert. Leistungswerte vor Ausführung des Steuerbefehls:")
 
                 msg = (f"EVU-Zähler: "
@@ -71,12 +76,17 @@ class DimmingIo(AbstractIoAction):
                 Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", None)
                 control_command_log.info("Dimmen deaktiviert.")
 
-    def dimming_get_import_power_left(self) -> None:
+    def dimming_get_import_power_left(self) -> Tuple[Optional[float], LoadmanagementLimit]:
+        if check_fault_state_io_device(self.config.configuration.io_device):
+            return (self.import_power_left, LoadmanagementLimit(
+                LimitingValue.CONTROLLABLE_CONSUMERS_ERROR.value.format(get_io_name_by_id(
+                    self.config.configuration.io_device)),
+                LimitingValue.CONTROLLABLE_CONSUMERS_ERROR))
         if self.dimming_active():
-            return self.import_power_left
+            return self.import_power_left, LoadmanagementLimit(LimitingValue.DIMMING.value, LimitingValue.DIMMING)
         elif data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
                 self.no_dimming_input] == self.no_dimming_value:
-            return None
+            return None, LoadmanagementLimit(None, None)
         else:
             raise Exception("Pattern passt nicht zur Dimmung.")
 
