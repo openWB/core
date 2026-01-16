@@ -1104,10 +1104,11 @@ class SubData:
                     # TCP-Verbindung aufgebaut wird, deren IP dann nicht aktualisiert werden würde.
                     component_config = decode_payload(msg.payload)
                     if component_config is not None:
-                        component = importlib.import_module(f'.devices.{var["consumer"+index].data.extra_meter.device.vendor}'
-                                                            f'.{var["consumer"+index].data.extra_meter.device.type}'
-                                                            f'.{component_config["type"].replace("consumer_", "")}',
-                                                            "modules")
+                        component = importlib.import_module(
+                            f'.devices.{var["consumer"+index].data.extra_meter.device.vendor}'
+                            f'.{var["consumer"+index].data.extra_meter.device.type}'
+                            f'.{component_config["type"].replace("consumer_", "")}',
+                            "modules")
                         config = dataclass_from_dict(
                             component.component_descriptor.configuration_factory, component_config)
                         var["consumer"+index].extra_meter.add_component(config, dependency_injection_devices_components)
@@ -1120,7 +1121,8 @@ class SubData:
             elif re.search("openWB/consumer/[0-9]+/extra_meter/device/component/simulation", msg.topic) is not None:
                 index = get_index(msg.topic)
                 index_second = get_second_index(msg.topic)
-                var["consumer"+index].extra_meter.components["component"+index_second].sim_counter.data = dataclass_from_dict(
+                var["consumer"+index].extra_meter.components["component"+index_second
+                                                             ].sim_counter.data = dataclass_from_dict(
                     SimCounterState,
                     decode_payload(msg.payload))
             elif re.search("^.+/device/[0-9]+/error_timestamp$", msg.topic) is not None:

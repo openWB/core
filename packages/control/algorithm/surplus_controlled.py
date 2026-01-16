@@ -103,10 +103,10 @@ class SurplusControlled:
 
     # tested
     def filter_by_feed_in_limit(self, loads: List[Load]) -> Tuple[List[Chargepoint], List[Chargepoint]]:
-        cp_with_feed_in = list(filter(lambda cp: isinstance(cp, Chargepoint) and cp.data.set.charge_template.data.chargemode.
-                                      pv_charging.feed_in_limit is True, loads))
-        cp_without_feed_in = list(filter(lambda cp: isinstance(cp, Consumer) or cp.data.set.charge_template.data.chargemode.
-                                         pv_charging.feed_in_limit is False, loads))
+        cp_with_feed_in = list(filter(lambda cp: isinstance(cp, Chargepoint) and cp.data.set.charge_template.data.
+                                      chargemode.pv_charging.feed_in_limit is True, loads))
+        cp_without_feed_in = list(filter(lambda cp: isinstance(cp, Consumer) or cp.data.set.charge_template.data.
+                                         chargemode.pv_charging.feed_in_limit is False, loads))
         return cp_with_feed_in, cp_without_feed_in
 
     def _fix_deviating_evse_current(self, chargepoint: Chargepoint) -> float:

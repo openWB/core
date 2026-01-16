@@ -42,12 +42,14 @@ class Consumer(Load):
         if self.data.usage.type == ConsumerUsage.METER_ONLY:
             return
         else:
-            if self.data.get.currents is None:
-                self.data.get.currents = [0]*3
-                self.data.get.currents = [
-                    self.data.get.power/self.data.config.connected_phases for i in range(0, self.data.config.connected_phases)]
             if self.data.get.voltages is None:
                 self.data.get.voltages = [230 for i in range(0, self.data.config.connected_phases)]
+            if self.data.get.currents is None:
+                self.data.get.currents = [0]*3
+                for i in range(0, self.data.config.connected_phases):
+                    self.data.get.currents[i] = (self.data.get.power /
+                                                 self.data.config.connected_phases /
+                                                 self.data.get.voltages[i])
             self.data.get.phases_in_use = self.data.config.connected_phases
             self.data.set.phases_to_use = self.data.config.connected_phases
             self.data.get.charge_state = True if self.data.get.power > 0 else False
@@ -57,10 +59,11 @@ class Consumer(Load):
                 f"Verbraucher {self.num}: Sollstrom {required_current}, min. Ist-Strom {max(self.data.get.currents)}")
 
     PRICE_LIMIT_EXCEEDED = "Preislimit für Verbraucher aktiv, aktueller Preis zu hoch."
-    PRICE_LIMIT_EXCEEDED_CONTINOUS_STILL_RUNNING = "Preislimit für Verbraucher aktiv, aktueller Preis zu hoch. " + \
-        "Verbraucher läuft weiter, da der Verbraucher nicht abgeschaltet werden darf."
-    SURPLUS_CONTINOUS_STILL_RUNNING = "Verbraucher läuft ggf auch ohne ausreichend Überschuss weiter, da der Verbraucher " + \
-        "nicht abgeschaltet werden darf."
+    PRICE_LIMIT_EXCEEDED_CONTINOUS_STILL_RUNNING = ("Preislimit für Verbraucher aktiv, aktueller Preis zu hoch. "
+                                                    "Verbraucher läuft weiter, da der Verbraucher nicht abgeschaltet "
+                                                    "werden darf.")
+    SURPLUS_CONTINOUS_STILL_RUNNING = ("Verbraucher läuft ggf auch ohne ausreichend Überschuss weiter, da der "
+                                       "Verbraucher nicht abgeschaltet werden darf.")
     WAIT_FOR_START_SIGNAL = "Warte auf Startsignal für kontinuierlichen Verbraucher. Nächster Testlauf in {}"
     WAIT_FOR_START_SIGNAL_TEST_RUN = "Verbraucher eingeschaltet, um zu testen, ob ein Startsignal empfangen wird."
     WAIT_FOR_START_SIGNAL_RECEIVED = "Startsignal für kontinuierlichen Verbraucher empfangen."

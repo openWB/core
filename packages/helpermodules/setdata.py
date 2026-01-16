@@ -1198,7 +1198,8 @@ class SetData:
             if (re.search("openWB/set/consumer/[0-9]+/module$", msg.topic) is not None or
                 re.search("openWB/set/consumer/[0-9]+/config$", msg.topic) is not None or
                     re.search("openWB/set/consumer/[0-9]+/extra_meter/device/config$", msg.topic) is not None or
-                    re.search("openWB/set/consumer/[0-9]+/extra_meter/device/component/config$", msg.topic) is not None or
+                    re.search("openWB/set/consumer/[0-9]+/extra_meter/device/component/config$",
+                              msg.topic) is not None or
                     re.search("openWB/set/consumer/[0-9]+/usage$", msg.topic) is not None):
                 self._validate_value(msg, "json")
             elif (re.search("openWB/set/consumer/[0-9]+/get/power$", msg.topic) is not None or

@@ -1049,7 +1049,8 @@ class Command:
                              MessageType.ERROR)
         try:
             SubData.counter_all_data.loadmanagement_prios_add_item(new_id, ComponentType.CONSUMER)
-            Pub().pub("openWB/set/counter/get/loadmanagement_prios", SubData.counter_all_data.data.get.loadmanagement_prios)
+            Pub().pub("openWB/set/counter/get/loadmanagement_prios",
+                      SubData.counter_all_data.data.get.loadmanagement_prios)
         except (TypeError, IndexError) as e:
             pub_user_message(payload, connection_id,
                              str(e),

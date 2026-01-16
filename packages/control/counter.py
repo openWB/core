@@ -456,7 +456,8 @@ class Counter:
                                      # Einen nach dem anderen abschalten, bis Ladeleistung des Speichers erreicht ist
                                      # und wieder eingespeist wird.
                                      self.data.set.reserved_surplus == 0))
-            if (switch_off_condition and (isinstance(load, Consumer) or get_medium_charging_current(load.data.get.currents) <= min_current)):
+            if (switch_off_condition and (isinstance(load, Consumer) or
+                                          get_medium_charging_current(load.data.get.currents) <= min_current)):
                 if load.is_charging_stop_allowed():
                     # EV, die ohnehin nicht laden, wird direkt die Ladefreigabe entzogen.
                     # Würde man required_power vom released_evu_surplus subtrahieren, würden keine anderen EVs

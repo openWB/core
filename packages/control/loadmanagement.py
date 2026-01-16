@@ -36,8 +36,11 @@ class Loadmanagement:
         available_currents, new_limit = self._limit_by_current(counter, available_currents, raw_currents_left)
         limit = new_limit if new_limit.limiting_value is not None else limit
 
-        available_currents, new_limit = self._limit_by_power(
-            counter, available_currents, voltages_mean(load.data.get.voltages), counter.data.set.raw_power_left, feed_in)
+        available_currents, new_limit = self._limit_by_power(counter,
+                                                             available_currents,
+                                                             voltages_mean(load.data.get.voltages),
+                                                             counter.data.set.raw_power_left,
+                                                             feed_in)
         limit = new_limit if new_limit.limiting_value is not None else limit
 
         if f"counter{counter.num}" == data.data.counter_all_data.get_evu_counter_str():
@@ -138,7 +141,8 @@ class Loadmanagement:
     def _limit_by_dimming_via_direct_control(self,
                                              missing_currents: List[float],
                                              load: Load) -> Tuple[List[float], LoadmanagementLimit]:
-        if data.data.io_actions.dimming_via_direct_control({"type": "cp" if isinstance(load, Chargepoint) else "consumer", "id": load.num}):
+        if data.data.io_actions.dimming_via_direct_control(
+                {"type": "cp" if isinstance(load, Chargepoint) else "consumer", "id": load.num}):
             phases = 3-missing_currents.count(0)
             current_per_phase = 4200 / 230 / phases
             available_currents = [current_per_phase -
