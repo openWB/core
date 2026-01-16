@@ -432,6 +432,7 @@ def create_debug_log(input_data) -> Optional[dict]:
             write_to_file(df, lambda: f"# section: uuids #\n{get_uuids()}\n")
             write_to_file(df, lambda: f"# section: boots #\n{get_boots(30)}\n")
             write_to_file(df, lambda: f'# section: storage #\n{run_command(["df", "-h"])}\n')
+            write_to_file(df, lambda: 'Extended_Debug_Section\n')
             write_to_file(df, lambda: f"# section: broker essentials #\n{broker.get_broker_essentials()}\n")
             write_to_file(
                 df, lambda: f"# section: retained log #\n{merge_log_files('main', 500)}")
