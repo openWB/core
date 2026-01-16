@@ -86,6 +86,12 @@
 			"textdescription": "Diese Rolle ermöglicht das Auslesen grundlegender Einstellungen des Systems und wird von mehreren Clients verwendet. Notwendig für die anonyme Gruppe!",
 			"acls": [
 				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/system/messages/+",
+					"priority": 0,
+					"allow": true
+				},
+				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/version",
 					"priority": 0,
@@ -180,6 +186,12 @@
 					"topic": "openWB/general/allow_unencrypted_access",
 					"priority": 0,
 					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/messages/+",
+					"priority": 0,
+					"allow": true
 				}
 			]
 		},
@@ -226,8 +238,20 @@
 			"textdescription": "Diese Rolle ermöglicht grundlegenden Zugriff auf openWB. Notwendig für alle normalen Benutzer!",
 			"acls": [
 				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/command/+/messages/+",
+					"priority": 0,
+					"allow": true
+				},
+				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/access_allowed",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/command/+/messages/+",
 					"priority": 0,
 					"allow": true
 				}
@@ -1146,6 +1170,30 @@
 			"acls": [
 				{
 					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/addDevice",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/removeDevice",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/addComponent",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/removeComponent",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
 					"topic": "openWB/set/system/device/+/config",
 					"priority": 0,
 					"allow": true
@@ -1292,10 +1340,46 @@
 			]
 		},
 		{
-			"rolename": "charge-point-installation-access",
+			"rolename": "chargepoint-installation-access",
 			"textname": "Zugang zu der Ladepunkt-Installation",
 			"textdescription": "Erlaubt den Zugang zu der Ladepunkt-Installation.",
 			"acls": [
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/addChargepoint",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/removeChargepoint",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/addChargepointTemplate",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/removeChargepointTemplate",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/addAutolockPlan",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/removeAutolockPlan",
+					"priority": 0,
+					"allow": true
+				},
 				{
 					"acltype": "publishClientSend",
 					"topic": "openWB/set/chargepoint/+/config",
@@ -1363,6 +1447,66 @@
 			"textname": "Zugang zu den Fahrzeugeinstellungen",
 			"textdescription": "Erlaubt den Zugang zu den Fahrzeugeinstellungen.",
 			"acls": [
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/addVehicle",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/removeVehicle",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/addEvTemplate",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/removeEvTemplate",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/addChargeTemplate",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/removeChargeTemplate",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/addChargeTemplateSchedulePlan",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/removeChargeTemplateSchedulePlan",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/addChargeTimeChargingPlan",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/removeChargeTimeChargingPlan",
+					"priority": 0,
+					"allow": true
+				},
 				{
 					"acltype": "publishClientSend",
 					"topic": "openWB/set/vehicle/template/ev_template/+",
@@ -1510,6 +1654,30 @@
 			"acls": [
 				{
 					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/addIoDevice",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/removeIoDevice",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/addIoAction",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/removeIoAction",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
 					"topic": "openWB/set/system/io/+/config",
 					"priority": 0,
 					"allow": true
@@ -1522,7 +1690,7 @@
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/system/security/access/IOConfiguration",
+					"topic": "openWB/system/security/access/IoConfiguration",
 					"priority": 0,
 					"allow": true
 				},
@@ -1571,7 +1739,7 @@
 			"acls": [
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/LegacySmartHome/config/get/+",
+					"topic": "openWB/set/LegacySmartHome/#",
 					"priority": 0,
 					"allow": true
 				},
@@ -1589,7 +1757,7 @@
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/LegacySmartHome/config/get/+",
+					"topic": "openWB/LegacySmartHome/#",
 					"priority": 0,
 					"allow": true
 				}
@@ -1706,7 +1874,7 @@
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/system/security/access/MQTTBridgeConfiguration",
+					"topic": "openWB/system/security/access/MqttBridgeConfiguration",
 					"priority": 0,
 					"allow": true
 				},
@@ -2150,6 +2318,12 @@
 			"acls": [
 				{
 					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/systemShutdown",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
 					"topic": "openWB/set/system/dataprotection_acknowledged",
 					"priority": 0,
 					"allow": true
@@ -2157,12 +2331,6 @@
 				{
 					"acltype": "publishClientSend",
 					"topic": "openWB/set/system/usage_terms_acknowledged",
-					"priority": 0,
-					"allow": true
-				},
-				{
-					"acltype": "publishClientSend",
-					"topic": "openWB/set/command/+/todo/systemShutdown",
 					"priority": 0,
 					"allow": true
 				},
