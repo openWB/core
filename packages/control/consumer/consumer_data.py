@@ -93,7 +93,7 @@ def get_plan_class_for_usage(usage: ConsumerUsage):
 
 @dataclass
 class ConsumerConfig:
-    connected_phases: int = 3
+    connected_phases: int = 1
     phase_1: int = 1
 
 
@@ -103,16 +103,22 @@ def consumer_config_factory() -> ConsumerConfig:
 
 @dataclass
 class Get:
+    charge_state: bool = False
+    currents: Optional[List[Optional[float]]] = None
+    daily_imported: float = 0
+    daily_exported: float = 0
+    error_timestamp: int = 0
+    exported: float = 0
     fault_str: str = NO_ERROR
     fault_state: int = 0
     imported: float = 0
-    exported: float = 0
+    phases_in_use: int
     power: float = 0
-    voltages: Optional[List[Optional[float]]] = None
-    currents: Optional[List[Optional[float]]] = None
     powers: Optional[List[Optional[float]]] = None
     set_power: Optional[float] = None
     state: Optional[bool] = False
+    state_str: Optional[str] = None
+    voltages: Optional[List[Optional[float]]] = None
 
 
 def get_factory() -> Get:
@@ -121,6 +127,14 @@ def get_factory() -> Get:
 
 @dataclass
 class Set:
+    current: float = 0
+    loadmanagement_available: bool = False
+    phases_to_use: int = 0
+    plug_time: Optional[float] = 0
+    required_power: float = 0
+    current_prev: float = 0
+    target_current: float = 0
+    charge_state_prev: bool = False
     set_power: Optional[float] = None
     state: Optional[bool] = False
     state_str: Optional[str] = None

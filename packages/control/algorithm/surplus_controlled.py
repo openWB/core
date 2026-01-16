@@ -5,12 +5,13 @@ from control import data
 from control.algorithm import common
 from control.algorithm.chargemodes import (CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE, CONSIDERED_CHARGE_MODES_PV_ONLY,
                                            CONSIDERED_CHARGE_MODES_SURPLUS)
-from control.algorithm.filter_chargepoints import (get_chargepoints_by_mode_and_counter, get_loadmanagement_prios,
+from control.algorithm.filter_chargepoints import (get_loads_by_mode_and_counter, get_loadmanagement_prios,
                                                    get_preferenced_chargepoint_charging)
 from control.algorithm.utils import get_medium_charging_current
 from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state import ChargepointState, CHARGING_STATES
+from control.consumer.consumer import Consumer
 from control.counter import ControlRangeState, Counter
 from control.limiting_value import LoadmanagementLimit
 from control.loadmanagement import LimitingValue, Loadmanagement
@@ -29,7 +30,7 @@ class SurplusControlled:
         common.reset_current_by_chargemode(CONSIDERED_CHARGE_MODES_SURPLUS)
         for counter in common.counter_generator():
             preferenced_chargepoints, preferenced_cps_without_set_current = get_preferenced_chargepoint_charging(
-                get_chargepoints_by_mode_and_counter(CONSIDERED_CHARGE_MODES_SURPLUS, f"counter{counter.num}"))
+                get_loads_by_mode_and_counter(CONSIDERED_CHARGE_MODES_SURPLUS, f"counter{counter.num}"))
             cp_with_feed_in, cp_without_feed_in = self.filter_by_feed_in_limit(preferenced_chargepoints)
             if cp_without_feed_in:
                 self._set(cp_without_feed_in, 0, counter)
@@ -60,7 +61,7 @@ class SurplusControlled:
                 feed_in=feed_in_yield
             )
             cp.data.control_parameter.limit = limit
-            available_for_cp = common.available_current_for_cp(cp, counts, available_currents, missing_currents)
+            available_for_cp = common.available_current_for_load(cp, counts, available_currents, missing_currents)
             if counter.get_control_range_state(feed_in_yield) == ControlRangeState.MIDDLE:
                 pv_charging = data.data.general_data.data.chargemode_config.pv_charging
                 dif_to_old_current = available_for_cp + cp.data.set.target_current - cp.data.set.current_prev
@@ -125,18 +126,18 @@ class SurplusControlled:
     def check_submode_pv_charging(self) -> None:
         evu_counter = data.data.counter_all_data.get_evu_counter()
 
-        for cp in get_loadmanagement_prios(CONSIDERED_CHARGE_MODES_PV_ONLY):
+        for load in get_loadmanagement_prios(CONSIDERED_CHARGE_MODES_PV_ONLY):
             try:
                 def phase_switch_necessary() -> bool:
-                    return (cp.cp_state_hw_support_phase_switch() and
-                            cp.data.get.phases_in_use != 1 and
-                            cp.data.control_parameter.template_phases == 0)
-                control_parameter = cp.data.control_parameter
-                if cp.chargemode_changed or cp.submode_changed:
+                    return isinstance(load, Chargepoint) and (load.cp_state_hw_support_phase_switch() and
+                                                              load.data.get.phases_in_use != 1 and
+                                                              load.data.control_parameter.template_phases == 0)
+                control_parameter = load.data.control_parameter
+                if load.chargemode_changed or load.submode_changed:
                     if (control_parameter.state in CHARGING_STATES):
-                        if cp.data.set.charging_ev_data.ev_template.data.prevent_charge_stop is False:
-                            threshold = evu_counter.calc_switch_off_threshold(cp)
-                            if evu_counter.calc_raw_surplus() - cp.data.set.required_power < threshold:
+                        if load.is_charging_stop_allowed():
+                            threshold = evu_counter.calc_switch_off_threshold(load)
+                            if evu_counter.calc_raw_surplus() - load.data.set.required_power < threshold:
                                 control_parameter.required_currents = [0]*3
                                 control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
                     else:
@@ -145,16 +146,16 @@ class SurplusControlled:
                     if ((control_parameter.state == ChargepointState.CHARGING_ALLOWED or
                             control_parameter.state == ChargepointState.SWITCH_OFF_DELAY) and
                             phase_switch_necessary() is False):
-                        evu_counter.switch_off_check_threshold(cp)
+                        evu_counter.switch_off_check_threshold(load)
                     if control_parameter.state == ChargepointState.SWITCH_OFF_DELAY:
-                        evu_counter.switch_off_check_timer(cp)
+                        evu_counter.switch_off_check_timer(load)
                     if control_parameter.state == ChargepointState.SWITCH_ON_DELAY:
                         # Wenn charge_state False und set_current > 0, will Auto nicht laden
-                        evu_counter.switch_on_timer_expired(cp)
+                        evu_counter.switch_on_timer_expired(load)
                     if control_parameter.state not in CHARGING_STATES:
                         control_parameter.required_currents = [0]*3
             except Exception:
-                log.exception(f"Fehler in der PV-gesteuerten Ladung bei {cp.num}")
+                log.exception(f"Fehler in der PV-gesteuerten Ladung bei {load.num}")
 
     def set_required_current_to_max(self) -> None:
         for cp in get_loadmanagement_prios(CONSIDERED_CHARGE_MODES_SURPLUS +

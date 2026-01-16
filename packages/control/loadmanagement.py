@@ -6,6 +6,7 @@ from control import data
 from control.chargepoint.chargepoint import Chargepoint
 from control.counter import Counter
 from control.limiting_value import LimitingValue, LoadmanagementLimit
+from control.load_protocol import Load
 from helpermodules.phase_handling import voltages_mean
 from modules.common.utils.component_parser import get_component_name_by_id
 
@@ -17,16 +18,16 @@ class Loadmanagement:
     def get_available_currents(self,
                                missing_currents: List[float],
                                counter: Counter,
-                               cp: Chargepoint,
+                               load: Load,
                                feed_in: int = 0) -> Tuple[List[float], LoadmanagementLimit]:
         raw_currents_left = counter.data.set.raw_currents_left
         try:
-            available_currents, limit = self._limit_by_dimming_via_direct_control(missing_currents, cp)
+            available_currents, limit = self._limit_by_dimming_via_direct_control(missing_currents, load)
 
-            available_currents, new_limit = self._limit_by_dimming(available_currents, cp)
+            available_currents, new_limit = self._limit_by_dimming(available_currents, load)
             limit = new_limit if new_limit.limiting_value is not None else limit
 
-            available_currents, new_limit = self._limit_by_ripple_control_receiver(available_currents, cp)
+            available_currents, new_limit = self._limit_by_ripple_control_receiver(available_currents, load)
             limit = new_limit if new_limit.limiting_value is not None else limit
         except ValueError as e:
             available_currents = [0]*3
@@ -36,7 +37,7 @@ class Loadmanagement:
         limit = new_limit if new_limit.limiting_value is not None else limit
 
         available_currents, new_limit = self._limit_by_power(
-            counter, available_currents, voltages_mean(cp.data.get.voltages), counter.data.set.raw_power_left, feed_in)
+            counter, available_currents, voltages_mean(load.data.get.voltages), counter.data.set.raw_power_left, feed_in)
         limit = new_limit if new_limit.limiting_value is not None else limit
 
         if f"counter{counter.num}" == data.data.counter_all_data.get_evu_counter_str():
@@ -136,12 +137,12 @@ class Loadmanagement:
 
     def _limit_by_dimming_via_direct_control(self,
                                              missing_currents: List[float],
-                                             cp: Chargepoint) -> Tuple[List[float], LoadmanagementLimit]:
-        if data.data.io_actions.dimming_via_direct_control({"type": "cp", "id": cp.num}):
+                                             load: Load) -> Tuple[List[float], LoadmanagementLimit]:
+        if data.data.io_actions.dimming_via_direct_control({"type": "cp" if isinstance(load, Chargepoint) else "consumer", "id": load.num}):
             phases = 3-missing_currents.count(0)
             current_per_phase = 4200 / 230 / phases
             available_currents = [current_per_phase -
-                                  cp.data.set.target_current if c > 0 else 0 for c in missing_currents]
+                                  load.data.set.target_current if c > 0 else 0 for c in missing_currents]
             log.debug(f"Dimmung per Direkt-Steuerung: {available_currents}A")
             limit = LoadmanagementLimit(LimitingValue.DIMMING_VIA_DIRECT_CONTROL.value,
                                         LimitingValue.DIMMING_VIA_DIRECT_CONTROL)
@@ -151,8 +152,9 @@ class Loadmanagement:
 
     def _limit_by_dimming(self,
                           available_currents: List[float],
-                          cp: Chargepoint) -> Tuple[List[float], LoadmanagementLimit]:
-        dimming_power_left = data.data.io_actions.dimming_get_import_power_left({"type": "cp", "id": cp.num})
+                          load: Load) -> Tuple[List[float], LoadmanagementLimit]:
+        dimming_power_left = data.data.io_actions.dimming_get_import_power_left(
+            {"type": "cp" if isinstance(load, Chargepoint) else "consumer", "id": load.num})
         if dimming_power_left:
             if sum(available_currents)*230 > dimming_power_left:
                 phases = 3-available_currents.count(0)

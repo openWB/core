@@ -152,7 +152,7 @@ cases_get_chargepoints_of_counter = [
                          ids=[c.name for c in cases_get_chargepoints_of_counter])
 def test_get_chargepoints_of_counter(params: ParamsItem):
     # execution
-    actual = params.counter_all.get_chargepoints_of_counter(params.id)
+    actual = params.counter_all.get_loads_of_counter(params.id)
 
     # evaluation
     assert actual == params.expected_return

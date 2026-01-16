@@ -49,43 +49,6 @@ def mock_cp3() -> Chargepoint:
 
 preferenced_cases = [
     PreferencedParams("sort by num", [mock_cp1, mock_cp2, mock_cp3]),
-    PreferencedParams("sort by imported_since_plugged", [
-                      mock_cp2, mock_cp3, mock_cp1], imported_since_plugged_2=20, imported_since_plugged_3=60),
-    PreferencedParams("sort by plug_time", [mock_cp2, mock_cp1, mock_cp3],
-                      plug_time_2="10/31/2022, 06:00:00", plug_time_3="10/31/2022, 12:00:00"),
-    PreferencedParams("sort by soc", [mock_cp2, mock_cp1, mock_cp3], soc_2=20, soc_3=60),
-    PreferencedParams("sort by required_current", [mock_cp1, mock_cp2,
-                      mock_cp3], required_current_2=7, required_current_3=8),
-    PreferencedParams("sort by required_current and soc", [
-                      mock_cp2, mock_cp1, mock_cp3], required_current_2=7, soc_2=40),
-]
-
-
-@pytest.mark.parametrize("params", preferenced_cases, ids=[c.name for c in preferenced_cases])
-def test_get_preferenced_chargepoint(params: PreferencedParams):
-    # setup
-    def mock_cp(cp: Chargepoint, num: int):
-        ev = Ev(0)
-        ev.data = EvData(get=Get(soc=getattr(params, f"soc_{num}")))
-        cp.data = ChargepointData(set=Set(plug_time=getattr(params, f"plug_time_{num}"), log=Log(
-            imported_since_plugged=getattr(params, f"imported_since_plugged_{num}")), charging_ev_data=ev),
-            control_parameter=ControlParameter(
-            required_current=getattr(params, f"required_current_{num}")))
-        cp.num = num
-        return cp
-
-    cp1 = mock_cp(mock_cp1, 1)
-    cp2 = mock_cp(mock_cp2, 2)
-    cp3 = mock_cp(mock_cp3, 3)
-    # execution
-    preferenced_chargepoints = filter_chargepoints._get_preferenced_chargepoint([cp1, cp2, cp3])
-
-    # evaluation
-    assert preferenced_chargepoints == params.expected_sort
-
-
-preferenced_cases = [
-    PreferencedParams("sort by num", [mock_cp1, mock_cp2, mock_cp3]),
 
     PreferencedParams("sort by soc", [mock_cp2, mock_cp1, mock_cp3], soc_2=20, soc_3=60),
     PreferencedParams("sort by required_current", [mock_cp1, mock_cp2,
@@ -157,7 +120,7 @@ def test_get_chargepoints_by_mode_and_counter(chargepoints_of_counter: List[str]
     data.data.counter_all_data = CounterAll()
 
     # evaluation
-    valid_chargepoints = filter_chargepoints.get_chargepoints_by_mode_and_counter(Mock(), "counter6")
+    valid_chargepoints = filter_chargepoints.get_loads_by_mode_and_counter(Mock(), "counter6")
 
     # assertion
     assert valid_chargepoints == expected_chargepoints

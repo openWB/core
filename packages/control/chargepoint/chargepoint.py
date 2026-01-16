@@ -19,6 +19,7 @@ from control.ev.charge_template import ChargeTemplate
 from control.ev.ev import Ev
 from control import phase_switch
 from control.chargepoint.chargepoint_state import CHARGING_STATES, ChargepointState
+from control.load_protocol import Load
 from control.text import BidiState
 from helpermodules.phase_handling import convert_single_evu_phase_to_cp_phase
 from helpermodules.pub import Pub
@@ -49,7 +50,7 @@ def get_chargepoint_get_default() -> Dict:
 log = logging.getLogger(__name__)
 
 
-class Chargepoint(ChargepointRfidMixin):
+class Chargepoint(ChargepointRfidMixin, Load):
     """ geht alle Ladepunkte durch, prüft, ob geladen werden darf und ruft die Funktion des angesteckten Autos auf.
     """
     MAX_FAILED_PHASE_SWITCHES = 2
@@ -865,3 +866,6 @@ class Chargepoint(ChargepointRfidMixin):
             return False
         else:
             return True
+
+    def is_charging_stop_allowed(self) -> bool:
+        return self.data.set.charging_ev_data.ev_template.data.prevent_charge_stop is False

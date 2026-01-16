@@ -4,6 +4,7 @@ from typing import Union
 from control import data
 from control.chargemode import Chargemode
 from control.consumer.consumer_data import ConsumerData, ConsumerUsage
+from control.load_protocol import Load
 from helpermodules import timecheck
 from helpermodules.abstract_plans import ConsumerMode, ContinuousConsumerPlan, SuspendableConsumerPlan
 from helpermodules.phase_handling import convert_single_evu_phase_to_cp_phase
@@ -20,12 +21,14 @@ class WaitForStartStates(Enum):
     WAIT_FOR_NEXT_TEST_RUN = "wait_for_next_test_run"
 
 
-class Consumer:
+class Consumer(Load):
     def __init__(self, index: int):
         self.num = index
         self.data: ConsumerData = ConsumerData()
         self.module: ConfigurableConsumer = None
         self.extra_meter: AbstractDevice = None
+        self.chargemode_changed: bool = False
+        self.submode_changed: bool = False
 
     def set_state_and_log(self, message: str) -> None:
         if message:
@@ -39,6 +42,15 @@ class Consumer:
         if self.data.usage.type == ConsumerUsage.METER_ONLY:
             return
         else:
+            if self.data.get.currents is None:
+                self.data.get.currents = [0]*3
+                self.data.get.currents = [
+                    self.data.get.power/self.data.config.connected_phases for i in range(0, self.data.config.connected_phases)]
+            if self.data.get.voltages is None:
+                self.data.get.voltages = [230 for i in range(0, self.data.config.connected_phases)]
+            self.data.get.phases_in_use = self.data.config.connected_phases
+            self.data.set.phases_to_use = self.data.config.connected_phases
+            self.data.get.charge_state = True if self.data.get.power > 0 else False
             min_current, required_current = self.get_parameter()
             self.set_control_parameter(min_current, required_current, self.data.config.connected_phases)
             log.debug(
@@ -132,7 +144,7 @@ class Consumer:
             return WaitForStartStates.START_SIGNAL_RECEIVED
         else:
             if self.data.usage.wait_for_start_test:
-                if self.data.get.power > 0:
+                if self.data.get.charge_state:
                     self.data.usage.wait_for_start_signal = True
                     self.data.usage.wait_for_start_test = False
                     return WaitForStartStates.START_SIGNAL_RECEIVED
@@ -162,3 +174,8 @@ class Consumer:
             self.set_state_and_log("Bitte in den Ladepunkt-Einstellungen die Einstellung 'Phase 1 des Ladekabels'" +
                                    " angeben. Andernfalls wird der benötigte Strom auf allen 3 Phasen vorgehalten, " +
                                    "was ggf eine unnötige Reduktion der Ladeleistung zur Folge hat.")
+        self.data.set.required_power = sum(
+            [c * v for c, v in zip(control_parameter.required_currents, self.data.get.voltages)])
+
+    def is_charging_stop_allowed(self) -> bool:
+        return self.data.usage.type != ConsumerUsage.CONTINUOUS

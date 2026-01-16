@@ -5,7 +5,7 @@ from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_ADDITIONAL_CUR
 from control.limiting_value import LoadmanagementLimit
 from control.loadmanagement import Loadmanagement
 from control.chargepoint.chargepoint import Chargepoint
-from control.algorithm.filter_chargepoints import (get_chargepoints_by_mode_and_counter,
+from control.algorithm.filter_chargepoints import (get_loads_by_mode_and_counter,
                                                    get_preferenced_chargepoint_charging)
 
 log = logging.getLogger(__name__)
@@ -20,8 +20,8 @@ class AdditionalCurrent:
         common.reset_current_by_chargemode(CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT)
         for counter in common.counter_generator():
             preferenced_chargepoints, preferenced_cps_without_set_current = get_preferenced_chargepoint_charging(
-                get_chargepoints_by_mode_and_counter(CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT,
-                                                     f"counter{counter.num}"))
+                get_loads_by_mode_and_counter(CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT,
+                                              f"counter{counter.num}"))
             if preferenced_chargepoints:
                 common.update_raw_data(preferenced_chargepoints)
                 log.info(f"Zähler {counter.num}, Verbraucher {preferenced_chargepoints}")
@@ -32,7 +32,8 @@ class AdditionalCurrent:
                     log.debug(f"cp {cp.num} available currents {available_currents} missing currents "
                               f"{missing_currents} limit {limit.message}")
                     cp.data.control_parameter.limit = limit
-                    available_for_cp = common.available_current_for_cp(cp, counts, available_currents, missing_currents)
+                    available_for_cp = common.available_current_for_load(
+                        cp, counts, available_currents, missing_currents)
                     current = common.get_current_to_set(
                         cp.data.set.current, available_for_cp, cp.data.set.target_current)
                     self._set_loadmangement_message(current, limit, cp)
