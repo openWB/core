@@ -95,6 +95,7 @@ def get_plan_class_for_usage(usage: ConsumerUsage):
 class ConsumerConfig:
     connected_phases: int = 1
     phase_1: int = 1
+    max_power: float = 5000
 
 
 def consumer_config_factory() -> ConsumerConfig:

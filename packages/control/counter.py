@@ -285,8 +285,11 @@ class Counter:
         try:
             message = None
             control_parameter = load.data.control_parameter
-            feed_in_limit = load.data.set.charge_template.data.chargemode.pv_charging.\
-                feed_in_limit
+            if isinstance(load, Chargepoint):
+                feed_in_limit = load.data.set.charge_template.data.chargemode.pv_charging.\
+                    feed_in_limit
+            else:
+                feed_in_limit = False
             pv_config = data.data.general_data.data.chargemode_config.pv_charging
             timestamp_switch_on_off = control_parameter.timestamp_switch_on_off
 

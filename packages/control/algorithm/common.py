@@ -30,8 +30,8 @@ def reset_current():
 
 
 def reset_current_by_chargemode(chargemodes: Tuple[Tuple[Optional[str], str]]) -> None:
-    for cp in get_loadmanagement_prios(chargemodes):
-        cp.data.set.current = None
+    for load in get_loadmanagement_prios(chargemodes):
+        load.data.set.current = None
 
 
 def counter_generator() -> Iterable[Counter]:
@@ -183,18 +183,18 @@ def consider_less_charging_chargepoint_in_loadmanagement(cp: Chargepoint, set_cu
 # tested
 
 
-def get_missing_currents_left(preferenced_chargepoints: List[Chargepoint]) -> Tuple[List[float], List[int]]:
+def get_missing_currents_left(preferenced_loads: List[Load]) -> Tuple[List[float], List[int]]:
     missing_currents = [0.0]*3
     counts = [0]*3
-    for chargepoint in preferenced_chargepoints:
-        required_currents = chargepoint.data.control_parameter.required_currents
+    for load in preferenced_loads:
+        required_currents = load.data.control_parameter.required_currents
         for i in range(0, 3):
             if required_currents[i] != 0:
                 counts[i] += 1
                 try:
-                    missing_currents[i] += required_currents[i] - chargepoint.data.control_parameter.min_current
+                    missing_currents[i] += required_currents[i] - load.data.control_parameter.min_current
                 except KeyError:
-                    missing_currents[i] += max(required_currents) - chargepoint.data.control_parameter.min_current
+                    missing_currents[i] += max(required_currents) - load.data.control_parameter.min_current
             else:
                 missing_currents[i] += 0
     return missing_currents, counts
@@ -204,8 +204,9 @@ def reset_current_to_target_current():
     """target_current enthält die gesetzte Stromstärke der vorherigen Stufe. Notwendig, um zB bei der
     Mindeststromstärke erkennen zu können, ob diese ein vom LM begrenzter Strom aus Stufe 2 oder der Mindeststrom
     aus Stufe 1 ist."""
-    for cp in data.data.cp_data.values():
+    for load in data.data.cp_data.values() and data.data.consumer_data.values():
         try:
-            cp.data.set.target_current = cp.data.set.current
+            load.data.set.target_current = load.data.set.current
         except Exception:
-            log.exception(f"Fehler im Algorithmus-Modul für Ladepunkt{cp.num}")
+            log.exception(f"Fehler im Algorithmus-Modul für "
+                          f"{'Ladepunkt' if isinstance(load, Chargepoint) else 'Verbraucher'}{load.num}")

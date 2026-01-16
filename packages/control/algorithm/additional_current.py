@@ -3,10 +3,10 @@ import logging
 from control.algorithm import common
 from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT
 from control.limiting_value import LoadmanagementLimit
+from control.load_protocol import Load
 from control.loadmanagement import Loadmanagement
-from control.chargepoint.chargepoint import Chargepoint
 from control.algorithm.filter_chargepoints import (get_loads_by_mode_and_counter,
-                                                   get_preferenced_chargepoint_charging)
+                                                   get_preferenced_load_charging)
 
 log = logging.getLogger(__name__)
 
@@ -19,45 +19,45 @@ class AdditionalCurrent:
     def set_additional_current(self) -> None:
         common.reset_current_by_chargemode(CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT)
         for counter in common.counter_generator():
-            preferenced_chargepoints, preferenced_cps_without_set_current = get_preferenced_chargepoint_charging(
+            preferenced_loads, preferenced_loads_without_set_current = get_preferenced_load_charging(
                 get_loads_by_mode_and_counter(CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT,
                                               f"counter{counter.num}"))
-            if preferenced_chargepoints:
-                common.update_raw_data(preferenced_chargepoints)
-                log.info(f"Zähler {counter.num}, Verbraucher {preferenced_chargepoints}")
-                while len(preferenced_chargepoints):
-                    cp = preferenced_chargepoints[0]
-                    missing_currents, counts = common.get_missing_currents_left(preferenced_chargepoints)
-                    available_currents, limit = Loadmanagement().get_available_currents(missing_currents, counter, cp)
-                    log.debug(f"cp {cp.num} available currents {available_currents} missing currents "
+            if preferenced_loads:
+                common.update_raw_data(preferenced_loads)
+                log.info(f"Zähler {counter.num}, Verbraucher {preferenced_loads}")
+                while len(preferenced_loads):
+                    load = preferenced_loads[0]
+                    missing_currents, counts = common.get_missing_currents_left(preferenced_loads)
+                    available_currents, limit = Loadmanagement().get_available_currents(missing_currents, counter, load)
+                    log.debug(f"load {load.num} available currents {available_currents} missing currents "
                               f"{missing_currents} limit {limit.message}")
-                    cp.data.control_parameter.limit = limit
+                    load.data.control_parameter.limit = limit
                     available_for_cp = common.available_current_for_load(
-                        cp, counts, available_currents, missing_currents)
+                        load, counts, available_currents, missing_currents)
                     current = common.get_current_to_set(
-                        cp.data.set.current, available_for_cp, cp.data.set.target_current)
-                    self._set_loadmangement_message(current, limit, cp)
+                        load.data.set.current, available_for_cp, load.data.set.target_current)
+                    self._set_loadmangement_message(current, limit, load)
                     common.set_current_counterdiff(
-                        cp.data.control_parameter.min_current,
+                        load.data.control_parameter.min_current,
                         current,
-                        cp)
-                    preferenced_chargepoints.pop(0)
-            if preferenced_cps_without_set_current:
-                for cp in preferenced_cps_without_set_current:
-                    cp.data.set.current = cp.data.set.target_current
+                        load)
+                    preferenced_loads.pop(0)
+            if preferenced_loads_without_set_current:
+                for load in preferenced_loads_without_set_current:
+                    load.data.set.current = load.data.set.target_current
 
     # tested
     def _set_loadmangement_message(self,
                                    current: float,
                                    limit: LoadmanagementLimit,
-                                   chargepoint: Chargepoint) -> None:
+                                   load: Load) -> None:
         # Strom muss an diesem Zähler geändert werden
         log.debug(
-            f"current {current} target {chargepoint.data.set.target_current} set current {chargepoint.data.set.current}"
-            f" required currents {chargepoint.data.control_parameter.required_currents}")
-        if (current != max(chargepoint.data.set.target_current, chargepoint.data.set.current or 0) and
+            f"current {current} target {load.data.set.target_current} set current {load.data.set.current}"
+            f" required currents {load.data.control_parameter.required_currents}")
+        if (current != max(load.data.set.target_current, load.data.set.current or 0) and
                 # Strom erreicht nicht die vorgegebene Stromstärke
                 round(current, 2) != round(max(
-                    chargepoint.data.control_parameter.required_currents), 2)):
-            chargepoint.set_state_and_log(f"Es kann nicht mit der vorgegebenen Stromstärke geladen werden"
-                                          f"{limit.message}")
+                    load.data.control_parameter.required_currents), 2)):
+            load.set_state_and_log(f"Es kann nicht mit der vorgegebenen Stromstärke geladen werden"
+                                   f"{limit.message}")

@@ -55,19 +55,19 @@ def get_loadmanagement_prios(chargemodes: Tuple[Tuple[Optional[str], str]],
     return valid
 
 
-def get_preferenced_chargepoint_charging(
-        chargepoints: List[Chargepoint]) -> Tuple[List[Chargepoint], List[Chargepoint]]:
-    preferenced_chargepoints_with_set_current = []
-    preferenced_chargepoints_without_set_current = []
-    for cp in chargepoints:
-        if cp.data.set.target_current == 0:
-            log.info(
-                f"LP {cp.num}: Keine Zuteilung des Mindeststroms, daher keine weitere Berücksichtigung")
-            preferenced_chargepoints_without_set_current.append(cp)
-        elif cp.data.get.charge_state is False:
-            log.info(
-                f"LP {cp.num}: Lädt nicht, daher keine weitere Berücksichtigung")
-            preferenced_chargepoints_without_set_current.append(cp)
+def get_preferenced_load_charging(
+        loads: List[Load]) -> Tuple[List[Load], List[Load]]:
+    preferenced_loads_with_set_current = []
+    preferenced_loads_without_set_current = []
+    for load in loads:
+        if load.data.set.target_current == 0:
+            log.info(f"{'LP' if isinstance(load, Chargepoint) else 'Verbraucher'} {load.num}: "
+                     f"Keine Zuteilung des Mindeststroms, daher keine weitere Berücksichtigung")
+            preferenced_loads_without_set_current.append(load)
+        elif load.data.get.charge_state is False:
+            log.info(f"{'LP' if isinstance(load, Chargepoint) else 'Verbraucher'} {load.num}: "
+                     f"Lädt nicht, daher keine weitere Berücksichtigung")
+            preferenced_loads_without_set_current.append(load)
         else:
-            preferenced_chargepoints_with_set_current.append(cp)
-    return preferenced_chargepoints_with_set_current, preferenced_chargepoints_without_set_current
+            preferenced_loads_with_set_current.append(load)
+    return preferenced_loads_with_set_current, preferenced_loads_without_set_current

@@ -2,6 +2,7 @@ import logging
 from control import data
 from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE
 from control.algorithm.filter_chargepoints import get_loadmanagement_prios
+from control.chargepoint.chargepoint import Chargepoint
 from helpermodules.phase_handling import voltages_mean
 
 log = logging.getLogger(__name__)
@@ -19,7 +20,7 @@ class Bidi:
         if preferenced_cps:
             log.info(f"Verbraucher {preferenced_cps}")
             while len(preferenced_cps):
-                cp = preferenced_cps[0]
+                cp: Chargepoint = preferenced_cps[0]
                 zero_point_adjustment = grid_counter.data.set.surplus_power_left / len(preferenced_cps)
                 log.debug(f"Nullpunktanpassung für LP{cp.num}: verbleibende Leistung {zero_point_adjustment}W")
                 missing_currents = [zero_point_adjustment / cp.data.get.phases_in_use /
