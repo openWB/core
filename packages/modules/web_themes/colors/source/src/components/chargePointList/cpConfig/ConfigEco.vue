@@ -112,7 +112,7 @@ const energyLimit = computed({
 }
 
 .heading {
-	color: var(--color-devices);
+	color: var(--color-eco);
 	font-size: var(--font-settings);
 	font-weight: bold;
 }
