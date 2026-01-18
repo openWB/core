@@ -122,7 +122,7 @@ const buttons = [
 		name: 'Zielladen',
 		color: 'var(--color-battery)',
 	},
-	{ mode: 'eco_charging', name: 'Eco', color: 'var(--color-devices)' },
+	{ mode: 'eco_charging', name: 'Eco', color: 'var(--color-eco)' },
 	{ mode: 'stop', name: 'Stop', color: 'var(--color-axis)' },
 ]
 const cp = computed(() => {

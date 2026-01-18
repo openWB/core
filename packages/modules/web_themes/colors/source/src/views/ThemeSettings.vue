@@ -14,8 +14,13 @@
 			</span>
 		</template>
 		<div class="subgrid m-0 p-0">
+			<div class="topbanner grid-col-12">
+				Eine Reihe von Einstellungen werden neu
+				<em>in den openWB-Einstellungen "Allgemein"</em> <br />
+				für alle Geräte einheitlich festgelegt.
+			</div>
 			<div class="settingscolumn">
-				<ConfigItem
+				<!-- <ConfigItem
 					:fullwidth="true"
 					title="Farbschema"
 					icon="fa-adjust"
@@ -25,8 +30,8 @@
 						v-model="globalConfig.displayMode"
 						:options="colorschemes"
 					/>
-				</ConfigItem>
-				<ConfigItem
+				</ConfigItem> -->
+				<!-- <ConfigItem
 					:fullwidth="true"
 					title="Farbschema Smart-Home-Geräte"
 					icon="fa-palette"
@@ -36,8 +41,8 @@
 						v-model="globalConfig.smartHomeColors"
 						:options="shSchemes"
 					/>
-				</ConfigItem>
-				<ConfigItem
+				</ConfigItem> -->
+				<!-- <ConfigItem
 					:fullwidth="true"
 					title="Grafik: Raster"
 					icon="fa-th"
@@ -46,8 +51,8 @@
 					<template #inline-item>
 						<SwitchInput v-model="globalConfig.showGrid" />
 					</template>
-				</ConfigItem>
-				<ConfigItem
+				</ConfigItem> -->
+				<!-- <ConfigItem
 					:fullwidth="true"
 					title="Variable Bogenlänge"
 					icon="fa-chart-area"
@@ -56,11 +61,11 @@
 					<template #inline-item>
 						<SwitchInput v-model="globalConfig.showRelativeArcs" />
 					</template>
-				</ConfigItem>
+				</ConfigItem> -->
 				<ConfigItem
 					v-if="globalConfig.showRelativeArcs"
 					:fullwidth="true"
-					title="Bögen zurücksetzen"
+					title="Linker Graph: Bögen zurücksetzen"
 					icon="fa-undo"
 					infotext="Durch Click auf den Button wird die Maximallänge der Bögen auf den aktuellen Wert gesetzt."
 				>
@@ -72,7 +77,7 @@
 						Reset
 					</button>
 				</ConfigItem>
-				<ConfigItem
+				<!-- <ConfigItem
 					:fullwidth="true"
 					title="Anzahl Dezimalstellen"
 					icon="fa-sliders-h"
@@ -82,7 +87,7 @@
 						v-model="globalConfig.decimalPlaces"
 						:options="decimalDisplay"
 					/>
-				</ConfigItem>
+				</ConfigItem> -->
 				<ConfigItem
 					:fullwidth="true"
 					title="Uhrzeit anzeigen"
@@ -105,8 +110,6 @@
 						:options="shortListOptions"
 					/>
 				</ConfigItem>
-			</div>
-			<div class="settingscolumn">
 				<ConfigItem
 					:fullwidth="true"
 					title="Buttonleiste für Ladepunkte"
@@ -127,6 +130,8 @@
 						<SwitchInput v-model="globalConfig.showQuickAccess" />
 					</template>
 				</ConfigItem>
+			</div>
+			<div class="settingscolumn">
 				<ConfigItem
 					:fullwidth="true"
 					title="Breite Widgets"
@@ -157,7 +162,7 @@
 						<SwitchInput v-model="globalConfig.showAnimations" />
 					</template>
 				</ConfigItem>
-				<ConfigItem
+				<!-- <ConfigItem
 					:fullwidth="true"
 					title="Zähler anzeigen"
 					icon="fa-chart-bar"
@@ -166,8 +171,8 @@
 					<template #inline-item>
 						<SwitchInput v-model="globalConfig.showCounters" />
 					</template>
-				</ConfigItem>
-				<ConfigItem
+				</ConfigItem> -->
+				<!-- <ConfigItem
 					:fullwidth="true"
 					title="Fahrzeuge anzeigen"
 					icon="fa-car"
@@ -176,8 +181,8 @@
 					<template #inline-item>
 						<SwitchInput v-model="globalConfig.showVehicles" />
 					</template>
-				</ConfigItem>
-				<ConfigItem
+				</ConfigItem> -->
+				<!-- <ConfigItem
 					:fullwidth="true"
 					title="Standardfahrzeug anzeigen"
 					icon="fa-car"
@@ -186,8 +191,8 @@
 					<template #inline-item>
 						<SwitchInput v-model="globalConfig.showStandardVehicle" />
 					</template>
-				</ConfigItem>
-				<ConfigItem
+				</ConfigItem> -->
+				<!-- <ConfigItem
 					:fullwidth="true"
 					title="Wechselrichter-Details anzeigen"
 					icon="fa-solar-panel"
@@ -196,8 +201,8 @@
 					<template #inline-item>
 						<SwitchInput v-model="globalConfig.showInverters" />
 					</template>
-				</ConfigItem>
-				<ConfigItem
+				</ConfigItem> -->
+				<!-- <ConfigItem
 					:fullwidth="true"
 					title="Alternatives Energie-Widget"
 					icon="fa-chart-area"
@@ -206,19 +211,7 @@
 					<template #inline-item>
 						<SwitchInput v-model="globalConfig.alternativeEnergy" />
 					</template>
-				</ConfigItem>
-			</div>
-			<div class="settingscolumn">
-				<ConfigItem
-					:fullwidth="true"
-					title="Preistabelle anzeigen"
-					icon="fa-car"
-					infotext="Zeige die Strompreistabelle in einer separaten Box an"
-				>
-					<template #inline-item>
-						<SwitchInput v-model="globalConfig.showPrices" />
-					</template>
-				</ConfigItem>
+				</ConfigItem> -->
 				<ConfigItem
 					:fullwidth="true"
 					title="Untere Markierung in der Preistabelle"
@@ -251,6 +244,18 @@
 						unit="ct"
 					/>
 				</ConfigItem>
+			</div>
+			<div class="settingscolumn">
+				<!-- <ConfigItem
+					:fullwidth="true"
+					title="Preistabelle anzeigen"
+					icon="fa-car"
+					infotext="Zeige die Strompreistabelle in einer separaten Box an"
+				>
+					<template #inline-item>
+						<SwitchInput v-model="globalConfig.showPrices" />
+					</template>
+				</ConfigItem> -->
 
 				<ConfigItem
 					:fullwidth="true"
@@ -290,7 +295,7 @@
 
 <script setup lang="ts">
 import { globalConfig } from '@/assets/js/themeConfig'
-import SelectInput from '@/components/shared/SelectInput.vue'
+//import SelectInput from '@/components/shared/SelectInput.vue'
 import ConfigItem from '@/components/shared/ConfigItem.vue'
 import SwitchInput from '@/components/shared/SwitchInput.vue'
 import RadioInput2 from '@/components/shared/RadioInput2.vue'
@@ -298,23 +303,23 @@ import RadioInput2 from '@/components/shared/RadioInput2.vue'
 import WbWidgetFlex from '@/components/shared/WbWidgetFlex.vue'
 import RangeInput from '@/components/shared/RangeInput.vue'
 const emit = defineEmits(['reset-arcs'])
-const colorschemes: [string, string][] = [
+/* const colorschemes: [string, string][] = [
 	['Dunkel', 'dark'],
 	['Hell', 'light'],
 	['Blau', 'blue'],
-]
-const decimalDisplay: [string, string][] = [
+] */
+/* const decimalDisplay: [string, string][] = [
 	['3 kW', '0'],
 	['3,1 kW', '1'],
 	['3,14 kW', '2'],
 	['3,141 kW', '3'],
 	['3141 W', '4'],
-]
-const shSchemes: [string, string][] = [
+] */
+/* const shSchemes: [string, string][] = [
 	['Orange', 'normal'],
 	['Grün/Violett', 'standard'],
 	['Bunt', 'advanced'],
-]
+] */
 const clockModes: [string, string][] = [
 	['Aus', 'off'],
 	['Menü', 'navbar'],
@@ -339,5 +344,13 @@ const shortListOptions: [string, string][] = [
 
 .settingscolumn {
 	padding: 20px;
+}
+.topbanner {
+	font-size: var(--font-large);
+	color: var(--color-evu);
+	text-align: center;
+	padding: 1em;
+	border: 1px solid var(--color-evu);
+	border-radius: 5px;
 }
 </style>

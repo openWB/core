@@ -9,10 +9,10 @@ import { select } from 'd3'
 import { ChargeMode, type ChargeModeInfo } from './types'
 import { addShDevice, shDevices } from '@/components/smartHome/model'
 import { registry } from './model'
-import {
+/* import {
 	sourceGraphIsNotInitialized,
 	usageGraphIsNotInitialized,
-} from '@/components/powerGraph/model'
+} from '@/components/powerGraph/model' */
 import { updateServer } from './sendMessages'
 import { counters } from '@/components/counterList/model'
 export class Config {
@@ -21,6 +21,7 @@ export class Config {
 	private _graphPreference = 'today'
 	private _usageStackOrder = 0
 	private _displayMode = 'dark'
+	private _liveGraphDuration = 7200
 	private _showGrid = false
 	private _smartHomeColors = 'normal'
 	private _decimalPlaces = 1
@@ -56,10 +57,11 @@ export class Config {
 	get showRelativeArcs() {
 		return this._showRelativeArcs
 	}
-	set showRelativeArcs(setting: boolean) {
+	/* set showRelativeArcs(setting: boolean) {
 		this._showRelativeArcs = setting
 		savePrefs()
 	}
+	 */
 	setShowRelativeArcs(setting: boolean) {
 		this._showRelativeArcs = setting
 	}
@@ -86,41 +88,48 @@ export class Config {
 	get displayMode() {
 		return this._displayMode
 	}
-	set displayMode(mode: string) {
+	/* set displayMode(mode: string) {
+		this._displayMode = mode
+		switchTheme(mode)
+	} */
+	setDisplayMode(mode: string) {
 		this._displayMode = mode
 		switchTheme(mode)
 	}
-	setDisplayMode(mode: string) {
-		this._displayMode = mode
+	get liveGraphDuration() {
+		return this._liveGraphDuration
+	}
+	setLiveGraphDuration(t: number) {
+		this._liveGraphDuration = t
 	}
 	get showGrid() {
 		return this._showGrid
 	}
-	set showGrid(setting: boolean) {
+	/* set showGrid(setting: boolean) {
 		this._showGrid = setting
 		savePrefs()
-	}
+	} */
 	setShowGrid(setting: boolean) {
 		this._showGrid = setting
 	}
 	get decimalPlaces() {
 		return this._decimalPlaces
 	}
-	set decimalPlaces(setting: number) {
+	/* set decimalPlaces(setting: number) {
 		this._decimalPlaces = setting
 		savePrefs()
-	}
+	} */
 	setDecimalPlaces(setting: number) {
 		this._decimalPlaces = setting
 	}
 	get smartHomeColors() {
 		return this._smartHomeColors
 	}
-	set smartHomeColors(setting: string) {
+	/* set smartHomeColors(setting: string) {
 		this._smartHomeColors = setting
 		switchSmarthomeColors(setting)
 		savePrefs()
-	}
+	} */
 	setSmartHomeColors(setting: string) {
 		this._smartHomeColors = setting
 		switchSmarthomeColors(setting)
@@ -238,64 +247,64 @@ export class Config {
 	get showCounters() {
 		return this._showCounters
 	}
-	set showCounters(show: boolean) {
+	/* set showCounters(show: boolean) {
 		this._showCounters = show
 		savePrefs()
-	}
+	} */
 	setShowCounters(show: boolean) {
 		this._showCounters = show
 	}
 	get showVehicles() {
 		return this._showVehicles
 	}
-	set showVehicles(show: boolean) {
+	/* set showVehicles(show: boolean) {
 		this._showVehicles = show
 		savePrefs()
-	}
+	} */
 	setShowVehicles(show: boolean) {
 		this._showVehicles = show
 	}
 	get showStandardVehicle() {
 		return this._showStandardVehicle
 	}
-	set showStandardVehicle(show: boolean) {
-		this._showStandardVehicle = show
-		savePrefs()
-	}
+	//set showStandardVehicle(show: boolean) {
+	//this._showStandardVehicle = show
+	//savePrefs()
+	//}
 	setShowStandardVehicle(show: boolean) {
 		this._showStandardVehicle = show
 	}
 	get showPrices() {
 		return this._showPrices
 	}
-	set showPrices(show: boolean) {
+	/* set showPrices(show: boolean) {
 		this._showPrices = show
 		savePrefs()
-	}
+	} */
 	setShowPrices(show: boolean) {
 		this._showPrices = show
 	}
 	get showInverters() {
 		return this._showInverters
 	}
-	set showInverters(show: boolean) {
+	/* set showInverters(show: boolean) {
 		this._showInverters = show
 		sourceGraphIsNotInitialized()
 		usageGraphIsNotInitialized()
 		savePrefs()
-	}
+	} */
 	setShowInverters(show: boolean) {
 		this._showInverters = show
 	}
 	get alternativeEnergy() {
 		return this._alternativeEnergy
 	}
-	set alternativeEnergy(show: boolean) {
+	/* set alternativeEnergy(show: boolean) {
 		this._alternativeEnergy = show
 		sourceGraphIsNotInitialized()
 		usageGraphIsNotInitialized()
 		savePrefs()
-	}
+	} */
 	setAlternativeEnergy(show: boolean) {
 		this._alternativeEnergy = show
 	}
@@ -385,7 +394,7 @@ export const chargemodes: { [key: string]: ChargeModeInfo } = {
 	eco_charging: {
 		mode: ChargeMode.eco_charging,
 		name: 'Eco',
-		color: 'var(--color-devices)',
+		color: 'var(--color-eco)',
 		icon: 'fa-coins',
 	},
 	stop: {
@@ -432,15 +441,15 @@ export function switchTheme(mode: string) {
 	doc.classed('theme-blue', mode == 'blue')
 	savePrefs()
 }
-export function toggleGrid() {
+/* export function toggleGrid() {
 	globalConfig.showGrid = !globalConfig.showGrid
 	savePrefs()
-}
-export function toggleFixArcs() {
+} */
+/* export function toggleFixArcs() {
 	// globalConfig.etPrice = globalConfig.etPrice + 10
 	globalConfig.showRelativeArcs = !globalConfig.showRelativeArcs
 	savePrefs()
-}
+} */
 export function resetArcs() {
 	globalConfig.maxPower =
 		registry.getPower('evuIn') +
@@ -448,14 +457,14 @@ export function resetArcs() {
 		registry.getPower('batOut')
 	savePrefs()
 }
-export function switchDecimalPlaces() {
+/* export function switchDecimalPlaces() {
 	if (globalConfig.decimalPlaces < 4) {
 		globalConfig.decimalPlaces = globalConfig.decimalPlaces + 1
 	} else {
 		globalConfig.decimalPlaces = 0
 	}
 	savePrefs()
-}
+} */
 export function switchSmarthomeColors(setting: string) {
 	const doc = select('html')
 	doc.classed('shcolors-normal', setting == 'normal')
@@ -520,12 +529,12 @@ function writeCookie() {
 		.filter((ctr) => ctr.showInGraph)
 		.map((ctr) => ctr.id.toString())
 	prefs.showLG = globalConfig.graphPreference == 'live'
-	prefs.displayM = globalConfig.displayMode
+	//prefs.displayM = globalConfig.displayMode
 	prefs.stackO = globalConfig.usageStackOrder
-	prefs.showGr = globalConfig.showGrid
-	prefs.decimalP = globalConfig.decimalPlaces
-	prefs.smartHomeC = globalConfig.smartHomeColors
-	prefs.relPM = globalConfig.showRelativeArcs
+	//prefs.showGr = globalConfig.showGrid
+	//prefs.decimalP = globalConfig.decimalPlaces
+	//prefs.smartHomeC = globalConfig.smartHomeColors
+	//prefs.relPM = globalConfig.showRelativeArcs
 	prefs.maxPow = globalConfig.maxPower
 	prefs.showQA = globalConfig.showQuickAccess
 	prefs.simpleCP = globalConfig.simpleCpList
@@ -535,12 +544,12 @@ function writeCookie() {
 	prefs.fluidD = globalConfig.fluidDisplay
 	prefs.clock = globalConfig.showClock
 	prefs.showButtonBar = globalConfig.showButtonBar
-	prefs.showCounters = globalConfig.showCounters
-	prefs.showVehicles = globalConfig.showVehicles
-	prefs.showStandardV = globalConfig.showStandardVehicle
-	prefs.showPrices = globalConfig.showPrices
-	prefs.showInv = globalConfig.showInverters
-	prefs.altEngy = globalConfig.alternativeEnergy
+	//prefs.showCounters = globalConfig.showCounters
+	//prefs.showVehicles = globalConfig.showVehicles
+	//prefs.showStandardV = globalConfig.showStandardVehicle
+	//prefs.showPrices = globalConfig.showPrices
+	//prefs.showInv = globalConfig.showInverters
+	//prefs.altEngy = globalConfig.alternativeEnergy
 	prefs.lowerP = globalConfig.lowerPriceBound
 	prefs.upperP = globalConfig.upperPriceBound
 	prefs.sslPrefs = globalConfig.sslPrefs
@@ -561,12 +570,12 @@ function readCookie() {
 	)
 	if (myCookie.length > 0) {
 		const prefs = JSON.parse(myCookie[0].split('=')[1]) as Preferences
-		if (prefs.decimalP !== undefined) {
+		/* if (prefs.decimalP !== undefined) {
 			globalConfig.setDecimalPlaces(+prefs.decimalP)
-		}
-		if (prefs.smartHomeC !== undefined) {
+		} */
+		/* if (prefs.smartHomeC !== undefined) {
 			globalConfig.setSmartHomeColors(prefs.smartHomeC)
-		}
+		} */
 		if (prefs.hideSH !== undefined) {
 			prefs.hideSH.forEach((i) => {
 				if (shDevices.get(i) == undefined) {
@@ -575,27 +584,27 @@ function readCookie() {
 				shDevices.get(i)!.setShowInGraph(false)
 			})
 		}
-		if (prefs.showCtr !== undefined) {
+		/* if (prefs.showCtr !== undefined) {
 			globalConfig.countersToShow = prefs.showCtr.map((i) => +i)
-		}
+		} */
 		if (prefs.showLG !== undefined) {
 			globalConfig.setGraphPreference(prefs.showLG ? 'live' : 'today')
 		}
 		if (prefs.maxPow !== undefined) {
 			globalConfig.setMaxPower(+prefs.maxPow)
 		}
-		if (prefs.relPM !== undefined) {
+		/* if (prefs.relPM !== undefined) {
 			globalConfig.setShowRelativeArcs(prefs.relPM)
-		}
-		if (prefs.displayM !== undefined) {
+		} */
+		/* if (prefs.displayM !== undefined) {
 			globalConfig.setDisplayMode(prefs.displayM)
-		}
+		} */
 		if (prefs.stackO !== undefined) {
 			globalConfig.setUsageStackOrder(prefs.stackO)
 		}
-		if (prefs.showGr !== undefined) {
+		/* if (prefs.showGr !== undefined) {
 			globalConfig.setShowGrid(prefs.showGr)
-		}
+		} */
 		if (prefs.showQA !== undefined) {
 			globalConfig.setShowQuickAccess(prefs.showQA)
 		}
@@ -620,24 +629,24 @@ function readCookie() {
 		if (prefs.showButtonBar !== undefined) {
 			globalConfig.setShowButtonBar(prefs.showButtonBar)
 		}
-		if (prefs.showCounters !== undefined) {
+		/* if (prefs.showCounters !== undefined) {
 			globalConfig.setShowCounters(prefs.showCounters)
-		}
-		if (prefs.showVehicles !== undefined) {
+		} */
+		/* if (prefs.showVehicles !== undefined) {
 			globalConfig.setShowVehicles(prefs.showVehicles)
-		}
-		if (prefs.showStandardV !== undefined) {
-			globalConfig.setShowStandardVehicle(prefs.showStandardV)
-		}
-		if (prefs.showPrices !== undefined) {
+		} */
+		//if (prefs.showStandardV !== undefined) {
+		//	globalConfig.setShowStandardVehicle(prefs.showStandardV)
+		//}
+		/* if (prefs.showPrices !== undefined) {
 			globalConfig.setShowPrices(prefs.showPrices)
-		}
-		if (prefs.showInv !== undefined) {
+		} */
+		/* if (prefs.showInv !== undefined) {
 			globalConfig.setShowInverters(prefs.showInv)
-		}
-		if (prefs.altEngy !== undefined) {
+		} */
+		/* if (prefs.altEngy !== undefined) {
 			globalConfig.setAlternativeEnergy(prefs.altEngy)
-		}
+		} */
 		if (prefs.lowerP !== undefined) {
 			globalConfig.setLowerPriceBound(prefs.lowerP)
 		}
