@@ -69,6 +69,8 @@ def set_current_counterdiff(diff_current: float,
     if isinstance(load, Chargepoint):
         considered_current = consider_less_charging_chargepoint_in_loadmanagement(
             load, current)
+    else:
+        considered_current = current
     # gar nicht ladende Autos?
     diff = max(considered_current - diff_current, 0)
     diffs = [diff if required_currents[i] != 0 else 0 for i in range(3)]

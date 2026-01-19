@@ -35,7 +35,7 @@ def get_loadmanagement_prios(chargemodes: Tuple[Tuple[Optional[str], str]],
         for chargemode in chargemodes:
             valid_chargemode = []
             for item in data.data.counter_all_data.data.get.loadmanagement_prios:
-                if item["type"] == "ev":
+                if item["type"] == "vehicle":
                     for cp in data.data.cp_data.values():
                         if item["id"] == cp.data.config.ev and power_filter_func(cp):
                             if _is_valid_for_chargemode(cp, chargemode, valid, valid_chargemode):

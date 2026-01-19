@@ -9,6 +9,8 @@ from control.chargelog import chargelog
 from control.chargepoint import chargepoint
 from control import data
 from control.chargepoint.chargepoint_state import ChargepointState
+from control.consumer.consumer import Consumer
+from control.consumer.usage import ConsumerUsage
 from helpermodules.pub import Pub
 from helpermodules.utils._thread_handler import joined_thread_handler
 from modules.common.abstract_io import AbstractIoDevice
@@ -59,6 +61,30 @@ class Process:
                     cp.remember_previous_values()
                 except Exception:
                     log.exception("Fehler im Process-Modul für Ladepunkt "+str(cp))
+            for consumer in data.data.consumer_data.values():
+                try:
+                    control_parameter = consumer.data.control_parameter
+                    if control_parameter.state != ChargepointState.NO_CHARGING_ALLOWED or consumer.data.set.current != 0:
+                        control_parameter.state = ChargepointState.CHARGING_ALLOWED
+                        consumer.data.set.current = round(consumer.data.set.current, 2)
+                        Pub().pub(f"openWB/set/consumer/{consumer.num}/set/current", consumer.data.set.current)
+                        log.info(f"Verbraucher{consumer.num}: set current {consumer.data.set.current} A, "
+                                 f"state {ChargepointState(consumer.data.control_parameter.state).name}")
+                    else:
+                        control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
+                    if consumer.data.get.state_str is not None:
+                        Pub().pub(f"openWB/set/consumer/{consumer.num}/get/state_str",
+                                  consumer.data.get.state_str)
+                    else:
+                        if consumer.data.get.charge_state:
+                            Pub().pub(
+                                f"openWB/set/consumer/{consumer.num}/get/state_str", "Verbraucher läuft.")
+                        else:
+                            Pub().pub(
+                                f"openWB/set/consumer/{consumer.num}/get/state_str", "Verbraucher wird gestartet... ")
+                    modules_threads.append(self._start_consumer(consumer))
+                except Exception:
+                    log.exception("Fehler im Process-Modul für Verbaucher "+str(consumer))
             for bat_component in get_controllable_bat_components():
                 modules_threads.append(
                     Thread(
@@ -142,3 +168,14 @@ class Process:
         return Thread(target=chargepoint.chargepoint_module.set_current,
                       args=(chargepoint.data.set.current,),
                       name=f"set current cp{chargepoint.chargepoint_module.config.id}")
+
+    def _start_consumer(self, consumer: Consumer) -> Thread:
+        if consumer.data.usage.type in (ConsumerUsage.CONTINUOUS,
+                                        ConsumerUsage.SUSPENDABLE_ONOFF,
+                                        ConsumerUsage.SUSPENDABLE_ONOFF_INDIVIDUAL):
+            return Thread(
+                target=consumer.module.switch_on if consumer.data.set.current > 0 else consumer.module.switch_off,
+                name=f"set current consumer{consumer.num}")
+        return Thread(target=consumer.module.set_power_limit,
+                      args=(consumer.data.set.current,),
+                      name=f"set current consumer{consumer.num}")

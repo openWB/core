@@ -11,7 +11,7 @@ from modules.devices.shelly.shelly.config import (ShellyConfiguration as ShellyD
 def create_consumer(config: ShellyEM):
     device = None
 
-    def initializer(self):
+    def initializer():
         nonlocal device
         device = create_device(device_config=ShellyDevice(
             configuration=ShellyDeviceConfiguration(
@@ -21,14 +21,14 @@ def create_consumer(config: ShellyEM):
             id=config.id)
         device.create_counter_component(component_config=ShellyDeviceCounterSetup(type="consumer_counter"))
 
-    def error_handler(self) -> None:
+    def error_handler() -> None:
         initializer()
 
-    def update(self) -> None:
+    def update() -> None:
         device.update()
     return ConfigurableConsumer(consumer_config=config,
-                                initializer=initializer,
-                                error_handler=error_handler,
+                                module_initializer=initializer,
+                                module_error_handler=error_handler,
                                 update=update,)
 
 

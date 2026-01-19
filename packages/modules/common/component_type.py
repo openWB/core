@@ -18,6 +18,8 @@ class ComponentType(Enum):
 def special_to_general_type_mapping(component_type: str) -> ComponentType:
     if "bat" in component_type:
         return ComponentType.BAT
+    elif "consumer" in component_type:
+        return ComponentType.CONSUMER
     elif "counter" in component_type:
         return ComponentType.COUNTER
     elif "inverter" in component_type:

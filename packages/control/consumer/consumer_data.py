@@ -1,5 +1,5 @@
 from dataclasses import asdict, dataclass, field
-from typing import Dict, List, Optional, Union
+from typing import Callable, Dict, List, Optional, Union
 from control.chargepoint.control_parameter import ControlParameter, control_parameter_factory
 from control.consumer.usage import ConsumerUsage
 from dataclass_utils.factories import empty_list_factory
@@ -9,7 +9,7 @@ from modules.common.consumer_setup import ConsumerSetup
 
 
 def get_meter_only_config() -> Dict:
-    return asdict(MeterOnlyConfig())
+    return MeterOnlyConfig()
 
 
 @dataclass
@@ -18,11 +18,11 @@ class MeterOnlyConfig:
 
 
 def get_suspendable_tunable_consumer_config() -> Dict:
-    return asdict(SuspendableTunableDeviceConfig())
+    return SuspendableTunableDeviceConfig()
 
 
 def get_suspendable_tunable_consumer_individual_config() -> Dict:
-    return asdict(SuspendableTunableDeviceConfig(type=ConsumerUsage.SUSPENDABLE_TUNABLE_INDIVIDUAL))
+    return SuspendableTunableDeviceConfig(type=ConsumerUsage.SUSPENDABLE_TUNABLE_INDIVIDUAL)
 
 
 @dataclass
@@ -36,11 +36,11 @@ class SuspendableTunableDeviceConfig:
 
 
 def get_suspendable_onoff_consumer_config() -> Dict:
-    return asdict(SuspendableOnOffDeviceConfig())
+    return SuspendableOnOffDeviceConfig()
 
 
 def get_suspendable_onoff_consumer_individual_config() -> Dict:
-    return asdict(SuspendableOnOffDeviceConfig(type=ConsumerUsage.SUSPENDABLE_ONOFF_INDIVIDUAL))
+    return SuspendableOnOffDeviceConfig(type=ConsumerUsage.SUSPENDABLE_ONOFF_INDIVIDUAL)
 
 
 @dataclass
@@ -54,7 +54,7 @@ class SuspendableOnOffDeviceConfig:
 
 
 def get_continuous_consumer_config() -> Dict:
-    return asdict(ContinuousDeviceConfig())
+    return ContinuousDeviceConfig()
 
 
 @dataclass
@@ -78,6 +78,15 @@ GET_DEFAULTS_BY_USAGE: Dict[ConsumerUsage, callable] = {
     ConsumerUsage.SUSPENDABLE_ONOFF: get_suspendable_onoff_consumer_config,
     ConsumerUsage.SUSPENDABLE_ONOFF_INDIVIDUAL: get_suspendable_onoff_consumer_individual_config,
     ConsumerUsage.CONTINUOUS: get_continuous_consumer_config,
+}
+
+GET_CLASS_BY_USAGE: Dict[ConsumerUsage, Callable] = {
+    ConsumerUsage.METER_ONLY: MeterOnlyConfig,
+    ConsumerUsage.SUSPENDABLE_TUNABLE: SuspendableTunableDeviceConfig,
+    ConsumerUsage.SUSPENDABLE_TUNABLE_INDIVIDUAL: SuspendableTunableDeviceConfig,
+    ConsumerUsage.SUSPENDABLE_ONOFF: SuspendableOnOffDeviceConfig,
+    ConsumerUsage.SUSPENDABLE_ONOFF_INDIVIDUAL: SuspendableOnOffDeviceConfig,
+    ConsumerUsage.CONTINUOUS: ContinuousDeviceConfig,
 }
 
 
@@ -113,7 +122,7 @@ class Get:
     fault_str: str = NO_ERROR
     fault_state: int = 0
     imported: float = 0
-    phases_in_use: int
+    phases_in_use: int = 0
     power: float = 0
     powers: Optional[List[Optional[float]]] = None
     set_power: Optional[float] = None
@@ -162,7 +171,7 @@ class ConsumerData:
     config: ConsumerConfig = field(default_factory=consumer_config_factory)
     extra_meter: ExtraMeterConfig = field(default_factory=extra_meter_config_factory)
     usage: Union[MeterOnlyConfig, SuspendableTunableDeviceConfig,
-                 SuspendableOnOffDeviceConfig, ContinuousDeviceConfig] = None
+                 SuspendableOnOffDeviceConfig, ContinuousDeviceConfig] = field(default_factory=get_meter_only_config)
     control_parameter: ControlParameter = field(default_factory=control_parameter_factory)
     get: Get = field(default_factory=get_factory)
     set: Set = field(default_factory=set_factory)

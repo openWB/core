@@ -1064,16 +1064,19 @@ class Command:
         """ weist einem Verbraucher eine Nutzung zu.
         """
         usage = ConsumerUsage(payload["data"]["usage"])
-        usage_config = GET_DEFAULTS_BY_USAGE(usage)
+        usage_config = GET_DEFAULTS_BY_USAGE[usage]()
         plan = get_plan_class_for_usage(usage)
         if plan is not None:
             plan = plan()
-            plan.id = self.max_id_usage_plan
-            usage_config.plans.append()
-        Pub().pub(f'openWB/set/consumer/{payload["data"]["id"]}/usage', dataclass_utils.asdict(usage_config))
+            new_id = self.max_id_usage_plan + 1
+            plan.id = new_id
+            self.max_id_usage_plan = new_id
+            Pub().pub("openWB/set/command/max_id/usage_plan", new_id)
+            usage_config.plans.append(plan)
+        Pub().pub(f'openWB/set/consumer/{payload["data"]["consumer_id"]}/usage', dataclass_utils.asdict(usage_config))
         pub_user_message(
             payload, connection_id,
-            f'Dem Verbraucher mit ID \'{payload["data"]["id"]}\' wurde die Nutzung '
+            f'Dem Verbraucher mit ID \'{payload["data"]["consumer_id"]}\' wurde die Nutzung '
             f'\'{payload["data"]["usage"]}\' zugewiesen.',
             MessageType.SUCCESS)
 

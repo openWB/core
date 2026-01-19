@@ -38,7 +38,7 @@ class Consumer(Load):
             elif message not in self.data.set.state_str:
                 self.data.set.state_str += f" {message}"
 
-    def setup(self):
+    def update(self):
         if self.data.usage.type == ConsumerUsage.METER_ONLY:
             return
         else:
@@ -53,15 +53,19 @@ class Consumer(Load):
             self.data.get.phases_in_use = self.data.config.connected_phases
             self.data.set.phases_to_use = self.data.config.connected_phases
             self.data.get.charge_state = True if self.data.get.power > 0 else False
-            min_current, required_current = self.get_parameter()
-            self.set_control_parameter(min_current, required_current, self.data.config.connected_phases)
+            min_current, required_current, message, mode, submode = self.get_parameter()
+            self.set_control_parameter(min_current, required_current, self.data.config.connected_phases, submode, mode)
+            self.set_state_and_log(message)
+            self.set_mode_changed(submode, mode)
             log.debug(
-                f"Verbraucher {self.num}: Sollstrom {required_current}, min. Ist-Strom {max(self.data.get.currents)}")
+                f"Verbraucher {self.num}: Sollstrom {required_current}, min. Ist-Strom {max(self.data.get.currents)},"
+                f" Modus {mode}, Submodus {submode}, {message}")
 
     PRICE_LIMIT_EXCEEDED = "Preislimit für Verbraucher aktiv, aktueller Preis zu hoch."
     PRICE_LIMIT_EXCEEDED_CONTINOUS_STILL_RUNNING = ("Preislimit für Verbraucher aktiv, aktueller Preis zu hoch. "
                                                     "Verbraucher läuft weiter, da der Verbraucher nicht abgeschaltet "
                                                     "werden darf.")
+    BELOW_PRICE_LIMIT = "Preislimit für Verbraucher aktiv, aktueller Preis in Ordnung."
     SURPLUS_CONTINOUS_STILL_RUNNING = ("Verbraucher läuft ggf auch ohne ausreichend Überschuss weiter, da der "
                                        "Verbraucher nicht abgeschaltet werden darf.")
     WAIT_FOR_START_SIGNAL = "Warte auf Startsignal für kontinuierlichen Verbraucher. Nächster Testlauf in {}"
@@ -116,28 +120,42 @@ class Consumer(Load):
                             submode = Chargemode.PV_CHARGING
                 else:
                     if self.data.usage.price_limit_active:
-                        if self.data.usage.type == ConsumerUsage.CONTINUOUS and self.data.get.power > 0:
-                            required_current = max(self.data.get.currents)
-                            message = self.PRICE_LIMIT_EXCEEDED_CONTINOUS_STILL_RUNNING
-                            mode = Chargemode.INSTANT_CHARGING
-                            submode = Chargemode.INSTANT_CHARGING
-                        elif data.data.optional_data.ep_get_current_price() <= self.data.usage.price_limit:
+                        if data.data.optional_data.ep_get_current_price() > self.data.usage.price_limit:
+                            if self.data.usage.type == ConsumerUsage.CONTINUOUS and self.data.get.power > 0:
+                                if self.data.get.power > 0:
+                                    required_current = max(self.data.get.currents)
+                                else:
+                                    required_current = self.data.usage.min_current
+                                message = self.PRICE_LIMIT_EXCEEDED_CONTINOUS_STILL_RUNNING
+                                mode = Chargemode.INSTANT_CHARGING
+                                submode = Chargemode.INSTANT_CHARGING
+                            else:
+                                min_current = 0
+                                required_current = 0
+                                message = self.PRICE_LIMIT_EXCEEDED
+                                mode = Chargemode.STOP
+                                submode = Chargemode.STOP
+                        else:
                             if self.data.get.power > 0:
                                 required_current = max(self.data.get.currents)
                             else:
                                 required_current = self.data.usage.min_current
-                            message = self.PRICE_LIMIT_EXCEEDED_CONTINOUS_STILL_RUNNING
+                            message = self.BELOW_PRICE_LIMIT
                             mode = Chargemode.INSTANT_CHARGING
                             submode = Chargemode.INSTANT_CHARGING
+                    else:
+                        if self.data.get.power > 0:
+                            required_current = max(self.data.get.currents)
                         else:
-                            min_current = 0
-                            required_current = 0
-                            message = self.PRICE_LIMIT_EXCEEDED
-                            mode = Chargemode.STOP
-                            submode = Chargemode.STOP
-                    return self.data.usage.min_current, self.data.usage.min_current
+                            required_current = self.data.usage.min_current
+                        mode = Chargemode.INSTANT_CHARGING
+                        submode = Chargemode.INSTANT_CHARGING
             else:
-                log.debug("Kein Usage-Plan-Zeitfenster aktiv.")
+                min_current = 0
+                required_current = 0
+                message = "Kein Plan-Zeitfenster aktiv."
+                mode = Chargemode.STOP
+                submode = Chargemode.STOP
         else:
             log.debug("Intervall für neuen Schaltbefehl nicht abgelaufen.")
         return min_current, required_current, message, mode, submode
@@ -163,10 +181,12 @@ class Consumer(Load):
             else:
                 return WaitForStartStates.WAIT_FOR_NEXT_TEST_RUN
 
-    def set_control_parameter(self, min_current, required_current, phases):
+    def set_control_parameter(self, min_current, required_current, phases, submode, mode):
         self.data.control_parameter.min_current = min_current
         self.data.control_parameter.required_current = required_current
         self.data.control_parameter.phases = phases
+        self.data.control_parameter.submode = submode
+        self.data.control_parameter.chargemode = mode
         control_parameter = self.data.control_parameter
         try:
             for i in range(0, phases):
@@ -182,3 +202,7 @@ class Consumer(Load):
 
     def is_charging_stop_allowed(self) -> bool:
         return self.data.usage.type != ConsumerUsage.CONTINUOUS
+
+    def set_mode_changed(self, submode: Chargemode, mode: Chargemode) -> None:
+        self.submode_changed = (submode != self.data.control_parameter.submode)
+        self.chargemode_changed = (mode != self.data.control_parameter.chargemode)

@@ -24,8 +24,8 @@ def create_consumer(config: ShellyPM):
         client.write_coil(16, False, unit=config.configuration.modbus_id)
 
     return ConfigurableConsumer(consumer_config=config,
-                                initializer=initializer,
-                                error_handler=error_handler,
+                                module_initializer=initializer,
+                                module_error_handler=error_handler,
                                 switch_on=switch_on,
                                 switch_off=switch_off,)
 

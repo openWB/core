@@ -102,7 +102,7 @@ class Loadvars:
                         if thread_name not in not_finished_threads:
                             modules_threads.append(Thread(
                                 target=update_values,
-                                args=(consumer,),
+                                args=(consumer.module,),
                                 name=f"update values consumer{consumer.data.module.id}"))
                 else:
                     component = get_finished_component_obj_by_id(element["id"], not_finished_threads)

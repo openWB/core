@@ -26,19 +26,19 @@ class ConfigurableConsumer(Generic[T_CONSUMER]):
                  switch_on: Optional[Callable] = lambda: None,
                  switch_off: Optional[Callable] = lambda: None,) -> None:
         self.config = consumer_config
-        self.initializer = initializer
-        self.error_handler = error_handler
-        self.update = update
-        self.set_power_limit = set_power_limit
-        self.switch_on = switch_on
-        self.switch_off = switch_off
+        self.module_initializer = initializer
+        self.module_error_handler = error_handler
+        self.module_updater = update
+        self.module_set_power_limit = set_power_limit
+        self.module_switch_on = switch_on
+        self.module_switch_off = switch_off
 
         self.error_timestamp = None
-        self.sim_counter = SimCounterConsumer(self.config.id, self.config.type)
-        self.store = get_component_value_store(self.config.type, self.config.id)
+        self.sim_counter = SimCounterConsumer(self.config.id, "consumer")
+        self.store = get_component_value_store("consumer", self.config.id)
         self.fault_state = FaultState(ComponentInfo(self.config.id, self.config.name, "consumer"))
         try:
-            self.initializer()
+            self.module_initializer()
         except Exception:
             log.exception(f"Initialisierung von Gerät {self.config.name} fehlgeschlagen")
 
@@ -51,7 +51,7 @@ class ConfigurableConsumer(Generic[T_CONSUMER]):
                       f"Fehlerzeitstempel: {self.error_timestamp}")
         if timecheck.check_timestamp(self.error_timestamp, 60) is False:
             try:
-                self.error_handler()
+                self.module_error_handler()
             except Exception:
                 log.exception(f"Fehlerbehandlung für Gerät {self.config.name} fehlgeschlagen")
             else:
@@ -62,20 +62,20 @@ class ConfigurableConsumer(Generic[T_CONSUMER]):
 
     def update(self):
         with SingleComponentUpdateContext(self.fault_state):
-            if self.update is not None:
-                self.store(self.update())
+            if self.module_updater is not None:
+                self.store.set(self.module_updater())
 
     def set_power_limit(self, power_limit: Any) -> None:
         with SingleComponentUpdateContext(self.fault_state):
-            self.set_power_limit(power_limit)
+            self.module_set_power_limit(power_limit)
 
     def switch_on(self) -> None:
         with SingleComponentUpdateContext(self.fault_state):
-            self.switch_on()
+            self.module_switch_on()
 
     def switch_off(self) -> None:
         with SingleComponentUpdateContext(self.fault_state):
-            self.switch_off()
+            self.module_switch_off()
 
 
 def dependency_injection_devices_components(component: AbstractCounter):

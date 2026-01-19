@@ -235,8 +235,10 @@ class CounterAll:
         # Alle Objekte der Ebene durchgehen
         for child in child["children"]:
             try:
-                if child["type"] == ComponentType.CHARGEPOINT.value or child["type"] == ComponentType.CONSUMER.value:
+                if child["type"] == ComponentType.CHARGEPOINT.value:
                     self.connected_chargepoints.append(f"cp{child['id']}")
+                elif child["type"] == ComponentType.CONSUMER.value:
+                    self.connected_chargepoints.append(f"consumer{child['id']}")
                 # Wenn das Objekt noch Kinder hat, diese ebenfalls untersuchen.
                 elif len(child["children"]) != 0:
                     self._get_all_loads_connected_to_counter(child)

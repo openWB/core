@@ -16,6 +16,8 @@ from control.chargepoint.chargepoint_data import Log
 from control.chargepoint.chargepoint_state_update import ChargepointStateUpdate
 from control.chargepoint.chargepoint_template import CpTemplate, CpTemplateData
 from control.consumer.consumer import Consumer
+from control.consumer.consumer_data import GET_CLASS_BY_USAGE, GET_DEFAULTS_BY_USAGE
+from control.consumer.usage import ConsumerUsage
 from control.ev.charge_template import ChargeTemplate, ChargeTemplateData
 from control.ev import ev
 from control.ev.ev_template import EvTemplate, EvTemplateData
@@ -1056,7 +1058,7 @@ class SubData:
         except Exception:
             log.exception("Fehler im subdata-Modul")
 
-    def process_consumer_topic(self, client: mqtt.Client, var: counter_all.CounterAll, msg: mqtt.MQTTMessage):
+    def process_consumer_topic(self, client: mqtt.Client, var: Dict[str, Consumer], msg: mqtt.MQTTMessage):
         try:
             index = get_index(msg.topic)
             if re.search("openWB/consumer/[0-9]+/module", msg.topic) is not None:
@@ -1068,7 +1070,7 @@ class SubData:
                                   str(index)+" gefunden werden.")
                 else:
                     if f"consumer{index}" not in var:
-                        var[f"consumer{index}"] = Consumer(index)
+                        var[f"consumer{index}"] = Consumer(int(index))
                     consumer_config = decode_payload(msg.payload)
                     con = importlib.import_module(
                         f".consumers.{consumer_config['vendor']}.{consumer_config['type']}.consumer",
@@ -1128,7 +1130,9 @@ class SubData:
             elif re.search("^.+/device/[0-9]+/error_timestamp$", msg.topic) is not None:
                 index = get_index(msg.topic)
                 var["consumer"+index].extra_meter.error_timestamp = decode_payload(msg.payload)
-            elif re.search("openWB/consumer/[0-9]+/usage", msg.topic) is not None:
-                self.set_json_payload_class(var["consumer"+index].data.usage, msg)
+            elif re.search("openWB/consumer/[0-9]+/usage$", msg.topic) is not None:
+                payload = decode_payload(msg.payload)
+                var[f"consumer{index}"].data.usage = dataclass_from_dict(GET_CLASS_BY_USAGE[ConsumerUsage(payload["type"])],
+                                                                         payload)
         except Exception:
             log.exception("Fehler im subdata-Modul")

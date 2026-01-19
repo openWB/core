@@ -152,7 +152,7 @@ class Counter:
                 if "cp" in load_key:
                     load = data.data.cp_data[load_key]
                 else:
-                    load = data.data.load_data[load_key]
+                    load = data.data.consumer_data[load_key]
                 try:
                     element_current = convert_cp_currents_to_evu_currents(
                         load.data.config.phase_1,
