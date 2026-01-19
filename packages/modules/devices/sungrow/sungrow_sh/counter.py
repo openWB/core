@@ -8,22 +8,22 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import Endian, ModbusDataType, ModbusTcpClient_
 from modules.common.simcount._simcounter import SimCounter
 from modules.common.store import get_counter_value_store
-from modules.devices.sungrow.sungrow.config import Sungrow, SungrowCounterSetup
-from modules.devices.sungrow.sungrow.version import Version
+from modules.devices.sungrow.sungrow_sh.config import SungrowSH, SungrowSHCounterSetup
+from modules.devices.sungrow.sungrow_sh.version import Version
 
 
 class KwargsDict(TypedDict):
     client: ModbusTcpClient_
-    device_config: Sungrow
+    device_config: SungrowSH
 
 
-class SungrowCounter(AbstractCounter):
-    def __init__(self, component_config: SungrowCounterSetup, **kwargs: Any) -> None:
+class SungrowSHCounter(AbstractCounter):
+    def __init__(self, component_config: SungrowSHCounterSetup, **kwargs: Any) -> None:
         self.component_config = component_config
         self.kwargs: KwargsDict = kwargs
 
     def initialize(self) -> None:
-        self.device_config: Sungrow = self.kwargs['device_config']
+        self.device_config: SungrowSH = self.kwargs['device_config']
         self.__tcp_client: ModbusTcpClient_ = self.kwargs['client']
         self.sim_counter = SimCounter(self.device_config.id, self.component_config.id, prefix="evu")
         self.store = get_counter_value_store(self.component_config.id)
@@ -34,29 +34,15 @@ class SungrowCounter(AbstractCounter):
 
     def update(self, pv_power: float):
         unit = self.device_config.configuration.modbus_id
-        if self.device_config.configuration.version in (Version.SH, Version.SH_winet_dongle):
-            power = self.__tcp_client.read_input_registers(13009, ModbusDataType.INT_32,
-                                                           wordorder=Endian.Little, unit=unit) * -1
-            try:
-                powers = self.__tcp_client.read_input_registers(5602, [ModbusDataType.INT_32] * 3,
-                                                                wordorder=Endian.Little, unit=unit)
-            except Exception:
-                powers = None
-                self.fault_state.no_error(self.fault_text)
-        else:
-            if pv_power != 0:
-                power = self.__tcp_client.read_input_registers(5082, ModbusDataType.INT_32,
-                                                               wordorder=Endian.Little, unit=unit)
-            else:
-                power = self.__tcp_client.read_input_registers(5090, ModbusDataType.INT_32,
-                                                               wordorder=Endian.Little, unit=unit)
-            try:
-                powers = self.__tcp_client.read_input_registers(5084, [ModbusDataType.INT_32] * 3,
-                                                                wordorder=Endian.Little, unit=unit)
-            except Exception:
-                powers = None
-                self.fault_state.no_error(self.fault_text)
-
+        power = self.__tcp_client.read_input_registers(13009, ModbusDataType.INT_32, 
+                                                       wordorder=Endian.Little, unit=unit) * -1
+        try:
+            powers = self.__tcp_client.read_input_registers(5602, [ModbusDataType.INT_32] * 3, 
+                                                            wordorder=Endian.Little, unit=unit)
+        except Exception:
+            powers = None
+            self.fault_state.no_error(self.fault_text)
+        
         frequency = self.__tcp_client.read_input_registers(5035, ModbusDataType.UINT_16, unit=unit) / 10
         if self.device_config.configuration.version == Version.SH_winet_dongle:
             # On WiNet-S, the frequency accuracy is higher by one place
@@ -89,4 +75,4 @@ class SungrowCounter(AbstractCounter):
         self.store.set(counter_state)
 
 
-component_descriptor = ComponentDescriptor(configuration_factory=SungrowCounterSetup)
+component_descriptor = ComponentDescriptor(configuration_factory=SungrowSHCounterSetup)
