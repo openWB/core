@@ -20,7 +20,7 @@ class SungrowIHM:
                  name: str = "Sungrow iHomeManager",
                  type: str = "sungrow_ihm",
                  id: int = 0,
-                 configuration: SungrowConfiguration = None) -> None:
+                 configuration: SungrowIHMConfiguration = None) -> None:
         self.name = name
         self.type = type
         self.vendor = vendor_descriptor.configuration_factory().type
@@ -35,10 +35,10 @@ class SungrowIHMBatConfiguration:
 
 class SungrowIHMBatSetup(ComponentSetup[SungrowIHMBatConfiguration]):
     def __init__(self,
-                 name: str = "Sungrow iHM Speicher",
+                 name: str = " iHM Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: SungrowIHMBatConfiguration = None) -> None:
+                 configuration: IHMBatConfiguration = None) -> None:
         super().__init__(name, type, id, configuration or SungrowIHMBatConfiguration())
 
 
