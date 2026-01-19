@@ -17,10 +17,12 @@ def create_device(device_config: Solvis):
 
     def create_counter_component(component_config: SolvisCounterSetup):
         nonlocal client
-        return SolvisCounter(component_config,
-                          device_id=device_config.id,
-                          client=client,
-                          modbus_id=device_config.configuration.modbus_id)
+        return SolvisCounter(
+            component_config,
+            device_id=device_config.id,
+            client=client,
+            modbus_id=device_config.configuration.modbus_id,
+        )
 
     def update_components(components: Iterable[SolvisCounter]):
         with client:
