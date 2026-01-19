@@ -1,10 +1,14 @@
 import logging
+from typing import Optional, Tuple
 from control import data
+from control.limiting_value import LimitingValue, LoadmanagementLimit
 from helpermodules.logger import ModifyLoglevelContext
 from helpermodules.pub import Pub
 from helpermodules.timecheck import create_timestamp
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.abstract_io import AbstractIoAction
+from modules.common.utils.component_parser import get_io_name_by_id
+from modules.io_actions.common import check_fault_state_io_device
 from modules.io_actions.controllable_consumers.dimming_direct_control.config import DimmingDirectControlSetup
 
 control_command_log = logging.getLogger("steuve_control_command")
@@ -29,13 +33,16 @@ class DimmingDirectControl(AbstractIoAction):
     def setup(self) -> None:
         with ModifyLoglevelContext(control_command_log, logging.DEBUG):
             if data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
-                    self.dimming_input] == self.dimming_value:
+                    self.dimming_input] == self.dimming_value or check_fault_state_io_device(self.config.configuration.io_device):
                 device = self.config.configuration.devices[0]
                 if device["type"] == "cp":
                     cp = f"cp{device['id']}"
                 if self.timestamp is None:
                     Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
                     if device["type"] == "cp":
+                        if check_fault_state_io_device(self.config.configuration.io_device):
+                            control_command_log.info(
+                                "Fehler des IO-Geräts: Direktsteuerung an Ladepunkt aktiviert für Failsafe-Modus.")
                         control_command_log.info(
                             f"Direktsteuerung an Ladepunkt "
                             f"{data.data.cp_data[cp].data.config.name} aktiviert. "
@@ -55,13 +62,19 @@ class DimmingDirectControl(AbstractIoAction):
                 Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", None)
                 control_command_log.info("Direktsteuerung deaktiviert.")
 
-    def dimming_via_direct_control(self) -> None:
-        if data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
+    def dimming_via_direct_control(self) -> Tuple[Optional[float], LoadmanagementLimit]:
+        if check_fault_state_io_device(self.config.configuration.io_device):
+            return (4200, LoadmanagementLimit(
+                LimitingValue.CONTROLLABLE_CONSUMERS_ERROR.value.format(get_io_name_by_id(
+                    self.config.configuration.io_device)),
+                LimitingValue.CONTROLLABLE_CONSUMERS_ERROR))
+        elif data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
                 self.dimming_input] == self.dimming_value:
-            return 4200
+            return (4200, LoadmanagementLimit(LimitingValue.DIMMING_VIA_DIRECT_CONTROL.value,
+                                              LimitingValue.DIMMING_VIA_DIRECT_CONTROL))
         elif data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
                 self.no_dimming_input] == self.no_dimming_value:
-            return None
+            return None, LoadmanagementLimit(None, None)
         else:
             raise Exception("Pattern passt nicht zur Dimmung per Direktsteuerung.")
 
