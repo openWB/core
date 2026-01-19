@@ -9,7 +9,6 @@ from modules.common.modbus import ModbusDataType, Endian, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_inverter_value_store
 from modules.devices.sungrow.sungrow_sg.config import SungrowSGInverterSetup, SungrowSG
-from modules.devices.sungrow.sungrow_sg.version import Version
 
 
 class KwargsDict(TypedDict):
