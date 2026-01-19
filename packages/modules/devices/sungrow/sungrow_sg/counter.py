@@ -32,7 +32,7 @@ class SungrowSGCounter(AbstractCounter):
             "keine Leistung der einzelnen Phasen. "\
             "Das Lastmanagement ist daher nur anhand der Gesamtleistung (nicht phasenbasiert) möglich."
 
-    def update(self, pv_power: float):
+    def update(self):
         unit = self.device_config.configuration.modbus_id
         power = self.__tcp_client.read_input_registers(5082, ModbusDataType.INT_32, 
                                                        wordorder=Endian.Little, unit=unit)
