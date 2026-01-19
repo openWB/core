@@ -39,6 +39,20 @@
 				}
 			],
 			"clients": []
+		}, {
+			"groupname":	"user",
+			"textname":	"Basisgruppe für normale Benutzer",
+			"textdescription":	"Diese Gruppe stellt grundlegende Rechte bereit, welche für alle Benutzer als Ausgangsbasis sinnvoll sind.",
+			"roles":	[{
+					"rolename":	"basic-display-data"
+				}, {
+					"rolename":	"basic-system-data"
+				}, {
+					"rolename":	"basic-theme-data"
+				}, {
+					"rolename":	"basic-user-data"
+				}],
+			"clients":	[]
 		}
 	],
 	"anonymousGroup": "anonymous",
