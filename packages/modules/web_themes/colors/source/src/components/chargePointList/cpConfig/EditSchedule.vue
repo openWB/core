@@ -50,7 +50,22 @@
 			</ConfigItem2>
 			<ConfigItem2
 				v-if="plan.limit.selected === 'soc'"
-				title="EV-SoC"
+				title="Ziel-SoC"
+				icon="fa-battery-half"
+				:fullwidth="true"
+			>
+				<RangeInput
+					id="evSoc"
+					v-model="plan.limit.soc_scheduled!"
+					:min="0"
+					:max="100"
+					:step="1"
+					unit="%"
+				/>
+			</ConfigItem2>
+			<ConfigItem2
+				v-if="plan.limit.selected === 'soc'"
+				title="Maximaler SoC bei Überschuss"
 				icon="fa-battery-half"
 				:fullwidth="true"
 			>
@@ -61,9 +76,8 @@
 					:max="100"
 					:step="1"
 					unit="%"
-				/>
-			</ConfigItem2>
-			<ConfigItem2
+				/> </ConfigItem2
+			><ConfigItem2
 				v-if="plan.limit.selected === 'amount'"
 				title="Energiemenge (kWh)"
 				icon="fa-charging-station"

@@ -48,7 +48,7 @@ onMounted(() => {
 
 <style scoped>
 .modal {
-	opacity: 0.9;
+	opacity: 1;
 }
 .modal-dialog {
 	border-radius: 2px;
@@ -58,7 +58,7 @@ onMounted(() => {
 .modal-footer,
 .modal-header,
 .modal-body {
-	background: var(--color-config);
+	background: var(--color-bg);
 	color: var(--color-fg);
 }
 .btn-close {

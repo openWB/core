@@ -91,7 +91,6 @@ function timeString(key: number) {
 	return `${plans.value[key].time[0]} -> ${plans.value[key].time[1]}`
 }
 function dateString(s: [string, string]) {
-	console.log(s)
 	const elts0 = s[0].split('-')
 	const elts1 = s[1].split('-')
 
