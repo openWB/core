@@ -7,7 +7,7 @@
 				<span
 					class="lefttitle d-flex justify-content-start align-items-baseline"
 				>
-					<span class="d-flex align-items-baseline m-0 p-0" @click="toggleInfo">
+					<span class="d-flex align-items-center m-0 p-0" @click="toggleInfo">
 						<i
 							v-if="props.icon"
 							class="fa-solid fa-sm m-0 p-0 me-2 item-icon"
@@ -15,23 +15,22 @@
 						/>
 						{{ title }}
 					</span>
-				</span>
-				<span class="righttitle d-flex align-items-center">
 					<span class="d-flex">
 						<i
 							v-if="props.infotext"
-							class="fa-solid fa-sm fa-circle-question ms-4 me-2"
+							class="fa-solid fa-sm fa-circle-question ms-3 me-2"
 							:style="iconstyle"
 							@click="toggleInfo"
 						/>
 					</span>
-
+				</span>
+				<span class="righttitle d-flex align-items-center">
 					<span class="inlinecontent"><slot name="inline-item" /> </span>
 				</span>
 			</div>
 			<p
 				v-if="showInfo"
-				class="infotext shadow m-0 ps-2 mb-1 p-1"
+				class="infotext shadow m-0 ps-2 mb-1 p-3"
 				@click="toggleInfo"
 			>
 				<i class="me-1 fa-solid fa-sm fa-circle-info" />
@@ -108,7 +107,10 @@ const iconstyle = computed(() => {
 }
 .infotext {
 	font-size: var(--font-settings);
+	text-align: center;
 	color: var(--color-battery);
+	grid-column: span 12;
+	border-radius: 12px;
 }
 
 .item-icon {

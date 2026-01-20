@@ -123,9 +123,7 @@
 		>
 			<span :style="currentPriceStyle">{{ etData.etCurrentPriceString }} </span>
 		</InfoItem>
-		<InfoItem 
-			v-if="cp.etActive" 
-			heading="max. Preis:" class="grid-col-4">
+		<InfoItem v-if="cp.etActive" heading="max. Preis:" class="grid-col-4">
 			<span type="button" @click="editPrice = !editPrice"
 				>{{
 					props.chargepoint.etActive
