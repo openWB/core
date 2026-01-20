@@ -20,9 +20,11 @@
 			</span>
 		</span>
 		<span class="d-flex justify-content-between align-items-center">
-			<span class="minlabel ps-4"> {{ formatCurrentTime(min) }} </span>
-			<span class="valuelabel">{{ formatCurrentTime(new Date(v)) }} </span>
-			<span class="maxlabel pe-4"> {{ formatCurrentTime(max) }} </span>
+			<span class="minlabel ps-4"> {{ formatCurrentTime(min, true) }} </span>
+			<span class="valuelabel"
+				>{{ formatCurrentTime(new Date(v), true) }}
+			</span>
+			<span class="maxlabel pe-4"> {{ formatCurrentTime(max, true) }} </span>
 		</span>
 	</span>
 </template>

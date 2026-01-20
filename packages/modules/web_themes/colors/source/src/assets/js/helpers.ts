@@ -80,10 +80,20 @@ export function formatTime(seconds: number) {
 		return minutes + ' min'
 	}
 }
-export function formatCurrentTime(d: Date) {
-	return d.toLocaleTimeString(['de-DE'], { hour: '2-digit', minute: '2-digit' })
+export function formatCurrentTime(d: Date, includeDay = false) {
+	if (includeDay) {
+		return d.toLocaleTimeString(['de-DE'], {
+			weekday: 'short',
+			hour: '2-digit',
+			minute: '2-digit',
+		})
+	} else {
+		return d.toLocaleTimeString(['de-DE'], {
+			hour: '2-digit',
+			minute: '2-digit',
+		})
+	}
 }
-
 export function formatDate(d: Date, mode: string = 'day') {
 	switch (mode) {
 		case 'day':
@@ -95,7 +105,6 @@ export function formatDate(d: Date, mode: string = 'day') {
 			return `${d.getFullYear()}`
 	}
 }
-
 export function formatMonth(month: number, year: number) {
 	const months = [
 		'Jan',
