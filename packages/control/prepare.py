@@ -22,6 +22,8 @@ class Prepare:
             data.data.bat_all_data.calc_power_for_all_components()
             for cp in data.data.cp_data.values():
                 cp.setup_values_at_start()
+            for consumer in data.data.consumer_data.values():
+                consumer.update()
             levels = data.data.counter_all_data.get_list_of_elements_per_level()
             for level in reversed(levels):
                 for element in level:
@@ -29,8 +31,6 @@ class Prepare:
                         data.data.counter_data[f"counter{element['id']}"].setup_counter()
             for cp in data.data.cp_data.values():
                 cp.update(data.data.ev_data)
-            for consumer in data.data.consumer_data.values():
-                consumer.update()
             # Nach cp update, da für die Speicher-Sperre der Lademodus bekannt sein muss.
             data.data.bat_all_data.setup_bat()
             data.data.cp_all_data.get_cp_sum()

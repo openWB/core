@@ -11,6 +11,7 @@ from control import data
 from control.chargepoint.chargepoint_state import ChargepointState
 from control.consumer.consumer import Consumer
 from control.consumer.usage import ConsumerUsage
+from helpermodules.phase_handling import voltages_mean
 from helpermodules.pub import Pub
 from helpermodules.utils._thread_handler import joined_thread_handler
 from modules.common.abstract_io import AbstractIoDevice
@@ -63,13 +64,13 @@ class Process:
                     log.exception("Fehler im Process-Modul für Ladepunkt "+str(cp))
             for consumer in data.data.consumer_data.values():
                 try:
+                    log.info(f"Verbraucher{consumer.num}: set current {consumer.data.set.current} A, "
+                             f"state {ChargepointState(consumer.data.control_parameter.state).name}")
                     control_parameter = consumer.data.control_parameter
                     if control_parameter.state != ChargepointState.NO_CHARGING_ALLOWED or consumer.data.set.current != 0:
                         control_parameter.state = ChargepointState.CHARGING_ALLOWED
                         consumer.data.set.current = round(consumer.data.set.current, 2)
                         Pub().pub(f"openWB/set/consumer/{consumer.num}/set/current", consumer.data.set.current)
-                        log.info(f"Verbraucher{consumer.num}: set current {consumer.data.set.current} A, "
-                                 f"state {ChargepointState(consumer.data.control_parameter.state).name}")
                     else:
                         control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
                     if consumer.data.get.state_str is not None:
@@ -177,5 +178,6 @@ class Process:
                 target=consumer.module.switch_on if consumer.data.set.current > 0 else consumer.module.switch_off,
                 name=f"set current consumer{consumer.num}")
         return Thread(target=consumer.module.set_power_limit,
-                      args=(consumer.data.set.current,),
+                      args=(consumer.data.set.current * voltages_mean(consumer.data.get.voltages)
+                            * consumer.data.config.connected_phases,),
                       name=f"set current consumer{consumer.num}")

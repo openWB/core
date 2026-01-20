@@ -43,13 +43,13 @@ def create_consumer(config: Mqtt):
             raise KeyError("Es wurden nicht alle notwendigen Daten empfangen.")
 
     def set_power_limit(power_limit: float) -> None:
-        Pub().pub(f"openWB/mqtt/consumer/{config.id}/set/power_limit", power_limit)
+        Pub().pub(f"openWB/set/mqtt/consumer/{config.id}/set/power_limit", power_limit)
 
     def switch_on() -> None:
-        Pub().pub(f"openWB/mqtt/consumer/{config.id}/set/switch", True)
+        Pub().pub(f"openWB/set/mqtt/consumer/{config.id}/set/switch", True)
 
     def switch_off() -> None:
-        Pub().pub(f"openWB/mqtt/consumer/{config.id}/set/switch", False)
+        Pub().pub(f"openWB/set/mqtt/consumer/{config.id}/set/switch", False)
     return ConfigurableConsumer(consumer_config=config,
                                 update=update,
                                 set_power_limit=set_power_limit,
