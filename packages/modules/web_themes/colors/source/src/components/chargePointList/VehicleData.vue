@@ -124,17 +124,17 @@
 			<span :style="currentPriceStyle">{{ etData.etCurrentPriceString }} </span>
 		</InfoItem>
 		<InfoItem 
-			v-if="cp.etActive || cp.chargeTemplate?.chargemode.selected=='scheduled_charging'" 
+			v-if="cp.etActive" 
 			heading="max. Preis:" class="grid-col-4">
 			<span type="button" @click="editPrice = !editPrice"
 				>{{
-					props.chargepoint.etActive || cp.chargeTemplate?.chargemode.selected=='scheduled_charging'
+					props.chargepoint.etActive
 						? (Math.round(props.chargepoint.etMaxPrice * 10) / 10).toFixed(1) +
 							priceUnit
 						: '-'
 				}}
 				<i
-					v-if="props.chargepoint.etActive || cp.chargeTemplate?.chargemode.selected=='scheduled_charging'"
+					v-if="props.chargepoint.etActive"
 					class="fa-solid fa-sm fas fa-edit ms-2"
 				/>
 			</span>
