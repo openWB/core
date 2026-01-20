@@ -58,6 +58,12 @@
 	"anonymousGroup": "anonymous",
 	"roles": [
 		{
+			"rolename": "openwb-version:1",
+			"textname": "openWB Versionsnummer",
+			"textdescription": "Diese Rolle ist ein Platzhalter für die openWB Versionsnummer und wird automatisch aktualisiert. Sie hat keine direkten Berechtigungen.",
+			"acls": []
+		},
+		{
 			"rolename": "basic-display-data",
 			"textname": "Basisdaten für das Display",
 			"textdescription": "Diese Rolle erlaubt das Auslesen der Display-Einstellungen und wird für das integrierte Display benötigt. Notwendig für die anonyme Gruppe!",
