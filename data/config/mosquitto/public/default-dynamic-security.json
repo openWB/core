@@ -1360,7 +1360,7 @@
 			]
 		},
 		{
-			"rolename": "chargepoint-installation-access",
+			"rolename": "charge-point-installation-access",
 			"textname": "Zugang zu der Ladepunkt-Installation",
 			"textdescription": "Erlaubt den Zugang zu der Ladepunkt-Installation.",
 			"acls": [
@@ -2005,7 +2005,7 @@
 			]
 		},
 		{
-			"rolename": "data-management-configuration-access",
+			"rolename": "data-management-access",
 			"textname": "Zugang zur Datenverwaltung",
 			"textdescription": "Erlaubt den Zugang zur Datenverwaltung.",
 			"acls": [
