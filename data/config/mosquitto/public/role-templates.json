@@ -55,19 +55,19 @@
 			},
 			{
 				"acltype": "publishClientSend",
-				"topic": "openWB/set/mqtt/vehicle/<id>/get/soc",
+				"topic": "openWB/set/vehicle/<id>/get/soc",
 				"priority": 0,
 				"allow": true
 			},
 			{
 				"acltype": "publishClientSend",
-				"topic": "openWB/set/mqtt/vehicle/<id>/get/soc_timestamp",
+				"topic": "openWB/set/vehicle/<id>/get/soc_timestamp",
 				"priority": 0,
 				"allow": true
 			},
 			{
 				"acltype": "publishClientSend",
-				"topic": "openWB/set/mqtt/vehicle/<id>/get/range",
+				"topic": "openWB/set/vehicle/<id>/get/range",
 				"priority": 0,
 				"allow": true
 			},
