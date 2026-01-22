@@ -163,7 +163,7 @@ const targetPriceStyle = computed(() => {
 	display: grid;
 }
 .closebutton {
-	font-size: var(--font-settings);
+	font-size: var(--font-settings-button);
 	background-color: var(--color-charging);
 	color: white;
 }
