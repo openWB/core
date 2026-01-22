@@ -1,7 +1,7 @@
 <template>
 	<Teleport to="body">
-		<div :id="props.modalId" class="modal fade" data-bs-backdrop="static">
-			<div class="modal-dialog modal-lg modal-fullscreen-lg-down">
+		<div :id="props.modalId" class="modal fade">
+			<div class="modal-dialog modal-lg modal-fullscreen-lg-down shadow">
 				<div class="modal-content">
 					<div class="modal-header">
 						<h3 class="modal-title">
@@ -51,21 +51,33 @@ onMounted(() => {
 	opacity: 1;
 }
 .modal-dialog {
-	border-radius: 2px;
-	box-shadow: 2px 2px 5px 3px darkslategray;
+	border-radius: 30px;
+	border: 0px dotted var(--color-frame);
 }
-
+.modal-content {
+	border-radius: 30px;
+}
+.modal-title {
+	font-size: var(--font-large);
+	color: var(--color-charging);
+}
 .modal-footer,
 .modal-header,
 .modal-body {
 	background: var(--color-bg);
 	color: var(--color-fg);
 }
+.modal-header {
+	border: 0px;
+	border-radius: 30px;
+}
 .btn-close {
 	color: var(--color-input);
 }
 .modal-footer {
 	text-align: right;
+	border: 0px;
+	border-radius: 30px;
 }
 .modal-header .btn-close {
 	color: var(--color-fg);
@@ -84,6 +96,6 @@ onMounted(() => {
 }
 
 .close-button-bottom {
-	font-size: var(--font-settings);
+	font-size: var(--font-settings-button);
 }
 </style>
