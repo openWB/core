@@ -150,4 +150,8 @@ function setBatteryPriority(mode: string) {
 }
 </script>
 
-<style scoped></style>
+<style scoped>
+.buttonTextSize {
+	font-size: var(--font-large);
+}
+</style>

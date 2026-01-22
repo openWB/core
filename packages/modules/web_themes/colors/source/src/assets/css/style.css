@@ -125,9 +125,7 @@ html {
 .largeTextSize {
 	font-size: var(--font-large);
 }
-.buttonTextSize {
-	font-size: var(--font-large);
-}
+
 h3 {
 	font-size: var(--font-large);
 	color: var(--color-title);

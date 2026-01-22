@@ -9,9 +9,11 @@
 						</h3>
 						<button
 							type="button"
-							class="btn-close buttonTextSize d-flex justify-content-center pt-3 pb-0"
+							class="btn-close d-flex justify-content-center pt-3 pb-0"
 							data-bs-dismiss="modal"
-						></button>
+						>
+							<span class="fa-solid fa-xl fa-circle-check" />
+						</button>
 					</div>
 					<div class="modal-body">
 						<slot />
@@ -72,7 +74,9 @@ onMounted(() => {
 	border-radius: 30px;
 }
 .btn-close {
-	color: var(--color-input);
+	color: var(--color-menu);
+	font-size: var(--font-medium);
+	background-size: 0px;
 }
 .modal-footer {
 	text-align: right;
