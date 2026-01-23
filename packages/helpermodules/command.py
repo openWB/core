@@ -1,11 +1,13 @@
 import copy
 from dataclasses import asdict
+from datetime import datetime
 import importlib
 import json
 import logging
+from random import randrange
 import subprocess
 from threading import Event
-import time
+from time import sleep
 from typing import Dict, Optional
 import re
 import traceback
@@ -29,7 +31,9 @@ from helpermodules.broker import BrokerClient
 from helpermodules.data_migration.data_migration import MigrateData
 from helpermodules.measurement_logging.process_log import get_daily_log, get_monthly_log, get_yearly_log
 from helpermodules.messaging import MessageType, pub_user_message
-from helpermodules.mosquitto_dynsec import add_acl_role, remove_acl_role
+from helpermodules.mosquitto_dynsec import (add_acl_role, generate_password_reset_token, remove_acl_role,
+                                            get_user_email, send_password_reset_to_server, update_user_password,
+                                            verify_password_reset_token)
 from helpermodules.create_debug import create_debug_log
 from helpermodules.pub import Pub, pub_single
 from helpermodules.subdata import SubData
@@ -128,7 +132,7 @@ class Command:
         try:
             # kurze Pause, damit die ID vom Broker ermittelt werden können. Sonst werden noch vorher die retained
             # Topics empfangen, was zu doppelten Meldungen im Protokoll führt.
-            time.sleep(1)
+            sleep(1)
             self.internal_broker_client = BrokerClient("command", self.on_connect, self.on_message)
             self.internal_broker_client.start_infinite_loop()
         except Exception:
@@ -876,7 +880,7 @@ class Command:
                     cp.chargepoint.chargepoint_module.config.configuration.duo_num == 0 and
                     cp.chargepoint.data.get.current_branch == "Release"
                 ):
-                    time.sleep(2)
+                    sleep(2)
                     self.secondaryChargepointUpdate({"data": {"chargepoint": f"cp{cp.chargepoint.num}"}})
         if "branch" in payload["data"] and "tag" in payload["data"]:
             pub_user_message(
@@ -1021,6 +1025,72 @@ class Command:
         pub_user_message(payload, connection_id,
                          "Admin-Passwort wurde erfolgreich aktualisiert.",
                          MessageType.SUCCESS)
+
+    def createPasswordResetToken(self, connection_id: str, payload: dict) -> None:
+        """ generiert ein Token zum Zurücksetzen eines Benutzer-Passworts
+        """
+        username = str(payload['data']['username']).strip()
+        if username is None or len(username) == 0:
+            pub_user_message(payload, connection_id,
+                             "Der Benutzername darf nicht leer sein.",
+                             MessageType.ERROR)
+            return
+        email = get_user_email(username)
+        if email is not None:
+            token, expires_at = generate_password_reset_token(username)
+            send_password_reset_to_server(email, token)
+        else:
+            sleep(randrange(5, 25) * 0.1)  # artificial delay to mitigate user enumeration
+        pub_user_message(
+            payload, connection_id,
+            (f"Falls der Benutzername '{username}' existiert und eine E-Mail-Adresse hinterlegt ist, "
+             "wurde ein Token zum Zurücksetzen des Passworts generiert.<br>"
+             f"Der Token ist gültig bis {datetime.fromtimestamp(expires_at).strftime('%a, %x %X')}<br>"),
+            MessageType.SUCCESS)
+
+    def resetUserPassword(self, connection_id: str, payload: dict) -> None:
+        """ setzt das Passwort eines Benutzers zurück
+        """
+        username = str(payload['data']['username']).strip()
+        token = str(payload['data']['token']).strip()
+        new_password = str(payload['data']['newPassword']).strip()
+        if username is None or len(username) == 0:
+            pub_user_message(payload, connection_id,
+                             "Der Benutzername darf nicht leer sein.",
+                             MessageType.ERROR)
+            return
+        if token is None or len(token) == 0:
+            pub_user_message(payload, connection_id,
+                             "Der Token darf nicht leer sein.",
+                             MessageType.ERROR)
+            return
+        if new_password is None or len(new_password) == 0:
+            pub_user_message(payload, connection_id,
+                             "Das neue Passwort darf nicht leer sein.",
+                             MessageType.ERROR)
+            return
+        if verify_password_reset_token(username, token):
+            if update_user_password(username, new_password):
+                if username == "admin":
+                    self.updateAdminPassword(connection_id, {
+                        "data": {
+                            "newPassword": new_password
+                        }
+                    })
+                pub_user_message(
+                    payload, connection_id,
+                    f"Das Passwort für den Benutzer '{username}' wurde erfolgreich zurückgesetzt.",
+                    MessageType.SUCCESS)
+            else:
+                pub_user_message(
+                    payload, connection_id,
+                    f"Der Passwort für Benutzer '{username}' konnte nicht zurückgesetzt werden!",
+                    MessageType.ERROR)
+        else:
+            pub_user_message(
+                payload, connection_id,
+                "Der Token ist ungültig oder abgelaufen.",
+                MessageType.ERROR)
 
 
 class ErrorHandlingContext:
