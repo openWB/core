@@ -107,6 +107,18 @@
 			"acls": [
 				{
 					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/createPasswordResetToken",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/resetUserPassword",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
 					"topic": "openWB/system/messages/+",
 					"priority": 0,
 					"allow": true
