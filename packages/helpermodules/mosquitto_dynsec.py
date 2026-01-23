@@ -195,39 +195,41 @@ def update_acls():
                 try:
                     role_data = _get_configured_role_data(role_name)
                     template_role_data = get_template_role_data()
-                    if template_role_data:
-                        # vegleiche die zwei ACL dicts, welche ACLs hinzugefügt, geändert oder entfernt wurden
-                        for acl in role_data["acls"]:
-                            for template_acl in template_role_data["acls"]:
-                                if template_acl == acl:
-                                    break
-                            else:
-                                log.debug(f"ACL {acl['acltype']}:{'allow' if acl['allow'] else 'deny'}:{acl['topic']}:"
-                                          f"{acl['priority']} in Rolle {role_data['rolename']} wird entfernt.")
-                                run_command([
-                                    "mosquitto_ctrl", "dynsec", "removeRoleAcl", role_data["rolename"],
-                                    acl["acltype"], acl["topic"]
-                                ])
-                        for acl in template_role_data["acls"]:
-                            for role_acl in role_data["acls"]:
-                                if acl == role_acl:
-                                    break
-                            else:
-                                rolename_id = _extract_id_from_role_name(role_data["rolename"])
-                                if rolename_id is not None:
-                                    acl["topic"] = acl["topic"].replace("<id>", str(rolename_id))
-                                log.debug(f"ACL {acl['acltype']}:{'allow' if acl['allow'] else 'deny'}:{acl['topic']}:"
-                                          f"{acl['priority']} in Rolle {role_data['rolename']} wird hinzugefügt.")
-                                run_command([
-                                    "mosquitto_ctrl", "dynsec", "addRoleAcl", role_data["rolename"],
-                                    acl["acltype"], acl["topic"],
-                                    "allow" if acl["allow"] else "deny",
-                                    str(acl["priority"])
-                                ])
-                    elif template_role_data is None:
+                    # entferne Rollen, die in der Konfigurationsdatei nicht vorhanden sind
+                    if template_role_data is None:
                         log.debug(f"Rolle '{role_data['rolename']}' existiert nicht in den Konfigurationsdateien und"
                                   " wird gelöscht.")
                         run_command(["mosquitto_ctrl", "dynsec", "deleteRole", role_data["rolename"]])
+
+                    # entferne ACLs aus der Rolle, wenn diese im Template nicht vorhanden sind
+                    for acl in role_data["acls"]:
+                        for template_acl in template_role_data["acls"]:
+                            if template_acl == acl:
+                                break
+                        else:
+                            log.debug(f"ACL {acl['acltype']}:{'allow' if acl['allow'] else 'deny'}:{acl['topic']}:"
+                                      f"{acl['priority']} in Rolle {role_data['rolename']} wird entfernt.")
+                            run_command([
+                                "mosquitto_ctrl", "dynsec", "removeRoleAcl", role_data["rolename"],
+                                acl["acltype"], acl["topic"]
+                            ])
+                    # ergänze zusätzliche ACLs aus dem Template in der Rollen
+                    for acl in template_role_data["acls"]:
+                        for role_acl in role_data["acls"]:
+                            if acl == role_acl:
+                                break
+                        else:
+                            rolename_id = _extract_id_from_role_name(role_data["rolename"])
+                            if rolename_id is not None:
+                                acl["topic"] = acl["topic"].replace("<id>", str(rolename_id))
+                            log.debug(f"ACL {acl['acltype']}:{'allow' if acl['allow'] else 'deny'}:{acl['topic']}:"
+                                      f"{acl['priority']} in Rolle {role_data['rolename']} wird hinzugefügt.")
+                            run_command([
+                                "mosquitto_ctrl", "dynsec", "addRoleAcl", role_data["rolename"],
+                                acl["acltype"], acl["topic"],
+                                "allow" if acl["allow"] else "deny",
+                                str(acl["priority"])
+                            ])
                 except Exception:
                     log.exception(f"Fehler beim Aktualisieren der Rolle '{role_name}'")
             # bei allen anderen Rollen dürfen nur die ACLs editiert werden,
