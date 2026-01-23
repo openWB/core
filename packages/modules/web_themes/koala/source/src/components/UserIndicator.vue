@@ -23,7 +23,7 @@
     <q-dialog v-model="showLoginDialog" persistent @hide="clearLoginData">
       <q-card>
         <q-card-section class="row items-center">
-          <q-avatar icon="logout" color="warning" text-color="white" />
+          <q-avatar icon="login" color="warning" text-color="white" />
           <span class="q-ml-sm">Gib Deine Anmeldedaten ein.</span>
         </q-card-section>
 
@@ -46,7 +46,7 @@
             </q-input>
             <q-input
               v-model="password"
-              label="Passwort"
+              label="Kennwort"
               type="password"
               dense
               :rules="[
@@ -63,11 +63,109 @@
           <q-card-actions align="right">
             <q-btn flat label="Anmelden" color="positive" type="submit" />
             <q-btn
+              flat
+              label="Kennwort vergessen"
+              color="warning"
+              type="button"
+              @click="
+                showLoginDialog = false;
+                showPasswordResetDialog = true;
+              "
+            />
+            <q-btn
               v-if="anonymousAccessAllowed"
               flat
               label="Schließen"
               color="primary"
               v-close-popup
+            />
+          </q-card-actions>
+        </q-form>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog
+      v-model="showPasswordResetDialog"
+      persistent
+      @hide="clearLoginData"
+    >
+      <q-card>
+        <q-card-section class="row items-center">
+          <q-avatar icon="login" color="warning" text-color="white" />
+          <span class="q-ml-sm">Kennwort vergessen</span>
+        </q-card-section>
+
+        <q-form @submit="login">
+          <q-card-section>
+            <q-input
+              v-model="user"
+              label="Benutzername"
+              type="text"
+              dense
+              autofocus
+              :rules="[
+                (value) =>
+                  (value && value.length > 0) || 'Benutzername erforderlich',
+              ]"
+            >
+              <template v-slot:prepend>
+                <q-icon name="account_circle" />
+              </template>
+            </q-input>
+            <q-input v-model="code" label="Code" type="password" dense>
+              <template v-slot:prepend>
+                <q-icon name="key" />
+              </template>
+            </q-input>
+            <q-input
+              v-model="password"
+              label="Neues Kennwort"
+              type="password"
+              dense
+            >
+              <template v-slot:prepend>
+                <q-icon name="key" />
+              </template>
+            </q-input>
+            <q-input
+              v-model="passwordConfirm"
+              label="Neues Kennwort bestätigen"
+              type="password"
+              dense
+              :rules="[
+                (value) =>
+                  value == password || 'Kennwörter stimmen nicht überein',
+              ]"
+            >
+              <template v-slot:prepend>
+                <q-icon name="key" />
+              </template>
+            </q-input>
+          </q-card-section>
+
+          <q-card-actions align="right">
+            <q-btn
+              flat
+              label="Code anfordern"
+              color="positive"
+              type="button"
+              @click="requestCode()"
+            />
+            <q-btn
+              flat
+              label="Kennwort zurücksetzen"
+              color="primary"
+              type="button"
+              @click="resetPassword()"
+            />
+            <q-btn
+              flat
+              label="Schließen"
+              color="negative"
+              @click="
+                showPasswordResetDialog = false;
+                showLoginDialog = true;
+              "
             />
           </q-card-actions>
         </q-form>
@@ -122,17 +220,18 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import { useQuasar, QInput } from 'quasar';
-// import { useRouter } from 'vue-router';
 import { useMqttStore } from 'src/stores/mqtt-store';
 
 const $q = useQuasar();
-// const router = useRouter();
 const mqttStore = useMqttStore();
 
 const showLogoutDialog = ref(false);
 const showLoginDialog = ref(false);
+const showPasswordResetDialog = ref(false);
 const user = ref('');
 const password = ref('');
+const passwordConfirm = ref('');
+const code = ref('');
 
 const smallScreen = computed(() => {
   return $q.screen.lt.sm;
@@ -162,20 +261,16 @@ const username = computed(() => {
 });
 
 const logout = () => {
-  console.log('cookies:', $q.cookies.getAll());
   if ($q.cookies.has('mqtt')) {
-    console.log('Removing mqtt cookie');
+    console.debug('Removing mqtt cookie');
     $q.cookies.remove('mqtt', { path: '/' });
-    // not functional in Safari browser?
-    // router.go(0);
     location.reload();
   } else {
-    console.log('No mqtt cookie found to remove');
+    console.warn('No mqtt cookie found to remove');
   }
 };
 
 const login = () => {
-  console.log('Logging in with user:', user.value);
   if (!user.value || user.value.length === 0) {
     showLoginDialog.value = false;
     return;
@@ -187,26 +282,71 @@ const login = () => {
     secure: true,
     sameSite: 'Lax',
   });
-  console.log('Set mqtt cookie:', $q.cookies.get('mqtt'));
   showLoginDialog.value = false;
-  // not functional in Safari browser?
-  // router.go(0);
   location.reload();
 };
 
 const clearLoginData = () => {
   user.value = '';
   password.value = '';
+  passwordConfirm.value = '';
+  code.value = '';
+};
+
+const requestCode = () => {
+  if (!user.value || user.value.length === 0) {
+    console.error('Benutzername erforderlich.');
+    return;
+  }
+  mqttStore.sendSystemCommand('createPasswordResetToken', {
+    username: user.value,
+  });
+  $q.notify({
+    type: 'info',
+    message: `Falls der Benutzer "${user.value}" existiert und eine E-Mail-Adresse hinterlegt ist, wurde ein Code per E-Mail versendet.`,
+    progress: true,
+  });
+};
+
+const resetPassword = () => {
+  if (
+    !user.value ||
+    user.value.length === 0 ||
+    !code.value ||
+    code.value.length === 0 ||
+    !password.value ||
+    password.value.length === 0 ||
+    !passwordConfirm.value ||
+    passwordConfirm.value.length === 0
+  ) {
+    if (password.value !== passwordConfirm.value) {
+      $q.notify({
+        type: 'negative',
+        message: 'Kennwörter stimmen nicht überein.',
+        progress: true,
+      });
+      return;
+    }
+    $q.notify({
+      type: 'negative',
+      message: 'Benutzername, Code und neues Kennwort erforderlich.',
+      progress: true,
+    });
+    return;
+  }
+  mqttStore.sendSystemCommand('resetUserPassword', {
+    username: user.value,
+    code: code.value,
+    newPassword: password.value,
+  });
+  $q.notify({
+    type: 'info',
+    message: `Falls der Benutzer "${user.value}" existiert und der Code korrekt ist, wurde das Kennwort zurückgesetzt.`,
+    progress: true,
+  });
 };
 
 watch(anonymousAccessAllowed, (newValue) => {
-  console.log('anonymousAccessAllowed changed to:', newValue);
-  console.log(
-    'userManagementActive:',
-    userManagementActive.value,
-    'loggedIn:',
-    loggedIn.value,
-  );
   if (userManagementActive.value && !newValue && !loggedIn.value) {
     showLoginDialog.value = true;
   } else {
@@ -215,14 +355,6 @@ watch(anonymousAccessAllowed, (newValue) => {
 });
 
 onMounted(() => {
-  console.log(
-    'UserIndicator mounted. userManagementActive:',
-    userManagementActive.value,
-    'anonymousAccessAllowed:',
-    anonymousAccessAllowed.value,
-    'loggedIn:',
-    loggedIn.value,
-  );
   if (
     userManagementActive.value &&
     !anonymousAccessAllowed.value &&
