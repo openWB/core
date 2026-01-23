@@ -4,7 +4,6 @@ LOGFILE="${OPENWBBASEDIR}/data/log/update.log"
 GITREMOTE="origin"
 SELECTEDBRANCH="$1"
 DEFAULTTAG="*HEAD*"
-# ToDo: honor selected tag
 SELECTEDTAG=$2
 
 echo "#### running update ####" >"$LOGFILE"
@@ -30,6 +29,10 @@ echo "#### running update ####" >"$LOGFILE"
 	fi
 	git -C "$OPENWBBASEDIR" reset --hard "$resetTarget" && echo "#### done"
 
+	# clean mosquitto configuration directory to remove possibly outdated files
+	echo "#### 4. clean mosquitto configuration, will be recreated on next boot"
+	sudo rm -v -f /etc/mosquitto/conf.d/openwb-*.conf
+
 	# notify system
 	# set boot_done first to prevent flickering in gui
 	mosquitto_pub -p 1886 -t "openWB/system/boot_done" -r -m 'false'
@@ -37,6 +40,6 @@ echo "#### running update ####" >"$LOGFILE"
 	sleep 1
 
 	# now reboot system
-	echo "#### 4. rebooting system ####"
+	echo "#### 5. rebooting system ####"
 	sudo reboot now &
 } >>"$LOGFILE" 2>&1
