@@ -1,12 +1,17 @@
-from json import load as json_load
-import json
 import logging
-from pathlib import Path
 import re
+import requests
+from json import load as json_load, dump as json_dump
+from pathlib import Path
 from typing import Tuple, TypedDict, Optional
+from datetime import datetime, timedelta
+from passlib.hash import bcrypt
+from secrets import token_hex
 
 from helpermodules.subdata import SubData
 from helpermodules.utils.run_command import run_command
+
+TOKEN_DATA_PATH = Path(Path(__file__).resolve().parents[2]/"ramdisk"/"password_reset_tokens")
 
 log = logging.getLogger(__name__)
 
@@ -31,6 +36,16 @@ class MosquittoRole(TypedDict):
     textname: Optional[str]
     textdescription: Optional[str]
     acls: list[MosquittoAcl]
+
+
+def _get_client_data(clientid: str) -> Optional[dict]:
+    with open("/var/lib/mosquitto/dynamic-security.json", 'r') as file:
+        dynsec_data = json_load(file)
+    clients: list[dict] = dynsec_data["data"]["clients"]
+    for client in clients:
+        if client["username"] == clientid:
+            return {"username": client["username"], "email": client.get("textname", None), "roles": client["roles"]}
+    return None
 
 
 def _get_acl_role_data(role_template: str, id: int) -> MosquittoRole:
@@ -62,6 +77,94 @@ def _acl_role_exists(role_template: str, id: int) -> bool:
     role_data = _get_acl_role_data(role_template, id)
     role_list = _list_acl_roles()
     return role_data["rolename"] in role_list
+
+
+def _user_exists(username: str) -> Optional[dict]:
+    result = run_command(["mosquitto_ctrl", "dynsec", "getUser", username])
+    if "not found" in result:
+        return False
+    return True
+
+
+def get_user_email(username: str) -> Optional[str]:
+    email_regexp = r'(^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z0-9]{2,7}$)'
+    if _user_exists(username):
+        user_details = _get_client_data(username)
+        email = user_details.get("email", None)
+        return email if re.fullmatch(email_regexp, email) else None
+    return None
+
+
+def generate_password_reset_token(username: str) -> list[str, int]:
+    token = token_hex(16)
+    token_hash = bcrypt.hash(token)
+    expires_at = datetime.now() + timedelta(hours=1)
+
+    TOKEN_DATA_PATH.mkdir(parents=True, exist_ok=True)
+    token_file = TOKEN_DATA_PATH / f"{username}_reset.token"
+    with open(token_file, "w") as file:
+        # store hash and timestamp in epoch format
+        json_dump({"token_hash": token_hash, "expires_at": int(expires_at.timestamp())}, file)
+    return token, int(expires_at.timestamp())
+
+
+def send_password_reset_to_server(email: str, token: str) -> None:
+    TOKEN_SERVER_URL = "https://openwb.de/forgotpassword/send_token.php"
+    timeout = 10  # seconds
+    payload = {
+        "email": email,
+        "subject": "openWB Passwort zurücksetzen",
+        "message": (f"Hallo,<br><br>"
+                    "es wurde ein Antrag zum Zurücksetzen deines openWB Passworts gestellt.<br>"
+                    "Bitte benutze den folgenden Token, um dein Passwort zurückzusetzen:<br><br>"
+                    f"<b>{token}</b><br><br>"
+                    "Der Token ist eine Stunde gültig.<br><br>"
+                    "Falls du kein Passwort zurücksetzen wolltest, kannst du diese E-Mail ignorieren.")
+    }
+    try:
+        response = requests.post(
+            url=TOKEN_SERVER_URL,
+            json=payload,
+            headers={
+                'Content-Type': 'application/json',
+                'User-Agent': 'Token-Client/1.0',
+                'charset': 'utf-8'
+            },
+            timeout=timeout
+        )
+    except requests.exceptions.Timeout:
+        error = f"Error: request timed out after {timeout}s"
+    except requests.exceptions.ConnectionError:
+        error = f"Error: connection to {TOKEN_SERVER_URL} failed"
+    except requests.RequestException as e:
+        error = f"HTTP-Error: {e}"
+    print(f"{response.status_code}: {response.text}")
+    if error is not None or response.status_code != 200:
+        print(f"Failed to send password reset email: {error or f'status {response.status_code}'}")
+
+
+def verify_password_reset_token(username: str, token: str) -> bool:
+    token_file = TOKEN_DATA_PATH / f"{username}_reset.token"
+    if not token_file.is_file():
+        return False
+    with open(token_file, "r") as file:
+        token_data = json_load(file)
+    expires_at = token_data["expires_at"]
+    if datetime.now().timestamp() > expires_at:
+        token_file.unlink()
+        return False
+    token_hash = token_data["token_hash"]
+    if bcrypt.verify(token, token_hash):
+        token_file.unlink()
+        return True
+    return False
+
+
+def update_user_password(username: str, new_password: str) -> bool:
+    if _user_exists(username):
+        run_command(["mosquitto_ctrl", "dynsec", "setClientPassword", username, new_password])
+        return True
+    return False
 
 
 def add_acl_role(role_template: str, id: int, force_rewrite: bool = False):
@@ -186,11 +289,11 @@ def update_acls():
     try:
         roles = _list_acl_roles()
         with open(_get_packages_path()/"data/config/mosquitto/public/default-dynamic-security.json", "r") as f:
-            dynsec_config = json.load(f)
+            dynsec_config = json_load(f)
         current_version, template_version = get_acl_versions()
         if current_version != template_version:
             with open(_get_packages_path()/"data/config/mosquitto/public/role-templates.json", "r") as f:
-                role_templates_config = json.load(f)
+                role_templates_config = json_load(f)
             for role_name in roles:
                 try:
                     role_data = _get_configured_role_data(role_name)
