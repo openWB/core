@@ -17,6 +17,14 @@ class MosquittoAcl(TypedDict):
     allow: bool
     priority: int
 
+    def __eq__(self, other):
+        if self["acltype"] == other["acltype"]:
+            if re.sub(r'/\d+/', '/<id>/', self["topic"]) == re.sub(r'/\d+/', '/<id>/', other["topic"]):
+                if self["allow"] == other["allow"]:
+                    if self["priority"] == other["priority"]:
+                        return True
+            return False
+
 
 class MosquittoRole(TypedDict):
     rolename: str
@@ -116,15 +124,6 @@ def _extract_id_from_role_name(role_name: str) -> Optional[int]:
     return None
 
 
-def _compare_acl(template_acl: MosquittoAcl, configured_acl: MosquittoAcl) -> bool:
-    if template_acl["acltype"] == configured_acl["acltype"]:
-        if re.sub(r'/\d+/', '/<id>/', template_acl["topic"]) == re.sub(r'/\d+/', '/<id>/', configured_acl["topic"]):
-            if template_acl["allow"] == configured_acl["allow"]:
-                if template_acl["priority"] == configured_acl["priority"]:
-                    return True
-    return False
-
-
 def _get_configured_role_data(role_name: str) -> Optional[MosquittoRole]:
     role_output = run_command([
         "mosquitto_ctrl", "dynsec", "getRole", role_name])
@@ -147,10 +146,13 @@ def _get_configured_role_data(role_name: str) -> Optional[MosquittoRole]:
     return role_data
 
 
+VERSION_STRING = "openwb-version:"
+
+
 def update_acls():
-    def is_version_updated() -> Tuple[str, str]:
+    def get_acl_versions() -> Tuple[str, str]:
         for role in roles:
-            if "openwb-version" in role:
+            if VERSION_STRING in role:
                 current_version = role.split(":")[1]
                 break
         else:
@@ -158,7 +160,7 @@ def update_acls():
 
         for role in dynsec_config["roles"]:
             try:
-                if "openwb-version" in role["rolename"]:
+                if VERSION_STRING in role["rolename"]:
                     template_version = role["rolename"].split(":")[1]
                     break
             except Exception:
@@ -167,31 +169,25 @@ def update_acls():
             raise RuntimeError("openwb-version role not found in default-dynamic-security.json")
 
         if current_version != template_version:
-            log.debug(f"Updating ACLs from version {current_version} to {template_version}")
+            log.debug(f"Current ACL version: '{current_version}' Template version: '{template_version}'")
         return current_version, template_version
 
     def get_template_role_data() -> Optional[MosquittoRole]:
-        template_role_data = None
         for config_role in dynsec_config["roles"]:
             if (config_role["rolename"] == role_data["rolename"] or
-                    ("openwb-version" in config_role["rolename"] and "openwb-version" in role_data["rolename"])):
-                template_role_data = config_role
-                break
-        else:
-            for config_role in role_templates_config:
-                pattern = config_role["rolename"].replace("<id>", r"\d+")
-                if re.match(pattern, role_data["rolename"]):
-                    template_role_data = config_role
-                    break
-            else:
-                raise RuntimeError(f"Role {role_data['rolename']} not found in default-dynamic-security.json")
-        return template_role_data
+                    (VERSION_STRING in config_role["rolename"] and VERSION_STRING in role_data["rolename"])):
+                return config_role
+        for config_role in role_templates_config:
+            pattern = config_role["rolename"].replace("<id>", r"\d+")
+            if re.match(pattern, role_data["rolename"]):
+                return config_role
+        raise RuntimeError(f"Role {role_data['rolename']} not found in default-dynamic-security.json")
 
     try:
         roles = _list_acl_roles()
         with open(_get_packages_path()/"data/config/mosquitto/public/default-dynamic-security.json", "r") as f:
             dynsec_config = json.load(f)
-        current_version, template_version = is_version_updated()
+        current_version, template_version = get_acl_versions()
         if current_version != template_version:
             with open(_get_packages_path()/"data/config/mosquitto/public/role-templates.json", "r") as f:
                 role_templates_config = json.load(f)
@@ -203,7 +199,7 @@ def update_acls():
                         # vegleiche die zwei ACL dicts, welche ACLs hinzugefügt, geändert oder entfernt wurden
                         for acl in role_data["acls"]:
                             for template_acl in template_role_data["acls"]:
-                                if _compare_acl(template_acl, acl):
+                                if template_acl == acl:
                                     break
                             else:
                                 log.debug(f"ACL {acl['acltype']}:{'allow' if acl['allow'] else 'deny'}:{acl['topic']}:"
@@ -214,7 +210,7 @@ def update_acls():
                                 ])
                         for acl in template_role_data["acls"]:
                             for role_acl in role_data["acls"]:
-                                if _compare_acl(acl, role_acl):
+                                if acl == role_acl:
                                     break
                             else:
                                 rolename_id = _extract_id_from_role_name(role_data["rolename"])
@@ -236,8 +232,8 @@ def update_acls():
                     log.exception(f"Fehler beim Aktualisieren der Rolle '{role_name}'")
             # bei allen anderen Rollen dürfen nur die ACLs editiert werden,
             # damit diese in den Benutzergruppen erhalten bleiben
-            run_command(["mosquitto_ctrl", "dynsec", "deleteRole", f"openwb-version:{current_version}"])
-            run_command(["mosquitto_ctrl", "dynsec", "createRole", f"openwb-version:{template_version}"])
+            run_command(["mosquitto_ctrl", "dynsec", "deleteRole", f"{VERSION_STRING}{current_version}"])
+            run_command(["mosquitto_ctrl", "dynsec", "createRole", f"{VERSION_STRING}{template_version}"])
     except Exception:
         log.exception("Fehler beim Aktualisieren der ACLs")
 
