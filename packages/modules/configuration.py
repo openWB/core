@@ -5,7 +5,7 @@ from typing import Dict, List
 
 import dataclass_utils
 from helpermodules.pub import Pub
-from packages.control.consumer.consumer_data import GET_DEFAULTS_BY_USAGE
+from control.consumer.consumer_data import GET_DEFAULTS_BY_USAGE
 from modules.io_actions.groups import READABLE_GROUP_NAME, ActionGroup
 import sys
 log = logging.getLogger(__name__)
