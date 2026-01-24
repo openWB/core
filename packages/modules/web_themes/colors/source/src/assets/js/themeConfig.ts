@@ -9,10 +9,6 @@ import { select } from 'd3'
 import { ChargeMode, type ChargeModeInfo } from './types'
 import { addShDevice, shDevices } from '@/components/smartHome/model'
 import { registry } from './model'
-/* import {
-	sourceGraphIsNotInitialized,
-	usageGraphIsNotInitialized,
-} from '@/components/powerGraph/model' */
 import { updateServer } from './sendMessages'
 import { counters } from '@/components/counterList/model'
 export class Config {
@@ -487,6 +483,7 @@ export const infotext: { [key: string]: string } = {
 		'Laden bei dynamischem Stromtarif, wenn eingestellter Maximalpreis unterboten wird.',
 	pvpriority:
 		'Ladepriorität bei PV-Produktion. Bevorzung von Fahzeugen, Speicher, oder Fahrzeugen bis zum eingestellten Mindest-Ladestand. Die Einstellung ist für alle Ladepunkte gleich.',
+	chargeTemplate: 'Ladeprofil für dieses Fahrzeug.',
 }
 interface Preferences {
 	hideSH?: string[]
