@@ -39,6 +39,23 @@
 			"
 		/>
 	</ConfigItem>
+	<!-- Select the charge template -->
+	<ConfigItem
+		title="Ladeprofil"
+		icon="fa-settings"
+		:infotext="infotext['chargeTemplate']"
+		:fullwidth="true"
+	>
+		<RadioInput2
+			v-model="vehicle.chargeTemplateId"
+			:options="
+				Object.values(chargeTemplates).map((template) => [
+					template.name,
+					template.id,
+				])
+			"
+		/>
+	</ConfigItem>
 	<ConfigItem
 		title="Sperren"
 		icon="fa-lock"
@@ -101,7 +118,7 @@
 
 <script setup lang="ts">
 import { chargemodes } from '@/assets/js/themeConfig'
-import { ChargePoint, vehicles } from '../model'
+import { ChargePoint, vehicles, chargeTemplates } from '../model'
 import ConfigItem from '../../shared/ConfigItem.vue'
 import { infotext } from '@/assets/js/themeConfig'
 import SwitchInput from '../../shared/SwitchInput.vue'
@@ -115,6 +132,7 @@ const props = defineProps<{
 defineEmits(['closeConfig'])
 //state
 const cp = props.chargepoint
+const vehicle = vehicles[cp.connectedVehicle]
 </script>
 
 <style scoped>

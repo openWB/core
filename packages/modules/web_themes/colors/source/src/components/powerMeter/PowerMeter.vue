@@ -1,6 +1,6 @@
 <template>
 	<WBWidget :full-width="true">
-		<template #title> Aktuelle Leistung </template>
+		<template #title> Aktuell </template>
 		<figure id="powermeter" class="p-0 m-0">
 			<svg :viewBox="'0 0 ' + width + ' ' + height">
 				<g :transform="'translate(' + width / 2 + ',' + height / 2 + ')'">

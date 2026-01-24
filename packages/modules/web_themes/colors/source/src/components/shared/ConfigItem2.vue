@@ -108,7 +108,7 @@ const iconstyle = computed(() => {
 .infotext {
 	font-size: var(--font-settings);
 	text-align: center;
-	color: var(--color-battery);
+	color: var(--color-charging);
 	grid-column: span 12;
 	border-radius: 12px;
 }

@@ -157,7 +157,7 @@ const heading = computed(() => {
 		case 'month':
 			return 'Monatsübersicht'
 		default:
-			return 'Leistung / Ladestand'
+			return 'Verlauf'
 	}
 })
 /**
