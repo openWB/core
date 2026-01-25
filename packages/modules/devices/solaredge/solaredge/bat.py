@@ -25,8 +25,9 @@ MAX_CHARGEDISCHARGE_LIMIT = 5000
 CONTROL_MODE_MSC = 1  # Storage Control Mode Maximize Self Consumption
 CONTROL_MODE_REMOTE = 4  # Control Mode Remotesteuerung
 REMOTE_CONTROL_COMMAND_MODE_DEFAULT = 0  # Default RC Command Mode ohne Steuerung
-REMOTE_CONTROL_COMMAND_MODE_CHARGE = 3 # RC Command Mode Charge from PV+AC
+REMOTE_CONTROL_COMMAND_MODE_CHARGE = 3  # RC Command Mode Charge from PV+AC
 REMOTE_CONTROL_COMMAND_MODE_DISCHARGE = 5  # RC Command Mode Discharge (Discharge to Grid not allowed)
+
 
 class KwargsDict(TypedDict):
     device_id: int
@@ -59,7 +60,7 @@ class SolaredgeBat(AbstractBat):
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.min_soc = 13
-        self.StorageControlMode_Read = CONTROL_MODE_MSC # Default Control Mode Set to MSC if not Read
+        self.StorageControlMode_Read = CONTROL_MODE_MSC  # Default Control Mode Set to MSC if not Read
         self.last_mode = 'undefined'
 
     def update(self) -> None:
@@ -122,7 +123,7 @@ class SolaredgeBat(AbstractBat):
         # Use 1 as fallback if battery_index is not set
         battery_index = getattr(self.component_config.configuration, "battery_index", 1)
 
-        if power_limit is None: # No Bat Control should be used.
+        if power_limit is None:  # No Bat Control should be used.
             if self.last_mode in ('discharge-mode', 'charge-mode'):
                 # Disable Bat Control
                 log.debug(f"Speicher{battery_index}:Keine Steuerung gefordert, Steuerung deaktivieren.")
@@ -138,7 +139,7 @@ class SolaredgeBat(AbstractBat):
             else:
                 return
 
-        elif power_limit <= 0: # Limit Discharge Mode should be used.
+        elif power_limit <= 0:  # Limit Discharge Mode should be used.
             """
             SolarEdge discharges the battery only to SoC-Reserve.
             Disable Remote Control if SoC of battery is lower than SoC-Reserve.
@@ -199,7 +200,7 @@ class SolaredgeBat(AbstractBat):
                     self._write_registers(values_to_write, unit)
                     self.last_mode = 'discharge-mode'
 
-        elif power_limit > 0: # Charge Mode should be used
+        elif power_limit > 0:  # Charge Mode should be used
             registers_to_read = [
                 "StorageControlMode",
                 "RemoteControlChargeLimit",
