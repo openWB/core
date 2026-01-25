@@ -47,7 +47,7 @@
 		:fullwidth="true"
 	>
 		<RadioInput2
-			v-model="vehicle.chargeTemplateId"
+			v-model="templateId"
 			:options="
 				Object.values(chargeTemplates).map((template) => [
 					template.name,
@@ -126,6 +126,7 @@ import RadioInput2 from '@/components/shared/RadioInput2.vue'
 //import { etData } from '@/components/priceChart/model'
 import { globalData } from '@/assets/js/model'
 import { evPriorityModes } from '@/assets/js/types'
+import { computed } from 'vue'
 const props = defineProps<{
 	chargepoint: ChargePoint
 }>()
@@ -133,6 +134,15 @@ defineEmits(['closeConfig'])
 //state
 const cp = props.chargepoint
 const vehicle = vehicles[cp.connectedVehicle]
+const templateId = computed ( {
+	get() {
+		return vehicle.chargeTemplateId
+	},
+	set(value: number) {
+		vehicle.chargeTemplateId = value
+		cp.chargeTemplate = chargeTemplates[value]
+	},
+} )
 </script>
 
 <style scoped>

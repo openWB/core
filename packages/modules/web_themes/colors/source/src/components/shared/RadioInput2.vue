@@ -57,10 +57,10 @@ function buttonStyle(index: number) {
 	const maxRow = Math.floor((optionCount - 1) / 3)
 	if (col == 0) {
 		if (row == 0) {
-			borderRadius[0] = '0.5rem' // top-left
+			borderRadius[0] = '0.45rem' // top-left
 		}
 		if (row == maxRow) {
-			borderRadius[3] = '0.5rem' // bottom-left
+			borderRadius[3] = '0.45rem' // bottom-left
 		}
 		borderWidth[1] = '0.1px' // right
 	}
@@ -70,10 +70,10 @@ function buttonStyle(index: number) {
 	}
 	if (col == 2) {
 		if (row == 0) {
-			borderRadius[1] = '0.5rem' // top-right
+			borderRadius[1] = '0.45rem' // top-right
 		}
 		if (row == maxRow) {
-			borderRadius[2] = '0.5rem' // bottom-right
+			borderRadius[2] = '0.45rem' // bottom-right
 		}
 		borderWidth[3] = '0.1px' // left
 	}
