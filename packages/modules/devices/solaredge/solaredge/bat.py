@@ -148,6 +148,7 @@ class SolaredgeBat(AbstractBat):
                 f"Battery{battery_index}StateOfEnergy",
                 "StorageControlMode",
                 "StorageBackupReserved",
+                "RemoteControlCommandMode",
                 "RemoteControlDischargeLimit",
             ]
             try:
@@ -163,7 +164,9 @@ class SolaredgeBat(AbstractBat):
             log.debug(f"SoC-Reserve Speicher{battery_index}: {int(soc_reserve)}%.")
             discharge_limit = int(values["RemoteControlDischargeLimit"])
 
-            if values["StorageControlMode"] == CONTROL_MODE_REMOTE:  # Remote Control active.
+            if (values["StorageControlMode"] == CONTROL_MODE_REMOTE and
+                values["RemoteControlCommandMode"] == REMOTE_CONTROL_COMMAND_MODE_MSC):
+                # RC Discharge Mode active.
                 if soc_reserve > soc:
                     # Disable Remote Control if SOC is lower than SOC-RESERVE.
                     # toDo: Problem with 2 batteries is unsolved.
@@ -203,6 +206,7 @@ class SolaredgeBat(AbstractBat):
         elif power_limit > 0:  # Charge Mode should be used
             registers_to_read = [
                 "StorageControlMode",
+                "RemoteControlCommandMode",
                 "RemoteControlChargeLimit",
             ]
             try:
@@ -212,7 +216,9 @@ class SolaredgeBat(AbstractBat):
                 self.fault_state.error(f"Modbus read error: {e}")
                 return
 
-            if values["StorageControlMode"] == CONTROL_MODE_REMOTE:  # Remote Control active.
+            if (values["StorageControlMode"] == CONTROL_MODE_REMOTE and
+                values["RemoteControlCommandMode"] == REMOTE_CONTROL_COMMAND_MODE_CHARGE):
+                # Remote Control Charge Mode active.
                 log.debug(f"Ladung Speicher{battery_index}: {int(min(abs(power_limit), MAX_CHARGEDISCHARGE_LIMIT))}W.")
                 values_to_write = {
                     "RemoteControlChargeLimit": int(min(abs(power_limit), MAX_CHARGEDISCHARGE_LIMIT))
@@ -220,7 +226,7 @@ class SolaredgeBat(AbstractBat):
                 self._write_registers(values_to_write, unit)
                 self.last_mode = 'charge-mode'
 
-            else:  # Remote Control inactive.
+            else:  # Remote Control Charge Mode inactive.
                 log.debug(f"Aktivierung Laden Speicher{battery_index}: {int(abs(power_limit))}W.")
                 self.StorageControlMode_Read = values["StorageControlMode"]
                 values_to_write = {
