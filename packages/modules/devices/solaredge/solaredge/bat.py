@@ -166,28 +166,28 @@ class SolaredgeBat(AbstractBat):
 
             if (values["StorageControlMode"] == CONTROL_MODE_REMOTE and
                 values["RemoteControlCommandMode"] == REMOTE_CONTROL_COMMAND_MODE_MSC):
-                # RC Discharge Mode active.
-                if soc_reserve > soc:
-                    # Disable Remote Control if SOC is lower than SOC-RESERVE.
-                    # toDo: Problem with 2 batteries is unsolved.
-                    log.debug(f"Speicher{battery_index}: Steuerung deaktivieren. SoC-Reserve unterschritten")
-                    values_to_write = {
-                        "RemoteControlDischargeLimit": MAX_CHARGEDISCHARGE_LIMIT,
-                        "RemoteControlCommandModeDefault": REMOTE_CONTROL_COMMAND_MODE_DEFAULT,
-                        "RemoteControlCommandMode": REMOTE_CONTROL_COMMAND_MODE_DEFAULT,
-                        "StorageControlMode": self.StorageControlMode_Read,
-                    }
-                    self._write_registers(values_to_write, unit)
-                    self.last_mode = None
+                    # RC Discharge Mode active.
+                    if soc_reserve > soc:
+                        # Disable Remote Control if SOC is lower than SOC-RESERVE.
+                        # toDo: Problem with 2 batteries is unsolved.
+                        log.debug(f"Speicher{battery_index}: Steuerung deaktivieren. SoC-Reserve unterschritten")
+                        values_to_write = {
+                            "RemoteControlDischargeLimit": MAX_CHARGEDISCHARGE_LIMIT,
+                            "RemoteControlCommandModeDefault": REMOTE_CONTROL_COMMAND_MODE_DEFAULT,
+                            "RemoteControlCommandMode": REMOTE_CONTROL_COMMAND_MODE_DEFAULT,
+                            "StorageControlMode": self.StorageControlMode_Read,
+                        }
+                        self._write_registers(values_to_write, unit)
+                        self.last_mode = None
 
-                elif discharge_limit not in range(int(abs(power_limit)) - 10, int(abs(power_limit)) + 10):
-                    # Limit only if difference is more than 10W, needed with more than 1 battery.
-                    log.debug(f"Discharge-Limit Speicher{battery_index}: {int(abs(power_limit))}W.")
-                    values_to_write = {
-                        "RemoteControlDischargeLimit": int(min(abs(power_limit), MAX_CHARGEDISCHARGE_LIMIT))
-                    }
-                    self._write_registers(values_to_write, unit)
-                self.last_mode = 'discharge-mode'
+                    elif discharge_limit not in range(int(abs(power_limit)) - 10, int(abs(power_limit)) + 10):
+                        # Limit only if difference is more than 10W, needed with more than 1 battery.
+                        log.debug(f"Discharge-Limit Speicher{battery_index}: {int(abs(power_limit))}W.")
+                        values_to_write = {
+                            "RemoteControlDischargeLimit": int(min(abs(power_limit), MAX_CHARGEDISCHARGE_LIMIT))
+                        }
+                        self._write_registers(values_to_write, unit)
+                    self.last_mode = 'discharge-mode'
 
             else:  # Remote Control not active.
                 if soc_reserve < soc:
@@ -218,13 +218,14 @@ class SolaredgeBat(AbstractBat):
 
             if (values["StorageControlMode"] == CONTROL_MODE_REMOTE and
                 values["RemoteControlCommandMode"] == REMOTE_CONTROL_COMMAND_MODE_CHARGE):
-                # Remote Control Charge Mode active.
-                log.debug(f"Ladung Speicher{battery_index}: {int(min(abs(power_limit), MAX_CHARGEDISCHARGE_LIMIT))}W.")
-                values_to_write = {
-                    "RemoteControlChargeLimit": int(min(abs(power_limit), MAX_CHARGEDISCHARGE_LIMIT))
-                }
-                self._write_registers(values_to_write, unit)
-                self.last_mode = 'charge-mode'
+                    # Remote Control Charge Mode active.
+                    log.debug(
+                        f"Ladung Speicher.{battery_index}: {int(min(abs(power_limit), MAX_CHARGEDISCHARGE_LIMIT))}W.")
+                    values_to_write = {
+                        "RemoteControlChargeLimit": int(min(abs(power_limit), MAX_CHARGEDISCHARGE_LIMIT))
+                    }
+                    self._write_registers(values_to_write, unit)
+                    self.last_mode = 'charge-mode'
 
             else:  # Remote Control Charge Mode inactive.
                 log.debug(f"Aktivierung Laden Speicher{battery_index}: {int(abs(power_limit))}W.")
