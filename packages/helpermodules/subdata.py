@@ -891,7 +891,7 @@ class SubData:
                     log.debug("skipping mqtt bridge message on startup")
             elif "mqtt" and "valid_partner_ids" in msg.topic:
                 # duplicate topic for remote support service
-                log.error(f"received valid partner ids: {decode_payload(msg.payload)}")
+                log.debug(f"received valid partner ids: {decode_payload(msg.payload)}")
                 Pub().pub("openWB-remote/valid_partner_ids", decode_payload(msg.payload))
             # will be moved to separate handler!
             elif "GetRemoteSupport" in msg.topic:
