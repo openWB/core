@@ -1,6 +1,5 @@
 import copy
 from dataclasses import asdict
-from datetime import datetime
 import importlib
 import json
 import logging
@@ -1035,17 +1034,19 @@ class Command:
                              "Der Benutzername darf nicht leer sein.",
                              MessageType.ERROR)
             return
+        log.debug(f"Password reset token requested for user '{username}'")
         email = get_user_email(username)
         if email is not None:
             token, expires_at = generate_password_reset_token(username)
-            send_password_reset_to_server(email, token)
+            send_password_reset_to_server(email, token, expires_at)
         else:
+            log.warning(f"Password reset token requested for non-existing user '{username}' or user without email")
             sleep(randrange(5, 25) * 0.1)  # artificial delay to mitigate user enumeration
         pub_user_message(
             payload, connection_id,
             (f"Falls der Benutzername '{username}' existiert und eine E-Mail-Adresse hinterlegt ist, "
-             "wurde ein Token zum Zurücksetzen des Passworts generiert.<br>"
-             f"Der Token ist gültig bis {datetime.fromtimestamp(expires_at).strftime('%a, %x %X')}<br>"),
+             "wurde ein Token zum Zurücksetzen des Passworts generiert.<br />"
+             "Das Token ist eine Stunde lang gültig."),
             MessageType.SUCCESS)
 
     def resetUserPassword(self, connection_id: str, payload: dict) -> None:

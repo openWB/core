@@ -112,7 +112,7 @@
                 <q-icon name="account_circle" />
               </template>
             </q-input>
-            <q-input v-model="code" label="Code" type="password" dense>
+            <q-input v-model="token" label="Token" type="password" dense>
               <template v-slot:prepend>
                 <q-icon name="key" />
               </template>
@@ -146,10 +146,10 @@
           <q-card-actions align="right">
             <q-btn
               flat
-              label="Code anfordern"
+              label="Token anfordern"
               color="positive"
               type="button"
-              @click="requestCode()"
+              @click="requestToken()"
             />
             <q-btn
               flat
@@ -231,7 +231,7 @@ const showPasswordResetDialog = ref(false);
 const user = ref('');
 const password = ref('');
 const passwordConfirm = ref('');
-const code = ref('');
+const token = ref('');
 
 const smallScreen = computed(() => {
   return $q.screen.lt.sm;
@@ -290,10 +290,10 @@ const clearLoginData = () => {
   user.value = '';
   password.value = '';
   passwordConfirm.value = '';
-  code.value = '';
+  token.value = '';
 };
 
-const requestCode = () => {
+const requestToken = () => {
   if (!user.value || user.value.length === 0) {
     console.error('Benutzername erforderlich.');
     return;
@@ -303,7 +303,7 @@ const requestCode = () => {
   });
   $q.notify({
     type: 'info',
-    message: `Falls der Benutzer "${user.value}" existiert und eine E-Mail-Adresse hinterlegt ist, wurde ein Code per E-Mail versendet.`,
+    message: `Falls der Benutzer "${user.value}" existiert und eine E-Mail-Adresse hinterlegt ist, wurde ein Token per E-Mail versendet.`,
     progress: true,
   });
 };
@@ -312,8 +312,8 @@ const resetPassword = () => {
   if (
     !user.value ||
     user.value.length === 0 ||
-    !code.value ||
-    code.value.length === 0 ||
+    !token.value ||
+    token.value.length === 0 ||
     !password.value ||
     password.value.length === 0 ||
     !passwordConfirm.value ||
@@ -329,19 +329,19 @@ const resetPassword = () => {
     }
     $q.notify({
       type: 'negative',
-      message: 'Benutzername, Code und neues Kennwort erforderlich.',
+      message: 'Benutzername, Token und neues Kennwort erforderlich.',
       progress: true,
     });
     return;
   }
   mqttStore.sendSystemCommand('resetUserPassword', {
     username: user.value,
-    code: code.value,
+    token: token.value,
     newPassword: password.value,
   });
   $q.notify({
     type: 'info',
-    message: `Falls der Benutzer "${user.value}" existiert und der Code korrekt ist, wurde das Kennwort zurückgesetzt.`,
+    message: `Falls der Benutzer "${user.value}" existiert und der Token korrekt ist, wurde das Kennwort zurückgesetzt.`,
     progress: true,
   });
 };
