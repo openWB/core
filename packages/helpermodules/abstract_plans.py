@@ -122,7 +122,15 @@ class ContinuousConsumerPlan(TimeframePlan):
 
 
 @dataclass
-class SuspendableConsumerPlan(TimeframePlan):
+class SuspendableOnOffConsumerPlan(TimeframePlan):
+    id: Optional[int] = None
+    mode: ConsumerMode = ConsumerMode.SURPLUS
+    name: str = "neuer Verbraucher-Plan"
+    phases_to_use: int = 1
+
+
+@dataclass
+class SuspendableTunableConsumerPlan(TimeframePlan):
     id: Optional[int] = None
     max_power: int = 5000
     mode: ConsumerMode = ConsumerMode.SURPLUS

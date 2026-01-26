@@ -225,13 +225,13 @@ cases = [
 @pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
 def test_counter(params: CounterParams, monkeypatch, requests_mock: requests_mock.mock):
     mock_counter_value_store = Mock()
-    monkeypatch.setattr(counter, "get_counter_value_store", Mock(return_value=mock_counter_value_store))
+    monkeypatch.setattr(counter, "get_component_value_store", Mock(return_value=mock_counter_value_store))
     if params.generation == 1:
         requests_mock.get(f"http://{SAMPLE_IP}/status", json=params.json_data)
     else:
         requests_mock.get(f"http://{SAMPLE_IP}/rpc/Shelly.GetStatus", json=params.json_data)
     mock_counter_value_store = Mock()
-    monkeypatch.setattr(counter, "get_counter_value_store", Mock(return_value=mock_counter_value_store))
+    monkeypatch.setattr(counter, "get_component_value_store", Mock(return_value=mock_counter_value_store))
     c = counter.ShellyCounter(
         ShellyCounterSetup(), device_id=0, ip_address=SAMPLE_IP,
         factor=params.factor, phase=params.phase, generation=params.generation)
@@ -266,7 +266,7 @@ cases = [
     InverterParams(name="G1 - Shelly EM3 Inverter - Phase 2, Faktor -1",
                    json_data=DATA_EM_3_G1, factor=-1, phase=2, generation=1,
                    expected_inverter_state=InverterState(
-                      power=-2990.00, currents=[-1.0, -10.0, -2.0], exported=200)),
+                       power=-2990.00, currents=[-1.0, -10.0, -2.0], exported=200)),
     InverterParams(name="G3 - Shelly Mini PM Inverter - Phase 1, Faktor -1",
                    json_data=DATA_MINPM_G3, factor=-1, phase=1, generation=3,
                    expected_inverter_state=InverterState(
@@ -285,13 +285,13 @@ cases = [
 @pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
 def test_inverter(params: InverterParams, monkeypatch, requests_mock: requests_mock.mock):
     mock_inverter_value_store = Mock()
-    monkeypatch.setattr(inverter, "get_inverter_value_store", Mock(return_value=mock_inverter_value_store))
+    monkeypatch.setattr(inverter, "get_component_value_store", Mock(return_value=mock_inverter_value_store))
     if params.generation == 1:
         requests_mock.get(f"http://{SAMPLE_IP}/status", json=params.json_data)
     else:
         requests_mock.get(f"http://{SAMPLE_IP}/rpc/Shelly.GetStatus", json=params.json_data)
     mock_inverter_value_store = Mock()
-    monkeypatch.setattr(inverter, "get_inverter_value_store", Mock(return_value=mock_inverter_value_store))
+    monkeypatch.setattr(inverter, "get_component_value_store", Mock(return_value=mock_inverter_value_store))
     c = inverter.ShellyInverter(
         ShellyInverterSetup(), device_id=0, ip_address=SAMPLE_IP,
         factor=params.factor, phase=params.phase, generation=params.generation)
@@ -345,13 +345,13 @@ cases = [
 @pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
 def test_bat(params: BatParams, monkeypatch, requests_mock: requests_mock.mock):
     mock_bat_value_store = Mock()
-    monkeypatch.setattr(bat, "get_bat_value_store", Mock(return_value=mock_bat_value_store))
+    monkeypatch.setattr(bat, "get_component_value_store", Mock(return_value=mock_bat_value_store))
     if params.generation == 1:
         requests_mock.get(f"http://{SAMPLE_IP}/status", json=params.json_data)
     else:
         requests_mock.get(f"http://{SAMPLE_IP}/rpc/Shelly.GetStatus", json=params.json_data)
     mock_bat_value_store = Mock()
-    monkeypatch.setattr(bat, "get_bat_value_store", Mock(return_value=mock_bat_value_store))
+    monkeypatch.setattr(bat, "get_component_value_store", Mock(return_value=mock_bat_value_store))
     c = bat.ShellyBat(
         ShellyBatSetup(), device_id=0, ip_address=SAMPLE_IP,
         factor=params.factor, phase=params.phase, generation=params.generation)

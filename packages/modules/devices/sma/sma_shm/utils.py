@@ -31,7 +31,7 @@ class SpeedwireComponent(Generic[T]):
         self.component_config = component_config
 
     def initialize(self) -> None:
-        self.store = self.kwargs['value_store_factory'](self.component_config.id)
+        self.store = self.kwargs['value_store_factory'](self.component_config.type, self.component_config.id)
         self.__parser = self.kwargs['parser']
         self.__serial_matcher = _create_serial_matcher(self.component_config.configuration.serials)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))

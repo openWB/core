@@ -11,11 +11,11 @@ def get_component_value_store(component_type: str,
                               component_num: int,
                               add_child_values: bool = False,
                               simcounter: Optional[SimCounter] = None):
-    if component_type == ComponentType.BAT.value:
+    if ComponentType.BAT.value in component_type:
         return get_bat_value_store(component_num)
-    elif component_type == ComponentType.CONSUMER.value:
+    elif ComponentType.CONSUMER.value in component_type:
         return get_consumer_value_store(component_num)
-    elif component_type == ComponentType.COUNTER.value:
+    elif ComponentType.COUNTER.value in component_type:
         return get_counter_value_store(component_num, add_child_values, simcounter)
-    elif component_type == ComponentType.INVERTER.value:
+    elif ComponentType.INVERTER.value in component_type:
         return get_inverter_value_store(component_num)

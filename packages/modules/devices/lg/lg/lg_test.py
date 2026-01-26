@@ -45,11 +45,11 @@ def assert_inverter_state_correct(state: InverterState):
 def test_valid_login(monkeypatch, dev: ConfigurableDevice):
     # setup
     mock_bat_value_store = Mock()
-    monkeypatch.setattr(bat, "get_bat_value_store", Mock(return_value=mock_bat_value_store))
+    monkeypatch.setattr(bat, "get_component_value_store", Mock(return_value=mock_bat_value_store))
     mock_counter_value_store = Mock()
-    monkeypatch.setattr(counter, "get_counter_value_store", Mock(return_value=mock_counter_value_store))
+    monkeypatch.setattr(counter, "get_component_value_store", Mock(return_value=mock_counter_value_store))
     mock_inverter_value_store = Mock()
-    monkeypatch.setattr(inverter, "get_inverter_value_store", Mock(return_value=mock_inverter_value_store))
+    monkeypatch.setattr(inverter, "get_component_value_store", Mock(return_value=mock_inverter_value_store))
     monkeypatch.setattr(device, "_request_data", Mock(return_value=sample_auth_key_valid))
     component_config = bat.component_descriptor.configuration_factory()
     component_config.id = None
@@ -73,11 +73,11 @@ def test_valid_login(monkeypatch, dev: ConfigurableDevice):
 def test_update_session_key(monkeypatch, dev: ConfigurableDevice):
     # setup
     mock_bat_value_store = Mock()
-    monkeypatch.setattr(bat, "get_bat_value_store", Mock(return_value=mock_bat_value_store))
+    monkeypatch.setattr(bat, "get_component_value_store", Mock(return_value=mock_bat_value_store))
     mock_counter_value_store = Mock()
-    monkeypatch.setattr(counter, "get_counter_value_store", Mock(return_value=mock_counter_value_store))
+    monkeypatch.setattr(counter, "get_component_value_store", Mock(return_value=mock_counter_value_store))
     mock_inverter_value_store = Mock()
-    monkeypatch.setattr(inverter, "get_inverter_value_store", Mock(return_value=mock_inverter_value_store))
+    monkeypatch.setattr(inverter, "get_component_value_store", Mock(return_value=mock_inverter_value_store))
     monkeypatch.setattr(device, "_request_data", Mock(
         side_effect=[HTTPError, sample_auth_key_valid]))
     component_config = bat.component_descriptor.configuration_factory()

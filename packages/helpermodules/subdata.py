@@ -16,7 +16,7 @@ from control.chargepoint.chargepoint_data import Log
 from control.chargepoint.chargepoint_state_update import ChargepointStateUpdate
 from control.chargepoint.chargepoint_template import CpTemplate, CpTemplateData
 from control.consumer.consumer import Consumer
-from control.consumer.consumer_data import GET_CLASS_BY_USAGE, GET_DEFAULTS_BY_USAGE
+from control.consumer.consumer_data import GET_CLASS_BY_USAGE
 from control.consumer.usage import ConsumerUsage
 from control.ev.charge_template import ChargeTemplate, ChargeTemplateData
 from control.ev import ev
@@ -1113,26 +1113,36 @@ class SubData:
                             "modules")
                         config = dataclass_from_dict(
                             component.component_descriptor.configuration_factory, component_config)
-                        var["consumer"+index].extra_meter.add_component(config, dependency_injection_devices_components)
-                        var["consumer"+index].data.extra_meter.component = config
+                        var[f"consumer{index}"].extra_meter.add_component(
+                            config, dependency_injection_devices_components)
+                        var[f"consumer{index}"].data.extra_meter.component = config
                         client.subscribe(f"openWB/consumer/{index}/extra_meter/device/component/simulation", 2)
                         self.processing_counter.add_task()
                         Pub().pub("openWB/system/subdata_initialized", True)
                     else:
-                        var["consumer"+index].data.extra_meter.component = component_config
+                        var[f"consumer{index}"].data.extra_meter.component = component_config
             elif re.search("openWB/consumer/[0-9]+/extra_meter/device/component/simulation", msg.topic) is not None:
                 index = get_index(msg.topic)
                 index_second = get_second_index(msg.topic)
-                var["consumer"+index].extra_meter.components["component"+index_second
-                                                             ].sim_counter.data = dataclass_from_dict(
+                var[f"consumer{index}"].extra_meter.components["component"+index_second
+                                                               ].sim_counter.data = dataclass_from_dict(
                     SimCounterState,
                     decode_payload(msg.payload))
             elif re.search("^.+/device/[0-9]+/error_timestamp$", msg.topic) is not None:
                 index = get_index(msg.topic)
-                var["consumer"+index].extra_meter.error_timestamp = decode_payload(msg.payload)
+                var[f"consumer{index}"].extra_meter.error_timestamp = decode_payload(msg.payload)
             elif re.search("openWB/consumer/[0-9]+/usage$", msg.topic) is not None:
                 payload = decode_payload(msg.payload)
-                var[f"consumer{index}"].data.usage = dataclass_from_dict(GET_CLASS_BY_USAGE[ConsumerUsage(payload["type"])],
-                                                                         payload)
+                if payload is not None:
+                    var[f"consumer{index}"].data.usage = dataclass_from_dict(
+                        GET_CLASS_BY_USAGE[ConsumerUsage(payload["type"])],
+                        payload)
+            elif re.search("openWB/consumer/[0-9]+/control_parameter/", msg.topic) is not None:
+                if re.search("openWB/consumer/[0-9]+/control_parameter/limit", msg.topic) is not None:
+                    payload = decode_payload(msg.payload)
+                    var[f"consumer{index}"].data.control_parameter.limit = dataclass_from_dict(
+                        LoadmanagementLimit, payload)
+                else:
+                    self.set_json_payload_class(var[f"consumer{index}"].data.control_parameter, msg)
         except Exception:
             log.exception("Fehler im subdata-Modul")

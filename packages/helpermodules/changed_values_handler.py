@@ -90,6 +90,9 @@ class ChangedValuesHandler:
             for key, value in data.data.counter_data.items():
                 self._update_value(f"openWB/set/counter/{value.num}/",
                                    self.prev_data.counter_data[key].data, value.data)
+            for key, value in data.data.consumer_data.items():
+                self._update_value(f"openWB/set/consumer/{value.num}/",
+                                   self.prev_data.consumer_data[key].data, value.data)
             # chargepoint, ev template, autolock, time and scheduled charging plans mutable_by_algorithm immer false
         except Exception as e:
             log.exception(e)

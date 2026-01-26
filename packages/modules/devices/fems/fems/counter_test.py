@@ -11,7 +11,7 @@ from modules.devices.fems.fems.config import Fems, FemsConfiguration, FemsCounte
 def test_fems_counter(monkeypatch, requests_mock: requests_mock.mock):
     # setup
     mock_counter_value_store = Mock()
-    monkeypatch.setattr(counter, 'get_counter_value_store', Mock(return_value=mock_counter_value_store))
+    monkeypatch.setattr(counter, 'get_component_value_store', Mock(return_value=mock_counter_value_store))
     requests_mock.get('http://1.1.1.1:8084/rest/channel/(meter0|_sum)/(ActivePower.*|VoltageL.|Frequency|Grid.+' +
                       'ActiveEnergy)',
                       json=SAMPLE_RESPONSE)

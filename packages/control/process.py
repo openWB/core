@@ -42,7 +42,7 @@ class Process:
                         cp.initiate_phase_switch()
                         if control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED and cp.data.set.current != 0:
                             control_parameter.state = ChargepointState.WAIT_FOR_USING_PHASES
-                        self._update_state(cp)
+                        self._update_state_cp(cp)
                         cp.set_timestamp_charge_start()
                     else:
                         control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
@@ -64,25 +64,18 @@ class Process:
                     log.exception("Fehler im Process-Modul für Ladepunkt "+str(cp))
             for consumer in data.data.consumer_data.values():
                 try:
-                    log.info(f"Verbraucher{consumer.num}: set current {consumer.data.set.current} A, "
-                             f"state {ChargepointState(consumer.data.control_parameter.state).name}")
                     control_parameter = consumer.data.control_parameter
-                    if control_parameter.state != ChargepointState.NO_CHARGING_ALLOWED or consumer.data.set.current != 0:
+                    if (control_parameter.state != ChargepointState.NO_CHARGING_ALLOWED or
+                            consumer.data.set.current != 0):
                         control_parameter.state = ChargepointState.CHARGING_ALLOWED
-                        consumer.data.set.current = round(consumer.data.set.current, 2)
-                        Pub().pub(f"openWB/set/consumer/{consumer.num}/set/current", consumer.data.set.current)
+                        self._update_state_consumer(consumer)
                     else:
                         control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
-                    if consumer.data.get.state_str is not None:
-                        Pub().pub(f"openWB/set/consumer/{consumer.num}/get/state_str",
-                                  consumer.data.get.state_str)
-                    else:
+                    if consumer.data.get.state_str is None:
                         if consumer.data.get.charge_state:
-                            Pub().pub(
-                                f"openWB/set/consumer/{consumer.num}/get/state_str", "Verbraucher läuft.")
+                            consumer.data.get.state_str = "Verbraucher läuft."
                         else:
-                            Pub().pub(
-                                f"openWB/set/consumer/{consumer.num}/get/state_str", "Verbraucher wird gestartet... ")
+                            consumer.data.get.state_str = "Verbraucher wird gestartet... "
                     modules_threads.append(self._start_consumer(consumer))
                 except Exception:
                     log.exception("Fehler im Process-Modul für Verbaucher "+str(consumer))
@@ -129,7 +122,7 @@ class Process:
         except Exception:
             log.exception("Fehler im Process-Modul")
 
-    def _update_state(self, chargepoint: chargepoint.Chargepoint) -> None:
+    def _update_state_cp(self, chargepoint: chargepoint.Chargepoint) -> None:
         """aktualisiert den Zustand des Ladepunkts.
         """
         charging_ev = chargepoint.data.set.charging_ev_data
@@ -170,6 +163,13 @@ class Process:
                       args=(chargepoint.data.set.current,),
                       name=f"set current cp{chargepoint.chargepoint_module.config.id}")
 
+    def _update_state_consumer(self, consumer: Consumer) -> None:
+        consumer.data.set.current = round(consumer.data.set.current, 2)
+        consumer.data.set.power = consumer.data.set.current * \
+            voltages_mean(consumer.data.get.voltages) * consumer.data.config.connected_phases
+        log.info(f"Verbraucher{consumer.num}: set current {consumer.data.set.current} A, "
+                 f"state {ChargepointState(consumer.data.control_parameter.state).name}")
+
     def _start_consumer(self, consumer: Consumer) -> Thread:
         if consumer.data.usage.type in (ConsumerUsage.CONTINUOUS,
                                         ConsumerUsage.SUSPENDABLE_ONOFF,
@@ -178,6 +178,5 @@ class Process:
                 target=consumer.module.switch_on if consumer.data.set.current > 0 else consumer.module.switch_off,
                 name=f"set current consumer{consumer.num}")
         return Thread(target=consumer.module.set_power_limit,
-                      args=(consumer.data.set.current * voltages_mean(consumer.data.get.voltages)
-                            * consumer.data.config.connected_phases,),
+                      args=(consumer.data.set.power,),
                       name=f"set current consumer{consumer.num}")

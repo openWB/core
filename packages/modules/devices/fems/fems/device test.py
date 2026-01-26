@@ -32,8 +32,8 @@ class TestDiscovergyDevice:
         self.mock_counter_value_store = Mock()
         self.mock_inverter_value_store = Mock()
         self.mock_get_last_reading = Mock(return_value=SAMPLE_COUNTER_STATE)
-        monkeypatch.setattr(counter, 'get_counter_value_store', Mock(return_value=self.mock_counter_value_store))
-        monkeypatch.setattr(inverter, 'get_inverter_value_store', Mock(return_value=self.mock_inverter_value_store))
+        monkeypatch.setattr(counter, 'get_component_value_store', Mock(return_value=self.mock_counter_value_store))
+        monkeypatch.setattr(inverter, 'get_component_value_store', Mock(return_value=self.mock_inverter_value_store))
         monkeypatch.setattr(api, 'get_last_reading', self.mock_get_last_reading)
 
     def test_read_legacy_reads_counter(self, monkeypatch):

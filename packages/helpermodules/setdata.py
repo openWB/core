@@ -506,34 +506,8 @@ class SetData:
                         msg, int, [(0, float("inf"))], pub_json=True)
                 elif "get" in msg.topic:
                     self.process_chargepoint_get_topics(msg)
-                elif "/control_parameter/required_current" in msg.topic:
-                    if hardware_configuration.get_hardware_configuration_setting("dc_charging"):
-                        self._validate_value(msg, float, [(0, 0), (6, 32), (0, 450)])
-                    else:
-                        self._validate_value(msg, float, [(6, 32), (0, 0)])
-                elif ("/control_parameter/phases" in msg.topic or
-                      "/control_parameter/template_phases" in msg.topic):
-                    self._validate_value(msg, int, [(0, 3)])
-                elif "/control_parameter/failed_phase_switches" in msg.topic:
-                    self._validate_value(msg, int, [(0, 4)])
-                elif ("/control_parameter/submode" in msg.topic or
-                        "/control_parameter/chargemode" in msg.topic):
-                    self._validate_value(msg, str)
-                elif "/control_parameter/limit" in msg.topic:
-                    self._validate_value(msg, "json")
-                elif "/control_parameter/prio" in msg.topic:
-                    self._validate_value(msg, bool)
-                elif "/control_parameter/current_plan" in msg.topic:
-                    self._validate_value(msg, int)
-                elif ("/control_parameter/min_current" in msg.topic or
-                        "/control_parameter/timestamp_switch_on_off" in msg.topic or
-                        "/control_parameter/timestamp_charge_start" in msg.topic or
-                        "/control_parameter/timestamp_chargemode_changed" in msg.topic or
-                        "/control_parameter/timestamp_last_phase_switch" in msg.topic or
-                        "/control_parameter/timestamp_phase_switch_buffer_start" in msg.topic):
-                    self._validate_value(msg, float, [(0, float("inf"))])
-                elif "/control_parameter/state" in msg.topic:
-                    self._validate_value(msg, int, [(0, 7)])
+                elif "/control_parameter/" in msg.topic:
+                    self.process_control_parameter_topics(msg)
                 elif "/disable_after_unplug" in msg.topic:
                     self._validate_value(msg, bool, pub_json=True)
                 else:
@@ -542,6 +516,39 @@ class SetData:
                 self.__unknown_id(msg)
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
+
+    def process_control_parameter_topics(self, msg):
+        if "/control_parameter/required_current" in msg.topic:
+            if "chargepoint" in msg.topic:
+                if hardware_configuration.get_hardware_configuration_setting("dc_charging"):
+                    self._validate_value(msg, float, [(0, 0), (6, 32), (0, 450)])
+                else:
+                    self._validate_value(msg, float, [(6, 32), (0, 0)])
+            elif "consumer" in msg.topic:
+                self._validate_value(msg, float, [(0, float("inf"))])
+        elif ("/control_parameter/phases" in msg.topic or
+                "/control_parameter/template_phases" in msg.topic):
+            self._validate_value(msg, int, [(0, 3)])
+        elif "/control_parameter/failed_phase_switches" in msg.topic:
+            self._validate_value(msg, int, [(0, 4)])
+        elif ("/control_parameter/submode" in msg.topic or
+                "/control_parameter/chargemode" in msg.topic):
+            self._validate_value(msg, str)
+        elif "/control_parameter/limit" in msg.topic:
+            self._validate_value(msg, "json")
+        elif "/control_parameter/prio" in msg.topic:
+            self._validate_value(msg, bool)
+        elif "/control_parameter/current_plan" in msg.topic:
+            self._validate_value(msg, int)
+        elif ("/control_parameter/min_current" in msg.topic or
+                "/control_parameter/timestamp_switch_on_off" in msg.topic or
+                "/control_parameter/timestamp_charge_start" in msg.topic or
+                "/control_parameter/timestamp_chargemode_changed" in msg.topic or
+                "/control_parameter/timestamp_last_phase_switch" in msg.topic or
+                "/control_parameter/timestamp_phase_switch_buffer_start" in msg.topic):
+            self._validate_value(msg, float, [(0, float("inf"))])
+        elif "/control_parameter/state" in msg.topic:
+            self._validate_value(msg, int, [(0, 7)])
 
     def process_chargepoint_get_topics(self, msg):
         if ("/get/voltages" in msg.topic):
@@ -1205,6 +1212,8 @@ class SetData:
                     re.search("openWB/set/consumer/[0-9]+/usage$", msg.topic) is not None):
                 self._validate_value(msg, "json")
             elif (re.search("consumer/[0-9]+/get/power$", msg.topic) is not None or
+                  re.search("consumer/[0-9]+/set/power$", msg.topic) is not None or
+                  re.search("consumer/[0-9]+/set/current$", msg.topic) is not None or
                   re.search("consumer/[0-9]+/get/set_power$", msg.topic) is not None):
                 self._validate_value(msg, float)
             elif (re.search("consumer/[0-9]+/get/currents$", msg.topic) is not None or
@@ -1213,16 +1222,18 @@ class SetData:
                   re.search("consumer/[0-9]+/get/temperatures$", msg.topic) is not None):
                 self._validate_value(msg, float, collection=list)
             elif (re.search("consumer/[0-9]+/get/imported$", msg.topic) is not None or
-                  re.search("consumer/[0-9]+/get/exported$", msg.topic) is not None or
                   re.search("consumer/[0-9]+/get/daily_imported$", msg.topic) is not None or
-                  re.search("consumer/[0-9]+/get/daily_exported$", msg.topic) is not None):
+                  re.search("consumer/[0-9]+/get/timestamp_last_current_set$", msg.topic) is not None):
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif re.search("consumer/[0-9]+/get/fault_state$", msg.topic) is not None:
                 self._validate_value(msg, int, [(0, 2)])
-            elif re.search("consumer/[0-9]+/get/fault_str$", msg.topic) is not None:
+            elif (re.search("consumer/[0-9]+/get/fault_str$", msg.topic) is not None or
+                  re.search("consumer/[0-9]+/get/state_str$", msg.topic) is not None):
                 self._validate_value(msg, str)
             elif re.search("consumer/[0-9]+/get/state$", msg.topic) is not None:
                 self._validate_value(msg, bool)
+            elif re.search("consumer/[0-9]+/control_parameter/", msg.topic) is not None:
+                self.process_control_parameter_topics(msg)
             else:
                 self.__unknown_topic(msg)
         except Exception:

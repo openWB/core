@@ -11,7 +11,7 @@ from modules.devices.fems.fems.config import Fems, FemsConfiguration, FemsInvert
 def test_fems_inverter(monkeypatch, requests_mock: requests_mock.mock):
     # setup
     mock_inverter_value_store = Mock()
-    monkeypatch.setattr(inverter, 'get_inverter_value_store', Mock(return_value=mock_inverter_value_store))
+    monkeypatch.setattr(inverter, 'get_component_value_store', Mock(return_value=mock_inverter_value_store))
     requests_mock.get('http://1.1.1.1:8084/rest/channel/_sum/(ProductionActivePower|ProductionActiveEnergy)',
                       json=SAMPLE_RESPONSE)
 

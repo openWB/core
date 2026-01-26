@@ -1,9 +1,10 @@
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional, Union
 from control.chargepoint.control_parameter import ControlParameter, control_parameter_factory
 from control.consumer.usage import ConsumerUsage
 from dataclass_utils.factories import empty_list_factory
-from helpermodules.abstract_plans import ContinuousConsumerPlan, SuspendableConsumerPlan
+from helpermodules.abstract_plans import (ContinuousConsumerPlan, SuspendableOnOffConsumerPlan,
+                                          SuspendableTunableConsumerPlan)
 from helpermodules.constants import NO_ERROR
 from modules.common.consumer_setup import ConsumerSetup
 
@@ -29,7 +30,7 @@ def get_suspendable_tunable_consumer_individual_config() -> Dict:
 class SuspendableTunableDeviceConfig:
     min_current: int = 0.5
     min_intervall: int = 60
-    plans: List[SuspendableConsumerPlan] = field(default_factory=empty_list_factory)
+    plans: List[SuspendableTunableConsumerPlan] = field(default_factory=empty_list_factory)
     price_limit_active: bool = False
     price_limit: float = 0.07
     type: ConsumerUsage = ConsumerUsage.SUSPENDABLE_TUNABLE
@@ -47,7 +48,7 @@ def get_suspendable_onoff_consumer_individual_config() -> Dict:
 class SuspendableOnOffDeviceConfig:
     min_current: int = 0.5
     min_intervall: int = 60
-    plans: List[SuspendableConsumerPlan] = field(default_factory=empty_list_factory)
+    plans: List[SuspendableOnOffConsumerPlan] = field(default_factory=empty_list_factory)
     price_limit_active: bool = False
     price_limit: float = 0.07
     type: ConsumerUsage = ConsumerUsage.SUSPENDABLE_ONOFF
@@ -93,9 +94,10 @@ GET_CLASS_BY_USAGE: Dict[ConsumerUsage, Callable] = {
 def get_plan_class_for_usage(usage: ConsumerUsage):
     if usage == ConsumerUsage.CONTINUOUS:
         return ContinuousConsumerPlan
-    elif usage in [ConsumerUsage.SUSPENDABLE_TUNABLE, ConsumerUsage.SUSPENDABLE_ONOFF,
-                   ConsumerUsage.SUSPENDABLE_TUNABLE_INDIVIDUAL, ConsumerUsage.SUSPENDABLE_ONOFF_INDIVIDUAL]:
-        return SuspendableConsumerPlan
+    elif usage in [ConsumerUsage.SUSPENDABLE_TUNABLE, ConsumerUsage.SUSPENDABLE_TUNABLE_INDIVIDUAL]:
+        return SuspendableTunableConsumerPlan
+    elif usage in [ConsumerUsage.SUSPENDABLE_ONOFF, ConsumerUsage.SUSPENDABLE_ONOFF_INDIVIDUAL]:
+        return SuspendableOnOffConsumerPlan
     else:
         return None
 
@@ -115,8 +117,7 @@ def consumer_config_factory() -> ConsumerConfig:
 class Get:
     charge_state: bool = False
     currents: Optional[List[Optional[float]]] = None
-    daily_imported: float = 0
-    daily_exported: float = 0
+    daily_imported: float = field(default=0, metadata={"topic": "get/daily_imported"})
     error_timestamp: int = 0
     exported: float = 0
     fault_str: str = NO_ERROR
@@ -127,7 +128,7 @@ class Get:
     powers: Optional[List[Optional[float]]] = None
     set_power: Optional[float] = None
     state: Optional[bool] = False
-    state_str: Optional[str] = None
+    state_str: Optional[str] = field(default=False, metadata={"topic": "set/state_str"})
     voltages: Optional[List[Optional[float]]] = None
 
 
@@ -145,10 +146,8 @@ class Set:
     current_prev: float = 0
     target_current: float = 0
     charge_state_prev: bool = False
-    set_power: Optional[float] = None
-    state: Optional[bool] = False
-    state_str: Optional[str] = None
-    timestamp_last_current_set: float = 0
+    power: Optional[float] = None
+    timestamp_last_current_set: float = field(default=0, metadata={"topic": "set/timestamp_last_current_set"})
 
 
 def set_factory() -> Set:

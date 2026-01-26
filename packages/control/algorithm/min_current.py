@@ -3,6 +3,7 @@ import logging
 from control import data
 from control.algorithm import common
 from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_MIN_CURRENT, CONSIDERED_CHARGE_MODES_PV_ONLY
+from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state import ChargepointState
 from control.loadmanagement import Loadmanagement
 from control.algorithm.filter_chargepoints import get_loads_by_mode_and_counter
@@ -34,9 +35,9 @@ class MinCurrent:
                             load, counts, available_currents, missing_currents)
                         current = common.get_current_to_set(
                             load.data.set.current, available_for_load, load.data.set.target_current)
-                        if current < load.data.control_parameter.min_current:
+                        if isinstance(load, Chargepoint) and current < load.data.control_parameter.min_current:
                             common.set_current_counterdiff(-(load.data.set.current or 0), 0, load)
-                            if limit:
+                            if limit.limiting_value is not None:
                                 load.set_state_and_log(
                                     f"Ladung kann nicht gestartet werden{limit.message}")
                         else:

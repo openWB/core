@@ -16,9 +16,9 @@ def test_batterx(monkeypatch, requests_mock: requests_mock.mock):
     mock_bat_value_store = Mock()
     mock_counter_value_store = Mock()
     mock_inverter_value_store = Mock()
-    monkeypatch.setattr(bat, 'get_bat_value_store', Mock(return_value=mock_bat_value_store))
-    monkeypatch.setattr(counter, 'get_counter_value_store', Mock(return_value=mock_counter_value_store))
-    monkeypatch.setattr(inverter, 'get_inverter_value_store', Mock(return_value=mock_inverter_value_store))
+    monkeypatch.setattr(bat, 'get_component_value_store', Mock(return_value=mock_bat_value_store))
+    monkeypatch.setattr(counter, 'get_component_value_store', Mock(return_value=mock_counter_value_store))
+    monkeypatch.setattr(inverter, 'get_component_value_store', Mock(return_value=mock_inverter_value_store))
     requests_mock.get("http://1.1.1.1/api.php?get=currentstate", json=SAMPLE)
 
     dev = create_device(BatterX(configuration=BatterXConfiguration(ip_address="1.1.1.1")))

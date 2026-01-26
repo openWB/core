@@ -6,7 +6,8 @@ from control.chargemode import Chargemode
 from control.consumer.consumer_data import ConsumerData, ConsumerUsage
 from control.load_protocol import Load
 from helpermodules import timecheck
-from helpermodules.abstract_plans import ConsumerMode, ContinuousConsumerPlan, SuspendableConsumerPlan
+from helpermodules.abstract_plans import (ConsumerMode, ContinuousConsumerPlan, SuspendableOnOffConsumerPlan,
+                                          SuspendableTunableConsumerPlan)
 from helpermodules.phase_handling import convert_single_evu_phase_to_cp_phase
 from modules.common.abstract_device import AbstractDevice
 from modules.common.configurable_consumer import ConfigurableConsumer
@@ -33,10 +34,10 @@ class Consumer(Load):
     def set_state_and_log(self, message: str) -> None:
         if message:
             log.info(f"Verbraucher {self.num}: {message}")
-            if self.data.set.state_str is None:
-                self.data.set.state_str = message
-            elif message not in self.data.set.state_str:
-                self.data.set.state_str += f" {message}"
+            if self.data.get.state_str is None:
+                self.data.get.state_str = message
+            elif message not in self.data.get.state_str:
+                self.data.get.state_str += f" {message}"
 
     def update(self):
         if self.data.usage.type == ConsumerUsage.METER_ONLY:
@@ -79,7 +80,8 @@ class Consumer(Load):
         mode = None
         submode = None
         if timecheck.create_timestamp() > self.data.set.timestamp_last_current_set + self.data.usage.min_intervall:
-            plan: Union[SuspendableConsumerPlan,
+            plan: Union[SuspendableTunableConsumerPlan,
+                        SuspendableOnOffConsumerPlan,
                         ContinuousConsumerPlan] = timecheck.check_plans_timeframe(self.data.usage.plans)
             if plan is not None:
                 if plan.mode == ConsumerMode.SURPLUS:
@@ -144,10 +146,11 @@ class Consumer(Load):
                             mode = Chargemode.INSTANT_CHARGING
                             submode = Chargemode.INSTANT_CHARGING
                     else:
-                        if self.data.get.power > 0:
-                            required_current = max(self.data.get.currents)
+                        if (self.data.usage.type == ConsumerUsage.SUSPENDABLE_TUNABLE or
+                                self.data.usage.type == ConsumerUsage.SUSPENDABLE_TUNABLE_INDIVIDUAL):
+                            required_current = plan.max_power / self.data.config.connected_phases / 230
                         else:
-                            required_current = self.data.usage.min_current
+                            required_current = max(self.data.get.currents)
                         mode = Chargemode.INSTANT_CHARGING
                         submode = Chargemode.INSTANT_CHARGING
             else:

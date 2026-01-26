@@ -34,7 +34,6 @@ def create_consumer(config: Mqtt):
             return ConsumerState(
                 power=received_topics[f"{topic_prefix}power"],
                 imported=received_topics[f"{topic_prefix}imported"],
-                exported=received_topics[f"{topic_prefix}exported"],
                 powers=parse_received_topics("powers"),
                 voltages=parse_received_topics("voltages"),
                 currents=received_topics[f"{topic_prefix}currents"],
@@ -43,7 +42,7 @@ def create_consumer(config: Mqtt):
             raise KeyError("Es wurden nicht alle notwendigen Daten empfangen.")
 
     def set_power_limit(power_limit: float) -> None:
-        Pub().pub(f"openWB/set/mqtt/consumer/{config.id}/set/power_limit", power_limit)
+        Pub().pub(f"openWB/set/mqtt/consumer/{config.id}/set/power", power_limit)
 
     def switch_on() -> None:
         Pub().pub(f"openWB/set/mqtt/consumer/{config.id}/set/switch", True)

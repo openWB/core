@@ -240,7 +240,7 @@ def test_calc_uncounted_consumption(monkeypatch):
     virtual_counter_purge = PurgeCounterState(
         delegate=Mock(delegate=Mock(num=3)),
         add_child_values=True,
-        simcounter=SimCounter(0, 0, prefix="virtual")
+        simcounter=SimCounter(0, 0, "counter")
     )
 
     # execution
