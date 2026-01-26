@@ -58,7 +58,7 @@
 	"anonymousGroup": "anonymous",
 	"roles": [
 		{
-			"rolename": "openwb-version:1",
+			"rolename": "openwb-version:2",
 			"textname": "openWB Versionsnummer",
 			"textdescription": "Diese Rolle ist ein Platzhalter für die openWB Versionsnummer und wird automatisch aktualisiert. Sie hat keine direkten Berechtigungen.",
 			"acls": []
@@ -120,6 +120,12 @@
 				{
 					"acltype": "publishClientSend",
 					"topic": "openWB/system/messages/+",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/command/+/messages/+",
 					"priority": 0,
 					"allow": true
 				},
