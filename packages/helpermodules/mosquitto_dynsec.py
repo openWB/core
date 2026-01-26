@@ -104,16 +104,18 @@ def send_password_reset_to_server(email: str, token: str, expires_at: int) -> No
                     f"{datetime.fromtimestamp(expires_at).strftime('%d-%m-%Y %H:%M:%S %Z')}\n\n"
                     "Falls du kein Passwort zurücksetzen wolltest, kannst du diese E-Mail ignorieren.")
     }
+    error: Optional[str] = None
+    response: Optional[requests.Response] = None
     try:
         response = requests.post(
             url=TOKEN_SERVER_URL,
             json=payload,
             headers={
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/json; charset=utf-8',
                 'User-Agent': 'Token-Client/1.0',
-                'charset': 'utf-8'
             },
-            timeout=timeout
+            timeout=timeout,
+            verify=True
         )
         print(f"{response.status_code}: {response.text}")
     except requests.exceptions.Timeout:
