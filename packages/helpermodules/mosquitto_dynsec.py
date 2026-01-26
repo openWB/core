@@ -38,16 +38,6 @@ class MosquittoRole(TypedDict):
     acls: list[MosquittoAcl]
 
 
-def _get_client_data(clientid: str) -> Optional[dict]:
-    with open("/var/lib/mosquitto/dynamic-security.json", 'r') as file:
-        dynsec_data = json_load(file)
-    clients: list[dict] = dynsec_data["data"]["clients"]
-    for client in clients:
-        if client["username"] == clientid:
-            return {"username": client["username"], "email": client.get("textname", None), "roles": client["roles"]}
-    return None
-
-
 def _get_acl_role_data(role_template: str, id: int) -> MosquittoRole:
     with open(Path(__file__).resolve().parents[2] /
               "data" / "config" / "mosquitto" / "public" / "role-templates.json", 'r', encoding='utf-8') as file:
@@ -80,7 +70,7 @@ def _acl_role_exists(role_template: str, id: int) -> bool:
 
 
 def _user_exists(username: str) -> Optional[dict]:
-    result = run_command(["mosquitto_ctrl", "dynsec", "getUser", username])
+    result = run_command(["mosquitto_ctrl", "dynsec", "getClient", username])
     if "not found" in result:
         return False
     return True
@@ -89,8 +79,8 @@ def _user_exists(username: str) -> Optional[dict]:
 def get_user_email(username: str) -> Optional[str]:
     email_regexp = r'(^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z0-9]{2,7}$)'
     if _user_exists(username):
-        user_details = _get_client_data(username)
-        email = user_details.get("email", None)
+        result = run_command(["/var/www/html/openWB/runs/dynsec_helper/get_user_mail.sh", username])
+        email = result.strip()
         return email if re.fullmatch(email_regexp, email) else None
     return None
 
@@ -108,17 +98,18 @@ def generate_password_reset_token(username: str) -> list[str, int]:
     return token, int(expires_at.timestamp())
 
 
-def send_password_reset_to_server(email: str, token: str) -> None:
+def send_password_reset_to_server(email: str, token: str, expires_at: int) -> None:
     TOKEN_SERVER_URL = "https://openwb.de/forgotpassword/send_token.php"
     timeout = 10  # seconds
     payload = {
         "email": email,
         "subject": "openWB Passwort zurücksetzen",
-        "message": (f"Hallo,<br><br>"
-                    "es wurde ein Antrag zum Zurücksetzen deines openWB Passworts gestellt.<br>"
-                    "Bitte benutze den folgenden Token, um dein Passwort zurückzusetzen:<br><br>"
-                    f"<b>{token}</b><br><br>"
-                    "Der Token ist eine Stunde gültig.<br><br>"
+        "message": (f"Hallo,\n\n"
+                    "es wurde ein Antrag zum Zurücksetzen deines openWB Passworts gestellt.\n"
+                    "Bitte benutze den folgenden Token, um dein Passwort zurückzusetzen:\n\n"
+                    f"{token}\n\n"
+                    "Der Token ist gültig bis "
+                    f"{datetime.fromtimestamp(expires_at).strftime('%d-%m-%Y %H:%M:%S %Z')}\n\n"
                     "Falls du kein Passwort zurücksetzen wolltest, kannst du diese E-Mail ignorieren.")
     }
     try:
@@ -132,13 +123,13 @@ def send_password_reset_to_server(email: str, token: str) -> None:
             },
             timeout=timeout
         )
+        print(f"{response.status_code}: {response.text}")
     except requests.exceptions.Timeout:
         error = f"Error: request timed out after {timeout}s"
     except requests.exceptions.ConnectionError:
         error = f"Error: connection to {TOKEN_SERVER_URL} failed"
     except requests.RequestException as e:
         error = f"HTTP-Error: {e}"
-    print(f"{response.status_code}: {response.text}")
     if error is not None or response.status_code != 200:
         print(f"Failed to send password reset email: {error or f'status {response.status_code}'}")
 
