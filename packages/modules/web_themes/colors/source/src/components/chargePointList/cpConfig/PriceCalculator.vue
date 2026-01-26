@@ -22,6 +22,7 @@
 			<ConfigItem2
 				title="Ziel-SoC"
 				icon="fa-battery-full"
+				class="mt-4"
 				:fullwidth="true"
 				:infotext="`Der gewünschte Ladezustand, der bis zur Zielzeit erreicht sein soll. Aktueller SoC: ${currentSoc}%`"
 			>
@@ -52,6 +53,7 @@
 			<ConfigItem2
 				title="Ladezeit-Puffer"
 				icon="fa-clock"
+				class="mb-4"
 				:fullwidth="true"
 				:infotext="`Der zeitliche Puffer, der zur berechneten Ladezeit hinzugerechnet wird. Dadurch wird sichergestellt, dass das Fahrzeug rechtzeitig fertig geladen ist.`"
 			>
@@ -92,8 +94,8 @@ const props = defineProps<{
 }>()
 const emit = defineEmits(['update:modelValue', 'deletePlan'])
 const cp = computed(() => chargePoints[props.cpId])
-const currentSoc = cp.value.soc
-var targetSoc = ref(80)
+const currentSoc = ref(cp.value.soc)
+var targetSoc = ref(currentSoc.value < 80 ? 80 : 100)
 const bufferMinutes = ref(30)
 const evTemplate = computed(() => evTemplates[cp.value.evTemplate])
 const chargeTemplate = computed(() => chargeTemplates[cp.value.evTemplate])
@@ -117,7 +119,7 @@ const chargeDuration = computed(() => {
 		const chargingPower =
 			evTemplate.value.max_current_multi_phases * phases * 230
 		const neededCapacity =
-			(batteryCapacity * (targetSoc.value - currentSoc)) / 100
+			(batteryCapacity * (targetSoc.value - currentSoc.value)) / 100
 		return (neededCapacity / chargingPower) * 60 //in minutes
 	} else {
 		return -1

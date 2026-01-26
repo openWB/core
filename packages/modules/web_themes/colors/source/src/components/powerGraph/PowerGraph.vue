@@ -21,7 +21,7 @@
 					class="ms-1 p-0 pt-1"
 					@click="zoomGraph"
 				>
-					<span class="fa-solid fa-lg ps-1 fa-magnifying-glass" />
+					<span class="fa-solid fa-lg ps-1" :class="zoomIcon()" />
 				</span>
 				<span type="button" class="ms-1 p-0 pt-1" @click="changeStackOrder">
 					<span class="fa-solid fa-lg ps-1 fa-sort" />
@@ -95,6 +95,15 @@
 						:margin="margin"
 						:order="2"
 					/>
+					<PriceLine
+						v-if="
+							globalConfig.showPrices &&
+							(graphData.graphMode == 'day' || graphData.graphMode == 'today')
+						"
+						:width="width - margin.left - 2 * margin.right"
+						:height="(height - margin.top - margin.bottom) / 2"
+						:margin="margin"
+					/>
 
 					<PgSocAxis
 						v-if="
@@ -138,15 +147,15 @@ import {
 	margin,
 	mytransform,
 } from './model'
+import { onMounted } from 'vue'
+import { zoom, type D3ZoomEvent, type Selection, select } from 'd3'
 import { globalConfig, widescreen } from '@/assets/js/themeConfig'
-import { topVehicles } from '../chargePointList/model'
+import { topVehicles, vehicles } from '../chargePointList/model'
 import PgSoc from './PgSoc.vue'
 import PgSocAxis from './PgSocAxis.vue'
-import { vehicles } from '../chargePointList/model'
 import PgSelector from './PgSelector.vue'
-import { zoom, type D3ZoomEvent, type Selection, select } from 'd3'
-import { onMounted } from 'vue'
 import PgToolTips from './PgToolTips.vue'
+import PriceLine from './PriceLine.vue'
 
 // state
 const stackOrderMax = 2
@@ -224,7 +233,9 @@ function zoomGraph() {
 	globalConfig.zoomedWidget = 1
 	globalConfig.zoomGraph = !globalConfig.zoomGraph
 }
-
+function zoomIcon() {
+	return globalConfig.zoomGraph ? 'fa-minimize' : 'fa-maximize'
+}
 onMounted(() => {
 	const svg = select<Element, unknown>('svg#powergraph')
 	setZoom(svg)
@@ -232,8 +243,11 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.fa-magnifying-glass {
+.fa-maximize {
 	color: var(--color-menu);
+}
+.fa-minimize {
+	color: var(--color-charging);
 }
 .fa-sort {
 	color: var(--color-menu);

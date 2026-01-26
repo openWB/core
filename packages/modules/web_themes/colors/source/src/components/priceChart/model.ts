@@ -7,6 +7,7 @@ class EtData {
 	etProvider = ''
 	etMaxPrice = 0
 	country = 'de'
+	unit = 'ct'
 
 	get etCurrentPriceString() {
 		if (this.etPriceList.size > 0) {

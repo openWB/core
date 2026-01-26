@@ -19,11 +19,7 @@
 		</template>
 
 		<template #buttons>
-			<span
-				type="button"
-				class="ms-2 ps-1 pt-1"
-				@click="configmode = !configmode"
-			>
+			<span type="button" class="ms-2 ps-1 pt-1" @click="toggleConfigMode()">
 				<span class="fa-solid fa-lg ps-1 fa-ellipsis-vertical" />
 			</span>
 		</template>
@@ -149,6 +145,9 @@ const cpNameStyle = computed(() => {
 })
 
 // methods
+function toggleConfigMode() {
+	configmode.value = !configmode.value
+}
 </script>
 
 <style scoped>
