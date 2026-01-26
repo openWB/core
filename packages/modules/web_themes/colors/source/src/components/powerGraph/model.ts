@@ -50,6 +50,12 @@ export interface RawDayGraphDataItem {
 	cp: object
 	ev: object
 	sh: object
+	prices: {
+		grid: number
+		pv: number
+		bat: number
+		cp: number
+	}
 }
 
 export class GraphData {

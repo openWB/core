@@ -134,7 +134,7 @@ defineEmits(['closeConfig'])
 //state
 const cp = props.chargepoint
 const vehicle = vehicles[cp.connectedVehicle]
-const templateId = computed ( {
+const templateId = computed({
 	get() {
 		return vehicle.chargeTemplateId
 	},
@@ -142,7 +142,7 @@ const templateId = computed ( {
 		vehicle.chargeTemplateId = value
 		cp.chargeTemplate = chargeTemplates[value]
 	},
-} )
+})
 </script>
 
 <style scoped>

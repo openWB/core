@@ -104,14 +104,23 @@
 				:power="entry.evuOut"
 				:width="boxwidth"
 			/>
+			<PgToolTipLine
+				v-if="globalConfig.showPrices"
+				cat="price"
+				:indent="5"
+				:power="entry.price"
+				name="Preis"
+				:width="boxwidth"
+			/>
 		</text>
 	</g>
 </template>
 
 <script setup lang="ts">
-import { itemNames, type GraphDataItem } from './model'
 import type { ScaleTime } from 'd3'
 import { timeFormat } from 'd3'
+import { itemNames, type GraphDataItem } from './model'
+import { globalConfig } from '@/assets/js/themeConfig'
 import PgToolTipLine from './PgToolTipLine.vue'
 
 const props = defineProps<{

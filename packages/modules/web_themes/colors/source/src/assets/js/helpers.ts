@@ -4,6 +4,8 @@
  * Copyright (c) 2022 Claus Hagen
  */
 
+import { etData } from '@/components/priceChart/model'
+
 export function formatWatt(watt: number, decimalPlaces = 1) {
 	let wattResult: number
 	if (watt >= 1000 && decimalPlaces < 4) {
@@ -129,6 +131,10 @@ export function formatTemp(t: number) {
 				minimumFractionDigits: 1,
 			}) + '°'
 		: '-'
+}
+
+export function formatPrice(price: number) {
+	return `${price.toFixed(2)} ${etData.unit}`
 }
 
 export function fgColor(colorname: string) {
