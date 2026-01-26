@@ -26,7 +26,7 @@ CONTROL_MODE_MSC = 1  # Storage Control Mode Maximize Self Consumption
 CONTROL_MODE_REMOTE = 4  # Control Mode Remotesteuerung
 REMOTE_CONTROL_COMMAND_MODE_DEFAULT = 0  # Default RC Command Mode ohne Steuerung
 REMOTE_CONTROL_COMMAND_MODE_CHARGE = 3  # RC Command Mode Charge from PV+AC
-REMOTE_CONTROL_COMMAND_MODE_DISCHARGE = 5  # RC Command Mode Discharge (Discharge to Grid not allowed)
+REMOTE_CONTROL_COMMAND_MODE_MSC = 7  # RC Command Mode Maximize Self Consumtion
 
 
 class KwargsDict(TypedDict):
@@ -193,8 +193,8 @@ class SolaredgeBat(AbstractBat):
                     self.StorageControlMode_Read = values["StorageControlMode"]
                     values_to_write = {
                         "StorageControlMode": CONTROL_MODE_REMOTE,
-                        "RemoteControlCommandModeDefault": REMOTE_CONTROL_COMMAND_MODE_DISCHARGE,
-                        "RemoteControlCommandMode": REMOTE_CONTROL_COMMAND_MODE_DISCHARGE,
+                        "RemoteControlCommandModeDefault": REMOTE_CONTROL_COMMAND_MODE_MSC,
+                        "RemoteControlCommandMode": REMOTE_CONTROL_COMMAND_MODE_MSC,
                         "RemoteControlDischargeLimit": int(min(abs(power_limit), MAX_CHARGEDISCHARGE_LIMIT))
                     }
                     self._write_registers(values_to_write, unit)
