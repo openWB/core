@@ -731,6 +731,21 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
+   * Check if data protection is acknowledged
+   * Defaults to false if the value is not set as this may be due to insufficient permissions
+   * @returns boolean
+   */
+  const dataProtectionAcknowledged: ComputedRef<boolean> = computed(() => {
+    return (
+      getValue.value(
+        'openWB/system/dataprotection_acknowledged',
+        undefined,
+        false,
+      ) === true
+    );
+  });
+
+  /**
    * Check if user management is active
    * Defaults to true if the value is not set as this may be due to insufficient permissions
    * @returns boolean
@@ -3886,6 +3901,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     systemCommit,
     themeConfiguration,
     systemDateTime,
+    dataProtectionAcknowledged,
     // security settings
     userManagementActive,
     accessAllowed,
