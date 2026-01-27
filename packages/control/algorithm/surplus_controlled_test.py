@@ -12,7 +12,6 @@ from control.chargepoint.chargepoint import Chargepoint, ChargepointData
 from control.chargepoint.chargepoint_data import Get, Set
 from control.chargepoint.chargepoint_template import CpTemplate
 from control.chargepoint.control_parameter import ControlParameter
-from control.counter_all import CounterAll
 from control.ev.ev import Ev
 
 
@@ -88,7 +87,8 @@ def test_limit_adjust_current(new_current: float, expected_current: float, monke
 def test_set_required_current_to_max(phases: int,
                                      required_currents: List[float],
                                      expected_currents: List[int],
-                                     monkeypatch):
+                                     monkeypatch,
+                                     mock_cp1: Chargepoint):
     # setup
     ev = Ev(0)
     mock_cp1.data = ChargepointData(set=Set(charging_ev_data=ev),
@@ -136,34 +136,29 @@ def test_add_unused_evse_current(evse_current: float,
 
 
 @pytest.mark.parametrize(
-    "submode_1, submode_2, expected_cp_indices",
+    "submode_1, submode_2, expected_chargepoints",
     [
-        pytest.param(Chargemode.PV_CHARGING, Chargemode.PV_CHARGING, [1, 2]),
-        pytest.param(Chargemode.INSTANT_CHARGING, Chargemode.PV_CHARGING, [2]),
+        pytest.param(Chargemode.PV_CHARGING, Chargemode.PV_CHARGING, [mock_cp1, mock_cp2]),
+        pytest.param(Chargemode.INSTANT_CHARGING, Chargemode.PV_CHARGING, [mock_cp2]),
         pytest.param(Chargemode.INSTANT_CHARGING, Chargemode.INSTANT_CHARGING, []),
     ])
 def test_get_chargepoints_submode_pv_charging(submode_1: Chargemode,
                                               submode_2: Chargemode,
-                                              expected_cp_indices: List[int],
-                                              mock_cp1, mock_cp2, mock_data):
+                                              expected_chargepoints: List[Chargepoint],
+                                              mock_cp1: Chargepoint,
+                                              mock_cp2: Chargepoint):
     # setup
     def setup_cp(cp: Chargepoint, submode: str) -> Chargepoint:
-        cp.data.set.charging_ev_data = Ev(cp.num)
-        cp.data.config.ev = cp.num
+        cp.data.set.charging_ev_data = Ev(0)
         cp.data.control_parameter.chargemode = Chargemode.PV_CHARGING
         cp.data.control_parameter.submode = submode
         cp.data.control_parameter.required_current = 6
-        cp.data.set.plug_time = 1
         return cp
     data.data.cp_data = {"cp1": setup_cp(mock_cp1, submode_1),
                          "cp2": setup_cp(mock_cp2, submode_2)}
-    data.data.counter_all_data.data.get.loadmanagement_prios = [
-        {"type": "ev", "id": 1}, {"type": "ev", "id": 2}]
 
     # evaluation
     chargepoints = get_loadmanagement_prios(CONSIDERED_CHARGE_MODES_PV_ONLY)
 
     # assertion
-    cp_mapping = {1: mock_cp1, 2: mock_cp2}
-    expected_chargepoints = [cp_mapping[i] for i in expected_cp_indices]
     assert chargepoints == expected_chargepoints
