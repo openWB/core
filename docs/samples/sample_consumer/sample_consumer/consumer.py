@@ -6,7 +6,7 @@ from modules.common.component_state import ConsumerState
 from modules.common.configurable_consumer import ConfigurableConsumer
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount._simcounter import SimCounterConsumer
-from modules.consumers.acthor.acthor.config import Acthor
+from modules.consumers.askoma.askoheat.config import SampleConsumer
 
 log = logging.getLogger(__name__)
 
@@ -19,14 +19,6 @@ class Register(IntEnum):
     STATUS = 1003
 
 
-FACTORS = {"9s45": 45000,
-           "9s27": 27000,
-           "9s18": 18000,
-           "9s": 9000,
-           "M3": 6000,
-           "E2M1": 3500,
-           "E2M3": 6500,
-           "M1": 3000}
 REG_MAPPING = (
     (Register.POWER, [ModbusDataType.INT_16]),
     (Register.TEMP0, [ModbusDataType.INT_16]),
@@ -36,7 +28,7 @@ REG_MAPPING = (
 )
 
 
-def create_consumer(config: Acthor):
+def create_consumer(config: SampleConsumer):
     client = None
     sim_counter = None
 
@@ -52,11 +44,9 @@ def create_consumer(config: Acthor):
         nonlocal client, sim_counter
         resp = client.read_holding_registers_bulk(
             Register.POWER, 35, mapping=REG_MAPPING, unit=config.configuration.modbus_id)
-        power = resp[Register.POWER] * \
-            FACTORS.get(config.configuration.model, 9000)/config.configuration.max_power
-        imported, exported = sim_counter.sim_count(power)
+        imported, exported = sim_counter.sim_count(resp[Register.POWER])
         return ConsumerState(
-            power=power,
+            power=resp[Register.POWER],
             imported=imported,
             exported=exported,
             temperatures=[resp[Register.TEMP0]/10, resp[Register.TEMP1]/10, resp[Register.TEMP2]/10]
@@ -65,11 +55,23 @@ def create_consumer(config: Acthor):
     def set_limit(power_limit: float) -> None:
         nonlocal client
         client.write_registers(1000, power_limit, unit=config.configuration.modbus_id)
+
+    # ODER
+
+    def switch_on() -> None:
+        nonlocal client
+        client.write_registers(1000, 1, unit=config.configuration.modbus_id)
+
+    def switch_off() -> None:
+        nonlocal client
+        client.write_registers(1000, 0, unit=config.configuration.modbus_id)
     return ConfigurableConsumer(consumer_config=config,
                                 module_initializer=initializer,
                                 module_error_handler=error_handler,
                                 update=update,
-                                set_power_limit=set_limit,)
+                                set_power_limit=set_limit,
+                                switch_on=switch_on,
+                                switch_off=switch_off)
 
 
-device_descriptor = DeviceDescriptor(configuration_factory=Acthor)
+device_descriptor = DeviceDescriptor(configuration_factory=SampleConsumer)

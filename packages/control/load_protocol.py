@@ -52,3 +52,6 @@ class Load(Protocol):
 
     def set_state_and_log(self, message: str) -> None:
         ...
+
+    def is_feed_in_limit_active(self) -> bool:
+        ...
