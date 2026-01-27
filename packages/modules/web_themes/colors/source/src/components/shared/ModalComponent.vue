@@ -71,7 +71,6 @@ onMounted(() => {
 }
 .modal-header {
 	border: 0px;
-	border-radius: 30px;
 }
 .btn-close {
 	color: var(--color-menu);
@@ -81,7 +80,6 @@ onMounted(() => {
 .modal-footer {
 	text-align: right;
 	border: 0px;
-	border-radius: 30px;
 }
 .modal-header .btn-close {
 	color: var(--color-fg);
