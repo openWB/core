@@ -206,7 +206,7 @@ def reset_current_to_target_current():
     """target_current enthält die gesetzte Stromstärke der vorherigen Stufe. Notwendig, um zB bei der
     Mindeststromstärke erkennen zu können, ob diese ein vom LM begrenzter Strom aus Stufe 2 oder der Mindeststrom
     aus Stufe 1 ist."""
-    for load in data.data.cp_data.values() and data.data.consumer_data.values():
+    for load in (list(data.data.cp_data.values()) + list(data.data.consumer_data.values())):
         try:
             load.data.set.target_current = load.data.set.current
         except Exception:

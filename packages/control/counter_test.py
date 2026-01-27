@@ -29,7 +29,7 @@ def test_set_loadmanagement_state(fault_state: FaultStateLevel,
                                   data_):
     # setup
     connected_cps_mock = Mock(return_value=["cp3", "cp4"])
-    monkeypatch.setattr(data.data.counter_all_data, "get_chargepoints_of_counter", connected_cps_mock)
+    monkeypatch.setattr(data.data.counter_all_data, "get_loads_of_counter", connected_cps_mock)
     id_mock = Mock(return_value=0)
     monkeypatch.setattr(data.data.counter_all_data, "get_id_evu_counter", id_mock)
     name_mock = Mock(return_value="Test")
@@ -79,8 +79,8 @@ def test_set_current_left(loadmanagement_available: bool,
                           monkeypatch,
                           data_):
     # setup
-    get_chargepoints_of_counter_mock = Mock(return_value=["cp3", "cp4", "cp5"])
-    monkeypatch.setattr(data.data.counter_all_data, "get_chargepoints_of_counter", get_chargepoints_of_counter_mock)
+    get_loads_of_counter_mock = Mock(return_value=["cp3", "cp4", "cp5"])
+    monkeypatch.setattr(data.data.counter_all_data, "get_loads_of_counter", get_loads_of_counter_mock)
     counter = Counter(0)
     counter.data.config.max_currents = max_currents
     counter.data.config.max_total_power = sum(max_currents)*230

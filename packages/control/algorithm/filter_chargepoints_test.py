@@ -59,11 +59,11 @@ preferenced_cases = [
 @pytest.mark.parametrize(
     "required_current_1, loadmanagement_prios, expected_cp_indices",
     [
-        pytest.param(6, [{"type": "ev", "id": 1}, {"type": "ev", "id": 2}],
+        pytest.param(6, [{"type": "vehicle", "id": 1}, {"type": "vehicle", "id": 2}],
                      [1, 2], id="fits mode"),
-        pytest.param(0, [{"type": "ev", "id": 1}, {"type": "ev", "id": 2}],
+        pytest.param(0, [{"type": "vehicle", "id": 1}, {"type": "vehicle", "id": 2}],
                      [2], id="cp1 should not charge"),
-        pytest.param(6, [{"type": "ev", "id": 2}, {"type": "ev", "id": 1}],
+        pytest.param(6, [{"type": "vehicle", "id": 2}, {"type": "vehicle", "id": 1}],
                      [2, 1], id="cp2 is prioritized")
     ])
 def test_get_chargepoints_by_mode(required_current_1: int,
@@ -111,8 +111,8 @@ def test_get_chargepoints_by_mode_and_counter(chargepoints_of_counter: List[str]
     chargepoints_by_mode = [cp_mapping[i] for i in chargepoints_by_mode_indices]
     expected_chargepoints = [cp_mapping[i] for i in expected_cp_indices]
 
-    get_chargepoints_of_counter_mock = Mock(return_value=chargepoints_of_counter)
-    monkeypatch.setattr(CounterAll, "get_chargepoints_of_counter", get_chargepoints_of_counter_mock)
+    get_loads_of_counter_mock = Mock(return_value=chargepoints_of_counter)
+    monkeypatch.setattr(CounterAll, "get_loads_of_counter", get_loads_of_counter_mock)
     get_loadmanagement_prios_mock = Mock(return_value=chargepoints_by_mode)
     monkeypatch.setattr(filter_chargepoints, "get_loadmanagement_prios", get_loadmanagement_prios_mock)
     data.data.counter_all_data = CounterAll()
