@@ -286,7 +286,7 @@ def update_acls():
             pattern = config_role["rolename"].replace("<id>", r"\d+")
             if re.match(pattern, role_data["rolename"]):
                 return config_role
-        raise RuntimeError(f"Role {role_data['rolename']} not found in default-dynamic-security.json")
+        return None
 
     try:
         roles = _list_acl_roles()
@@ -305,6 +305,7 @@ def update_acls():
                     if template_role_data is None:
                         log.info(f"Rolle '{role_data['rolename']}' existiert nicht in den Vorlagen und wird gelöscht.")
                         run_command(["mosquitto_ctrl", "dynsec", "deleteRole", role_data["rolename"]])
+                        continue
 
                     # entferne ACLs aus der Rolle, wenn diese im Template nicht vorhanden sind
                     for acl in role_data["acls"]:
