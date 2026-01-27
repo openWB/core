@@ -69,6 +69,7 @@
               :disable="stringIsEmpty(user) || stringIsEmpty(password)"
             />
             <q-btn
+              v-if="dataProtectionAcknowledged"
               flat
               label="Kennwort vergessen"
               color="warning"
@@ -91,6 +92,7 @@
     </q-dialog>
 
     <q-dialog
+      v-if="dataProtectionAcknowledged"
       v-model="showPasswordResetDialog"
       persistent
       @hide="clearLoginData"
@@ -255,6 +257,10 @@ const accessAllowed = computed(() => {
 
 const anonymousAccessAllowed = computed(() => {
   return accessAllowed.value && !loggedIn.value;
+});
+
+const dataProtectionAcknowledged = computed(() => {
+  return mqttStore.dataProtectionAcknowledged === true;
 });
 
 const loggedIn = computed(() => {
