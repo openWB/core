@@ -160,7 +160,7 @@
             />
             <q-btn
               flat
-              label="Schließen"
+              label="Zurück"
               color="negative"
               @click="
                 showPasswordResetDialog = false;
