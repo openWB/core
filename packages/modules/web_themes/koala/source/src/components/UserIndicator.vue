@@ -61,7 +61,13 @@
           </q-card-section>
 
           <q-card-actions align="right">
-            <q-btn flat label="Anmelden" color="positive" type="submit" />
+            <q-btn
+              flat
+              label="Anmelden"
+              color="positive"
+              type="submit"
+              :disable="stringIsEmpty(user) || stringIsEmpty(password)"
+            />
             <q-btn
               flat
               label="Kennwort vergessen"
@@ -149,6 +155,7 @@
               label="Token anfordern"
               color="positive"
               type="button"
+              :disabled="requestTokenDisabled"
               @click="requestToken()"
             />
             <q-btn
@@ -156,6 +163,7 @@
               label="Kennwort zurücksetzen"
               color="primary"
               type="button"
+              :disabled="resetPasswordDisabled"
               @click="resetPassword()"
             />
             <q-btn
@@ -259,6 +267,24 @@ const username = computed(() => {
   }
   return '';
 });
+
+const requestTokenDisabled = computed(() => {
+  return stringIsEmpty(user.value);
+});
+
+const resetPasswordDisabled = computed(() => {
+  return (
+    stringIsEmpty(user.value) ||
+    stringIsEmpty(token.value) ||
+    stringIsEmpty(password.value) ||
+    stringIsEmpty(passwordConfirm.value) ||
+    password.value !== passwordConfirm.value
+  );
+});
+
+const stringIsEmpty = (myString: string) => {
+  return !myString || myString.length === 0;
+};
 
 const logout = () => {
   if ($q.cookies.has('mqtt')) {
