@@ -76,7 +76,7 @@ class EvData:
     set: Set = field(default_factory=set_factory)
     charge_template: int = field(default=0, metadata={"topic": "charge_template"})
     ev_template: int = field(default=0, metadata={"topic": "ev_template"})
-    full_power: bool = False
+    max_surplus: bool = field(default=False, metadata={"topic": "max_surplus"})
     name: str = field(default="neues Fahrzeug", metadata={"topic": "name"})
     tag_id: List[str] = field(default_factory=empty_list_factory, metadata={
         "topic": "tag_id"})
