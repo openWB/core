@@ -10,17 +10,17 @@ log = logging.getLogger(__name__)
 
 def get_chargepoints_by_mode_and_counter(chargemodes: Tuple[Tuple[Optional[str], str]],
                                          counter: str,
-                                         max_surplus_considered: bool = True) -> List[Chargepoint]:
+                                         full_power_considered: bool = True) -> List[Chargepoint]:
     cps_to_counter = data.data.counter_all_data.get_chargepoints_of_counter(counter)
     cps_to_counter_ids = [int(cp[2:]) for cp in cps_to_counter]
-    cps_by_mode = get_loadmanagement_prios(chargemodes, max_surplus_considered)
+    cps_by_mode = get_loadmanagement_prios(chargemodes, full_power_considered)
     return list(filter(lambda cp: cp.num in cps_to_counter_ids, cps_by_mode))
 
 # tested
 
 
 def get_loadmanagement_prios(chargemodes: Tuple[Tuple[Optional[str], str]],
-                             max_surplus_considered: bool = True) -> List[Chargepoint]:
+                             full_power_considered: bool = True) -> List[Chargepoint]:
     def _process_chargemodes(power_filter_func):
         for chargemode in chargemodes:
             valid_chargemode = []
@@ -37,9 +37,9 @@ def get_loadmanagement_prios(chargemodes: Tuple[Tuple[Optional[str], str]],
             valid.extend(valid_chargemode)
 
     valid = []
-    if max_surplus_considered:
-        _process_chargemodes(lambda cp: cp.data.set.charging_ev_data.data.max_surplus is True)
-        _process_chargemodes(lambda cp: cp.data.set.charging_ev_data.data.max_surplus is False)
+    if full_power_considered:
+        _process_chargemodes(lambda cp: cp.data.set.charging_ev_data.data.full_power is True)
+        _process_chargemodes(lambda cp: cp.data.set.charging_ev_data.data.full_power is False)
     else:
         _process_chargemodes(lambda cp: True)
     return valid

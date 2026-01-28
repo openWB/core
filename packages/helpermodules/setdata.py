@@ -367,7 +367,7 @@ class SetData:
                 self._validate_value(msg, str)
             elif "/info" in msg.topic:
                 self._validate_value(msg, "json")
-            elif "/max_surplus" in msg.topic:
+            elif "/full_power" in msg.topic:
                 self._validate_value(msg, bool)
             elif "openWB/set/vehicle/set/vehicle_update_completed" in msg.topic:
                 self._validate_value(msg, bool)

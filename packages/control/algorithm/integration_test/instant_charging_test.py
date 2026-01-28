@@ -143,19 +143,19 @@ def test_instant_charging_limit(params: ParamsLimit, all_cp_instant_charging_1p,
 @dataclass
 class ParamsControlParameter(ParamsExpectedSetCurrent, ParamsExpectedCounterSet):
     name: str = ""
-    max_surplus_cp3: bool = False
+    full_power_cp3: bool = False
     submode_cp3: Chargemode = Chargemode.INSTANT_CHARGING
-    max_surplus_cp4: bool = False
+    full_power_cp4: bool = False
     submode_cp4: Chargemode = Chargemode.INSTANT_CHARGING
-    max_surplus_cp5: bool = False
+    full_power_cp5: bool = False
     submode_cp5: Chargemode = Chargemode.INSTANT_CHARGING
 
 
 cases_control_parameter = [
     ParamsControlParameter(name="lift prio cp3",
-                           max_surplus_cp3=True,
-                           max_surplus_cp4=False,
-                           max_surplus_cp5=False,
+                           full_power_cp3=True,
+                           full_power_cp4=False,
+                           full_power_cp5=False,
                            expected_current_cp3=16,
                            expected_current_cp4=8,
                            expected_current_cp5=8,
@@ -163,9 +163,9 @@ cases_control_parameter = [
                            expected_raw_currents_left_counter0=[0]*3,
                            expected_raw_currents_left_counter6=[0]*3),
     ParamsControlParameter(name="drop prio cp4",
-                           max_surplus_cp3=True,
-                           max_surplus_cp4=False,
-                           max_surplus_cp5=True,
+                           full_power_cp3=True,
+                           full_power_cp4=False,
+                           full_power_cp5=True,
                            expected_current_cp3=16,
                            expected_current_cp4=6,
                            expected_current_cp5=10,
@@ -187,11 +187,11 @@ cases_control_parameter = [
 def test_control_parameter_instant_charging(params: ParamsControlParameter, all_cp_instant_charging_3p, monkeypatch):
     # setup
     data.data.cp_data["cp3"].data.control_parameter.submode = params.submode_cp3
-    data.data.cp_data["cp3"].data.set.charging_ev_data.data.max_surplus = params.max_surplus_cp3
+    data.data.cp_data["cp3"].data.set.charging_ev_data.data.full_power = params.full_power_cp3
     data.data.cp_data["cp4"].data.control_parameter.submode = params.submode_cp4
-    data.data.cp_data["cp4"].data.set.charging_ev_data.data.max_surplus = params.max_surplus_cp4
+    data.data.cp_data["cp4"].data.set.charging_ev_data.data.full_power = params.full_power_cp4
     data.data.cp_data["cp5"].data.control_parameter.submode = params.submode_cp5
-    data.data.cp_data["cp5"].data.set.charging_ev_data.data.max_surplus = params.max_surplus_cp5
+    data.data.cp_data["cp5"].data.set.charging_ev_data.data.full_power = params.full_power_cp5
     data.data.counter_data["counter0"].data.set.raw_power_left = 22080
     data.data.counter_data["counter0"].data.set.raw_currents_left = [32]*3
     data.data.counter_data["counter6"].data.set.raw_currents_left = [16]*3

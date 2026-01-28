@@ -112,7 +112,7 @@ def available_current_for_cp(chargepoint: Chargepoint,
     missing_current_cp = control_parameter.required_current - chargepoint.data.set.target_current
 
     for i in range(0, 3):
-        shared_with = 1 if chargepoint.data.set.charging_ev_data.data.max_surplus else counts[i]
+        shared_with = 1 if chargepoint.data.set.charging_ev_data.data.full_power else counts[i]
         if (control_parameter.required_currents[i] != 0 and missing_currents[i] != available_currents[i]):
             available_current = min(min(missing_current_cp, available_currents[i]/shared_with), available_current)
 
