@@ -199,6 +199,8 @@ onMounted(() => {
 	color: var(--color-charging);
 	border-radius: 12px;
 	background: var(--color-input);
+	width: 100%;
+	text-align: center;
 }
 
 .nav-tabs .nav-link {
