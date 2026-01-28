@@ -2708,7 +2708,7 @@ class UpdateConfig:
 
     def upgrade_datastore_108(self) -> None:
         def upgrade(topic: str, payload) -> None:
-            if re.search("openWB/ev/[0-9]+/name$", topic) is not None:
+            if re.search("openWB/vehicle/[0-9]+/name$", topic) is not None:
                 return {topic.replace("/name", "/full_power"): False}
         self._loop_all_received_topics(upgrade)
 
@@ -2723,7 +2723,7 @@ class UpdateConfig:
                        (Chargemode.STOP.value, False),)
 
         def upgrade2(topic: str, payload) -> None:
-            if re.search("openWB/ev/[0-9]+/charge_template", topic) is not None:
+            if re.search("openWB/vehicle/[0-9]+/charge_template", topic) is not None:
                 charge_template_id = decode_payload(payload)
                 charge_template = decode_payload(
                     self.all_received_topics[f"openWB/vehicle/template/charge_template/{charge_template_id}"])
