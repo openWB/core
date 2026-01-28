@@ -24,8 +24,8 @@ class PvCharging:
         "topic": "chargemode_config/pv_charging/bat_power_reserve_active"})
     control_range: List = field(default_factory=control_range_factory, metadata={
         "topic": "chargemode_config/pv_charging/control_range"})
-    feed_in_yield: int = field(default=15000, metadata={
-        "topic": "chargemode_config/pv_charging/feed_in_yield"})
+    feed_in_limit: bool = field(default=False, metadata={
+        "topic": "chargemode_config/pv_charging/feed_in_limit"})
     phase_switch_delay: int = field(default=7, metadata={
         "topic": "chargemode_config/pv_charging/phase_switch_delay"})
     bat_power_discharge: int = field(default=1500, metadata={
@@ -57,6 +57,8 @@ def pv_charging_factory() -> PvCharging:
 
 @dataclass
 class ChargemodeConfig:
+    feed_in_yield: int = field(default=15000, metadata={
+        "topic": "chargemode_config/feed_in_yield"})
     pv_charging: PvCharging = field(default_factory=pv_charging_factory)
     unbalanced_load_limit: int = field(
         default=18, metadata={"topic": "chargemode_config/unbalanced_load_limit"})
