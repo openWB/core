@@ -19,7 +19,7 @@ class MinCurrent:
         for counter in common.counter_generator():
             preferenced_chargepoints = get_chargepoints_by_mode_and_counter(CONSIDERED_CHARGE_MODES_MIN_CURRENT,
                                                                             f"counter{counter.num}",
-                                                                            max_surplus_considered=False)
+                                                                            full_power_considered=False)
             if preferenced_chargepoints:
                 log.info(f"Zähler {counter.num}, Verbraucher {preferenced_chargepoints}")
                 common.update_raw_data(preferenced_chargepoints, diff_to_zero=True)
