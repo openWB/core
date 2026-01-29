@@ -36,11 +36,11 @@ class SungrowIHMBat(AbstractBat):
         unit = self.device_config.configuration.modbus_id
         soc = int(self.__tcp_client.read_input_registers(8162, ModbusDataType.UINT_16, unit=unit) / 10)
 
-        bat_power = self.__tcp_client.read_input_registers(8160, ModbusDataType.INT_32, 
+        bat_power = self.__tcp_client.read_input_registers(8160, ModbusDataType.INT_32,
                                                            wordorder=Endian.Little, unit=unit) * -10
 
         imported, exported = self.sim_counter.sim_count(bat_power)
-      
+
         bat_state = BatState(
             power=bat_power,
             soc=soc,
@@ -73,7 +73,7 @@ class SungrowIHMBat(AbstractBat):
                 self.last_mode = 'discharge'
             power_value = int(power_limit / 100)
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W entladen für den Hausverbrauch")
-            self.__tcp_client.write_registers(8025, [power_value], data_type=ModbusDataType.UINT_32, 
+            self.__tcp_client.write_registers(8025, [power_value], data_type=ModbusDataType.UINT_32,
                                               wordorder=Endian.Little, unit=unit)
         elif power_limit > 0:
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W geladen")
@@ -83,7 +83,7 @@ class SungrowIHMBat(AbstractBat):
                 self.last_mode = 'charge'
             power_value = int(power_limit / 100)
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W geladen")
-            self.__tcp_client.write_registers(8025, [power_value], data_type=ModbusDataType.UINT_32, 
+            self.__tcp_client.write_registers(8025, [power_value], data_type=ModbusDataType.UINT_32,
                                               wordorder=Endian.Little, unit=unit)
 
     def power_limit_controllable(self) -> bool:
