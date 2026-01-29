@@ -6,6 +6,7 @@ import DateTime from "@/components/DateTime.vue";
 import NavBar from "@/components/NavBar.vue";
 import LockNavItem from "@/components/LockNavItem.vue";
 import TouchBlocker from "@/components/TouchBlocker.vue";
+import UserIndicator from "@/components/UserIndicator.vue";
 
 import { useMqttStore } from "@/stores/mqtt.js";
 
@@ -17,6 +18,7 @@ export default {
     NavBar,
     LockNavItem,
     TouchBlocker,
+    UserIndicator,
   },
   data() {
     return {
@@ -25,12 +27,17 @@ export default {
       },
       connection: {
         protocol: location.protocol == "https:" ? "wss" : "ws",
+        protocolVersion: 5,
         host: location.hostname,
-        port:
-          parseInt(location.port) || (location.protocol == "https:" ? 443 : 80),
-        endpoint: "/ws",
+        port: parseInt(location.port) || (location.protocol == "https:" ? 443 : 80),
+        path: "/ws",
         connectTimeout: 4000,
         reconnectPeriod: 4000,
+        resubscribe: true,
+        properties: {
+          requestResponseInformation: true,
+          requestProblemInformation: true,
+        },
       },
       mqttTopicsToSubscribe: [
         "openWB/bat/config/configured",
@@ -67,8 +74,11 @@ export default {
         "openWB/system/ip_address",
         "openWB/system/time",
         "openWB/system/version",
+        "openWB/system/security/user_management_active",
+        "openWB/system/security/access_allowed",
         "openWB/vehicle/+/get/fault_state",
         "openWB/vehicle/+/name",
+        "openWB/vehicle/+/info",
         "openWB/vehicle/+/soc_module/config",
       ],
       mqttStore: useMqttStore(),
@@ -144,8 +154,31 @@ export default {
      * Establishes a connection to the configured broker
      */
     createConnection() {
-      const { protocol, host, port, endpoint, ...options } = this.connection;
-      const connectUrl = `${protocol}://${host}:${port}${endpoint}`;
+      const { protocol, host, port, path, ...options } = this.connection;
+      const connectUrl = `${protocol}://${host}:${port}${path}`;
+      // $router is not ready here, so we use document.location
+      const urlParams = new URLSearchParams(document.location.search);
+      let user = urlParams.get("user");
+      let pass = urlParams.get("pass");
+      if (user && pass) {
+        console.debug("Using mqtt credentials from url:", user, "/", pass);
+        this.$cookies.set("mqtt", user + ":" + pass)
+        console.debug("Stored mqtt credentials in cookie");
+      } else {
+        console.debug("No mqtt credentials in url, checking cookies...");
+        [user, pass] = this.$cookies.get("mqtt")?.split(":") || [null, null];
+      }
+      if (!(user && pass)) {
+        console.debug("Anonymous mqtt connection (no params or cookie set)");
+      }
+      if ((this.nodeEnv !== "production" || protocol == "wss") && user && pass) {
+        console.debug("Using mqtt credentials from params or cookie:", user, "/", pass);
+        options.username = user;
+        options.password = pass;
+        if (user === "admin" && pass === "openwb") {
+          console.warn("Using default mqtt credentials! This is insecure and not recommended for production systems.");
+        }
+      }
       console.debug("connecting to broker:", connectUrl);
       try {
         this.client = mqtt.connect(connectUrl, options);
@@ -276,6 +309,7 @@ export default {
           </i-column>
         </i-row>
       </i-container>
+      <UserIndicator />
       <LockNavItem />
       <NavBar :changes-locked="changesLocked" />
       <TouchBlocker />

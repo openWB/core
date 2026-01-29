@@ -54,6 +54,18 @@ LOG_FILE="$OPENWB_BASE_DIR/data/log/restore.log"
 	else
 		echo "Backup does not contain configuration. Skipping restore."
 	fi
+	if [[ -f "$WORKING_DIR/mosquitto_ctrl" ]]; then
+		sudo mv -v -f "${WORKING_DIR}/mosquitto_ctrl" "/home/openwb/.config/"
+	else
+		echo "Backup does not contain mosquitto_ctrl. Skipping restore."
+	fi
+	if [[ -f "$WORKING_DIR/dynamic-security.json" ]]; then
+		sudo mv -v -f "${WORKING_DIR}/dynamic-security.json" "/var/lib/mosquitto/"
+		sudo chown mosquitto:mosquitto "/var/lib/mosquitto/dynamic-security.json"
+		sudo chmod 600 "/var/lib/mosquitto/dynamic-security.json"
+	else
+		echo "Backup does not contain dynamic-security.json. Skipping restore."
+	fi
 	echo "****************************************"
 	echo "Step 5.1: restore mosquitto db"
 	if [[ -f "${WORKING_DIR}/mosquitto/mosquitto.db" ]]; then
@@ -78,6 +90,10 @@ LOG_FILE="$OPENWB_BASE_DIR/data/log/restore.log"
 	else
 		echo "Backup does not contain mosquitto configuration. Skipping restore."
 	fi
+	# already done in prepare_restore.sh
+	# echo "****************************************"
+	# echo "Step 5.3: clean mosquitto configuration, will be recreated on next start"
+	# sudo rm -v -f "$MOSQUITTO_CONF_DIR/conf.d/openwb-*.conf"
 	echo "****************************************"
 	echo "Step 6: restore boot file"
 	if [[ -f "${WORKING_DIR}/boot/config.txt" ]]; then
