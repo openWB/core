@@ -98,11 +98,11 @@ preferenced_cases = [
 @pytest.mark.parametrize(
     "required_current_1, loadmanagement_prios, expected_cp_indices",
     [
-        pytest.param(6, [{"type": "ev", "id": 1}, {"type": "ev", "id": 2}],
+        pytest.param(6, [{"type": "vehicle", "id": 1}, {"type": "vehicle", "id": 2}],
                      [1, 2], id="fits mode"),
-        pytest.param(0, [{"type": "ev", "id": 1}, {"type": "ev", "id": 2}],
+        pytest.param(0, [{"type": "vehicle", "id": 1}, {"type": "vehicle", "id": 2}],
                      [2], id="cp1 should not charge"),
-        pytest.param(6, [{"type": "ev", "id": 2}, {"type": "ev", "id": 1}],
+        pytest.param(6, [{"type": "vehicle", "id": 2}, {"type": "vehicle", "id": 1}],
                      [2, 1], id="cp2 is prioritized")
     ])
 def test_get_chargepoints_by_mode(required_current_1: int,

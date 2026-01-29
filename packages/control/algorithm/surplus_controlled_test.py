@@ -158,7 +158,7 @@ def test_get_chargepoints_submode_pv_charging(submode_1: Chargemode,
     data.data.cp_data = {"cp1": setup_cp(mock_cp1, submode_1),
                          "cp2": setup_cp(mock_cp2, submode_2)}
     data.data.counter_all_data.data.get.loadmanagement_prios = [
-        {"type": "ev", "id": 1}, {"type": "ev", "id": 2}]
+        {"type": "vehicle", "id": 1}, {"type": "vehicle", "id": 2}]
 
     # evaluation
     chargepoints = get_loadmanagement_prios(CONSIDERED_CHARGE_MODES_PV_ONLY)
