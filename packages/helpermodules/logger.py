@@ -109,18 +109,42 @@ def filter_pos(name: str, record) -> bool:
 
 
 class InMemoryLogHandler(logging.Handler):
-    def __init__(self, base_handler=None):
+    def __init__(self, base_handler=None, max_size_mb=50):
         super().__init__()
         self.base_handler = base_handler
         self.log_stream = io.StringIO()
         self.has_warning_or_error = False
+        self.max_size_bytes = max_size_mb * 1024 * 1024  # Convert MB to bytes
+        self.line_count = 0
 
     def emit(self, record):
         if self.base_handler is None or self.base_handler.filter(record):
             msg = self.format(record)
             self.log_stream.write(msg + '\n')
+            self.line_count += 1
+
+            # Check size every 100 lines to avoid performance overhead
+            if self.line_count % 100 == 0:
+                current_size = len(self.log_stream.getvalue().encode('utf-8'))
+                if current_size > self.max_size_bytes:
+                    self._truncate_logs()
+
             if record.levelno >= logging.WARNING:
                 self.has_warning_or_error = True
+
+    def _truncate_logs(self):
+        """Keep only the last 25% of logs when size limit is exceeded"""
+        current_logs = self.log_stream.getvalue()
+        lines = current_logs.split('\n')
+
+        # Keep only the last 25% of lines
+        keep_count = max(100, len(lines) // 4)  # At least 100 lines
+        kept_lines = lines[-keep_count:]
+
+        # Reset the stream with truncated content
+        self.log_stream = io.StringIO()
+        self.log_stream.write('\n'.join(kept_lines))
+        self.line_count = len(kept_lines)
 
     def get_logs(self):
         return self.log_stream.getvalue()
@@ -128,6 +152,7 @@ class InMemoryLogHandler(logging.Handler):
     def clear(self):
         self.log_stream = io.StringIO()
         self.has_warning_or_error = False
+        self.line_count = 0
 
 
 def clear_in_memory_log_handler(logger_name: str = None) -> None:
