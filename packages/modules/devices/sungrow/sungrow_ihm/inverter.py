@@ -31,7 +31,7 @@ class SungrowIHMInverter(AbstractInverter):
     def update(self) -> float:
         unit = self.device_config.configuration.modbus_id
 
-        power = self.__tcp_client.read_input_registers(8154, ModbusDataType.INT_32, 
+        power = self.__tcp_client.read_input_registers(8154, ModbusDataType.INT_32,
                                                        wordorder=Endian.Little, unit=unit) * -10
 
         imported, exported = self.sim_counter.sim_count(power)
