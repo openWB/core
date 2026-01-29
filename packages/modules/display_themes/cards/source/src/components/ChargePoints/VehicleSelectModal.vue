@@ -18,16 +18,12 @@ export default {
   },
   computed: {
     vehicleList() {
-      let topicList = this.mqttStore.getVehicleList;
-      /* topicList is an object, but we need an array for our select input */
-      var vehicleList = [];
-      Object.keys(topicList).forEach((topic) => {
-        let vehicleId = parseInt(
-          topic.match(/(?:\/)([0-9]+)(?=\/)*/g)[0].replace(/[^0-9]+/g, ""),
-        );
-        vehicleList.push({ id: vehicleId, name: topicList[topic] });
+      return this.mqttStore.getVehicleList.map((id) => {
+        return {
+          id: id,
+          name: this.mqttStore.getVehicleName(id),
+        };
       });
-      return vehicleList;
     },
   },
   methods: {
