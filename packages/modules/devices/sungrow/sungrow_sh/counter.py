@@ -34,15 +34,15 @@ class SungrowSHCounter(AbstractCounter):
 
     def update(self):
         unit = self.device_config.configuration.modbus_id
-        power = self.__tcp_client.read_input_registers(13009, ModbusDataType.INT_32, 
+        power = self.__tcp_client.read_input_registers(13009, ModbusDataType.INT_32,
                                                        wordorder=Endian.Little, unit=unit) * -1
         try:
-            powers = self.__tcp_client.read_input_registers(5602, [ModbusDataType.INT_32] * 3, 
+            powers = self.__tcp_client.read_input_registers(5602, [ModbusDataType.INT_32] * 3,
                                                             wordorder=Endian.Little, unit=unit)
         except Exception:
             powers = None
             self.fault_state.no_error(self.fault_text)
-        
+
         frequency = self.__tcp_client.read_input_registers(5035, ModbusDataType.UINT_16, unit=unit) / 10
         if self.device_config.configuration.version == Version.SH_winet_dongle:
             # On WiNet-S, the frequency accuracy is higher by one place
