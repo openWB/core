@@ -78,6 +78,7 @@ export default {
         "openWB/system/security/access_allowed",
         "openWB/vehicle/+/get/fault_state",
         "openWB/vehicle/+/name",
+        "openWB/vehicle/+/info",
         "openWB/vehicle/+/soc_module/config",
       ],
       mqttStore: useMqttStore(),
@@ -308,6 +309,7 @@ export default {
           </i-column>
         </i-row>
       </i-container>
+      <UserIndicator />
       <LockNavItem />
       <NavBar :changes-locked="changesLocked" />
       <TouchBlocker />

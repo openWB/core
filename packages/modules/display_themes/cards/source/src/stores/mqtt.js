@@ -436,7 +436,11 @@ export const useMqttStore = defineStore("mqtt", {
       return state.getChartData("openWB/chargepoint/get/power");
     },
     getChargePointIds(state) {
-      let chargePoints = state.getObjectIds("cp");
+      // get all charge points from the hierarchy and filter out those we have no access to
+      let chargePoints = state.getObjectIds("cp").filter((id) => {
+        return state.accessChargePointAllowed(id);
+      });
+      // apply charge point filter if set
       let filter = this.getChargePointFilter;
       if (filter.length > 0) {
         console.debug("charge points are filtered!", chargePoints, filter);
@@ -445,6 +449,11 @@ export const useMqttStore = defineStore("mqtt", {
         );
       }
       return chargePoints;
+    },
+    accessChargePointAllowed(state) {
+      return (chargePointId) => {
+        return state.getChargePointName(chargePointId) !== undefined;
+      };
     },
     getChargePointName(state) {
       return (chargePointId) => {
@@ -455,7 +464,7 @@ export const useMqttStore = defineStore("mqtt", {
           return state.topics[`openWB/chargepoint/${chargePointId}/config`]
             .name;
         }
-        return "---";
+        return undefined;
       };
     },
     getChargePointPower(state) {
@@ -860,17 +869,24 @@ export const useMqttStore = defineStore("mqtt", {
     /* vehicle getters */
 
     getVehicleList(state) {
-      return state.getWildcardTopics("openWB/vehicle/+/name");
+      return Object.keys(state.getWildcardTopics("openWB/vehicle/+/info")).map((key) => {
+        return parseInt(key.split("/")[2]);
+      });
     },
     getVehicleName(state) {
       return (vehicleId) => {
         return state.topics[`openWB/vehicle/${vehicleId}/name`];
       };
     },
+    getVehicleInfo(state) {
+      return (vehicleId) => {
+        return state.topics[`openWB/vehicle/${vehicleId}/info`];
+      };
+    },
     getVehicleSocConfigured(state) {
       return (vehicleId) => {
         return (
-          state.topics[`openWB/vehicle/${vehicleId}/soc_module/config`].type !=
+          state.topics[`openWB/vehicle/${vehicleId}/soc_module/config`]?.type !=
           null
         );
       };
@@ -878,7 +894,7 @@ export const useMqttStore = defineStore("mqtt", {
     getVehicleSocIsManual(state) {
       return (vehicleId) => {
         return (
-          state.topics[`openWB/vehicle/${vehicleId}/soc_module/config`].type ==
+          state.topics[`openWB/vehicle/${vehicleId}/soc_module/config`]?.type ==
           "manual"
         );
       };
