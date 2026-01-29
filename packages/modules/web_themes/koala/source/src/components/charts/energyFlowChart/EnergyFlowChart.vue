@@ -531,7 +531,7 @@ const svgComponents = computed((): FlowComponent[] => {
           powerValue: Number(chargePoint3Power.value.value),
         });
       }
-    } else {
+    } else if (chargePointSumPower.value !== undefined) {
       // add charge point sum component
       components.push({
         id: 'charge-point-sum',
