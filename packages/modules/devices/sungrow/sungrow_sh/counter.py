@@ -5,8 +5,8 @@ from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.modbus import Endian, ModbusDataType, ModbusTcpClient_
-from modules.common.simcount._simcounter import SimCounter
+from modules.common.modbus import ModbusDataType, Endian, ModbusTcpClient_
+from modules.common.simcount import SimCounter
 from modules.common.store import get_counter_value_store
 from modules.devices.sungrow.sungrow_sh.config import SungrowSH, SungrowSHCounterSetup
 from modules.devices.sungrow.sungrow_sh.version import Version
