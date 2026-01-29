@@ -3,7 +3,7 @@
     <q-dialog v-model="showLogoutDialog" persistent>
       <q-card>
         <q-card-section class="row items-center">
-          <q-avatar icon="logout" color="warning" text-color="white" />
+          <q-avatar icon="logout" color="negative" text-color="white" />
           <span class="q-ml-sm">Willst Du Dich wirklich abmelden?</span>
         </q-card-section>
 
@@ -23,7 +23,7 @@
     <q-dialog v-model="showLoginDialog" persistent @hide="clearLoginData">
       <q-card>
         <q-card-section class="row items-center">
-          <q-avatar icon="login" color="warning" text-color="white" />
+          <q-avatar icon="login" color="positive" text-color="white" />
           <span class="q-ml-sm">Gib Deine Anmeldedaten ein.</span>
         </q-card-section>
 
@@ -183,47 +183,31 @@
     </q-dialog>
 
     <q-badge
-      v-if="loggedIn && !smallScreen"
       rounded
       align="middle"
-      color="primary"
+      :color="loggedIn ? 'positive' : 'negative'"
       class="non-selectable"
     >
-      <q-icon name="account_circle" size="sm" left />
-      {{ username }}
+      <q-icon
+        :name="loggedIn ? 'account_circle' : 'no_accounts'"
+        size="sm"
+        :left="!smallScreen"
+      >
+        <q-tooltip v-if="loggedIn">Angemeldet als "{{ username }}"</q-tooltip>
+        <q-tooltip v-else>Anmelden</q-tooltip>
+      </q-icon>
+      {{ !smallScreen && loggedIn ? username : '' }}
+      <q-icon
+        :name="loggedIn ? 'logout' : 'login'"
+        size="sm"
+        :right="!smallScreen"
+        class="cursor-pointer"
+        @click="loggedIn ? showLogoutDialog = true : showLoginDialog = true"
+      >
+        <q-tooltip v-if="loggedIn">Abmelden</q-tooltip>
+        <q-tooltip v-else>Anmelden</q-tooltip>
+      </q-icon>
     </q-badge>
-    <q-icon
-      v-if="loggedIn && smallScreen"
-      name="account_circle"
-      size="md"
-      left
-      color="primary"
-    >
-      <q-tooltip>Angemeldet als "{{ username }}"</q-tooltip>
-    </q-icon>
-    <q-btn
-      v-if="loggedIn"
-      icon="logout"
-      dense
-      flat
-      round
-      @click="showLogoutDialog = true"
-    >
-      <q-tooltip>Abmelden</q-tooltip>
-    </q-btn>
-    <q-icon v-if="!loggedIn" name="no_accounts" size="md" left>
-      <q-tooltip>Nicht angemeldet</q-tooltip>
-    </q-icon>
-    <q-btn
-      v-if="!loggedIn"
-      icon="login"
-      dense
-      flat
-      round
-      @click="showLoginDialog = true"
-    >
-      <q-tooltip>Anmelden</q-tooltip>
-    </q-btn>
   </div>
 </template>
 
