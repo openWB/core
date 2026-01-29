@@ -22,7 +22,7 @@ class SungrowSH:
                  name: str = "Sungrow SH",
                  type: str = "sungrow_sh",
                  id: int = 0,
-                 configuration: SungrowConfiguration = None) -> None:
+                 configuration: SungrowSHConfiguration = None) -> None:
         self.name = name
         self.type = type
         self.vendor = vendor_descriptor.configuration_factory().type
