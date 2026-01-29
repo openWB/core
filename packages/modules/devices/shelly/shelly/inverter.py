@@ -65,6 +65,8 @@ class ShellyInverter(AbstractInverter):
             elif "em:0" in status:
                 meters = status['em:0']
                 for i in range(len(meters)):
+                    if meters.get(f'{alphabetical_index[i]}_current') is None:
+                        continue
                     currents[(i+self.phase-1) % 3] = (float(meters[f'{alphabetical_index[i]}_current']) * self.factor
                                                       if meters.get(f'{alphabetical_index[i]}_current') else 0)
                 power = float(meters['total_act_power']) * self.factor
