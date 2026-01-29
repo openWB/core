@@ -7,7 +7,8 @@ from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.common import modbus
 from modules.devices.sungrow.sungrow_sh.bat import SungrowSHBat
-from modules.devices.sungrow.sungrow_sh.config import SungrowSH, SungrowSHBatSetup, SungrowSHCounterSetup, SungrowSHInverterSetup
+from modules.devices.sungrow.sungrow_sh.config import SungrowSH, SungrowSHBatSetup
+from modules.devices.sungrow.sungrow_sh.config import SungrowSHCounterSetup, SungrowSHInverterSetup
 from modules.devices.sungrow.sungrow_sh.counter import SungrowSHCounter
 from modules.devices.sungrow.sungrow_sh.inverter import SungrowSHInverter
 
