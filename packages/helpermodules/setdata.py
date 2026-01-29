@@ -1204,8 +1204,14 @@ class SetData:
 
     def process_consumer_topic(self, msg):
         try:
-            if (re.search("openWB/set/consumer/[0-9]+/module$", msg.topic) is not None or
-                re.search("openWB/set/consumer/[0-9]+/config$", msg.topic) is not None or
+            if ("openWB/set/consumer/get/imported" in msg.topic or
+                    "openWB/set/consumer/get/exported" in msg.topic or
+                    "openWB/set/consumer/get/power" in msg.topic or
+                    "openWB/set/consumer/get/daily_imported" in msg.topic or
+                    "openWB/set/consumer/get/daily_exported" in msg.topic):
+                self._validate_value(msg, float)
+            elif (re.search("openWB/set/consumer/[0-9]+/module$", msg.topic) is not None or
+                  re.search("openWB/set/consumer/[0-9]+/config$", msg.topic) is not None or
                     re.search("openWB/set/consumer/[0-9]+/extra_meter/device/config$", msg.topic) is not None or
                     re.search("openWB/set/consumer/[0-9]+/extra_meter/device/component/config$",
                               msg.topic) is not None or

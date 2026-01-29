@@ -172,6 +172,11 @@ class UpdateConfig:
         "^openWB/command/[A-Za-z0-9_]+/error$",
         "^openWB/command/todo$",
 
+        "^openWB/consumer/get/power$",
+        "^openWB/consumer/get/exported$",
+        "^openWB/consumer/get/imported$",
+        "^openWB/consumer/get/daily_exported$",
+        "^openWB/consumer/get/daily_imported$",
         "^openWB/consumer/[0-9]+/module$",
         "^openWB/consumer/[0-9]+/config$",
         "^openWB/consumer/[0-9]+/extra_meter/device/config$",

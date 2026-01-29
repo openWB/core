@@ -13,6 +13,7 @@ from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_all import AllChargepoints
 from control.chargepoint.chargepoint_template import CpTemplate
 from control.consumer.consumer import Consumer
+from control.consumer.consumer_all import AllConsumers
 from control.pv import Pv
 from control.pv_all import PvAll
 
@@ -35,6 +36,7 @@ bat_data_lock = Lock()
 bat_all_data_lock = Lock()
 graph_data_lock = Lock()
 consumer_data_lock = Lock()
+consumer_all_data_lock = Lock()
 counter_data_lock = Lock()
 counter_all_data_lock = Lock()
 cp_data_lock = Lock()
@@ -72,6 +74,7 @@ class Data:
         self._bat_data: Dict[str, Bat] = {}
         self._bat_all_data = BatAll()
         self._consumer_data: Dict[str, Consumer] = {}
+        self._consumer_all_data: AllConsumers = {}
         self._counter_data: Dict[str, Counter] = {}
         self._counter_all_data = CounterAll()
         self._cp_data: Dict[str, Chargepoint] = {}
@@ -132,6 +135,15 @@ class Data:
     @locked(consumer_data_lock)
     def consumer_data(self, value):
         self._consumer_data = value
+
+    @property
+    def consumer_all_data(self) -> AllConsumers:
+        return self._consumer_all_data
+
+    @consumer_all_data.setter
+    @locked(consumer_all_data_lock)
+    def consumer_all_data(self, value):
+        self._consumer_all_data = value
 
     @property
     def counter_data(self) -> Dict[str, Counter]:
@@ -485,6 +497,7 @@ class Data:
                 self.consumer_data[consumer].data = copy.deepcopy(SubData.consumer_data[consumer].data)
                 self.consumer_data[consumer].module = SubData.consumer_data[consumer].module
                 self.consumer_data[consumer].extra_meter = SubData.consumer_data[consumer].extra_meter
+            self.consumer_all_data = copy.deepcopy(SubData.consumer_all_data)
         except Exception:
             log.exception("Fehler im Prepare-Modul beim Kopieren der Verbraucherdaten")
 
