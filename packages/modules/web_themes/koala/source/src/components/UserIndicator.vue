@@ -202,7 +202,7 @@
         size="sm"
         :right="!smallScreen"
         class="cursor-pointer"
-        @click="loggedIn ? showLogoutDialog = true : showLoginDialog = true"
+        @click="loggedIn ? (showLogoutDialog = true) : (showLoginDialog = true)"
       >
         <q-tooltip v-if="loggedIn">Abmelden</q-tooltip>
         <q-tooltip v-else>Anmelden</q-tooltip>
