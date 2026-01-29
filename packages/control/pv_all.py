@@ -69,15 +69,11 @@ class PvAll:
                         else:
                             if fault_state < module.data.get.fault_state:
                                 fault_state = module.data.get.fault_state
-                        limit_value = data.data.io_actions.stepwise_control(module.num)
-                        if limit_value is not None and module.data.get.fault_state == 0:
-                            msg = (
-                                f"Leistung begrenzt auf {int(limit_value * 100)}%"
-                                if limit_value < 1
-                                else "Keine Leistungsbegrenzung aktiv."
-                            )
-                            module.data.get.fault_str = msg
-                            Pub().pub(f"openWB/set/pv/{module.num}/get/fault_str", msg)
+                        limit = data.data.io_actions.stepwise_control(module.num)[1]
+                        if module.data.get.fault_state == 0:
+                            # Fehlermeldung nicht überschreiben
+                            module.data.get.fault_str = limit.message
+                            Pub().pub(f"openWB/set/pv/{module.num}/get/fault_str", limit.message)
                     except Exception:
                         log.exception(f"Fehler im allgemeinen PV-Modul für pv{module.num}")
                 if fault_state == 0:
