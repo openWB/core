@@ -37,7 +37,7 @@ class SungrowIHMBatSetup(ComponentSetup[SungrowIHMBatConfiguration]):
                  name: str = " iHM Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: IHMBatConfiguration = None) -> None:
+                 configuration: SungrowIHMBatConfiguration = None) -> None:
         super().__init__(name, type, id, configuration or SungrowIHMBatConfiguration())
 
 
