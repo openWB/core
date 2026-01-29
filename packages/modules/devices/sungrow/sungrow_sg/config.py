@@ -1,7 +1,6 @@
 from typing import Optional
 
 from modules.common.component_setup import ComponentSetup
-from modules.devices.sungrow.sungrow_sg.version import Version
 from ..vendor import vendor_descriptor
 
 
