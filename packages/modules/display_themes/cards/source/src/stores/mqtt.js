@@ -103,7 +103,7 @@ export const useMqttStore = defineStore("mqtt", {
         if (value !== undefined) {
           return value;
         }
-        console.warn("topic not found! using default", topic, defaultValue);
+        console.info("topic not found! using default", topic, defaultValue);
         return defaultValue;
       };
     },

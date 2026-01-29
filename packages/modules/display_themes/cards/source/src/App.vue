@@ -6,6 +6,7 @@ import DateTime from "@/components/DateTime.vue";
 import NavBar from "@/components/NavBar.vue";
 import LockNavItem from "@/components/LockNavItem.vue";
 import TouchBlocker from "@/components/TouchBlocker.vue";
+import UserIndicator from "@/components/UserIndicator.vue";
 
 import { useMqttStore } from "@/stores/mqtt.js";
 
@@ -17,6 +18,7 @@ export default {
     NavBar,
     LockNavItem,
     TouchBlocker,
+    UserIndicator,
   },
   data() {
     return {
@@ -72,6 +74,8 @@ export default {
         "openWB/system/ip_address",
         "openWB/system/time",
         "openWB/system/version",
+        "openWB/system/security/user_management_active",
+        "openWB/system/security/access_allowed",
         "openWB/vehicle/+/get/fault_state",
         "openWB/vehicle/+/name",
         "openWB/vehicle/+/soc_module/config",
