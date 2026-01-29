@@ -47,7 +47,7 @@ def all_cp_instant_charging_3p():
         data.data.cp_data[f"cp{i}"].data.set.charging_ev_data = Ev(i)
         data.data.cp_data[f"cp{i}"].data.config.ev = i
     data.data.counter_all_data.data.get.loadmanagement_prios = [
-        {"type": "ev", "id": 3}, {"type": "ev", "id": 4}, {"type": "ev", "id": 5}]
+        {"type": "vehicle", "id": 3}, {"type": "vehicle", "id": 4}, {"type": "vehicle", "id": 5}]
 
 
 @dataclass
