@@ -31,13 +31,13 @@ class SungrowSGInverter(AbstractInverter):
     def update(self) -> float:
         unit = self.device_config.configuration.modbus_id
 
-        power = self.__tcp_client.read_input_registers(5030, ModbusDataType.INT_32, 
+        power = self.__tcp_client.read_input_registers(5030, ModbusDataType.INT_32,
                                                        wordorder=Endian.Little, unit=unit) * -1
-        dc_power = self.__tcp_client.read_input_registers(5016, ModbusDataType.UINT_32, 
+        dc_power = self.__tcp_client.read_input_registers(5016, ModbusDataType.UINT_32,
                                                           wordorder=Endian.Little, unit=unit) * -1
 
         currents = self.__tcp_client.read_input_registers(5021, [ModbusDataType.INT_16]*3, unit=unit)
-        
+
         currents = [value * -0.1 for value in currents]
 
         imported, exported = self.sim_counter.sim_count(power, dc_power)
