@@ -39,9 +39,9 @@ class SungrowSGCounter(AbstractCounter):
         try:
             powers = self.__tcp_client.read_input_registers(5084, [ModbusDataType.INT_32] * 3, 
                                                             wordorder=Endian.Little, unit=unit)
-            except Exception:
-                powers = None
-                self.fault_state.no_error(self.fault_text)
+        except Exception:
+            powers = None
+            self.fault_state.no_error(self.fault_text)
 
         frequency = self.__tcp_client.read_input_registers(5035, ModbusDataType.UINT_16, unit=unit) / 10
   
