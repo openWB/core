@@ -28,8 +28,7 @@ class SungrowIHMCounter(AbstractCounter):
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
-
-    def update(self, pv_power: float):
+    def update(self):
         unit = self.device_config.configuration.modbus_id
         power = self.__tcp_client.read_input_registers(8156, ModbusDataType.INT_32,
                                                        wordorder=Endian.Little, unit=unit) * -10
