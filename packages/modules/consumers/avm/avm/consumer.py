@@ -10,8 +10,6 @@ from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
 from modules.common.configurable_consumer import ConfigurableConsumer
-from modules.common.modbus import ModbusDataType, ModbusTcpClient_
-from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.avm.avm.config import Avm
 
 log = logging.getLogger(__name__)
