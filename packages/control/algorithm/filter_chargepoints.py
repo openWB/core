@@ -36,7 +36,7 @@ def get_chargepoints_by_mode(chargemodes: Tuple[Tuple[Optional[str], str]]) -> L
 def get_chargepoints_by_mode_and_lm_prio(chargemodes: Tuple[Tuple[Optional[str], str]],
                                          prio_group: List[Chargepoint]) -> List[Chargepoint]:
     cps_by_mode = get_chargepoints_by_mode(chargemodes)
-    return list(filter(lambda cp: cp.num in cps_by_mode, prio_group))
+    return [cp for cp in prio_group if cp in cps_by_mode]
 
 
 def get_preferenced_chargepoint_charging(
