@@ -198,6 +198,7 @@ def reset_current_to_target_current(cp_prio_group: List[Chargepoint]) -> None:
     aus Stufe 1 ist."""
     for cp in cp_prio_group:
         try:
-            cp.data.set.target_current = cp.data.set.current
+            if cp.data.set.current is not None:
+                cp.data.set.target_current = cp.data.set.current
         except Exception:
             log.exception(f"Fehler im Algorithmus-Modul für Ladepunkt{cp.num}")
