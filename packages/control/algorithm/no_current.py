@@ -2,7 +2,7 @@ import logging
 from control import data
 
 from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_NO_CURRENT
-from control.algorithm.filter_chargepoints import get_loadmanagement_prios
+from control.algorithm.filter_chargepoints import get_chargepoints_by_mode
 
 log = logging.getLogger(__name__)
 
@@ -12,7 +12,7 @@ class NoCurrent:
         pass
 
     def set_no_current(self) -> None:
-        chargepoints = get_loadmanagement_prios(CONSIDERED_CHARGE_MODES_NO_CURRENT)
+        chargepoints = get_chargepoints_by_mode(CONSIDERED_CHARGE_MODES_NO_CURRENT)
         for cp in chargepoints:
             cp.data.set.current = 0
 

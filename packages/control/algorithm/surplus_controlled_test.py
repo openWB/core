@@ -4,7 +4,7 @@ import pytest
 
 from control import data
 from control.algorithm import surplus_controlled
-from control.algorithm.filter_chargepoints import get_loadmanagement_prios
+from control.algorithm.filter_chargepoints import get_chargepoints_by_mode
 from control.algorithm.surplus_controlled import (CONSIDERED_CHARGE_MODES_PV_ONLY, SurplusControlled,
                                                   limit_adjust_current)
 from control.chargemode import Chargemode
@@ -161,7 +161,7 @@ def test_get_chargepoints_submode_pv_charging(submode_1: Chargemode,
         {"type": "vehicle", "id": 1}, {"type": "vehicle", "id": 2}]
 
     # evaluation
-    chargepoints = get_loadmanagement_prios(CONSIDERED_CHARGE_MODES_PV_ONLY)
+    chargepoints = get_chargepoints_by_mode(CONSIDERED_CHARGE_MODES_PV_ONLY)
 
     # assertion
     cp_mapping = {1: mock_cp1, 2: mock_cp2}

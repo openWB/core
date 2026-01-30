@@ -1,11 +1,13 @@
 import logging
 from typing import List, Optional, Tuple
 
+from control.counter import limit_raw_power_left_to_surplus
 from control import data
 from control.algorithm import common
 from control.algorithm.chargemodes import (CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE, CONSIDERED_CHARGE_MODES_PV_ONLY,
                                            CONSIDERED_CHARGE_MODES_SURPLUS)
-from control.algorithm.filter_chargepoints import (get_chargepoints_by_mode_and_counter, get_loadmanagement_prios,
+from control.algorithm.filter_chargepoints import (get_chargepoints_by_mode_and_counter_and_lm_prio,
+                                                   get_chargepoints_by_mode_and_lm_prio,
                                                    get_preferenced_chargepoint_charging)
 from control.algorithm.utils import get_medium_charging_current
 from control.chargepoint.charging_type import ChargingType
@@ -25,11 +27,20 @@ class SurplusControlled:
     def __init__(self) -> None:
         pass
 
-    def set_surplus_current(self) -> None:
-        common.reset_current_by_chargemode(CONSIDERED_CHARGE_MODES_SURPLUS)
+    def set_surplus_current(self, cp_prio_group: List[Chargepoint]) -> None:
+        self.set_required_current_to_max(cp_prio_group)
+        evu_counter = data.data.counter_all_data.get_evu_counter()
+        limit_raw_power_left_to_surplus(evu_counter.calc_raw_surplus())
+        if evu_counter.data.set.surplus_power_left < 0:
+            log.info("Keine Leistung für PV-geführtes Laden übrig.")
+            return
+        log.info("**PV-geführten Strom setzen**")
+        common.reset_current_to_target_current(cp_prio_group)
+        common.reset_current_by_chargemode(CONSIDERED_CHARGE_MODES_SURPLUS, cp_prio_group)
         for counter in common.counter_generator():
             preferenced_chargepoints, preferenced_cps_without_set_current = get_preferenced_chargepoint_charging(
-                get_chargepoints_by_mode_and_counter(CONSIDERED_CHARGE_MODES_SURPLUS, f"counter{counter.num}"))
+                get_chargepoints_by_mode_and_counter_and_lm_prio(CONSIDERED_CHARGE_MODES_SURPLUS,
+                                                                 f"counter{counter.num}", cp_prio_group))
             cp_with_feed_in, cp_without_feed_in = self.filter_by_feed_in_limit(preferenced_chargepoints)
             if cp_without_feed_in:
                 self._set(cp_without_feed_in, 0, counter)
@@ -39,7 +50,7 @@ class SurplusControlled:
             if preferenced_cps_without_set_current:
                 for cp in preferenced_cps_without_set_current:
                     cp.data.set.current = cp.data.set.target_current
-        for cp in get_loadmanagement_prios(CONSIDERED_CHARGE_MODES_SURPLUS):
+        for cp in get_chargepoints_by_mode_and_lm_prio(CONSIDERED_CHARGE_MODES_SURPLUS, cp_prio_group):
             if cp.data.control_parameter.state in CHARGING_STATES:
                 self._fix_deviating_evse_current(cp)
 
@@ -122,10 +133,10 @@ class SurplusControlled:
                 log.debug(f"Ungenutzten Soll-Strom aufschlagen ergibt {current}A.")
             chargepoint.data.set.current = current
 
-    def check_submode_pv_charging(self) -> None:
+    def check_submode_pv_charging(self, cp_prio_group: List[Chargepoint]) -> None:
         evu_counter = data.data.counter_all_data.get_evu_counter()
 
-        for cp in get_loadmanagement_prios(CONSIDERED_CHARGE_MODES_PV_ONLY):
+        for cp in get_chargepoints_by_mode_and_lm_prio(CONSIDERED_CHARGE_MODES_PV_ONLY, cp_prio_group):
             try:
                 def phase_switch_necessary() -> bool:
                     return (cp.cp_state_hw_support_phase_switch() and
@@ -156,9 +167,9 @@ class SurplusControlled:
             except Exception:
                 log.exception(f"Fehler in der PV-gesteuerten Ladung bei {cp.num}")
 
-    def set_required_current_to_max(self) -> None:
-        for cp in get_loadmanagement_prios(CONSIDERED_CHARGE_MODES_SURPLUS +
-                                           CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE):
+    def set_required_current_to_max(self, cp_prio_group: List[Chargepoint]) -> None:
+        for cp in get_chargepoints_by_mode_and_lm_prio(CONSIDERED_CHARGE_MODES_SURPLUS +
+                                                       CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE, cp_prio_group):
             try:
                 charging_ev_data = cp.data.set.charging_ev_data
                 required_currents = cp.data.control_parameter.required_currents

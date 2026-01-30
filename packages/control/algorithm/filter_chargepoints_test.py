@@ -124,7 +124,7 @@ def test_get_chargepoints_by_mode(required_current_1: int,
     data.data.counter_all_data.data.get.loadmanagement_prios = loadmanagement_prios
 
     # evaluation
-    valid_chargepoints = filter_chargepoints.get_loadmanagement_prios(
+    valid_chargepoints = filter_chargepoints.get_chargepoints_by_mode(
         ((Chargemode.SCHEDULED_CHARGING, Chargemode.INSTANT_CHARGING),))
 
     # assertion

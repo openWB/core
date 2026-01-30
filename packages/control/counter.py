@@ -8,7 +8,7 @@ from typing import List, Optional, Tuple
 
 from control import data
 from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE
-from control.algorithm.filter_chargepoints import get_loadmanagement_prios
+from control.algorithm.filter_chargepoints import get_chargepoints_by_mode
 from control.algorithm.utils import get_medium_charging_current
 from control.chargemode import Chargemode
 from control.chargepoint.chargepoint import Chargepoint
@@ -519,7 +519,7 @@ def set_raw_surplus_power_left() -> None:
     """
     grid_counter = data.data.counter_all_data.get_evu_counter()
     bidi_power = 0
-    chargepoint_by_chargemodes = get_loadmanagement_prios(CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE)
+    chargepoint_by_chargemodes = get_chargepoints_by_mode(CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE)
     for cp in chargepoint_by_chargemodes:
         bidi_power += cp.data.get.power
     grid_counter.data.set.surplus_power_left = grid_counter.data.get.power * -1 + bidi_power
