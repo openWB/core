@@ -9,11 +9,13 @@
 		{{ name ? name : masterData[cat].icon }} &nbsp;
 	</tspan>
 	<tspan text-anchor="end" :x="width - indent">
-		<FormatWatt v-if="props.power > 0" :watt="power * 1000" />
+		<FormatWatt v-if="cat != 'price' && props.power > 0" :watt="power * 1000" />
+		<tspan v-if="cat === 'price'">{{ formatPrice(props.power) }}</tspan>
 	</tspan>
 </template>
 <script setup lang="ts">
 import { masterData } from '@/assets/js/model'
+import { formatPrice } from '@/assets/js/helpers'
 import FormatWatt from '@/components/shared/FormatWatt.vue'
 const props = defineProps<{
 	cat: string

@@ -16,7 +16,7 @@
 				:d="myline"
 				:stroke="cpColor"
 				stroke-width="1"
-				:style="{ strokeDasharray: '3,3' }"
+				:style="{ strokeDasharray: '3,1' }"
 				fill="none"
 			/>
 			<text

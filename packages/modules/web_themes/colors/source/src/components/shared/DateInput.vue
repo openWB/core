@@ -114,23 +114,24 @@ const days = computed(() => {
 	const newDate = new Date(year.value, month.value, 1)
 	const firstWeekdayInMonth = newDate.getDay()
 	let maxDaysPerMonth = 0
+	console.log(month.value)
 	switch (month.value) {
-		case 1:
-		case 3:
-		case 5:
-		case 7:
-		case 8:
-		case 10:
-		case 12:
-			maxDaysPerMonth = 31
-			break
+		case 0:
+		case 2:
 		case 4:
 		case 6:
+		case 7:
 		case 9:
 		case 11:
+			maxDaysPerMonth = 31
+			break
+		case 3:
+		case 5:
+		case 8:
+		case 10:
 			maxDaysPerMonth = 30
 			break
-		case 2:
+		case 1:
 			if (Math.trunc(year.value / 4) * 4 == year.value) {
 				maxDaysPerMonth = 29
 			} else {
