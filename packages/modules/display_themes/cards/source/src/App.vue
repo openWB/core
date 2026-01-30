@@ -100,18 +100,21 @@ export default {
     // parse and add url parameters to store
     let uri = window.location.search;
     if (uri != "") {
-      console.debug("search", uri);
       let params = new URLSearchParams(uri);
       if (params.has("data")) {
         let data = JSON.parse(params.get("data"));
         Object.entries(data).forEach(([key, value]) => {
-          console.log("updateSetting", key, value);
           if (key.startsWith("parentChargePoint")) {
             this.mqttStore.updateSetting(key, parseInt(value));
           } else {
             this.mqttStore.updateSetting(key, value);
           }
         });
+      }
+      if (params.has("hide_login")) {
+        const hideLogin = params.get("hide_login");
+        console.debug("hide_login from url param:", hideLogin);
+        this.mqttStore.updateSetting("hideLogin", hideLogin === "1");
       }
     }
     // subscribe our topics
@@ -156,23 +159,12 @@ export default {
     createConnection() {
       const { protocol, host, port, path, ...options } = this.connection;
       const connectUrl = `${protocol}://${host}:${port}${path}`;
-      // $router is not ready here, so we use document.location
-      const urlParams = new URLSearchParams(document.location.search);
-      let user = urlParams.get("user");
-      let pass = urlParams.get("pass");
-      if (user && pass) {
-        console.debug("Using mqtt credentials from url:", user, "/", pass);
-        this.$cookies.set("mqtt", user + ":" + pass)
-        console.debug("Stored mqtt credentials in cookie");
-      } else {
-        console.debug("No mqtt credentials in url, checking cookies...");
-        [user, pass] = this.$cookies.get("mqtt")?.split(":") || [null, null];
-      }
+      const [user, pass] = this.$cookies.get("mqtt")?.split(":") || [null, null];
       if (!(user && pass)) {
-        console.debug("Anonymous mqtt connection (no params or cookie set)");
+        console.debug("Anonymous mqtt connection (no cookie set)");
       }
       if ((this.nodeEnv !== "production" || protocol == "wss") && user && pass) {
-        console.debug("Using mqtt credentials from params or cookie:", user, "/", pass);
+        console.debug("Using mqtt credentials from cookie:", user, "/", pass);
         options.username = user;
         options.password = pass;
         if (user === "admin" && pass === "openwb") {
