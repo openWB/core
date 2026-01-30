@@ -9,6 +9,7 @@ export const useMqttStore = defineStore("mqtt", {
       localVersion: undefined,
       parentChargePoint1: undefined,
       parentChargePoint2: undefined,
+      hideLogin: false,
     },
     topics: {},
     chartData: {},
