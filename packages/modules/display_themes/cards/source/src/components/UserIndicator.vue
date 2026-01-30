@@ -54,6 +54,9 @@ export default {
     enableLogin() {
       return this.loginUser.trim() !== "" && this.loginPassword.trim() !== "";
     },
+    hideLogin() {
+      return this.mqttStore.settings.hideLogin === true;
+    },
   },
   mounted() {},
   methods: {
@@ -86,7 +89,7 @@ export default {
 
 <template>
   <i-button
-    v-if="userManagementActive"
+    v-if="userManagementActive && !hideLogin"
     class="_padding-left:0 _padding-right:0 _margin-bottom:1"
     size="lg"
     block
