@@ -8,12 +8,21 @@ export default {
       mqttStore: useMqttStore(),
     };
   },
+  computed: {
+    accessAllowed() {
+      return this.mqttStore.getAccessAllowed;
+    },
+  },
   mounted() {
     setTimeout(this.selectFirstRoute, 3000);
   },
   methods: {
     selectFirstRoute() {
       if (this.mqttStore.getDefaultView) {
+        if (this.accessAllowed === false) {
+          console.warn("access not allowed, staying on welcome view");
+          return;
+        }
         this.$router.push({ name: this.mqttStore.getDefaultView });
       } else {
         console.warn("no router view enabled, check your configuration!");
@@ -38,6 +47,12 @@ export default {
             class="logo"
             src="/openWB_logo_dark.png"
           >
+          <template
+            v-if="!accessAllowed"
+            #footer
+          >
+            Bitte anmelden.
+          </template>
         </i-card>
       </i-column>
     </i-row>

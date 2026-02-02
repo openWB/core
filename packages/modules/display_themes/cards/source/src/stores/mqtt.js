@@ -288,6 +288,12 @@ export const useMqttStore = defineStore("mqtt", {
       }
       return false;
     },
+    getAccessAllowed(state) {
+      if (state.topics["openWB/system/security/access_allowed"] === undefined) {
+        return false;
+      }
+      return state.topics["openWB/system/security/access_allowed"] === true;
+    },
 
     /* devices and components getters */
 
