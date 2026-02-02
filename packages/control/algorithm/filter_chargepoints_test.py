@@ -152,12 +152,12 @@ def test_get_chargepoints_by_mode_and_counter(chargepoints_of_counter: List[str]
 
     get_chargepoints_of_counter_mock = Mock(return_value=chargepoints_of_counter)
     monkeypatch.setattr(CounterAll, "get_chargepoints_of_counter", get_chargepoints_of_counter_mock)
-    get_loadmanagement_prios_mock = Mock(return_value=chargepoints_by_mode)
-    monkeypatch.setattr(filter_chargepoints, "get_loadmanagement_prios", get_loadmanagement_prios_mock)
+    get_chargepoints_by_mode_mock = Mock(return_value=chargepoints_by_mode)
+    monkeypatch.setattr(filter_chargepoints, "get_chargepoints_by_mode", get_chargepoints_by_mode_mock)
     data.data.counter_all_data = CounterAll()
 
     # evaluation
-    valid_chargepoints = filter_chargepoints.get_chargepoints_by_mode_and_counter(Mock(), "counter6")
+    valid_chargepoints = filter_chargepoints.get_chargepoints_by_mode_and_counter_and_lm_prio(Mock(), "counter6")
 
     # assertion
     assert valid_chargepoints == expected_chargepoints

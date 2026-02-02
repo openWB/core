@@ -58,7 +58,7 @@ class SurplusControlled:
              chargepoints: List[Chargepoint],
              feed_in_yield: Optional[int],
              counter: Counter) -> None:
-        log.info(f"Zähler {counter.num}, Verbraucher {chargepoints}")
+        log.info(f"Zähler {counter.num}, Verbraucher {[f'LP{cp.num}' for cp in chargepoints]}")
         common.update_raw_data(chargepoints, surplus=True)
         while len(chargepoints):
             cp = chargepoints[0]

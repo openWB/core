@@ -24,7 +24,7 @@ class MinCurrent:
                 f"counter{counter.num}",
                 cp_prio_group)
             if preferenced_chargepoints:
-                log.info(f"Zähler {counter.num}, Verbraucher {preferenced_chargepoints}")
+                log.info(f"Zähler {counter.num}, Verbraucher {[f'LP{cp.num}' for cp in preferenced_chargepoints]}")
                 common.update_raw_data(preferenced_chargepoints, diff_to_zero=True)
                 while len(preferenced_chargepoints):
                     cp = preferenced_chargepoints[0]

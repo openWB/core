@@ -48,6 +48,9 @@ def all_cp_instant_charging_3p():
         data.data.cp_data[f"cp{i}"].data.config.ev = i
     data.data.counter_all_data.data.get.loadmanagement_prios = [
         {"type": "vehicle", "id": 3}, {"type": "vehicle", "id": 4}, {"type": "vehicle", "id": 5}]
+    data.data.ev_data["ev3"] = Ev(3)
+    data.data.ev_data["ev4"] = Ev(4)
+    data.data.ev_data["ev5"] = Ev(5)
 
 
 @dataclass
@@ -188,10 +191,13 @@ def test_control_parameter_instant_charging(params: ParamsControlParameter, all_
     # setup
     data.data.cp_data["cp3"].data.control_parameter.submode = params.submode_cp3
     data.data.cp_data["cp3"].data.set.charging_ev_data.data.full_power = params.full_power_cp3
+    data.data.ev_data["ev3"].data.full_power = params.full_power_cp3
     data.data.cp_data["cp4"].data.control_parameter.submode = params.submode_cp4
     data.data.cp_data["cp4"].data.set.charging_ev_data.data.full_power = params.full_power_cp4
+    data.data.ev_data["ev4"].data.full_power = params.full_power_cp4
     data.data.cp_data["cp5"].data.control_parameter.submode = params.submode_cp5
     data.data.cp_data["cp5"].data.set.charging_ev_data.data.full_power = params.full_power_cp5
+    data.data.ev_data["ev5"].data.full_power = params.full_power_cp5
     data.data.counter_data["counter0"].data.set.raw_power_left = 22080
     data.data.counter_data["counter0"].data.set.raw_currents_left = [32]*3
     data.data.counter_data["counter6"].data.set.raw_currents_left = [16]*3

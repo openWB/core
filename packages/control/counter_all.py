@@ -531,6 +531,7 @@ class CounterAll:
                                                  None]:
         groups = self._get_prio_groups()
         start_index = 0
+        skip_next = False
 
         if not groups:
             yield None, None
@@ -544,6 +545,9 @@ class CounterAll:
 
         for index in range(start_index, len(groups)):
             try:
+                if skip_next:
+                    skip_next = False
+                    continue
                 if groups[index]["is_full_power_group"]:
                     next_full_power_group = groups[index]
                     next_low_power_group = None
@@ -551,6 +555,7 @@ class CounterAll:
                     next_low_power_group = groups[index]
                     if index + 1 < len(groups) and groups[index + 1]["is_full_power_group"]:
                         next_full_power_group = groups[index + 1]
+                        skip_next = True
                     else:
                         next_full_power_group = None
                 yield self._convert_to_cp_group(next_low_power_group), self._convert_to_cp_group(next_full_power_group)

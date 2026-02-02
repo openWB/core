@@ -96,11 +96,11 @@ def test_set_required_current_to_max(phases: int,
                                                                        required_currents=required_currents))
     mock_cp1.template = CpTemplate()
     mock_get_chargepoints_surplus_controlled = Mock(return_value=[mock_cp1])
-    monkeypatch.setattr(surplus_controlled, "get_loadmanagement_prios",
+    monkeypatch.setattr(surplus_controlled, "get_chargepoints_by_mode_and_lm_prio",
                         mock_get_chargepoints_surplus_controlled)
 
     # execution
-    SurplusControlled().set_required_current_to_max()
+    SurplusControlled().set_required_current_to_max([mock_cp1])
 
     # evaluation
     assert mock_cp1.data.control_parameter.required_currents == expected_currents

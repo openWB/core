@@ -51,6 +51,7 @@ def data_() -> None:
     data.data.counter_all_data = CounterAll()
     data.data.counter_all_data.data.get.hierarchy = NESTED_HIERARCHY
     data.data.counter_all_data.data.get.loadmanagement_prios = [{"type": "vehicle", "id": 0}]
+    data.data.ev_data["ev0"] = Ev(0)
     data.data.counter_all_data.data.config.consider_less_charging = True
     data.data.io_actions = IoActions()
 
