@@ -59,13 +59,6 @@ LOG_FILE="$OPENWB_BASE_DIR/data/log/restore.log"
 	else
 		echo "Backup does not contain mosquitto_ctrl. Skipping restore."
 	fi
-	if [[ -f "$WORKING_DIR/dynamic-security.json" ]]; then
-		sudo mv -v -f "${WORKING_DIR}/dynamic-security.json" "/var/lib/mosquitto/"
-		sudo chown mosquitto:mosquitto "/var/lib/mosquitto/dynamic-security.json"
-		sudo chmod 600 "/var/lib/mosquitto/dynamic-security.json"
-	else
-		echo "Backup does not contain dynamic-security.json. Skipping restore."
-	fi
 	echo "****************************************"
 	echo "Step 5.1: restore mosquitto db"
 	if [[ -f "${WORKING_DIR}/mosquitto/mosquitto.db" ]]; then
@@ -73,6 +66,13 @@ LOG_FILE="$OPENWB_BASE_DIR/data/log/restore.log"
 		sudo chown mosquitto:mosquitto "$MOSQUITTO_DB_DIR/mosquitto.db"
 	else
 		echo "Backup does not contain mosquitto.db. Skipping restore."
+	fi
+	if [[ -f "$WORKING_DIR/mosquitto/dynamic-security.json" ]]; then
+		sudo mv -v -f "${WORKING_DIR}/mosquitto/dynamic-security.json" "/var/lib/mosquitto/"
+		sudo chown mosquitto:mosquitto "/var/lib/mosquitto/dynamic-security.json"
+		sudo chmod 600 "/var/lib/mosquitto/dynamic-security.json"
+	else
+		echo "Backup does not contain dynamic-security.json. Skipping restore."
 	fi
 	if [[ -f "${WORKING_DIR}/mosquitto_local/mosquitto.db" ]]; then
 		sudo mv -v -f "${WORKING_DIR}/mosquitto_local/mosquitto.db" "$MOSQUITTO_LOCAL_DB_DIR/mosquitto.db"
