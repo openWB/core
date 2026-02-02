@@ -26,6 +26,7 @@ var secondaryTopicsToSubscribe = {
 
 var data = {};
 var retries = 0;
+var credentialsFetched = false;
 
 // Connect Options
 var connection = {
@@ -43,52 +44,44 @@ var connection = {
 	},
 };
 
-function getCookie(cookieName) {
-	const name = cookieName + "=";
-	const decodedCookies = decodeURIComponent(document.cookie);
-	const cookieArray = decodedCookies.split(';');
-	for (let cookie of cookieArray) {
-		cookie = cookie.trim();
-		if (cookie.indexOf(name) === 0) {
-			return decodeURIComponent(cookie.substring(name.length, cookie.length));
-		}
-	}
-	return null;
+function setCookie(cookieName, cookieValue, expireDays = 30, path = "/") {
+	let currentDate = new Date();
+	currentDate.setTime(currentDate.getTime() + (expireDays * 24 * 60 * 60 * 1000));
+	const expires = "expires=" + currentDate.toUTCString();
+	document.cookie = `${cookieName}=${encodeURIComponent(cookieValue)};${expires};path=${path}; SameSite=Lax; Secure`;
 };
 
-// function setCookie(cookieName, cookieValue, expireDays = 30, path = "/") {
-// 	let currentDate = new Date();
-// 	currentDate.setTime(currentDate.getTime() + (expireDays * 24 * 60 * 60 * 1000));
-// 	const expires = "expires=" + currentDate.toUTCString();
-// 	document.cookie = `${cookieName}=${encodeURIComponent(cookieValue)};${expires};path=${path}; SameSite=Lax; Secure`;
-// }
-
-// function deleteCookie(cookieName, path = "/") {
-// 	setCookie(cookieName, "", -1, path);
-// }
-
-// For testing purposes only, set a test cookie
-// setCookie("mqtt", "unknown:user");
-// setCookie("mqtt", "admin:openwb");
+function deleteCookie(cookieName, path = "/") {
+	setCookie(cookieName, "", -1, path);
+}
 
 // Connect string, and specify the connection method used through protocol
 // ws not encrypted WebSocket connection
 // wss encrypted WebSocket connection
 const { protocol, host, port, path, ...options } = connection;
 const connectUrl = `${protocol}://${host}:${port}${path}`;
-const [user, pass] = getCookie("mqtt")?.split(":") || [null, null];
-if (!(user && pass)) {
-	console.debug("Anonymous mqtt connection (no cookie set)");
-}
-if (protocol == "wss" && user && pass) {
-	console.debug("Using mqtt credentials from cookie:", user, "/", pass);
-	options.username = user;
-	options.password = pass;
-	if (user === "admin" && pass === "openwb") {
-		console.warn("Using default mqtt credentials!");
-		addLog("Warnung: Es werden die Standard MQTT Anmeldedaten verwendet!", true);
-	}
-}
+addLog(`hostname: ${location.hostname}, port: ${port}`);
+addLog("try to read stored credentials");
+fetch("/openWB/runs/dynsec_helper/display.php")
+	.then(response => {
+		console.debug("ok?", response.ok, "status:", response.status);
+		if (response.ok) {
+			response.json()
+				.then((credentials) => {
+					setCookie("mqtt", `${credentials.username}:${credentials.password}`);
+					credentialsFetched = true;
+					addLog(`Using mqtt credentials from dynsec-storage: ${credentials.username} / ${credentials.password.charAt(0)}...`);
+					if (credentials.username === "admin" && credentials.password === "openwb") {
+						console.warn("Using default mqtt credentials!");
+						addLog("Warnung: Es werden die Standard MQTT Anmeldedaten verwendet!", true);
+					}
+				});
+		} else {
+			console.debug("no credentials for client found, using anonymous mqtt connection");
+			deleteCookie("mqtt");
+			addLog(`Keine Anmeldedaten gefunden. ${location.hostname}`, true);
+		}
+	});
 console.debug("connecting to broker:", connectUrl);
 timeOfLastMqttMessage = Date.now();
 client = mqtt.connect(connectUrl, options);
