@@ -14,6 +14,11 @@ from control.counter_all import CounterAll
 from control.ev.ev import Ev, EvData, Get
 
 
+@pytest.fixture()
+def mock_data() -> None:
+    data.data_init(Mock())
+
+
 @dataclass
 class PreferencedParams:
     name: str
@@ -96,17 +101,12 @@ preferenced_cases = [
 
 
 @pytest.mark.parametrize(
-    "required_current_1, loadmanagement_prios, expected_cp_indices",
+    "required_current_1, expected_cp_indices",
     [
-        pytest.param(6, [{"type": "vehicle", "id": 1}, {"type": "vehicle", "id": 2}],
-                     [1, 2], id="fits mode"),
-        pytest.param(0, [{"type": "vehicle", "id": 1}, {"type": "vehicle", "id": 2}],
-                     [2], id="cp1 should not charge"),
-        pytest.param(6, [{"type": "vehicle", "id": 2}, {"type": "vehicle", "id": 1}],
-                     [2, 1], id="cp2 is prioritized")
+        pytest.param(6, [1, 2], id="fits mode"),
+        pytest.param(0, [2], id="cp1 should not charge"),
     ])
 def test_get_chargepoints_by_mode(required_current_1: int,
-                                  loadmanagement_prios: List[Dict],
                                   expected_cp_indices,
                                   mock_cp1, mock_cp2):
     # setup
@@ -120,8 +120,6 @@ def test_get_chargepoints_by_mode(required_current_1: int,
         return cp
     data.data.cp_data = {"cp1": setup_cp(mock_cp1, required_current_1),
                          "cp2": setup_cp(mock_cp2, 6)}
-    data.data.counter_all_data = CounterAll()
-    data.data.counter_all_data.data.get.loadmanagement_prios = loadmanagement_prios
 
     # evaluation
     valid_chargepoints = filter_chargepoints.get_chargepoints_by_mode(
@@ -144,7 +142,7 @@ def test_get_chargepoints_by_mode(required_current_1: int,
 def test_get_chargepoints_by_mode_and_counter(chargepoints_of_counter: List[str],
                                               chargepoints_by_mode_indices: List[int],
                                               expected_cp_indices: List[int],
-                                              monkeypatch, mock_cp1, mock_cp2):
+                                              monkeypatch, mock_cp1, mock_cp2, mock_data):
     # setup
     cp_mapping = {1: mock_cp1, 2: mock_cp2}
     chargepoints_by_mode = [cp_mapping[i] for i in chargepoints_by_mode_indices]
@@ -157,7 +155,8 @@ def test_get_chargepoints_by_mode_and_counter(chargepoints_of_counter: List[str]
     data.data.counter_all_data = CounterAll()
 
     # evaluation
-    valid_chargepoints = filter_chargepoints.get_chargepoints_by_mode_and_counter_and_lm_prio(Mock(), "counter6")
+    valid_chargepoints = filter_chargepoints.get_chargepoints_by_mode_and_counter_and_lm_prio(Mock(), "counter6", (
+                                                                                              mock_cp1, mock_cp2))
 
     # assertion
     assert valid_chargepoints == expected_chargepoints

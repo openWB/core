@@ -180,8 +180,8 @@ cases_control_parameter = [
                            expected_current_cp3=13.333333333333334,
                            expected_current_cp4=8,
                            expected_current_cp5=8,
-                           expected_raw_power_left=1380,
-                           expected_raw_currents_left_counter0=[2]*3,
+                           expected_raw_power_left=1840,
+                           expected_raw_currents_left_counter0=[2.666666666666666]*3,
                            expected_raw_currents_left_counter6=[0]*3),
 ]
 
