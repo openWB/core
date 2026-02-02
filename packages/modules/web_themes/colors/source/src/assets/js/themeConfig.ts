@@ -28,7 +28,7 @@ export class Config {
 	private _preferWideBoxes = false
 	private _maxPower = 4000
 	private _fluidDisplay = false
-	private _showClock = 'no'
+	private _showClock = 'off'
 	private _showButtonBar = true
 	private _showCounters = false
 	private _showVehicles = false
@@ -53,11 +53,6 @@ export class Config {
 	get showRelativeArcs() {
 		return this._showRelativeArcs
 	}
-	/* set showRelativeArcs(setting: boolean) {
-		this._showRelativeArcs = setting
-		savePrefs()
-	}
-	 */
 	setShowRelativeArcs(setting: boolean) {
 		this._showRelativeArcs = setting
 	}
@@ -84,10 +79,6 @@ export class Config {
 	get displayMode() {
 		return this._displayMode
 	}
-	/* set displayMode(mode: string) {
-		this._displayMode = mode
-		switchTheme(mode)
-	} */
 	setDisplayMode(mode: string) {
 		this._displayMode = mode
 		switchTheme(mode)
@@ -101,31 +92,18 @@ export class Config {
 	get showGrid() {
 		return this._showGrid
 	}
-	/* set showGrid(setting: boolean) {
-		this._showGrid = setting
-		savePrefs()
-	} */
 	setShowGrid(setting: boolean) {
 		this._showGrid = setting
 	}
 	get decimalPlaces() {
 		return this._decimalPlaces
 	}
-	/* set decimalPlaces(setting: number) {
-		this._decimalPlaces = setting
-		savePrefs()
-	} */
 	setDecimalPlaces(setting: number) {
 		this._decimalPlaces = setting
 	}
 	get smartHomeColors() {
 		return this._smartHomeColors
 	}
-	/* set smartHomeColors(setting: string) {
-		this._smartHomeColors = setting
-		switchSmarthomeColors(setting)
-		savePrefs()
-	} */
 	setSmartHomeColors(setting: string) {
 		this._smartHomeColors = setting
 		switchSmarthomeColors(setting)
@@ -243,83 +221,47 @@ export class Config {
 	get showCounters() {
 		return this._showCounters
 	}
-	/* set showCounters(show: boolean) {
-		this._showCounters = show
-		savePrefs()
-	} */
 	setShowCounters(show: boolean) {
 		this._showCounters = show
 	}
 	get showVehicles() {
 		return this._showVehicles
 	}
-	/* set showVehicles(show: boolean) {
-		this._showVehicles = show
-		savePrefs()
-	} */
 	setShowVehicles(show: boolean) {
 		this._showVehicles = show
 	}
 	get showStandardVehicle() {
 		return this._showStandardVehicle
 	}
-	//set showStandardVehicle(show: boolean) {
-	//this._showStandardVehicle = show
-	//savePrefs()
-	//}
 	setShowStandardVehicle(show: boolean) {
 		this._showStandardVehicle = show
 	}
 	get showPrices() {
 		return this._showPrices
 	}
-	/* set showPrices(show: boolean) {
-		this._showPrices = show
-		savePrefs()
-	} */
 	setShowPrices(show: boolean) {
 		this._showPrices = show
 	}
 	get showInverters() {
 		return this._showInverters
 	}
-	/* set showInverters(show: boolean) {
-		this._showInverters = show
-		sourceGraphIsNotInitialized()
-		usageGraphIsNotInitialized()
-		savePrefs()
-	} */
 	setShowInverters(show: boolean) {
 		this._showInverters = show
 	}
 	get alternativeEnergy() {
 		return this._alternativeEnergy
 	}
-	/* set alternativeEnergy(show: boolean) {
-		this._alternativeEnergy = show
-		sourceGraphIsNotInitialized()
-		usageGraphIsNotInitialized()
-		savePrefs()
-	} */
 	setAlternativeEnergy(show: boolean) {
 		this._alternativeEnergy = show
 	}
 	get lowerPriceBound() {
 		return this._lowerPriceBound
 	}
-	set lowerPriceBound(val: number) {
-		this._lowerPriceBound = val
-		savePrefs()
-	}
 	setLowerPriceBound(val: number) {
 		this._lowerPriceBound = val
 	}
 	get upperPriceBound() {
 		return this._upperPriceBound
-	}
-	set upperPriceBound(val: number) {
-		this._upperPriceBound = val
-		savePrefs()
 	}
 	setUpperPriceBound(val: number) {
 		this._upperPriceBound = val

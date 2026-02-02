@@ -120,7 +120,10 @@
 				role="tabpanel"
 				aria-labelledby="eco-tab"
 			>
-				<ConfigEco v-if="chargeTemplate != undefined" :chargepoint="cp as ChargePoint" />
+				<ConfigEco
+					v-if="chargeTemplate != undefined"
+					:chargepoint="cp as ChargePoint"
+				/>
 			</div>
 			<div
 				:id="'timedSettings' + cpid"
@@ -128,7 +131,10 @@
 				role="tabpanel"
 				aria-labelledby="scheduled-tab"
 			>
-				<ConfigTimed v-if="chargeTemplate != undefined" :charge-point="cp as ChargePoint" />
+				<ConfigTimed
+					v-if="chargeTemplate != undefined"
+					:charge-point="cp as ChargePoint"
+				/>
 			</div>
 		</div>
 	</div>

@@ -112,12 +112,17 @@ const newTime = ref(etData.maxDate() ?? new Date())
 const chargeDuration = computed(() => {
 	if (evTemplate.value != null) {
 		const batteryCapacity = evTemplate.value.battery_capacity ?? 0 //in Wh
+		const charge_efficiency = evTemplate.value.efficiency ?? 90
 		const phases = Math.min(
 			evTemplate.value.max_phases,
 			chargeTemplate.value.chargemode.eco_charging.phases_to_use,
 		)
 		const chargingPower =
-			evTemplate.value.max_current_multi_phases * phases * 230
+			((evTemplate.value.max_current_multi_phases *
+				phases *
+				charge_efficiency) /
+				100) *
+			230
 		const neededCapacity =
 			(batteryCapacity * (targetSoc.value - currentSoc.value)) / 100
 		return (neededCapacity / chargingPower) * 60 //in minutes

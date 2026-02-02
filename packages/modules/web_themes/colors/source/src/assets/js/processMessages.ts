@@ -215,6 +215,8 @@ function processThemeConfigMessages(topic: string, message: string) {
 	globalConfig.setShowVehicles(themeConfig.showVehicles)
 	globalConfig.setShowStandardVehicle(themeConfig.showStandardVehicle)
 	globalConfig.setShowPrices(themeConfig.showPrices)
+	globalConfig.setLowerPriceBound(themeConfig.lowerPriceBound)
+	globalConfig.setUpperPriceBound(themeConfig.upperPriceBound)
 	globalConfig.setShowInverters(themeConfig.showInverters)
 	globalConfig.setAlternativeEnergy(themeConfig.alternativeEnergy)
 }
