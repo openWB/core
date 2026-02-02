@@ -43,10 +43,7 @@ export default {
       return this.mqttStore.topics["openWB/system/security/user_management_active"] !== false;
     },
     accessAllowed() {
-      if (this.mqttStore.topics["openWB/system/security/access_allowed"] === undefined) {
-        return false;
-      }
-      return this.mqttStore.topics["openWB/system/security/access_allowed"] === true;
+      return this.mqttStore.getAccessAllowed;
     },
     anonymousAccessAllowed() {
       return this.accessAllowed && this.loggedInUser === null;
@@ -112,120 +109,122 @@ export default {
     />
   </i-button>
   <!-- modals -->
-  <i-modal
-    v-model="showLoginModal"
-    class="modal-vehicle-select"
-    size="lg"
-  >
-    <template #header>
-      <FontAwesomeIcon
-        class="text-light clickable px-2"
-        :icon="['fas', 'arrow-right-to-bracket']"
-        size="lg"
-      />
-      Anmelden
-    </template>
-    <template #footer>
-      <i-row around>
-        <i-button
-          :disabled="!enableLogin"
-          :outline="!enableLogin"
-          color="success"
-          @click="handleLogin(true)"
-        >
-          Anmelden
-        </i-button>
-        <i-button
-          color="secondary"
-          @click="handleLogin(false)"
-        >
-          Abbrechen
-        </i-button>
-      </i-row>
-    </template>
-    <i-form>
-      <i-form-group>
-        <i-row class="_margin-bottom:1">
-          <i-column>
-            <i-input
-              v-model="loginUser"
-              size="lg"
-              placeholder="Benutzer"
-            >
-              <template #prepend>
-                <span>
-                  <FontAwesomeIcon
-                    :icon="['fas', 'circle-user']"
-                    size="lg"
-                  />
-                </span>
-              </template>
-            </i-input>
-          </i-column>
+  <Teleport to="body">
+    <i-modal
+      v-model="showLoginModal"
+      class="modal-vehicle-select"
+      size="lg"
+    >
+      <template #header>
+        <FontAwesomeIcon
+          class="text-light clickable px-2"
+          :icon="['fas', 'arrow-right-to-bracket']"
+          size="lg"
+        />
+        Anmelden
+      </template>
+      <template #footer>
+        <i-row around>
+          <i-button
+            :disabled="!enableLogin"
+            :outline="!enableLogin"
+            color="success"
+            @click="handleLogin(true)"
+          >
+            Anmelden
+          </i-button>
+          <i-button
+            color="secondary"
+            @click="handleLogin(false)"
+          >
+            Abbrechen
+          </i-button>
         </i-row>
-        <i-row>
-          <i-column>
-            <i-input
-              v-model="loginPassword"
-              size="lg"
-              :type="showPassword ? 'text' : 'password'"
-              placeholder="Passwort"
-            >
-              <template #prepend>
-                <span>
+      </template>
+      <i-form>
+        <i-form-group>
+          <i-row class="_margin-bottom:1">
+            <i-column>
+              <i-input
+                v-model="loginUser"
+                size="lg"
+                placeholder="Benutzer"
+              >
+                <template #prepend>
+                  <span>
+                    <FontAwesomeIcon
+                      :icon="['fas', 'circle-user']"
+                      size="lg"
+                    />
+                  </span>
+                </template>
+              </i-input>
+            </i-column>
+          </i-row>
+          <i-row>
+            <i-column>
+              <i-input
+                v-model="loginPassword"
+                size="lg"
+                :type="showPassword ? 'text' : 'password'"
+                placeholder="Passwort"
+              >
+                <template #prepend>
+                  <span>
+                    <FontAwesomeIcon
+                      :icon="['fas', 'lock']"
+                      size="lg"
+                    />
+                  </span>
+                </template>
+                <template #suffix>
                   <FontAwesomeIcon
-                    :icon="['fas', 'lock']"
+                    :icon="['fas', showPassword ? 'eye' : 'eye-slash']"
                     size="lg"
+                    @click="showPassword = !showPassword"
                   />
-                </span>
-              </template>
-              <template #suffix>
-                <FontAwesomeIcon
-                  :icon="['fas', showPassword ? 'eye' : 'eye-slash']"
-                  size="lg"
-                  @click="showPassword = !showPassword"
-                />
-              </template>
-            </i-input>
-          </i-column>
+                </template>
+              </i-input>
+            </i-column>
+          </i-row>
+        </i-form-group>
+      </i-form>
+    </i-modal>
+    <i-modal
+      v-model="showLogoutModal"
+      class="modal-vehicle-select"
+      size="lg"
+    >
+      <template #header>
+        <FontAwesomeIcon
+          class="text-light clickable px-2"
+          :icon="['fas', 'arrow-right-from-bracket']"
+          size="lg"
+        />
+        Abmelden
+      </template>
+      <template #footer>
+        <i-row around>
+          <i-button
+            color="success"
+            @click="handleLogout(true)"
+          >
+            Abmelden
+          </i-button>
+          <i-button
+            color="secondary"
+            @click="handleLogout(false)"
+          >
+            Abbrechen
+          </i-button>
         </i-row>
-      </i-form-group>
-    </i-form>
-  </i-modal>
-  <i-modal
-    v-model="showLogoutModal"
-    class="modal-vehicle-select"
-    size="lg"
-  >
-    <template #header>
-      <FontAwesomeIcon
-        class="text-light clickable px-2"
-        :icon="['fas', 'arrow-right-from-bracket']"
-        size="lg"
-      />
-      Abmelden
-    </template>
-    <template #footer>
-      <i-row around>
-        <i-button
-          color="success"
-          @click="handleLogout(true)"
-        >
-          Abmelden
-        </i-button>
-        <i-button
-          color="secondary"
-          @click="handleLogout(false)"
-        >
-          Abbrechen
-        </i-button>
-      </i-row>
-    </template>
-    <!-- logout form content goes here -->
-    <p>
-      Willst Du Dich wirklich abmelden?
-    </p>
-  </i-modal>
+      </template>
+      <!-- logout form content goes here -->
+      <p>
+        Willst Du Dich wirklich abmelden?
+      </p>
+    </i-modal>
+  </Teleport>
 </template>
 
 <style scoped></style>
