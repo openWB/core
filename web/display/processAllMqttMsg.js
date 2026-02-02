@@ -59,13 +59,18 @@ function setIframeSource() {
 			// load primary display (from primary or secondary openWB)
 			host = location.host;
 			const theme = data["openWB/optional/int_display/theme"].type;
+			const searchParams = new URLSearchParams(location.search);
 
 			if (data["openWB/optional/int_display/only_local_charge_points"]) {
-				const searchParams = new URLSearchParams(location.search);
 				if (searchParams.has("data")) {
 					query.append("data", searchParams.get("data"));
 				}
 			}
+			if (credentialsFetched) {
+				addLog("hiding login/-out in query string");
+				query.append("hide_login", "1");
+			}
+
 			destination = `${location.protocol}//${host}/openWB/web/display/themes/${theme}/?${query.toString()}`;
 
 			var request = new XMLHttpRequest();

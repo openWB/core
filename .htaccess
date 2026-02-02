@@ -7,4 +7,5 @@
 RedirectMatch 404 \.conf$
 RedirectMatch 404 \.ini$
 RedirectMatch 404 \.py$
+RedirectMatch 404 \.sh$
 ErrorDocument 404 /openWB/web/error.html
