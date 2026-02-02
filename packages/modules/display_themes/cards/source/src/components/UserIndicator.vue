@@ -77,6 +77,9 @@ export default {
       this.showLogoutModal = false;
       if (doLogout) {
         this.$cookies.remove("mqtt");
+        // reload current location without # part
+        const currentLocation = window.location.href.split("#")[0];
+        window.history.replaceState({}, document.title, currentLocation);
         window.location.reload();
       }
     },
