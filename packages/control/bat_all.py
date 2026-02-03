@@ -65,6 +65,12 @@ class ManualMode(Enum):
     MANUAL_DISCHARGE = "manual_discharge"  # in DE nicht erlaubt
 
 
+class CurrentState(Enum):
+    STARTUP = "startup"
+    ACTIVE = "active"
+    IDLE = "idle"
+
+
 @dataclass
 class Config:
     configured: bool = field(default=False, metadata={"topic": "config/configured"})
@@ -122,6 +128,8 @@ class BatAllData:
     config: Config = field(default_factory=config_factory)
     get: Get = field(default_factory=get_factory)
     set: Set = field(default_factory=set_factory)
+    current_state: CurrentState = CurrentState.STARTUP
+    set_limit: bool = False
 
 
 class BatAll:
@@ -543,6 +551,20 @@ class BatAll:
         elif charge_mode == BatChargeMode.BAT_FORCE_DISCHARGE:
             # das ist in Deutschland (noch) nicht erlaubt
             pass
+
+        if ((self.data.config.bat_control_permitted is False or
+                self.data.config.bat_control_activated is False)
+                and self.data.current_state == CurrentState.STARTUP):
+            self.data.set_limit = False
+        elif self.data.current_state == CurrentState.IDLE and charge_mode == BatChargeMode.BAT_SELF_REGULATION:
+            self.data.set_limit = False
+        else:
+            self.data.set_limit = True
+
+        if charge_mode == BatChargeMode.BAT_SELF_REGULATION:
+            self.data.current_state = CurrentState.IDLE
+        else:
+            self.data.current_state = CurrentState.ACTIVE
         self._set_bat_power_active_control(self.data.set.power_limit)
 
 
