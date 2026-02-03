@@ -42,6 +42,7 @@ class Bidi:
                         missing_currents[index] = cp.check_min_max_current(missing_currents[index],
                                                                            cp.data.get.phases_in_use)
                 grid_counter.update_surplus_values_left(missing_currents, voltages_mean(cp.data.get.voltages))
+                grid_counter.update_values_left(missing_currents, voltages_mean(cp.data.get.voltages))
                 cp.data.set.current = missing_currents[0]
                 log.info(f"LP{cp.num}: Stromstärke {missing_currents}A")
                 preferenced_cps.pop(0)

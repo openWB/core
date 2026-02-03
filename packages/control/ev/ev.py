@@ -39,7 +39,8 @@ def get_vehicle_default() -> dict:
             "model": None,
         },
         "tag_id": [],
-        "get/soc": 0
+        "get/soc": 0,
+        "full_power": False,
     }
 
 
