@@ -551,7 +551,9 @@ class BatAll:
         elif charge_mode == BatChargeMode.BAT_FORCE_DISCHARGE:
             # das ist in Deutschland (noch) nicht erlaubt
             pass
-
+        # keine Speichersteuerung beim Start
+        # Eigenregelung wird nur einmalig angestossen
+        # numerisches power_limit wird immer übergeben
         if ((self.data.config.bat_control_permitted is False or
                 self.data.config.bat_control_activated is False)
                 and self.data.current_state == CurrentState.STARTUP):
