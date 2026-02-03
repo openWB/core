@@ -8,6 +8,7 @@ var topicsToSubscribe = {
 	"openWB/system/version": false,
 	"openWB/system/boot_done": false,
 	"openWB/system/update_in_progress": false,
+	"openWB/system/security/user_management_active": false,
 	"openWB/general/extern": false,
 }
 var primaryTopicsToSubscribe = {
@@ -26,7 +27,6 @@ var secondaryTopicsToSubscribe = {
 
 var data = {};
 var retries = 0;
-var credentialsFetched = false;
 
 // Connect Options
 var connection = {
@@ -60,28 +60,6 @@ function deleteCookie(cookieName, path = "/") {
 // wss encrypted WebSocket connection
 const { protocol, host, port, path, ...options } = connection;
 const connectUrl = `${protocol}://${host}:${port}${path}`;
-addLog(`hostname: ${location.hostname}, port: ${port}`);
-addLog("try to read stored credentials");
-fetch("/openWB/runs/dynsec_helper/display.php")
-	.then(response => {
-		console.debug("ok?", response.ok, "status:", response.status);
-		if (response.ok) {
-			response.json()
-				.then((credentials) => {
-					setCookie("mqtt", `${credentials.username}:${credentials.password}`);
-					credentialsFetched = true;
-					addLog(`Using mqtt credentials from dynsec-storage: ${credentials.username} / ${credentials.password.charAt(0)}...`);
-					if (credentials.username === "admin" && credentials.password === "openwb") {
-						console.warn("Using default mqtt credentials!");
-						addLog("Warnung: Es werden die Standard MQTT Anmeldedaten verwendet!", true);
-					}
-				});
-		} else {
-			console.debug("no credentials for client found, using anonymous mqtt connection");
-			deleteCookie("mqtt");
-			addLog(`Keine Anmeldedaten gefunden. ${location.hostname}`, true);
-		}
-	});
 console.debug("connecting to broker:", connectUrl);
 timeOfLastMqttMessage = Date.now();
 client = mqtt.connect(connectUrl, options);
@@ -103,10 +81,7 @@ client.on("connect", (ack) => {
 
 client.on("error", (error) => {
 	console.error("Connection failed", error);
-	addLog("MQTT Verbindung fehlgeschlagen.");
-	addLog("Lösche evtl. vorhandene Anmeldedaten und lade die Seite neu...");
-	deleteCookie("mqtt");
-	window.location.reload();
+	addLog("MQTT Verbindung fehlgeschlagen.", true);
 });
 
 // Gets called whenever you receive a message
