@@ -2749,15 +2749,15 @@ class UpdateConfig:
                        (Chargemode.STOP.value, False),)
 
         def upgrade2(topic: str, payload) -> None:
-            if re.search("openWB/ev/[0-9]+/charge_template", topic) is not None:
+            if re.search("openWB/vehicle/[0-9]+/charge_template", topic) is not None:
                 charge_template_id = decode_payload(payload)
                 charge_template = decode_payload(
                     self.all_received_topics[f"openWB/vehicle/template/charge_template/{charge_template_id}"])
-                if charge_template["chargemode"]["selected"] == chargemoe and charge_template["prio"] == prio:
-                    loadmanagement_prios.append({"type": "ev", "id": int(get_index(topic))})
+                if charge_template["chargemode"]["selected"] == chargemode and charge_template["prio"] == prio:
+                    loadmanagement_prios.append({"type": "vehicle", "id": int(get_index(topic))})
 
         loadmanagement_prios = []
-        for chargemoe, prio in CHARGEMODES:
+        for chargemode, prio in CHARGEMODES:
             self._loop_all_received_topics(upgrade2)
         self.__update_topic("openWB/counter/get/loadmanagement_prios", loadmanagement_prios)
         self._append_datastore_version(108)
