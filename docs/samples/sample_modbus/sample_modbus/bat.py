@@ -76,7 +76,7 @@ class SampleBat(AbstractBat):
         # Wenn der Speicher die Steuerung der Ladeleistung unterstützt, muss bei Übergabe einer Zahl auf aktive
         # Speichersteurung umgeschaltet werden, sodass der Speicher mit der übergebenen Leistung lädt/entlädt. Wird
         # None übergeben, muss der Speicher die Null-Punkt-Ausregelung selbst übernehmen.
-        self.client.write_registers(reg, power_limit)
+        self.client.write_register(reg, power_limit)
         # Wenn der Speicher keine Steuerung der Ladeleistung unterstützt
         pass
 
