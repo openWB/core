@@ -21,11 +21,11 @@ log = logging.getLogger(__name__)
 
 
 class ModbusDataType(Enum):
-    UINT_8 = 8, "add_8bit_uint", "decode_8bit_uint"
+    UINT_8 = 8, "add_16bit_uint", "decode_8bit_uint"
     UINT_16 = 16, "add_16bit_uint", "decode_16bit_uint"
     UINT_32 = 32, "add_32bit_uint", "decode_32bit_uint"
     UINT_64 = 64, "add_64bit_uint", "decode_64bit_uint"
-    INT_8 = 8, "add_8bit_int", "decode_8bit_int"
+    INT_8 = 8, "add_16bit_int", "decode_8bit_int"
     INT_16 = 16, "add_16bit_int", "decode_16bit_int"
     INT_32 = 32, "add_32bit_int", "decode_32bit_int"
     INT_64 = 64, "add_64bit_int", "decode_64bit_int"
@@ -193,7 +193,12 @@ class ModbusClient:
                               byteorder: Endian = Endian.Big,
                               wordorder: Endian = Endian.Big) -> list:
         builder = BinaryPayloadBuilder(byteorder=byteorder, wordorder=wordorder)
-        if data_type in [ModbusDataType.FLOAT_16, ModbusDataType.FLOAT_32, ModbusDataType.FLOAT_64]:
+        if data_type == ModbusDataType.FLOAT_16:
+            # FLOAT_16 (IEEE 754 Half-Precision) manuelle Konvertierung
+            packed = struct.pack(">e", float(value))
+            uint16_value = struct.unpack(">H", packed)[0]
+            builder.add_16bit_uint(uint16_value)
+        elif data_type in [ModbusDataType.FLOAT_32, ModbusDataType.FLOAT_64]:
             getattr(builder, data_type.encoding_method)(float(value))
         else:
             getattr(builder, data_type.encoding_method)(int(value))
