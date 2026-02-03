@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 110
+    DATASTORE_VERSION = 111
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -2820,3 +2820,20 @@ class UpdateConfig:
                     return {topic: config}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(110)
+
+    def upgrade_datastore_111(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            # add "userManagementSupported" flag if display theme "cards" is selected
+            if re.search("openWB/optional/int_display/theme", topic) is not None:
+                configuration_payload = decode_payload(payload)
+                configuration_payload.update(
+                    {"userManagementSupported": True if configuration_payload.get("type") == "cards" else False})
+                return {topic: configuration_payload}
+            # add "userManagementSupported" flag if web theme "koala" is selected
+            if re.search("openWB/general/web_theme", topic) is not None:
+                configuration_payload = decode_payload(payload)
+                configuration_payload.update(
+                    {"userManagementSupported": True if configuration_payload.get("type") == "koala" else False})
+                return {topic: configuration_payload}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(111)
