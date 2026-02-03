@@ -73,7 +73,7 @@ Alternativ können die Zählerwerte an eine Hausautomationsserver weitergegeben,
 
 ## Virtuelle Zähler
 
-Virtuelle Zähler sind, wie der Name schon sagt, nicht physikalisch vorhanden. Sie dienen in der Struktur des [Lastmanagement](https://github.com/openWB/core/wiki/Lastmanagement-und-kaskadierte-Zähler) dazu, Ströme und/oder Leistung zu begrenzen oder Werte aus untergeordneten einzelnen Zählern zu akkumulieren.
+Virtuelle Zähler sind, wie der Name schon sagt, nicht physikalisch vorhanden. Diese dienen in der Struktur des [Lastmanagement](https://github.com/openWB/core/wiki/Lastmanagement-und-kaskadierte-Zähler) dazu, Ströme und/oder Leistung zu begrenzen oder Werte aus untergeordneten einzelnen Zählern zu akkumulieren.
 
 ## Timing
 

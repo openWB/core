@@ -73,7 +73,7 @@ class ChargepointModule(AbstractChargepoint):
 
     def set_current(self, current: float) -> None:
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
-            self._client.evse_client.set_current(current)
+            self._client.evse_client.set_current(current, phases_in_use=self.old_phases_in_use)
 
     def get_values(self, phase_switch_cp_active: bool, last_tag: str) -> ChargepointState:
         def store_state(chargepoint_state: ChargepointState) -> None:

@@ -62,7 +62,7 @@ class UpdateSoc:
                             log.debug(
                                 f"EV{ev.num}: Nach dreimaliger erfolgloser SoC-Abfrage wird ein SoC von 0% angenommen.")
                             Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc", 0)
-                            Pub().pub(f"openWB/set/vehicle/{ev.num}/get/range", 0)
+                            Pub().pub(f"openWB/set/vehicle/{ev.num}/get/range", None)
                         # Es wird ein Zeitstempel gesetzt, unabhängig ob die Abfrage erfolgreich war, da einige
                         # Hersteller bei zu häufigen Abfragen Accounts sperren.
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc_request_timestamp",

@@ -125,9 +125,14 @@ class SimpleAPI
                     }
 
                     // Einzelner Parameter: Raw-Output verwenden
-                    echo $this->formatRawOutput($result);
+                    echo $this->formatRawOutput($result, $paramName);
                 } else {
-                    echo json_encode($result);
+                    // Für get_lastlivevaluesjson: JSON direkt ausgeben auch ohne raw=true
+                    if (count($readParams) === 1 && array_keys($readParams)[0] === 'get_lastlivevaluesjson') {
+                        echo $this->formatRawOutput($result, 'get_lastlivevaluesjson');
+                    } else {
+                        echo json_encode($result);
+                    }
                 }
                 return;
             }
@@ -276,7 +281,9 @@ class SimpleAPI
             'get_pv_monthly_exported',
             'get_pv_yearly_exported',
             'get_pv_fault_str',
-            'get_pv_fault_state'
+            'get_pv_fault_state',
+            // System - Werte
+            'get_lastlivevaluesjson'
         ];
 
         foreach ($readableKeys as $key) {
@@ -479,15 +486,28 @@ class SimpleAPI
     /**
      * Raw-Ausgabe formatieren
      */
-    private function formatRawOutput($data)
+    private function formatRawOutput($data, $paramName = null)
     {
         if (is_array($data)) {
             $firstKey = array_keys($data)[0];
             $firstValue = $data[$firstKey];
 
+            // Für get_lastlivevaluesjson: JSON direkt zurückgeben
+            if ($paramName === 'get_lastlivevaluesjson' && is_string($firstValue)) {
+                return $firstValue;
+            }
+
+            // Für JSON-Strings: direkt den String-Wert zurückgeben
+            if (is_string($firstValue)) {
+                return $firstValue;
+            }
+
             if (is_array($firstValue) && count($firstValue) === 1) {
                 return array_values($firstValue)[0];
             }
+            
+            // Für andere Array-Strukturen: ersten Wert zurückgeben
+            return $firstValue;
         }
 
         return $data;

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import logging
+import struct
 from typing import TypedDict, Any, Optional
 from pymodbus.constants import Endian
 
@@ -60,27 +61,31 @@ class KostalPlenticoreBat(AbstractBat):
     # Timeout kann im Kostal UI geändert werden. Standardwert 30s
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
-        unit = self.device_config.configuration.modbus_id
-        log.debug(f'last_mode: {self.last_mode}')
+        unit = self.modbus_id
 
         if power_limit is None:
-            # Wert wird nur einmal gesetzt damit die Eigenregelung nach Timeout greift
+            # Keine Registeränderung damit nach Timeout eigenständig zurückgesetzt wird
             log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
-            if self.last_mode is not None:
-                self.__tcp_client.write_registers(1034, [0], data_type=ModbusDataType.FLOAT_32, unit=unit)
-                self.last_mode = None
         elif power_limit == 0:
             # wiederholt auf Stop setzen damit sich Register nicht zurücksetzt
             log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt und nicht entladen")
-            self.__tcp_client.write_registers(1034, [0], data_type=ModbusDataType.FLOAT_32, unit=unit)
-            self.last_mode = 'stop'
+            packed = struct.pack('>f', 0.0)
+            if self.endianess == Endian.Little:
+                registers = [int.from_bytes(packed[2:4], 'little'), int.from_bytes(packed[0:2], 'little')]
+            else:
+                registers = [int.from_bytes(packed[0:2], 'big'), int.from_bytes(packed[2:4], 'big')]
+            self.client.write_registers(1034, registers, data_type=ModbusDataType.FLOAT_32, unit=unit)
         elif power_limit < 0:
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W entladen für den Hausverbrauch")
             # Die maximale Entladeleistung begrenzen auf 7000W
-            power_value = int(min(abs(power_limit), 7000)) * -1
+            power_value = float(min(abs(power_limit), 7000)) * -1
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_value} W entladen für den Hausverbrauch")
-            self.__tcp_client.write_registers(1034, [power_value], data_type=ModbusDataType.FLOAT_32, unit=unit)
-            self.last_mode = 'discharge'
+            packed = struct.pack('>f', power_value)
+            if self.endianess == Endian.Little:
+                registers = [int.from_bytes(packed[2:4], 'little'), int.from_bytes(packed[0:2], 'little')]
+            else:
+                registers = [int.from_bytes(packed[0:2], 'big'), int.from_bytes(packed[2:4], 'big')]
+            self.client.write_registers(1034, registers, data_type=ModbusDataType.FLOAT_32, unit=unit)
 
     def power_limit_controllable(self) -> bool:
         return True

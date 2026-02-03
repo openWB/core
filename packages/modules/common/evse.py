@@ -109,8 +109,13 @@ class Evse:
         else:
             return
 
-    def set_current(self, current: int) -> None:
+    def set_current(self, current: int, phases_in_use: Optional[int] = None) -> None:
         time.sleep(0.1)
         formatted_current = round(current*100) if self._precise_current else round(current)
+        if self.max_current == 20 and phases_in_use is not None and phases_in_use != 0:
+            # Bei 20A EVSE und bekannter Phasenzahl auf 16A begrenzen, sonst erstmal Ladung mit Minimalstrom starten,
+            # um Phasenzahl zu ermitteln
+            if formatted_current > 16 and phases_in_use > 1:
+                formatted_current = 16
         if self.evse_current != formatted_current:
             self.client.write_registers(1000, formatted_current, unit=self.id)

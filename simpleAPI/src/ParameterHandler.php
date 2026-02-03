@@ -200,6 +200,9 @@ class ParameterHandler
             case 'get_pv_fault_state':
                 return $this->getPvFaultState($id);
 
+            case 'get_lastlivevaluesjson':
+                return $this->getLastLiveValuesJson();
+
             default:
                 return null;
         }
@@ -324,7 +327,8 @@ class ParameterHandler
             $instantChargingSoc = $template['chargemode']['instant_charging']['limit']['soc'] ?? 0;
             
             // ECO Charging max_price extrahieren
-            $maxPriceEco = isset($template['chargemode']['eco_charging']['max_price']) ? number_format((float)$template['chargemode']['eco_charging']['max_price'], 4, '.', '') : '0.0000';
+            $maxPriceEco = isset($template['chargemode']['eco_charging']['max_price']) ? number_format((float)$template['chargemode']['eco_charging']['max_price'], 6, '.', '') : '0.0000';
+            $maxPriceEco = $maxPriceEco * 100000; 
             
             // SoC und Range aus connected_vehicle extrahieren
             $connectedVehicleSocTopic = "openWB/chargepoint/{$id}/get/connected_vehicle/soc";
@@ -560,14 +564,13 @@ class ParameterHandler
      */
     private function getChargepointPower($id)
     {
-        $topic = "openWB/chargepoint/{$id}/get/power";
-        $power = $this->getNumericValue($topic);
-
-        return [
-            "chargepoint_{$id}" => [
-                'power' => $power
-            ]
-        ];
+        try {
+            $topic = "openWB/chargepoint/{$id}/get/power";
+            $value = $this->mqttClient->getValue($topic);
+            return ["chargepoint_{$id}" => ['power' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["chargepoint_{$id}" => ['power' => 0]];
+        }
     }
 
     /**
@@ -1528,6 +1531,633 @@ class ParameterHandler
             return ['success' => false, 'message' => 'Failed to set bat mode'];
         } catch (Exception $e) {
             return ['success' => false, 'message' => 'Error setting bat mode: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Lese openWB/system/lastlivevaluesJson Topic 1:1 aus
+     */
+    private function getLastLiveValuesJson()
+    {
+        $topic = "openWB/graph/lastlivevaluesJson";
+        $jsonValue = $this->mqttClient->getValue($topic);
+        
+        if ($jsonValue === null) {
+            return [
+                'get_lastlivevaluesjson' => null
+            ];
+        }
+        
+        // JSON-String 1:1 zurückgeben
+        return [
+            'get_lastlivevaluesjson' => $jsonValue
+        ];
+    }
+
+    /**
+     * Counter Power
+     */
+    private function getCounterPower($id)
+    {
+        try {
+            $topic = "openWB/counter/{$id}/get/power";
+            $value = $this->mqttClient->getValue($topic);
+            return ["counter_{$id}" => ['power' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["counter_{$id}" => ['power' => 0]];
+        }
+    }
+
+    /**
+     * Counter Powers
+     */
+    private function getCounterPowers($id)
+    {
+        try {
+            $topic = "openWB/counter/{$id}/get/powers";
+            $value = $this->mqttClient->getValue($topic);
+            $powers = json_decode($value ?? '[]', true) ?: [0, 0, 0];
+            
+            return [
+                "counter_{$id}" => [
+                    'powers' => [
+                        floatval($powers[0] ?? 0),
+                        floatval($powers[1] ?? 0),
+                        floatval($powers[2] ?? 0)
+                    ]
+                ]
+            ];
+        } catch (Exception $e) {
+            return [
+                "counter_{$id}" => [
+                    'powers' => [0, 0, 0]
+                ]
+            ];
+        }
+    }
+
+    /**
+     * Counter Voltage P1
+     */
+    private function getCounterVoltageP1($id)
+    {
+        try {
+            $topic = "openWB/counter/{$id}/get/voltages";
+            $value = $this->mqttClient->getValue($topic);
+            $voltages = json_decode($value ?? '[]', true) ?: [0, 0, 0];
+            return ["counter_{$id}" => ['voltage_p1' => floatval($voltages[0] ?? 0)]];
+        } catch (Exception $e) {
+            return ["counter_{$id}" => ['voltage_p1' => 0]];
+        }
+    }
+
+    /**
+     * Counter Voltage P2
+     */
+    private function getCounterVoltageP2($id)
+    {
+        try {
+            $topic = "openWB/counter/{$id}/get/voltages";
+            $value = $this->mqttClient->getValue($topic);
+            $voltages = json_decode($value ?? '[]', true) ?: [0, 0, 0];
+            return ["counter_{$id}" => ['voltage_p2' => floatval($voltages[1] ?? 0)]];
+        } catch (Exception $e) {
+            return ["counter_{$id}" => ['voltage_p2' => 0]];
+        }
+    }
+
+    /**
+     * Counter Voltage P3
+     */
+    private function getCounterVoltageP3($id)
+    {
+        try {
+            $topic = "openWB/counter/{$id}/get/voltages";
+            $value = $this->mqttClient->getValue($topic);
+            $voltages = json_decode($value ?? '[]', true) ?: [0, 0, 0];
+            return ["counter_{$id}" => ['voltage_p3' => floatval($voltages[2] ?? 0)]];
+        } catch (Exception $e) {
+            return ["counter_{$id}" => ['voltage_p3' => 0]];
+        }
+    }
+
+    /**
+     * Counter Voltages
+     */
+    private function getCounterVoltages($id)
+    {
+        try {
+            $topic = "openWB/counter/{$id}/get/voltages";
+            $value = $this->mqttClient->getValue($topic);
+            $voltages = json_decode($value ?? '[]', true) ?: [0, 0, 0];
+            
+            return [
+                "counter_{$id}" => [
+                    'voltages' => [
+                        floatval($voltages[0] ?? 0),
+                        floatval($voltages[1] ?? 0),
+                        floatval($voltages[2] ?? 0)
+                    ]
+                ]
+            ];
+        } catch (Exception $e) {
+            return [
+                "counter_{$id}" => [
+                    'voltages' => [0, 0, 0]
+                ]
+            ];
+        }
+    }
+
+    /**
+     * Counter Current P1
+     */
+    private function getCounterCurrentP1($id)
+    {
+        try {
+            $topic = "openWB/counter/{$id}/get/currents";
+            $value = $this->mqttClient->getValue($topic);
+            $currents = json_decode($value ?? '[]', true) ?: [0, 0, 0];
+            return ["counter_{$id}" => ['current_p1' => floatval($currents[0] ?? 0)]];
+        } catch (Exception $e) {
+            return ["counter_{$id}" => ['current_p1' => 0]];
+        }
+    }
+
+    /**
+     * Counter Current P2
+     */
+    private function getCounterCurrentP2($id)
+    {
+        try {
+            $topic = "openWB/counter/{$id}/get/currents";
+            $value = $this->mqttClient->getValue($topic);
+            $currents = json_decode($value ?? '[]', true) ?: [0, 0, 0];
+            return ["counter_{$id}" => ['current_p2' => floatval($currents[1] ?? 0)]];
+        } catch (Exception $e) {
+            return ["counter_{$id}" => ['current_p2' => 0]];
+        }
+    }
+
+    /**
+     * Counter Current P3
+     */
+    private function getCounterCurrentP3($id)
+    {
+        try {
+            $topic = "openWB/counter/{$id}/get/currents";
+            $value = $this->mqttClient->getValue($topic);
+            $currents = json_decode($value ?? '[]', true) ?: [0, 0, 0];
+            return ["counter_{$id}" => ['current_p3' => floatval($currents[2] ?? 0)]];
+        } catch (Exception $e) {
+            return ["counter_{$id}" => ['current_p3' => 0]];
+        }
+    }
+
+    /**
+     * Counter Currents
+     */
+    private function getCounterCurrents($id)
+    {
+        try {
+            $topic = "openWB/counter/{$id}/get/currents";
+            $value = $this->mqttClient->getValue($topic);
+            $currents = json_decode($value ?? '[]', true) ?: [0, 0, 0];
+            
+            return [
+                "counter_{$id}" => [
+                    'currents' => [
+                        floatval($currents[0] ?? 0),
+                        floatval($currents[1] ?? 0),
+                        floatval($currents[2] ?? 0)
+                    ]
+                ]
+            ];
+        } catch (Exception $e) {
+            return [
+                "counter_{$id}" => [
+                    'currents' => [0, 0, 0]
+                ]
+            ];
+        }
+    }
+
+    /**
+     * Counter Power Factors
+     */
+    private function getCounterPowerFactors($id)
+    {
+        try {
+            $topic = "openWB/counter/{$id}/get/power_factors";
+            $value = $this->mqttClient->getValue($topic);
+            $powerFactors = json_decode($value ?? '[]', true) ?: [0, 0, 0];
+            
+            return [
+                "counter_{$id}" => [
+                    'power_factors' => [
+                        floatval($powerFactors[0] ?? 0),
+                        floatval($powerFactors[1] ?? 0),
+                        floatval($powerFactors[2] ?? 0)
+                    ]
+                ]
+            ];
+        } catch (Exception $e) {
+            return [
+                "counter_{$id}" => [
+                    'power_factors' => [0, 0, 0]
+                ]
+            ];
+        }
+    }
+
+    /**
+     * Counter Imported
+     */
+    private function getCounterImported($id)
+    {
+        try {
+            $topic = "openWB/counter/{$id}/get/imported";
+            $value = $this->mqttClient->getValue($topic);
+            return ["counter_{$id}" => ['imported' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["counter_{$id}" => ['imported' => 0]];
+        }
+    }
+
+    /**
+     * Counter Exported
+     */
+    private function getCounterExported($id)
+    {
+        try {
+            $topic = "openWB/counter/{$id}/get/exported";
+            $value = $this->mqttClient->getValue($topic);
+            return ["counter_{$id}" => ['exported' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["counter_{$id}" => ['exported' => 0]];
+        }
+    }
+
+    /**
+     * Counter Daily Imported
+     */
+    private function getCounterDailyImported($id)
+    {
+        try {
+            $topic = "openWB/counter/{$id}/get/daily_imported";
+            $value = $this->mqttClient->getValue($topic);
+            return ["counter_{$id}" => ['daily_imported' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["counter_{$id}" => ['daily_imported' => 0]];
+        }
+    }
+
+    /**
+     * Counter Daily Exported
+     */
+    private function getCounterDailyExported($id)
+    {
+        try {
+            $topic = "openWB/counter/{$id}/get/daily_exported";
+            $value = $this->mqttClient->getValue($topic);
+            return ["counter_{$id}" => ['daily_exported' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["counter_{$id}" => ['daily_exported' => 0]];
+        }
+    }
+
+    /**
+     * Counter Frequency
+     */
+    private function getCounterFrequency($id)
+    {
+        try {
+            $topic = "openWB/counter/{$id}/get/frequency";
+            $value = $this->mqttClient->getValue($topic);
+            return ["counter_{$id}" => ['frequency' => floatval($value ?? 50.0)]];
+        } catch (Exception $e) {
+            return ["counter_{$id}" => ['frequency' => 50.0]];
+        }
+    }
+
+    /**
+     * Counter Fault String
+     */
+    private function getCounterFaultStr($id)
+    {
+        try {
+            $topic = "openWB/counter/{$id}/get/fault_str";
+            $value = $this->mqttClient->getValue($topic);
+            return ["counter_{$id}" => ['fault_str' => strval($value ?? 'Kein Fehler')]];
+        } catch (Exception $e) {
+            return ["counter_{$id}" => ['fault_str' => 'Kein Fehler']];
+        }
+    }
+
+    /**
+     * Counter Fault State
+     */
+    private function getCounterFaultState($id)
+    {
+        try {
+            $topic = "openWB/counter/{$id}/get/fault_state";
+            $value = $this->mqttClient->getValue($topic);
+            return ["counter_{$id}" => ['fault_state' => intval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["counter_{$id}" => ['fault_state' => 0]];
+        }
+    }
+
+    /**
+     * Battery Power
+     */
+    private function getBatteryPower($id)
+    {
+        try {
+            $topic = "openWB/bat/{$id}/get/power";
+            $value = $this->mqttClient->getValue($topic);
+            return ["battery_{$id}" => ['power' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["battery_{$id}" => ['power' => 0]];
+        }
+    }
+
+    /**
+     * Battery SoC
+     */
+    private function getBatterySoc($id)
+    {
+        try {
+            $topic = "openWB/bat/{$id}/get/soc";
+            $value = $this->mqttClient->getValue($topic);
+            return ["battery_{$id}" => ['soc' => intval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["battery_{$id}" => ['soc' => 0]];
+        }
+    }
+
+    /**
+     * Battery Currents
+     */
+    private function getBatteryCurrents($id)
+    {
+        try {
+            $topic = "openWB/bat/{$id}/get/currents";
+            $value = $this->mqttClient->getValue($topic);
+            $currents = json_decode($value ?? '[]', true) ?: [0, 0, 0];
+            
+            return [
+                "battery_{$id}" => [
+                    'currents' => [
+                        floatval($currents[0] ?? 0),
+                        floatval($currents[1] ?? 0),
+                        floatval($currents[2] ?? 0)
+                    ]
+                ]
+            ];
+        } catch (Exception $e) {
+            return [
+                "battery_{$id}" => [
+                    'currents' => [0, 0, 0]
+                ]
+            ];
+        }
+    }
+
+    /**
+     * Battery Imported
+     */
+    private function getBatteryImported($id)
+    {
+        try {
+            $topic = "openWB/bat/{$id}/get/imported";
+            $value = $this->mqttClient->getValue($topic);
+            return ["battery_{$id}" => ['imported' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["battery_{$id}" => ['imported' => 0]];
+        }
+    }
+
+    /**
+     * Battery Exported
+     */
+    private function getBatteryExported($id)
+    {
+        try {
+            $topic = "openWB/bat/{$id}/get/exported";
+            $value = $this->mqttClient->getValue($topic);
+            return ["battery_{$id}" => ['exported' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["battery_{$id}" => ['exported' => 0]];
+        }
+    }
+
+    /**
+     * Battery Daily Imported
+     */
+    private function getBatteryDailyImported($id)
+    {
+        try {
+            $topic = "openWB/bat/{$id}/get/daily_imported";
+            $value = $this->mqttClient->getValue($topic);
+            return ["battery_{$id}" => ['daily_imported' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["battery_{$id}" => ['daily_imported' => 0]];
+        }
+    }
+
+    /**
+     * Battery Daily Exported
+     */
+    private function getBatteryDailyExported($id)
+    {
+        try {
+            $topic = "openWB/bat/{$id}/get/daily_exported";
+            $value = $this->mqttClient->getValue($topic);
+            return ["battery_{$id}" => ['daily_exported' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["battery_{$id}" => ['daily_exported' => 0]];
+        }
+    }
+
+    /**
+     * Battery Fault String
+     */
+    private function getBatteryFaultStr($id)
+    {
+        try {
+            $topic = "openWB/bat/{$id}/get/fault_str";
+            $value = $this->mqttClient->getValue($topic);
+            return ["battery_{$id}" => ['fault_str' => strval($value ?? 'Kein Fehler')]];
+        } catch (Exception $e) {
+            return ["battery_{$id}" => ['fault_str' => 'Kein Fehler']];
+        }
+    }
+
+    /**
+     * Battery Fault State
+     */
+    private function getBatteryFaultState($id)
+    {
+        try {
+            $topic = "openWB/bat/{$id}/get/fault_state";
+            $value = $this->mqttClient->getValue($topic);
+            return ["battery_{$id}" => ['fault_state' => intval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["battery_{$id}" => ['fault_state' => 0]];
+        }
+    }
+
+    /**
+     * Battery Power Limit Controllable
+     */
+    private function getBatteryPowerLimitControllable($id)
+    {
+        try {
+            $topic = "openWB/bat/{$id}/get/power_limit_controllable";
+            $value = $this->mqttClient->getValue($topic);
+            return ["battery_{$id}" => ['power_limit_controllable' => boolval($value ?? false)]];
+        } catch (Exception $e) {
+            return ["battery_{$id}" => ['power_limit_controllable' => false]];
+        }
+    }
+
+    /**
+     * PV Power
+     */
+    private function getPvPower($id)
+    {
+        try {
+            $topic = "openWB/pv/{$id}/get/power";
+            $value = $this->mqttClient->getValue($topic);
+            return ["pv_{$id}" => ['power' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["pv_{$id}" => ['power' => 0]];
+        }
+    }
+
+    /**
+     * PV Currents
+     */
+    private function getPvCurrents($id)
+    {
+        try {
+            $topic = "openWB/pv/{$id}/get/currents";
+            $value = $this->mqttClient->getValue($topic);
+            $currents = json_decode($value ?? '[]', true) ?: [0, 0, 0];
+            
+            return [
+                "pv_{$id}" => [
+                    'currents' => [
+                        floatval($currents[0] ?? 0),
+                        floatval($currents[1] ?? 0),
+                        floatval($currents[2] ?? 0)
+                    ]
+                ]
+            ];
+        } catch (Exception $e) {
+            return [
+                "pv_{$id}" => [
+                    'currents' => [0, 0, 0]
+                ]
+            ];
+        }
+    }
+
+    /**
+     * PV Exported
+     */
+    private function getPvExported($id)
+    {
+        try {
+            $topic = "openWB/pv/{$id}/get/exported";
+            $value = $this->mqttClient->getValue($topic);
+            return ["pv_{$id}" => ['exported' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["pv_{$id}" => ['exported' => 0]];
+        }
+    }
+
+    /**
+     * PV Daily Exported
+     */
+    private function getPvDailyExported($id)
+    {
+        try {
+            $topic = "openWB/pv/{$id}/get/daily_exported";
+            $value = $this->mqttClient->getValue($topic);
+            return ["pv_{$id}" => ['daily_exported' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["pv_{$id}" => ['daily_exported' => 0]];
+        }
+    }
+
+    /**
+     * PV Monthly Exported
+     */
+    private function getPvMonthlyExported($id)
+    {
+        try {
+            $topic = "openWB/pv/{$id}/get/monthly_exported";
+            $value = $this->mqttClient->getValue($topic);
+            return ["pv_{$id}" => ['monthly_exported' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["pv_{$id}" => ['monthly_exported' => 0]];
+        }
+    }
+
+    /**
+     * PV Yearly Exported
+     */
+    private function getPvYearlyExported($id)
+    {
+        try {
+            $topic = "openWB/pv/{$id}/get/yearly_exported";
+            $value = $this->mqttClient->getValue($topic);
+            return ["pv_{$id}" => ['yearly_exported' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["pv_{$id}" => ['yearly_exported' => 0]];
+        }
+    }
+
+    /**
+     * PV Fault String
+     */
+    private function getPvFaultStr($id)
+    {
+        try {
+            $topic = "openWB/pv/{$id}/get/fault_str";
+            $value = $this->mqttClient->getValue($topic);
+            return ["pv_{$id}" => ['fault_str' => strval($value ?? 'Kein Fehler')]];
+        } catch (Exception $e) {
+            return ["pv_{$id}" => ['fault_str' => 'Kein Fehler']];
+        }
+    }
+
+    /**
+     * PV Fault State
+     */
+    private function getPvFaultState($id)
+    {
+        try {
+            $topic = "openWB/pv/{$id}/get/fault_state";
+            $value = $this->mqttClient->getValue($topic);
+            return ["pv_{$id}" => ['fault_state' => intval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["pv_{$id}" => ['fault_state' => 0]];
+        }
+    }
+
+    /**
+     * Hilfsmethode für numerische Werte
+     */
+    private function getNumericValue($topic)
+    {
+        try {
+            $value = $this->mqttClient->getValue($topic);
+            return floatval($value ?? 0);
+        } catch (Exception $e) {
+            return 0;
         }
     }
 }

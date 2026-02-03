@@ -611,7 +611,7 @@ $numDevices = 9;
 													</div>
 													<span class="form-text small">
 														Durch diese Option wird das angeschlossene Gerät täglich um 0:01 Uhr eingeschaltet. Wenn erkannt wird, dass das Gerät aktiviert wird (Leistungsaufnahme ist länger als "Zeit im Standby" größer als eingetragener "Verbrauch im Standby"), wird das Gerät direkt ausgeschaltet, falls die Einschaltschwelle nicht erreicht ist. Sobald die Einschaltschwelle erreicht wird, wird das Gerät erneut aktiviert.<br>
-														Somit kann z. B. eine Waschmaschine am Morgen im Standby befüllt und eingeschaltet werden. Sie läuft aber erst richtig an, wenn genügend Überschuss vorhanden ist.
+														Somit kann z. B. eine Waschmaschine am Morgen im Standby befüllt und eingeschaltet werden. Das Gerät läuft aber erst richtig an, wenn genügend Überschuss vorhanden ist.
 												</div>
 											</div>
 											<div class="device<?php echo $devicenum; ?>startupDetection hide">
@@ -1156,7 +1156,7 @@ $numDevices = 9;
 						<!-- modal body -->
 						<div class="modal-body text-center">
 							<p>
-								Es wurden fehlerhafte Eingaben gefunden, speichern ist nicht möglich! Bitte überprüfen Sie alle Eingaben.
+								Es wurden fehlerhafte Eingaben gefunden, speichern ist nicht möglich! Bitte überprüfe alle Eingaben.
 							</p>
 						</div>
 						<!-- modal footer -->
@@ -1215,7 +1215,7 @@ $numDevices = 9;
 
 		<footer class="footer bg-dark text-light font-small">
 			<div class="container text-center">
-				<small>Sie befinden sich hier: Ladeeinstellungen/Smart Home 2.0</small>
+				<small>Du befindest dich hier: Ladeeinstellungen/Smart Home 2.0</small>
 			</div>
 		</footer>
 

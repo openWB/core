@@ -47,6 +47,8 @@ class CounterValueStoreBroker(ValueStore[CounterState]):
         pub_to_broker("openWB/set/counter/" + str(self.num) + "/get/exported", self.state.exported)
         pub_to_broker("openWB/set/counter/" + str(self.num) + "/get/power", self.state.power)
         pub_to_broker("openWB/set/counter/" + str(self.num) + "/get/frequency", self.state.frequency)
+        if self.state.serial_number is not None:
+            pub_to_broker("openWB/set/counter/" + str(self.num) + "/get/serial_number", self.state.serial_number)
 
 
 class PurgeCounterState:

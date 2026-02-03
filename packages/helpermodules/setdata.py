@@ -627,7 +627,8 @@ class SetData:
             elif subdata.SubData.pv_data.get(f"pv{get_index(msg.topic)}"):
                 if "/get/fault_state" in msg.topic:
                     self._validate_value(msg, int, [(0, 2)])
-                elif "/get/fault_str" in msg.topic:
+                elif ("/get/fault_str" in msg.topic or
+                      "/get/serial_number" in msg.topic):
                     self._validate_value(msg, str)
                 elif ("/get/daily_exported" in msg.topic or
                         "/get/monthly_exported" in msg.topic or
@@ -664,7 +665,8 @@ class SetData:
                 "openWB/set/bat/config/price_charge_activated" in msg.topic or
                 "openWB/set/bat/config/configured" in msg.topic or
                 "openWB/set/bat/get/power_limit_controllable" in msg.topic or
-                    "openWB/set/bat/set/regulate_up" in msg.topic):
+                    "openWB/set/bat/set/regulate_up" in msg.topic or
+                    "openWB/set/bat/set/hysteresis_discharge" in msg.topic):
                 self._validate_value(msg, bool)
             elif (re.search("openWB/set/bat/[0-9]+/get/max_charge_power$", msg.topic) is not None or
                   re.search("openWB/set/bat/[0-9]+/get/max_discharge_power$", msg.topic) is not None):
@@ -710,7 +712,8 @@ class SetData:
                     self._validate_value(msg, float, [(0, 100)])
                 elif "/get/fault_state" in msg.topic:
                     self._validate_value(msg, int, [(0, 2)])
-                elif "/get/fault_str" in msg.topic:
+                elif ("/get/fault_str" in msg.topic or
+                      "/get/serial_number" in msg.topic):
                     self._validate_value(msg, str)
                 elif "/set/power_limit_controllable" in msg.topic:
                     self._validate_value(msg, bool)
@@ -962,7 +965,8 @@ class SetData:
                     self._validate_value(msg, int, [(0, 2)])
                 elif "/set/error_timer" in msg.topic:
                     self._validate_value(msg, float, [(0, float("inf"))])
-                elif "/get/fault_str" in msg.topic:
+                elif ("/get/fault_str" in msg.topic or
+                      "/get/serial_number" in msg.topic):
                     self._validate_value(msg, str)
                 elif "/get/power" in msg.topic:
                     self._validate_value(

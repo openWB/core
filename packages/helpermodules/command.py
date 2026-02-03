@@ -76,37 +76,38 @@ class Command:
 
     def _get_max_ids(self) -> None:
         """ ermittelt die maximale ID vom Broker """
+        plan_extractors = {
+            "autolock_plan": lambda p: p.get("autolock", {}).get("plans", []),
+            "charge_template_scheduled_plan": lambda p: p.get("chargemode", {}).get("scheduled_charging",
+                                                                                    {}).get("plans", []),
+            "charge_template_time_charging_plan": lambda p: p.get("time_charging", {}).get("plans", [])
+        }
         try:
             received_topics = ProcessBrokerBranch("").get_max_id()
-            for id_topic, topic_str, default in self.MAX_IDS["nested payload"]:
-                max_id = default
-                for topic, payload in received_topics.items():
-                    if re.search(topic_str, topic) is not None:
-                        if id_topic == "autolock_plan":
-                            for plan in payload["autolock"]["plans"]:
-                                max_id = max(plan["id"], max_id)
-                        elif id_topic == "charge_template_scheduled_plan":
-                            for plan in payload["chargemode"]["scheduled_charging"]["plans"]:
-                                max_id = max(plan["id"], max_id)
-                        elif id_topic == "charge_template_time_charging_plan":
-                            for plan in payload["time_charging"]["plans"]:
-                                max_id = max(plan["id"], max_id)
-                setattr(self, f'max_id_{id_topic}', max_id)
-                Pub().pub("openWB/set/command/max_id/"+id_topic, max_id)
-            for id_topic, topic_str, default in self.MAX_IDS["topic"]:
-                max_id = default
-                for topic in received_topics.keys():
-                    if re.search(topic_str, topic) is not None:
-                        max_id = max(int(get_index(topic)), max_id)
-                setattr(self, f'max_id_{id_topic}', max_id)
-                Pub().pub("openWB/set/command/max_id/"+id_topic, max_id)
-            for id_topic, topic_str, default in self.MAX_IDS["payload"]:
-                max_id = default
-                for topic, payload in received_topics.items():
-                    if re.search(topic_str, topic) is not None:
-                        max_id = max(payload["id"], max_id)
-                setattr(self, f'max_id_{id_topic}', max_id)
-                Pub().pub("openWB/set/command/max_id/"+id_topic, max_id)
+            for max_id_type in self.MAX_IDS.keys():
+                for id_topic, topic_str, default in self.MAX_IDS[max_id_type]:
+                    max_id = default
+                    for topic, payload in received_topics.items():
+                        try:
+                            if max_id_type == "nested payload":
+                                if re.search(topic_str, topic) is not None:
+                                    extractor = plan_extractors.get(id_topic)
+                                    for plan in extractor(payload):
+                                        try:
+                                            max_id = max(plan["id"], max_id)
+                                        except Exception:
+                                            log.exception(f"Fehler beim Ermitteln der maximalen ID für {id_topic} "
+                                                          f"beim {id_topic}")
+                            elif max_id_type == "topic":
+                                if re.search(topic_str, topic) is not None:
+                                    max_id = max(int(get_index(topic)), max_id)
+                            elif max_id_type == "payload":
+                                if re.search(topic_str, topic) is not None:
+                                    max_id = max(payload["id"], max_id)
+                        except Exception:
+                            log.exception(f"Fehler beim Ermitteln der maximalen ID für {id_topic}")
+                    setattr(self, f'max_id_{id_topic}', max_id)
+                    Pub().pub(f"openWB/set/command/max_id/{id_topic}", max_id)
         except Exception:
             log.exception("Fehler im Command-Modul")
 
@@ -240,6 +241,7 @@ class Command:
         """
         if self.max_id_io_device >= payload["data"]["id"]:
             ProcessBrokerBranch(f'system/io/{payload["data"]["id"]}/').remove_topics()
+            ProcessBrokerBranch(f'io/states/{payload["data"]["id"]}/').remove_topics()
             pub_user_message(payload, connection_id, f'IO-Gerät mit ID \'{payload["data"]["id"]}\' gelöscht.',
                              MessageType.SUCCESS)
         else:
@@ -277,7 +279,7 @@ class Command:
         check_num_msg = self._check_max_num_of_internal_chargepoints(chargepoint_config)
         if check_num_msg is not None:
             pub_user_message(
-                payload, connection_id, f"{check_num_msg} Wenn Sie weitere Ladepunkte anbinden wollen, müssen Sie "
+                payload, connection_id, f"{check_num_msg} Wenn Du weitere Ladepunkte anbinden willst, musst Du "
                 "diese als secondary openWB anbinden. Die weiteren Ladepunkte in den Steuerungsmodus 'secondary'"
                 " versetzen.", MessageType.ERROR)
             return
@@ -321,7 +323,9 @@ class Command:
             for cp in SubData.cp_data.values():
                 if isinstance(cp.chargepoint.chargepoint_module, ChargepointModule):
                     if (cp.chargepoint.chargepoint_module.config.configuration.mode ==
-                            InternalChargepointMode.DUO.value):
+                            InternalChargepointMode.DUO.value or
+                            cp.chargepoint.chargepoint_module.config.configuration.mode ==
+                            InternalChargepointMode.SE.value):
                         count_duo += 1
                     else:
                         count_series_socket += 1
@@ -726,9 +730,25 @@ class Command:
     def sendDebug(self, connection_id: str, payload: dict) -> None:
         pub_user_message(payload, connection_id, "Systembericht wird erstellt...", MessageType.INFO)
         previous_log_level = SubData.system_data["system"].data["debug_level"]
-        create_debug_log(payload["data"])
+        json_rsp = create_debug_log(payload["data"])
         Pub().pub("openWB/set/system/debug_level", previous_log_level)
-        pub_user_message(payload, connection_id, "Systembericht wurde versandt.", MessageType.SUCCESS)
+        if json_rsp is not None:
+            if json_rsp.get("error"):
+                pub_user_message(payload, connection_id,
+                                 f"Fehler: {json_rsp.get('message')}",
+                                 MessageType.ERROR)
+            elif json_rsp.get("status") == "created":
+                pub_user_message(payload, connection_id,
+                                 f"Neues Ticket {json_rsp.get('ticket_id')} erstellt.",
+                                 MessageType.SUCCESS)
+            elif json_rsp.get("status") == "updated":
+                pub_user_message(payload, connection_id,
+                                 f"Systembericht bestehendem Ticket {json_rsp.get('ticket_id')} hinzugefügt.",
+                                 MessageType.SUCCESS)
+        else:
+            pub_user_message(payload, connection_id,
+                             "Fehler beim Erstellen des Systemberichts.",
+                             MessageType.ERROR)
 
     def getChargeLog(self, connection_id: str, payload: dict) -> None:
         Pub().pub(f'openWB/set/log/{connection_id}/data', get_log_data(payload["data"]))
@@ -871,9 +891,15 @@ class Command:
     def createBackup(self, connection_id: str, payload: dict) -> None:
         pub_user_message(payload, connection_id, "Sicherung wird erstellt...", MessageType.INFO)
         parent_file = Path(__file__).resolve().parents[2]
-        result = run_command(
-            [str(parent_file / "runs" / "backup.sh"),
-             "1" if "use_extended_filename" in payload["data"] and payload["data"]["use_extended_filename"] else "0"])
+        try:
+            result = run_command([
+                str(parent_file / "runs" / "backup.sh"),
+                "1" if "use_extended_filename" in payload["data"] and payload["data"]["use_extended_filename"] else "0"
+            ], process_exception=False)
+        except subprocess.CalledProcessError:
+            pub_user_message(payload, connection_id,
+                             "Fehler beim Erstellen der Sicherung. Bitte Logdatei prüfen.", MessageType.ERROR)
+            return
         file_name = result.rstrip('\n')
         file_link = "/openWB/data/backup/" + file_name
         pub_user_message(payload, connection_id,

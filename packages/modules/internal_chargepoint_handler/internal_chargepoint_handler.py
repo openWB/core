@@ -116,7 +116,8 @@ class InternalChargepointHandler:
             self.cp0_client_handler = None
             self.cp0 = None
         try:
-            if mode == InternalChargepointMode.DUO.value:
+            if ((mode == InternalChargepointMode.DUO.value or mode == InternalChargepointMode.SE.value) and
+                    hierarchy_id_cp0 is not None):
                 with SingleComponentUpdateContext(fault_state_info_cp1, reraise=True):
                     log.debug("Zweiter Ladepunkt für Duo konfiguriert.")
                     self.cp1_client_handler = client_factory(1, fault_state_info_cp1, self.cp0_client_handler)
