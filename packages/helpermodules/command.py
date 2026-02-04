@@ -238,6 +238,8 @@ class Command:
         self.max_id_io_device = new_id
         Pub().pub("openWB/set/command/max_id/io_device", self.max_id_io_device)
         add_acl_role("io-device-<id>-access", new_id)
+        if device_default["output"]["digital"] or device_default["output"]["analog"]:
+            add_acl_role("io-device-<id>-mqtt-access", new_id)
         pub_user_message(
             payload, connection_id,
             f'Neues IO-Gerät vom Typ \'{payload["data"]["type"]}\' mit ID \'{new_id}\' hinzugefügt.',

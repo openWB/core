@@ -198,5 +198,24 @@
 				"allow": true
 			}
 		]
+	},
+	{
+		"rolename": "io-device-<id>-mqtt-access",
+		"textname": "Schreibrechte für IO-Gerät <id>",
+		"textdescription": "Erlaubt das Senden von Daten für IO-Gerät <id>.",
+		"acls": [
+			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/system/io/<id>/set/manual/#",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/set/system/io/<id>/set/manual/#",
+				"priority": 0,
+				"allow": true
+			}
+		]
 	}
 ]
