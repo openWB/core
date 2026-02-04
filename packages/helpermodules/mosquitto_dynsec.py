@@ -191,6 +191,8 @@ def check_roles_at_start():
         if flag:
             for cp in SubData.cp_data.values():
                 add_acl_role("chargepoint-<id>-access", cp.chargepoint.num)
+                if cp.chargepoint.data.config.type == "mqtt":
+                    add_acl_role("chargepoint-<id>-mqtt-access", cp.chargepoint.num)
             for ev in SubData.ev_data.values():
                 add_acl_role("vehicle-<id>-access", ev.num)
             for bat in SubData.bat_data.values():
