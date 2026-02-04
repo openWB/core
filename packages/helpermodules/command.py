@@ -276,6 +276,8 @@ class Command:
             if self.max_id_vehicle == -1:
                 self.addVehicle("addChargepoint", {})
             add_acl_role("chargepoint-<id>-access", new_id)
+            if chargepoint_config["type"] == "mqtt":
+                add_acl_role("chargepoint-<id>-mqtt-access", new_id)
             pub_user_message(payload, connection_id, f'Neuer Ladepunkt mit ID \'{new_id}\' wurde erstellt.',
                              MessageType.SUCCESS)
         new_id = self.max_id_hierarchy + 1
