@@ -37,12 +37,6 @@ export const useMqttStore = defineStore('mqtt', () => {
     [mqttUser, mqttPass] = decodeURIComponent($q.cookies.get('mqtt')).split(
       ':',
     ) || [null, null];
-  } else {
-    $q.notify({
-      type: 'warning',
-      message: 'Anonyme Anmeldung!',
-      progress: true,
-    });
   }
 
   // local variables
