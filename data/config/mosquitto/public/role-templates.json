@@ -43,6 +43,31 @@
 		]
 	},
 	{
+		"rolename": "chargepoint-<id>-mqtt-access",
+		"textname": "Schreibrechte für MQTT-Ladepunkt <id>",
+		"textdescription": "Erlaubt das Senden von Daten für Ladepunkt <id>.",
+		"acls": [
+			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/mqtt/chargepoint/<id>/get/#",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/set/mqtt/chargepoint/<id>/get/#",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/mqtt/chargepoint/<id>/#",
+				"priority": 0,
+				"allow": true
+			}
+		]
+	},
+	{
 		"rolename": "vehicle-<id>-access",
 		"textname": "Leserechte für Fahrzeug <id>",
 		"textdescription": "Erlaubt das Empfangen von Daten für Fahrzeug <id>.",
