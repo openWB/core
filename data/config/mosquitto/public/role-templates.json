@@ -105,6 +105,31 @@
 		]
 	},
 	{
+		"rolename": "vehicle-<id>-mqtt-access",
+		"textname": "Schreibrechte für Fahrzeug <id> mit MQTT-SoC",
+		"textdescription": "Erlaubt das Senden von SoC-Daten für Fahrzeug <id>.",
+		"acls": [
+			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/mqtt/vehicle/<id>/get/#",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/set/mqtt/vehicle/<id>/get/#",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/mqtt/vehicle/<id>/get/#",
+				"priority": 0,
+				"allow": true
+			}
+		]
+	},
+	{
 		"rolename": "bat-<id>-access",
 		"textname": "Leserechte für Batterie <id>",
 		"textdescription": "Erlaubt das Empfangen von Daten für Batterie <id>.",
