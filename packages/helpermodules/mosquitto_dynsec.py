@@ -206,6 +206,8 @@ def check_roles_at_start():
             for key, value in SubData.system_data.items():
                 if "io" in key:
                     add_acl_role("io-device-<id>-access", value.config.id)
+                    if value.config.output["digital"] or value.config.output["analog"]:
+                        add_acl_role("io-device-<id>-mqtt-access", value.config.id)
         flag_path.unlink()
 
 
