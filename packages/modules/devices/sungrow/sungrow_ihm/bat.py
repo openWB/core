@@ -56,34 +56,34 @@ class SungrowIHMBat(AbstractBat):
         if power_limit is None:
             log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
             if self.last_mode is not None:
-                self.__tcp_client.write_registers(8023, [1], data_type=ModbusDataType.UINT_16, unit=unit)
-                self.__tcp_client.write_registers(8024, [0xCC], data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_register(8023, 1, data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_register(8024, 0xCC, data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = None
         elif power_limit == 0:
             log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt und nicht entladen")
             if self.last_mode != 'stop':
-                self.__tcp_client.write_registers(8023, [5], data_type=ModbusDataType.UINT_16, unit=unit)
-                self.__tcp_client.write_registers(8024, [0xCC], data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_register(8023, 5, data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_register(8024, 0xCC, data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = 'stop'
         elif power_limit < 0:
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W entladen für den Hausverbrauch")
             if self.last_mode != 'discharge':
-                self.__tcp_client.write_registers(8023, [5], data_type=ModbusDataType.UINT_16, unit=unit)
-                self.__tcp_client.write_registers(8024, [0xBB], data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_register(8023, 5, data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_register(8024, 0xBB, data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = 'discharge'
             power_value = int(power_limit / 100)
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W entladen für den Hausverbrauch")
-            self.__tcp_client.write_registers(8025, [power_value], data_type=ModbusDataType.UINT_32,
+            self.__tcp_client.write_register(8025, power_value, data_type=ModbusDataType.UINT_32,
                                               wordorder=Endian.Little, unit=unit)
         elif power_limit > 0:
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W geladen")
             if self.last_mode != 'charge':
-                self.__tcp_client.write_registers(8023, [5], data_type=ModbusDataType.UINT_16, unit=unit)
-                self.__tcp_client.write_registers(8025, [0xAA], data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_register(8023, 5, data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_register(8025, 0xAA, data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = 'charge'
             power_value = int(power_limit / 100)
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W geladen")
-            self.__tcp_client.write_registers(8025, [power_value], data_type=ModbusDataType.UINT_32,
+            self.__tcp_client.write_register(8025, power_value, data_type=ModbusDataType.UINT_32,
                                               wordorder=Endian.Little, unit=unit)
 
     def power_limit_controllable(self) -> bool:
