@@ -296,6 +296,25 @@
 			]
 		},
 		{
+			"rolename": "other-data",
+			"textname": "Daten für externe Anwendungen",
+			"textdescription": "Diese Rolle erlaubt das Lesen und Schreiben für externe Anwendungen, welche nicht direkt mit der openWB zu tun haben. Hierfür ist der Zweig 'others/#' vorgesehen.",
+			"acls": [
+				{
+					"acltype": "publishClientSend",
+					"topic": "others/#",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "others/#",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
 			"rolename": "dynsec-admin",
 			"textname": "Dynamic Security Administrator",
 			"textdescription": "Voller Zugriff auf die Dynamic Security Funktionen des Mosquitto Brokers. Wird für die Bearbeitung der Benutzer, Gruppen und Rollen benötigt.",
