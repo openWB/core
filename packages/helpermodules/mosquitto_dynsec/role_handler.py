@@ -205,11 +205,12 @@ def update_acls():
                     role_data = get_configured_role_data(role_name)
                     template_role_data = get_template_role_data(role_name)
                     # entferne Rollen, die in der Konfigurationsdatei nicht vorhanden sind
+                    # bei allen anderen Rollen dürfen nur die ACLs editiert werden,
+                    # damit die Zuordnung zu Benutzern und Gruppen erhalten bleibt!
                     if template_role_data is None:
                         log.info(f"Rolle '{role_data['rolename']}' existiert nicht in den Vorlagen und wird gelöscht.")
                         run_command(["mosquitto_ctrl", "dynsec", "deleteRole", role_data["rolename"]])
                         continue
-
                     # entferne ACLs aus der Rolle, wenn diese im Template nicht vorhanden sind
                     for acl in role_data["acls"]:
                         for template_acl in template_role_data["acls"]:
@@ -243,8 +244,22 @@ def update_acls():
                             ])
                 except Exception:
                     log.exception(f"Fehler beim Aktualisieren der Rolle '{role_name}'")
-            # bei allen anderen Rollen dürfen nur die ACLs editiert werden,
-            # damit die Zuordnung zu Benutzern und Gruppen erhalten bleibt!
+            # Rollen ergänzen, welche in der neuen Version hinzugekommen sind,
+            # aber noch nicht in der Konfiguration existieren
+            dynsec_roles = _get_default_roles()
+            for config_role in dynsec_roles:
+                if (config_role["rolename"] not in roles and
+                        VERSION_STRING not in config_role["rolename"]):
+                    log.info(f"Füge neue Rolle '{config_role['rolename']}' aus der neuen Version hinzu.")
+                    run_command(["mosquitto_ctrl", "dynsec", "createRole", config_role["rolename"]])
+                    for acl in config_role["acls"]:
+                        run_command([
+                            "mosquitto_ctrl", "dynsec", "addRoleAcl", config_role["rolename"],
+                            acl["acltype"], acl["topic"],
+                            "allow" if acl["allow"] else "deny",
+                            str(acl["priority"])
+                        ])
+            # aktualisiere die openwb-version Rolle
             run_command(["mosquitto_ctrl", "dynsec", "deleteRole", f"{VERSION_STRING}{current_version}"])
             run_command(["mosquitto_ctrl", "dynsec", "createRole", f"{VERSION_STRING}{template_version}"])
             log.info("ACL-Aktualisierung abgeschlossen.")
