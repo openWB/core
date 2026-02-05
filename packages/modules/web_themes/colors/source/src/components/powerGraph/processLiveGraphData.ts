@@ -1,5 +1,6 @@
 import { globalData } from '../../assets/js/model'
 import { chargePoints } from '../chargePointList/model'
+import { counters } from '../counterList/model'
 import {
 	type GraphDataItem,
 	type RawGraphDataItem,
@@ -80,6 +81,7 @@ function extractValues(data: RawGraphDataItem): GraphDataItem {
 	const car1id = 'ev' + car1 + '-soc'
 	const car2id = 'ev' + car2 + '-soc'
 	const re_cp = /cp(\d+)-power/
+	const re_ctr = /counter(\d+)-power/
 	const values: GraphDataItem = {}
 	values.date = +data.timestamp * 1000
 	if (+data.grid > 0) {
@@ -125,22 +127,36 @@ function extractValues(data: RawGraphDataItem): GraphDataItem {
 
 	values.charging = +data['charging-all']
 	// charge points - we only show a maximum of 10 chargepoints in the graph
-/* 	for (let i = 0; i < 10; i++) {
+	/* 	for (let i = 0; i < 10; i++) {
 		const idx = 'cp' + i
 		values[idx] = +(data[idx + '-power'] ?? 0)
 	} */
-Object.keys(data)
-.filter(key => re_cp.test(key))
-	.forEach((key) => {
-		const found = key.match(re_cp)
-		if (found && found[1]) {
-			values['cp' + found[1]] = +(data[key] ?? 0)
-		}
-	})
+	Object.keys(data)
+		.filter((key) => re_cp.test(key))
+		.forEach((key) => {
+			const found = key.match(re_cp)
+			if (found && found[1]) {
+				values['cp' + found[1]] = +(data[key] ?? 0)
+			}
+		})
+	values['counters'] = 0
+	Object.keys(data)
+		.filter((key) => re_ctr.test(key))
+		.forEach((key) => {
+			const found = key.match(re_ctr)
+			if (found && found[1]) {
+				const id = 'ctr' + found[1]
+				if (counters.get(+found[1])?.showInGraph) {
+					values[id] = +(data[key] ?? 0)
+					values['counters'] += +(data[key] ?? 0)
+				}
+			}
+		})
 	values.selfUsage = values.pv - values.evuOut
 	if (values.selfUsage < 0) {
 		values.selfUsage = 0
 	}
 	values.devices = 0
+
 	return values
 }

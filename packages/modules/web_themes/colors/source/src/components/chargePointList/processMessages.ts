@@ -1,4 +1,4 @@
-import { usageSummary, globalData, masterData } from '@/assets/js/model'
+import { registry, globalData } from '@/assets/js/model'
 import {
 	chargePoints,
 	vehicles,
@@ -20,9 +20,9 @@ export function processChargepointMessages(topic: string, message: string) {
 	}
 	// General Chargepoint messages
 	if (topic == 'openWB/chargepoint/get/power') {
-		usageSummary.charging.power = +message
+		registry.setPower('charging', +message)
 	} else if (topic == 'openWB/chargepoint/get/daily_imported') {
-		usageSummary.charging.energy = +message
+		registry.setEnergy('charging', +message)
 	}
 	if (topic == 'openWB/chargepoint/get/daily_exported') {
 		globalData.cpDailyExported = +message
@@ -32,7 +32,7 @@ export function processChargepointMessages(topic: string, message: string) {
 				const configMessage = JSON.parse(message)
 				chargePoints[index].name = configMessage.name
 				chargePoints[index].icon = configMessage.name
-				if (masterData['cp' + index]) {
+				/* if (masterData['cp' + index]) {
 					masterData['cp' + index].name = configMessage.name
 					masterData['cp' + index].icon = configMessage.name
 				} else {
@@ -41,7 +41,7 @@ export function processChargepointMessages(topic: string, message: string) {
 						icon: configMessage.name,
 						color: 'var(--color-charging)',
 					}
-				}
+				} */
 			} else {
 				console.warn('invalid chargepoint index: ' + index)
 			}

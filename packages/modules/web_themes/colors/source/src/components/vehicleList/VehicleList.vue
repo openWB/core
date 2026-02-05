@@ -19,7 +19,6 @@
 </template>
 
 <script setup lang="ts">
-//import { computed } from 'vue'
 import WBWidgetFlex from '../shared/WbWidgetFlex.vue'
 import VlVehicle from './VlVehicle.vue'
 import { vehicles } from '@/components/chargePointList/model'

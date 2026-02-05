@@ -23,7 +23,7 @@
 				v-if="chargepoint.isSocManual"
 				class="fa-solid fa-sm fas fa-edit"
 				:style="{ color: 'var(--color-bg)' }"
-				@click="editSoc = !editSoc"
+				@click="toggleSocEditor()"
 			/>
 
 			<i
@@ -99,7 +99,7 @@
 				<span>
 					<RangeInput
 						id="manualSoc"
-						v-model="manualSoc"
+						v-model="tempsoc"
 						:min="0"
 						:max="100"
 						:step="1"
@@ -114,20 +114,21 @@
 			/>
 		</div>
 		<!-- ET Information -->
-		<hr class="divider grid-col-12" />
+		<hr v-if="etData.active" class="divider grid-col-12" />
+
 		<InfoItem
 			v-if="etData.active"
 			heading="Strompreis:"
 			class="grid-col-4 grid-left"
 		>
-			<span :style="currentPriceStyle">{{ currentPrice }} ct </span>
+			<span :style="currentPriceStyle">{{ etData.etCurrentPriceString }} </span>
 		</InfoItem>
 		<InfoItem v-if="cp.etActive" heading="max. Preis:" class="grid-col-4">
 			<span type="button" @click="editPrice = !editPrice"
 				>{{
 					props.chargepoint.etActive
 						? (Math.round(props.chargepoint.etMaxPrice * 10) / 10).toFixed(1) +
-							' ct'
+							priceUnit
 						: '-'
 				}}
 				<i
@@ -175,6 +176,7 @@ import RangeInput from '../shared/RangeInput.vue'
 import PriceChart from '../priceChart/PriceChart.vue'
 import InfoItem from '@/components/shared/InfoItem.vue'
 import ChargingState from './ChargingState.vue'
+import { globalData } from '@/assets/js/model'
 
 const props = defineProps<{
 	chargepoint: ChargePoint
@@ -213,15 +215,7 @@ const chargedRangeString = computed(() => {
 const soc = computed(() => {
 	return props.chargepoint.soc
 })
-const manualSoc = computed({
-	get() {
-		return props.chargepoint.soc
-	},
-	set(s: number) {
-		chargePoints[props.chargepoint.id].soc = s
-	},
-})
-
+const tempsoc = ref(0)
 const currentPrice = computed(() => {
 	const [p] = etData.etPriceList.values()
 	return (Math.round(p * 10) / 10).toFixed(1)
@@ -253,15 +247,26 @@ const modePillStyle = computed(() => {
 			}
 	}
 })
-
+const priceUnit = computed(() => {
+	return globalData.country === 'ch' ? ' Rp' : ' ct'
+})
 //methods
 function loadSoc() {
 	updateServer('socUpdate', 1, props.chargepoint.connectedVehicle)
 	chargePoints[props.chargepoint.id].waitingForSoc = true
 }
 function setSoc() {
-	updateServer('setSoc', manualSoc.value, props.chargepoint.connectedVehicle)
+	//updateServer('setSoc', manualSoc.value, props.chargepoint.connectedVehicle)
+	updateServer('setSoc', tempsoc.value, props.chargepoint.connectedVehicle)
 	editSoc.value = false
+}
+function toggleSocEditor() {
+	if (editSoc.value) {
+		editSoc.value = false
+	} else {
+		tempsoc.value = props.chargepoint.soc
+		editSoc.value = true
+	}
 }
 </script>
 <style scoped>

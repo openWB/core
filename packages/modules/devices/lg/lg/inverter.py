@@ -26,7 +26,10 @@ class LgInverter(AbstractInverter):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self, response: Dict) -> None:
-        power = float(response["statistics"]["pcs_pv_total_power"]) * -1
+        if 'pcs_pv_total_power' in response['statistics']:
+            power = float(response["statistics"]["pcs_pv_total_power"]) * -1
+        else:
+            power = float(response["statistics"]["pv_total_power_01kW"]) * -100  # Home 15
         _, exported = self.sim_counter.sim_count(power)
         inverter_state = InverterState(
             exported=exported,

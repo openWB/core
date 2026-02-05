@@ -1,6 +1,5 @@
 
 import logging
-import time
 
 from helpermodules.utils.error_handling import CP_ERROR, ErrorTimerContext
 from modules.chargepoints.openwb_pro.config import OpenWBPro
@@ -24,6 +23,11 @@ class EvseSignaling:
     PWM = "PWM"
 
 
+class CpInterruptionVersion:
+    CP_SIGNAL_0V = "0V"
+    CP_SIGNAL_minus12V = "-12V"
+
+
 class ChargepointModule(AbstractChargepoint):
     WRONG_CHARGE_STATE = "Lade-Status ist nicht aktiv, aber Strom fließt."
     WRONG_PLUG_STATE = "Ladepunkt ist nicht angesteckt, aber es wird geladen."
@@ -40,7 +44,7 @@ class ChargepointModule(AbstractChargepoint):
 
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
             self.__session.post(
-                'http://' + self.config.configuration.ip_address + '/connect.php',
+                f'http://{self.config.configuration.ip_address}/connect.php',
                 data={'heartbeatenabled': '1'})
 
     def set_internal_context_handlers(self, hierarchy_id: int, internal_cp: InternalChargepoint):
@@ -58,20 +62,28 @@ class ChargepointModule(AbstractChargepoint):
             current = 0
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
             with self.client_error_context:
-                ip_address = self.config.configuration.ip_address
-                self.__session.post('http://'+ip_address+'/connect.php', data={'ampere': current})
+                self.__session.post(
+                    f'http://{self.config.configuration.ip_address}/connect.php', data={'ampere': current})
 
     def get_values(self) -> None:
         with SingleComponentUpdateContext(self.fault_state):
-            chargepoint_state = self.request_values()
-            if chargepoint_state is not None:
-                # bei Fehler, aber Fehlezähler noch nicht abgelaufen, keine Werte mehr publishen.
-                self.store.set(chargepoint_state)
+            try:
+                chargepoint_state = self.request_values()
+                if chargepoint_state is not None:
+                    # bei Fehler, aber Fehlezähler noch nicht abgelaufen, keine Werte mehr publishen.
+                    self.store.set(chargepoint_state)
+            except Exception as e:
+                if self.client_error_context.error_counter_exceeded():
+                    chargepoint_state = ChargepointState(
+                        plug_state=None, charge_state=False, imported=None,
+                        # bei im-/exported None werden keine Werte gepublished
+                        exported=None, phases_in_use=0, power=0, currents=[0]*3)
+                    self.store.set(chargepoint_state)
+                    raise e
 
     def request_values(self) -> ChargepointState:
         with self.client_error_context:
-            ip_address = self.config.configuration.ip_address
-            json_rsp = self.__session.get('http://'+ip_address+'/connect.php').json()
+            json_rsp = self.__session.get(f'http://{self.config.configuration.ip_address}/connect.php').json()
 
             chargepoint_state = ChargepointState(
                 power=json_rsp["power_all"],
@@ -113,15 +125,6 @@ class ChargepointModule(AbstractChargepoint):
             self.validate_values(chargepoint_state)
             self.client_error_context.reset_error_counter()
             return chargepoint_state
-        if self.client_error_context.error_counter_exceeded():
-            chargepoint_state = ChargepointState()
-            chargepoint_state.plug_state = False
-            chargepoint_state.charge_state = False
-            chargepoint_state.imported = None  # bei None werden keine Werte gepublished
-            chargepoint_state.exported = None
-            return chargepoint_state
-        else:
-            return None
 
     def validate_values(self, chargepoint_state: ChargepointState) -> None:
         if chargepoint_state.charge_state is False and max(chargepoint_state.currents) > 1:
@@ -129,19 +132,22 @@ class ChargepointModule(AbstractChargepoint):
         if chargepoint_state.plug_state is False and chargepoint_state.power > 20:
             raise ValueError(self.WRONG_PLUG_STATE)
 
-    def switch_phases(self, phases_to_use: int, duration: int) -> None:
+    def switch_phases(self, phases_to_use: int) -> None:
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
             with self.client_error_context:
-                ip_address = self.config.configuration.ip_address
-                response = self.__session.get('http://'+ip_address+'/connect.php')
+                response = self.__session.get(f'http://{self.config.configuration.ip_address}/connect.php')
                 if response.json()["phases_target"] != phases_to_use:
-                    ip_address = self.config.configuration.ip_address
-                    self.__session.post('http://'+ip_address+'/connect.php',
+                    self.__session.post(f'http://{self.config.configuration.ip_address}/connect.php',
                                         data={'phasetarget': str(1 if phases_to_use == 1 else 3)})
-                    time.sleep(duration)
 
     def clear_rfid(self) -> None:
         pass
+
+    def interrupt_cp(self, duration: int) -> None:
+        self.__session.post(f'http://{self.config.configuration.ip_address}/connect.php',
+                            data={'cp_interrupt': True,
+                                  'cp_interrupt_version': CpInterruptionVersion.CP_SIGNAL_0V,
+                                  'cp_interrupt_duration': duration})
 
 
 chargepoint_descriptor = DeviceDescriptor(configuration_factory=OpenWBPro)

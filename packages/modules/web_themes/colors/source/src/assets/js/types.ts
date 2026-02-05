@@ -11,10 +11,18 @@ export class ShDevice implements PowerItem {
 	name = ''
 	type = PowerItemType.device
 	power = 0
-	energy = 0
-	energyPv = 0
-	energyBat = 0
-	pvPercentage = 0
+	now: EnergyData = {
+		energy: 0,
+		energyPv: 0,
+		energyBat: 0,
+		pvPercentage: 0,
+	}
+	past: EnergyData = {
+		energy: 0,
+		energyPv: 0,
+		energyBat: 0,
+		pvPercentage: 0,
+	}
 	configured = true
 	showInGraph = true
 	color = 'white'
@@ -50,6 +58,12 @@ export interface ItemProps {
 	color: string
 	icon: string
 }
+export interface EnergyData {
+	energy: number
+	energyPv: number
+	energyBat: number
+	pvPercentage: number
+}
 export enum PowerItemType {
 	counter = 'counter',
 	inverter = 'inverter',
@@ -60,19 +74,18 @@ export enum PowerItemType {
 	chargeSummary = 'chargeSummary',
 	device = 'device',
 	deviceSummary = 'deviceSummary',
+	counterSummary = 'counterSummary',
 	house = 'house',
 }
 export interface PowerItem {
 	name: string
 	type: PowerItemType
 	power: number
-	energy: number
-	energyPv: number
-	energyBat: number
-	pvPercentage: number
 	color: string
 	icon: string
 	showInGraph: boolean
+	now: EnergyData
+	past: EnergyData
 }
 
 export interface ItemList {
@@ -92,15 +105,23 @@ export class PvSystem implements PowerItem {
 	type = PowerItemType.inverter
 	color = 'var(--color-pv)'
 	power = 0
-	energy = 0
+	icon = ''
+	showInGraph = true
+	now: EnergyData = {
+		energy: 0,
+		energyPv: 0,
+		energyBat: 0,
+		pvPercentage: 0,
+	}
+	past: EnergyData = {
+		energy: 0,
+		energyPv: 0,
+		energyBat: 0,
+		pvPercentage: 0,
+	}
 	energy_month = 0
 	energy_year = 0
 	energy_total = 0
-	energyPv = 0
-	energyBat = 0
-	pvPercentage = 0
-	icon = ''
-	showInGraph = true
 	constructor(index: number) {
 		this.id = index
 	}

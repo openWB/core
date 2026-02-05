@@ -7,6 +7,7 @@ from typing import Optional
 from helpermodules import timecheck
 from helpermodules import pub
 
+from helpermodules.logger import clear_in_memory_log_handler
 from helpermodules.pub import Pub, pub_single
 from helpermodules.subdata import SubData
 from modules.chargepoints.internal_openwb.config import InternalChargepointMode
@@ -67,7 +68,7 @@ class UpdateState:
 
     def __thread_phase_switch(self, phases_to_use: int) -> None:
         self.phase_switch_thread = Thread(
-            target=self.cp_module.perform_phase_switch, args=(phases_to_use, 5),
+            target=self.cp_module.perform_phase_switch, args=(phases_to_use,),
             name=f"perform phase switch {self.cp_module.local_charge_point_num}")
         self.phase_switch_thread.start()
         log.debug("Thread zur Phasenumschaltung an LP"+str(self.cp_module.local_charge_point_num)+" gestartet.")
@@ -115,7 +116,8 @@ class InternalChargepointHandler:
             self.cp0_client_handler = None
             self.cp0 = None
         try:
-            if mode == InternalChargepointMode.DUO.value:
+            if ((mode == InternalChargepointMode.DUO.value or mode == InternalChargepointMode.SE.value) and
+                    hierarchy_id_cp0 is not None):
                 with SingleComponentUpdateContext(fault_state_info_cp1, reraise=True):
                     log.debug("Zweiter Ladepunkt für Duo konfiguriert.")
                     self.cp1_client_handler = client_factory(1, fault_state_info_cp1, self.cp0_client_handler)
@@ -147,6 +149,7 @@ class InternalChargepointHandler:
             while True:
                 if self.event_stop.is_set():
                     break
+                clear_in_memory_log_handler("internal_chargepoint")
                 log.debug("***Start***")
                 data = copy.deepcopy(SubData.internal_chargepoint_data)
                 log.debug(data)

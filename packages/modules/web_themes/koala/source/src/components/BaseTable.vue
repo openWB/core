@@ -15,10 +15,12 @@
     binary-state-sort
     :pagination="{ rowsPerPage: 0 }"
     hide-bottom
+    :dense="props.dense"
+    :square="props.square"
   >
     <!-- search field ------------------------------------------------------->
     <template #top v-if="searchInputVisible">
-      <div class="row full-width items-center q-mb-sm">
+      <div class="row full-width items-center">
         <div class="col">
           <q-input
             v-model="filterModel"
@@ -146,6 +148,8 @@ const props = defineProps<{
   filter?: string;
   columnsToSearch?: string[];
   rowExpandable?: boolean;
+  dense?: boolean;
+  square?: boolean;
 }>();
 
 /* ------------------------------------------------------------------ state */
@@ -211,7 +215,11 @@ const customFilterMethod: NonNullable<QTableProps['filterMethod']> = (
 const onRowClick = (evt: Event, row: T) => emit('row-click', row);
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+:deep(.q-table__top) {
+  padding: #{map-get($space-xs, y)} #{map-get($space-xs, x)};
+}
+
 .search-field {
   width: 100%;
   max-width: 18em;

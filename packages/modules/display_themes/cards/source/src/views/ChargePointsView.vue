@@ -464,7 +464,7 @@ export default {
             />
           </i-form-group>
           <i-form-group>
-            <i-form-label>Anzahl Phasen</i-form-label>
+            <i-form-label>Anzahl Phasen bei Überschuss</i-form-label>
             <i-button-group block>
               <i-button
                 :color="
@@ -1304,7 +1304,7 @@ export default {
                   @click="
                     setChargePointConnectedVehicleScheduledChargingPlanActive(
                       modalChargePointId,
-                      plan.id,
+                      planKey,
                       !plan.active,
                     )
                   "
@@ -1444,7 +1444,7 @@ export default {
                     @click="
                       setChargePointConnectedVehicleTimeChargingPlanActive(
                         modalChargePointId,
-                        plan.id,
+                        planKey,
                         !plan.active,
                       )
                     "

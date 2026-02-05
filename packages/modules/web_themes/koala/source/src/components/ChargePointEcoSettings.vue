@@ -1,5 +1,6 @@
 <template>
   <SliderStandard
+    v-if="acChargingEnabled"
     title="Minimaler Dauerstrom unter der Preisgrenze"
     :min="6"
     :max="16"
@@ -10,7 +11,7 @@
   />
 
   <SliderStandard
-    v-if="dcCharging"
+    v-if="dcChargingEnabled"
     title="Minimaler Dauerleistung unter der Preisgrenze"
     :min="4"
     :max="300"
@@ -20,19 +21,23 @@
     class="q-mt-md"
   />
 
-  <div class="text-subtitle2 q-mt-sm q-mr-sm">Anzahl Phasen</div>
-  <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
-    <q-btn-group class="col">
-      <q-btn
-        v-for="option in phaseOptions"
-        :key="option.value"
-        :color="numPhases.value === option.value ? 'primary' : 'grey'"
-        :label="option.label"
-        size="sm"
-        class="col"
-        @click="numPhases.value = option.value"
-      />
-    </q-btn-group>
+  <div v-if="acChargingEnabled">
+    <div class="text-subtitle2 q-mt-sm q-mr-sm">
+      Anzahl Phasen bei Überschuss
+    </div>
+    <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
+      <q-btn-group class="col">
+        <q-btn
+          v-for="option in phaseOptions"
+          :key="option.value"
+          :color="numPhases.value === option.value ? 'primary' : 'grey'"
+          :label="option.label"
+          size="sm"
+          class="col"
+          @click="numPhases.value = option.value"
+        />
+      </q-btn-group>
+    </div>
   </div>
 
   <div class="text-subtitle2 q-mt-sm q-mr-sm">Begrenzung</div>
@@ -72,34 +77,36 @@
     <div class="text-subtitle2 q-my-sm">
       Preisgrenze für strompreisbasiertes Laden
     </div>
-    <div class="row items-center justify-center q-mb-xs q-gutter-x-xs">
-      <q-btn
-        v-if="maxPrice.value"
-        class="col-auto"
-        label="-1,00"
-        color="grey"
-        size="sm"
-        dense
-        @click="maxPrice.value = maxPrice.value - 1"
-      />
-      <q-btn
-        v-if="maxPrice.value"
-        class="col-auto"
-        label="-0,10"
-        color="grey"
-        size="sm"
-        dense
-        @click="maxPrice.value = maxPrice.value - 0.1"
-      />
-      <q-btn
-        v-if="maxPrice.value"
-        class="col-auto"
-        label="-0,01"
-        color="grey"
-        size="sm"
-        dense
-        @click="maxPrice.value = maxPrice.value - 0.01"
-      />
+    <div class="row no-wrap items-center justify-between q-mb-xs q-gutter-x-xs">
+      <div class="col-auto">
+        <q-btn
+          v-if="maxPrice.value"
+          class="col-auto q-mr-xs disable-zoom"
+          label="-1,00"
+          color="grey"
+          size="sm"
+          dense
+          @click="maxPrice.value = maxPrice.value - 1"
+        />
+        <q-btn
+          v-if="maxPrice.value"
+          class="col-auto q-mr-xs disable-zoom"
+          label="-0,10"
+          color="grey"
+          size="sm"
+          dense
+          @click="maxPrice.value = maxPrice.value - 0.1"
+        />
+        <q-btn
+          v-if="maxPrice.value"
+          class="col-auto disable-zoom"
+          label="-0,01"
+          color="grey"
+          size="sm"
+          dense
+          @click="maxPrice.value = maxPrice.value - 0.01"
+        />
+      </div>
       <div class="col-auto q-mx-sm">
         {{
           maxPrice.value?.toLocaleString(undefined, {
@@ -108,33 +115,35 @@
           }) + ' ct/kWh'
         }}
       </div>
-      <q-btn
-        v-if="maxPrice.value"
-        class="col-auto"
-        label="+0,01"
-        color="grey"
-        size="sm"
-        dense
-        @click="maxPrice.value = maxPrice.value + 0.01"
-      />
-      <q-btn
-        v-if="maxPrice.value"
-        class="col-auto"
-        label="+0,10"
-        color="grey"
-        size="sm"
-        dense
-        @click="maxPrice.value = maxPrice.value + 0.1"
-      />
-      <q-btn
-        v-if="maxPrice.value"
-        class="col-auto"
-        label="+1,00"
-        color="grey"
-        size="sm"
-        dense
-        @click="maxPrice.value = maxPrice.value + 1"
-      />
+      <div class="col-auto">
+        <q-btn
+          v-if="maxPrice.value"
+          class="col-auto q-mr-xs disable-zoom"
+          label="+0,01"
+          color="grey"
+          size="sm"
+          dense
+          @click="maxPrice.value = maxPrice.value + 0.01"
+        />
+        <q-btn
+          v-if="maxPrice.value"
+          class="col-auto q-mr-xs disable-zoom"
+          label="+0,10"
+          color="grey"
+          size="sm"
+          dense
+          @click="maxPrice.value = maxPrice.value + 0.1"
+        />
+        <q-btn
+          v-if="maxPrice.value"
+          class="col-auto disable-zoom"
+          label="+1,00"
+          color="grey"
+          size="sm"
+          dense
+          @click="maxPrice.value = maxPrice.value + 1"
+        />
+      </div>
     </div>
     <q-field filled class="q-mt-sm">
       <ElectricityTariffChart
@@ -161,7 +170,7 @@ const limitModes = computed(() => {
   let modes = [
     { value: 'none', label: 'keine', color: 'primary' },
     { value: 'soc', label: 'EV-SoC', color: 'primary' },
-    { value: 'amount', label: 'Energiemenge', color: 'primary' },
+    { value: 'amount', label: 'Energie', color: 'primary' },
   ];
   if (vehicleSocType.value === undefined) {
     modes = modes.filter((mode) => mode.value !== 'soc');
@@ -183,7 +192,13 @@ const current = computed(() =>
   mqttStore.chargePointConnectedVehicleEcoChargeCurrent(props.chargePointId),
 );
 
-const dcCharging = computed(() => mqttStore.dcChargingEnabled);
+const dcChargingEnabled = computed(
+  () => mqttStore.chargePointChargeType(props.chargePointId).value === 'DC',
+);
+
+const acChargingEnabled = computed(
+  () => mqttStore.chargePointChargeType(props.chargePointId).value === 'AC',
+);
 
 const dcPower = computed(() =>
   mqttStore.chargePointConnectedVehicleEcoChargeDcPower(props.chargePointId),
@@ -213,3 +228,9 @@ const maxPrice = computed(() =>
   mqttStore.chargePointConnectedVehicleEcoChargeMaxPrice(props.chargePointId),
 );
 </script>
+
+<style scoped>
+.disable-zoom {
+  touch-action: manipulation;
+}
+</style>

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import logging
-from typing import TypedDict, Any
+import struct
+from typing import TypedDict, Any, Optional
 from pymodbus.constants import Endian
 
 from modules.common.abstract_device import AbstractBat
@@ -53,6 +54,35 @@ class KostalPlenticoreBat(AbstractBat):
             exported=exported
         )
         self.store.set(bat_state)
+
+    # 0x40A 1034 Battery charge power (DC) setpoint, absolute -  W Float 2 RW
+    # negative Werte: laden, positive Werte: entladen
+    # Kostal setzt das Register autmatisch nach Timeout zurück auf Eigensteuerung.
+    # Timeout kann im Kostal UI geändert werden. Standardwert 30s
+
+    def set_power_limit(self, power_limit: Optional[int]) -> None:
+        unit = self.modbus_id
+
+        if power_limit is None:
+            # Keine Registeränderung damit nach Timeout eigenständig zurückgesetzt wird
+            log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
+        elif power_limit == 0:
+            # wiederholt auf Stop setzen damit sich Register nicht zurücksetzt
+            log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt und nicht entladen")
+            packed = struct.pack('>f', 0.0)
+            registers = [int.from_bytes(packed[0:2], 'big'), int.from_bytes(packed[2:4], 'big')]
+            self.client.write_registers(1034, registers, data_type=ModbusDataType.FLOAT_32, unit=unit)
+        elif power_limit < 0:
+            log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W entladen für den Hausverbrauch")
+            # Die maximale Entladeleistung begrenzen auf 7000W
+            power_value = float(min(abs(power_limit), 7000)) * -1
+            log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_value} W entladen für den Hausverbrauch")
+            packed = struct.pack('>f', power_value)
+            registers = [int.from_bytes(packed[0:2], 'big'), int.from_bytes(packed[2:4], 'big')]
+            self.client.write_registers(1034, registers, data_type=ModbusDataType.FLOAT_32, unit=unit)
+
+    def power_limit_controllable(self) -> bool:
+        return True
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=KostalPlenticoreBatSetup)

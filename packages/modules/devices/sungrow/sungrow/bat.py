@@ -10,8 +10,7 @@ from modules.common.modbus import ModbusDataType, Endian, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.sungrow.sungrow.config import SungrowBatSetup, Sungrow
-from modules.devices.sungrow.sungrow.version import Version
-from modules.devices.sungrow.sungrow.firmware import Firmware
+from modules.devices.sungrow.sungrow.registers import RegMode
 
 log = logging.getLogger(__name__)
 
@@ -33,52 +32,75 @@ class SungrowBat(AbstractBat):
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.last_mode = 'Undefined'
-        self.firmware_check = self.check_firmware_register()
+        self.register_check = self.detect_register_check()
 
-    def check_firmware_register(self) -> bool:
-        if Firmware(self.device_config.configuration.firmware) == Firmware.v1:
-            return False
+    def detect_register_check(self) -> RegMode:
+        # Battery register availability test
         unit = self.device_config.configuration.modbus_id
+
         try:
             self.__tcp_client.read_input_registers(5213, ModbusDataType.INT_32,
                                                    wordorder=Endian.Little, unit=unit)
-            log.debug("Wechselrichter Firmware ist größer gleich 95.09")
-            return True
+            self.__tcp_client.read_input_registers(5630, ModbusDataType.INT_16, unit=unit)
+            log.debug("Battery register check: using new_registers (5213/5630).")
+            return RegMode.NEW_REGISTERS
         except Exception:
-            log.debug("Wechselrichter Firmware ist kleiner als 95.09")
-            return False
+            pass
+        # register 13000 is always available, if unused it contains zero
+        # register type can only be determined if battery power is not zero
+        if self.__tcp_client.read_input_registers(13021, ModbusDataType.UINT_16, unit=unit) == 0:
+            raise ValueError("Speicherleistung aktuell 0kW. Registertyp wird gesetzt sobald "
+                             "Speicher Leistungswerte liefert.")
+        try:
+            if self.__tcp_client.read_input_registers(13000, ModbusDataType.UINT_16, unit=unit) != 0:
+                # if battery power is not zero and register 13000 shows status bits, old registers are used
+                log.debug("Battery register check: using old_registers (13021 + 13000 bits for sign).")
+                return RegMode.OLD_REGISTERS
+        except Exception:
+            pass
+
+        log.debug("Battery register check: using fallback (13021 + total vs PV power).")
+        return RegMode.FALLBACK
 
     def update(self) -> None:
         unit = self.device_config.configuration.modbus_id
-
         soc = int(self.__tcp_client.read_input_registers(13022, ModbusDataType.UINT_16, unit=unit) / 10)
-        version = Version(self.device_config.configuration.version)
 
-        if Firmware(self.device_config.configuration.firmware) == Firmware.v2:
-            if self.firmware_check:  # Firmware >= 95.09
-                bat_current = self.__tcp_client.read_input_registers(5630, ModbusDataType.INT_16, unit=unit) * -0.1
-                bat_power = self.__tcp_client.read_input_registers(5213, ModbusDataType.INT_32,
-                                                                   wordorder=Endian.Little, unit=unit) * -1
-            else:  # Firmware between 95.03 and 95.09
-                bat_current = self.__tcp_client.read_input_registers(13020, ModbusDataType.INT_16, unit=unit) * -0.1
-                if version == Version.SH:
-                    bat_power = self.__tcp_client.read_input_registers(13021, ModbusDataType.INT_16, unit=unit)
-                elif version == Version.SH_winet_dongle:
-                    bat_power = self.__tcp_client.read_input_registers(13021, ModbusDataType.UINT_16, unit=unit)
-                    total_power = self.__tcp_client.read_input_registers(13033, ModbusDataType.INT_32,
-                                                                         wordorder=Endian.Little, unit=unit)
-                    pv_power = self.__tcp_client.read_input_registers(5016, ModbusDataType.UINT_32,
-                                                                      wordorder=Endian.Little, unit=unit)
-                    if total_power > pv_power:
-                        bat_power = bat_power * -1
-        else:  # Firmware.v1 (Firmware < 95.03)
+        # === Mode 1: new_registers ===
+        if self.register_check == RegMode.NEW_REGISTERS:
+            bat_current = self.__tcp_client.read_input_registers(5630, ModbusDataType.INT_16, unit=unit) * -0.1
+            bat_power = self.__tcp_client.read_input_registers(5213, ModbusDataType.INT_32,
+                                                               wordorder=Endian.Little, unit=unit) * -1
+
+        # === Mode 2: old_registers ===
+        elif self.register_check == RegMode.OLD_REGISTERS:
             bat_current = self.__tcp_client.read_input_registers(13020, ModbusDataType.INT_16, unit=unit) * -0.1
             bat_power = self.__tcp_client.read_input_registers(13021, ModbusDataType.UINT_16, unit=unit)
-            if version in (Version.SH, Version.SH_winet_dongle):
-                resp = self.__tcp_client._delegate.read_input_registers(13000, 1, unit=unit)
-                binary = bin(resp.registers[0])[2:].zfill(8)
-                if binary[5] == "1":
-                    bat_power = bat_power * -1
+
+            resp = self.__tcp_client._delegate.read_input_registers(13000, 1, unit=unit)
+            running_state = resp.registers[0]
+            is_charging = (running_state & 0x02) != 0
+            is_discharging = (running_state & 0x04) != 0
+
+            if is_discharging:
+                bat_power = -abs(bat_power)
+            elif is_charging:
+                bat_power = abs(bat_power)
+
+        # === Mode 3: fallback ===
+        else:
+            bat_current = self.__tcp_client.read_input_registers(13020, ModbusDataType.INT_16, unit=unit) * -0.1
+            bat_power = self.__tcp_client.read_input_registers(13021, ModbusDataType.UINT_16, unit=unit)
+
+            total_power = self.__tcp_client.read_input_registers(13033, ModbusDataType.INT_32,
+                                                                 wordorder=Endian.Little, unit=unit)
+            pv_power = self.__tcp_client.read_input_registers(5016, ModbusDataType.UINT_32,
+                                                              wordorder=Endian.Little, unit=unit)
+
+            if total_power > pv_power:
+                bat_power = -abs(bat_power)
+            else:
+                bat_power = abs(bat_power)
 
         currents = [bat_current / 3] * 3
 

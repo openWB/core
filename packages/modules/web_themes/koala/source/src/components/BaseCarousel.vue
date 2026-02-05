@@ -34,7 +34,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue';
+import {
+  ref,
+  computed,
+  nextTick,
+  onMounted,
+  onBeforeUnmount,
+  watch,
+} from 'vue';
 import { Screen } from 'quasar';
 
 const props = defineProps<{ items: number[] }>();
@@ -69,10 +76,9 @@ function measure() {
   });
 }
 
-
 onMounted(() => {
   measure();
-  window.addEventListener('resize', measure);
+  window.addEventListener('resize', measure, { passive: true });
 });
 
 onBeforeUnmount(() => {
@@ -83,14 +89,22 @@ watch(() => props.items, measure);
 
 const groupSize = computed(() => {
   if (!itemWidth.value || !carouselWidth.value) return 1;
-  const maxGroup = Math.max(1, Math.floor((carouselWidth.value - (showArrows.value ? carouselPadding.value : 50)) / itemWidth.value));
+  const maxGroup = Math.max(
+    1,
+    Math.floor(
+      (carouselWidth.value -
+        2 -
+        (showArrows.value ? carouselPadding.value : 50)) /
+        itemWidth.value,
+    ),
+  );
   // Spezialfall: Alle passen nebeneinander
   if (
     props.items.length > maxGroup &&
-    props.items.length <= maxGroup * 2 &&
+    props.items.length <= maxGroup + 1 &&
     props.items.length - maxGroup === 1
   ) {
-    if (props.items.length * itemWidth.value <= carouselWidth.value) {
+    if (props.items.length * itemWidth.value < carouselWidth.value) {
       return props.items.length;
     }
   }
@@ -114,6 +128,7 @@ watch(groupedItems, (groups) => {
   if (currentSlide.value > groups.length - 1) {
     currentSlide.value = Math.max(0, groups.length - 1);
   }
+  measure();
 });
 </script>
 

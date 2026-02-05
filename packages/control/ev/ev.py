@@ -120,10 +120,8 @@ class Ev:
                              max_phases_hw: int,
                              phase_switch_supported: bool,
                              charging_type: str,
-                             chargemode_switch_timestamp: float,
                              imported_since_plugged: float,
-                             bidi: BidiState,
-                             phases_in_use: int) -> Tuple[bool, Optional[str], str, float, int]:
+                             bidi: BidiState) -> Tuple[bool, Optional[str], str, float, int]:
         """ ermittelt, ob und mit welchem Strom das EV geladen werden soll (unabhängig vom Lastmanagement)
 
         Parameter
@@ -166,7 +164,6 @@ class Ev:
                         max_phases_hw,
                         phase_switch_supported,
                         charging_type,
-                        chargemode_switch_timestamp,
                         control_parameter,
                         soc_request_interval_offset,
                         bidi)
@@ -257,15 +254,16 @@ class Ev:
     def _check_phase_switch_conditions(self,
                                        charge_template: ChargeTemplate,
                                        control_parameter: ControlParameter,
+                                       evse_current: float,
                                        get_currents: List[float],
                                        get_power: float,
                                        max_current_cp: int,
                                        limit: LoadmanagementLimit) -> Tuple[bool, Optional[str]]:
         # Manche EV laden mit 6.1A bei 6A Soll-Strom
-        min_current = (max(control_parameter.min_current, control_parameter.required_current) +
-                       self.ev_template.data.nominal_difference)
-        max_current = (min(self.ev_template.data.max_current_single_phase, max_current_cp)
-                       - self.ev_template.data.nominal_difference)
+        min_current = max(control_parameter.min_current, control_parameter.required_current)
+        min_current_range = min_current + self.ev_template.data.nominal_difference
+        max_current = min(self.ev_template.data.max_current_single_phase, max_current_cp)
+        max_current_range = max_current - self.ev_template.data.nominal_difference
         phases_in_use = control_parameter.phases
         pv_config = data.data.general_data.data.chargemode_config.pv_charging
         max_phases_ev = self.ev_template.data.max_phases
@@ -276,20 +274,25 @@ class Ev:
         all_surplus = data.data.counter_all_data.get_evu_counter().get_usable_surplus(feed_in_yield)
         required_surplus = control_parameter.min_current * max_phases_ev * 230 - get_power
         unbalanced_load_limit_reached = limit.limiting_value == LimitingValue.UNBALANCED_LOAD
-        condition_1_to_3 = (((get_medium_charging_current(get_currents) > max_current and
+        condition_1_to_3 = (((get_medium_charging_current(get_currents) > max_current_range and
                             all_surplus > required_surplus) or unbalanced_load_limit_reached) and
                             phases_in_use == 1)
         condition_3_to_1 = get_medium_charging_current(
-            get_currents) < min_current and all_surplus <= 0 and phases_in_use > 1
+            get_currents) < min_current_range and all_surplus <= 0 and phases_in_use > 1
         if condition_1_to_3 or condition_3_to_1:
             return True, None
         else:
             if phases_in_use > 1 and all_surplus > 0:
+                # genug Leistung, um weiter mehrphasig zu laden
                 return False, self.ENOUGH_POWER
             elif phases_in_use == 1 and all_surplus < required_surplus:
+                # nicht genug Leistung, um mehrphasig zu laden, also einphasig laden
                 return False, self.NOT_ENOUGH_POWER
-            else:
+            elif min_current == evse_current or max_current == evse_current:
+                # EV lädt nicht mit dem vorgegebenen Strom +/- der erlaubten Abweichung
                 return False, self.CURRENT_OUT_OF_NOMINAL_DIFFERENCE
+            else:
+                return False, None
 
     PHASE_SWITCH_DELAY_TEXT = '{} Phasen in {}.'
 
@@ -297,6 +300,7 @@ class Ev:
                           charge_template: ChargeTemplate,
                           control_parameter: ControlParameter,
                           cp_num: int,
+                          evse_current: float,
                           get_currents: List[float],
                           get_power: float,
                           max_current_cp: int,
@@ -307,13 +311,12 @@ class Ev:
         phases_to_use = control_parameter.phases
         phases_in_use = control_parameter.phases
         pv_config = data.data.general_data.data.chargemode_config.pv_charging
-        cm_config = data.data.general_data.data.chargemode_config
         if charge_template.data.chargemode.pv_charging.feed_in_limit:
             feed_in_yield = pv_config.feed_in_yield
         else:
             feed_in_yield = 0
         all_surplus = data.data.counter_all_data.get_evu_counter().get_usable_surplus(feed_in_yield)
-        delay = cm_config.phase_switch_delay * 60
+        delay = pv_config.phase_switch_delay * 60
         if phases_in_use == 1:
             direction_str = f"Umschaltung von 1 auf {max_phases}"
             required_reserved_power = (control_parameter.min_current * max_phases * 230 -
@@ -337,6 +340,7 @@ class Ev:
         if not self.ev_template.data.prevent_phase_switch:
             condition, condition_msg = self._check_phase_switch_conditions(charge_template,
                                                                            control_parameter,
+                                                                           evse_current,
                                                                            get_currents,
                                                                            get_power,
                                                                            max_current_cp,
@@ -353,11 +357,13 @@ class Ev:
                                                           waiting_time,
                                                           delay)[1])
                     control_parameter.state = ChargepointState.PHASE_SWITCH_DELAY
-                elif condition_msg:
-                    if condition_msg == self.CURRENT_OUT_OF_NOMINAL_DIFFERENCE:
-                        message = f"Keine Phasenumschaltung{condition_msg}"
-                    else:
-                        log.debug(f"Keine Phasenumschaltung{condition_msg}")
+                else:
+                    if condition_msg:
+                        if condition_msg == self.CURRENT_OUT_OF_NOMINAL_DIFFERENCE:
+                            message = f"Keine Phasenumschaltung{condition_msg}"
+                        else:
+                            log.debug(f"Keine Phasenumschaltung{condition_msg}")
+                    control_parameter.timestamp_phase_switch_buffer_start = None
             else:
                 if condition:
                     # Timer laufen lassen
@@ -379,6 +385,7 @@ class Ev:
                     ).data.set.reserved_surplus -= max(0, required_reserved_power)
                     message = f"Verzögerung für die {direction_str} Phasen abgebrochen{condition_msg}"
                     control_parameter.state = ChargepointState.CHARGING_ALLOWED
+                    control_parameter.timestamp_phase_switch_buffer_start = None
 
         if message:
             log.info(f"LP {cp_num}: {message}")
@@ -387,7 +394,6 @@ class Ev:
     def _remaining_phase_switch_time(self, control_parameter: ControlParameter,
                                      waiting_time: float,
                                      buffer: float) -> float:
-
         if control_parameter.timestamp_phase_switch_buffer_start is None:
             control_parameter.timestamp_phase_switch_buffer_start = timecheck.create_timestamp()
         # Wenn der Puffer seit der letzen Umschaltung abgelaufen ist, warte noch die Umschaltverzögerung ab. ODER

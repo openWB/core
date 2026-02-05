@@ -1,7 +1,7 @@
 <template>
   <BaseCarousel :items="batteryIds">
     <template #item="{ item }">
-      <BatteryCard :battery-id="item" />
+      <BatteryCard :battery-id="item" full-height />
     </template>
   </BaseCarousel>
 </template>

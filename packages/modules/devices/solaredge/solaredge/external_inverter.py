@@ -10,7 +10,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType
 from modules.common.store import get_inverter_value_store
 from modules.devices.solaredge.solaredge.config import SolaredgeExternalInverterSetup
-from modules.devices.solaredge.solaredge.scale import create_scaled_reader
+from modules.devices.solaredge.solaredge.scale import scale_registers
 from modules.devices.solaredge.solaredge.meter import SolaredgeMeterRegisters, set_component_registers
 
 log = logging.getLogger(__name__)
@@ -38,26 +38,26 @@ class SolaredgeExternalInverter(AbstractInverter):
         components.append(self)
         set_component_registers(self.component_config, self.__tcp_client, components)
 
-        self._read_scaled_int16 = create_scaled_reader(
-            self.__tcp_client, self.component_config.configuration.modbus_id, ModbusDataType.INT_16
-        )
-        self._read_scaled_uint32 = create_scaled_reader(
-            self.__tcp_client, self.component_config.configuration.modbus_id, ModbusDataType.UINT_32
-        )
-
     def update(self) -> None:
         self.store.set(self.read_state())
 
     def read_state(self) -> InverterState:
-        factor = self.component_config.configuration.factor
-        power = self._read_scaled_int16(self.registers.powers, 4)[0] * factor
-        exported = self._read_scaled_uint32(self.registers.imp_exp, 8)[0]
-        currents = self._read_scaled_int16(self.registers.currents, 3)
+        reg_mapping = (
+            (self.registers.currents, [ModbusDataType.INT_16]*3),
+            (self.registers.currents_scale, ModbusDataType.INT_16),
+            (self.registers.power, ModbusDataType.INT_16),
+            (self.registers.powers_scale, ModbusDataType.INT_16),
+            (self.registers.exported, ModbusDataType.UINT_32),
+            (self.registers.imp_exp_scale, ModbusDataType.INT_16),
+        )
+        resp = self.__tcp_client.read_holding_registers_bulk(
+            self.registers.currents, 52, mapping=reg_mapping, unit=self.component_config.configuration.modbus_id)
 
+        factor = self.component_config.configuration.factor
         return InverterState(
-            exported=exported,
-            power=power,
-            currents=currents
+            exported=scale_registers(resp[self.registers.exported], resp[self.registers.imp_exp_scale]),
+            power=scale_registers(resp[self.registers.power], resp[self.registers.powers_scale]) * factor,
+            currents=scale_registers(resp[self.registers.currents], resp[self.registers.currents_scale])
         )
 
 

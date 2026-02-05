@@ -40,7 +40,7 @@ Achtung: Die angegeben Preise sind Nettopreise.
 
 * Protocol AutoPID wird zur automatischen Abfrage der PIDs benötigt (Bereich Automate)
 * MQTT zur openWB erfolgt mit leerem User und Passwort
-* RX und Status Topic müssen mit others/ beginnen, damit sie von openWB beachtet werden. Sie dienen nur der Fehleranalyse und Überwachung mit MQTT-Explorer. Für die eigentliche Funktion werden sie nicht benötigt.
+* RX und Status Topic müssen mit others/ beginnen, damit sie von openWB beachtet werden. Diese dienen nur der Fehleranalyse und Überwachung mit MQTT-Explorer. Für die eigentliche Funktion werden sie nicht benötigt.
 
 ---
 

@@ -1,3 +1,4 @@
+import logging
 import pymodbus
 from typing import Any, Optional, Protocol, Tuple, Union
 
@@ -5,6 +6,9 @@ from modules.common.component_state import CounterState, EvseState
 from modules.common.evse import Evse
 from modules.common.fault_state import FaultState
 from modules.common.modbus import ModbusSerialClient_, ModbusTcpClient_
+
+log = logging.getLogger(__name__)
+
 
 EVSE_MIN_FIRMWARE = 7
 
@@ -17,16 +21,10 @@ LAN_ADAPTER_BROKEN = (f"{RS485_ADAPTER_BROKEN.format('der LAN-Konverter abgestü
                       "Bitte den openWB series2 satellit stromlos machen.")
 METER_PROBLEM = "Der Zähler konnte nicht ausgelesen werden. Vermutlich ist der Zähler falsch konfiguriert oder defekt."
 METER_BROKEN_VOLTAGES = "Die Spannungen des Zählers konnten nicht korrekt ausgelesen werden: {}V Der Zähler ist defekt."
-METER_VOLTAGE = "Die Spannung des Zählers ist zu {}. Bitte prüfen Sie die Spannungsversorgung. Spannung: {}V."
-METER_VOLTAGE_TOO_HIGH = METER_VOLTAGE.format("hoch", "{}")
-METER_VOLTAGE_TOO_LOW = METER_VOLTAGE.format("niedrig", "{}")
-METER_NO_SERIAL_NUMBER = ("Die Seriennummer des Zählers für das Ladelog kann nicht ausgelesen werden. Wenn Sie die "
-                          "Seriennummer für Abrechnungszwecke benötigen, wenden Sie sich bitte an unseren Support. Die "
+METER_NO_SERIAL_NUMBER = ("Die Seriennummer des Zählers für das Ladelog kann nicht ausgelesen werden. Wenn Du die "
+                          "Seriennummer für Abrechnungszwecke benötigst, wende Dich bitte an unseren Support. Die "
                           "Funktionalität wird dadurch nicht beeinträchtigt!")
-EVSE_BROKEN = ("Auslesen der EVSE nicht möglich. Vermutlich ist die EVSE defekt oder hat eine unbekannte Modbus-ID. "
-               "(Fehlermeldung nur relevant, wenn diese auf der Startseite oder im Status angezeigt wird.)")
-METER_IMPLAUSIBLE_VALUE = ("Der Zähler hat einen unplausiblen Wert zurückgegeben: Leistungen {}W, Ströme {}A, "
-                           "Spannungen {}V.")
+EVSE_BROKEN = "Auslesen der EVSE nicht möglich. Vermutlich ist die EVSE defekt oder hat eine unbekannte Modbus-ID. "
 
 
 def check_meter_values(counter_state: CounterState, fault_state: Optional[FaultState] = None) -> None:
@@ -36,27 +34,14 @@ def check_meter_values(counter_state: CounterState, fault_state: Optional[FaultS
 
 
 def _check_meter_values(counter_state: CounterState) -> Optional[str]:
-    VOLTAGE_HIGH_THRESHOLD = 260
-    VOLTAGE_LOW_THRESHOLD = 200
-    VOLTAGE_DETECTED_THRESHOLD = 50  # Phasenaufall detektieren
-
-    def valid_voltage(voltage) -> bool:
-        return VOLTAGE_LOW_THRESHOLD < voltage < VOLTAGE_HIGH_THRESHOLD
+    # Nur prüfen, dass keine Phase ausgefallen ist
+    # Es gibt einige Fälle, in denen die Normtoleranzen der Netzspannung nicht eingehalten werden, aber kein Defekt
+    # vorliegt und der Kunde nicht eingreifen muss. Dann soll keine Warnung angezeigt werden.
+    # Kona 1-phasig induziert auf L2 40V, Zoe auf L2 130V
+    # beim Ladestart sind Strom und Spannung nicht immer konsistent.
     voltages = counter_state.voltages
-    # wenn ein Wert in voltages großer VOLTAGE_HIGH_THRESHOLD ist, gebe eine Fehlermeldung zurück
-    if any(v > VOLTAGE_HIGH_THRESHOLD and v > VOLTAGE_DETECTED_THRESHOLD for v in voltages):
-        return METER_VOLTAGE_TOO_HIGH.format(voltages)
-    elif any(v < VOLTAGE_LOW_THRESHOLD and v > VOLTAGE_DETECTED_THRESHOLD for v in voltages):
-        return METER_VOLTAGE_TOO_LOW.format(voltages)
-    if not ((valid_voltage(voltages[0]) and voltages[1] == 0 and voltages[2] == 0) or
-            # Zoe lädt einphasig an einphasiger Wallbox und erzeugt Spannung auf L2 (ca 126V)
-            (valid_voltage(voltages[0]) and 115 < voltages[1] < 135 and voltages[2] == 0) or
-            (valid_voltage(voltages[0]) and valid_voltage(voltages[1]) and voltages[2] == 0) or
-            (valid_voltage(voltages[0]) and valid_voltage(voltages[1]) and valid_voltage((voltages[2])))):
+    if (voltages[1] == 0 and voltages[2] > 30) or voltages[0] == 0:
         return METER_BROKEN_VOLTAGES.format(voltages)
-    if ((sum(counter_state.currents) < 0.5 and counter_state.power > 230) or
-            (sum(counter_state.currents) > 1 and counter_state.power < 100)):
-        return METER_IMPLAUSIBLE_VALUE.format(counter_state.powers, counter_state.currents, counter_state.voltages)
     return None
 
 
@@ -116,9 +101,7 @@ class SeriesHardwareCheckMixin:
             else:
                 raise Exception(meter_error_msg + OPEN_TICKET)
         elif evse_check_passed and meter_check_passed and meter_error_msg is not None:
-            if meter_error_msg != METER_NO_SERIAL_NUMBER:
-                meter_error_msg += OPEN_TICKET
-            fault_state.warning(meter_error_msg)
+            fault_state.warning(meter_error_msg + OPEN_TICKET)
         if evse_check_passed is False:
             if meter_error_msg is not None:
                 raise Exception(EVSE_BROKEN + " " + meter_error_msg + OPEN_TICKET)
@@ -131,7 +114,7 @@ class SeriesHardwareCheckMixin:
             with self.client:
                 counter_state = self.meter_client.get_counter_state()
             if counter_state.serial_number == "0" or counter_state.serial_number is None:
-                return True, METER_NO_SERIAL_NUMBER, counter_state
+                log.warning(METER_NO_SERIAL_NUMBER)
             return True, _check_meter_values(counter_state), counter_state
         except Exception:
             return False, METER_PROBLEM, None

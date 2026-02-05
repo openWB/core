@@ -35,6 +35,5 @@ client.loop(timeout=2.0)
 client.disconnect()
 file_stringpv = '/var/www/html/openWB/ramdisk/smarthome_device_' + str(devicenumber) + '_pv'
 pvmodus = 0
-f = open(file_stringpv, 'w')
-f.write(str(pvmodus))
-f.close()
+with open(file_stringpv, 'w') as f:
+    f.write(str(pvmodus))

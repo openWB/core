@@ -1,9 +1,22 @@
 <template>
-  <q-card ref="cardRef" class="card-width full-height">
-    <q-card-section class="row">
+  <q-card
+    ref="cardRef"
+    class="card-width"
+    :class="{ 'full-height': props.fullHeight }"
+  >
+    <q-card-section class="row no-wrap">
       <div class="text-h6 text-bold ellipsis" :title="vehicle?.name">
         {{ vehicle?.name }}
       </div>
+      <q-space />
+      <q-btn
+        v-if="props.closeButton"
+        icon="close"
+        flat
+        round
+        dense
+        v-close-popup
+      />
     </q-card-section>
     <q-separator class="q-mt-sm" />
     <q-card-section class="row q-mt-sm">
@@ -57,6 +70,8 @@ const cardRef = ref<{ $el: HTMLElement } | null>(null);
 
 const props = defineProps<{
   vehicleId: number;
+  closeButton?: boolean;
+  fullHeight?: boolean;
 }>();
 
 const mqttStore = useMqttStore();

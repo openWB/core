@@ -22,6 +22,7 @@ def create_device(device_config: Shelly) -> ConfigurableDevice:
                              device_id=device_config.id,
                              ip_address=device_config.configuration.ip_address,
                              factor=device_config.configuration.factor,
+                             phase=device_config.configuration.phase,
                              generation=generation)
 
     def create_inverter_component(component_config: ShellyInverterSetup) -> ShellyInverter:
@@ -30,6 +31,7 @@ def create_device(device_config: Shelly) -> ConfigurableDevice:
                               device_id=device_config.id,
                               ip_address=device_config.configuration.ip_address,
                               factor=device_config.configuration.factor,
+                              phase=device_config.configuration.phase,
                               generation=generation)
 
     def create_bat_component(component_config: ShellyBatSetup) -> ShellyBat:
@@ -38,6 +40,7 @@ def create_device(device_config: Shelly) -> ConfigurableDevice:
                          device_id=device_config.id,
                          ip_address=device_config.configuration.ip_address,
                          factor=device_config.configuration.factor,
+                         phase=device_config.configuration.phase,
                          generation=generation)
 
     def initializer() -> None:

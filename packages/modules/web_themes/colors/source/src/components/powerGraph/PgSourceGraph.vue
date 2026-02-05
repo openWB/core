@@ -132,7 +132,9 @@ const keysToUse = computed(() => {
 				? [...additionalKeys, ...k]
 				: ['selfUsage', 'evuOut', 'batOut', 'evuIn']
 		default:
-			return ['evuIn', 'batOut', 'selfUsage', 'evuOut']
+			return globalConfig.showInverters
+				? ['evuIn', 'batOut', 'selfUsage']
+				: ['evuIn', 'batOut', 'selfUsage', 'evuOut']
 	}
 })
 

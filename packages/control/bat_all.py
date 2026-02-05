@@ -78,6 +78,7 @@ class Set:
     charging_power_left: float = field(default=0, metadata={"topic": "set/charging_power_left"})
     power_limit: Optional[float] = field(default=None, metadata={"topic": "set/power_limit"})
     regulate_up: bool = field(default=False, metadata={"topic": "set/regulate_up"})
+    hysteresis_discharge: bool = field(default=False, metadata={"topic": "set/hysteresis_discharge"})
 
 
 def set_factory() -> Set:
@@ -214,7 +215,9 @@ class BatAll:
                 # Speicher sollte weder ge- noch entladen werden.
                 charging_power_left = self.data.get.power
             else:
+                # Speicher soll geladen werden um min SoC zu erreichen
                 if self.data.get.soc < config.min_bat_soc:
+                    self.data.set.hysteresis_discharge = False
                     if self.data.get.power < 0:
                         # Wenn der Speicher entladen wird, darf diese Leistung nicht zum Laden der Fahrzeuge
                         # genutzt werden. Wenn der Speicher schneller regelt als die LP, würde sonst der Speicher
@@ -235,10 +238,30 @@ class BatAll:
                             # Speicher wird geladen
                             charging_power_left = 0
                             self.data.set.regulate_up = True
-                elif int(self.data.get.soc) == config.min_bat_soc:
-                    # Speicher sollte weder ge- noch entladen werden, um den Mindest-SoC zu halten.
-                    charging_power_left = self.data.get.power
+                # Speicher zwischen min und max SoC
+                elif int(self.data.get.soc) >= config.min_bat_soc and int(self.data.get.soc) < config.max_bat_soc:
+                    # Speicher soll aktiv weder ge- noch entladen werden.
+                    # Mindest-SoC wird gehalten oder der Speicher mit weiterem vorhanden Überschuss geladen.
+                    if self.data.set.hysteresis_discharge is False:
+                        charging_power_left = self.data.get.power
+                    # Speicher darf wegen Hysterese bis min_bat_soc entladen werden.
+                    else:
+                        if self.data.set.power_limit is None:
+                            if config.bat_power_discharge_active:
+                                # Wenn der Speicher mit mehr als der erlaubten Entladeleistung entladen wird, muss das
+                                # vom Überschuss subtrahiert werden.
+                                charging_power_left = config.bat_power_discharge + self.data.get.power
+                                log.debug(f"Erlaubte Entlade-Leistung nutzen {charging_power_left}W")
+                            else:
+                                # Speicher sollte weder ge- noch entladen werden.
+                                charging_power_left = self.data.get.power
+                        else:
+                            log.debug("Keine erlaubte Entladeleistung freigeben, da der Speicher mit einer vorgegeben "
+                                      "Leistung entladen wird.")
+                            charging_power_left = 0
+                # Speicher oberhalb max SoC. Darf bis min SoC entladen werden.
                 else:
+                    self.data.set.hysteresis_discharge = True
                     if self.data.set.power_limit is None:
                         if config.bat_power_discharge_active:
                             # Wenn der Speicher mit mehr als der erlaubten Entladeleistung entladen wird, muss das
@@ -291,40 +314,42 @@ class BatAll:
 
     def get_power_limit(self):
         if self.data.config.bat_control_permitted is False:
-            return
-        chargepoint_by_chargemodes = get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_CHARGING)
-        # Falls aktive Steuerung an und Fahrzeuge laden und kein Überschuss im System ist,
-        # dann Speicherleistung begrenzen.
-        if (self.data.config.power_limit_mode != BatPowerLimitMode.NO_LIMIT.value and
-            len(chargepoint_by_chargemodes) > 0 and
-                data.data.cp_all_data.data.get.power > 100 and
-                self.data.get.power_limit_controllable and
-                self.data.get.power <= 0 and
-                data.data.counter_all_data.get_evu_counter().data.get.power >= -100):
-            if self.data.config.power_limit_mode == BatPowerLimitMode.LIMIT_STOP.value:
-                self.data.set.power_limit = 0
-            elif self.data.config.power_limit_mode == BatPowerLimitMode.LIMIT_TO_HOME_CONSUMPTION.value:
-                self.data.set.power_limit = data.data.counter_all_data.data.set.home_consumption * -1
-            log.debug(f"Speicher-Leistung begrenzen auf {self.data.set.power_limit/1000}kW")
-        else:
             self.data.set.power_limit = None
-            control_range_low = data.data.general_data.data.chargemode_config.pv_charging.control_range[0]
-            control_range_high = data.data.general_data.data.chargemode_config.pv_charging.control_range[1]
-            control_range_center = control_range_high - (control_range_high - control_range_low) / 2
-            if len(chargepoint_by_chargemodes) == 0:
-                log.debug("Speicher-Leistung nicht begrenzen, "
-                          "da keine Ladepunkte in einem Lademodus mit Netzbezug sind.")
-            elif data.data.cp_all_data.data.get.power <= 100:
-                log.debug("Speicher-Leistung nicht begrenzen, da kein Ladepunkt mit Netzbezug lädt.")
-            elif self.data.get.power_limit_controllable is False:
-                log.debug("Speicher-Leistung nicht begrenzen, da keine regelbaren Speicher vorhanden sind.")
-            elif self.data.get.power > 0:
-                log.debug("Speicher-Leistung nicht begrenzen, da kein Speicher entladen wird.")
-            elif data.data.counter_all_data.get_evu_counter().data.get.power < control_range_center + 80:
-                # Wenn der Regelbereich zB auf Bezug steht, darf auch die Leistung des Regelbereichs entladen werden.
-                log.debug("Speicher-Leistung nicht begrenzen, da EVU-Überschuss vorhanden ist.")
+        else:
+            chargepoint_by_chargemodes = get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_CHARGING)
+            # Falls aktive Steuerung an und Fahrzeuge laden und kein Überschuss im System ist,
+            # dann Speicherleistung begrenzen.
+            if (self.data.config.power_limit_mode != BatPowerLimitMode.NO_LIMIT.value and
+                len(chargepoint_by_chargemodes) > 0 and
+                    data.data.cp_all_data.data.get.power > 100 and
+                    self.data.get.power_limit_controllable and
+                    self.data.get.power <= 0 and
+                    data.data.counter_all_data.get_evu_counter().data.get.power >= -100):
+                if self.data.config.power_limit_mode == BatPowerLimitMode.LIMIT_STOP.value:
+                    self.data.set.power_limit = 0
+                elif self.data.config.power_limit_mode == BatPowerLimitMode.LIMIT_TO_HOME_CONSUMPTION.value:
+                    self.data.set.power_limit = data.data.counter_all_data.data.set.home_consumption * -1
+                log.debug(f"Speicher-Leistung begrenzen auf {self.data.set.power_limit/1000}kW")
             else:
-                log.debug("Speicher-Leistung nicht begrenzen.")
+                self.data.set.power_limit = None
+                control_range_low = data.data.general_data.data.chargemode_config.pv_charging.control_range[0]
+                control_range_high = data.data.general_data.data.chargemode_config.pv_charging.control_range[1]
+                control_range_center = control_range_high - (control_range_high - control_range_low) / 2
+                if len(chargepoint_by_chargemodes) == 0:
+                    log.debug("Speicher-Leistung nicht begrenzen, "
+                              "da keine Ladepunkte in einem Lademodus mit Netzbezug sind.")
+                elif data.data.cp_all_data.data.get.power <= 100:
+                    log.debug("Speicher-Leistung nicht begrenzen, da kein Ladepunkt mit Netzbezug lädt.")
+                elif self.data.get.power_limit_controllable is False:
+                    log.debug("Speicher-Leistung nicht begrenzen, da keine regelbaren Speicher vorhanden sind.")
+                elif self.data.get.power > 0:
+                    log.debug("Speicher-Leistung nicht begrenzen, da kein Speicher entladen wird.")
+                elif data.data.counter_all_data.get_evu_counter().data.get.power < control_range_center + 80:
+                    # Wenn der Regelbereich zB auf Bezug steht, darf auch die Leistung des Regelbereichs entladen
+                    # werden.
+                    log.debug("Speicher-Leistung nicht begrenzen, da EVU-Überschuss vorhanden ist.")
+                else:
+                    log.debug("Speicher-Leistung nicht begrenzen.")
         remaining_power_limit = self.data.set.power_limit
         for bat_component in get_controllable_bat_components():
             if self.data.set.power_limit is None:

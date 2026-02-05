@@ -42,6 +42,7 @@ class ChargepointModule(AbstractChargepoint):
                 f"openWB/set/chargepoint/{self.config.id}/get/error_timestamp", CP_ERROR, hide_exception=True)
             self._create_client()
             self._validate_version()
+        self.old_phases_in_use = 3
 
     def delay_second_cp(self, delay: float):
         if self.config.configuration.duo_num == 0:
@@ -82,12 +83,15 @@ class ChargepointModule(AbstractChargepoint):
                         if self.version is False:
                             self._validate_version()
 
-                        currents = counter_state.currents
-                        phases_in_use = sum(1 for current in currents if current > 3)
+                        phases_in_use = sum(1 for current in counter_state.currents if current > 3)
+                        if phases_in_use == 0:
+                            phases_in_use = self.old_phases_in_use
+                        else:
+                            self.old_phases_in_use = phases_in_use
 
                         chargepoint_state = ChargepointState(
                             power=counter_state.power,
-                            currents=currents,
+                            currents=counter_state.currents,
                             imported=counter_state.imported,
                             exported=0,
                             voltages=counter_state.voltages,
@@ -95,7 +99,9 @@ class ChargepointModule(AbstractChargepoint):
                             charge_state=evse_state.charge_state,
                             phases_in_use=phases_in_use,
                             serial_number=counter_state.serial_number,
-                            max_evse_current=evse_state.max_current
+                            max_evse_current=evse_state.max_current,
+                            evse_current=evse_state.set_current
+
                         )
                         self.store.set(chargepoint_state)
                         self.client_error_context.reset_error_counter()
@@ -103,6 +109,11 @@ class ChargepointModule(AbstractChargepoint):
                     if self.client_error_context.error_counter_exceeded():
                         run_command(f"{Path(__file__).resolve().parents[3]}/modules/chargepoints/"
                                     "openwb_series2_satellit/restart_protoss_satellite")
+                        chargepoint_state = ChargepointState(
+                            plug_state=None, charge_state=False, imported=None,
+                            # bei im-/exported None werden keine Werte gepublished
+                            exported=None, phases_in_use=self.old_phases_in_use, power=0, currents=[0]*3)
+                        self.store.set(chargepoint_state)
                 except AttributeError:
                     self._create_client()
                     self._validate_version()
@@ -120,19 +131,21 @@ class ChargepointModule(AbstractChargepoint):
                         self.delay_second_cp(self.CP1_DELAY)
                         with self._client.client:
                             if self.version:
-                                self._client.evse_client.set_current(int(current))
+                                self._client.evse_client.set_current(current)
                             else:
                                 self._client.evse_client.set_current(0)
                     except AttributeError:
                         self._create_client()
                         self._validate_version()
 
-    def switch_phases(self, phases_to_use: int, duration: int) -> None:
+    def switch_phases(self, phases_to_use: int) -> None:
         if self.version is not None:
             with SingleComponentUpdateContext(self.fault_state, update_always=False):
                 with self.client_error_context:
                     try:
                         with self._client.client:
+                            self._client.evse_client.set_current(0)
+                            time.sleep(5)
                             if phases_to_use == 1:
                                 self._client.client.delegate.write_register(
                                     0x0001, 256, unit=self.ID_PHASE_SWITCH_UNIT)

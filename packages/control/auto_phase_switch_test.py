@@ -138,6 +138,7 @@ def test_auto_phase_switch(monkeypatch, vehicle: Ev, params: Params):
     phases_to_use, current, message = vehicle.auto_phase_switch(ChargeTemplate(),
                                                                 control_parameter,
                                                                 0,
+                                                                max(params.get_currents),
                                                                 params.get_currents,
                                                                 params.get_power,
                                                                 32,

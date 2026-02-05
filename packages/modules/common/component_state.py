@@ -48,6 +48,15 @@ def _calculate_powers_and_currents(currents: Optional[List[Optional[float]]],
     return currents, powers, voltages
 
 
+def check_currents_power_sign(currents: Optional[List[Optional[float]]], power: float) -> bool:
+    """Check if the sign of the sum of currents matches the power sign or both zero."""
+    return any([
+        sum(currents) < 0 and power < 0,
+        sum(currents) > 0 and power > 0,
+        sum(currents) == 0 and power == 0
+    ])
+
+
 @auto_str
 class BatState:
     def __init__(
@@ -57,6 +66,7 @@ class BatState:
         power: float = 0,
         soc: float = 0,
         currents: Optional[List[float]] = None,
+        serial_number: Optional[str] = None,
     ):
         """Args:
             imported: total imported energy in Wh
@@ -71,9 +81,10 @@ class BatState:
         if _check_none(currents):
             currents = [0.0]*3
         else:
-            if not ((sum(currents) < 0 and power < 0) or (sum(currents) > 0 and power > 0)):
+            if not check_currents_power_sign(currents, power):
                 log.debug("currents sign wrong "+str(currents))
         self.currents = currents
+        self.serial_number = serial_number
 
 
 @auto_str
@@ -88,7 +99,7 @@ class CounterState:
         powers: Optional[List[Optional[float]]] = None,
         power_factors: Optional[List[Optional[float]]] = None,
         frequency: float = 50,
-        serial_number: str = "",
+        serial_number: Optional[str] = None,
     ):
         """Args:
             imported: total imported energy in Wh
@@ -119,7 +130,8 @@ class InverterState:
         power: float,
         imported: float = 0,  # simulated import counter to properly calculate PV energy when bat is charged from AC
         currents: Optional[List[Optional[float]]] = None,
-        dc_power: Optional[float] = None
+        dc_power: Optional[float] = None,
+        serial_number: Optional[str] = None,
     ):
         """Args:
             exported: total energy in Wh
@@ -131,13 +143,14 @@ class InverterState:
         if _check_none(currents):
             currents = [0.0]*3
         else:
-            if not ((sum(currents) < 0 and power < 0) or (sum(currents) > 0 and power > 0)):
+            if not check_currents_power_sign(currents, power):
                 log.debug("currents sign wrong "+str(currents))
         self.currents = currents
         self.power = power
         self.exported = exported
         self.imported = imported
         self.dc_power = dc_power
+        self.serial_number = serial_number
 
 
 @auto_str
@@ -168,7 +181,7 @@ class ChargepointState:
                  power: float,
                  currents: List[float],
                  charge_state: bool,
-                 plug_state: bool,
+                 plug_state: Optional[bool],
                  serial_number: str = "",
                  charging_current: Optional[float] = 0,
                  charging_voltage: Optional[float] = 0,
@@ -223,7 +236,8 @@ class ChargepointState:
 @auto_str
 class TariffState:
     def __init__(self,
-                 prices: Optional[Dict[int, float]] = None) -> None:
+                 prices: Optional[Dict[str, float]] = None
+                 ) -> None:
         self.prices = prices
 
 

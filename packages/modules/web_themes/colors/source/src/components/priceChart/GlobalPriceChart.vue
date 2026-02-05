@@ -10,13 +10,11 @@
 			<WbBadge v-if="etData.active" bgcolor="var(--color-charging)">{{
 				etData.etCurrentPriceString
 			}}</WbBadge>
-			<WbBadge v-if="etData.active" bgcolor="var(--color-menu)">{{
-				etData.etProvider
-			}}</WbBadge>
 		</template>
+		<div class="subtitle">{{ etData.etProvider }}</div>
 		<div class="grapharea">
-			<figure id="pricechart" class="p-1 m-0 pricefigure">
-				<svg viewBox="0 0 400 280">
+			<figure id="pricechart" class="p-0 m-0 pricefigure">
+				<svg viewBox="0 0 380 280">
 					<g
 						:id="chartId"
 						:origin="draw"
@@ -127,7 +125,11 @@ const xAxisGenerator = computed(() => {
 		.ticks(plotdata.value.length)
 		.tickSize(5)
 		.tickSizeInner(-height)
-		.tickFormat((d) => (d.getHours() % 6 == 0 ? timeFormat('%H:%M')(d) : ''))
+		.tickFormat((d) =>
+			d.getHours() % 6 == 0 && d.getMinutes() == 0
+				? timeFormat('%H:%M')(d)
+				: '',
+		)
 })
 const yAxisGenerator = computed(() => {
 	return (
@@ -156,7 +158,9 @@ const draw = computed(() => {
 	bargroups
 		.append('rect')
 		.attr('class', 'bar')
-		.attr('x', (d) => xScale.value(d[0]))
+		.attr('x', (d) => {
+			return xScale.value(d[0])
+		})
 		.attr('y', (d) => yScale.value(d[1]))
 		.attr('width', barwidth.value)
 		.attr('height', (d) => yScale.value(yDomain.value[0]) - yScale.value(d[1]))
@@ -172,7 +176,11 @@ const draw = computed(() => {
 		.selectAll('.tick line')
 		.attr('stroke', 'var(--color-bg)')
 		.attr('stroke-width', (d) =>
-			(d as Date).getHours() % 6 == 0 ? '2' : '0.5',
+			(d as Date).getMinutes() == 0
+				? (d as Date).getHours() % 6 == 0
+					? '2'
+					: '0.5'
+				: '0',
 		)
 	xAxis.select('.domain').attr('stroke', 'var(--color-bg')
 	// Y Axis
@@ -282,5 +290,11 @@ onMounted(() => {
 
 .pricefigure {
 	justify-self: stretch;
+}
+.subtitle {
+	color: var(--color-axis);
+	font-size: 12px;
+	grid-column: span 12;
+	justify-self: start;
 }
 </style>

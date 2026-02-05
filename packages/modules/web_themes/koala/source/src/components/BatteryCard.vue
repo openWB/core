@@ -1,18 +1,23 @@
 <template>
   <q-card
     ref="cardRef"
-    class="card-width full-height"
-    :class="{ 'battery-sum': props.batteryId === -1 }"
+    class="card-width"
+    :class="{
+      'battery-sum': props.batteryId === -1,
+      'full-height': props.fullHeight,
+    }"
   >
-    <q-card-section class="row items-center justify-between">
+    <q-card-section class="row no-wrap items-center justify-between">
       <div class="text-h6 text-bold ellipsis" :title="cardTitle">
         {{ cardTitle }}
       </div>
-      <q-icon
-        class="cursor-pointer q-ml-auto"
+      <q-space />
+      <q-btn
         v-if="showSettings"
-        name="settings"
-        size="sm"
+        icon="settings"
+        flat
+        round
+        dense
         @click="dialog?.open()"
       />
     </q-card-section>
@@ -80,6 +85,7 @@ const cardRef = ref<{ $el: HTMLElement } | null>(null);
 
 const props = defineProps<{
   batteryId: number;
+  fullHeight?: boolean;
 }>();
 
 const singleBattery = computed(() => {

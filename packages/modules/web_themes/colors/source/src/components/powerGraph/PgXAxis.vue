@@ -5,7 +5,7 @@
 			:transform="'translate(' + 0 + ',' + (height / 2 + 9) + ')'"
 		></g>
 	</svg>
-	<svg :x="0" :width="props.width + 10">
+	<svg :x="0" :width="props.width">
 		<g :transform="'translate(' + margin.left + ',' + margin.top + ')'">
 			<g
 				id="PGXAxis"
