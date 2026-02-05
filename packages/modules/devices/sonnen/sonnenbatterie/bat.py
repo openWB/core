@@ -37,6 +37,7 @@ class SonnenbatterieBat(AbstractBat):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.last_mode = 'Undefined'
         if self.__device_variant == 0:
             self.api = RestApi1(host=self.__device_address)
         elif self.__device_variant == 2:
@@ -50,7 +51,13 @@ class SonnenbatterieBat(AbstractBat):
         self.store.set(self.api.update_battery(sim_counter=self.sim_counter))
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
-        self.api.set_power_limit(power_limit=power_limit)
+        log.debug(f'last_mode: {self.last_mode}')
+        if power_limit is None and self.last_mode is not None:
+            self.api.set_power_limit(power_limit=power_limit)
+            self.last_mode = None
+        elif power_limit is not None:
+            self.api.set_power_limit(power_limit=power_limit)
+            self.last_mode = 'active'
 
     def power_limit_controllable(self) -> bool:
         return self.api.power_limit_controllable()
