@@ -72,6 +72,7 @@ def create_consumer(config: Acthor):
     def set_limit(power_limit: float) -> None:
         nonlocal client, fuse, power, status
         if status == 4:
+            log.debug("Elwa-E im Boost-Heat Modus, keine Leistungsvorgabe möglich")
             return
         if power_limit < power:
             power_limit = power + (power - power_limit) * fuse

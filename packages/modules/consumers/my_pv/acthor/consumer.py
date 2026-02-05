@@ -52,8 +52,7 @@ def create_consumer(config: Acthor):
         nonlocal client, sim_counter
         resp = client.read_holding_registers_bulk(
             Register.POWER, 35, mapping=REG_MAPPING, unit=config.configuration.modbus_id)
-        power = resp[Register.POWER] * \
-            FACTORS.get(config.configuration.model, 9000)/config.configuration.max_power
+        power = resp[Register.POWER]
         imported, exported = sim_counter.sim_count(power)
         return ConsumerState(
             power=power,
@@ -64,6 +63,7 @@ def create_consumer(config: Acthor):
 
     def set_limit(power_limit: float) -> None:
         nonlocal client
+        power_limit = power_limit * FACTORS.get(config.configuration.model, 9000)/config.configuration.max_power
         client.write_registers(1000, power_limit, unit=config.configuration.modbus_id)
     return ConfigurableConsumer(consumer_config=config,
                                 module_initializer=initializer,
