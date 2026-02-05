@@ -45,15 +45,26 @@ class AlphaEssCounter(AbstractCounter):
                 val * 10 for val in self.__tcp_client.read_holding_registers(
                     0x0010, [ModbusDataType.INT_32] * 2, unit=self.__modbus_id
                 )]
-            currents = [val / 1000 for val in self.__tcp_client.read_holding_registers(
+            currents = [val / 10 for val in self.__tcp_client.read_holding_registers(
                 0x0017, [ModbusDataType.INT_16]*3, unit=self.__modbus_id)]
-
+            powers = self.__tcp_client.read_holding_registers(
+                0x001b, [ModbusDataType.INT_32]*3, unit=self.__modbus_id)
+            voltages = self.__tcp_client.read_holding_registers(
+                0x0014, [ModbusDataType.UINT_16]*3, unit=self.__modbus_id)
+            frequency = self.__tcp_client.read_holding_registers(
+                0x001A, ModbusDataType.UINT_16, unit=self.__modbus_id) / 100
         counter_state = CounterState(
             currents=currents,
             imported=imported,
             exported=exported,
             power=power
         )
+        if 'powers' in locals():
+            counter_state.powers = powers
+        if 'voltages' in locals():
+            counter_state.voltages = voltages
+        if 'frequency' in locals():
+            counter_state.frequency = frequency
         self.store.set(counter_state)
 
 
