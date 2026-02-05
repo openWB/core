@@ -43,7 +43,7 @@
 		]
 	},
 	{
-		"rolename": "chargepoint-<id>-mqtt-access",
+		"rolename": "chargepoint-<id>-write-access",
 		"textname": "Schreibrechte für MQTT-Ladepunkt <id>",
 		"textdescription": "Erlaubt das Senden von Daten für Ladepunkt <id>.",
 		"acls": [
@@ -105,7 +105,7 @@
 		]
 	},
 	{
-		"rolename": "vehicle-<id>-mqtt-access",
+		"rolename": "vehicle-<id>-write-access",
 		"textname": "Schreibrechte für Fahrzeug <id> mit MQTT-SoC",
 		"textdescription": "Erlaubt das Senden von SoC-Daten für Fahrzeug <id>.",
 		"acls": [
@@ -149,6 +149,31 @@
 		]
 	},
 	{
+		"rolename": "bat-<id>-write-access",
+		"textname": "Schreibrechte für Batterie <id>",
+		"textdescription": "Erlaubt das Senden von Daten für Batterie <id>.",
+		"acls": [
+			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/mqtt/bat/<id>/get/+",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/set/mqtt/bat/<id>/get/+",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/mqtt/bat/<id>/set/#",
+				"priority": 0,
+				"allow": true
+			}
+		]
+	},
+	{
 		"rolename": "counter-<id>-access",
 		"textname": "Leserechte für Zähler <id>",
 		"textdescription": "Erlaubt das Empfangen von Daten für Zähler <id>.",
@@ -174,6 +199,25 @@
 		]
 	},
 	{
+		"rolename": "counter-<id>-write-access",
+		"textname": "Schreibrechte für Zähler <id>",
+		"textdescription": "Erlaubt das Senden von Daten für Zähler <id>.",
+		"acls": [
+			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/mqtt/counter/<id>/get/+",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/set/mqtt/counter/<id>/get/+",
+				"priority": 0,
+				"allow": true
+			}
+		]
+	},
+	{
 		"rolename": "inverter-<id>-access",
 		"textname": "Leserechte für Wechselrichter <id>",
 		"textdescription": "Erlaubt das Empfangen von Daten für Wechselrichter <id>.",
@@ -187,6 +231,25 @@
 			{
 				"acltype": "publishClientReceive",
 				"topic": "openWB/system/device/+/component/<id>/config",
+				"priority": 0,
+				"allow": true
+			}
+		]
+	},
+	{
+		"rolename": "inverter-<id>-write-access",
+		"textname": "Schreibrechte für Wechselrichter <id>",
+		"textdescription": "Erlaubt das Senden von Daten für Wechselrichter <id>.",
+		"acls": [
+			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/mqtt/pv/<id>/get/+",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/set/mqtt/pv/<id>/get/+",
 				"priority": 0,
 				"allow": true
 			}
@@ -225,7 +288,7 @@
 		]
 	},
 	{
-		"rolename": "io-device-<id>-mqtt-access",
+		"rolename": "io-device-<id>-write-access",
 		"textname": "Schreibrechte für IO-Gerät <id>",
 		"textdescription": "Erlaubt das Senden von Daten für IO-Gerät <id>.",
 		"acls": [

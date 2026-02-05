@@ -23,6 +23,7 @@ from control.optional_data import Ocpp
 from helpermodules import graph, system
 from helpermodules.broker import BrokerClient
 from helpermodules.messaging import MessageType, pub_system_message
+from helpermodules.mosquitto_dynsec.role_handler import add_acl_role, remove_acl_role
 from helpermodules.utils import ProcessingCounter
 from helpermodules.utils.run_command import run_command
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
@@ -275,6 +276,7 @@ class SubData:
                 if decode_payload(msg.payload) == "":
                     if re.search("/vehicle/[0-9]+/soc_module/config$", msg.topic) is not None:
                         var["ev"+index].soc_module = None
+                        remove_acl_role("vehicle-<id>-write-access", int(index))
                     elif re.search("/vehicle/[0-9]+/get", msg.topic) is not None:
                         self.set_json_payload_class(var["ev"+index].data.get, msg)
                     else:
@@ -283,7 +285,6 @@ class SubData:
                 else:
                     if "ev"+index not in var:
                         var["ev"+index] = ev.Ev(int(index))
-
                     if re.search("/vehicle/[0-9]+/get", msg.topic) is not None:
                         self.set_json_payload_class(var["ev"+index].data.get, msg)
                         if (re.search("/vehicle/[0-9]+/get/force_soc_update", msg.topic) is not None and
@@ -312,6 +313,8 @@ class SubData:
                             var["ev"+index].soc_module = mod.create_vehicle(config, index)
                             client.subscribe(f"openWB/vehicle/{index}/soc_module/calculated_soc_state", 2)
                             client.subscribe(f"openWB/vehicle/{index}/soc_module/general_config", 2)
+                            if config.type == "mqtt":
+                                add_acl_role("vehicle-<id>-write-access", int(index))
                             self.processing_counter.add_task()
                             Pub().pub("openWB/system/subdata_initialized", True)
                         self.event_soc.set()

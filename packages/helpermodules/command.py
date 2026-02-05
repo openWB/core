@@ -30,9 +30,10 @@ from helpermodules.broker import BrokerClient
 from helpermodules.data_migration.data_migration import MigrateData
 from helpermodules.measurement_logging.process_log import get_daily_log, get_monthly_log, get_yearly_log
 from helpermodules.messaging import MessageType, pub_user_message
-from helpermodules.mosquitto_dynsec import (add_acl_role, generate_password_reset_token, remove_acl_role,
-                                            get_user_email, send_password_reset_to_server, update_user_password,
-                                            verify_password_reset_token)
+from helpermodules.mosquitto_dynsec.mosquitto_dynsec import (generate_password_reset_token, get_user_email,
+                                                             send_password_reset_to_server, update_user_password,
+                                                             verify_password_reset_token)
+from helpermodules.mosquitto_dynsec.role_handler import add_acl_role, remove_acl_role
 from helpermodules.create_debug import create_debug_log
 from helpermodules.pub import Pub, pub_single
 from helpermodules.subdata import SubData
@@ -239,7 +240,7 @@ class Command:
         Pub().pub("openWB/set/command/max_id/io_device", self.max_id_io_device)
         add_acl_role("io-device-<id>-access", new_id)
         if device_default["output"]["digital"] or device_default["output"]["analog"]:
-            add_acl_role("io-device-<id>-mqtt-access", new_id)
+            add_acl_role("io-device-<id>-write-access", new_id)
         pub_user_message(
             payload, connection_id,
             f'Neues IO-Gerät vom Typ \'{payload["data"]["type"]}\' mit ID \'{new_id}\' hinzugefügt.',
@@ -252,6 +253,7 @@ class Command:
             ProcessBrokerBranch(f'system/io/{payload["data"]["id"]}/').remove_topics()
             ProcessBrokerBranch(f'io/states/{payload["data"]["id"]}/').remove_topics()
             remove_acl_role("io-device-<id>-access", payload["data"]["id"])
+            remove_acl_role("io-device-<id>-write-access", payload["data"]["id"])
             pub_user_message(payload, connection_id, f'IO-Gerät mit ID \'{payload["data"]["id"]}\' gelöscht.',
                              MessageType.SUCCESS)
         else:
@@ -279,7 +281,7 @@ class Command:
                 self.addVehicle("addChargepoint", {})
             add_acl_role("chargepoint-<id>-access", new_id)
             if chargepoint_config["type"] == "mqtt":
-                add_acl_role("chargepoint-<id>-mqtt-access", new_id)
+                add_acl_role("chargepoint-<id>-write-access", new_id)
             pub_user_message(payload, connection_id, f'Neuer Ladepunkt mit ID \'{new_id}\' wurde erstellt.',
                              MessageType.SUCCESS)
         new_id = self.max_id_hierarchy + 1
@@ -366,6 +368,7 @@ class Command:
         data.data.counter_all_data.hierarchy_remove_item(payload["data"]["id"])
         Pub().pub("openWB/set/counter/get/hierarchy", data.data.counter_all_data.data.get.hierarchy)
         remove_acl_role("chargepoint-<id>-access", payload["data"]["id"])
+        remove_acl_role("chargepoint-<id>-write-access", payload["data"]["id"])
         pub_user_message(payload, connection_id,
                          f'Ladepunkt mit ID \'{payload["data"]["id"]}\' gelöscht.', MessageType.SUCCESS)
 
@@ -670,6 +673,8 @@ class Command:
         ProcessBrokerBranch(branch).remove_topics()
         remove_acl_role(f"{special_to_general_type_mapping(payload['data']['type']).value}-<id>-access",
                         payload["data"]["id"])
+        remove_acl_role(f"{special_to_general_type_mapping(payload['data']['type']).value}-<id>-write-access",
+                        payload["data"]["id"])
         pub_user_message(
             payload, connection_id,
             f'Komponente mit ID \'{payload["data"]["id"]}\' gelöscht.', MessageType.SUCCESS)
@@ -739,6 +744,7 @@ class Command:
             Pub().pub(f'openWB/vehicle/{payload["data"]["id"]}', "")
             ProcessBrokerBranch(f'vehicle/{payload["data"]["id"]}/').remove_topics()
             remove_acl_role("vehicle-<id>-access", payload["data"]["id"])
+            remove_acl_role("vehicle-<id>-write-access", payload["data"]["id"])
             pub_user_message(
                 payload, connection_id,
                 f'EV mit ID \'{payload["data"]["id"]}\' gelöscht.', MessageType.SUCCESS)
