@@ -25,7 +25,7 @@ from control import data, prepare, process
 from control.algorithm import algorithm
 from helpermodules import command, setdata, subdata, timecheck, update_config
 from helpermodules.changed_values_handler import ChangedValuesContext
-from helpermodules.mosquitto_dynsec import check_roles_at_start
+from helpermodules.mosquitto_dynsec.mosquitto_dynsec import check_roles_at_start
 from helpermodules.measurement_logging.update_yields import update_daily_yields, update_pv_monthly_yearly_yields
 from helpermodules.measurement_logging.write_log import LogType, save_log
 from helpermodules.modbusserver import start_modbus_server
