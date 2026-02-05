@@ -60,12 +60,13 @@ class Process:
                     cp.remember_previous_values()
                 except Exception:
                     log.exception("Fehler im Process-Modul für Ladepunkt "+str(cp))
-            for bat_component in get_controllable_bat_components():
-                modules_threads.append(
-                    Thread(
-                        target=bat_component.set_power_limit,
-                        args=(data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set.power_limit,),
-                        name=f"set power limit {bat_component.component_config.id}"))
+            if data.data.bat_all_data.set_limit:
+                for bat_component in get_controllable_bat_components():
+                    modules_threads.append(
+                        Thread(
+                            target=bat_component.set_power_limit,
+                            args=(data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set.power_limit,),
+                            name=f"set power limit {bat_component.component_config.id}"))
             for action in data.data.io_actions.actions.values():
                 if isinstance(action, DimmingDirectControl):
                     for d in action.config.configuration.devices:
