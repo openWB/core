@@ -209,8 +209,8 @@ def test_get_power_limit(params: PowerLimitParams, data_, monkeypatch):
     data.data.counter_data["counter0"].data.get.power = params.evu_power
     data.data.bat_all_data = b_all
 
-    get_chargepoints_by_chargemodes_mock = Mock(return_value=params.cps)
-    monkeypatch.setattr(bat_all, "get_chargepoints_by_chargemodes", get_chargepoints_by_chargemodes_mock)
+    get_chargepoints_by_mode_mock = Mock(return_value=params.cps)
+    monkeypatch.setattr(bat_all, "get_chargepoints_by_mode", get_chargepoints_by_mode_mock)
     get_evu_counter_mock = Mock(return_value=data.data.counter_data["counter0"])
     monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", get_evu_counter_mock)
     get_controllable_bat_components_mock = Mock(return_value=[MqttBat(MqttBatSetup(id=2), device_id=0)])

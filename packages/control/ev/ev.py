@@ -39,7 +39,8 @@ def get_vehicle_default() -> dict:
             "model": None,
         },
         "tag_id": [],
-        "get/soc": 0
+        "get/soc": 0,
+        "full_power": False,
     }
 
 
@@ -76,6 +77,7 @@ class EvData:
     set: Set = field(default_factory=set_factory)
     charge_template: int = field(default=0, metadata={"topic": "charge_template"})
     ev_template: int = field(default=0, metadata={"topic": "ev_template"})
+    full_power: bool = field(default=False, metadata={"topic": "full_power"})
     name: str = field(default="neues Fahrzeug", metadata={"topic": "name"})
     tag_id: List[str] = field(default_factory=empty_list_factory, metadata={
         "topic": "tag_id"})

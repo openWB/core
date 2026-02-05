@@ -1,6 +1,6 @@
 import logging
+from typing import List
 
-from control import counter
 from control import data
 from control.algorithm import common
 from control.algorithm.additional_current import AdditionalCurrent
@@ -8,6 +8,7 @@ from control.algorithm.bidi_charging import Bidi
 from control.algorithm.min_current import MinCurrent
 from control.algorithm.no_current import NoCurrent
 from control.algorithm.surplus_controlled import SurplusControlled
+from control.chargepoint.chargepoint import Chargepoint
 
 log = logging.getLogger(__name__)
 
@@ -23,39 +24,35 @@ class Algorithm:
     def calc_current(self) -> None:
         """ Einstiegspunkt in den Regel-Algorithmus
         """
-        try:
-            log.info("# Algorithmus")
-            self.evu_counter = data.data.counter_all_data.get_evu_counter()
-            self._check_auto_phase_switch_delay()
-            self.surplus_controlled.check_submode_pv_charging()
-            common.reset_current()
-            log.info("**Mindestrom setzen**")
-            self.min_current.set_min_current()
-            log.info("**Soll-Strom setzen**")
-            common.reset_current_to_target_current()
-            self.additional_current.set_additional_current()
-            self.surplus_controlled.set_required_current_to_max()
-            log.info("**PV-geführten Strom setzen**")
-            counter.limit_raw_power_left_to_surplus(self.evu_counter.calc_raw_surplus())
-            if self.evu_counter.data.set.surplus_power_left > 0:
-                common.reset_current_to_target_current()
-                self.surplus_controlled.set_surplus_current()
-            else:
-                log.info("Keine Leistung für PV-geführtes Laden übrig.")
-            log.info("**Bidi-(Ent-)Lade-Strom setzen**")
-            counter.set_raw_surplus_power_left()
-            self.bidi.set_bidi()
-            self.no_current.set_no_current()
-            self.no_current.set_none_current()
-        except Exception:
-            log.exception("Fehler im Algorithmus-Modul")
+        log.info("# Algorithmus")
+        common.reset_current()
+        for next_low_power_group, next_full_power_group in data.data.counter_all_data.prio_groups_generator():
+            try:
+                if next_low_power_group is not None:
+                    self._check_auto_phase_switch_delay(next_low_power_group)
+                    self.surplus_controlled.check_submode_pv_charging(next_low_power_group)
+                    self.min_current.set_min_current(next_low_power_group)
+                if next_full_power_group is not None:
+                    self._check_auto_phase_switch_delay(next_full_power_group)
+                    self.surplus_controlled.check_submode_pv_charging(next_full_power_group)
+                    self.min_current.set_min_current(next_full_power_group)
+                    self.additional_current.set_additional_current(next_full_power_group)
+                    self.surplus_controlled.set_surplus_current(next_full_power_group)
+                if next_low_power_group is not None:
+                    self.additional_current.set_additional_current(next_low_power_group)
+                    self.surplus_controlled.set_surplus_current(next_low_power_group)
+            except Exception:
+                log.exception("Fehler im Algorithmus-Modul")
+        self.bidi.set_bidi()
+        self.no_current.set_no_current()
+        self.no_current.set_none_current()
 
-    def _check_auto_phase_switch_delay(self) -> None:
+    def _check_auto_phase_switch_delay(self, cps: List[Chargepoint]) -> None:
         """ geht alle LP durch und prüft, ob eine Ladung aktiv ist, ob automatische Phasenumschaltung
         möglich ist und ob ob ein Timer gestartet oder gestoppt werden muss oder ob
         ein Timer abgelaufen ist.
         """
-        for cp in data.data.cp_data.values():
+        for cp in cps:
             try:
                 if cp.data.control_parameter.required_current != 0:
                     charging_ev = cp.data.set.charging_ev_data

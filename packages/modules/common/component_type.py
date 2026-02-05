@@ -6,11 +6,13 @@ class ComponentType(Enum):
     BACKUP_CLOUD = "backup_cloud"
     BAT = "bat"
     CHARGEPOINT = "cp"
+    CONSUMER = "consumer"
     COUNTER = "counter"
     FLEXIBLE_TARIFF = "dynamic_tariff"
     GRID_FEE = "grid_tariff"
     INVERTER = "inverter"
     IO = "io"
+    VEHICLE = "vehicle"
 
 
 def special_to_general_type_mapping(component_type: str) -> ComponentType:

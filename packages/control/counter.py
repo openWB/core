@@ -8,7 +8,7 @@ from typing import List, Optional, Tuple
 
 from control import data
 from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE
-from control.algorithm.filter_chargepoints import get_chargepoints_by_chargemodes
+from control.algorithm.filter_chargepoints import get_chargepoints_by_mode
 from control.algorithm.utils import get_medium_charging_current
 from control.chargemode import Chargemode
 from control.chargepoint.chargepoint import Chargepoint
@@ -194,21 +194,21 @@ class Counter:
         else:
             self.data.set.raw_power_left = None
 
-    def update_values_left(self, diffs, cp_voltage: float) -> None:
+    def update_values_left(self, diffs: List[float], cp_voltage: float) -> None:
         # Mittelwert der Spannungen verwenden, um Phasenverdrehung zu kompensieren
         # (Probleme bei einphasig angeschlossenen Wallboxen)
-        self.data.set.raw_currents_left = list(map(operator.sub, self.data.set.raw_currents_left, diffs))
         if self.data.set.raw_power_left:
             self.data.set.raw_power_left -= sum([c * cp_voltage for c in diffs])
-        log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
-                  f'{self.data.set.raw_power_left}W verbleibende Leistung')
+        log.debug(f'Zähler {self.num}: {self.data.set.raw_power_left}W verbleibende Leistung')
 
-    def update_surplus_values_left(self, diffs, cp_voltage: float) -> None:
-        self.data.set.raw_currents_left = list(map(operator.sub, self.data.set.raw_currents_left, diffs))
+    def update_surplus_values_left(self, diffs: List[float], cp_voltage: float) -> None:
         if self.data.set.surplus_power_left:
             self.data.set.surplus_power_left -= sum([c * cp_voltage for c in diffs])
-        log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
-                  f'{self.data.set.surplus_power_left}W verbleibender Überschuss')
+        log.debug(f'Zähler {self.num}: {self.data.set.surplus_power_left}W verbleibender Überschuss')
+
+    def update_currents_left(self, diffs: List[float]) -> None:
+        self.data.set.raw_currents_left = list(map(operator.sub, self.data.set.raw_currents_left, diffs))
+        log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme')
 
     def calc_surplus(self):
         # reservierte Leistung wird nicht berücksichtigt, weil diese noch verwendet werden kann, bis die EV
@@ -519,7 +519,7 @@ def set_raw_surplus_power_left() -> None:
     """
     grid_counter = data.data.counter_all_data.get_evu_counter()
     bidi_power = 0
-    chargepoint_by_chargemodes = get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE)
+    chargepoint_by_chargemodes = get_chargepoints_by_mode(CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE)
     for cp in chargepoint_by_chargemodes:
         bidi_power += cp.data.get.power
     grid_counter.data.set.surplus_power_left = grid_counter.data.get.power * -1 + bidi_power

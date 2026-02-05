@@ -24,7 +24,7 @@ from typing import List, Optional
 
 from control import data
 from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_CHARGING
-from control.algorithm.filter_chargepoints import get_chargepoints_by_chargemodes
+from control.algorithm.filter_chargepoints import get_chargepoints_by_mode
 from control.pv import Pv
 from helpermodules.constants import NO_ERROR
 from modules.common.abstract_device import AbstractDevice
@@ -316,7 +316,7 @@ class BatAll:
         if self.data.config.bat_control_permitted is False:
             self.data.set.power_limit = None
         else:
-            chargepoint_by_chargemodes = get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_CHARGING)
+            chargepoint_by_chargemodes = get_chargepoints_by_mode(CONSIDERED_CHARGE_MODES_CHARGING)
             # Falls aktive Steuerung an und Fahrzeuge laden und kein Überschuss im System ist,
             # dann Speicherleistung begrenzen.
             if (self.data.config.power_limit_mode != BatPowerLimitMode.NO_LIMIT.value and

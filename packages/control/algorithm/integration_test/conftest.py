@@ -27,6 +27,7 @@ def data_() -> None:
     for i in range(3, 6):
         data.data.cp_data[f"cp{i}"].template = CpTemplate()
         data.data.cp_data[f"cp{i}"].data.config.phase_1 = i-2
+        data.data.cp_data[f"cp{i}"].data.config.ev = 0
         data.data.cp_data[f"cp{i}"].data.set.charging_ev_data = Ev(i)
         data.data.cp_data[f"cp{i}"].data.set.charging_ev_data.ev_template.data.max_current_single_phase = 32
         data.data.cp_data[f"cp{i}"].data.get.plug_state = True
@@ -49,6 +50,8 @@ def data_() -> None:
     data.data.counter_data["counter6"].data.config.max_total_power = 11000
     data.data.counter_all_data = CounterAll()
     data.data.counter_all_data.data.get.hierarchy = NESTED_HIERARCHY
+    data.data.counter_all_data.data.get.loadmanagement_prios = [{"type": "vehicle", "id": 0}]
+    data.data.ev_data["ev0"] = Ev(0)
     data.data.counter_all_data.data.config.consider_less_charging = True
     data.data.io_actions = IoActions()
 
