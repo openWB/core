@@ -1,0 +1,13 @@
+# openwb-version:1
+[Unit]
+Description="Auth-Server openWB 2.0"
+After=openwb2.service
+
+[Service]
+User=openwb
+WorkingDirectory=/var/www/html/openWB
+ExecStart=/var/www/html/openWB/packages/auth_service/auth_server.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
