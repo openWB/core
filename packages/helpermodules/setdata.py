@@ -660,11 +660,23 @@ class SetData:
         """
         try:
             if ("openWB/set/bat/config/bat_control_permitted" in msg.topic or
+                "openWB/set/bat/config/bat_control_activated" in msg.topic or
+                "openWB/set/bat/config/price_limit_actived" in msg.topic or
+                "openWB/set/bat/config/price_charge_activated" in msg.topic or
                 "openWB/set/bat/config/configured" in msg.topic or
                 "openWB/set/bat/get/power_limit_controllable" in msg.topic or
                     "openWB/set/bat/set/regulate_up" in msg.topic or
                     "openWB/set/bat/set/hysteresis_discharge" in msg.topic):
                 self._validate_value(msg, bool)
+            elif (re.search("openWB/set/bat/[0-9]+/get/max_charge_power$", msg.topic) is not None or
+                  re.search("openWB/set/bat/[0-9]+/get/max_discharge_power$", msg.topic) is not None):
+                self._validate_value(msg, float, [(0, float("inf"))])
+            elif ("openWB/set/bat/config/price_limit" in msg.topic or
+                  "openWB/set/bat/config/charge_limit" in msg.topic):
+                self._validate_value(msg, float, [(0, 99.99)])
+            elif ("openWB/set/bat/config/bat_control_min_soc" in msg.topic or
+                  "openWB/set/bat/config/bat_control_max_soc" in msg.topic):
+                self._validate_value(msg, int, [(0, 100)])
             elif "openWB/set/bat/set/charging_power_left" in msg.topic:
                 self._validate_value(msg, float)
             elif "openWB/set/bat/get/soc" in msg.topic:
@@ -680,7 +692,9 @@ class SetData:
             elif "openWB/set/bat/get/fault_state" in msg.topic:
                 self._validate_value(msg, int, [(0, 2)])
             elif ("openWB/set/bat/get/fault_str" in msg.topic or
-                  "openWB/set/bat/config/power_limit_mode" in msg.topic):
+                  "openWB/set/bat/config/power_limit_mode" in msg.topic or
+                  "openWB/set/bat/config/power_limit_condition" in msg.topic or
+                  "openWB/set/bat/config/manual_mode" in msg.topic):
                 self._validate_value(msg, str)
             elif "/config" in msg.topic:
                 self._validate_value(msg, "json")
