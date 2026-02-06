@@ -217,7 +217,9 @@ class Command:
         """ löscht ein Device.
         """
         ProcessBrokerBranch(
-            f'openWB/consumer/{payload["data"]["consumer_id"]}/extra_meter/device/').remove_topics()
+            f'consumer/{payload["data"]["consumer_id"]}/extra_meter/device/').remove_topics()
+        Pub().pub(f'openWB/set/consumer/{payload["data"]["consumer_id"]}/extra_meter/device/config', None)
+        Pub().pub(f'openWB/set/consumer/{payload["data"]["consumer_id"]}/extra_meter/device/component/config', None)
         pub_user_message(payload, connection_id,
                          f'Extra Zähler für Verbraucher \'{payload["data"]["consumer_id"]}\' gelöscht.',
                          MessageType.SUCCESS)
@@ -703,8 +705,9 @@ class Command:
     def removeConsumerExtraMeterComponent(self, connection_id: str, payload: dict) -> None:
         """ löscht eine Komponente.
         """
-        branch = f'openWB/consumer/{payload["data"]["consumer_id"]}/extra_meter/device/component/'
+        branch = f'consumer/{payload["data"]["consumer_id"]}/extra_meter/device/component/'
         ProcessBrokerBranch(branch).remove_topics()
+        Pub().pub(f'openWB/set/consumer/{payload["data"]["consumer_id"]}/extra_meter/device/component/config', None)
         pub_user_message(
             payload, connection_id,
             f'Komponente für Verbraucher \'{payload["data"]["consumer_id"]}\' gelöscht.', MessageType.SUCCESS)
@@ -1059,6 +1062,22 @@ class Command:
             payload, connection_id,
             f'Neues Gerät vom Typ \'{payload["data"]["type"]}\' mit ID \'{new_id}\' hinzugefügt.',
             MessageType.SUCCESS)
+
+    def removeConsumer(self, connection_id: str, payload: dict) -> None:
+        """ löscht ein Ladepunkt.
+        """
+        if self.max_id_hierarchy < payload["data"]["consumer_id"]:
+            pub_user_message(
+                payload, connection_id,
+                f'Die ID \'{payload["data"]["consumer_id"]}\' ist größer als die maximal vergebene '
+                f'ID \'{self.max_id_hierarchy}\'.', MessageType.ERROR)
+        ProcessBrokerBranch(f'consumer/{payload["data"]["consumer_id"]}/').remove_topics()
+        SubData.counter_all_data.hierarchy_remove_item(payload["data"]["consumer_id"])
+        Pub().pub("openWB/set/counter/get/hierarchy", SubData.counter_all_data.data.get.hierarchy)
+        SubData.counter_all_data.loadmanagement_prios_remove_item(payload["data"]["consumer_id"])
+        Pub().pub("openWB/set/counter/get/loadmanagement_prios", SubData.counter_all_data.data.get.loadmanagement_prios)
+        pub_user_message(payload, connection_id,
+                         f'Ladepunkt mit ID \'{payload["data"]["consumer_id"]}\' gelöscht.', MessageType.SUCCESS)
 
     def selectUsage(self, connection_id: str, payload: dict) -> None:
         """ weist einem Verbraucher eine Nutzung zu.

@@ -492,6 +492,7 @@ class Data:
 
     def __copy_consumer_data(self) -> None:
         try:
+            self.consumer_data.clear()
             for consumer in SubData.consumer_data:
                 self.consumer_data[consumer] = Consumer(SubData.consumer_data[consumer].num)
                 self.consumer_data[consumer].data = copy.deepcopy(SubData.consumer_data[consumer].data)

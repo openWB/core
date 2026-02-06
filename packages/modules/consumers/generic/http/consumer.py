@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 import logging
 
-from helpermodules.broker import BrokerClient
-from helpermodules.pub import Pub
-from helpermodules.utils._get_default import get_default
-from helpermodules.utils.topic_parser import decode_payload
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
