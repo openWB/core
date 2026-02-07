@@ -62,10 +62,8 @@ const props = defineProps<{
 	radius: number
 	categoriesToShow: PowerItemType[]
 }>()
-const cornerRadius = computed(() => (globalConfig.showRelativeArcs ? 0 : 10))
-// const cornerRadius = 10
+const cornerRadius = computed(() => (globalConfig.showRelativeArcs ? 0 : 3))
 const circleGapSize = Math.PI / 40
-//const arcCount = computed(() => props.plotdata.filter (d => d.power !=0).length - 1)
 const pieGenerator = computed(() =>
 	props.upperArc
 		? pie<PowerItem>()
@@ -82,7 +80,6 @@ const pieGenerator = computed(() =>
 
 const path = computed(() =>
 	arc<PieArcDatum<PowerItem>>()
-		//.innerRadius((props.radius / 6) * 5)
 		.innerRadius(props.radius * 0.87)
 		.outerRadius(props.radius)
 		.cornerRadius(cornerRadius.value),
@@ -106,7 +103,8 @@ function strokeColor(d: PieArcDatum<PowerItem>): string {
 		? d.data.power > 0
 			? 'var(--color-scale)'
 			: 'null'
-		: d.data.color
+		: //: d.data.color
+			'var(--color-bg)'
 }
 const summarizedPower = computed(() => {
 	return props.plotdata.reduce((sum, item) => sum + Math.abs(item.power), 0)
