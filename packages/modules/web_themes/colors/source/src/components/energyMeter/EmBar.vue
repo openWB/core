@@ -8,6 +8,8 @@
 			:width="props.xScale.bandwidth()"
 			:height="barheight"
 			:fill="item.color"
+			:rx="3"
+			:ry="3"
 		/>
 		<!-- Pv fraction inner bar -->
 		<rect
