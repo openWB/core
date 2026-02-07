@@ -144,10 +144,10 @@ const xScale = computed(() => {
 	let xdomain = extent(plotdata.value, (d) => d[0]) as [Date, Date]
 	if (xdomain[1]) {
 		xdomain[1] = new Date(xdomain[1])
-		xdomain[1].setTime(xdomain[1].getTime() + 3600000)
+		xdomain[1].setTime(xdomain[1].getTime() + 900000)
 	}
 	return scaleTime()
-		.range([margin.left, width - margin.right])
+		.range([margin.left, width - margin.left - margin.right])
 		.domain(xdomain)
 })
 const yDomain = computed(() => {
@@ -179,7 +179,7 @@ const lowerPath = computed(() => {
 	const generator = line()
 	const points = [
 		[margin.left, yScale.value(globalConfig.lowerPriceBound)],
-		[width - margin.right, yScale.value(globalConfig.lowerPriceBound)],
+		[width - margin.left - margin.right, yScale.value(globalConfig.lowerPriceBound)],
 	]
 	return generator(points as [number, number][])
 })
@@ -187,7 +187,7 @@ const upperPath = computed(() => {
 	const generator = line()
 	const points = [
 		[margin.left, yScale.value(globalConfig.upperPriceBound)],
-		[width - margin.right, yScale.value(globalConfig.upperPriceBound)],
+		[width - margin.left - margin.right, yScale.value(globalConfig.upperPriceBound)],
 	]
 	return generator(points as [number, number][])
 })
@@ -196,7 +196,7 @@ const zeroPath = computed(() => {
 	const generator = line()
 	const points = [
 		[margin.left, yScale.value(0)],
-		[width - margin.right, yScale.value(0)],
+		[width - margin.left - margin.right, yScale.value(0)],
 	]
 	return generator(points as [number, number][])
 })
