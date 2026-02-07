@@ -34,8 +34,19 @@
 			<i class="fa fa-sm fa-arrow-right" />
 		</button>
 	</div>
-	<div v-if="chargepoint != undefined" class="d-flex justify-content-end">
-		<span class="me-3 pt-2 pb-3" @click="setMaxPrice">
+	<div
+		v-if="chargepoint != undefined"
+		class="d-flex justify-content-between align-items-center mx-2 mb-4 mt-2"
+	>
+		<button
+			class="calculatorButton btn btn-secondary"
+			type="button"
+			@click="openCalculator"
+		>
+			Preis berechnen
+		</button>
+
+		<span class="" @click="setMaxPrice">
 			<button
 				type="button"
 				class="btn btn-secondary confirmButton"
@@ -46,6 +57,12 @@
 			</button>
 		</span>
 	</div>
+
+	<PriceCalculator
+		:model-value="calculatedPrice"
+		:cp-id="chargepoint!.id"
+		@update:model-value="storePrice"
+	/>
 </template>
 
 <script setup lang="ts">
@@ -65,10 +82,14 @@ import {
 import RangeInput from '../shared/RangeInput.vue'
 import { chargePoints, type ChargePoint } from '../chargePointList/model'
 import { globalConfig } from '@/assets/js/themeConfig'
+import { Modal } from 'bootstrap'
+import PriceCalculator from '../chargePointList/cpConfig/PriceCalculator.vue'
 const props = defineProps<{
 	chargepoint?: ChargePoint
 	globalview?: boolean
 }>()
+const calculatedPrice = ref(0)
+var calculatorModal = ref<Modal | null>(null)
 
 let _maxPrice = props.chargepoint ? ref(props.chargepoint.etMaxPrice) : ref(0)
 const maxPriceEdited = ref(false)
@@ -123,10 +144,10 @@ const xScale = computed(() => {
 	let xdomain = extent(plotdata.value, (d) => d[0]) as [Date, Date]
 	if (xdomain[1]) {
 		xdomain[1] = new Date(xdomain[1])
-		xdomain[1].setTime(xdomain[1].getTime() + 3600000)
+		xdomain[1].setTime(xdomain[1].getTime() + 900000)
 	}
 	return scaleTime()
-		.range([margin.left, width - margin.right])
+		.range([margin.left, width - margin.left - margin.right])
 		.domain(xdomain)
 })
 const yDomain = computed(() => {
@@ -158,7 +179,7 @@ const lowerPath = computed(() => {
 	const generator = line()
 	const points = [
 		[margin.left, yScale.value(globalConfig.lowerPriceBound)],
-		[width - margin.right, yScale.value(globalConfig.lowerPriceBound)],
+		[width - margin.left - margin.right, yScale.value(globalConfig.lowerPriceBound)],
 	]
 	return generator(points as [number, number][])
 })
@@ -166,7 +187,7 @@ const upperPath = computed(() => {
 	const generator = line()
 	const points = [
 		[margin.left, yScale.value(globalConfig.upperPriceBound)],
-		[width - margin.right, yScale.value(globalConfig.upperPriceBound)],
+		[width - margin.left - margin.right, yScale.value(globalConfig.upperPriceBound)],
 	]
 	return generator(points as [number, number][])
 })
@@ -175,7 +196,7 @@ const zeroPath = computed(() => {
 	const generator = line()
 	const points = [
 		[margin.left, yScale.value(0)],
-		[width - margin.right, yScale.value(0)],
+		[width - margin.left - margin.right, yScale.value(0)],
 	]
 	return generator(points as [number, number][])
 })
@@ -312,6 +333,19 @@ function priceUp() {
 	}
 	maxPrice.value = result
 }
+function openCalculator() {
+	const modalId = `priceCalculator-${props.chargepoint!.id}`
+	calculatorModal.value = new Modal(document.getElementById(modalId)!)
+	calculatorModal.value.toggle()
+}
+function storePrice(newPrice: number) {
+	calculatorModal.value!.hide()
+	maxPrice.value = newPrice
+	if (cp.value) {
+		chargePoints[cp.value.id].etMaxPrice = maxPrice.value
+	}
+	maxPriceEdited.value = false
+}
 onMounted(() => {
 	needsUpdate.value = !needsUpdate.value
 })
@@ -356,5 +390,9 @@ onMounted(() => {
 }
 .rangeInputContainer {
 	font-size: var(--font-settings);
+}
+.calculatorButton {
+	background-color: var(--color-pv);
+	font-size: var(--font-settings-button);
 }
 </style>

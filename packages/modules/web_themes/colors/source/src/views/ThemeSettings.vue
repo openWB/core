@@ -14,97 +14,10 @@
 			</span>
 		</template>
 		<div class="subgrid m-0 p-0">
-			<div class="settingscolumn">
-				<ConfigItem
-					:fullwidth="true"
-					title="Farbschema"
-					icon="fa-adjust"
-					infotext="Hintergrundfarbe"
-				>
-					<RadioInput2
-						v-model="globalConfig.displayMode"
-						:options="colorschemes"
-					/>
-				</ConfigItem>
-				<ConfigItem
-					:fullwidth="true"
-					title="Farbschema Smart-Home-Geräte"
-					icon="fa-palette"
-					infotext="Für die Smart-Home-Geräte stehen mehrere Schemata zur Verfügung."
-				>
-					<RadioInput2
-						v-model="globalConfig.smartHomeColors"
-						:options="shSchemes"
-					/>
-				</ConfigItem>
-				<ConfigItem
-					:fullwidth="true"
-					title="Grafik: Raster"
-					icon="fa-th"
-					infotext="Verwende ein Hintergrundraster in den Grafiken"
-				>
-					<template #inline-item>
-						<SwitchInput v-model="globalConfig.showGrid" />
-					</template>
-				</ConfigItem>
-				<ConfigItem
-					:fullwidth="true"
-					title="Variable Bogenlänge"
-					icon="fa-chart-area"
-					infotext="Im Graph 'Aktuelle Leistung' können die Bögen immer die volle Länge haben, oder entsprechend des aktuellen Gesamtleistung verkürzt dargestellt werden."
-				>
-					<template #inline-item>
-						<SwitchInput v-model="globalConfig.showRelativeArcs" />
-					</template>
-				</ConfigItem>
-				<ConfigItem
-					v-if="globalConfig.showRelativeArcs"
-					:fullwidth="true"
-					title="Bögen zurücksetzen"
-					icon="fa-undo"
-					infotext="Durch Click auf den Button wird die Maximallänge der Bögen auf den aktuellen Wert gesetzt."
-				>
-					<button
-						v-if="globalConfig.showRelativeArcs"
-						class="btn btn-secondary"
-						@click="emit('reset-arcs')"
-					>
-						Reset
-					</button>
-				</ConfigItem>
-				<ConfigItem
-					:fullwidth="true"
-					title="Anzahl Dezimalstellen"
-					icon="fa-sliders-h"
-					infotext="Alle kW- und kWh-Werte werden mit der gewählten Anzahl an Stellen angezeigt."
-				>
-					<SelectInput
-						v-model="globalConfig.decimalPlaces"
-						:options="decimalDisplay"
-					/>
-				</ConfigItem>
-				<ConfigItem
-					:fullwidth="true"
-					title="Uhrzeit anzeigen"
-					icon="fa-clock"
-					infotext="Zeige die aktuelle Uhrzeit an. In der Menüleiste oder neben den Lade-Buttons."
-				>
-					<RadioInput2
-						v-model="globalConfig.showClock"
-						:options="clockModes"
-					></RadioInput2>
-				</ConfigItem>
-				<ConfigItem
-					:fullwidth="true"
-					title="Kompakte Ladepunktliste"
-					icon="fa-list"
-					infotext="Zeige eine einzelne Ladepunktliste statt separater Element pro Ladepunkt."
-				>
-					<RadioInput2
-						v-model="globalConfig.shortCpList"
-						:options="shortListOptions"
-					/>
-				</ConfigItem>
+			<div class="topbanner grid-col-12">
+				Eine Reihe von Einstellungen werden neu
+				<em>in den openWB-Einstellungen "Allgemein"</em> <br />
+				für alle Geräte einheitlich festgelegt.
 			</div>
 			<div class="settingscolumn">
 				<ConfigItem
@@ -119,14 +32,43 @@
 				</ConfigItem>
 				<ConfigItem
 					:fullwidth="true"
-					title="Filter-Buttons"
+					title="Auswahleiste"
 					icon="fa-filter"
-					infotext="Hauptseite mit Buttons zur Auswahl der Kategorie."
+					infotext="Hauptseite mit Reitern zur Schnellwahl von Widgets."
 				>
 					<template #inline-item>
 						<SwitchInput v-model="globalConfig.showQuickAccess" />
 					</template>
 				</ConfigItem>
+				<ConfigItem
+					v-if="globalConfig.showRelativeArcs"
+					:fullwidth="true"
+					title="Linker Graph: Bögen zurücksetzen"
+					icon="fa-undo"
+					infotext="Durch Click auf den Button wird die Maximallänge der Bögen auf den aktuellen Wert gesetzt."
+				>
+					<button
+						v-if="globalConfig.showRelativeArcs"
+						class="btn btn-secondary"
+						@click="emit('reset-arcs')"
+					>
+						Reset
+					</button>
+				</ConfigItem>
+
+				<ConfigItem
+					:fullwidth="true"
+					title="Kompakte Ladepunktliste"
+					icon="fa-list"
+					infotext="Zeige eine einzelne Ladepunktliste statt separater Element pro Ladepunkt."
+				>
+					<RadioInput2
+						v-model="globalConfig.shortCpList"
+						:options="shortListOptions"
+					/>
+				</ConfigItem>
+			</div>
+			<div class="settingscolumn">
 				<ConfigItem
 					:fullwidth="true"
 					title="Breite Widgets"
@@ -159,99 +101,17 @@
 				</ConfigItem>
 				<ConfigItem
 					:fullwidth="true"
-					title="Zähler anzeigen"
-					icon="fa-chart-bar"
-					infotext="Zeige die Werte zusätzlich angelegter Zähler"
+					title="Uhrzeit anzeigen"
+					icon="fa-clock"
+					infotext="Zeige die aktuelle Uhrzeit an. In der Menüleiste oder neben den Lade-Buttons."
 				>
-					<template #inline-item>
-						<SwitchInput v-model="globalConfig.showCounters" />
-					</template>
-				</ConfigItem>
-				<ConfigItem
-					:fullwidth="true"
-					title="Fahrzeuge anzeigen"
-					icon="fa-car"
-					infotext="Zeige alle Fahrzeuge mit Ladestand und Reichweite"
-				>
-					<template #inline-item>
-						<SwitchInput v-model="globalConfig.showVehicles" />
-					</template>
-				</ConfigItem>
-				<ConfigItem
-					:fullwidth="true"
-					title="Standardfahrzeug anzeigen"
-					icon="fa-car"
-					infotext="Zeige das Standard-Fahrzeug in der Fahzeugliste"
-				>
-					<template #inline-item>
-						<SwitchInput v-model="globalConfig.showStandardVehicle" />
-					</template>
-				</ConfigItem>
-				<ConfigItem
-					:fullwidth="true"
-					title="Wechselrichter-Details anzeigen"
-					icon="fa-solar-panel"
-					infotext="Zeige Details zu den einzelnen Wechselrichtern"
-				>
-					<template #inline-item>
-						<SwitchInput v-model="globalConfig.showInverters" />
-					</template>
-				</ConfigItem>
-				<ConfigItem
-					:fullwidth="true"
-					title="Alternatives Energie-Widget"
-					icon="fa-chart-area"
-					infotext="Horizontale Darstellung der Energie-Werte"
-				>
-					<template #inline-item>
-						<SwitchInput v-model="globalConfig.alternativeEnergy" />
-					</template>
+					<RadioInput2
+						v-model="globalConfig.showClock"
+						:options="clockModes"
+					></RadioInput2>
 				</ConfigItem>
 			</div>
 			<div class="settingscolumn">
-				<ConfigItem
-					:fullwidth="true"
-					title="Preistabelle anzeigen"
-					icon="fa-car"
-					infotext="Zeige die Strompreistabelle in einer separaten Box an"
-				>
-					<template #inline-item>
-						<SwitchInput v-model="globalConfig.showPrices" />
-					</template>
-				</ConfigItem>
-				<ConfigItem
-					:fullwidth="true"
-					title="Untere Markierung in der Preistabelle"
-					icon="fa-car"
-					infotext="Position der unteren Markierung festlegen"
-				>
-					<RangeInput
-						id="lowerPriceBound"
-						v-model="globalConfig.lowerPriceBound"
-						:min="-25"
-						:max="95"
-						:step="0.1"
-						:decimals="1"
-						unit="ct"
-					/>
-				</ConfigItem>
-				<ConfigItem
-					:fullwidth="true"
-					title="Obere Markierung in der Preistabelle"
-					icon="fa-car"
-					infotext="Position der oberen Markierung festlegen"
-				>
-					<RangeInput
-						id="upperPriceBound"
-						v-model="globalConfig.upperPriceBound"
-						:min="-25"
-						:max="95"
-						:step="0.1"
-						:decimals="1"
-						unit="ct"
-					/>
-				</ConfigItem>
-
 				<ConfigItem
 					:fullwidth="true"
 					title="IFrame-Support für Einstellungen (Experimentell)"
@@ -290,31 +150,12 @@
 
 <script setup lang="ts">
 import { globalConfig } from '@/assets/js/themeConfig'
-import SelectInput from '@/components/shared/SelectInput.vue'
 import ConfigItem from '@/components/shared/ConfigItem.vue'
 import SwitchInput from '@/components/shared/SwitchInput.vue'
 import RadioInput2 from '@/components/shared/RadioInput2.vue'
 
 import WbWidgetFlex from '@/components/shared/WbWidgetFlex.vue'
-import RangeInput from '@/components/shared/RangeInput.vue'
 const emit = defineEmits(['reset-arcs'])
-const colorschemes: [string, string][] = [
-	['Dunkel', 'dark'],
-	['Hell', 'light'],
-	['Blau', 'blue'],
-]
-const decimalDisplay: [string, string][] = [
-	['3 kW', '0'],
-	['3,1 kW', '1'],
-	['3,14 kW', '2'],
-	['3,141 kW', '3'],
-	['3141 W', '4'],
-]
-const shSchemes: [string, string][] = [
-	['Orange', 'normal'],
-	['Grün/Violett', 'standard'],
-	['Bunt', 'advanced'],
-]
 const clockModes: [string, string][] = [
 	['Aus', 'off'],
 	['Menü', 'navbar'],
@@ -330,7 +171,7 @@ const shortListOptions: [string, string][] = [
 .fa-circle-check {
 	font-size: var(--font-large);
 	background-color: var(--color-bg);
-	color: var(--color-menu);
+	color: var(--color-input);
 }
 
 .closebutton {
@@ -339,5 +180,14 @@ const shortListOptions: [string, string][] = [
 
 .settingscolumn {
 	padding: 20px;
+}
+.topbanner {
+	font-size: var(--font-large);
+	color: var(--color-charging);
+	background-color: var(--color-bg);
+	text-align: center;
+	padding: 1em;
+	border: 1px solid var(--color-charging);
+	border-radius: 5px;
 }
 </style>
