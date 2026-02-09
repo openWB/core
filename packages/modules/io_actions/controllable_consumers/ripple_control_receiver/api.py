@@ -57,7 +57,7 @@ class RippleControlReceiver(AbstractIoAction):
                     break
             else:
                 # Alle digitalen Eingänge entsprechen dem Pattern
-                return pattern["value"]
+                return pattern["value"] if pattern["value"] is not None else 0
         else:
             # Zustand entspricht keinem Pattern
             return 0
