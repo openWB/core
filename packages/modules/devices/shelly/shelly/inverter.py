@@ -69,6 +69,7 @@ class ShellyInverter(AbstractInverter):
                     for key, value in meters.items()
                     if key.endswith('_current') and value is not None
                 )
+                phase_keys = phase_keys[:3]
                 for i, phase in enumerate(phase_keys):
                     currents[(i + self.phase - 1) % 3] = float(
                         meters[f"{phase}_current"]
