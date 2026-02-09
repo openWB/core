@@ -65,7 +65,7 @@ class AlphaEssBat(AbstractBat):
             # Kein Powerlimit gefordert, externe Steuerung deaktivieren
             log.debug("Keine Batteriesteuerung gefordert, deaktiviere externe Steuerung.")
             if self.last_mode is not None:
-                self.__tcp_client.write_registers(2127, [0], data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_register(2127, 0, data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = None
         elif power_limit <= 0:
             # AlphaESS kann die Entladung nur über den SoC verhindern (komplette Entladesperre)
@@ -73,15 +73,15 @@ class AlphaEssBat(AbstractBat):
             # Zeiten für Netzladung müssen im Wechselrichter aktiviert werden
             log.debug("Aktive Batteriesteuerung angestoßen. Setze Entladesperre.")
             if self.last_mode != 'stop':
-                self.__tcp_client.write_registers(2127, [1], data_type=ModbusDataType.UINT_16, unit=unit)
-                self.__tcp_client.write_registers(2133, [10], data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_register(2127, 1, data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_register(2133, 10, data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = 'stop'
         else:
             # Aktive Ladung
             log.debug("Aktive Batteriesteuerung angestoßen. Setze aktive Ladung.")
             if self.last_mode != 'charge':
-                self.__tcp_client.write_registers(2127, [1], data_type=ModbusDataType.UINT_16, unit=unit)
-                self.__tcp_client.write_registers(2133, [100], data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_register(2127, 1, data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_register(2133, 100, data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = 'charge'
 
     def power_limit_controllable(self) -> bool:
