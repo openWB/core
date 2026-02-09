@@ -1,7 +1,7 @@
 <?php
 header('Content-Type: application/json');
 $ip = $_SERVER['REMOTE_ADDR'];
-$filename = __DIR__ . "/../../data/clients/display-$ip.json";
+$filename = __DIR__ . "/../../data/clients/display-" . str_replace('.', '_', $ip) . ".json";
 if (file_exists($filename)) {
 	$json = file_get_contents($filename);
 	$data = json_decode($json, true);

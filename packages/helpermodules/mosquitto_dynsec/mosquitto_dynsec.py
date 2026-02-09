@@ -10,7 +10,8 @@ from secrets import token_hex
 
 from helpermodules.subdata import SubData
 from helpermodules.utils.run_command import run_command
-from helpermodules.mosquitto_dynsec.role_handler import add_acl_role, update_acls, user_exists
+from helpermodules.mosquitto_dynsec.role_handler import add_acl_role, update_acls
+from helpermodules.mosquitto_dynsec.user_handler import create_display_user, user_exists
 from modules.common.component_type import special_to_general_type_mapping
 
 TOKEN_DATA_PATH = Path(Path(__file__).resolve().parents[2]/"ramdisk"/"password_reset_tokens")
@@ -95,11 +96,22 @@ def verify_password_reset_token(username: str, token: str) -> bool:
     return False
 
 
-def update_user_password(username: str, new_password: str) -> bool:
-    if user_exists(username):
-        run_command(["mosquitto_ctrl", "dynsec", "setClientPassword", username, new_password])
-        return True
-    return False
+def check_required_users():
+    for cp in SubData.cp_data.values():
+        cp_type = cp.chargepoint.data.config.type
+        if cp_type == "internal_openwb":
+            ip_address = "127.0.0.1"
+        elif cp_type == "external_openwb":
+            ip_address: Optional[str] = cp.chargepoint.data.config.configuration.get('ip_address')
+        else:
+            log.info(f"Chargepoint {cp.chargepoint.num} has type '{cp_type}', skipping user creation")
+            continue
+        if ip_address is None:
+            log.warning(f"No IP address configured for cp {cp.chargepoint.num}, skipping user creation")
+            continue
+        success, user_name = create_display_user(ip_address)
+        if success:
+            log.info(f"Created user '{user_name}' for cp display at {ip_address}")
 
 
 def check_roles_at_start():
@@ -131,3 +143,4 @@ def check_roles_at_start():
                     if value.config.output["digital"] or value.config.output["analog"]:
                         add_acl_role("io-device-<id>-write-access", value.config.id)
         flag_path.unlink()
+    check_required_users()

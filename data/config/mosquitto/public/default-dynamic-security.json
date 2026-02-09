@@ -53,6 +53,18 @@
 					"rolename":	"basic-user-data"
 				}],
 			"clients":	[]
+		}, {
+			"groupname":	"display",
+			"textname":	"Basisgruppe für alle integrierten Displays",
+			"textdescription":	"Diese Gruppe stellt grundlegende Rechte bereit, welche für alle Displays als Ausgangsbasis sinnvoll sind.",
+			"roles":	[{
+					"rolename":	"basic-display-data"
+				}, {
+					"rolename":	"basic-system-data"
+				}, {
+					"rolename":	"basic-user-data"
+				}],
+			"clients":	[]
 		}
 	],
 	"anonymousGroup": "anonymous",
@@ -83,6 +95,12 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/general/extern_display_mode",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/counter/get/hierarchy",
 					"priority": 0,
 					"allow": true
 				},

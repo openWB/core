@@ -102,13 +102,6 @@ def acl_role_exists(role_template: str, id: int) -> bool:
     return role_data["rolename"] in role_list
 
 
-def user_exists(username: str) -> Optional[dict]:
-    result = run_command(["mosquitto_ctrl", "dynsec", "getClient", username])
-    if "not found" in result:
-        return False
-    return True
-
-
 def acl_equal_with_placeholder(acl1, acl2):
     def normalize_topic(topic):
         # Ersetze alle /Zahl/ oder /<id>/ durch /<id>/, auch am Ende

@@ -30,10 +30,11 @@ from helpermodules.broker import BrokerClient
 from helpermodules.data_migration.data_migration import MigrateData
 from helpermodules.measurement_logging.process_log import get_daily_log, get_monthly_log, get_yearly_log
 from helpermodules.messaging import MessageType, pub_user_message
-from helpermodules.mosquitto_dynsec.mosquitto_dynsec import (generate_password_reset_token, get_user_email,
-                                                             send_password_reset_to_server, update_user_password,
-                                                             verify_password_reset_token)
+from helpermodules.mosquitto_dynsec.mosquitto_dynsec import (
+    create_display_user, generate_password_reset_token, get_user_email, send_password_reset_to_server,
+    verify_password_reset_token)
 from helpermodules.mosquitto_dynsec.role_handler import add_acl_role, remove_acl_role
+from helpermodules.mosquitto_dynsec.user_handler import remove_display_user, update_user_password
 from helpermodules.create_debug import create_debug_log
 from helpermodules.pub import Pub, pub_single
 from helpermodules.subdata import SubData
@@ -282,6 +283,9 @@ class Command:
             add_acl_role("chargepoint-<id>-access", new_id)
             if chargepoint_config["type"] == "mqtt":
                 add_acl_role("chargepoint-<id>-write-access", new_id)
+            elif chargepoint_config["type"] == "internal_openwb":
+                # create display user for internal chargepoint
+                create_display_user("127.0.0.1")
             pub_user_message(payload, connection_id, f'Neuer Ladepunkt mit ID \'{new_id}\' wurde erstellt.',
                              MessageType.SUCCESS)
         new_id = self.max_id_hierarchy + 1
@@ -359,18 +363,33 @@ class Command:
     def removeChargepoint(self, connection_id: str, payload: dict) -> None:
         """ löscht ein Ladepunkt.
         """
-        if self.max_id_hierarchy < payload["data"]["id"]:
+        cp_id = payload["data"]["id"]
+        if self.max_id_hierarchy < cp_id:
             pub_user_message(
                 payload, connection_id,
-                f'Die ID \'{payload["data"]["id"]}\' ist größer als die maximal vergebene '
+                f'Die ID \'{cp_id}\' ist größer als die maximal vergebene '
                 f'ID \'{self.max_id_hierarchy}\'.', MessageType.ERROR)
-        ProcessBrokerBranch(f'chargepoint/{payload["data"]["id"]}/').remove_topics()
-        data.data.counter_all_data.hierarchy_remove_item(payload["data"]["id"])
+        cp_type = SubData.cp_data.get(f"cp{cp_id}", None).chargepoint.data.config.type
+        cp_ip = (SubData.cp_data.get(f"cp{cp_id}", None).chargepoint.data.config.configuration.get("ip_address")
+                 if cp_type == "external_openwb" else "127.0.0.1" if cp_type == "internal_openwb" else None)
+        if cp_type in ["internal_openwb", "external_openwb"] and cp_ip is not None:
+            # check if ip is used in other chargepoints, if not remove display user
+            for cp in SubData.cp_data.values():
+                temp_cp_ip = cp.chargepoint.data.config.configuration.get("ip_address", None)
+                if temp_cp_ip == "localhost":
+                    temp_cp_ip = "127.0.0.1"
+                if temp_cp_ip == cp_ip and cp.chargepoint.num != cp_id:
+                    log.info(f"IP {cp_ip} is still used by cp{cp.chargepoint.num}, not removing display user")
+                    break
+            else:
+                remove_display_user(cp_ip)
+        remove_acl_role("chargepoint-<id>-access", cp_id)
+        remove_acl_role("chargepoint-<id>-write-access", cp_id)
+        ProcessBrokerBranch(f'chargepoint/{cp_id}/').remove_topics()
+        data.data.counter_all_data.hierarchy_remove_item(cp_id, ComponentType.CHARGEPOINT)
         Pub().pub("openWB/set/counter/get/hierarchy", data.data.counter_all_data.data.get.hierarchy)
-        remove_acl_role("chargepoint-<id>-access", payload["data"]["id"])
-        remove_acl_role("chargepoint-<id>-write-access", payload["data"]["id"])
         pub_user_message(payload, connection_id,
-                         f'Ladepunkt mit ID \'{payload["data"]["id"]}\' gelöscht.', MessageType.SUCCESS)
+                         f'Ladepunkt mit ID \'{cp_id}\' gelöscht.', MessageType.SUCCESS)
 
     def addChargepointTemplate(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neues Ladepunkt-Profil erstellt werden soll.
