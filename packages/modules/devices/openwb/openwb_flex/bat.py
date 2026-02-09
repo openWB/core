@@ -62,7 +62,8 @@ class BatKitFlex(AbstractBat):
             currents=currents,
             imported=imported,
             exported=exported,
-            power=power
+            power=power,
+            serial_number=counter_state.serial_number,
         )
         self.store.set(bat_state)
 

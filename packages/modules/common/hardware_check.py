@@ -1,3 +1,4 @@
+import logging
 import pymodbus
 from typing import Any, Optional, Protocol, Tuple, Union
 
@@ -5,6 +6,9 @@ from modules.common.component_state import CounterState, EvseState
 from modules.common.evse import Evse
 from modules.common.fault_state import FaultState
 from modules.common.modbus import ModbusSerialClient_, ModbusTcpClient_
+
+log = logging.getLogger(__name__)
+
 
 EVSE_MIN_FIRMWARE = 7
 
@@ -17,8 +21,8 @@ LAN_ADAPTER_BROKEN = (f"{RS485_ADAPTER_BROKEN.format('der LAN-Konverter abgestü
                       "Bitte den openWB series2 satellit stromlos machen.")
 METER_PROBLEM = "Der Zähler konnte nicht ausgelesen werden. Vermutlich ist der Zähler falsch konfiguriert oder defekt."
 METER_BROKEN_VOLTAGES = "Die Spannungen des Zählers konnten nicht korrekt ausgelesen werden: {}V Der Zähler ist defekt."
-METER_NO_SERIAL_NUMBER = ("Die Seriennummer des Zählers für das Ladelog kann nicht ausgelesen werden. Wenn Sie die "
-                          "Seriennummer für Abrechnungszwecke benötigen, wenden Sie sich bitte an unseren Support. Die "
+METER_NO_SERIAL_NUMBER = ("Die Seriennummer des Zählers für das Ladelog kann nicht ausgelesen werden. Wenn Du die "
+                          "Seriennummer für Abrechnungszwecke benötigst, wende Dich bitte an unseren Support. Die "
                           "Funktionalität wird dadurch nicht beeinträchtigt!")
 EVSE_BROKEN = "Auslesen der EVSE nicht möglich. Vermutlich ist die EVSE defekt oder hat eine unbekannte Modbus-ID. "
 
@@ -97,9 +101,7 @@ class SeriesHardwareCheckMixin:
             else:
                 raise Exception(meter_error_msg + OPEN_TICKET)
         elif evse_check_passed and meter_check_passed and meter_error_msg is not None:
-            if meter_error_msg != METER_NO_SERIAL_NUMBER:
-                meter_error_msg += OPEN_TICKET
-            fault_state.warning(meter_error_msg)
+            fault_state.warning(meter_error_msg + OPEN_TICKET)
         if evse_check_passed is False:
             if meter_error_msg is not None:
                 raise Exception(EVSE_BROKEN + " " + meter_error_msg + OPEN_TICKET)
@@ -112,7 +114,7 @@ class SeriesHardwareCheckMixin:
             with self.client:
                 counter_state = self.meter_client.get_counter_state()
             if counter_state.serial_number == "0" or counter_state.serial_number is None:
-                return True, METER_NO_SERIAL_NUMBER, counter_state
+                log.warning(METER_NO_SERIAL_NUMBER)
             return True, _check_meter_values(counter_state), counter_state
         except Exception:
             return False, METER_PROBLEM, None

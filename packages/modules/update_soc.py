@@ -62,7 +62,7 @@ class UpdateSoc:
                             log.debug(
                                 f"EV{ev.num}: Nach dreimaliger erfolgloser SoC-Abfrage wird ein SoC von 0% angenommen.")
                             Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc", 0)
-                            Pub().pub(f"openWB/set/vehicle/{ev.num}/get/range", 0)
+                            Pub().pub(f"openWB/set/vehicle/{ev.num}/get/range", None)
                         # Es wird ein Zeitstempel gesetzt, unabhängig ob die Abfrage erfolgreich war, da einige
                         # Hersteller bei zu häufigen Abfragen Accounts sperren.
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc_request_timestamp",
@@ -100,7 +100,7 @@ class UpdateSoc:
         ev_template = subdata.SubData.ev_template_data[f"et{ev.data.ev_template}"]
         for cp_state_update in list(subdata.SubData.cp_data.values()):
             cp = cp_state_update.chargepoint
-            if cp.data.set.charging_ev == ev_num or cp.data.set.charging_ev_prev == ev_num:
+            if cp.data.config.ev == ev_num:
                 plug_state = cp.data.get.plug_state
                 charge_state = cp.data.get.charge_state
                 imported = cp.data.get.imported
@@ -127,7 +127,8 @@ class UpdateSoc:
                                  battery_capacity=battery_capacity,
                                  soc_from_cp=soc_from_cp,
                                  timestamp_soc_from_cp=timestamp_soc_from_cp,
-                                 soc_timestamp=soc_timestamp)
+                                 last_soc_timestamp=soc_timestamp,
+                                 last_soc=ev.data.get.soc if ev.data.get.soc is not None else soc_from_cp)
 
     def _filter_failed_store_threads(self, threads_store: List[Thread]) -> List[Thread]:
         ev_data = copy.deepcopy(subdata.SubData.ev_data)

@@ -22,7 +22,7 @@ def time_factory():
 @dataclass
 class Limit:
     selected: str = "none"
-    amount: int = 1000
+    amount: int = 50000
     soc: int = 50
 
 

@@ -63,10 +63,7 @@ class Socket(ChargepointModule):
             with self.client_error_context:
                 actor = ActorState(GPIO.input(19))
 
-                if actor == ActorState.CLOSED:
-                    if current == self.set_current_evse:
-                        return
-                else:
+                if actor == ActorState.OPENED:
                     current = 0
                 super().set_current(min(current, self.socket_max_current))
                 if actor == ActorState.OPENED and self.chargepoint_state.plug_state is True:

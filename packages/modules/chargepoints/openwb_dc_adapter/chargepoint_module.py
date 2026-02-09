@@ -119,8 +119,17 @@ class ChargepointModule(AbstractChargepoint):
                         json_rsp["state"] == ChargingStatus.FINISHING.value or
                         json_rsp["state"] == ChargingStatus.UNAVAILABLE_CONN_OBJ.value):
                     raise Exception(f"Ladepunkt nicht verfügbar. Status: {ChargingStatus(json_rsp['state'])}")
-                self.store.set(chargepoint_state)
                 self.client_error_context.reset_error_counter()
+            if self.client_error_context.error_counter_exceeded():
+                chargepoint_state = ChargepointState(plug_state=None,
+                                                     charge_state=False,
+                                                     imported=None,
+                                                     exported=None,
+                                                     currents=[0]*3,
+                                                     phases_in_use=0,
+                                                     power=0)
+
+            self.store.set(chargepoint_state)
 
 
 chargepoint_descriptor = DeviceDescriptor(configuration_factory=OpenWBDcAdapter)

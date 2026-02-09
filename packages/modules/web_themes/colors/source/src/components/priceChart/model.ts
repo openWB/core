@@ -9,11 +9,15 @@ class EtData {
 	country = 'de'
 
 	get etCurrentPriceString() {
-		const [p] = etData.etPriceList.values()
-		return (
-			(Math.round(p * 10) / 10).toFixed(1) +
-			(globalData.country === 'ch' ? ' Rp' : ' ct')
-		)
+		if (this.etPriceList.size > 0) {
+			const [p] = this.etPriceList.values()
+			return (
+				(Math.round(p * 10) / 10).toFixed(1) +
+				(globalData.country === 'ch' ? ' Rp' : ' ct')
+			)
+		} else {
+			return '---'
+		}
 	}
 }
 

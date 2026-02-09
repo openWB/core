@@ -1,5 +1,6 @@
 <template>
   <SliderStandard
+    v-if="acChargingEnabled"
     title="Minimaler Dauerstrom"
     :min="0"
     :max="16"
@@ -12,7 +13,7 @@
   />
 
   <SliderStandard
-    v-if="dcCharging"
+    v-if="dcChargingEnabled"
     title="Minimaler DC-Dauerleistung"
     :min="0"
     :max="300"
@@ -22,19 +23,21 @@
     class="q-mt-md"
   />
 
-  <div class="text-subtitle2 q-mt-sm q-mr-sm">Anzahl Phasen</div>
-  <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
-    <q-btn-group class="col">
-      <q-btn
-        v-for="option in phaseOptions"
-        :key="option.value"
-        :color="numPhases.value === option.value ? 'primary' : 'grey'"
-        :label="option.label"
-        size="sm"
-        class="col"
-        @click="numPhases.value = option.value"
-      />
-    </q-btn-group>
+  <div v-if="acChargingEnabled">
+    <div class="text-subtitle2 q-mt-sm q-mr-sm">Anzahl Phasen</div>
+    <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
+      <q-btn-group class="col">
+        <q-btn
+          v-for="option in phaseOptions"
+          :key="option.value"
+          :color="numPhases.value === option.value ? 'primary' : 'grey'"
+          :label="option.label"
+          size="sm"
+          class="col"
+          @click="numPhases.value = option.value"
+        />
+      </q-btn-group>
+    </div>
   </div>
 
   <div class="text-subtitle2 q-mt-sm q-mr-sm">Begrenzung</div>
@@ -82,6 +85,7 @@
       class="q-mt-md"
     />
     <SliderStandard
+      v-if="acChargingEnabled"
       title="Mindest-SoC-Strom"
       :min="6"
       :max="32"
@@ -91,7 +95,7 @@
     />
 
     <SliderStandard
-      v-if="dcCharging"
+      v-if="dcChargingEnabled"
       title="DC Mindest-SoC-Leistung"
       :min="0"
       :max="300"
@@ -100,19 +104,23 @@
       v-model="pvMinDcMinSocPower.value"
       class="q-mt-md"
     />
-    <div class="text-subtitle2 q-mt-sm q-mr-sm">Anzahl Phasen Mindest-SoC</div>
-    <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
-      <q-btn-group class="col">
-        <q-btn
-          v-for="option in phaseOptionsMinSoc"
-          :key="option.value"
-          :color="numPhasesMinSoc.value === option.value ? 'primary' : 'grey'"
-          :label="option.label"
-          size="sm"
-          class="col"
-          @click="numPhasesMinSoc.value = option.value"
-        />
-      </q-btn-group>
+    <div v-if="acChargingEnabled">
+      <div class="text-subtitle2 q-mt-sm q-mr-sm">
+        Anzahl Phasen Mindest-SoC
+      </div>
+      <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
+        <q-btn-group class="col">
+          <q-btn
+            v-for="option in phaseOptionsMinSoc"
+            :key="option.value"
+            :color="numPhasesMinSoc.value === option.value ? 'primary' : 'grey'"
+            :label="option.label"
+            size="sm"
+            class="col"
+            @click="numPhasesMinSoc.value = option.value"
+          />
+        </q-btn-group>
+      </div>
     </div>
   </div>
 
@@ -142,7 +150,7 @@ const limitModes = computed(() => {
   let modes = [
     { value: 'none', label: 'keine', color: 'primary' },
     { value: 'soc', label: 'EV-SoC', color: 'primary' },
-    { value: 'amount', label: 'Energiemenge', color: 'primary' },
+    { value: 'amount', label: 'Energie', color: 'primary' },
   ];
   if (vehicleSocType.value === undefined) {
     modes = modes.filter((mode) => mode.value !== 'soc');
@@ -169,7 +177,13 @@ const pvMinCurrent = computed(() =>
   mqttStore.chargePointConnectedVehiclePvChargeMinCurrent(props.chargePointId),
 );
 
-const dcCharging = computed(() => mqttStore.dcChargingEnabled);
+const dcChargingEnabled = computed(
+  () => mqttStore.chargePointChargeType(props.chargePointId).value === 'DC',
+);
+
+const acChargingEnabled = computed(
+  () => mqttStore.chargePointChargeType(props.chargePointId).value === 'AC',
+);
 
 const pvMinDcPower = computed(() =>
   mqttStore.chargePointConnectedVehiclePvDcChargePower(props.chargePointId),

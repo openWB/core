@@ -1,8 +1,13 @@
 import { computed, reactive } from 'vue'
 import { updateChargeTemplate, updateServer } from '@/assets/js/sendMessages'
-import { ChargeMode, PowerItemType, type PowerItem } from '@/assets/js/types'
+import {
+	ChargeMode,
+	PowerItemType,
+	type EnergyData,
+	type PowerItem,
+} from '@/assets/js/types'
 import { globalConfig } from '@/assets/js/themeConfig'
-import { masterData } from '@/assets/js/model'
+import { getColor } from '@/assets/js/model'
 export class ChargePoint implements PowerItem {
 	id: number
 	name = 'Ladepunkt'
@@ -30,6 +35,18 @@ export class ChargePoint implements PowerItem {
 	rangeUnit = ''
 	counter = 0
 	dailyYield = 0
+	now: EnergyData = {
+		energy: 0,
+		energyPv: 0,
+		energyBat: 0,
+		pvPercentage: 0,
+	}
+	past: EnergyData = {
+		energy: 0,
+		energyPv: 0,
+		energyBat: 0,
+		pvPercentage: 0,
+	}
 	energyPv = 0
 	energyBat = 0
 	pvPercentage = 0
@@ -47,7 +64,6 @@ export class ChargePoint implements PowerItem {
 	isSocManual = false
 	waitingForSoc = false
 	color = 'white'
-	energy = 0
 	showInGraph = true
 	private _timedCharging = false
 	private _instantChargeLimitMode = ''
@@ -112,9 +128,7 @@ export class ChargePoint implements PowerItem {
 		return this.chargeTemplate?.chargemode.selected ?? ChargeMode.stop
 	}
 	set chargeMode(cm: ChargeMode) {
-		console.log('set mode')
 		if (this.chargeTemplate) {
-			console.log('active')
 			this.chargeTemplate.chargemode.selected = cm
 			updateChargeTemplate(this.id)
 		}
@@ -386,20 +400,28 @@ export class ChargePoint implements PowerItem {
 				return 0
 		}
 	}
-	toPowerItem(): PowerItem {
+	/* toPowerItem(): PowerItem {
 		return {
 			name: this.name,
 			type: PowerItemType.chargepoint,
 			power: this.power,
-			energy: this.dailyYield,
-			energyPv: this.energyPv,
-			energyBat: this.energyBat,
-			pvPercentage: this.pvPercentage,
+			now : {
+				energy: this.dailyYield,
+				energyPv: this.energyPv,
+				energyBat: this.energyBat,
+				pvPercentage: this.pvPercentage,
+			},			
+			past: {
+				energy: this.dailyYield,
+				energyPv: this.energyPv,
+				energyBat: this.energyBat,
+				pvPercentage: this.pvPercentage,
+			},
 			color: this.color,
 			icon: this.icon,
 			showInGraph: true,
 		}
-	}
+	} */
 }
 export class Vehicle {
 	id: number
@@ -462,19 +484,19 @@ export interface ChargeTimePlan {
 	id: number
 	name: string
 	active: boolean
-	time: string[]
+	time: [string, string]
 	current: number
 	dc_current: number
 	phases_to_use: number
 	limit: {
-		selected: string
-		amount: number
-		soc: number
+		selected: 'none' | 'soc' | 'amount'
+		amount?: number
+		soc?: number
 	}
 	frequency: {
-		once: string[]
-		selected: string
-		weekly: boolean[]
+		selected: 'daily' | 'weekly' | 'once'
+		once?: [string, string]
+		weekly: [boolean, boolean, boolean, boolean, boolean, boolean, boolean]
 	}
 }
 export interface ChargeSchedule {
@@ -487,16 +509,18 @@ export interface ChargeSchedule {
 	phases_to_use: number
 	phases_to_use_pv: number
 	et_active: boolean
+	bidi_charging_enabled: boolean
+	bidi_power: number
 	limit: {
-		selected: string
-		amount: number
-		soc_limit: number
+		selected: 'soc' | 'amount'
+		amount?: number
+		soc_limit?: number
 		soc_scheduled: number
 	}
 	frequency: {
-		once: string
-		selected: string
-		weekly: boolean[]
+		once?: string
+		selected: 'weekly' | 'daily' | 'once'
+		weekly: [boolean, boolean, boolean, boolean, boolean, boolean, boolean]
 	}
 }
 export interface ChargeTemplate {
@@ -576,11 +600,12 @@ export const evTemplates: { [key: number]: EvTemplate } = reactive({})
 export function addChargePoint(chargePointIndex: number) {
 	if (!(chargePointIndex in chargePoints)) {
 		chargePoints[chargePointIndex] = new ChargePoint(chargePointIndex)
-		const cpcolor =
-			'var(--color-cp' + (Object.values(chargePoints).length - 1) + ')'
+		const cpcolor = getColor('cp', Object.values(chargePoints).length - 1)
+		//
+		//'var(--color-cp' + (Object.values(chargePoints).length - 1) + ')'
 		chargePoints[chargePointIndex].color = cpcolor
-		const cpId = 'cp' + chargePointIndex
-		if (!masterData[cpId]) {
+		//const cpId = 'cp' + chargePointIndex
+		/* if (!masterData[cpId]) {
 			masterData[cpId] = {
 				name: 'Ladepunkt',
 				color: cpcolor,
@@ -589,6 +614,7 @@ export function addChargePoint(chargePointIndex: number) {
 		} else {
 			masterData['cp' + chargePointIndex].color = cpcolor
 		}
+		 */
 		// console.info('Added chargepoint ' + chargePointIndex)
 	} else {
 		// console.info('Duplicate chargepoint message: ' + chargePointIndex)

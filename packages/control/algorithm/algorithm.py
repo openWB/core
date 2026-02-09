@@ -57,10 +57,10 @@ class Algorithm:
         """
         for cp in data.data.cp_data.values():
             try:
-                if cp.data.set.charging_ev != -1:
+                if cp.data.control_parameter.required_current != 0:
                     charging_ev = cp.data.set.charging_ev_data
                     control_parameter = cp.data.control_parameter
-                    if cp.cp_ev_chargemode_support_phase_switch():
+                    if control_parameter.template_phases == 0 and cp.cp_state_hw_support_phase_switch():
                         # Gibt die Stromstärke und Phasen zurück, mit denen nach der Umschaltung geladen werden
                         # soll. Falls keine Umschaltung erforderlich ist, werden Strom und Phasen, die übergeben
                         # wurden, wieder zurückgegeben.
@@ -69,6 +69,7 @@ class Algorithm:
                             cp.data.set.charge_template,
                             cp.data.control_parameter,
                             cp.num,
+                            cp.data.get.evse_current,
                             cp.data.get.currents,
                             cp.data.get.power,
                             cp.template.data.max_current_single_phase,

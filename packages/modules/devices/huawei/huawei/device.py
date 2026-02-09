@@ -56,14 +56,19 @@ def create_device(device_config: Huawei):
         if HuaweiType(device_config.configuration.type) == HuaweiType.SDongle:
             client = ModbusTcpClient_(device_config.configuration.ip_address,
                                       device_config.configuration.port, sleep_after_connect=7)
-        if HuaweiType(device_config.configuration.type) == HuaweiType.HuaweiKit:
+        elif HuaweiType(device_config.configuration.type) == HuaweiType.Huawei_Kit:
             client = ModbusTcpClient_("192.168.193.126", 8899)
         else:
             client = ModbusTcpClient_(device_config.configuration.ip_address,
                                       device_config.configuration.port)
 
     def error_handler():
-        run_command(f"{Path(__file__).resolve().parents[4]}/modules/common/restart_protoss_admin")
+        if HuaweiType(device_config.configuration.type) == HuaweiType.Huawei_Kit:
+            run_command([f"{Path(__file__).resolve().parents[4]}/modules/common/restart_protoss_admin",
+                        "192.168.193.126"])
+        else:
+            run_command([f"{Path(__file__).resolve().parents[4]}/modules/common/restart_protoss_admin",
+                         device_config.configuration.ip_address])
 
     return ConfigurableDevice(
         device_config=device_config,

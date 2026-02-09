@@ -1,9 +1,7 @@
 import functools
 import logging
-import logging.handlers
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-import queue
 import sys
 import threading
 import typing_extensions
@@ -111,18 +109,42 @@ def filter_pos(name: str, record) -> bool:
 
 
 class InMemoryLogHandler(logging.Handler):
-    def __init__(self, base_handler=None):
+    def __init__(self, base_handler=None, max_size_mb=50):
         super().__init__()
         self.base_handler = base_handler
         self.log_stream = io.StringIO()
         self.has_warning_or_error = False
+        self.max_size_bytes = max_size_mb * 1024 * 1024  # Convert MB to bytes
+        self.line_count = 0
 
     def emit(self, record):
         if self.base_handler is None or self.base_handler.filter(record):
             msg = self.format(record)
             self.log_stream.write(msg + '\n')
+            self.line_count += 1
+
+            # Check size every 100 lines to avoid performance overhead
+            if self.line_count % 100 == 0:
+                current_size = len(self.log_stream.getvalue().encode('utf-8'))
+                if current_size > self.max_size_bytes:
+                    self._truncate_logs()
+
             if record.levelno >= logging.WARNING:
                 self.has_warning_or_error = True
+
+    def _truncate_logs(self):
+        """Keep only the last 25% of logs when size limit is exceeded"""
+        current_logs = self.log_stream.getvalue()
+        lines = current_logs.split('\n')
+
+        # Keep only the last 25% of lines
+        keep_count = max(100, len(lines) // 4)  # At least 100 lines
+        kept_lines = lines[-keep_count:]
+
+        # Reset the stream with truncated content
+        self.log_stream = io.StringIO()
+        self.log_stream.write('\n'.join(kept_lines))
+        self.line_count = len(kept_lines)
 
     def get_logs(self):
         return self.log_stream.getvalue()
@@ -130,6 +152,7 @@ class InMemoryLogHandler(logging.Handler):
     def clear(self):
         self.log_stream = io.StringIO()
         self.has_warning_or_error = False
+        self.line_count = 0
 
 
 def clear_in_memory_log_handler(logger_name: str = None) -> None:
@@ -210,99 +233,84 @@ def setup_logging() -> None:
     # to do: add smarthome and soc to in_memory_log_handlers, needs updates in individual thread calls
 
     # Main logger
-    log_queue = queue.Queue()
-    queue_handler = logging.handlers.QueueHandler(log_queue)
-    main_file_handler = RotatingFileHandler(RAMDISK_PATH + 'main.log', maxBytes=mb_to_bytes(5.5), backupCount=4)
+    main_file_handler = RotatingFileHandler(RAMDISK_PATH + 'main.log', maxBytes=mb_to_bytes(5), backupCount=4)
     main_file_handler.setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
     main_file_handler.addFilter(RedactingFilter())
     in_memory_log_handlers["main"] = InMemoryLogHandler(main_file_handler)
     in_memory_log_handlers["main"].setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
-    logging.basicConfig(level=logging.DEBUG, handlers=[queue_handler, in_memory_log_handlers["main"]])
+    logging.basicConfig(level=logging.DEBUG, handlers=[main_file_handler, in_memory_log_handlers["main"]])
     logging.getLogger().handlers[0].addFilter(functools.partial(filter_neg, "soc"))
     logging.getLogger().handlers[0].addFilter(functools.partial(filter_neg, "Internal Chargepoint"))
     logging.getLogger().handlers[0].addFilter(functools.partial(filter_neg, "smarthome"))
-    main_listener = logging.handlers.QueueListener(log_queue, main_file_handler)
-    main_listener.start()
 
     # Chargelog logger
-    chargelog_queue = queue.Queue()
-    chargelog_queue_handler = logging.handlers.QueueHandler(chargelog_queue)
     chargelog_log = logging.getLogger("chargelog")
     chargelog_log.propagate = False
     chargelog_file_handler = RotatingFileHandler(
         RAMDISK_PATH + 'chargelog.log', maxBytes=mb_to_bytes(2), backupCount=1)
     chargelog_file_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
     chargelog_file_handler.addFilter(RedactingFilter())
-    chargelog_log.addHandler(chargelog_queue_handler)
-    chargelog_listener = logging.handlers.QueueListener(chargelog_queue, chargelog_file_handler)
-    chargelog_listener.start()
+    chargelog_log.addHandler(chargelog_file_handler)
 
     # Data migration logger
-    data_migration_queue = queue.Queue()
-    data_migration_queue_handler = logging.handlers.QueueHandler(data_migration_queue)
     data_migration_log = logging.getLogger("data_migration")
     data_migration_log.propagate = False
     data_migration_file_handler = RotatingFileHandler(
         PERSISTENT_LOG_PATH + 'data_migration.log', maxBytes=mb_to_bytes(1), backupCount=1)
     data_migration_file_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
     data_migration_file_handler.addFilter(RedactingFilter())
-    data_migration_log.addHandler(data_migration_queue_handler)
-    data_migration_listener = logging.handlers.QueueListener(data_migration_queue, data_migration_file_handler)
-    data_migration_listener.start()
+    data_migration_log.addHandler(data_migration_file_handler)
 
     # MQTT logger
-    mqtt_queue = queue.Queue()
-    mqtt_queue_handler = logging.handlers.QueueHandler(mqtt_queue)
     mqtt_log = logging.getLogger("mqtt")
     mqtt_log.propagate = False
     mqtt_file_handler = RotatingFileHandler(RAMDISK_PATH + 'mqtt.log', maxBytes=mb_to_bytes(3), backupCount=1)
     mqtt_file_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
     mqtt_file_handler.addFilter(RedactingFilter())
-    mqtt_log.addHandler(mqtt_queue_handler)
-    mqtt_listener = logging.handlers.QueueListener(mqtt_queue, mqtt_file_handler)
-    mqtt_listener.start()
+    mqtt_log.addHandler(mqtt_file_handler)
 
     # Steuve control command logger
-    steuve_control_command_queue = queue.Queue()
-    steuve_control_command_queue_handler = logging.handlers.QueueHandler(steuve_control_command_queue)
     steuve_control_command_log = logging.getLogger("steuve_control_command")
     steuve_control_command_log.propagate = False
     steuve_control_command_file_handler = RotatingFileHandler(
         PERSISTENT_LOG_PATH + 'steuve_control_command.log', maxBytes=mb_to_bytes(80), backupCount=1)
     steuve_control_command_file_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
-    steuve_control_command_log.addHandler(steuve_control_command_queue_handler)
-    steuve_control_command_listener = logging.handlers.QueueListener(steuve_control_command_queue,
-                                                                     steuve_control_command_file_handler)
-    steuve_control_command_listener.start()
+    steuve_control_command_log.addHandler(steuve_control_command_file_handler)
+
+    # Garbage collector logger
+    garbage_collector_log = logging.getLogger("garbage_collector")
+    garbage_collector_log.propagate = False
+    garbage_collector_file_handler = RotatingFileHandler(
+        RAMDISK_PATH + 'garbage_collector.log', maxBytes=mb_to_bytes(0.5), backupCount=1)
+    garbage_collector_file_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
+    garbage_collector_log.addHandler(garbage_collector_file_handler)
+
+    # tracemalloc logger
+    tracemalloc_log = logging.getLogger("tracemalloc")
+    tracemalloc_log.propagate = False
+    tracemalloc_file_handler = RotatingFileHandler(
+        RAMDISK_PATH + 'tracemalloc.log', maxBytes=mb_to_bytes(0.5), backupCount=1)
+    tracemalloc_file_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
+    tracemalloc_log.addHandler(tracemalloc_file_handler)
 
     # Smarthome logger
-    smarthome_queue = queue.Queue()
-    smarthome_queue_handler = logging.handlers.QueueHandler(smarthome_queue)
     smarthome_log_handler = RotatingFileHandler(RAMDISK_PATH + 'smarthome.log', maxBytes=mb_to_bytes(1), backupCount=1)
     smarthome_log_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
     smarthome_log_handler.addFilter(functools.partial(filter_pos, "smarthome"))
     smarthome_log_handler.addFilter(RedactingFilter())
-    logging.getLogger().addHandler(smarthome_queue_handler)
-    smarthome_listener = logging.handlers.QueueListener(smarthome_queue, smarthome_log_handler)
-    smarthome_listener.start()
+    logging.getLogger().addHandler(smarthome_log_handler)
 
     # SoC logger
-    soc_queue = queue.Queue()
-    soc_queue_handler = logging.handlers.QueueHandler(soc_queue)
     soc_log_handler = RotatingFileHandler(RAMDISK_PATH + 'soc.log', maxBytes=mb_to_bytes(2), backupCount=1)
     soc_log_handler.setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
     soc_log_handler.addFilter(functools.partial(filter_pos, "soc"))
     soc_log_handler.addFilter(RedactingFilter())
     in_memory_log_handlers["soc"] = InMemoryLogHandler(soc_log_handler)
     in_memory_log_handlers["soc"].setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
-    logging.getLogger().addHandler(soc_queue_handler)
+    logging.getLogger().addHandler(soc_log_handler)
     logging.getLogger().addHandler(in_memory_log_handlers["soc"])
-    soc_listener = logging.handlers.QueueListener(soc_queue, soc_log_handler)
-    soc_listener.start()
 
     # Internal chargepoint logger
-    internal_chargepoint_queue = queue.Queue()
-    internal_chargepoint_queue_handler = logging.handlers.QueueHandler(internal_chargepoint_queue)
     internal_chargepoint_log_handler = RotatingFileHandler(RAMDISK_PATH + 'internal_chargepoint.log',
                                                            maxBytes=mb_to_bytes(1),
                                                            backupCount=1)
@@ -311,24 +319,17 @@ def setup_logging() -> None:
     internal_chargepoint_log_handler.addFilter(RedactingFilter())
     in_memory_log_handlers["internal_chargepoint"] = InMemoryLogHandler(internal_chargepoint_log_handler)
     in_memory_log_handlers["internal_chargepoint"].setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
-    logging.getLogger().addHandler(internal_chargepoint_queue_handler)
+    logging.getLogger().addHandler(internal_chargepoint_log_handler)
     logging.getLogger().addHandler(in_memory_log_handlers["internal_chargepoint"])
-    internal_chargepoint_listener = logging.handlers.QueueListener(internal_chargepoint_queue,
-                                                                   internal_chargepoint_log_handler)
-    internal_chargepoint_listener.start()
 
     # urllib3 logger
-    urllib3_queue = queue.Queue()
-    urllib3_queue_handler = logging.handlers.QueueHandler(urllib3_queue)
     urllib3_log = logging.getLogger("urllib3.connectionpool")
     urllib3_log.propagate = True
     urllib3_file_handler = RotatingFileHandler(RAMDISK_PATH + 'soc.log', maxBytes=mb_to_bytes(2), backupCount=1)
     urllib3_file_handler.setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
     urllib3_file_handler.addFilter(RedactingFilter())
     urllib3_file_handler.addFilter(functools.partial(filter_pos, "soc"))
-    urllib3_log.addHandler(urllib3_queue_handler)
-    urllib3_listener = logging.handlers.QueueListener(urllib3_queue, urllib3_file_handler)
-    urllib3_listener.start()
+    urllib3_log.addHandler(urllib3_file_handler)
 
     logging.getLogger("pymodbus").setLevel(logging.WARNING)
     logging.getLogger("uModbus").setLevel(logging.WARNING)

@@ -96,9 +96,9 @@ class RestApi2():
         Returns:
             CounterState: The updated grid counter state.
         """
-        grid_import_power = -int(float(self.__read_element(device="battery", element="M39")))
-        grid_export_power = -int(float(self.__read_element(device="battery", element="M38")))
-        grid_power = grid_import_power - grid_export_power
+        grid_export_power = int(float(self.__read_element(device="battery", element="M38")))
+        grid_import_power = int(float(self.__read_element(device="battery", element="M39")))
+        grid_power = grid_import_power - grid_export_power  # export power must be negative
         imported, exported = sim_counter.sim_count(grid_power)
         return CounterState(power=grid_power,
                             imported=imported,

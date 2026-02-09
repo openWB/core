@@ -11,13 +11,12 @@ from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE
 from control.algorithm.filter_chargepoints import get_chargepoints_by_chargemodes
 from control.algorithm.utils import get_medium_charging_current
 from control.chargemode import Chargemode
-from control.ev.ev import Ev
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state import ChargepointState
 from dataclass_utils.factories import currents_list_factory, voltages_list_factory
 from helpermodules import timecheck
 from helpermodules.constants import NO_ERROR
-from helpermodules.phase_mapping import convert_cp_currents_to_evu_currents
+from helpermodules.phase_handling import convert_cp_currents_to_evu_currents
 from modules.common.fault_state import FaultStateLevel
 from modules.common.utils.component_parser import get_component_name_by_id
 
@@ -67,6 +66,7 @@ class Get:
     fault_state: int = field(default=0, metadata={"topic": "get/fault_state"})
     fault_str: str = field(default=NO_ERROR, metadata={"topic": "get/fault_str"})
     power: float = field(default=0, metadata={"topic": "get/power"})
+    serial_number: Optional[str] = field(default=None, metadata={"topic": "get/serial_number"})
 
 
 def get_factory() -> Get:
@@ -194,17 +194,19 @@ class Counter:
         else:
             self.data.set.raw_power_left = None
 
-    def update_values_left(self, diffs, cp_voltages: List[float]) -> None:
+    def update_values_left(self, diffs, cp_voltage: float) -> None:
+        # Mittelwert der Spannungen verwenden, um Phasenverdrehung zu kompensieren
+        # (Probleme bei einphasig angeschlossenen Wallboxen)
         self.data.set.raw_currents_left = list(map(operator.sub, self.data.set.raw_currents_left, diffs))
         if self.data.set.raw_power_left:
-            self.data.set.raw_power_left -= sum([c * v for c, v in zip(diffs, cp_voltages)])
+            self.data.set.raw_power_left -= sum([c * cp_voltage for c in diffs])
         log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
                   f'{self.data.set.raw_power_left}W verbleibende Leistung')
 
-    def update_surplus_values_left(self, diffs, cp_voltages: List[float]) -> None:
+    def update_surplus_values_left(self, diffs, cp_voltage: float) -> None:
         self.data.set.raw_currents_left = list(map(operator.sub, self.data.set.raw_currents_left, diffs))
         if self.data.set.surplus_power_left:
-            self.data.set.surplus_power_left -= sum([c * v for c, v in zip(diffs, cp_voltages)])
+            self.data.set.surplus_power_left -= sum([c * cp_voltage for c in diffs])
         log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
                   f'{self.data.set.surplus_power_left}W verbleibender Überschuss')
 
@@ -253,7 +255,7 @@ class Counter:
 
     def get_usable_surplus(self, feed_in_yield: float) -> float:
         # verbleibender EVU-Überschuss unter Berücksichtigung der Einspeisegrenze und Speicherleistung
-        return (-self.calc_surplus() - self.data.set.released_surplus +
+        return (-self.calc_surplus() + self.data.set.released_surplus -
                 self.data.set.reserved_surplus - feed_in_yield)
 
     SWITCH_ON_FALLEN_BELOW = "Einschaltschwelle während der Wartezeit unterschritten."
@@ -349,7 +351,7 @@ class Counter:
                 max_phases_power = ev_template.data.min_current * ev_template.data.max_phases * 230
                 if (control_parameter.submode == Chargemode.PV_CHARGING and
                     chargepoint.data.set.charge_template.data.chargemode.pv_charging.phases_to_use == 0 and
-                        chargepoint.cp_ev_support_phase_switch() and
+                        chargepoint.hw_supports_phase_switch() and
                         self.get_usable_surplus(feed_in_yield) > max_phases_power):
                     control_parameter.phases = ev_template.data.max_phases
                     msg += self.SWITCH_ON_MAX_PHASES.format(ev_template.data.max_phases)
@@ -386,25 +388,24 @@ class Counter:
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")
 
-    def calc_switch_off_threshold(self, chargepoint: Chargepoint) -> Tuple[float, float]:
+    def calc_switch_off_threshold(self, chargepoint: Chargepoint) -> float:
         pv_config = data.data.general_data.data.chargemode_config.pv_charging
         control_parameter = chargepoint.data.control_parameter
         if chargepoint.data.set.charge_template.data.chargemode.pv_charging.feed_in_limit:
             # Der EVU-Überschuss muss ggf um die Einspeisegrenze bereinigt werden.
             # Wnn die Leistung nicht Einspeisegrenze + Einschaltschwelle erreicht, darf die Ladung nicht pulsieren.
             # Abschaltschwelle um Einschaltschwelle reduzieren.
-            feed_in_yield = (-data.data.general_data.data.chargemode_config.pv_charging.feed_in_yield
-                             + pv_config.switch_on_threshold*control_parameter.phases)
+            threshold = (-data.data.general_data.data.chargemode_config.pv_charging.feed_in_yield
+                         + pv_config.switch_on_threshold*control_parameter.phases)
         else:
-            feed_in_yield = 0
-        threshold = pv_config.switch_off_threshold + feed_in_yield
-        return threshold, feed_in_yield
+            threshold = pv_config.switch_off_threshold
+        return threshold
 
     def calc_switch_off(self, chargepoint: Chargepoint) -> Tuple[float, float]:
         switch_off_power = self.calc_surplus() - self.data.set.released_surplus
-        threshold, feed_in_yield = self.calc_switch_off_threshold(chargepoint)
+        threshold = self.calc_switch_off_threshold(chargepoint)
         log.debug(f'LP{chargepoint.num} Switch-Off-Threshold prüfen: {switch_off_power}W, Schwelle: {threshold}W, '
-                  f'freigegebener Überschuss {self.data.set.released_surplus}W, Einspeisegrenze {feed_in_yield}W')
+                  f'freigegebener Überschuss {self.data.set.released_surplus}W')
         return switch_off_power, threshold
 
     def switch_off_check_threshold(self, chargepoint: Chargepoint) -> bool:
@@ -474,22 +475,14 @@ class Counter:
         chargepoint.set_state_and_log(msg)
         return charge
 
-    def reset_switch_on_off(self, chargepoint: Chargepoint, charging_ev: Ev):
-        """ Zeitstempel und reservierte Leistung löschen
-
-        Parameter
-        ---------
-        chargepoint: dict
-            Ladepunkt, für den die Werte zurückgesetzt werden sollen
-        charging_ev: dict
-            EV, das dem Ladepunkt zugeordnet ist
-        """
+    def reset_switch_on_off(self, chargepoint: Chargepoint):
         try:
             if chargepoint.data.control_parameter.timestamp_switch_on_off is not None:
                 chargepoint.data.control_parameter.timestamp_switch_on_off = None
                 evu_counter = data.data.counter_all_data.get_evu_counter()
-                # Wenn bereits geladen wird, freigegebene Leistung freigeben. Wenn nicht geladen wird, reservierte
-                # Leistung freigeben.
+                # Wenn bereits geladen wird, lief die Abschaltverzögerung -> Leistung, die nach Abschalten frei
+                # geworden wäre, nicht mehr zum zur Verfügung stehenden Überschuss zählen.
+                # Wenn nicht geladen wird, reservierte Leistung freigeben.
                 pv_config = data.data.general_data.data.chargemode_config.pv_charging
                 if not chargepoint.data.get.charge_state:
                     evu_counter.data.set.reserved_surplus -= (pv_config.switch_on_threshold

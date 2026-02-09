@@ -135,7 +135,9 @@ def test_is_phase_switch_required(params: Params):
     cp.data.get.charge_state = params.charge_state
     cp.data.control_parameter.failed_phase_switches = params.failed_phase_switches
     data.data_init(Mock())
-    data.data.general_data.data.chargemode_config.retry_failed_phase_switches = params.retry_failed_phase_switches
+    data.data.general_data.data.chargemode_config.pv_charging.retry_failed_phase_switches = (
+        params.retry_failed_phase_switches
+    )
 
     # evaluation
     ret = cp._is_phase_switch_required()

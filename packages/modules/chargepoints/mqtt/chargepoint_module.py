@@ -98,8 +98,11 @@ class ChargepointModule(AbstractChargepoint):
                                          "veraltete, abwärtskompatible Topics verwendet. Bitte die Doku in den "
                                          "Einstellungen beachten.")
 
-    def switch_phases(self, phases_to_use: int, duration: int) -> None:
+    def switch_phases(self, phases_to_use: int) -> None:
         Pub().pub(f"openWB/mqtt/chargepoint/{self.config.id}/set/phases_to_use", phases_to_use)
+
+    def clear_rfid(self) -> None:
+        Pub().pub(f"openWB/mqtt/chargepoint/{self.config.id}/get/rfid", "")
 
 
 chargepoint_descriptor = DeviceDescriptor(configuration_factory=Mqtt)

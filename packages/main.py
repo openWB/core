@@ -19,7 +19,7 @@ import schedule
 import time
 from threading import Event, Thread, enumerate
 import traceback
-from control.chargelog.chargelog import calculate_charge_cost
+from control.chargelog.chargelog import calc_energy_costs, calculate_charged_energy_by_source
 
 from control import data, prepare, process
 from control.algorithm import algorithm
@@ -182,11 +182,16 @@ class HandlerAlgorithm:
                 totals = save_log(LogType.DAILY)
                 update_daily_yields(totals)
                 update_pv_monthly_yearly_yields()
+                for cp in data.data.cp_data.values():
+                    calc_energy_costs(cp)
                 data.data.general_data.grid_protection()
                 data.data.optional_data.ocpp_transfer_meter_values()
                 data.data.counter_all_data.validate_hierarchy()
+                data.data.optional_data.remove_outdated_prices()
+            loadvars_.ep_get_prices()
         except Exception:
             log.exception("Fehler im Main-Modul")
+
 
     @__with_handler_lock(error_threshold=60)
     def handler5Min(self):
@@ -248,10 +253,7 @@ class HandlerAlgorithm:
         """ Handler, der jede Stunde aufgerufen wird und die Aufgaben ausführt, die nur jede Stunde ausgeführt werden müssen.
         """
         try:
-            with ChangedValuesContext(loadvars_.event_module_update_completed):
-                for cp in data.data.cp_data.values():
-                    calculate_charge_cost(cp)
-            data.data.optional_data.et_get_prices()
+            logger.clear_in_memory_log_handler(None)
         except Exception:
             log.exception("Fehler im Main-Modul")
 
@@ -273,6 +275,7 @@ def schedule_jobs():
 
 try:
     log.debug("Start openWB2.service")
+    old_memory_usage = 0
     loadvars_ = loadvars.Loadvars()
     data.data_init(loadvars_.event_module_update_completed)
     update_config.UpdateConfig().update()

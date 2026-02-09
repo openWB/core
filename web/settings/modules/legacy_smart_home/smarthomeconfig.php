@@ -611,7 +611,7 @@ $numDevices = 9;
 													</div>
 													<span class="form-text small">
 														Durch diese Option wird das angeschlossene Gerät täglich um 0:01 Uhr eingeschaltet. Wenn erkannt wird, dass das Gerät aktiviert wird (Leistungsaufnahme ist länger als "Zeit im Standby" größer als eingetragener "Verbrauch im Standby"), wird das Gerät direkt ausgeschaltet, falls die Einschaltschwelle nicht erreicht ist. Sobald die Einschaltschwelle erreicht wird, wird das Gerät erneut aktiviert.<br>
-														Somit kann z. B. eine Waschmaschine am Morgen im Standby befüllt und eingeschaltet werden. Sie läuft aber erst richtig an, wenn genügend Überschuss vorhanden ist.
+														Somit kann z. B. eine Waschmaschine am Morgen im Standby befüllt und eingeschaltet werden. Das Gerät läuft aber erst richtig an, wenn genügend Überschuss vorhanden ist.
 												</div>
 											</div>
 											<div class="device<?php echo $devicenum; ?>startupDetection hide">
@@ -905,6 +905,7 @@ $numDevices = 9;
 									<div class="col">
 										<select class="form-control" name="device_measureType" id="device_measureTypeDevices<?php echo $devicenum; ?>" data-default="sdm630" data-topicprefix="openWB/LegacySmartHome/config/get/" data-topicsubgroup="Devices/<?php echo $devicenum; ?>/">
 											<option value ="" data-option="" disabled="disabled" selected="selected">-- Bitte auswählen --</option>
+											<option value="elgris" data-option="fronius">Elgris</option>
 											<option value="fronius" data-option="fronius">Fronius</option>
 											<option value="http" data-option="http">Http</option>
 											<option value="json" data-option="json">Json</option>
@@ -922,7 +923,7 @@ $numDevices = 9;
 										</select>
 									</div>
 								</div>
-								<div class="form-row mb-1 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-shelly deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-tasmota deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-sdm630 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-lovato deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-b23 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-sdm120 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-we514 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-mystrom deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-fronius deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-avm hide">
+								<div class="form-row mb-1 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-shelly deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-tasmota deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-sdm630 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-lovato deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-b23 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-sdm120 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-we514 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-mystrom deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-fronius deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-avm hide deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-elgris">
 									<label for="device_measureipDevices<?php echo $devicenum; ?>" class="col-md-4 col-form-label">IP Adresse</label>
 									<div class="col">
 										<input id="device_measureipDevices<?php echo $devicenum; ?>" name="device_measureip" class="form-control" type="text" required="required" pattern="^((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$" data-default="192.168.1.1" value="192.168.1.1" inputmode="text"  data-topicprefix="openWB/LegacySmartHome/config/get/" data-topicsubgroup="Devices/<?php echo $devicenum; ?>/">
@@ -976,13 +977,13 @@ $numDevices = 9;
 										</select>
 									</div>
 								</div>
-								<div class="form-row mb-1 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-sdm630 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-b23 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-lovato deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-sdm120 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-we514 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-fronius hide">
+								<div class="form-row mb-1 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-sdm630 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-b23 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-lovato deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-sdm120 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-we514 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-fronius hide deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-elgris ">
 									<label for="device_measureidDevices<?php echo $devicenum; ?>" class="col-md-4 col-form-label">ID des Zählers</label>
 									<div class="col">
 										<input id="device_measureidDevices<?php echo $devicenum; ?>" name="device_measureid" class="form-control naturalNumber" type="number" inputmode="decimal" required min="1" max="255" data-default="1" value="1"  data-topicprefix="openWB/LegacySmartHome/config/get/" data-topicsubgroup="Devices/<?php echo $devicenum; ?>/">
 									</div>
 								</div>
-								<div class="form-row mb-1 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-sdm120 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-b23 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-lovato deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-sdm630 hide">
+								<div class="form-row mb-1 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-sdm120 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-b23 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-lovato deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-sdm630 hide deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-elgris hide">
 									<label for="device_measurePortSdmDevices<?php echo $devicenum; ?>" class="col-md-4 col-form-label">Modbusport des Zählers</label>
 									<div class="col">
 										<input id="device_measurePortSdmDevices<?php echo $devicenum; ?>" name="device_measurePortSdm" class="form-control naturalNumber" type="number" inputmode="decimal" required min="1" max="9999" data-default="8899" value="8899"  data-topicprefix="openWB/LegacySmartHome/config/get/" data-topicsubgroup="Devices/<?php echo $devicenum; ?>/">
@@ -1155,7 +1156,7 @@ $numDevices = 9;
 						<!-- modal body -->
 						<div class="modal-body text-center">
 							<p>
-								Es wurden fehlerhafte Eingaben gefunden, speichern ist nicht möglich! Bitte überprüfen Sie alle Eingaben.
+								Es wurden fehlerhafte Eingaben gefunden, speichern ist nicht möglich! Bitte überprüfe alle Eingaben.
 							</p>
 						</div>
 						<!-- modal footer -->
@@ -1214,7 +1215,7 @@ $numDevices = 9;
 
 		<footer class="footer bg-dark text-light font-small">
 			<div class="container text-center">
-				<small>Sie befinden sich hier: Ladeeinstellungen/Smart Home 2.0</small>
+				<small>Du befindest dich hier: Ladeeinstellungen/Smart Home 2.0</small>
 			</div>
 		</footer>
 

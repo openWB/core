@@ -1,0 +1,11 @@
+{
+  "host": "localhost",
+  "port": 1883,
+  "username": null,
+  "password": null,
+  "use_tls": false,
+  "qos": 0,
+  "retain": true,
+  "reconnect_delay": 10,
+  "log_level": "INFO"
+}

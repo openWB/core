@@ -3,7 +3,6 @@ from typing import TypedDict, Any
 
 from modules.common import modbus
 from modules.common.abstract_device import AbstractCounter
-from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount import SimCounter
@@ -34,27 +33,12 @@ class ConsumptionCounterFlex(AbstractCounter):
 
     def update(self) -> None:
         with self.__tcp_client:
-            voltages = self.__client.get_voltages()
-            powers, power = self.__client.get_power()
-            frequency = self.__client.get_frequency()
-            power_factors = self.__client.get_power_factors()
-            imported = self.__client.get_imported()
-            currents = self.__client.get_currents()
+            counter_state = self.__client.get_counter_state()
             if self.component_config.configuration.type == "b23":
-                exported = self.__client.get_exported()
+                counter_state.exported = self.__client.get_exported()
             else:
-                exported = 0
+                counter_state.exported = 0
 
-        counter_state = CounterState(
-            voltages=voltages,
-            currents=currents,
-            powers=powers,
-            power_factors=power_factors,
-            imported=imported,
-            exported=exported,
-            power=power,
-            frequency=frequency
-        )
         self.store.set(counter_state)
 
 

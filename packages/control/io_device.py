@@ -4,10 +4,12 @@ from control import data
 from control.limiting_value import LimitingValue
 from helpermodules.constants import NO_ERROR
 from modules.common.utils.component_parser import get_io_name_by_id
-from modules.io_actions.controllable_consumers.dimming.api import Dimming
+from modules.io_actions.controllable_consumers.dimming.api_eebus import DimmingEebus
+from modules.io_actions.controllable_consumers.dimming.api_io import DimmingIo
 from modules.io_actions.controllable_consumers.dimming_direct_control.api import DimmingDirectControl
 from modules.io_actions.controllable_consumers.ripple_control_receiver.api import RippleControlReceiver
-from modules.io_actions.generator_systems.stepwise_control.api import StepwiseControl
+from modules.io_actions.generator_systems.stepwise_control.api_eebus import StepwiseControlEebus
+from modules.io_actions.generator_systems.stepwise_control.api_io import StepwiseControlIo
 
 
 @dataclass
@@ -54,7 +56,8 @@ class IoStates:
 
 class IoActions:
     def __init__(self):
-        self.actions: Dict[int, Union[Dimming, DimmingDirectControl, RippleControlReceiver, StepwiseControl]] = {}
+        self.actions: Dict[int, Union[DimmingIo, DimmingEebus, DimmingDirectControl,
+                                      RippleControlReceiver, StepwiseControlEebus, StepwiseControlIo]] = {}
 
     def setup(self):
         for action in self.actions.values():
@@ -66,7 +69,7 @@ class IoActions:
 
     def dimming_get_import_power_left(self, device: Dict) -> Optional[float]:
         for action in self.actions.values():
-            if isinstance(action, Dimming):
+            if isinstance(action, (DimmingIo, DimmingEebus)):
                 for d in action.config.configuration.devices:
                     if device == d:
                         self._check_fault_state_io_device(action.config.configuration.io_device)
@@ -76,7 +79,7 @@ class IoActions:
 
     def dimming_set_import_power_left(self, device: Dict, used_power: float) -> Optional[float]:
         for action in self.actions.values():
-            if isinstance(action, Dimming):
+            if isinstance(action, (DimmingIo, DimmingEebus)):
                 for d in action.config.configuration.devices:
                     if d == device:
                         return action.dimming_set_import_power_left(used_power)
@@ -103,7 +106,7 @@ class IoActions:
 
     def stepwise_control(self, device_id: int) -> Optional[float]:
         for action in self.actions.values():
-            if isinstance(action, StepwiseControl):
+            if isinstance(action, (StepwiseControlEebus, StepwiseControlIo)):
                 if device_id in [component["id"] for component in action.config.configuration.devices]:
                     self._check_fault_state_io_device(action.config.configuration.io_device)
                     return action.control_stepwise()
