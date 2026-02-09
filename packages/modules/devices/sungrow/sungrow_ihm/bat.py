@@ -74,7 +74,7 @@ class SungrowIHMBat(AbstractBat):
             power_value = int(power_limit / 100)
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W entladen für den Hausverbrauch")
             self.__tcp_client.write_register(8025, power_value, data_type=ModbusDataType.UINT_32,
-                                              wordorder=Endian.Little, unit=unit)
+                                             wordorder=Endian.Little, unit=unit)
         elif power_limit > 0:
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W geladen")
             if self.last_mode != 'charge':
@@ -84,7 +84,7 @@ class SungrowIHMBat(AbstractBat):
             power_value = int(power_limit / 100)
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W geladen")
             self.__tcp_client.write_register(8025, power_value, data_type=ModbusDataType.UINT_32,
-                                              wordorder=Endian.Little, unit=unit)
+                                             wordorder=Endian.Little, unit=unit)
 
     def power_limit_controllable(self) -> bool:
         return True
