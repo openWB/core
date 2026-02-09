@@ -35,10 +35,10 @@ class VictronCounter(AbstractCounter):
         with self.__udp_client:
             if energy_meter:
                 powers = [
-                    self.__udp_client.read_holding_registers(reg, ModbusDataType.INT_32, unit=unit) / -1
+                    self.__udp_client.read_holding_registers(reg, ModbusDataType.INT_32, unit=unit) / 1
                     for reg in [0x3082, 0x3086, 0x308A]]
                 currents = [
-                    self.__udp_client.read_holding_registers(reg, ModbusDataType.INT_16, unit=unit) / -100
+                    self.__udp_client.read_holding_registers(reg, ModbusDataType.INT_16, unit=unit) / 100
                     for reg in [0x3041, 0x3049, 0x3051]]
                 voltages = [
                     self.__udp_client.read_holding_registers(reg, ModbusDataType.INT_16, unit=unit) / 100
