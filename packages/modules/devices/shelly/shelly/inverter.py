@@ -44,7 +44,6 @@ class ShellyInverter(AbstractInverter):
             status_url = "http://" + self.address + "/rpc/Shelly.GetStatus"
         status = req.get_http_session().get(status_url, timeout=3).json()
         try:
-            alphabetical_index = ['a', 'b', 'c']
             currents = [0.0, 0.0, 0.0]
             # GEN 1
             if "meters" in status:
