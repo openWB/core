@@ -401,7 +401,7 @@ def get_boots(num_lines=100):
     return ''.join(lines[-num_lines:])
 
 
-def create_debug_log(input_data):
+def create_debug_log(input_data) -> Optional[dict]:
     def write_to_file(file_handler, func, default: Optional[Any] = None):
         try:
             file_handler.write(func()+"\n")
@@ -432,6 +432,7 @@ def create_debug_log(input_data):
             write_to_file(df, lambda: f"# section: uuids #\n{get_uuids()}\n")
             write_to_file(df, lambda: f"# section: boots #\n{get_boots(30)}\n")
             write_to_file(df, lambda: f'# section: storage #\n{run_command(["df", "-h"])}\n')
+            write_to_file(df, lambda: 'Extended_Debug_Section\n')
             write_to_file(df, lambda: f"# section: broker essentials #\n{broker.get_broker_essentials()}\n")
             write_to_file(
                 df, lambda: f"# section: retained log #\n{merge_log_files('main', 500)}")
@@ -455,20 +456,22 @@ def create_debug_log(input_data):
         log.info("***** uploading debug log...")
         with open(debug_file, 'rb') as f:
             data = f.read()
-            req.get_http_session().put("https://openwb.de/tools/debug3.php",
-                                       data=data,
-                                       params={
-                                           'debugemail': debug_email,
-                                           'ticketnumber': ticketnumber,
-                                           'subject': subject
-                                       },
-                                       timeout=10)
+            json_rsp = req.get_http_session().put("https://debughandler.wb-solution.de",
+                                                  data=data,
+                                                  params={
+                                                    'debugemail': debug_email,
+                                                    'ticketnumber': ticketnumber,
+                                                    'subject': subject
+                                                  },
+                                                  timeout=10).json()
 
         log.info("***** cleanup...")
         os.remove(debug_file)
         log.info("***** debug log end")
+        return json_rsp
     except Exception as e:
         log.exception(f"Error creating debug log: {e}")
+        return None
 
 
 class BrokerContent:

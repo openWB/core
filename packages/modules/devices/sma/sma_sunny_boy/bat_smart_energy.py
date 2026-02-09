@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import pymodbus
 from typing import TypedDict, Any, Dict, Union, Optional
 import logging
 
@@ -130,28 +129,8 @@ class SunnyBoySmartEnergyBat(AbstractBat):
     def _write_registers(self, values_to_write: Dict[str, Union[int, float]], unit: int) -> None:
         for key, value in values_to_write.items():
             address, data_type = self.REGISTERS[key]
-            encoded_value = self._encode_value(value, data_type)
-            self.__tcp_client.write_registers(address, encoded_value, unit=unit)
-            log.debug(f"Neuer Wert {encoded_value} in Register {address} geschrieben.")
-
-    def _encode_value(self, value: Union[int, float], data_type: ModbusDataType) -> list:
-        builder = pymodbus.payload.BinaryPayloadBuilder(
-            byteorder=pymodbus.constants.Endian.Big,
-            wordorder=pymodbus.constants.Endian.Big
-        )
-        encode_methods = {
-            ModbusDataType.UINT_32: builder.add_32bit_uint,
-            ModbusDataType.INT_32: builder.add_32bit_int,
-            ModbusDataType.UINT_16: builder.add_16bit_uint,
-            ModbusDataType.INT_16: builder.add_16bit_int,
-        }
-
-        if data_type in encode_methods:
-            encode_methods[data_type](int(value))
-        else:
-            raise ValueError(f"Unsupported data type: {data_type}")
-
-        return builder.to_registers()
+            self.__tcp_client.write_register(address, value, data_type, unit=unit)
+            log.debug(f"Neuer Wert {value} in Register {address} geschrieben.")
 
     def power_limit_controllable(self) -> bool:
         return True

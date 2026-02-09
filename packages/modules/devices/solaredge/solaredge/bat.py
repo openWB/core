@@ -235,34 +235,12 @@ class SolaredgeBat(AbstractBat):
     def _write_registers(self, values_to_write: Dict[str, Union[int, float]], unit: int) -> None:
         for key, value in values_to_write.items():
             address, data_type = self.REGISTERS[key]
-            encoded_value = self._encode_value(value, data_type)
             try:
-                self.__tcp_client.write_registers(address, encoded_value, unit=unit)
-                log.debug(f"Neuer Wert {encoded_value} in Register {address} geschrieben.")
+                self.__tcp_client.write_register(address, value, data_type, wordorder=Endian.Little, unit=unit)
+                log.debug(f"Neuer Wert {value} in Register {address} geschrieben.")
             except pymodbus.exceptions.ModbusException as e:
                 log.error(f"Failed to write register {key} at address {address}: {e}")
                 self.fault_state.error(f"Modbus write error: {e}")
-
-    def _encode_value(self, value: Union[int, float], data_type: ModbusDataType) -> list:
-        builder = pymodbus.payload.BinaryPayloadBuilder(
-            byteorder=pymodbus.constants.Endian.Big,
-            wordorder=pymodbus.constants.Endian.Little
-        )
-        encode_methods = {
-            ModbusDataType.UINT_32: builder.add_32bit_uint,
-            ModbusDataType.INT_32: builder.add_32bit_int,
-            ModbusDataType.UINT_16: builder.add_16bit_uint,
-            ModbusDataType.INT_16: builder.add_16bit_int,
-            ModbusDataType.FLOAT_32: builder.add_32bit_float,
-        }
-        if data_type in encode_methods:
-            if data_type == ModbusDataType.FLOAT_32:
-                encode_methods[data_type](float(value))
-            else:
-                encode_methods[data_type](int(value))
-        else:
-            raise ValueError(f"Unsupported data type: {data_type}")
-        return builder.to_registers()
 
     def power_limit_controllable(self) -> bool:
         return True

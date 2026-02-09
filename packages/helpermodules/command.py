@@ -791,9 +791,25 @@ class Command:
     def sendDebug(self, connection_id: str, payload: dict) -> None:
         pub_user_message(payload, connection_id, "Systembericht wird erstellt...", MessageType.INFO)
         previous_log_level = SubData.system_data["system"].data["debug_level"]
-        create_debug_log(payload["data"])
+        json_rsp = create_debug_log(payload["data"])
         Pub().pub("openWB/set/system/debug_level", previous_log_level)
-        pub_user_message(payload, connection_id, "Systembericht wurde versandt.", MessageType.SUCCESS)
+        if json_rsp is not None:
+            if json_rsp.get("error"):
+                pub_user_message(payload, connection_id,
+                                 f"Fehler: {json_rsp.get('message')}",
+                                 MessageType.ERROR)
+            elif json_rsp.get("status") == "created":
+                pub_user_message(payload, connection_id,
+                                 f"Neues Ticket {json_rsp.get('ticket_id')} erstellt.",
+                                 MessageType.SUCCESS)
+            elif json_rsp.get("status") == "updated":
+                pub_user_message(payload, connection_id,
+                                 f"Systembericht bestehendem Ticket {json_rsp.get('ticket_id')} hinzugefügt.",
+                                 MessageType.SUCCESS)
+        else:
+            pub_user_message(payload, connection_id,
+                             "Fehler beim Erstellen des Systemberichts.",
+                             MessageType.ERROR)
 
     def getChargeLog(self, connection_id: str, payload: dict) -> None:
         Pub().pub(f'openWB/set/log/{connection_id}/data', get_log_data(payload["data"]))
