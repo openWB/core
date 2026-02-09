@@ -15,7 +15,7 @@ const props = defineProps<{
 }>()
 const y = computed(() => {
 	return scaleLinear()
-		.range([props.height - 10, 0])
+		.range([props.height - 10, 5])
 		.domain([0, 100])
 })
 const axisGenerator = computed(() => {

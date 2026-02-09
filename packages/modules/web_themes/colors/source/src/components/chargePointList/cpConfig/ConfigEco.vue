@@ -5,23 +5,18 @@
 		<!-- Minimal current -->
 		<ConfigItem
 			v-if="etData.active"
-			title="Minimaler Ladestrom unter der Preisgrenze:"
+			title="Minimaler Ladestrom unter der Preisgrenze"
 			icon="fa-bolt"
 			:fullwidth="true"
 		>
-			<div class="subconfigstack grid-col-12">
-				<div class="subconfig subgrid">
-					<span class="subconfigtitle grid-col-1">Stärke:</span>
-					<RangeInput
-						id="minCurrent"
-						v-model="cp.ecoMinCurrent"
-						:min="6"
-						:max="32"
-						:step="1"
-						unit="A"
-					/>
-				</div>
-			</div>
+			<RangeInput
+				id="minCurrent"
+				v-model="cp.ecoMinCurrent"
+				:min="6"
+				:max="32"
+				:step="1"
+				unit="A"
+			/>
 		</ConfigItem>
 
 		<!-- Number of phases -->

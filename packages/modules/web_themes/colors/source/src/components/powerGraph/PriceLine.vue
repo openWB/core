@@ -61,7 +61,7 @@ const yScale = computed(() => {
 	let e = extent(graphData.data, (d) => d.price)
 	if (e[0] && e[1]) {
 		return scaleLinear()
-			.range([props.height - 10, 0])
+			.range([props.height - 10, 5])
 			.domain(e)
 	} else {
 		return scaleLinear()

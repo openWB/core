@@ -61,7 +61,7 @@ const xScale = computed(() => {
 })
 const yScale = computed(() => {
 	return scaleLinear()
-		.range([props.height - 10, 0])
+		.range([props.height - 10, 5])
 		.domain([0, 100])
 })
 const myline = computed(() => {
