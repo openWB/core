@@ -12,12 +12,10 @@ class IdmConfiguration:
                  ip_address: Optional[str] = None,
                  port: Optional[int] = 502,
                  modbus_id: Optional[int] = 1,
-                 send_import: bool = False,
                  version: int = 1):
         self.ip_address = ip_address
         self.port = port
         self.modbus_id = modbus_id
-        self.send_import = send_import
         self.version = version
 
 
