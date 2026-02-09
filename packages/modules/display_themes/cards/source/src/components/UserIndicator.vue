@@ -93,23 +93,28 @@ export default {
     class="_padding-left:0 _padding-right:0 _margin-bottom:1"
     size="lg"
     block
-    :title="loggedInUser ? 'Abmelden' : 'Anmelden'"
+    :title="loggedInUser ? `${loggedInUser} Abmelden` : 'Anmelden'"
     :color="loggedInUser ? 'success' : 'danger'"
     @click="loggedInUser ? showLogoutModal = true : showLoginModal = true"
   >
-    <FontAwesomeIcon
-      v-if="loggedInUser"
-      :icon="['fas', 'circle-user']"
-      size="lg"
-    />
-    <span class="non-selectable">
-      {{ loggedInUser || 'Anmelden' }}
-    </span>
-    <FontAwesomeIcon
-      class="text-light clickable px-2"
-      :icon="loggedInUser ? ['fas', 'arrow-right-from-bracket'] : ['fas', 'arrow-right-to-bracket']"
-      size="lg"
-    />
+    <div class="buttonContent">
+      <FontAwesomeIcon
+        v-if="loggedInUser"
+        :icon="['fas', 'circle-user']"
+        class="_flex-shrink:0"
+        size="lg"
+      />
+      <div
+        class="username"
+      >
+        {{ loggedInUser || 'Anmelden' }}
+      </div>
+      <FontAwesomeIcon
+        class="text-light px-2 _flex-shrink:0"
+        :icon="loggedInUser ? ['fas', 'arrow-right-from-bracket'] : ['fas', 'arrow-right-to-bracket']"
+        size="lg"
+      />
+    </div>
   </i-button>
   <!-- modals -->
   <Teleport to="body">
@@ -230,4 +235,16 @@ export default {
   </Teleport>
 </template>
 
-<style scoped></style>
+<style scoped>
+.buttonContent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.username {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+</style>

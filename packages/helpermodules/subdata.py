@@ -24,6 +24,7 @@ from helpermodules import graph, system
 from helpermodules.broker import BrokerClient
 from helpermodules.messaging import MessageType, pub_system_message
 from helpermodules.mosquitto_dynsec.role_handler import add_acl_role, remove_acl_role
+from helpermodules.mosquitto_dynsec.user_handler import remove_display_user, create_display_user
 from helpermodules.utils import ProcessingCounter
 from helpermodules.utils.run_command import run_command
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
@@ -475,6 +476,8 @@ class SubData:
     def process_chargepoint_config_topic(self, var: Dict[str, chargepoint.CpTemplate], msg: mqtt.MQTTMessage):
         index = get_index(msg.topic)
         payload = decode_payload(msg.payload)
+        if (payload["type"] == "external_openwb"):
+            old_ip = var["cp"+index].chargepoint.data.config.configuration.get("ip_address", None)
         if (var["cp"+index].chargepoint.chargepoint_module is None or
                 payload["configuration"] != asdict(var["cp"+index
                                                        ].chargepoint.chargepoint_module.config.configuration)):
@@ -488,6 +491,23 @@ class SubData:
             log.debug("Neustart des Handlers für den internen Ladepunkt.")
             self.event_stop_internal_chargepoint.set()
             self.event_start_internal_chargepoint.set()
+        if (payload["type"] == "external_openwb"):
+            new_ip = payload["configuration"].get("ip_address", None)
+            if old_ip != new_ip:
+                log.debug(f"IP of chargepoint {index} changed, modifying display user")
+                if old_ip is not None:
+                    # check if ip is used in other chargepoints, if not remove display user
+                    for cp in var:
+                        if (
+                            var[cp].chargepoint.data.config.configuration.get("ip_address", None) == old_ip
+                            and var[cp].chargepoint.num != int(index)
+                        ):
+                            log.info(f"Old IP {old_ip} is still used by {cp}, not removing display user")
+                            break
+                    else:
+                        remove_display_user(old_ip)
+                if new_ip is not None:
+                    create_display_user(new_ip)
         self.set_json_payload_class(var["cp"+index].chargepoint.data.config, msg)
         self.event_cp_config.set()
 
