@@ -20,6 +20,15 @@ def create_request_function(url: str, path: Optional[str]) -> RequestFunction[Op
         return functools.partial(_request_value, url + path)
 
 
+def create_post_function(url: str, path: Optional[str]) -> Callable[[Session, dict], None]:
+    if path is None:
+        return lambda _: None
+    else:
+        def post_function(session: Session, params: dict):
+            session.post(url + path, params=params, timeout=5)
+        return post_function
+
+
 def create_request_function_array(url: str, paths: Iterable[Optional[str]]) -> RequestFunction[Optional[List[float]]]:
     functions = []  # type: List[RequestFunction[float]]
     for path in paths:

@@ -45,7 +45,7 @@ def create_consumer(config: Idm):
         # <option value="UP" data-option="UP">Überschuss als positive Zahl übertragen, Bezug negativ</option>
         # <option value="UZ" data-option="UZ">Überschuss als positive Zahl übertragen, Bezug als 0</option>
         # muss man unterscheiden, ob Bezug als negative Zahl oder null übertragen werden soll. Die Wärmepumpe kann
-        # den Bezug ja nicht kompensieren. Bei 0W oder 500W Bezug soll das Verhalten gleich sein (Wärmepumpe nur 
+        # den Bezug ja nicht kompensieren. Bei 0W oder 500W Bezug soll das Verhalten gleich sein (Wärmepumpe nur
         # nach Bedarf einschalten, Eigensteuerung)
         nonlocal client
         # if config.configuration.send_import:
