@@ -24,7 +24,7 @@ class ActhorConfiguration:
 @auto_str
 class Acthor(ConsumerSetup[ActhorConfiguration]):
     def __init__(self,
-                 name: str = "my-PV Acthor oder Elwa2 Heizstab",
+                 name: str = "my-PV Acthor",
                  type: str = "acthor",
                  id: int = 0,
                  configuration: ActhorConfiguration = None,
