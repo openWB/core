@@ -28,6 +28,59 @@ def is_port_open(host: str, port: int):
         s.close()
 
 
+def _enforce_retention(conn, config: SambaBackupCloudConfiguration, backup_filename: str) -> None:
+    """
+    Löscht alte Backups auf dem SMB-Share, wenn mehr als max_backups vorhanden sind.
+    Es werden nur Dateien berücksichtigt, deren Dateiname mit dem Basisnamen der aktuellen
+    Backup-Datei beginnt (alles vor dem ersten Punkt).
+    """
+    max_backups = getattr(config, "max_backups", None)
+    if not max_backups or max_backups <= 0:
+        return
+
+    # Verzeichnis ermitteln, in dem die Backups liegen
+    smb_path = config.smb_path or "/"
+    smb_path = smb_path.rstrip("/")
+    if smb_path == "":
+        dir_path = "/"
+    else:
+        dir_path = smb_path
+
+    # Basispräfix der aktuellen Backup-Datei (z.B. "openwb-backup-2026-02-10" aus "openwb-backup-2026-02-10.tar.gz")
+    base_name = os.path.basename(backup_filename)
+    base_prefix = base_name.split(".")[0]
+
+    # Alle Einträge im Backup-Verzeichnis holen
+    entries = conn.listPath(config.smb_share, dir_path)
+
+    # Nur relevante Backup-Dateien herausfiltern
+    backup_files = [
+        e for e in entries
+        if not e.isDirectory
+        and e.filename not in (".", "..")
+        and e.filename.startswith(base_prefix)
+    ]
+
+    if len(backup_files) <= max_backups:
+        return
+
+    # Nach Änderungszeit sortieren (neueste zuerst)
+    backup_files.sort(key=lambda e: e.last_write_time, reverse=True)
+
+    # Ältere Backups über dem Limit löschen
+    for old_entry in backup_files[max_backups:]:
+        if dir_path in ("", "/"):
+            delete_path = f"/{old_entry.filename}"
+        else:
+            delete_path = f"{dir_path.rstrip('/')}/{old_entry.filename}"
+        try:
+            log.info("Lösche altes Samba-Backup: //%s/%s%s", config.smb_server, config.smb_share, delete_path)
+            conn.deleteFiles(config.smb_share, delete_path)
+        except Exception as error:
+            # Fehler beim Aufräumen sollen das eigentliche Backup nicht fehlschlagen lassen
+            log.error("Fehler beim Löschen alter Samba-Backups (%s): %s", delete_path, str(error).split("\n")[0])
+
+
 def upload_backup(config: SambaBackupCloudConfiguration, backup_filename: str, backup_file: bytes) -> None:
     SMB_PORT_445 = 445
     SMB_PORT_139 = 139
@@ -57,9 +110,19 @@ def upload_backup(config: SambaBackupCloudConfiguration, backup_filename: str, b
 
                 conn.storeFile(config.smb_share, full_file_path, io.BytesIO(backup_file))
 
+                try:
+                    _enforce_retention(conn, config, backup_filename)
+                except Exception as error:
+                    log.error(
+                        "Fehler bei der Bereinigung alter Samba-Backups (Port 445): %s",
+                        str(error).split("\n")[0],
+                    )
+
                 return
             except Exception as error:
-                raise Exception("Freigabe oder Unterordner existiert möglicherweise nicht. "+str(error).split('\n')[0])
+                raise Exception(
+                    "Freigabe oder Unterordner existiert möglicherweise nicht. " + str(error).split("\n")[0]
+                )
             finally:
                 conn.close()
         else:
@@ -88,6 +151,14 @@ def upload_backup(config: SambaBackupCloudConfiguration, backup_filename: str, b
             log.info(f"Backup nach //{config.smb_server}/{config.smb_share}/{full_file_path}")
 
             conn.storeFile(config.smb_share, full_file_path, io.BytesIO(backup_file))
+
+            try:
+                _enforce_retention(conn, config, backup_filename)
+            except Exception as error:
+                log.error(
+                    "Fehler bei der Bereinigung alter Samba-Backups (Port 139): %s",
+                    str(error).split("\n")[0],
+                )
         except Exception as error:
             raise Exception(
                 "Möglicherweise ist die Freigabe oder ein Unterordner nicht vorhanden."
