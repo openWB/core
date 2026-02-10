@@ -30,6 +30,8 @@ class VZLoggerInverter(AbstractInverter):
         config = self.component_config.configuration
 
         power = parse_line(response, config.line_power)
+        if power > 0:
+            power = power * -1
         if config.line_exported is None:
             _, exported = self.sim_counter.sim_count(power)
         else:
