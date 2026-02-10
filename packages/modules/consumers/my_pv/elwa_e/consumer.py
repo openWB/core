@@ -6,7 +6,7 @@ from modules.common.component_state import ConsumerState
 from modules.common.configurable_consumer import ConfigurableConsumer
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount._simcounter import SimCounterConsumer
-from modules.consumers.my_pv.elwa_e.config import Acthor
+from modules.consumers.my_pv.elwa_e.config import Elwa
 
 log = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ STATUS = {
 }
 
 
-def create_consumer(config: Acthor):
+def create_consumer(config: Elwa):
     client = None
     fuse = 1
     power = 0
@@ -87,4 +87,4 @@ def create_consumer(config: Acthor):
                                 set_power_limit=set_limit,)
 
 
-device_descriptor = DeviceDescriptor(configuration_factory=Acthor)
+device_descriptor = DeviceDescriptor(configuration_factory=Elwa)

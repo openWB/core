@@ -7,7 +7,7 @@ from ..vendor import vendor_descriptor
 
 
 @auto_str
-class ActhorConfiguration:
+class ElwaConfiguration:
     def __init__(self,
                  ip_address: Optional[str] = None,
                  port: Optional[int] = 502,
@@ -18,14 +18,14 @@ class ActhorConfiguration:
 
 
 @auto_str
-class Acthor(ConsumerSetup[ActhorConfiguration]):
+class Elwa(ConsumerSetup[ElwaConfiguration]):
     def __init__(self,
                  name: str = "my-PV Elwa-E Heizstab",
-                 type: str = "acthor",
+                 type: str = "elwa_e",
                  id: int = 0,
-                 configuration: ActhorConfiguration = None,
+                 configuration: ElwaConfiguration = None,
                  usage: List[ConsumerUsage] = [ConsumerUsage.SUSPENDABLE_TUNABLE,
                                                ConsumerUsage.SUSPENDABLE_TUNABLE_INDIVIDUAL,
                                                ConsumerUsage.METER_ONLY]) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
-        ).type, configuration=configuration or ActhorConfiguration(), usage=usage)
+        ).type, configuration=configuration or ElwaConfiguration(), usage=usage)
