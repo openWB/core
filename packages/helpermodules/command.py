@@ -30,9 +30,8 @@ from helpermodules.broker import BrokerClient
 from helpermodules.data_migration.data_migration import MigrateData
 from helpermodules.measurement_logging.process_log import get_daily_log, get_monthly_log, get_yearly_log
 from helpermodules.messaging import MessageType, pub_user_message
-from helpermodules.mosquitto_dynsec.mosquitto_dynsec import (
-    create_display_user, generate_password_reset_token, get_user_email, send_password_reset_to_server,
-    verify_password_reset_token)
+from helpermodules.mosquitto_dynsec.mosquitto_dynsec import (generate_password_reset_token, get_user_email,
+                                                             send_password_reset_to_server, verify_password_reset_token)
 from helpermodules.mosquitto_dynsec.role_handler import add_acl_role, remove_acl_role
 from helpermodules.mosquitto_dynsec.user_handler import remove_display_user, update_user_password
 from helpermodules.create_debug import create_debug_log
@@ -283,9 +282,6 @@ class Command:
             add_acl_role("chargepoint-<id>-access", new_id)
             if chargepoint_config["type"] == "mqtt":
                 add_acl_role("chargepoint-<id>-write-access", new_id)
-            elif chargepoint_config["type"] == "internal_openwb":
-                # create display user for internal chargepoint
-                create_display_user("127.0.0.1")
             pub_user_message(payload, connection_id, f'Neuer Ladepunkt mit ID \'{new_id}\' wurde erstellt.',
                              MessageType.SUCCESS)
         new_id = self.max_id_hierarchy + 1
@@ -372,13 +368,13 @@ class Command:
         cp_type = SubData.cp_data.get(f"cp{cp_id}", None).chargepoint.data.config.type
         cp_ip = (SubData.cp_data.get(f"cp{cp_id}", None).chargepoint.data.config.configuration.get("ip_address")
                  if cp_type == "external_openwb" else "127.0.0.1" if cp_type == "internal_openwb" else None)
-        if cp_type in ["internal_openwb", "external_openwb"] and cp_ip is not None:
+        if cp_type == "external_openwb" and cp_ip is not None:
             # check if ip is used in other chargepoints, if not remove display user
             for cp in SubData.cp_data.values():
-                temp_cp_ip = cp.chargepoint.data.config.configuration.get("ip_address", None)
-                if temp_cp_ip == "localhost":
-                    temp_cp_ip = "127.0.0.1"
-                if temp_cp_ip == cp_ip and cp.chargepoint.num != cp_id:
+                if (
+                    cp.chargepoint.data.config.configuration.get("ip_address", None) == cp_ip
+                    and cp.chargepoint.num != cp_id
+                ):
                     log.info(f"IP {cp_ip} is still used by cp{cp.chargepoint.num}, not removing display user")
                     break
             else:
