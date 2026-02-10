@@ -48,11 +48,14 @@ class ChargepointModule(AbstractChargepoint):
                 "DC-Laden muss durch den Support freigeschaltet werden. Bitte nehme Kontakt mit dem Support auf.")
         self.efficiency = None
 
-        with SingleComponentUpdateContext(self.fault_state, update_always=False):
-            with self.client_error_context:
-                self.__session.post(
-                    'http://' + self.config.configuration.ip_address + '/connect.php',
-                    data={'heartbeatenabled': '1'})
+        try:
+            self.__session.post(
+                f'http://{self.config.configuration.ip_address}/connect.php',
+                data={'heartbeatenabled': '1'})
+        except Exception:
+            log.exception(
+                f"Verbindung zum Ladepunkt {self.config.id} konnte nicht hergestellt werden. "
+                "Heartbeat konnte nicht aktiviert werden.")
 
     def set_current(self, current: float) -> None:
         if self.client_error_context.error_counter_exceeded():
