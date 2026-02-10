@@ -44,6 +44,7 @@ class ShellyInverter(AbstractInverter):
             status_url = "http://" + self.address + "/rpc/Shelly.GetStatus"
         status = req.get_http_session().get(status_url, timeout=3).json()
         try:
+            alphabetical_index = ['a', 'b', 'c']
             currents = [0.0, 0.0, 0.0]
             # GEN 1
             if "meters" in status:
@@ -63,17 +64,12 @@ class ShellyInverter(AbstractInverter):
             # shelly Pro3EM
             elif "em:0" in status:
                 meters = status['em:0']
-                phase_keys = sorted(
-                    key[0]
-                    for key, value in meters.items()
-                    if key.endswith('_current') and value is not None
-                )
-                phase_keys = phase_keys[:3]
-                for i, phase in enumerate(phase_keys):
-                    currents[(i + self.phase - 1) % 3] = float(
-                        meters[f"{phase}_current"]
-                    ) * self.factor
-
+                for i in range(0, 3):
+                    if (f'{alphabetical_index[i]}_current' not in meters or
+                            meters.get(f'{alphabetical_index[i]}_current') is None):
+                        continue
+                    currents[(i+self.phase-1) % 3] = (float(meters[f'{alphabetical_index[i]}_current']) * self.factor
+                                                      if meters.get(f'{alphabetical_index[i]}_current') else 0)
                 power = float(meters['total_act_power']) * self.factor
             # Shelly MiniPM G3
             elif "pm1:0" in status:
