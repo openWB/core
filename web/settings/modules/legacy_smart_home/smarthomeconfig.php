@@ -129,7 +129,7 @@ $numDevices = 9;
 											openWB/set/LegacySmartHome/Devices/2/Aktpower = in Watt erwartet<br>
 											openWB/set/LegacySmartHome/Devices/2/Tempa = Temperatur in C mit max 2 Nachkommastellen<br>
 											openWB/set/LegacySmartHome/Devices/2/Tempb = Temperatur in C mit max 2 Nachkommastellen<br>
-											openWB/set/LegacySmartHome/Devices/2/Tempc = Temperatur in C mit max 2 Nachkommastellen<br>										
+											openWB/set/LegacySmartHome/Devices/2/Tempc = Temperatur in C mit max 2 Nachkommastellen<br>
 											und der aktuelle Zähler in Wattstunden wird hier erwartet<br>
 											openWB/set/LegacySmartHome/Devices/2/Powerc<br>
 											wenn kein Zähler übergeben oder 0 übergeben wird, wird der Zähler selber gerechnet<br>
@@ -174,7 +174,7 @@ $numDevices = 9;
 											Wenn die Ausschaltbedingung erreicht ist wird einmalig 0 als Überschuss übertragen.
 											Die Ausschaltschwelle/ Ausschaltverzögerung in openWB ist sinnvoll zu wählen (z.B. 500 / 3) um die Regelung von Askoheat+ nicht zu stören.
 											Wenn Askoheat+ als Gerät 1 oder 2 definiert ist, wird die Temperatur von internen Sensort als Temp1 angezeigt (Modbusadresse 638).
-										</span>										
+										</span>
 										<span class="form-text small device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-idm hide">
 											Wärmepumpe der Firma IDM mit Navigatorregelung 1.7/2.0<br>
 											Im Web Frontend muss unter "Heizungsbauerebene / Konfiguration / PV-Signal": Auswahl "Gebäudeleittechnik / Smartfox" und unter "Heizungsbauerebene / Gebäudeleittechnik" der Parameter "Modbus TCP = Ein" und unter "Einstellungen / Photovoltaik" der Parameter "PV Überschuss = 0" gesetzt werden
@@ -206,7 +206,7 @@ $numDevices = 9;
 										</span>
 										<span class="form-text small device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-nibe hide">
 											Abfrage der aktuellen Leistung von Nibe S-Series Wärmepumpen.
-										</span>										
+										</span>
 									</div>
 								</div>
 							</div>
@@ -295,7 +295,7 @@ $numDevices = 9;
 												<option value="0" data-option="0">N4Dac02</option>
 												<option value="1" data-option="1">DA02</option>
 												<option value="2" data-option="2">M120T von Pigeon</option>
-												<option value="3" data-option="3">AA02B</option>													
+												<option value="3" data-option="3">AA02B</option>
 											</select>
 											<span class="form-text small">
 												Hier ist das installierte Modell auszuwählen.
@@ -312,7 +312,7 @@ $numDevices = 9;
 									</div>
 								</div>
 							</div>
-							
+
 							<div class="device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-shelly device<?php echo $devicenum; ?>-option-tasmota device<?php echo $devicenum; ?>-option-acthor device<?php echo $devicenum; ?>-option-lambda device<?php echo $devicenum; ?>-option-elwa device<?php echo $devicenum; ?>-option-idm device<?php echo $devicenum; ?>-option-stiebel device<?php echo $devicenum; ?>-option-avm device<?php echo $devicenum; ?>-option-mystrom device<?php echo $devicenum; ?>-option-vampair device<?php echo $devicenum;  ?>-option-viessmann device<?php echo $devicenum;  ?>-option-ratiotherm device<?php echo $devicenum;  ?>-option-askoheat device<?php echo $devicenum;  ?>-option-nibe device<?php echo $devicenum;  ?>-option-NXDACXX hide">
 								<hr class="border-secondary">
 								<div class="form-row mb-1">
@@ -401,7 +401,7 @@ $numDevices = 9;
 											<input id="device_maxuebDevices<?php echo $devicenum; ?>" name="device_maxueb" class="form-control" type="number" min="0" max="30000" step="1" required="required" data-default="0" value="0" data-topicprefix="openWB/LegacySmartHome/config/get/" data-topicsubgroup="Devices/<?php echo $devicenum; ?>/">
 											<span class="form-text small">
 												Hier ist die maximale Leistungsaufnahme anzugeben, die idm bei PV Betrieb nicht überschreiten soll. Bei 0 gibt es keine Limitierung bezüglich dem maximal zu übergebenen Überschuss. <br>
-												Sonst wird der zu übergebene Überschuss wie folgt gerechnet: 										
+												Sonst wird der zu übergebene Überschuss wie folgt gerechnet:
 												maximal zu übergeber Überschuss = maximale Leistungsaufnahme - aktuelle Leistungsaufnahme
 												<br>
 												Sofern die aktuelle Leistungsaufnahme bereits grösser als die maximale Leistungsaufnahme ist, wird gar kein Überschuss mehr übergeben im PV Betrieb.
@@ -423,10 +423,10 @@ $numDevices = 9;
 												<option value="E2M3" data-option="M3">Elwa2 M3</option>
 												<option value="9s" data-option="9s">Acthor 9s</option>
 												<option value="E2M1" data-option="M1">Elwa2 M1</option>
-												<option value="E2M3" data-option="M3">Elwa2 M3</option>												
+												<option value="E2M3" data-option="M3">Elwa2 M3</option>
 												<option value="9s18" data-option="9s18">Acthor 9s Dual 18k</option>
-												<option value="9s27" data-option="9s27">Acthor 9s Boost 27k</option>												
-												<option value="9s45" data-option="9s45">Acthor 9s Boost 45k</option>																								
+												<option value="9s27" data-option="9s27">Acthor 9s Boost 27k</option>
+												<option value="9s45" data-option="9s45">Acthor 9s Boost 45k</option>
 											</select>
 											<span class="form-text small">
 												Hier ist das installierte Modell auszuwählen.
@@ -789,7 +789,7 @@ $numDevices = 9;
 															<input type="range" class="form-control-range rangeInput" id="device_speichersocbeforestartDevices<?php echo $devicenum; ?>" name="device_speichersocbeforestart" min="0" max="100" step="5" data-default="0" value="0" data-topicprefix="openWB/LegacySmartHome/config/get/" data-topicsubgroup="Devices/<?php echo $devicenum; ?>/">
 														</div>
 													</div>
-													<span class="form-text small">Parameter in % Ladezustand. 0% deaktiviert die Funktion. Bei deaktivierter Funktion oder wenn der Ladezustand grösser gleich dem Parameter ist, wird die Speicherleistung bei der Berechnung der Ein- und Ausschaltschwelle berücksichtigt<br> 
+													<span class="form-text small">Parameter in % Ladezustand. 0% deaktiviert die Funktion. Bei deaktivierter Funktion oder wenn der Ladezustand grösser gleich dem Parameter ist, wird die Speicherleistung bei der Berechnung der Ein- und Ausschaltschwelle berücksichtigt<br>
 													Uberschuss = evu + speicherleistung, wobei evu - > Bezug(-)/Einspeisung(+) und speicherleistung Entladung(-)/Ladung(+) ist .<br>
 													Unterhalb dieses Wertes ist für die Berechnung der obige Überschuss und die maximal mögliche Speicherladung (als Offset) relevant <br>Uberschussoffset = Uberschuss - maxspeicher<br>
 													Bei überschussgesteuerten Geräten wird dann der Ueberschuss oder der Ueberschuss mit Offset übertragen.</span>
@@ -911,7 +911,7 @@ $numDevices = 9;
 											<option value="json" data-option="json">Json</option>
 											<option value="mystrom" data-option="mystrom">MyStrom</option>
 											<option value="sdm630" data-option="sdm630">SDM630</option>
-											<option value="b23" data-option="b23">b23</option>											
+											<option value="b23" data-option="b23">b23</option>
 											<option value="shelly" data-option="shelly">Shelly oder Shelly plus</option>
 											<option value="tasmota" data-option="tasmota">tasmota</option>
 											<option value="we514" data-option="we514">WE514</option>
@@ -1220,13 +1220,13 @@ $numDevices = 9;
 		</footer>
 
 		<!-- load mqtt library -->
-		<script src = "modules/legacy_smart_home/js/mqttws31.js" ></script>
+		<script src = "modules/legacy_smart_home/js/mqtt-5.14.1.js" ></script>
 		<!-- load topics -->
 		<script src = "modules/legacy_smart_home/topicsToSubscribe_smarthomeconfig.js?ver=20210215" ></script>
 		<!-- load helper functions -->
 		<script src = "modules/legacy_smart_home/helperFunctions.js?ver=20210215" ></script>
 		<!-- load service -->
-		<script src = "modules/legacy_smart_home/setupMqttServices.js?ver=20201207" ></script>
+		<script src = "modules/legacy_smart_home/setupMqttServices.js?ver=20260112" ></script>
 		<!-- load mqtt handler-->
 		<script src = "modules/legacy_smart_home/processAllMqttMsg.js?ver=20210104" ></script>
 
@@ -1510,5 +1510,5 @@ $numDevices = 9;
 		</script>
 
 	</body>
-														
+
 </html>
