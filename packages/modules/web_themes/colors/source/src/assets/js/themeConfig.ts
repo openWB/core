@@ -426,6 +426,7 @@ export const infotext: { [key: string]: string } = {
 	pvpriority:
 		'Ladepriorität bei PV-Produktion. Bevorzung von Fahzeugen, Speicher, oder Fahrzeugen bis zum eingestellten Mindest-Ladestand. Die Einstellung ist für alle Ladepunkte gleich.',
 	chargeTemplate: 'Ladeprofil für dieses Fahrzeug.',
+	ecoMinCurrent: 'Minimaler Ladestrom beim Preisladen. Bei PV-Überschuss kann der Strom höher sein.',
 }
 interface Preferences {
 	hideSH?: string[]

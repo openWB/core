@@ -5,8 +5,9 @@
 		<!-- Minimal current -->
 		<ConfigItem
 			v-if="etData.active"
-			title="Minimaler Ladestrom unter der Preisgrenze"
+			title="Ladestrom beim Preisladen"
 			icon="fa-bolt"
+			:infotext="infotext.ecoMinCurrent"
 			:fullwidth="true"
 		>
 			<RangeInput
@@ -89,7 +90,7 @@ import RangeInput from '@/components/shared/RangeInput.vue'
 import RadioInput2 from '@/components/shared/RadioInput2.vue'
 import PriceChart from '@/components/priceChart/PriceChart.vue'
 import PriceCalculator from './PriceCalculator.vue'
-//import { infotext } from '@/assets/js/themeConfig'
+import { infotext } from '@/assets/js/themeConfig'
 const props = defineProps<{
 	chargepoint: ChargePoint
 }>()
