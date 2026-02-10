@@ -80,7 +80,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         console.debug('connected to broker');
         $q.notify({
           type: 'positive',
-          message: `Anmeldung ${mqttUser ? 'als Benutzer "' + mqttUser + '" ' : ''}erfolgreich`,
+          message: `MQTT-Verbindung hergestellt.${mqttUser ? ` Angemeldet als ${mqttUser}.` : ''}`,
           progress: true,
         });
         if (mqttUser === 'admin' && mqttPass === 'openwb') {
