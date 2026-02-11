@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-from pymodbus.constants import Endian
 import logging
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
 from modules.common.component_type import ComponentType
 from modules.common.configurable_consumer import ConfigurableConsumer
-from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.mystrom.mystrom.config import MyStrom
 
