@@ -17,6 +17,6 @@ class NoCurrent:
             cp.data.set.current = 0
 
     def set_none_current(self) -> None:
-        for cp in data.data.cp_data.values():
-            if cp.data.set.current is None:
-                cp.data.set.current = 0
+        for load in list(data.data.cp_data.values()) + list(data.data.consumer_data.values()):
+            if load.data.set.current is None:
+                load.data.set.current = 0

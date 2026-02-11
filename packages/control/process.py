@@ -46,7 +46,7 @@ class Process:
                         cp.set_timestamp_charge_start()
                     else:
                         control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
-                    self._update_state(cp)
+                    self._update_state_cp(cp)
 
                     if cp.data.get.state_str is not None:
                         Pub().pub("openWB/set/chargepoint/"+str(cp.num)+"/get/state_str",
@@ -70,9 +70,9 @@ class Process:
                     if (control_parameter.state != ChargepointState.NO_CHARGING_ALLOWED or
                             consumer.data.set.current != 0):
                         control_parameter.state = ChargepointState.CHARGING_ALLOWED
-                        self._update_state_consumer(consumer)
                     else:
                         control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
+                    self._update_state_consumer(consumer)
                     if consumer.data.get.state_str is None:
                         if consumer.data.get.charge_state:
                             consumer.data.get.state_str = "Verbraucher läuft."

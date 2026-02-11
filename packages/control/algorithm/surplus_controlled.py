@@ -41,9 +41,9 @@ class SurplusControlled:
             if preferenced_loads_without_set_current:
                 for cp in preferenced_loads_without_set_current:
                     cp.data.set.current = cp.data.set.target_current
-        for cp in get_loadmanagement_prios(CONSIDERED_CHARGE_MODES_SURPLUS):
-            if cp.data.control_parameter.state in CHARGING_STATES:
-                self._fix_deviating_evse_current(cp)
+        for load in get_loadmanagement_prios(CONSIDERED_CHARGE_MODES_SURPLUS):
+            if isinstance(load, Chargepoint) and load.data.control_parameter.state in CHARGING_STATES:
+                self._fix_deviating_evse_current(load)
 
     def _set(self,
              loads: List[Load],
@@ -162,10 +162,10 @@ class SurplusControlled:
         for load in get_loadmanagement_prios(CONSIDERED_CHARGE_MODES_SURPLUS +
                                              CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE):
             try:
-                required_currents = load.data.control_parameter.required_currents
+                control_parameter = load.data.control_parameter
+                required_currents = control_parameter.required_currents
                 if isinstance(load, Chargepoint):
                     charging_ev_data = load.data.set.charging_ev_data
-                    control_parameter = load.data.control_parameter
 
                     if control_parameter.phases == 1:
                         max_current = charging_ev_data.ev_template.data.max_current_single_phase

@@ -16,6 +16,7 @@ from control.chargepoint.chargepoint_data import Log
 from control.chargepoint.chargepoint_state_update import ChargepointStateUpdate
 from control.chargepoint.chargepoint_template import CpTemplate, CpTemplateData
 from control.consumer.consumer import Consumer
+from control.consumer.consumer_all import AllConsumers
 from control.consumer.consumer_data import GET_CLASS_BY_USAGE
 from control.consumer.usage import ConsumerUsage
 from control.ev.charge_template import ChargeTemplate, ChargeTemplateData
@@ -74,6 +75,7 @@ class SubData:
     system_data = {"system": system.System()}
     graph_data = graph.Graph()
     consumer_data: Dict[str, Consumer] = {}
+    consumer_all_data = AllConsumers()
 
     def __init__(self,
                  event_ev_template: Event,
@@ -1144,5 +1146,7 @@ class SubData:
                         LoadmanagementLimit, payload)
                 else:
                     self.set_json_payload_class(var[f"consumer{index}"].data.control_parameter, msg)
+            elif re.search("/consumer/get/", msg.topic) is not None:
+                self.set_json_payload_class(self.consumer_all_data.data.get, msg)
         except Exception:
             log.exception("Fehler im subdata-Modul")

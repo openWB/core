@@ -128,7 +128,7 @@ class Get:
     powers: Optional[List[Optional[float]]] = None
     set_power: Optional[float] = None
     state: Optional[bool] = False
-    state_str: Optional[str] = field(default=False, metadata={"topic": "set/state_str"})
+    state_str: Optional[str] = field(default=None, metadata={"topic": "get/state_str"})
     voltages: Optional[List[Optional[float]]] = None
 
 
