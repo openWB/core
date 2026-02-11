@@ -35,7 +35,7 @@ def create_consumer(config: SampleConsumer):
     def initializer():
         nonlocal client, sim_counter
         client = ModbusTcpClient_(config.configuration.ip_address, config.configuration.port)
-        sim_counter = SimCounterConsumer(config.id, config.type)
+        sim_counter = SimCounterConsumer(config.id, ComponentType.CONSUMER)
 
     def error_handler() -> None:
         initializer()
@@ -66,8 +66,8 @@ def create_consumer(config: SampleConsumer):
         nonlocal client
         client.write_registers(1000, 0, unit=config.configuration.modbus_id)
     return ConfigurableConsumer(consumer_config=config,
-                                module_initializer=initializer,
-                                module_error_handler=error_handler,
+                                initializer=initializer,
+                                error_handler=error_handler,
                                 update=update,
                                 set_power_limit=set_limit,
                                 switch_on=switch_on,

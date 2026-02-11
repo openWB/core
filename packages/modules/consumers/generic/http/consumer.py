@@ -4,6 +4,7 @@ import logging
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
+from modules.common.component_type import ComponentType
 from modules.common.configurable_consumer import ConfigurableConsumer
 from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.generic.http.config import Http
@@ -31,7 +32,7 @@ def create_consumer(config: Http):
         if not config.configuration.url.startswith('https://'):
             raise ValueError("Only HTTPS URLs allowed for security")
         session = req.get_http_session()
-        sim_counter = SimCounterConsumer(config.id, config.type)
+        sim_counter = SimCounterConsumer(config.id, ComponentType.CONSUMER)
 
         get_power = create_request_function(config.configuration.url, config.configuration.power_path)
         get_imported = create_request_function(config.configuration.url, config.configuration.imported_path)
@@ -79,7 +80,7 @@ def create_consumer(config: Http):
         post_set_power_limit(session, params={"power_limit": power_limit})
 
     return ConfigurableConsumer(consumer_config=config,
-                                module_initializer=initializer,
+                                initializer=initializer,
                                 update=update,
                                 set_power_limit=set_power_limit,
                                 switch_on=switch_on,

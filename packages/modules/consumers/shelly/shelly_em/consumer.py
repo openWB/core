@@ -27,8 +27,8 @@ def create_consumer(config: ShellyEM):
     def update() -> None:
         device.update()
     return ConfigurableConsumer(consumer_config=config,
-                                module_initializer=initializer,
-                                module_error_handler=error_handler,
+                                initializer=initializer,
+                                error_handler=error_handler,
                                 update=update,)
 
 

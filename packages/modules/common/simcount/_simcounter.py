@@ -22,7 +22,8 @@ class SimCounter:
 class SimCounterConsumer:
     def __init__(self, consumer_id: int, component_type: ComponentType):
         self.topic = f"openWB/set/consumer/{consumer_id}/module/"
-        self.component_type = special_to_general_type_mapping(component_type)
+        self.component_type = special_to_general_type_mapping(
+            component_type.value if isinstance(component_type, ComponentType) else component_type)
         self.data: Optional[SimCounterState] = None
 
     def sim_count(self, power: float, dc_power: Optional[float] = None) -> Tuple[float, float]:

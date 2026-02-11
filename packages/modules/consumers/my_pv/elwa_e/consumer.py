@@ -3,6 +3,7 @@ from enum import IntEnum
 import logging
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
+from modules.common.component_type import ComponentType
 from modules.common.configurable_consumer import ConfigurableConsumer
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount._simcounter import SimCounterConsumer
@@ -48,7 +49,7 @@ def create_consumer(config: Elwa):
         nonlocal client, fuse, sim_counter
         client = ModbusTcpClient_(config.configuration.ip_address, config.configuration.port)
         fuse = client.read_input_registers(1014, ModbusDataType.INT_16, unit=config.configuration.modbus_id)
-        sim_counter = SimCounterConsumer(config.id, config.type)
+        sim_counter = SimCounterConsumer(config.id, ComponentType.CONSUMER)
 
     def error_handler() -> None:
         initializer()
@@ -81,8 +82,8 @@ def create_consumer(config: Elwa):
 
         client.write_registers(1000, power_limit, unit=config.configuration.modbus_id)
     return ConfigurableConsumer(consumer_config=config,
-                                module_initializer=initializer,
-                                module_error_handler=error_handler,
+                                initializer=initializer,
+                                error_handler=error_handler,
                                 update=update,
                                 set_power_limit=set_limit,)
 

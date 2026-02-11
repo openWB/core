@@ -24,8 +24,8 @@ def create_consumer(config: ViessmannHeatPump):
         client.write_single_coil(16, False, unit=config.configuration.modbus_id)
 
     return ConfigurableConsumer(consumer_config=config,
-                                module_initializer=initializer,
-                                module_error_handler=error_handler,
+                                initializer=initializer,
+                                error_handler=error_handler,
                                 switch_on=switch_on,
                                 switch_off=switch_off,)
 

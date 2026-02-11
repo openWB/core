@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
+from modules.common.component_type import ComponentType
 from modules.common.configurable_consumer import ConfigurableConsumer
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount._simcounter import SimCounterConsumer
@@ -14,7 +15,7 @@ def create_consumer(config: SolvisHeatPump):
     def initializer():
         nonlocal client, sim_counter
         client = ModbusTcpClient_(config.configuration.ip_address, config.configuration.port)
-        sim_counter = SimCounterConsumer(config.id, config.type)
+        sim_counter = SimCounterConsumer(config.id, ComponentType.CONSUMER)
 
     def error_handler() -> None:
         initializer()
@@ -30,8 +31,8 @@ def create_consumer(config: SolvisHeatPump):
         )
 
     return ConfigurableConsumer(consumer_config=config,
-                                module_initializer=initializer,
-                                module_error_handler=error_handler,
+                                initializer=initializer,
+                                error_handler=error_handler,
                                 update=update)
 
 

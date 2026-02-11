@@ -26,7 +26,7 @@ def create_consumer(config: Lambda):
 
     def update() -> ConsumerState:
         nonlocal client, sim_counter
-        client.read_holding_registers(103, ModbusDataType.INT16, unit=config.configuration.modbus_id)
+        power = client.read_holding_registers(103, ModbusDataType.INT_16, unit=config.configuration.modbus_id)
         imported, exported = sim_counter.sim_count(power)
         return ConsumerState(
             power=power,
@@ -36,7 +36,10 @@ def create_consumer(config: Lambda):
 
     def set_limit(power_limit: float) -> None:
         nonlocal client
-        client.write_register(102, max(power_limit * config.configuration.sign, 0), wordorder=Endian.Little, unit=config.configuration.modbus_id)
+        client.write_register(102,
+                              max(power_limit * config.configuration.sign, 0),
+                              wordorder=Endian.Little,
+                              unit=config.configuration.modbus_id)
 
     return ConfigurableConsumer(consumer_config=config,
                                 initializer=initializer,

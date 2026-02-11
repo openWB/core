@@ -6,6 +6,7 @@ import jq
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
+from modules.common.component_type import ComponentType
 from modules.common.configurable_consumer import ConfigurableConsumer
 from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.generic.json.config import Json
@@ -50,7 +51,7 @@ def create_consumer(config: Json):
         if not config.configuration.url.startswith('https://'):
             raise ValueError("Only HTTPS URLs allowed for security")
         session = req.get_http_session()
-        sim_counter = SimCounterConsumer(config.id, config.type)
+        sim_counter = SimCounterConsumer(config.id, ComponentType.CONSUMER)
 
         _compile_jq_filters()
         jq_set_power_limit = create_post_function(config.configuration.jq_set_power_limit)
@@ -93,7 +94,7 @@ def create_consumer(config: Json):
         jq_set_power_limit(session, params={"power_limit": power_limit})
 
     return ConfigurableConsumer(consumer_config=config,
-                                module_initializer=initializer,
+                                initializer=initializer,
                                 update=update,
                                 set_power_limit=set_power_limit,
                                 switch_on=switch_on,
