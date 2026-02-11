@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from enum import Enum
 import logging
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_type import ComponentType
@@ -7,15 +6,9 @@ from modules.common.configurable_consumer import ConfigurableConsumer
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.generic.dac.config import Dac
+from modules.consumers.generic.dac.model import Model
 
 log = logging.getLogger(__name__)
-
-
-class Model(Enum):
-    N4Dac02 = "N4Dac02"
-    DA02 = "DA02"
-    M120T = "M120T"
-    AA02B = "AA02B"
 
 
 def create_consumer(config: Dac):
