@@ -41,7 +41,7 @@ from control.ev.charge_template import EcoCharging, get_charge_template_default
 from control.ev import ev
 from control.ev.ev_template import EvTemplateData
 from control.general import Prices, PvCharging
-from control.optional_data import Ocpp
+from control.optional_data import OcppConfig
 from modules.common.abstract_vehicle import GeneralVehicleConfig
 from modules.common.component_type import ComponentType
 from modules.devices.sungrow.sungrow.version import Version
@@ -325,7 +325,6 @@ class UpdateConfig:
         "^openWB/optional/int_display/rotation$",
         "^openWB/optional/int_display/theme$",
         "^openWB/optional/int_display/only_local_charge_points",
-        "^openWB/optional/led/active$",
         "^openWB/optional/monitoring/config$",
         "^openWB/optional/rfid/active$",
         "^openWB/optional/ocpp/config$",
@@ -584,9 +583,8 @@ class UpdateConfig:
         ("openWB/optional/int_display/rotation", 0),
         ("openWB/optional/int_display/theme", dataclass_utils.asdict(CardsDisplayTheme())),
         ("openWB/optional/int_display/only_local_charge_points", False),
-        ("openWB/optional/led/active", False),
         ("openWB/optional/monitoring/config", NO_MODULE),
-        ("openWB/optional/ocpp/config", dataclass_utils.asdict(Ocpp())),
+        ("openWB/optional/ocpp/config", dataclass_utils.asdict(OcppConfig())),
         ("openWB/optional/rfid/active", False),
         ("openWB/system/backup_password", None),
         ("openWB/system/backup_cloud/config", NO_MODULE),
