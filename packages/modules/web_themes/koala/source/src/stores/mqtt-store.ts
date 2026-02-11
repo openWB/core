@@ -1687,16 +1687,25 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @returns boolean | undefined
    */
   const chargePointConnectedVehiclePriority = (chargePointId: number) => {
-    return computed({
+    return computed<boolean | undefined>({
       get() {
-        return chargePointConnectedVehicleChargeTemplate(chargePointId).value
-          ?.prio;
+        const connectedVehicleId = chargePointConnectedVehicleInfo(chargePointId).value?.id;
+        if (connectedVehicleId === undefined) {
+          return undefined;
+        }
+        return getValue.value(
+          `openWB/vehicle/${connectedVehicleId}/full_power`,
+        ) as boolean;
       },
       set(newValue: boolean) {
+        const connectedVehicleId = chargePointConnectedVehicleInfo(chargePointId).value?.id;
+        if (connectedVehicleId === undefined) {
+          return;
+        }
         return updateTopic(
-          `openWB/chargepoint/${chargePointId}/set/charge_template`,
+          `openWB/vehicle/${connectedVehicleId}/full_power`,
           newValue,
-          'prio',
+          undefined,
           true,
         );
       },

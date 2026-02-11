@@ -39,8 +39,8 @@ const props = defineProps({
 });
 
 const icon = {
-  off: 'star_border',
-  on: 'star',
+  off: 'bolt',
+  on: 'electric_bolt',
 };
 
 const mqttStore = useMqttStore();
