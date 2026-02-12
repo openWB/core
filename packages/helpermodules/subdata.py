@@ -700,6 +700,8 @@ class SubData:
                     self.set_json_payload_class(var.data.led, msg)
                 elif re.search("/optional/rfid/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.rfid, msg)
+                elif re.search("/optional/ocpp/config", msg.topic) is not None:
+                    self.set_json_payload_class(var.data.ocpp.config, msg)
                 elif re.search("/optional/ocpp/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.ocpp, msg)
                 elif re.search("/optional/int_display/", msg.topic) is not None:
