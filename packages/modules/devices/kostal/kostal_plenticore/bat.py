@@ -73,8 +73,15 @@ class KostalPlenticoreBat(AbstractBat):
         elif power_limit < 0:
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W entladen für den Hausverbrauch")
             # Die maximale Entladeleistung begrenzen auf 7000W
-            power_value = float(min(abs(power_limit), 7000)) * -1
+            power_value = float(min(abs(power_limit), 7000))
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_value} W entladen für den Hausverbrauch")
+            self.client.write_register(1034, power_value, data_type=ModbusDataType.FLOAT_32,
+                                       wordorder=self.endianess, unit=unit)
+        elif power_limit > 0:
+            log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W geladen")
+            # Die maximale Ladeleistung begrenzen auf 7000W
+            power_value = float(min(abs(power_limit), 7000)) * -1
+            log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_value} W geladen")
             self.client.write_register(1034, power_value, data_type=ModbusDataType.FLOAT_32,
                                        wordorder=self.endianess, unit=unit)
 
