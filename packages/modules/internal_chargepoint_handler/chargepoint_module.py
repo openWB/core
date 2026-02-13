@@ -67,7 +67,7 @@ class ChargepointModule(AbstractChargepoint):
             def on_message(client, userdata, message):
                 self.old_phases_in_use = decode_payload(message.payload)
 
-            self.old_phases_in_use = None
+            self.old_phases_in_use = 1
             BrokerClient(f"subscribeInternalCp{self.local_charge_point_num}",
                          on_connect, on_message).start_finite_loop()
 
