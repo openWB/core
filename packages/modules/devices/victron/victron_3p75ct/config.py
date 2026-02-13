@@ -24,9 +24,8 @@ class Victron:
 
 
 class VictronCounterConfiguration:
-    def __init__(self, energy_meter: bool = True, modbus_id: int = 1):
-        self.energy_meter = energy_meter
-        self.modbus_id = modbus_id
+    def __init__(self):
+        pass
 
 
 class VictronCounterSetup(ComponentSetup[VictronCounterConfiguration]):
