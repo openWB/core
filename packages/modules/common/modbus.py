@@ -11,7 +11,7 @@ import time
 from typing import Any, Callable, Iterable, Optional, Union, overload, List
 
 import pymodbus
-from pymodbus.client.sync import ModbusTcpClient, ModbusSerialClient
+from pymodbus.client.sync import ModbusTcpClient, ModbusUdpClient, ModbusSerialClient
 from pymodbus.constants import Endian
 from pymodbus.payload import BinaryPayloadBuilder, BinaryPayloadDecoder
 from pymodbus.transaction import ModbusSocketFramer
@@ -50,7 +50,7 @@ NO_VALUES = ("TCP-Client {}:{} konnte keinen Wert abfragen. Falls vorhanden, par
 
 class ModbusClient:
     def __init__(self,
-                 delegate: Union[ModbusSerialClient, ModbusTcpClient],
+                 delegate: Union[ModbusSerialClient, ModbusTcpClient, ModbusUdpClient],
                  address: str, port: int = 502,
                  sleep_after_connect: Optional[int] = 0):
         self._delegate = delegate
@@ -307,6 +307,17 @@ class ModbusTcpClient_(ModbusClient):
             port = parsed_url.port
         super().__init__(ModbusTcpClient(host, port, framer, **kwargs), address, port, sleep_after_connect)
 
+class ModbusUdpClient_(ModbusClient):
+    def __init__(self,
+                 address: str,
+                 port: int = 502,
+                 sleep_after_connect: Optional[int] = 0,
+                 **kwargs):
+        parsed_url = parse_url(address)
+        host = parsed_url.host
+        if parsed_url.port is not None:
+            port = parsed_url.port
+        super().__init__(ModbusUdpClient(host, port, **kwargs), address, port, sleep_after_connect)
 
 class ModbusSerialClient_(ModbusClient):
     def __init__(self,
