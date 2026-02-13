@@ -48,8 +48,8 @@ class VictronCounter(AbstractCounter):
                     for reg in [0x3047, 0x304F, 0x3057]]
                 power = sum(powers)
                 frequency = self.__udp_client.read_holding_registers(0x3032, ModbusDataType.UINT_16, unit=unit) / 100
-                imported = self.__udp_client.read_holding_registers(0x3034, ModbusDataType.UINT_32, unit=unit) / 100
-                exported = self.__udp_client.read_holding_registers(0x3036, ModbusDataType.UINT_32, unit=unit) / 100
+                imported = self.__udp_client.read_holding_registers(0x3034, ModbusDataType.UINT_32, unit=unit) *10
+                exported = self.__udp_client.read_holding_registers(0x3036, ModbusDataType.UINT_32, unit=unit) *10
                 
             else:
                 powers = self.__udp_client.read_holding_registers(820, [ModbusDataType.INT_16]*3, unit=unit)
