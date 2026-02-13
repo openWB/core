@@ -29,7 +29,7 @@ def create_device(device_config: Victron):
 
     def initializer():
         nonlocal client
-        client = ModbusUdpClient_(device_config.configuration.ip_address, device_config.configuration.port, timeout=10)
+        client = ModbusUdpClient_(device_config.configuration.ip_address, device_config.configuration.port, timeout=30)
 
     return ConfigurableDevice(
         device_config=device_config,
