@@ -52,8 +52,6 @@ class VictronCounter(AbstractCounter):
                 powers = self.__udp_client.read_holding_registers(820, [ModbusDataType.INT_16]*3, unit=unit)
                 power = sum(powers)
 
-        self.__udp_client.read_holding_registers_bulk()
-
         imported, exported = self.sim_counter.sim_count(power)
 
         if energy_meter:
