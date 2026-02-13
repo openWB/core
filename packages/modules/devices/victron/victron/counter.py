@@ -43,7 +43,11 @@ class VictronCounter(AbstractCounter):
                 voltages = [
                     self.__udp_client.read_holding_registers(reg, ModbusDataType.INT_16, unit=unit) / 100
                     for reg in [0x3040, 0x3048, 0x3050]]
+                power_factors = [
+                    self.__udp_client.read_holding_registers(reg, ModbusDataType.INT_16, unit=unit) / 1000
+                    for reg in [0x3047, 0x304F, 0x3057]]
                 power = sum(powers)
+                frequency = self.__udp_client.read_holding_registers(0x3032, ModbusDataType.UINT_16, unit=unit) / 100
             else:
                 powers = self.__udp_client.read_holding_registers(820, [ModbusDataType.INT_16]*3, unit=unit)
                 power = sum(powers)
@@ -55,9 +59,11 @@ class VictronCounter(AbstractCounter):
                 voltages=voltages,
                 currents=currents,
                 powers=powers,
+                power_factors=power_factors,
                 imported=imported,
                 exported=exported,
-                power=power
+                power=power,
+                frequency=frequency
             )
         else:
             counter_state = CounterState(
