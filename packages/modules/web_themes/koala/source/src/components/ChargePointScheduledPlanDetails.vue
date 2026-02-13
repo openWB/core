@@ -1,12 +1,38 @@
 <template>
-  <q-card>
+  <q-card class="card-width">
     <q-card-section>
       <div class="row no-wrap">
         <div class="text-h6 ellipsis" :title="planName.value">
-          {{ planName.value }}
+          {{ planName.value }}. TEST
         </div>
+
         <q-space />
         <q-btn icon="close" flat round dense v-close-popup />
+      </div>
+      <div
+        v-if="isTemporaryPlan"
+        class="row q-mt-sm q-pa-sm text-white no-wrap cursor-pointer bg-warning max-w-s"
+        :class="[{ 'items-center': collapsed }]"
+        style="border-radius: 10px"
+        @click="toggleCollapse"
+      >
+        <q-icon name="warning" size="sm" class="q-mr-xs" />
+        <div :class="{ ellipsis: collapsed }">
+          Temporär Plan, Plan wird verworfen nach abstecken
+        </div>
+      </div>
+      <div
+        v-if="temporaryChargeModeActive"
+        class="row q-mt-sm q-pa-sm text-white no-wrap cursor-pointer bg-warning"
+        :class="[{ 'items-center': collapsed }]"
+        style="border-radius: 10px"
+        @click="toggleCollapse"
+      >
+        <q-icon name="warning" size="sm" class="q-mr-xs" />
+        <div :class="{ ellipsis: collapsed }">
+          Temporär Modus aktiv, alle Planänderungen werden verworfen nach
+          abstecken
+        </div>
       </div>
     </q-card-section>
     <q-separator />
@@ -89,6 +115,7 @@
             class="col"
           />
         </div>
+
         <div
           class="row q-mt-sm q-pa-sm text-white no-wrap items-center bg-primary"
           style="border-radius: 10px"
@@ -243,6 +270,15 @@
         <q-btn
           size="sm"
           class="col"
+          color="warning"
+          href="/openWB/web/settings/#/VehicleConfiguration/charge_template/"
+          >Einstellungen</q-btn
+        >
+      </div>
+      <div class="row q-mt-md">
+        <q-btn
+          size="sm"
+          class="col"
           color="negative"
           @click="removeScheduledChargingPlan(plan.id)"
           >Plan löschen</q-btn
@@ -257,7 +293,7 @@ import { useMqttStore } from 'src/stores/mqtt-store';
 import { useQuasar } from 'quasar';
 import SliderStandard from './SliderStandard.vue';
 import ToggleStandard from './ToggleStandard.vue';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import ChargePointScheduledPlanSummary from './ChargePointScheduledPlanSummary.vue';
 import { type ScheduledChargingPlan } from '../stores/mqtt-store-model';
 
@@ -269,6 +305,12 @@ const props = defineProps<{
 const emit = defineEmits(['close']);
 const mqttStore = useMqttStore();
 const $q = useQuasar();
+
+const collapsed = ref<boolean>(true);
+
+const toggleCollapse = () => {
+  collapsed.value = !collapsed.value;
+};
 
 const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
@@ -433,9 +475,27 @@ const removeScheduledChargingPlan = (planId) => {
   );
   emit('close');
 };
+
+const PermanentScheduledChargingPlansIds = computed(() =>
+  mqttStore
+    .vehicleScheduledChargingPlansPermanent(props.chargePointId)
+    .map((plan) => plan.id),
+);
+const isTemporaryPlan = computed(() => {
+  return !PermanentScheduledChargingPlansIds.value.some(
+    (id) => id === props.plan.id,
+  );
+});
+
+const temporaryChargeModeActive = computed(() => {
+  return mqttStore.temporaryChargeModeAktiv;
+});
 </script>
 
 <style scoped>
+.card-width {
+  width: 26em;
+}
 .q-btn-group .q-btn {
   min-width: 100px !important;
   font-size: 10px !important;
