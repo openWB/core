@@ -44,23 +44,26 @@ def _fetch(config: FixedHoursTariffConfiguration) -> TariffState:
     current_time = datetime.datetime.now().replace(minute=0, second=0, microsecond=0)
     prices: Dict[str, float] = {}
 
-    for i in range(24):  # get prices for the next 24 hours
-        time_slot = current_time + datetime.timedelta(hours=i)
-        epoch_time = int(time.mktime(time_slot.timetuple()))
-        price = config.default_price / 1000
+    # get prices untill (next) day end
+    for i in range(24 - current_time.hour + (24 if 14 < current_time.hour else 0)):
+        for j in range(4):  # get prices for quarter hours
+            time_slot = current_time + datetime.timedelta(hours=i, minutes=j * 15)
+            time_slot = current_time + datetime.timedelta(hours=i)
+            epoch_time = int(time.mktime(time_slot.timetuple()))
+            price = config.default_price / 1000
 
-        for tariff in config.tariffs:
-            active_times = [(_to_time(start), _to_time(end)) for start, end in tariff["active_times"]["times"]]
-            active_dates = [
-                (_to_date(start, time_slot), _to_date(end, time_slot))
-                for start, end in tariff["active_times"]["dates"]
-            ]
-            if (any(start <= time_slot.time() < end for start, end in active_times) and
-                    any(start <= time_slot.date() <= end for start, end in active_dates)):
-                price = tariff["price"] / 1000
-                break  # Break since we found a matching tariff
+            for tariff in config.tariffs:
+                active_times = [(_to_time(start), _to_time(end)) for start, end in tariff["active_times"]["times"]]
+                active_dates = [
+                    (_to_date(start, time_slot), _to_date(end, time_slot))
+                    for start, end in tariff["active_times"]["dates"]
+                ]
+                if (any(start <= time_slot.time() < end for start, end in active_times) and
+                        any(start <= time_slot.date() <= end for start, end in active_dates)):
+                    price = tariff["price"] / 1000
+                    break  # Break since we found a matching tariff
 
-        prices[str(epoch_time)] = price
+            prices[str(epoch_time)] = price
 
     return TariffState(prices=prices)
 
