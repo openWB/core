@@ -295,6 +295,21 @@ class TestCreateElectricityTariff:
                 3.5,
                 id="premium_tariff",
             ),
+            pytest.param(
+                2000,
+                [
+                    {
+                        "name": "never active_tariff",
+                        "price": 3500,
+                        "active_times": {
+                            "dates": [("01-01", "01-01")],
+                            "times": [("00:00", "00:00")],
+                        },
+                    }
+                ],
+                2.0,
+                id="not_matching_tariff returns default price",
+            ),
         ],
     )
     def test_create_electricity_tariff_updater(
