@@ -1,4 +1,6 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
+from typing import Dict
+from helpermodules import timecheck
 from control import data
 from modules.common.component_state import TariffState
 from modules.common.store import ValueStore
@@ -52,10 +54,18 @@ class PriceValueStore(ValueStore[TariffState]):
         pub_to_broker("openWB/set/optional/ep/get/prices", self.sum_prices())
 
     def sum_prices(self):
-        flexible_tariff_prices = data.data.optional_data.data.electricity_pricing.flexible_tariff.get.prices
+        timestamp = timecheck.create_timestamp()
+        first_timestamp = timestamp - (timestamp % 900)  # Start of current quarter hour
+        # if first_timestamp != 1761127200:
+        #    raise ValueError(f"Expected first timestamp to be {1761127200} but got {first_timestamp}")
+
+        def reduce_prices(prices: Dict[str, float]) -> Dict[int, float]:
+            return {int(float(k)): v for k, v in prices.items() if int(float(k)) >= first_timestamp}
+
+        flexible_tariff_prices = reduce_prices(data.data.optional_data.data.electricity_pricing.flexible_tariff.get.prices)
         if len(flexible_tariff_prices) == 0 and data.data.optional_data.flexible_tariff_module is not None:
             raise ValueError("Keine Preise für konfigurierten dynamischen Stromtarif vorhanden.")
-        grid_fee_prices = data.data.optional_data.data.electricity_pricing.grid_fee.get.prices
+        grid_fee_prices = reduce_prices(data.data.optional_data.data.electricity_pricing.grid_fee.get.prices)
         if len(grid_fee_prices) == 0 and data.data.optional_data.grid_fee_module is not None:
             raise ValueError("Keine Preise für konfigurierten Netzentgelttarif vorhanden.")
         flexible_tariff_prices = {int(float(k)): v for k, v in flexible_tariff_prices.items()}
@@ -106,9 +116,8 @@ class PriceValueStore(ValueStore[TariffState]):
                 if start <= ts_fine < ende:
                     coarse_value = coarse_dict[start]
                     break
-            if coarse_value is None:
-                raise ValueError(f"Kein passendes Intervall für {ts_fine}")
-            result[ts_fine] = preis_fine + coarse_value
+            if coarse_value is not None:
+                result[ts_fine] = preis_fine + coarse_value
         return result
 
 
