@@ -1,7 +1,7 @@
 from datetime import timedelta
 import datetime
 from typing import Dict
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 
@@ -76,7 +76,6 @@ def mock_data() -> None:
             make_prices(5, 15, 10),
             {
                 1761127200: 11,
-                1761127500: 12,
                 1761128100: 13,
                 1761129000: 15,
                 1761129900: 17,
@@ -103,8 +102,7 @@ def test_sum_prices(
     )
     data.data.optional_data.data.electricity_pricing.grid_fee.get.prices = grid_fee
     summed = value_Store.sum_prices()
-    for timestamp, price in summed.items():
-        assert price == expected_prices[timestamp]
+    assert summed == expected_prices
 
 
 @pytest.mark.parametrize(
