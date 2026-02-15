@@ -51,11 +51,13 @@ class PriceValueStore(ValueStore[TariffState]):
         pass
 
     def update(self):
+        log.debug("Updating combined prices for flexible tariff and grid fee")
         pub_to_broker("openWB/set/optional/ep/get/prices", self.sum_prices())
 
     def sum_prices(self):
         timestamp = timecheck.create_timestamp()
         first_timestamp = timestamp - (timestamp % 900)  # Start of current quarter hour
+        log.debug(f"Summing prices for timestamp {timestamp} (first timestamp: {first_timestamp})")
 
         def median_delta(keys):
             """Typische Schrittweite bestimmen (Median der Deltas)"""
@@ -64,6 +66,15 @@ class PriceValueStore(ValueStore[TariffState]):
             deltas = [(keys[i+1] - keys[i]) for i in range(len(keys)-1)]
             deltas.sort()
             return timedelta(seconds=deltas[len(deltas)//2])
+
+        def _get_value_at_or_before(d: Dict[int, float], ts_key: int) -> float:
+            """Return value for the greatest key <= ts_key, or the earliest value if none."""
+            keys = [k for k in d.keys() if k <= ts_key]
+            if keys:
+                key = max(keys)
+            else:
+                key = min(d.keys())
+            return d[key]
 
         def reduce_prices(prices: Dict[str, float]) -> Dict[int, float]:
             prices = {int(float(k)): v for k, v in prices.items() if int(float(k)) >= first_timestamp}
@@ -75,9 +86,9 @@ class PriceValueStore(ValueStore[TariffState]):
                     last_timestamp = max(int(float(k)) for k in prices.keys())
                     target_timestamp = (
                         datetime.fromtimestamp(last_timestamp).replace(second=59, microsecond=0).timestamp())
-                    for ts in range(first_timestamp, int(target_timestamp), 900):
+                    for ts in range(int(first_timestamp), int(target_timestamp), 900):
                         if ts not in prices:
-                            prices[ts] = prices[max(k for k in prices.keys() if k < ts)]
+                            prices[ts] = _get_value_at_or_before(prices, ts)
             return prices
 
         flexible_tariff_prices = reduce_prices(
@@ -109,11 +120,19 @@ class PriceValueStore(ValueStore[TariffState]):
             sorted(int(float(k)) for k in flexible_tariff_prices.keys())).total_seconds()
 
         result = {}
+        def _get_value_from_keys(d: Dict[int, float], keys_list: list, ts_key: int) -> float:
+            keys = [k for k in keys_list if k <= ts_key]
+            if keys:
+                key = max(keys)
+            else:
+                key = min(keys_list)
+            return d[key]
+
         for ts in (flexible_tariff_keys
                    if median_delta_seconds_flexible < median_delta_seconds_grid
                    else grid_fee_keys):
-            result[ts] = (flexible_tariff_prices[max(k for k in flexible_tariff_keys if k <= ts)] +
-                          grid_fee_prices[max(k for k in grid_fee_keys if k <= ts)])
+            result[ts] = (_get_value_from_keys(flexible_tariff_prices, flexible_tariff_keys, ts) +
+                          _get_value_from_keys(grid_fee_prices, grid_fee_keys, ts))
         return result
 
 

@@ -48,7 +48,6 @@ def _fetch(config: FixedHoursTariffConfiguration) -> TariffState:
     for i in range(24 - current_time.hour + (24 if 14 < current_time.hour else 0)):
         for j in range(4):  # get prices for quarter hours
             time_slot = current_time + datetime.timedelta(hours=i, minutes=j * 15)
-            time_slot = current_time + datetime.timedelta(hours=i)
             epoch_time = int(time.mktime(time_slot.timetuple()))
             price = config.default_price / 1000
 
