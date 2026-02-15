@@ -56,13 +56,32 @@ class PriceValueStore(ValueStore[TariffState]):
     def sum_prices(self):
         timestamp = timecheck.create_timestamp()
         first_timestamp = timestamp - (timestamp % 900)  # Start of current quarter hour
-        # if first_timestamp != 1761127200:
-        #    raise ValueError(f"Expected first timestamp to be {1761127200} but got {first_timestamp}")
+
+        def median_delta(keys):
+            """Typische Schrittweite bestimmen (Median der Deltas)"""
+            if len(keys) < 2:
+                return timedelta.max
+            deltas = [(keys[i+1] - keys[i]) for i in range(len(keys)-1)]
+            deltas.sort()
+            return timedelta(seconds=deltas[len(deltas)//2])
 
         def reduce_prices(prices: Dict[str, float]) -> Dict[int, float]:
-            return {int(float(k)): v for k, v in prices.items() if int(float(k)) >= first_timestamp}
+            prices = {int(float(k)): v for k, v in prices.items() if int(float(k)) >= first_timestamp}
+            if (len(prices) > 0):
+                median_delta_seconds = median_delta(sorted(int(float(k)) for k in prices.keys())).total_seconds()
+                if median_delta_seconds > 900:
+                    # Wenn die typische Schrittweite größer als 15 Minuten ist, annehmen,
+                    # dass es sich um unregelmäßige Preise handelt
+                    last_timestamp = max(int(float(k)) for k in prices.keys())
+                    target_timestamp = (
+                        datetime.fromtimestamp(last_timestamp).replace(second=59, microsecond=0).timestamp())
+                    for ts in range(first_timestamp, int(target_timestamp), 900):
+                        if ts not in prices:
+                            prices[ts] = prices[max(k for k in prices.keys() if k < ts)]
+            return prices
 
-        flexible_tariff_prices = reduce_prices(data.data.optional_data.data.electricity_pricing.flexible_tariff.get.prices)
+        flexible_tariff_prices = reduce_prices(
+            data.data.optional_data.data.electricity_pricing.flexible_tariff.get.prices)
         if len(flexible_tariff_prices) == 0 and data.data.optional_data.flexible_tariff_module is not None:
             raise ValueError("Keine Preise für konfigurierten dynamischen Stromtarif vorhanden.")
         grid_fee_prices = reduce_prices(data.data.optional_data.data.electricity_pricing.grid_fee.get.prices)
@@ -82,42 +101,19 @@ class PriceValueStore(ValueStore[TariffState]):
         median_grid_fee = (
             distinct_grid_fee_values[len(distinct_grid_fee_values) // 2]
             if distinct_grid_fee_values else 0)
-        grid_fee_prices = {float(k): v - median_grid_fee for k, v in grid_fee_prices.items()}
+        grid_fee_prices = {int(float(k)): v - median_grid_fee for k, v in grid_fee_prices.items()}
 
-        def median_delta(keys):
-            """Typische Schrittweite bestimmen (Median der Deltas)"""
-            if len(keys) < 2:
-                return timedelta.max
-            deltas = [(keys[i+1] - keys[i]) for i in range(len(keys)-1)]
-            deltas.sort()
-            return timedelta(seconds=deltas[len(deltas)//2])
-        grid_fee_delta = median_delta(grid_fee_keys)
-        electricity_tariff_delta = median_delta(flexible_tariff_keys)
+        median_delta_seconds_grid = median_delta(
+            sorted(int(float(k)) for k in grid_fee_prices.keys())).total_seconds()
+        median_delta_seconds_flexible = median_delta(
+            sorted(int(float(k)) for k in flexible_tariff_prices.keys())).total_seconds()
 
-        # Feinere und gröbere Auflösung bestimmen
-        if grid_fee_delta < electricity_tariff_delta:
-            fine_dict, coarse_dict = grid_fee_prices, flexible_tariff_prices
-        else:
-            fine_dict, coarse_dict = flexible_tariff_prices, grid_fee_prices
-        # Intervallgrenzen für das gröbere Dict
-        coarse_keys = sorted(coarse_dict.keys())
-        intervalle = []
-        for i, start in enumerate(coarse_keys):
-            if i+1 < len(coarse_keys):
-                ende = coarse_keys[i+1]
-            else:
-                ende = max(fine_dict.keys()) + 1
-            intervalle.append((start, ende))
-        # Für jeden feinen Zeitstempel das passende grobe Intervall suchen und addieren
         result = {}
-        for ts_fine, preis_fine in fine_dict.items():
-            coarse_value = None
-            for start, ende in intervalle:
-                if start <= ts_fine < ende:
-                    coarse_value = coarse_dict[start]
-                    break
-            if coarse_value is not None:
-                result[ts_fine] = preis_fine + coarse_value
+        for ts in (flexible_tariff_keys
+                   if median_delta_seconds_flexible < median_delta_seconds_grid
+                   else grid_fee_keys):
+            result[ts] = (flexible_tariff_prices[max(k for k in flexible_tariff_keys if k <= ts)] +
+                          grid_fee_prices[max(k for k in grid_fee_keys if k <= ts)])
         return result
 
 
