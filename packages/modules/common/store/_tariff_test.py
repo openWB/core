@@ -1,17 +1,23 @@
 from datetime import timedelta
 import datetime
 from typing import Dict
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 
 from control import data
 from control.optional import Optional
 from modules.common.store._tariff import PriceValueStore
+from helpermodules import timecheck
 
 
-def make_prices(count, step, base):
-    start = datetime.datetime.fromtimestamp(1761127200.0)  # 2025-10-22 12:00
+# Default start timestamp for price generation
+DEFAULT_START_TIMESTAMP = 1761127200  # 2025-10-22 12:00
+EARLIER_START_TIMESTAMP = 1761124500  # 2025-10-22 11:15
+
+
+def make_prices(count, step, base, start_timestamp=DEFAULT_START_TIMESTAMP):
+    start = datetime.datetime.fromtimestamp(start_timestamp)
     # json.loads macht keys immer zu str
     return {
         str((start + timedelta(minutes=step * i)).timestamp()): base + i
@@ -99,3 +105,67 @@ def test_sum_prices(
     summed = value_Store.sum_prices()
     for timestamp, price in summed.items():
         assert price == expected_prices[timestamp]
+
+
+@pytest.mark.parametrize(
+    "flexible_tariff, grid_fee",
+    [
+        # Finer grid fee
+        pytest.param(
+            make_prices(4, 15, 16),
+            make_prices(11, 5, 1),
+            id="grid_fee_finer",
+        ),
+        # Finer flexible tariff
+        pytest.param(
+            make_prices(12, 5, 13),
+            make_prices(5, 14, 10),
+            id="flexible_tariff_finer",
+        ),
+        pytest.param(
+            # flexible_tariff starting earlier than grid_fee
+            make_prices(15, 5, 13, EARLIER_START_TIMESTAMP),
+            make_prices(5, 14, 10, DEFAULT_START_TIMESTAMP),
+            id="tariffs start earlier than current quarter hour",
+        ),
+        pytest.param(
+            # grid fee 12x5min, starting earlier than flexible tariff
+            make_prices(5, 14, 10, DEFAULT_START_TIMESTAMP),
+            make_prices(15, 5, 13, EARLIER_START_TIMESTAMP),
+            id="tariffs start earlier than current quarter hour",
+        ),
+        pytest.param(
+            # grid fee and  flexible tariff  starting earlier than current quarter hour
+            make_prices(15, 5, 13, EARLIER_START_TIMESTAMP),
+            make_prices(15, 5, 10, EARLIER_START_TIMESTAMP),
+            id="tariffs start earlier than current quarter hour",
+        ),
+    ],
+)
+def test_sum_prices_first_entry_starts_with_current_quarter_hour(
+    flexible_tariff: Dict[int, float],
+    grid_fee: Dict[int, float],
+    monkeypatch,
+):
+    # Patch timecheck.create_timestamp at the location where it's used in _tariff.py
+    monkeypatch.setattr(
+        timecheck, "create_timestamp",
+        Mock(return_value=DEFAULT_START_TIMESTAMP)
+    )
+    value_Store = PriceValueStore()
+    data.data.optional_data.data.electricity_pricing.flexible_tariff.get.prices = (
+        flexible_tariff
+    )
+    data.data.optional_data.data.electricity_pricing.grid_fee.get.prices = (
+        grid_fee
+    )
+    summed = value_Store.sum_prices()
+
+    assert len(summed) > 0
+
+    # Get the first timestamp (smallest key)
+    first_timestamp = int(min(summed.keys()))
+
+    # The first entry should be greater than or equal to DEFAULT_START_TIMESTAMP
+    # (since sum_prices filters prices >= first_timestamp from timecheck.create_timestamp())
+    assert first_timestamp >= int(DEFAULT_START_TIMESTAMP)
