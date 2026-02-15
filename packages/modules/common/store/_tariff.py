@@ -65,8 +65,14 @@ class PriceValueStore(ValueStore[TariffState]):
         if len(grid_fee_prices) == 0 and len(flexible_tariff_prices) > 0:
             return flexible_tariff_prices
 
-        grid_fee_keys = sorted(grid_fee_prices.keys())
         flexible_tariff_keys = sorted(flexible_tariff_prices.keys())
+        grid_fee_keys = sorted(grid_fee_prices.keys())
+        # Get distinct grid_fee_prices values, sort and take the middle one
+        distinct_grid_fee_values = sorted(set(grid_fee_prices.values()))
+        median_grid_fee = (
+            distinct_grid_fee_values[len(distinct_grid_fee_values) // 2]
+            if distinct_grid_fee_values else 0)
+        grid_fee_prices = {float(k): v - median_grid_fee for k, v in grid_fee_prices.items()}
 
         def median_delta(keys):
             """Typische Schrittweite bestimmen (Median der Deltas)"""
@@ -77,6 +83,7 @@ class PriceValueStore(ValueStore[TariffState]):
             return timedelta(seconds=deltas[len(deltas)//2])
         grid_fee_delta = median_delta(grid_fee_keys)
         electricity_tariff_delta = median_delta(flexible_tariff_keys)
+
         # Feinere und gröbere Auflösung bestimmen
         if grid_fee_delta < electricity_tariff_delta:
             fine_dict, coarse_dict = grid_fee_prices, flexible_tariff_prices
