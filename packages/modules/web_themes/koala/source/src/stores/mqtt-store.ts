@@ -1814,6 +1814,10 @@ export const useMqttStore = defineStore('mqtt', () => {
     return Array.isArray(plans) ? plans : [];
   };
 
+  /**
+   * Get temporary charge settings mode selected
+   * @returns boolean | undefined
+   */
   const temporaryChargeModeAktiv = computed(() => {
     const chargeMode = getValue.value(
       'openWB/general/temporary_charge_templates_active'
