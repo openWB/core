@@ -3,7 +3,7 @@
     <q-card-section>
       <div class="row no-wrap">
         <div class="text-h6 ellipsis" :title="planName.value">
-          {{ planName.value }}. TEST
+          {{ planName.value }}
         </div>
 
         <q-space />
@@ -266,13 +266,14 @@
           color="positive"
         />
       </div>
-      <div class="row q-mt-md">
+      <div v-if="temporaryChargeModeActive" class="row q-mt-md">
         <q-btn
           size="sm"
           class="col"
           color="warning"
-          href="/openWB/web/settings/#/VehicleConfiguration/charge_template/"
-          >Einstellungen</q-btn
+          :href="`/openWB/web/settings/#/VehicleConfiguration/charge_template/${chargeTemplateId ?? ''}`"
+          ><q-icon left size="xs" name="settings" /> Änderungen in Einstellungen
+          Speichern</q-btn
         >
       </div>
       <div class="row q-mt-md">
@@ -490,6 +491,12 @@ const isTemporaryPlan = computed(() => {
 const temporaryChargeModeActive = computed(() => {
   return mqttStore.temporaryChargeModeAktiv;
 });
+
+const chargeTemplateId = computed(
+  () =>
+    mqttStore.chargePointConnectedVehicleChargeTemplate(props.chargePointId)
+      .value?.id,
+);
 </script>
 
 <style scoped>
