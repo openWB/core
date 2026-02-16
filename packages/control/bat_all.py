@@ -76,7 +76,7 @@ class Config:
                                        metadata={"topic": "config/bat_control_condition"})
     manual_mode: str = field(default=ManualMode.MANUAL_DISABLE.value,
                              metadata={"topic": "config/manual_mode"})
-    bat_control_min_soc: str = field(default=10, metadata={"topic": "config/bat_control_min_soc"})
+    bat_control_min_soc: str = field(default=5, metadata={"topic": "config/bat_control_min_soc"})
     bat_control_max_soc: str = field(default=90, metadata={"topic": "config/bat_control_max_soc"})
     price_limit_activated: bool = field(default=False, metadata={"topic": "config/price_limit_activated"})
     price_charge_activated: bool = field(default=False, metadata={"topic": "config/price_charge_activated"})
