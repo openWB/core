@@ -258,7 +258,7 @@ class BatAll:
                                    "befindet sich unterhalb minimal SoC - auf Eigenregelung gesetzt."))
                     # setze Entladeleistung als Bruchteil der möglichen Entladeleistung
                     else:
-                        factor = max(power / max_discharge_power_total, -1)
+                        factor = min(power / max_discharge_power_total, 1)
                         power_limit = bat_component_data.get.max_discharge_power * factor
                         log.debug(("Aktive Speichersteuerung: Entladung - "
                                    f"Speicher (ID: {bat_component.component_config.id}) "
