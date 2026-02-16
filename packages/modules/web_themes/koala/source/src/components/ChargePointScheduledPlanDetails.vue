@@ -266,7 +266,7 @@
           color="positive"
         />
       </div>
-      <div v-if="temporaryChargeModeActive" class="row q-mt-md">
+      <div v-if="temporaryChargeModeActive" class="row q-mt-lg">
         <q-btn
           size="sm"
           class="col"
