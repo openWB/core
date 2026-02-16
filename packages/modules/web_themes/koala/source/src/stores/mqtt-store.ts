@@ -1800,21 +1800,6 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
-   * Get scheduled permanent charging plan/s identified by the charge point id
-   * @param chargePointId charge point id
-   * @returns ScheduledChargingPlan[]
-   */
-  const vehicleScheduledChargingPlansPermanent = (chargePointId: number) => {
-    const templateId =
-      chargePointConnectedVehicleChargeTemplate(chargePointId).value?.id;
-    const plans = getValue.value(
-      `openWB/vehicle/template/charge_template/${templateId}`,
-      'chargemode.scheduled_charging.plans',
-    ) as ScheduledChargingPlan[] | undefined;
-    return Array.isArray(plans) ? plans : [];
-  };
-
-  /**
    * Get temporary charge settings mode selected
    * @returns boolean | undefined
    */
@@ -1957,6 +1942,21 @@ export const useMqttStore = defineStore('mqtt', () => {
         );
       },
     });
+  };
+
+  /**
+   * Get scheduled permanent scheduled charging plan/s identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns ScheduledChargingPlan[]
+   */
+  const vehicleTimeChargingPlansPermanent = (chargePointId: number) => {
+    const templateId =
+      chargePointConnectedVehicleChargeTemplate(chargePointId).value?.id;
+    const plans = getValue.value(
+      `openWB/vehicle/template/charge_template/${templateId}`,
+      'time_charging.plans',
+    ) as TimeChargingPlan[] | undefined;
+    return Array.isArray(plans) ? plans : [];
   };
 
   /**
@@ -2706,6 +2706,21 @@ export const useMqttStore = defineStore('mqtt', () => {
       console.warn('Kein Template für ChargePoint gefunden:', chargePointId);
     }
   }
+
+  /**
+   * Get scheduled permanent scheduled charging plan/s identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns ScheduledChargingPlan[]
+   */
+  const vehicleScheduledChargingPlansPermanent = (chargePointId: number) => {
+    const templateId =
+      chargePointConnectedVehicleChargeTemplate(chargePointId).value?.id;
+    const plans = getValue.value(
+      `openWB/vehicle/template/charge_template/${templateId}`,
+      'chargemode.scheduled_charging.plans',
+    ) as ScheduledChargingPlan[] | undefined;
+    return Array.isArray(plans) ? plans : [];
+  };
 
   function removeScheduledChargingPlanForChargePoint(
     chargePointId: number,
@@ -3725,6 +3740,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     vehicleTimeChargingPlanStartTime,
     vehicleTimeChargingPlanEndTime,
     vehicleTimeChargingPlanCurrent,
+    vehicleTimeChargingPlansPermanent,
     vehicleTimeChargingPlanLimitSelected,
     vehicleTimeChargingPlanSocLimit,
     vehicleTimeChargingPlanEnergyAmount,
