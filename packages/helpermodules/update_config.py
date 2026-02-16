@@ -532,7 +532,7 @@ class UpdateConfig:
         ("openWB/bat/config/price_limit_activated", False),
         ("openWB/bat/config/price_limit$", 0.3),
         ("openWB/bat/config/price_charge_activated", False),
-        ("openWB/bat/config/charge_limit$", 0.3)
+        ("openWB/bat/config/charge_limit$", 0.3),
         ("openWB/bat/[0-9]+/get/max_charge_power", 0),
         ("openWB/bat/[0-9]+/get/max_discharge_power", 0),
         ("openWB/bat/config/configured", False),
