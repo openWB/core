@@ -10,9 +10,9 @@ except Exception as e:
     # Durch try-except werden die Imports vom Formatierer nicht an den Dateianfang geschoben.
     print(e)
 
-unit = int(sys.argv[3])
-register = int(sys.argv[4])
-value = int(sys.argv[5])
+unit = int(sys.argv[1])
+register = int(sys.argv[2])
+value = int(sys.argv[3])
 
 client = ModbusSerialClient_(str(list(Path("/dev/serial/by-path").glob("*"))[0].resolve()))
 client.write_register(register, value, unit=unit)
