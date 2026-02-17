@@ -64,8 +64,9 @@ class ShellyInverter(AbstractInverter):
             # shelly Pro3EM
             elif "em:0" in status:
                 meters = status['em:0']
-                for i in range(len(meters)):
-                    if meters.get(f'{alphabetical_index[i]}_current') is None:
+                for i in range(0, 3):
+                    if (f'{alphabetical_index[i]}_current' not in meters or
+                            meters.get(f'{alphabetical_index[i]}_current') is None):
                         continue
                     currents[(i+self.phase-1) % 3] = (float(meters[f'{alphabetical_index[i]}_current']) * self.factor
                                                       if meters.get(f'{alphabetical_index[i]}_current') else 0)
