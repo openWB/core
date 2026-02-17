@@ -270,6 +270,7 @@ def test_active_bat_control(params: BatControlParams, data_, monkeypatch):
     monkeypatch.setattr(bat_all, "get_controllable_bat_components", get_controllable_bat_components_mock)
 
     data.data.bat_all_data.get_power_limit()
+    data.data.bat_all_data._set_bat_power_active_control(data.data.bat_all_data.data.set.power_limit)
 
     assert data.data.bat_data["bat2"].data.set.power_limit == params.expected_power_limit_bat
 
@@ -350,5 +351,6 @@ def test_control_price_limit(params: BatControlParams, data_, monkeypatch):
     monkeypatch.setattr(bat_all, "get_controllable_bat_components", get_controllable_bat_components_mock)
 
     data.data.bat_all_data.get_power_limit()
+    data.data.bat_all_data._set_bat_power_active_control(data.data.bat_all_data.data.set.power_limit)
 
     assert data.data.bat_data["bat2"].data.set.power_limit == params.expected_power_limit_bat

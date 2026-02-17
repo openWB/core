@@ -290,6 +290,7 @@ class BatAll:
                 if self.data.get.fault_state == 0:
                     self.set_power_limit_controllable()
                     self.get_power_limit()
+                    self._set_bat_power_active_control(self.data.set.power_limit)
                     self._get_charging_power_left()
                     log.info(f"{self.data.set.charging_power_left}W verbleibende Speicher-Leistung")
                 else:
@@ -322,7 +323,9 @@ class BatAll:
                 # Speicher sollte weder ge- noch entladen werden.
                 charging_power_left = self.data.get.power
             else:
+                # Speicher soll geladen werden um min SoC zu erreichen
                 if self.data.get.soc < config.min_bat_soc:
+                    self.data.set.hysteresis_discharge = False
                     if self.data.get.power < 0:
                         # Wenn der Speicher entladen wird, darf diese Leistung nicht zum Laden der Fahrzeuge
                         # genutzt werden. Wenn der Speicher schneller regelt als die LP, würde sonst der Speicher
@@ -343,10 +346,30 @@ class BatAll:
                             # Speicher wird geladen
                             charging_power_left = 0
                             self.data.set.regulate_up = True
-                elif int(self.data.get.soc) == config.min_bat_soc:
-                    # Speicher sollte weder ge- noch entladen werden, um den Mindest-SoC zu halten.
-                    charging_power_left = self.data.get.power
+                # Speicher zwischen min und max SoC
+                elif int(self.data.get.soc) >= config.min_bat_soc and int(self.data.get.soc) < config.max_bat_soc:
+                    # Speicher soll aktiv weder ge- noch entladen werden.
+                    # Mindest-SoC wird gehalten oder der Speicher mit weiterem vorhanden Überschuss geladen.
+                    if self.data.set.hysteresis_discharge is False:
+                        charging_power_left = self.data.get.power
+                    # Speicher darf wegen Hysterese bis min_bat_soc entladen werden.
+                    else:
+                        if self.data.set.power_limit is None:
+                            if config.bat_power_discharge_active:
+                                # Wenn der Speicher mit mehr als der erlaubten Entladeleistung entladen wird, muss das
+                                # vom Überschuss subtrahiert werden.
+                                charging_power_left = config.bat_power_discharge + self.data.get.power
+                                log.debug(f"Erlaubte Entlade-Leistung nutzen {charging_power_left}W")
+                            else:
+                                # Speicher sollte weder ge- noch entladen werden.
+                                charging_power_left = self.data.get.power
+                        else:
+                            log.debug("Keine erlaubte Entladeleistung freigeben, da der Speicher mit einer vorgegeben "
+                                      "Leistung entladen wird.")
+                            charging_power_left = 0
+                # Speicher oberhalb max SoC. Darf bis min SoC entladen werden.
                 else:
+                    self.data.set.hysteresis_discharge = True
                     if self.data.set.power_limit is None:
                         if config.bat_power_discharge_active:
                             # Wenn der Speicher mit mehr als der erlaubten Entladeleistung entladen wird, muss das
@@ -543,7 +566,6 @@ class BatAll:
         elif charge_mode == BatChargeMode.BAT_FORCE_DISCHARGE:
             # das ist in Deutschland (noch) nicht erlaubt
             pass
-        self._set_bat_power_active_control(self.data.set.power_limit)
 
 
 def get_controllable_bat_components() -> List:
