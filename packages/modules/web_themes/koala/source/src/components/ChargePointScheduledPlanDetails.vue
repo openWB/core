@@ -11,13 +11,13 @@
       </div>
       <BaseMessage
         :show-message="isTemporaryPlan"
-        message="Temporär Plan, Plan wird verworfen nach abstecken"
+        message="Temporärer Plan. Der Plan wird nach dem Abstecken verworfen."
         type="warning"
       />
 
       <BaseMessage
         :show-message="temporaryChargeModeActive"
-        message="Temporär Modus aktiv, alle Planänderungen werden verworfen nach abstecken"
+        message="Temporärer Modus aktiv. Alle Planänderungen werden nach dem Abstecken verworfen."
         type="warning"
       />
     </q-card-section>
