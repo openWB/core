@@ -609,6 +609,18 @@
 				},
 				{
 					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/user_management_active",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/allow_unencrypted_access",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
 					"topic": "openWB/general/charge_log_data_config",
 					"priority": 0,
 					"allow": true
@@ -761,6 +773,12 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/configurable/display_themes",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/user_management_active",
 					"priority": 0,
 					"allow": true
 				}
@@ -2253,7 +2271,31 @@
 				},
 				{
 					"acltype": "publishClientReceive",
+					"topic": "openWB/general/extern",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/user_management_active",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/extern",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/web_theme",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/int_display/theme",
 					"priority": 0,
 					"allow": true
 				},
