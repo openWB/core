@@ -10,7 +10,7 @@ except Exception as e:
     # Durch try-except werden die Imports vom Formatierer nicht an den Dateianfang geschoben.
     print(e)
 
-unit = sys.argv[1]
+unit = int(sys.argv[1])
 register = int(sys.argv[2])
 num = int(sys.argv[3])
 
