@@ -2224,9 +2224,9 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
-   * Get scheduled permanent scheduled charging plan/s identified by the charge point id
+   * Get permanent time charging plan/s identified by the charge point id
    * @param chargePointId charge point id
-   * @returns ScheduledChargingPlan[]
+   * @returns TimeChargingPlan[]
    */
   const vehicleTimeChargingPlansPermanent = (chargePointId: number) => {
     const templateId =
@@ -3005,7 +3005,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   }
 
   /**
-   * Get scheduled permanent scheduled charging plan/s identified by the charge point id
+   * Get permanent scheduled charging plan/s identified by the charge point id
    * @param chargePointId charge point id
    * @returns ScheduledChargingPlan[]
    */
