@@ -463,15 +463,13 @@ const PermanentScheduledChargingPlansIds = computed(() =>
     .vehicleScheduledChargingPlansPermanent(props.chargePointId)
     .map((plan) => plan.id),
 );
-const isTemporaryPlan = computed(() => {
-  return !PermanentScheduledChargingPlansIds.value.some(
-    (id) => id === props.plan.id,
-  );
-});
+const isTemporaryPlan = computed(
+  () => !PermanentScheduledChargingPlansIds.value.includes(props.plan.id),
+);
 
-const temporaryChargeModeActive = computed(() => {
-  return mqttStore.temporaryChargeModeAktiv;
-});
+const temporaryChargeModeActive = computed(
+  () => mqttStore.temporaryChargeModeAktiv ?? false,
+);
 
 const chargeTemplateId = computed(
   () =>
