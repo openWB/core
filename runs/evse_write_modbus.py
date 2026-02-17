@@ -11,8 +11,9 @@ except Exception as e:
 
 mode = sys.argv[1]
 local_chargepoint_num = int(sys.argv[2])
-register = int(sys.argv[3])
-value = int(sys.argv[4])
+unit = int(sys.argv[3])
+register = int(sys.argv[4])
+value = int(sys.argv[5])
 
 client, evse_ids = get_modbus_client(InternalChargepointMode(mode), local_chargepoint_num)
-client.write_register(register, value, unit=evse_ids[0])
+client.write_register(register, value, unit=unit)
