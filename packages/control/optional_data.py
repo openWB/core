@@ -137,6 +137,7 @@ class OcppConfig:
     active: bool = False
     url: Optional[str] = None
     version: str = "ocpp1.6"
+    dummy_id_tag: Optional[str] = None
 
 
 def ocpp_config_factory() -> OcppConfig:
