@@ -204,8 +204,8 @@
           class="col"
           color="warning"
           :href="`/openWB/web/settings/#/VehicleConfiguration/charge_template/${chargeTemplateId ?? ''}`"
-          ><q-icon left size="xs" name="settings" /> Änderungen in Einstellungen
-          Speichern</q-btn
+          ><q-icon left size="xs" name="settings" /> Ladeplan
+          Einstellungen</q-btn
         >
       </div>
       <div class="row q-mt-md">
