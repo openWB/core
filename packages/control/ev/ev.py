@@ -267,8 +267,8 @@ class Ev:
         phases_in_use = control_parameter.phases
         pv_config = data.data.general_data.data.chargemode_config.pv_charging
         max_phases_ev = self.ev_template.data.max_phases
-        if charge_template.data.chargemode.pv_charging.feed_in_limit:
-            feed_in_yield = pv_config.feed_in_yield
+        if pv_config.feed_in_limit:
+            feed_in_yield = data.data.general_data.data.chargemode_config.feed_in_yield
         else:
             feed_in_yield = 0
         all_surplus = data.data.counter_all_data.get_evu_counter().get_usable_surplus(feed_in_yield)
@@ -311,8 +311,8 @@ class Ev:
         phases_to_use = control_parameter.phases
         phases_in_use = control_parameter.phases
         pv_config = data.data.general_data.data.chargemode_config.pv_charging
-        if charge_template.data.chargemode.pv_charging.feed_in_limit:
-            feed_in_yield = pv_config.feed_in_yield
+        if pv_config.feed_in_limit:
+            feed_in_yield = data.data.general_data.data.chargemode_config.feed_in_yield
         else:
             feed_in_yield = 0
         all_surplus = data.data.counter_all_data.get_evu_counter().get_usable_surplus(feed_in_yield)

@@ -35,8 +35,8 @@ def get_common_data():
         ip_address = None
     try:
         updateAvailable = subdata.SubData.system_data["system"].data["current_branch_commit"] and \
-                          subdata.SubData.system_data["system"].data["current_branch_commit"] != \
-                          subdata.SubData.system_data["system"].data["current_commit"]
+            subdata.SubData.system_data["system"].data["current_branch_commit"] != \
+            subdata.SubData.system_data["system"].data["current_commit"]
     except Exception:
         updateAvailable = False
 
@@ -120,7 +120,8 @@ def config_and_state():
                 f"Switch_On_Delay: {chargemode_config.pv_charging.switch_on_delay}s\n"
                 f"Switch_Off_Threshold: {chargemode_config.pv_charging.switch_off_threshold}W\n"
                 f"Switch_Off_Delay: {chargemode_config.pv_charging.switch_off_delay}s\n"
-                f"Feed_In_Yield: {chargemode_config.pv_charging.feed_in_yield}W\n"
+                f"Feed_In_Yield: {chargemode_config.feed_in_yield}W\n"
+                f"Feed_In_Limit_Vehicle: {chargemode_config.pv_charging.feed_in_limit}W\n"
                 f"Bat_Mode: {chargemode_config.pv_charging.bat_mode}\n"
                 f"Min_Bat_SoC: {chargemode_config.pv_charging.min_bat_soc}%\n"
                 f"Bat_Power_Reserve_Active: {chargemode_config.pv_charging.bat_power_reserve_active}\n"

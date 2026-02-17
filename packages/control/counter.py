@@ -231,9 +231,13 @@ class Counter:
         ranged_surplus = surplus + self._control_range_offset()
         return ranged_surplus
 
-    def get_control_range_state(self, feed_in_yield: int) -> ControlRangeState:
+    def get_control_range_state(self) -> ControlRangeState:
         control_range_low = data.data.general_data.data.chargemode_config.pv_charging.control_range[0]
         control_range_high = data.data.general_data.data.chargemode_config.pv_charging.control_range[1]
+        if data.data.general_data.data.chargemode_config.pv_charging.feed_in_limit:
+            feed_in_yield = data.data.general_data.data.chargemode_config.feed_in_yield
+        else:
+            feed_in_yield = 0
         surplus = data.data.counter_all_data.get_evu_counter().data.get.power + feed_in_yield
         if control_range_low > surplus:
             return ControlRangeState.BELOW
@@ -270,8 +274,8 @@ class Counter:
         control_parameter = chargepoint.data.control_parameter
         pv_config = data.data.general_data.data.chargemode_config.pv_charging
 
-        if chargepoint.data.set.charge_template.data.chargemode.pv_charging.feed_in_limit:
-            threshold = pv_config.feed_in_yield
+        if data.data.general_data.data.chargemode_config.pv_charging.feed_in_limit:
+            threshold = data.data.general_data.data.chargemode_config.feed_in_yield
         else:
             threshold = pv_config.switch_on_threshold*control_parameter.phases
         return surplus, threshold
@@ -280,8 +284,7 @@ class Counter:
         try:
             message = None
             control_parameter = chargepoint.data.control_parameter
-            feed_in_limit = chargepoint.data.set.charge_template.data.chargemode.pv_charging.\
-                feed_in_limit
+            feed_in_limit = data.data.general_data.data.chargemode_config.pv_charging.feed_in_limit
             pv_config = data.data.general_data.data.chargemode_config.pv_charging
             timestamp_switch_on_off = control_parameter.timestamp_switch_on_off
 
@@ -305,7 +308,7 @@ class Counter:
                     message = self.SWITCH_ON_WAITING.format(timecheck.convert_timestamp_delta_to_time_string(
                         timestamp_switch_on_off, pv_config.switch_on_delay))
                     if feed_in_limit:
-                        message += "Die Einspeisegrenze wird berücksichtigt."
+                        message += " Die Einspeisegrenze wird berücksichtigt."
                     control_parameter.state = ChargepointState.SWITCH_ON_DELAY
                 else:
                     # Einschaltschwelle nicht erreicht
@@ -343,8 +346,8 @@ class Counter:
                 msg = self.SWITCH_ON_EXPIRED.format(pv_config.switch_on_threshold)
                 control_parameter.state = ChargepointState.WAIT_FOR_USING_PHASES
 
-                if chargepoint.data.set.charge_template.data.chargemode.pv_charging.feed_in_limit:
-                    feed_in_yield = pv_config.feed_in_yield
+                if pv_config.feed_in_limit:
+                    feed_in_yield = data.data.general_data.data.chargemode_config.feed_in_yield
                 else:
                     feed_in_yield = 0
                 ev_template = charging_ev_data.ev_template
@@ -391,11 +394,11 @@ class Counter:
     def calc_switch_off_threshold(self, chargepoint: Chargepoint) -> float:
         pv_config = data.data.general_data.data.chargemode_config.pv_charging
         control_parameter = chargepoint.data.control_parameter
-        if chargepoint.data.set.charge_template.data.chargemode.pv_charging.feed_in_limit:
+        if pv_config.feed_in_limit:
             # Der EVU-Überschuss muss ggf um die Einspeisegrenze bereinigt werden.
             # Wnn die Leistung nicht Einspeisegrenze + Einschaltschwelle erreicht, darf die Ladung nicht pulsieren.
             # Abschaltschwelle um Einschaltschwelle reduzieren.
-            threshold = (-data.data.general_data.data.chargemode_config.pv_charging.feed_in_yield
+            threshold = (-data.data.general_data.data.chargemode_config.feed_in_yield
                          + pv_config.switch_on_threshold*control_parameter.phases)
         else:
             threshold = pv_config.switch_off_threshold

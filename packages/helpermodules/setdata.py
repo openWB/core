@@ -735,11 +735,12 @@ class SetData:
             elif "openWB/set/general/chargemode_config/unbalanced_load_limit" in msg.topic:
                 self._validate_value(msg, int, [(10, 32)])
             elif ("openWB/set/general/chargemode_config/unbalanced_load" in msg.topic or
+                  "openWB/set/general/chargemode_config/pv_charging/feed_in_limit" in msg.topic or
                   "openWB/set/general/chargemode_config/pv_charging/retry_failed_phase_switches" in msg.topic or
                   "openWB/set/general/chargemode_config/pv_charging/bat_power_discharge_active" in msg.topic or
                     "openWB/set/general/chargemode_config/pv_charging/bat_power_reserve_active" in msg.topic):
                 self._validate_value(msg, bool)
-            elif ("openWB/set/general/chargemode_config/pv_charging/feed_in_yield" in msg.topic or
+            elif ("openWB/set/general/chargemode_config/feed_in_yield" in msg.topic or
                     "openWB/set/general/chargemode_config/pv_charging/switch_on_threshold" in msg.topic or
                     "openWB/set/general/chargemode_config/pv_charging/switch_on_delay" in msg.topic or
                     "openWB/set/general/chargemode_config/pv_charging/switch_off_delay" in msg.topic):
