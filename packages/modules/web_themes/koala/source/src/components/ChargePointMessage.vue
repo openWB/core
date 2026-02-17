@@ -28,11 +28,12 @@ const state = computed(() =>
     : -1,
 );
 
-const message = computed(() =>
-  props.faultMessage
+const message = computed(() => {
+  const message = props.faultMessage
     ? mqttStore.chargePointFaultMessage(props.chargePointId)
-    : mqttStore.chargePointStateMessage(props.chargePointId),
-);
+    : mqttStore.chargePointStateMessage(props.chargePointId);
+  return message ?? '';
+});
 
 const messageType = computed(() => {
   switch (state.value) {
