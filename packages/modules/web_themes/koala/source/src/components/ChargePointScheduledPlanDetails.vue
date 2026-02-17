@@ -10,13 +10,13 @@
         <q-btn icon="close" flat round dense v-close-popup />
       </div>
       <BaseMessage
-        :show="isTemporaryPlan"
+        :show-message="isTemporaryPlan"
         message="Temporär Plan, Plan wird verworfen nach abstecken"
         type="warning"
       />
 
       <BaseMessage
-        :show="temporaryChargeModeActive"
+        :show-message="temporaryChargeModeActive"
         message="Temporär Modus aktiv, alle Planänderungen werden verworfen nach abstecken"
         type="warning"
       />

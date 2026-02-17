@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="show"
+    v-if="showMessage"
     class="row q-mt-sm q-pa-sm text-white no-wrap cursor-pointer"
     :class="[{ 'items-center': collapsed }, messageClass]"
     style="border-radius: 10px"
@@ -17,7 +17,7 @@
 import { computed, ref } from 'vue';
 
 const props = defineProps<{
-  show: boolean;
+  showMessage: boolean;
   message: string;
   type?: 'info' | 'warning' | 'error';
 }>();
