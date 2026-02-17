@@ -13,7 +13,6 @@
         message="Temporärer Plan. Der Plan wird nach dem Abstecken verworfen."
         type="warning"
       />
-
       <BaseMessage
         :show-message="temporaryChargeModeActive"
         message="Temporärer Modus aktiv. Alle Planänderungen werden nach dem Abstecken verworfen."
@@ -21,7 +20,6 @@
       />
     </q-card-section>
     <q-separator />
-
     <q-card-section>
       <div class="row items-center q-mb-sm">
         <q-input v-model="planName.value" label="Plan Name" class="col" />

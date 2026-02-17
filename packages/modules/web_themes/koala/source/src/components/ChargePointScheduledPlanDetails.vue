@@ -5,7 +5,6 @@
         <div class="text-h6 ellipsis" :title="planName.value">
           {{ planName.value }}
         </div>
-
         <q-space />
         <q-btn icon="close" flat round dense v-close-popup />
       </div>
@@ -14,7 +13,6 @@
         message="Temporärer Plan. Der Plan wird nach dem Abstecken verworfen."
         type="warning"
       />
-
       <BaseMessage
         :show-message="temporaryChargeModeActive"
         message="Temporärer Modus aktiv. Alle Planänderungen werden nach dem Abstecken verworfen."
@@ -101,7 +99,6 @@
             class="col"
           />
         </div>
-
         <div
           class="row q-mt-sm q-pa-sm text-white no-wrap items-center bg-primary"
           style="border-radius: 10px"
