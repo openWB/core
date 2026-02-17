@@ -1,33 +1,22 @@
 <template>
-  <div
-    v-if="showMessage"
-    class="row q-mt-sm q-pa-sm text-white no-wrap cursor-pointer"
-    :class="[{ 'items-center': collapsed }, messageClass]"
-    style="border-radius: 10px"
-    @click="toggleCollapse"
-  >
-    <q-icon :name="iconName" size="sm" class="q-mr-xs" />
-    <div :class="{ ellipsis: collapsed }">
-      {{ message }}
-    </div>
-  </div>
+  <BaseMessage
+  :show="showMessage"
+  :message="message"
+  :type="messageType"
+/>
 </template>
 
 <script setup lang="ts">
 import { useMqttStore } from 'src/stores/mqtt-store';
-import { computed, ref } from 'vue';
+import BaseMessage from './BaseMessage.vue';
+import { computed } from 'vue';
 
 const props = defineProps<{
   chargePointId: number;
   faultMessage?: boolean;
 }>();
-
 const mqttStore = useMqttStore();
-const collapsed = ref<boolean>(true);
 
-const toggleCollapse = () => {
-  collapsed.value = !collapsed.value;
-};
 
 const showMessage = computed(() => {
   return state.value !== undefined && state.value !== 0;
@@ -45,18 +34,7 @@ const message = computed(() =>
     : mqttStore.chargePointStateMessage(props.chargePointId),
 );
 
-const messageClass = computed(() => {
-  switch (state.value) {
-    case 1:
-      return 'bg-warning';
-    case 2:
-      return 'bg-negative';
-    default:
-      return 'bg-primary';
-  }
-});
-
-const iconName = computed(() => {
+const messageType = computed(() => {
   switch (state.value) {
     case 1:
       return 'warning';
