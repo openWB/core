@@ -1,6 +1,6 @@
 <template>
   <BaseMessage
-  :show="showMessage"
+  :show-message="showMessage"
   :message="message"
   :type="messageType"
 />
