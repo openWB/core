@@ -8,31 +8,17 @@
         <q-space />
         <q-btn icon="close" flat round dense v-close-popup />
       </div>
-      <div
-        v-if="isTemporaryPlan"
-        class="row q-mt-sm q-pa-sm text-white no-wrap cursor-pointer bg-warning max-w-s"
-        :class="[{ 'items-center': collapsed }]"
-        style="border-radius: 10px"
-        @click="toggleCollapse"
-      >
-        <q-icon name="warning" size="sm" class="q-mr-xs" />
-        <div :class="{ ellipsis: collapsed }">
-          Temporär Plan, Plan wird verworfen nach abstecken
-        </div>
-      </div>
-      <div
-        v-if="temporaryChargeModeActive"
-        class="row q-mt-sm q-pa-sm text-white no-wrap cursor-pointer bg-warning"
-        :class="[{ 'items-center': collapsed }]"
-        style="border-radius: 10px"
-        @click="toggleCollapse"
-      >
-        <q-icon name="warning" size="sm" class="q-mr-xs" />
-        <div :class="{ ellipsis: collapsed }">
-          Temporär Modus aktiv, alle Planänderungen werden verworfen nach
-          abstecken
-        </div>
-      </div>
+      <BaseMessage
+        :show-message="isTemporaryPlan"
+        message="Temporär Plan, Plan wird verworfen nach abstecken"
+        type="warning"
+      />
+
+      <BaseMessage
+        :show-message="temporaryChargeModeActive"
+        message="Temporär Modus aktiv, alle Planänderungen werden verworfen nach abstecken"
+        type="warning"
+      />
     </q-card-section>
     <q-separator />
 
@@ -225,8 +211,9 @@
 import { useMqttStore } from 'src/stores/mqtt-store';
 import SliderStandard from './SliderStandard.vue';
 import ToggleStandard from './ToggleStandard.vue';
+import BaseMessage from './BaseMessage.vue';
 import { type TimeChargingPlan } from '../stores/mqtt-store-model';
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 
 const props = defineProps<{
   chargePointId: number;
@@ -235,12 +222,6 @@ const props = defineProps<{
 
 const mqttStore = useMqttStore();
 const emit = defineEmits(['close']);
-
-const collapsed = ref<boolean>(true);
-
-const toggleCollapse = () => {
-  collapsed.value = !collapsed.value;
-};
 
 const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
@@ -346,15 +327,13 @@ const PermanentTimeChargingPlansIds = computed(() =>
     .map((plan) => plan.id),
 );
 
-const isTemporaryPlan = computed(() => {
-  return !PermanentTimeChargingPlansIds.value.some(
-    (id) => id === props.plan.id,
-  );
-});
+const isTemporaryPlan = computed(
+  () => !PermanentTimeChargingPlansIds.value.includes(props.plan.id),
+);
 
-const temporaryChargeModeActive = computed(() => {
-  return mqttStore.temporaryChargeModeAktiv;
-});
+const temporaryChargeModeActive = computed(
+  () => mqttStore.temporaryChargeModeAktiv ?? false,
+);
 
 const chargeTemplateId = computed(
   () =>
