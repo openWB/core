@@ -9,11 +9,6 @@
         <q-btn icon="close" flat round dense v-close-popup />
       </div>
       <BaseMessage
-        :show-message="isTemporaryPlan"
-        message="Temporärer Plan. Der Plan wird nach dem Abstecken verworfen."
-        type="warning"
-      />
-      <BaseMessage
         :show-message="temporaryChargeModeActive"
         message="Temporärer Modus aktiv. Alle Planänderungen werden nach dem Abstecken verworfen."
         type="warning"
@@ -182,23 +177,22 @@
           <div class="text-body2">kWh</div>
         </template>
       </q-input>
-      <div v-if="temporaryChargeModeActive" class="row q-mt-lg">
-        <q-btn
-          size="sm"
-          class="col"
-          color="warning"
-          :href="`/openWB/web/settings/#/VehicleConfiguration/charge_template/${chargeTemplateId ?? ''}`"
-          ><q-icon left size="xs" name="settings" /> Ladeplan
-          Einstellungen</q-btn
-        >
-      </div>
-      <div class="row q-mt-md">
+      <div class="row q-mt-lg">
         <q-btn
           size="sm"
           class="col"
           color="negative"
           @click="removeTimeChargingPlan(plan.id)"
           >Plan löschen</q-btn
+        >
+      </div>
+      <div v-if="temporaryChargeModeActive" class="row q-mt-md">
+        <q-btn
+          size="sm"
+          class="col charge-plan-link-button"
+          :href="`/openWB/web/settings/#/VehicleConfiguration/charge_template/${chargeTemplateId ?? ''}`"
+          ><q-icon left size="xs" name="settings" /> persistente Ladeplan
+          Einstellungen</q-btn
         >
       </div>
     </q-card-section>
@@ -319,16 +313,6 @@ const acChargingEnabled = computed(
   () => mqttStore.chargePointChargeType(props.chargePointId).value === 'AC',
 );
 
-const PermanentTimeChargingPlansIds = computed(() =>
-  mqttStore
-    .vehicleTimeChargingPlansPermanent(props.chargePointId)
-    .map((plan) => plan.id),
-);
-
-const isTemporaryPlan = computed(
-  () => !PermanentTimeChargingPlansIds.value.includes(props.plan.id),
-);
-
 const temporaryChargeModeActive = computed(
   () => mqttStore.temporaryChargeModeAktiv ?? false,
 );
@@ -353,6 +337,11 @@ const removeTimeChargingPlan = (planId: number) => {
 .q-btn-group .q-btn {
   min-width: 100px !important;
   font-size: 10px !important;
+}
+
+.charge-plan-link-button {
+  background-color: var(--q-charge-plan-link-button);
+  color: white;
 }
 
 .flex-grow {

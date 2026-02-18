@@ -1945,21 +1945,6 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
-   * Get permanent time charging plan/s identified by the charge point id
-   * @param chargePointId charge point id
-   * @returns TimeChargingPlan[]
-   */
-  const vehicleTimeChargingPlansPermanent = (chargePointId: number) => {
-    const templateId =
-      chargePointConnectedVehicleChargeTemplate(chargePointId).value?.id;
-    const plans = getValue.value(
-      `openWB/vehicle/template/charge_template/${templateId}`,
-      'time_charging.plans',
-    ) as TimeChargingPlan[] | undefined;
-    return Array.isArray(plans) ? plans : [];
-  };
-
-  /**
    * Get or set the limit selected mode for the time charging plan identified by the time charging plan id
    * @param chargePointId charge point id
    * @param planId time charging plan id
@@ -2706,21 +2691,6 @@ export const useMqttStore = defineStore('mqtt', () => {
       console.warn('Kein Template für ChargePoint gefunden:', chargePointId);
     }
   }
-
-  /**
-   * Get permanent scheduled charging plan/s identified by the charge point id
-   * @param chargePointId charge point id
-   * @returns ScheduledChargingPlan[]
-   */
-  const vehicleScheduledChargingPlansPermanent = (chargePointId: number) => {
-    const templateId =
-      chargePointConnectedVehicleChargeTemplate(chargePointId).value?.id;
-    const plans = getValue.value(
-      `openWB/vehicle/template/charge_template/${templateId}`,
-      'chargemode.scheduled_charging.plans',
-    ) as ScheduledChargingPlan[] | undefined;
-    return Array.isArray(plans) ? plans : [];
-  };
 
   function removeScheduledChargingPlanForChargePoint(
     chargePointId: number,
@@ -3735,12 +3705,10 @@ export const useMqttStore = defineStore('mqtt', () => {
     vehicleTimeChargingPlanName,
     addTimeChargingPlanForChargePoint,
     removeTimeChargingPlanForChargePoint,
-    vehicleScheduledChargingPlansPermanent,
     vehicleTimeChargingPlanActive,
     vehicleTimeChargingPlanStartTime,
     vehicleTimeChargingPlanEndTime,
     vehicleTimeChargingPlanCurrent,
-    vehicleTimeChargingPlansPermanent,
     vehicleTimeChargingPlanLimitSelected,
     vehicleTimeChargingPlanSocLimit,
     vehicleTimeChargingPlanEnergyAmount,

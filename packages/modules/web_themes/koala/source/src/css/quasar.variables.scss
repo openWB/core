@@ -49,6 +49,7 @@ $battery-fill: #ba712833;
 $battery-fill-flow-diagram: #c6a583;
 $charge-point-stroke: #5c93d1;
 $charge-point-fill: #5c93d14d;
+$charge-plan-link-button: #6b757d;
 // Light theme (default)
 :root {
   --q-primary: #{$primary};
@@ -78,6 +79,7 @@ $charge-point-fill: #5c93d14d;
   --q-battery-fill-flow-diagram: #{$battery-fill-flow-diagram};
   --q-charge-point-stroke: #{$charge-point-stroke};
   --q-charge-point-fill: #{$charge-point-fill};
+  --q-charge-plan-link-button: #{$charge-plan-link-button};
 
   // Main background
   background-color: var(--q-background-1);
