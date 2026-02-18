@@ -23,10 +23,13 @@
 	</g>
 	<g
 		v-for="consumer in pieGenerator(props.plotdata.filter((v) => v.power != 0))"
+		id="test"
 		:key="consumer.data.name"
 	>
 		<path
 			v-if="consumer.data.name != 'empty'"
+			:id="`segment-${consumer.data.name}`"
+			class="segment"
 			:d="path(consumer)!"
 			:fill="consumer.data.color"
 			:stroke="strokeColor(consumer)"
@@ -62,8 +65,9 @@ const props = defineProps<{
 	radius: number
 	categoriesToShow: PowerItemType[]
 }>()
-const cornerRadius = computed(() => (globalConfig.showRelativeArcs ? 0 : 3))
+const cornerRadius = computed(() => (globalConfig.showRelativeArcs ? 0 : 4))
 const circleGapSize = Math.PI / 40
+
 const pieGenerator = computed(() =>
 	props.upperArc
 		? pie<PowerItem>()
@@ -109,5 +113,11 @@ function strokeColor(d: PieArcDatum<PowerItem>): string {
 const summarizedPower = computed(() => {
 	return props.plotdata.reduce((sum, item) => sum + Math.abs(item.power), 0)
 })
+
+/* onUpdated (() => {
+	const arcs = selectAll<SVGPathElement,PieArcDatum<PowerItem>>(".segment")
+		console.log(arcs)
+	})
+ */
 </script>
 <style scoped></style>

@@ -1,7 +1,7 @@
 <template>
 	<div class="pt-2 d-flex flex-column">
 		<div class="heading ms-1">Eco-Laden:</div>
-		<PriceChart v-if="etData.active" :chargepoint="cp as ChargePoint" />
+		<PriceSelector v-if="etData.active" :chargepoint="cp as ChargePoint" />
 		<!-- Minimal current -->
 		<ConfigItem
 			v-if="etData.active"
@@ -88,7 +88,7 @@ import ConfigItem from '../../shared/ConfigItem.vue'
 import RangeInput from '@/components/shared/RangeInput.vue'
 //import SwitchInput from '@/components/shared/SwitchInput.vue'
 import RadioInput2 from '@/components/shared/RadioInput2.vue'
-import PriceChart from '@/components/priceChart/PriceChart.vue'
+import PriceSelector from '@/components/priceChart/PriceSelector.vue'
 import PriceCalculator from './PriceCalculator.vue'
 import { infotext } from '@/assets/js/themeConfig'
 const props = defineProps<{

@@ -10,7 +10,15 @@
 			:fill="item.color"
 			:rx="3"
 			:ry="3"
-		/>
+		>
+			<animate
+				:id="'bar-animate-' + props.id"
+				attributeName="height"
+				:from="0"
+				:to="barheight"
+				dur="0.5s"
+			/>
+		</rect>
 		<!-- Pv fraction inner bar -->
 		<rect
 			class="bar"
@@ -20,7 +28,9 @@
 			:height="pvBarheight"
 			fill="var(--color-pv)"
 			fill-opacity="66%"
-		/>
+		>
+			<animate attributeName="height" :from="0" :to="pvBarheight" dur="0.5s" />
+		</rect>
 		<!-- Battery fraction inner bar  -->
 		<rect
 			class="bar"
@@ -30,15 +40,18 @@
 			:height="batBarheight"
 			fill="var(--color-battery)"
 			fill-opacity="66%"
-		/>
+		>
+			<animate attributeName="height" :from="0" :to="batBarheight" dur="0.5s" />
+		</rect>
 	</g>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onUpdated } from 'vue'
 import * as d3 from 'd3'
 import type { MarginType, PowerItem } from '@/assets/js/types'
 import { graphData } from '../powerGraph/model'
+import { globalConfig } from '@/assets/js/themeConfig'
 
 const props = defineProps<{
 	item: PowerItem
@@ -48,6 +61,7 @@ const props = defineProps<{
 	margin: MarginType
 	height: number
 }>()
+let lastheight = 0
 const barheight = computed(
 	() =>
 		props.height -
@@ -84,6 +98,18 @@ const batBarheight = computed(() => {
 	return result
 })
 const graphScope = computed(() => (graphData.usePastData ? 'past' : 'now'))
+
+onUpdated(() => {
+	if (globalConfig.showAnimations && barheight.value != lastheight) {
+		const animation = document.getElementById(
+			'bar-animate-' + props.id,
+		) as unknown as SVGAnimateElement
+		if (animation) {
+			animation.beginElement()
+		}
+		lastheight = barheight.value
+	}
+})
 </script>
 
 <style scoped></style>

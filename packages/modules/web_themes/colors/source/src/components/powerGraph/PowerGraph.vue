@@ -15,6 +15,9 @@
 					@shift-up="shiftUp"
 					@shift-down="shiftDown"
 				/>
+				<span type="button" class="ms-1 p-0 pt-1" @click="changeStackOrder">
+					<span class="fa-solid fa-lg ps-1 fa-sort" />
+				</span>
 				<span
 					v-if="widescreen"
 					type="button"
@@ -22,9 +25,6 @@
 					@click="zoomGraph"
 				>
 					<span class="fa-solid fa-lg ps-1" :class="zoomIcon()" />
-				</span>
-				<span type="button" class="ms-1 p-0 pt-1" @click="changeStackOrder">
-					<span class="fa-solid fa-lg ps-1 fa-sort" />
 				</span>
 			</div>
 		</template>

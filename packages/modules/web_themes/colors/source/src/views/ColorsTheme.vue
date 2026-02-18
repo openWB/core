@@ -298,7 +298,7 @@ onMounted(() => {
 
 function haveFocus() {
 	if (document.hasFocus()) {
-		//	console.log('I have focus')
+		console.log('I have focus')
 		initGraph(true) // reload only
 	}
 	//msgInit()
