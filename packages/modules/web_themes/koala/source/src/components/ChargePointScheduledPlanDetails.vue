@@ -9,11 +9,6 @@
         <q-btn icon="close" flat round dense v-close-popup />
       </div>
       <BaseMessage
-        :show-message="isTemporaryPlan"
-        message="Temporärer Plan. Der Plan wird nach dem Abstecken verworfen."
-        type="warning"
-      />
-      <BaseMessage
         :show-message="temporaryChargeModeActive"
         message="Temporärer Modus aktiv. Alle Planänderungen werden nach dem Abstecken verworfen."
         type="warning"
@@ -249,23 +244,22 @@
           color="positive"
         />
       </div>
-      <div v-if="temporaryChargeModeActive" class="row q-mt-lg">
-        <q-btn
-          size="sm"
-          class="col"
-          color="warning"
-          :href="`/openWB/web/settings/#/VehicleConfiguration/charge_template/${chargeTemplateId ?? ''}`"
-          ><q-icon left size="xs" name="settings" /> Ladeplan
-          Einstellungen</q-btn
-        >
-      </div>
-      <div class="row q-mt-md">
+      <div class="row q-mt-lg">
         <q-btn
           size="sm"
           class="col"
           color="negative"
           @click="removeScheduledChargingPlan(plan.id)"
           >Plan löschen</q-btn
+        >
+      </div>
+      <div v-if="temporaryChargeModeActive" class="row q-mt-md">
+        <q-btn
+          size="sm"
+          class="col charge-plan-link-button"
+          :href="`/openWB/web/settings/#/VehicleConfiguration/charge_template/${chargeTemplateId ?? ''}`"
+          ><q-icon left size="xs" name="settings" /> persistente Ladeplan
+          Einstellungen</q-btn
         >
       </div>
     </q-card-section>
@@ -455,15 +449,6 @@ const removeScheduledChargingPlan = (planId) => {
   emit('close');
 };
 
-const PermanentScheduledChargingPlansIds = computed(() =>
-  mqttStore
-    .vehicleScheduledChargingPlansPermanent(props.chargePointId)
-    .map((plan) => plan.id),
-);
-const isTemporaryPlan = computed(
-  () => !PermanentScheduledChargingPlansIds.value.includes(props.plan.id),
-);
-
 const temporaryChargeModeActive = computed(
   () => mqttStore.temporaryChargeModeAktiv ?? false,
 );
@@ -482,6 +467,11 @@ const chargeTemplateId = computed(
 .q-btn-group .q-btn {
   min-width: 100px !important;
   font-size: 10px !important;
+}
+
+.charge-plan-link-button {
+  background-color: var(--q-charge-plan-link-button);
+  color: white;
 }
 
 .flex-grow {
