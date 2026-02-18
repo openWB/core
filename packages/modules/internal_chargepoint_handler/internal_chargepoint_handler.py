@@ -277,4 +277,4 @@ class GeneralInternalChargepointHandler:
                 except UnboundLocalError:
                     log.debug("Kein interner Ladepunkt konfiguriert.")
             except Exception:
-                log.exception("Fehler im internem Ladepunkt")
+                log.exception("Fehler im internen Ladepunkt")
