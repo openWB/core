@@ -1,5 +1,5 @@
 <template>
-  <q-card>
+  <q-card class="card-width">
     <q-card-section>
       <div class="row no-wrap">
         <div class="text-h6 ellipsis" :title="planName.value">
@@ -8,6 +8,11 @@
         <q-space />
         <q-btn icon="close" flat round dense v-close-popup />
       </div>
+      <BaseMessage
+        :show-message="temporaryChargeModeActive"
+        message="Temporärer Modus aktiv. Alle Planänderungen werden nach dem Abstecken verworfen."
+        type="warning"
+      />
     </q-card-section>
     <q-separator />
     <q-card-section>
@@ -239,13 +244,22 @@
           color="positive"
         />
       </div>
-      <div class="row q-mt-md">
+      <div class="row q-mt-lg">
         <q-btn
           size="sm"
           class="col"
           color="negative"
           @click="removeScheduledChargingPlan(plan.id)"
           >Plan löschen</q-btn
+        >
+      </div>
+      <div v-if="temporaryChargeModeActive" class="row q-mt-md">
+        <q-btn
+          size="sm"
+          class="col charge-plan-link-button"
+          :href="`/openWB/web/settings/#/VehicleConfiguration/charge_template/${chargeTemplateId ?? ''}`"
+          ><q-icon left size="xs" name="settings" /> persistente Ladeplan
+          Einstellungen</q-btn
         >
       </div>
     </q-card-section>
@@ -257,6 +271,7 @@ import { useMqttStore } from 'src/stores/mqtt-store';
 import { useQuasar } from 'quasar';
 import SliderStandard from './SliderStandard.vue';
 import ToggleStandard from './ToggleStandard.vue';
+import BaseMessage from './BaseMessage.vue';
 import { computed } from 'vue';
 import ChargePointScheduledPlanSummary from './ChargePointScheduledPlanSummary.vue';
 import { type ScheduledChargingPlan } from '../stores/mqtt-store-model';
@@ -433,12 +448,30 @@ const removeScheduledChargingPlan = (planId) => {
   );
   emit('close');
 };
+
+const temporaryChargeModeActive = computed(
+  () => mqttStore.temporaryChargeModeAktiv ?? false,
+);
+
+const chargeTemplateId = computed(
+  () =>
+    mqttStore.chargePointConnectedVehicleChargeTemplate(props.chargePointId)
+      .value?.id,
+);
 </script>
 
 <style scoped>
+.card-width {
+  width: 26em;
+}
 .q-btn-group .q-btn {
   min-width: 100px !important;
   font-size: 10px !important;
+}
+
+.charge-plan-link-button {
+  background-color: var(--q-charge-plan-link-button);
+  color: white;
 }
 
 .flex-grow {
