@@ -50,6 +50,12 @@ export interface RawDayGraphDataItem {
 	cp: object
 	ev: object
 	sh: object
+	prices: {
+		grid: number
+		pv: number
+		bat: number
+		cp: number
+	}
 }
 
 export class GraphData {
@@ -97,9 +103,15 @@ export function setInitializeUsageGraph(val: boolean) {
 	animateUsageGraph = val
 }
 export function setGraphData(d: GraphDataItem[]) {
-	graphData.data = d
-	graphData.waitForData = false
-	// graphData.graphMode = graphData.graphMode
+	if (graphData.graphMode == 'live' && d.length > 0) {
+		const windowStart =
+			new Date().getTime() - globalConfig.liveGraphDuration * 1000
+		graphData.data = d.filter((e) => e.date > windowStart)
+		graphData.waitForData = false
+	} else {
+		graphData.data = d
+		graphData.waitForData = false
+	}
 }
 // LIVE GRAPH
 export const liveGraph = reactive({

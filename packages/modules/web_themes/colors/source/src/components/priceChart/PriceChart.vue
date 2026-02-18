@@ -1,95 +1,52 @@
 <template>
-	<p class="providername ms-1">Anbieter: {{ etData.etProvider }}</p>
-	<div class="container">
-		<figure id="pricechart" class="p-0 m-0">
-			<svg viewBox="0 0 400 260">
+	<figure id="pricechart" class="p-0 m-0">
+		<svg viewBox="0 0 400 260">
+			<g :transform="'translate(' + margin.top + ',' + margin.right + ')'">
+				<g :id="'pricechart-' + id" :origin="draw" />
 				<g
-					:id="chartId"
-					:origin="draw"
-					:transform="'translate(' + margin.top + ',' + margin.right + ')'"
+					:id="'xaxis-' + id"
+					class="axis"
+					:transform="`translate(0,${height - margin.bottom})`"
 				/>
-			</svg>
-		</figure>
-	</div>
-	<div class="chargeDuration p-0 m-0">Ladezeit: {{ charge_duration }}</div>
-	<div v-if="chargepoint != undefined" class="p-3 pb-1 rangeInputContainer">
-		<RangeInput
-			id="pricechart_local"
-			v-model="maxPrice"
-			:min="Math.floor(prices[0] - 1)"
-			:max="Math.ceil(prices[prices.length - 1] + 1)"
-			:step="0.1"
-			:decimals="2"
-			:show-subrange="true"
-			:subrange-min="prices[0]"
-			:subrange-max="prices[prices.length - 1]"
-			:unit="globalData.country == 'ch' ? 'Rp' : 'ct'"
-		/>
-	</div>
-	<div class="d-flex justify-content-between px-3 pb-2 pt-0 mt-0">
-		<button type="button" class="btn btn-sm jumpbutton" @click="priceDown">
-			<i class="fa fa-sm fa-arrow-left" />
-		</button>
-		<button type="button" class="btn btn-sm jumpbutton" @click="priceUp">
-			<i class="fa fa-sm fa-arrow-right" />
-		</button>
-	</div>
-	<div v-if="chargepoint != undefined" class="d-flex justify-content-end">
-		<span class="me-3 pt-2 pb-3" @click="setMaxPrice">
-			<button
-				type="button"
-				class="btn btn-secondary confirmButton"
-				:style="confirmButtonStyle"
-				:disabled="!maxPriceEdited"
-			>
-				Bestätigen
-			</button>
-		</span>
-	</div>
+				<g
+					:id="'yaxis-' + id"
+					class="axis"
+					:transform="`translate(${margin.left},0)`"
+				/>
+				<path
+					v-if="yDomain[0] < 0"
+					:d="zeroPath!"
+					stroke="var(--color-fg)"
+					stroke-width="1"
+				/>
+				<path :d="lowerPath!" stroke="green" />
+				<path :d="upperPath!" stroke="red" />
+				<path :d="maxPricePath!" stroke="yellow" />
+			</g>
+			<g id="tooltips" />
+		</svg>
+	</figure>
 </template>
-
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { globalData } from '@/assets/js/model'
-import { etData } from './model'
+import { computed, ref, onMounted } from 'vue'
 import {
+	select,
 	extent,
 	scaleTime,
 	scaleLinear,
-	line,
 	axisBottom,
-	timeFormat,
 	axisLeft,
-	select,
+	timeFormat,
+	line,
+	type AxisContainerElement,
 } from 'd3'
-import RangeInput from '../shared/RangeInput.vue'
-import { chargePoints, type ChargePoint } from '../chargePointList/model'
 import { globalConfig } from '@/assets/js/themeConfig'
+import { etData } from './model'
 const props = defineProps<{
-	chargepoint?: ChargePoint
-	globalview?: boolean
+	id: string
+	maxPrice?: number
 }>()
 
-let _maxPrice = props.chargepoint ? ref(props.chargepoint.etMaxPrice) : ref(0)
-const maxPriceEdited = ref(false)
-const cp = ref(props.chargepoint)
-const maxPrice = computed({
-	get() {
-		return _maxPrice.value
-		// ref(props.chargepoint.etMaxPrice)
-	},
-	set(newmax) {
-		_maxPrice.value = newmax
-		maxPriceEdited.value = true
-	},
-})
-
-function setMaxPrice() {
-	if (cp.value) {
-		chargePoints[cp.value.id].etMaxPrice = maxPrice.value
-	}
-	maxPriceEdited.value = false
-}
 const needsUpdate = ref(false)
 let dummy = false
 const width = 400
@@ -112,21 +69,14 @@ const barwidth = computed(() => {
 		return 0
 	}
 })
-const confirmButtonStyle = computed(() => {
-	if (maxPriceEdited.value) {
-		return { background: 'var(--color-charging)' }
-	} else {
-		return { background: 'var(--color-menu)' }
-	}
-})
 const xScale = computed(() => {
 	let xdomain = extent(plotdata.value, (d) => d[0]) as [Date, Date]
 	if (xdomain[1]) {
 		xdomain[1] = new Date(xdomain[1])
-		xdomain[1].setTime(xdomain[1].getTime() + 3600000)
+		xdomain[1].setTime(xdomain[1].getTime() + 900000)
 	}
 	return scaleTime()
-		.range([margin.left, width - margin.right])
+		.range([margin.left, width - margin.left - margin.right])
 		.domain(xdomain)
 })
 const yDomain = computed(() => {
@@ -145,20 +95,27 @@ const yScale = computed(() => {
 		.range([height - margin.bottom, 0])
 		.domain(yDomain.value)
 })
-const linePath = computed(() => {
-	const generator = line()
+const maxPricePath = computed(() => {
+	if (props.maxPrice != undefined) {
+		const generator = line()
 
-	const points = [
-		[margin.left, yScale.value(maxPrice.value)],
-		[width - margin.right, yScale.value(maxPrice.value)],
-	]
-	return generator(points as [number, number][])
+		const points = [
+			[margin.left, yScale.value(props.maxPrice)],
+			[width - margin.left - margin.right, yScale.value(props.maxPrice)],
+		]
+		return generator(points as [number, number][])
+	} else {
+		return ''
+	}
 })
 const lowerPath = computed(() => {
 	const generator = line()
 	const points = [
 		[margin.left, yScale.value(globalConfig.lowerPriceBound)],
-		[width - margin.right, yScale.value(globalConfig.lowerPriceBound)],
+		[
+			width - margin.left - margin.right,
+			yScale.value(globalConfig.lowerPriceBound),
+		],
 	]
 	return generator(points as [number, number][])
 })
@@ -166,7 +123,10 @@ const upperPath = computed(() => {
 	const generator = line()
 	const points = [
 		[margin.left, yScale.value(globalConfig.upperPriceBound)],
-		[width - margin.right, yScale.value(globalConfig.upperPriceBound)],
+		[
+			width - margin.left - margin.right,
+			yScale.value(globalConfig.upperPriceBound),
+		],
 	]
 	return generator(points as [number, number][])
 })
@@ -175,7 +135,7 @@ const zeroPath = computed(() => {
 	const generator = line()
 	const points = [
 		[margin.left, yScale.value(0)],
-		[width - margin.right, yScale.value(0)],
+		[width - margin.left - margin.right, yScale.value(0)],
 	]
 	return generator(points as [number, number][])
 })
@@ -197,11 +157,12 @@ const yAxisGenerator = computed(() => {
 		.tickSizeInner(-(width - margin.right - margin.left))
 		.tickFormat((d: number) => (d % 5 != 0 ? '' : d.toString()))
 })
+
 const draw = computed(() => {
 	if (needsUpdate.value == true) {
 		dummy = !dummy
 	}
-	const svg = select('g#' + chartId.value)
+	const svg = select('g#' + 'pricechart-' + props.id)
 	svg.selectAll('*').remove()
 	const bargroups = svg
 		.selectAll('bar')
@@ -216,11 +177,16 @@ const draw = computed(() => {
 		.attr('width', barwidth.value)
 		.attr('height', (d) => yScale.value(yDomain.value[0]) - yScale.value(d[1]))
 		.attr('fill', (d) =>
-			d[1] <= maxPrice.value ? 'var(--color-charging)' : 'var(--color-axis)',
+			props.maxPrice != undefined
+				? d[1] <= props.maxPrice
+					? 'var(--color-charging)'
+					: 'var(--color-axis)'
+				: 'var(--color-charging)',
 		)
 	// X Axis
-	const xAxis = svg.append('g').attr('class', 'axis').call(xAxisGenerator.value)
-	xAxis.attr('transform', 'translate(0,' + (height - margin.bottom) + ')')
+	const xAxis = select<AxisContainerElement, number>(
+		'g#xaxis-' + props.id,
+	).call(xAxisGenerator.value)
 	xAxis
 		.selectAll('.tick')
 		.attr('font-size', axisfontsize)
@@ -237,124 +203,74 @@ const draw = computed(() => {
 		)
 	xAxis.select('.domain').attr('stroke', 'var(--color-bg')
 	// Y Axis
-	const yAxis = svg.append('g').attr('class', 'axis').call(yAxisGenerator.value)
-	yAxis.attr('transform', 'translate(' + margin.left + ',' + 0 + ')')
-
+	const yAxis = select<AxisContainerElement, number>(
+		'g#yaxis-' + props.id,
+	).call(yAxisGenerator.value)
 	yAxis
 		.selectAll('.tick')
 		.attr('font-size', axisfontsize)
 		.attr('color', 'var(--color-bg)')
-
 	yAxis
 		.selectAll('.tick line')
 		.attr('stroke', 'var(--color-bg)')
-		//.attr('stroke-width', '0.5')
 		.attr('stroke-width', (d) => ((d as number) % 5 == 0 ? '2' : '0.5'))
 	yAxis.select('.domain').attr('stroke', 'var(--color-bg)')
-	// zero line
-	if (yDomain.value[0] < 0) {
-		svg
-			.append('path')
-			.attr('d', zeroPath.value)
-			.attr('stroke', 'var(--color-fg)')
-	}
-	// Line for lower bound
-	svg.append('path').attr('d', lowerPath.value).attr('stroke', 'green')
-	// Line for upper bound
-	svg.append('path').attr('d', upperPath.value).attr('stroke', 'red')
-	// Line for max price
-	svg.append('path').attr('d', linePath.value).attr('stroke', 'yellow')
+	// Tooltips
+	const ttips = select('g#tooltips')
+		.selectAll('ttip')
+		.data(plotdata.value)
+		.enter()
+		.append('g')
+		.attr('class', 'ttarea')
+
+	ttips
+		.append('rect')
+		.attr('x', (d) => xScale.value(d[0]))
+		.attr('y', (d) => yScale.value(d[1]))
+		.attr('height', (d) => yScale.value(yDomain.value[0]) - yScale.value(d[1]))
+		.attr('class', 'ttrect')
+		.attr('width', barwidth.value)
+		.attr('opacity', '1%')
+		.attr('fill', 'var(--color-charging)')
+	const tt = ttips
+		.append('g')
+		.attr('class', 'ttmessage')
+		.attr(
+			'transform',
+			(d) =>
+				'translate(' +
+				(xScale.value(d[0]) - 30 + barwidth.value / 2) +
+				',' +
+				(yScale.value(d[1]) - 16) +
+				')',
+		)
+	tt.append('rect')
+		.attr('rx', 5)
+		.attr('width', '60')
+		.attr('height', '30')
+		.attr('fill', 'var(--color-menu)')
+	const texts = tt
+		.append('text')
+		.attr('text-anchor', 'middle')
+		.attr('x', 30)
+		.attr('y', 12)
+		.attr('font-size', axisfontsize)
+		.attr('fill', 'var(--color-bg)')
+	texts
+		.append('tspan')
+		.attr('x', 30)
+		.attr('dy', '0em')
+		.text((d) => timeFormat('%H:%M')(d[0]))
+	texts
+		.append('tspan')
+		.attr('x', 30)
+		.attr('dy', '1.1em')
+		.text((d) => Math.round(d[1] * 10) / 10 + ' ct')
 	return 'PriceChart.vue'
 })
-const chartId = computed(() => {
-	if (props.chargepoint) {
-		return 'priceChartCanvas' + props.chargepoint.id
-	} else {
-		return 'priceChartCanvasGlobal'
-	}
-})
-const prices = computed(() => {
-	let result: number[] = []
-	etData.etPriceList.forEach((p) => {
-		result.push(p)
-	})
-	return result.sort((a, b) => a - b)
-})
 
-const charge_duration = computed(() => {
-	const minutesPerSegment = 15
-	const activeSegmentCount = prices.value.filter(
-		(p) => p <= maxPrice.value,
-	).length
-	return `${Math.floor((activeSegmentCount * minutesPerSegment) / 60)}h ${(activeSegmentCount * minutesPerSegment) % 60}min`
-})
-
-function priceDown() {
-	let lastValue = prices.value[0]
-	for (let p of prices.value) {
-		if (p >= maxPrice.value) {
-			break
-		} else {
-			lastValue = p
-		}
-	}
-	maxPrice.value = lastValue
-}
-function priceUp() {
-	let result = prices.value[0]
-	for (let p of prices.value) {
-		if (p > maxPrice.value) {
-			result = p
-			break
-		} else {
-			result = p
-		}
-	}
-	maxPrice.value = result
-}
 onMounted(() => {
 	needsUpdate.value = !needsUpdate.value
 })
 </script>
-
-<style scoped>
-.color-charging {
-	color: var(--color-charging);
-}
-
-.fa-circle-check {
-	color: var(--color-menu);
-}
-
-.settingsheader {
-	color: var(--color-charging);
-	font-size: 16px;
-	font-weight: bold;
-}
-
-.providername {
-	color: var(--color-axis);
-	font-size: 16px;
-}
-.jumpbutton {
-	background-color: var(--color-menu);
-	color: var(--color-bg);
-	border: 0;
-	font-size: var(--font-settings-button);
-	padding-left: 12px;
-	padding-right: 12px;
-}
-.confirmButton {
-	font-size: var(--font-settings-button);
-}
-.chargeDuration {
-	color: var(--color-charging);
-	font-size: var(--font-settings);
-	text-align: center;
-	margin-top: -10px;
-	margin-bottom: 10px;
-}
-.rangeInputContainer {
-	font-size: var(--font-settings);
-}
-</style>
+<style scoped></style>

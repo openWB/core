@@ -587,6 +587,7 @@ export interface EvTemplate {
 	min_current: number
 	max_current_one_phase: number
 	battery_capacity: number
+	efficiency: number
 	nominal_difference: number
 	request_interval_charging: number
 	request_interval_not_charging: number

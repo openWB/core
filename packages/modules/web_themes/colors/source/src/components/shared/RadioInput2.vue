@@ -11,11 +11,11 @@
 			:key="index"
 			class="btn btn-outline-secondary radiobutton me-0 mb-0 px-2"
 			:value="element[1]"
-			:style="getColors(index)"
+			:style="buttonStyle(index)"
 			:class="element[1] == v ? 'active' : ''"
 			@click="setValue"
 		>
-			<span :style="getColors(index)">
+			<span>
 				<i v-if="element[3]" class="fa-solid" :class="element[3]" />
 				{{ element[0] }}
 			</span>
@@ -39,16 +39,56 @@ const v = computed({
 		emit('update:modelValue', value)
 	},
 })
-function getColors(index: number) {
+function buttonStyle(index: number) {
 	const fg = props.options[index][2] || 'var(--color-fg)'
 	const bg = 'var(--color-bg)'
+	let color = fg
+	let background = bg
+	let borderRadius = ['0', '0', '0', '0'] // top-left, top-right, bottom-right, bottom-left
+	let borderWidth = ['0', '0', '0', '0'] // top, right, bottom, left
 	if (props.options[index][1] == v.value) {
-		return {
-			color: bg,
-			background: props.options[index][2] || 'var(--color-menu)',
+		color = bg
+		background = props.options[index][2] || 'var(--color-menu)'
+	}
+
+	const optionCount = props.options.length
+	const col = index % 3
+	const row = Math.floor(index / 3)
+	const maxRow = Math.floor((optionCount - 1) / 3)
+	if (col == 0) {
+		if (row == 0) {
+			borderRadius[0] = '0.45rem' // top-left
 		}
-	} else {
-		return { color: fg, background: bg }
+		if (row == maxRow) {
+			borderRadius[3] = '0.45rem' // bottom-left
+		}
+		borderWidth[1] = '0.1px' // right
+	}
+	if (col == 1) {
+		borderWidth[1] = '0.1px' // right
+		borderWidth[3] = '0.1px' // left
+	}
+	if (col == 2) {
+		if (row == 0) {
+			borderRadius[1] = '0.45rem' // top-right
+		}
+		if (row == maxRow) {
+			borderRadius[2] = '0.45rem' // bottom-right
+		}
+		borderWidth[3] = '0.1px' // left
+	}
+	if (row != 0) {
+		borderWidth[0] = '0.1px' // top
+	}
+	if (row != maxRow) {
+		borderWidth[2] = '0.1px' // bottom
+	}
+
+	return {
+		color: color,
+		background: background,
+		'border-radius': `${borderRadius[0]} ${borderRadius[1]} ${borderRadius[2]} ${borderRadius[3]}`,
+		'border-width': `${borderWidth[0]} ${borderWidth[1]} ${borderWidth[2]} ${borderWidth[3]}`,
 	}
 }
 function setValue(event: Event) {
@@ -69,7 +109,7 @@ function setValue(event: Event) {
 
 <style scoped>
 .radiobutton {
-	border: 0.2px solid var(--color-menu);
+	border: 0.1px solid var(--color-menu);
 	opacity: 1;
 	font-size: var(--font-settings-button);
 	border-radius: 0;
