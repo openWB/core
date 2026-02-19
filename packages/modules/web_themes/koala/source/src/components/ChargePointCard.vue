@@ -59,6 +59,7 @@
     <q-card-section>
       <ChargePointModeButtons :charge-point-id="props.chargePointId" />
     </q-card-section>
+
     <q-card-section class="row q-mt-sm">
       <div class="col">
         <div class="text-subtitle2">Leistung</div>
@@ -76,9 +77,18 @@
       </div>
     </q-card-section>
     <q-card-section>
+      <div v-if="!hasSocModule" class="row items-center justify-between">
+        <div class="text-subtitle2">Energie-Ziel aktiv</div>
+        <q-toggle
+          v-model="energyTargetEnabled"
+          @update:model-value="onEnergyToggle"
+        />
+      </div>
+    </q-card-section>
+    <q-card-section>
       <SliderDouble
-        v-if="showSocTargetSlider"
-        class="q-mt-sm"
+        v-if="showSlider"
+        class="q-mt-sm cursor-pointer"
         :model-value="target"
         :readonly="true"
         :charge-mode="chargeMode"
@@ -88,6 +98,7 @@
         :vehicle-soc-type="vehicleSocType"
         :on-edit-soc="openSocDialog"
         :on-refresh-soc="refreshSoc"
+        @click="chargeLimitsVisible = true"
       />
     </q-card-section>
     <q-card-actions v-if="$slots['card-actions']" align="right">
@@ -97,6 +108,12 @@
     <ChargePointSettings
       :chargePointId="props.chargePointId"
       v-model="settingsVisible"
+    />
+    <!-- //////////////////////  modal charge limit settings dialog   //////////////////// -->
+    <ChargeLimits
+      :chargePointId="props.chargePointId"
+      :energyTargetEnabled="energyTargetEnabled"
+      v-model="chargeLimitsVisible"
     />
     <!-- //////////////////////  modal soc dialog   //////////////////// -->
     <ManualSocDialog
@@ -117,6 +134,7 @@ import ChargePointModeButtons from './ChargePointModeButtons.vue';
 import ChargePointMessage from './ChargePointMessage.vue';
 import ChargePointVehicleSelect from './ChargePointVehicleSelect.vue';
 import ChargePointSettings from './ChargePointSettings.vue';
+import ChargeLimits from './ChargeLimits.vue';
 import ManualSocDialog from './ManualSocDialog.vue';
 import ChargePointTimeCharging from './ChargePointTimeCharging.vue';
 import ChargePointPowerData from './ChargePointPowerData.vue';
@@ -161,6 +179,7 @@ const limitMode = computed(() => {
 });
 
 const settingsVisible = ref<boolean>(false);
+const chargeLimitsVisible = ref<boolean>(false);
 
 const socInputVisible = ref<boolean>(false);
 const openSocDialog = () => {
@@ -272,17 +291,25 @@ const target = computed(() => {
   }
 });
 
-const showSocTargetSlider = computed(() => {
-  if (target.value && target.value > 999) {
-    // we have a energy based target
-    return true;
+const hasSocModule = computed(() => !!vehicleSocType.value);
+
+const instantLimit = computed(() =>
+  mqttStore.chargePointConnectedVehicleInstantChargeLimit(
+    props.chargePointId
+  )
+);
+
+const energyTargetEnabled = computed({
+  get: () => instantLimit.value.value === 'amount',
+  set: (enabled: boolean) => {
+    instantLimit.value.value = enabled ? 'amount' : 'none'
   }
-  if (vehicleSocType.value) {
-    // we have a soc module defined
-    return true;
-  }
-  return false;
 });
+
+const showSlider = computed(() => {
+  if (hasSocModule.value) return true
+  return limitMode.value === 'amount'
+})
 
 const vehicleTarget = computed(() => {
   return mqttStore.vehicleChargeTarget(props.chargePointId).value;
@@ -291,6 +318,18 @@ const vehicleTarget = computed(() => {
 const vehicleSocType = computed(() =>
   mqttStore.chargePointConnectedVehicleSocType(props.chargePointId),
 )?.value;
+
+const onEnergyToggle = (enabled: boolean) => {
+  const limit = mqttStore.chargePointConnectedVehicleInstantChargeLimit(
+    props.chargePointId,
+  );
+
+  if (enabled) {
+    limit.value = 'amount';
+  } else {
+    limit.value = 'none';
+  }
+};
 
 const refreshSoc = () => {
   mqttStore.chargePointConnectedVehicleForceSocUpdate(props.chargePointId);
