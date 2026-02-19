@@ -236,16 +236,20 @@ class BatAll:
             # Falls keine leistung übergeben wird greift die Eigenregelung der Speicher
             if power is None:
                 power_limit = None
+                bat_component_data.get.state_str = "Keine Steuerung"
                 log.debug(("Aktive Speichersteuerung: Eigenregelung - Speicher "
                           f"(ID: {bat_component.component_config.id}) auf Eigenregelung gesetzt."))
             elif power == 0:
                 power_limit = 0
+                bat_component_data.get.state_str = "Entladesperre"
                 log.debug((f"Aktive Speichersteuerung: Kein Laden/Entladen - "
                            f"Speicher (ID: {bat_component.component_config.id}) auf 0W gesetzt."))
             elif power < 0:
                 # Eigenregelung aller Speicher, da Entladung nicht möglich
                 if max_discharge_power_total == 0:
                     power_limit = None
+                    bat_component_data.get.state_str = ("Keine Steuerung - alle Speicher "
+                                                        "befinden sich unterhalb minimal SoC")
                     log.debug(("Aktive Speichersteuerung: Entladung - alle Speicher befinden sich unterhalb minimal "
                                f"SoC. Speicher (ID: {bat_component.component_config.id}) auf Eigenregelung gesetzt."))
                 else:
@@ -253,6 +257,8 @@ class BatAll:
                     # das verhindert Tiefenentladung
                     if bat_component_data.get.soc <= self.data.config.bat_control_min_soc:
                         power_limit = None
+                        bat_component_data.get.state_str = ("Keine Steuerung - dieser Speicher "
+                                                            "befindet sich unterhalb minimal SoC")
                         log.debug(("Aktive Speichersteuerung: Entladung - "
                                    f"Speicher (ID: {bat_component.component_config.id}) "
                                    "befindet sich unterhalb minimal SoC - auf Eigenregelung gesetzt."))
@@ -260,6 +266,7 @@ class BatAll:
                     else:
                         factor = min(power / max_discharge_power_total, 1)
                         power_limit = bat_component_data.get.max_discharge_power * factor
+                        bat_component_data.get.state_str = f"Entladung mit {power_limit}W"
                         log.debug(("Aktive Speichersteuerung: Entladung - "
                                    f"Speicher (ID: {bat_component.component_config.id}) "
                                    f"entlädt mit {power_limit} ({factor} x "
@@ -268,17 +275,18 @@ class BatAll:
                 # oberhalb des max_soc soll Speicher nicht entladen wenn andere Speicher laden
                 if bat_component_data.get.soc >= self.data.config.bat_control_max_soc:
                     power_limit = 0
+                    bat_component_data.get.state_str = ("Speicher befindet sich oberhalb "
+                                                        "des maximalen SoC - Ladung gesperrt")
                     log.debug(("Aktive Speichersteuerung: Ladung - "
                                f"Speicher (ID: {bat_component.component_config.id}) "
                                "befindet sich oberhalb maximal SoC - Speicher sperren."))
                 else:
                     factor = min(power / max_charge_power_total, 1)
                     power_limit = bat_component_data.get.max_charge_power * factor
+                    bat_component_data.get.state_str = f"Ladung mit {power_limit}W"
                     log.debug(("Aktive Speichersteuerung: Ladung - "
                                f"Speicher (ID: {bat_component.component_config.id}) "
                                f"lädt mit {power_limit} ({factor} x {bat_component_data.get.max_charge_power})"))
-
-            # power_limit = self._limit_bat_power_discharge(power_limit)
             data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set.power_limit = power_limit
             log.debug(f"Power Limit {power_limit}W an Speicher übergeben!")
 

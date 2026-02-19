@@ -73,6 +73,7 @@ class UpdateConfig:
         "^openWB/bat/config/charge_limit$",
         "^openWB/bat/[0-9]+/get/max_charge_power$",
         "^openWB/bat/[0-9]+/get/max_discharge_power$",
+        "^openWB/bat/[0-9]+/get/state_str$",
 
         "^openWB/bat/config/configured$",
         "^openWB/bat/set/charging_power_left$",
@@ -534,6 +535,7 @@ class UpdateConfig:
         ("openWB/bat/config/charge_limit$", 0.3),
         ("openWB/bat/[0-9]+/get/max_charge_power", 0),
         ("openWB/bat/[0-9]+/get/max_discharge_power", 0),
+        # ("openWB/bat/[0-9]+/get/state_str", "Eigenregelung"),
         ("openWB/bat/config/configured", False),
         ("openWB/bat/get/fault_state", 0),
         ("openWB/bat/get/fault_str", NO_ERROR),
