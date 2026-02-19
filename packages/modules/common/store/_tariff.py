@@ -58,8 +58,8 @@ class PriceValueStore(ValueStore[TariffState]):
         grid_fee_prices = data.data.optional_data.data.electricity_pricing.grid_fee.get.prices
         if len(grid_fee_prices) == 0 and data.data.optional_data.grid_fee_module is not None:
             raise ValueError("Keine Preise für konfigurierten Netzentgelttarif vorhanden.")
-        flexible_tariff_prices = {float(k): v for k, v in flexible_tariff_prices.items()}
-        grid_fee_prices = {float(k): v for k, v in grid_fee_prices.items()}
+        flexible_tariff_prices = {int(float(k)): v for k, v in flexible_tariff_prices.items()}
+        grid_fee_prices = {int(float(k)): v for k, v in grid_fee_prices.items()}
         if len(flexible_tariff_prices) == 0 and len(grid_fee_prices) > 0:
             return grid_fee_prices
         if len(grid_fee_prices) == 0 and len(flexible_tariff_prices) > 0:
