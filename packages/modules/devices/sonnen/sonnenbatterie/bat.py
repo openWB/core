@@ -45,12 +45,20 @@ class SonnenbatterieBat(AbstractBat):
             self.api = JsonApi(host=self.__device_address,
                                api_version=JsonApiVersion.V2 if self.__device_variant == 3 else JsonApiVersion.V1,
                                auth_token=self.__api_v2_token if self.__device_variant == 3 else None)
+        self.last_mode = 'Undefined'
 
     def update(self) -> None:
         self.store.set(self.api.update_battery(sim_counter=self.sim_counter))
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
-        self.api.set_power_limit(power_limit=power_limit)
+        if power_limit is None:
+            # Wert wird nur einmal gesetzt
+            if self.last_mode is not None:
+                self.api.set_power_limit(power_limit=power_limit)
+                self.last_mode = None
+        else:
+            self.api.set_power_limit(power_limit=power_limit)
+            self.last_mode = 'active'
 
     def power_limit_controllable(self) -> bool:
         return self.api.power_limit_controllable()
