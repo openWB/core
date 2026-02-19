@@ -19,6 +19,7 @@ from modules.common.configurable_monitoring import ConfigurableMonitoring
 
 log = logging.getLogger(__name__)
 AS_EURO_PER_KWH = 1000.0  # Umrechnung von €/Wh in €/kWh
+MQTT_PREFIX = "openWB/set/optional/ep"
 
 
 class Optional(OcppMixin):
@@ -154,15 +155,16 @@ class Optional(OcppMixin):
 
         try:
             if self.data.electricity_pricing.configured:
-                if len(self.data.electricity_pricing.get.prices) >= 0:
-                    ep = self.data.electricity_pricing
-                    ep.get.prices = remove(ep.get.prices)
+                ep = self.data.electricity_pricing
+                #  prices lists are updated in optional_data via mqtt listener
+                if len(ep.get.prices) >= 0:
+                    Pub().pub(f"{MQTT_PREFIX}/get/prices", remove(ep.get.prices))
                 if self._flexible_tariff_module:
-                    ep.flexible_tariff.get.prices = remove(ep.flexible_tariff.get.prices)
+                    Pub().pub(f"{MQTT_PREFIX}/flexible_tariff/get/prices", remove(ep.flexible_tariff.get.prices))
                 if self._grid_fee_module:
-                    ep.grid_fee.get.prices = remove(ep.grid_fee.get.prices)
-        except Exception:
-            log.exception("Fehler beim Entfernen veralteter Preise")
+                    Pub().pub(f"{MQTT_PREFIX}/grid_fee/get/prices", remove(ep.grid_fee.get.prices))
+        except Exception as e:
+            log.exception("Fehler beim Entfernen veralteter Preise: %s", e)
 
     def __get_current_timeslot_start(self) -> int:
         timestamp = self.__get_first_entry()[0]
