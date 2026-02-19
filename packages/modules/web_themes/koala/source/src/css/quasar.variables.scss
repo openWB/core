@@ -329,7 +329,7 @@ $dark-daily-totals-chargepoint-fill: #254a8c;
   }
   // Tab active background color
   .q-tab--active {
-    background-color: $dark-secondary;
+    background-color: var(--q-secondary);
   }
   // Carousel control arrows and buttons
   .q-carousel__control {
