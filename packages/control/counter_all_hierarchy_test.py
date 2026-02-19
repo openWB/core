@@ -142,7 +142,7 @@ def test_delete_discard_children(params: ParamsItem):
 
 
 cases_get_chargepoints_of_counter = [
-    ParamsItem("get_chargepoints_of_counter", hierarchy_cp(), "counter2", expected_return=["cp3", "cp5", "cp6"]),
+    ParamsItem("get_chargepoints_of_counter", hierarchy_cp(), "counter2", expected_return=["cp6", "cp5", "cp3"]),
     ParamsItem("get_chargepoints_of_counter", hierarchy_two_level(), "counter0", expected_return=["cp2"])
 ]
 

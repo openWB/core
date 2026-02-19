@@ -1,11 +1,12 @@
 import logging
+from typing import List
 
 from control.algorithm import common
 from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT
 from control.limiting_value import LoadmanagementLimit
 from control.loadmanagement import Loadmanagement
 from control.chargepoint.chargepoint import Chargepoint
-from control.algorithm.filter_chargepoints import (get_chargepoints_by_mode_and_counter,
+from control.algorithm.filter_chargepoints import (get_chargepoints_by_mode_and_counter_and_lm_prio,
                                                    get_preferenced_chargepoint_charging)
 
 log = logging.getLogger(__name__)
@@ -16,14 +17,17 @@ class AdditionalCurrent:
     def __init__(self) -> None:
         pass
 
-    def set_additional_current(self) -> None:
-        common.reset_current_by_chargemode(CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT)
-        for mode_tuple, counter in common.mode_and_counter_generator(CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT):
+    def set_additional_current(self, cp_prio_group: List[Chargepoint]) -> None:
+        log.info("**Soll-Strom setzen**")
+        common.reset_current_to_target_current(cp_prio_group)
+        common.reset_current_by_chargemode(CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT, cp_prio_group)
+        for counter in common.counter_generator():
             preferenced_chargepoints, preferenced_cps_without_set_current = get_preferenced_chargepoint_charging(
-                get_chargepoints_by_mode_and_counter(mode_tuple, f"counter{counter.num}"))
+                get_chargepoints_by_mode_and_counter_and_lm_prio(CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT,
+                                                                 f"counter{counter.num}", cp_prio_group))
             if preferenced_chargepoints:
                 common.update_raw_data(preferenced_chargepoints)
-                log.info(f"Mode-Tuple {mode_tuple[0]} - {mode_tuple[1]} - {mode_tuple[2]}, Zähler {counter.num}")
+                log.info(f"Zähler {counter.num}, Verbraucher {[f'LP{cp.num}' for cp in preferenced_chargepoints]}")
                 while len(preferenced_chargepoints):
                     cp = preferenced_chargepoints[0]
                     missing_currents, counts = common.get_missing_currents_left(preferenced_chargepoints)

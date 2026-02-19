@@ -367,6 +367,8 @@ class SetData:
                 self._validate_value(msg, str)
             elif "/info" in msg.topic:
                 self._validate_value(msg, "json")
+            elif "/full_power" in msg.topic:
+                self._validate_value(msg, bool)
             elif "openWB/set/vehicle/set/vehicle_update_completed" in msg.topic:
                 self._validate_value(msg, bool)
             elif "/set/soc_error_counter" in msg.topic:
@@ -913,7 +915,8 @@ class SetData:
                   "openWB/set/counter/set/daily_yield_home_consumption" in msg.topic or
                   "openWB/set/counter/set/disengageable_smarthome_power" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
-            elif "openWB/set/counter/get/hierarchy" in msg.topic:
+            elif ("openWB/set/counter/get/hierarchy" in msg.topic or
+                  "openWB/set/counter/get/loadmanagement_prios" in msg.topic):
                 self._validate_value(msg, None)
             elif "openWB/set/counter/config/home_consumption_source_id" in msg.topic:
                 self._validate_value(msg, int)

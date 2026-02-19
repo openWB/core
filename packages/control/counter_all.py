@@ -4,9 +4,10 @@ import copy
 from dataclasses import dataclass, field
 import logging
 import re
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, Generator, List, Optional, Tuple, Union
 
 from control import data
+from control.chargepoint.chargepoint import Chargepoint
 from control.counter import Counter
 from dataclass_utils.factories import empty_list_factory
 from helpermodules.messaging import MessageType, pub_system_message
@@ -52,6 +53,8 @@ class Set:
 class Get:
     hierarchy: List = field(default_factory=empty_list_factory, metadata={
                             "topic": "get/hierarchy"})
+    loadmanagement_prios: List[Dict] = field(
+        default_factory=empty_list_factory, metadata={"topic": "get/loadmanagement_prios"})
 
 
 def get_factory() -> Get:
@@ -225,7 +228,7 @@ class CounterAll:
         except KeyError:
             # Kein Ladepunkt unter dem Zähler
             pass
-        return self.connected_chargepoints
+        return list(reversed(self.connected_chargepoints))
 
     def _get_all_cp_connected_to_counter(self, child: Dict) -> None:
         """ Rekursive Funktion, die alle Ladepunkte ermittelt, die an den angegebenen Zähler angeschlossen sind.
@@ -480,6 +483,84 @@ class CounterAll:
             pub_system_message({}, ("Es konnte kein Zähler gefunden werden, der als EVU-Zähler an die Spitze des "
                                "Lastmanagements gesetzt werden kann. Bitte zuerst einen EVU-Zähler hinzufügen."),
                                MessageType.ERROR)
+
+    # Lastmanagement-Prioritäten
+    def loadmanagement_prios_add_item(self, new_id: int, new_type: ComponentType) -> None:
+        if new_type == ComponentType.VEHICLE:
+            self.data.get.loadmanagement_prios.append({"id": new_id, "type": new_type.value})
+        else:
+            raise ValueError("Derzeit können nur Fahrzeuge zu den Lastmanagement-Prioritäten hinzugefügt werden.")
+
+    def loadmanagement_prios_remove_item(self, id: int) -> None:
+        for item in self.data.get.loadmanagement_prios:
+            if item["id"] == id:
+                self.data.get.loadmanagement_prios.remove(item)
+                return
+        else:
+            raise IndexError(f"Element {id} konnte nicht in den Lastmanagement-Prioritäten gefunden werden.")
+
+    def _get_prio_groups(self) -> List[Dict]:
+        groups = []
+        current_group = []
+
+        for item in self.data.get.loadmanagement_prios:
+            if data.data.ev_data[f'ev{item["id"]}'].data.full_power:
+                if current_group:
+                    groups.append({"items": current_group.copy(), "is_full_power_group": False})
+                    current_group.clear()
+                groups.append({"items": [item], "is_full_power_group": True})
+            else:
+                current_group.append(item)
+
+        if current_group:
+            groups.append({"items": current_group.copy(), "is_full_power_group": False})
+        return groups
+
+    def _convert_to_cp_group(self, group: Optional[Dict]) -> Optional[List[Counter]]:
+        if group is None:
+            return None
+        cp_group = []
+        for item in group["items"]:
+            for cp in data.data.cp_data.values():
+                if cp.data.config.ev == item["id"]:
+                    cp_group.append(cp)
+        return cp_group
+
+    def prio_groups_generator(self) -> Generator[Tuple[Optional[List[Chargepoint]], Optional[List[Chargepoint]]],
+                                                 None,
+                                                 None]:
+        groups = self._get_prio_groups()
+        start_index = 0
+        skip_next = False
+
+        if not groups:
+            yield None, None
+
+        if groups[0]["is_full_power_group"]:
+            # Beginnt mit Blitz
+            next_full_power_group = groups[0]
+            next_low_power_group = None
+            start_index = 1
+            yield None, self._convert_to_cp_group(next_full_power_group)
+
+        for index in range(start_index, len(groups)):
+            try:
+                if skip_next:
+                    skip_next = False
+                    continue
+                if groups[index]["is_full_power_group"]:
+                    next_full_power_group = groups[index]
+                    next_low_power_group = None
+                else:
+                    next_low_power_group = groups[index]
+                    if index + 1 < len(groups) and groups[index + 1]["is_full_power_group"]:
+                        next_full_power_group = groups[index + 1]
+                        skip_next = True
+                    else:
+                        next_full_power_group = None
+                yield self._convert_to_cp_group(next_low_power_group), self._convert_to_cp_group(next_full_power_group)
+            except Exception:
+                log.exception("Fehler in der allgemeinen Zähler-Klasse")
 
 
 def get_max_id_in_hierarchy(current_entry: List, max_id: int) -> int:

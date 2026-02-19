@@ -11,6 +11,7 @@ import time
 from typing import List, Optional
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
 
+from control.chargemode import Chargemode
 from control.limiting_value import LoadmanagementLimit
 import dataclass_utils
 
@@ -57,7 +58,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 107
+    DATASTORE_VERSION = 108
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -174,6 +175,7 @@ class UpdateConfig:
         "^openWB/counter/config/consider_less_charging$",
         "^openWB/counter/config/home_consumption_source_id$",
         "^openWB/counter/get/hierarchy$",
+        "^openWB/counter/get/loadmanagement_prios$",
         "^openWB/counter/set/disengageable_smarthome_power$",
         "^openWB/counter/set/imported_home_consumption$",
         "^openWB/counter/set/invalid_home_consumption$",
@@ -358,6 +360,7 @@ class UpdateConfig:
         "^openWB/vehicle/[0-9]+/ev_template$",
         "^openWB/vehicle/[0-9]+/name$",
         "^openWB/vehicle/[0-9]+/info$",
+        "^openWB/vehicle/[0-9]+/full_power$",
         "^openWB/vehicle/[0-9]+/soc_module/calculated_soc_state$",
         "^openWB/vehicle/[0-9]+/soc_module/config$",
         "^openWB/vehicle/[0-9]+/soc_module/general_config$",
@@ -518,6 +521,7 @@ class UpdateConfig:
         ("openWB/chargepoint/get/power", 0),
         ("openWB/chargepoint/template/0", get_chargepoint_template_default()),
         ("openWB/counter/get/hierarchy", []),
+        ("openWB/counter/get/loadmanagement_prios", [{"id": 0, "type": "vehicle"}]),
         ("openWB/counter/config/consider_less_charging", counter_all.Config().consider_less_charging),
         ("openWB/counter/config/home_consumption_source_id", counter_all.Config().home_consumption_source_id),
         ("openWB/vehicle/0/name", "Standard-Fahrzeug"),
@@ -2699,3 +2703,33 @@ class UpdateConfig:
                         return {topic: provider}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(107)
+
+    def upgrade_datastore_108(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/vehicle/[0-9]+/name$", topic) is not None:
+                return {topic.replace("/name", "/full_power"): False}
+        self._loop_all_received_topics(upgrade)
+
+        CHARGEMODES = ((Chargemode.SCHEDULED_CHARGING.value, True),
+                       (Chargemode.SCHEDULED_CHARGING.value, False),
+                       (Chargemode.INSTANT_CHARGING.value, True),
+                       (Chargemode.INSTANT_CHARGING.value, False),
+                       (Chargemode.ECO_CHARGING.value, True),
+                       (Chargemode.PV_CHARGING.value, True),
+                       (Chargemode.PV_CHARGING.value, False),
+                       (Chargemode.STOP.value, True),
+                       (Chargemode.STOP.value, False),)
+
+        def upgrade2(topic: str, payload) -> None:
+            if re.search("openWB/vehicle/[0-9]+/charge_template", topic) is not None:
+                charge_template_id = decode_payload(payload)
+                charge_template = decode_payload(
+                    self.all_received_topics[f"openWB/vehicle/template/charge_template/{charge_template_id}"])
+                if charge_template["chargemode"]["selected"] == chargemode and charge_template["prio"] == prio:
+                    loadmanagement_prios.append({"type": "vehicle", "id": int(get_index(topic))})
+
+        loadmanagement_prios = []
+        for chargemode, prio in CHARGEMODES:
+            self._loop_all_received_topics(upgrade2)
+        self.__update_topic("openWB/counter/get/loadmanagement_prios", loadmanagement_prios)
+        self._append_datastore_version(108)
