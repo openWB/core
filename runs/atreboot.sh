@@ -12,36 +12,12 @@ chmod 666 "$LOGFILE"
 		file=$1
 		target=$2
 		currentVersion=$(grep -o "openwb-version:[0-9]\+" "$file" | grep -o "[0-9]\+$")
-		installedVersion=$(grep -o "openwb-version:[0-9]\+" "$target" | grep -o "[0-9]\+$")
+		installedVersion=$(sudo grep -o "openwb-version:[0-9]\+" "$target" | grep -o "[0-9]\+$")
 		# echo "$currentVersion == $installedVersion ?"
 		if ((currentVersion == installedVersion)); then
 			return 0
 		else
 			return 1
-		fi
-	}
-
-	waitForServiceStop() {
-		# this function waits for a service to stop and kills the process if it takes too long
-		# this is necessary at least for mosquitto, as the service is stopped, but the process is still running
-		service=$1
-		pattern=$2
-		timeout=$3
-
-		counter=0
-		sudo systemctl stop "$service"
-		while pgrep --full "$pattern" >/dev/null && ((counter < timeout)); do
-			echo "process '$pattern' still running after ${counter}s, waiting..."
-			sleep 1
-			((counter++))
-		done
-		if ((counter >= timeout)); then
-			echo "process '$pattern' still running after ${timeout}s, killing process"
-			sudo pkill --full "$pattern" --signal 9
-			sleep 2
-			# if the process was killed, the service is in "active (exited)" state
-			# so we need to trigger a stop here to be able to start it again
-			sudo systemctl stop "$service"
 		fi
 	}
 
@@ -213,6 +189,17 @@ chmod 666 "$LOGFILE"
 		sudo reboot now &
 	fi
 
+	# # check for openwb Auth service definition
+	# if find /etc/systemd/system/ -maxdepth 1 -name openwbAuthServer.service -type l | grep -q "."; then
+	# 	echo "openwbAuthServer.service definition is already a symlink"
+	# else
+	# 	sudo ln -s "${OPENWBBASEDIR}/data/config/openwbAuthServer.service" /etc/systemd/system/openwbAuthServer.service
+	# 	sudo systemctl daemon-reload
+	# 	sudo systemctl enable openwbAuthServer
+	# 	echo "openwbAuthServer.service definition updated. restarting service..."
+	# 	sudo systemctl restart openwbAuthServer
+	# fi
+
 	# check for openwb-simpleAPI service definition
 	if find /etc/systemd/system/ -maxdepth 1 -name openwb-simpleAPI.service -type l | grep -q "."; then
 		echo "openwb-simpleAPI.service definition is already a symlink"
@@ -335,78 +322,7 @@ chmod 666 "$LOGFILE"
 	"${OPENWBBASEDIR}/runs/setup_apache2.sh"
 
 	# check for mosquitto configuration
-	echo "check mosquitto installation..."
-	restartService=0
-	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto.conf" "/etc/mosquitto/mosquitto.conf"; then
-		echo "mosquitto.conf already up to date"
-	else
-		echo "updating mosquitto.conf"
-		sudo cp "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto.conf" "/etc/mosquitto/mosquitto.conf"
-		restartService=1
-	fi
-	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/openwb.conf" "/etc/mosquitto/conf.d/openwb.conf"; then
-		echo "mosquitto openwb.conf already up to date"
-	else
-		echo "updating mosquitto openwb.conf"
-		sudo cp "${OPENWBBASEDIR}/data/config/mosquitto/openwb.conf" "/etc/mosquitto/conf.d/openwb.conf"
-		restartService=1
-	fi
-	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto.acl" "/etc/mosquitto/mosquitto.acl"; then
-		echo "mosquitto acl already up to date"
-	else
-		echo "updating mosquitto acl"
-		sudo cp "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto.acl" "/etc/mosquitto/mosquitto.acl"
-		restartService=1
-	fi
-	if [[ ! -f "/etc/mosquitto/certs/openwb.key" ]]; then
-		echo -n "copy ssl certs..."
-		sudo cp "/etc/ssl/certs/ssl-cert-snakeoil.pem" "/etc/mosquitto/certs/openwb.pem"
-		sudo cp "/etc/ssl/private/ssl-cert-snakeoil.key" "/etc/mosquitto/certs/openwb.key"
-		sudo chgrp mosquitto "/etc/mosquitto/certs/openwb.key"
-		restartService=1
-		echo "done"
-	fi
-	if ((restartService == 1)); then
-		echo -n "restarting mosquitto service..."
-		waitForServiceStop "mosquitto" "mosquitto.conf" 10
-		sudo systemctl start mosquitto
-		echo "done"
-	fi
-
-	#check for mosquitto_local instance
-	# restartService=0  # if we restart mosquitto, we need to restart mosquitto_local as well
-	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto_local_init" "/etc/init.d/mosquitto_local"; then
-		echo "mosquitto_local service definition already up to date"
-	else
-		echo "updating mosquitto_local service definition"
-		sudo cp "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto_local_init" /etc/init.d/mosquitto_local
-		sudo chown root:root /etc/init.d/mosquitto_local
-		sudo chmod 755 /etc/init.d/mosquitto_local
-		sudo systemctl daemon-reload
-		sudo systemctl enable mosquitto_local
-		restartService=1
-	fi
-	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto_local.conf" "/etc/mosquitto/mosquitto_local.conf"; then
-		echo "mosquitto_local.conf already up to date"
-	else
-		echo "updating mosquitto_local.conf"
-		sudo cp -a "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto_local.conf" "/etc/mosquitto/mosquitto_local.conf"
-		restartService=1
-	fi
-	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/openwb_local.conf" "/etc/mosquitto/conf_local.d/openwb_local.conf"; then
-		echo "mosquitto openwb_local.conf already up to date"
-	else
-		echo "updating mosquitto openwb_local.conf"
-		sudo cp -a "${OPENWBBASEDIR}/data/config/mosquitto/openwb_local.conf" "/etc/mosquitto/conf_local.d/"
-		restartService=1
-	fi
-	if ((restartService == 1)); then
-		echo -n "restarting mosquitto_local service..."
-		waitForServiceStop "mosquitto_local" "mosquitto_local.conf" 10
-		sudo systemctl start mosquitto_local
-		echo "done"
-	fi
-	echo "mosquitto done"
+	"${OPENWBBASEDIR}/runs/setup_mosquitto.sh" 1
 
 	# check for home configuration
 	if [[ ! -f "/home/openwb/configuration.json" ]]; then

@@ -4,6 +4,8 @@
       <q-toolbar>
         <q-btn dense flat round icon="menu" @click="drawer = !drawer" />
         <q-toolbar-title>openWB</q-toolbar-title>
+        <q-space />
+        <user-indicator />
       </q-toolbar>
     </q-header>
 
@@ -11,53 +13,61 @@
       <!-- drawer content -->
       <q-scroll-area class="fit" :horizontal-thumb-style="{ opacity: '0' }">
         <q-list padding>
-          <q-item clickable v-ripple href="/openWB/web/settings/#/Status">
-            <q-item-section avatar>
-              <q-icon name="dashboard" />
-            </q-item-section>
+          <div v-if="accessStatusAllowed">
+            <q-item clickable v-ripple href="/openWB/web/settings/#/Status">
+              <q-item-section avatar>
+                <q-icon name="dashboard" />
+              </q-item-section>
 
-            <q-item-section> Status </q-item-section>
-          </q-item>
+              <q-item-section> Status </q-item-section>
+            </q-item>
 
-          <q-separator />
+            <q-separator />
+          </div>
 
-          <q-item-label header>Auswertungen</q-item-label>
+          <div v-if="accessChargeLogAllowed || accessChartAllowed">
+            <q-item-label header>Auswertungen</q-item-label>
 
-          <q-item
-            clickable
-            v-ripple
-            href="/openWB/web/settings/#/Logging/ChargeLog"
-          >
-            <q-item-section avatar>
-              <q-icon name="table_chart" />
-            </q-item-section>
+            <q-item
+              v-if="accessChargeLogAllowed"
+              clickable
+              v-ripple
+              href="/openWB/web/settings/#/Logging/ChargeLog"
+            >
+              <q-item-section avatar>
+                <q-icon name="table_chart" />
+              </q-item-section>
 
-            <q-item-section> Ladeprotokoll </q-item-section>
-          </q-item>
+              <q-item-section> Ladeprotokoll </q-item-section>
+            </q-item>
 
-          <q-item
-            clickable
-            v-ripple
-            href="/openWB/web/settings/#/Logging/Chart"
-          >
-            <q-item-section avatar>
-              <q-icon name="area_chart" />
-            </q-item-section>
+            <q-item
+              v-if="accessChartAllowed"
+              clickable
+              v-ripple
+              href="/openWB/web/settings/#/Logging/Chart"
+            >
+              <q-item-section avatar>
+                <q-icon name="area_chart" />
+              </q-item-section>
 
-            <q-item-section> Diagramme </q-item-section>
-          </q-item>
+              <q-item-section> Diagramme </q-item-section>
+            </q-item>
 
-          <q-separator />
+            <q-separator />
+          </div>
 
-          <q-item clickable v-ripple href="/openWB/web/settings/">
-            <q-item-section avatar>
-              <q-icon name="settings" />
-            </q-item-section>
+          <div v-if="accessSettingsAllowed">
+            <q-item clickable v-ripple href="/openWB/web/settings/">
+              <q-item-section avatar>
+                <q-icon name="settings" />
+              </q-item-section>
 
-            <q-item-section> Einstellungen </q-item-section>
-          </q-item>
+              <q-item-section> Einstellungen </q-item-section>
+            </q-item>
 
-          <q-separator />
+            <q-separator />
+          </div>
 
           <q-item-label header>Anzeigeeinstellungen</q-item-label>
 
@@ -123,13 +133,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import UserIndicator from 'src/components/UserIndicator.vue';
+import { useMqttStore } from 'src/stores/mqtt-store';
+const mqttStore = useMqttStore();
+
 import { useQuasar } from 'quasar';
 const $q = useQuasar();
 
 defineOptions({
   name: 'MainLayout',
 });
+
+const accessSettingsAllowed = computed(() => mqttStore.accessSettingsAllowed);
+const accessStatusAllowed = computed(() => mqttStore.accessStatusAllowed);
+const accessChargeLogAllowed = computed(() => mqttStore.accessChargeLogAllowed);
+const accessChartAllowed = computed(() => mqttStore.accessChartAllowed);
 
 const drawer = ref(false);
 const themeMode = ref('auto');

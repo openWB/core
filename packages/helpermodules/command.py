@@ -3,9 +3,10 @@ from dataclasses import asdict
 import importlib
 import json
 import logging
+from random import randrange
 import subprocess
 from threading import Event
-import time
+from time import sleep
 from typing import Dict, Optional
 import re
 import traceback
@@ -29,6 +30,10 @@ from helpermodules.broker import BrokerClient
 from helpermodules.data_migration.data_migration import MigrateData
 from helpermodules.measurement_logging.process_log import get_daily_log, get_monthly_log, get_yearly_log
 from helpermodules.messaging import MessageType, pub_user_message
+from helpermodules.mosquitto_dynsec.mosquitto_dynsec import (generate_password_reset_token, get_user_email,
+                                                             send_password_reset_to_server, verify_password_reset_token)
+from helpermodules.mosquitto_dynsec.role_handler import add_acl_role, remove_acl_role
+from helpermodules.mosquitto_dynsec.user_handler import remove_display_user, update_user_password
 from helpermodules.create_debug import create_debug_log
 from helpermodules.pub import Pub, pub_single
 from helpermodules.subdata import SubData
@@ -127,7 +132,7 @@ class Command:
         try:
             # kurze Pause, damit die ID vom Broker ermittelt werden können. Sonst werden noch vorher die retained
             # Topics empfangen, was zu doppelten Meldungen im Protokoll führt.
-            time.sleep(1)
+            sleep(1)
             self.internal_broker_client = BrokerClient("command", self.on_connect, self.on_message)
             self.internal_broker_client.start_infinite_loop()
         except Exception:
@@ -203,6 +208,7 @@ class Command:
         Pub().pub(f'openWB/set/io/action/{new_id}/config', device_default)
         self.max_id_io_action = new_id
         Pub().pub("openWB/set/command/max_id/io_action", self.max_id_io_action)
+        add_acl_role("io-action-<id>-access", new_id)
         pub_user_message(
             payload, connection_id,
             f'Neue IO-Aktion vom Typ \'{" / ".join(payload["data"]["type"])}\' mit ID \'{new_id}\' hinzugefügt.',
@@ -211,6 +217,7 @@ class Command:
     def removeIoAction(self, connection_id: str, payload: dict) -> None:
         if self.max_id_io_action >= payload["data"]["id"]:
             ProcessBrokerBranch(f'io/action/{payload["data"]["id"]}/').remove_topics()
+            remove_acl_role("io-action-<id>-access", payload["data"]["id"])
             pub_user_message(payload, connection_id, f'IO-Aktion mit ID \'{payload["data"]["id"]}\' gelöscht.',
                              MessageType.SUCCESS)
         else:
@@ -231,6 +238,9 @@ class Command:
         Pub().pub(f'openWB/set/system/io/{new_id}/config', device_default)
         self.max_id_io_device = new_id
         Pub().pub("openWB/set/command/max_id/io_device", self.max_id_io_device)
+        add_acl_role("io-device-<id>-access", new_id)
+        if device_default["output"]["digital"] or device_default["output"]["analog"]:
+            add_acl_role("io-device-<id>-write-access", new_id)
         pub_user_message(
             payload, connection_id,
             f'Neues IO-Gerät vom Typ \'{payload["data"]["type"]}\' mit ID \'{new_id}\' hinzugefügt.',
@@ -242,6 +252,8 @@ class Command:
         if self.max_id_io_device >= payload["data"]["id"]:
             ProcessBrokerBranch(f'system/io/{payload["data"]["id"]}/').remove_topics()
             ProcessBrokerBranch(f'io/states/{payload["data"]["id"]}/').remove_topics()
+            remove_acl_role("io-device-<id>-access", payload["data"]["id"])
+            remove_acl_role("io-device-<id>-write-access", payload["data"]["id"])
             pub_user_message(payload, connection_id, f'IO-Gerät mit ID \'{payload["data"]["id"]}\' gelöscht.',
                              MessageType.SUCCESS)
         else:
@@ -267,6 +279,9 @@ class Command:
                 self.addChargepointTemplate("addChargepoint", {})
             if self.max_id_vehicle == -1:
                 self.addVehicle("addChargepoint", {})
+            add_acl_role("chargepoint-<id>-access", new_id)
+            if chargepoint_config["type"] == "mqtt":
+                add_acl_role("chargepoint-<id>-write-access", new_id)
             pub_user_message(payload, connection_id, f'Neuer Ladepunkt mit ID \'{new_id}\' wurde erstellt.',
                              MessageType.SUCCESS)
         new_id = self.max_id_hierarchy + 1
@@ -344,16 +359,33 @@ class Command:
     def removeChargepoint(self, connection_id: str, payload: dict) -> None:
         """ löscht ein Ladepunkt.
         """
-        if self.max_id_hierarchy < payload["data"]["id"]:
+        cp_id = payload["data"]["id"]
+        if self.max_id_hierarchy < cp_id:
             pub_user_message(
                 payload, connection_id,
-                f'Die ID \'{payload["data"]["id"]}\' ist größer als die maximal vergebene '
+                f'Die ID \'{cp_id}\' ist größer als die maximal vergebene '
                 f'ID \'{self.max_id_hierarchy}\'.', MessageType.ERROR)
-        ProcessBrokerBranch(f'chargepoint/{payload["data"]["id"]}/').remove_topics()
-        data.data.counter_all_data.hierarchy_remove_item(payload["data"]["id"])
+        cp_type = SubData.cp_data.get(f"cp{cp_id}", None).chargepoint.data.config.type
+        cp_ip = (SubData.cp_data.get(f"cp{cp_id}", None).chargepoint.data.config.configuration.get("ip_address")
+                 if cp_type == "external_openwb" else "127.0.0.1" if cp_type == "internal_openwb" else None)
+        if cp_type == "external_openwb" and cp_ip is not None:
+            # check if ip is used in other chargepoints, if not remove display user
+            for cp in SubData.cp_data.values():
+                if (
+                    cp.chargepoint.data.config.configuration.get("ip_address", None) == cp_ip
+                    and cp.chargepoint.num != cp_id
+                ):
+                    log.info(f"IP {cp_ip} is still used by cp{cp.chargepoint.num}, not removing display user")
+                    break
+            else:
+                remove_display_user(cp_ip)
+        remove_acl_role("chargepoint-<id>-access", cp_id)
+        remove_acl_role("chargepoint-<id>-write-access", cp_id)
+        ProcessBrokerBranch(f'chargepoint/{cp_id}/').remove_topics()
+        data.data.counter_all_data.hierarchy_remove_item(cp_id, ComponentType.CHARGEPOINT)
         Pub().pub("openWB/set/counter/get/hierarchy", data.data.counter_all_data.data.get.hierarchy)
         pub_user_message(payload, connection_id,
-                         f'Ladepunkt mit ID \'{payload["data"]["id"]}\' gelöscht.', MessageType.SUCCESS)
+                         f'Ladepunkt mit ID \'{cp_id}\' gelöscht.', MessageType.SUCCESS)
 
     def addChargepointTemplate(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neues Ladepunkt-Profil erstellt werden soll.
@@ -640,6 +672,7 @@ class Command:
         self.max_id_hierarchy = self.max_id_hierarchy + 1
         Pub().pub("openWB/set/command/max_id/hierarchy",
                   self.max_id_hierarchy)
+        add_acl_role(f"{general_type.value}-<id>-access", new_id)
         pub_user_message(
             payload, connection_id,
             f'Neue Komponente vom Typ \'{payload["data"]["type"]}\' mit ID \'{new_id}\' hinzugefügt.',
@@ -653,6 +686,10 @@ class Command:
                       "Die ID ist größer als die maximal vergebene ID.", MessageType.ERROR)
         branch = f'system/device/{payload["data"]["deviceId"]}/component/{payload["data"]["id"]}/'
         ProcessBrokerBranch(branch).remove_topics()
+        remove_acl_role(f"{special_to_general_type_mapping(payload['data']['type']).value}-<id>-access",
+                        payload["data"]["id"])
+        remove_acl_role(f"{special_to_general_type_mapping(payload['data']['type']).value}-<id>-write-access",
+                        payload["data"]["id"])
         pub_user_message(
             payload, connection_id,
             f'Komponente mit ID \'{payload["data"]["id"]}\' gelöscht.', MessageType.SUCCESS)
@@ -709,6 +746,7 @@ class Command:
             self.addChargeTemplate("addVehicle", {})
         if self.max_id_ev_template == -1:
             self.addEvTemplate("addVehicle", {})
+        add_acl_role("vehicle-<id>-access", new_id)
         pub_user_message(payload, connection_id, f'Neues EV mit ID \'{new_id}\' hinzugefügt.', MessageType.SUCCESS)
 
     def removeVehicle(self, connection_id: str, payload: dict) -> None:
@@ -720,6 +758,8 @@ class Command:
         if payload["data"]["id"] > 0:
             Pub().pub(f'openWB/vehicle/{payload["data"]["id"]}', "")
             ProcessBrokerBranch(f'vehicle/{payload["data"]["id"]}/').remove_topics()
+            remove_acl_role("vehicle-<id>-access", payload["data"]["id"])
+            remove_acl_role("vehicle-<id>-write-access", payload["data"]["id"])
             pub_user_message(
                 payload, connection_id,
                 f'EV mit ID \'{payload["data"]["id"]}\' gelöscht.', MessageType.SUCCESS)
@@ -864,7 +904,7 @@ class Command:
                     cp.chargepoint.chargepoint_module.config.configuration.duo_num == 0 and
                     cp.chargepoint.data.get.current_branch == "Release"
                 ):
-                    time.sleep(2)
+                    sleep(2)
                     self.secondaryChargepointUpdate({"data": {"chargepoint": f"cp{cp.chargepoint.num}"}})
         if "branch" in payload["data"] and "tag" in payload["data"]:
             pub_user_message(
@@ -978,6 +1018,105 @@ class Command:
                     "bridge": int(received_id[0])
                 }
             })
+
+    def resetUserManagement(self, connection_id: str, payload: dict) -> None:
+        log.info("User management reset requested!")
+        parent_file = Path(__file__).resolve().parents[2]
+        run_command([str(parent_file / "runs" / "reset_user_management.sh")])
+        pub_user_message(payload, connection_id,
+                         "Benutzerverwaltung wurde zurückgesetzt.",
+                         MessageType.WARNING)
+
+    def updateAdminPassword(self, connection_id: str, payload: dict) -> None:
+        """ aktualisiert das Passwort des Admin-Benutzers im User-Management
+        """
+        log.warning("Admin password update requested!")
+        mosquitto_ctrl_config_file = "/home/openwb/.config/mosquitto_ctrl"
+        newPassword = str(payload['data']['newPassword']).strip()
+        if newPassword is None or len(newPassword) == 0:
+            pub_user_message(payload, connection_id,
+                             "Das Admin-Passwort darf nicht leer sein.",
+                             MessageType.ERROR)
+            return
+        with open(mosquitto_ctrl_config_file, "r") as file:
+            lines = file.readlines()
+        with open(mosquitto_ctrl_config_file, "w") as file:
+            for line in lines:
+                if line.startswith("-P "):
+                    file.write(f"-P {payload['data']['newPassword']}\n")
+                else:
+                    file.write(line)
+        pub_user_message(payload, connection_id,
+                         "Admin-Passwort wurde erfolgreich aktualisiert.",
+                         MessageType.SUCCESS)
+
+    def createPasswordResetToken(self, connection_id: str, payload: dict) -> None:
+        """ generiert ein Token zum Zurücksetzen eines Benutzer-Passworts
+        """
+        username = str(payload['data']['username']).strip()
+        if username is None or len(username) == 0:
+            pub_user_message(payload, connection_id,
+                             "Der Benutzername darf nicht leer sein.",
+                             MessageType.ERROR)
+            return
+        log.debug(f"Password reset token requested for user '{username}'")
+        email = get_user_email(username)
+        if email is not None:
+            token, expires_at = generate_password_reset_token(username)
+            send_password_reset_to_server(email, token, expires_at)
+        else:
+            log.warning(f"Password reset token requested for non-existing user '{username}' or user without email")
+            sleep(randrange(5, 25) * 0.1)  # artificial delay to mitigate user enumeration
+        pub_user_message(
+            payload, connection_id,
+            (f"Falls der Benutzername '{username}' existiert und eine E-Mail-Adresse hinterlegt ist, "
+             "wurde ein Token zum Zurücksetzen des Passworts generiert.<br />"
+             "Das Token ist eine Stunde lang gültig."),
+            MessageType.SUCCESS)
+
+    def resetUserPassword(self, connection_id: str, payload: dict) -> None:
+        """ setzt das Passwort eines Benutzers zurück
+        """
+        username = str(payload['data']['username']).strip()
+        token = str(payload['data']['token']).strip()
+        new_password = str(payload['data']['newPassword']).strip()
+        if username is None or len(username) == 0:
+            pub_user_message(payload, connection_id,
+                             "Der Benutzername darf nicht leer sein.",
+                             MessageType.ERROR)
+            return
+        if token is None or len(token) == 0:
+            pub_user_message(payload, connection_id,
+                             "Der Token darf nicht leer sein.",
+                             MessageType.ERROR)
+            return
+        if new_password is None or len(new_password) == 0:
+            pub_user_message(payload, connection_id,
+                             "Das neue Passwort darf nicht leer sein.",
+                             MessageType.ERROR)
+            return
+        if verify_password_reset_token(username, token):
+            if update_user_password(username, new_password):
+                if username == "admin":
+                    self.updateAdminPassword(connection_id, {
+                        "data": {
+                            "newPassword": new_password
+                        }
+                    })
+                pub_user_message(
+                    payload, connection_id,
+                    f"Das Passwort für den Benutzer '{username}' wurde erfolgreich zurückgesetzt.",
+                    MessageType.SUCCESS)
+            else:
+                pub_user_message(
+                    payload, connection_id,
+                    f"Der Passwort für Benutzer '{username}' konnte nicht zurückgesetzt werden!",
+                    MessageType.ERROR)
+        else:
+            pub_user_message(
+                payload, connection_id,
+                "Der Token ist ungültig oder abgelaufen.",
+                MessageType.ERROR)
 
 
 class ErrorHandlingContext:

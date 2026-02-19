@@ -726,7 +726,8 @@ class SetData:
                 self._validate_value(msg, str)
             elif ("openWB/set/general/http_api" in msg.topic or
                   "openWB/set/general/modbus_control" in msg.topic or
-                  "openWB/set/general/extern" in msg.topic):
+                  "openWB/set/general/extern" in msg.topic or
+                  "openWB/set/general/allow_unencrypted_access" in msg.topic):
                 self._validate_value(msg, bool)
             elif "openWB/set/general/control_interval" in msg.topic:
                 self._validate_value(msg, int, [(10, 10), (20, 20), (60, 60)])
@@ -1029,7 +1030,8 @@ class SetData:
                     "openWB/set/system/installAssistantDone" in msg.topic or
                     "openWB/set/system/dataprotection_acknowledged" in msg.topic or
                     "openWB/set/system/usage_terms_acknowledged" in msg.topic or
-                    "openWB/set/system/update_config_completed" in msg.topic):
+                    "openWB/set/system/update_config_completed" in msg.topic or
+                    "openWB/set/system/security/user_management_active" in msg.topic):
                 self._validate_value(msg, bool)
             elif ("openWB/set/system/version" in msg.topic or
                     "openWB/set/system/backup_password" in msg.topic):
@@ -1107,6 +1109,11 @@ class SetData:
             if "openWB/set/command/max_id" in msg.topic:
                 self._validate_value(msg, int, [(-1, float("inf"))])
             elif "todo" in msg.topic:
+                if subdata.SubData.system_data["system"].data["security"]["user_management_active"]:
+                    payload = decode_payload(msg.payload)
+                    if msg.topic.split("/")[-1] != payload["command"]:
+                        log.warning(f'Keine Berechtigung für den Befehl: {payload["command"]}')
+                        return
                 self._validate_value(msg, "json")
             elif "messages" in msg.topic:
                 self._validate_value(msg, "json")

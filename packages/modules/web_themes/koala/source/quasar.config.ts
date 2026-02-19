@@ -95,7 +95,7 @@ export default defineConfig((ctx) => {
       open: true, // opens browser window automatically
       proxy: {
         '/ws': {
-          target: 'ws://localhost:9001',
+          target: 'ws://localhost:9003',
           ws: true,
         },
       },
@@ -118,7 +118,7 @@ export default defineConfig((ctx) => {
       // directives: [],
 
       // Quasar plugins
-      plugins: ['Notify'],
+      plugins: ['Notify', 'Cookies'],
     },
 
     // animations: 'all', // --- includes all animations

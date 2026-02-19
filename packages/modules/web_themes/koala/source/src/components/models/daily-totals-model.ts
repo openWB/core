@@ -3,9 +3,9 @@ export interface DailyTotalsItem {
   title: string;
   icon: string;
   soc?: number;
-  power: string;
-  powerValue: number;
-  today: {
+  power?: string;
+  powerValue?: number;
+  today?: {
     imported?: string;
     exported?: string;
   };

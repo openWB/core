@@ -61,20 +61,24 @@ fi
 echo "updating mosquitto config file"
 systemctl stop mosquitto
 sleep 2
-cp -a "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto.conf" /etc/mosquitto/mosquitto.conf
-cp "${OPENWBBASEDIR}/data/config/mosquitto/openwb.conf" /etc/mosquitto/conf.d/openwb.conf
-cp "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto.acl" /etc/mosquitto/mosquitto.acl
+SRC="${OPENWBBASEDIR}/data/config/mosquitto/public"
+cp -a "${SRC}/mosquitto.conf" "${SRC}/mosquitto.acl" /etc/mosquitto/
+sudo chown mosquitto:mosquitto /etc/mosquitto/mosquitto.acl
+sudo chmod 700 /etc/mosquitto/mosquitto.acl
+# enable default listeners: local bridge, public secure and unsecure mqtt and ws listeners with acl files
+cp -a "${SRC}/openwb.conf" "${SRC}/openwb-unsecure-acl.conf" "${SRC}/openwb-default-acl.conf" /etc/mosquitto/conf.d/
 sudo cp /etc/ssl/certs/ssl-cert-snakeoil.pem /etc/mosquitto/certs/openwb.pem
 sudo cp /etc/ssl/private/ssl-cert-snakeoil.key /etc/mosquitto/certs/openwb.key
 sudo chgrp mosquitto /etc/mosquitto/certs/openwb.key
 systemctl start mosquitto
 
 #check for mosquitto_local instance
+SRC="${OPENWBBASEDIR}/data/config/mosquitto/local"
 if [ ! -f /etc/init.d/mosquitto_local ]; then
 	echo "setting up mosquitto local instance"
 	install -d -m 0755 -o root -g root /etc/mosquitto/conf_local.d/
 	install -d -m 0755 -o mosquitto -g root /var/lib/mosquitto_local
-	cp "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto_local_init" /etc/init.d/mosquitto_local
+	cp "${SRC}/mosquitto_local_init" /etc/init.d/mosquitto_local
 	chown root:root /etc/init.d/mosquitto_local
 	chmod 755 /etc/init.d/mosquitto_local
 	systemctl daemon-reload
@@ -83,8 +87,8 @@ else
 	systemctl stop mosquitto_local
 	sleep 2
 fi
-cp -a "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto_local.conf" /etc/mosquitto/mosquitto_local.conf
-cp -a "${OPENWBBASEDIR}/data/config/mosquitto/openwb_local.conf" /etc/mosquitto/conf_local.d/
+cp -a "${SRC}/mosquitto_local.conf" /etc/mosquitto/
+cp -a "${SRC}/openwb_local.conf" /etc/mosquitto/conf_local.d/
 systemctl start mosquitto_local
 echo "mosquitto done"
 
@@ -122,6 +126,11 @@ ln -s "${OPENWBBASEDIR}/data/config/openwb2.service" /etc/systemd/system/openwb2
 systemctl daemon-reload
 systemctl enable openwb2
 
+# echo "installing openwb2 auth service..."
+# ln -s "${OPENWBBASEDIR}/data/config/openwbAuthServer.service" /etc/systemd/system/openwbAuthServer.service
+# systemctl daemon-reload
+# systemctl enable openwbAuthServer
+
 echo "installing openwb2-simpleAPI service..."
 ln -s "${OPENWBBASEDIR}/data/config/openwb-simpleAPI.service" /etc/systemd/system/openwb-simpleAPI.service
 systemctl daemon-reload
@@ -133,7 +142,8 @@ systemctl daemon-reload
 systemctl enable openwbRemoteSupport
 systemctl start openwbRemoteSupport
 
-echo "installation finished, now starting openwb2.service..."
+echo "installation finished, now starting openwb services..."
+# systemctl start openwbAuthServer
 systemctl start openwb2
 
 echo "all done"

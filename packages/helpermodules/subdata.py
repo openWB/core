@@ -23,6 +23,8 @@ from control.optional_data import Ocpp
 from helpermodules import graph, system
 from helpermodules.broker import BrokerClient
 from helpermodules.messaging import MessageType, pub_system_message
+from helpermodules.mosquitto_dynsec.role_handler import add_acl_role, remove_acl_role
+from helpermodules.mosquitto_dynsec.user_handler import remove_display_user, create_display_user
 from helpermodules.utils import ProcessingCounter
 from helpermodules.utils.run_command import run_command
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
@@ -146,6 +148,7 @@ class SubData:
             ("openWB/system/device/module_update_completed", 2),
             ("openWB/system/device/+/config", 2),
             ("openWB/system/io/#", 2),
+            ("openWB/system/security/#", 2),
             ("openWB/LegacySmartHome/Status/wattnichtHaus", 2),
             ("openWB/io/#", 2),
         ])
@@ -274,6 +277,7 @@ class SubData:
                 if decode_payload(msg.payload) == "":
                     if re.search("/vehicle/[0-9]+/soc_module/config$", msg.topic) is not None:
                         var["ev"+index].soc_module = None
+                        remove_acl_role("vehicle-<id>-write-access", int(index))
                     elif re.search("/vehicle/[0-9]+/get", msg.topic) is not None:
                         self.set_json_payload_class(var["ev"+index].data.get, msg)
                     else:
@@ -282,7 +286,6 @@ class SubData:
                 else:
                     if "ev"+index not in var:
                         var["ev"+index] = ev.Ev(int(index))
-
                     if re.search("/vehicle/[0-9]+/get", msg.topic) is not None:
                         self.set_json_payload_class(var["ev"+index].data.get, msg)
                         if (re.search("/vehicle/[0-9]+/get/force_soc_update", msg.topic) is not None and
@@ -311,6 +314,8 @@ class SubData:
                             var["ev"+index].soc_module = mod.create_vehicle(config, index)
                             client.subscribe(f"openWB/vehicle/{index}/soc_module/calculated_soc_state", 2)
                             client.subscribe(f"openWB/vehicle/{index}/soc_module/general_config", 2)
+                            if config.type == "mqtt":
+                                add_acl_role("vehicle-<id>-write-access", int(index))
                             self.processing_counter.add_task()
                             Pub().pub("openWB/system/subdata_initialized", True)
                         self.event_soc.set()
@@ -471,6 +476,8 @@ class SubData:
     def process_chargepoint_config_topic(self, var: Dict[str, chargepoint.CpTemplate], msg: mqtt.MQTTMessage):
         index = get_index(msg.topic)
         payload = decode_payload(msg.payload)
+        if (payload["type"] == "external_openwb"):
+            old_ip = var["cp"+index].chargepoint.data.config.configuration.get("ip_address", None)
         if (var["cp"+index].chargepoint.chargepoint_module is None or
                 payload["configuration"] != asdict(var["cp"+index
                                                        ].chargepoint.chargepoint_module.config.configuration)):
@@ -484,6 +491,23 @@ class SubData:
             log.debug("Neustart des Handlers für den internen Ladepunkt.")
             self.event_stop_internal_chargepoint.set()
             self.event_start_internal_chargepoint.set()
+        if (payload["type"] == "external_openwb"):
+            new_ip = payload["configuration"].get("ip_address", None)
+            if old_ip != new_ip:
+                log.debug(f"IP of chargepoint {index} changed, modifying display user")
+                if old_ip is not None:
+                    # check if ip is used in other chargepoints, if not remove display user
+                    for cp in var:
+                        if (
+                            var[cp].chargepoint.data.config.configuration.get("ip_address", None) == old_ip
+                            and var[cp].chargepoint.num != int(index)
+                        ):
+                            log.info(f"Old IP {old_ip} is still used by {cp}, not removing display user")
+                            break
+                    else:
+                        remove_display_user(old_ip)
+                if new_ip is not None:
+                    create_display_user(new_ip)
         self.set_json_payload_class(var["cp"+index].chargepoint.data.config, msg)
         self.event_cp_config.set()
 
@@ -619,6 +643,22 @@ class SubData:
                             "Bitte die openWB <a href=\"/openWB/web/settings/#/System/SystemConfiguration\">"
                             "neu starten</a>, damit die Änderungen an der HTTP-API wirksam werden.",
                             MessageType.SUCCESS
+                        )
+                    self.set_json_payload_class(var.data, msg)
+                elif "openWB/general/allow_unencrypted_access" == msg.topic:
+                    allow_unencrypted_access = decode_payload(msg.payload)
+                    if (
+                        self.event_subdata_initialized.is_set() and
+                        self.general_data.data.allow_unencrypted_access != allow_unencrypted_access
+                    ):
+                        log.warning("Änderung der Einstellung 'allow_unencrypted_access' erkannt. "
+                                    "Konfiguration von Apache2 und Mosquitto wird beim nächsten Neustart angepasst.")
+                        pub_system_message(
+                            msg.payload,
+                            f"Unsichere Verbindungen wurden {'' if allow_unencrypted_access else 'de'}aktiviert.<br />"
+                            "Bitte die openWB <a href=\"/openWB/web/settings/#/System/SystemConfiguration\">"
+                            "neu starten</a>, damit die Änderungen wirksam werden.",
+                            MessageType.WARNING
                         )
                     self.set_json_payload_class(var.data, msg)
                 else:
@@ -962,6 +1002,22 @@ class SubData:
             elif re.search("^.+/io/[0-9]+/set/manual/digital_output", msg.topic) is not None:
                 index = get_index(msg.topic)
                 self.set_json_payload(var["io"+index].set_manual["digital_output"], msg)
+            elif "openWB/system/security/user_management_active" == msg.topic:
+                user_management_active = decode_payload(msg.payload)
+                if (
+                    self.event_subdata_initialized.is_set() and
+                    var["system"].data["security"]["user_management_active"] != user_management_active
+                ):
+                    log.warning("Änderung der Einstellung 'user_management_active' erkannt. "
+                                "Konfiguration von Mosquitto wird beim nächsten Neustart angepasst.")
+                    pub_system_message(
+                        msg.payload,
+                        f"Benutzerverwaltung wurde {'' if user_management_active else 'de'}aktiviert.<br />"
+                        "Bitte die openWB <a href=\"/openWB/web/settings/#/System/SystemConfiguration\">"
+                        "neu starten</a>, damit die Änderungen wirksam werden.",
+                        MessageType.WARNING
+                    )
+                self.set_json_payload(var["system"].data["security"], msg)
             else:
                 if "module_update_completed" in msg.topic:
                     self.event_module_update_completed.set()

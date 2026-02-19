@@ -24,7 +24,8 @@ class System:
         """
         self.data = {"update_in_progress": False,
                      "perform_update": False,
-                     "backup_cloud": {}}
+                     "backup_cloud": {},
+                     "security": {}}
         self.backup_cloud: Optional[ConfigurableBackupCloud] = None
 
     def perform_update(self):

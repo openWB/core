@@ -198,6 +198,12 @@ create_archive() {
 		echo "creating new backup file: $BACKUPFILE"
 		echo "adding files"
 
+		# JSON-Dateien im clients-Ordner sammeln
+		json_files=()
+		while IFS= read -r -d '' file; do
+			json_files+=("${file#$TARBASEDIR/}")
+		done < <(find "$TARBASEDIR/$OPENWBDIRNAME/data/clients" -maxdepth 1 -type f -name '*.json' -print0)
+
 		sudo tar --verbose --create \
 			--file="$BACKUPFILE" \
 			--exclude=".gitignore" \
@@ -212,10 +218,30 @@ create_archive() {
 				"$OPENWBDIRNAME/data/daily_log" \
 				"$OPENWBDIRNAME/data/monthly_log" \
 				"$OPENWBDIRNAME/data/log/uuid" \
+				"${json_files[@]}" \
 			--directory="$HOMEDIR/" \
 				"configuration.json" \
 			--directory="/" \
 				"boot/config.txt"
+		
+		if [ -f "$VAR_LIB/mosquitto/dynamic-security.json" ]; then
+			echo "adding mosquitto/dynamic-security.json"
+			sudo tar --verbose --append \
+				--file="$BACKUPFILE" \
+				--directory="$VAR_LIB/" \
+					"mosquitto/dynamic-security.json"
+		else
+			echo "mosquitto/dynamic-security.json not found, skipping"
+		fi
+		if [ -f "$HOMEDIR/.config/mosquitto_ctrl" ]; then
+			echo "adding mosquitto_ctrl file"
+			sudo tar --verbose --append \
+				--file="$BACKUPFILE" \
+				--directory="$HOMEDIR/.config/" \
+					"mosquitto_ctrl"
+		else
+			echo "mosquitto_ctrl file not found, skipping"
+		fi
 	}
 
 	calculate_checksums() {

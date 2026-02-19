@@ -1,0 +1,309 @@
+[
+	{
+		"rolename": "chargepoint-<id>-access",
+		"textname": "Leserechte für Ladepunkt <id>",
+		"textdescription": "Erlaubt das Empfangen von Daten für Ladepunkt <id>.",
+		"acls": [
+			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/chargepoint/<id>/set/charge_template",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/chargepoint/<id>/set/manual_lock",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/chargepoint/<id>/config/ev",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/command/+/todo/addChargeTemplateSchedulePlan",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/command/+/todo/addChargeTemplateTimeChargingPlan",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/chargepoint/<id>/#",
+				"priority": 0,
+				"allow": true
+			}
+		]
+	},
+	{
+		"rolename": "chargepoint-<id>-write-access",
+		"textname": "Schreibrechte für MQTT-Ladepunkt <id>",
+		"textdescription": "Erlaubt das Senden von Daten für Ladepunkt <id>.",
+		"acls": [
+			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/mqtt/chargepoint/<id>/get/#",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/set/mqtt/chargepoint/<id>/get/#",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/mqtt/chargepoint/<id>/#",
+				"priority": 0,
+				"allow": true
+			}
+		]
+	},
+	{
+		"rolename": "vehicle-<id>-access",
+		"textname": "Leserechte für Fahrzeug <id>",
+		"textdescription": "Erlaubt das Empfangen von Daten für Fahrzeug <id>.",
+		"acls": [
+			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/vehicle/<id>/soc_module/calculated_soc_state/manual_soc",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/vehicle/<id>/get/soc",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/vehicle/<id>/get/soc_timestamp",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/vehicle/<id>/get/range",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/vehicle/<id>/#",
+				"priority": 0,
+				"allow": true
+			}
+		]
+	},
+	{
+		"rolename": "vehicle-<id>-write-access",
+		"textname": "Schreibrechte für Fahrzeug <id> mit MQTT-SoC",
+		"textdescription": "Erlaubt das Senden von SoC-Daten für Fahrzeug <id>.",
+		"acls": [
+			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/mqtt/vehicle/<id>/get/#",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/set/mqtt/vehicle/<id>/get/#",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/mqtt/vehicle/<id>/get/#",
+				"priority": 0,
+				"allow": true
+			}
+		]
+	},
+	{
+		"rolename": "bat-<id>-access",
+		"textname": "Leserechte für Batterie <id>",
+		"textdescription": "Erlaubt das Empfangen von Daten für Batterie <id>.",
+		"acls": [
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/bat/<id>/get/+",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/system/device/+/component/<id>/config",
+				"priority": 0,
+				"allow": true
+			}
+		]
+	},
+	{
+		"rolename": "bat-<id>-write-access",
+		"textname": "Schreibrechte für Batterie <id>",
+		"textdescription": "Erlaubt das Senden von Daten für Batterie <id>.",
+		"acls": [
+			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/mqtt/bat/<id>/get/+",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/set/mqtt/bat/<id>/get/+",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/mqtt/bat/<id>/set/#",
+				"priority": 0,
+				"allow": true
+			}
+		]
+	},
+	{
+		"rolename": "counter-<id>-access",
+		"textname": "Leserechte für Zähler <id>",
+		"textdescription": "Erlaubt das Empfangen von Daten für Zähler <id>.",
+		"acls": [
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/counter/<id>/get/+",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/counter/<id>/config/+",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/system/device/+/component/<id>/config",
+				"priority": 0,
+				"allow": true
+			}
+		]
+	},
+	{
+		"rolename": "counter-<id>-write-access",
+		"textname": "Schreibrechte für Zähler <id>",
+		"textdescription": "Erlaubt das Senden von Daten für Zähler <id>.",
+		"acls": [
+			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/mqtt/counter/<id>/get/+",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/set/mqtt/counter/<id>/get/+",
+				"priority": 0,
+				"allow": true
+			}
+		]
+	},
+	{
+		"rolename": "inverter-<id>-access",
+		"textname": "Leserechte für Wechselrichter <id>",
+		"textdescription": "Erlaubt das Empfangen von Daten für Wechselrichter <id>.",
+		"acls": [
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/pv/<id>/get/+",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/system/device/+/component/<id>/config",
+				"priority": 0,
+				"allow": true
+			}
+		]
+	},
+	{
+		"rolename": "inverter-<id>-write-access",
+		"textname": "Schreibrechte für Wechselrichter <id>",
+		"textdescription": "Erlaubt das Senden von Daten für Wechselrichter <id>.",
+		"acls": [
+			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/mqtt/pv/<id>/get/+",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/set/mqtt/pv/<id>/get/+",
+				"priority": 0,
+				"allow": true
+			}
+		]
+	},
+	{
+		"rolename": "io-action-<id>-access",
+		"textname": "Leserechte für IO-Aktion <id>",
+		"textdescription": "Erlaubt das Empfangen von Daten für IO-Aktion <id>.",
+		"acls": [
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/io/action/<id>/+",
+				"priority": 0,
+				"allow": true
+			}
+		]
+	},
+	{
+		"rolename": "io-device-<id>-access",
+		"textname": "Leserechte für IO-Gerät <id>",
+		"textdescription": "Erlaubt das Empfangen von Daten für IO-Gerät <id>.",
+		"acls": [
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/io/states/<id>/#",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/system/io/<id>/config",
+				"priority": 0,
+				"allow": true
+			}
+		]
+	},
+	{
+		"rolename": "io-device-<id>-write-access",
+		"textname": "Schreibrechte für IO-Gerät <id>",
+		"textdescription": "Erlaubt das Senden von Daten für IO-Gerät <id>.",
+		"acls": [
+			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/system/io/<id>/set/manual/#",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/set/system/io/<id>/set/manual/#",
+				"priority": 0,
+				"allow": true
+			}
+		]
+	}
+]

@@ -19,11 +19,22 @@ export default {
       mqttStore: useMqttStore(),
     };
   },
+  computed: {
+    gridPower() {
+      return this.mqttStore.getGridPower("object");
+    },
+    showGridPower() {
+      return this.gridPower.value !== undefined;
+    },
+  },
 };
 </script>
 
 <template>
-  <dashboard-card color="danger">
+  <dashboard-card
+    v-if="showGridPower"
+    color="danger"
+  >
     <template #headerLeft>
       <font-awesome-icon
         fixed-width
@@ -32,7 +43,7 @@ export default {
       EVU
     </template>
     <template #headerRight>
-      {{ mqttStore.getGridPower() }}
+      {{ gridPower.value.textValue }}
     </template>
     <spark-line
       color="var(--color--danger)"

@@ -18,9 +18,9 @@
         </template>
         <!-- Expansion chevron icon -->
         <q-icon
-          v-if="props.item.id === 'grid' && secondaryCountersConfigured"
+          v-if="secondaryComponentsConfigured"
           name="keyboard_arrow_down"
-          :class="['expand-icon', { 'rotate-180': gridExpanded }]"
+          :class="['expand-icon', { 'rotate-180': rowExpanded }]"
         />
       </div>
     </div>
@@ -33,17 +33,16 @@
     <!-- Arrow -->
     <div class="col-arrow">
       <q-icon
-        v-if="props.currentPowerVisible"
-        :name=" arrowDirection(item.id).noCurrent
-              ? 'horizontal_rule'
-              : 'double_arrow'
+        v-if="props.currentPowerVisible && props.item.power !== undefined"
+        :name="
+          arrowDirection(item.id).noCurrent ? 'horizontal_rule' : 'double_arrow'
         "
         :class="{ 'rotate-180': arrowDirection(props.item.id).rotate180 }"
       />
     </div>
     <!-- Power -->
     <div class="col-power">
-      <span v-if="props.currentPowerVisible">
+      <span v-if="props.currentPowerVisible && props.item.power !== undefined">
         {{ props.item.power.replace('-', '') }}
       </span>
     </div>
@@ -55,7 +54,10 @@
       <slot name="right-label" :item="props.item">
         <template
           v-if="
-            props.item.id === 'grid' || props.item.id.startsWith('counter-')
+            (props.item.id === 'grid' ||
+              props.item.id.startsWith('counter-') ||
+              props.item.id.startsWith('chargepoint-')) &&
+            props.item.today !== undefined
           "
         >
           <div>Bezug:</div>
@@ -68,7 +70,10 @@
       <slot name="right-value" :item="props.item">
         <template
           v-if="
-            props.item.id === 'grid' || props.item.id.startsWith('counter-')
+            (props.item.id === 'grid' ||
+              props.item.id.startsWith('counter-') ||
+              props.item.id.startsWith('chargepoint-')) &&
+            props.item.today !== undefined
           "
         >
           <div>{{ props.item.today.imported }}</div>
@@ -92,8 +97,8 @@ const props = defineProps<{
   componentNameVisible: boolean;
   currentPowerVisible: boolean;
   socValueVisible: boolean;
-  secondaryCountersConfigured?: boolean;
-  gridExpanded?: boolean;
+  secondaryComponentsConfigured?: boolean;
+  rowExpanded?: boolean;
 }>();
 
 const rowHeightCssValue = computed(() => `${props.rowHeight}px`);

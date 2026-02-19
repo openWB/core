@@ -1,0 +1,3 @@
+<Files "*.json">
+	Require all denied
+</Files>
