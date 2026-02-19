@@ -1,6 +1,9 @@
+from datetime import datetime, timedelta
+import random
 from typing import TypeVar, Generic, Callable
 from helpermodules import timecheck
 import logging
+from helpermodules.pub import Pub
 from modules.common import store
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import TariffState
@@ -8,9 +11,12 @@ from modules.common.component_type import ComponentType
 from modules.common.fault_state import ComponentInfo, FaultState
 
 
+# Stunden für tägliche Tarifaktualisierung, manche Anbieter aktualisieren mehrfach täglich
+TARIFF_UPDATE_HOURS = [2, 8, 14, 20]
 T_TARIFF_CONFIG = TypeVar("T_TARIFF_CONFIG")
 TARIFF_UPDATE_HOUR = 14  # latest expected time for daily tariff update
 ONE_HOUR_SECONDS: int = 3600
+
 log = logging.getLogger(__name__)
 
 
@@ -28,16 +34,35 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
 
     def update(self) -> None:
         if hasattr(self, "_component_updater"):
-            with SingleComponentUpdateContext(self.fault_state):
-                tariff_state, timeslot_length_seconds = self.__update_et_provider_data()
-                self.__store_and_publish_updated_data(tariff_state)
-                self.__log_and_publish_progress(timeslot_length_seconds, tariff_state)
+            try:
+                with SingleComponentUpdateContext(self.fault_state):
+                    tariff_state, timeslot_length_seconds = self.__update_et_provider_data()
+                    self.__store_and_publish_updated_data(tariff_state)
+                    self.__log_and_publish_progress(timeslot_length_seconds, tariff_state)
+            except Exception as e:
+                log.exception(f"Fehler beim Aktualisieren der Tarifdaten {e}")
+                self.fault_state.warning("Error updating tariff data, retry in 5 minutes")
 
     def __update_et_provider_data(self) -> tuple[TariffState, int]:
-        tariff_state = self._component_updater()
+        tariff_state = self.__call_component_updater()
         timeslot_length_seconds = self.__calculate_price_timeslot_length(tariff_state)
         tariff_state = self._remove_outdated_prices(tariff_state, timeslot_length_seconds)
         return tariff_state, timeslot_length_seconds
+
+    def __calculate_next_query_time(self) -> float:
+        now = datetime.now()
+        current_hour = now.hour
+        next_hour = min([hour for hour in TARIFF_UPDATE_HOURS
+                         if hour > current_hour], default=TARIFF_UPDATE_HOURS[0])
+        # reduce serverload on their site by trying early and randomizing query time minutes and seconds
+        next_query_time = (now.replace(hour=next_hour, minute=0, second=0, microsecond=0) +
+                           timedelta(days=1, minutes=random.randint(1, 7) * -5))
+        Pub().pub("openWB/set/optional/ep/get/next_query_time", int(next_query_time.timestamp()))
+
+    def __call_component_updater(self) -> TariffState:
+        tariff_state = self._component_updater()
+        self.__calculate_next_query_time()
+        return tariff_state
 
     def __log_and_publish_progress(self, timeslot_length_seconds, tariff_state):
         def publish_info(message_extension: str) -> None:

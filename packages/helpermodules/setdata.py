@@ -861,7 +861,7 @@ class SetData:
             elif "openWB/set/optional/ep/get/prices" in msg.topic:
                 self._validate_value(msg, "json")
             elif "openWB/set/optional/ep/get/next_query_time" in msg.topic:
-                self._validate_value(msg, float)
+                self._validate_value(msg, int)
             elif "openWB/set/optional/ep/configured" in msg.topic:
                 self._validate_value(msg, bool)
             elif "module_update_completed" in msg.topic:

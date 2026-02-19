@@ -1,15 +1,9 @@
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-import random
 from typing import Dict, Optional, Protocol
 
 from dataclass_utils.factories import empty_dict_factory
 from helpermodules.constants import NO_ERROR
-from helpermodules.pub import Pub
 from modules.display_themes.cards.config import CardsDisplayTheme
-
-# Stunden für tägliche Tarifaktualisierung, manche Anbieter aktualisieren mehrfach täglich
-TARIFF_UPDATE_HOURS = [2, 8, 14, 20]
 
 
 @dataclass
@@ -56,7 +50,7 @@ def get_grid_fee_factory() -> GridFee:
 
 @dataclass
 class ElectricityPricingGet:
-    next_query_time: Optional[float] = field(default=None, metadata={"topic": "ep/next_query_time"})
+    next_query_time: Optional[int] = field(default=None, metadata={"topic": "ep/next_query_time"})
     _prices: Dict = field(default_factory=empty_dict_factory, metadata={"topic": "ep/prices"})
 
     @property
@@ -66,23 +60,6 @@ class ElectricityPricingGet:
     @prices.setter
     def prices(self, value: Dict):
         self._prices = value
-        if value:
-            now = datetime.now()
-            current_hour = now.hour
-            next_hour = None
-            for hour in TARIFF_UPDATE_HOURS:
-                if hour > current_hour:
-                    next_hour = hour
-                    break
-            # Wenn keine Stunde heute gefunden, nimm die erste Stunde vom nächsten Tag
-            if next_hour is None:
-                next_hour = TARIFF_UPDATE_HOURS[0]
-                next_query_time = (now + timedelta(days=1)).replace(hour=next_hour, minute=0, second=0, microsecond=0)
-            else:
-                next_query_time = now.replace(hour=next_hour, minute=0, second=0, microsecond=0)
-            # reduce serverload on their site by trying early and randomizing query time
-            next_query_time += timedelta(minutes=random.randint(1, 7) * -5)
-            Pub().pub("openWB/set/optional/ep/get/next_query_time", next_query_time.timestamp())
 
 
 def electricity_pricing_get_factory() -> ElectricityPricingGet:
