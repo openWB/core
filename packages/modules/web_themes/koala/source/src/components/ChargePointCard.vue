@@ -81,6 +81,8 @@
         <div class="text-subtitle2">Energie-Ziel aktiv</div>
         <q-toggle
           v-model="energyTargetEnabled"
+          icon="ev_station"
+          size="lg"
           @update:model-value="onEnergyToggle"
         />
       </div>
