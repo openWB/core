@@ -9,22 +9,31 @@ from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import TariffState
 from modules.common.component_type import ComponentType
 from modules.common.fault_state import ComponentInfo, FaultState
+from control.optional_data import OptionalData, PricingGet
 
 
 # Stunden für tägliche Tarifaktualisierung, manche Anbieter aktualisieren mehrfach täglich
-TARIFF_UPDATE_HOURS = [2, 8, 14, 20]
 T_TARIFF_CONFIG = TypeVar("T_TARIFF_CONFIG")
-TARIFF_UPDATE_HOUR = 14  # latest expected time for daily tariff update
 ONE_HOUR_SECONDS: int = 3600
 
 log = logging.getLogger(__name__)
 
 
 class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
+    # Default value, may be overridden in __init__ if config provides it
+
     def __init__(self,
                  config: T_TARIFF_CONFIG,
-                 component_initializer: Callable[[], float]) -> None:
+                 component_initializer: Callable[[], float],
+                 get: PricingGet) -> None:
         self.config = config
+        self.get = get
+
+        # Set update_hours from config if available, else default to [14]
+        if hasattr(config.configuration, 'update_hours') and config.configuration.update_hours is not None:
+            self.update_hours = config.configuration.update_hours
+        else:
+            self.update_hours = [14]
 
         # nach Init auf NO_ERROR setzen, damit der Fehlerstatus beim Modulwechsel gelöscht wird
         self.fault_state.no_error()
@@ -52,16 +61,19 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
     def __calculate_next_query_time(self) -> float:
         now = datetime.now()
         current_hour = now.hour
-        next_hour = min([hour for hour in TARIFF_UPDATE_HOURS
-                         if hour > current_hour], default=TARIFF_UPDATE_HOURS[0])
+        next_hour = min([hour for hour in self.tariff_update_hours
+                         if hour > current_hour], default=self.tariff_update_hours[0])
         # reduce serverload on their site by trying early and randomizing query time minutes and seconds
         next_query_time = (now.replace(hour=next_hour, minute=0, second=0, microsecond=0) +
                            timedelta(days=1, minutes=random.randint(1, 7) * -5))
         Pub().pub("openWB/set/optional/ep/get/next_query_time", int(next_query_time.timestamp()))
 
     def __call_component_updater(self) -> TariffState:
+        last_known_timestamp = datetime.fromtimestamp(int(max(self.get.prices.keys()) if self.get.prices else 0))
         tariff_state = self._component_updater()
-        self.__calculate_next_query_time()
+        if (last_known_timestamp <
+                datetime.fromtimestamp(int(max(tariff_state.prices.keys())))):
+            self.__calculate_next_query_time()
         return tariff_state
 
     def __log_and_publish_progress(self, timeslot_length_seconds, tariff_state):
@@ -111,7 +123,7 @@ class ConfigurableFlexibleTariff(ConfigurableTariff):
                  component_initializer: Callable[[], float]) -> None:
         self.store = store.get_flexible_tariff_value_store()
         self.fault_state = FaultState(ComponentInfo(None, config.name, ComponentType.FLEXIBLE_TARIFF.value))
-        super().__init__(config, component_initializer)
+        super().__init__(config, component_initializer, OptionalData().electricity_pricing.flexible_tariff.get)
 
 
 class ConfigurableGridFee(ConfigurableTariff):
@@ -120,4 +132,4 @@ class ConfigurableGridFee(ConfigurableTariff):
                  component_initializer: Callable[[], float]) -> None:
         self.store = store.get_grid_fee_value_store()
         self.fault_state = FaultState(ComponentInfo(None, config.name, ComponentType.GRID_FEE.value))
-        super().__init__(config, component_initializer)
+        super().__init__(config, component_initializer, OptionalData().electricity_pricing.grid_fee.get)

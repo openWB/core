@@ -9,6 +9,7 @@ class OstromTariffConfiguration:
         self.client_id = client_id
         self.client_secret = client_secret
         self.zip = zip
+        self.update_hours = [2, 8, 14, 20]  # expected time to get next chunk of prices
 
 
 class OstromTariff:
