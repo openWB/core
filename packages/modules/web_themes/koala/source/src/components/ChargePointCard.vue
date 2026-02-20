@@ -87,7 +87,13 @@
           icon="ev_station"
           size="lg"
           @update:model-value="onEnergyToggle"
-        />
+        >
+          <q-tooltip>
+            {{
+              energyTargetEnabled ? 'Energie Begrenzung' : 'keine Begrenzung'
+            }}
+          </q-tooltip>
+        </q-toggle>
       </div>
     </q-card-section>
     <q-card-section>
@@ -106,7 +112,11 @@
         @click="openLimitDialog"
       >
         <template #tooltip>
-          <q-tooltip> Begrenzung einstellen </q-tooltip>
+          <q-tooltip
+            v-if="chargeMode !== 'scheduled_charging' && chargeMode !== 'stop'"
+          >
+            Begrenzung einstellen
+          </q-tooltip>
         </template>
       </SliderDouble>
     </q-card-section>
@@ -365,7 +375,6 @@ const onEnergyToggle = (enabled: boolean) => {
   const limit = mqttStore.chargePointConnectedVehicleInstantChargeLimit(
     props.chargePointId,
   );
-
   if (enabled) {
     limit.value = 'amount';
   } else {
