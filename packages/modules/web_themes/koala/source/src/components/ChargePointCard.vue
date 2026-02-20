@@ -77,7 +77,10 @@
       </div>
     </q-card-section>
     <q-card-section>
-      <div v-if="showEnergyLimitToggle" class="row items-center justify-between">
+      <div
+        v-if="showEnergyLimitToggle"
+        class="row items-center justify-between"
+      >
         <div class="text-subtitle2">Energie Begrenzung</div>
         <q-toggle
           v-model="energyTargetEnabled"
@@ -101,7 +104,11 @@
         :on-edit-soc="openSocDialog"
         :on-refresh-soc="refreshSoc"
         @click="openLimitDialog"
-      />
+      >
+        <template #tooltip>
+          <q-tooltip> Begrenzung einstellen </q-tooltip>
+        </template>
+      </SliderDouble>
     </q-card-section>
     <q-card-actions v-if="$slots['card-actions']" align="right">
       <slot name="card-actions"></slot>

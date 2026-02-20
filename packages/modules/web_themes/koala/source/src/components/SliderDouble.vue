@@ -16,6 +16,7 @@
         @touchmove.stop
         @touchend.stop
       />
+      <slot name="tooltip" />
       <q-slider
         v-if="props.limitMode == 'soc'"
         v-model="target"
