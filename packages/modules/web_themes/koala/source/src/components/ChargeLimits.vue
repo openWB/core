@@ -5,13 +5,12 @@
   >
     <q-card>
       <q-card-section>
-      <div class="row nowrap q-mb-sm">
-        <div class="text-h6">Begrenzung</div>
-        <q-space />
-        <q-btn icon="close" flat round dense v-close-popup />
-      </div>
-      <q-separator class="q-mt-sm q-mb-sm" />
-
+        <div class="row nowrap q-mb-sm">
+          <div class="text-h6">Begrenzung</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup />
+        </div>
+        <q-separator class="q-mt-sm q-mb-sm" />
         <div
           class="row items-center justify-center q-ma-none q-pa-none no-wrap"
         >
@@ -72,47 +71,87 @@ const mqttStore = useMqttStore();
 const isSmallScreen = computed(() => Screen.lt.sm);
 const tempValue = ref<boolean>(props.modelValue);
 
-  const baseLimitModes = [
+const baseLimitModes = [
   { value: 'none', label: 'keine' },
   { value: 'soc', label: 'EV-SoC' },
   { value: 'amount', label: 'Energie' },
-]
+];
 
 const limitModes = computed(() => {
   return baseLimitModes.filter((mode) => {
-    // If vehicle has no SoC module → remove soc
+    // If vehicle has no SoC module - remove soc
     if (!vehicleSocType.value && mode.value === 'soc') {
-      return false
+      return false;
     }
-    return true
-  })
-})
+    return true;
+  });
+});
 
 const vehicleSocType = computed(() =>
   mqttStore.chargePointConnectedVehicleSocType(props.chargePointId),
 )?.value;
 
-const limitMode = computed(() =>
-  mqttStore.chargePointConnectedVehicleInstantChargeLimit(props.chargePointId),
+const chargeMode = computed(
+  () =>
+    mqttStore.chargePointConnectedVehicleChargeMode(props.chargePointId)?.value,
 );
 
-const limitSoC = computed(() =>
-  mqttStore.chargePointConnectedVehicleInstantChargeLimitSoC(
-    props.chargePointId,
-  ),
-);
+const activeLimitConfig = computed(() => {
+  switch (chargeMode.value) {
+    case 'instant_charging':
+      return {
+        mode: mqttStore.chargePointConnectedVehicleInstantChargeLimit(
+          props.chargePointId,
+        ),
+        soc: mqttStore.chargePointConnectedVehicleInstantChargeLimitSoC(
+          props.chargePointId,
+        ),
+        energy: mqttStore.chargePointConnectedVehicleInstantChargeLimitEnergy(
+          props.chargePointId,
+        ),
+      };
+    case 'pv_charging':
+      return {
+        mode: mqttStore.chargePointConnectedVehiclePvChargeLimit(
+          props.chargePointId,
+        ),
+        soc: mqttStore.chargePointConnectedVehiclePvChargeLimitSoC(
+          props.chargePointId,
+        ),
+        energy: mqttStore.chargePointConnectedVehiclePvChargeLimitEnergy(
+          props.chargePointId,
+        ),
+      };
+    case 'eco_charging':
+      return {
+        mode: mqttStore.chargePointConnectedVehicleEcoChargeLimit(
+          props.chargePointId,
+        ),
+        soc: mqttStore.chargePointConnectedVehicleEcoChargeLimitSoC(
+          props.chargePointId,
+        ),
+        energy: mqttStore.chargePointConnectedVehicleEcoChargeLimitEnergy(
+          props.chargePointId,
+        ),
+      };
+    default:
+      return {
+        mode: ref('none'),
+        soc: ref(0),
+        energy: ref(0),
+      };
+  }
+});
 
-const limitEnergy = computed(() =>
-  mqttStore.chargePointConnectedVehicleInstantChargeLimitEnergy(
-    props.chargePointId,
-  ),
-);
+const limitMode = computed(() => activeLimitConfig.value.mode);
+const limitSoC = computed(() => activeLimitConfig.value.soc);
+const limitEnergy = computed(() => activeLimitConfig.value.energy);
 
 const visible = computed({
   get: () => tempValue.value,
   set: (value) => {
     tempValue.value = value;
-    emit('update:model-value', value );
+    emit('update:model-value', value);
   },
 });
 
