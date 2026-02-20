@@ -96,7 +96,7 @@ const chargeMode = computed(
     mqttStore.chargePointConnectedVehicleChargeMode(props.chargePointId)?.value,
 );
 
-const activeLimitConfig = computed(() => {
+const activeChargeLimitConfig = computed(() => {
   switch (chargeMode.value) {
     case 'instant_charging':
       return {
@@ -143,9 +143,9 @@ const activeLimitConfig = computed(() => {
   }
 });
 
-const limitMode = computed(() => activeLimitConfig.value.mode);
-const limitSoC = computed(() => activeLimitConfig.value.soc);
-const limitEnergy = computed(() => activeLimitConfig.value.energy);
+const limitMode = computed(() => activeChargeLimitConfig.value.mode);
+const limitSoC = computed(() => activeChargeLimitConfig.value.soc);
+const limitEnergy = computed(() => activeChargeLimitConfig.value.energy);
 
 const visible = computed({
   get: () => tempValue.value,
