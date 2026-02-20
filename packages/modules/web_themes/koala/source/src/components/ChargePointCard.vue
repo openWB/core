@@ -77,7 +77,7 @@
       </div>
     </q-card-section>
     <q-card-section>
-      <div v-if="!hasSocModule" class="row items-center justify-between">
+      <div v-if="showEnergyLimitToggle" class="row items-center justify-between">
         <div class="text-subtitle2">Energie Begrenzung</div>
         <q-toggle
           v-model="energyTargetEnabled"
@@ -334,6 +334,16 @@ const energyTargetEnabled = computed({
 const showSlider = computed(() => {
   if (hasSocModule.value) return true;
   return limitMode.value === 'amount';
+});
+
+const showEnergyLimitToggle = computed(() => {
+  if (
+    hasSocModule.value ||
+    chargeMode.value === 'scheduled_charging' ||
+    chargeMode.value === 'stop'
+  )
+    return false;
+  return true;
 });
 
 const vehicleTarget = computed(() => {
