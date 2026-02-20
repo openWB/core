@@ -1,15 +1,18 @@
 #!/usr/bin/python3
+from pathlib import Path
 import sys
+
+
 sys.path.append("/var/www/html/openWB/packages")
 try:
-    from modules.internal_chargepoint_handler.clients import get_modbus_client
+    from modules.common.modbus import ModbusSerialClient_
 except Exception as e:
     # Durch try-except werden die Imports vom Formatierer nicht an den Dateianfang geschoben.
     print(e)
 
-local_chargepoint_num = int(sys.argv[1])
+unit = int(sys.argv[1])
 register = int(sys.argv[2])
 value = int(sys.argv[3])
 
-client, evse_ids = get_modbus_client(local_chargepoint_num)
-client.write_register(register, value, unit=evse_ids[0])
+client = ModbusSerialClient_(str(list(Path("/dev/serial/by-path").glob("*"))[0].resolve()))
+client.write_register(register, value, unit=unit)
