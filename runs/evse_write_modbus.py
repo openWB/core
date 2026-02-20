@@ -15,4 +15,4 @@ register = int(sys.argv[2])
 value = int(sys.argv[3])
 
 client = ModbusSerialClient_(str(list(Path("/dev/serial/by-path").glob("*"))[0].resolve()))
-client.write_register(register, value, unit=unit)
+client.write_registers(register, value, unit=unit)
