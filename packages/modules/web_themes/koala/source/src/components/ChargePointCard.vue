@@ -78,7 +78,7 @@
     </q-card-section>
     <q-card-section>
       <div v-if="!hasSocModule" class="row items-center justify-between">
-        <div class="text-subtitle2">Energie-Ziel aktiv</div>
+        <div class="text-subtitle2">Energie Begrenzung</div>
         <q-toggle
           v-model="energyTargetEnabled"
           icon="ev_station"
@@ -90,7 +90,10 @@
     <q-card-section>
       <SliderDouble
         v-if="showSlider"
-        class="q-mt-sm cursor-pointer"
+        :class="[
+          'q-mt-sm',
+          limitEditable && 'cursor-pointer',
+        ]"
         :model-value="target"
         :readonly="true"
         :charge-mode="chargeMode"
@@ -100,7 +103,7 @@
         :vehicle-soc-type="vehicleSocType"
         :on-edit-soc="openSocDialog"
         :on-refresh-soc="refreshSoc"
-        @click="chargeLimitsVisible = true"
+        @click="openLimitDialog"
       />
     </q-card-section>
     <q-card-actions v-if="$slots['card-actions']" align="right">
@@ -182,6 +185,15 @@ const limitMode = computed(() => {
 
 const settingsVisible = ref<boolean>(false);
 const chargeLimitsVisible = ref<boolean>(false);
+
+const limitEditable = computed(() => {
+  return !['scheduled_charging', 'stop'].includes(chargeMode.value);
+});
+
+const openLimitDialog = () => {
+  if (!limitEditable.value) return;
+  chargeLimitsVisible.value = true;
+};
 
 const socInputVisible = ref<boolean>(false);
 const openSocDialog = () => {
@@ -296,22 +308,20 @@ const target = computed(() => {
 const hasSocModule = computed(() => !!vehicleSocType.value);
 
 const instantLimit = computed(() =>
-  mqttStore.chargePointConnectedVehicleInstantChargeLimit(
-    props.chargePointId
-  )
+  mqttStore.chargePointConnectedVehicleInstantChargeLimit(props.chargePointId),
 );
 
 const energyTargetEnabled = computed({
   get: () => instantLimit.value.value === 'amount',
   set: (enabled: boolean) => {
-    instantLimit.value.value = enabled ? 'amount' : 'none'
-  }
+    instantLimit.value.value = enabled ? 'amount' : 'none';
+  },
 });
 
 const showSlider = computed(() => {
-  if (hasSocModule.value) return true
-  return limitMode.value === 'amount'
-})
+  if (hasSocModule.value) return true;
+  return limitMode.value === 'amount';
+});
 
 const vehicleTarget = computed(() => {
   return mqttStore.vehicleChargeTarget(props.chargePointId).value;
