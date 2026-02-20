@@ -90,10 +90,7 @@
     <q-card-section>
       <SliderDouble
         v-if="showSlider"
-        :class="[
-          'q-mt-sm',
-          limitEditable && 'cursor-pointer',
-        ]"
+        :class="['q-mt-sm', limitEditable && 'cursor-pointer']"
         :model-value="target"
         :readonly="true"
         :charge-mode="chargeMode"
@@ -307,14 +304,30 @@ const target = computed(() => {
 
 const hasSocModule = computed(() => !!vehicleSocType.value);
 
-const instantLimit = computed(() =>
-  mqttStore.chargePointConnectedVehicleInstantChargeLimit(props.chargePointId),
-);
+const activeChargeLimit = computed(() => {
+  switch (chargeMode.value) {
+    case 'instant_charging':
+      return mqttStore.chargePointConnectedVehicleInstantChargeLimit(
+        props.chargePointId,
+      );
+    case 'pv_charging':
+      return mqttStore.chargePointConnectedVehiclePvChargeLimit(
+        props.chargePointId,
+      );
+    case 'eco_charging':
+      return mqttStore.chargePointConnectedVehicleEcoChargeLimit(
+        props.chargePointId,
+      );
+    default:
+      return undefined;
+  }
+});
 
 const energyTargetEnabled = computed({
-  get: () => instantLimit.value.value === 'amount',
+  get: () => activeChargeLimit.value?.value === 'amount',
   set: (enabled: boolean) => {
-    instantLimit.value.value = enabled ? 'amount' : 'none';
+    if (!activeChargeLimit.value) return;
+    activeChargeLimit.value.value = enabled ? 'amount' : 'none';
   },
 });
 
