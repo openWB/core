@@ -46,7 +46,7 @@
             name="edit"
             size="xs"
             class="q-ml-xs cursor-pointer"
-            @click="onEditSoc"
+            @click.stop="onEditSoc"
           >
             <q-tooltip>Ladestand eingeben</q-tooltip>
           </q-icon>
@@ -55,7 +55,7 @@
             name="refresh"
             size="xs"
             class="q-ml-xs cursor-pointer"
-            @click="onRefreshSoc"
+            @click.stop="onRefreshSoc"
           >
             <q-tooltip>Ladestand aktualisieren</q-tooltip>
           </q-icon>
