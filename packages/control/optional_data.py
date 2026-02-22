@@ -9,6 +9,7 @@ from modules.display_themes.cards.config import CardsDisplayTheme
 @dataclass
 class PricingGet:
     fault_state: int = field(default=0)
+    next_query_time: int = field(default=0)
     fault_str: str = field(default=NO_ERROR)
     prices: Dict = field(default_factory=empty_dict_factory)
 
@@ -19,6 +20,7 @@ def create_pricing_get_with_topics(topic_prefix: str) -> PricingGet:
     pricing_get.__dataclass_fields__['fault_state'].metadata = {"topic": f"{topic_prefix}/get/fault_state"}
     pricing_get.__dataclass_fields__['fault_str'].metadata = {"topic": f"{topic_prefix}/get/fault_str"}
     pricing_get.__dataclass_fields__['prices'].metadata = {"topic": f"{topic_prefix}/get/prices"}
+    pricing_get.__dataclass_fields__['next_query_time'].metadata = {"topic": f"{topic_prefix}/get/next_query_time"}
     return pricing_get
 
 
@@ -33,6 +35,7 @@ def grid_fee_get_factory() -> PricingGet:
 @dataclass
 class FlexibleTariff:
     get: PricingGet = field(default_factory=flexible_tariff_get_factory)
+    name: str = field(default="flexible_tariff")
 
 
 def get_flexible_tariff_factory() -> FlexibleTariff:
@@ -42,6 +45,7 @@ def get_flexible_tariff_factory() -> FlexibleTariff:
 @dataclass
 class GridFee:
     get: PricingGet = field(default_factory=grid_fee_get_factory)
+    name: str = field(default="grid_fee")
 
 
 def get_grid_fee_factory() -> GridFee:
@@ -50,7 +54,6 @@ def get_grid_fee_factory() -> GridFee:
 
 @dataclass
 class ElectricityPricingGet:
-    next_query_time: Optional[int] = field(default=None, metadata={"topic": "ep/next_query_time"})
     _prices: Dict = field(default_factory=empty_dict_factory, metadata={"topic": "ep/prices"})
 
     @property
