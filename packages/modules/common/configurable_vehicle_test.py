@@ -204,12 +204,14 @@ def test_2(monkeypatch):
     c = conf_vehicle_manual_from_cp()
 
     # execution
-    c.update(VehicleUpdateData(plug_state=True,average_consump=18))
+    c.update(VehicleUpdateData(plug_state=True, average_consump=18))
     c.calculated_soc_state.manual_soc = 42
-    c.update(VehicleUpdateData(plug_state=True,average_consump=18))
-    c.update(VehicleUpdateData(plug_state=True, soc_from_cp=45, timestamp_soc_from_cp=TIMESTAMP_SOC_VALID,average_consump=18))
+    c.update(VehicleUpdateData(plug_state=True, average_consump=18))
+    c.update(VehicleUpdateData(plug_state=True, soc_from_cp=45, timestamp_soc_from_cp=TIMESTAMP_SOC_VALID,
+             average_consump=18))
     # im nächsten Zyklus wird mit calc_soc hochgerechnet
-    c.update(VehicleUpdateData(plug_state=True, soc_from_cp=45, timestamp_soc_from_cp=TIMESTAMP_SOC_INVALID,average_consump=18))
+    c.update(VehicleUpdateData(plug_state=True, soc_from_cp=45, timestamp_soc_from_cp=TIMESTAMP_SOC_INVALID,
+             average_consump=18))
 
     # evaluation
     assert mock_value_store.set.call_args_list[3][0][0].soc == 47
@@ -225,12 +227,15 @@ def test_3(monkeypatch):
     c = conf_vehicle_manual_from_cp()
 
     # execution
-    c.update(VehicleUpdateData(plug_state=True,average_consump=18))
-    c.update(VehicleUpdateData(plug_state=True, soc_from_cp=45, timestamp_soc_from_cp=TIMESTAMP_SOC_VALID,average_consump=18))
+    c.update(VehicleUpdateData(plug_state=True, average_consump=18))
+    c.update(VehicleUpdateData(plug_state=True, soc_from_cp=45, timestamp_soc_from_cp=TIMESTAMP_SOC_VALID,
+             average_consump=18))
     c.calculated_soc_state.manual_soc = 42
-    c.update(VehicleUpdateData(plug_state=True, soc_from_cp=45, timestamp_soc_from_cp=TIMESTAMP_SOC_INVALID,average_consump=18))
+    c.update(VehicleUpdateData(plug_state=True, soc_from_cp=45, timestamp_soc_from_cp=TIMESTAMP_SOC_INVALID,
+             average_consump=18))
     # im nächsten Zyklus wird mit calc_soc hochgerechnet
-    c.update(VehicleUpdateData(plug_state=True, soc_from_cp=45, timestamp_soc_from_cp=TIMESTAMP_SOC_INVALID,average_consump=18))
+    c.update(VehicleUpdateData(plug_state=True, soc_from_cp=45, timestamp_soc_from_cp=TIMESTAMP_SOC_INVALID,
+             average_consump=18))
 
     # evaluation
     assert mock_value_store.set.call_args_list[3][0][0].soc == 44
@@ -247,11 +252,11 @@ def test_4(monkeypatch):
     c = conf_vehicle_manual_from_cp()
 
     # execution
-    c.update(VehicleUpdateData(plug_state=True,average_consump=18))
+    c.update(VehicleUpdateData(plug_state=True, average_consump=18))
     c.calculated_soc_state.manual_soc = 42
-    c.update(VehicleUpdateData(plug_state=True,average_consump=18))
+    c.update(VehicleUpdateData(plug_state=True, average_consump=18))
     # im nächsten Zyklus wird mit calc_soc hochgerechnet
-    c.update(VehicleUpdateData(plug_state=True,average_consump=18))
+    c.update(VehicleUpdateData(plug_state=True, average_consump=18))
 
     # evaluation
     assert mock_value_store.set.call_args_list[2][0][0].soc == 44
@@ -268,11 +273,12 @@ def test_5(monkeypatch):
     c = conf_vehicle_manual_from_cp()
 
     # execution
-    c.update(VehicleUpdateData(plug_state=True, soc_from_cp=45, timestamp_soc_from_cp=TIMESTAMP_SOC_VALID,average_consump=18))
+    c.update(VehicleUpdateData(plug_state=True, soc_from_cp=45, timestamp_soc_from_cp=TIMESTAMP_SOC_VALID,
+             average_consump=18))
     c.calculated_soc_state.manual_soc = 42
-    c.update(VehicleUpdateData(plug_state=True,average_consump=18))
+    c.update(VehicleUpdateData(plug_state=True, average_consump=18))
     # im nächsten Zyklus wird mit calc_soc hochgerechnet
-    c.update(VehicleUpdateData(plug_state=True,average_consump=18))
+    c.update(VehicleUpdateData(plug_state=True, average_consump=18))
 
     # evaluation
     assert mock_value_store.set.call_args_list[2][0][0].soc == 44
@@ -289,7 +295,8 @@ def test_6(monkeypatch):
     c = conf_vehicle_manual_from_cp()
 
     # execution
-    c.update(VehicleUpdateData(plug_state=True, soc_from_cp=45, timestamp_soc_from_cp=TIMESTAMP_SOC_INVALID,average_consump=18))
+    c.update(VehicleUpdateData(plug_state=True, soc_from_cp=45, timestamp_soc_from_cp=TIMESTAMP_SOC_INVALID,
+             average_consump=18))
 
     # evaluation
     assert mock_value_store.set.call_args_list[0][0][0].soc == 44
@@ -340,8 +347,10 @@ def test_9(monkeypatch):
     c = conf_vehicle_api_from_cp()
 
     # execution
-    c.update(VehicleUpdateData(plug_state=True, soc_from_cp=45, timestamp_soc_from_cp=TIMESTAMP_SOC_VALID,average_consump=18))
-    c.update(VehicleUpdateData(plug_state=True, soc_from_cp=45, timestamp_soc_from_cp=TIMESTAMP_SOC_INVALID,average_consump=18))
+    c.update(VehicleUpdateData(plug_state=True, soc_from_cp=45, timestamp_soc_from_cp=TIMESTAMP_SOC_VALID,
+             average_consump=18))
+    c.update(VehicleUpdateData(plug_state=True, soc_from_cp=45, timestamp_soc_from_cp=TIMESTAMP_SOC_INVALID,
+             average_consump=18))
 
     # evaluation
     assert mock_value_store.set.call_args_list[1][0][0].soc == 46
@@ -372,9 +381,9 @@ def test_11(monkeypatch):
     c = conf_vehicle_api_while_charging()
 
     # execution
-    c.update(VehicleUpdateData(plug_state=True,average_consump=18))
+    c.update(VehicleUpdateData(plug_state=True, average_consump=18))
     # im nächsten Zyklus wird mit calc_soc hochgerechnet
-    c.update(VehicleUpdateData(plug_state=True, charge_state=True,average_consump=18))
+    c.update(VehicleUpdateData(plug_state=True, charge_state=True, average_consump=18))
 
     # evaluation
     assert mock_value_store.set.call_args_list[1][0][0].soc == 44
