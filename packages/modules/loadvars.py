@@ -39,7 +39,7 @@ class Loadvars:
             joined_thread_handler(self._get_io(), data.data.general_data.data.control_interval/3)
             joined_thread_handler(self._set_io(), data.data.general_data.data.control_interval/3)
             wait_for_module_update_completed(self.event_module_update_completed, topic)
-            if data.data.optional_data.data.electricity_pricing.get.next_query_time is None:
+            if (data.data.optional_data.data.electricity_pricing.configured):
                 self.ep_get_prices()
         except Exception:
             log.exception("Fehler im loadvars-Modul")

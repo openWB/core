@@ -10,6 +10,7 @@ from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
 
 log = logging.getLogger(__name__)
+AS_EURO_PER_WH = 1000
 
 
 def _to_time(time_str: str) -> datetime.time:
@@ -40,28 +41,35 @@ def _validate_tariff_times(config: FixedHoursTariffConfiguration) -> None:
 
 def _fetch(config: FixedHoursTariffConfiguration) -> TariffState:
     _validate_tariff_times(config)
+    return _calculate_price_timeslots(config)
 
-    current_time = datetime.datetime.now().replace(minute=0, second=0, microsecond=0)
+
+def _fetch_price_for_time_slot(config: FixedHoursTariffConfiguration,
+                               time_slot: datetime.datetime
+                               ) -> float:
+    for tariff in config.tariffs:
+        active_times = [(_to_time(start), _to_time(end)) for start, end in tariff["active_times"]["times"]]
+        active_dates = [
+            (_to_date(start, time_slot), _to_date(end, time_slot))
+            for start, end in tariff["active_times"]["dates"]
+        ]
+        if (any(start <= time_slot.time() < end for start, end in active_times) and
+                any(start <= time_slot.date() <= end for start, end in active_dates)):
+            return tariff["price"]
+    return config.default_price
+
+
+def _calculate_price_timeslots(config: FixedHoursTariffConfiguration) -> int:
+    current_hour = datetime.datetime.now().replace(minute=0, second=0, microsecond=0)
     prices: Dict[str, float] = {}
-
-    for i in range(24):  # get prices for the next 24 hours
-        time_slot = current_time + datetime.timedelta(hours=i)
-        epoch_time = int(time.mktime(time_slot.timetuple()))
-        price = config.default_price / 1000
-
-        for tariff in config.tariffs:
-            active_times = [(_to_time(start), _to_time(end)) for start, end in tariff["active_times"]["times"]]
-            active_dates = [
-                (_to_date(start, time_slot), _to_date(end, time_slot))
-                for start, end in tariff["active_times"]["dates"]
-            ]
-            if (any(start <= time_slot.time() < end for start, end in active_times) and
-                    any(start <= time_slot.date() <= end for start, end in active_dates)):
-                price = tariff["price"] / 1000
-                break  # Break since we found a matching tariff
-
-        prices[str(epoch_time)] = price
-
+    # 36 hours to cover the next day and the current day,
+    # this ensures enough values in prises list when used as grid fee adjustment for flexible tariffs
+    # that might provide prices untill midnight next day.
+    for i in range(36):
+        for j in range(4):  # get prices for quarter hours
+            time_slot = current_hour + datetime.timedelta(hours=i, minutes=j * 15)
+            epoch_time = int(time.mktime(time_slot.timetuple()))
+            prices[str(epoch_time)] = _fetch_price_for_time_slot(config, time_slot) / AS_EURO_PER_WH
     return TariffState(prices=prices)
 
 

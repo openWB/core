@@ -129,8 +129,8 @@ def _pub_configurable_tariffs() -> None:
                         "text": dev_defaults.name,
                         "defaults": dataclass_utils.asdict(dev_defaults)
                     })
-                except Exception:
-                    log.exception("Fehler im configuration-Modul")
+                except Exception as e:
+                    log.exception(f"Fehler im configuration-Modul, {path}: {e}")
             tariffs = sorted(tariffs, key=lambda d: d['text'].upper())
             # "leeren" Eintrag an erster Stelle einfügen
             tariffs.insert(0,
