@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 107
+    DATASTORE_VERSION = 108
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -2699,3 +2699,14 @@ class UpdateConfig:
                         return {topic: provider}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(107)
+
+    def upgrade_datastore_108(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/vehicle/[0-9]+/soc_module/general_config", topic) is not None:
+                payload = decode_payload(payload)
+                # initialize request_calculation_threshold if not set
+                if "request_calculation_threshold" not in payload:
+                    payload["request_calculation_threshold"] = 0
+                return {topic: payload}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(108)
