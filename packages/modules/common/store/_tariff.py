@@ -1,4 +1,3 @@
-from datetime import timedelta, datetime
 from typing import Dict
 from helpermodules import timecheck
 from control import data
@@ -59,15 +58,7 @@ class PriceValueStore(ValueStore[TariffState]):
         first_timestamp = timestamp - (timestamp % 900)  # Start of current quarter hour
         log.debug(f"Summing prices for timestamp {timestamp} (first timestamp: {first_timestamp})")
 
-        def median_delta(keys):
-            """Typische Schrittweite bestimmen (Median der Deltas)"""
-            if len(keys) < 2:
-                return timedelta.max
-            deltas = [(keys[i+1] - keys[i]) for i in range(len(keys)-1)]
-            deltas.sort()
-            return timedelta(seconds=deltas[len(deltas)//2])
-
-        def _get_value_at_or_before(d: Dict[int, float], ts_key: int) -> float:
+        def __get_value_at_or_before(d: Dict[int, float], ts_key: int) -> float:
             """Return value for the greatest key <= ts_key, or the earliest value if none."""
             keys = [k for k in d.keys() if k <= ts_key]
             if keys:
@@ -76,69 +67,66 @@ class PriceValueStore(ValueStore[TariffState]):
                 key = min(d.keys())
             return d[key]
 
-        def _add_missing_slots(prices: Dict[int, float]) -> None:
-            last_timestamp = max(int(float(k)) for k in prices.keys())
-            target_timestamp = (
-                datetime.fromtimestamp(last_timestamp).replace(second=59, microsecond=0).timestamp())
-            for ts in range(int(first_timestamp), int(target_timestamp), 900):
-                if ts not in prices:
-                    prices[ts] = _get_value_at_or_before(prices, ts)
+        def __reduce_prices(prices: Dict[str, float]) -> Dict[int, float]:
+            return {int(float(k)): v for k, v in prices.items() if int(float(k)) >= first_timestamp}
 
-        def reduce_prices(prices: Dict[str, float]) -> Dict[int, float]:
-            prices = {int(float(k)): v for k, v in prices.items() if int(float(k)) >= first_timestamp}
-            if (len(prices) > 0):
-                median_delta_seconds = median_delta(sorted(int(float(k)) for k in prices.keys())).total_seconds()
-                if median_delta_seconds > 900:
-                    # Wenn die typische Schrittweite größer als 15 Minuten ist, annehmen,
-                    # dass es sich um unregelmäßige Preise handelt
-                    _add_missing_slots(prices)
-            return prices
+        def __get_default_grid_fee_price(prices: Dict[str, float]) -> float:
+            if (hasattr(data.data.optional_data.grid_fee_module.config, "default_price") and
+                    data.data.optional_data.grid_fee_module.config.default_price is not None):
+                print("Using default grid fee price from configuration: " +
+                      f"{data.data.optional_data.grid_fee_module.config.default_price}")
+                return data.data.optional_data.grid_fee_module.config.default_price
+            else:
+                # Fallback: Median der vorhandenen Netzentgelte wird
+                # als Schätzung für das Standard-Netzentgelt verwenden
+                distinct_grid_fee_values = sorted(set(prices.values()))
+                return (
+                    distinct_grid_fee_values[len(distinct_grid_fee_values) // 2]
+                    if distinct_grid_fee_values else 0)
 
-        def _normalize_grid_fee_prices(grid_fee_prices: Dict[int, float]) -> Dict[int, float]:
-            # Get distinct grid_fee_prices values, sort and take the middle one
-            distinct_grid_fee_values = sorted(set(grid_fee_prices.values()))
-            median_grid_fee = (
-                distinct_grid_fee_values[len(distinct_grid_fee_values) // 2]
-                if distinct_grid_fee_values else 0)
-            return {int(float(k)): v - median_grid_fee for k, v in grid_fee_prices.items()}
+        def __normalize_grid_fee_prices(grid_fee_prices: Dict[int, float], max_timestamp: int) -> Dict[int, float]:
+            '''
+              Normalisiert die Netzentgelte.
+              Dies ist notwendig, da Nettzentgelte die Preisen einiger Stromanbieter
+              bereits ein festes Netzentgeld enthalten.
+            '''
+            grid_fee_prices = __reduce_prices(grid_fee_prices)
+            grid_fee_prices = {int(float(k)): v for k, v in grid_fee_prices.items() if int(float(k)) <= max_timestamp}
 
-        def _sum_of_tariff_and_grid_fee(
+            if (hasattr(data.data.optional_data.flexible_tariff_module.config, "includes_grid_fee")
+                    and data.data.optional_data.flexible_tariff_module.config.includes_grid_fee is False):
+                return grid_fee_prices
+            else:
+                #  Bei flexiblen Tarifen, die das Netzentgeln _nicht_ enthalten,
+                #  muss "includes_grid_fee" explizit auf False gesetzt werden.
+                return {int(float(k)): v - __get_default_grid_fee_price(grid_fee_prices)
+                        for k, v in grid_fee_prices.items()}
+
+        def __sum_of_tariff_and_grid_fee(
                 flexible_tariff_prices: Dict[int, float],
                 grid_fee_prices: Dict[int, float]
                 ) -> Dict[int, float]:
-            flexible_tariff_keys = sorted(flexible_tariff_prices.keys())
-            grid_fee_keys = sorted(grid_fee_prices.keys())
-            grid_fee_prices = _normalize_grid_fee_prices(grid_fee_prices)
+            grid_fee_prices = __normalize_grid_fee_prices(grid_fee_prices, max(flexible_tariff_prices.keys()))
+            timestamps = sorted(list(set(flexible_tariff_prices.keys()) | set(grid_fee_prices.keys())))
+            return {ts: (__get_value_at_or_before(flexible_tariff_prices, ts) +
+                         __get_value_at_or_before(grid_fee_prices, ts))
+                    for ts in timestamps if ts <= max(flexible_tariff_prices.keys())}
 
-            median_delta_seconds_grid = median_delta(
-                sorted(int(float(k)) for k in grid_fee_prices.keys())).total_seconds()
-            median_delta_seconds_flexible = median_delta(
-                sorted(int(float(k)) for k in flexible_tariff_prices.keys())).total_seconds()
+        optional_data = data.data.optional_data
+        electricity_pricing = optional_data.data.electricity_pricing
+        flexible_tariff_prices = {int(float(k)): v for k, v
+                                  in electricity_pricing.flexible_tariff.get.prices.items()}
+        grid_fee_prices = {int(float(k)): v for k, v
+                           in electricity_pricing.grid_fee.get.prices.items()}
 
-            result = {}
-            for ts in (flexible_tariff_keys
-                       if median_delta_seconds_flexible < median_delta_seconds_grid
-                       else grid_fee_keys):
-                result[ts] = (_get_value_at_or_before(flexible_tariff_prices, ts) +
-                              _get_value_at_or_before(grid_fee_prices, ts))
-            return result
-
-        flexible_tariff_prices = reduce_prices(
-            data.data.optional_data.data.electricity_pricing.flexible_tariff.get.prices)
-        grid_fee_prices = reduce_prices(
-            data.data.optional_data.data.electricity_pricing.grid_fee.get.prices)
-
-        if len(flexible_tariff_prices) == 0 and data.data.optional_data.flexible_tariff_module is not None:
-            raise ValueError("Keine Preise für konfigurierten dynamischen Stromtarif vorhanden.")
-        if len(grid_fee_prices) == 0 and data.data.optional_data.grid_fee_module is not None:
-            raise ValueError("Keine Preise für konfigurierten Netzentgelttarif vorhanden.")
-        flexible_tariff_prices = {int(float(k)): v for k, v in flexible_tariff_prices.items()}
-        grid_fee_prices = {int(float(k)): v for k, v in grid_fee_prices.items()}
-        if len(flexible_tariff_prices) == 0 and len(grid_fee_prices) > 0:
-            return grid_fee_prices
+        flexible_tariff_prices = __reduce_prices(flexible_tariff_prices)
         if len(grid_fee_prices) == 0 and len(flexible_tariff_prices) > 0:
             return flexible_tariff_prices
-        return _sum_of_tariff_and_grid_fee(flexible_tariff_prices, grid_fee_prices)
+
+        if len(flexible_tariff_prices) == 0 and len(grid_fee_prices) > 0:
+            return __reduce_prices(grid_fee_prices)
+
+        return __sum_of_tariff_and_grid_fee(flexible_tariff_prices, grid_fee_prices)
 
 
 def get_price_value_store() -> ValueStore[TariffState]:

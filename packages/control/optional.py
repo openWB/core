@@ -44,7 +44,7 @@ class Optional(OcppMixin):
                 (self._flexible_tariff_module and value and
                  self._flexible_tariff_module.config.name != value.config.name)):
             self.data.electricity_pricing.flexible_tariff.get = PricingGet()
-            self._reset_state(self.data.electricity_pricing.flexible_tariff, "flexible_tariff")
+            self._reset_state(self.data.electricity_pricing.flexible_tariff)
         self._flexible_tariff_module = value
         self._set_ep_configured()
 
@@ -55,9 +55,10 @@ class Optional(OcppMixin):
     @grid_fee_module.setter
     def grid_fee_module(self, value: TypingOptional[ConfigurableGridFee]):
         if (value is None or
-                (self._grid_fee_module and value and self._grid_fee_module.config.name != value.config.name)):
+                (self._grid_fee_module and value and
+                 self._grid_fee_module.config.name != value.config.name)):
             self.data.electricity_pricing.grid_fee.get = PricingGet()
-            self._reset_state(self.data.electricity_pricing.grid_fee, "grid_fee")
+            self._reset_state(self.data.electricity_pricing.grid_fee)
         self._grid_fee_module = value
         self._set_ep_configured()
 
@@ -69,15 +70,15 @@ class Optional(OcppMixin):
             self.data.electricity_pricing.configured = False
             Pub().pub("openWB/set/optional/ep/configured", False)
 
-    def _reset_state(self, module: Union[FlexibleTariff, GridFee], module_name: str):
+    def _reset_state(self, module: Union[FlexibleTariff, GridFee]):
         if (module.get.fault_state != 0 or module.get.fault_str != NO_ERROR):
             module.get.fault_state = 0
             module.get.fault_str = NO_ERROR
-            Pub().pub(f"openWB/set/optional/ep/{module_name}/get/fault_state", 0)
-            Pub().pub(f"openWB/set/optional/ep/{module_name}/get/fault_str", NO_ERROR)
-        Pub().pub(f"openWB/set/optional/ep/{module_name}/get/prices", {})
+            Pub().pub(f"openWB/set/optional/ep/{module.name}/get/fault_state", 0)
+            Pub().pub(f"openWB/set/optional/ep/{module.name}/get/fault_str", NO_ERROR)
+            Pub().pub(f"openWB/set/optional/ep/{module.name}/get/prices", {})
+            Pub().pub(f"openWB/set/optional/ep/{module.name}/get/next_query_time", None)
         Pub().pub("openWB/set/optional/ep/get/prices", {})
-        Pub().pub("openWB/set/optional/ep/get/next_query_time", None)
 
     def monitoring_start(self):
         if self.monitoring_module is not None:
@@ -104,7 +105,7 @@ class Optional(OcppMixin):
             if self.data.electricity_pricing.configured:
                 return self.__get_current_timeslot_start() in selected_hours
             else:
-                log.info("Prüfe strompreisbasiertes Laden: Nicht konfiguriert")
+                log.debug("Prüfe strompreisbasiertes Laden: Nicht konfiguriert")
                 return False
         except Exception as e:
             log.exception(f"Fehler im Optional-Modul: {e}")
@@ -144,14 +145,13 @@ class Optional(OcppMixin):
             return timestamp, first
 
     def remove_outdated_prices(self):
-        def remove(price_data: Dict) -> Dict:
-            price_timeslot_seconds = self.__calculate_price_timeslot_length(price_data)
+        def remove(price_data: Dict, last_active_timestamp: int = 0) -> Dict:
             now = timecheck.create_timestamp()
-            return {
-                price[0]: price[1]
-                for price in price_data.items()
-                if float(price[0]) > now - (price_timeslot_seconds - 1)
-            }
+            first_timestamp = (max([timestamp for timestamp in price_data.keys()
+                                    if float(timestamp) <= now], default=0))
+            return {int(timestamp): price for timestamp, price in price_data.items()
+                    if (timestamp) >= first_timestamp and
+                    (int(timestamp) <= last_active_timestamp if last_active_timestamp > 0 else True)}
 
         try:
             if self.data.electricity_pricing.configured:
@@ -162,7 +162,10 @@ class Optional(OcppMixin):
                 if self._flexible_tariff_module:
                     Pub().pub(f"{MQTT_PREFIX}/flexible_tariff/get/prices", remove(ep.flexible_tariff.get.prices))
                 if self._grid_fee_module:
-                    Pub().pub(f"{MQTT_PREFIX}/grid_fee/get/prices", remove(ep.grid_fee.get.prices))
+                    Pub().pub(f"{MQTT_PREFIX}/grid_fee/get/prices",
+                              remove(ep.grid_fee.get.prices,
+                                     last_active_timestamp=int(max(ep.get.prices.keys()))
+                                     if ep.get.prices else 0))
         except Exception as e:
             log.exception("Fehler beim Entfernen veralteter Preise: %s", e)
 
@@ -178,7 +181,7 @@ class Optional(OcppMixin):
             raise Exception("Kein Anbieter für strompreisbasiertes Laden konfiguriert.")
 
     def __calculate_price_timeslot_length(self, prices: dict) -> int:
-        first_timestamps = list(prices.keys())[:2]
+        first_timestamps = sorted(list(prices.keys()))[:2]
         return float(first_timestamps[1]) - float(first_timestamps[0])
 
     def ep_get_loading_hours(self, duration: float, remaining_time: float) -> List[int]:
@@ -197,7 +200,12 @@ class Optional(OcppMixin):
             raise Exception("Kein Anbieter für strompreisbasiertes Laden konfiguriert.")
         try:
             prices = self.data.electricity_pricing.get.prices
+            log.debug("Berechne günstige Zeit-Slots für strompreisbasiertes Laden, "
+                      "benötigte Ladezeit: %.2f Sekunden, Restzeit bis Termin: %.2f Sekunden",
+                      duration, remaining_time)
+            log.debug("Verfügbare Preise: %s", prices)
             price_timeslot_seconds = self.__calculate_price_timeslot_length(prices)
+            log.debug("Preis-Zeitslot-Länge: %.2f Sekunden", price_timeslot_seconds)
             now = timecheck.create_timestamp()
             price_candidates = {
                 timestamp: price
@@ -214,18 +222,18 @@ class Optional(OcppMixin):
                       duration,
                       datetime.fromtimestamp(now),
                       datetime.fromtimestamp(now + remaining_time),
-                      datetime.fromtimestamp(float(min(price_candidates))),
-                      datetime.fromtimestamp(float(max(price_candidates))+price_timeslot_seconds))
+                      datetime.fromtimestamp(float(min(price_candidates, default=0))),
+                      datetime.fromtimestamp(float(max(price_candidates, default=0))+price_timeslot_seconds))
             ordered_by_date_reverse = reversed(sorted(price_candidates.items(), key=lambda x: x[0]))
             ordered_by_price = sorted(ordered_by_date_reverse, key=lambda x: x[1])
             selected_time_slots = {float(i[0]): float(i[1])
                                    for i in ordered_by_price[:1 + ceil(duration/price_timeslot_seconds)]}
             selected_lenght = (
                 price_timeslot_seconds * (len(selected_time_slots)-1) -
-                (float(now) - min(selected_time_slots))
+                (float(now) - min(selected_time_slots, default=now))
             )
             return sorted(selected_time_slots.keys()
-                          if not (min(selected_time_slots) > now or duration <= selected_lenght)
+                          if not (min(selected_time_slots, default=0) > now or duration <= selected_lenght)
                           else [timestamp[0] for timestamp in iter(selected_time_slots.items())][:-1]
                           )
             # if sum() sorted([int(i[0]) for i in ordered_by_price][:ceil(duration/price_timeslot_seconds)])
@@ -233,24 +241,28 @@ class Optional(OcppMixin):
             log.exception("Fehler im Optional-Modul: %s", e)
             return []
 
+    def _is_et_price_update_required_for_module(self, module: Union[FlexibleTariff, GridFee]) -> bool:
+        if module is None:
+            return False
+        if module.get.next_query_time is None:
+            return True
+        now = timecheck.create_timestamp()
+        next_query_formatted = datetime.fromtimestamp(module.get.next_query_time).strftime("%Y%m%d-%H:%M:%S")
+        if now > module.get.next_query_time:
+            log.debug(f'Wartezeit {next_query_formatted} für {module.name} abgelaufen, Strompreise werden abgefragt')
+            return True
+        else:
+            log.debug(f'Nächster Abruf der {module.name} Strompreise {next_query_formatted}.')
+            return False
+
     def et_price_update_required(self) -> bool:
         self._set_ep_configured()
         if self.data.electricity_pricing.configured is False:
             return False
         if len(self.data.electricity_pricing.get.prices) == 0:
             return True
-        if self.data.electricity_pricing.get.next_query_time is None:
-            return True
-        if timecheck.create_timestamp() > self.data.electricity_pricing.get.next_query_time:
-            next_query_formatted = datetime.fromtimestamp(
-                self.data.electricity_pricing.get.next_query_time).strftime("%Y%m%d-%H:%M:%S")
-            log.info(f'Wartezeit {next_query_formatted} abgelaufen, Strompreise werden abgefragt')
-            return True
-        else:
-            next_query_formatted = datetime.fromtimestamp(
-                self.data.electricity_pricing.get.next_query_time).strftime("%Y%m%d-%H:%M:%S")
-            log.info(f'Nächster Abruf der Strompreise {next_query_formatted}.')
-            return False
+        return (self._is_et_price_update_required_for_module(self.data.electricity_pricing.flexible_tariff) or
+                self._is_et_price_update_required_for_module(self.data.electricity_pricing.grid_fee))
 
     def ocpp_transfer_meter_values(self):
         try:
