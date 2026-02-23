@@ -14,11 +14,13 @@ class PubSingleton:
         self.publisher.start_loop()
 
     def pub(self, topic: str, payload, qos: int = 0, retain: bool = True) -> None:
-        if payload == "":
-            self.publisher.client.publish(topic, payload, qos=qos, retain=retain)
-        else:
-            self.publisher.client.publish(topic, payload=json.dumps(payload), qos=qos, retain=retain)
-
+        try:
+            if payload == "":
+                self.publisher.client.publish(topic, payload, qos=qos, retain=retain)
+            else:
+                self.publisher.client.publish(topic, payload=json.dumps(payload), qos=qos, retain=retain)
+        except Exception as e:
+            log.exception("Fehler beim beim Publish Topic %s: %s", topic, e)
 
 class Pub:
     instance = None
