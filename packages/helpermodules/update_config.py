@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 107
+    DATASTORE_VERSION = 108
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -2724,3 +2724,14 @@ class UpdateConfig:
                         return {topic: provider}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(107)
+
+    def upgrade_datastore_108(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/chargepoint/[0-9]+/set/log$", topic) is not None:
+                log_data = decode_payload(payload)
+                if log_data.get("time_charged") is not None:
+                    if isinstance(log_data["time_charged"], str):
+                        log_data["time_charged"] = 0
+                        return {topic: log_data}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(108)
