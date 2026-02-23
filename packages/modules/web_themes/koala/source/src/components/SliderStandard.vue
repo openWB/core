@@ -11,10 +11,11 @@
           props.discreteValues ? props.discreteValues.length - 1 : props.max
         "
         :step="props.step"
-        color="primary"
+        :color="props.color"
         class="col"
-        track-size="0.5em"
-        thumb-size="1.7em"
+        :track-size="props.trackSize"
+        :thumb-size="props.thumbSize"
+        :thumb-color="props.thumbColor"
         @touchstart.stop
         @touchmove.stop
         @touchend.stop
@@ -68,6 +69,26 @@ const props = defineProps({
   },
   discreteValues: {
     type: Array as () => number[],
+    default: undefined,
+  },
+  color: {
+    type: String,
+    default: 'primary',
+  },
+  trackSize: {
+    type: String,
+    default: '0.5em',
+  },
+  thumbSize: {
+    type: String,
+    default: '1.5em',
+  },
+  thumbColor: {
+    type: String,
+    default: 'primary',
+  },
+  limitMode: {
+    type: String,
     default: undefined,
   },
 });
