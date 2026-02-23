@@ -53,24 +53,24 @@ class SolarmaxBat(AbstractBat):
         if power_limit is None:
             log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
             if self.last_mode is not None:
-                self.client.write_register(142, [0], data_type=ModbusDataType.INT_16, unit=unit)
+                self.client.write_register(142, 0, data_type=ModbusDataType.INT_16, unit=unit)
                 self.last_mode = None
         elif power_limit >= 0:
             # Solarmax kann nicht aktiv laden
             log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt und nicht entladen")
-            self.client.write_register(140, [0], data_type=ModbusDataType.INT_16, unit=unit)
-            self.client.write_register(141, [0], data_type=ModbusDataType.INT_16, unit=unit)
-            self.client.write_register(142, [1], data_type=ModbusDataType.INT_16, unit=unit)
+            self.client.write_register(140, 0, data_type=ModbusDataType.INT_16, unit=unit)
+            self.client.write_register(141, 0, data_type=ModbusDataType.INT_16, unit=unit)
+            self.client.write_register(142, 1, data_type=ModbusDataType.INT_16, unit=unit)
             self.last_mode = 'stop'
         elif power_limit < 0:
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W entladen für den Hausverbrauch")
-            self.client.write_register(142, [1], data_type=ModbusDataType.INT_16, unit=unit)
+            self.client.write_register(142, 1, data_type=ModbusDataType.INT_16, unit=unit)
             self.last_mode = 'discharge'
             # Die maximale Entladeleistung begrenzen auf 5000W, maximaler Wertebereich Modbusregister.
             power_value = int(min(abs(power_limit), 7000))
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_value} W entladen für den Hausverbrauch")
-            self.client.write_register(140, [power_value], data_type=ModbusDataType.INT_16, unit=unit)
-            self.client.write_register(141, [power_value], data_type=ModbusDataType.INT_16, unit=unit)
+            self.client.write_register(140, power_value, data_type=ModbusDataType.INT_16, unit=unit)
+            self.client.write_register(141, power_value, data_type=ModbusDataType.INT_16, unit=unit)
 
     def power_limit_controllable(self) -> bool:
         return self.component_config.configuration.power_limit_controllable
