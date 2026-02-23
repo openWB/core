@@ -86,7 +86,6 @@
           v-model="energyTargetEnabled"
           icon="ev_station"
           size="lg"
-          @update:model-value="onEnergyToggle"
         >
           <q-tooltip>
             {{
@@ -370,17 +369,6 @@ const vehicleTarget = computed(() => {
 const vehicleSocType = computed(() =>
   mqttStore.chargePointConnectedVehicleSocType(props.chargePointId),
 )?.value;
-
-const onEnergyToggle = (enabled: boolean) => {
-  const limit = mqttStore.chargePointConnectedVehicleInstantChargeLimit(
-    props.chargePointId,
-  );
-  if (enabled) {
-    limit.value = 'amount';
-  } else {
-    limit.value = 'none';
-  }
-};
 
 const refreshSoc = () => {
   mqttStore.chargePointConnectedVehicleForceSocUpdate(props.chargePointId);
