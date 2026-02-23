@@ -1,5 +1,5 @@
 <template>
-  <div class="double-slider-container">
+  <div>
     <div class="slider-container">
       <q-slider
         :model-value="currentValue"
