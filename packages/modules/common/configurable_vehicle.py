@@ -179,8 +179,7 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                     raise Exception(f"Der SoC kann nicht ausgelesen werden: {e}. {_txt1}{reason}")
             return _carState
         elif source == SocSource.CALCULATION:
-            _carState = self._calc_soc_range(vehicle_update_data)
-            return _carState
+            return self._calc_soc_range(vehicle_update_data)
         elif source == SocSource.CP:
             return CarState(soc=vehicle_update_data.soc_from_cp,
                             soc_timestamp=vehicle_update_data.timestamp_soc_from_cp)
