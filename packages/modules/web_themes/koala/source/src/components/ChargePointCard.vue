@@ -130,7 +130,6 @@
     <!-- //////////////////////  modal charge limit settings dialog   //////////////////// -->
     <ChargePointChargeLimits
       :chargePointId="props.chargePointId"
-      :energyTargetEnabled="energyTargetEnabled"
       v-model="chargeLimitsVisible"
     />
     <!-- //////////////////////  modal soc dialog   //////////////////// -->

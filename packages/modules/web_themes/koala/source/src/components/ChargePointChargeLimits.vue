@@ -69,7 +69,6 @@ import { computed, ref, watch } from 'vue';
 const props = defineProps<{
   chargePointId: number;
   modelValue: boolean;
-  energyTargetEnabled: boolean;
 }>();
 
 const emit = defineEmits<{
