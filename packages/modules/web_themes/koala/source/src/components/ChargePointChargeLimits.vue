@@ -3,7 +3,7 @@
     v-model="visible"
     :backdrop-filter="isSmallScreen ? '' : 'blur(4px)'"
   >
-    <q-card>
+    <q-card class="card-width">
       <q-card-section>
         <div class="row nowrap q-mb-sm">
           <div class="text-h6">Begrenzung</div>
@@ -32,6 +32,11 @@
           :min="5"
           :max="100"
           :step="5"
+          color="light-green-14"
+          :track-size="'1em'"
+          :limit-mode="limitMode.value"
+          thumb-size="2.3em"
+          thumb-color="light-green-14"
           unit="%"
           v-model="limitSoC.value"
           class="q-mt-md"
@@ -41,6 +46,11 @@
           title="Energie-Limit"
           :min="1"
           :max="50"
+          color="green-7"
+          :track-size="'1em'"
+          :limit-mode="limitMode.value"
+          thumb-size="2.3em"
+          thumb-color="green-7"
           unit="kWh"
           v-model="limitEnergy.value"
           class="q-mt-md"
@@ -164,6 +174,9 @@ watch(
 </script>
 
 <style scoped>
+.card-width {
+  width: 25em;
+}
 .q-btn-group .q-btn {
   min-width: 100px !important;
 }

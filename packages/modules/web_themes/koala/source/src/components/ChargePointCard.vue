@@ -129,7 +129,7 @@
       v-model="settingsVisible"
     />
     <!-- //////////////////////  modal charge limit settings dialog   //////////////////// -->
-    <ChargeLimits
+    <ChargePointChargeLimits
       :chargePointId="props.chargePointId"
       :energyTargetEnabled="energyTargetEnabled"
       v-model="chargeLimitsVisible"
@@ -153,7 +153,7 @@ import ChargePointModeButtons from './ChargePointModeButtons.vue';
 import ChargePointMessage from './ChargePointMessage.vue';
 import ChargePointVehicleSelect from './ChargePointVehicleSelect.vue';
 import ChargePointSettings from './ChargePointSettings.vue';
-import ChargeLimits from './ChargeLimits.vue';
+import ChargePointChargeLimits from './ChargePointChargeLimits.vue';
 import ManualSocDialog from './ManualSocDialog.vue';
 import ChargePointTimeCharging from './ChargePointTimeCharging.vue';
 import ChargePointPowerData from './ChargePointPowerData.vue';
