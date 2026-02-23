@@ -22,6 +22,7 @@ class PubSingleton:
         except Exception as e:
             log.exception("Fehler beim beim Publish Topic %s: %s", topic, e)
 
+
 class Pub:
     instance = None
 
