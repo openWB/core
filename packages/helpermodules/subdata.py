@@ -1002,6 +1002,40 @@ class SubData:
             elif re.search("^.+/io/[0-9]+/set/manual/digital_output", msg.topic) is not None:
                 index = get_index(msg.topic)
                 self.set_json_payload(var["io"+index].set_manual["digital_output"], msg)
+            elif "openWB/system/hostname" == msg.topic:
+                if (
+                    self.event_subdata_initialized.is_set() and
+                    var["system"].data["hostname"] != decode_payload(msg.payload)
+                ):
+                    pass
+                    # log.warning("Änderung der Einstellung 'hostname' erkannt. "
+                    #             f"Hostname wird angepasst auf '{decode_payload(msg.payload)}'.")
+                    # pub_system_message(
+                    #     msg.payload,
+                    #     f"Der Hostname wird zu '{decode_payload(msg.payload)}' geändert.<br />"
+                    #     "Dieser Vorgang dauert ca. 1 Minute. Bitte nicht ausschalten oder neu starten.",
+                    #     MessageType.WARNING
+                    # )
+                    # try:
+                    #     run_command([
+                    #         str(Path(__file__).resolve().parents[2] / "runs" / "update_hostname.sh"),
+                    #         decode_payload(msg.payload)
+                    #     ])
+                    # except subprocess.CalledProcessError as e:
+                    #     log.error(f"Fehler beim Aktualisieren des Hostnamens: {e}")
+                    #     pub_system_message(
+                    #         msg.payload,
+                    #         f"Fehler beim Aktualisieren des Hostnamens: {e}",
+                    #         MessageType.ERROR
+                    #     )
+                    # pub_system_message(
+                    #     msg.payload,
+                    #     f"Hostname wurde zu '{decode_payload(msg.payload)}' geändert.<br />"
+                    #     "Bitte die openWB <a href=\"/openWB/web/settings/#/System/SystemConfiguration\">"
+                    #     "neu starten</a>, damit die Änderungen wirksam werden.",
+                    #     MessageType.SUCCESS
+                    # )
+                self.set_json_payload(var["system"].data, msg)
             elif "openWB/system/security/user_management_active" == msg.topic:
                 user_management_active = decode_payload(msg.payload)
                 if (

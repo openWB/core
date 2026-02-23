@@ -145,6 +145,11 @@ fi
 mac="$(get_mac)"
 mosquitto_pub -t "openWB/system/mac_address" -p 1886 -r -m "\"$mac\""
 
+# publish hostname
+hostname=$(hostname)
+echo "my hostname: $hostname"
+mosquitto_pub -t "openWB/system/hostname" -p 1886 -r -m "\"$hostname\""
+
 # image restricted to LAN only
 # get local ip
 ip="$(get_ip)"
