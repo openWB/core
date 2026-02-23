@@ -11,7 +11,41 @@
           <q-btn icon="close" flat round dense v-close-popup />
         </div>
         <q-separator class="q-mt-sm q-mb-sm" />
+        <div v-if="isSmallScreen" class="row q-pt-md full-width">
+          <q-btn-dropdown
+            class="col"
+            transition-show="scale"
+            transition-hide="scale"
+            transition-duration="500"
+            color="primary"
+            :label="currentLimitModeLabel"
+            size="md"
+            dropdown-icon="none"
+            cover
+            push
+          >
+            <q-list>
+              <template v-for="(mode, index) in limitModes" :key="mode.value">
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="limitMode.value = mode.value"
+                  :active="limitMode.value === mode.value"
+                  active-class="bg-primary text-white"
+                >
+                  <q-item-section class="text-center text-weight-bold">
+                    <q-item-label>{{
+                      mode.label.toLocaleUpperCase()
+                    }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+                <q-separator v-if="index < limitModes.length - 1" />
+              </template>
+            </q-list>
+          </q-btn-dropdown>
+        </div>
         <div
+          v-else
           class="row items-center justify-center q-ma-none q-pa-none no-wrap"
         >
           <q-btn-group class="col">
@@ -164,6 +198,12 @@ const visible = computed({
   },
 });
 
+const currentLimitModeLabel = computed(
+  () =>
+    limitModes.value.find((mode) => mode.value === limitMode.value.value)
+      ?.label,
+);
+
 watch(
   () => props.modelValue,
   (value) => {
@@ -184,5 +224,11 @@ body.mobile .q-btn-group .q-btn {
   padding: 4px 8px;
   font-size: 12px !important;
   min-height: 30px;
+}
+
+:deep(.q-btn-dropdown__arrow-container) {
+  width: 0;
+  padding: 0;
+  margin: 0;
 }
 </style>
