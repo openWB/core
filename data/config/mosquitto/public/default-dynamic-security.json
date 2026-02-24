@@ -1062,12 +1062,6 @@
 					"allow": true
 				},
 				{
-					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/phases_to_use",
-					"priority": 0,
-					"allow": true
-				},
-				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/access/SurplusChargeConfiguration",
 					"priority": 0,
