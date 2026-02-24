@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 112
+    DATASTORE_VERSION = 110
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -213,7 +213,6 @@ class UpdateConfig:
         "^openWB/counter/[0-9]+/config/max_currents$",
         "^openWB/counter/[0-9]+/config/max_total_power$",
 
-        "^openWB/general/allow_unencrypted_access$",
         "^openWB/general/extern$",
         "^openWB/general/extern_display_mode$",
         "^openWB/general/charge_log_data_config$",
@@ -510,7 +509,6 @@ class UpdateConfig:
         "^openWB/system/device/[0-9]+/component/[0-9]+/simulation/timestamp_present$",
         "^openWB/system/device/[0-9]+/config$",
         "^openWB/system/device/module_update_completed$",
-        "^openWB/system/hostname$",
         "^openWB/system/io/[0-9]+/config$",
         "^openWB/system/ip_address$",
         "^openWB/system/lastlivevaluesJson$",
@@ -518,33 +516,6 @@ class UpdateConfig:
         "^openWB/system/mqtt/valid_partner_ids$",
         "^openWB/system/release_train$",
         "^openWB/system/secondary_auto_update$",
-        "^openWB/system/security/user_management_active$",
-        "^openWB/system/security/access_allowed$",
-        "^openWB/system/security/access/Settings$",
-        "^openWB/system/security/access/Status$",
-        "^openWB/system/security/access/ChargeLog$",
-        "^openWB/system/security/access/Chart$",
-        "^openWB/system/security/access/GeneralConfiguration$",
-        "^openWB/system/security/access/DisplayConfiguration$",
-        "^openWB/system/security/access/IdentificationConfiguration$",
-        "^openWB/system/security/access/GeneralChargeConfiguration$",
-        "^openWB/system/security/access/SurplusChargeConfiguration$",
-        "^openWB/system/security/access/ActiveBatControlConfiguration$",
-        "^openWB/system/security/access/HardwareInstallation$",
-        "^openWB/system/security/access/LoadManagementConfiguration$",
-        "^openWB/system/security/access/ChargePointInstallation$",
-        "^openWB/system/security/access/VehicleConfiguration$",
-        "^openWB/system/security/access/IoConfiguration$",
-        "^openWB/system/security/access/LegacySmartHomeConfiguration$",
-        "^openWB/system/security/access/InstallAssistant$",
-        "^openWB/system/security/access/CloudConfiguration$",
-        "^openWB/system/security/access/MqttBridgeConfiguration$",
-        "^openWB/system/security/access/DebugConfiguration$",
-        "^openWB/system/security/access/Support$",
-        "^openWB/system/security/access/DataManagement$",
-        "^openWB/system/security/access/SecurityConfiguration$",
-        "^openWB/system/security/access/SystemConfiguration$",
-        "^openWB/system/security/access/LegalSettings$",
         "^openWB/system/time$",
         "^openWB/system/update_in_progress$",
         "^openWB/system/usage_terms_acknowledged$",
@@ -582,7 +553,6 @@ class UpdateConfig:
         ("openWB/vehicle/template/ev_template/0", asdict(EvTemplateData(name="Standard-Fahrzeug-Profil",
                                                                         min_current=10))),
         ("openWB/vehicle/template/charge_template/0", get_charge_template_default()),
-        ("openWB/general/allow_unencrypted_access", True),
         ("openWB/general/charge_log_data_config", get_default_charge_log_columns()),
         ("openWB/general/chargemode_config/pv_charging/bat_mode", BatConsiderationMode.EV_MODE.value),
         ("openWB/general/chargemode_config/pv_charging/bat_power_discharge", 1000),
@@ -649,42 +619,11 @@ class UpdateConfig:
         ("openWB/system/usage_terms_acknowledged", False),
         ("openWB/system/debug_level", 30),
         ("openWB/system/device/module_update_completed", True),
-        ("openWB/system/hostname", "unknown"),
         ("openWB/system/ip_address", "unknown"),
         ("openWB/system/mqtt/valid_partner_ids", []),
         ("openWB/system/release_train", "master"),
         ("openWB/system/secondary_auto_update", True),
         ("openWB/system/serial_number", get_serial_number()),
-        ("openWB/system/security/user_management_active", False),
-        # the following topics in openWB/system/security/ must default to True!
-        # ACLs will restrict access to this topics if user management is active so that the UI can distinguish
-        # between "no access" (no topic received) and "access" (topic received)
-        ("openWB/system/security/access_allowed", True),
-        ("openWB/system/security/access/Settings", True),
-        ("openWB/system/security/access/Status", True),
-        ("openWB/system/security/access/ChargeLog", True),
-        ("openWB/system/security/access/Chart", True),
-        ("openWB/system/security/access/GeneralConfiguration", True),
-        ("openWB/system/security/access/DisplayConfiguration", True),
-        ("openWB/system/security/access/IdentificationConfiguration", True),
-        ("openWB/system/security/access/GeneralChargeConfiguration", True),
-        ("openWB/system/security/access/SurplusChargeConfiguration", True),
-        ("openWB/system/security/access/ActiveBatControlConfiguration", True),
-        ("openWB/system/security/access/HardwareInstallation", True),
-        ("openWB/system/security/access/LoadManagementConfiguration", True),
-        ("openWB/system/security/access/ChargePointInstallation", True),
-        ("openWB/system/security/access/VehicleConfiguration", True),
-        ("openWB/system/security/access/IoConfiguration", True),
-        ("openWB/system/security/access/LegacySmartHomeConfiguration", True),
-        ("openWB/system/security/access/InstallAssistant", True),
-        ("openWB/system/security/access/CloudConfiguration", True),
-        ("openWB/system/security/access/MqttBridgeConfiguration", True),
-        ("openWB/system/security/access/DebugConfiguration", True),
-        ("openWB/system/security/access/Support", True),
-        ("openWB/system/security/access/DataManagement", True),
-        ("openWB/system/security/access/SecurityConfiguration", True),
-        ("openWB/system/security/access/SystemConfiguration", True),
-        ("openWB/system/security/access/LegalSettings", True),
     )
     invalid_topic = (
         # Tuple: (Regex, callable)
@@ -2795,67 +2734,111 @@ class UpdateConfig:
         self._append_datastore_version(108)
 
     def upgrade_datastore_109(self) -> None:
-        def upgrade(topic: str, payload) -> Optional[dict]:
-            if re.search("^openWB/bat/[0-9]+/get/power$", topic) is not None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/bat/[0-9]+/get/power", topic) is not None:
                 index = get_index(topic)
-                new_topics = {}
                 # add new topics for battery control:
                 # openWB/bat/[0-9]+/get/max_charge_power => 0
                 # openWB/bat/[0-9]+/get/max_discharge_power => 0
                 if f"openWB/bat/{index}/get/max_charge_power" not in self.all_received_topics:
-                    new_topics[f"openWB/bat/{index}/get/max_charge_power"] = 0
+                    self.__update_topic(f"openWB/bat/{index}/get/max_charge_power", 0)
                 if f"openWB/bat/{index}/get/max_discharge_power" not in self.all_received_topics:
-                    new_topics[f"openWB/bat/{index}/get/max_discharge_power"] = 0
-                return new_topics if new_topics else None
+                    self.__update_topic(f"openWB/bat/{index}/get/max_discharge_power", 0)
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(109)
 
     def upgrade_datastore_110(self) -> None:
-        def upgrade(topic: str, payload) -> Optional[dict]:
-            if re.search("openWB/chargepoint/[0-9]+/config", topic) is not None:
-                config = decode_payload(payload)
-                if config.get("type") == "openwb_dc_adapter":
-                    config["configuration"]["user"] = None
-                    config["configuration"]["password"] = None
-                    ip_address = config["configuration"].pop("ip_address")
-                    config["configuration"]["url"] = f'http://{ip_address}/connect.php'
-                    return {topic: config}
-        self._loop_all_received_topics(upgrade)
-        self._append_datastore_version(110)
+            # Migrate old single 'sungrow' devices into new modules:
+            # - 'sungrow_sg' for SG family (no version field)
+            # - 'sungrow_sh' for SH family (keeps numeric version 0 or 1)
+            # Old version mapping:
+            # * 0 -> sungrow_sh, version 0
+            # * 1 -> sungrow_sg (remove version)
+            # * 2 -> sungrow_sg (remove version)
+            # * 3 -> sungrow_sh, version 1
+            # Default for missing/unknown old version: sungrow_sg (no version).
+            def upgrade(topic: str, payload) -> None:
+                if re.search(r"^openWB/system/device/[0-9]+$", topic) is not None:
+                    device = decode_payload(payload)
+                    if device.get("type") == "sungrow":
+                        old_raw = device.get("configuration", {}).get("version")
+                        old_version = None
+                        if old_raw is None:
+                            old_version = None
+                        else:
+                            try:
+                                if isinstance(old_raw, Version):
+                                    old_version = int(old_raw)
+                                else:
+                                    old_version = int(old_raw)
+                            except Exception:
+                                old_version = None
 
-    def upgrade_datastore_111(self) -> None:
-        def upgrade(topic: str, payload) -> Optional[dict]:
-            # add "userManagementSupported" flag if display theme "cards" is selected
-            if re.search("openWB/optional/int_display/theme", topic) is not None:
-                configuration_payload = decode_payload(payload)
-                configuration_payload.update(
-                    {"userManagementSupported": True if configuration_payload.get("type") == "cards" else False})
-                return {topic: configuration_payload}
-            # add "userManagementSupported" flag if web theme "koala" is selected
-            if re.search("openWB/general/web_theme", topic) is not None:
-                configuration_payload = decode_payload(payload)
-                configuration_payload.update(
-                    {"userManagementSupported": True if configuration_payload.get("type") == "koala" else False})
-                return {topic: configuration_payload}
-        self._loop_all_received_topics(upgrade)
-        self._append_datastore_version(111)
+                        new_type = "sungrow_sg"
+                        new_version = None
 
-    def upgrade_datastore_112(self) -> None:
-        def upgrade(topic: str, payload) -> Optional[dict]:
-            if re.search("openWB/vehicle/[0-9]+/soc_module/config", topic) is not None:
-                payload = decode_payload(payload)
-                if payload.get("type") == "bmwbc":
-                    pub_system_message(
-                        {},
-                        "Die Schnittstelle des bisherigen BMW-Moduls wurde eingestellt und in openWB entfernt. Bitte "
-                        "beachte, dass Du ohne die Konfiguration eines anderen Fahrzeug-Moduls kein SoC-basiertes "
-                        "Laden nutzen kannst.<br />Unsere Fahrzeug-Module werden von der Community entwickelt. Wenn du "
-                        "also ein BMW-Fahrer bist und gerne ein neues BMW-Modul in openWB programmieren möchtest, "
-                        "findest Du im <a href='https://forum.openwb.de/viewtopic.php?t=4870&start=960'>Forum</a> "
-                        "weitere Informationen.",
-                        MessageType.INFO,
-                    )
-                    return {topic: NO_MODULE}
-        run_command(['pip', 'uninstall', 'bimmer_connected', '-y'], process_exception=True)
-        self._loop_all_received_topics(upgrade)
-        self._append_datastore_version(112)
+                        if old_version == 0:
+                            new_type = "sungrow_sh"
+                            new_version = 0
+                        elif old_version in (1, 2):
+                            new_type = "sungrow_sg"
+                            new_version = None
+                        elif old_version == 3:
+                            new_type = "sungrow_sh"
+                            new_version = 1
+                        else:
+                            new_type = "sungrow_sg"
+                            new_version = None
+
+                        changed = False
+
+                        if device.get("type") != new_type:
+                            device["type"] = new_type
+                            changed = True
+
+                        if "configuration" not in device or device["configuration"] is None:
+                            device["configuration"] = {}
+
+                        if new_version is None:
+                            # sungrow_sg: remove version key if present
+                            if "version" in device["configuration"]:
+                                device["configuration"].pop("version", None)
+                                changed = True
+                        else:
+                            # sungrow_sh: set numeric version if different
+                            if device["configuration"].get("version") != new_version:
+                                device["configuration"]["version"] = new_version
+                                changed = True
+
+                        if changed:
+                            device_name = device.get("name")
+                            device_id = device.get("id")
+                            log.info(
+                                f"Upgrading sungrow device {device_name!r} (id={device_id}) -> "
+                                f"type='{new_type}'"
+                                + (f", version={new_version}" if new_version is not None else ", no version")
+                            )
+                            Pub().pub(topic, device)
+
+                            if new_version is not None:
+                                try:
+                                    version_name = Version(new_version).name
+                                except Exception:
+                                    version_name = str(new_version)
+                                pub_system_message(
+                                    device,
+                                    (f"Die Konfiguration von '{device_name}' wurde aktualisiert. "
+                                     f"Bitte in den Geräteeinstellungen sicherstellen, dass Version "
+                                     f"'{version_name}' korrekt ist"),
+                                    MessageType.INFO,
+                                )
+                            else:
+                                pub_system_message(
+                                    device,
+                                    (f"Die Sungrow-Geräte-Konfiguration wurde aktualisiert: Gerät "
+                                     f"'{device_name}' auf Typ '{new_type}'."),
+                                    MessageType.INFO,
+                                )
+
+            self._loop_all_received_topics(upgrade)
+            self._append_datastore_version(108)
