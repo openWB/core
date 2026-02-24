@@ -2747,98 +2747,102 @@ class UpdateConfig:
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(109)
 
-    def upgrade_datastore_110(self) -> None:
-            # Migrate old single 'sungrow' devices into new modules:
-            # - 'sungrow_sg' for SG family (no version field)
-            # - 'sungrow_sh' for SH family (keeps numeric version 0 or 1)
-            # Old version mapping:
-            # * 0 -> sungrow_sh, version 0
-            # * 1 -> sungrow_sg (remove version)
-            # * 2 -> sungrow_sg (remove version)
-            # * 3 -> sungrow_sh, version 1
-            # Default for missing/unknown old version: sungrow_sg (no version).
-            def upgrade(topic: str, payload) -> None:
-                if re.search(r"^openWB/system/device/[0-9]+$", topic) is not None:
-                    device = decode_payload(payload)
-                    if device.get("type") == "sungrow":
-                        old_raw = device.get("configuration", {}).get("version")
-                        old_version = None
-                        if old_raw is None:
-                            old_version = None
-                        else:
-                            try:
-                                if isinstance(old_raw, Version):
-                                    old_version = int(old_raw)
-                                else:
-                                    old_version = int(old_raw)
-                            except Exception:
-                                old_version = None
+    def upgrade_datastore_108(self) -> None:
+        """
+        Migrate old single 'sungrow' devices into new modules:
+         - 'sungrow_sg' for SG family (no version field)
+         - 'sungrow_sh' for SH family (keeps numeric version 0 or 1)
 
+        Old version mapping:
+         * 0 -> sungrow_sh, version 0
+         * 1 -> sungrow_sg (remove version)
+         * 2 -> sungrow_sg (remove version)
+         * 3 -> sungrow_sh, version 1
+        Default for missing/unknown old version: sungrow_sg (no version).
+        """
+        def upgrade(topic: str, payload) -> None:
+            if re.search(r"^openWB/system/device/[0-9]+$", topic) is not None:
+                device = decode_payload(payload)
+                if device.get("type") == "sungrow":
+                    # inline normalization: handle Version enum, ints, numeric strings
+                    old_raw = device.get("configuration", {}).get("version")
+                    old_version = None
+                    if old_raw is None:
+                        old_version = None
+                    else:
+                        try:
+                            # Version enum -> int
+                            if isinstance(old_raw, Version):
+                                old_version = int(old_raw)
+                            else:
+                                # numeric-like: int or numeric string
+                                old_version = int(old_raw)
+                        except Exception:
+                            old_version = None
+
+                    new_type = "sungrow_sg"
+                    new_version = None
+
+                    if old_version == 0:
+                        new_type = "sungrow_sh"
+                        new_version = 0
+                    elif old_version in (1, 2):
+                        new_type = "sungrow_sg"
+                        new_version = None
+                    elif old_version == 3:
+                        new_type = "sungrow_sh"
+                        new_version = 1
+                    else:
                         new_type = "sungrow_sg"
                         new_version = None
 
-                        if old_version == 0:
-                            new_type = "sungrow_sh"
-                            new_version = 0
-                        elif old_version in (1, 2):
-                            new_type = "sungrow_sg"
-                            new_version = None
-                        elif old_version == 3:
-                            new_type = "sungrow_sh"
-                            new_version = 1
-                        else:
-                            new_type = "sungrow_sg"
-                            new_version = None
+                    changed = False
 
-                        changed = False
+                    if device.get("type") != new_type:
+                        device["type"] = new_type
+                        changed = True
 
-                        if device.get("type") != new_type:
-                            device["type"] = new_type
+                    if "configuration" not in device or device["configuration"] is None:
+                        device["configuration"] = {}
+
+                    if new_version is None:
+                        if "version" in device["configuration"]:
+                            device["configuration"].pop("version", None)
+                            changed = True
+                    else:
+                        if device["configuration"].get("version") != new_version:
+                            device["configuration"]["version"] = new_version
                             changed = True
 
-                        if "configuration" not in device or device["configuration"] is None:
-                            device["configuration"] = {}
+                    if changed:
+                        device_name = device.get("name")
+                        device_id = device.get("id")
+                        log.info(
+                            f"Upgrading sungrow device {device_name!r} (id={device_id}) -> "
+                            f"type='{new_type}'"
+                            + (f", version={new_version}" if new_version is not None else ", no version")
+                        )
+                        Pub().pub(topic, device)
 
-                        if new_version is None:
-                            # sungrow_sg: remove version key if present
-                            if "version" in device["configuration"]:
-                                device["configuration"].pop("version", None)
-                                changed = True
-                        else:
-                            # sungrow_sh: set numeric version if different
-                            if device["configuration"].get("version") != new_version:
-                                device["configuration"]["version"] = new_version
-                                changed = True
-
-                        if changed:
-                            device_name = device.get("name")
-                            device_id = device.get("id")
-                            log.info(
-                                f"Upgrading sungrow device {device_name!r} (id={device_id}) -> "
-                                f"type='{new_type}'"
-                                + (f", version={new_version}" if new_version is not None else ", no version")
+                        if new_version is not None:
+                            try:
+                                version_name = Version(new_version).name
+                            except Exception:
+                                version_name = str(new_version)
+                            pub_system_message(
+                                device,
+                                (f"Die Konfiguration von '{device_name}' wurde aktualisiert. "
+                                 f"Bitte in den Geräteeinstellungen sicherstellen, dass Version "
+                                 f"'{version_name}' korrekt ist"),
+                                MessageType.INFO,
                             )
-                            Pub().pub(topic, device)
+                        else:
+                            pub_system_message(
+                                device,
+                                (f"Die Sungrow-Geräte-Konfiguration wurde aktualisiert: Gerät "
+                                 f"'{device_name}' auf Typ '{new_type}'."),
+                                MessageType.INFO,
+                            )
 
-                            if new_version is not None:
-                                try:
-                                    version_name = Version(new_version).name
-                                except Exception:
-                                    version_name = str(new_version)
-                                pub_system_message(
-                                    device,
-                                    (f"Die Konfiguration von '{device_name}' wurde aktualisiert. "
-                                     f"Bitte in den Geräteeinstellungen sicherstellen, dass Version "
-                                     f"'{version_name}' korrekt ist"),
-                                    MessageType.INFO,
-                                )
-                            else:
-                                pub_system_message(
-                                    device,
-                                    (f"Die Sungrow-Geräte-Konfiguration wurde aktualisiert: Gerät "
-                                     f"'{device_name}' auf Typ '{new_type}'."),
-                                    MessageType.INFO,
-                                )
-
-            self._loop_all_received_topics(upgrade)
-            self._append_datastore_version(108)
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(108)
