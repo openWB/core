@@ -2735,7 +2735,7 @@ class UpdateConfig:
 
     def upgrade_datastore_109(self) -> None:
         def upgrade(topic: str, payload) -> None:
-            if re.search("openWB/bat/[0-9]+/power", topic) is not None:
+            if re.search("openWB/bat/[0-9]+/get/power", topic) is not None:
                 index = get_index(topic)
                 # add new topics for battery control:
                 # openWB/bat/[0-9]+/get/max_charge_power => 0
