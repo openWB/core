@@ -209,7 +209,7 @@ class BatAll:
 
     def _set_bat_power_active_control(self, power):
         controllable_bat_components = get_controllable_bat_components()
-        # maximal mögliche Lade- und Entaldeleistung des Systems unter Einbeziehung
+        # maximal mögliche Lade- und Entladeleistung des Systems unter Einbeziehung
         # der erlaubten Lade-/ Entladeleistung und SoC der regelbaren Speicher ermitteln
         max_charge_power_total = 0
         bat_ready_to_charge = 0
@@ -233,7 +233,7 @@ class BatAll:
         # Leistung an einzelne Speicher übergeben
         for bat_component in controllable_bat_components:
             bat_component_data = data.data.bat_data[f"bat{bat_component.component_config.id}"].data
-            # Falls keine leistung übergeben wird greift die Eigenregelung der Speicher
+            # Falls keine Leistung übergeben wird greift die Eigenregelung der Speicher
             if power is None:
                 power_limit = None
                 bat_component_data.get.state_str = "Keine Steuerung"

@@ -533,9 +533,6 @@ class UpdateConfig:
         ("openWB/bat/config/price_limit$", 0.3),
         ("openWB/bat/config/price_charge_activated", False),
         ("openWB/bat/config/charge_limit$", 0.3),
-        ("openWB/bat/[0-9]+/get/max_charge_power", 0),
-        ("openWB/bat/[0-9]+/get/max_discharge_power", 0),
-        # ("openWB/bat/[0-9]+/get/state_str", "Eigenregelung"),
         ("openWB/bat/config/configured", False),
         ("openWB/bat/get/fault_state", 0),
         ("openWB/bat/get/fault_str", NO_ERROR),
@@ -2735,3 +2732,17 @@ class UpdateConfig:
                         return {topic: log_data}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(108)
+
+    def upgrade_datastore_109(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/bat/[0-9]+/power", topic) is not None:
+                index = get_index(topic)
+                # add new topics for battery control:
+                # openWB/bat/[0-9]+/get/max_charge_power => 0
+                # openWB/bat/[0-9]+/get/max_discharge_power => 0
+                if f"openWB/bat/{index}/get/max_charge_power" not in self.all_received_topics:
+                    self.__update_topic(f"openWB/bat/{index}/get/max_charge_power", 0)
+                if f"openWB/bat/{index}/get/max_discharge_power" not in self.all_received_topics:
+                    self.__update_topic(f"openWB/bat/{index}/get/max_discharge_power", 0)
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(109)
