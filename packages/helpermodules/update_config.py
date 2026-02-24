@@ -2845,4 +2845,4 @@ class UpdateConfig:
                             )
 
         self._loop_all_received_topics(upgrade)
-        self._append_datastore_version(108)
+        self._append_datastore_version(110)
