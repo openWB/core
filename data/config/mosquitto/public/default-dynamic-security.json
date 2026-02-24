@@ -1136,19 +1136,85 @@
 			"acls": [
 				{
 					"acltype": "publishClientSend",
+					"topic": "openWB/set/bat/+/get/max_charge_power",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/bat/+/get/max_discharge_power",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/bat/config/bat_control_activated",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/bat/config/bat_control_max_soc",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/bat/config/bat_control_min_soc",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/bat/config/bat_control_permitted",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/bat/config/charge_limit",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/bat/config/manual_mode",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/bat/config/power_limit_condition",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/bat/config/power_limit_mode",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/bat/config/price_charge_activated",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/bat/config/price_limit",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/bat/config/price_limit_activated",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
 					"topic": "openWB/set/general/chargemode_config/pv_charging/bat_mode",
-					"priority": 0,
-					"allow": true
-				},
-				{
-					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/bat_power_reserve",
-					"priority": 0,
-					"allow": true
-				},
-				{
-					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/bat_power_reserve_active",
 					"priority": 0,
 					"allow": true
 				},
@@ -1166,7 +1232,13 @@
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/min_bat_soc",
+					"topic": "openWB/set/general/chargemode_config/pv_charging/bat_power_reserve",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/chargemode_config/pv_charging/bat_power_reserve_active",
 					"priority": 0,
 					"allow": true
 				},
@@ -1178,13 +1250,7 @@
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/bat/config/bat_control_permitted",
-					"priority": 0,
-					"allow": true
-				},
-				{
-					"acltype": "publishClientSend",
-					"topic": "openWB/set/bat/config/power_limit_mode",
+					"topic": "openWB/set/general/chargemode_config/pv_charging/min_bat_soc",
 					"priority": 0,
 					"allow": true
 				},
@@ -1196,19 +1262,97 @@
 				},
 				{
 					"acltype": "publishClientReceive",
+					"topic": "openWB/bat/+/get/max_charge_power",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/bat/+/get/max_discharge_power",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/bat/+/get/power_limit_controllable",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/bat/config/bat_control_activated",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/bat/config/bat_control_max_soc",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/bat/config/bat_control_min_soc",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/bat/config/bat_control_permitted",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/bat/config/charge_limit",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/bat/config/manual_mode",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/bat/config/power_limit_condition",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/bat/config/power_limit_mode",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/bat/config/price_charge_activated",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/bat/config/price_limit",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/bat/config/price_limit_activated",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/bat/get/power_limit_controllable",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
 					"topic": "openWB/general/chargemode_config/pv_charging/bat_mode",
-					"priority": 0,
-					"allow": true
-				},
-				{
-					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/bat_power_reserve",
-					"priority": 0,
-					"allow": true
-				},
-				{
-					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/bat_power_reserve_active",
 					"priority": 0,
 					"allow": true
 				},
@@ -1226,7 +1370,13 @@
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/min_bat_soc",
+					"topic": "openWB/general/chargemode_config/pv_charging/bat_power_reserve",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/chargemode_config/pv_charging/bat_power_reserve_active",
 					"priority": 0,
 					"allow": true
 				},
@@ -1238,19 +1388,13 @@
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/bat/config/bat_control_permitted",
+					"topic": "openWB/general/chargemode_config/pv_charging/min_bat_soc",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/bat/get/power_limit_controllable",
-					"priority": 0,
-					"allow": true
-				},
-				{
-					"acltype": "publishClientReceive",
-					"topic": "openWB/bat/config/power_limit_mode",
+					"topic": "openWB/system/device/+/component/+/config",
 					"priority": 0,
 					"allow": true
 				}
