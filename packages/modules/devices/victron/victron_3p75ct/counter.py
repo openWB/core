@@ -27,7 +27,7 @@ class VictronCounter(AbstractCounter):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self):
-        unit = 1 # Modbus ID ist immer 1 da Standalone Produkt
+        unit = 1  # Modbus ID ist immer 1 da Standalone Produkt
         with self.__udp_client:
             powers = [
                 self.__udp_client.read_holding_registers(reg, ModbusDataType.INT_32, unit=unit) / 1
@@ -37,16 +37,16 @@ class VictronCounter(AbstractCounter):
                 for reg in [0x3041, 0x3049, 0x3051]]
             voltages = [
                 self.__udp_client.read_holding_registers(reg, ModbusDataType.INT_16, unit=unit) / 100
-                for reg in [0x3040, 0x3048, 0x3050]] 
+                for reg in [0x3040, 0x3048, 0x3050]]
             power_factors = [
                 self.__udp_client.read_holding_registers(reg, ModbusDataType.INT_16, unit=unit) / 1000
                 for reg in [0x3047, 0x304F, 0x3057]]
-            
+
             power = sum(powers)
             frequency = self.__udp_client.read_holding_registers(0x3032, ModbusDataType.UINT_16, unit=unit) / 100
-            imported = self.__udp_client.read_holding_registers(0x3034, ModbusDataType.UINT_32, unit=unit) *10
-            exported = self.__udp_client.read_holding_registers(0x3036, ModbusDataType.UINT_32, unit=unit) *10
-            
+            imported = self.__udp_client.read_holding_registers(0x3034, ModbusDataType.UINT_32, unit=unit) * 10
+            exported = self.__udp_client.read_holding_registers(0x3036, ModbusDataType.UINT_32, unit=unit) * 10
+
         counter_state = CounterState(
             voltages=voltages,
             currents=currents,

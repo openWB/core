@@ -307,6 +307,7 @@ class ModbusTcpClient_(ModbusClient):
             port = parsed_url.port
         super().__init__(ModbusTcpClient(host, port, framer, **kwargs), address, port, sleep_after_connect)
 
+
 class ModbusUdpClient_(ModbusClient):
     def __init__(self,
                  address: str,
@@ -318,6 +319,7 @@ class ModbusUdpClient_(ModbusClient):
         if parsed_url.port is not None:
             port = parsed_url.port
         super().__init__(ModbusUdpClient(host, port, **kwargs), address, port, sleep_after_connect)
+
 
 class ModbusSerialClient_(ModbusClient):
     def __init__(self,

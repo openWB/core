@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import Iterable, Union
+from typing import Iterable
 
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
@@ -18,7 +18,6 @@ def create_device(device_config: Victron):
     def create_counter_component(component_config: VictronCounterSetup):
         nonlocal client
         return VictronCounter(component_config, device_id=device_config.id, client=client)
-
 
     def update_components(components: Iterable[VictronCounter]):
         nonlocal client
