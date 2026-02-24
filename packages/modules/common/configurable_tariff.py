@@ -89,8 +89,7 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
     def __call_component_updater(self) -> TariffState:
         last_known_timestamp = datetime.fromtimestamp(int(max(self.get.prices.keys()) if self.get.prices else 0))
         tariff_state = self._component_updater()
-        if (self.tariff_type == "grid_fee"
-                or last_known_timestamp < datetime.fromtimestamp(int(max(tariff_state.prices.keys())))):
+        if last_known_timestamp < datetime.fromtimestamp(int(max(tariff_state.prices.keys()))):
             self.__calculate_next_query_time()
         return tariff_state
 
