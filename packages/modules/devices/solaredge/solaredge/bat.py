@@ -26,7 +26,7 @@ CONTROL_MODE_MSC = 1  # Storage Control Mode Maximize Self Consumption
 CONTROL_MODE_REMOTE = 4  # Control Mode Remotesteuerung
 REMOTE_CONTROL_COMMAND_MODE_DEFAULT = 0  # Default RC Command Mode ohne Steuerung
 REMOTE_CONTROL_COMMAND_MODE_CHARGE = 3  # RC Command Mode Charge from PV+AC
-REMOTE_CONTROL_COMMAND_MODE_MSC = 7  # RC Command Mode Maximize Self Consumtion
+REMOTE_CONTROL_COMMAND_MODE_MSC = 7  # RC Command Mode Maximize Self Consumtion used for Limit Discharge
 
 
 class KwargsDict(TypedDict):
@@ -59,7 +59,6 @@ class SolaredgeBat(AbstractBat):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.min_soc = 13
         self.StorageControlMode_Read = CONTROL_MODE_MSC  # Default Control Mode Set to MSC if not Read
         self.last_mode = 'undefined'
 
@@ -109,9 +108,6 @@ class SolaredgeBat(AbstractBat):
             power = 0
         if soc == FLOAT32_UNSUPPORTED or not 0 <= soc <= 100:
             log.warning(f"Invalid SoC Speicher{battery_index}: {soc}")
-        else:
-            self.min_soc = min(int(soc), int(self.min_soc))
-            log.debug(f"Min-SoC Speicher{battery_index}: {int(self.min_soc)}%.")
 
         return power, soc
 
@@ -137,17 +133,11 @@ class SolaredgeBat(AbstractBat):
                 self._write_registers(values_to_write, unit)
                 self.last_mode = None
             else:
-                return
+               return
 
         elif power_limit <= 0:  # Limit Discharge Mode should be used.
-            """
-            SolarEdge discharges the battery only to SoC-Reserve.
-            Disable Remote Control if SoC of battery is lower than SoC-Reserve.
-            """
             registers_to_read = [
-                f"Battery{battery_index}StateOfEnergy",
                 "StorageControlMode",
-                "StorageBackupReserved",
                 "RemoteControlCommandMode",
                 "RemoteControlDischargeLimit",
             ]
@@ -159,30 +149,12 @@ class SolaredgeBat(AbstractBat):
                 return
             if values["StorageControlMode"] != CONTROL_MODE_REMOTE:  # Save StorageControlMode if not Remote
                 self.StorageControlMode_Read = values["StorageControlMode"]
-            soc = values[f"Battery{battery_index}StateOfEnergy"]
-            if soc == FLOAT32_UNSUPPORTED or not 0 <= soc <= 100:
-                log.warning(f"Speicher{battery_index}: Invalid SoC: {soc}")
-            soc_reserve = max(int(self.min_soc + 2), int(values["StorageBackupReserved"]))
-            log.debug(f"SoC-Reserve Speicher{battery_index}: {int(soc_reserve)}%.")
             discharge_limit = int(values["RemoteControlDischargeLimit"])
 
             if (values["StorageControlMode"] == CONTROL_MODE_REMOTE and
                     values["RemoteControlCommandMode"] == REMOTE_CONTROL_COMMAND_MODE_MSC):
                 # RC Discharge Mode active.
-                if soc_reserve > soc:
-                    # Disable Remote Control if SOC is lower than SOC-RESERVE.
-                    # toDo: Problem with 2 batteries is unsolved.
-                    log.debug(f"Speicher{battery_index}: Steuerung deaktivieren. SoC-Reserve unterschritten")
-                    values_to_write = {
-                        "RemoteControlDischargeLimit": MAX_CHARGEDISCHARGE_LIMIT,
-                        "RemoteControlCommandModeDefault": REMOTE_CONTROL_COMMAND_MODE_DEFAULT,
-                        "RemoteControlCommandMode": REMOTE_CONTROL_COMMAND_MODE_DEFAULT,
-                        "StorageControlMode": self.StorageControlMode_Read,
-                    }
-                    self._write_registers(values_to_write, unit)
-                    self.last_mode = None
-
-                elif discharge_limit not in range(int(abs(power_limit)) - 10, int(abs(power_limit)) + 10):
+                if discharge_limit not in range(int(abs(power_limit)) - 10, int(abs(power_limit)) + 10):
                     # Limit only if difference is more than 10W, needed with more than 1 battery.
                     log.debug(f"Discharge-Limit Speicher{battery_index}: {int(abs(power_limit))}W.")
                     values_to_write = {
@@ -191,18 +163,16 @@ class SolaredgeBat(AbstractBat):
                     self._write_registers(values_to_write, unit)
                     self.last_mode = 'discharge-mode'
 
-            else:  # Remote Control Discharge Mode not active.
-                if soc_reserve < soc:
-                    # Enable Remote Control if SoC above SoC-Reserve.
-                    log.debug(f"Discharge-Limit aktivieren, Speicher{battery_index}: {int(abs(power_limit))}W.")
-                    values_to_write = {
-                        "StorageControlMode": CONTROL_MODE_REMOTE,
-                        "RemoteControlCommandModeDefault": REMOTE_CONTROL_COMMAND_MODE_MSC,
-                        "RemoteControlCommandMode": REMOTE_CONTROL_COMMAND_MODE_MSC,
-                        "RemoteControlDischargeLimit": int(min(abs(power_limit), MAX_CHARGEDISCHARGE_LIMIT))
-                    }
-                    self._write_registers(values_to_write, unit)
-                    self.last_mode = 'discharge-mode'
+            else:  # Enable Remote Control Discharge Mode if not active.
+                log.debug(f"Discharge-Limit aktivieren, Speicher{battery_index}: {int(abs(power_limit))}W.")
+                values_to_write = {
+                    "StorageControlMode": CONTROL_MODE_REMOTE,
+                    "RemoteControlCommandModeDefault": REMOTE_CONTROL_COMMAND_MODE_MSC,
+                    "RemoteControlCommandMode": REMOTE_CONTROL_COMMAND_MODE_MSC,
+                    "RemoteControlDischargeLimit": int(min(abs(power_limit), MAX_CHARGEDISCHARGE_LIMIT))
+                }
+                self._write_registers(values_to_write, unit)
+                self.last_mode = 'discharge-mode'
 
         elif power_limit > 0:  # Charge Mode should be used
             registers_to_read = [
