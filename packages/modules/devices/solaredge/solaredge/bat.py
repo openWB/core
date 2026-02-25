@@ -133,7 +133,8 @@ class SolaredgeBat(AbstractBat):
                 self._write_registers(values_to_write, unit)
                 self.last_mode = None
             else:
-               return
+                log.debug(f"Speicher{battery_index}:Power_Limit=None mehrfach geschrieben.")
+                return
 
         elif power_limit <= 0:  # Limit Discharge Mode should be used.
             registers_to_read = [
