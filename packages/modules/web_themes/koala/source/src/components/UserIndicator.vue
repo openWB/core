@@ -9,7 +9,6 @@
 
         <q-card-actions align="right">
           <q-btn
-            flat
             label="Abmelden"
             color="negative"
             v-close-popup
@@ -62,7 +61,6 @@
 
           <q-card-actions align="right">
             <q-btn
-              flat
               label="Anmelden"
               color="positive"
               type="submit"
@@ -72,7 +70,7 @@
               v-if="dataProtectionAcknowledged"
               flat
               label="Kennwort vergessen"
-              color="warning"
+              color="primary"
               type="button"
               @click="
                 showLoginDialog = false;
@@ -103,7 +101,7 @@
           <span class="q-ml-sm">Kennwort vergessen</span>
         </q-card-section>
 
-        <q-form @submit="login">
+        <q-form>
           <q-card-section>
             <q-input
               v-model="user"
@@ -120,7 +118,14 @@
                 <q-icon name="account_circle" />
               </template>
             </q-input>
-            <q-input v-model="token" label="Token" type="password" dense>
+            <q-input
+              v-model="token"
+              label="Token"
+              type="password"
+              dense
+              :readonly="user.length === 0"
+              :disabled="user.length === 0"
+            >
               <template v-slot:prepend>
                 <q-icon name="key" />
               </template>
@@ -130,6 +135,8 @@
               label="Neues Kennwort"
               type="password"
               dense
+              :readonly="user.length === 0 || token.length === 0"
+              :disabled="user.length === 0 || token.length === 0"
             >
               <template v-slot:prepend>
                 <q-icon name="key" />
@@ -140,6 +147,8 @@
               label="Neues Kennwort bestätigen"
               type="password"
               dense
+              :readonly="user.length === 0 || token.length === 0"
+              :disabled="user.length === 0 || token.length === 0"
               :rules="[
                 (value) =>
                   value == password || 'Kennwörter stimmen nicht überein',
@@ -153,7 +162,6 @@
 
           <q-card-actions align="right">
             <q-btn
-              flat
               label="Token anfordern"
               color="positive"
               type="button"
@@ -161,9 +169,8 @@
               @click="requestToken()"
             />
             <q-btn
-              flat
               label="Kennwort zurücksetzen"
-              color="primary"
+              color="warning"
               type="button"
               :disabled="resetPasswordDisabled"
               @click="resetPassword()"
@@ -171,7 +178,7 @@
             <q-btn
               flat
               label="Zurück"
-              color="negative"
+              color="primary"
               @click="
                 showPasswordResetDialog = false;
                 showLoginDialog = true;
