@@ -134,6 +134,7 @@ class SolaredgeBat(AbstractBat):
                 self.last_mode = None
             else:
                 log.debug(f"Speicher{battery_index}:Power_Limit=None mehrfach geschrieben.")
+                log.debug(f"Speicher{battery_index}:Last_Mode={self.last_mode}")
                 return
 
         elif power_limit <= 0:  # Limit Discharge Mode should be used.
@@ -163,6 +164,7 @@ class SolaredgeBat(AbstractBat):
                     }
                     self._write_registers(values_to_write, unit)
                     self.last_mode = 'discharge-mode'
+                    log.debug(f"Speicher{battery_index}:Last_Mode={self.last_mode}")
 
             else:  # Enable Remote Control Discharge Mode if not active.
                 log.debug(f"Discharge-Limit aktivieren, Speicher{battery_index}: {int(abs(power_limit))}W.")
@@ -174,6 +176,7 @@ class SolaredgeBat(AbstractBat):
                 }
                 self._write_registers(values_to_write, unit)
                 self.last_mode = 'discharge-mode'
+                log.debug(f"Speicher{battery_index}:Last_Mode={self.last_mode}")
 
         elif power_limit > 0:  # Charge Mode should be used
             registers_to_read = [
@@ -199,6 +202,7 @@ class SolaredgeBat(AbstractBat):
                 }
                 self._write_registers(values_to_write, unit)
                 self.last_mode = 'charge-mode'
+                log.debug(f"Speicher{battery_index}:Last_Mode={self.last_mode}")
 
             else:  # Remote Control Charge Mode inactive.
                 log.debug(f"Aktivierung Laden Speicher{battery_index}: {int(abs(power_limit))}W.")
@@ -210,6 +214,7 @@ class SolaredgeBat(AbstractBat):
                 }
                 self._write_registers(values_to_write, unit)
                 self.last_mode = 'charge-mode'
+                log.debug(f"Speicher{battery_index}:Last_Mode={self.last_mode}")
 
     def _read_registers(self, register_names: list, unit: int) -> Dict[str, Union[int, float]]:
         values = {}
