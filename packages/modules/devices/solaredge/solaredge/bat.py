@@ -59,8 +59,6 @@ class SolaredgeBat(AbstractBat):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.StorageControlMode_Read = CONTROL_MODE_MSC  # Default Control Mode Set to MSC if not Read
-        self.last_mode = 'undefined'
 
     def update(self) -> None:
         self.store.set(self.read_state())
@@ -119,55 +117,48 @@ class SolaredgeBat(AbstractBat):
         # Use 1 as fallback if battery_index is not set
         battery_index = getattr(self.component_config.configuration, "battery_index", 1)
 
+        registers_to_read = [
+            "StorageControlMode",
+            "RemoteControlCommandMode",
+            "RemoteControlChargeLimit",
+            "RemoteControlDischargeLimit",
+        ]
+        try:
+            values = self._read_registers(registers_to_read, unit)
+        except pymodbus.exceptions.ModbusException as e:
+            log.error(f"Failed to read registers: {e}")
+            self.fault_state.error(f"Modbus read error: {e}")
+            return
+
         if power_limit is None:  # No Bat Control should be used.
-            if self.last_mode in ('discharge-mode', 'charge-mode'):
-                # Disable Bat Control
-                log.debug(f"Speicher{battery_index}:Keine Steuerung gefordert, Steuerung deaktivieren.")
-                values_to_write = {
-                    "RemoteControlChargeLimit": MAX_CHARGEDISCHARGE_LIMIT,
-                    "RemoteControlDischargeLimit": MAX_CHARGEDISCHARGE_LIMIT,
-                    "RemoteControlCommandModeDefault": REMOTE_CONTROL_COMMAND_MODE_DEFAULT,
-                    "RemoteControlCommandMode": REMOTE_CONTROL_COMMAND_MODE_DEFAULT,
-                    "StorageControlMode": self.StorageControlMode_Read,
-                }
-                self._write_registers(values_to_write, unit)
-                self.last_mode = None
-            else:
-                log.debug(f"Speicher{battery_index}:Power_Limit=None mehrfach geschrieben.")
-                log.debug(f"Speicher{battery_index}:Last_Mode={self.last_mode}")
-                return
+            if values["StorageControlMode"] == CONTROL_MODE_MSC:
+                log.debug(f"Speicher{battery_index}:Keine Steuerung gefordert, bereits deaktiviert.")
+            # Disable Bat Control
+            log.debug(f"Speicher{battery_index}:Keine Steuerung gefordert, Steuerung deaktivieren.")
+            values_to_write = {
+                "RemoteControlChargeLimit": MAX_CHARGEDISCHARGE_LIMIT,
+                "RemoteControlDischargeLimit": MAX_CHARGEDISCHARGE_LIMIT,
+                "RemoteControlCommandModeDefault": REMOTE_CONTROL_COMMAND_MODE_DEFAULT,
+                "RemoteControlCommandMode": REMOTE_CONTROL_COMMAND_MODE_DEFAULT,
+                "StorageControlMode": CONTROL_MODE_MSC,
+            }
+            self._write_registers(values_to_write, unit)
 
         elif power_limit <= 0:  # Limit Discharge Mode should be used.
-            registers_to_read = [
-                "StorageControlMode",
-                "RemoteControlCommandMode",
-                "RemoteControlDischargeLimit",
-            ]
-            try:
-                values = self._read_registers(registers_to_read, unit)
-            except pymodbus.exceptions.ModbusException as e:
-                log.error(f"Failed to read registers: {e}")
-                self.fault_state.error(f"Modbus read error: {e}")
-                return
-            if values["StorageControlMode"] != CONTROL_MODE_REMOTE:  # Save StorageControlMode if not Remote
-                self.StorageControlMode_Read = values["StorageControlMode"]
-            discharge_limit = int(values["RemoteControlDischargeLimit"])
-
             if (values["StorageControlMode"] == CONTROL_MODE_REMOTE and
                     values["RemoteControlCommandMode"] == REMOTE_CONTROL_COMMAND_MODE_MSC):
-                # RC Discharge Mode active.
+                # Remote Control and Discharge Mode already active.
+                discharge_limit = int(values["RemoteControlDischargeLimit"])
                 if discharge_limit not in range(int(abs(power_limit)) - 10, int(abs(power_limit)) + 10):
-                    # Limit only if difference is more than 10W, needed with more than 1 battery.
-                    log.debug(f"Discharge-Limit Speicher{battery_index}: {int(abs(power_limit))}W.")
+                    # Send Limit only if difference is more than 10W, needed with more than 1 battery.
+                    log.debug(f"Entlade-Limit Speicher{battery_index}: {int(abs(power_limit))}W.")
                     values_to_write = {
                         "RemoteControlDischargeLimit": int(min(abs(power_limit), MAX_CHARGEDISCHARGE_LIMIT))
                     }
                     self._write_registers(values_to_write, unit)
-                    self.last_mode = 'discharge-mode'
-                    log.debug(f"Speicher{battery_index}:Last_Mode={self.last_mode}")
-
-            else:  # Enable Remote Control Discharge Mode if not active.
-                log.debug(f"Discharge-Limit aktivieren, Speicher{battery_index}: {int(abs(power_limit))}W.")
+                else:
+                    log.debug(f"Entlade-Limit Speicher{battery_index}: Abweichung unter  +/- 10W.")
+            else:  # Enable Remote Control and Discharge Mode.
                 values_to_write = {
                     "StorageControlMode": CONTROL_MODE_REMOTE,
                     "RemoteControlCommandModeDefault": REMOTE_CONTROL_COMMAND_MODE_MSC,
@@ -175,37 +166,21 @@ class SolaredgeBat(AbstractBat):
                     "RemoteControlDischargeLimit": int(min(abs(power_limit), MAX_CHARGEDISCHARGE_LIMIT))
                 }
                 self._write_registers(values_to_write, unit)
-                self.last_mode = 'discharge-mode'
-                log.debug(f"Speicher{battery_index}:Last_Mode={self.last_mode}")
+                log.debug(f"Entlade-Limit aktiviert, Speicher{battery_index}: {int(abs(power_limit))}W.")
 
         elif power_limit > 0:  # Charge Mode should be used
-            registers_to_read = [
-                "StorageControlMode",
-                "RemoteControlCommandMode",
-                "RemoteControlChargeLimit",
-            ]
-            try:
-                values = self._read_registers(registers_to_read, unit)
-            except pymodbus.exceptions.ModbusException as e:
-                log.error(f"Failed to read registers: {e}")
-                self.fault_state.error(f"Modbus read error: {e}")
-                return
-            if values["StorageControlMode"] != CONTROL_MODE_REMOTE:  # Save StorageControlMode if not Remote
-                self.StorageControlMode_Read = values["StorageControlMode"]
             if (values["StorageControlMode"] == CONTROL_MODE_REMOTE and
                     values["RemoteControlCommandMode"] == REMOTE_CONTROL_COMMAND_MODE_CHARGE):
-                # Remote Control Charge Mode active.
+                # Remote Control and Charge Mode already active.
                 log.debug(
-                    f"Ladung Speicher.{battery_index}: {int(min(abs(power_limit), MAX_CHARGEDISCHARGE_LIMIT))}W.")
+                    f"Ladung Speicher{battery_index}: {int(abs(power_limit))}W.")
                 values_to_write = {
                     "RemoteControlChargeLimit": int(min(abs(power_limit), MAX_CHARGEDISCHARGE_LIMIT))
                 }
                 self._write_registers(values_to_write, unit)
                 self.last_mode = 'charge-mode'
                 log.debug(f"Speicher{battery_index}:Last_Mode={self.last_mode}")
-
-            else:  # Remote Control Charge Mode inactive.
-                log.debug(f"Aktivierung Laden Speicher{battery_index}: {int(abs(power_limit))}W.")
+            else:  # Enable Remote Control and Charge Mode.
                 values_to_write = {
                     "StorageControlMode": CONTROL_MODE_REMOTE,
                     "RemoteControlCommandModeDefault": REMOTE_CONTROL_COMMAND_MODE_CHARGE,
@@ -213,8 +188,7 @@ class SolaredgeBat(AbstractBat):
                     "RemoteControlChargeLimit": int(min(abs(power_limit), MAX_CHARGEDISCHARGE_LIMIT))
                 }
                 self._write_registers(values_to_write, unit)
-                self.last_mode = 'charge-mode'
-                log.debug(f"Speicher{battery_index}:Last_Mode={self.last_mode}")
+                log.debug(f"Aktivierung Ladung Speicher{battery_index}: {int(abs(power_limit))}W.")
 
     def _read_registers(self, register_names: list, unit: int) -> Dict[str, Union[int, float]]:
         values = {}
