@@ -178,8 +178,6 @@ class SolaredgeBat(AbstractBat):
                     "RemoteControlChargeLimit": int(min(abs(power_limit), MAX_CHARGEDISCHARGE_LIMIT))
                 }
                 self._write_registers(values_to_write, unit)
-                self.last_mode = 'charge-mode'
-                log.debug(f"Speicher{battery_index}:Last_Mode={self.last_mode}")
             else:  # Enable Remote Control and Charge Mode.
                 values_to_write = {
                     "StorageControlMode": CONTROL_MODE_REMOTE,
