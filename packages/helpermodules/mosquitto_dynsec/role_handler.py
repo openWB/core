@@ -3,6 +3,7 @@ import re
 from typing import Tuple, TypedDict, Optional
 from pathlib import Path
 from json import load as json_load
+from copy import deepcopy
 
 from helpermodules.utils.run_command import run_command
 
@@ -24,12 +25,12 @@ class MosquittoRole(TypedDict):
     acls: list[MosquittoAcl]
 
 
-def _get_packages_path() -> Path:
+def _get_base_path() -> Path:
     return Path(__file__).resolve().parents[3]
 
 
 def _get_default_roles() -> list[MosquittoRole]:
-    with open(_get_packages_path() /
+    with open(_get_base_path() /
               "data" / "config" / "mosquitto" / "public" / "default-dynamic-security.json", 'r',
               encoding='utf-8') as file:
         dynsec_config = json_load(file)
@@ -38,7 +39,7 @@ def _get_default_roles() -> list[MosquittoRole]:
 
 
 def _get_role_templates() -> list[MosquittoRole]:
-    with open(_get_packages_path() /
+    with open(_get_base_path() /
               "data" / "config" / "mosquitto" / "public" / "role-templates.json", 'r', encoding='utf-8') as file:
         roles: list[MosquittoRole] = json_load(file)
     return roles if roles else []
@@ -51,21 +52,22 @@ def extract_id_from_role_name(role_name: str) -> Optional[int]:
     return None
 
 
-def get_acl_role_data(role_template: str, id: int) -> MosquittoRole:
-    roles = _get_role_templates()
-    role_data = None
-    for role in roles:
-        if role["rolename"] == role_template:
-            role_data = role
-            break
-    if role_data is None:
-        raise ValueError(f"Kein passendes Rollen-Template für '{role_template}' gefunden.")
-    role_data["rolename"] = role_data["rolename"].replace("<id>", str(id))
-    role_data["textname"] = role_data["textname"].replace("<id>", str(id))
-    role_data["textdescription"] = role_data["textdescription"].replace("<id>", str(id))
-    for acl in role_data["acls"]:
-        acl["topic"] = acl["topic"].replace("<id>", str(id))
-    return role_data
+def get_acl_role_data(role_template_name: str, id: int) -> MosquittoRole:
+    template_roles = _get_role_templates()
+    for template_role in template_roles:
+        if template_role["rolename"] == role_template_name:
+            role_data: MosquittoRole = {
+                "rolename": template_role["rolename"].replace("<id>", str(id)),
+                "textname": template_role["textname"].replace("<id>", str(id)),
+                "textdescription": template_role["textdescription"].replace("<id>", str(id)),
+                "acls": []
+            }
+            for acl in template_role["acls"]:
+                new_acl = deepcopy(acl)
+                new_acl["topic"] = new_acl["topic"].replace("<id>", str(id))
+                role_data["acls"].append(new_acl)
+            return role_data
+    raise ValueError(f"Kein passendes Rollen-Template für '{role_template_name}' gefunden.")
 
 
 def get_configured_role_data(role_name: str) -> Optional[MosquittoRole]:

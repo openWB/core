@@ -3,18 +3,18 @@ import re
 import requests
 from json import load as json_load, dump as json_dump
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 from datetime import datetime, timedelta
 from passlib.hash import bcrypt
 from secrets import token_hex
 
 from helpermodules.subdata import SubData
 from helpermodules.utils.run_command import run_command
-from helpermodules.mosquitto_dynsec.role_handler import add_acl_role, update_acls
+from helpermodules.mosquitto_dynsec.role_handler import _get_base_path, add_acl_role, update_acls
 from helpermodules.mosquitto_dynsec.user_handler import create_display_user, user_exists
 from modules.common.component_type import special_to_general_type_mapping
 
-TOKEN_DATA_PATH = Path(Path(__file__).resolve().parents[2]/"ramdisk"/"password_reset_tokens")
+TOKEN_DATA_PATH = Path(_get_base_path() / "ramdisk" / "password_reset_tokens")
 
 log = logging.getLogger(__name__)
 
@@ -22,13 +22,13 @@ log = logging.getLogger(__name__)
 def get_user_email(username: str) -> Optional[str]:
     email_regexp = r'(^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z0-9]{2,7}$)'
     if user_exists(username):
-        result = run_command(["/var/www/html/openWB/runs/dynsec_helper/get_user_mail.sh", username])
+        result = run_command([f"{_get_base_path()}/runs/dynsec_helper/get_user_mail.sh", username])
         email = result.strip()
         return email if re.fullmatch(email_regexp, email) else None
     return None
 
 
-def generate_password_reset_token(username: str) -> list[str, int]:
+def generate_password_reset_token(username: str) -> Tuple[str, int]:
     token = token_hex(16)
     token_hash = bcrypt.hash(token)
     expires_at = datetime.now() + timedelta(hours=1)
@@ -68,7 +68,7 @@ def send_password_reset_to_server(email: str, token: str, expires_at: int) -> No
             timeout=timeout,
             verify=True
         )
-        print(f"{response.status_code}: {response.text}")
+        log.debug(f"Password reset token request returned {response.status_code}: {response.text}")
     except requests.exceptions.Timeout:
         error = f"Error: request timed out after {timeout}s"
     except requests.exceptions.ConnectionError:
@@ -76,7 +76,7 @@ def send_password_reset_to_server(email: str, token: str, expires_at: int) -> No
     except requests.RequestException as e:
         error = f"HTTP-Error: {e}"
     if error is not None or response.status_code != 200:
-        print(f"Failed to send password reset email: {error or f'status {response.status_code}'}")
+        log.error(f"Failed to send password reset email: {error or f'status {response.status_code}'}")
 
 
 def verify_password_reset_token(username: str, token: str) -> bool:

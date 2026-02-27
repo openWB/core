@@ -365,20 +365,27 @@ class Command:
                 payload, connection_id,
                 f'Die ID \'{cp_id}\' ist größer als die maximal vergebene '
                 f'ID \'{self.max_id_hierarchy}\'.', MessageType.ERROR)
-        cp_type = SubData.cp_data.get(f"cp{cp_id}", None).chargepoint.data.config.type
-        cp_ip = (SubData.cp_data.get(f"cp{cp_id}", None).chargepoint.data.config.configuration.get("ip_address")
-                 if cp_type == "external_openwb" else "127.0.0.1" if cp_type == "internal_openwb" else None)
-        if cp_type == "external_openwb" and cp_ip is not None:
-            # check if ip is used in other chargepoints, if not remove display user
-            for cp in SubData.cp_data.values():
-                if (
-                    cp.chargepoint.data.config.configuration.get("ip_address", None) == cp_ip
-                    and cp.chargepoint.num != cp_id
-                ):
-                    log.info(f"IP {cp_ip} is still used by cp{cp.chargepoint.num}, not removing display user")
-                    break
-            else:
-                remove_display_user(cp_ip)
+            return
+        cp = SubData.cp_data.get(f"cp{cp_id}", None)
+        if cp is None:
+            pub_user_message(
+                payload, connection_id,
+                f'Ladepunkt mit ID \'{cp_id}\' existiert nicht.', MessageType.ERROR)
+            return
+        cp_type = cp.chargepoint.data.config.type
+        if cp_type == "external_openwb":
+            cp_ip = cp.chargepoint.data.config.configuration.get("ip_address")
+            if cp_ip is not None:
+                # check if ip is used in other charge points, if not remove display user
+                for cp in SubData.cp_data.values():
+                    if (
+                        cp.chargepoint.data.config.configuration.get("ip_address", None) == cp_ip
+                        and cp.chargepoint.num != cp_id
+                    ):
+                        log.info(f"IP {cp_ip} is still used by cp{cp.chargepoint.num}, not removing display user")
+                        break
+                else:
+                    remove_display_user(cp_ip)
         remove_acl_role("chargepoint-<id>-access", cp_id)
         remove_acl_role("chargepoint-<id>-write-access", cp_id)
         ProcessBrokerBranch(f'chargepoint/{cp_id}/').remove_topics()

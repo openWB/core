@@ -3,10 +3,10 @@ from secrets import token_hex
 from typing import Optional, Tuple
 from json import dump as json_dump
 
-from helpermodules.mosquitto_dynsec.role_handler import _get_packages_path
+from helpermodules.mosquitto_dynsec.role_handler import _get_base_path
 from helpermodules.utils.run_command import run_command
 
-USER_CREDENTIALS_PATH = _get_packages_path() / "data" / "clients"
+USER_CREDENTIALS_PATH = _get_base_path() / "data" / "clients"
 log = logging.getLogger(__name__)
 
 
@@ -58,7 +58,7 @@ def remove_display_user(ip_address: str) -> bool:
     return False
 
 
-def user_exists(username: str) -> Optional[dict]:
+def user_exists(username: str) -> bool:
     result = run_command(["mosquitto_ctrl", "dynsec", "getClient", username], process_exception=True)
     if username in result:
         return True

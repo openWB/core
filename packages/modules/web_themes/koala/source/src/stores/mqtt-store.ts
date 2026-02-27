@@ -34,9 +34,9 @@ export const useMqttStore = defineStore('mqtt', () => {
   let mqttUser = null;
   let mqttPass = null;
   if ($q.cookies.has('mqtt')) {
-    [mqttUser, mqttPass] = decodeURIComponent($q.cookies.get('mqtt')).split(
-      ':',
-    ) || [null, null];
+    [mqttUser, mqttPass] = decodeURIComponent($q.cookies.get('mqtt'))
+      ?.match(/^([^:]+):(.+)$/)
+      ?.slice(1) || [null, null];
   }
 
   // local variables

@@ -4,13 +4,14 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import {
   faCircleUser as fasCircleUser,
+  faLock as fasLock,
   faArrowRightToBracket as fasArrowRightToBracket,
   faArrowRightFromBracket as fasArrowRightFromBracket,
   faEye as fasEye,
   faEyeSlash as fasEyeSlash,
 } from "@fortawesome/free-solid-svg-icons";
 /* add icons to the library */
-library.add(fasCircleUser, fasArrowRightToBracket, fasArrowRightFromBracket, fasEye, fasEyeSlash);
+library.add(fasCircleUser, fasLock, fasArrowRightToBracket, fasArrowRightFromBracket, fasEye, fasEyeSlash);
 import { useMqttStore } from "@/stores/mqtt.js";
 
 export default {

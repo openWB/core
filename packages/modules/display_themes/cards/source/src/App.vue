@@ -159,12 +159,15 @@ export default {
     createConnection() {
       const { protocol, host, port, path, ...options } = this.connection;
       const connectUrl = `${protocol}://${host}:${port}${path}`;
-      const [user, pass] = this.$cookies.get("mqtt")?.split(":") || [null, null];
+      const [user, pass] = this.$cookies
+        .get("mqtt")
+        ?.match(/^([^:]+):(.+)$/)
+        ?.slice(1) || [null, null];
       if (!(user && pass)) {
         console.debug("Anonymous mqtt connection (no cookie set)");
       }
       if ((this.nodeEnv !== "production" || protocol == "wss") && user && pass) {
-        console.debug("Using mqtt credentials from cookie:", user, "/", pass);
+        console.debug(`Using mqtt credentials from cookie: "${user}" / "${pass.charAt(0)}..."`);
         options.username = user;
         options.password = pass;
         if (user === "admin" && pass === "openwb") {
