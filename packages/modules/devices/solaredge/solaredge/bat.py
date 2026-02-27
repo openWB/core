@@ -133,16 +133,17 @@ class SolaredgeBat(AbstractBat):
         if power_limit is None:  # No Bat Control should be used.
             if values["StorageControlMode"] == CONTROL_MODE_MSC:
                 log.debug(f"Speicher{battery_index}:Keine Steuerung gefordert, bereits deaktiviert.")
-            # Disable Bat Control
-            log.debug(f"Speicher{battery_index}:Keine Steuerung gefordert, Steuerung deaktivieren.")
-            values_to_write = {
-                "RemoteControlChargeLimit": MAX_CHARGEDISCHARGE_LIMIT,
-                "RemoteControlDischargeLimit": MAX_CHARGEDISCHARGE_LIMIT,
-                "RemoteControlCommandModeDefault": REMOTE_CONTROL_COMMAND_MODE_DEFAULT,
-                "RemoteControlCommandMode": REMOTE_CONTROL_COMMAND_MODE_DEFAULT,
-                "StorageControlMode": CONTROL_MODE_MSC,
-            }
-            self._write_registers(values_to_write, unit)
+            else:
+                # Disable Bat Control
+                values_to_write = {
+                    "RemoteControlChargeLimit": MAX_CHARGEDISCHARGE_LIMIT,
+                    "RemoteControlDischargeLimit": MAX_CHARGEDISCHARGE_LIMIT,
+                    "RemoteControlCommandModeDefault": REMOTE_CONTROL_COMMAND_MODE_DEFAULT,
+                    "RemoteControlCommandMode": REMOTE_CONTROL_COMMAND_MODE_DEFAULT,
+                    "StorageControlMode": CONTROL_MODE_MSC,
+                }
+                self._write_registers(values_to_write, unit)
+                log.debug(f"Speicher{battery_index}:Keine Steuerung gefordert, Steuerung deaktiviert.")
 
         elif power_limit <= 0:  # Limit Discharge Mode should be used.
             if (values["StorageControlMode"] == CONTROL_MODE_REMOTE and
