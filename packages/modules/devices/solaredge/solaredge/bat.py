@@ -173,12 +173,16 @@ class SolaredgeBat(AbstractBat):
             if (values["StorageControlMode"] == CONTROL_MODE_REMOTE and
                     values["RemoteControlCommandMode"] == REMOTE_CONTROL_COMMAND_MODE_CHARGE):
                 # Remote Control and Charge Mode already active.
-                log.debug(
-                    f"Ladung Speicher{battery_index}: {int(abs(power_limit))}W.")
-                values_to_write = {
-                    "RemoteControlChargeLimit": int(min(abs(power_limit), MAX_CHARGEDISCHARGE_LIMIT))
-                }
-                self._write_registers(values_to_write, unit)
+                charge_limit = int(values["RemoteControlChargeLimit"])
+                if charge_limit not in range(int(abs(power_limit)) - 10, int(abs(power_limit)) + 10):
+                    # Send Limit only if difference is more than 10W, needed with more than 1 battery.
+                    values_to_write = {
+                        "RemoteControlChargeLimit": int(min(abs(power_limit), MAX_CHARGEDISCHARGE_LIMIT))
+                    }
+                    self._write_registers(values_to_write, unit)
+                    log.debug(f"Ladung Speicher{battery_index}: {int(abs(power_limit))}W.")
+                else:
+                    log.debug(f"Ladung Speicher{battery_index}: Abweichung unter  +/- 10W.")
             else:  # Enable Remote Control and Charge Mode.
                 values_to_write = {
                     "StorageControlMode": CONTROL_MODE_REMOTE,
