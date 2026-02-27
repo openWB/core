@@ -175,7 +175,7 @@ class SolaredgeBat(AbstractBat):
                 # Remote Control and Charge Mode already active.
                 charge_limit = int(values["RemoteControlChargeLimit"])
                 if charge_limit not in range(int(abs(power_limit)) - 10, int(abs(power_limit)) + 10):
-                    # Send Limit only if difference is more than 10W, needed with more than 1 battery.
+                    # Send Limit only if difference is more than 10W.
                     values_to_write = {
                         "RemoteControlChargeLimit": int(min(abs(power_limit), MAX_CHARGEDISCHARGE_LIMIT))
                     }
