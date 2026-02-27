@@ -64,7 +64,7 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
         tariff_state = self._remove_outdated_prices(tariff_state, timeslot_length_seconds)
         return tariff_state, timeslot_length_seconds
 
-    def __calculate_next_query_time(self) -> float:
+    def __calculate_next_query_time(self) -> None:
         now = datetime.now()
         current_hour = now.hour + 1  # next full hour
         log.debug(f"Aktuelle Tarif Update Stunde: {current_hour} Uhr."

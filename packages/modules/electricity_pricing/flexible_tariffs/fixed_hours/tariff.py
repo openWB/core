@@ -59,12 +59,12 @@ def _fetch_price_for_time_slot(config: FixedHoursTariffConfiguration,
     return config.default_price
 
 
-def _calculate_price_timeslots(config: FixedHoursTariffConfiguration) -> int:
+def _calculate_price_timeslots(config: FixedHoursTariffConfiguration) -> TariffState:
     current_hour = datetime.datetime.now().replace(minute=0, second=0, microsecond=0)
     prices: Dict[str, float] = {}
     # 36 hours to cover the next day and the current day,
-    # this ensures enough values in prises list when used as grid fee adjustment for flexible tariffs
-    # that might provide prices untill midnight next day.
+    # this ensures enough values in prices list when used as grid fee adjustment for flexible tariffs
+    # that might provide prices until midnight next day.
     for i in range(36):
         for j in range(4):  # get prices for quarter hours
             time_slot = current_hour + datetime.timedelta(hours=i, minutes=j * 15)

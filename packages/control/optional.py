@@ -150,14 +150,14 @@ class Optional(OcppMixin):
             first_timestamp = (max([timestamp for timestamp in price_data.keys()
                                     if float(timestamp) <= now], default=0))
             return {int(timestamp): price for timestamp, price in price_data.items()
-                    if (timestamp) >= first_timestamp and
+                    if int(timestamp) >= int(first_timestamp) and
                     (int(timestamp) <= last_active_timestamp if last_active_timestamp > 0 else True)}
 
         try:
             if self.data.electricity_pricing.configured:
                 ep = self.data.electricity_pricing
                 #  prices lists are updated in optional_data via mqtt listener
-                if len(ep.get.prices) >= 0:
+                if len(ep.get.prices) > 0:
                     Pub().pub(f"{MQTT_PREFIX}/get/prices", remove(ep.get.prices))
                 if self._flexible_tariff_module:
                     Pub().pub(f"{MQTT_PREFIX}/flexible_tariff/get/prices", remove(ep.flexible_tariff.get.prices))
@@ -171,7 +171,7 @@ class Optional(OcppMixin):
 
     def __get_current_timeslot_start(self) -> int:
         timestamp = self.__get_first_entry()[0]
-        return float(timestamp)
+        return int(timestamp)
 
     def ep_get_current_price(self) -> float:
         if self.data.electricity_pricing.configured:

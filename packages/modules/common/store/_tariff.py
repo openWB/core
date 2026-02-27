@@ -73,8 +73,8 @@ class PriceValueStore(ValueStore[TariffState]):
         def __get_default_grid_fee_price(prices: Dict[str, float]) -> float:
             if (hasattr(data.data.optional_data.grid_fee_module.config, "default_price") and
                     data.data.optional_data.grid_fee_module.config.default_price is not None):
-                print("Using default grid fee price from configuration: " +
-                      f"{data.data.optional_data.grid_fee_module.config.default_price}")
+                log.debug("Using default grid fee price from configuration: " +
+                          f"{data.data.optional_data.grid_fee_module.config.default_price}")
                 return data.data.optional_data.grid_fee_module.config.default_price
             else:
                 # Fallback: Median der vorhandenen Netzentgelte wird
@@ -87,7 +87,7 @@ class PriceValueStore(ValueStore[TariffState]):
         def __normalize_grid_fee_prices(grid_fee_prices: Dict[int, float], max_timestamp: int) -> Dict[int, float]:
             '''
               Normalisiert die Netzentgelte.
-              Dies ist notwendig, da Nettzentgelte die Preisen einiger Stromanbieter
+              Dies ist notwendig, da die Preise einiger Stromanbieter
               bereits ein festes Netzentgeld enthalten.
             '''
             grid_fee_prices = __reduce_prices(grid_fee_prices)
@@ -97,7 +97,7 @@ class PriceValueStore(ValueStore[TariffState]):
                     and data.data.optional_data.flexible_tariff_module.config.includes_grid_fee is False):
                 return grid_fee_prices
             else:
-                #  Bei flexiblen Tarifen, die das Netzentgeln _nicht_ enthalten,
+                #  Bei flexiblen Tarifen, die das Netzentgelt _nicht_ enthalten,
                 #  muss "includes_grid_fee" explizit auf False gesetzt werden.
                 return {int(float(k)): v - __get_default_grid_fee_price(grid_fee_prices)
                         for k, v in grid_fee_prices.items()}

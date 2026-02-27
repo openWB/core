@@ -114,7 +114,7 @@ def mock_data() -> None:
         ),
         pytest.param(
             {DEFAULT_START_TIMESTAMP + step * 900: 10 for step in range(5)},
-            {DEFAULT_START_TIMESTAMP + step * 900: 14 for step in range(5)},  # nedian 14
+            {DEFAULT_START_TIMESTAMP + step * 900: 14 for step in range(5)},  # median 14
             True,
             10,  # default_grid_fee_price overrides median grid fee price of 14
             {
