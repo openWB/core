@@ -152,11 +152,11 @@ class SolaredgeBat(AbstractBat):
                 discharge_limit = int(values["RemoteControlDischargeLimit"])
                 if discharge_limit not in range(int(abs(power_limit)) - 10, int(abs(power_limit)) + 10):
                     # Send Limit only if difference is more than 10W, needed with more than 1 battery.
-                    log.debug(f"Entlade-Limit Speicher{battery_index}: {int(abs(power_limit))}W.")
                     values_to_write = {
                         "RemoteControlDischargeLimit": int(min(abs(power_limit), MAX_CHARGEDISCHARGE_LIMIT))
                     }
                     self._write_registers(values_to_write, unit)
+                    log.debug(f"Entlade-Limit Speicher{battery_index}: {int(abs(power_limit))}W.")
                 else:
                     log.debug(f"Entlade-Limit Speicher{battery_index}: Abweichung unter  +/- 10W.")
             else:  # Enable Remote Control and Discharge Mode.
