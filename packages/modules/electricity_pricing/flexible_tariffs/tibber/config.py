@@ -6,7 +6,7 @@ class TibberTariffConfiguration:
             resolution: Optional[str] = None):
         self.token = token
         self.home_id = home_id
-        self.resolution = resolution if resolution is not None 'HOURLY'
+        self.resolution = resolution if resolution is not None else 'HOURLY'
 
 
 class TibberTariff:
