@@ -3,7 +3,7 @@ from typing import Optional
 
 class TibberTariffConfiguration:
     def __init__(self, token: Optional[str] = None, home_id: Optional[str] = None,
-            resolution: Optional[str] = None):
+                 resolution: Optional[str] = None):
         self.token = token
         self.home_id = home_id
         self.resolution = resolution if resolution is not None else 'HOURLY'
