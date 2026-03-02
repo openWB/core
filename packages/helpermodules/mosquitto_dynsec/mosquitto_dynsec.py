@@ -121,8 +121,8 @@ def check_required_users():
 
 
 def check_roles_at_start():
-    update_acls()
-    flag_path = Path(Path(__file__).resolve().parents[3]/"ramdisk"/"init_user_management")
+    display_reload_required = update_acls()
+    flag_path = Path(_get_base_path() / "ramdisk" / "init_user_management")
     if flag_path.is_file():
         with open(flag_path, "r") as file:
             flag = file.readline() == "1"
@@ -148,5 +148,11 @@ def check_roles_at_start():
                     add_acl_role("io-device-<id>-access", value.config.id)
                     if value.config.output["digital"] or value.config.output["analog"]:
                         add_acl_role("io-device-<id>-write-access", value.config.id)
+            display_reload_required = True
         flag_path.unlink()
     check_required_users()
+    # finally trigger a reload of a local display to ensure the new credentials are picked up
+    if display_reload_required:
+        run_command([
+            f"{_get_base_path()}/runs/update_local_display.sh", "1"
+        ], process_exception=True)
