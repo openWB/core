@@ -125,7 +125,7 @@ def check_roles_at_start():
     flag_path = Path(Path(__file__).resolve().parents[3]/"ramdisk"/"init_user_management")
     if flag_path.is_file():
         with open(flag_path, "r") as file:
-            flag = bool(file.read())
+            flag = file.readline() == "1"
         if flag:
             for cp in SubData.cp_data.values():
                 add_acl_role("chargepoint-<id>-access", cp.chargepoint.num)
