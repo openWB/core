@@ -233,6 +233,8 @@ const user = ref('');
 const password = ref('');
 const passwordConfirm = ref('');
 const token = ref('');
+const tokenRequested = ref(false);
+const passwordResetRequested = ref(false);
 
 const smallScreen = computed(() => {
   return $q.screen.lt.sm;
@@ -266,7 +268,7 @@ const username = computed(() => {
 });
 
 const requestTokenDisabled = computed(() => {
-  return stringIsEmpty(user.value);
+  return stringIsEmpty(user.value) || tokenRequested.value;
 });
 
 const resetPasswordDisabled = computed(() => {
@@ -275,7 +277,8 @@ const resetPasswordDisabled = computed(() => {
     stringIsEmpty(token.value) ||
     stringIsEmpty(password.value) ||
     stringIsEmpty(passwordConfirm.value) ||
-    password.value !== passwordConfirm.value
+    password.value !== passwordConfirm.value ||
+    passwordResetRequested.value
   );
 });
 
@@ -314,6 +317,8 @@ const clearLoginData = () => {
   password.value = '';
   passwordConfirm.value = '';
   token.value = '';
+  tokenRequested.value = false;
+  passwordResetRequested.value = false;
 };
 
 const requestToken = () => {
@@ -321,6 +326,7 @@ const requestToken = () => {
     console.error('Benutzername erforderlich.');
     return;
   }
+  tokenRequested.value = true;
   mqttStore.sendSystemCommand('createPasswordResetToken', {
     username: user.value,
   });
@@ -357,6 +363,7 @@ const resetPassword = () => {
     });
     return;
   }
+  passwordResetRequested.value = true;
   mqttStore.sendSystemCommand('resetUserPassword', {
     username: user.value,
     token: token.value,
