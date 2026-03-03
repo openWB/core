@@ -2754,13 +2754,10 @@ class UpdateConfig:
             if re.search("openWB/chargepoint/[0-9]+/config", topic) is not None:
                 config = decode_payload(payload)
                 if config.get("type") == "openwb_dc_adapter":
-                    if config["configuration"].get("user") is None:
-                        config["configuration"]["user"] = None
-                    if config["configuration"].get("password") is None:
-                        config["configuration"]["password"] = None
-                    if config["configuration"].get("ip_address") is not None:
-                        ip_address = config["configuration"].pop("ip_address")
-                        config["configuration"]["url"] = f'http://{ip_address}/connect.php'
+                    config["configuration"]["user"] = None
+                    config["configuration"]["password"] = None
+                    ip_address = config["configuration"].pop("ip_address")
+                    config["configuration"]["url"] = f'http://{ip_address}/connect.php'
                     return {topic: config}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(110)
