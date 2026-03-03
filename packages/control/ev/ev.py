@@ -121,7 +121,8 @@ class Ev:
                              phase_switch_supported: bool,
                              charging_type: str,
                              imported_since_plugged: float,
-                             bidi: BidiState) -> Tuple[bool, Optional[str], str, float, int]:
+                             bidi: BidiState,
+                             charge_state: bool) -> Tuple[bool, Optional[str], str, float, int]:
         """ ermittelt, ob und mit welchem Strom das EV geladen werden soll (unabhängig vom Lastmanagement)
 
         Parameter
@@ -166,7 +167,8 @@ class Ev:
                         charging_type,
                         control_parameter,
                         soc_request_interval_offset,
-                        bidi)
+                        bidi,
+                        charge_state)
                     message = f"{tmp_message or ''}".strip()
 
                 # Wenn Zielladen auf Überschuss wartet, prüfen, ob Zeitladen aktiv ist.
