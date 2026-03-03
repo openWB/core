@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 109
+    DATASTORE_VERSION = 110
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -2748,3 +2748,13 @@ class UpdateConfig:
                 return new_topics if new_topics else None
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(109)
+
+    def upgrade_datastore_110(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/bat/config/power_limit_mode", topic) is not None:
+                mode = decode_payload(payload)
+                if mode == "no_limit":
+                    mode = "mode_no_discharge"
+                    return {topic: mode}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(110)
