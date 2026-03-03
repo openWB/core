@@ -3,6 +3,7 @@ import re
 import requests
 from json import load as json_load, dump as json_dump
 from pathlib import Path
+from time import sleep
 from typing import Optional, Tuple
 from datetime import datetime, timedelta
 from passlib.hash import bcrypt
@@ -121,11 +122,18 @@ def check_required_users():
 
 
 def check_roles_at_start():
+    log.warning("Warte auf SubData-Initialisierung, bevor ACL-Rollen überprüft werden ...")
+    sleep(0.5)  # we have a race condition at startup!
+    # check roles and users at startup and add missing ones if user management is active
+    if SubData.system_data["system"].data["security"]["user_management_active"] is not True:
+        log.warning("Benutzerverwaltung ist deaktiviert.")
+        return
+    log.warning("Benutzerverwaltung ist aktiviert, überprüfe ACL-Rollen und System-Benutzer ...")
     display_reload_required = update_acls()
     flag_path = Path(_get_base_path() / "ramdisk" / "init_user_management")
     if flag_path.is_file():
         with open(flag_path, "r") as file:
-            flag = file.readline() == "1"
+            flag = file.readline().strip() == "1"
         if flag:
             for cp in SubData.cp_data.values():
                 add_acl_role("chargepoint-<id>-access", cp.chargepoint.num)
@@ -153,6 +161,7 @@ def check_roles_at_start():
     check_required_users()
     # finally trigger a reload of a local display to ensure the new credentials are picked up
     if display_reload_required:
+        log.warning("ACLs wurden aktualisiert, lokale Displays werden neu geladen, um die Änderungen zu übernehmen.")
         run_command([
             f"{_get_base_path()}/runs/update_local_display.sh", "1"
         ], process_exception=True)

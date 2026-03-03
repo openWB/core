@@ -350,11 +350,7 @@ try:
     # Warten, damit subdata Zeit hat, alle Topics auf dem Broker zu empfangen.
     event_update_config_completed.wait(300)
     event_subdata_initialized.wait(300)
-    # wenn die Benutzerverwaltung aktiviert ist, müssen die Rollen beim Start überprüft werden, damit die ACLs korrekt angewendet werden.
-    if sub.system_data["system"].data["security"]["user_management_active"]:
-        Thread(target=check_roles_at_start, args=(), name="check acl roles at start").start()
-    else:
-        log.debug("Benutzerverwaltung ist deaktiviert, ACL-Rollen werden nicht überprüft.")
+    Thread(target=check_roles_at_start, args=(), name="check acl roles at start").start()
     Pub().pub("openWB/set/system/boot_done", True)
     Path(Path(__file__).resolve().parents[1]/"ramdisk"/"bootdone").touch()
     schedule_jobs()
