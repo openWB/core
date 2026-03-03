@@ -45,10 +45,9 @@ class AlphaEssCounter(AbstractCounter):
                 val * 10 for val in self.__tcp_client.read_holding_registers(
                     0x0010, [ModbusDataType.INT_32] * 2, unit=self.__modbus_id
                 )]
-            currents = [val / 10 for val in self.__tcp_client.read_holding_registers(
-                0x0017, [ModbusDataType.INT_16]*3, unit=self.__modbus_id)]
             powers = self.__tcp_client.read_holding_registers(
                 0x001b, [ModbusDataType.INT_32]*3, unit=self.__modbus_id)
+            currents = [val / 230 for val in powers]
             voltages = self.__tcp_client.read_holding_registers(
                 0x0014, [ModbusDataType.UINT_16]*3, unit=self.__modbus_id)
             frequency = self.__tcp_client.read_holding_registers(
