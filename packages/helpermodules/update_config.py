@@ -2855,7 +2855,7 @@ class UpdateConfig:
                         "weitere Informationen.",
                         MessageType.INFO,
                     )
-                    run_command("pip uninstall bimmer-connected -y")
                     return {topic: NO_MODULE}
+        run_command(['pip', 'uninstall', 'bimmer_connected', '-y'], process_exception=True)
         self._loop_all_received_topics(upgrade)
-        self._append_datastore_version(112)
+        # self._append_datastore_version(112)
