@@ -33,10 +33,12 @@ class KoalaWebTheme:
                  name: str = "Koala",
                  type: str = "koala",
                  official: bool = True,
+                 userManagementSupported: bool = True,
                  configuration: KoalaWebThemeConfiguration = None) -> None:
         self.name = name
         self.type = type
         self.official = official
+        self.userManagementSupported = userManagementSupported
         self.configuration = configuration or KoalaWebThemeConfiguration()
 
 

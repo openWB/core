@@ -19,11 +19,22 @@ export default {
       mqttStore: useMqttStore(),
     };
   },
+  computed: {
+    homePower() {
+      return this.mqttStore.getHomePower("object");
+    },
+    showHomePower() {
+      return this.homePower.value !== undefined;
+    },
+  },
 };
 </script>
 
 <template>
-  <dashboard-card color="light">
+  <dashboard-card
+    v-if="showHomePower"
+    color="light"
+  >
     <template #headerLeft>
       <font-awesome-icon
         fixed-width
@@ -32,7 +43,7 @@ export default {
       Hausverbrauch
     </template>
     <template #headerRight>
-      {{ mqttStore.getHomePower() }}
+      {{ homePower.value.textValue }}
     </template>
     <spark-line
       color="var(--color--light)"
