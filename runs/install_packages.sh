@@ -1,4 +1,15 @@
 #!/bin/bash
+echo "add required repositories..."
+# add mosquitto repository
+if [ ! -f /etc/apt/sources.list.d/mosquitto.list ]; then
+	sudo apt-get -q -y install wget apt-transport-https
+	sudo wget -q https://repo.mosquitto.org/debian/mosquitto-repo.gpg -O /etc/apt/trusted.gpg.d/mosquitto-repo.gpg
+	# get installed debian version
+	. /etc/os-release
+	sudo wget -q -O /etc/apt/sources.list.d/mosquitto.list "https://repo.mosquitto.org/debian/mosquitto-${VERSION_CODENAME}.list"
+fi
+echo "done"
+
 echo "install required packages with 'apt-get'..."
 sudo apt-get -q update
 sudo apt-get -q -y install \

@@ -37,6 +37,10 @@ case "$1" in
 			mosquitto_pub -t "openWB/system/mqtt/bridge/$new_cloud_bridge_index" -r -m "$cloud_bridge_configuration" -p 1886
 			php -f "$OPENWBBASEDIR/runs/save_mqtt.php" "$new_cloud_bridge_index" "$cloud_bridge_configuration"
 		fi
+		$OPENWBBASEDIR/runs/reset_user_management.sh
+		echo "deleting openWB specific mosquitto configuration files (they will be recreated on next start)"
+		sudo rm -v -f "/etc/mosquitto/conf.d/openwb*.conf"
+		sudo systemctl restart mosquitto.service
 		echo "all done";;
 	*)
 		echo "please pass \"clearall\" as parameter if you really want to reset all data stored in the internal and external broker"
