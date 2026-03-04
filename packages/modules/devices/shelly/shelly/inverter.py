@@ -66,7 +66,7 @@ class ShellyInverter(AbstractInverter):
                     if meters.get(f'{alphabetical_index}_current') is None:
                         continue
                     currents[(i+self.phase-1) % 3] = float(meters.get(f'{alphabetical_index}_current', 0)) * self.factor
-                power = float(meters['total_act_power']) * self.factor
+                power = float(meters.get('total_act_power', 0)) * self.factor
             # Shelly MiniPM G3
             elif "pm1:0" in status:
                 log.debug("single phase shelly")
