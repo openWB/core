@@ -41,7 +41,7 @@ class TasmotaBat(AbstractBat):
             currents = [0.0, 0.0, 0.0]
 
             power = float(response['StatusSNS']['ENERGY']['Power'])
-            currents[self.__phase-1] = (response['StatusSNS']['ENERGY']['Current']), 0.0, 0.0
+            currents[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Current']), 0.0, 0.0
             imported = float(response['StatusSNS']['ENERGY']['Total']*1000)
             _, exported = self.sim_counter.sim_count(power)
 
