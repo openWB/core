@@ -126,11 +126,6 @@ ln -s "${OPENWBBASEDIR}/data/config/openwb2.service" /etc/systemd/system/openwb2
 systemctl daemon-reload
 systemctl enable openwb2
 
-# echo "installing openwb2 auth service..."
-# ln -s "${OPENWBBASEDIR}/data/config/openwbAuthServer.service" /etc/systemd/system/openwbAuthServer.service
-# systemctl daemon-reload
-# systemctl enable openwbAuthServer
-
 echo "installing openwb2-simpleAPI service..."
 ln -s "${OPENWBBASEDIR}/data/config/openwb-simpleAPI.service" /etc/systemd/system/openwb-simpleAPI.service
 systemctl daemon-reload
@@ -143,7 +138,6 @@ systemctl enable openwbRemoteSupport
 systemctl start openwbRemoteSupport
 
 echo "installation finished, now starting openwb services..."
-# systemctl start openwbAuthServer
 systemctl start openwb2
 
 echo "all done"
