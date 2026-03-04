@@ -32,9 +32,9 @@
 				</ConfigItem>
 				<ConfigItem
 					:fullwidth="true"
-					title="Auswahleiste"
+					title="Schnellwahl-Leiste"
 					icon="fa-filter"
-					infotext="Hauptseite mit Reitern zur Schnellwahl von Widgets."
+					infotext="Reiter auf der Hauptseite zur Schnellwahl von Widgets."
 				>
 					<template #inline-item>
 						<SwitchInput v-model="globalConfig.showQuickAccess" />
