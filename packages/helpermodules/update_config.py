@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 111
+    DATASTORE_VERSION = 112
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -2747,7 +2747,37 @@ class UpdateConfig:
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(109)
 
+    def upgrade_datastore_110(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/chargepoint/[0-9]+/config", topic) is not None:
+                config = decode_payload(payload)
+                if config.get("type") == "openwb_dc_adapter":
+                    config["configuration"]["user"] = None
+                    config["configuration"]["password"] = None
+                    ip_address = config["configuration"].pop("ip_address")
+                    config["configuration"]["url"] = f'http://{ip_address}/connect.php'
+                    return {topic: config}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(110)
+
     def upgrade_datastore_111(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            # add "userManagementSupported" flag if display theme "cards" is selected
+            if re.search("openWB/optional/int_display/theme", topic) is not None:
+                configuration_payload = decode_payload(payload)
+                configuration_payload.update(
+                    {"userManagementSupported": True if configuration_payload.get("type") == "cards" else False})
+                return {topic: configuration_payload}
+            # add "userManagementSupported" flag if web theme "koala" is selected
+            if re.search("openWB/general/web_theme", topic) is not None:
+                configuration_payload = decode_payload(payload)
+                configuration_payload.update(
+                    {"userManagementSupported": True if configuration_payload.get("type") == "koala" else False})
+                return {topic: configuration_payload}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(111)
+
+    def upgrade_datastore_112(self) -> None:
         """
         Migrate old single 'sungrow' devices into new modules:
          - 'sungrow_sg' for SG family (no version field)
