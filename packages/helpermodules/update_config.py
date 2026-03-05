@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 110
+    DATASTORE_VERSION = 111
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -2747,7 +2747,7 @@ class UpdateConfig:
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(109)
 
-    def upgrade_datastore_110(self) -> None:
+    def upgrade_datastore_111(self) -> None:
         """
         Migrate old single 'sungrow' devices into new modules:
          - 'sungrow_sg' for SG family (no version field)
