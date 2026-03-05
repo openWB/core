@@ -213,6 +213,7 @@ class UpdateConfig:
         "^openWB/counter/[0-9]+/config/max_currents$",
         "^openWB/counter/[0-9]+/config/max_total_power$",
 
+        "^openWB/general/allow_unencrypted_access$",
         "^openWB/general/extern$",
         "^openWB/general/extern_display_mode$",
         "^openWB/general/charge_log_data_config$",
@@ -509,6 +510,7 @@ class UpdateConfig:
         "^openWB/system/device/[0-9]+/component/[0-9]+/simulation/timestamp_present$",
         "^openWB/system/device/[0-9]+/config$",
         "^openWB/system/device/module_update_completed$",
+        "^openWB/system/hostname$",
         "^openWB/system/io/[0-9]+/config$",
         "^openWB/system/ip_address$",
         "^openWB/system/lastlivevaluesJson$",
@@ -516,6 +518,33 @@ class UpdateConfig:
         "^openWB/system/mqtt/valid_partner_ids$",
         "^openWB/system/release_train$",
         "^openWB/system/secondary_auto_update$",
+        "^openWB/system/security/user_management_active$",
+        "^openWB/system/security/access_allowed$",
+        "^openWB/system/security/access/Settings$",
+        "^openWB/system/security/access/Status$",
+        "^openWB/system/security/access/ChargeLog$",
+        "^openWB/system/security/access/Chart$",
+        "^openWB/system/security/access/GeneralConfiguration$",
+        "^openWB/system/security/access/DisplayConfiguration$",
+        "^openWB/system/security/access/IdentificationConfiguration$",
+        "^openWB/system/security/access/GeneralChargeConfiguration$",
+        "^openWB/system/security/access/SurplusChargeConfiguration$",
+        "^openWB/system/security/access/ActiveBatControlConfiguration$",
+        "^openWB/system/security/access/HardwareInstallation$",
+        "^openWB/system/security/access/LoadManagementConfiguration$",
+        "^openWB/system/security/access/ChargePointInstallation$",
+        "^openWB/system/security/access/VehicleConfiguration$",
+        "^openWB/system/security/access/IoConfiguration$",
+        "^openWB/system/security/access/LegacySmartHomeConfiguration$",
+        "^openWB/system/security/access/InstallAssistant$",
+        "^openWB/system/security/access/CloudConfiguration$",
+        "^openWB/system/security/access/MqttBridgeConfiguration$",
+        "^openWB/system/security/access/DebugConfiguration$",
+        "^openWB/system/security/access/Support$",
+        "^openWB/system/security/access/DataManagement$",
+        "^openWB/system/security/access/SecurityConfiguration$",
+        "^openWB/system/security/access/SystemConfiguration$",
+        "^openWB/system/security/access/LegalSettings$",
         "^openWB/system/time$",
         "^openWB/system/update_in_progress$",
         "^openWB/system/usage_terms_acknowledged$",
@@ -553,6 +582,7 @@ class UpdateConfig:
         ("openWB/vehicle/template/ev_template/0", asdict(EvTemplateData(name="Standard-Fahrzeug-Profil",
                                                                         min_current=10))),
         ("openWB/vehicle/template/charge_template/0", get_charge_template_default()),
+        ("openWB/general/allow_unencrypted_access", True),
         ("openWB/general/charge_log_data_config", get_default_charge_log_columns()),
         ("openWB/general/chargemode_config/pv_charging/bat_mode", BatConsiderationMode.EV_MODE.value),
         ("openWB/general/chargemode_config/pv_charging/bat_power_discharge", 1000),
@@ -619,11 +649,42 @@ class UpdateConfig:
         ("openWB/system/usage_terms_acknowledged", False),
         ("openWB/system/debug_level", 30),
         ("openWB/system/device/module_update_completed", True),
+        ("openWB/system/hostname", "unknown"),
         ("openWB/system/ip_address", "unknown"),
         ("openWB/system/mqtt/valid_partner_ids", []),
         ("openWB/system/release_train", "master"),
         ("openWB/system/secondary_auto_update", True),
         ("openWB/system/serial_number", get_serial_number()),
+        ("openWB/system/security/user_management_active", False),
+        # the following topics in openWB/system/security/ must default to True!
+        # ACLs will restrict access to this topics if user management is active so that the UI can distinguish
+        # between "no access" (no topic received) and "access" (topic received)
+        ("openWB/system/security/access_allowed", True),
+        ("openWB/system/security/access/Settings", True),
+        ("openWB/system/security/access/Status", True),
+        ("openWB/system/security/access/ChargeLog", True),
+        ("openWB/system/security/access/Chart", True),
+        ("openWB/system/security/access/GeneralConfiguration", True),
+        ("openWB/system/security/access/DisplayConfiguration", True),
+        ("openWB/system/security/access/IdentificationConfiguration", True),
+        ("openWB/system/security/access/GeneralChargeConfiguration", True),
+        ("openWB/system/security/access/SurplusChargeConfiguration", True),
+        ("openWB/system/security/access/ActiveBatControlConfiguration", True),
+        ("openWB/system/security/access/HardwareInstallation", True),
+        ("openWB/system/security/access/LoadManagementConfiguration", True),
+        ("openWB/system/security/access/ChargePointInstallation", True),
+        ("openWB/system/security/access/VehicleConfiguration", True),
+        ("openWB/system/security/access/IoConfiguration", True),
+        ("openWB/system/security/access/LegacySmartHomeConfiguration", True),
+        ("openWB/system/security/access/InstallAssistant", True),
+        ("openWB/system/security/access/CloudConfiguration", True),
+        ("openWB/system/security/access/MqttBridgeConfiguration", True),
+        ("openWB/system/security/access/DebugConfiguration", True),
+        ("openWB/system/security/access/Support", True),
+        ("openWB/system/security/access/DataManagement", True),
+        ("openWB/system/security/access/SecurityConfiguration", True),
+        ("openWB/system/security/access/SystemConfiguration", True),
+        ("openWB/system/security/access/LegalSettings", True),
     )
     invalid_topic = (
         # Tuple: (Regex, callable)
@@ -2734,16 +2795,18 @@ class UpdateConfig:
         self._append_datastore_version(108)
 
     def upgrade_datastore_109(self) -> None:
-        def upgrade(topic: str, payload) -> None:
-            if re.search("openWB/bat/[0-9]+/get/power", topic) is not None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("^openWB/bat/[0-9]+/get/power$", topic) is not None:
                 index = get_index(topic)
+                new_topics = {}
                 # add new topics for battery control:
                 # openWB/bat/[0-9]+/get/max_charge_power => 0
                 # openWB/bat/[0-9]+/get/max_discharge_power => 0
                 if f"openWB/bat/{index}/get/max_charge_power" not in self.all_received_topics:
-                    self.__update_topic(f"openWB/bat/{index}/get/max_charge_power", 0)
+                    new_topics[f"openWB/bat/{index}/get/max_charge_power"] = 0
                 if f"openWB/bat/{index}/get/max_discharge_power" not in self.all_received_topics:
-                    self.__update_topic(f"openWB/bat/{index}/get/max_discharge_power", 0)
+                    new_topics[f"openWB/bat/{index}/get/max_discharge_power"] = 0
+                return new_topics if new_topics else None
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(109)
 
@@ -2875,4 +2938,4 @@ class UpdateConfig:
                             )
 
         self._loop_all_received_topics(upgrade)
-        self._append_datastore_version(110)
+        self._append_datastore_version(112)
