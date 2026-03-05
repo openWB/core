@@ -87,10 +87,6 @@ const props = defineProps({
     type: String,
     default: 'primary',
   },
-  limitMode: {
-    type: String,
-    default: undefined,
-  },
 });
 
 const emit = defineEmits<{
