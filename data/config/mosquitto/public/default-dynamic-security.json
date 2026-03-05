@@ -1770,6 +1770,12 @@
 				},
 				{
 					"acltype": "publishClientSend",
+					"topic": "openWB/set/vehicle/+/color",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
 					"topic": "openWB/set/vehicle/+/charge_template",
 					"priority": 0,
 					"allow": true
@@ -1843,6 +1849,12 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/vehicle/+/info",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/vehicle/+/color",
 					"priority": 0,
 					"allow": true
 				},
