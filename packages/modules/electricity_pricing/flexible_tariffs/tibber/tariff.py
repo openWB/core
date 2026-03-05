@@ -30,7 +30,7 @@ def fetch_prices(config: TibberTariffConfiguration) -> dict[str, float]:
       viewer {
         home(id: $homeId) {
           currentSubscription {
-            priceInfo(resolution: QUARTER_HOURLY) {
+            priceInfo(resolution: $resolution) {
               today { total startsAt }
               tomorrow { total startsAt }
             }
@@ -42,7 +42,7 @@ def fetch_prices(config: TibberTariffConfiguration) -> dict[str, float]:
 
     payload = {
         "query": query,
-        "variables": {"homeId": config.home_id},
+        "variables": {"homeId": config.home_id, "resolution": config.resolution},
     }
     data = json.dumps(payload)
     response = req.get_http_session().post('https://api.tibber.com/v1-beta/gql', headers=headers, data=data, timeout=6)
