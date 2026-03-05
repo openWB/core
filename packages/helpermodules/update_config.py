@@ -2849,8 +2849,8 @@ class UpdateConfig:
                         {},
                         "Die Schnittstelle des bisherigen BMW-Moduls wurde eingestellt und in openWB entfernt. Bitte "
                         "beachte, dass Du ohne die Konfiguration eines anderen Fahrzeug-Moduls kein SoC-basiertes "
-                        "Laden nutzen kannst.\nUnsere Fahrzeug-Module werden von der Community entwickelt. Wenn du "
-                        "also ein BMW-Fahrer bist und gerne ein neues BMW-Modul in openWB porgrammieren möchtest, "
+                        "Laden nutzen kannst.<br />Unsere Fahrzeug-Module werden von der Community entwickelt. Wenn du "
+                        "also ein BMW-Fahrer bist und gerne ein neues BMW-Modul in openWB programmieren möchtest, "
                         "findest Du im <a href='https://forum.openwb.de/viewtopic.php?t=4870&start=960'>Forum</a> "
                         "weitere Informationen.",
                         MessageType.INFO,
