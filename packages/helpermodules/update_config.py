@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 111
+    DATASTORE_VERSION = 112
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -2839,3 +2839,23 @@ class UpdateConfig:
                 return {topic: configuration_payload}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(111)
+
+    def upgrade_datastore_112(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/vehicle/[0-9]+/soc_module/config", topic) is not None:
+                payload = decode_payload(payload)
+                if payload.get("type") == "bmwbc":
+                    pub_system_message(
+                        {},
+                        "Die Schnittstelle des bisherigen BMW-Moduls wurde eingestellt und in openWB entfernt. Bitte "
+                        "beachte, dass Du ohne die Konfiguration eines anderen Fahrzeug-Moduls kein SoC-basiertes "
+                        "Laden nutzen kannst.<br />Unsere Fahrzeug-Module werden von der Community entwickelt. Wenn du "
+                        "also ein BMW-Fahrer bist und gerne ein neues BMW-Modul in openWB programmieren möchtest, "
+                        "findest Du im <a href='https://forum.openwb.de/viewtopic.php?t=4870&start=960'>Forum</a> "
+                        "weitere Informationen.",
+                        MessageType.INFO,
+                    )
+                    return {topic: NO_MODULE}
+        run_command(['pip', 'uninstall', 'bimmer_connected', '-y'], process_exception=True)
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(112)
