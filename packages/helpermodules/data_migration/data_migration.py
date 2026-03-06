@@ -573,7 +573,7 @@ class MigrateData:
                       {"command": "connectCloud", "data": {"username": cloud_user, "password": cloud_pw, "partner": 0}})
 
     def _move_rse(self) -> None:
-        if bool(self._get_openwb_conf_value("rseenabled", "0")):
+        if self._get_openwb_conf_value("rseenabled", "0") == "1":
             action = RippleControlReceiverSetup()
             for cp_topic in self.all_received_topics.keys():
                 if re.search("openWB/chargepoint/[0-9]+/config", cp_topic) is not None:
