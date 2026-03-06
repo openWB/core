@@ -25,7 +25,7 @@ class MqttBat(AbstractBat):
     def initialize(self) -> None:
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.sim_counter = SimCounter(self.kwargs['device_id'], self.component_config.id, prefix="bat")
-        self.peak_filter = PeakFilter("bat", self.component_config.id)
+        self.peak_filter = PeakFilter("bat", self.component_config.id, self.fault_state)
         self.store = get_bat_value_store(self.component_config.id)
 
     def update(self, received_topics: Dict) -> None:

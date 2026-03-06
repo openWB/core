@@ -24,7 +24,7 @@ class MqttInverter(AbstractInverter):
     def initialize(self) -> None:
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.sim_counter = SimCounter(self.kwargs['device_id'], self.component_config.id, prefix="pv")
-        self.peak_filter = PeakFilter("inverter", self.component_config.id)
+        self.peak_filter = PeakFilter("inverter", self.component_config.id, self.fault_state)
         self.store = get_inverter_value_store(self.component_config.id)
 
     def update(self, received_topics: Dict) -> None:
@@ -43,7 +43,7 @@ class MqttInverter(AbstractInverter):
                 imported = 0
             else:
                 imported = received_topics[f"{topic_prefix}imported"]
-            self.peak_filter.check_values(power, imported, exported)
+            imported, exported = self.peak_filter.check_values(power, imported, exported)
 
         currents = parse_received_topics("currents")
         dc_power = parse_received_topics("dc_power")
