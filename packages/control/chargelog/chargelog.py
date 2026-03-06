@@ -205,7 +205,7 @@ def _get_range_charged(log_data, charging_ev) -> float:
 def _calc_power_source_percentages(log_data) -> Dict[str, float]:
     power_source = {}
     for source in ENERGY_SOURCES:
-        power_source[source] = log_data.charged_energy_by_source[source] * log_data.imported_since_mode_switch
+        power_source[source] = log_data.charged_energy_by_source[source] / log_data.imported_since_mode_switch
     return power_source
 
 
