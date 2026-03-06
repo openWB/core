@@ -31,7 +31,7 @@ class SunnyBoySmartEnergyBat(AbstractBat):
         "Battery_DischargedEnergy": (31401, ModbusDataType.UINT_64),
         "Inverter_Type": (30053, ModbusDataType.UINT_32),
         "Externe_Steuerung": (40151, ModbusDataType.UINT_32),
-        "Wirkleistungsvorgabe": (40149, ModbusDataType.UINT_32),
+        "Wirkleistungsvorgabe": (40149, ModbusDataType.INT_32),
     }
 
     def __init__(self, component_config: SmaSunnyBoySmartEnergyBatSetup, **kwargs: Any) -> None:
