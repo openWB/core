@@ -13,7 +13,7 @@ bs4==0.0.1
 pkce==1.0.3
 evdev==1.5.0
 cryptography==46.0.5
-msal==1.31.1
+msal==1.33.0
 python-dateutil==2.8.2
 umodbus==1.0.4
 pysmb==1.2.9.1
