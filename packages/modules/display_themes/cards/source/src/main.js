@@ -21,7 +21,7 @@ const app = createApp(App)
     expire: "30d",
     path: "/",
     domain: "",
-    secure: true,
+    secure: location.protocol === "https:",
     sameSite: "Lax",
   });
 

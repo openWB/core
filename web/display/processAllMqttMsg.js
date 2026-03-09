@@ -132,28 +132,26 @@ function handleMessage(topic, payload) {
 	if (topic === "openWB/system/security/user_management_active") {
 		if (data["openWB/system/security/user_management_active"] === true) {
 			console.debug("user management is active, fetching mqtt credentials from storage");
-			fetch("/openWB/runs/dynsec_helper/display.php")
-				var xhr = new XMLHttpRequest();
-				xhr.open("GET", "/openWB/runs/dynsec_helper/display.php", false); // synchroner Request
-				xhr.send();
-				if (xhr.status === 200) {
-					try {
-						var credentials = JSON.parse(xhr.responseText);
-						setCookie("mqtt", `${credentials.username}:${credentials.password}`);
-						credentialsFetched = true;
-						addLog(`Using mqtt credentials from storage: ${credentials.username.charAt(0)}... / ${credentials.password.charAt(0)}...`);
-						if (credentials.username === "admin" && credentials.password === "openwb") {
-							console.warn("Using default mqtt credentials!");
-							addLog("Warnung: Es werden die Standard MQTT Anmeldedaten verwendet!", true);
-						}
-					} catch (e) {
-						console.debug("Fehler beim Parsen der Credentials:", e);
-						deleteCookie("mqtt");
+			var xhr = new XMLHttpRequest();
+			xhr.open("GET", "/openWB/runs/dynsec_helper/display.php", false); // synchroner Request
+			xhr.send();
+			if (xhr.status === 200) {
+				try {
+					var credentials = JSON.parse(xhr.responseText);
+					setCookie("mqtt", `${credentials.username}:${credentials.password}`);
+					credentialsFetched = true;
+					addLog(`Using mqtt credentials from storage: ${credentials.username.charAt(0)}... / ${credentials.password.charAt(0)}...`);
+					if (credentials.username === "admin" && credentials.password === "openwb") {
+						console.warn("Using default mqtt credentials!");
+						addLog("Warnung: Es werden die Standard MQTT Anmeldedaten verwendet!", true);
 					}
-				} else {
-					console.debug("no credentials for client found, using anonymous mqtt connection");
+				} catch (e) {
+					console.debug("Fehler beim Parsen der Credentials:", e);
 					deleteCookie("mqtt");
 				}
+			} else {
+				console.debug("no credentials for client found, using existing cookie if available");
+			}
 		} else {
 			deleteCookie("mqtt");
 			credentialsFetched = false;
