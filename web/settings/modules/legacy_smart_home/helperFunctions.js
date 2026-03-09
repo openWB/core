@@ -135,7 +135,9 @@ function setInputValue(elementId, value) {
 	 * will represent negative numbers by being checked
 	 */
 	var element = $("#" + elementId);
-	if (!isNaN(value)) {
+	if (isNaN(value)) {
+		element.val(value);
+	} else {
 		var signCheckboxName = element.data("signcheckbox");
 		var signCheckbox = $("#" + signCheckboxName);
 		if (signCheckbox.length == 1) {
@@ -151,8 +153,6 @@ function setInputValue(elementId, value) {
 		if (element.attr("type") == "range") {
 			updateLabel(elementId);
 		}
-	} else {
-		element.val(value);
 	}
 }
 

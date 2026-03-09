@@ -14,7 +14,7 @@ import type {
 
 export function processChargepointMessages(topic: string, message: string) {
 	const index = getIndex(topic)
-	if (index && !(index in chargePoints)) {
+	if (index != undefined && !(index in chargePoints)) {
 		console.warn('Invalid chargepoint id received: ' + index)
 		return
 	}

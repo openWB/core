@@ -1,4 +1,5 @@
 import logging
+import time
 import pymodbus
 from typing import Any, Optional, Protocol, Tuple, Union
 
@@ -80,12 +81,22 @@ class SeriesHardwareCheckMixin:
 
     def request_and_check_hardware(self: ClientHandlerProtocol,
                                    fault_state: FaultState) -> Tuple[EvseState, CounterState]:
-        try:
-            with self.client:
-                evse_state = self.evse_client.get_evse_state()
-            evse_check_passed = True
-        except Exception as e:
-            evse_check_passed = self.handle_exception(e)
+        evse_check_passed = False
+        evse_state: EvseState
+        # 2x Retry bei EVSE-Auslesen vor dem Absetzen einer Fehlermeldung
+        for attempt in (1, 2, 3):
+            try:
+                with self.client:
+                    evse_state = self.evse_client.get_evse_state()
+                evse_check_passed = True
+                break
+            except Exception as e:
+                evse_check_passed = self.handle_exception(e)
+                # Wenn nicht "handled" -> maximal zwei Wiederholungen
+                if attempt < 3 and evse_check_passed is False:
+                    time.sleep(0.3)
+                    continue
+                break
         meter_check_passed, meter_error_msg, counter_state = self.check_meter()
         if meter_check_passed is False and evse_check_passed is False:
             if isinstance(self.client, ModbusTcpClient_):

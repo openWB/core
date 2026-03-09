@@ -373,7 +373,8 @@ class ChargeTemplate:
                            charging_type: str,
                            control_parameter: ControlParameter,
                            soc_request_interval_offset: int,
-                           bidi_state: BidiState) -> Optional[SelectedPlan]:
+                           bidi_state: BidiState,
+                           charge_state: bool) -> Optional[SelectedPlan]:
         if bidi_state == BidiState.BIDI_CAPABLE and soc is None:
             raise Exception("Für den Lademodis Bidi ist zwingend ein SoC-Modul erforderlich. Soll der "
                             "SoC ausschließlich aus dem Fahrzeug ausgelesen werden, bitte auf "
@@ -402,7 +403,8 @@ class ChargeTemplate:
             soc_request_interval_offset,
             charging_type,
             ev_template,
-            bidi_state)
+            bidi_state,
+            charge_state)
 
     def _calc_remaining_time(self,
                              plan: ScheduledChargingPlan,
@@ -538,7 +540,8 @@ class ChargeTemplate:
                                         soc_request_interval_offset: int,
                                         charging_type: str,
                                         ev_template: EvTemplate,
-                                        bidi_state: BidiState) -> Tuple[float, str, str, int]:
+                                        bidi_state: BidiState,
+                                        charge_state: bool) -> Tuple[float, str, str, int]:
         current = 0
         submode = "stop"
         if selected_plan is None:
@@ -555,7 +558,10 @@ class ChargeTemplate:
         else:
             plan_current = plan.dc_current
             max_current = ev_template.data.dc_max_current
-        if plan.limit.selected != "soc":
+        if plan.limit.selected != "soc" or charge_state is False:
+            # das Abfrageintervall nur einbeziehen, wenn die Ladung bereits gestartet wurde und
+            # SoC-basiertes Laden aktiv ist, sonst wird einfach alles
+            # um das Abfrageintervall früher gestartet, und nicht die Pufferzeit um das Abfrageintervall erhöht.
             soc_request_interval_offset = 0
         log.debug("Verwendeter Plan: "+str(plan.name))
         if (limit.selected == "soc" and

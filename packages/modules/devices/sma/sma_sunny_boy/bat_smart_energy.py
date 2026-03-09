@@ -31,7 +31,7 @@ class SunnyBoySmartEnergyBat(AbstractBat):
         "Battery_DischargedEnergy": (31401, ModbusDataType.UINT_64),
         "Inverter_Type": (30053, ModbusDataType.UINT_32),
         "Externe_Steuerung": (40151, ModbusDataType.UINT_32),
-        "Wirkleistungsvorgabe": (40149, ModbusDataType.UINT_32),
+        "Wirkleistungsvorgabe": (40149, ModbusDataType.INT_32),
     }
 
     def __init__(self, component_config: SmaSunnyBoySmartEnergyBatSetup, **kwargs: Any) -> None:
@@ -113,7 +113,7 @@ class SunnyBoySmartEnergyBat(AbstractBat):
             log.debug("Aktive Batteriesteuerung vorhanden. Setze externe Steuerung.")
             values_to_write = {
                 "Externe_Steuerung": 802,
-                "Wirkleistungsvorgabe": abs(power_limit)
+                "Wirkleistungsvorgabe": int(power_limit) * -1
             }
             self._write_registers(values_to_write, unit)
             self.last_mode = 'limited'

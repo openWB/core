@@ -104,6 +104,7 @@ class cupra:
     async def reconnect(self):
         # Get code challenge and verifier
         code_verifier, code_challenge = self.get_code_challenge()
+        self.log.debug("Starting Cupra reconnect/auth flow")
 
         # Get authorize page
         _scope = 'openid profile nickname birthdate phone'
@@ -119,6 +120,7 @@ class cupra:
         }
 
         response = await self.session.get(LOGIN_BASE + '/authorize', params=payload)
+        self.log.debug("Authorize request finished with status=%s", response.status)
         if response.status >= 400:
             self.log.error(f"Authorize: Non-2xx response ({response.status})")
             # Non 2xx response, failed
@@ -127,27 +129,37 @@ class cupra:
         # Fill form with email (username)
         (form, action) = self.form_from_response(await response.read())
         form['email'] = self.username
+        self.log.debug("Submitting email form to action=%s", action)
         response = await self.session.post(LOGIN_HANDLER_BASE+action, data=form)
+        self.log.debug("Email form response status=%s", response.status)
         if response.status >= 400:
             self.log.error("Email: Non-2xx response")
             return False
 
         # Fill form with password
         (form, action) = self.password_form(await response.read())
+        if not form or not action:
+            self.log.error("Password form parsing failed")
+            return False
         form['password'] = self.password
         url = LOGIN_HANDLER_BASE + action
+        self.log.debug("Submitting password form to url=%s", url)
         response = await self.session.post(url, data=form, allow_redirects=False)
+        self.log.debug("Password form response status=%s", response.status)
 
         # Can get a 303 redirect for a "terms and conditions" page
         if (response.status == 303):
             url = response.headers['Location']
+            self.log.debug("Received 303 redirect to %s", url)
             if ("terms-and-conditions" in url):
                 # Get terms and conditions page
                 url = LOGIN_HANDLER_BASE + url
+                self.log.debug("Opening terms and conditions page: %s", url)
                 response = await self.session.get(url, data=form, allow_redirects=False)
                 (form, action) = self.form_from_response(await response.read())
 
                 url = LOGIN_HANDLER_BASE + action
+                self.log.debug("Submitting terms and conditions form to %s", url)
                 response = await self.session.post(url, data=form, allow_redirects=False)
 
                 self.log.warning("Agreed to terms and conditions")
@@ -158,7 +170,13 @@ class cupra:
         # Handle every single redirect and stop if the redirect
         # URL uses the seat adapter.
         while (True):
+            if 'Location' not in response.headers:
+                self.log.error("Redirect handling stopped: missing Location header (status=%s)",
+                               response.status)
+                return False
+
             url = response.headers['Location']
+            self.log.debug("Redirect: status=%s location=%s", response.status, url)
             if (url.split(':')[0] == "seat"):
                 if not ('code' in url):
                     self.log.error("Missing authorization code")
@@ -166,10 +184,11 @@ class cupra:
                     # Parse query string
                 query_string = url.split('?')[1]
                 query = {x[0]: x[1] for x in [x.split("=") for x in query_string.split("&")]}
+                self.log.debug("Authorization redirect reached")
                 break
 
             if (response.status != 302):
-                self.log.error("Not redirected, status %u" % response.status)
+                self.log.error("Not redirected, status=%u, last_url=%s", response.status, url)
                 return False
 
             response = await self.session.get(url, data=form, allow_redirects=False)
@@ -191,6 +210,7 @@ class cupra:
 
         response = await self.session.post(API_BASE + '/authorization/api/v1/token',
                                            headers=headers, data=form)
+        self.log.debug("Authorization code exchange status=%s", response.status)
         if response.status >= 400:
             self.log.error("Login: Non-2xx response")
             # Non 2xx response, failed
@@ -199,6 +219,7 @@ class cupra:
 
         # Update header with final token
         self.headers['Authorization'] = 'Bearer %s' % self.tokens["accessToken"]
+        self.log.debug("Cupra authorization completed successfully")
 
         # Success
         return True
