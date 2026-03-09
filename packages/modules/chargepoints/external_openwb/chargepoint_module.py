@@ -33,16 +33,10 @@ class ChargepointModule(AbstractChargepoint):
             current = 0
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
             with self.client_error_context:
-                if self.config.configuration.duo_num == 0:
-                    pub.pub_single("openWB/set/internal_chargepoint/0/data/set_current", current,
-                                   hostname=self.config.configuration.ip_address)
-                    pub.pub_single("openWB/set/isss/Current", current,
-                                   hostname=self.config.configuration.ip_address)
-                else:
-                    pub.pub_single("openWB/set/internal_chargepoint/1/data/set_current", current,
-                                   hostname=self.config.configuration.ip_address)
-                    pub.pub_single("openWB/set/isss/Lp2Current", current,
-                                   hostname=self.config.configuration.ip_address)
+                pub.pub_single(f"openWB/set/internal_chargepoint/{self.config.configuration.duo_num}/data/set_current",
+                               current, hostname=self.config.configuration.ip_address)
+                pub.pub_single(f"openWB/set/isss/{'' if self.config.configuration.duo_num == 0 else 'Lp2'}Current",
+                               current, hostname=self.config.configuration.ip_address)
 
     def get_values(self) -> None:
         def parse_received_topics(value: str):
@@ -59,14 +53,11 @@ class ChargepointModule(AbstractChargepoint):
                                {"heartbeat": timecheck.create_timestamp(), "parent_ip": my_ip_address},
                                hostname=ip_address)
                 pub.pub_single("openWB/set/isss/heartbeat", 0, hostname=ip_address)
-                pub.pub_single("openWB/set/isss/parentWB", my_ip_address,
-                               hostname=ip_address, no_json=True)
-                if (self.config.configuration.duo_num == 1):
-                    pub.pub_single("openWB/set/internal_chargepoint/1/data/parent_cp", str(num), hostname=ip_address)
-                    pub.pub_single("openWB/set/isss/parentCPlp2", str(num), hostname=ip_address)
-                else:
-                    pub.pub_single("openWB/set/internal_chargepoint/0/data/parent_cp", str(num), hostname=ip_address)
-                    pub.pub_single("openWB/set/isss/parentCPlp1", str(num), hostname=ip_address)
+                pub.pub_single("openWB/set/isss/parentWB", my_ip_address, hostname=ip_address, no_json=True)
+                pub.pub_single(f"openWB/set/internal_chargepoint/{self.config.configuration.duo_num}/data/parent_cp",
+                               str(num), hostname=ip_address)
+                pub.pub_single(f"openWB/set/isss/parentCPlp{self.config.configuration.duo_num + 1}",
+                               str(num), hostname=ip_address)
 
                 def on_connect(client, userdata, flags, rc):
                     client.subscribe(f"openWB/internal_chargepoint/{self.config.configuration.duo_num}/get/#")
@@ -152,14 +143,14 @@ class ChargepointModule(AbstractChargepoint):
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
             with self.client_error_context:
                 ip_address = self.config.configuration.ip_address
-                if (self.config.configuration.duo_num == 1):
-                    pub.pub_single("openWB/set/internal_chargepoint/1/data/cp_interruption_duration",
-                                   duration, hostname=ip_address)
-                    pub.pub_single("openWB/set/isss/Cpulp2", duration, hostname=ip_address)
-                else:
-                    pub.pub_single("openWB/set/internal_chargepoint/0/data/cp_interruption_duration",
-                                   duration, hostname=ip_address)
-                    pub.pub_single("openWB/set/isss/Cpulp1", duration, hostname=ip_address)
+                pub.pub_single(
+                    "openWB/set/internal_chargepoint/"
+                    f"{self.config.configuration.duo_num}/data/cp_interruption_duration",
+                    duration,
+                    hostname=ip_address
+                )
+                pub.pub_single(f"openWB/set/isss/Cpulp{self.config.configuration.duo_num + 1}",
+                               duration, hostname=ip_address)
                 time.sleep(duration)
 
     def clear_rfid(self) -> None:
