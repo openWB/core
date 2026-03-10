@@ -2,7 +2,7 @@
   <div>
     <div class="slider-container">
       <q-slider
-        :model-value="currentValue"
+        :model-value="props.currentValue"
         :min="0"
         :max="maxValue"
         :markers="props.limitMode == 'amount' ? 10000 : 10"
@@ -39,11 +39,11 @@
         <div>
           {{
             props.limitMode == 'amount'
-              ? formatEnergy(currentValue)
-              : currentValue + '%'
+              ? formatEnergy(props.currentValue)
+              : props.currentValue + '%'
           }}
           <q-icon
-            v-if="vehicleSocType === 'manual' && limitMode !== 'amount'"
+            v-if="props.vehicleSocType === 'manual' && props.limitMode !== 'amount'"
             name="edit"
             size="xs"
             class="q-ml-xs cursor-pointer"
@@ -52,7 +52,7 @@
             <q-tooltip>Ladestand eingeben</q-tooltip>
           </q-icon>
           <q-icon
-            v-else-if="vehicleSocType !== undefined && limitMode !== 'amount'"
+            v-else-if="props.vehicleSocType && props.vehicleSocType !== 'manual' && props.limitMode !== 'amount'"
             name="refresh"
             size="xs"
             class="q-ml-xs cursor-pointer"
@@ -60,6 +60,7 @@
           >
             <q-tooltip>Ladestand aktualisieren</q-tooltip>
           </q-icon>
+          <span v-if="!props.vehicleSocType && props.limitMode !== 'amount'" class="row">Kein SoC-Modul konfiguriert</span>
         </div>
       </div>
       <div v-if="props.targetTime" class="col text-center">
@@ -117,7 +118,7 @@ const props = defineProps({
   vehicleSocType: {
     type: String,
     required: false,
-    default: undefined,
+    default: null,
   },
   onEditSoc: {
     type: Function,

@@ -77,27 +77,7 @@
       </div>
     </q-card-section>
     <q-card-section>
-      <div
-        v-if="showEnergyLimitToggle"
-        class="row items-center justify-between"
-      >
-        <div class="text-subtitle2">Energie Begrenzung</div>
-        <q-toggle
-          v-model="energyTargetEnabled"
-          icon="ev_station"
-          size="lg"
-        >
-          <q-tooltip>
-            {{
-              energyTargetEnabled ? 'Energie Begrenzung' : 'keine Begrenzung'
-            }}
-          </q-tooltip>
-        </q-toggle>
-      </div>
-    </q-card-section>
-    <q-card-section>
       <SliderDouble
-        v-if="showSlider"
         :class="['q-mt-sm', limitEditable && 'cursor-pointer']"
         :model-value="target"
         :readonly="true"
@@ -315,50 +295,6 @@ const target = computed(() => {
     default:
       return undefined;
   }
-});
-
-const hasSocModule = computed(() => !!vehicleSocType.value);
-
-const activeChargeLimit = computed(() => {
-  switch (chargeMode.value) {
-    case 'instant_charging':
-      return mqttStore.chargePointConnectedVehicleInstantChargeLimit(
-        props.chargePointId,
-      );
-    case 'pv_charging':
-      return mqttStore.chargePointConnectedVehiclePvChargeLimit(
-        props.chargePointId,
-      );
-    case 'eco_charging':
-      return mqttStore.chargePointConnectedVehicleEcoChargeLimit(
-        props.chargePointId,
-      );
-    default:
-      return undefined;
-  }
-});
-
-const energyTargetEnabled = computed({
-  get: () => activeChargeLimit.value?.value === 'amount',
-  set: (enabled: boolean) => {
-    if (!activeChargeLimit.value) return;
-    activeChargeLimit.value.value = enabled ? 'amount' : 'none';
-  },
-});
-
-const showSlider = computed(() => {
-  if (hasSocModule.value) return true;
-  return limitMode.value === 'amount';
-});
-
-const showEnergyLimitToggle = computed(() => {
-  if (
-    hasSocModule.value ||
-    chargeMode.value === 'scheduled_charging' ||
-    chargeMode.value === 'stop'
-  )
-    return false;
-  return true;
 });
 
 const vehicleTarget = computed(() => {

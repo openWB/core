@@ -31,6 +31,7 @@
                   v-close-popup
                   @click="limitMode.value = mode.value"
                   :active="limitMode.value === mode.value"
+                  :disable="mode.value === 'soc' && !vehicleSocType"
                   active-class="bg-primary text-white"
                 >
                   <q-item-section class="text-center text-weight-bold">
@@ -54,6 +55,8 @@
               :key="mode.value"
               :color="limitMode.value === mode.value ? 'primary' : 'grey'"
               :label="mode.label"
+              :disable="mode.value === 'soc' && !vehicleSocType"
+              :outline="mode.value === 'soc' && !vehicleSocType"
               size="sm"
               class="col"
               @click="limitMode.value = mode.value"
@@ -112,21 +115,11 @@ const mqttStore = useMqttStore();
 const isSmallScreen = computed(() => Screen.lt.sm);
 const tempValue = ref<boolean>(props.modelValue);
 
-const baseLimitModes = [
+const limitModes = [
   { value: 'none', label: 'keine' },
   { value: 'soc', label: 'EV-SoC' },
   { value: 'amount', label: 'Energie' },
 ];
-
-const limitModes = computed(() => {
-  return baseLimitModes.filter((mode) => {
-    // If vehicle has no SoC module - remove soc
-    if (!vehicleSocType.value && mode.value === 'soc') {
-      return false;
-    }
-    return true;
-  });
-});
 
 const vehicleSocType = computed(() =>
   mqttStore.chargePointConnectedVehicleSocType(props.chargePointId),
@@ -197,9 +190,7 @@ const visible = computed({
 });
 
 const currentLimitModeLabel = computed(
-  () =>
-    limitModes.value.find((mode) => mode.value === limitMode.value.value)
-      ?.label,
+  () => limitModes.find((mode) => mode.value === limitMode.value.value)?.label,
 );
 
 watch(
