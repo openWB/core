@@ -86,18 +86,21 @@ class SeriesHardwareCheckMixin:
         evse_check_passed = False
         evse_state: EvseState
         # 2x Retry bei EVSE-Auslesen vor dem Absetzen einer Fehlermeldung
-        with self.client:
-            for attempt in range(MAX_ATTEMPTS):
-                try:
-                    evse_state = self.evse_client.get_evse_state()
-                    evse_check_passed = True
-                    break
-                except (pymodbus.exceptions.ModbusIOException,
-                        pymodbus.exceptions.ConnectionException) as e:
-                    evse_check_passed = self.handle_exception(e)
-                    # nur warten, wenn danach noch ein Versuch folgt
-                    if attempt < MAX_ATTEMPTS - 2 and evse_check_passed is False:
-                        time.sleep(RETRY_DELAY_SECONDS)
+        try:
+            with self.client:
+                for attempt in range(MAX_ATTEMPTS):
+                    try:
+                        evse_state = self.evse_client.get_evse_state()
+                        evse_check_passed = True
+                        break
+                    except (pymodbus.exceptions.ModbusIOException,
+                            pymodbus.exceptions.ConnectionException) as e:
+                        evse_check_passed = self.handle_exception(e)
+                        # nur warten, wenn danach noch ein Versuch folgt
+                        if attempt < MAX_ATTEMPTS - 2 and evse_check_passed is False:
+                            time.sleep(RETRY_DELAY_SECONDS)
+        except Exception as e:
+            evse_check_passed = self.handle_exception(e)
         meter_check_passed, meter_error_msg, counter_state = self.check_meter()
         if meter_check_passed is False and evse_check_passed is False:
             if isinstance(self.client, ModbusTcpClient_):
