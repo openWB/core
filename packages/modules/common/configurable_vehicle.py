@@ -11,7 +11,7 @@ from modules.common.abstract_vehicle import CalculatedSocState, GeneralVehicleCo
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import CarState
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.vehicles.common.calc_soc import calc_soc
+from modules.vehicles.common.calc_vehicle_data import calc_vehicle_data
 from modules.vehicles.manual.config import ManualSoc
 from modules.vehicles.mqtt.config import MqttSocSetup
 
@@ -125,19 +125,11 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                 # Wenn SoC vom LP nicht mehr aktuell, dann berechnen.
                 return SocSource.CALCULATION
 
-    def _calc_soc_range(self, vehicle_update_data: VehicleUpdateData) -> CarState:
-        _soc = calc_soc.calc_soc(
-                             vehicle_update_data,
-                             vehicle_update_data.efficiency,
-                             self.calculated_soc_state.last_imported or vehicle_update_data.imported,
-                             vehicle_update_data.battery_capacity)
-        _range = int(vehicle_update_data.battery_capacity * _soc / vehicle_update_data.average_consump)
-        return CarState(soc=_soc, range=_range)
-
     def _get_carstate_by_source(self, vehicle_update_data: VehicleUpdateData, source: SocSource) -> CarState:
         if source == SocSource.API:
             try:
                 _carState = self.__component_updater(vehicle_update_data)
+                _odometer = _carState.odometer
                 _now = int(time.time())
                 _diff = 0
                 if _carState.soc_timestamp:
@@ -153,7 +145,13 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                     _txt1 = _txt1 + f"gelieferte Zeitstempel mehr als {_age} min alt ist."
                     self.fault_state.warning(f"{_txt1}")
                     self.fault_state.store_error()
-                    _carState = self._calc_soc_range(vehicle_update_data)
+                    _soc, _range = calc_vehicle_data.calc_vehicle_data(
+                                                                       vehicle_update_data,
+                                                                       self.calculated_soc_state.last_imported or
+                                                                       vehicle_update_data.imported)
+                    _carState = CarState(soc=_soc, range=_range)
+                    _carState.odometer = _odometer
+                    log.info(f"RLEXP: odometer: {_carState.odometer}")
             except Exception as e:
                 if vehicle_update_data.plug_state and\
                    vehicle_update_data.last_soc and\
@@ -162,7 +160,11 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                     _txt1 = "SoC FALLBACK: SoC wird berechnet, da ein Fehler bei der Abfrage aufgetreten ist:"
                     self.fault_state.warning(f"{_txt1} {e}")
                     self.fault_state.store_error()
-                    _carState = self._calc_soc_range(vehicle_update_data)
+                    _soc, _range = calc_vehicle_data.calc_vehicle_data(
+                                                                       vehicle_update_data,
+                                                                       self.calculated_soc_state.last_imported or
+                                                                       vehicle_update_data.imported)
+                    _carState = CarState(soc=_soc, range=_range)
                 else:
                     if not vehicle_update_data.plug_state:
                         reason = ", weil kein Fahrzeug eingesteckt ist."
@@ -178,7 +180,12 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                     raise Exception(f"Der SoC kann nicht ausgelesen werden: {e}. {_txt1}{reason}")
             return _carState
         elif source == SocSource.CALCULATION:
-            return self._calc_soc_range(vehicle_update_data)
+            _soc, _range = calc_vehicle_data.calc_vehicle_data(
+                                                               vehicle_update_data,
+                                                               self.calculated_soc_state.last_imported or
+                                                               vehicle_update_data.imported)
+            _carState = CarState(soc=_soc, range=_range)
+            return _carState
         elif source == SocSource.CP:
             return CarState(soc=vehicle_update_data.soc_from_cp,
                             soc_timestamp=vehicle_update_data.timestamp_soc_from_cp)
