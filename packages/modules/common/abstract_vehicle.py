@@ -23,7 +23,6 @@ class GeneralVehicleConfig:
     request_interval_charging: int = 300
     request_interval_not_charging: int = 43200
     request_only_plugged: bool = False
-    request_calculation_threshold: int = 0
 
 
 @dataclass
