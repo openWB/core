@@ -28,14 +28,13 @@ class ChargepointRfidMixin:
                 # keine Duo
                 cp2_data is None):
             self.data.set.rfid = rfid
-            self.chargepoint_module.clear_rfid()
 
         self.data.get.rfid = None
         Pub().pub("openWB/chargepoint/"+str(self.num)+"/get/rfid", None)
         self.data.get.rfid_timestamp = None
         Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp", None)
 
-    def _validate_rfid(self) -> None:
+    def _validate_rfid(self: ChargepointProtocol) -> None:
         """Prüft, dass der Tag an diesem Ladepunkt gültig ist und  dass dieser innerhalb von 5 Minuten einem EV
         zugeordnet wird.
         """
@@ -78,7 +77,6 @@ class ChargepointRfidMixin:
             Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid", None)
             self.data.get.rfid_timestamp = None
             Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp", None)
-            self.chargepoint_module.clear_rfid()
             self.set_state_and_log(msg)
 
     def find_duo_partner(self: ChargepointProtocol) -> Optional[int]:

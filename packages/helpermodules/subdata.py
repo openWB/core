@@ -411,7 +411,8 @@ class SubData:
         try:
             if re.search("/chargepoint/[0-9]+/", msg.topic) is not None:
                 index = get_index(msg.topic)
-                if decode_payload(msg.payload) == "":
+                payload = decode_payload(msg.payload)
+                if payload == "":
                     if re.search("/chargepoint/[0-9]+/config", msg.topic) is not None:
                         log.debug("Stop des Handlers für den internen Ladepunkt.")
                         self.event_stop_internal_chargepoint.set()
@@ -430,12 +431,11 @@ class SubData:
                             self.ev_template_data)
                     if re.search("/chargepoint/[0-9]+/set/", msg.topic) is not None:
                         if re.search("/chargepoint/[0-9]+/set/log$", msg.topic) is not None:
-                            var["cp"+index].chargepoint.data.set.log = dataclass_from_dict(
-                                Log, decode_payload(msg.payload))
+                            var["cp"+index].chargepoint.data.set.log = dataclass_from_dict(Log, payload)
                         elif "charge_template" in msg.topic:
                             var["cp"+index].chargepoint.data.set.charge_template = ChargeTemplate()
                             var["cp"+index].chargepoint.data.set.charge_template.data = dataclass_from_dict(
-                                ChargeTemplateData, decode_payload(msg.payload))
+                                ChargeTemplateData, payload)
                         else:
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.set, msg)
                     elif re.search("/chargepoint/[0-9]+/get/", msg.topic) is not None:
@@ -448,22 +448,22 @@ class SubData:
                         elif re.search("/chargepoint/[0-9]+/get/connected_vehicle/soc", msg.topic) is not None:
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.get.connected_vehicle.soc, msg)
                         elif (re.search("/chargepoint/[0-9]+/get/soc$", msg.topic) is not None and
-                              decode_payload(msg.payload) != var["cp"+index].chargepoint.data.get.soc):
+                              payload != var["cp"+index].chargepoint.data.get.soc):
                             Pub().pub(f'openWB/set/vehicle/{var["cp"+index].chargepoint.data.config.ev}'
                                       '/get/force_soc_update', True)
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.get, msg)
                         elif (re.search("/chargepoint/[0-9]+/get/error_timestamp$", msg.topic) is not None and
                               hasattr(var[f"cp{index}"].chargepoint.chargepoint_module, "client_error_context")):
                             var["cp" +
-                                index].chargepoint.chargepoint_module.client_error_context.error_timestamp = (
-                                decode_payload(msg.payload)
-                            )
+                                index].chargepoint.chargepoint_module.client_error_context.error_timestamp = payload
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.get, msg)
                         elif re.search("/chargepoint/[0-9]+/get/simulation$", msg.topic) is not None:
                             var["cp"+index].chargepoint.chargepoint_module.sim_counter.data = dataclass_from_dict(
-                                SimCounterState,
-                                decode_payload(msg.payload))
+                                SimCounterState, payload)
                         else:
+                            if (re.search("/chargepoint/[0-9]+/get/rfid$", msg.topic) is not None and
+                                    payload is not None):
+                                var["cp"+index].chargepoint.chargepoint_module.clear_rfid()
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.get, msg)
                     elif re.search("/chargepoint/[0-9]+/config$", msg.topic) is not None:
                         self.process_chargepoint_config_topic(var, msg)
