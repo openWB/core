@@ -136,7 +136,6 @@ class Process:
             current = 0
 
         chargepoint.data.set.current = current
-        Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num)+"/set/current", current)
         if chargepoint.data.get.plug_state:
             log.info(f"LP{chargepoint.num}: set current {current} A, "
                      f"state {ChargepointState(chargepoint.data.control_parameter.state).name}")
