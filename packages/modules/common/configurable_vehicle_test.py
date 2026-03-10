@@ -141,10 +141,15 @@ def test_get_carstate_source(conf_vehicle: ConfigurableVehicle,
 @pytest.mark.parametrize(
     "vehicle_update_data, use_soc_from_cp, expected_calculated_soc_state, expected_call_count",
     [
-        pytest.param(VehicleUpdateData(last_soc=42, last_soc_timestamp=1, plug_time=0, average_consump=18), False, CalculatedSocState(), 1, id="request only from api"),
-        pytest.param(VehicleUpdateData(imported=150, last_soc=42, last_soc_timestamp=1, plug_time=0, average_consump=18), True, CalculatedSocState(
+        pytest.param(VehicleUpdateData(last_soc=42, last_soc_timestamp=1, plug_time=0, average_consump=18),
+                     False, CalculatedSocState(), 1, id="request only from api"),
+        pytest.param(VehicleUpdateData(imported=150, last_soc=42, last_soc_timestamp=1, plug_time=0,
+                                       average_consump=18),
+                     True, CalculatedSocState(
             last_imported=150), 1, id="request from api, not plugged"),
-        pytest.param(VehicleUpdateData(imported=200, plug_state=True, last_soc=42, last_soc_timestamp=1, plug_time=0, average_consump=18), True,
+        pytest.param(VehicleUpdateData(imported=200, plug_state=True, last_soc=42, last_soc_timestamp=1,
+                                       plug_time=0, average_consump=18),
+                     True,
                      CalculatedSocState(last_imported=200), 1, id="request from api, recently plugged"),
     ])
 def test_update_api(vehicle_update_data,
@@ -197,7 +202,7 @@ def test_1(monkeypatch):
 def test_2(monkeypatch):
     # Anstecken -> Eintragen -> aktueller SoC von EV -> SoC von Ev hochrechnen
     # setup
-    mock_calc_vehicle_data = Mock(name="calc_vehicle_data", return_value=[47,250])
+    mock_calc_vehicle_data = Mock(name="calc_vehicle_data", return_value=[47, 250])
     monkeypatch.setattr(calc_vehicle_data, "calc_vehicle_data", mock_calc_vehicle_data)
     mock_value_store = Mock(name="value_store")
     monkeypatch.setattr(store, "get_car_value_store", Mock(return_value=mock_value_store))
@@ -207,9 +212,11 @@ def test_2(monkeypatch):
     c.update(VehicleUpdateData(plug_state=True, last_soc_timestamp=0))
     c.calculated_soc_state.manual_soc = 42
     c.update(VehicleUpdateData(plug_state=True, last_soc_timestamp=0))
-    c.update(VehicleUpdateData(plug_state=True, soc_from_cp=45, timestamp_soc_from_cp=TIMESTAMP_SOC_VALID, average_consump=18, last_soc_timestamp=0))
+    c.update(VehicleUpdateData(plug_state=True, soc_from_cp=45, timestamp_soc_from_cp=TIMESTAMP_SOC_VALID,
+                               average_consump=18, last_soc_timestamp=0))
     # im nächsten Zyklus wird mit calc_vehicle_data hochgerechnet
-    c.update(VehicleUpdateData(plug_state=True, soc_from_cp=45, timestamp_soc_from_cp=TIMESTAMP_SOC_INVALID, average_consump=18, last_soc_timestamp=0))
+    c.update(VehicleUpdateData(plug_state=True, soc_from_cp=45, timestamp_soc_from_cp=TIMESTAMP_SOC_INVALID,
+                               average_consump=18, last_soc_timestamp=0))
 
     # evaluation
     assert mock_value_store.set.call_args_list[3][0][0].soc == 47
@@ -218,7 +225,7 @@ def test_2(monkeypatch):
 def test_3(monkeypatch):
     # Anstecken -> aktueller SoC von EV -> Eintragen -> Manuellen SoC hochrechnen
     # setup
-    mock_calc_vehicle_data = Mock(name="calc_vehicle_data", return_value=[44,250])
+    mock_calc_vehicle_data = Mock(name="calc_vehicle_data", return_value=[44, 250])
     monkeypatch.setattr(calc_vehicle_data, "calc_vehicle_data", mock_calc_vehicle_data)
     mock_value_store = Mock(name="value_store")
     monkeypatch.setattr(store, "get_car_value_store", Mock(return_value=mock_value_store))
@@ -240,7 +247,7 @@ def test_3(monkeypatch):
 def test_4(monkeypatch):
     # Anstecken -> kein SoC von EV -> Eintragen -> Manuellen SoC hochrechnen
     # setup
-    mock_calc_vehicle_data = Mock(name="calc_vehicle_data", return_value=[44,250])
+    mock_calc_vehicle_data = Mock(name="calc_vehicle_data", return_value=[44, 250])
     monkeypatch.setattr(calc_vehicle_data, "calc_vehicle_data", mock_calc_vehicle_data)
     mock_value_store = Mock(name="value_store")
     monkeypatch.setattr(store, "get_car_value_store", Mock(return_value=mock_value_store))
@@ -261,7 +268,7 @@ def test_4(monkeypatch):
 def test_5(monkeypatch):
     # Anstecken -> kein aktueller SoC von EV -> Eintragen -> Manuellen SoC hochrechnen
     # setup
-    mock_calc_vehicle_data = Mock(name="calc_vehicle_data", return_value=[44,250])
+    mock_calc_vehicle_data = Mock(name="calc_vehicle_data", return_value=[44, 250])
     monkeypatch.setattr(calc_vehicle_data, "calc_vehicle_data", mock_calc_vehicle_data)
     mock_value_store = Mock(name="value_store")
     monkeypatch.setattr(store, "get_car_value_store", Mock(return_value=mock_value_store))
@@ -282,7 +289,7 @@ def test_5(monkeypatch):
 def test_6(monkeypatch):
     # Abgesteckt -> vom letzten Manuellen SoC hochrechnen
     # setup
-    mock_calc_vehicle_data = Mock(name="calc_vehicle_data", return_value=[44,250])
+    mock_calc_vehicle_data = Mock(name="calc_vehicle_data", return_value=[44, 250])
     monkeypatch.setattr(calc_vehicle_data, "calc_vehicle_data", mock_calc_vehicle_data)
     mock_value_store = Mock(name="value_store")
     monkeypatch.setattr(store, "get_car_value_store", Mock(return_value=mock_value_store))
@@ -335,7 +342,7 @@ def test_9(monkeypatch):
     # setup
     mock_value_store = Mock(name="value_store")
     monkeypatch.setattr(store, "get_car_value_store", Mock(return_value=mock_value_store))
-    mock_calc_vehicle_data = Mock(name="calc_vehicle_data", return_value=[46,250])
+    mock_calc_vehicle_data = Mock(name="calc_vehicle_data", return_value=[46, 250])
     monkeypatch.setattr(calc_vehicle_data, "calc_vehicle_data", mock_calc_vehicle_data)
     c = conf_vehicle_api_from_cp()
 
@@ -365,7 +372,7 @@ def test_10(monkeypatch):
 def test_11(monkeypatch):
     # Anstecken -> kein SoC von EV -> API -> von API hochrechnen
     # setup
-    mock_calc_vehicle_data = Mock(name="calc_vehicle_data", return_value=[44,250])
+    mock_calc_vehicle_data = Mock(name="calc_vehicle_data", return_value=[44, 250])
     monkeypatch.setattr(calc_vehicle_data, "calc_vehicle_data", mock_calc_vehicle_data)
     mock_value_store = Mock(name="value_store")
     monkeypatch.setattr(store, "get_car_value_store", Mock(return_value=mock_value_store))
