@@ -12,6 +12,8 @@ log = logging.getLogger(__name__)
 
 
 EVSE_MIN_FIRMWARE = 7
+MAX_ATTEMPTS = 3
+RETRY_DELAY_SECONDS = 0.3
 
 OPEN_TICKET = (" Bitte nehme bei anhaltenden Problemen über die Support-Funktion in den Einstellungen Kontakt mit " +
                "uns auf.")
@@ -84,19 +86,18 @@ class SeriesHardwareCheckMixin:
         evse_check_passed = False
         evse_state: EvseState
         # 2x Retry bei EVSE-Auslesen vor dem Absetzen einer Fehlermeldung
-        for attempt in (1, 2, 3):
-            try:
-                with self.client:
+        with self.client:
+            for attempt in range(MAX_ATTEMPTS):
+                try:
                     evse_state = self.evse_client.get_evse_state()
-                evse_check_passed = True
-                break
-            except Exception as e:
-                evse_check_passed = self.handle_exception(e)
-                # Wenn nicht "handled" -> maximal zwei Wiederholungen
-                if attempt < 3 and evse_check_passed is False:
-                    time.sleep(0.3)
-                    continue
-                break
+                    evse_check_passed = True
+                    break
+                except (pymodbus.exceptions.ModbusIOException,
+                        pymodbus.exceptions.ConnectionException) as e:
+                    evse_check_passed = self.handle_exception(e)
+                    # nur warten, wenn danach noch ein Versuch folgt
+                    if attempt < MAX_ATTEMPTS - 2 and evse_check_passed is False:
+                        time.sleep(RETRY_DELAY_SECONDS)
         meter_check_passed, meter_error_msg, counter_state = self.check_meter()
         if meter_check_passed is False and evse_check_passed is False:
             if isinstance(self.client, ModbusTcpClient_):
