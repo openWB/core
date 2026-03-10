@@ -400,10 +400,8 @@ class Chargepoint(ChargepointRfidMixin):
                     self.set_state_and_log(message)
                 return
             if self.data.control_parameter.state == ChargepointState.WAIT_FOR_USING_PHASES:
-                log.debug("pos 1")
                 if check_timestamp(self.data.control_parameter.timestamp_charge_start,
                                    charging_ev.ev_template.data.keep_charge_active_duration) is False:
-                    log.debug("pos 2")
                     if self.hw_supports_phase_switch() and self.failed_phase_switches_reached():
                         if phase_switch.phase_switch_thread_alive(self.num) is False:
                             self.data.control_parameter.state = ChargepointState.PHASE_SWITCH_AWAITED
