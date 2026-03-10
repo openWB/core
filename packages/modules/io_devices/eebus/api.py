@@ -8,7 +8,7 @@ from control import data
 from dataclass_utils._dataclass_asdict import asdict
 from helpermodules import timecheck
 from helpermodules.broker import BrokerClient
-from helpermodules.pub import pub_single
+from helpermodules.pub import Pub
 from helpermodules.utils.run_command import run_command
 from helpermodules.utils._thread_handler import is_thread_alive, thread_handler
 from helpermodules.utils.topic_parser import decode_payload
@@ -61,7 +61,7 @@ def create_io(config: Eebus):
                 if e.returncode == 2:
                     msg = ("Zertifikat oder Key ungültig. Wenn das Zertifikat abgelaufen ist, bitte in "
                            "den Einstellungen ein neues Zertifikat generieren und den SKI beim VNB "
-                           "akutalisieren.")
+                           "aktualisieren.")
                     control_command_log.error(msg)
                     thread_exception = ValueError(msg)
                 else:
@@ -178,4 +178,4 @@ def create_pub_cert_ski(id: int):
     config.configuration.cert_info = cert_info
     with open(f"{cert_path}/ski-{id}", "w") as ski_file:
         ski_file.write(cert_info.client_ski)
-    pub_single(f"openWB/set/system/io/{config.id}/config", asdict(config))
+    Pub().pub(f"openWB/set/system/io/{config.id}/config", asdict(config))

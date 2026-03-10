@@ -5,10 +5,9 @@ from threading import Event, Thread
 import time
 from typing import Optional
 from helpermodules import timecheck
-from helpermodules import pub
 
 from helpermodules.logger import clear_in_memory_log_handler
-from helpermodules.pub import Pub, pub_single
+from helpermodules.pub import Pub
 from helpermodules.subdata import SubData
 from modules.chargepoints.internal_openwb.config import InternalChargepointMode
 from modules.common.component_context import SingleComponentUpdateContext
@@ -55,11 +54,11 @@ class UpdateState:
                           " noch aktiv. Es muss erst gewartet werden, bis die CP-Unterbrechung abgeschlossen ist.")
                 return
         self.cp_module.set_current(set_current)
-        pub_single(f"openWB/set/chargepoint/{self.hierarchy_id}/set/current", payload=set_current)
+        Pub().pub(f"openWB/set/chargepoint/{self.hierarchy_id}/set/current", payload=set_current)
         if data.trigger_phase_switch:
             log.debug("Switch Phases from "+str(self.old_phases_to_use) + " to " + str(data.phases_to_use))
             self.__thread_phase_switch(data.phases_to_use)
-            pub.pub_single(
+            Pub().pub(
                 f"openWB/set/internal_chargepoint/{self.cp_module.local_charge_point_num}/data/trigger_phase_switch",
                 False)
 
@@ -209,8 +208,8 @@ class HandlerChargepoint:
             self.update_state = UpdateState(self.module, hierarchy_id)
             self.old_plug_state = False
             if global_data.parent_ip != "localhost":
-                pub_single(f"openWB/set/chargepoint/{hierarchy_id}/get/state_str",
-                           payload="Statusmeldungen bitte auf der Primary-openWB einsehen.")
+                Pub().pub(f"openWB/set/chargepoint/{hierarchy_id}/get/state_str",
+                          payload="Statusmeldungen bitte auf der Primary-openWB einsehen.")
 
     def update(self, global_data: GlobalHandlerData, data: InternalChargepointData, rfid_data: RfidData) -> bool:
         def __thread_active(thread: Optional[Thread]) -> bool:

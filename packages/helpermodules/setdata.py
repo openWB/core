@@ -13,7 +13,7 @@ import logging
 from control import data
 from helpermodules import hardware_configuration, subdata
 from helpermodules.broker import BrokerClient
-from helpermodules.pub import Pub, pub_single
+from helpermodules.pub import Pub
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_index_position
 from helpermodules.update_config import UpdateConfig
 import dataclass_utils
@@ -1183,9 +1183,9 @@ class SetData:
             if ("openWB/set/LegacySmartHome/config" in msg.topic or "openWB/set/LegacySmartHome/Devices" in msg.topic):
                 index = get_index(msg.topic)
                 if "openWB/set/LegacySmartHome/config" in msg.topic:
-                    pub_single(msg.topic.replace('openWB/set/', 'openWB/', 1), msg.payload.decode("utf-8"),
-                               retain=True, no_json=True, port=1886)
-                    pub_single(msg.topic, "", no_json=True, port=1886)
+                    Pub().pub(msg.topic.replace('openWB/set/', 'openWB/', 1), msg.payload.decode("utf-8"),
+                              retain=True, no_json=True)
+                    Pub().pub(msg.topic, "", no_json=True)
                     with open(self._get_ramdisk_path()/"rereadsmarthomedevices", 'w') as f:
                         f.write(str(1))
                     if f"openWB/set/LegacySmartHome/config/set/Devices/{index}/mode" in msg.topic:
