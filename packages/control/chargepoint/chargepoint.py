@@ -370,7 +370,7 @@ class Chargepoint(ChargepointRfidMixin):
                         self.set_state_and_log(
                             "Keine Phasenumschaltung, da wiederholtes Anstoßen der Umschaltung in den übergreifenden "
                             "Ladeeinstellungen deaktiviert wurde. Die aktuelle "
-                            "Phasenzahl wird bis zum Abstecken beibehalten.")
+                            "Phasenzahl wird bis zum nächsten Lademoduswechsel beibehalten.")
                     self.data.control_parameter.failed_phase_switches += 1
         return phase_switch_required
 
@@ -400,8 +400,10 @@ class Chargepoint(ChargepointRfidMixin):
                     self.set_state_and_log(message)
                 return
             if self.data.control_parameter.state == ChargepointState.WAIT_FOR_USING_PHASES:
+                log.debug("pos 1")
                 if check_timestamp(self.data.control_parameter.timestamp_charge_start,
                                    charging_ev.ev_template.data.keep_charge_active_duration) is False:
+                    log.debug("pos 2")
                     if self.hw_supports_phase_switch() and self.failed_phase_switches_reached():
                         if phase_switch.phase_switch_thread_alive(self.num) is False:
                             self.data.control_parameter.state = ChargepointState.PHASE_SWITCH_AWAITED
@@ -463,6 +465,7 @@ class Chargepoint(ChargepointRfidMixin):
                                           self.data.control_parameter.phases)
                                 self.data.set.phases_to_use = self.data.control_parameter.phases
                             self.data.control_parameter.state = ChargepointState.PERFORMING_PHASE_SWITCH
+                            self.data.set.current = 0
                         else:
                             log.error("Phasenumschaltung an Ladepunkt" + str(self.num) +
                                       " nicht möglich, da gerade eine Umschaltung im Gange ist.")
