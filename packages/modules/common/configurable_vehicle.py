@@ -129,7 +129,6 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
         if source == SocSource.API:
             try:
                 _carState = self.__component_updater(vehicle_update_data)
-                _odometer = _carState.odometer
                 _now = int(time.time())
                 _diff = 0
                 if _carState.soc_timestamp:
@@ -150,8 +149,6 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                                                                        self.calculated_soc_state.last_imported or
                                                                        vehicle_update_data.imported)
                     _carState = CarState(soc=_soc, range=_range)
-                    _carState.odometer = _odometer
-                    log.info(f"RLEXP: odometer: {_carState.odometer}")
             except Exception as e:
                 if vehicle_update_data.plug_state and\
                    vehicle_update_data.last_soc and\
