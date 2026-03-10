@@ -29,14 +29,17 @@ class Loadvars:
             levels = data.data.counter_all_data.get_list_of_elements_per_level()
             levels.reverse()
             for level in levels:
-                self._update_values_of_level(level, not_finished_threads)
+                self._update_values_of_level_buttom_top(level, not_finished_threads)
                 wait_for_module_update_completed(self.event_module_update_completed, topic)
                 data.data.copy_module_data()
+            self._update_values_virtual_counter_uncounted_consumption(not_finished_threads)
+            wait_for_module_update_completed(self.event_module_update_completed, topic)
+            data.data.copy_module_data()
             wait_for_module_update_completed(self.event_module_update_completed, topic)
             joined_thread_handler(self._get_io(), data.data.general_data.data.control_interval/3)
             joined_thread_handler(self._set_io(), data.data.general_data.data.control_interval/3)
             wait_for_module_update_completed(self.event_module_update_completed, topic)
-            if data.data.optional_data.data.electricity_pricing.get.next_query_time is None:
+            if (data.data.optional_data.data.electricity_pricing.configured):
                 self.ep_get_prices()
         except Exception:
             log.exception("Fehler im loadvars-Modul")
@@ -59,8 +62,8 @@ class Loadvars:
                 log.exception(f"Fehler im loadvars-Modul bei Element {cp.num}")
         return joined_thread_handler(modules_threads, data.data.general_data.data.control_interval/3)
 
-    def _update_values_of_level(self, elements, not_finished_threads: List[str]) -> None:
-        """Threads, um von der niedrigsten Ebene der Hierarchie Werte ggf. miteinander zu verrechnen und zu
+    def _update_values_of_level_buttom_top(self, elements, not_finished_threads: List[str]) -> None:
+        """Threads, um von der niedrigsten Ebene der Hierarchie beginnend Werte ggf. miteinander zu verrechnen und zu
         veröffentlichen"""
         modules_threads: List[Thread] = []
         for element in elements:
@@ -81,6 +84,23 @@ class Loadvars:
                         component,), name=f"component{component.component_config.id}"))
             except Exception:
                 log.exception(f"Fehler im loadvars-Modul bei Element {element}")
+        joined_thread_handler(modules_threads, data.data.general_data.data.control_interval/3)
+
+    def _update_values_virtual_counter_uncounted_consumption(self, not_finished_threads: List[str]) -> None:
+        modules_threads: List[Thread] = []
+        for counter in data.data.counter_data.values():
+            try:
+                component = get_finished_component_obj_by_id(counter.num, not_finished_threads)
+                if component.component_config.type == "virtual":
+                    if len(data.data.counter_all_data.get_entry_of_element(counter.num)["children"]) == 0:
+                        thread_name = f"component{component.component_config.id}"
+                        if thread_name not in not_finished_threads:
+                            modules_threads.append(Thread(
+                                target=update_values,
+                                args=(component,),
+                                name=f"component{component.component_config.id}"))
+            except Exception:
+                log.exception(f"Fehler im loadvars-Modul bei Zähler {counter}")
         joined_thread_handler(modules_threads, data.data.general_data.data.control_interval/3)
 
     def _get_io(self) -> List[Thread]:
@@ -135,7 +155,7 @@ class Loadvars:
                 joined_thread_handler(threads_set_values, None)
                 wait_for_module_update_completed(self.event_module_update_completed,
                                                  "openWB/set/optional/ep/module_update_completed")
-                data.data.copy_module_data()
+                data.data.copy_data()
                 self.price_value_store.update()
         except Exception as e:
             log.exception("Fehler im Optional-Modul: %s", e)

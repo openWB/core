@@ -240,6 +240,9 @@ class Chargepoint(ChargepointRfidMixin):
     def reset_log_data_chargemode_switch(self) -> None:
         reset_log = Log()
         # Wenn ein Zwischeneintrag, zB bei Wechsel des Lademodus, erstellt wird, Zählerstände nicht verwerfen.
+        reset_log.exported_at_mode_switch = self.data.get.exported
+        reset_log.exported_at_plugtime = self.data.set.log.exported_at_plugtime
+        reset_log.exported_since_plugged = self.data.set.log.exported_since_plugged
         reset_log.imported_at_mode_switch = self.data.get.imported
         reset_log.imported_at_plugtime = self.data.set.log.imported_at_plugtime
         reset_log.imported_since_plugged = self.data.set.log.imported_since_plugged
@@ -273,7 +276,7 @@ class Chargepoint(ChargepointRfidMixin):
                                 name=f"cp{self.chargepoint_module.config.id}")):
                             message = "Control-Pilot-Unterbrechung für " + str(
                                 charging_ev.ev_template.data.control_pilot_interruption_duration) + "s."
-                        self.set_state_and_log(message)
+                            self.set_state_and_log(message)
                 else:
                     message = "CP-Unterbrechung nicht möglich, da der Ladepunkt keine CP-Unterbrechung unterstützt."
                     self.set_state_and_log(message)
@@ -332,7 +335,7 @@ class Chargepoint(ChargepointRfidMixin):
                         self.set_state_and_log(
                             "Keine Phasenumschaltung, da wiederholtes Anstoßen der Umschaltung in den übergreifenden "
                             "Ladeeinstellungen deaktiviert wurde. Die aktuelle "
-                            "Phasenzahl wird bis zum Abstecken beibehalten.")
+                            "Phasenzahl wird bis zum nächsten Lademoduswechsel beibehalten.")
                     self.data.control_parameter.failed_phase_switches += 1
         return phase_switch_required
 
@@ -421,6 +424,7 @@ class Chargepoint(ChargepointRfidMixin):
                             if self.data.set.phases_to_use != self.data.control_parameter.phases:
                                 self.data.set.phases_to_use = self.data.control_parameter.phases
                             self.data.control_parameter.state = ChargepointState.PERFORMING_PHASE_SWITCH
+                            self.data.set.current = 0
                         else:
                             log.error("Phasenumschaltung an Ladepunkt" + str(self.num) +
                                       " nicht möglich, da gerade eine Umschaltung im Gange ist.")
@@ -625,7 +629,8 @@ class Chargepoint(ChargepointRfidMixin):
                         self.hw_supports_phase_switch(),
                         self.template.data.charging_type,
                         self.data.set.log.imported_since_plugged,
-                        self.hw_bidi_capable())
+                        self.hw_bidi_capable(),
+                        self.data.get.charge_state)
                     required_phases = self.get_phases_by_selected_chargemode(template_phases)
                     required_phases = self.set_phases(required_phases, template_phases)
                     self._pub_connected_vehicle(charging_ev)

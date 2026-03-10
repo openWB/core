@@ -37,7 +37,9 @@ def create_vehicle(vehicle_config: MqttSocSetup, vehicle: int):
                 "Einstellungen beachten.")
             return None
     configurable_vehicle = ConfigurableVehicle(vehicle_config=vehicle_config,
-                                               component_updater=updater, vehicle=vehicle)
+                                               component_updater=updater,
+                                               vehicle=vehicle,
+                                               calc_while_charging=vehicle_config.configuration.calculate_soc)
     return configurable_vehicle
 
 

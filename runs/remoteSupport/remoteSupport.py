@@ -166,7 +166,7 @@ def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
                         log.info("start partner support")
                         partner_tunnel = Popen(["sshpass", "-p", token, "ssh", "-N", "-tt", "-o",
                                                 "StrictHostKeyChecking=no", "-o", "ServerAliveInterval 60", "-R",
-                                                f"{port_or_node}:localhost:80", f"{user}@partner.openwb.de"])
+                                                f"{port_or_node}:localhost:81", f"{user}@partner.openwb.de"])
                         log.info(f"tunnel running with pid {partner_tunnel.pid}")
                     else:
                         # v1
@@ -178,7 +178,7 @@ def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
                                 if lt_executable is not None:
                                     partner_tunnel = Popen([f"{lt_executable}", "-h",
                                                             "https://" + port_or_node + ".openwb.de/",
-                                                            "-p", "80", "-s", token])
+                                                            "-p", "81", "-s", token])
                                     log.info(f"tunnel running with pid {partner_tunnel.pid}")
                             else:
                                 log.error(f"invalid partner-id: {user}")
@@ -206,7 +206,7 @@ def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
                     else:
                         log.info(f"start cloud tunnel '{token[:4]}...{token[-4:]}' on '{cloud_node}'")
                         cloud_tunnel = Popen([f"{lt_executable}", "-h",
-                                              "https://" + cloud_node + ".openwb.de/", "-p", "80", "-s", token])
+                                              "https://" + cloud_node + ".openwb.de/", "-p", "81", "-s", token])
                         log.info(f"cloud tunnel running with pid {cloud_tunnel.pid}")
             else:
                 log.info("unknown message: " + payload)

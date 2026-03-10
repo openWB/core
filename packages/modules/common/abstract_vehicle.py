@@ -5,6 +5,7 @@ from typing import Optional
 @dataclass
 class VehicleUpdateData:
     plug_state: bool = False
+    plug_time: float = 0.0
     charge_state: bool = False
     imported: float = 0
     battery_capacity: float = 82

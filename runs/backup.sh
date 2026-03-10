@@ -178,15 +178,31 @@ force_mosquitto_write() {
 
 collect_git_info() {
 	echo "collecting git information"
-	git branch --no-color --show-current >"$TEMPDIR/GIT_BRANCH"
-	git log --pretty='format:%H' -n1 >"$TEMPDIR/GIT_HASH"
-	echo "branch: $(<"$TEMPDIR/GIT_BRANCH") commit-hash: $(<"$TEMPDIR/GIT_HASH")"
+	if git branch --no-color --show-current >"$TEMPDIR/GIT_BRANCH"; then
+		echo "current branch: $(<"$TEMPDIR/GIT_BRANCH")"
+	else
+		echo "failed to collect git branch info"
+		return 1
+	fi
+	if git log --pretty='format:%H' -n1 >"$TEMPDIR/GIT_HASH"; then
+		echo "current commit hash: $(<"$TEMPDIR/GIT_HASH")"
+	else
+		echo "failed to collect git commit hash"
+		return 1
+	fi
+	return 0
 }
 
 create_archive() {
 	create_backup() {
 		echo "creating new backup file: $BACKUPFILE"
 		echo "adding files"
+
+		# JSON-Dateien im clients-Ordner sammeln
+		json_files=()
+		while IFS= read -r -d '' file; do
+			json_files+=("${file#$TARBASEDIR/}")
+		done < <(find "$TARBASEDIR/$OPENWBDIRNAME/data/clients" -maxdepth 1 -type f -name '*.json' -print0)
 
 		sudo tar --verbose --create \
 			--file="$BACKUPFILE" \
@@ -202,10 +218,30 @@ create_archive() {
 				"$OPENWBDIRNAME/data/daily_log" \
 				"$OPENWBDIRNAME/data/monthly_log" \
 				"$OPENWBDIRNAME/data/log/uuid" \
+				"${json_files[@]}" \
 			--directory="$HOMEDIR/" \
 				"configuration.json" \
 			--directory="/" \
 				"boot/config.txt"
+		
+		if [ -f "$VAR_LIB/mosquitto/dynamic-security.json" ]; then
+			echo "adding mosquitto/dynamic-security.json"
+			sudo tar --verbose --append \
+				--file="$BACKUPFILE" \
+				--directory="$VAR_LIB/" \
+					"mosquitto/dynamic-security.json"
+		else
+			echo "mosquitto/dynamic-security.json not found, skipping"
+		fi
+		if [ -f "$HOMEDIR/.config/mosquitto_ctrl" ]; then
+			echo "adding mosquitto_ctrl file"
+			sudo tar --verbose --append \
+				--file="$BACKUPFILE" \
+				--directory="$HOMEDIR/.config/" \
+					"mosquitto_ctrl"
+		else
+			echo "mosquitto_ctrl file not found, skipping"
+		fi
 	}
 
 	calculate_checksums() {
@@ -277,7 +313,12 @@ create_archive() {
 	generate_filename
 	log_environment
 	remove_old_backups
-	collect_git_info
+	if collect_git_info; then
+		echo "git information collected successfully"
+	else
+		echo "error: failed to collect git information"
+		exit 1
+	fi
 	force_mosquitto_write
 	create_archive
 	echo "backup finished"

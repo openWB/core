@@ -50,18 +50,13 @@ async def _fetch_soc(username, password, region, vehicle) -> CarState:
         log.debug("vehicle%s: Update not successful" % (vehicle))
         return status
 
-    try:
-        leaf = await getNissanSession()       # start HTTPS session with Nissan server
-        soc_range = await readSoc(leaf)       # read old SoC & range values from server
-        await asyncio.sleep(1)                # give Nissan server some time
-        status = await requestSoc(leaf)       # Nissan server to request new values from vehicle
-        if status is not None:                # was update of values successful?
-            await asyncio.sleep(1)            # give Nissan server some time
-            soc_range = await readSoc(leaf)   # final read of SoC & range from server
-    except pycarwings3.CarwingsError as e:
-        log.info("vehicle%s: SoC & range request not successful" % (vehicle))
-        log.info(e)
-        soc_range = CarState(0.0, 0.0)
+    leaf = await getNissanSession()       # start HTTPS session with Nissan server
+    soc_range = await readSoc(leaf)       # read old SoC & range values from server
+    await asyncio.sleep(1)                # give Nissan server some time
+    status = await requestSoc(leaf)       # Nissan server to request new values from vehicle
+    if status is not None:                # was update of values successful?
+        await asyncio.sleep(1)            # give Nissan server some time
+        soc_range = await readSoc(leaf)   # final read of SoC & range from server
     return soc_range
 
 

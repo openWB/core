@@ -49,8 +49,11 @@ const absoluteValueObject = (valueObject: ValueObject): ValueObject => {
 };
 
 const gridPower = computed(
-  () => mqttStore.getGridPower('object') as ValueObject,
+  () => mqttStore.getCounterPower('object') as ValueObject,
 );
+const showGridPower = computed(() => {
+  return gridPower.value.value !== undefined;
+});
 const gridConsumption = computed(() => Number(gridPower.value.value) > 0);
 const gridFeedIn = computed(() => Number(gridPower.value.value) < 0);
 
@@ -69,6 +72,9 @@ const batterySoc = computed(() => Number(mqttStore.batterySocTotal) / 100);
 const homePower = computed(
   () => mqttStore.getHomePower('object') as ValueObject,
 );
+const showHomePower = computed(() => {
+  return homePower.value.value !== undefined;
+});
 const homeConsumption = computed(() => Number(homePower.value.value) > 0);
 const homeProduction = computed(() => Number(homePower.value.value) < 0);
 
@@ -107,7 +113,7 @@ const chargePoint1Power = computed(() => {
 });
 
 const chargePoint2Power = computed(() => {
-  if (connectedChargePoints.value.length > 0) {
+  if (connectedChargePoints.value.length > 1) {
     return (
       (mqttStore.chargePointPower(
         connectedChargePoints.value[1],
@@ -119,7 +125,7 @@ const chargePoint2Power = computed(() => {
 });
 
 const chargePoint3Power = computed(() => {
-  if (connectedChargePoints.value.length > 0) {
+  if (connectedChargePoints.value.length > 2) {
     return (
       (mqttStore.chargePointPower(
         connectedChargePoints.value[2],
@@ -193,9 +199,12 @@ const chargePoint1ConnectedVehicleSoc = computed(() =>
   mqttStore.chargePointConnectedVehicleSoc(connectedChargePoints.value[0]),
 );
 
-const chargePoint2VehicleConnected = computed(() =>
-  mqttStore.chargePointPlugState(connectedChargePoints.value[1]),
-);
+const chargePoint2VehicleConnected = computed(() => {
+  if (connectedChargePoints.value.length > 1) {
+    return mqttStore.chargePointPlugState(connectedChargePoints.value[1]);
+  }
+  return false;
+});
 
 const chargePoint2ConnectedVehicleChargeMode = computed(() => {
   const mode = mqttStore.chargePointConnectedVehicleChargeMode(
@@ -214,9 +223,12 @@ const chargePoint2ConnectedVehicleSoc = computed(() =>
   mqttStore.chargePointConnectedVehicleSoc(connectedChargePoints.value[1]),
 );
 
-const chargePoint3VehicleConnected = computed(() =>
-  mqttStore.chargePointPlugState(connectedChargePoints.value[2]),
-);
+const chargePoint3VehicleConnected = computed(() => {
+  if (connectedChargePoints.value.length > 2) {
+    return mqttStore.chargePointPlugState(connectedChargePoints.value[2]);
+  }
+  return false;
+});
 
 const chargePoint3ConnectedVehicleChargeMode = computed(() => {
   const mode = mqttStore.chargePointConnectedVehicleChargeMode(
@@ -286,18 +298,9 @@ const animationDurations = computed(() => {
     home: calcDuration(Number(homePower.value.value), maxPower),
     pv: calcDuration(Number(pvPower.value.value), maxPower),
     battery: calcDuration(Number(batteryPower.value.value), maxPower),
-    chargePoint1: calcDuration(
-      Number(chargePoint1Power.value.value),
-      maxPower,
-    ),
-    chargePoint2: calcDuration(
-      Number(chargePoint2Power.value.value),
-      maxPower,
-    ),
-    chargePoint3: calcDuration(
-      Number(chargePoint3Power.value.value),
-      maxPower,
-    ),
+    chargePoint1: calcDuration(Number(chargePoint1Power.value.value), maxPower),
+    chargePoint2: calcDuration(Number(chargePoint2Power.value.value), maxPower),
+    chargePoint3: calcDuration(Number(chargePoint3Power.value.value), maxPower),
     chargePointSum: calcDuration(
       Number(chargePointSumPower.value.value),
       maxPower,
@@ -313,37 +316,41 @@ const animationDurations = computed(() => {
 const svgComponents = computed((): FlowComponent[] => {
   const components: FlowComponent[] = [];
 
-  components.push({
-    id: 'grid',
-    class: {
-      base: 'grid',
-      valueLabel: gridFeedIn.value
-        ? 'fill-success'
-        : gridConsumption.value
-          ? 'fill-danger'
-          : '',
-      animated: gridConsumption.value,
-      animatedReverse: gridFeedIn.value,
-    },
-    position: { row: 0, column: 0 },
-    label: ['EVU', absoluteValueObject(gridPower.value).textValue],
-    powerValue: Number(gridPower.value.value),
-    icon: 'icons/owbGrid.svg',
-  });
+  if (showGridPower.value) {
+    components.push({
+      id: 'grid',
+      class: {
+        base: 'grid',
+        valueLabel: gridFeedIn.value
+          ? 'fill-success'
+          : gridConsumption.value
+            ? 'fill-danger'
+            : '',
+        animated: gridConsumption.value,
+        animatedReverse: gridFeedIn.value,
+      },
+      position: { row: 0, column: 0 },
+      label: ['EVU', absoluteValueObject(gridPower.value).textValue],
+      powerValue: Number(gridPower.value.value),
+      icon: 'icons/owbGrid.svg',
+    });
+  }
 
-  components.push({
-    id: 'home',
-    class: {
-      base: 'home',
-      valueLabel: '',
-      animated: homeProduction.value,
-      animatedReverse: homeConsumption.value,
-    },
-    position: { row: 0, column: 2 },
-    label: ['Haus', absoluteValueObject(homePower.value).textValue],
-    powerValue: Number(homePower.value.value),
-    icon: 'icons/owbHouse.svg',
-  });
+  if (showHomePower.value) {
+    components.push({
+      id: 'home',
+      class: {
+        base: 'home',
+        valueLabel: '',
+        animated: homeProduction.value,
+        animatedReverse: homeConsumption.value,
+      },
+      position: { row: 0, column: 2 },
+      label: ['Haus', absoluteValueObject(homePower.value).textValue],
+      powerValue: Number(homePower.value.value),
+      icon: 'icons/owbHouse.svg',
+    });
+  }
 
   if (mqttStore.getPvConfigured) {
     components.push({
@@ -524,7 +531,7 @@ const svgComponents = computed((): FlowComponent[] => {
           powerValue: Number(chargePoint3Power.value.value),
         });
       }
-    } else {
+    } else if (chargePointSumPower.value !== undefined) {
       // add charge point sum component
       components.push({
         id: 'charge-point-sum',
@@ -837,7 +844,7 @@ path.animatedReverse.grid {
 
 path.animated.home,
 path.animatedReverse.home {
-  stroke: var(--q-flow-home-stroke);
+  stroke: var(--q-home-stroke);
   animation-duration: v-bind('animationDurations.home');
 }
 
@@ -849,28 +856,28 @@ path.animatedReverse.pv {
 
 path.animated.battery,
 path.animatedReverse.battery {
-  stroke: var(--q-warning);
+  stroke: var(--q-battery-stroke);
   animation-duration: v-bind('animationDurations.battery');
 }
 
 path.animated.charge-point-1,
 path.animatedReverse.charge-point-1 {
-  stroke: var(--q-primary);
+  stroke: var(--q-charge-point-stroke);
   animation-duration: v-bind('animationDurations.chargePoint1');
 }
 path.animated.charge-point-2,
 path.animatedReverse.charge-point-2 {
-  stroke: var(--q-primary);
+  stroke: var(--q-charge-point-stroke);
   animation-duration: v-bind('animationDurations.chargePoint2');
 }
 path.animated.charge-point-3,
 path.animatedReverse.charge-point-3 {
-  stroke: var(--q-primary);
+  stroke: var(--q-charge-point-stroke);
   animation-duration: v-bind('animationDurations.chargePoint3');
 }
 path.animated.charge-point-sum,
 path.animatedReverse.charge-point-sum {
-  stroke: var(--q-primary);
+  stroke: var(--q-charge-point-stroke);
   animation-duration: v-bind('animationDurations.chargePointSum');
 }
 
@@ -909,7 +916,7 @@ path.animatedReverse.vehicle-3 {
 
 :root {
   path.home {
-    stroke: var(--q-grey);
+    stroke: var(--q-home-stroke);
   }
 }
 
@@ -958,7 +965,7 @@ text .fill-success {
 }
 
 text .fill-danger {
-  fill: var(--q-negative);
+  fill: var(--q-grid-stroke);
 }
 
 text .fill-dark {
@@ -966,42 +973,42 @@ text .fill-dark {
 }
 
 .grid text {
-  fill: var(--q-negative);
+  fill: var(--q-grid-stroke);
 }
 
 .grid circle,
 .grid rect {
-  stroke: var(--q-negative);
+  stroke: var(--q-grid-stroke);
 }
 
 .grid circle {
-  fill: color-mix(in srgb, var(--q-negative) 20%, transparent);
+  fill: var(--q-grid-fill);
 }
 
 .pv text {
-  fill: var(--q-positive);
+  fill: var(--q-pv-stroke);
 }
 
 .pv circle,
 .pv rect {
-  stroke: var(--q-positive);
+  stroke: var(--q-pv-stroke);
 }
 
 .pv circle {
-  fill: color-mix(in srgb, var(--q-positive) 30%, transparent);
+  fill: var(--q-pv-fill);
 }
 
 .battery text {
-  fill: var(--q-battery);
+  fill: var(--q-battery-stroke);
 }
 
 .battery circle,
 .battery rect {
-  stroke: var(--q-battery);
+  stroke: var(--q-battery-stroke);
 }
 
 .battery circle:not(.soc) {
-  fill: color-mix(in srgb, var(--q-battery) 50%, transparent);
+  fill: var(--q-battery-fill-flow-diagram);
 }
 
 :root {
@@ -1018,24 +1025,24 @@ text .fill-dark {
 
 .home circle,
 .home rect {
-  stroke: var(--q-flow-home-stroke);
+  stroke: var(--q-home-stroke);
 }
 
 .home circle {
-  fill: color-mix(in srgb, var(--q-brown-text) 20%, transparent);
+  fill: var(--q-home-fill);
 }
 
 .charge-point text {
-  fill: var(--q-primary);
+  fill: var(--q-charge-point-stroke);
 }
 
 .charge-point circle,
 .charge-point rect {
-  stroke: var(--q-primary);
+  stroke: var(--q-charge-point-stroke);
 }
 
 .charge-point circle {
-  fill: color-mix(in srgb, var(--q-primary) 30%, transparent);
+  fill: var(--q-charge-point-fill);
 }
 
 .background-circle {

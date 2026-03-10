@@ -51,7 +51,7 @@ import { ref, computed, watch } from 'vue';
 import { useQuasar } from 'quasar';
 import EnergyFlowChart from './charts/energyFlowChart/EnergyFlowChart.vue';
 import HistoryChart from './charts/historyChart/HistoryChart.vue';
-import DailyTotals from './DailyTotals.vue';
+import DailyTotals from './charts/dailyTotals/DailyTotals.vue';
 import { useLocalDataStore } from 'src/stores/localData-store';
 import { useMqttStore } from 'src/stores/mqtt-store';
 

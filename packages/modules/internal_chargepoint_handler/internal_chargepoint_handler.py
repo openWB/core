@@ -5,10 +5,9 @@ from threading import Event, Thread
 import time
 from typing import Optional
 from helpermodules import timecheck
-from helpermodules import pub
 
 from helpermodules.logger import clear_in_memory_log_handler
-from helpermodules.pub import Pub, pub_single
+from helpermodules.pub import Pub
 from helpermodules.subdata import SubData
 from modules.chargepoints.internal_openwb.config import InternalChargepointMode
 from modules.common.component_context import SingleComponentUpdateContext
@@ -55,11 +54,11 @@ class UpdateState:
                           " noch aktiv. Es muss erst gewartet werden, bis die CP-Unterbrechung abgeschlossen ist.")
                 return
         self.cp_module.set_current(set_current)
-        pub_single(f"openWB/set/chargepoint/{self.hierarchy_id}/set/current", payload=set_current)
+        Pub().pub(f"openWB/set/chargepoint/{self.hierarchy_id}/set/current", payload=set_current)
         if data.trigger_phase_switch:
             log.debug("Switch Phases from "+str(self.old_phases_to_use) + " to " + str(data.phases_to_use))
             self.__thread_phase_switch(data.phases_to_use)
-            pub.pub_single(
+            Pub().pub(
                 f"openWB/set/internal_chargepoint/{self.cp_module.local_charge_point_num}/data/trigger_phase_switch",
                 False)
 
@@ -106,20 +105,21 @@ class InternalChargepointHandler:
         try:
             with SingleComponentUpdateContext(self.fault_state_info_cp0, reraise=True):
                 # Allgemeine Fehlermeldungen an LP 1:
-                if mode == InternalChargepointMode.PRO_PLUS.value:
+                if mode == InternalChargepointMode.PRO_PLUS:
                     self.cp0_client_handler = None
                 else:
-                    self.cp0_client_handler = client_factory(0, self.fault_state_info_cp0)
+                    self.cp0_client_handler = client_factory(mode, 0, self.fault_state_info_cp0)
                 self.cp0 = HandlerChargepoint(self.cp0_client_handler, 0, mode,
                                               global_data, parent_cp0, hierarchy_id_cp0)
         except Exception:
             self.cp0_client_handler = None
             self.cp0 = None
         try:
-            if mode == InternalChargepointMode.DUO.value:
+            if ((mode == InternalChargepointMode.DUO or mode == InternalChargepointMode.SE) and
+                    hierarchy_id_cp0 is not None):
                 with SingleComponentUpdateContext(fault_state_info_cp1, reraise=True):
                     log.debug("Zweiter Ladepunkt für Duo konfiguriert.")
-                    self.cp1_client_handler = client_factory(1, fault_state_info_cp1, self.cp0_client_handler)
+                    self.cp1_client_handler = client_factory(mode, 1, fault_state_info_cp1, self.cp0_client_handler)
                     self.cp1 = HandlerChargepoint(self.cp1_client_handler, 1, mode,
                                                   global_data, parent_cp1, hierarchy_id_cp1)
             else:
@@ -162,7 +162,7 @@ class InternalChargepointHandler:
                 time.sleep(1.1)
         with SingleComponentUpdateContext(self.fault_state_info_cp0, update_always=False):
             # Allgemeine Fehlermeldungen an LP 1
-            if self.cp0 is not None and self.cp0.mode == InternalChargepointMode.PRO_PLUS.value:
+            if self.cp0 is not None and self.cp0.mode == InternalChargepointMode.PRO_PLUS:
                 _loop()
             elif self.cp0_client_handler is None and self.cp1_client_handler is None:
                 log.error("Kein ClientHandler vorhanden. Beende.")
@@ -194,9 +194,9 @@ class HandlerChargepoint:
         self.local_charge_point_num = local_charge_point_num
         self.mode = mode
         if local_charge_point_num == 0:
-            if mode == InternalChargepointMode.SOCKET.value:
+            if mode == InternalChargepointMode.SOCKET:
                 self.module = Socket(local_charge_point_num, client_handler, internal_cp, hierarchy_id)
-            elif mode == InternalChargepointMode.PRO_PLUS.value:
+            elif mode == InternalChargepointMode.PRO_PLUS:
                 self.module = ProPlus(local_charge_point_num, internal_cp, hierarchy_id)
             else:
                 self.module = chargepoint_module.ChargepointModule(
@@ -208,8 +208,8 @@ class HandlerChargepoint:
             self.update_state = UpdateState(self.module, hierarchy_id)
             self.old_plug_state = False
             if global_data.parent_ip != "localhost":
-                pub_single(f"openWB/set/chargepoint/{hierarchy_id}/get/state_str",
-                           payload="Statusmeldungen bitte auf der Primary-openWB einsehen.")
+                Pub().pub(f"openWB/set/chargepoint/{hierarchy_id}/get/state_str",
+                          payload="Statusmeldungen bitte auf der Primary-openWB einsehen.")
 
     def update(self, global_data: GlobalHandlerData, data: InternalChargepointData, rfid_data: RfidData) -> bool:
         def __thread_active(thread: Optional[Thread]) -> bool:
@@ -256,7 +256,7 @@ class GeneralInternalChargepointHandler:
                 hierarchy_id_cp1 = None
                 for cp in SubData.cp_data.values():
                     if cp.chargepoint.chargepoint_module.config.type == "internal_openwb":
-                        mode = cp.chargepoint.chargepoint_module.config.configuration.mode
+                        mode = InternalChargepointMode(cp.chargepoint.chargepoint_module.config.configuration.mode)
                         if cp.chargepoint.chargepoint_module.config.configuration.duo_num == 0:
                             hierarchy_id_cp0 = cp.chargepoint.num
                         else:
@@ -276,4 +276,4 @@ class GeneralInternalChargepointHandler:
                 except UnboundLocalError:
                     log.debug("Kein interner Ladepunkt konfiguriert.")
             except Exception:
-                log.exception("Fehler im internem Ladepunkt")
+                log.exception("Fehler im internen Ladepunkt")

@@ -21,10 +21,12 @@ class ColorsDisplayTheme:
                  name: str = "Colors",
                  type: str = "colors",
                  official: bool = False,
+                 userManagementSupported: bool = False,
                  configuration: ColorsDisplayThemeConfiguration = None) -> None:
         self.name = name
         self.type = type
         self.official = official
+        self.userManagementSupported = userManagementSupported
         self.configuration = configuration or ColorsDisplayThemeConfiguration()
 
 

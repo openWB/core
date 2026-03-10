@@ -44,4 +44,37 @@ Bei manchen Fahrzeugen kann der SoC nicht während der Ladung abgefragt werden. 
 
 Nach dreimaliger fehlgeschlagener Abfrage wird der SoC auf 0% gesetzt, damit in jedem Fall geladen wird.
 
-_Bei Fragen programmiert Ihr das SoC-Modul vorerst, wie Ihr es versteht, und erstellt einen (Draft-)PR. Wir unterstützen Euch gerne per Review.
+_Bei Fragen programmiert Ihr das SoC-Modul vorerst, wie Ihr es versteht, und erstellt einen (Draft-)PR. Wir unterstützen Euch gerne per Review._
+
+### Breaking Changes und Ergänzen von neuen Einstellungen
+
+Die Klasse `UpdateConfig` verwaltet automatische Migrationen bei Breaking Changes und neuen Einstellungen. Das System funktioniert folgendermaßen:
+- Für jede notwendige Anpassung wird eine nummerierte Upgrade-Funktion erstellt.
+- Beim Systemstart werden alle noch nicht ausgeführten Upgrade-Funktionen automatisch aufgerufen
+- Die Nummern der bereits ausgeführten Funktionen werden persistent gespeichert, um mehrfache Ausführung zu verhindern. Der aktuelle Migrations-Status wird im MQTT-Topic `openWB/system/datastore_version` veröffentlicht.
+
+Alle Upgrade-Funktionen folgen einem einheitlichen Schema:
+```python
+def upgrade_datastore_104(self) -> None:
+    """Upgrade-Funktion für Datastore-Version 104: Ergänzt fehlende aWATTar-Konfigurationsparameter"""
+    def upgrade(topic: str, payload) -> None:
+        """Prüft und migriert ein einzelnes MQTT-Topic"""
+        # Topic finden, das aktualisiert werden soll
+        if "openWB/optional/ep/flexible_tariff/provider" == topic:
+            provider = decode_payload(payload)
+            # Nur für aWATTar-Provider ausführen
+            if provider["type"] == "awattar":
+                # Prüfen, ob das "net"-Feld fehlt (neue Konfiguration)
+                if provider["configuration"].get("net") is None:
+                    # Standardwerte für fehlende Konfigurationsparameter setzen
+                    provider["configuration"]["net"] = False
+                    provider["configuration"]["fix"] = 0.015
+                    provider["configuration"]["proportional"] = 0.03
+                    provider["configuration"]["tax"] = 0.2
+                    # Aktualisierte Konfiguration zurückgeben
+                    return {topic: provider}
+    # Alle gespeicherten MQTT-Topics durchlaufen und Upgrade-Funktion anwenden
+    self._loop_all_received_topics(upgrade)
+    # Diese Upgrade-Funktion als ausgeführt markieren (Version 104)
+    self._append_datastore_version(104)
+```

@@ -54,7 +54,8 @@ class PvKitFlex(AbstractInverter):
         inverter_state = InverterState(
             power=power,
             exported=exported,
-            currents=counter_state.currents
+            currents=counter_state.currents,
+            serial_number=counter_state.serial_number
         )
         self.store.set(inverter_state)
 

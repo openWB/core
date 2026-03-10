@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import Iterable
+from typing import Iterable, Union
 
 from modules.common import modbus
 from modules.common.abstract_device import DeviceDescriptor
@@ -29,7 +29,7 @@ def create_device(device_config: Saxpower):
                                client=client,
                                modbus_id=device_config.configuration.modbus_id)
 
-    def update_components(components: Iterable[SaxpowerBat, SaxpowerCounter]):
+    def update_components(components: Iterable[Union[SaxpowerBat, SaxpowerCounter]]):
         nonlocal client
         with client:
             for component in components:

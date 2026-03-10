@@ -67,13 +67,13 @@ class ChargepointModule(AbstractChargepoint):
             def on_message(client, userdata, message):
                 self.old_phases_in_use = decode_payload(message.payload)
 
-            self.old_phases_in_use = None
+            self.old_phases_in_use = 1
             BrokerClient(f"subscribeInternalCp{self.local_charge_point_num}",
                          on_connect, on_message).start_finite_loop()
 
     def set_current(self, current: float) -> None:
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
-            self._client.evse_client.set_current(current)
+            self._client.evse_client.set_current(current, phases_in_use=self.old_phases_in_use)
 
     def get_values(self, phase_switch_cp_active: bool, last_tag: str) -> ChargepointState:
         def store_state(chargepoint_state: ChargepointState) -> None:

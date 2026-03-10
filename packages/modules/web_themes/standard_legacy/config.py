@@ -14,13 +14,15 @@ class StandardLegacyWebThemeConfiguration:
 @auto_str
 class StandardLegacyWebTheme:
     def __init__(self,
-                 name: str = "Standard",
+                 name: str = "Classic",
                  type: str = "standard_legacy",
                  official: bool = True,
+                 userManagementSupported: bool = False,
                  configuration: StandardLegacyWebThemeConfiguration = None) -> None:
         self.name = name
         self.type = type
         self.official = official
+        self.userManagementSupported = userManagementSupported
         self.configuration = configuration or StandardLegacyWebThemeConfiguration()
 
 

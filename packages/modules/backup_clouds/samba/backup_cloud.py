@@ -29,31 +29,75 @@ def is_port_open(host: str, port: int):
 
 
 def upload_backup(config: SambaBackupCloudConfiguration, backup_filename: str, backup_file: bytes) -> None:
-    conn = SMBConnection(config.smb_user, config.smb_password, os.uname()[1], config.smb_server, use_ntlm_v2=True)
-    found_invalid_chars = re.search(r'[\\\:\*\?\"\<\>\|]+', config.smb_path)
-    host_is_reachable = is_port_open(config.smb_server, 139)
+    SMB_PORT_445 = 445
+    SMB_PORT_139 = 139
 
-    if found_invalid_chars:
-        log.warning("Folgenden ungültige Zeichen im Pfad gefunden: {}".format(found_invalid_chars.group()))
-        log.warning("Sicherung nicht erfolgreich.")
-        send_file = False
-    else:
-        send_file = True
+    # Pfad prüfen
+    if re.search(r'[\\\:\*\?\"\<\>\|]+', config.smb_path):
+        raise Exception("Ungültige Zeichen im Pfad. Sicherung nicht erfolgreich.")
 
-    if host_is_reachable and conn.connect(config.smb_server, 139) and send_file:
-        log.info("SMB Verbindungsaufbau erfolgreich.")
-        full_file_path = config.smb_path + backup_filename if config.smb_path is not None else backup_filename
-        log.info("Backup nach //" + config.smb_server + '/' + config.smb_share + '/' + full_file_path)
+    # ------------------------------------------------------------
+    # 1) SMB2/3 über Port 445 testen
+    # ------------------------------------------------------------
+    if is_port_open(config.smb_server, SMB_PORT_445):
+        conn = SMBConnection(
+            config.smb_user,
+            config.smb_password,
+            os.uname()[1],
+            config.smb_server,
+            use_ntlm_v2=True,
+            is_direct_tcp=True
+        )
+
+        if conn.connect(config.smb_server, SMB_PORT_445):
+            try:
+                log.info("SMB-Verbindung über Port 445 erfolgreich.")
+                full_file_path = f"{config.smb_path.rstrip('/')}/{backup_filename}"
+                log.info(f"Backup nach //{config.smb_server}/{config.smb_share}/{full_file_path}")
+
+                conn.storeFile(config.smb_share, full_file_path, io.BytesIO(backup_file))
+
+                return
+            except Exception as error:
+                raise Exception("Freigabe oder Unterordner existiert möglicherweise nicht. "+str(error).split('\n')[0])
+            finally:
+                conn.close()
+        else:
+            raise Exception("SMB-Verbindungsaufbau über Port 445 nicht möglich.")
+
+    # ------------------------------------------------------------
+    # 2) Fallback: SMB1 über Port 139
+    # ------------------------------------------------------------
+    if not is_port_open(config.smb_server, SMB_PORT_139):
+        raise Exception(
+            f"Host {config.smb_server} und/oder Port {SMB_PORT_139} und {SMB_PORT_445} nicht erreichbar."
+        )
+
+    conn = SMBConnection(
+        config.smb_user,
+        config.smb_password,
+        os.uname()[1],
+        config.smb_server,
+        use_ntlm_v2=True
+    )
+
+    if conn.connect(config.smb_server, SMB_PORT_139):
         try:
+            log.info("SMB Verbindungsaufbau über Port 139 erfolgreich.")
+            full_file_path = f"{config.smb_path.rstrip('/')}/{backup_filename}"
+            log.info(f"Backup nach //{config.smb_server}/{config.smb_share}/{full_file_path}")
+
             conn.storeFile(config.smb_share, full_file_path, io.BytesIO(backup_file))
         except Exception as error:
-            log.error(error.__str__().split('\n')[0])
-            log.error("Möglicherweise ist die Freigabe oder ein Unterordner nicht vorhanden.")
-        conn.close()
-    elif send_file:
-        log.warning("SMB Verbindungsaufbau fehlgeschlagen.")
-    elif not host_is_reachable:
-        log.warning("Host {} und/oder Port 139 nicht zu erreichen.".format(config.smb_server))
+            raise Exception(
+                "Möglicherweise ist die Freigabe oder ein Unterordner nicht vorhanden."
+                + str(error).split("\n")[0]
+            )
+
+        finally:
+            conn.close()
+    else:
+        raise Exception("SMB Verbindungsaufbau über Port 139 fehlgeschlagen.")
 
 
 def create_backup_cloud(config: SambaBackupCloud):

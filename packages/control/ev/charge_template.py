@@ -136,7 +136,6 @@ class ChargeTemplate:
     data: ChargeTemplateData = field(default_factory=charge_template_data_factory, metadata={
         "topic": ""})
 
-    BUFFER = -1200  # nach mehr als 20 Min Überschreitung wird der Termin als verpasst angesehen
     CHARGING_PRICE_EXCEEDED = ("Der aktuelle Strompreis liegt über dem maximalen Strompreis. ")
     CHARGING_PRICE_LOW = "Laden, da der aktuelle Strompreis unter dem maximalen Strompreis liegt."
 
@@ -309,7 +308,8 @@ class ChargeTemplate:
             log.exception("Fehler im ev-Modul "+str(self.data.id))
             return 0, "stop", "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc(), 0
 
-    BUFFER = -1200  # nach mehr als 20 Min Überschreitung wird der Termin als verpasst angesehen
+    BUFFER_AFTER_END_TIME = -1200  # nach mehr als 20 Min Überschreitung wird der Termin als verpasst angesehen
+    BUFFER_START_EARLIER = 600  # 10 Min vor dem geplanten Start kann begonnen werden
 
     def _find_recent_plan(self,
                           plans: List[ScheduledChargingPlan],
@@ -330,7 +330,7 @@ class ChargeTemplate:
                                      f"oder im Plan {p.name} als Begrenzung Energie einstellen.")
                 try:
                     plans_diff_end_date.append(
-                        {p.id: timecheck.check_end_time(p, self.BUFFER)})
+                        {p.id: timecheck.check_end_time(p, self.BUFFER_AFTER_END_TIME)})
                     log.debug(f"Verbleibende Zeit bis zum Zieltermin [s]: {plans_diff_end_date}")
                 except Exception:
                     log.exception("Fehler im ev-Modul "+str(self.data.id))
@@ -339,30 +339,28 @@ class ChargeTemplate:
             filtered_plans = [d for d in plans_diff_end_date if list(d.values())[0] is not None]
             if filtered_plans:
                 sorted_plans = sorted(filtered_plans, key=lambda x: list(x.values())[0])
-                if len(sorted_plans) == 1:
-                    plan_dict = sorted_plans[0]
-                elif (len(sorted_plans) > 1 and
-                      list(sorted_plans[0].values())[0] < self.BUFFER):
-                    plan_dict = sorted_plans[1]
+                for plan in sorted_plans:
+                    if self.BUFFER_AFTER_END_TIME < list(plan.values())[0]:
+                        plan_dict = plan
+                        break
                 else:
-                    plan_dict = sorted_plans[0]
-                if plan_dict:
-                    plan_id = list(plan_dict.keys())[0]
-                    plan_end_time = list(plan_dict.values())[0]
+                    return None
+                plan_id = list(plan_dict.keys())[0]
+                plan_end_time = list(plan_dict.values())[0]
 
-                    for p in plans:
-                        if p.id == plan_id:
-                            plan = p
+                for p in plans:
+                    if p.id == plan_id:
+                        plan = p
 
-                    remaining_time, missing_amount, phases, duration = self._calc_remaining_time(
-                        plan, plan_end_time, soc, ev_template, used_amount, max_hw_phases, phase_switch_supported,
-                        charging_type, control_parameter.phases, soc_request_interval_offset, hw_bidi)
+                remaining_time, missing_amount, phases, duration = self._calc_remaining_time(
+                    plan, plan_end_time, soc, ev_template, used_amount, max_hw_phases, phase_switch_supported,
+                    charging_type, control_parameter.phases, soc_request_interval_offset, hw_bidi)
 
-                    return SelectedPlan(remaining_time=remaining_time,
-                                        duration=duration,
-                                        missing_amount=missing_amount,
-                                        phases=phases,
-                                        plan=plan)
+                return SelectedPlan(remaining_time=remaining_time,
+                                    duration=duration,
+                                    missing_amount=missing_amount,
+                                    phases=phases,
+                                    plan=plan)
             else:
                 return None
 
@@ -375,7 +373,8 @@ class ChargeTemplate:
                            charging_type: str,
                            control_parameter: ControlParameter,
                            soc_request_interval_offset: int,
-                           bidi_state: BidiState) -> Optional[SelectedPlan]:
+                           bidi_state: BidiState,
+                           charge_state: bool) -> Optional[SelectedPlan]:
         if bidi_state == BidiState.BIDI_CAPABLE and soc is None:
             raise Exception("Für den Lademodis Bidi ist zwingend ein SoC-Modul erforderlich. Soll der "
                             "SoC ausschließlich aus dem Fahrzeug ausgelesen werden, bitte auf "
@@ -398,12 +397,14 @@ class ChargeTemplate:
             plan_data,
             soc,
             used_amount,
+            max_hw_phases,
             control_parameter.phases,
             control_parameter.min_current,
             soc_request_interval_offset,
             charging_type,
             ev_template,
-            bidi_state)
+            bidi_state,
+            charge_state)
 
     def _calc_remaining_time(self,
                              plan: ScheduledChargingPlan,
@@ -437,9 +438,15 @@ class ChargeTemplate:
                     charging_type, ev_template, bidi)
                 phases = control_parameter_phases
                 remaining_time = plan_end_time - duration
+            elif plan.et_active:
+                duration, missing_amount = self._calculate_duration(
+                    plan, soc, ev_template.data.battery_capacity, used_amount, max_hw_phases,
+                    charging_type, ev_template, bidi)
+                phases = max_hw_phases
+                remaining_time = plan_end_time - duration
             else:
                 duration_3p, missing_amount = self._calculate_duration(
-                    plan, soc, ev_template.data.battery_capacity, used_amount, 3,
+                    plan, soc, ev_template.data.battery_capacity, used_amount, max_hw_phases,
                     charging_type, ev_template, bidi)
                 remaining_time_3p = plan_end_time - duration_3p
                 duration_1p, missing_amount = self._calculate_duration(
@@ -452,7 +459,7 @@ class ChargeTemplate:
                     # Zeit reicht nicht mehr für einphasiges Laden
                     remaining_time = remaining_time_3p
                     duration = duration_3p
-                    phases = 3
+                    phases = max_hw_phases
                 else:
                     remaining_time = remaining_time_1p
                     duration = duration_1p
@@ -461,7 +468,7 @@ class ChargeTemplate:
         elif plan.phases_to_use == 3 or plan.phases_to_use == 1:
             duration, missing_amount = self._calculate_duration(
                 plan, soc, ev_template.data.battery_capacity,
-                used_amount, plan.phases_to_use, charging_type, ev_template, bidi)
+                used_amount, min(plan.phases_to_use, max_hw_phases), charging_type, ev_template, bidi)
             remaining_time = plan_end_time - duration
             phases = plan.phases_to_use
 
@@ -527,12 +534,14 @@ class ChargeTemplate:
                                         selected_plan: Optional[SelectedPlan],
                                         soc: int,
                                         used_amount: float,
+                                        max_phases_hw: int,
                                         control_parameter_phases: int,
                                         min_current: int,
                                         soc_request_interval_offset: int,
                                         charging_type: str,
                                         ev_template: EvTemplate,
-                                        bidi_state: BidiState) -> Tuple[float, str, str, int]:
+                                        bidi_state: BidiState,
+                                        charge_state: bool) -> Tuple[float, str, str, int]:
         current = 0
         submode = "stop"
         if selected_plan is None:
@@ -549,7 +558,10 @@ class ChargeTemplate:
         else:
             plan_current = plan.dc_current
             max_current = ev_template.data.dc_max_current
-        if plan.limit.selected != "soc":
+        if plan.limit.selected != "soc" or charge_state is False:
+            # das Abfrageintervall nur einbeziehen, wenn die Ladung bereits gestartet wurde und
+            # SoC-basiertes Laden aktiv ist, sonst wird einfach alles
+            # um das Abfrageintervall früher gestartet, und nicht die Pufferzeit um das Abfrageintervall erhöht.
             soc_request_interval_offset = 0
         log.debug("Verwendeter Plan: "+str(plan.name))
         if (limit.selected == "soc" and
@@ -574,7 +586,8 @@ class ChargeTemplate:
                 phases = plan.phases_to_use_pv
         elif limit.selected == "amount" and used_amount >= limit.amount:
             message = self.SCHEDULED_CHARGING_REACHED_AMOUNT
-        elif 0 - soc_request_interval_offset < selected_plan.remaining_time < 300 + soc_request_interval_offset:
+        elif (0 - soc_request_interval_offset < selected_plan.remaining_time <
+                self.BUFFER_START_EARLIER + soc_request_interval_offset):
             # Wenn der SoC ein paar Minuten alt ist, kann der Termin trotzdem gehalten werden.
             # Zielladen kann nicht genauer arbeiten, als das Abfrageintervall vom SoC.
             # 5 Min vor spätestem Ladestart
@@ -620,19 +633,22 @@ class ChargeTemplate:
                     loading_times_tomorrow = [datetime.datetime.fromtimestamp(hour)
                                               for hour in sorted(hour_list) if hour > midnight]
 
-                    loading_message = "Geladen wird "+("jetzt"
-                                                       if is_loading_hour(hour_list)
-                                                       else '')
-                    loading_message += ((" und " if is_loading_hour(hour_list) else "") +
-                                        f"heute {convert_loading_hours_to_string(loading_times_today)}"
-                                        if 0 < len(loading_times_today)
-                                        else '')
-                    loading_message += (" sowie "
-                                        if 0 < len(loading_times_tomorrow)
-                                        else '')
-                    loading_message += (f"morgen {convert_loading_hours_to_string(loading_times_tomorrow)}"
-                                        if 0 < len(loading_times_tomorrow)
-                                        else '')
+                    parts = []
+
+                    if is_loading_hour(hour_list):
+                        parts.append("jetzt")
+
+                    if 0 < len(loading_times_today):
+                        if parts:
+                            parts.append(" und ")
+                        parts.append(f"heute {convert_loading_hours_to_string(loading_times_today)}")
+
+                    if 0 < len(loading_times_tomorrow):
+                        if parts:
+                            parts.append(" sowie ")
+                        parts.append(f"morgen {convert_loading_hours_to_string(loading_times_tomorrow)}")
+
+                    loading_message = "Geladen wird " + "".join(parts)
                     return loading_message + '.'
 
                 hour_list = data.data.optional_data.ep_get_loading_hours(
@@ -642,6 +658,7 @@ class ChargeTemplate:
                 if data.data.optional_data.ep_is_charging_allowed_hours_list(hour_list):
                     message = self.SCHEDULED_CHARGING_CHEAP_HOUR.format(get_hours_message())
                     current = plan_current
+                    phases = max_phases_hw if plan.phases_to_use == 0 else plan.phases_to_use
                     submode = "instant_charging"
                 elif ((limit.selected == "soc" and soc <= limit.soc_limit) or
                       (limit.selected == "amount" and used_amount < limit.amount)):

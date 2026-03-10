@@ -31,9 +31,8 @@ class SaxpowerCounter(AbstractCounter):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
 
     def update(self) -> None:
-        with self.__tcp_client:
-            power = self.__tcp_client.read_holding_registers(48, [ModbusDataType.INT_16]*2, unit=self.__modbus_id)
-            power = power * -1 + 16384
+        power = self.client.read_holding_registers(48, ModbusDataType.INT_16, unit=self.__modbus_id)
+        power = power - 16384
         imported, exported = self.sim_counter.sim_count(power)
 
         counter_state = CounterState(

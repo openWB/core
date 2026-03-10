@@ -47,23 +47,25 @@ class ChargepointModule(AbstractChargepoint):
             raise Exception(
                 "DC-Laden muss durch den Support freigeschaltet werden. Bitte nehme Kontakt mit dem Support auf.")
         self.efficiency = None
+        if self.config.configuration.user and self.config.configuration.password:
+            self.__session.auth = (self.config.configuration.user, self.config.configuration.password)
 
-        with SingleComponentUpdateContext(self.fault_state, update_always=False):
-            with self.client_error_context:
-                self.__session.post(
-                    'http://' + self.config.configuration.ip_address + '/connect.php',
-                    data={'heartbeatenabled': '1'})
+        try:
+            self.__session.post(self.config.configuration.url, data={'heartbeatenabled': '1'})
+        except Exception:
+            log.exception(
+                f"Verbindung zum Ladepunkt {self.config.id} konnte nicht hergestellt werden. "
+                "Heartbeat konnte nicht aktiviert werden.")
 
     def set_current(self, current: float) -> None:
         if self.client_error_context.error_counter_exceeded():
             current = 0
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
             with self.client_error_context:
-                ip_address = self.config.configuration.ip_address
                 raw_current = self.subtract_conversion_loss_from_current(current)
                 raw_power = raw_current * 3 * 230
                 log.debug(f"DC-Stromstärke: {raw_current}A ≙ {raw_power / 1000}kW")
-                self.__session.post('http://'+ip_address+'/connect.php', data={'power': raw_power})
+                self.__session.post(self.config.configuration.url, data={'power': raw_power})
 
     def subtract_conversion_loss_from_current(self, current: float) -> float:
         return current * (self.efficiency if self.efficiency else 0.9)
@@ -74,8 +76,7 @@ class ChargepointModule(AbstractChargepoint):
     def get_values(self) -> None:
         with SingleComponentUpdateContext(self.fault_state):
             with self.client_error_context:
-                ip_address = self.config.configuration.ip_address
-                json_rsp = self.__session.get('http://'+ip_address+'/connect.php').json()
+                json_rsp = self.__session.get(self.config.configuration.url).json()
 
                 if json_rsp["fault_state"] == 1:
                     self.fault_state.warning(json_rsp["fault_str"])

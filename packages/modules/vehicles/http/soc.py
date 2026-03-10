@@ -17,25 +17,28 @@ log = logging.getLogger(__name__)
 def fetch_soc(config: HttpSocSetup) -> CarState:
     soc_url = config.configuration.soc_url
     range_url = config.configuration.range_url
+
     if soc_url is None or soc_url == "none":
-        log.warning("http_soc: soc_url not defined - set soc to 0")
-        soc = 0
+        raise Exception("http_soc: soc_url not defined - using default soc value")
     else:
         soc_text = req.get_http_session().get(soc_url, timeout=5).text
         soc = int(soc_text)
+
     if range_url is None or range_url == "none":
-        log.warning("http_soc: range_url not defined - set range to 0.0")
-        range = float(0)
+        return CarState(soc)
     else:
         range_text = req.get_http_session().get(range_url, timeout=5).text
         range = float(range_text)
-    return CarState(soc, range)
+        return CarState(soc, range)
 
 
 def create_vehicle(vehicle_config: HttpSocSetup, vehicle: int):
     def updater(vehicle_update_data: VehicleUpdateData) -> CarState:
         return fetch_soc(vehicle_config)
-    return ConfigurableVehicle(vehicle_config=vehicle_config, component_updater=updater, vehicle=vehicle)
+    return ConfigurableVehicle(vehicle_config=vehicle_config,
+                               component_updater=updater,
+                               vehicle=vehicle,
+                               calc_while_charging=vehicle_config.configuration.calculate_soc)
 
 
 def http_update(soc_url: str, range_url: str, charge_point: int):

@@ -25,6 +25,13 @@ from modules.common.store._api import LoggingValueStore
 def pytest_configure(config):
     config.addinivalue_line("markers", "no_mock_full_hour: mark test to disable full_hour mocking.")
     config.addinivalue_line("markers", "no_mock_quarter_hour: mark test to disable quarter_hour mocking.")
+    import sys
+    sys._called_from_test = True
+
+
+def pytest_unconfigure(config):
+    import sys
+    del sys._called_from_test
 
 
 @pytest.fixture(autouse=True)

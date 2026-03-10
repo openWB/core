@@ -39,15 +39,12 @@ class Process:
                         cp.initiate_phase_switch()
                         if control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED and cp.data.set.current != 0:
                             control_parameter.state = ChargepointState.WAIT_FOR_USING_PHASES
-                        self._update_state(cp)
                         cp.set_timestamp_charge_start()
+                        self._update_state(cp)
                     else:
-                        # LP, an denen nicht geladen werden darf
-                        chargelog.save_interim_data(
-                            cp, data.data.ev_data
-                            ["ev" + str(cp.data.config.ev)],
-                            immediately=False)
                         control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
+                        cp.data.set.current = 0
+
                     if cp.data.get.state_str is not None:
                         Pub().pub("openWB/set/chargepoint/"+str(cp.num)+"/get/state_str",
                                   cp.data.get.state_str)
@@ -139,8 +136,9 @@ class Process:
             current = 0
 
         chargepoint.data.set.current = current
-        log.info(f"LP{chargepoint.num}: set current {current} A, "
-                 f"state {ChargepointState(chargepoint.data.control_parameter.state).name}")
+        if chargepoint.data.get.plug_state:
+            log.info(f"LP{chargepoint.num}: set current {current} A, "
+                     f"state {ChargepointState(chargepoint.data.control_parameter.state).name}")
 
     def _start_charging(self, chargepoint: chargepoint.Chargepoint) -> Thread:
         return Thread(target=chargepoint.chargepoint_module.set_current,

@@ -27,8 +27,9 @@ try:
                           fault_state: FaultState,
                           func: Callable) -> Optional[websockets.WebSocketClientProtocol]:
             async def make_call() -> websockets.WebSocketClientProtocol:
-                async with websockets.connect(self.data.ocpp.url+chargebox_id,
-                                              subprotocols=[self.data.ocpp.version]) as ws:
+                url = self.data.ocpp.config.url
+                async with websockets.connect(f"{url}{'' if url.endswith('/') else '/'}{chargebox_id}",
+                                              subprotocols=[self.data.ocpp.config.version]) as ws:
                     try:
                         cp = OcppChargepoint(chargebox_id, ws, 2)
                         await cp.call(func)
@@ -37,7 +38,7 @@ try:
                         pass
                     return ws
             try:
-                if self.data.ocpp.active and chargebox_id:
+                if self.data.ocpp.config.active and chargebox_id:
                     return asyncio.run(make_call())
             except websockets.exceptions.InvalidStatusCode:
                 fault_state.warning(f"Chargebox ID {chargebox_id} konnte nicht im OCPP-Backend gefunden werden oder "

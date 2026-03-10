@@ -13,7 +13,7 @@ import logging
 from control import data
 from helpermodules import hardware_configuration, subdata
 from helpermodules.broker import BrokerClient
-from helpermodules.pub import Pub, pub_single
+from helpermodules.pub import Pub
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_index_position
 from helpermodules.update_config import UpdateConfig
 import dataclass_utils
@@ -626,7 +626,8 @@ class SetData:
             elif subdata.SubData.pv_data.get(f"pv{get_index(msg.topic)}"):
                 if "/get/fault_state" in msg.topic:
                     self._validate_value(msg, int, [(0, 2)])
-                elif "/get/fault_str" in msg.topic:
+                elif ("/get/fault_str" in msg.topic or
+                      "/get/serial_number" in msg.topic):
                     self._validate_value(msg, str)
                 elif ("/get/daily_exported" in msg.topic or
                         "/get/monthly_exported" in msg.topic or
@@ -658,10 +659,25 @@ class SetData:
         """
         try:
             if ("openWB/set/bat/config/bat_control_permitted" in msg.topic or
+                "openWB/set/bat/config/bat_control_activated" in msg.topic or
+                "openWB/set/bat/config/price_limit_activated" in msg.topic or
+                "openWB/set/bat/config/price_charge_activated" in msg.topic or
                 "openWB/set/bat/config/configured" in msg.topic or
                 "openWB/set/bat/get/power_limit_controllable" in msg.topic or
-                    "openWB/set/bat/set/regulate_up" in msg.topic):
+                    "openWB/set/bat/set/regulate_up" in msg.topic or
+                    "openWB/set/bat/set/hysteresis_discharge" in msg.topic):
                 self._validate_value(msg, bool)
+            elif (re.search("openWB/set/bat/[0-9]+/get/max_charge_power$", msg.topic) is not None or
+                  re.search("openWB/set/bat/[0-9]+/get/max_discharge_power$", msg.topic) is not None):
+                self._validate_value(msg, float, [(0, float("inf"))])
+            elif (re.search("openWB/set/bat/[0-9]+/get/state_str$", msg.topic) is not None):
+                self._validate_value(msg, str)
+            elif ("openWB/set/bat/config/price_limit" in msg.topic or
+                  "openWB/set/bat/config/charge_limit" in msg.topic):
+                self._validate_value(msg, float, [(0, 99.99)])
+            elif ("openWB/set/bat/config/bat_control_min_soc" in msg.topic or
+                  "openWB/set/bat/config/bat_control_max_soc" in msg.topic):
+                self._validate_value(msg, int, [(0, 100)])
             elif "openWB/set/bat/set/charging_power_left" in msg.topic:
                 self._validate_value(msg, float)
             elif "openWB/set/bat/get/soc" in msg.topic:
@@ -677,7 +693,9 @@ class SetData:
             elif "openWB/set/bat/get/fault_state" in msg.topic:
                 self._validate_value(msg, int, [(0, 2)])
             elif ("openWB/set/bat/get/fault_str" in msg.topic or
-                  "openWB/set/bat/config/power_limit_mode" in msg.topic):
+                  "openWB/set/bat/config/power_limit_mode" in msg.topic or
+                  "openWB/set/bat/config/power_limit_condition" in msg.topic or
+                  "openWB/set/bat/config/manual_mode" in msg.topic):
                 self._validate_value(msg, str)
             elif "/config" in msg.topic:
                 self._validate_value(msg, "json")
@@ -695,7 +713,8 @@ class SetData:
                     self._validate_value(msg, float, [(0, 100)])
                 elif "/get/fault_state" in msg.topic:
                     self._validate_value(msg, int, [(0, 2)])
-                elif "/get/fault_str" in msg.topic:
+                elif ("/get/fault_str" in msg.topic or
+                      "/get/serial_number" in msg.topic):
                     self._validate_value(msg, str)
                 elif "/set/power_limit_controllable" in msg.topic:
                     self._validate_value(msg, bool)
@@ -722,7 +741,8 @@ class SetData:
                 self._validate_value(msg, str)
             elif ("openWB/set/general/http_api" in msg.topic or
                   "openWB/set/general/modbus_control" in msg.topic or
-                  "openWB/set/general/extern" in msg.topic):
+                  "openWB/set/general/extern" in msg.topic or
+                  "openWB/set/general/allow_unencrypted_access" in msg.topic):
                 self._validate_value(msg, bool)
             elif "openWB/set/general/control_interval" in msg.topic:
                 self._validate_value(msg, int, [(10, 10), (20, 20), (60, 60)])
@@ -852,12 +872,12 @@ class SetData:
                     self._validate_value(msg, float)
                 elif re.search(f"{pricing_regex}get/fault_state$", msg.topic) is not None:
                     self._validate_value(msg, int, [(0, 2)])
+                elif re.search(f"{pricing_regex}get/next_query_time$", msg.topic) is not None:
+                    self._validate_value(msg, int)
                 elif re.search(f"{pricing_regex}get/fault_str$", msg.topic) is not None:
                     self._validate_value(msg, str)
             elif "openWB/set/optional/ep/get/prices" in msg.topic:
                 self._validate_value(msg, "json")
-            elif "openWB/set/optional/ep/get/next_query_time" in msg.topic:
-                self._validate_value(msg, float)
             elif "openWB/set/optional/ep/configured" in msg.topic:
                 self._validate_value(msg, bool)
             elif "module_update_completed" in msg.topic:
@@ -947,7 +967,8 @@ class SetData:
                     self._validate_value(msg, int, [(0, 2)])
                 elif "/set/error_timer" in msg.topic:
                     self._validate_value(msg, float, [(0, float("inf"))])
-                elif "/get/fault_str" in msg.topic:
+                elif ("/get/fault_str" in msg.topic or
+                      "/get/serial_number" in msg.topic):
                     self._validate_value(msg, str)
                 elif "/get/power" in msg.topic:
                     self._validate_value(
@@ -1024,7 +1045,8 @@ class SetData:
                     "openWB/set/system/installAssistantDone" in msg.topic or
                     "openWB/set/system/dataprotection_acknowledged" in msg.topic or
                     "openWB/set/system/usage_terms_acknowledged" in msg.topic or
-                    "openWB/set/system/update_config_completed" in msg.topic):
+                    "openWB/set/system/update_config_completed" in msg.topic or
+                    "openWB/set/system/security/user_management_active" in msg.topic):
                 self._validate_value(msg, bool)
             elif ("openWB/set/system/version" in msg.topic or
                     "openWB/set/system/backup_password" in msg.topic):
@@ -1045,7 +1067,8 @@ class SetData:
             elif "openWB/set/system/debug_level" in msg.topic:
                 self._validate_value(msg, int, [(10, 10), (20, 20), (30, 30)])
             elif ("openWB/set/system/ip_address" in msg.topic or
-                    "openWB/set/system/release_train" in msg.topic):
+                  "openWB/set/system/hostname" in msg.topic or
+                  "openWB/set/system/release_train" in msg.topic):
                 self._validate_value(msg, str)
             elif "openWB/set/system/mqtt/bridge/" in msg.topic:
                 self._validate_value(msg, "json")
@@ -1102,6 +1125,11 @@ class SetData:
             if "openWB/set/command/max_id" in msg.topic:
                 self._validate_value(msg, int, [(-1, float("inf"))])
             elif "todo" in msg.topic:
+                if subdata.SubData.system_data["system"].data["security"]["user_management_active"]:
+                    payload = decode_payload(msg.payload)
+                    if msg.topic.split("/")[-1] != payload["command"]:
+                        log.warning(f'Keine Berechtigung für den Befehl: {payload["command"]}')
+                        return
                 self._validate_value(msg, "json")
             elif "messages" in msg.topic:
                 self._validate_value(msg, "json")
@@ -1154,9 +1182,9 @@ class SetData:
             if ("openWB/set/LegacySmartHome/config" in msg.topic or "openWB/set/LegacySmartHome/Devices" in msg.topic):
                 index = get_index(msg.topic)
                 if "openWB/set/LegacySmartHome/config" in msg.topic:
-                    pub_single(msg.topic.replace('openWB/set/', 'openWB/', 1), msg.payload.decode("utf-8"),
-                               retain=True, no_json=True, port=1886)
-                    pub_single(msg.topic, "", no_json=True, port=1886)
+                    Pub().pub(msg.topic.replace('openWB/set/', 'openWB/', 1), msg.payload.decode("utf-8"),
+                              retain=True, no_json=True)
+                    Pub().pub(msg.topic, "", no_json=True)
                     with open(self._get_ramdisk_path()/"rereadsmarthomedevices", 'w') as f:
                         f.write(str(1))
                     if f"openWB/set/LegacySmartHome/config/set/Devices/{index}/mode" in msg.topic:

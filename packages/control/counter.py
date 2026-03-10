@@ -8,7 +8,7 @@ from typing import List, Optional, Tuple
 
 from control import data
 from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE
-from control.algorithm.filter_chargepoints import get_chargepoints_by_chargemodes
+from control.algorithm.filter_chargepoints import get_chargepoints_with_required_current_by_chargemode
 from control.algorithm.utils import get_medium_charging_current
 from control.chargemode import Chargemode
 from control.chargepoint.chargepoint import Chargepoint
@@ -66,6 +66,7 @@ class Get:
     fault_state: int = field(default=0, metadata={"topic": "get/fault_state"})
     fault_str: str = field(default=NO_ERROR, metadata={"topic": "get/fault_str"})
     power: float = field(default=0, metadata={"topic": "get/power"})
+    serial_number: Optional[str] = field(default=None, metadata={"topic": "get/serial_number"})
 
 
 def get_factory() -> Get:
@@ -518,7 +519,8 @@ def set_raw_surplus_power_left() -> None:
     """
     grid_counter = data.data.counter_all_data.get_evu_counter()
     bidi_power = 0
-    chargepoint_by_chargemodes = get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE)
+    chargepoint_by_chargemodes = get_chargepoints_with_required_current_by_chargemode(
+        CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE)
     for cp in chargepoint_by_chargemodes:
         bidi_power += cp.data.get.power
     grid_counter.data.set.surplus_power_left = grid_counter.data.get.power * -1 + bidi_power

@@ -1,5 +1,5 @@
 <template>
-  <q-card class="rounded-borders-md">
+  <q-card>
     <q-card-section>
       <div class="row no-wrap">
         <div class="text-h6 ellipsis" :title="planName.value">
@@ -22,24 +22,97 @@
           color="positive"
         />
       </div>
-      <div class="row items-center q-mb-md">
-        <q-input
-          v-model="planTime.value"
-          type="time"
-          label="Ziel-Uhrzeit"
-          class="col"
-        />
+      <q-separator />
+      <div class="q-mb-sm">
+        <div class="text-subtitle2 q-mb-sm q-mt-sm">Wiederholungen</div>
+        <q-btn-group spread>
+          <q-btn
+            size="sm"
+            :color="planFrequency.value === 'once' ? 'primary' : 'grey'"
+            @click="planFrequency.value = 'once'"
+            label="Einmalig"
+          />
+          <q-btn
+            size="sm"
+            :color="planFrequency.value === 'daily' ? 'primary' : 'grey'"
+            @click="planFrequency.value = 'daily'"
+            label="Täglich"
+          />
+          <q-btn
+            size="sm"
+            :color="planFrequency.value === 'weekly' ? 'primary' : 'grey'"
+            @click="planFrequency.value = 'weekly'"
+            label="Wöchentlich"
+          />
+        </q-btn-group>
+        <!-- Weekly buttons -->
+        <div
+          v-if="planFrequency.value === 'weekly'"
+          class="row items-center q-gutter-sm justify-center no-wrap q-mt-xs"
+        >
+          <div v-for="(day, index) in weekDays" :key="day">
+            <q-btn
+              round
+              :size="$q.platform.is.mobile ? '0.8rem' : '0.7rem'"
+              :flat="!selectedWeekDays[index]"
+              :outline="selectedWeekDays[index]"
+              color="primary"
+              :label="day"
+              :class="{ deselected: !selectedWeekDays[index] }"
+              @click="selectDay(index)"
+            />
+          </div>
+        </div>
+        <div class="text-subtitle2 q-mt-sm">Ziel-Termin</div>
+        <div class="row items-center q-mb-md">
+          <q-input
+            v-if="planFrequency.value === 'once'"
+            class="q-mr-lg col"
+            v-model="planOnceDate.value"
+            type="date"
+            label="Ziel-Datum"
+            :min="new Date().toISOString().split('T')[0]"
+          />
+          <q-input
+            v-else
+            class="q-mr-lg col"
+            :model-value="undefined"
+            type="date"
+            label="Ziel-Datum"
+            readonly
+            disable
+          />
+          <q-input
+            v-model="planTime.value"
+            type="time"
+            label="Ziel-Uhrzeit"
+            class="col"
+          />
+        </div>
+        <div
+          class="row q-mt-sm q-pa-sm text-white no-wrap items-center bg-primary"
+          style="border-radius: 10px"
+        >
+          <q-icon name="info" size="sm" class="q-mr-xs" />
+          <ChargePointScheduledPlanSummary
+            :charge-point-id="props.chargePointId"
+            :plan="props.plan"
+            mode="info"
+          />
+        </div>
       </div>
+      <q-separator />
       <SliderStandard
-        class="q-mb-sm"
-        :title="planDcChargingEnabled ? 'Ladestrom (AC)' : 'Ladestrom'"
+        v-if="acChargingEnabled"
+        class="q-my-sm"
+        title="Ladestrom"
         :min="6"
         :max="32"
         unit="A"
         v-model="planCurrent.value"
       />
       <q-input
-        v-if="planDcChargingEnabled"
+        v-if="dcChargingEnabled"
         v-model="planDcPower.value"
         label="Ladeleistung (DC)"
         class="col q-mb-md"
@@ -48,13 +121,52 @@
           <div class="text-body2">kW</div>
         </template>
       </q-input>
+      <div v-if="acChargingEnabled">
+        <div class="text-subtitle2 q-mr-sm">Anzahl Phasen Zielladen</div>
+        <div
+          class="row items-center justify-center q-ma-none q-pa-none no-wrap"
+        >
+          <q-btn-group class="col">
+            <q-btn
+              v-for="option in phaseOptions"
+              :key="option.value"
+              :color="planNumPhases.value === option.value ? 'primary' : 'grey'"
+              :label="option.label"
+              size="sm"
+              class="col"
+              @click="planNumPhases.value = option.value"
+            />
+          </q-btn-group>
+        </div>
+        <div class="text-subtitle2 q-mt-md q-mr-sm">
+          Anzahl Phasen bei PV-Überschuss
+        </div>
+        <div
+          class="row items-center justify-center q-ma-none q-pa-none no-wrap"
+        >
+          <q-btn-group class="col">
+            <q-btn
+              v-for="option in phaseOptions"
+              :key="option.value"
+              :color="
+                planNumPhasesPv.value === option.value ? 'primary' : 'grey'
+              "
+              :label="option.label"
+              size="sm"
+              class="col"
+              @click="planNumPhasesPv.value = option.value"
+            />
+          </q-btn-group>
+        </div>
+      </div>
+      <div class="text-subtitle2 q-mt-sm q-mr-sm">Ziel</div>
       <q-btn-group class="full-width">
         <q-btn
           size="sm"
           class="flex-grow"
           :color="planLimitSelected.value === 'soc' ? 'primary' : 'grey'"
           @click="planLimitSelected.value = 'soc'"
-          label="SoC"
+          label="EV-SoC"
         />
         <q-btn
           size="sm"
@@ -93,7 +205,6 @@
           <div class="text-body2">kWh</div>
         </template>
       </q-input>
-
       <div
         v-if="
           planLimitSelected.value === 'soc' &&
@@ -120,55 +231,6 @@
         label="Bidirektionales Ladeleistung (kW)"
         class="col"
       />
-      <div class="q-mb-md">
-        <div class="text-subtitle2 q-mb-sm q-mt-sm">Wiederholungen</div>
-        <q-btn-group spread>
-          <q-btn
-            size="sm"
-            :color="planFrequency.value === 'once' ? 'primary' : 'grey'"
-            @click="planFrequency.value = 'once'"
-            label="Einmalig"
-          />
-          <q-btn
-            size="sm"
-            :color="planFrequency.value === 'daily' ? 'primary' : 'grey'"
-            @click="planFrequency.value = 'daily'"
-            label="Täglich"
-          />
-          <q-btn
-            size="sm"
-            :color="planFrequency.value === 'weekly' ? 'primary' : 'grey'"
-            @click="planFrequency.value = 'weekly'"
-            label="Wöchentlich"
-          />
-        </q-btn-group>
-        <div v-if="planFrequency.value === 'once'" class="q-mt-sm">
-          <q-input
-            v-model="planOnceDate.value"
-            type="date"
-            label="Datum"
-            :min="new Date().toISOString().split('T')[0]"
-          />
-        </div>
-        <!-- Weekly buttons -->
-        <div
-          v-if="planFrequency.value === 'weekly'"
-          class="q-mt-sm row items-center q-gutter-sm justify-center no-wrap"
-        >
-          <div v-for="(day, index) in weekDays" :key="day">
-            <q-btn
-              round
-              :size="$q.platform.is.mobile ? '0.8rem' : '0.7rem'"
-              :flat="!selectedWeekDays[index]"
-              :outline="selectedWeekDays[index]"
-              color="primary"
-              :label="day"
-              :class="{ deselected: !selectedWeekDays[index] }"
-              @click="selectDay(index)"
-            />
-          </div>
-        </div>
-      </div>
       <div class="row items-center justify-between">
         <div class="text-subtitle2 q-mr-sm">Strompreisbasiert laden</div>
         <ToggleStandard
@@ -177,37 +239,7 @@
           color="positive"
         />
       </div>
-      <div class="text-subtitle2 q-mt-sm q-mr-sm">Anzahl Phasen Zielladen</div>
-      <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
-        <q-btn-group class="col">
-          <q-btn
-            v-for="option in phaseOptions"
-            :key="option.value"
-            :color="planNumPhases.value === option.value ? 'primary' : 'grey'"
-            :label="option.label"
-            size="sm"
-            class="col"
-            @click="planNumPhases.value = option.value"
-          />
-        </q-btn-group>
-      </div>
-      <div class="text-subtitle2 q-mt-md q-mr-sm">
-        Anzahl Phasen bei PV-Überschuss
-      </div>
-      <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
-        <q-btn-group class="col">
-          <q-btn
-            v-for="option in phaseOptions"
-            :key="option.value"
-            :color="planNumPhasesPv.value === option.value ? 'primary' : 'grey'"
-            :label="option.label"
-            size="sm"
-            class="col"
-            @click="planNumPhasesPv.value = option.value"
-          />
-        </q-btn-group>
-      </div>
-      <div class="row q-mt-lg">
+      <div class="row q-mt-md">
         <q-btn
           size="sm"
           class="col"
@@ -226,6 +258,7 @@ import { useQuasar } from 'quasar';
 import SliderStandard from './SliderStandard.vue';
 import ToggleStandard from './ToggleStandard.vue';
 import { computed } from 'vue';
+import ChargePointScheduledPlanSummary from './ChargePointScheduledPlanSummary.vue';
 import { type ScheduledChargingPlan } from '../stores/mqtt-store-model';
 
 const props = defineProps<{
@@ -239,17 +272,17 @@ const $q = useQuasar();
 
 const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
-const phaseOptions = [
-  { value: 1, label: '1' },
-  { value: 3, label: 'Maximum' },
-  { value: 0, label: 'Automatik' },
-];
-
 const selectDay = (index: number) => {
   const newArray = [...selectedWeekDays.value];
   newArray[index] = !newArray[index];
   selectedWeekDays.value = newArray;
 };
+
+const phaseOptions = [
+  { value: 1, label: '1' },
+  { value: 3, label: 'Maximum' },
+  { value: 0, label: 'Automatik' },
+];
 
 const planActive = computed(() =>
   mqttStore.vehicleScheduledChargingPlanActive(
@@ -378,7 +411,13 @@ const chargePointConnectedVehicleBidiEnabled = computed(
     mqttStore.chargePointConnectedVehicleBidiEnabled(props.chargePointId).value,
 );
 
-const planDcChargingEnabled = computed(() => mqttStore.dcChargingEnabled);
+const dcChargingEnabled = computed(
+  () => mqttStore.chargePointChargeType(props.chargePointId).value === 'DC',
+);
+
+const acChargingEnabled = computed(
+  () => mqttStore.chargePointChargeType(props.chargePointId).value === 'AC',
+);
 
 const planDcPower = computed(() =>
   mqttStore.vehicleScheduledChargingPlanDcPower(

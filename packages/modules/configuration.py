@@ -6,6 +6,7 @@ from typing import Dict, List
 import dataclass_utils
 from helpermodules.pub import Pub
 from modules.io_actions.groups import READABLE_GROUP_NAME, ActionGroup
+import sys
 log = logging.getLogger(__name__)
 
 
@@ -128,8 +129,8 @@ def _pub_configurable_tariffs() -> None:
                         "text": dev_defaults.name,
                         "defaults": dataclass_utils.asdict(dev_defaults)
                     })
-                except Exception:
-                    log.exception("Fehler im configuration-Modul")
+                except Exception as e:
+                    log.exception(f"Fehler im configuration-Modul, {path}: {e}")
             tariffs = sorted(tariffs, key=lambda d: d['text'].upper())
             # "leeren" Eintrag an erster Stelle einfügen
             tariffs.insert(0,
@@ -165,8 +166,10 @@ def _pub_configurable_soc_modules() -> None:
                     "text": dev_defaults.name,
                     "defaults": dataclass_utils.asdict(dev_defaults)
                 })
-            except Exception:
-                log.exception("Fehler im configuration-Modul")
+            except Exception as e:
+                log.exception(f"Fehler {e} im configuration-Modul {path}")
+                if hasattr(sys, '_called_from_test'):
+                    print(f"Fehler {e} im configuration-Modul {path}")
         soc_modules = sorted(soc_modules, key=lambda d: d['text'].upper())
         # "leeren" Eintrag an erster Stelle einfügen
         soc_modules.insert(0,
@@ -179,8 +182,10 @@ def _pub_configurable_soc_modules() -> None:
                                }
                            })
         Pub().pub("openWB/set/system/configurable/soc_modules", soc_modules)
-    except Exception:
-        log.exception("Fehler im configuration-Modul")
+    except Exception as e:
+        log.exception(f"Fehler {e} im configuration-Modul {path}")
+        if hasattr(sys, '_called_from_test'):
+            print(f"Fehler {e} im configuration-Modul {path}")
 
 
 def _pub_configurable_devices_components() -> None:

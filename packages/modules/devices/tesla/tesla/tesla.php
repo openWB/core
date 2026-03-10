@@ -333,7 +333,7 @@
 								?>
 									<div class="alert alert-success">
 										Anmeldung erfolgreich!<br>
-										Die erhaltenen Token wurden gespeichert. Sie können diese Seite jetzt schließen.
+										Die erhaltenen Token wurden gespeichert. Du kannst diese Seite jetzt schließen.
 									</div>
 								<?php
 							} else {
@@ -354,7 +354,7 @@
 							}
 							?>
 								<div class="alert alert-success">
-									Gespeicherte Anmeldedaten wurden entfernt. Sie können diese Seite jetzt schließen.
+									Gespeicherte Anmeldedaten wurden entfernt. Du kannst diese Seite jetzt schließen.
 								</div>
 							<?php
 							break;

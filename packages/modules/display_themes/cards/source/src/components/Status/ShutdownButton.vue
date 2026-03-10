@@ -74,7 +74,7 @@ export default {
           openWB ausschalten...
         </template>
         <i-container>
-          Möchten Sie diese openWB wirklich ausschalten?<br>
+          Möchtest Du diese openWB wirklich ausschalten?<br>
           Nach dem Ausschalten muss die Ladestation komplett spannungsfrei
           geschaltet werden. Erst beim erneuten Zuschalten der Spannung fährt
           das System wieder hoch.

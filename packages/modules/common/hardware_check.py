@@ -1,4 +1,5 @@
 import logging
+import time
 import pymodbus
 from typing import Any, Optional, Protocol, Tuple, Union
 
@@ -11,6 +12,8 @@ log = logging.getLogger(__name__)
 
 
 EVSE_MIN_FIRMWARE = 7
+MAX_ATTEMPTS = 3
+RETRY_DELAY_SECONDS = 0.3
 
 OPEN_TICKET = (" Bitte nehme bei anhaltenden Problemen über die Support-Funktion in den Einstellungen Kontakt mit " +
                "uns auf.")
@@ -21,8 +24,8 @@ LAN_ADAPTER_BROKEN = (f"{RS485_ADAPTER_BROKEN.format('der LAN-Konverter abgestü
                       "Bitte den openWB series2 satellit stromlos machen.")
 METER_PROBLEM = "Der Zähler konnte nicht ausgelesen werden. Vermutlich ist der Zähler falsch konfiguriert oder defekt."
 METER_BROKEN_VOLTAGES = "Die Spannungen des Zählers konnten nicht korrekt ausgelesen werden: {}V Der Zähler ist defekt."
-METER_NO_SERIAL_NUMBER = ("Die Seriennummer des Zählers für das Ladelog kann nicht ausgelesen werden. Wenn Sie die "
-                          "Seriennummer für Abrechnungszwecke benötigen, wenden Sie sich bitte an unseren Support. Die "
+METER_NO_SERIAL_NUMBER = ("Die Seriennummer des Zählers für das Ladelog kann nicht ausgelesen werden. Wenn Du die "
+                          "Seriennummer für Abrechnungszwecke benötigst, wende Dich bitte an unseren Support. Die "
                           "Funktionalität wird dadurch nicht beeinträchtigt!")
 EVSE_BROKEN = "Auslesen der EVSE nicht möglich. Vermutlich ist die EVSE defekt oder hat eine unbekannte Modbus-ID. "
 
@@ -80,10 +83,22 @@ class SeriesHardwareCheckMixin:
 
     def request_and_check_hardware(self: ClientHandlerProtocol,
                                    fault_state: FaultState) -> Tuple[EvseState, CounterState]:
+        evse_check_passed = False
+        evse_state: EvseState
+        # 2x Retry bei EVSE-Auslesen vor dem Absetzen einer Fehlermeldung
         try:
             with self.client:
-                evse_state = self.evse_client.get_evse_state()
-            evse_check_passed = True
+                for attempt in range(MAX_ATTEMPTS):
+                    try:
+                        evse_state = self.evse_client.get_evse_state()
+                        evse_check_passed = True
+                        break
+                    except (pymodbus.exceptions.ModbusIOException,
+                            pymodbus.exceptions.ConnectionException) as e:
+                        evse_check_passed = self.handle_exception(e)
+                        # nur warten, wenn danach noch ein Versuch folgt
+                        if attempt < MAX_ATTEMPTS - 2 and evse_check_passed is False:
+                            time.sleep(RETRY_DELAY_SECONDS)
         except Exception as e:
             evse_check_passed = self.handle_exception(e)
         meter_check_passed, meter_error_msg, counter_state = self.check_meter()

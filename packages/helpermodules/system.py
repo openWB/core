@@ -24,7 +24,8 @@ class System:
         """
         self.data = {"update_in_progress": False,
                      "perform_update": False,
-                     "backup_cloud": {}}
+                     "backup_cloud": {},
+                     "security": {"user_management_active": False}}
         self.backup_cloud: Optional[ConfigurableBackupCloud] = None
 
     def perform_update(self):
@@ -97,7 +98,7 @@ class System:
 
     def create_backup(self) -> str:
         try:
-            result = run_command([str(self._get_parent_file() / "runs" / "backup.sh"), "1"])
+            result = run_command([str(self._get_parent_file() / "runs" / "backup.sh"), "1"], process_exception=False)
             file_name = result.rstrip('\n')
             return file_name
         except subprocess.CalledProcessError as e:

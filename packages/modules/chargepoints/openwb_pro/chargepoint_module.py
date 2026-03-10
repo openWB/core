@@ -42,10 +42,14 @@ class ChargepointModule(AbstractChargepoint):
         self.client_error_context = ErrorTimerContext(
             f"openWB/set/chargepoint/{self.config.id}/get/error_timestamp", CP_ERROR, hide_exception=True)
 
-        with SingleComponentUpdateContext(self.fault_state, update_always=False):
+        try:
             self.__session.post(
                 f'http://{self.config.configuration.ip_address}/connect.php',
                 data={'heartbeatenabled': '1'})
+        except Exception:
+            log.exception(
+                f"Verbindung zum Ladepunkt {self.config.id} konnte nicht hergestellt werden. "
+                "Heartbeat konnte nicht aktiviert werden.")
 
     def set_internal_context_handlers(self, hierarchy_id: int, internal_cp: InternalChargepoint):
         self.fault_state = FaultState(ComponentInfo(

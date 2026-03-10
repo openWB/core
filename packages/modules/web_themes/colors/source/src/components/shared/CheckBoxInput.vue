@@ -1,18 +1,20 @@
 <template>
-	<div v-for="(element, index) in options" :key="index">
-		<input
-			:id="'check' + index"
-			v-model="v[index]"
-			class="form-check-input"
-			type="checkbox"
-			:value="element"
-		/>
-		<label
-			class="form-check-label px-2"
-			:for="'check' + index"
-			:style="optionColor(index)"
-			>{{ options[index] }}</label
-		>
+	<div class="d-flex">
+		<div v-for="(element, index) in options" :key="index">
+			<input
+				:id="'check' + index"
+				v-model="v[index]"
+				class="form-check-input"
+				type="checkbox"
+				:value="element"
+			/>
+			<label
+				class="form-check-label px-2"
+				:for="'check' + index"
+				:style="optionColor(index)"
+				>{{ options[index] }}</label
+			>
+		</div>
 	</div>
 </template>
 

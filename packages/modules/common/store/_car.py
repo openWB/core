@@ -23,10 +23,8 @@ class CarValueStoreBroker(ValueStore[CarState]):
 
     def update(self):
         pub_to_broker("openWB/set/vehicle/"+str(self.vehicle_id)+"/get/soc", self.state.soc, 2)
-        if self.state.range:
-            pub_to_broker("openWB/set/vehicle/"+str(self.vehicle_id)+"/get/range", self.state.range, 2)
-        if self.state.soc_timestamp:
-            pub_to_broker("openWB/set/vehicle/"+str(self.vehicle_id)+"/get/soc_timestamp", self.state.soc_timestamp)
+        pub_to_broker("openWB/set/vehicle/"+str(self.vehicle_id)+"/get/range", self.state.range, 2)
+        pub_to_broker("openWB/set/vehicle/"+str(self.vehicle_id)+"/get/soc_timestamp", self.state.soc_timestamp)
 
 
 def get_car_value_store(id: int) -> ValueStore[CarState]:
