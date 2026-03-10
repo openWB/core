@@ -441,33 +441,43 @@ def test_et_charging_available_exception(monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "prices, next_query_time, current_timestamp, expected",
+    "flexible_tariff, grid_fee, current_timestamp, expected",
     [
         pytest.param(
-            {}, None, 1698224400, True,
+            {"prices": {}, "next_query_time": None},
+            {"prices": {}, "next_query_time": None},
+            1698224400, True,
             id="update_required_when_no_prices"
         ),
         pytest.param(
-            {"1698224400": 0.1, "1698228000": 0.2}, 1698310800, 1698224400, False,
+            {"prices": {"1698224400": 0.1, "1698228000": 0.2}, "next_query_time": 1698310800},
+            {"prices": {}, "next_query_time": None},
+            1698224400, False,
             id="no_update_required_when_next_query_time_not_reached"
         ),
         pytest.param(
-            {"1698224400": 0.1, "1698228000": 0.2}, 1698224000, 1698310800, True,
+            {"prices": {"1698224400": 0.1, "1698228000": 0.2}, "next_query_time": 1698224000},
+            {"prices": {}, "next_query_time": None},
+            1698310800, True,
             id="update_required_when_next_query_time_passed"
         ),
         pytest.param(
-            {"1609459200": 0.1, "1609462800": 0.2}, None, 1698224400, True,
+            {"prices": {"1609459200": 0.1, "1609462800": 0.2}, "next_query_time": None},
+            {"prices": {}, "next_query_time": None},
+            1698224400, True,
             id="update_required_when_prices_from_yesterday"
         ),
     ]
 )
-def test_et_price_update_required(monkeypatch, prices, next_query_time, current_timestamp, expected):
+def test_et_price_update_required(monkeypatch, flexible_tariff, grid_fee, current_timestamp, expected):
     # setup
     opt = Optional()
     opt._flexible_tariff_module = Mock()
     opt._grid_fee_module = Mock()
-    opt.data.electricity_pricing.get.prices = prices
-    opt.data.electricity_pricing.get.next_query_time = next_query_time
+    opt.data.electricity_pricing.get.prices = flexible_tariff["prices"]
+    opt.data.electricity_pricing.flexible_tariff.get.prices = flexible_tariff["prices"]
+    opt.data.electricity_pricing.flexible_tariff.get.next_query_time = flexible_tariff["next_query_time"]
+    opt.data.electricity_pricing.grid_fee = None
 
     monkeypatch.setattr(timecheck, "create_timestamp", Mock(return_value=current_timestamp))
     opt.data.electricity_pricing.configured = True

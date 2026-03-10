@@ -10,8 +10,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from control import data
 from dataclass_utils import asdict
 from helpermodules.measurement_logging.process_log import (
-    FILE_ERRORS, CalculationType, _analyse_energy_source,
-    _process_entries, analyse_percentage, get_log_from_date_until_now, get_totals)
+    FILE_ERRORS, CalculationType, _analyse_energy_source, _process_entries, get_totals)
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 from helpermodules.utils.json_file_handler import write_and_check
@@ -203,6 +202,13 @@ def _get_range_charged(log_data, charging_ev) -> float:
         return None
 
 
+def _calc_power_source_percentages(log_data) -> Dict[str, float]:
+    power_source = {}
+    for source in ENERGY_SOURCES:
+        power_source[source] = log_data.charged_energy_by_source[source] / log_data.imported_since_mode_switch
+    return power_source
+
+
 def save_data(chargepoint, charging_ev):
     """ json-Objekt für den Log-Eintrag erstellen, an die Datei anhängen und die Daten, die sich auf den Ladevorgang
     beziehen, löschen.
@@ -245,8 +251,8 @@ def _create_entry(chargepoint, charging_ev):
         # log_data.imported_since_mode_switch / (duration / 3600)
         power = get_value_or_default(lambda: round(log_data.imported_since_mode_switch / (time_charged / 3600), 2))
     calc_energy_costs(chargepoint, True)
-    energy_source = get_value_or_default(lambda: analyse_percentage(get_log_from_date_until_now(
-        log_data.timestamp_mode_switch)["totals"])["energy_source"])
+    energy_source = get_value_or_default(lambda: _calc_power_source_percentages(log_data), {
+                                         source: 0 for source in ENERGY_SOURCES})
     costs = round(log_data.costs, 2)
 
     new_entry = {

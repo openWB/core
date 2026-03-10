@@ -133,21 +133,15 @@ export class ChargePoint implements PowerItem {
 			updateChargeTemplate(this.id)
 		}
 	}
-	/* updateChargeMode(cm: ChargeMode) {
-		this._chargeMode = cm
-	} */
 	get hasPriority() {
 		return this.chargeTemplate?.prio ?? false
 	}
 	set hasPriority(prio: boolean) {
 		if (this.chargeTemplate) {
 			this.chargeTemplate.prio = prio
-			updateServer('cpPriority', prio, this.id)
+			updateChargeTemplate(this.id)
 		}
 	}
-	/* updateCpPriority(prio: boolean) {
-		this._hasPriority = prio
-	} */
 	get timedCharging() {
 		if (this.chargeTemplate) {
 			return this.chargeTemplate.time_charging.active
@@ -156,9 +150,8 @@ export class ChargePoint implements PowerItem {
 		}
 	}
 	set timedCharging(setting: boolean) {
-		// chargeTemplates[this.chargeTemplate].time_charging.active = false
 		this.chargeTemplate!.time_charging.active = setting
-		updateServer('cpTimedCharging', setting, this.id)
+		updateChargeTemplate(this.id)
 	}
 	get instantTargetCurrent() {
 		return this.chargeTemplate?.chargemode.instant_charging.current ?? 0
@@ -169,10 +162,6 @@ export class ChargePoint implements PowerItem {
 			updateChargeTemplate(this.id)
 		}
 	}
-	/* updateInstantTargetCurrent(current: number) {
-		this._instantTargetCurrent = current
-	}
-	 */
 	get instantChargeLimitMode() {
 		return (
 			this.chargeTemplate?.chargemode.instant_charging.limit.selected ?? 'none'
@@ -184,9 +173,6 @@ export class ChargePoint implements PowerItem {
 			updateChargeTemplate(this.id)
 		}
 	}
-	/* updateInstantChargeLimitMode(mode: string) {
-		this._instantChargeLimitMode = mode
-	} */
 	get instantTargetSoc() {
 		return this.chargeTemplate?.chargemode.instant_charging.limit.soc ?? 0
 	}
@@ -196,9 +182,6 @@ export class ChargePoint implements PowerItem {
 			updateChargeTemplate(this.id)
 		}
 	}
-	/* updateInstantTargetSoc(soc: number) {
-		this._instantTargetSoc = soc
-	} */
 	get instantMaxEnergy() {
 		return this.chargeTemplate?.chargemode.instant_charging.limit.amount ?? 0
 	}
@@ -208,9 +191,6 @@ export class ChargePoint implements PowerItem {
 			updateChargeTemplate(this.id)
 		}
 	}
-	/* updateInstantMaxEnergy(max: number) {
-		this._instantMaxEnergy = max
-	} */
 	get instantTargetPhases() {
 		return this.chargeTemplate?.chargemode.instant_charging.phases_to_use ?? 0
 	}
@@ -220,7 +200,6 @@ export class ChargePoint implements PowerItem {
 			updateChargeTemplate(this.id)
 		}
 	}
-
 	get pvFeedInLimit() {
 		return this.chargeTemplate?.chargemode.pv_charging.feed_in_limit ?? false
 	}
@@ -230,9 +209,6 @@ export class ChargePoint implements PowerItem {
 			updateChargeTemplate(this.id)
 		}
 	}
-	/* updatePvFeedInLimit(setting: boolean) {
-		this._pvFeedInLimit = setting
-	} */
 	get pvMinCurrent() {
 		return this.chargeTemplate?.chargemode.pv_charging.min_current ?? 0
 	}
@@ -242,9 +218,6 @@ export class ChargePoint implements PowerItem {
 			updateChargeTemplate(this.id)
 		}
 	}
-	/* updatePvMinCurrent(min: number) {
-		this._pvMinCurrent = min
-	} */
 	get pvMaxSoc() {
 		return this._pvMaxSoc
 	}
@@ -264,9 +237,6 @@ export class ChargePoint implements PowerItem {
 			updateChargeTemplate(this.id)
 		}
 	}
-	/* updatePvMinSoc(min: number) {
-		this._pvMinSoc = min
-	} */
 	get pvMinSocCurrent() {
 		return this.chargeTemplate?.chargemode.pv_charging.min_soc_current ?? 0
 	}
@@ -400,28 +370,6 @@ export class ChargePoint implements PowerItem {
 				return 0
 		}
 	}
-	/* toPowerItem(): PowerItem {
-		return {
-			name: this.name,
-			type: PowerItemType.chargepoint,
-			power: this.power,
-			now : {
-				energy: this.dailyYield,
-				energyPv: this.energyPv,
-				energyBat: this.energyBat,
-				pvPercentage: this.pvPercentage,
-			},			
-			past: {
-				energy: this.dailyYield,
-				energyPv: this.energyPv,
-				energyBat: this.energyBat,
-				pvPercentage: this.pvPercentage,
-			},
-			color: this.color,
-			icon: this.icon,
-			showInGraph: true,
-		}
-	} */
 }
 export class Vehicle {
 	id: number

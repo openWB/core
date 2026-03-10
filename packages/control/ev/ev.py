@@ -121,7 +121,8 @@ class Ev:
                              phase_switch_supported: bool,
                              charging_type: str,
                              imported_since_plugged: float,
-                             bidi: BidiState) -> Tuple[bool, Optional[str], str, float, int]:
+                             bidi: BidiState,
+                             charge_state: bool) -> Tuple[bool, Optional[str], str, float, int]:
         """ ermittelt, ob und mit welchem Strom das EV geladen werden soll (unabhängig vom Lastmanagement)
 
         Parameter
@@ -166,7 +167,8 @@ class Ev:
                         charging_type,
                         control_parameter,
                         soc_request_interval_offset,
-                        bidi)
+                        bidi,
+                        charge_state)
                     message = f"{tmp_message or ''}".strip()
 
                 # Wenn Zielladen auf Überschuss wartet, prüfen, ob Zeitladen aktiv ist.
@@ -285,10 +287,15 @@ class Ev:
             if phases_in_use > 1 and all_surplus > 0:
                 # genug Leistung, um weiter mehrphasig zu laden
                 return False, self.ENOUGH_POWER
-            elif phases_in_use == 1 and all_surplus < required_surplus:
+            elif phases_in_use == 1 and (all_surplus < required_surplus or unbalanced_load_limit_reached):
                 # nicht genug Leistung, um mehrphasig zu laden, also einphasig laden
                 return False, self.NOT_ENOUGH_POWER
-            elif min_current == evse_current or max_current == evse_current:
+            elif ((get_medium_charging_current(get_currents) < max_current_range and
+                   evse_current > max_current_range and
+                   phases_in_use == 1) or
+                  (get_medium_charging_current(get_currents) > min_current_range and
+                   evse_current < min_current_range and
+                   phases_in_use > 1)):
                 # EV lädt nicht mit dem vorgegebenen Strom +/- der erlaubten Abweichung
                 return False, self.CURRENT_OUT_OF_NOMINAL_DIFFERENCE
             else:

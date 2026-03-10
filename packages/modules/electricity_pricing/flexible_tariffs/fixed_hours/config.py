@@ -2,9 +2,13 @@ from typing import List, Dict
 
 
 class FixedHoursTariffConfiguration:
-    def __init__(self, default_price: float = 0, tariffs: List[Dict[str, any]] = []) -> None:
+    def __init__(self,
+                 default_price: float = 0,
+                 tariffs: List[Dict[str, any]] = None,
+                 update_hours: List[int] = None) -> None:
         self.default_price = default_price
-        self.tariffs = tariffs
+        self.tariffs = tariffs if tariffs is not None else []
+        self.update_hours = update_hours if update_hours is not None else list(range(24))
         '''
         Example configuration:
         "tariffs": [

@@ -311,7 +311,7 @@ class Chargepoint(ChargepointRfidMixin):
                                 name=f"cp{self.chargepoint_module.config.id}")):
                             message = "Control-Pilot-Unterbrechung für " + str(
                                 charging_ev.ev_template.data.control_pilot_interruption_duration) + "s."
-                        self.set_state_and_log(message)
+                            self.set_state_and_log(message)
                 else:
                     message = "CP-Unterbrechung nicht möglich, da der Ladepunkt keine CP-Unterbrechung unterstützt."
                     self.set_state_and_log(message)
@@ -667,7 +667,8 @@ class Chargepoint(ChargepointRfidMixin):
                         self.hw_supports_phase_switch(),
                         self.template.data.charging_type,
                         self.data.set.log.imported_since_plugged,
-                        self.hw_bidi_capable())
+                        self.hw_bidi_capable(),
+                        self.data.get.charge_state)
                     required_phases = self.get_phases_by_selected_chargemode(template_phases)
                     required_phases = self.set_phases(required_phases, template_phases)
                     self._pub_connected_vehicle(charging_ev)

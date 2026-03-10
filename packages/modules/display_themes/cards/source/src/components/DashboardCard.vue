@@ -29,8 +29,8 @@ export default {
 </template>
 
 <style lang="scss" scoped>
-@import "@inkline/inkline/css/variables";
-@import "@inkline/inkline/css/mixins";
+@import "@inkline/inkline/css/variables/_index.scss";
+@import "@inkline/inkline/css/mixins/_index.scss";
 
 @include i-column {
   padding-left: 0;
