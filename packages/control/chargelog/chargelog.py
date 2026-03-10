@@ -1,3 +1,5 @@
+from helpermodules.utils.json_file_handler import write_and_check
+from helpermodules import timecheck
 import copy
 import datetime
 from enum import Enum
@@ -9,15 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from control import data
 from helpermodules.measurement_logging.process_log import (
-<< << << < HEAD
-    FILE_ERRORS, CalculationType, _analyse_energy_source,
-    _process_entries, analyse_percentage, get_log_from_date_until_now, get_totals)
-== == == =
     FILE_ERRORS, CalculationType, _analyse_energy_source, _process_entries, get_totals)
-from helpermodules.pub import Pub
->> >>>> > upstream/master
-from helpermodules import timecheck
-from helpermodules.utils.json_file_handler import write_and_check
 
 # alte Daten: Startzeitpunkt der Ladung, Endzeitpunkt, Geladene Reichweite, Energie, Leistung, Ladedauer, LP-Nummer,
 # Lademodus, ID-Tag
@@ -62,9 +56,9 @@ from helpermodules.utils.json_file_handler import write_and_check
 #                 "cp": 0}
 #     }
 # }
-log= logging.getLogger("chargelog")
+log = logging.getLogger("chargelog")
 
-MEASUREMENT_LOGGING_INTERVAL= 300  # in Sekunden
+MEASUREMENT_LOGGING_INTERVAL = 300  # in Sekunden
 
 
 def collect_data(chargepoint):
@@ -75,58 +69,58 @@ def collect_data(chargepoint):
         Ladepunkt, dessen Logdaten gesammelt werden
     """
     try:
-        now= timecheck.create_timestamp()
-        log_data= get_value_or_default(lambda: chargepoint.data.set.log)
-        charging_ev= get_value_or_default(lambda: chargepoint.data.set.charging_ev_data)
+        now = timecheck.create_timestamp()
+        log_data = get_value_or_default(lambda: chargepoint.data.set.log)
+        charging_ev = get_value_or_default(lambda: chargepoint.data.set.charging_ev_data)
         if get_value_or_default(lambda: chargepoint.data.get.plug_state, False):
             # Zählerstand beim Einschalten merken
             if get_value_or_default(lambda: log_data.imported_at_plugtime == 0, True):
-                log_data.imported_at_plugtime= get_value_or_default(lambda: chargepoint.data.get.imported, 0)
+                log_data.imported_at_plugtime = get_value_or_default(lambda: chargepoint.data.get.imported, 0)
                 log.debug(f"imported_at_plugtime {log_data.imported_at_plugtime}")
             # Bisher geladene Energie ermitteln
-            log_data.imported_since_plugged= get_value_or_default(
+            log_data.imported_since_plugged = get_value_or_default(
                 lambda: chargepoint.data.get.imported - log_data.imported_at_plugtime, 0)
             if get_value_or_default(lambda: log_data.exported_at_plugtime == 0, True):
-                log_data.exported_at_plugtime= get_value_or_default(lambda: chargepoint.data.get.exported, 0)
-            log_data.exported_since_plugged= get_value_or_default(
+                log_data.exported_at_plugtime = get_value_or_default(lambda: chargepoint.data.get.exported, 0)
+            log_data.exported_since_plugged = get_value_or_default(
                 lambda: chargepoint.data.get.exported - log_data.exported_at_plugtime, 0)
 
             if get_value_or_default(lambda: log_data.imported_at_mode_switch == 0, True):
-                log_data.imported_at_mode_switch= get_value_or_default(lambda: chargepoint.data.get.imported, 0)
+                log_data.imported_at_mode_switch = get_value_or_default(lambda: chargepoint.data.get.imported, 0)
                 log.debug(f"imported_at_mode_switch {log_data.imported_at_mode_switch}")
 
             if get_value_or_default(lambda: log_data.exported_at_mode_switch == 0, True):
-                log_data.exported_at_mode_switch= get_value_or_default(lambda: chargepoint.data.get.exported, 0)
+                log_data.exported_at_mode_switch = get_value_or_default(lambda: chargepoint.data.get.exported, 0)
 
             if get_value_or_default(lambda: log_data.timestamp_mode_switch is None):
-                log_data.timestamp_mode_switch= now
+                log_data.timestamp_mode_switch = now
 
             if get_value_or_default(lambda: chargepoint.data.get.charge_state, False):
                 if get_value_or_default(lambda: log_data.timestamp_start_charging is None):
-                    log_data.timestamp_start_charging= now
-                    submode= get_value_or_default(lambda: chargepoint.data.control_parameter.submode, "")
+                    log_data.timestamp_start_charging = now
+                    submode = get_value_or_default(lambda: chargepoint.data.control_parameter.submode, "")
                     if submode == "time_charging":
-                        log_data.chargemode_log_entry= "time_charging"
+                        log_data.chargemode_log_entry = "time_charging"
                     else:
-                        log_data.chargemode_log_entry= get_value_or_default(
+                        log_data.chargemode_log_entry = get_value_or_default(
                             lambda: chargepoint.data.control_parameter.chargemode.value)
 
                 if get_value_or_default(lambda: charging_ev.soc_module if charging_ev else None):
                     if get_value_or_default(lambda: log_data.range_at_start is None):
                         # manche Vehicle-Module liefern erstmal None
-                        log_data.range_at_start= get_value_or_default(lambda: charging_ev.data.get.range)
+                        log_data.range_at_start = get_value_or_default(lambda: charging_ev.data.get.range)
 
-                    plug_time= get_value_or_default(lambda: chargepoint.data.set.plug_time, 0)
-                    soc_timestamp= get_value_or_default(lambda: charging_ev.data.get.soc_timestamp, 0)
+                    plug_time = get_value_or_default(lambda: chargepoint.data.set.plug_time, 0)
+                    soc_timestamp = get_value_or_default(lambda: charging_ev.data.get.soc_timestamp, 0)
                     if (get_value_or_default(lambda: log_data.soc_at_start is None) and
                             get_value_or_default(lambda: plug_time < soc_timestamp, True)):
                         # SoC muss nach dem Anstecken aktualisiert worden sein
-                        log_data.soc_at_start= get_value_or_default(lambda: charging_ev.data.get.soc)
+                        log_data.soc_at_start = get_value_or_default(lambda: charging_ev.data.get.soc)
 
-                log_data.ev= get_value_or_default(lambda: chargepoint.data.set.charging_ev_data.num, 0)
-                log_data.prio= get_value_or_default(lambda: chargepoint.data.control_parameter.prio, False)
-                log_data.rfid= get_value_or_default(lambda: chargepoint.data.set.rfid)
-                log_data.imported_since_mode_switch= get_value_or_default(
+                log_data.ev = get_value_or_default(lambda: chargepoint.data.set.charging_ev_data.num, 0)
+                log_data.prio = get_value_or_default(lambda: chargepoint.data.control_parameter.prio, False)
+                log_data.rfid = get_value_or_default(lambda: chargepoint.data.set.rfid)
+                log_data.imported_since_mode_switch = get_value_or_default(
                     lambda: chargepoint.data.get.imported - log_data.imported_at_mode_switch, 0)
                 log_data.exported_since_mode_switch = get_value_or_default(
                     lambda: chargepoint.data.get.exported - log_data.exported_at_mode_switch, 0)
