@@ -40,9 +40,10 @@ class Process:
                         if control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED and cp.data.set.current != 0:
                             control_parameter.state = ChargepointState.WAIT_FOR_USING_PHASES
                         cp.set_timestamp_charge_start()
+                        self._update_state(cp)
                     else:
                         control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
-                    self._update_state(cp)
+                        cp.data.set.current = 0
 
                     if cp.data.get.state_str is not None:
                         Pub().pub("openWB/set/chargepoint/"+str(cp.num)+"/get/state_str",
