@@ -463,7 +463,15 @@ class SubData:
                         else:
                             if (re.search("/chargepoint/[0-9]+/get/rfid$", msg.topic) is not None and
                                     payload is not None):
-                                var["cp"+index].chargepoint.chargepoint_module.clear_rfid()
+                                chargepoint_module = var["cp"+index].chargepoint.chargepoint_module
+                                if chargepoint_module is not None and hasattr(chargepoint_module, "clear_rfid"):
+                                    chargepoint_module.clear_rfid()
+                                else:
+                                    log.debug(
+                                        "Received /get/rfid for chargepoint %s but chargepoint_module is not "
+                                        "initialized or has no clear_rfid().",
+                                        index,
+                                    )
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.get, msg)
                     elif re.search("/chargepoint/[0-9]+/config$", msg.topic) is not None:
                         self.process_chargepoint_config_topic(var, msg)
