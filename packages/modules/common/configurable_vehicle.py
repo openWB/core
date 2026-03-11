@@ -133,8 +133,7 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                 _diff = 0
                 if _carState.soc_timestamp:
                     _diff = int(_now - _carState.soc_timestamp)
-                if _diff and\
-                   _diff > self.general_config.request_interval_charging and\
+                if _diff > self.general_config.request_interval_charging and\
                    vehicle_update_data.plug_state and\
                    vehicle_update_data.last_soc and\
                    vehicle_update_data.last_soc_timestamp >= vehicle_update_data.plug_time and\
@@ -144,11 +143,9 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                     _txt1 = _txt1 + f"gelieferte Zeitstempel mehr als {_age} min alt ist."
                     self.fault_state.warning(f"{_txt1}")
                     self.fault_state.store_error()
-                    _soc, _range = calc_vehicle_data.calc_vehicle_data(
-                                                                       vehicle_update_data,
-                                                                       self.calculated_soc_state.last_imported or
-                                                                       vehicle_update_data.imported)
-                    _carState = CarState(soc=_soc, range=_range)
+                    _carState = calc_vehicle_data.calc_vehicle_data(vehicle_update_data,
+                                                                    self.calculated_soc_state.last_imported or
+                                                                    vehicle_update_data.imported)
             except Exception as e:
                 if vehicle_update_data.plug_state and\
                    vehicle_update_data.last_soc and\
@@ -157,11 +154,9 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                     _txt1 = "SoC FALLBACK: SoC wird berechnet, da ein Fehler bei der Abfrage aufgetreten ist:"
                     self.fault_state.warning(f"{_txt1} {e}")
                     self.fault_state.store_error()
-                    _soc, _range = calc_vehicle_data.calc_vehicle_data(
-                                                                       vehicle_update_data,
-                                                                       self.calculated_soc_state.last_imported or
-                                                                       vehicle_update_data.imported)
-                    _carState = CarState(soc=_soc, range=_range)
+                    _carState = calc_vehicle_data.calc_vehicle_data(vehicle_update_data,
+                                                                    self.calculated_soc_state.last_imported or
+                                                                    vehicle_update_data.imported)
                 else:
                     if not vehicle_update_data.plug_state:
                         reason = ", weil kein Fahrzeug eingesteckt ist."
@@ -177,11 +172,9 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                     raise Exception(f"Der SoC kann nicht ausgelesen werden: {e}. {_txt1}{reason}")
             return _carState
         elif source == SocSource.CALCULATION:
-            _soc, _range = calc_vehicle_data.calc_vehicle_data(
-                                                               vehicle_update_data,
-                                                               self.calculated_soc_state.last_imported or
-                                                               vehicle_update_data.imported)
-            _carState = CarState(soc=_soc, range=_range)
+            _carState = calc_vehicle_data.calc_vehicle_data(vehicle_update_data,
+                                                            self.calculated_soc_state.last_imported or
+                                                            vehicle_update_data.imported)
             return _carState
         elif source == SocSource.CP:
             return CarState(soc=vehicle_update_data.soc_from_cp,
