@@ -592,7 +592,10 @@ class SetData:
             self._validate_value(msg, str)
         elif ("/get/soc" in msg.topic):
             self._validate_value(msg, float, [(0, 100)])
-        elif "/get/simulation" in msg.topic:
+        elif ("/get/simulation" in msg.topic or
+              "/get/connected_vehicle/config" in msg.topic or
+              "/get/connected_vehicle/info" in msg.topic or
+              "/get/connected_vehicle/soc" in msg.topic):
             self._validate_value(msg, "json")
         else:
             self.__unknown_topic(msg)
