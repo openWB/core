@@ -1,12 +1,14 @@
 import logging
-from typing import Optional
+from typing import Optional, Tuple
 from control import data
+from control.limiting_value import LimitingValue, LoadmanagementLimit
 from helpermodules.logger import ModifyLoglevelContext
 from helpermodules.pub import Pub
 from helpermodules.timecheck import create_timestamp
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.abstract_io import AbstractIoAction
-from modules.common.utils.component_parser import get_component_name_by_id
+from modules.common.utils.component_parser import get_component_name_by_id, get_io_name_by_id
+from modules.io_actions.common import check_fault_state_io_device
 from modules.io_actions.generator_systems.stepwise_control.config import StepwiseControlSetup
 from modules.io_devices.eebus.config import AnalogInputMapping, DigitalInputMapping
 
@@ -56,7 +58,7 @@ class StepwiseControlEebus(AbstractIoAction):
             for inverter in self.config.configuration.devices:
                 max_output_inverter += data.data.pv_data[f"pv{inverter['id']}"].data.config.max_ac_out
 
-            if self.lpp_active:
+            if self.lpp_active or check_fault_state_io_device(self.config.configuration.io_device):
                 try:
                     self.step = self.lpp_value / max_output_inverter
                 except ZeroDivisionError:
@@ -69,7 +71,8 @@ class StepwiseControlEebus(AbstractIoAction):
                     if self.step <= s:
                         self.step = s
                         break
-
+                if check_fault_state_io_device(self.config.configuration.io_device):
+                    control_command_log.info("Fehler des IO-Geräts: EZA-Begrenzung kann nicht erfasst werden.")
                 if changed:
                     Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
                     control_command_log.info(f"EEBus-Steuerung: LPP-Wert {self.lpp_value} / "
@@ -85,18 +88,34 @@ class StepwiseControlEebus(AbstractIoAction):
                     Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", None)
                     control_command_log.info("EZA-Begrenzung aufgehoben.")
 
-    def control_stepwise(self) -> Optional[float]:
+    def control_stepwise(self) -> Tuple[Optional[float], LoadmanagementLimit]:
+        if check_fault_state_io_device(self.config.configuration.io_device):
+            return (0, LoadmanagementLimit(
+                LimitingValue.CONTROLLABLE_CONSUMERS_ERROR.value.format(get_io_name_by_id(
+                    self.config.configuration.io_device)),
+                LimitingValue.CONTROLLABLE_CONSUMERS_ERROR))
         for pattern in self.config.configuration.input_pattern:
             for digital_input, value in pattern["matrix"].items():
                 if data.data.io_states[f"io_states{self.config.configuration.io_device}"
                                        ].data.get.digital_input[digital_input] != value:
                     break
             else:
+                if pattern["value"] is None:
+                    return 0, LoadmanagementLimit(LimitingValue.MISSING_CONFIGURATION.value,
+                                                  LimitingValue.MISSING_CONFIGURATION)
                 # Alle digitalen Eingänge entsprechen dem Pattern
-                return pattern['value']
+                elif pattern["value"] != 1:
+                    limit = LoadmanagementLimit(
+                        LimitingValue.CONTROL_STEPWISE.value.format(pattern["value"]*100),
+                        LimitingValue.CONTROL_STEPWISE)
+                else:
+                    limit = LoadmanagementLimit("Keine Leistungsbegrenzung aktiv.", None)
+                return pattern["value"], limit
         else:
-            # Zustand entspricht keinem Pattern, Leistungsbegrenzung aufheben
-            return 1
+            # Zustand entspricht keinem Pattern
+            return 0, LoadmanagementLimit(
+                LimitingValue.CONTROL_STEPWISE.value.format(0),
+                LimitingValue.CONTROL_STEPWISE)
 
 
 def create_action(config: StepwiseControlSetup, parent_device_type: str):
