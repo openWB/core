@@ -96,15 +96,15 @@ class StepwiseControlIo(AbstractIoAction):
                     break
             else:
                 if pattern["value"] is None:
-                    return 0, LoadmanagementLimit(LimitingValue.MISSING_CONFIFGURATION,
-                                                  LimitingValue.MISSING_CONFIFGURATION)
+                    return 0, LoadmanagementLimit(LimitingValue.MISSING_CONFIGURATION.value,
+                                                  LimitingValue.MISSING_CONFIGURATION)
                 # Alle digitalen Eingänge entsprechen dem Pattern
                 elif pattern["value"] != 1:
                     limit = LoadmanagementLimit(
                         LimitingValue.CONTROL_STEPWISE.value.format(pattern["value"]*100),
                         LimitingValue.CONTROL_STEPWISE)
                 else:
-                    limit = LoadmanagementLimit("Keine Leistungsbegrenzung aktiv.", "Keine Leistungsbegrenzung aktiv.")
+                    limit = LoadmanagementLimit("Keine Leistungsbegrenzung aktiv.", None)
                 return pattern["value"], limit
         else:
             # Zustand entspricht keinem Pattern

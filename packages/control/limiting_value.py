@@ -14,7 +14,7 @@ class LimitingValue(Enum):
     CONTROL_STEPWISE = "Leistung begrenzt auf {}%"
     CONTROLLABLE_CONSUMERS_ERROR = (", da aufgrund eines Fehlers im IO-Gerät {} die steuerbaren Verbraucher nur "
                                     "mit der minimalen Leistung betrieben werden können. Bitte prüfe die Status-Seite.")
-    MISSING_CONFIFGURATION = ", da die Konfiguration für die Aktion unvollständig ist."
+    MISSING_CONFIGURATION = ", da die Konfiguration für die Aktion unvollständig ist."
 
 
 @dataclass

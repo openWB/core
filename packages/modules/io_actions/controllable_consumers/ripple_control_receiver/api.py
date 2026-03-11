@@ -45,7 +45,6 @@ class RippleControlReceiver(AbstractIoAction):
 
         with ModifyLoglevelContext(control_command_log, logging.DEBUG):
             if check_fault_state_io_device(self.config.configuration.io_device):
-                log_active_ripple_control_receiver()
                 for pattern in self.config.configuration.input_pattern:
                     for digital_input, value in pattern["matrix"].items():
                         if data.data.io_states[
@@ -76,8 +75,8 @@ class RippleControlReceiver(AbstractIoAction):
             else:
                 # Alle digitalen Eingänge entsprechen dem Pattern
                 if pattern["value"] is None:
-                    return 0, LoadmanagementLimit(LimitingValue.MISSING_CONFIFGURATION,
-                                                  LimitingValue.MISSING_CONFIFGURATION)
+                    return 0, LoadmanagementLimit(LimitingValue.MISSING_CONFIGURATION.value,
+                                                  LimitingValue.MISSING_CONFIGURATION)
                 if pattern["value"] != 1:
                     limit = LoadmanagementLimit(
                         LimitingValue.RIPPLE_CONTROL_RECEIVER.value.format(pattern["value"]*100),

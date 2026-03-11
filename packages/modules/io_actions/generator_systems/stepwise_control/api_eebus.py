@@ -1,5 +1,5 @@
 import logging
-from typing import Optional
+from typing import Optional, Tuple
 from control import data
 from control.limiting_value import LimitingValue, LoadmanagementLimit
 from helpermodules.logger import ModifyLoglevelContext
@@ -88,7 +88,7 @@ class StepwiseControlEebus(AbstractIoAction):
                     Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", None)
                     control_command_log.info("EZA-Begrenzung aufgehoben.")
 
-    def control_stepwise(self) -> Optional[float]:
+    def control_stepwise(self) -> Tuple[Optional[float], LoadmanagementLimit]:
         if check_fault_state_io_device(self.config.configuration.io_device):
             return (0, LoadmanagementLimit(
                 LimitingValue.CONTROLLABLE_CONSUMERS_ERROR.value.format(get_io_name_by_id(
@@ -101,15 +101,15 @@ class StepwiseControlEebus(AbstractIoAction):
                     break
             else:
                 if pattern["value"] is None:
-                    return 0, LoadmanagementLimit(LimitingValue.MISSING_CONFIFGURATION,
-                                                  LimitingValue.MISSING_CONFIFGURATION)
+                    return 0, LoadmanagementLimit(LimitingValue.MISSING_CONFIGURATION.value,
+                                                  LimitingValue.MISSING_CONFIGURATION)
                 # Alle digitalen Eingänge entsprechen dem Pattern
                 elif pattern["value"] != 1:
                     limit = LoadmanagementLimit(
                         LimitingValue.CONTROL_STEPWISE.value.format(pattern["value"]*100),
                         LimitingValue.CONTROL_STEPWISE)
                 else:
-                    limit = LoadmanagementLimit("Keine Leistungsbegrenzung aktiv.", "Keine Leistungsbegrenzung aktiv.")
+                    limit = LoadmanagementLimit("Keine Leistungsbegrenzung aktiv.", None)
                 return pattern["value"], limit
         else:
             # Zustand entspricht keinem Pattern

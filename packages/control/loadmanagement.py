@@ -172,7 +172,7 @@ class Loadmanagement:
                 max_current = cp.template.data.max_current_multi_phases
             # target_current ist das Ergebnis der letzten Iteration. Die Differenz der begrenzten Anschlussleistung und
             # der Sollstrom der letzten Iteration dürfen daher nicht größer sein als der aktuell fehlende Strom.
-            available_currents = [min(max_current*value - cp.data.set.target_current, c)
+            available_currents = [max(min(max_current*value - cp.data.set.target_current, c), 0)
                                   if c > 0 else 0 for c in available_currents]
             log.debug(f"Reduzierung durch RSE-Kontakt auf {value*100}%, maximal {max_current*value}A")
         return available_currents, limit
