@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>openWB Display - URL</title>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+
+		html,
+		body {
+			width: 100%;
+			height: 100%;
+			background-color: #000;
+			color: #fff;
+			font-family: sans-serif;
+		}
+
+		#status {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			width: 100%;
+			height: 100%;
+			flex-direction: column;
+			gap: 1em;
+		}
+
+		#status p {
+			font-size: 1.2em;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="status">
+		<p id="message">Verbinde mit MQTT...</p>
+	</div>
+	<script src="/openWB/web/js/mqttws31.js"></script>
+	<script>
+		var themeTopicName = "openWB/optional/int_display/theme";
+		var isSSL = location.protocol === 'https:';
+		var port = parseInt(location.port) || (location.protocol === 'https:' ? 443 : 80);
+		var clientUid = Math.random().toString(36).replace(/[^a-z]+/g, "").substring(0, 5);
+
+		var client = new Messaging.Client(location.hostname, port, clientUid);
+
+		client.onConnectionLost = function (responseObject) {
+			document.getElementById("message").textContent = "MQTT-Verbindung verloren. Verbinde erneut...";
+			setTimeout(function () { client.connect(connectOptions); }, 2000);
+		};
+
+		client.onMessageArrived = function (message) {
+			if (message.destinationName === themeTopicName) {
+				try {
+					var theme = JSON.parse(message.payloadString);
+					if (theme && theme.configuration && theme.configuration.url) {
+						var url = theme.configuration.url;
+						var parsedUrl;
+						try {
+							parsedUrl = new URL(url);
+						} catch (e) {
+							document.getElementById("message").textContent = "Fehler: Ungültige URL in der Konfiguration.";
+							return;
+						}
+						if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+							document.getElementById("message").textContent = "Fehler: Nur http:// und https:// URLs sind erlaubt.";
+							return;
+						}
+						document.getElementById("message").textContent = "Lade URL: " + url;
+						window.location.href = url;
+					} else {
+						document.getElementById("message").textContent = "Fehler: Keine URL in der Theme-Konfiguration gefunden.";
+					}
+				} catch (e) {
+					document.getElementById("message").textContent = "Fehler beim Lesen der Konfiguration: " + e.message;
+				}
+			}
+		};
+
+		var connectOptions = {
+			timeout: 5,
+			useSSL: isSSL,
+			onSuccess: function () {
+				document.getElementById("message").textContent = "Verbunden. Lade Konfiguration...";
+				client.subscribe(themeTopicName, { qos: 0 });
+			},
+			onFailure: function (message) {
+				document.getElementById("message").textContent = "MQTT-Verbindungsfehler. Versuche erneut...";
+				setTimeout(function () { client.connect(connectOptions); }, 5000);
+			}
+		};
+
+		client.connect(connectOptions);
+	</script>
+</body>
+
+</html>
