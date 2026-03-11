@@ -9,6 +9,15 @@ log = logging.getLogger(__name__)
 
 
 @dataclass
+class Config:
+    max_power: float = 0
+
+
+def config_factory() -> Config:
+    return Config()
+
+
+@dataclass
 class Get:
     currents: List[float] = field(default_factory=currents_list_factory, metadata={
                                   "topic": "get/currents"})
@@ -41,6 +50,7 @@ def set_factory() -> Set:
 
 @dataclass
 class BatData:
+    config: Config = field(default_factory=config_factory)
     get: Get = field(default_factory=get_factory)
     set: Set = field(default_factory=set_factory)
 
