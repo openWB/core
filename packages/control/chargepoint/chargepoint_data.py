@@ -168,7 +168,7 @@ class Set:
     # set current aus dem vorherigen Zyklus, um zu wissen, ob am Ende des Zyklus die Ladung freigegeben wird
     # (für Control-Pilot-Unterbrechung)
     current_prev: float = field(default=0.0, metadata={"topic": "set/current_prev"})
-    target_current: float = field(default=0) # Zwischenergebnis vom Algorithmus
+    target_current: float = field(default=0)  # Zwischenergebnis vom Algorithmus
     charging_ev_data: Ev = field(default_factory=ev_factory)
     ocpp_transaction_id: Optional[int] = field(default=None, metadata={"topic": "set/ocpp_transaction_id"})
     charge_state_prev: bool = field(default=False, metadata={"topic": "set/charge_state_prev"})
