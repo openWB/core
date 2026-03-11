@@ -32,8 +32,9 @@ class DimmingDirectControl(AbstractIoAction):
 
     def setup(self) -> None:
         with ModifyLoglevelContext(control_command_log, logging.DEBUG):
-            if data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
-                    self.dimming_input] == self.dimming_value or check_fault_state_io_device(self.config.configuration.io_device):
+            if (data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
+                self.dimming_input] == self.dimming_value or
+                    check_fault_state_io_device(self.config.configuration.io_device)):
                 device = self.config.configuration.devices[0]
                 if device["type"] == "cp":
                     cp = f"cp{device['id']}"
@@ -48,8 +49,8 @@ class DimmingDirectControl(AbstractIoAction):
                             f"{data.data.cp_data[cp].data.config.name} aktiviert. "
                             "Leistungswerte vor Ausführung des Steuerbefehls:")
 
-                msg = (f"EVU-Zähler: "
-                       f"{data.data.counter_data[data.data.counter_all_data.get_evu_counter_str()].data.get.powers}W")
+                evu_counter = data.data.counter_data[data.data.counter_all_data.get_evu_counter_str()]
+                msg = f"EVU-Zähler: {evu_counter.data.get.powers}W, {evu_counter.data.get.power}W"
                 if device["type"] == "cp":
                     msg += (f", Ladepunkt {data.data.cp_data[cp].data.config.name}: "
                             f"{data.data.cp_data[cp].data.get.powers}W")

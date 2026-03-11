@@ -59,6 +59,8 @@ class StepwiseControlIo(AbstractIoAction):
                 if digital_input[input_name] != digital_input_prev[input_name]
             ]) > 0
 
+            if check_fault_state_io_device(self.config.configuration.io_device):
+                control_command_log.info("Fehler des IO-Geräts: EZA-Begrenzung kann nicht erfasst werden.")
             for pattern in self.config.configuration.input_pattern:
                 for action_input, value in pattern["matrix"].items():
                     if digital_input[action_input] != value:

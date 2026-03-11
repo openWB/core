@@ -144,6 +144,8 @@ class Loadmanagement:
             available_currents = [current_per_phase -
                                   cp.data.set.target_current if c > 0 else 0 for c in missing_currents]
             log.debug(f"Dimmung per Direkt-Steuerung: {available_currents}A")
+        else:
+            available_currents = missing_currents
         return available_currents, limit
 
     def _limit_by_dimming(self,

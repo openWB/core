@@ -25,13 +25,13 @@ class RippleControlReceiver(AbstractIoAction):
                 Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
                 if check_fault_state_io_device(self.config.configuration.io_device):
                     control_command_log.info(
-                        "Fehler des IO-Geräts: Dimmen aktiviert für Failsafe-Modus.")
+                        "Fehler des IO-Geräts: RSE aktiviert für Failsafe-Modus.")
                 control_command_log.info(
                     f"RSE-Sperre mit Wert {pattern['value']*100}"
                     "% aktiviert. Leistungswerte vor Ausführung des Steuerbefehls:")
 
             evu_counter = data.data.counter_data[data.data.counter_all_data.get_evu_counter_str()]
-            msg = f"EVU-Zähler: {evu_counter.data.get.powers}W"
+            msg = f"EVU-Zähler: {evu_counter.data.get.powers}W, {evu_counter.data.get.power}W"
             for device in self.config.configuration.devices:
                 if device["type"] == "cp":
                     cp = f"cp{device['id']}"
@@ -48,7 +48,8 @@ class RippleControlReceiver(AbstractIoAction):
                 log_active_ripple_control_receiver()
                 for pattern in self.config.configuration.input_pattern:
                     for digital_input, value in pattern["matrix"].items():
-                        if data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
+                        if data.data.io_states[
+                            f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
                                 digital_input] != value:
                             break
                     else:

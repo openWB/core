@@ -58,7 +58,7 @@ class StepwiseControlEebus(AbstractIoAction):
             for inverter in self.config.configuration.devices:
                 max_output_inverter += data.data.pv_data[f"pv{inverter['id']}"].data.config.max_ac_out
 
-            if self.lpp_active:
+            if self.lpp_active or check_fault_state_io_device(self.config.configuration.io_device):
                 try:
                     self.step = self.lpp_value / max_output_inverter
                 except ZeroDivisionError:
@@ -71,7 +71,8 @@ class StepwiseControlEebus(AbstractIoAction):
                     if self.step <= s:
                         self.step = s
                         break
-
+                if check_fault_state_io_device(self.config.configuration.io_device):
+                    control_command_log.info("Fehler des IO-Geräts: EZA-Begrenzung kann nicht erfasst werden.")
                 if changed:
                     Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
                     control_command_log.info(f"EEBus-Steuerung: LPP-Wert {self.lpp_value} / "

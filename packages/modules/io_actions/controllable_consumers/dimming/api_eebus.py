@@ -55,8 +55,8 @@ class DimmingEebus(AbstractIoAction):
                     control_command_log.info(f"Dimmen aktiviert. Übermittelter LPC-Wert: {lpc_value/1000}kWh. "
                                              "Leistungswerte vor Ausführung des Steuerbefehls:")
 
-                msg = (f"EVU-Zähler: "
-                       f"{data.data.counter_data[data.data.counter_all_data.get_evu_counter_str()].data.get.powers}W")
+                evu_counter = data.data.counter_data[data.data.counter_all_data.get_evu_counter_str()]
+                msg = f"EVU-Zähler: {evu_counter.data.get.powers}W, {evu_counter.data.get.power}W"
                 for device in self.config.configuration.devices:
                     if device["type"] == "cp":
                         cp = f"cp{device['id']}"
