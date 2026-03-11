@@ -3,7 +3,6 @@ from control import data
 from typing import Optional
 
 from modules.common.fault_state import FaultState
-from control import data as data_module
 
 log = logging.getLogger(__name__)
 
@@ -52,7 +51,7 @@ class PeakFilter:
     ) -> tuple[float, float]:
         # Die erlaubte Abweichung ist doppelt so groß wie die mögliche
         # Energiemenge pro Intervall bei maximaler Leistung
-        control_interval = data_module.data.general_data.data.control_interval
+        control_interval = data.data.general_data.data.control_interval
         allowed_deviation = 2 * (control_interval / 3600) * max_power
 
         imp = self.check_total_energy(imported, self.imported, allowed_deviation)

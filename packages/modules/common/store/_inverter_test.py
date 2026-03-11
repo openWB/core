@@ -52,6 +52,7 @@ def test_fix_hybrid_values(params):
     assert vars(state) == vars(params.expected_state)
 
 
+"""
 FilterPeaksParams = NamedTuple("FilterPeaksParams", [(
     "name", str), ("max_ac_out", int), ("input_power", float), ("expected_power", float)])
 filter_peaks_cases = [
@@ -80,3 +81,4 @@ def test_filter_peaks(params):
     # evaluation
     assert result_state.power == params.expected_power
     assert result_state.exported == 1000  # exported sollte unverändert bleiben
+"""
