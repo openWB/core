@@ -75,13 +75,15 @@ class Process:
                     if isinstance(action, DimmingDirectControl):
                         for d in action.config.configuration.devices:
                             if d["type"] == "io":
-                                data.data.io_states[f"io_states{d['id']}"].data.set.digital_output[d["digital_output"]] = (
+                                data.data.io_states[f"io_states{d['id']}"].data.set.digital_output[
+                                    d["digital_output"]] = (
                                     action.dimming_via_direct_control()[0] is None  # active output (True) if no dimming
                                 )
                     if isinstance(action, DimmingIo):
                         for d in action.config.configuration.devices:
                             if d["type"] == "io":
-                                data.data.io_states[f"io_states{d['id']}"].data.set.digital_output[d["digital_output"]] = (
+                                data.data.io_states[f"io_states{d['id']}"].data.set.digital_output[
+                                    d["digital_output"]] = (
                                     not action.dimming_active()  # active output (True) if no dimming
                                 )
                     if isinstance(action, StepwiseControlIo):
