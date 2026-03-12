@@ -2080,14 +2080,17 @@ export const useMqttStore = defineStore('mqtt', () => {
 
   /**
    * Get temporary charge settings mode selected
-   * @returns boolean | undefined
+   * @returns boolean
    */
-  const temporaryChargeModeAktiv = computed(() => {
-    const chargeMode = getValue.value(
-      'openWB/general/temporary_charge_templates_active'
-    ) as boolean | undefined;
-    return chargeMode;
-  });
+  const temporaryChargeModeAktiv: ComputedRef<boolean> = computed(() => {
+  return (
+    getValue.value(
+      'openWB/general/temporary_charge_templates_active',
+      undefined,
+      false
+    ) === true
+  );
+});
 
   /**
    * Helper function to update a subtopic of a time charging plan
