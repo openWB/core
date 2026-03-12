@@ -16,9 +16,8 @@ from modules.devices.solaredge.solaredge.config import SolaredgeBatSetup
 
 log = logging.getLogger(__name__)
 
-FLOAT32_UNSUPPORTED = -0xFFFFFF00
+FLOAT32_UNSUPPORTED = -0xffffff00000000000000000000000000
 MAX_CHARGEDISCHARGE_LIMIT = 5000
-DEFAULT_SOC = 50.0  # Fallback bei ungültigem SoC
 CONTROL_MODE_MSC = 1  # Storage Control Mode Maximize Self Consumption
 CONTROL_MODE_REMOTE = 4  # Control Mode Remotesteuerung
 REMOTE_CONTROL_COMMAND_MODE_DEFAULT = 0  # Default RC Command Mode ohne Steuerung
@@ -79,7 +78,7 @@ class SolaredgeBat(AbstractBat):
 
     def get_values(self) -> Tuple[float, float]:
         unit = self.component_config.configuration.modbus_id
-        battery_index = getattr(self.component_config.configuration, "battery_index", 1)
+        battery_index = self.component_config.configuration.battery_index
         power_reg = Registers.BAT_1_POWER if battery_index == 1 else Registers.BAT_2_POWER
         soc_reg = Registers.BAT_1_SOC if battery_index == 1 else Registers.BAT_2_SOC
         bulk = (
@@ -96,8 +95,7 @@ class SolaredgeBat(AbstractBat):
         if power == FLOAT32_UNSUPPORTED:
             power = 0
         if soc == FLOAT32_UNSUPPORTED or not 0 <= soc <= 100:
-            log.warning(f"Invalid SoC Speicher{battery_index}: {soc}, using default")
-            soc = DEFAULT_SOC
+            log.warning(f"Invalid SoC Speicher{battery_index}: {soc}")
 
         return power, soc
 
@@ -106,7 +104,7 @@ class SolaredgeBat(AbstractBat):
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
         unit = self.component_config.configuration.modbus_id
-        battery_index = getattr(self.component_config.configuration, "battery_index", 1)
+        battery_index = self.component_config.configuration.battery_index
 
         bulk = (
             (Registers.STORAGE_CONTROL_MODE, ModbusDataType.UINT_16),
