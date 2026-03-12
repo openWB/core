@@ -16,13 +16,19 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 
-const props = defineProps<{
-  showMessage: boolean;
-  message: string;
-  type?: 'info' | 'warning' | 'error';
-}>();
+const props = withDefaults(
+  defineProps<{
+    showMessage: boolean;
+    message: string;
+    type?: 'info' | 'warning' | 'error';
+    collapsed?: boolean;
+  }>(),
+  {
+    collapsed: true,
+  },
+);
 
-const collapsed = ref(true);
+const collapsed = ref(props.collapsed);
 
 const toggleCollapse = () => {
   collapsed.value = !collapsed.value;

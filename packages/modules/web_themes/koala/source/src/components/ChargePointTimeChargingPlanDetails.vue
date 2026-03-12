@@ -12,6 +12,7 @@
         :show-message="temporaryChargeModeActive"
         message="Temporärer Modus aktiv. Alle Planänderungen werden nach dem Abstecken verworfen."
         type="warning"
+        :collapsed="false"
       />
     </q-card-section>
     <q-separator />
