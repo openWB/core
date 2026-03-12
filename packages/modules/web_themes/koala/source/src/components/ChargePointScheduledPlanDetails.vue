@@ -449,7 +449,10 @@ const removeScheduledChargingPlan = (planId) => {
   emit('close');
 };
 
-const temporaryChargeModeActive = mqttStore.temporaryChargeModeAktiv;
+
+const temporaryChargeModeActive = computed(
+  () => mqttStore.temporaryChargeModeAktiv
+);
 
 const chargeTemplateId = computed(
   () =>

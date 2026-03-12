@@ -313,7 +313,9 @@ const acChargingEnabled = computed(
   () => mqttStore.chargePointChargeType(props.chargePointId).value === 'AC',
 );
 
-const temporaryChargeModeActive = mqttStore.temporaryChargeModeAktiv
+const temporaryChargeModeActive =  computed(
+  () => mqttStore.temporaryChargeModeAktiv
+);
 
 const chargeTemplateId = computed(
   () =>
