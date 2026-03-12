@@ -192,8 +192,8 @@
           size="sm"
           class="col charge-plan-link-button"
           :href="`/openWB/web/settings/#/VehicleConfiguration/charge_template/${chargeTemplateId ?? ''}`"
-          ><q-icon left size="xs" name="settings" /> persistente Ladeplan
-          Einstellungen</q-btn
+          ><q-icon left size="xs" name="settings" /> Persistente
+          Ladeplan-Einstellungen</q-btn
         >
       </div>
     </q-card-section>
@@ -314,8 +314,8 @@ const acChargingEnabled = computed(
   () => mqttStore.chargePointChargeType(props.chargePointId).value === 'AC',
 );
 
-const temporaryChargeModeActive =  computed(
-  () => mqttStore.temporaryChargeModeAktiv
+const temporaryChargeModeActive = computed(
+  () => mqttStore.temporaryChargeModeAktiv,
 );
 
 const chargeTemplateId = computed(
