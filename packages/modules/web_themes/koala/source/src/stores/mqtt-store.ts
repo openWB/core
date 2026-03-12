@@ -2082,7 +2082,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * Get temporary charge settings mode selected
    * @returns boolean
    */
-  const temporaryChargeModeAktiv: ComputedRef<boolean> = computed(() => {
+  const temporaryChargeModeActive: ComputedRef<boolean> = computed(() => {
   return (
     getValue.value(
       'openWB/general/temporary_charge_templates_active',
@@ -3935,7 +3935,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointStateMessage,
     chargePointFaultState,
     chargePointFaultMessage,
-    temporaryChargeModeAktiv,
+    temporaryChargeModeActive,
     chargePointChargeType,
     dcChargingEnabled,
     chargePointConnectedVehicleInfo,
