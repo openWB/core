@@ -38,9 +38,11 @@
         <div>{{ props.limitMode == 'amount' ? 'Geladen' : 'Ladestand' }}</div>
         <div>
           {{
-            props.limitMode == 'amount'
+            props.limitMode === 'amount'
               ? formatEnergy(props.currentValue)
-              : props.currentValue + '%'
+              : !props.vehicleSocType
+                ? 'Kein SoC-Modul konfiguriert'
+                : props.currentValue + '%'
           }}
           <q-icon
             v-if="props.vehicleSocType === 'manual' && props.limitMode !== 'amount'"
@@ -60,7 +62,6 @@
           >
             <q-tooltip>Ladestand aktualisieren</q-tooltip>
           </q-icon>
-          <span v-if="!props.vehicleSocType && props.limitMode !== 'amount'" class="row">Kein SoC-Modul konfiguriert</span>
         </div>
       </div>
       <div v-if="props.targetTime" class="col text-center">
