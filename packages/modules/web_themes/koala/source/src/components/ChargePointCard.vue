@@ -59,6 +59,7 @@
     <q-card-section>
       <ChargePointModeButtons :charge-point-id="props.chargePointId" />
     </q-card-section>
+
     <q-card-section class="row q-mt-sm">
       <div class="col">
         <div class="text-subtitle2">Leistung</div>
@@ -77,8 +78,7 @@
     </q-card-section>
     <q-card-section>
       <SliderDouble
-        v-if="showSocTargetSlider"
-        class="q-mt-sm"
+        :class="['q-mt-sm', limitEditable && 'cursor-pointer']"
         :model-value="target"
         :readonly="true"
         :charge-mode="chargeMode"
@@ -88,7 +88,16 @@
         :vehicle-soc-type="vehicleSocType"
         :on-edit-soc="openSocDialog"
         :on-refresh-soc="refreshSoc"
-      />
+        @click="openLimitDialog"
+      >
+        <template #tooltip>
+          <q-tooltip
+            v-if="chargeMode !== 'scheduled_charging' && chargeMode !== 'stop'"
+          >
+            Begrenzung einstellen
+          </q-tooltip>
+        </template>
+      </SliderDouble>
     </q-card-section>
     <q-card-actions v-if="$slots['card-actions']" align="right">
       <slot name="card-actions"></slot>
@@ -97,6 +106,11 @@
     <ChargePointSettings
       :chargePointId="props.chargePointId"
       v-model="settingsVisible"
+    />
+    <!-- //////////////////////  modal charge limit settings dialog   //////////////////// -->
+    <ChargePointChargeLimits
+      :chargePointId="props.chargePointId"
+      v-model="chargeLimitsVisible"
     />
     <!-- //////////////////////  modal soc dialog   //////////////////// -->
     <ManualSocDialog
@@ -117,6 +131,7 @@ import ChargePointModeButtons from './ChargePointModeButtons.vue';
 import ChargePointMessage from './ChargePointMessage.vue';
 import ChargePointVehicleSelect from './ChargePointVehicleSelect.vue';
 import ChargePointSettings from './ChargePointSettings.vue';
+import ChargePointChargeLimits from './ChargePointChargeLimits.vue';
 import ManualSocDialog from './ManualSocDialog.vue';
 import ChargePointTimeCharging from './ChargePointTimeCharging.vue';
 import ChargePointPowerData from './ChargePointPowerData.vue';
@@ -161,6 +176,16 @@ const limitMode = computed(() => {
 });
 
 const settingsVisible = ref<boolean>(false);
+const chargeLimitsVisible = ref<boolean>(false);
+
+const limitEditable = computed(() => {
+  return !['scheduled_charging', 'stop'].includes(chargeMode.value);
+});
+
+const openLimitDialog = () => {
+  if (!limitEditable.value) return;
+  chargeLimitsVisible.value = true;
+};
 
 const socInputVisible = ref<boolean>(false);
 const openSocDialog = () => {
@@ -270,18 +295,6 @@ const target = computed(() => {
     default:
       return undefined;
   }
-});
-
-const showSocTargetSlider = computed(() => {
-  if (target.value && target.value > 999) {
-    // we have a energy based target
-    return true;
-  }
-  if (vehicleSocType.value) {
-    // we have a soc module defined
-    return true;
-  }
-  return false;
 });
 
 const vehicleTarget = computed(() => {
