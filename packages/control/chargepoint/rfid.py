@@ -3,7 +3,6 @@ from typing import Optional
 
 from control import data
 from control.chargepoint.chargepoint_data import ChargepointProtocol
-from helpermodules.pub import Pub
 from helpermodules import timecheck
 
 log = logging.getLogger(__name__)
@@ -28,14 +27,11 @@ class ChargepointRfidMixin:
                 # keine Duo
                 cp2_data is None):
             self.data.set.rfid = rfid
-            self.chargepoint_module.clear_rfid()
 
         self.data.get.rfid = None
-        Pub().pub("openWB/chargepoint/"+str(self.num)+"/get/rfid", None)
         self.data.get.rfid_timestamp = None
-        Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp", None)
 
-    def _validate_rfid(self) -> None:
+    def _validate_rfid(self: ChargepointProtocol) -> None:
         """Prüft, dass der Tag an diesem Ladepunkt gültig ist und  dass dieser innerhalb von 5 Minuten einem EV
         zugeordnet wird.
         """
@@ -49,8 +45,6 @@ class ChargepointRfidMixin:
                             self.data.set.log.imported_at_plugtime == self.data.get.imported):
                         if self.data.get.rfid_timestamp is None:
                             self.data.get.rfid_timestamp = timecheck.create_timestamp()
-                            Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp",
-                                      self.data.get.rfid_timestamp)
                             return
                         else:
                             if timecheck.check_timestamp(self.data.get.rfid_timestamp, 300):
@@ -65,7 +59,6 @@ class ChargepointRfidMixin:
                                     self.data.set.manual_lock = True
                                 if self.data.set.charging_ev_data.charge_template.data.load_default:
                                     self.data.config.ev = 0
-                                Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp", None)
                                 msg = ("Es ist in den letzten 5 Minuten kein EV angesteckt worden, dem "
                                        f"der ID-Tag {rfid} zugeordnet werden kann. Daher wird dieser verworfen.")
                     else:
@@ -75,10 +68,7 @@ class ChargepointRfidMixin:
             else:
                 msg = "Identifikation von Fahrzeugen ist nicht aktiviert."
             self.data.get.rfid = None
-            Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid", None)
             self.data.get.rfid_timestamp = None
-            Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp", None)
-            self.chargepoint_module.clear_rfid()
             self.set_state_and_log(msg)
 
     def find_duo_partner(self: ChargepointProtocol) -> Optional[int]:
