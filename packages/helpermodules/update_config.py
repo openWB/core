@@ -2874,7 +2874,7 @@ class UpdateConfig:
         Default for missing/unknown old version: sungrow_sg (no version).
         """
         def upgrade(topic: str, payload) -> None:
-            if re.search(r"^openWB/system/device/[0-9]+$", topic) is not None:
+            if re.search(r"^openWB/system/device/[0-9]+/config$", topic) is not None:
                 device = decode_payload(payload)
                 if device.get("type") == "sungrow":
                     # inline normalization: handle Version enum, ints, numeric strings
