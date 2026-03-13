@@ -17,13 +17,14 @@ import { computed, ref } from 'vue';
 
 const props = withDefaults(
   defineProps<{
-    showMessage: boolean;
+    showMessage?: boolean;
     message: string;
     type?: 'info' | 'warning' | 'error';
     collapsed?: boolean;
   }>(),
   {
     collapsed: true,
+    showMessage: true,
   },
 );
 
