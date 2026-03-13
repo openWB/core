@@ -196,6 +196,9 @@ class Chargepoint(ChargepointRfidMixin):
             if data.data.general_data.data.temporary_charge_templates_active:
                 self.update_charge_template(
                     data.data.ev_data["ev"+str(self.data.config.ev)].charge_template)
+            if (self.data.set.charging_ev_data.soc_module is not None and
+                    self.data.set.charging_ev_data.soc_module.vehicle_config.configuration.reset_after_unplug):
+                Pub().pub(f"openWB/set/ev/{self.data.config.ev}/get/manual_soc", 0)
             self.data.set.rfid = None
             self.data.set.plug_time = None
             self.data.set.phases_to_use = self.data.get.phases_in_use
