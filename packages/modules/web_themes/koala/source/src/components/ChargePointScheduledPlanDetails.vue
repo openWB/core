@@ -254,7 +254,7 @@
           >Plan löschen</q-btn
         >
       </div>
-      <div v-if="temporaryChargeModeActive" class="row q-mt-md">
+      <div v-if="temporaryChargeModeActive && chargeTemplateId != null" class="row q-mt-md">
         <q-btn
           size="sm"
           class="col charge-plan-link-button"
