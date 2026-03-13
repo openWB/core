@@ -1,9 +1,8 @@
 <template>
   <div
     v-if="showMessage"
-    class="row q-mt-sm q-pa-sm text-white no-wrap cursor-pointer"
+    class="row q-mt-sm q-pa-sm text-white no-wrap cursor-pointer rounded-borders"
     :class="[{ 'items-center': collapsed }, messageClass]"
-    style="border-radius: 10px"
     @click="toggleCollapse"
   >
     <q-icon :name="iconName" size="sm" class="q-mr-xs" />

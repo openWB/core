@@ -96,8 +96,7 @@
           />
         </div>
         <div
-          class="row q-mt-sm q-pa-sm text-white no-wrap items-center bg-primary"
-          style="border-radius: 10px"
+          class="row q-mt-sm q-pa-sm text-white no-wrap items-center bg-primary rounded-borders"
         >
           <q-icon name="info" size="sm" class="q-mr-xs" />
           <ChargePointScheduledPlanSummary
