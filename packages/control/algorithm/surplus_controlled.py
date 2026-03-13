@@ -31,12 +31,7 @@ class SurplusControlled:
         for mode_tuple, counter in common.mode_and_counter_generator(CONSIDERED_CHARGE_MODES_SURPLUS):
             preferenced_chargepoints, preferenced_cps_without_set_current = get_preferenced_chargepoint_charging(
                 get_chargepoints_by_mode_and_counter(mode_tuple, f"counter{counter.num}"))
-            cp_with_feed_in, cp_without_feed_in = self.filter_by_feed_in_limit(preferenced_chargepoints)
-            if cp_without_feed_in:
-                self._set(cp_without_feed_in, 0, mode_tuple, counter)
-            feed_in_yield = data.data.general_data.data.chargemode_config.pv_charging.feed_in_yield
-            if cp_with_feed_in:
-                self._set(cp_with_feed_in, feed_in_yield, mode_tuple, counter)
+            self._set(preferenced_chargepoints, mode_tuple, counter)
             if preferenced_cps_without_set_current:
                 for cp in preferenced_cps_without_set_current:
                     cp.data.set.current = cp.data.set.target_current
@@ -46,7 +41,6 @@ class SurplusControlled:
 
     def _set(self,
              chargepoints: List[Chargepoint],
-             feed_in_yield: Optional[int],
              mode_tuple: Tuple[Optional[str], str, bool],
              counter: Counter) -> None:
         log.info(f"Mode-Tuple {mode_tuple[0]} - {mode_tuple[1]} - {mode_tuple[2]}, Zähler {counter.num}")
@@ -58,12 +52,11 @@ class SurplusControlled:
                 missing_currents,
                 voltages_mean(cp.data.get.voltages),
                 counter,
-                cp,
-                feed_in=feed_in_yield
+                cp
             )
             cp.data.control_parameter.limit = limit
             available_for_cp = common.available_current_for_cp(cp, counts, available_currents, missing_currents)
-            if counter.get_control_range_state(feed_in_yield) == ControlRangeState.MIDDLE:
+            if counter.get_control_range_state() == ControlRangeState.MIDDLE:
                 pv_charging = data.data.general_data.data.chargemode_config.pv_charging
                 dif_to_old_current = available_for_cp + cp.data.set.target_current - cp.data.set.current_prev
                 # Wenn die Differenz zwischen altem und neuem Soll-Strom größer als der Regelbereich ist, trotzdem
@@ -100,14 +93,6 @@ class SurplusControlled:
                 limit.limiting_value != LimitingValue.POWER):
             chargepoint.set_state_and_log(f"Es kann nicht mit der vorgegebenen Stromstärke geladen werden"
                                           f"{limit.message}")
-
-    # tested
-    def filter_by_feed_in_limit(self, chargepoints: List[Chargepoint]) -> Tuple[List[Chargepoint], List[Chargepoint]]:
-        cp_with_feed_in = list(filter(lambda cp: cp.data.set.charge_template.data.chargemode.
-                                      pv_charging.feed_in_limit is True, chargepoints))
-        cp_without_feed_in = list(filter(lambda cp: cp.data.set.charge_template.data.chargemode.
-                                         pv_charging.feed_in_limit is False, chargepoints))
-        return cp_with_feed_in, cp_without_feed_in
 
     def _fix_deviating_evse_current(self, chargepoint: Chargepoint) -> float:
         """Wenn Autos nicht die volle Ladeleistung nutzen, wird unnötig eingespeist. Dann kann um den noch nicht

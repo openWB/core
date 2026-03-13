@@ -30,29 +30,6 @@ def mock_cp3() -> Chargepoint:
     return Chargepoint(3, None)
 
 
-@pytest.mark.parametrize("feed_in_limit_1, feed_in_limit_2, feed_in_limit_3, expected_sorted",
-                         [pytest.param(True, True, True, ([mock_cp1, mock_cp2, mock_cp3], [])),
-                          pytest.param(True, False, True, ([mock_cp1, mock_cp3], [mock_cp2])),
-                          pytest.param(False, False, False, ([], [mock_cp1, mock_cp2, mock_cp3]))])
-def test_filter_by_feed_in_limit(feed_in_limit_1: bool,
-                                 feed_in_limit_2: bool,
-                                 feed_in_limit_3: bool,
-                                 expected_sorted: int):
-    # setup
-    def setup_cp(cp: Chargepoint, feed_in_limit: bool) -> Chargepoint:
-        cp.data = ChargepointData()
-        cp.data.set.charge_template.data.chargemode.pv_charging.feed_in_limit = feed_in_limit
-        return cp
-
-    cp1 = setup_cp(mock_cp1, feed_in_limit_1)
-    cp2 = setup_cp(mock_cp2, feed_in_limit_2)
-    cp3 = setup_cp(mock_cp3, feed_in_limit_3)
-    # execution
-    cp_with_feed_in, cp_without_feed_in = SurplusControlled().filter_by_feed_in_limit([cp1, cp2, cp3])
-    # evaluation
-    assert (cp_with_feed_in, cp_without_feed_in) == expected_sorted
-
-
 @pytest.mark.parametrize("new_current, expected_current",
                          [
                              pytest.param(7, 10),
@@ -129,16 +106,21 @@ def test_add_unused_evse_current(evse_current: float,
 
 
 @pytest.mark.parametrize(
-    "submode_1, submode_2, expected_chargepoints",
+    "submode_1, submode_2, expected_cp_indices",
     [
-        pytest.param(Chargemode.PV_CHARGING, Chargemode.PV_CHARGING, [mock_cp1, mock_cp2]),
-        pytest.param(Chargemode.INSTANT_CHARGING, Chargemode.PV_CHARGING, [mock_cp2]),
+        pytest.param(Chargemode.PV_CHARGING, Chargemode.PV_CHARGING, [1, 2]),
+        pytest.param(Chargemode.INSTANT_CHARGING, Chargemode.PV_CHARGING, [2]),
         pytest.param(Chargemode.INSTANT_CHARGING, Chargemode.INSTANT_CHARGING, []),
     ])
 def test_get_chargepoints_submode_pv_charging(submode_1: Chargemode,
                                               submode_2: Chargemode,
-                                              expected_chargepoints: List[Chargepoint]):
+                                              expected_cp_indices: List[int],
+                                              mock_cp1: Chargepoint,
+                                              mock_cp2: Chargepoint):
     # setup
+    cp_mapping = {1: mock_cp1, 2: mock_cp2}
+    expected_chargepoints = [cp_mapping[i] for i in expected_cp_indices]
+
     def setup_cp(cp: Chargepoint, submode: str) -> Chargepoint:
         cp.data.set.charging_ev_data = Ev(0)
         cp.data.control_parameter.chargemode = Chargemode.PV_CHARGING

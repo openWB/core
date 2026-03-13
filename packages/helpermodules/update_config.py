@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 112
+    DATASTORE_VERSION = 113
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -236,7 +236,8 @@ class UpdateConfig:
         "^openWB/general/chargemode_config/unbalanced_load_limit$",
         "^openWB/general/chargemode_config/unbalanced_load$",
         "^openWB/general/chargemode_config/pv_charging/bat_mode$",
-        "^openWB/general/chargemode_config/pv_charging/feed_in_yield$",
+        "^openWB/general/chargemode_config/feed_in_yield$",
+        "^openWB/general/chargemode_config/pv_charging/feed_in_limit$",
         "^openWB/general/chargemode_config/pv_charging/switch_on_threshold$",
         "^openWB/general/chargemode_config/pv_charging/switch_on_delay$",
         "^openWB/general/chargemode_config/pv_charging/switch_off_threshold$",
@@ -586,6 +587,7 @@ class UpdateConfig:
         ("openWB/general/chargemode_config/pv_charging/bat_mode", BatConsiderationMode.EV_MODE.value),
         ("openWB/general/chargemode_config/pv_charging/bat_power_discharge", 1000),
         ("openWB/general/chargemode_config/pv_charging/bat_power_discharge_active", True),
+        ("openWB/general/chargemode_config/pv_charging/feed_in_limit", False),
         ("openWB/general/chargemode_config/pv_charging/min_bat_soc", 50),
         ("openWB/general/chargemode_config/pv_charging/max_bat_soc", 70),
         ("openWB/general/chargemode_config/pv_charging/bat_power_reserve", 200),
@@ -595,7 +597,7 @@ class UpdateConfig:
         ("openWB/general/chargemode_config/pv_charging/switch_off_delay", 60),
         ("openWB/general/chargemode_config/pv_charging/switch_on_delay", 30),
         ("openWB/general/chargemode_config/pv_charging/switch_on_threshold", 1500),
-        ("openWB/general/chargemode_config/pv_charging/feed_in_yield", 0),
+        ("openWB/general/chargemode_config/feed_in_yield", 0),
         ("openWB/general/chargemode_config/pv_charging/phase_switch_delay", 7),
         ("openWB/general/chargemode_config/pv_charging/retry_failed_phase_switches",
          PvCharging().retry_failed_phase_switches),
@@ -2858,3 +2860,23 @@ class UpdateConfig:
         run_command(['pip', 'uninstall', 'bimmer_connected', '-y'], process_exception=True)
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(112)
+
+    def upgrade_datastore_113(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/general/chargemode_config/pv_charging/feed_in_yield$", topic) is not None:
+                payload = decode_payload(payload)
+                return {"openWB/general/chargemode_config/feed_in_yield": payload}
+        self._loop_all_received_topics(upgrade)
+        feed_in_limit = False
+        for topic, payload in self.all_received_topics.items():
+            try:
+                if re.search("openWB/vehicle/template/charge_template/[0-9]+$", topic) is not None:
+                    payload = decode_payload(payload)
+                    if payload["chargemode"]["pv_charging"].get("feed_in_limit") is True:
+                        feed_in_limit = True
+                    payload["chargemode"]["pv_charging"].pop("feed_in_limit", None)
+                    self.__update_topic(topic, payload)
+            except KeyError:
+                log.exception(f"Fehler beim Lesen des feed_in_limit im Fahrzeugtemplate {payload}")
+        self.__update_topic("openWB/general/chargemode_config/pv_charging/feed_in_limit", feed_in_limit)
+        self._append_datastore_version(113)
