@@ -62,43 +62,54 @@ class Process:
                 except Exception:
                     log.exception("Fehler im Process-Modul für Ladepunkt "+str(cp))
             for bat_component in get_controllable_bat_components():
-                modules_threads.append(
-                    Thread(
-                        target=bat_component.set_power_limit,
-                        args=(data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set.power_limit,),
-                        name=f"set power limit {bat_component.component_config.id}"))
-            for action in data.data.io_actions.actions.values():
-                if isinstance(action, DimmingDirectControl):
-                    for d in action.config.configuration.devices:
-                        if d["type"] == "io":
-                            data.data.io_states[f"io_states{d['id']}"].data.set.digital_output[d["digital_output"]] = (
-                                action.dimming_via_direct_control()[0] is None  # active output (True) if no dimming
-                            )
-                if isinstance(action, DimmingIo):
-                    for d in action.config.configuration.devices:
-                        if d["type"] == "io":
-                            data.data.io_states[f"io_states{d['id']}"].data.set.digital_output[d["digital_output"]] = (
-                                not action.dimming_active()  # active output (True) if no dimming
-                            )
-                if isinstance(action, StepwiseControlIo):
-                    # check if passthrough is enabled
-                    if action.config.configuration.passthrough_enabled:
-                        # find output pattern by value
-                        for pattern in action.config.configuration.output_pattern:
-                            if pattern["value"] == action.control_stepwise()[0]:
-                                # set digital outputs according to matching output_pattern
-                                for output in pattern["matrix"].keys():
-                                    data.data.io_states[
-                                        f"io_states{action.config.configuration.io_device}"
-                                    ].data.set.digital_output[output] = pattern["matrix"][output]
-            for io in data.data.system_data.values():
-                if isinstance(io, AbstractIoDevice):
+                try:
                     modules_threads.append(
                         Thread(
-                            target=io.write,
-                            args=(data.data.io_states[f"io_states{io.config.id}"].data.set.analog_output,
-                                  data.data.io_states[f"io_states{io.config.id}"].data.set.digital_output,),
-                            name=f"set output io{io.config.id}"))
+                            target=bat_component.set_power_limit,
+                            args=(data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set.power_limit,),
+                            name=f"set power limit {bat_component.component_config.id}"))
+                except Exception:
+                    log.exception(f"Fehler im Process-Modul für Speicher {bat_component.component_config.id}")
+            for action in data.data.io_actions.actions.values():
+                try:
+                    if isinstance(action, DimmingDirectControl):
+                        for d in action.config.configuration.devices:
+                            if d["type"] == "io":
+                                data.data.io_states[f"io_states{d['id']}"].data.set.digital_output[
+                                    d["digital_output"]] = (
+                                    action.dimming_via_direct_control()[0] is None  # active output (True) if no dimming
+                                )
+                    if isinstance(action, DimmingIo):
+                        for d in action.config.configuration.devices:
+                            if d["type"] == "io":
+                                data.data.io_states[f"io_states{d['id']}"].data.set.digital_output[
+                                    d["digital_output"]] = (
+                                    not action.dimming_active()  # active output (True) if no dimming
+                                )
+                    if isinstance(action, StepwiseControlIo):
+                        # check if passthrough is enabled
+                        if action.config.configuration.passthrough_enabled:
+                            # find output pattern by value
+                            for pattern in action.config.configuration.output_pattern:
+                                if pattern["value"] == action.control_stepwise()[0]:
+                                    # set digital outputs according to matching output_pattern
+                                    for output in pattern["matrix"].keys():
+                                        data.data.io_states[
+                                            f"io_states{action.config.configuration.io_device}"
+                                        ].data.set.digital_output[output] = pattern["matrix"][output]
+                except Exception:
+                    log.exception(f"Fehler im Process-Modul für IO-Aktion {action.config.id}")
+            for io in data.data.system_data.values():
+                try:
+                    if isinstance(io, AbstractIoDevice):
+                        modules_threads.append(
+                            Thread(
+                                target=io.write,
+                                args=(data.data.io_states[f"io_states{io.config.id}"].data.set.analog_output,
+                                      data.data.io_states[f"io_states{io.config.id}"].data.set.digital_output,),
+                                name=f"set output io{io.config.id}"))
+                except Exception:
+                    log.exception(f"Fehler im Process-Modul für IO-Gerät {io.config.id}")
             if modules_threads:
                 joined_thread_handler(modules_threads, 3)
         except Exception:
