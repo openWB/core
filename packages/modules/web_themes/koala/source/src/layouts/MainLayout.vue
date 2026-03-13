@@ -5,6 +5,7 @@
         <q-btn dense flat round icon="menu" @click="drawer = !drawer" />
         <q-toolbar-title>openWB</q-toolbar-title>
         <q-space />
+        <connection-indicator />
         <user-indicator />
       </q-toolbar>
     </q-header>
@@ -135,6 +136,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import UserIndicator from 'src/components/UserIndicator.vue';
+import ConnectionIndicator from 'src/components/ConnectionIndicator.vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 const mqttStore = useMqttStore();
 
