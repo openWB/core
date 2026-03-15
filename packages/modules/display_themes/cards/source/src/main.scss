@@ -1,5 +1,5 @@
-@import '@inkline/inkline/css/variables';
-@import '@inkline/inkline/css/mixins';
+@import '@inkline/inkline/css/variables/_index.scss';
+@import '@inkline/inkline/css/mixins/_index.scss';
 
 :root {
   --spacing: 0.5rem;
@@ -20,6 +20,12 @@ html,
 body {
   scrollbar-width: thin;
   scrollbar-color: color('primary-70') transparent;
+}
+
+.large-button {
+  height: 3.5rem !important;
+  font-size: 1.5rem !important;
+  padding: 0.75rem 1.5rem !important;
 }
 
 /* width */

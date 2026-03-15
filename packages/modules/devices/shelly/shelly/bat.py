@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import Optional
+from typing import Optional, TypedDict, Any
 from modules.common import req
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
@@ -9,63 +9,92 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_bat_value_store
 from modules.common.simcount._simcounter import SimCounter
 from modules.devices.shelly.shelly.config import ShellyBatSetup
+from modules.devices.shelly.shelly.constants import ALPHABETICAL_INDEX
 
 log = logging.getLogger(__name__)
 
 
-class ShellyBat(AbstractBat):
+class KwargsDict(TypedDict):
+    device_id: int
+    ip_address: str
+    factor: int
+    phase: int
+    generation: Optional[int]
 
-    def __init__(self,
-                 device_id: int,
-                 component_config: ShellyBatSetup,
-                 address: str,
-                 factor: int,
-                 generation: Optional[int]) -> None:
+
+class ShellyBat(AbstractBat):
+    def __init__(self, component_config: ShellyBatSetup, **kwargs: Any) -> None:
         self.component_config = component_config
-        self.sim_counter = SimCounter(device_id, self.component_config.id, prefix="speicher")
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__device_id: int = self.kwargs['device_id']
+        self.address: str = self.kwargs['ip_address']
+        self.factor: int = self.kwargs['factor']
+        self.phase: int = self.kwargs['phase']
+        self.generation: Optional[int] = self.kwargs['generation']
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.address = address
-        self.factor = factor
-        self.generation = generation
 
-    def total_power_from_shelly(self) -> int:
-        total = 0
+    def update(self) -> None:
         if self.generation == 1:
             status_url = "http://" + self.address + "/status"
         else:
             status_url = "http://" + self.address + "/rpc/Shelly.GetStatus"
         status = req.get_http_session().get(status_url, timeout=3).json()
-        try:
-            if self.generation == 1:
-                if 'meters' in status:
-                    meters = status['meters']  # shelly
-                else:
-                    meters = status['emeters']  # shellyEM & shelly3EM
-                # shellyEM has one meter, shelly3EM has three meters:
-                for meter in meters:
-                    total = total + meter['power']
-            else:
-                if 'switch:0' in status:
-                    total = status['switch:0']['apower']
-                elif 'pm1:0' in status:
-                    total = status['pm1:0']['apower']  # shelly PM Mini Gen 3
-                else:
-                    total = status['em:0']['total_act_power']  # shelly Pro3EM
-        except KeyError:
-            log.exception("unsupported shelly device?")
-        finally:
-            return int(total)
 
-    def update(self) -> None:
-        bat = self.total_power_from_shelly() * self.factor
-        imported, exported = self.sim_counter.sim_count(bat)
-        bat_state = BatState(
-            power=bat,
-            imported=imported,
-            exported=exported
-        )
-        self.store.set(bat_state)
+        try:
+            power = 0
+            currents = [0.0, 0.0, 0.0]
+            # GEN 1
+            if "meters" in status:
+                meters = status['meters']  # einphasiger shelly?
+                for i in range(0, min(3, len(meters))):
+                    currents[(i+self.phase-1) % 3] = (float(meters[i].get('power', 0)) * self.factor) / 230
+                    power = power + (float(meters[i].get('power', 0)) * self.factor)
+            elif "emeters" in status:
+                meters = status['emeters']  # shellyEM & shelly3EM
+                # shellyEM has one meter, shelly3EM has three meters
+                for i in range(0, min(3, len(meters))):
+                    currents[(i+self.phase-1) % 3] = float(meters[i].get('current', 0)) * self.factor
+                    power = power + float(meters[i].get('power', 0)) * self.factor
+            # GEN 2+
+            # shelly Pro3EM
+            elif "em:0" in status:
+                meters = status['em:0']
+                for i, alphabetical_index in enumerate(ALPHABETICAL_INDEX):
+                    if meters.get(f'{alphabetical_index}_current') is None:
+                        continue
+                    currents[(i+self.phase-1) % 3] = float(meters.get(f'{alphabetical_index}_current', 0)) * self.factor
+                power = float(meters.get('total_act_power', 0)) * self.factor
+            # Shelly MiniPM G3
+            elif "pm1:0" in status:
+                log.debug("single phase shelly")
+                meters = status['pm1:0']
+                currents[self.phase-1] = meters['current'] * self.factor
+                power = meters['apower'] * self.factor
+            elif 'switch:0' in status and 'apower' in status['switch:0']:
+                log.debug("single phase shelly")
+                meters = status['switch:0']
+                currents[self.phase-1] = meters['current'] * self.factor
+                power = meters['apower'] * self.factor
+            else:
+                log.debug("single phase shelly")
+                meters = status['em1:0']
+                currents[self.phase-1] = meters['current'] * self.factor
+                power = meters['act_power'] * self.factor  # shelly Pro EM Gen 2
+            imported, exported = self.sim_counter.sim_count(power)
+
+            bat_state = BatState(
+                power=power,
+                currents=currents,
+                imported=imported,
+                exported=exported
+            )
+            self.store.set(bat_state)
+        except KeyError:
+            log.exception("unsupported shelly device.")
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=ShellyBatSetup)

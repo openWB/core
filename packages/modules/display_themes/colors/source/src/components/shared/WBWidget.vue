@@ -42,7 +42,6 @@
 	/* display: grid;
 	grid-template-columns: repeat(12, auto);
 	gap: 0.2em; */
-	
 }
 
 .wb-subwidget {
@@ -71,7 +70,6 @@
 }
 
 .cont {
-	
 	align-self: stretch;
 	height: 100%;
 }

@@ -181,7 +181,7 @@ class Frame:
 
     # add a rct_id item to a frame
     def add(self, item):
-        if type(item) == rct_id:
+        if isinstance(item, rct_id):
             if len(item.name) > self.name_len:
                 self.name_len = len(item.name)
             if len(item.desc) > self.desc_len:
@@ -534,9 +534,9 @@ class RCT():
     # add all ids to a new frame
     def read_setup_frame(self, id):
         frame = Frame(cmd_read)
-        if type(id) == list:
+        if isinstance(id, list):
             for item in id:
-                if type(item) == rct_id:
+                if isinstance(item, rct_id):
                     frame.add(item)
                 else:
                     obj = self.find_by_id(item)

@@ -30,6 +30,7 @@ import {
 	zoomedRange,
 	type GraphDataItem,
 } from './model'
+import { pvSystems } from '@/assets/js/model'
 
 const props = defineProps<{
 	width: number
@@ -123,14 +124,17 @@ const keysToUse = computed(() => {
 			}
 		case 'today':
 		case 'day':
-			additionalKeys.forEach((key, i) => {
-				colors[key] = 'var(--color-pv' + (i + 1) + ')'
+			additionalKeys.forEach((key) => {
+				colors[key] =
+					pvSystems.value.get(+key.slice(2))?.color ?? 'var(--color-pv)'
 			})
 			return globalConfig.showInverters
 				? [...additionalKeys, ...k]
 				: ['selfUsage', 'evuOut', 'batOut', 'evuIn']
 		default:
-			return ['evuIn', 'batOut', 'selfUsage', 'evuOut']
+			return globalConfig.showInverters
+				? ['evuIn', 'batOut', 'selfUsage']
+				: ['evuIn', 'batOut', 'selfUsage', 'evuOut']
 	}
 })
 
@@ -173,7 +177,7 @@ const ticklineColor = computed(() => {
 	return globalConfig.showGrid ? 'var(--color-grid)' : 'var(--color-bg)'
 })
 function drawGraph(
-	graph: Selection<SVGGElement, unknown, HTMLElement, never>,
+	graph: Selection<SVGGElement, unknown, HTMLElement, unknown>,
 	xScale: ScaleTime<number, number, never>,
 ) {
 	const area0 = area()
@@ -187,7 +191,8 @@ function drawGraph(
 		.curve(curveBumpX)
 	if (animateSourceGraph) {
 		graph.selectAll('*').remove()
-		paths = graph
+		const canvas = graph.append('svg').attr('x', 0).attr('width', props.width)
+		paths = canvas
 			.selectAll('.sourceareas')
 			.data(stackedSeries.value as [number, number][][])
 			.enter()

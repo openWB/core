@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 import logging
-from typing import Dict, Union
 from requests import Session
 
-
-from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
@@ -16,14 +13,15 @@ log = logging.getLogger(__name__)
 
 
 class PowerfoxInverter(AbstractInverter):
-    def __init__(self,
-                 component_config: Union[Dict, PowerfoxInverterSetup]) -> None:
-        self.component_config = dataclass_from_dict(PowerfoxInverterSetup, component_config)
+    def __init__(self, component_config: PowerfoxInverterSetup) -> None:
+        self.component_config = component_config
+
+    def initialize(self) -> None:
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self, session: Session) -> None:
-        response = session.get('https://backend.powerfox.energy/api/2.0/my/'+self.component_config.configuration.id +
+        response = session.get('https://backend.powerfox.energy/api/2.0/my/' + self.component_config.configuration.id +
                                '/current', timeout=3).json()
 
         self.store.set(InverterState(

@@ -7,33 +7,96 @@ from modules.display_themes.cards.config import CardsDisplayTheme
 
 
 @dataclass
-class EtGet:
-    fault_state: int = 0
-    fault_str: str = NO_ERROR
+class PricingGet:
+    fault_state: int = field(default=0)
+    next_query_time: int = field(default=0)
+    fault_str: str = field(default=NO_ERROR)
     prices: Dict = field(default_factory=empty_dict_factory)
 
 
-def get_factory() -> EtGet:
-    return EtGet()
+def create_pricing_get_with_topics(topic_prefix: str) -> PricingGet:
+    """Factory function to create PricingGet with custom topic prefix"""
+    pricing_get = PricingGet()
+    pricing_get.__dataclass_fields__['fault_state'].metadata = {"topic": f"{topic_prefix}/get/fault_state"}
+    pricing_get.__dataclass_fields__['fault_str'].metadata = {"topic": f"{topic_prefix}/get/fault_str"}
+    pricing_get.__dataclass_fields__['prices'].metadata = {"topic": f"{topic_prefix}/get/prices"}
+    pricing_get.__dataclass_fields__['next_query_time'].metadata = {"topic": f"{topic_prefix}/get/next_query_time"}
+    return pricing_get
+
+
+def flexible_tariff_get_factory() -> PricingGet:
+    return create_pricing_get_with_topics("ep/flexible_tariff")
+
+
+def grid_fee_get_factory() -> PricingGet:
+    return create_pricing_get_with_topics("ep/grid_fee")
 
 
 @dataclass
-class Et:
-    get: EtGet = field(default_factory=get_factory)
+class FlexibleTariff:
+    get: PricingGet = field(default_factory=flexible_tariff_get_factory)
+    name: str = field(default="flexible_tariff")
 
 
-def et_factory() -> Et:
-    return Et()
+def get_flexible_tariff_factory() -> FlexibleTariff:
+    return FlexibleTariff()
+
+
+@dataclass
+class GridFee:
+    get: PricingGet = field(default_factory=grid_fee_get_factory)
+    name: str = field(default="grid_fee")
+
+
+def get_grid_fee_factory() -> GridFee:
+    return GridFee()
+
+
+@dataclass
+class ElectricityPricingGet:
+    _prices: Dict = field(default_factory=empty_dict_factory, metadata={"topic": "ep/prices"})
+
+    @property
+    def prices(self) -> Dict:
+        return self._prices
+
+    @prices.setter
+    def prices(self, value: Dict):
+        self._prices = value
+
+
+def electricity_pricing_get_factory() -> ElectricityPricingGet:
+    return ElectricityPricingGet()
+
+
+@dataclass
+class ElectricityPricing:
+    configured: bool = field(default=False, metadata={"topic": "ep/configured"})
+    flexible_tariff: FlexibleTariff = field(default_factory=get_flexible_tariff_factory)
+    grid_fee: GridFee = field(default_factory=get_grid_fee_factory)
+    get: ElectricityPricingGet = field(default_factory=electricity_pricing_get_factory)
+
+
+def ep_factory() -> ElectricityPricing:
+    return ElectricityPricing()
+
+
+def cards_display_theme_factory() -> CardsDisplayTheme:
+    return CardsDisplayTheme()
 
 
 @dataclass
 class InternalDisplay:
-    active: bool = False
-    on_if_plugged_in: bool = True
-    pin_active: bool = False
-    pin_code: str = "0000"
-    standby: int = 60
-    theme: CardsDisplayTheme = CardsDisplayTheme()
+    active: bool = field(default=False, metadata={"topic": "int_display/active"})
+    detected: bool = field(default=False, metadata={"topic": "int_display/detected"})
+    on_if_plugged_in: bool = field(default=True, metadata={"topic": "int_display/on_if_plugged_in"})
+    only_local_charge_points: bool = field(default=False, metadata={"topic": "int_display/only_local_charge_points"})
+    pin_active: bool = field(default=False, metadata={"topic": "int_display/pin_active"})
+    pin_code: str = field(default="0000", metadata={"topic": "int_display/pin_code"})
+    rotation: int = field(default=0, metadata={"topic": "int_display/rotation"})
+    standby: int = field(default=60, metadata={"topic": "int_display/standby"})
+    theme: CardsDisplayTheme = field(default_factory=cards_display_theme_factory,
+                                     metadata={"topic": "int_display/theme"})
 
 
 def int_display_factory() -> InternalDisplay:
@@ -41,17 +104,8 @@ def int_display_factory() -> InternalDisplay:
 
 
 @dataclass
-class Led:
-    active: bool = False
-
-
-def led_factory() -> Led:
-    return Led()
-
-
-@dataclass
 class Rfid:
-    active: bool = False
+    active: bool = field(default=False, metadata={"topic": "rfid/active"})
 
 
 def rfid_factory() -> Rfid:
@@ -59,11 +113,20 @@ def rfid_factory() -> Rfid:
 
 
 @dataclass
-class Ocpp:
+class OcppConfig:
     active: bool = False
-    boot_notification_sent: bool = False
     url: Optional[str] = None
     version: str = "ocpp1.6"
+
+
+def ocpp_config_factory() -> OcppConfig:
+    return OcppConfig()
+
+
+@dataclass
+class Ocpp:
+    config: OcppConfig = field(default_factory=ocpp_config_factory, metadata={"topic": "ocpp/config"})
+    boot_notification_sent: bool = field(default=False, metadata={"topic": "ocpp/boot_notification_sent"})
 
 
 def ocpp_factory() -> Ocpp:
@@ -72,11 +135,10 @@ def ocpp_factory() -> Ocpp:
 
 @dataclass
 class OptionalData:
-    et: Et = field(default_factory=et_factory)
+    electricity_pricing: ElectricityPricing = field(default_factory=ep_factory)
     int_display: InternalDisplay = field(default_factory=int_display_factory)
-    led: Led = field(default_factory=led_factory)
     rfid: Rfid = field(default_factory=rfid_factory)
-    dc_charging: bool = False
+    dc_charging: bool = field(default=False, metadata={"topic": "dc_charging"})
     ocpp: Ocpp = field(default_factory=ocpp_factory)
 
 

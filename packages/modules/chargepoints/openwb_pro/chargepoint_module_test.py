@@ -25,6 +25,7 @@ def sample_chargepoint_state():
         rfid_timestamp=1700839714,
         vehicle_id="98:ED:5C:B4:EE:8D",
         evse_current=6,
+        evse_signaling="fake highlevel + basic iec61851",
         serial_number="823950"
     )
 
@@ -65,6 +66,7 @@ def sample_chargepoint_extended():
         rfid=None,
         frequency=50.2,
         evse_current=6,
+        evse_signaling="unclear\n",
         serial_number="493826"
     )
 
@@ -116,10 +118,13 @@ def test_openwb_pro(sample_state: Dict, expected_state: Dict, monkeypatch, reque
 
 @pytest.mark.parametrize("chargepoint_state, expected_exception, expected_message", [
     (ChargepointState(charge_state=False, currents=[0, 2, 0], plug_state=True,
-     power=0), ValueError, chargepoint_module.ChargepointModule.WRONG_CHARGE_STATE),
+     power=0, imported=None, exported=None, phases_in_use=0),
+     ValueError, chargepoint_module.ChargepointModule.WRONG_CHARGE_STATE),
     (ChargepointState(charge_state=True, currents=[0, 0, 0], plug_state=False,
-     power=30), ValueError, chargepoint_module.ChargepointModule.WRONG_PLUG_STATE),
-    (ChargepointState(charge_state=True, currents=[0, 2, 0], plug_state=True, power=30), None, None)
+     power=30, imported=None, exported=None, phases_in_use=0),
+     ValueError, chargepoint_module.ChargepointModule.WRONG_PLUG_STATE),
+    (ChargepointState(charge_state=True, currents=[0, 2, 0], plug_state=True,
+     power=30, imported=None, exported=None, phases_in_use=0), None, None)
 ])
 def test_validate_values(chargepoint_state, expected_exception, expected_message):
     cp = chargepoint_module.ChargepointModule(OpenWBPro(configuration=OpenWBProConfiguration(ip_address=SAMPLE_IP)))
@@ -148,10 +153,10 @@ def sample_wrong_charge_state_chargepoint_state():
     return sample_wrong_charge_state_chargepoint_state
 
 
-def sample_chargepoint_state_resetted():
-    sample_chargepoint_state_resetted = sample_wrong_charge_state_chargepoint_state()
-    sample_chargepoint_state_resetted.plug_state = False
-    return sample_chargepoint_state_resetted
+def sample_chargepoint_state_is_reset():
+    sample_chargepoint_state_is_reset = sample_wrong_charge_state_chargepoint_state()
+    sample_chargepoint_state_is_reset.plug_state = False
+    return sample_chargepoint_state_is_reset
 
 
 @pytest.mark.parametrize(
@@ -161,12 +166,11 @@ def sample_chargepoint_state_resetted():
         pytest.param(sample(), 1652683242, None, None, sample_chargepoint_state(),
                      id="Timestamp gesetzt, kein Fehler aufgetreten"),
         pytest.param(sample_wrong_charge_state(), None, None, 1652683252,
-                     sample_wrong_charge_state_chargepoint_state(), id="kein Timestamp gesetzt, Fehler aufgetreten"),
-        pytest.param(sample_wrong_charge_state(), 1652683242, None, 1652683242,
-                     sample_wrong_charge_state_chargepoint_state(),
+                     None, id="kein Timestamp gesetzt, Fehler aufgetreten"),
+        pytest.param(sample_wrong_charge_state(), 1652683242, None, 1652683242, None,
                      id="Timestamp gesetzt, Fehler aufgetreten, Timestamp nicht abgelaufen"),
-        pytest.param(sample_wrong_charge_state(), 1652683182, ValueError, 1652683182,
-                     sample_chargepoint_state_resetted(),
+        pytest.param(sample_wrong_charge_state(), 1652683112, ValueError, 1652683112,
+                     sample_chargepoint_state_is_reset(),
                      id="Timestamp gesetzt, Fehler aufgetreten, Timestamp abgelaufen"),
     ])
 def test_error_timestamp(sample_state,
@@ -185,7 +189,6 @@ def test_error_timestamp(sample_state,
 
     cp = chargepoint_module.ChargepointModule(OpenWBPro(configuration=OpenWBProConfiguration(ip_address=SAMPLE_IP)))
     cp.client_error_context.error_timestamp = error_timestamp
-    cp.old_chargepoint_state = sample_chargepoint_state
 
     # evaluation
     if expected_exception is not None:

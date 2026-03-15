@@ -5,6 +5,8 @@ from typing import Dict, List
 
 import dataclass_utils
 from helpermodules.pub import Pub
+from modules.io_actions.groups import READABLE_GROUP_NAME, ActionGroup
+import sys
 log = logging.getLogger(__name__)
 
 
@@ -14,11 +16,12 @@ def pub_configurable():
     _pub_configurable_backup_clouds()
     _pub_configurable_web_themes()
     _pub_configurable_display_themes()
-    _pub_configurable_electricity_tariffs()
+    _pub_configurable_tariffs()
     _pub_configurable_soc_modules()
     _pub_configurable_devices_components()
     _pub_configurable_chargepoints()
-    _pub_configurable_ripple_control_receivers()
+    _pub_configurable_io_devices()
+    _pub_configurable_io_actions()
     _pub_configurable_monitoring()
 
 
@@ -107,40 +110,44 @@ def _pub_configurable_display_themes() -> None:
         log.exception("Fehler im configuration-Modul")
 
 
-def _pub_configurable_electricity_tariffs() -> None:
-    try:
-        electricity_tariffs: List[Dict] = []
-        path_list = Path(_get_packages_path()/"modules"/"electricity_tariffs").glob('**/tariff.py')
-        for path in path_list:
-            try:
-                if path.name.endswith("_test.py"):
-                    # Tests überspringen
-                    continue
-                dev_defaults = importlib.import_module(
-                    f".electricity_tariffs.{path.parts[-2]}.tariff",
-                    "modules").device_descriptor.configuration_factory()
-                electricity_tariffs.append({
-                    "value": dev_defaults.type,
-                    "text": dev_defaults.name,
-                    "defaults": dataclass_utils.asdict(dev_defaults)
-                })
-            except Exception:
-                log.exception("Fehler im configuration-Modul")
-        electricity_tariffs = sorted(electricity_tariffs, key=lambda d: d['text'].upper())
-        # "leeren" Eintrag an erster Stelle einfügen
-        electricity_tariffs.insert(0,
-                                   {
-                                       "value": None,
-                                       "text": "- kein Anbieter -",
-                                       "defaults": {
-                                           "type": None,
-                                           "configuration": {}
-                                       }
-                                   })
+def _pub_configurable_tariffs() -> None:
+    def pub(source: str):
+        try:
+            tariffs: List[Dict] = []
+            path_list = Path(_get_packages_path()/"modules"/"electricity_pricing" /
+                             f"{source}").glob('**/tariff.py')
+            for path in path_list:
+                try:
+                    if path.name.endswith("_test.py"):
+                        # Tests überspringen
+                        continue
+                    dev_defaults = importlib.import_module(
+                        f".electricity_pricing.{source}.{path.parts[-2]}.tariff",
+                        "modules").device_descriptor.configuration_factory()
+                    tariffs.append({
+                        "value": dev_defaults.type,
+                        "text": dev_defaults.name,
+                        "defaults": dataclass_utils.asdict(dev_defaults)
+                    })
+                except Exception as e:
+                    log.exception(f"Fehler im configuration-Modul, {path}: {e}")
+            tariffs = sorted(tariffs, key=lambda d: d['text'].upper())
+            # "leeren" Eintrag an erster Stelle einfügen
+            tariffs.insert(0,
+                           {
+                               "value": None,
+                               "text": "- kein Anbieter -",
+                               "defaults": {
+                                   "type": None,
+                                   "configuration": {}
+                               }
+                           })
 
-        Pub().pub("openWB/set/system/configurable/electricity_tariffs", electricity_tariffs)
-    except Exception:
-        log.exception("Fehler im configuration-Modul")
+            Pub().pub(f"openWB/set/system/configurable/{source}", tariffs)
+        except Exception:
+            log.exception("Fehler im configuration-Modul")
+    pub("flexible_tariffs")
+    pub("grid_fees")
 
 
 def _pub_configurable_soc_modules() -> None:
@@ -159,8 +166,10 @@ def _pub_configurable_soc_modules() -> None:
                     "text": dev_defaults.name,
                     "defaults": dataclass_utils.asdict(dev_defaults)
                 })
-            except Exception:
-                log.exception("Fehler im configuration-Modul")
+            except Exception as e:
+                log.exception(f"Fehler {e} im configuration-Modul {path}")
+                if hasattr(sys, '_called_from_test'):
+                    print(f"Fehler {e} im configuration-Modul {path}")
         soc_modules = sorted(soc_modules, key=lambda d: d['text'].upper())
         # "leeren" Eintrag an erster Stelle einfügen
         soc_modules.insert(0,
@@ -173,8 +182,10 @@ def _pub_configurable_soc_modules() -> None:
                                }
                            })
         Pub().pub("openWB/set/system/configurable/soc_modules", soc_modules)
-    except Exception:
-        log.exception("Fehler im configuration-Modul")
+    except Exception as e:
+        log.exception(f"Fehler {e} im configuration-Modul {path}")
+        if hasattr(sys, '_called_from_test'):
+            print(f"Fehler {e} im configuration-Modul {path}")
 
 
 def _pub_configurable_devices_components() -> None:
@@ -293,7 +304,12 @@ def _pub_configurable_chargepoints() -> None:
             return chargepoints
 
         path_list = Path(_get_packages_path()/"modules"/"chargepoints").glob('**/chargepoint_module.py')
-        Pub().pub("openWB/set/system/configurable/chargepoints", create_chargepoints_list(path_list))
+        cp_list = create_chargepoints_list(path_list)
+        # Nach Umbenennung der "Externen openWB" zu "Secondary openWB" soll der Eintrag weiterhin an zweiter Stelle
+        # stehen
+        cp_list.remove({'value': 'external_openwb', 'text': 'Secondary openWB'})
+        cp_list.insert(1, {'value': 'external_openwb', 'text': 'Secondary openWB'})
+        Pub().pub("openWB/set/system/configurable/chargepoints", cp_list)
 
         path_list = Path(_get_packages_path()/"modules" /
                          "chargepoints/internal_openwb").glob('**/chargepoint_module.py')
@@ -302,37 +318,53 @@ def _pub_configurable_chargepoints() -> None:
         log.exception("Fehler im configuration-Modul")
 
 
-def _pub_configurable_ripple_control_receivers() -> None:
+def _pub_configurable_io_devices() -> None:
     try:
-        ripple_control_receivers = []
-        path_list = Path(_get_packages_path()/"modules"/"ripple_control_receivers").glob('**/config.py')
+        io_devices = []
+        path_list = Path(_get_packages_path()/"modules"/"io_devices").glob('**/config.py')
         for path in path_list:
             try:
                 if path.name.endswith("_test.py"):
                     # Tests überspringen
                     continue
                 dev_defaults = importlib.import_module(
-                    f".ripple_control_receivers.{path.parts[-2]}.ripple_control_receiver",
-                    "modules").device_descriptor.configuration_factory()
-                ripple_control_receivers.append({
+                    f".io_devices.{path.parts[-2]}.api", "modules").device_descriptor.configuration_factory()
+                io_devices.append({
                     "value": dev_defaults.type,
                     "text": dev_defaults.name,
                     "defaults": dataclass_utils.asdict(dev_defaults)
                 })
             except Exception:
                 log.exception("Fehler im configuration-Modul")
-        ripple_control_receivers = sorted(ripple_control_receivers, key=lambda d: d['text'].upper())
-        # "leeren" Eintrag an erster Stelle einfügen
-        ripple_control_receivers.insert(0,
-                                        {
-                                            "value": None,
-                                            "text": "- kein RSE Modul -",
-                                            "defaults": {
-                                                "type": None,
-                                                "configuration": {}
-                                            }
-                                        })
-        Pub().pub("openWB/set/system/configurable/ripple_control_receivers", ripple_control_receivers)
+        io_devices = sorted(io_devices, key=lambda d: d['text'].upper())
+        Pub().pub("openWB/set/system/configurable/io_devices", io_devices)
+    except Exception:
+        log.exception("Fehler im configuration-Modul")
+
+
+def _pub_configurable_io_actions() -> None:
+    try:
+        action_groups = {}
+        for group in ActionGroup:
+            action_groups[group.value] = {"group_name": READABLE_GROUP_NAME[group], "actions": []}
+            path_list = Path(_get_packages_path()/"modules"/"io_actions"/group.value).glob('**/api.py')
+            for path in path_list:
+                try:
+                    if path.name.endswith("_test.py"):
+                        # Tests überspringen
+                        continue
+                    action_defaults = importlib.import_module(f".io_actions.{group.value}.{path.parts[-2]}.api",
+                                                              "modules").device_descriptor.configuration_factory()
+                    action_groups[group.value]["actions"].append({
+                        "value": action_defaults.type,
+                        "text": action_defaults.name,
+                        "defaults": dataclass_utils.asdict(action_defaults)
+                    })
+                except Exception:
+                    log.exception(f"Fehler im configuration-Modul: groups: {path}")
+            action_groups[group.value]["actions"] = sorted(
+                action_groups[group.value]["actions"], key=lambda d: d['text'].upper())
+        Pub().pub("openWB/set/system/configurable/io_actions", action_groups)
     except Exception:
         log.exception("Fehler im configuration-Modul")
 

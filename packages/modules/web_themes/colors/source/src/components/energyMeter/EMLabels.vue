@@ -3,6 +3,7 @@
 		<!-- Bars -->
 		<g v-for="(item, i) in props.plotdata" :key="i">
 			<EmLabel
+				:id="i.toString()"
 				:item="item"
 				:x-scale="props.xScale"
 				:y-scale="props.yScale"
@@ -18,10 +19,9 @@
 
 <script setup lang="ts">
 import * as d3 from 'd3'
-import { graphData } from '../powerGraph/model'
-import { historicSummary, sourceSummary, usageSummary } from '@/assets/js/model'
 import EmLabel from './EmLabel.vue'
 import type { MarginType, PowerItem } from '@/assets/js/types'
+import { autPct } from './model'
 const props = defineProps<{
 	plotdata: PowerItem[]
 	xScale: d3.ScaleBand<string>
@@ -31,52 +31,6 @@ const props = defineProps<{
 }>()
 // computed
 // methods
-function autPct(item: PowerItem) {
-	if (item.name == 'PV') {
-		const src =
-			graphData.graphMode == 'live' || graphData.graphMode == 'today'
-				? sourceSummary
-				: historicSummary.items
-		const usg =
-			graphData.graphMode == 'live' || graphData.graphMode == 'today'
-				? usageSummary
-				: historicSummary.items
-		const exportedEnergy = usg.evuOut.energy
-		const generatedEnergy = src.pv.energy
-		return Math.round(
-			((generatedEnergy - exportedEnergy) / generatedEnergy) * 100,
-		)
-	} else if (item.name == 'Netz') {
-		const src =
-			graphData.graphMode == 'live' || graphData.graphMode == 'today'
-				? sourceSummary
-				: historicSummary.items
-		const usg =
-			graphData.graphMode == 'live' || graphData.graphMode == 'today'
-				? usageSummary
-				: historicSummary.items
-		const exportedEnergy = usg.evuOut.energy
-		const importedEnergy = src.evuIn.energy
-		const generatedEnergy = src.pv.energy
-		const batEnergy = src.batOut.energy
-		const storedEnergy = usg.batIn.energy
-		if (generatedEnergy + batEnergy - exportedEnergy - storedEnergy > 0) {
-			return Math.round(
-				((generatedEnergy + batEnergy - exportedEnergy - storedEnergy) /
-					(generatedEnergy +
-						batEnergy +
-						importedEnergy -
-						exportedEnergy -
-						storedEnergy)) *
-					100,
-			)
-		} else {
-			return 0
-		}
-	} else {
-		return item.pvPercentage
-	}
-}
 
 function autTxt(item: PowerItem) {
 	if (item.name == 'PV') {

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import Tuple, List
+from typing import Tuple, List, TypedDict, Any
 
 from modules.common import modbus
 from modules.common.abstract_device import AbstractCounter
@@ -40,19 +40,27 @@ def read_counter(client: modbus.ModbusTcpClient_, modbus_id: int) -> Tuple[int, 
     return power, powers
 
 
+class KwargsDict(TypedDict):
+    device_id: int
+    modbus_id: int
+    client: modbus.ModbusTcpClient_
+
+
 class E3dcCounter(AbstractCounter):
-    def __init__(self,
-                 device_id: int,
-                 component_config: E3dcCounterSetup,
-                 modbus_id: int) -> None:
+    def __init__(self, component_config: E3dcCounterSetup, **kwargs: Any) -> None:
         self.component_config = component_config
-        self.__modbus_id = modbus_id
-        self.sim_counter = SimCounter(device_id, self.component_config.id, prefix="bezug")
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__device_id: int = self.kwargs['device_id']
+        self.__modbus_id: int = self.kwargs['modbus_id']
+        self.client: modbus.ModbusTcpClient_ = self.kwargs['client']
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
-    def update(self, client: modbus.ModbusTcpClient_) -> None:
-        power, powers = read_counter(client, self.__modbus_id)
+    def update(self) -> None:
+        power, powers = read_counter(self.client, self.__modbus_id)
         imported, exported = self.sim_counter.sim_count(power)
         counter_state = CounterState(
             imported=imported,
@@ -61,7 +69,6 @@ class E3dcCounter(AbstractCounter):
             power=power
         )
         self.store.set(counter_state)
-        log.debug("Update completed successfully")
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=E3dcCounterSetup)

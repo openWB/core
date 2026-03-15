@@ -9,22 +9,8 @@ export default {
     };
   },
   computed: {
-    firstView() {
-      if (this.mqttStore.getThemeConfiguration) {
-        if (this.mqttStore.getThemeConfiguration.enable_dashboard_view) {
-          return "dash-board";
-        }
-        if (this.mqttStore.getThemeConfiguration.enable_energy_flow_view) {
-          return "energy-flow";
-        }
-        if (this.mqttStore.getThemeConfiguration.enable_charge_points_view) {
-          return "charge-points";
-        }
-        if (this.mqttStore.getThemeConfiguration.enable_status_view) {
-          return "status";
-        }
-      }
-      return undefined;
+    accessAllowed() {
+      return this.mqttStore.getAccessAllowed;
     },
   },
   mounted() {
@@ -32,8 +18,12 @@ export default {
   },
   methods: {
     selectFirstRoute() {
-      if (this.firstView) {
-        this.$router.push({ name: this.firstView });
+      if (this.mqttStore.getDefaultView) {
+        if (this.accessAllowed === false) {
+          console.warn("access not allowed, staying on welcome view");
+          return;
+        }
+        this.$router.push({ name: this.mqttStore.getDefaultView });
       } else {
         console.warn("no router view enabled, check your configuration!");
       }
@@ -57,6 +47,12 @@ export default {
             class="logo"
             src="/openWB_logo_dark.png"
           >
+          <template
+            v-if="!accessAllowed"
+            #footer
+          >
+            Bitte anmelden.
+          </template>
         </i-card>
       </i-column>
     </i-row>

@@ -11,8 +11,8 @@ export default {
     NumberPad,
   },
   props: {
-    modelValue: { required: true, type: Boolean, default: false },
-    vehicleId: { required: true, type: Number, default: 0 },
+    modelValue: { required: true, type: Boolean },
+    vehicleId: { required: true, type: Number },
   },
   emits: ["update:modelValue"],
   data() {

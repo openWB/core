@@ -1,35 +1,36 @@
-#!/usr/bin/env python3
 import logging
 import time
-from typing import Dict, Union
-
-from dataclass_utils import dataclass_from_dict
-from modules.devices.alpha_ess.alpha_ess.config import AlphaEssBatSetup, AlphaEssConfiguration
-from modules.common import modbus
+from typing import TypedDict, Any, Optional
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.modbus import ModbusDataType
+from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
+from modules.devices.alpha_ess.alpha_ess.config import AlphaEssBatSetup
 
 log = logging.getLogger(__name__)
 
 
+class KwargsDict(TypedDict):
+    device_id: int
+    tcp_client: ModbusTcpClient_
+    modbus_id: int
+
+
 class AlphaEssBat(AbstractBat):
-    def __init__(self, device_id: int,
-                 component_config: Union[Dict, AlphaEssBatSetup],
-                 tcp_client: modbus.ModbusTcpClient_,
-                 device_config: AlphaEssConfiguration,
-                 modbus_id: int) -> None:
-        self.__device_id = device_id
-        self.component_config = dataclass_from_dict(AlphaEssBatSetup, component_config)
-        self.__tcp_client = tcp_client
-        self.__modbus_id = modbus_id
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
+    def __init__(self, component_config: AlphaEssBatSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__tcp_client: ModbusTcpClient_ = self.kwargs['tcp_client']
+        self.__modbus_id: int = self.kwargs['modbus_id']
+        self.sim_counter = SimCounter(self.kwargs['device_id'], self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.last_mode = 'Undefined'
 
     def update(self) -> None:
         # keine Unterschiede zwischen den Versionen
@@ -56,6 +57,35 @@ class AlphaEssBat(AbstractBat):
             exported=exported
         )
         self.store.set(bat_state)
+
+    def set_power_limit(self, power_limit: Optional[int]) -> None:
+        unit = self.__modbus_id
+
+        if power_limit is None:
+            # Kein Powerlimit gefordert, externe Steuerung deaktivieren
+            log.debug("Keine Batteriesteuerung gefordert, deaktiviere externe Steuerung.")
+            if self.last_mode is not None:
+                self.__tcp_client.write_register(2127, 0, data_type=ModbusDataType.UINT_16, unit=unit)
+                self.last_mode = None
+        elif power_limit <= 0:
+            # AlphaESS kann die Entladung nur über den SoC verhindern (komplette Entladesperre)
+            # Netzladung mit geringen Ziel SoC verhindert auch Entladung (Default 10%)
+            # Zeiten für Netzladung müssen im Wechselrichter aktiviert werden
+            log.debug("Aktive Batteriesteuerung angestoßen. Setze Entladesperre.")
+            if self.last_mode != 'stop':
+                self.__tcp_client.write_register(2127, 1, data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_register(2133, 10, data_type=ModbusDataType.UINT_16, unit=unit)
+                self.last_mode = 'stop'
+        else:
+            # Aktive Ladung
+            log.debug("Aktive Batteriesteuerung angestoßen. Setze aktive Ladung.")
+            if self.last_mode != 'charge':
+                self.__tcp_client.write_register(2127, 1, data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_register(2133, 100, data_type=ModbusDataType.UINT_16, unit=unit)
+                self.last_mode = 'charge'
+
+    def power_limit_controllable(self) -> bool:
+        return True
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=AlphaEssBatSetup)

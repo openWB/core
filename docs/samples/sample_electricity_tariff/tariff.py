@@ -5,7 +5,6 @@ from docs.samples.sample_electricity_tariff.config import SampleTariff, SampleTa
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
-from modules.common.configurable_tariff import ConfigurableTariff
 
 log = logging.getLogger(__name__)
 

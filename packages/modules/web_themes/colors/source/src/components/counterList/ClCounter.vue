@@ -1,7 +1,7 @@
 <template>
 	<WbSubwidget titlecolor="var(--color-title)" :fullwidth="true">
 		<template #title>
-			<span class="countername">{{ counter.name }} </span>
+			<span class="countername" :style="namestyle">{{ counter.name }} </span>
 		</template>
 		<template #buttons>
 			<WbBadge v-if="props.counter.power != 0" :bgcolor="modebg">
@@ -52,6 +52,9 @@ const modebg = computed(() => {
 	} else {
 		return 'var(--color-pv)'
 	}
+})
+const namestyle = computed(() => {
+	return { color: props.counter.color || 'var(--color-evu)' }
 })
 </script>
 <style scoped>

@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
+from enum import IntEnum
+import time
 from typing import List, Tuple
 
 from modules.common import modbus
 from modules.common.abstract_counter import AbstractCounter
+from modules.common.component_state import CounterState
+from modules.common.fault_state import FaultState
+from modules.common.hardware_check import check_meter_values
 from modules.common.modbus import ModbusDataType
 
 
@@ -10,49 +15,129 @@ class Sdm(AbstractCounter):
     def __init__(self, modbus_id: int, client: modbus.ModbusTcpClient_) -> None:
         self.client = client
         self.id = modbus_id
+        with client:
+            self.serial_number = str(self.client.read_holding_registers(0xFC00, ModbusDataType.UINT_32, unit=self.id))
 
     def get_imported(self) -> float:
+        # smarthome legacy
+        time.sleep(0.1)
         return self.client.read_input_registers(0x0048, ModbusDataType.FLOAT_32, unit=self.id) * 1000
 
-    def get_exported(self) -> float:
-        return self.client.read_input_registers(0x004a, ModbusDataType.FLOAT_32, unit=self.id) * 1000
 
-    def get_frequency(self) -> float:
-        frequency = self.client.read_input_registers(0x46, ModbusDataType.FLOAT_32, unit=self.id)
-        if frequency > 100:
-            frequency = frequency / 10
-        return frequency
-
-    def get_serial_number(self) -> str:
-        return str(self.client.read_holding_registers(0xFC00, ModbusDataType.UINT_32, unit=self.id))
+class SdmRegister(IntEnum):
+    VOLTAGE_L1 = 0x00
+    CURRENT_L1 = 0x06
+    POWER_L1 = 0x0C
+    POWER_FACTOR_L1 = 0x1E
+    FREQUENCY = 0x46
+    IMPORTED = 0x48
+    EXPORTED = 0x4A
 
 
 class Sdm630_72(Sdm):
-    def __init__(self, modbus_id: int, client: modbus.ModbusTcpClient_) -> None:
+    REG_MAPPING_BULK_1 = (
+        (SdmRegister.VOLTAGE_L1, [ModbusDataType.FLOAT_32]*3),
+        (SdmRegister.CURRENT_L1, [ModbusDataType.FLOAT_32]*3),
+        (SdmRegister.POWER_L1, [ModbusDataType.FLOAT_32]*3)
+    )
+    REG_MAPPING_BULK_2 = (
+        (SdmRegister.FREQUENCY, ModbusDataType.FLOAT_32),
+        (SdmRegister.IMPORTED, ModbusDataType.FLOAT_32),
+        (SdmRegister.EXPORTED, ModbusDataType.FLOAT_32),
+    )
+
+    def __init__(self, modbus_id: int, client: modbus.ModbusTcpClient_, fault_state: FaultState) -> None:
         super().__init__(modbus_id, client)
-
-    def get_currents(self) -> List[float]:
-        return self.client.read_input_registers(0x06, [ModbusDataType.FLOAT_32]*3, unit=self.id)
-
-    def get_power_factors(self) -> List[float]:
-        return self.client.read_input_registers(0x1E, [ModbusDataType.FLOAT_32]*3, unit=self.id)
+        self.fault_state = fault_state
 
     def get_power(self) -> Tuple[List[float], float]:
+        # smarthome legacy
+        time.sleep(0.1)
         powers = self.client.read_input_registers(0x0C, [ModbusDataType.FLOAT_32]*3, unit=self.id)
         power = sum(powers)
         return powers, power
 
-    def get_voltages(self) -> List[float]:
+    def get_voltages(self) -> Tuple[List[float], float]:
+        # client handler
+        time.sleep(0.1)
         return self.client.read_input_registers(0x00, [ModbusDataType.FLOAT_32]*3, unit=self.id)
+
+    def get_counter_state(self) -> CounterState:
+        # entgegen der Doku können nicht bei allen SDM72 80 Register auf einmal gelesen werden,
+        # manche können auch nur 20
+        time.sleep(0.1)
+        bulk_1 = self.client.read_input_registers_bulk(
+            SdmRegister.VOLTAGE_L1, 20, mapping=self.REG_MAPPING_BULK_1, unit=self.id)
+        time.sleep(0.1)
+        power_factors = self.client.read_input_registers(0x1E, [ModbusDataType.FLOAT_32]*3, unit=self.id)
+        time.sleep(0.1)
+        bulk_2 = self.client.read_input_registers_bulk(
+            SdmRegister.FREQUENCY, 8, mapping=self.REG_MAPPING_BULK_2, unit=self.id)
+        resp = {**bulk_1, **bulk_2}
+        frequency = resp[SdmRegister.FREQUENCY]
+        if frequency > 100:
+            frequency = frequency / 10
+        counter_state = CounterState(
+            imported=resp[SdmRegister.IMPORTED]*1000,
+            exported=resp[SdmRegister.EXPORTED]*1000,
+            power=sum(resp[SdmRegister.POWER_L1]),
+            voltages=resp[SdmRegister.VOLTAGE_L1],
+            currents=resp[SdmRegister.CURRENT_L1],
+            powers=resp[SdmRegister.POWER_L1],
+            power_factors=power_factors,
+            frequency=frequency,
+            serial_number=self.serial_number
+        )
+        check_meter_values(counter_state, self.fault_state)
+        return counter_state
 
 
 class Sdm120(Sdm):
-    def __init__(self, modbus_id: int, client: modbus.ModbusTcpClient_) -> None:
+    REG_MAPPING_BULK_1 = (
+        (SdmRegister.VOLTAGE_L1, ModbusDataType.FLOAT_32),
+        (SdmRegister.CURRENT_L1, ModbusDataType.FLOAT_32),
+        (SdmRegister.POWER_L1, ModbusDataType.FLOAT_32)
+    )
+    REG_MAPPING_BULK_2 = (
+        (SdmRegister.FREQUENCY, ModbusDataType.FLOAT_32),
+        (SdmRegister.IMPORTED, ModbusDataType.FLOAT_32),
+        (SdmRegister.EXPORTED, ModbusDataType.FLOAT_32),
+    )
+
+    def __init__(self, modbus_id: int, client: modbus.ModbusTcpClient_, fault_state: FaultState) -> None:
         super().__init__(modbus_id, client)
+        self.fault_state = fault_state
 
     def get_power(self) -> Tuple[List[float], float]:
+        # smarthome legacy
+        time.sleep(0.1)
         power = self.client.read_input_registers(0x0C, ModbusDataType.FLOAT_32, unit=self.id)
         return [power, 0, 0], power
 
-    def get_currents(self) -> List[float]:
-        return [self.client.read_input_registers(0x06, ModbusDataType.FLOAT_32, unit=self.id), 0, 0]
+    def get_counter_state(self) -> CounterState:
+        # beim SDM120 steht nichts von Bulk-Reads in der Doku, daher auch auf 20 Register limitiert
+        time.sleep(0.1)
+        bulk_1 = self.client.read_input_registers_bulk(
+            SdmRegister.VOLTAGE_L1, 14, mapping=self.REG_MAPPING_BULK_1, unit=self.id)
+        time.sleep(0.1)
+        power_factor = self.client.read_input_registers(0x1E, ModbusDataType.FLOAT_32, unit=self.id)
+        time.sleep(0.1)
+        bulk_2 = self.client.read_input_registers_bulk(
+            SdmRegister.FREQUENCY, 8, mapping=self.REG_MAPPING_BULK_2, unit=self.id)
+        resp = {**bulk_1, **bulk_2}
+        frequency = resp[SdmRegister.FREQUENCY]
+        if frequency > 100:
+            frequency = frequency / 10
+        counter_state = CounterState(
+            imported=resp[SdmRegister.IMPORTED]*1000,
+            exported=resp[SdmRegister.EXPORTED]*1000,
+            power=resp[SdmRegister.POWER_L1],
+            voltages=[resp[SdmRegister.VOLTAGE_L1], 0, 0],
+            currents=[resp[SdmRegister.CURRENT_L1], 0, 0],
+            powers=[resp[SdmRegister.POWER_L1], 0, 0],
+            power_factors=[power_factor, 0, 0],
+            frequency=frequency,
+            serial_number=self.serial_number
+        )
+        check_meter_values(counter_state, self.fault_state)
+        return counter_state

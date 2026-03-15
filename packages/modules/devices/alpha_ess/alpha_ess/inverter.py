@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
+from typing import TypedDict, Any
 
-from dataclass_utils import dataclass_from_dict
 from modules.devices.alpha_ess.alpha_ess.config import AlphaEssConfiguration, AlphaEssInverterSetup
 from modules.common import modbus
 from modules.common.abstract_device import AbstractInverter
@@ -13,17 +12,23 @@ from modules.common.simcount._simcounter import SimCounter
 from modules.common.store import get_inverter_value_store
 
 
+class KwargsDict(TypedDict):
+    device_id: int
+    tcp_client: modbus.ModbusTcpClient_
+    device_config: AlphaEssConfiguration
+    modbus_id: int
+
+
 class AlphaEssInverter(AbstractInverter):
-    def __init__(self, device_id: int,
-                 component_config: Union[Dict, AlphaEssInverterSetup],
-                 tcp_client: modbus.ModbusTcpClient_,
-                 device_config: AlphaEssConfiguration,
-                 modbus_id: int) -> None:
-        self.__device_id = device_id
-        self.component_config = dataclass_from_dict(AlphaEssInverterSetup, component_config)
-        self.__tcp_client = tcp_client
-        self.__device_config = device_config
-        self.__modbus_id = modbus_id
+    def __init__(self, component_config: AlphaEssInverterSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__device_id: int = self.kwargs['device_id']
+        self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['tcp_client']
+        self.__device_config: AlphaEssConfiguration = self.kwargs['device_config']
+        self.__modbus_id: int = self.kwargs['modbus_id']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))

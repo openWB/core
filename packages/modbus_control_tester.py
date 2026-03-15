@@ -28,7 +28,7 @@ port = 1502
 slave_id = 1
 read_mode = ReadMode.READ_INPUT_REG
 read_client = modbus.ModbusTcpClient_(host, port=port)
-Register = namedtuple("Register", "reg, action, length, type, name, expected")
+Register = namedtuple("Register", ("reg", "action", "length", "type", "name", "expected"))
 REGISTERS = (
     Register(10100, Actions.READ_NUMBER, 1, ModbusDataType.INT_32, name="Actual Power", expected=(0, 0)),
     Register(10102, Actions.READ_NUMBER, 1, ModbusDataType.INT_32,
@@ -135,7 +135,7 @@ def evaluate_reg(reg):
 def read_all_registers():
     heartbeat_read()
     for reg in REGISTERS:
-        if reg.reg == 10160:
+        if reg.reg % 100 == 60:
             while True:
                 try:
                     if evaluate_reg(reg):

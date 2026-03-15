@@ -96,45 +96,44 @@ preferenced_cases = [
 
 
 @pytest.mark.parametrize(
-    "set_mode_tuple, charging_ev_1, mode_tuple_1, charging_ev_2, mode_tuple_2, expected_valid_chargepoints",
+    "set_mode_tuple, required_current_1, mode_tuple_1, mode_tuple_2, expected_valid_chargepoints",
     [
         pytest.param((Chargemode.SCHEDULED_CHARGING, Chargemode.INSTANT_CHARGING, False),
-                     1, (Chargemode.SCHEDULED_CHARGING,
+                     6, (Chargemode.SCHEDULED_CHARGING,
                          Chargemode.INSTANT_CHARGING, False),
-                     1, (Chargemode.SCHEDULED_CHARGING,
+                     (Chargemode.SCHEDULED_CHARGING,
                          Chargemode.INSTANT_CHARGING, False),
                      [mock_cp1, mock_cp2], id="fits mode"),
         pytest.param((Chargemode.SCHEDULED_CHARGING, Chargemode.INSTANT_CHARGING, False),
-                     -1, (Chargemode.SCHEDULED_CHARGING,
-                          Chargemode.INSTANT_CHARGING, False),
-                     1, (Chargemode.SCHEDULED_CHARGING,
+                     0, (Chargemode.SCHEDULED_CHARGING,
                          Chargemode.INSTANT_CHARGING, False),
-                     [mock_cp2], id="cp1 has no charging car"),
+                     (Chargemode.SCHEDULED_CHARGING,
+                         Chargemode.INSTANT_CHARGING, False),
+                     [mock_cp2], id="cp1 should not charge"),
         pytest.param((Chargemode.SCHEDULED_CHARGING, Chargemode.INSTANT_CHARGING, False),
-                     1, (Chargemode.SCHEDULED_CHARGING,
+                     6, (Chargemode.SCHEDULED_CHARGING,
                          Chargemode.INSTANT_CHARGING, False),
-                     1, (Chargemode.SCHEDULED_CHARGING,
+                     (Chargemode.SCHEDULED_CHARGING,
                          Chargemode.INSTANT_CHARGING, True),
                      [mock_cp1], id="cp2 is prioritized")
     ])
 def test_get_chargepoints_by_mode(set_mode_tuple: Tuple[Optional[str], str, bool],
-                                  charging_ev_1: int,
+                                  required_current_1: int,
                                   mode_tuple_1: Tuple[str, str, bool],
-                                  charging_ev_2: int,
                                   mode_tuple_2: Tuple[str, str, bool],
                                   expected_valid_chargepoints):
     # setup
-    def setup_cp(cp: Chargepoint, charging_ev: int, mode_tuple: Tuple[str, str, bool]) -> Chargepoint:
-        cp.data.set.charging_ev = charging_ev
+    def setup_cp(cp: Chargepoint, required_current: float, mode_tuple: Tuple[str, str, bool]) -> Chargepoint:
+        cp.data.control_parameter.required_current = required_current
         cp.data.control_parameter.prio = mode_tuple[2]
         cp.data.control_parameter.chargemode = mode_tuple[0]
         cp.data.control_parameter.submode = mode_tuple[1]
         return cp
-    data.data.cp_data = {"cp1": setup_cp(mock_cp1, charging_ev_1, mode_tuple_1),
-                         "cp2": setup_cp(mock_cp2, charging_ev_2, mode_tuple_2)}
+    data.data.cp_data = {"cp1": setup_cp(mock_cp1, required_current_1, mode_tuple_1),
+                         "cp2": setup_cp(mock_cp2, 6, mode_tuple_2)}
 
     # evaluation
-    valid_chargepoints = filter_chargepoints.get_chargepoints_by_mode(set_mode_tuple)
+    valid_chargepoints = filter_chargepoints.get_chargepoints_with_required_current_by_chargemode(set_mode_tuple)
 
     # assertion
     assert valid_chargepoints == expected_valid_chargepoints
@@ -155,8 +154,8 @@ def test_get_chargepoints_by_mode_and_counter(chargepoints_of_counter: List[str]
     # setup
     get_chargepoints_of_counter_mock = Mock(return_value=chargepoints_of_counter)
     monkeypatch.setattr(CounterAll, "get_chargepoints_of_counter", get_chargepoints_of_counter_mock)
-    get_chargepoints_by_mode_mock = Mock(return_value=chargepoints_by_mode)
-    monkeypatch.setattr(filter_chargepoints, "get_chargepoints_by_mode", get_chargepoints_by_mode_mock)
+    get_chargepoints_by_chargemode_mock = Mock(return_value=chargepoints_by_mode)
+    monkeypatch.setattr(filter_chargepoints, "get_chargepoints_by_chargemode", get_chargepoints_by_chargemode_mock)
     data.data.counter_all_data = CounterAll()
 
     # evaluation

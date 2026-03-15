@@ -12,6 +12,7 @@
 
 // add topics here which should be subscribed before any other topics
 var topicsToSubscribeFirst = [
+	["openWB/general/web_theme", 0], // theme configuration
 	["openWB/counter/get/hierarchy", 0] // hierarchy of all counters and charge points
 ];
 
@@ -62,25 +63,24 @@ var topicsToSubscribe = [
 	["openWB/chargepoint/+/get/connected_vehicle/info", 1], // general info of the vehicle; JSON { "id": int, "name": str }
 	["openWB/chargepoint/+/get/connected_vehicle/config", 1], // general configuration of the vehicle; JSON { "charge_template": int, "ev_template": int, "chargemode": str, "priority": bool, "average_consumption": int (Wh/100km) }
 	["openWB/chargepoint/+/get/connected_vehicle/soc", 1], // soc info of the vehicle; JSON {"soc": float (%), "range_charged": int, "range": float, "range_unit": str, "timestamp": int, "fault_stat": int, "fault_str": str }
+	["openWB/chargepoint/+/set/charge_template", 1], // populate a list of charge templates
+	["openWB/chargepoint/+/set/charge_template/chargemode/scheduled_charging/plans/+", 1], // populate a list of schedule plans
+	["openWB/chargepoint/+/set/charge_template/time_charging/plans/+", 1], // populate a list of time charge plans
 
 	// vehicle topics
 	["openWB/vehicle/+/name", 1], // populate a list of vehicle id/name info
 	["openWB/vehicle/+/soc_module/config", 1], // soc configuration of the vehicle; JSON { "type": text, "configuration": object }
-	["openWB/vehicle/template/charge_template/+", 1], // populate a list of charge templates
-	["openWB/vehicle/template/charge_template/+/chargemode/scheduled_charging/plans/+", 1], // populate a list of schedule plans
-	["openWB/vehicle/template/charge_template/+/time_charging/plans/+", 1], // populate a list of time charge plans
+
 
 	// charge mode config
 	["openWB/general/chargemode_config/pv_charging/bat_mode", 0],
 
 	// electricity tariff
-	["openWB/optional/et/active", 1], // et provider is configured
-	["openWB/optional/et/provider", 1], // et provider information
-	["openWB/optional/et/get/prices", 1], // current price list
+	["openWB/optional/ep/configured", 1], // ep provider information
+	["openWB/optional/ep/get/prices", 1], // current price list
 	["openWB/optional/dc_charging", 1], // dc charging is configured
 
 	// graph topics
-	["openWB/graph/config/duration", 1], // maximum duration to display in landing page
 	["openWB/graph/alllivevaluesJson1", 1],
 	["openWB/graph/alllivevaluesJson2", 1],
 	["openWB/graph/alllivevaluesJson3", 1],
@@ -98,7 +98,6 @@ var topicsToSubscribe = [
 	["openWB/graph/alllivevaluesJson15", 1],
 	["openWB/graph/alllivevaluesJson16", 1],
 	["openWB/graph/lastlivevaluesJson", 1],
-
 ];
 
 // holds number of topics flagged 1 initially
@@ -107,63 +106,116 @@ var countTopicsNotForPreloader = topicsToSubscribeFirst.filter(row => row[1] ===
 var retries = 0;
 
 //Connect Options
-var isSSL = location.protocol == 'https:'
-var port = parseInt(location.port) || (location.protocol == "https:" ? 443 : 80);
-
-var options = {
-	timeout: 5,
-	useSSL: isSSL,
-	//Gets Called if the connection has been established
-	onSuccess: function () {
-		retries = 0;
-		topicsToSubscribeFirst.forEach((topic) => {
-			client.subscribe(topic[0], { qos: 0 });
-		});
-		setTimeout(function () {
-			topicsToSubscribe.forEach((topic) => {
-				client.subscribe(topic[0], { qos: 0 });
-			});
-		}, 200);
+var connection = {
+	protocol: location.protocol == "https:" ? "wss" : "ws",
+	protocolVersion: 5,
+	host: location.hostname,
+	port: parseInt(location.port) || (location.protocol == "https:" ? 443 : 80),
+	path: "/ws",
+	connectTimeout: 4000,
+	reconnectPeriod: 4000,
+	properties: {
+		requestResponseInformation: true,
+		requestProblemInformation: true,
 	},
-	//Gets Called if the connection could not be established
-	onFailure: function (message) {
-		setTimeout(function () { client.connect(options); }, 5000);
-	}
 };
 
-var clientUid = Math.random().toString(36).replace(/[^a-z]+/g, "").substr(0, 5);
-console.debug(`connecting to broker on ${location.hostname}:${port} as client "${clientUid}"`);
-var client = new Messaging.Client(location.hostname, port, clientUid);
+function getCookie(cookieName) {
+	const name = cookieName + "=";
+	const decodedCookies = decodeURIComponent(document.cookie);
+	const cookieArray = decodedCookies.split(';');
+	for (let cookie of cookieArray) {
+		cookie = cookie.trim();
+		if (cookie.indexOf(name) === 0) {
+			return decodeURIComponent(cookie.substring(name.length, cookie.length));
+		}
+	}
+	return null;
+};
 
-$(document).ready(function () {
-	client.connect(options);
-	timeOfLastMqttMessage = Date.now();
+function setCookie(cookieName, cookieValue, expireDays = 30, path = "/") {
+	let currentDate = new Date();
+	currentDate.setTime(currentDate.getTime() + (expireDays * 24 * 60 * 60 * 1000));
+	const expires = "expires=" + currentDate.toUTCString();
+	document.cookie = `${cookieName}=${encodeURIComponent(cookieValue)};${expires};path=${path}; SameSite=Lax; Secure`;
+}
+
+function deleteCookie(cookieName, path = "/") {
+	setCookie(cookieName, "", -1, path);
+}
+
+// For testing purposes only, set a test cookie
+// setCookie("mqtt", "unknown:user");
+// setCookie("mqtt", "koala:openwb");
+// setCookie("mqtt", "admin:openwb");
+
+// Connect string, and specify the connection method used through protocol
+// ws not encrypted WebSocket connection
+// wss encrypted WebSocket connection
+const { protocol, host, port, path, ...options } = connection;
+const connectUrl = `${protocol}://${host}:${port}${path}`;
+// Check for default credentials
+const [user, pass] = getCookie("mqtt")?.split(":") || [null, null];
+if (!(user && pass)) {
+	console.debug("Anonymous mqtt connection (no cookie set)");
+}
+if (protocol == "wss" && user && pass) {
+	console.debug("Using mqtt credentials from cookie:", user, "/", pass);
+	options.username = user;
+	options.password = pass;
+	if (user === "admin" && pass === "openwb") {
+		console.warn("Using default mqtt credentials!");
+	}
+}
+console.debug("connecting to broker:", connectUrl);
+timeOfLastMqttMessage = Date.now();
+client = mqtt.connect(connectUrl, options);
+
+// Gets Called if the connection has been established
+client.on("connect", (ack) => {
+	console.debug("connected!", ack);
+	retries = 0;
+	topicsToSubscribeFirst.forEach((topic) => {
+		client.subscribe(topic[0], { qos: 0 });
+	});
+	setTimeout(function () {
+		topicsToSubscribe.forEach((topic) => {
+			client.subscribe(topic[0], { qos: 0 }, (err) => {
+				if (!err) {
+					console.debug("subscribed to topic:", topic[0]);
+				} else {
+					console.error("could not subscribe to topic:", topic[0], err);
+				}
+			});
+		});
+	}, 200);
 });
 
-//Gets  called if the websocket/mqtt connection gets disconnected for any reason
-client.onConnectionLost = function (responseObject) {
-	client.connect(options);
-};
+// Gets Called if the connection could not be established
+client.on("error", (error) => {
+	console.error("Connection failed", error);
+	addLog("MQTT Verbindung fehlgeschlagen.");
+	if (options.username) {
+		addLog("Lösche evtl. vorhandene Anmeldedaten und lade die Seite neu...");
+		deleteCookie("mqtt");
+		location.reload();
+	}
+});
 
 //Gets called whenever you receive a message
-client.onMessageArrived = function (message) {
-	handleMessage(message.destinationName, message.payloadString);
-};
+client.on("message", (topic, message) => {
+	handleMessage(topic, message.toString());
+});
 
-//Creates a new Messaging.Message Object and sends it
+// Publishes a message to the broker
 function publish(payload, topic) {
 	console.debug(`publishing message: ${topic} -> ${payload}`);
 	if (topic != undefined) {
-		var message = new Messaging.Message(JSON.stringify(payload));
-		message.destinationName = topic;
-		message.qos = 2;
-		message.retained = true;
-		client.send(message);
-		var message = new Messaging.Message("local client uid: " + clientUid + " sent: " + topic);
-		message.destinationName = "openWB/set/system/topicSender";
-		message.qos = 2;
-		message.retained = true;
-		client.send(message);
+		client.publish(topic, JSON.stringify(payload), { qos: 2, retain: true }, (err) => {
+			if (err) {
+				console.error("error publishing message:", err);
+			}
+		});
 	} else {
 		console.error("not publishing message without topic!");
 	}

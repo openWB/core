@@ -13,10 +13,9 @@ sys.modules['bs4'] = type(sys)('bs4')
 sys.modules['pkce'] = type(sys)('pkce')
 sys.modules['msal'] = type(sys)('msal')
 sys.modules['smb'] = type(sys)('smb')
-sys.modules['skodaconnect'] = type(sys)('skodaconnect')
-sys.modules['skodaconnect.Connection'] = type(sys)('skodaconnect.Connection')
 sys.modules['socketserver'] = type(sys)('socketserver')
 sys.modules['grpc'] = type(sys)('grpc')
+sys.modules['pycarwings3'] = type(sys)('pycarwings3')
 
 
 # sys.modules['telnetlib3'] = type(sys)('telnetlib3')
@@ -24,6 +23,7 @@ sys.modules['grpc'] = type(sys)('grpc')
 module = type(sys)('pymodbus.client.sync')
 module.ModbusSerialClient = Mock()
 module.ModbusTcpClient = Mock()
+module.ModbusUdpClient = Mock()
 sys.modules['pymodbus.client.sync'] = module
 
 module = type(sys)('pymodbus.constants')
@@ -33,6 +33,11 @@ sys.modules['pymodbus.constants'] = module
 module = type(sys)('pymodbus.payload')
 module.BinaryPayloadDecoder = Mock()
 sys.modules['pymodbus.payload'] = module
+
+module = type(sys)('pymodbus.transaction')
+module.ModbusSocketFramer = Mock()
+module.ModbusRtuFramer = Mock()
+sys.modules['pymodbus.transaction'] = module
 
 module = type(sys)('socketserver')
 module.TCPServer = Mock()

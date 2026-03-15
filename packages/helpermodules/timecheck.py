@@ -1,9 +1,9 @@
 """prüft, ob Zeitfenster aktuell sind
 """
-import copy
 import logging
 import datetime
-from typing import Dict, List, Optional, Tuple, TypeVar, Union
+import re
+from typing import List, Optional, Tuple, TypeVar, Union
 
 from helpermodules.utils.error_handling import ImportErrorContext
 with ImportErrorContext():
@@ -47,12 +47,12 @@ def is_now_in_locking_time(now: datetime.datetime,
 T = TypeVar("T", AutolockPlan, TimeChargingPlan)
 
 
-def check_plans_timeframe(plans: Dict[int, T]) -> Optional[T]:
+def check_plans_timeframe(plans: List[T]) -> Optional[T]:
     """ gibt den ersten aktiven Plan zurück. None, falls kein Plan aktiv ist.
     """
     state = False
     try:
-        for plan in plans.values():
+        for plan in plans:
             if plan.active:
                 state = check_timeframe(plan)
                 if state:
@@ -113,81 +113,55 @@ def check_timeframe(plan: Union[AutolockPlan, TimeChargingPlan]) -> bool:
         return state
 
 
-def check_duration(plan: ScheduledChargingPlan, duration: float, buffer: int) -> Tuple[Optional[float], bool]:
-    """ prüft, ob der in angegebene Zeitpunkt abzüglich der Dauer jetzt ist.
-    Um etwas Puffer zu haben, werden bei Überschreiten des Zeitpunkts die nachfolgenden 20 Min auch noch als Ladezeit
-    zurückgegeben.
+def check_end_time(plan: ScheduledChargingPlan,
+                   buffer: Optional[float]) -> Optional[float]:
+    """ gibt die verbleibende Zeit in Sekunden zurück.
 
     Return
     ------
     neg: Zeitpunkt vorbei
     pos: verbleibende Sekunden
     """
-
     now = datetime.datetime.today()
     end = datetime.datetime.strptime(plan.time, '%H:%M')
     remaining_time = None
     if plan.frequency.selected == "once":
         endDate = datetime.datetime.strptime(plan.frequency.once, "%Y-%m-%d")
         end = end.replace(endDate.year, endDate.month, endDate.day)
-        remaining_time = _get_remaining_time(now, duration, end)
+        remaining_time = end - now
     elif plan.frequency.selected == "daily":
         end = end.replace(now.year, now.month, now.day)
-        remaining_time_today = _get_remaining_time(now, duration, end)
-        remaining_time, end = check_following_days(now, duration, end, remaining_time_today, buffer)
+        remaining_time = end - now
+        if remaining_time.total_seconds() < buffer:
+            # Wenn auf Zielladen umgeschaltet wurde und der Termin noch nicht vorbei war, noch auf diesen Termin laden.
+            end = end + datetime.timedelta(days=1)
+            remaining_time = end - now
     elif plan.frequency.selected == "weekly":
-        end = end.replace(now.year, now.month, now.day)
-        if plan.frequency.weekly[now.weekday()]:
-            remaining_time = _get_remaining_time(now, duration, end)
-        # prüfen, ob für den nächsten Tag ein Termin ansteht und heute schon begonnen werden muss
         if not any(plan.frequency.weekly):
             raise ValueError("Es muss mindestens ein Tag ausgewählt werden.")
-        num_of_following_days = _get_next_charging_day(copy.deepcopy(plan.frequency.weekly), now.weekday())
-        remaining_time, end = check_following_days(now, duration, end, remaining_time, buffer, num_of_following_days)
+        end = end.replace(now.year, now.month, now.day)
+        end += datetime.timedelta(days=_get_next_charging_day(plan.frequency.weekly, now.weekday()))
+        remaining_time = end - now
+        if remaining_time.total_seconds() < buffer:
+            end = end.replace(now.year, now.month, now.day)
+            end += datetime.timedelta(days=_get_next_charging_day(plan.frequency.weekly, now.weekday()+1)+1)
+            remaining_time = end - now
     else:
         raise TypeError(f'Unbekannte Häufigkeit {plan.frequency.selected}')
-    return remaining_time, _missed_date_today(now, end, buffer)
+    return remaining_time.total_seconds()
 
 
-def _get_next_charging_day(weekly_temp: List[bool], weekday: int) -> int:
-    weekly_temp[weekday] = False
-    try:
-        return (weekly_temp[weekday:] + weekly_temp[:weekday]).index(True)
-    except ValueError:
-        # Es wird nur am Wochentag von weekday geladen.
-        return 7
-
-
-def _missed_date_today(now: datetime.datetime,
-                       end: datetime.datetime,
-                       buffer: float):
-    return end < now + datetime.timedelta(seconds=buffer)
-
-
-def check_following_days(now: datetime.datetime,
-                         duration: float,
-                         end: datetime.datetime,
-                         remaining_time_today: Optional[float],
-                         buffer: float,
-                         num_of_following_days: int = 1) -> Tuple[Optional[float], datetime.datetime]:
-    # Zeitpunkt heute darf noch nicht verstrichen sein
-    if remaining_time_today and not _missed_date_today(now, end, buffer):
-        return remaining_time_today, end
-    end = end+datetime.timedelta(days=num_of_following_days)
-    remaining_time = _get_remaining_time(now, duration, end)
-    return remaining_time, end
-
-
-def _get_remaining_time(now: datetime.datetime, duration: float, end: datetime.datetime) -> float:
-    """ Return
-    ------
-    neg: Zeitpunkt vorbei
-    pos: verbleibende Sekunden
-    """
-    delta = datetime.timedelta(seconds=duration)
-    start_time = end-delta
-    log.debug(f"delta {delta} start_time {start_time} end {end} now {now}")
-    return (start_time-now).total_seconds()
+def _get_next_charging_day(weekly: List[bool], weekday: int) -> int:
+    count = 0
+    for i in range(weekday, len(weekly)):
+        if weekly[i] is True:
+            return count
+        count += 1
+    for i in range(0, weekday):
+        if weekly[i] is True:
+            return count
+        count += 1
+    return count
 
 
 def is_list_valid(hour_list: List[int]) -> bool:
@@ -319,14 +293,14 @@ def duration_sum(first: str, second: str) -> str:
         return "00:00"
 
 
-def __get_timedelta_obj(time: str) -> datetime.timedelta:
+def __get_timedelta_obj(time_str: str) -> datetime.timedelta:
     """ erstellt aus einem String ein timedelta-Objekt.
     Parameter
     ---------
-    time: str
+    time_str: str
         Zeitstrings HH:MM ggf DD:HH:MM
     """
-    time_charged = time.split(":")
+    time_charged = time_str.split(":")
     if len(time_charged) == 2:
         delta = datetime.timedelta(hours=int(time_charged[0]),
                                    minutes=int(time_charged[1]))
@@ -335,7 +309,7 @@ def __get_timedelta_obj(time: str) -> datetime.timedelta:
                                    hours=int(time_charged[1]),
                                    minutes=int(time_charged[2]))
     else:
-        raise Exception("Unknown charge duration: "+time)
+        raise Exception(f"Unknown charge duration: {time_str}")
     return delta
 
 
@@ -355,3 +329,31 @@ def convert_timestamp_delta_to_time_string(timestamp: int, delta: int) -> str:
         return f"{minute_diff} Min."
     elif seconds_diff > 0:
         return f"{seconds_diff} Sek."
+
+
+def convert_to_timestamp(timestring: str) -> int:
+    return int(datetime.datetime.fromisoformat(timestring).timestamp())
+
+
+def parse_iso8601_duration(duration: str) -> float:
+    """
+    Parst eine ISO-8601 Duration wie 'PT3723S', 'P1DT2H30M', etc.
+    Gibt ein timedelta zurück.
+    """
+    pattern = re.compile(
+        r'P'                      # beginnt immer mit P
+        r'(?:(?P<days>\d+)D)?'    # Tage
+        r'(?:T'                   # Zeit-Teil beginnt mit T
+        r'(?:(?P<hours>\d+)H)?'   # Stunden
+        r'(?:(?P<minutes>\d+)M)?'  # Minuten
+        r'(?:(?P<seconds>\d+)S)?'  # Sekunden
+        r')?$'
+    )
+
+    match = pattern.fullmatch(duration)
+    if not match:
+        raise ValueError(f"Ungültiges ISO-8601 Duration Format: {duration}")
+
+    parts = {name: int(val) if val else 0 for name, val in match.groupdict().items()}
+    return datetime.timedelta(days=parts["days"], hours=parts["hours"],
+                              minutes=parts["minutes"], seconds=parts["seconds"]).total_seconds()

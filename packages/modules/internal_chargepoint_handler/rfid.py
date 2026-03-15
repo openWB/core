@@ -2,7 +2,7 @@ import asyncio
 import logging
 
 from evdev import InputDevice, ecodes, list_devices, categorize
-from helpermodules import pub
+from helpermodules.pub import Pub
 log = logging.getLogger(__name__)
 
 
@@ -97,7 +97,7 @@ class RfidReader:
             devices = [InputDevice(path) for path in list_devices()]
             for device in devices:
                 log.debug(f"**** {device.path} {device.name} {device.phys} ****")
-                log.debug(device.capabilities(verbose=True))
+                # log.debug(device.capabilities(verbose=True))
                 device_capabilities = device.capabilities()
                 if ecodes.EV_KEY in device_capabilities:
                     log.debug("device emits keyboard events")
@@ -128,7 +128,7 @@ class RfidReader:
                         if data.scancode in (ecodes.KEY_ENTER, ecodes.KEY_KPENTER):
                             if len(key_string) > 0:
                                 log.debug(f"RFID-String: {key_string}")
-                                pub.pub_single("openWB/set/internal_chargepoint/last_tag", key_string)
+                                Pub().pub("openWB/set/internal_chargepoint/last_tag", key_string)
                                 key_string = ""
                         else:
                             log.debug(f"new key: {data.scancode} - {ecodes.KEY[data.scancode]}")

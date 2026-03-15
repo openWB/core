@@ -6,7 +6,7 @@ from control.chargepoint.charging_type import ChargingType
 
 class AbstractChargepoint:
     @abstractmethod
-    def __init__(self, id: int, connection_module: dict, power_module: dict) -> None:
+    def __init__(self, config) -> None:
         pass
 
     @abstractmethod
@@ -18,7 +18,7 @@ class AbstractChargepoint:
         pass
 
     @abstractmethod
-    def switch_phases(self, phases_to_use: int, duration: int) -> None:
+    def switch_phases(self, phases_to_use: int) -> None:
         pass
 
     @abstractmethod

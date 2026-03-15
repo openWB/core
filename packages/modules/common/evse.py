@@ -6,12 +6,13 @@ from typing import Optional, Tuple
 from helpermodules.logger import ModifyLoglevelContext
 
 from modules.common import modbus
+from modules.common.component_state import EvseState
 from modules.common.modbus import ModbusDataType
 
 log = logging.getLogger(__name__)
 
 
-class EvseState(IntEnum):
+class EvseStatusCode(IntEnum):
     READY = (1, False, False)
     EV_PRESENT = (2, True, False)
     CHARGING = (3, True, True)
@@ -32,27 +33,48 @@ class Evse:
     def __init__(self, modbus_id: int, client: modbus.ModbusSerialClient_) -> None:
         self.client = client
         self.id = modbus_id
+        with client:
+            time.sleep(0.1)
+            self.version = self.client.read_holding_registers(1005, ModbusDataType.UINT_16, unit=self.id)
+            time.sleep(0.1)
+            self.max_current = self.client.read_holding_registers(2007, ModbusDataType.UINT_16, unit=self.id)
+            with ModifyLoglevelContext(log, logging.DEBUG):
+                log.debug(f"Firmware-Version der EVSE: {self.version}")
+            if self.version < 17:
+                self._precise_current = False
+            else:
+                if self.is_precise_current_active() is False:
+                    self.activate_precise_current()
+                self._precise_current = self.is_precise_current_active()
 
     def get_plug_charge_state(self) -> Tuple[bool, bool, float]:
         time.sleep(0.1)
-        set_current, _, state_number = self.client.read_holding_registers(
+        raw_set_current, _, state_number = self.client.read_holding_registers(
             1000, [ModbusDataType.UINT_16]*3, unit=self.id)
         # remove leading zeros
-        set_current = int(set_current)
-        log.debug("Gesetzte Stromstärke EVSE: "+str(set_current) +
+        self.evse_current = int(raw_set_current)
+        log.debug("Gesetzte Stromstärke EVSE: "+str(self.evse_current) +
                   ", Status: "+str(state_number)+", Modbus-ID: "+str(self.id))
-        state = EvseState(state_number)
-        if state == EvseState.FAILURE:
+        state = EvseStatusCode(state_number)
+        if state == EvseStatusCode.FAILURE:
             raise ValueError("Unbekannter Zustand der EVSE: State " +
-                             str(state)+", Soll-Stromstärke: "+str(set_current))
+                             str(state)+", Soll-Stromstärke: "+str(self.evse_current))
         plugged = state.plugged
-        charging = set_current > 0 if state.charge_enabled else False
-        return plugged, charging, set_current
+        charging = self.evse_current > 0 if state.charge_enabled else False
+        if self.evse_current > 32:
+            self.evse_current = self.evse_current / 100
+        return plugged, charging, self.evse_current
 
     def get_firmware_version(self) -> int:
-        time.sleep(0.1)
-        version = self.client.read_holding_registers(1005, ModbusDataType.UINT_16, unit=self.id)
-        return version
+        return self.version
+
+    def get_evse_state(self) -> EvseState:
+        plugged, charging, set_current = self.get_plug_charge_state()
+        state = EvseState(plug_state=plugged,
+                          charge_state=charging,
+                          set_current=set_current,
+                          max_current=self.max_current)
+        return state
 
     def is_precise_current_active(self) -> bool:
         time.sleep(0.1)
@@ -73,7 +95,7 @@ class Evse:
         else:
             with ModifyLoglevelContext(log, logging.DEBUG):
                 log.debug("Bit zur Angabe der Ströme in 0,1A-Schritten wird gesetzt.")
-            self.client.write_registers(2005, value ^ self.PRECISE_CURRENT_BIT, unit=self.id)
+            self.client.write_register(2005, value ^ self.PRECISE_CURRENT_BIT, unit=self.id)
             # Zeit zum Verarbeiten geben
             time.sleep(1)
 
@@ -83,15 +105,17 @@ class Evse:
         if value & self.PRECISE_CURRENT_BIT:
             with ModifyLoglevelContext(log, logging.DEBUG):
                 log.debug("Bit zur Angabe der Ströme in 0,1A-Schritten wird zurueckgesetzt.")
-            self.client.write_registers(2005, value ^ self.PRECISE_CURRENT_BIT, unit=self.id)
+            self.client.write_register(2005, value ^ self.PRECISE_CURRENT_BIT, unit=self.id)
         else:
             return
 
-    def set_current(self, current: int) -> None:
+    def set_current(self, current: int, phases_in_use: Optional[int] = None) -> None:
         time.sleep(0.1)
-        self.client.write_registers(1000, current, unit=self.id)
-
-    def get_max_current(self) -> int:
-        time.sleep(0.1)
-        current = self.client.read_holding_registers(2007, ModbusDataType.UINT_16, unit=self.id)
-        return current
+        formatted_current = round(current*100) if self._precise_current else round(current)
+        if self.max_current == 20 and phases_in_use is not None and phases_in_use != 0:
+            # Bei 20A EVSE und bekannter Phasenzahl auf 16A begrenzen, sonst erstmal Ladung mit Minimalstrom starten,
+            # um Phasenzahl zu ermitteln
+            if formatted_current > 16 and phases_in_use > 1:
+                formatted_current = 16
+        if self.evse_current != formatted_current:
+            self.client.write_register(1000, formatted_current, unit=self.id)

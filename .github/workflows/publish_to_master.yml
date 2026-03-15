@@ -1,0 +1,50 @@
+name: Publish to master
+on:
+  push:
+    paths:
+      - 'packages/modules/*_themes/*/source/**'
+    branches:
+      - master
+
+jobs:
+  build-and-push-themes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js v24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: 'packages/modules/*_themes/*/source/package-lock.json'
+
+      - name: Install dependencies and build all themes
+        run: |
+          for theme_dir in packages/modules/*_themes/*/; do
+            if [ -d "$theme_dir/source" ]; then
+              echo "Building theme: $theme_dir"
+              cd "$theme_dir/source"
+              npm install
+              npm run build --if-present
+              cd - > /dev/null
+            fi
+          done
+
+      - name: Commit and push built themes
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          
+          # Add all built theme files
+          git add packages/modules/*_themes/*/web/
+          
+          if ! git diff --cached --quiet; then
+            git commit -m "Build Themes"
+            git push
+          else
+            echo "No changes to commit."
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

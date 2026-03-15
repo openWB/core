@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
-import logging
+from logging import getLogger
 from typing import Union
-import asyncio
+from asyncio import new_event_loop, set_event_loop
+from time import mktime
+from datetime import datetime
 from json import loads, dumps
 from modules.vehicles.ovms.config import OVMS
 from helpermodules.pub import Pub
@@ -15,8 +17,10 @@ OVMS_APPL_LABEL = "application"
 OVMS_APPL_VALUE = "owb-ovms-2.x-vh"
 OVMS_PURPOSE_LABEL = "purpose"
 OVMS_PURPOSE_VALUE = "get soc"
+date_fmt = '%Y-%m-%d %H:%M:%S'
 
-log = logging.getLogger(__name__)
+
+log = getLogger(__name__)
 
 
 # store soc module configuration
@@ -26,6 +30,12 @@ def write_config(topic: str, config: dict):
         Pub().pub(topic, config)
     except Exception as e:
         log.exception('Token mqtt write exception ' + str(e))
+
+
+def utc2local(utc):
+    epoch = mktime(utc.timetuple())
+    offset = datetime.fromtimestamp(epoch) - datetime.utcfromtimestamp(epoch)
+    return utc + offset
 
 
 class api:
@@ -180,16 +190,22 @@ class api:
         self.kms = float(statusDict['odometer']) / 10
         self.vehicle12v = statusDict['vehicle12v']
         self.soc_ts = statusDict['m_msgtime_s']
+        self.soc_tsdt = datetime.strptime(self.soc_ts, date_fmt)
+        self.soc_tsdtL = utc2local(self.soc_tsdt)
+        self.soc_tsX = datetime.timestamp(self.soc_tsdtL)
 
-        return int(float(self.soc)), float(self.range), self.soc_ts
+        log.info("soc=" + self.soc + ", range=" + self.range + ", soc_ts=" + str(self.soc_tsdtL))
+        log.debug("statusDict=\n" + dumps(statusDict, indent=4))
+
+        return int(float(self.soc)), float(self.range), self.soc_tsX
 
 
 # sync function
 def fetch_soc(conf: OVMS, vehicle: int) -> Union[int, float, str]:
 
     # prepare and call async method
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    loop = new_event_loop()
+    set_event_loop(loop)
 
     # get soc, range from server
     a = api()

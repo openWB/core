@@ -1,0 +1,76 @@
+#!/usr/bin/env python3
+import time
+from typing import Dict, Optional
+from modules.common.component_state import IoState
+from modules.common.configurable_io import ConfigurableIo
+from modules.io_devices.dimm_kit.config import IoLan, AnalogInputMapping, DigitalInputMapping, DigitalOutputMapping
+from modules.common.version_by_telnet import get_version_by_telnet
+from modules.common.modbus import ModbusDataType, ModbusTcpClient_
+import logging
+import socket
+
+from modules.common.abstract_device import DeviceDescriptor
+
+log = logging.getLogger(__name__)
+
+
+VALID_VERSIONS = ["openWB DimmModul"]
+
+
+def create_io(config: IoLan):
+    version = False
+    client = None
+
+    def read():
+        nonlocal version
+        nonlocal client
+        if version is False:
+            try:
+                parsed_answer = get_version_by_telnet(VALID_VERSIONS[0], config.configuration.host)
+                for version in VALID_VERSIONS:
+                    if version in parsed_answer:
+                        version = True
+                        log.debug("Firmware des openWB Dimm-& Control-Kit ist mit openWB software2 kompatibel.")
+                    else:
+                        version = False
+                        raise ValueError
+            except (ConnectionRefusedError, ValueError):
+                log.exception("Dimm-Kit")
+                raise Exception("Firmware des openWB Dimm-& Control-Kit ist nicht mit openWB software2 kompatibel. "
+                                "Bitte den Support kontaktieren.")
+            except socket.timeout:
+                log.exception("Dimm-Kit")
+                raise Exception("Die IP-Adresse ist nicht erreichbar. Bitte überprüfe die Einstellungen.")
+        # analog inputs are configured as 0-5V (AI1-AI4) and 0-25mA (AI5-AI8) as default
+        # the values are reported as integers in range of 0-1024
+        time.sleep(0.1)
+        analog_read = client.read_input_registers(0x00, [ModbusDataType.UINT_16]*8, unit=config.configuration.modbus_id)
+        analog_input = {getattr(AnalogInputMapping, f'AI{pin+1}').name: analog_read[pin] * 5 for pin in range(8)}
+        time.sleep(0.1)
+        digital_input_read = client.read_coils(0x00, 8, unit=config.configuration.modbus_id)
+        digital_input = {getattr(DigitalInputMapping, f'DI{pin+1}').name: digital_input_read[pin] for pin in range(8)}
+        time.sleep(0.1)
+        digital_output_read = client.read_coils(0x10, 8, unit=config.configuration.modbus_id)
+        digital_output = {
+            getattr(DigitalOutputMapping, f'DO{pin+1}').name: digital_output_read[pin] for pin in range(8)}
+        return IoState(
+            analog_input=analog_input,
+            digital_input=digital_input,
+            digital_output=digital_output
+        )
+
+    def write(analog_output: Optional[Dict[str, int]], digital_output: Optional[Dict[str, bool]]) -> None:
+        nonlocal client
+        for i, value in digital_output.items():
+            client.write_single_coil(DigitalOutputMapping[i].value, 1 if value is True else 0,
+                                     unit=config.configuration.modbus_id)
+
+    def initializer():
+        nonlocal client
+        client = ModbusTcpClient_(config.configuration.host, config.configuration.port)
+        for output, value in config.output["digital"].items():
+            client.write_single_coil(DigitalOutputMapping[output].value, value, unit=config.configuration.modbus_id)
+    return ConfigurableIo(config=config, component_reader=read, component_writer=write, initializer=initializer)
+
+
+device_descriptor = DeviceDescriptor(configuration_factory=IoLan)

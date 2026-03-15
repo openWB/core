@@ -10,6 +10,8 @@ from modules.devices.youless.youless.config import YoulessInverterSetup
 class YoulessInverter(AbstractInverter):
     def __init__(self, component_config: YoulessInverterSetup) -> None:
         self.component_config = component_config
+
+    def initialize(self) -> None:
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 

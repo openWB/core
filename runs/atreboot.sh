@@ -12,36 +12,12 @@ chmod 666 "$LOGFILE"
 		file=$1
 		target=$2
 		currentVersion=$(grep -o "openwb-version:[0-9]\+" "$file" | grep -o "[0-9]\+$")
-		installedVersion=$(grep -o "openwb-version:[0-9]\+" "$target" | grep -o "[0-9]\+$")
+		installedVersion=$(sudo grep -o "openwb-version:[0-9]\+" "$target" | grep -o "[0-9]\+$")
 		# echo "$currentVersion == $installedVersion ?"
 		if ((currentVersion == installedVersion)); then
 			return 0
 		else
 			return 1
-		fi
-	}
-
-	waitForServiceStop() {
-		# this function waits for a service to stop and kills the process if it takes too long
-		# this is necessary at least for mosquitto, as the service is stopped, but the process is still running
-		service=$1
-		pattern=$2
-		timeout=$3
-
-		counter=0
-		sudo systemctl stop "$service"
-		while pgrep --full "$pattern" >/dev/null && ((counter < timeout)); do
-			echo "process '$pattern' still running after ${counter}s, waiting..."
-			sleep 1
-			((counter++))
-		done
-		if ((counter >= timeout)); then
-			echo "process '$pattern' still running after ${timeout}s, killing process"
-			sudo pkill --full "$pattern" --signal 9
-			sleep 2
-			# if the process was killed, the service is in "active (exited)" state
-			# so we need to trigger a stop here to be able to start it again
-			sudo systemctl stop "$service"
 		fi
 	}
 
@@ -137,7 +113,7 @@ chmod 666 "$LOGFILE"
 	# check group membership
 	echo "Group membership..."
 	# ToDo: remove sudo group membership if possible
-	for group in "input" "dialout" "gpio" "sudo"; do
+	for group in "input" "dialout" "gpio" "sudo" "video"; do
 		if ! groups openwb | grep --quiet "$group"; then
 			if getent group | cut -d: -f1 | grep --quiet "$group"; then
 				sudo usermod -G "$group" -a openwb
@@ -149,6 +125,16 @@ chmod 666 "$LOGFILE"
 	done
 	echo -n "Final group membership: "
 	groups openwb
+
+	# allow apache to restart some services
+	echo "Apache service restart permissions..."
+	if versionMatch "${OPENWBBASEDIR}/data/config/sudoers/apache2" "/etc/sudoers.d/apache2"; then
+		echo "apache2 sudoers already up to date"
+	else
+		echo "updating apache2 sudoers"
+		sudo cp "${OPENWBBASEDIR}/data/config/sudoers/apache2" "/etc/sudoers.d/apache2"
+		sudo chmod 440 /etc/sudoers.d/apache2
+	fi
 
 	# network setup
 	echo "Network..."
@@ -174,6 +160,8 @@ chmod 666 "$LOGFILE"
 		echo "path '/etc/apt/apt.conf.d' is missing! unsupported system!"
 	fi
 	if ((hasInet == 1)); then
+		# remove urllib3 version to avoid conflicts
+		pip uninstall urllib3 -y
 		"${OPENWBBASEDIR}/runs/install_packages.sh"
 	else
 		echo "no internet connection, skipping package installation"
@@ -199,6 +187,21 @@ chmod 666 "$LOGFILE"
 		sudo systemctl daemon-reload
 		echo "openwb2.service definition updated. rebooting..."
 		sudo reboot now &
+	fi
+
+	# check for openwb-simpleAPI service definition
+	if find /etc/systemd/system/ -maxdepth 1 -name openwb-simpleAPI.service -type l | grep -q "."; then
+		echo "openwb-simpleAPI.service definition is already a symlink"
+	else
+		if find /etc/systemd/system/ -maxdepth 1 -name openwb-simpleAPI.service -type f | grep -q "."; then
+			echo "openwb-simpleAPI.service definition is a regular file, deleting file"
+			sudo rm "/etc/systemd/system/openwb-simpleAPI.service"
+		fi
+		sudo ln -s "${OPENWBBASEDIR}/data/config/openwb-simpleAPI.service" /etc/systemd/system/openwb-simpleAPI.service
+		sudo systemctl daemon-reload
+		sudo systemctl enable openwb-simpleAPI
+		sudo systemctl restart openwb-simpleAPI
+		echo "openwb-simpleAPI.service definition updated."
 	fi
 
 	# check for remote support service definition
@@ -256,7 +259,22 @@ chmod 666 "$LOGFILE"
 		echo "'tvservice' not found, assuming a display is present"
 	fi
 	echo "displayDetected: $displayDetected"
-	mosquitto_pub -p 1886 -t "openWB/optional/int_display/detected" -r -m "$displayDetected"
+	forceDisplaySetup=0
+	if displayDetected_old=$(mosquitto_sub -p 1886 -t "openWB/optional/int_display/detected" -C 1 -W 1); then
+		echo "previous displayDetected value: $displayDetected_old"
+		if [[ $displayDetected_old != "$displayDetected" ]]; then
+			echo "displayDetected value changed, publishing new value"
+			mosquitto_pub -p 1886 -t "openWB/optional/int_display/detected" -r -m "$displayDetected"
+		else
+			echo "no change in displayDetected value, skipping publish"
+		fi
+	else
+		echo "no previous displayDetected value found, assuming initial boot"
+		echo "update of display settings forced"
+		forceDisplaySetup=1
+		mosquitto_pub -p 1886 -t "openWB/optional/int_display/detected" -r -m "$displayDetected"
+		mosquitto_pub -p 1886 -t "openWB/optional/int_display/active" -r -m "true"
+	fi
 
 	# display setup
 	echo "display setup..."
@@ -285,86 +303,15 @@ chmod 666 "$LOGFILE"
 		cp "${OPENWBBASEDIR}/data/config/display/lxdeautostart" "/home/openwb/.config/lxsession/LXDE/autostart"
 		displaySetupModified=1
 	fi
-	if ((displaySetupModified == 1)); then
-		"${OPENWBBASEDIR}/runs/update_local_display.sh"
+	if ((displaySetupModified == 1)) || ((forceDisplaySetup == 1)); then
+		"${OPENWBBASEDIR}/runs/update_local_display.sh" $forceDisplaySetup
 	fi
 
 	# check apache configuration
 	"${OPENWBBASEDIR}/runs/setup_apache2.sh"
 
 	# check for mosquitto configuration
-	echo "check mosquitto installation..."
-	restartService=0
-	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto.conf" "/etc/mosquitto/mosquitto.conf"; then
-		echo "mosquitto.conf already up to date"
-	else
-		echo "updating mosquitto.conf"
-		sudo cp "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto.conf" "/etc/mosquitto/mosquitto.conf"
-		restartService=1
-	fi
-	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/openwb.conf" "/etc/mosquitto/conf.d/openwb.conf"; then
-		echo "mosquitto openwb.conf already up to date"
-	else
-		echo "updating mosquitto openwb.conf"
-		sudo cp "${OPENWBBASEDIR}/data/config/mosquitto/openwb.conf" "/etc/mosquitto/conf.d/openwb.conf"
-		restartService=1
-	fi
-	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto.acl" "/etc/mosquitto/mosquitto.acl"; then
-		echo "mosquitto acl already up to date"
-	else
-		echo "updating mosquitto acl"
-		sudo cp "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto.acl" "/etc/mosquitto/mosquitto.acl"
-		restartService=1
-	fi
-	if [[ ! -f "/etc/mosquitto/certs/openwb.key" ]]; then
-		echo -n "copy ssl certs..."
-		sudo cp "/etc/ssl/certs/ssl-cert-snakeoil.pem" "/etc/mosquitto/certs/openwb.pem"
-		sudo cp "/etc/ssl/private/ssl-cert-snakeoil.key" "/etc/mosquitto/certs/openwb.key"
-		sudo chgrp mosquitto "/etc/mosquitto/certs/openwb.key"
-		restartService=1
-		echo "done"
-	fi
-	if ((restartService == 1)); then
-		echo -n "restarting mosquitto service..."
-		waitForServiceStop "mosquitto" "mosquitto.conf" 10
-		sudo systemctl start mosquitto
-		echo "done"
-	fi
-
-	#check for mosquitto_local instance
-	# restartService=0  # if we restart mosquitto, we need to restart mosquitto_local as well
-	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto_local_init" "/etc/init.d/mosquitto_local"; then
-		echo "mosquitto_local service definition already up to date"
-	else
-		echo "updating mosquitto_local service definition"
-		sudo cp "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto_local_init" /etc/init.d/mosquitto_local
-		sudo chown root:root /etc/init.d/mosquitto_local
-		sudo chmod 755 /etc/init.d/mosquitto_local
-		sudo systemctl daemon-reload
-		sudo systemctl enable mosquitto_local
-		restartService=1
-	fi
-	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto_local.conf" "/etc/mosquitto/mosquitto_local.conf"; then
-		echo "mosquitto_local.conf already up to date"
-	else
-		echo "updating mosquitto_local.conf"
-		sudo cp -a "${OPENWBBASEDIR}/data/config/mosquitto/mosquitto_local.conf" "/etc/mosquitto/mosquitto_local.conf"
-		restartService=1
-	fi
-	if versionMatch "${OPENWBBASEDIR}/data/config/mosquitto/openwb_local.conf" "/etc/mosquitto/conf_local.d/openwb_local.conf"; then
-		echo "mosquitto openwb_local.conf already up to date"
-	else
-		echo "updating mosquitto openwb_local.conf"
-		sudo cp -a "${OPENWBBASEDIR}/data/config/mosquitto/openwb_local.conf" "/etc/mosquitto/conf_local.d/"
-		restartService=1
-	fi
-	if ((restartService == 1)); then
-		echo -n "restarting mosquitto_local service..."
-		waitForServiceStop "mosquitto_local" "mosquitto_local.conf" 10
-		sudo systemctl start mosquitto_local
-		echo "done"
-	fi
-	echo "mosquitto done"
+	"${OPENWBBASEDIR}/runs/setup_mosquitto.sh" 1
 
 	# check for home configuration
 	if [[ ! -f "/home/openwb/configuration.json" ]]; then
@@ -374,7 +321,7 @@ chmod 666 "$LOGFILE"
 	# check for python dependencies
 	if ((hasInet == 1)); then
 		echo "install required python packages with 'pip3'..."
-		if pip3 install -r "${OPENWBBASEDIR}/requirements.txt"; then
+		if pip3 install --only-binary :all: -r "${OPENWBBASEDIR}/requirements.txt"; then
 			echo "done"
 		else
 			echo "failed!"
@@ -398,8 +345,8 @@ chmod 666 "$LOGFILE"
 	fi
 
 	# set restore dir permissions to allow file upload for apache
-	sudo chgrp www-data "${OPENWBBASEDIR}/data/restore" "${OPENWBBASEDIR}/data/restore/"* "${OPENWBBASEDIR}/data/data_migration" "${OPENWBBASEDIR}/data/data_migration/"*
-	sudo chmod g+w "${OPENWBBASEDIR}/data/restore" "${OPENWBBASEDIR}/data/restore/"* "${OPENWBBASEDIR}/data/data_migration" "${OPENWBBASEDIR}/data/data_migration/"*
+	sudo chgrp -R www-data "${OPENWBBASEDIR}/data/restore/." "${OPENWBBASEDIR}/data/data_migration/."
+	sudo chmod -R g+w "${OPENWBBASEDIR}/data/restore/." "${OPENWBBASEDIR}/data/data_migration/."
 
 	# cleanup some folders
 	folder="${OPENWBBASEDIR}/data/data_migration/var"

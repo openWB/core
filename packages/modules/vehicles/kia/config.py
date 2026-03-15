@@ -15,7 +15,9 @@ class KIA:
     def __init__(self,
                  name: str = "KIA / Hyundai (experimental)",
                  type: str = "kia",
+                 official: bool = False,
                  configuration: KIAConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.official = official
         self.configuration = configuration or KIAConfiguration()

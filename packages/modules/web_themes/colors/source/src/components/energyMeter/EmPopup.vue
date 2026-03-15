@@ -48,16 +48,16 @@
 						item.name
 					}}</tspan>
 					<tspan x="25" dy="1.5em"
-						>Energie heute: {{ formatWattH(item.energy) }}
+						>Energie heute: {{ formatWattH(item[graphScope].energy) }}
 					</tspan>
 					<tspan v-if="(props.autarchy ?? 0) > 0" x="25" dy="1.3em"
 						>Autarkie: {{ props.autarchy ?? 0 }} %</tspan
 					>
-					<tspan v-if="item.energyPv > 0" x="30" dy="1.3em"
-						>PV: {{ formatWatt(item.energyPv) }}</tspan
+					<tspan v-if="item[graphScope].energyPv > 0" x="30" dy="1.3em"
+						>PV: {{ formatWatt(item[graphScope].energyPv) }}</tspan
 					>
-					<tspan v-if="item.energyBat > 0" x="30" dy="1.3em"
-						>Speicher: {{ formatWatt(item.energyBat) }}</tspan
+					<tspan v-if="item[graphScope].energyBat > 0" x="30" dy="1.3em"
+						>Speicher: {{ formatWatt(item[graphScope].energyBat) }}</tspan
 					>
 					<tspan x="25" dy="1.3em"
 						>Aktuelle Leistung: {{ formatWatt(item.power) }}</tspan
@@ -65,55 +65,6 @@
 				</text>
 			</g>
 		</g>
-		<!-- const ttips = svg
-		.selectAll('ttip')
-		.data(plotdata.value)
-		.enter()
-		.append('g')
-		.attr('class', 'ttarea')
-	ttips
-		.append('rect')
-		.attr('x', (d) => xScale.value(d[0]))
-		.attr('y', (d) => yScale.value(d[1]))
-		.attr('height', (d) => yScale.value(yDomain.value[0]) - yScale.value(d[1]))
-		.attr('class', 'ttrect')
-		.attr('width', barwidth.value)
-		.attr('opacity', '1%')
-		.attr('fill', 'var(--color-charging)')
-	const tt = ttips
-		.append('g')
-		.attr('class', 'ttmessage')
-		.attr(
-			'transform',
-			(d) =>
-				'translate(' +
-				(xScale.value(d[0]) - 30 + barwidth.value / 2) +
-				',' +
-				(yScale.value(d[1]) - 18) +
-				')',
-		)
-	tt.append('rect')
-		.attr('rx', 5)
-		.attr('width', '60')
-		.attr('height', '30')
-		.attr('fill', 'var(--color-menu)')
-	const texts = tt
-		.append('text')
-		.attr('text-anchor', 'middle')
-		.attr('x', 30)
-		.attr('y', 12)
-		.attr('font-size', axisfontsize)
-		.attr('fill', 'var(--color-bg)')
-	texts
-		.append('tspan')
-		.attr('x', 30)
-		.attr('dy', '0em')
-		.text((d) => timeFormat('%H:%M')(d[0]))
-	texts
-		.append('tspan')
-		.attr('x', 30)
-		.attr('dy', '1.1em')
-		.text((d) => Math.round(d[1] * 10) / 10 + ' ct') -->
 	</g>
 </template>
 
@@ -122,6 +73,7 @@ import { computed } from 'vue'
 import * as d3 from 'd3'
 import type { MarginType, PowerItem } from '@/assets/js/types'
 import { formatWatt, formatWattH } from '@/assets/js/helpers'
+import { graphData } from '../powerGraph/model'
 
 const props = defineProps<{
 	item: PowerItem
@@ -136,8 +88,9 @@ const props = defineProps<{
 const barheight = computed(
 	() =>
 		props.height -
-		props.yScale(props.item.energy) -
+		props.yScale(props.item[graphScope.value].energy) -
 		props.margin.top -
 		props.margin.bottom,
 )
+const graphScope = computed(() => (graphData.usePastData ? 'past' : 'now'))
 </script>

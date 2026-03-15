@@ -52,7 +52,12 @@ function get_mac() {
 function setup_pnp_network() {
 	# ToDo: make ip configurable
 	myVirtualIp="192.168.193.250"
-	isSecondary=$(mosquitto_sub -t "openWB/general/extern" -p 1886 -C 1 -W 1 --quiet)
+	if isSecondary=$(mosquitto_sub -t "openWB/general/extern" -p 1886 -C 1 -W 1 --quiet); then
+		echo "got 'is secondary' setting: '$isSecondary'"
+	else
+		echo "failed getting 'is secondary' setting! assuming 'false'"
+		isSecondary="false"
+	fi
 	if [[ $isSecondary == "true" ]]; then
 		echo "running as secondary, disabling plug'n'play network on dev $myPrimaryNetDevice"
 		sudo ip addr del "$myVirtualIp/24" dev "$myPrimaryNetDevice"
@@ -63,7 +68,7 @@ function setup_pnp_network() {
 }
 
 function check_internet_connection() {
-	if curl -s --head  --request GET "https://www.github.com" >/dev/null; then
+	if curl -s --head --connect-timeout 3 --request GET "https://www.github.com" >/dev/null; then
 		echo "Internet connection is up"
 	else
 		echo "ERROR: no internet connection!"
@@ -100,6 +105,8 @@ function setup_dhcpcd_proplus() {
 		echo "done"
 		echo "restarting dhcpcd"
 		sudo systemctl restart dhcpcd
+		sleep 5
+		sudo dhclient -1 eth0
 	fi
 }
 
@@ -113,6 +120,8 @@ function disable_dhcpcd_proplus() {
 		sudo sed -i "/$pattern_begin/,/$pattern_end/d" "$dhcpcd_config_target"
 		echo "restarting dhcpcd"
 		sudo systemctl restart dhcpcd
+		sleep 5
+		sudo dhclient -1 eth0
 	else
 		echo "no changes required"
 	fi
@@ -135,6 +144,11 @@ fi
 # publish mac address
 mac="$(get_mac)"
 mosquitto_pub -t "openWB/system/mac_address" -p 1886 -r -m "\"$mac\""
+
+# publish hostname
+hostname=$(hostname)
+echo "my hostname: $hostname"
+mosquitto_pub -t "openWB/system/hostname" -p 1886 -r -m "\"$hostname\""
 
 # image restricted to LAN only
 # get local ip

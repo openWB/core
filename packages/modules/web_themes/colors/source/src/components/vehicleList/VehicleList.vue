@@ -11,7 +11,7 @@
 				(v) => v.visible,
 			)"
 			:key="index"
-			class="subgrid"
+			class="subgrid px-4"
 		>
 			<VlVehicle :vehicle="vehicle" />
 		</div>
@@ -19,7 +19,6 @@
 </template>
 
 <script setup lang="ts">
-//import { computed } from 'vue'
 import WBWidgetFlex from '../shared/WbWidgetFlex.vue'
 import VlVehicle from './VlVehicle.vue'
 import { vehicles } from '@/components/chargePointList/model'

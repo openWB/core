@@ -22,7 +22,7 @@ log.info(' off.py devicenr %d ipadr %s ueberschuss %6d try to connect (modbus)'
          % (devicenumber, ipadr, uberschuss))
 client = ModbusTcpClient(ipadr, port=502)
 start = 103
-resp = client.read_holding_registers(start, 2)
+resp = client.read_holding_registers(start, 2, unit=1)
 value1 = resp.registers[0]
 all = format(value1, '04x')
 aktpower = int(struct.unpack('>h', codecs.decode(all, 'hex'))[0])

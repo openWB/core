@@ -1,12 +1,12 @@
 from dataclasses import asdict, dataclass, field
 import logging
 import traceback
-from typing import Dict, List
+from typing import List
 
 from control import data
 from control.ev import ev as ev_module
 from control.chargepoint.charging_type import ChargingType
-from dataclass_utils.factories import empty_dict_factory, empty_list_factory
+from dataclass_utils.factories import empty_list_factory
 from helpermodules.abstract_plans import AutolockPlan
 from helpermodules import timecheck
 
@@ -16,18 +16,13 @@ log = logging.getLogger(__name__)
 
 def get_chargepoint_template_default():
     default = asdict(CpTemplateData())
-    default["autolock"].pop("plans")
     return default
-
-
-def get_autolock_plan_default():
-    return asdict(AutolockPlan())
 
 
 @dataclass
 class Autolock:
     active: bool = False
-    plans: Dict[int, AutolockPlan] = field(default_factory=empty_dict_factory)
+    plans: List[AutolockPlan] = field(default_factory=empty_list_factory)
     wait_for_charging_end: bool = False
 
 
@@ -71,7 +66,7 @@ class CpTemplate:
                 else:
                     return False
             else:
-                log.info("Keine Sperrung durch Autolock, weil keine Zeitpläne konfiguriert sind.")
+                log.info("Keine Sperrung durch Sperren nach Zeitplan, weil keine Zeitpläne konfiguriert sind.")
                 return False
         else:
             return False
@@ -92,7 +87,6 @@ class CpTemplate:
         message: str
             Status-Text
         """
-        num = -1
         message = None
         try:
             if data.data.optional_data.data.rfid.active and (rfid is not None or vehicle_id is not None):
@@ -108,4 +102,4 @@ class CpTemplate:
         except Exception:
             log.exception(
                 "Fehler in der Ladepunkt-Profil Klasse")
-            return num, "Keine Ladung, da ein interner Fehler aufgetreten ist: " + traceback.format_exc()
+            return assigned_ev, "Keine Ladung, da ein interner Fehler aufgetreten ist: " + traceback.format_exc()

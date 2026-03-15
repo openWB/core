@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from dataclass_utils import dataclass_from_dict
+
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
@@ -14,7 +14,9 @@ log = logging.getLogger(__name__)
 
 class RctBat(AbstractBat):
     def __init__(self, component_config: RctBatSetup) -> None:
-        self.component_config = dataclass_from_dict(RctBatSetup, component_config)
+        self.component_config = component_config
+
+    def initialize(self) -> None:
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
@@ -41,7 +43,7 @@ class RctBat(AbstractBat):
         if (stat1.value + stat2.value + stat3.value) > 0:
             # Werte werden trotz Fehlercode übermittelt.
             self.fault_state.warning(
-                f"Alarm Status Speicher ist ungleich 0. Status 1: {stat1.value}, Status 2: {stat2.value}, "
+                f"Speicher-Status ist ungleich 0. Status 1: {stat1.value}, Status 2: {stat2.value}, "
                 f"Status 3: {stat3.value}")
 
 

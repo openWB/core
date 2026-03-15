@@ -12,7 +12,7 @@
 		</template>
 		<div class="subgrid pt-1">
 			<InfoItem heading="Heute:" :small="true" class="grid-col-4 grid-left">
-				<FormatWattH :watt-h="props.inverter.energy"></FormatWattH>
+				<FormatWattH :watt-h="props.inverter.now.energy"></FormatWattH>
 			</InfoItem>
 			<InfoItem heading="Monat:" :small="true" class="grid-col-4">
 				<FormatWattH :watt-h="props.inverter.energy_month"></FormatWattH>

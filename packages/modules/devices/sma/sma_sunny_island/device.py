@@ -13,21 +13,26 @@ log = logging.getLogger(__name__)
 
 
 def create_device(device_config: SmaSunnyIsland):
+    client = None
+
     def create_bat_component(component_config: SmaSunnyIslandBatSetup):
-        return SunnyIslandBat(component_config, client)
+        nonlocal client
+        return SunnyIslandBat(component_config, client=client)
 
     def update_components(components: Iterable[SunnyIslandBat]):
+        nonlocal client
         with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):
                     component.update()
 
-    try:
+    def initializer():
+        nonlocal client
         client = modbus.ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
-    except Exception:
-        log.exception("Fehler in create_device")
+
     return ConfigurableDevice(
         device_config=device_config,
+        initializer=initializer,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
         ),

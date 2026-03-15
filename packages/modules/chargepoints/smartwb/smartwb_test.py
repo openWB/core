@@ -25,6 +25,7 @@ class TestSmartWb:
         power=5790,
         currents=[8.54, 8.54, 8.54],
         imported=54350.0,
+        exported=0,
         plug_state=True,
         charge_state=False,
         phases_in_use=3,
@@ -58,10 +59,10 @@ class TestSmartWb:
         currents=[9.78, 0, 0],
         voltages=[228.28, 231.85, 232.07],
         imported=54350.0,
+        exported=0,
         plug_state=True,
         charge_state=True,
         rfid="0a1b2c3d",
-        rfid_timestamp=1652683252,
         serial_number="94:B9:7E:69:F0:D1",
         max_evse_current=16
     )
@@ -97,11 +98,11 @@ class TestSmartWb:
         currents=[0, 0, 0],
         voltages=[228.28, 231.85, 232.07],
         imported=54350.0,
+        exported=0,
         plug_state=True,
         charge_state=True,
         rfid="0a1b2c3d",
-        rfid_timestamp=1652683252,
-        phases_in_use=1,
+        phases_in_use=None,
         serial_number="94:B9:7E:69:F0:D1",
         max_evse_current=16
     )

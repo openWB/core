@@ -12,7 +12,9 @@ class Polestar2:
     def __init__(self,
                  name: str = "Polestar2",
                  type: str = "polestar",
+                 official: bool = False,
                  configuration: Polestar2Configuration = None) -> None:
         self.name = name
         self.type = type
+        self.official = official
         self.configuration = configuration or Polestar2Configuration()

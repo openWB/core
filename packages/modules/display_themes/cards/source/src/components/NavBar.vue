@@ -10,18 +10,24 @@ export default {
       mqttStore: useMqttStore(),
     };
   },
+  computed: {
+    accessAllowed() {
+      return this.mqttStore.getAccessAllowed;
+    },
+  },
 };
 </script>
 
 <template>
   <i-nav
+    v-if="accessAllowed"
     vertical
     class="_align-items:stretch"
     size="lg"
   >
     <nav-item
-      v-if="mqttStore.getDashBoardEnabled"
-      :to="{ name: 'dash-board' }"
+      v-if="mqttStore.getDashboardEnabled"
+      :to="{ name: 'dashboard' }"
     >
       Übersicht
     </nav-item>

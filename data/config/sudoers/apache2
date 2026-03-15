@@ -1,0 +1,2 @@
+# openwb-version:1
+www-data ALL=NOPASSWD: /bin/systemctl restart openwb2.service, /bin/systemctl restart openwbRemoteSupport.service, /bin/systemctl restart mosquitto.service, /bin/systemctl restart mosquitto_local.service

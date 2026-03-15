@@ -3,7 +3,7 @@
 import logging
 import os
 import subprocess
-import threading
+from threading import Thread
 import time
 from pathlib import Path
 from typing import Optional
@@ -24,7 +24,8 @@ class System:
         """
         self.data = {"update_in_progress": False,
                      "perform_update": False,
-                     "backup_cloud": {}}
+                     "backup_cloud": {},
+                     "security": {"user_management_active": False}}
         self.backup_cloud: Optional[ConfigurableBackupCloud] = None
 
     def perform_update(self):
@@ -85,7 +86,7 @@ class System:
                 self.create_backup_and_send_to_cloud()
             except Exception as e:
                 log.exception(f"Error in cloud backup: {e}")
-        thread_handler(threading.Thread(target=create, args=(), name="cloud backup"))
+        thread_handler(Thread(target=create, args=(), name="cloud backup"))
 
     def create_backup_and_send_to_cloud(self):
         if self.backup_cloud is not None:
@@ -97,7 +98,7 @@ class System:
 
     def create_backup(self) -> str:
         try:
-            result = run_command([str(self._get_parent_file() / "runs" / "backup.sh"), "1"])
+            result = run_command([str(self._get_parent_file() / "runs" / "backup.sh"), "1"], process_exception=False)
             file_name = result.rstrip('\n')
             return file_name
         except subprocess.CalledProcessError as e:

@@ -14,9 +14,13 @@ class ColorsWebTheme:
     def __init__(self,
                  name: str = "Colors",
                  type: str = "colors",
+                 official: bool = False,
+                 userManagementSupported: bool = False,
                  configuration: ColorsWebThemeConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.official = official
+        self.userManagementSupported = userManagementSupported
         self.configuration = configuration or ColorsWebThemeConfiguration()
 
 

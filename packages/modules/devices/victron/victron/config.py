@@ -24,8 +24,9 @@ class Victron:
 
 
 class VictronBatConfiguration:
-    def __init__(self, modbus_id: int = 100):
+    def __init__(self, modbus_id: int = 100, vebus_id: int = 228):
         self.modbus_id = modbus_id
+        self.vebus_id = vebus_id
 
 
 class VictronBatSetup(ComponentSetup[VictronBatConfiguration]):

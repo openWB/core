@@ -43,6 +43,8 @@ export class Config {
 	animationDuration = 300
 	animationDelay = 100
 	zoomGraph = false
+	parentChargePoint1: undefined
+	parentChargePoint2: undefined
 
 	constructor() {}
 	get showRelativeArcs() {
@@ -249,6 +251,16 @@ export class Config {
 	}
 }
 export const globalConfig = reactive(new Config())
+export const wbSettings: { [key: string]: string | number | undefined } =
+	reactive({
+		localIp: undefined,
+		localBranch: undefined,
+		localCommit: undefined,
+		localVersion: undefined,
+		parentChargePoint1: undefined,
+		parentChargePoint2: undefined,
+	})
+
 export function initConfig() {
 	// readCookie()
 	// set the background
@@ -281,17 +293,17 @@ export const widescreen = computed(() => {
 	return screensize.x >= breakpoint
 })
 export const chargemodes: { [key: string]: ChargeModeInfo } = {
-	pv_charging: {
-		mode: ChargeMode.pv_charging,
-		name: 'PV',
-		color: 'var(--color-pv',
-		icon: 'fa-solar-panel',
-	},
 	instant_charging: {
 		mode: ChargeMode.instant_charging,
 		name: 'Sofort',
 		color: 'var(--color-charging)',
 		icon: 'fa-bolt',
+	},
+	pv_charging: {
+		mode: ChargeMode.pv_charging,
+		name: 'PV',
+		color: 'var(--color-pv',
+		icon: 'fa-solar-panel',
 	},
 	scheduled_charging: {
 		mode: ChargeMode.scheduled_charging,
@@ -299,11 +311,11 @@ export const chargemodes: { [key: string]: ChargeModeInfo } = {
 		color: 'var(--color-battery)',
 		icon: 'fa-bullseye',
 	},
-	standby: {
-		mode: ChargeMode.standby,
-		name: 'Standby',
-		color: 'var(--color-axis)',
-		icon: 'fa-pause',
+	eco_charging: {
+		mode: ChargeMode.eco_charging,
+		name: 'Eco',
+		color: 'var(--color-devices)',
+		icon: 'fa-coins',
 	},
 	stop: {
 		mode: ChargeMode.stop,
@@ -396,7 +408,7 @@ interface Preferences {
 
 function writeCookie() {
 	const prefs: Preferences = {}
-	prefs.hideSH = Object.values(shDevices)
+	prefs.hideSH = [...shDevices.values()]
 		.filter((device) => !device.showInGraph)
 		.map((device) => device.id)
 	prefs.showLG = globalConfig.graphPreference == 'live'

@@ -53,7 +53,7 @@ if os.path.isfile(file_stringpv):
 # aktuelle Leistung lesen
 with ModbusTcpClient(ipadr, port=502) as client:
     start = 103
-    resp = client.read_holding_registers(start, 2)
+    resp = client.read_holding_registers(start, 2, unit=1)
     #
     value1 = resp.registers[0]
     all = format(value1, '04x')
@@ -104,7 +104,7 @@ with ModbusTcpClient(ipadr, port=502) as client:
             builder = BinaryPayloadBuilder(byteorder=Endian.Big, wordorder=Endian.Little)
             builder.add_16bit_int(neupower)
             pay = builder.to_registers()
-            client.write_registers(102, [pay[0]])
+            client.write_registers(102, [pay[0]], unit=1)
             if count1 < 3:
                 log.info(' %d ipadr %s written %6d %#4X' %
                          (devicenumber, ipadr, pay[0], pay[0]))

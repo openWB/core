@@ -2,6 +2,7 @@ import logging
 from pathlib import Path
 from typing import List, NamedTuple, Optional, Tuple, Union
 from helpermodules.logger import ModifyLoglevelContext
+from modules.chargepoints.internal_openwb.config import InternalChargepointMode
 from modules.common.fault_state import FaultState
 from modules.common.hardware_check import SeriesHardwareCheckMixin
 
@@ -24,8 +25,10 @@ CP0_METERS = [meter_config(mpm3pm.Mpm3pm, modbus_id=5),
 CP1_METERS = [meter_config(mpm3pm.Mpm3pm, modbus_id=6), meter_config(sdm.Sdm630_72, modbus_id=106)]
 
 EVSE_ID_CP0 = [1]
+EVSE_ID_SE_CP0 = [11]
 EVSE_ID_TWO_BUSSES_CP1 = [1, 2]
 EVSE_ID_ONE_BUS_CP1 = [2]
+EVSE_ID_ONE_BUS_SE_CP1 = [12]
 EVSE_MIN_FIRMWARE = 7
 
 
@@ -39,39 +42,40 @@ class ClientHandler(SeriesHardwareCheckMixin):
         self.local_charge_point_num = local_charge_point_num
         self.evse_client = self._evse_factory(client, evse_ids)
         self.meter_client = self.find_meter_client(CP0_METERS if self.local_charge_point_num == 0 else CP1_METERS,
-                                                   client)
-        with client:
-            self.check_hardware(fault_state)
+                                                   client, fault_state)
+        self.request_and_check_hardware(fault_state)
         self.read_error = 0
 
     def _evse_factory(self, client: Union[ModbusSerialClient_, ModbusTcpClient_], evse_ids: List[int]) -> evse.Evse:
         for modbus_id in evse_ids:
-            evse_client = evse.Evse(modbus_id, client)
-            with client:
-                try:
+            try:
+                evse_client = evse.Evse(modbus_id, client)
+                with client:
                     if evse_client.get_firmware_version() > EVSE_MIN_FIRMWARE:
                         log.debug(client)
                         with ModifyLoglevelContext(log, logging.DEBUG):
                             log.debug("Modbus-ID der EVSE an LP"+str(self.local_charge_point_num)+": "+str(modbus_id))
                         return evse_client
-                except Exception:
-                    pass
+            except Exception:
+                pass
         else:
             return None
 
     @staticmethod
-    def find_meter_client(meters: List[meter_config], client: Union[ModbusSerialClient_, ModbusTcpClient_]) -> METERS:
+    def find_meter_client(meters: List[meter_config],
+                          client: Union[ModbusSerialClient_, ModbusTcpClient_],
+                          fault_state: FaultState) -> METERS:
         for meter_type, modbus_id in meters:
-            meter_client = meter_type(modbus_id, client)
-            with client:
-                try:
+            try:
+                with client:
+                    meter_client = meter_type(modbus_id, client, fault_state)
                     if meter_client.get_voltages()[0] > 200:
                         with ModifyLoglevelContext(log, logging.DEBUG):
                             log.debug("Verbauter Zähler: "+str(meter_type)+" mit Modbus-ID: "+str(modbus_id))
                         return meter_client
-                except Exception:
-                    log.debug(client)
-                    log.debug(f"Zähler {meter_type} mit Modbus-ID:{modbus_id} antwortet nicht.")
+            except Exception:
+                log.debug(client)
+                log.debug(f"Zähler {meter_type} mit Modbus-ID:{modbus_id} antwortet nicht.")
         else:
             return None
 
@@ -90,16 +94,20 @@ class ClientHandler(SeriesHardwareCheckMixin):
             return 15
 
 
-def client_factory(local_charge_point_num: int,
+def client_factory(mode: InternalChargepointMode,
+                   local_charge_point_num: int,
                    fault_state: FaultState,
                    created_client_handler: Optional[ClientHandler] = None) -> ClientHandler:
     serial_client, evse_ids = get_modbus_client(
-        local_charge_point_num, created_client_handler)
+        mode, local_charge_point_num, created_client_handler, fault_state)
     return ClientHandler(local_charge_point_num, serial_client, evse_ids, fault_state)
 
 
-def get_modbus_client(local_charge_point_num: int,
-                      created_client_handler: Optional[ClientHandler] = None):
+def get_modbus_client(mode: InternalChargepointMode,
+                      local_charge_point_num: int,
+                      created_client_handler: Optional[ClientHandler] = None,
+                      fault_state: Optional[FaultState] = None) -> Tuple[Union[ModbusSerialClient_, ModbusTcpClient_],
+                                                                         List[int]]:
     tty_devices = list(Path("/dev/serial/by-path").glob("*"))
     log.debug("tty_devices"+str(tty_devices))
     resolved_devices = [str(file.resolve()) for file in tty_devices]
@@ -117,7 +125,10 @@ def get_modbus_client(local_charge_point_num: int,
             with ModifyLoglevelContext(log, logging.DEBUG):
                 log.debug("LP0 Device: "+str(resolved_devices[0]))
             serial_client = ModbusSerialClient_(resolved_devices[0])
-            evse_ids = EVSE_ID_CP0
+            if mode == InternalChargepointMode.SE:
+                evse_ids = EVSE_ID_SE_CP0
+            else:
+                evse_ids = EVSE_ID_CP0
         else:
             # Don't create two clients for one source!
             with ModifyLoglevelContext(log, logging.DEBUG):
@@ -126,7 +137,10 @@ def get_modbus_client(local_charge_point_num: int,
                 serial_client = created_client_handler.client
             else:
                 serial_client = ModbusSerialClient_(resolved_devices[0])
-            evse_ids = EVSE_ID_ONE_BUS_CP1
+            if mode == InternalChargepointMode.SE:
+                evse_ids = EVSE_ID_ONE_BUS_SE_CP1
+            else:
+                evse_ids = EVSE_ID_ONE_BUS_CP1
     elif counter > 1:
         with ModifyLoglevelContext(log, logging.DEBUG):
             log.debug("found "+str(counter)+" possible usb devices: "+str(resolved_devices))
@@ -141,7 +155,7 @@ def get_modbus_client(local_charge_point_num: int,
                 serial_client = ModbusSerialClient_(device)
                 # Source immer an der Modbus-ID des Zählers fest machen, da diese immer fest ist.
                 # Die USB-Anschlüsse können vertauscht sein.
-                detected_device = ClientHandler.find_meter_client(meters, serial_client)
+                detected_device = ClientHandler.find_meter_client(meters, serial_client, fault_state)
                 if detected_device:
                     break
         with ModifyLoglevelContext(log, logging.DEBUG):

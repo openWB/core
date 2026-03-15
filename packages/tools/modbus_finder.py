@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
-import sys
 import time
 from typing import Callable
 
 import pymodbus
 from pymodbus.constants import Endian
 
-from modules.common import modbus
+import sys
+sys.path.append("/var/www/html/openWB/packages")
+
+try:
+    from modules.common import modbus
+except Exception as e:
+    print(e)
 
 
 def try_read(function: Callable, **kwargs) -> str:

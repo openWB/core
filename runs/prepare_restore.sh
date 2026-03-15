@@ -15,11 +15,13 @@ declare resultStatus
 	mkdir -p "$WORKING_DIR"
 	echo "****************************************"
 	echo "Step 2: extract archive to working directory"
-	# extracting as root preserves file owner/group and permissions!
+	# extracting as root preserves file owner/group and permissions, but directory owner/group is root!
 	if ! sudo tar --verbose --extract --file="$SOURCE_FILE" --directory="$WORKING_DIR"; then
 		resultMessage="Beim Entpacken des Archivs ist ein Fehler aufgetreten!"
 		resultStatus=1
 	else
+		echo "fixing directory owner/group"
+		sudo chown --verbose openwb:openwb "$WORKING_DIR/openWB" "$WORKING_DIR/openWB/data" "$WORKING_DIR/openWB/data/log"
 		echo "****************************************"
 		echo "Step 3: validating extracted files"
 		if [[ ! -f "$WORKING_DIR/SHA256SUM" ]] ||
@@ -33,6 +35,18 @@ declare resultStatus
 		else
 			if [[ ! -f "$WORKING_DIR/configuration.json" ]]; then
 				echo "configuration missing; continue anyway"
+			fi
+			if [[ ! -d "$WORKING_DIR/conf_local.d" ]]; then
+				echo "mosquitto configuration missing; continue anyway"
+			fi
+			if [[ ! -d "$WORKING_DIR/boot" ]]; then
+				echo "boot file missing; continue anyway"
+			fi
+			if [[ ! -f "$WORKING_DIR/mosquitto_ctrl" ]]; then
+				echo "mosquitto_ctrl file missing; continue anyway"
+			fi
+			if [[ ! -f "$WORKING_DIR/dynamic-security.json" ]]; then
+				echo "dynamic-security.json file missing; continue anyway"
 			fi
 			if ! (cd "$WORKING_DIR" && sudo sha256sum --quiet --check "SHA256SUM"); then
 				resultMessage="Einige Dateien wurden gelöscht oder bearbeitet!"
@@ -53,6 +67,10 @@ declare resultStatus
 						resultMessage="Der Entwicklungszweig \"$BRANCH\" des Archivs ist ungültig."
 						resultStatus=1
 					else
+						echo "Step 5.3: clean mosquitto configuration, will be recreated on next boot"
+						sudo rm -v -f /etc/mosquitto/conf.d/openwb-*.conf
+						sudo rm -v -f "/var/lib/mosquitto/dynamic-security.json"
+						rm -v -f "/home/openwb/.config/mosquitto_ctrl"
 						# set trigger for restore (checked in atreboot.sh)
 						touch "${OPENWB_BASE_DIR}/data/restore/run_on_boot"
 						resultMessage="Wiederherstellung vorbereitet. System wird neu gestartet."

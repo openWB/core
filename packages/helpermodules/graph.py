@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class Config:
-    duration: int = 120
+    duration: int = 240
 
 
 def config_factory() -> Config:

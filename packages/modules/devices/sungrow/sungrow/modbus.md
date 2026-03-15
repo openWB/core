@@ -1,13 +1,15 @@
-# Modbus Adressen für Sungrow SH* und SG* Wechselrichter
+# Modbus Adressen für Sungrow SH\* und SG\* Wechselrichter
 
-## Datengrundlage:
-* TI_20230918_Communication Protocol of Residential and Commerical PV Grid-connected Inverter_V1.1.58_EN.pdf
+## Datengrundlage
+
+* TI_20230918_Communication Protocol of Residential and Commercial PV Grid-connected Inverter_V1.1.58_EN.pdf
 * TI_20231019_Communication Protocol of Residential Hybrid Inverter_V1.1.2_EN.pdf
 * modbus_finder.py an SH10RT-V112 (LAN) Firmware SAPPHIRE-H_B001.V000.P005-20231027
 * modbus_finder.py an SH10RT-V112 (WiNet-S) Firmware WINET-SV200.001.00.P023
 * modbus_finder.py an SG10RT (WiNet-S) Firmware BERYL-S_B000.V000.P039-20230626 / WINET-SV200.001.00.P023
 
 ## Werte
+
 | Wert                                | SH_LAN | SH_WiNet | SG_WiNet      | Einheit | Typ            | Bemerkung                                                        |
 |-------------------------------------|--------|----------|---------------|---------|----------------|------------------------------------------------------------------|
 | WR: Zähler inkl. Batterieentladung  | 5003   | 5003     | --            | 0.1 kWh | UINT_32 mixed  | Delta zu 'WR: Zähler Gesamtertrag' ist entladene **Netz**energie |

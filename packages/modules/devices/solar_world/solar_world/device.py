@@ -5,6 +5,7 @@ from typing import Iterable, Optional, Union, List
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
 from modules.devices.solar_world.solar_world import counter, inverter
 from modules.devices.solar_world.solar_world.config import (
@@ -17,16 +18,17 @@ log = logging.getLogger(__name__)
 
 def create_device(device_config: SolarWorld):
     def create_counter_component(component_config: SolarWorldCounterSetup):
-        return SolarWorldCounter(device_config.id, component_config)
+        return SolarWorldCounter(component_config, device_id=device_config.id)
 
     def create_inverter_component(component_config: SolarWorldInverterSetup):
-        return SolarWorldInverter(device_config.id, component_config)
+        return SolarWorldInverter(component_config, device_id=device_config.id)
 
     def update_components(components: Iterable[Union[SolarWorldCounter, SolarWorldInverter]]):
         response = req.get_http_session().get("http://"+str(device_config.configuration.ip_address) +
                                               "/rest/solarworld/lpvm/powerAndBatteryData", timeout=5).json()
         for component in components:
-            component.update(response)
+            with SingleComponentUpdateContext(component.fault_state):
+                component.update(response)
 
     return ConfigurableDevice(
         device_config=device_config,

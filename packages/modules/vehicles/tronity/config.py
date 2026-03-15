@@ -19,7 +19,9 @@ class TronityVehicleSoc:
     def __init__(self,
                  name: str = "Tronity",
                  type: str = "tronity",
+                 official: bool = True,
                  configuration: TronityVehicleSocConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.official = official
         self.configuration = configuration or TronityVehicleSocConfiguration()

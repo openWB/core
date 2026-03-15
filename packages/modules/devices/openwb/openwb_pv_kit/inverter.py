@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from typing import Union
+from typing import Union, TypedDict, Any
 
 from modules.common import modbus
 from modules.common.abstract_device import AbstractInverter
@@ -10,12 +10,21 @@ from modules.devices.openwb.openwb_flex.inverter import PvKitFlex
 from modules.devices.openwb.openwb_pv_kit.config import PvKitInverterSetup
 
 
+class KwargsDict(TypedDict):
+    device_id: int
+    client: modbus.ModbusTcpClient_
+
+
 class PvKit(PvKitFlex, AbstractInverter):
     def __init__(self,
-                 device_id: int,
                  component_config: Union[EvuKitInverterSetup, PvKitInverterSetup],
-                 tcp_client: modbus.ModbusTcpClient_) -> None:
+                 **kwargs: Any) -> None:
         self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__device_id: int = self.kwargs['device_id']
+        self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['client']
         version = self.component_config.configuration.version
         if version == 0 or version == 1:
             id = 8
@@ -24,7 +33,10 @@ class PvKit(PvKitFlex, AbstractInverter):
         else:
             raise ValueError("Version "+str(version) + " unbekannt.")
 
-        super().__init__(device_id, convert_to_flex_setup(self.component_config, id), tcp_client)
+        super().__init__(convert_to_flex_setup(self.component_config, id),
+                         device_id=self.__device_id,
+                         client=self.__tcp_client)
+        super().initialize()
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=PvKitInverterSetup)

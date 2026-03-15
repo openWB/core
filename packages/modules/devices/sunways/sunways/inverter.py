@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
+from typing import Any, TypedDict
 from requests.auth import HTTPDigestAuth
 
-from dataclass_utils import dataclass_from_dict
 from modules.common import req
 from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
@@ -18,15 +17,19 @@ x
 """
 
 
-class SunwaysInverter(AbstractInverter):
-    def __init__(self,
-                 component_config: Union[Dict, SunwaysInverterSetup],
-                 ip_address: str,
-                 password: str) -> None:
+class KwargsDict(TypedDict):
+    ip_address: str
+    password: str
 
-        self.component_config = dataclass_from_dict(SunwaysInverterSetup, component_config)
-        self.ip_address = ip_address
-        self.password = password
+
+class SunwaysInverter(AbstractInverter):
+    def __init__(self, component_config: SunwaysInverterSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.ip_address: str = self.kwargs['ip_address']
+        self.password: str = self.kwargs['password']
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 

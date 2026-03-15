@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
+from typing import Any, TypedDict
 
 from pymodbus.constants import Endian
 
-from dataclass_utils import dataclass_from_dict
 from modules.devices.carlo_gavazzi.carlo_gavazzi.config import CarloGavazziCounterSetup
 from modules.common import modbus
 from modules.common.abstract_device import AbstractCounter
@@ -15,16 +14,21 @@ from modules.common.simcount import SimCounter
 from modules.common.store import get_counter_value_store
 
 
+class KwargsDict(TypedDict):
+    device_id: int
+    tcp_client: modbus.ModbusTcpClient_
+    modbus_id: int
+
+
 class CarloGavazziCounter(AbstractCounter):
-    def __init__(self,
-                 device_id: int,
-                 component_config: Union[Dict, CarloGavazziCounterSetup],
-                 tcp_client: modbus.ModbusTcpClient_,
-                 modbus_id: int) -> None:
-        self.__device_id = device_id
-        self.component_config = dataclass_from_dict(CarloGavazziCounterSetup, component_config)
-        self.__tcp_client = tcp_client
-        self.__modbus_id = modbus_id
+    def __init__(self, component_config: CarloGavazziCounterSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__device_id: int = self.kwargs['device_id']
+        self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['tcp_client']
+        self.__modbus_id: int = self.kwargs['modbus_id']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))

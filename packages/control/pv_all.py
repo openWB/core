@@ -58,18 +58,24 @@ class PvAll:
                 exported = 0
                 power = 0
                 fault_state = 0
-                for module in data.data.pv_data:
+                for module in data.data.pv_data.values():
                     try:
-                        if "pv" in module:
-                            module_data = data.data.pv_data[module].data
-                            if module_data.get.fault_state < 2:
-                                power += module_data.get.power
-                                exported += module_data.get.exported
-                            else:
-                                if fault_state < module_data.get.fault_state:
-                                    fault_state = module_data.get.fault_state
+                        if module.data.get.fault_state < 2:
+                            try:
+                                power += module.data.get.power
+                            except Exception:
+                                log.exception(f"Fehler im allgemeinen PV-Modul für pv{module.num}")
+                            exported += module.data.get.exported
+                        else:
+                            if fault_state < module.data.get.fault_state:
+                                fault_state = module.data.get.fault_state
+                        limit = data.data.io_actions.stepwise_control(module.num)[1]
+                        if module.data.get.fault_state == 0:
+                            # Fehlermeldung nicht überschreiben
+                            module.data.get.fault_str = limit.message
+                            Pub().pub(f"openWB/set/pv/{module.num}/get/fault_str", limit.message)
                     except Exception:
-                        log.exception("Fehler im allgemeinen PV-Modul für "+str(module))
+                        log.exception(f"Fehler im allgemeinen PV-Modul für pv{module.num}")
                 if fault_state == 0:
                     self.data.get.exported = exported
                     Pub().pub("openWB/set/pv/get/exported", self.data.get.exported)

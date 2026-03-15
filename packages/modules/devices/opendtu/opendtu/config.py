@@ -9,7 +9,7 @@ from ..vendor import vendor_descriptor
 @auto_str
 class OpenDTUConfiguration(JsonConfiguration):
     def __init__(self, url: Optional[str] = None):
-        self.url = "http://" + url + "/api/livedata/status"
+        self.url = f"http://{url}/api/livedata/status"
 
 
 @auto_str

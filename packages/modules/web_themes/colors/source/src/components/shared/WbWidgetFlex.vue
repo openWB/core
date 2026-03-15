@@ -16,7 +16,7 @@
 					<slot name="buttons" />
 				</div>
 			</div>
-			<div class="grid12 pb-3">
+			<div class="grid12 pb-3 px-3">
 				<slot />
 			</div>
 		</div>

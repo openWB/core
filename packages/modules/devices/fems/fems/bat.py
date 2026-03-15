@@ -1,6 +1,6 @@
 import logging
 from requests import Session
-from helpermodules.scale_metric import scale_metric
+from typing import TypedDict, Any
 from modules.devices.fems.fems.config import FemsBatSetup
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
@@ -8,14 +8,24 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_bat_value_store
 from modules.devices.fems.fems.version import FemsVersion, get_version
+from helpermodules.scale_metric import scale_metric
+
 log = logging.getLogger(__name__)
 
 
+class KwargsDict(TypedDict):
+    ip_address: str
+    session: Session
+
+
 class FemsBat(AbstractBat):
-    def __init__(self, ip_address: str, component_config: FemsBatSetup, session: Session) -> None:
-        self.ip_address = ip_address
+    def __init__(self, component_config: FemsBatSetup, **kwargs: Any) -> None:
         self.component_config = component_config
-        self.session = session
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.ip_address: str = self.kwargs['ip_address']
+        self.session: Session = self.kwargs['session']
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         if self.component_config.configuration.num == 1:
@@ -75,7 +85,6 @@ class FemsBat(AbstractBat):
                     pv = scale_metric(singleValue['value'], singleValue.get('unit'), 'W')
                 elif address == "_sum/ConsumptionActivePower":
                     haus = scale_metric(singleValue['value'], singleValue.get('unit'), 'W')
-        # keine Berechnung im Gerät, da grid nicht der Leistung aus der Zählerkomponente entspricht.
         power = grid + pv - haus
         bat_state = BatState(
             power=power,

@@ -1,5 +1,5 @@
 import sys
-from typing import Type, Optional, Callable, TypeVar, Generic, List, Union, Any
+from typing import List, Type, Optional, Callable, TypeVar, Generic, Union, Any, Tuple
 
 from modules.common.fault_state_level import FaultStateLevel
 
@@ -20,9 +20,9 @@ class RegistryEntry(Generic[T]):
 
 
 class ExceptionRegistry:
-    registry = []  # type: List[RegistryEntry]
+    registry: List[RegistryEntry] = []
 
-    def translate_exception(self, exception: Exception) -> [str, FaultStateLevel]:
+    def translate_exception(self, exception: Exception) -> Tuple[str, FaultStateLevel]:
         entry = self.find_registry_entry(exception)
         if entry is None:
             return "{} {}".format(type(exception), exception.args), FaultStateLevel.ERROR

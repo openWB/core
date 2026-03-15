@@ -1,22 +1,32 @@
 <template>
 	<WbSubwidget :fullwidth="fullwidth ? true : false">
-		<div class="grid-col-12 mt-2 mb-0 px-0 py-0 configitem">
-			<div class="titlecolumn m-0 p-0 d-flex align-items-center">
-				<span class="d-flex align-items-baseline m-0 p-0" @click="toggleInfo">
-					<i
-						v-if="props.icon"
-						class="fa-solid fa-sm m-0 p-0 me-2 item-icon"
-						:class="props.icon"
-					/>
-					{{ title }}</span
-				>
-				<span>
-					<i
-						v-if="props.infotext"
-						class="fa-solid fa-sm fa-circle-question ms-4 me-2"
-						:style="iconstyle"
-						@click="toggleInfo"
-					/>
+		<div class="grid-col-12 mt-0 mb-0 px-0 py-0 configitem">
+			<div
+				class="titlecolumn m-0 p-0 d-flex justify-content-between align-items-baseline"
+			>
+				<span class="d-flex justify-content-end align-items-baseline">
+					<span class="d-flex align-items-baseline m-0 p-0" @click="toggleInfo">
+						<i
+							v-if="props.icon"
+							class="fa-solid fa-sm m-0 p-0 me-2 item-icon"
+							:class="props.icon"
+						/>
+						{{ title }}
+					</span>
+				</span>
+				<span class="d-flex align-items-center">
+					<span class="d-flex">
+						<i
+							v-if="props.infotext"
+							class="fa-solid fa-sm fa-circle-question ms-4 me-2"
+							:style="iconstyle"
+							@click="toggleInfo"
+						/>
+					</span>
+
+					<span class="d-flex justify-content-end m-0 p-0"
+						><slot name="inline-item" />
+					</span>
 				</span>
 			</div>
 
@@ -29,11 +39,9 @@
 				{{ infotext }}
 			</p>
 			<div
-				class="ms-1 mb-2 p-0 pt-2 d-flex justify-content-stretch align-items-center"
+				class="ms-1 mb-2 p-0 pt-2 d-flex justify-content-stretch align-items-center contentrow"
 			>
-				<span class="justify-content-stretch d-flex">
-					<slot />
-				</span>
+				<slot />
 			</div>
 		</div>
 	</WbSubwidget>
@@ -76,6 +84,7 @@ const iconstyle = computed(() => {
 .titlecolumn {
 	color: var(--color-fg);
 	font-size: var(--font-settings);
+	flex-grow: 1;
 }
 
 .selectors {
@@ -84,5 +93,16 @@ const iconstyle = computed(() => {
 
 .configitem {
 	font-size: var(--font-settings);
+	display: flex;
+	flex-direction: column;
+	justify-content: stretch;
+	align-items: stretch;
+	height: 100%;
+	width: 100%;
+}
+.contentrow {
+	display: flex;
+	height: 100%;
+	width: 100%;
 }
 </style>

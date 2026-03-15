@@ -6,66 +6,77 @@ import requests
 
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.fronius.fronius.bat import FroniusBat
 from modules.devices.fronius.fronius.config import (Fronius, FroniusBatSetup, FroniusSecondaryInverterSetup,
                                                     FroniusSmCounterSetup, FroniusS0CounterSetup,
-                                                    FroniusInverterSetup)
+                                                    FroniusProductionMeterSetup, FroniusInverterSetup)
 from modules.devices.fronius.fronius.counter_s0 import FroniusS0Counter
 from modules.devices.fronius.fronius.counter_sm import FroniusSmCounter
 from modules.devices.fronius.fronius.inverter import FroniusInverter
 from modules.devices.fronius.fronius.inverter_secondary import FroniusSecondaryInverter
+from modules.devices.fronius.fronius.inverter_production_meter import FroniusProductionMeter
 
 log = logging.getLogger(__name__)
 
-fronius_component_classes = Union[FroniusBat, FroniusSmCounter,
-                                  FroniusS0Counter, FroniusInverter, FroniusSecondaryInverter]
+fronius_component_classes = Union[FroniusBat, FroniusSmCounter, FroniusS0Counter,
+                                  FroniusInverter, FroniusSecondaryInverter, FroniusProductionMeter]
 
 
 def create_device(device_config: Fronius):
     def create_bat_component(component_config: FroniusBatSetup):
-        return FroniusBat(device_config.id, component_config, device_config.configuration)
+        return FroniusBat(component_config=component_config,
+                          device_id=device_config.id,
+                          device_config=device_config.configuration)
 
     def create_counter_sm_component(component_config: FroniusSmCounterSetup):
-        return FroniusSmCounter(device_config.id, component_config, device_config.configuration)
+        return FroniusSmCounter(component_config=component_config,
+                                device_id=device_config.id,
+                                device_config=device_config.configuration)
 
     def create_counter_s0_component(component_config: FroniusS0CounterSetup):
-        return FroniusS0Counter(device_config.id, component_config, device_config.configuration)
+        return FroniusS0Counter(component_config=component_config,
+                                device_id=device_config.id,
+                                device_config=device_config.configuration)
 
     def create_inverter_component(component_config: FroniusInverterSetup):
-        return FroniusInverter(device_config.id, component_config)
+        return FroniusInverter(component_config=component_config,
+                               device_id=device_config.id)
 
     def create_inverter_secondary_component(component_config: FroniusSecondaryInverterSetup):
-        return FroniusSecondaryInverter(device_config.id, component_config)
+        return FroniusSecondaryInverter(component_config=component_config,
+                                        device_id=device_config.id)
+
+    def create_inverter_production_meter_component(component_config: FroniusProductionMeterSetup):
+        return FroniusProductionMeter(component_config=component_config,
+                                      device_id=device_config.id,
+                                      device_config=device_config.configuration)
 
     def update_components(components: Iterable[fronius_component_classes]):
         inverter_response = None
         for component in components:
-            with SingleComponentUpdateContext(component.fault_state):
-                if (
-                    component.component_config.type == "inverter" or
-                    component.component_config.type == "inverter_secondary"
-                ):
-                    if inverter_response is None:
-                        try:
-                            inverter_response = req.get_http_session().get(
-                                (f'http://{device_config.configuration.ip_address}'
-                                    '/solar_api/v1/GetPowerFlowRealtimeData.fcgi'),
-                                params=(('Scope', 'System'),),
-                                timeout=3).json()
-                        except (requests.ConnectTimeout, requests.ConnectionError) as e:
-                            inverter_response = e
-                        # Nachtmodus: WR ist ausgeschaltet
-                    component.update(inverter_response)
+            if (
+                component.component_config.type == "inverter" or
+                component.component_config.type == "inverter_secondary"
+            ):
+                if inverter_response is None:
+                    try:
+                        inverter_response = req.get_http_session().get(
+                            (f'http://{device_config.configuration.ip_address}'
+                                '/solar_api/v1/GetPowerFlowRealtimeData.fcgi'),
+                            params=(('Scope', 'System'),),
+                            timeout=3).json()
+                    except (requests.ConnectTimeout, requests.ConnectionError) as e:
+                        inverter_response = e
+                    # Nachtmodus: WR ist ausgeschaltet
+                component.update(inverter_response)
 
         for component in components:
-            with SingleComponentUpdateContext(component.fault_state):
-                if (
-                    component.component_config.type != "inverter" and
-                    component.component_config.type != "inverter_secondary"
-                ):
-                    component.update()
+            if (
+                component.component_config.type != "inverter" and
+                component.component_config.type != "inverter_secondary"
+            ):
+                component.update()
 
     return ConfigurableDevice(
         device_config=device_config,
@@ -75,6 +86,7 @@ def create_device(device_config: Fronius):
             counter_s0=create_counter_s0_component,
             inverter=create_inverter_component,
             inverter_secondary=create_inverter_secondary_component,
+            inverter_production_meter=create_inverter_production_meter_component,
         ),
         component_updater=MultiComponentUpdater(update_components)
     )

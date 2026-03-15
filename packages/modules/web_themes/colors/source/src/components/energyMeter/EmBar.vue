@@ -1,9 +1,9 @@
 <template>
-	<g :id="'bar-' + props.item.name" transform="scale(1,-1) translate (0,-445)">
+	<g :id="'bar-' + props.id" transform="scale(1,-1) translate (0,-445)">
 		<!-- Main bar -->
 		<rect
 			class="bar"
-			:x="props.xScale(item.name)"
+			:x="props.xScale(props.id)"
 			y="0"
 			:width="props.xScale.bandwidth()"
 			:height="barheight"
@@ -12,7 +12,7 @@
 		<!-- Pv fraction inner bar -->
 		<rect
 			class="bar"
-			:x="(props.xScale(item.name) as number) + props.xScale.bandwidth() / 6"
+			:x="(props.xScale(props.id) as number) + props.xScale.bandwidth() / 6"
 			y="0"
 			:width="(props.xScale.bandwidth() * 2) / 3"
 			:height="pvBarheight"
@@ -22,7 +22,7 @@
 		<!-- Battery fraction inner bar  -->
 		<rect
 			class="bar"
-			:x="(props.xScale(item.name) as number) + props.xScale.bandwidth() / 6"
+			:x="(props.xScale(props.id) as number) + props.xScale.bandwidth() / 6"
 			:y="pvBarheight"
 			:width="(props.xScale.bandwidth() * 2) / 3"
 			:height="batBarheight"
@@ -36,31 +36,29 @@
 import { computed } from 'vue'
 import * as d3 from 'd3'
 import type { MarginType, PowerItem } from '@/assets/js/types'
+import { graphData } from '../powerGraph/model'
 
 const props = defineProps<{
 	item: PowerItem
+	id: string
 	xScale: d3.ScaleBand<string>
 	yScale: d3.ScaleLinear<number, number, never>
 	margin: MarginType
 	height: number
-	barcount: number
-	autarchy?: number
-	autText?: string
 }>()
 const barheight = computed(
 	() =>
 		props.height -
-		props.yScale(props.item.energy) -
+		props.yScale(props.item[graphScope.value].energy) -
 		props.margin.top -
 		props.margin.bottom,
 )
-
 const pvBarheight = computed(() => {
 	let result = 0
-	if (props.item.energyPv > 0) {
+	if (props.item[graphScope.value].energyPv > 0) {
 		result =
 			props.height -
-			props.yScale(props.item.energyPv) -
+			props.yScale(props.item[graphScope.value].energyPv) -
 			props.margin.top -
 			props.margin.bottom
 	}
@@ -71,10 +69,10 @@ const pvBarheight = computed(() => {
 })
 const batBarheight = computed(() => {
 	let result = 0
-	if (props.item.energyBat > 0) {
+	if (props.item[graphScope.value].energyBat > 0) {
 		result =
 			props.height -
-			props.yScale(props.item.energyBat) -
+			props.yScale(props.item[graphScope.value].energyBat) -
 			props.margin.top -
 			props.margin.bottom
 	}
@@ -83,6 +81,7 @@ const batBarheight = computed(() => {
 	}
 	return result
 })
+const graphScope = computed(() => (graphData.usePastData ? 'past' : 'now'))
 </script>
 
 <style scoped></style>

@@ -28,7 +28,6 @@ class ChargepointRfidMixin:
                 # keine Duo
                 cp2_data is None):
             self.data.set.rfid = rfid
-            Pub().pub("openWB/chargepoint/"+str(self.num)+"/set/rfid", rfid)
             self.chargepoint_module.clear_rfid()
 
         self.data.get.rfid = None
@@ -64,7 +63,8 @@ class ChargepointRfidMixin:
                                 self.data.get.rfid_timestamp = None
                                 if self.template.data.disable_after_unplug:
                                     self.data.set.manual_lock = True
-                                    Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/manual_lock", True)
+                                if self.data.set.charging_ev_data.charge_template.data.load_default:
+                                    self.data.config.ev = 0
                                 Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp", None)
                                 msg = ("Es ist in den letzten 5 Minuten kein EV angesteckt worden, dem "
                                        f"der ID-Tag {rfid} zugeordnet werden kann. Daher wird dieser verworfen.")
@@ -76,6 +76,8 @@ class ChargepointRfidMixin:
                 msg = "Identifikation von Fahrzeugen ist nicht aktiviert."
             self.data.get.rfid = None
             Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid", None)
+            self.data.get.rfid_timestamp = None
+            Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp", None)
             self.chargepoint_module.clear_rfid()
             self.set_state_and_log(msg)
 

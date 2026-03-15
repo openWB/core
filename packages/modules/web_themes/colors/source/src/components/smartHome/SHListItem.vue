@@ -31,7 +31,7 @@
 				<FormatWatt :watt="device.power" />
 			</InfoItem>
 			<InfoItem heading="Energie:" :small="true" class="grid-col-4">
-				<FormatWattH :watt-h="device.energy" />
+				<FormatWattH :watt-h="device.now.energy" />
 			</InfoItem>
 			<InfoItem heading="Laufzeit:" :small="true" class="grid-col-4 grid-right">
 				{{ formatTime(device.runningTime) }}
@@ -86,18 +86,18 @@ const switchStyle = computed(() => {
 function statusButtonClicked() {
 	if (!props.device.isAutomatic) {
 		if (props.device.status == 'on') {
-			updateServer('shSwitchOn', 0, props.device.id)
+			updateServer('shSwitchOn', 0, +props.device.id.slice(2))
 		} else {
-			updateServer('shSwitchOn', 1, props.device.id)
+			updateServer('shSwitchOn', 1, +props.device.id.slice(2))
 		}
 		shDevices.get(props.device.id)!.status = 'waiting'
 	}
 }
 function modeButtonClicked() {
 	if (props.device.isAutomatic) {
-		updateServer('shSetManual', 1, props.device.id)
+		updateServer('shSetManual', 1, +props.device.id.slice(2))
 	} else {
-		updateServer('shSetManual', 0, props.device.id)
+		updateServer('shSetManual', 0, +props.device.id.slice(2))
 	}
 }
 const deviceMode = computed(() => {

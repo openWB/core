@@ -41,6 +41,7 @@ class Get:
     rfid_timestamp: Optional[str] = None
     rfid: Optional[str] = None
     voltages: List[float] = field(default_factory=voltages_list_factory)
+    error_timestamp: float = None
 
 
 def get_factory() -> Get:

@@ -1,11 +1,15 @@
 from requests import HTTPError
-from requests.exceptions import ConnectionError
+from requests.exceptions import ConnectionError, ReadTimeout
 
 from helpermodules.exceptions.registry import ExceptionRegistry
 
 
 def handle_connection_error(e: ConnectionError):
     return "Die Verbindung zum Server {} ist fehlgeschlagen. Überprüfe Adresse und Netzwerk.".format(e.request.url)
+
+
+def handle_read_timeout(e: ReadTimeout):
+    return "Innerhalb des Timeouts wurde keine Antwort erhalten. Überprüfe Adresse und Netzwerk."
 
 
 def handle_http_error(e: HTTPError):
@@ -22,3 +26,4 @@ def handle_http_error(e: HTTPError):
 def register_request_exception_handlers(registry: ExceptionRegistry) -> None:
     registry.add(ConnectionError, handle_connection_error)
     registry.add(HTTPError, handle_http_error)
+    registry.add(ReadTimeout, handle_read_timeout)

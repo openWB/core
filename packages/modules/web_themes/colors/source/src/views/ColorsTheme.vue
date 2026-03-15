@@ -11,16 +11,7 @@ Hagen */
 		<ButtonBar v-if="globalConfig.showButtonBar" />
 
 		<!-- Main Widgets -->
-		<div v-if="false" class="row py-0 px-0 m-0">
-			<PowerMeter />
-			<PowerGraph />
-			<EnergyMeter />
-			<ChargePointList id="0" :compact="globalConfig.shortCpList == 'always'" />
-			<GlobalPriceChart id="Hidden" />
-			<VehicleList />
-			<CounterList />
-		</div>
-		<div v-if="true" class="row py-0 px-0 m-0">
+		<div class="row py-0 px-0 m-0">
 			<CarouselFix>
 				<template #item1>
 					<PowerMeter />
@@ -90,7 +81,7 @@ Hagen */
 				<span class="d-none d-md-inline ms-2">Fahrzeuge</span>
 			</a>
 			<a
-				v-if="globalData.isBatteryConfigured"
+				v-if="globalData.isBatteryConfigured && batteries.size > 0"
 				class="nav-link"
 				data-bs-toggle="tab"
 				data-bs-target="#batterylist"
@@ -260,6 +251,7 @@ import { ref, computed, onMounted } from 'vue'
 import { globalData } from '../assets/js/model'
 import { shDevices } from '@/components/smartHome/model'
 import { initConfig } from '@/assets/js/themeConfig'
+import { batteries } from '@/components/batteryList/model'
 import PowerMeter from '@/components/powerMeter/PowerMeter.vue'
 import PowerGraph from '@/components/powerGraph/PowerGraph.vue'
 import EnergyMeter from '@/components/energyMeter/EnergyMeter.vue'
@@ -283,7 +275,6 @@ import {
 	screensize,
 } from '@/assets/js/themeConfig'
 import { initGraph } from '@/components/powerGraph/model'
-
 // state
 const showMQ = ref(false)
 const showSH = computed(() => {

@@ -23,7 +23,9 @@ class PSA:
     def __init__(self,
                  name: str = "PSA (nicht mehr verwenden)",
                  type: str = "psa",
+                 official: bool = False,
                  configuration: PSAConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.official = official
         self.configuration = configuration or PSAConfiguration()

@@ -9,6 +9,7 @@ export const useMqttStore = defineStore("mqtt", {
       localVersion: undefined,
       parentChargePoint1: undefined,
       parentChargePoint2: undefined,
+      hideLogin: false,
     },
     topics: {},
     chartData: {},
@@ -103,7 +104,7 @@ export const useMqttStore = defineStore("mqtt", {
         if (value !== undefined) {
           return value;
         }
-        console.warn("topic not found! using default", topic, defaultValue);
+        console.info("topic not found! using default", topic, defaultValue);
         return defaultValue;
       };
     },
@@ -190,7 +191,36 @@ export const useMqttStore = defineStore("mqtt", {
       }
       return undefined;
     },
-    getDashBoardEnabled(state) {
+    getDefaultView: (state) => {
+      if (state.getThemeConfiguration) {
+        const views = {
+          'dashboard': state.getThemeConfiguration.enable_dashboard_view,
+          'energy-flow': state.getThemeConfiguration.enable_energy_flow_view,
+          'charge-points': state.getThemeConfiguration.enable_charge_points_view,
+          'status': state.getThemeConfiguration.enable_status_view,
+        };
+        if (state.getThemeConfiguration.default_view !== undefined) {
+          if (views[state.getThemeConfiguration.default_view] === true) {
+            return state.getThemeConfiguration.default_view;
+          } else {
+            console.warn(`default view '${state.getThemeConfiguration.default_view}' is not enabled, check your configuration!`);
+          }
+        }
+        for (const [view, enabled] of Object.entries(views)) {
+          if (enabled) {
+            return view;
+          }
+        }
+      }
+      return undefined;
+    },
+    getDefaultViewTimeout: (state) => {
+      if (state.getThemeConfiguration) {
+        return state.getThemeConfiguration.default_view_timeout;
+      }
+      return 0;
+    },
+    getDashboardEnabled(state) {
       if (state.getThemeConfiguration) {
         return state.getThemeConfiguration.enable_dashboard_view;
       }
@@ -202,7 +232,6 @@ export const useMqttStore = defineStore("mqtt", {
       }
       return true;
     },
-
     getChargePointsEnabled(state) {
       if (state.getThemeConfiguration) {
         return state.getThemeConfiguration.enable_charge_points_view;
@@ -258,6 +287,12 @@ export const useMqttStore = defineStore("mqtt", {
         return state.getThemeConfiguration.simple_charge_point_view;
       }
       return false;
+    },
+    getAccessAllowed(state) {
+      if (state.topics["openWB/system/security/access_allowed"] === undefined) {
+        return false;
+      }
+      return state.topics["openWB/system/security/access_allowed"] === true;
     },
 
     /* devices and components getters */
@@ -362,6 +397,9 @@ export const useMqttStore = defineStore("mqtt", {
     getBatterySocChartData(state) {
       return state.getChartData("openWB/bat/get/soc");
     },
+    getBatteryMode(state) {
+      return state.topics["openWB/general/chargemode_config/pv_charging/bat_mode"];
+    },
     getPvConfigured(state) {
       return state.getValueBool("openWB/pv/config/configured");
     },
@@ -371,8 +409,6 @@ export const useMqttStore = defineStore("mqtt", {
           "openWB/pv/get/power",
           "W",
           "",
-          true,
-          true,
         );
         if (Object.hasOwnProperty.call(power, returnType)) {
           return power[returnType];
@@ -407,7 +443,11 @@ export const useMqttStore = defineStore("mqtt", {
       return state.getChartData("openWB/chargepoint/get/power");
     },
     getChargePointIds(state) {
-      let chargePoints = state.getObjectIds("cp");
+      // get all charge points from the hierarchy and filter out those we have no access to
+      let chargePoints = state.getObjectIds("cp").filter((id) => {
+        return state.accessChargePointAllowed(id);
+      });
+      // apply charge point filter if set
       let filter = this.getChargePointFilter;
       if (filter.length > 0) {
         console.debug("charge points are filtered!", chargePoints, filter);
@@ -416,6 +456,11 @@ export const useMqttStore = defineStore("mqtt", {
         );
       }
       return chargePoints;
+    },
+    accessChargePointAllowed(state) {
+      return (chargePointId) => {
+        return state.getChargePointName(chargePointId) !== undefined;
+      };
     },
     getChargePointName(state) {
       return (chargePointId) => {
@@ -426,7 +471,7 @@ export const useMqttStore = defineStore("mqtt", {
           return state.topics[`openWB/chargepoint/${chargePointId}/config`]
             .name;
         }
-        return "---";
+        return undefined;
       };
     },
     getChargePointPower(state) {
@@ -608,12 +653,8 @@ export const useMqttStore = defineStore("mqtt", {
     },
     getChargePointConnectedVehicleChargeTemplate(state) {
       return (chargePointId) => {
-        let chargeTemplateId =
-          state.getChargePointConnectedVehicleChargeTemplateIndex(
-            chargePointId,
-          );
         return state.topics[
-          `openWB/vehicle/template/charge_template/${chargeTemplateId}`
+          `openWB/chargepoint/${chargePointId}/set/charge_template`
         ];
       };
     },
@@ -689,6 +730,16 @@ export const useMqttStore = defineStore("mqtt", {
         return { selected: undefined };
       };
     },
+    getChargePointConnectedVehicleInstantChargingPhases(state) {
+      return (chargePointId) => {
+        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
+          return state.getChargePointConnectedVehicleChargeTemplate(
+            chargePointId,
+          ).chargemode.instant_charging.phases_to_use;
+        }
+        return undefined;
+      };
+    },
     getChargePointConnectedVehiclePvChargingFeedInLimit(state) {
       return (chargePointId) => {
         if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
@@ -707,6 +758,26 @@ export const useMqttStore = defineStore("mqtt", {
           ).chargemode.pv_charging.min_current;
         }
         return undefined;
+      };
+    },
+    getChargePointConnectedVehiclePvChargingPhases(state) {
+      return (chargePointId) => {
+        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
+          return state.getChargePointConnectedVehicleChargeTemplate(
+            chargePointId,
+          ).chargemode.pv_charging.phases_to_use;
+        }
+        return undefined;
+      };
+    },
+    getChargePointConnectedVehiclePvChargingLimit(state) {
+      return (chargePointId) => {
+        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
+          return state.getChargePointConnectedVehicleChargeTemplate(
+            chargePointId,
+          ).chargemode.pv_charging.limit;
+        }
+        return { selected: undefined };
       };
     },
     getChargePointConnectedVehiclePvChargingMinSoc(state) {
@@ -729,53 +800,100 @@ export const useMqttStore = defineStore("mqtt", {
         return undefined;
       };
     },
-    getChargePointConnectedVehiclePvChargingMaxSoc(state) {
+    getChargePointConnectedVehiclePvChargingMinSocPhases(state) {
       return (chargePointId) => {
         if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
           return state.getChargePointConnectedVehicleChargeTemplate(
             chargePointId,
-          ).chargemode.pv_charging.max_soc;
+          ).chargemode.pv_charging.phases_to_use_min_soc;
+        }
+        return undefined;
+      };
+    },
+    getChargePointConnectedVehicleEcoChargingCurrent(state) {
+      return (chargePointId) => {
+        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
+          return state.getChargePointConnectedVehicleChargeTemplate(
+            chargePointId,
+          ).chargemode.eco_charging.current;
+        }
+        return undefined;
+      };
+    },
+    getChargePointConnectedVehicleEcoChargingPhases(state) {
+      return (chargePointId) => {
+        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
+          return state.getChargePointConnectedVehicleChargeTemplate(
+            chargePointId,
+          ).chargemode.eco_charging.phases_to_use;
+        }
+        return undefined;
+      };
+    },
+    getChargePointConnectedVehicleEcoChargingLimit(state) {
+      return (chargePointId) => {
+        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
+          return state.getChargePointConnectedVehicleChargeTemplate(
+            chargePointId,
+          ).chargemode.eco_charging.limit;
+        }
+        return { selected: undefined };
+      };
+    },
+    getChargePointConnectedVehicleEcoChargingMaxPrice(state) {
+      return (chargePointId) => {
+        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
+          return state.getChargePointConnectedVehicleChargeTemplate(
+            chargePointId,
+          ).chargemode.eco_charging.max_price * 100000;
         }
         return undefined;
       };
     },
     getChargePointConnectedVehicleScheduledChargingPlans(state) {
       return (chargePointId) => {
-        let chargeTemplateId =
-          state.getChargePointConnectedVehicleChargeTemplateIndex(
+        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
+          return state.getChargePointConnectedVehicleChargeTemplate(
             chargePointId,
-          );
-        return state.getWildcardTopics(
-          `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/+`,
-        );
+          ).chargemode.scheduled_charging.plans;
+        }
+        return {};
       };
     },
     getChargePointConnectedVehicleTimeChargingPlans(state) {
       return (chargePointId) => {
-        let chargeTemplateId =
-          state.getChargePointConnectedVehicleChargeTemplateIndex(
+        if (
+          state.getChargePointConnectedVehicleChargeTemplate(chargePointId)
+        ) {
+          return state.getChargePointConnectedVehicleChargeTemplate(
             chargePointId,
-          );
-        return state.getWildcardTopics(
-          `openWB/vehicle/template/charge_template/${chargeTemplateId}/time_charging/plans/+`,
-        );
+          ).time_charging.plans;
+        }
+        return {};
       };
     },
 
     /* vehicle getters */
 
     getVehicleList(state) {
-      return state.getWildcardTopics("openWB/vehicle/+/name");
+      return Object.keys(state.getWildcardTopics("openWB/vehicle/+/info")).map((key) => {
+        return parseInt(key.split("/")[2]);
+      });
     },
     getVehicleName(state) {
       return (vehicleId) => {
         return state.topics[`openWB/vehicle/${vehicleId}/name`];
       };
     },
+    getVehicleInfo(state) {
+      return (vehicleId) => {
+        return state.topics[`openWB/vehicle/${vehicleId}/info`];
+      };
+    },
     getVehicleSocConfigured(state) {
       return (vehicleId) => {
         return (
-          state.topics[`openWB/vehicle/${vehicleId}/soc_module/config`].type !=
+          state.topics[`openWB/vehicle/${vehicleId}/soc_module/config`]?.type !=
           null
         );
       };
@@ -783,7 +901,7 @@ export const useMqttStore = defineStore("mqtt", {
     getVehicleSocIsManual(state) {
       return (vehicleId) => {
         return (
-          state.topics[`openWB/vehicle/${vehicleId}/soc_module/config`].type ==
+          state.topics[`openWB/vehicle/${vehicleId}/soc_module/config`]?.type ==
           "manual"
         );
       };
@@ -848,6 +966,20 @@ export const useMqttStore = defineStore("mqtt", {
     getRfidEnabled() {
       return this.getValueBool("openWB/optional/rfid/active");
     },
+
+    /* electricity tariff provider */
+    getEtConfigured(state){
+      if (
+        state.topics["openWB/optional/ep/configured"] !==
+        undefined
+      ) {
+        return state.topics["openWB/optional/ep/configured"];
+      }
+      return false;
+    },
+    getEtPrices(state) {
+      return state.topics["openWB/optional/ep/get/prices"];
+    },
   },
   actions: {
     updateSetting(setting, value) {
@@ -904,8 +1036,10 @@ export const useMqttStore = defineStore("mqtt", {
         } else {
           this.topics[topic] = payload;
         }
+        return this.topics[topic];
       } else {
         console.debug("topic not found: ", topic);
+        return undefined;
       }
     },
     updateChartData() {
@@ -929,14 +1063,14 @@ export const useMqttStore = defineStore("mqtt", {
     },
     updateState(topic, value, objectPath = undefined) {
       console.debug("updateState:", topic, value, objectPath);
-      this.updateTopic(topic, value, objectPath);
+      return this.updateTopic(topic, value, objectPath);
     },
     chargeModeList() {
       var chargeModes = [
         { id: "instant_charging" },
         { id: "pv_charging" },
         { id: "scheduled_charging" },
-        { id: "standby" },
+        { id: "eco_charging" },
         { id: "stop" },
       ];
       chargeModes.forEach((mode) => {
@@ -952,11 +1086,11 @@ export const useMqttStore = defineStore("mqtt", {
         case "pv_charging":
           return { mode: mode, label: "PV", class: "success" };
         case "scheduled_charging":
-          return { mode: mode, label: "Zielladen", class: "primary" };
+          return { mode: mode, label: "Ziel", class: "primary" };
         case "time_charging":
-          return { mode: mode, label: "Zeitladen", class: "warning" };
-        case "standby":
-          return { mode: mode, label: "Standby", class: "secondary" };
+          return { mode: mode, label: "Zeit", class: "warning" };
+        case "eco_charging":
+          return { mode: mode, label: "Eco", class: "secondary" };
         case "stop":
           return { mode: mode, label: "Stop", class: "dark" };
         default:
@@ -986,6 +1120,7 @@ export const useMqttStore = defineStore("mqtt", {
       const beginDate = new Date(dateArray[0]);
       const endDate = new Date(dateArray[1]);
       if (beginDate.getFullYear() == endDate.getFullYear()) {
+        separator = `.${separator}`;
         if (beginDate.getMonth() != endDate.getMonth()) {
           // add display of month if different and year is identical
           beginFormat.month = endFormat.month;
@@ -1000,14 +1135,37 @@ export const useMqttStore = defineStore("mqtt", {
       )}${separator}${this.formatDate(dateArray[1], endFormat)}`;
     },
     formatWeeklyScheduleDays(weekDays) {
-      const days = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
-      let planDays = [];
-      weekDays.forEach(function (dayValue, index) {
-        if (dayValue == true) {
-          planDays.push(days[index]);
+        const days = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+        let planDays = [];
+        let rangeStart = null;
+
+        weekDays.forEach((dayValue, index) => {
+            if (dayValue) {
+                if (rangeStart === null) {
+                    rangeStart = index;
+                }
+            } else {
+                if (rangeStart !== null) {
+                    if (rangeStart === index - 1) {
+                        planDays.push(days[rangeStart]);
+                    } else {
+                        planDays.push(`${days[rangeStart]}-${days[index - 1]}`);
+                    }
+                    rangeStart = null;
+                }
+            }
+        });
+
+        // Handle the case where the last day(s) of the week are true
+        if (rangeStart !== null) {
+            if (rangeStart === weekDays.length - 1) {
+                planDays.push(days[rangeStart]);
+            } else {
+                planDays.push(`${days[rangeStart]}-${days[weekDays.length - 1]}`);
+            }
         }
-      });
-      return planDays.join(",");
-    },
+
+        return planDays.join(", ");
+    }
   },
 });

@@ -1,11 +1,11 @@
 <template>
-	<div class="wb-subwidget px-3 pt-2 my-0" :class="widgetwidth">
+	<div class="wb-subwidget-noborder px-0 pe-1 my-0 pb-2" :class="widgetwidth">
 		<div class="d-flex justify-content-between align-items-center titlerow">
 			<div class="d-flex widgetname p-0 m-0" :style="titlestyle">
 				<slot name="title" />
 			</div>
 			<div
-				class="buttonrea d-flex float-right justify-content-end align-items-center"
+				class="buttonarea d-flex float-right justify-content-end align-items-center"
 			>
 				<slot name="buttons" />
 			</div>
@@ -50,13 +50,25 @@ const widgetwidth = computed(() => {
 		grid-template-columns: subgrid;
 		grid-column: 1 / 13;
 	}
+	.wb-subwidget-noborder {
+		margin-top: 20px;
+		display: grid;
+		grid-template-columns: subgrid;
+		grid-column: 1 / 13;
+		padding-top: 10px;
+	}
 }
-
 @supports not (grid-template-columns: subgrid) {
 	.wb-subwidget {
 		border-top: 0.5px solid var(--color-scale);
 		display: grid;
 		grid-template-columns: repeat(12, auto);
+		grid-column: 1 / 13;
+	}
+	.wb-subwidget-noborder {
+		margin-top: 20px;
+		display: grid;
+		grid-template-columns: subgrid;
 		grid-column: 1 / 13;
 	}
 }

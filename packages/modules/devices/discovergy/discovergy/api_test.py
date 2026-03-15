@@ -71,7 +71,7 @@ SAMPLE_JSON_4 = """{
 @pytest.fixture
 def mock_discovery_response(requests_mock):
     def do_mock(json_str: str):
-        requests_mock.get("https://api.discovergy.com/public/v1/last_reading?meterId=someMeterId", text=json_str)
+        requests_mock.get("https://api.inexogy.com/public/v1/last_reading?meterId=someMeterId", text=json_str)
 
     return do_mock
 

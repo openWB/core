@@ -28,7 +28,7 @@ def test_backup_restore_and_corrupt_data_handling(load_return, expected_content,
             restored_content = json.loads(file.read())
             assert restored_content == expected_content
     finally:
-        # Löschen Sie die temporären Dateien
+        # Lösche die temporären Dateien
         os.remove(file_path)
         if os.path.exists(file_path + ".bak"):
             os.remove(file_path + ".bak")

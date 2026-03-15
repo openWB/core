@@ -14,8 +14,24 @@ from control.counter import Get as CounterGet
 from control.counter import Set as CounterSet
 from control.counter_all import CounterAll
 from control.pv import Pv, PvData
+from control.pv import Config as PvConfig
 from control.pv import Get as PvGet
 from helpermodules import hardware_configuration, pub, timecheck
+from modules.chargepoints.mqtt.chargepoint_module import ChargepointModule
+from modules.common.component_state import ChargepointState
+from modules.common.store._api import LoggingValueStore
+
+
+def pytest_configure(config):
+    config.addinivalue_line("markers", "no_mock_full_hour: mark test to disable full_hour mocking.")
+    config.addinivalue_line("markers", "no_mock_quarter_hour: mark test to disable quarter_hour mocking.")
+    import sys
+    sys._called_from_test = True
+
+
+def pytest_unconfigure(config):
+    import sys
+    del sys._called_from_test
 
 
 @pytest.fixture(autouse=True)
@@ -29,9 +45,12 @@ def mock_today(monkeypatch) -> None:
     datetime_mock = MagicMock(wraps=datetime.datetime)
     # Montag 16.05.2022, 8:40:52  "05/16/2022, 08:40:52" Unix: 1652683252
     datetime_mock.today.return_value = datetime.datetime(2022, 5, 16, 8, 40, 52)
+    datetime_mock.now.return_value = datetime.datetime(2022, 5, 16, 8, 40, 52)
     monkeypatch.setattr(datetime, "datetime", datetime_mock)
-    mock_today_timestamp = Mock(return_value=1652683252)
-    monkeypatch.setattr(timecheck, "create_timestamp", mock_today_timestamp)
+    now_timestamp = Mock(return_value=1652683252)
+    monkeypatch.setattr(timecheck, "create_timestamp", now_timestamp)
+    full_hour_timestamp = Mock(return_value=int(datetime.datetime(2022, 5, 16, 8, 0, 0).timestamp()))
+    monkeypatch.setattr(timecheck, "create_unix_timestamp_current_full_hour", full_hour_timestamp)
 
 
 @pytest.fixture(autouse=True)
@@ -118,26 +137,56 @@ def data_() -> None:
                                                 get=Mock(spec=Get, currents=[30, 0, 0], power=6900,
                                                          daily_imported=10000, daily_exported=0, imported=56000,
                                                          fault_state=0),
-                                                set=Mock(spec=Set, loadmanagement_available=True))),
+                                                set=Mock(spec=Set, loadmanagement_available=True)),
+                    chargepoint_module=Mock(spec=ChargepointModule,
+                                            store=Mock(spec=LoggingValueStore,
+                                                       delegate=Mock(spec=LoggingValueStore,
+                                                                     state=ChargepointState(currents=[30, 0, 0],
+                                                                                            power=6900,
+                                                                                            plug_state=False,
+                                                                                            charge_state=False,
+                                                                                            imported=None,
+                                                                                            exported=None,
+                                                                                            phases_in_use=0))))),
         "cp4": Mock(spec=Chargepoint, data=Mock(spec=ChargepointData,
                                                 config=Mock(spec=Config, phase_1=2),
                                                 get=Mock(spec=Get, currents=[0, 15, 15], power=6900,
                                                          daily_imported=10000, daily_exported=0, imported=60000,
                                                          fault_state=0),
-                                                set=Mock(spec=Set, loadmanagement_available=True))),
+                                                set=Mock(spec=Set, loadmanagement_available=True)),
+                    chargepoint_module=Mock(spec=ChargepointModule,
+                                            store=Mock(spec=LoggingValueStore,
+                                                       delegate=Mock(spec=LoggingValueStore,
+                                                                     state=ChargepointState(currents=[0, 15, 15],
+                                                                                            power=6900,
+                                                                                            plug_state=False,
+                                                                                            charge_state=False,
+                                                                                            imported=None,
+                                                                                            exported=None,
+                                                                                            phases_in_use=0))))),
         "cp5": Mock(spec=Chargepoint, data=Mock(spec=ChargepointData,
                                                 config=Mock(spec=Config, phase_1=3),
                                                 get=Mock(spec=Get, currents=[10]*3, power=6900,
                                                          daily_imported=10000, daily_exported=0, imported=62000,
                                                          fault_state=0),
-                                                set=Mock(spec=Set, loadmanagement_available=True)))}
+                                                set=Mock(spec=Set, loadmanagement_available=True)),
+                    chargepoint_module=Mock(spec=ChargepointModule,
+                                            store=Mock(spec=LoggingValueStore,
+                                                       delegate=Mock(spec=LoggingValueStore,
+                                                                     state=ChargepointState(currents=[10]*3,
+                                                                                            power=6900,
+                                                                                            plug_state=False,
+                                                                                            charge_state=False,
+                                                                                            imported=None,
+                                                                                            exported=None,
+                                                                                            phases_in_use=0)))))}
     data.data.bat_data.update({"bat2": Mock(spec=Bat, num=2, data=Mock(spec=BatData, get=Mock(
         spec=BatGet, power=-5000, daily_imported=7000, daily_exported=3000, imported=12000, exported=10000,
         currents=None, fault_state=0),
         set=Mock(spec=BatSet, power_limit=None)))})
     data.data.pv_data.update({"pv1": Mock(spec=Pv, data=Mock(
         spec=PvData, get=Mock(spec=PvGet, power=-10000, daily_exported=6000, exported=27000, currents=None,
-                              fault_state=0)))})
+                              fault_state=0), config=Mock(spec=PvConfig, max_ac_out=10000)))})
     data.data.counter_data.update({
         "counter0": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
             spec=CounterGet, currents=[40]*3, power=6200, daily_imported=45000, daily_exported=3000, fault_state=0))),

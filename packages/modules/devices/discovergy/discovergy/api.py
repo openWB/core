@@ -5,7 +5,7 @@ from modules.common.component_state import CounterState
 
 def get_last_reading(session: Session, meter_id: str):
     values = session.get(
-        "https://api.discovergy.com/public/v1/last_reading",
+        "https://api.inexogy.com/public/v1/last_reading",
         params={"meterId": meter_id},
         timeout=3
     ).json()["values"]

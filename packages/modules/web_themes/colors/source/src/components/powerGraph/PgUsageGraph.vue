@@ -39,19 +39,19 @@ const props = defineProps<{
 
 //state
 const keys = computed(() => {
-	if (globalConfig.showInverters) {
+	if (!globalConfig.showInverters) {
 		return [
-			['house', 'charging', 'devices', 'batIn'],
-			['charging', 'devices', 'batIn', 'house'],
-			['devices', 'batIn', 'charging', 'house'],
-			['batIn', 'charging', 'house', 'devices'],
+			['house', 'charging', 'devices', 'counters', 'batIn'],
+			['charging', 'devices', 'counters', 'batIn', 'house'],
+			['devices', 'counters', 'batIn', 'charging', 'house'],
+			['batIn', 'charging', 'house', 'devices', 'counters'],
 		]
 	} else {
 		return [
-			['house', 'charging', 'devices', 'batIn', 'evuOut'],
-			['charging', 'devices', 'batIn', 'house', 'evuOut'],
-			['devices', 'batIn', 'charging', 'house', 'evuOut'],
-			['batIn', 'charging', 'house', 'devices', 'evuOut'],
+			['house', 'charging', 'devices', 'counters', 'batIn', 'evuOut'],
+			['charging', 'devices', 'counters', 'batIn', 'house', 'evuOut'],
+			['devices', 'counters', 'batIn', 'charging', 'house', 'evuOut'],
+			['batIn', 'charging', 'house', 'devices', 'counters', 'evuOut'],
 		]
 	}
 })
@@ -72,6 +72,7 @@ const colors: { [key: string]: string } = {
 	sh3: 'var(--color-sh3)',
 	sh4: 'var(--color-sh4)',
 	devices: 'var(--color-devices)',
+	counters: 'var(--color-counters)',
 }
 var paths: Selection<SVGPathElement, [number, number][], BaseType, never>
 var rects: Selection<SVGRectElement, [number, number], BaseType, never>
@@ -82,7 +83,9 @@ const delay = globalConfig.showAnimations ? globalConfig.animationDelay : 0
 
 // computed:
 const draw = computed(() => {
-	const graph = select('g#pgUsageGraph')
+	const graph: Selection<SVGGElement, unknown, HTMLElement, unknown> =
+		select('g#pgUsageGraph')
+
 	if (graphData.graphMode == 'month' || graphData.graphMode == 'year') {
 		drawBarGraph(graph)
 	} else {
@@ -104,7 +107,6 @@ const draw = computed(() => {
 		yAxis.selectAll('.tick line').attr('stroke', 'var(--color-bg)')
 	}
 	yAxis.select('.domain').attr('stroke', 'var(--color-bg)')
-
 	return 'pgUsageGraph.vue'
 })
 //const stackGen = computed(() => stack().keys(keys[props.stackOrder].concat(['cp3'])))
@@ -128,8 +130,8 @@ const yScale = computed(() => {
 const keysToUse = computed(() => {
 	if (
 		graphData.graphMode != 'today' &&
-		graphData.graphMode != 'day' &&
-		graphData.graphMode != 'live'
+		graphData.graphMode != 'day' //&&
+		//graphData.graphMode != 'live'
 	) {
 		return keys.value[props.stackOrder]
 	} else {
@@ -153,9 +155,6 @@ const keysToUse = computed(() => {
 			k.splice(idx + i, 0, key)
 			colors[key] = chargePoints[+key.slice(2)]?.color ?? 'black'
 		})
-		if (globalConfig.showInverters) {
-			k.push('evuOut')
-		}
 		return k
 	}
 })
@@ -163,7 +162,7 @@ const keysToUse = computed(() => {
 const vrange = computed(() => {
 	let result = extent(
 		graphData.data,
-		(d) => d.house + d.charging + d.batIn + d.devices + d.evuOut,
+		(d) => d.house + d.charging + d.batIn + d.devices + d.counters + d.evuOut,
 	)
 	if (result[0] != undefined && result[1] != undefined) {
 		if (graphData.graphMode == 'year') {
@@ -190,7 +189,7 @@ const yAxisGenerator = computed(() => {
 			(d == 0 ? '' : Math.round(d * 10) / 10).toLocaleString(undefined),
 		)
 })
-function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
+function drawGraph(graph: Selection<SVGGElement, unknown, HTMLElement, never>) {
 	const area0 = area()
 		.x((d, i) => xScale.value(graphData.data[i].date))
 		.y(yScale.value(0))
@@ -203,7 +202,8 @@ function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 	if (globalConfig.showAnimations) {
 		if (animateUsageGraph) {
 			graph.selectAll('*').remove()
-			paths = graph
+			const canvas = graph.append('svg').attr('x', 0).attr('width', props.width)
+			paths = canvas
 				.selectAll('.usageareas')
 				.data(stackedSeries.value as [number, number][][])
 				.enter()
@@ -219,7 +219,8 @@ function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 			usageGraphIsInitialized()
 		} else {
 			graph.selectAll('*').remove()
-			graph
+			const canvas = graph.append('svg').attr('x', 0).attr('width', props.width)
+			canvas
 				.selectAll('.usageareas')
 
 				.data(stackedSeries.value as [number, number][][])
@@ -230,7 +231,8 @@ function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 		}
 	} else {
 		graph.selectAll('*').remove()
-		graph
+		const canvas = graph.append('svg').attr('x', 0).attr('width', props.width)
+		canvas
 			.selectAll('.usageareas')
 			.data(stackedSeries.value as [number, number][][])
 			.enter()
@@ -239,7 +241,9 @@ function drawGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
 			.attr('fill', (d, i: number) => colors[keysToUse.value[i]])
 	}
 }
-function drawBarGraph(graph: Selection<BaseType, unknown, HTMLElement, never>) {
+function drawBarGraph(
+	graph: Selection<SVGGElement, unknown, HTMLElement, never>,
+) {
 	if (animateUsageGraph) {
 		graph.selectAll('*').remove()
 		rects = graph

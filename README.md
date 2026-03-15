@@ -37,6 +37,7 @@ Software:
 <https://downloads.raspberrypi.org/raspios_oldstable_lite_armhf/>
 - alternativ kann auch ein x86_64 System (Hardware oder als VM) mit installiertem **Debian 11 "Bullseye"** als Basis verwendet werden.
 - Eine Installation unter **Debian 12 "Bookworm"** wird noch nicht unterstützt!
+- Bitte beachten das **Debian 11 "Bullseye"** nur mit erheblichem Aufwand mit einem Raspberry Pi 5 kompatibel ist. Wir empfehlen die Nutzung von einem Raspberry Pi 3b.
 
 In der Shell folgendes eingeben:
 

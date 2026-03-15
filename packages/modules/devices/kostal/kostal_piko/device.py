@@ -12,10 +12,13 @@ log = logging.getLogger(__name__)
 
 def create_device(device_config: KostalPiko):
     def create_counter_component(component_config: KostalPikoCounterSetup):
-        return counter.KostalPikoCounter(device_config.id, component_config, device_config.configuration.ip_address)
+        return counter.KostalPikoCounter(component_config,
+                                         device_id=device_config.id,
+                                         ip_address=device_config.configuration.ip_address)
 
     def create_inverter_component(component_config: KostalPikoInverterSetup):
-        return inverter.KostalPikoInverter(device_config.id, component_config, device_config.configuration.ip_address)
+        return inverter.KostalPikoInverter(component_config,
+                                           ip_address=device_config.configuration.ip_address)
 
     return ConfigurableDevice(
         device_config=device_config,

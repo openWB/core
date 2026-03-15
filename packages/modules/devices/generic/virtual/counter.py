@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-from typing import Dict, Union
+from typing import Any, TypedDict
 
-from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
@@ -11,21 +10,26 @@ from modules.common.store import get_counter_value_store
 from modules.devices.generic.virtual.config import VirtualCounterSetup
 
 
-class VirtualCounter(AbstractCounter):
+class KwargsDict(TypedDict):
+    device_id: int
 
-    def __init__(self, device_id: int, component_config: Union[Dict, VirtualCounterSetup]) -> None:
-        self.__device_id = device_id
-        self.component_config = dataclass_from_dict(VirtualCounterSetup, component_config)
+
+class VirtualCounter(AbstractCounter):
+    def __init__(self, component_config: VirtualCounterSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__device_id: int = self.kwargs['device_id']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
-        self.store = get_counter_value_store(self.component_config.id, add_child_values=True)
+        self.store = get_counter_value_store(
+            self.component_config.id, add_child_values=True, simcounter=self.sim_counter)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self):
-        imported, exported = self.sim_counter.sim_count(self.component_config.configuration.external_consumption)
-
         counter_state = CounterState(
-            imported=imported,
-            exported=exported,
+            imported=None,
+            exported=None,
             power=self.component_config.configuration.external_consumption,
             currents=[self.component_config.configuration.external_consumption/3/230]*3
         )

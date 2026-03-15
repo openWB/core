@@ -65,3 +65,95 @@ $ curl -k -d '{"auth_key":"67567d76-0c83-11ea-8a59-d84fb802005a"}' -H "Content-T
         "pcs_status": "pcs_ok"
     }
 }
+
+### LG Home 15 ###
+{
+    "statistics": {
+        "pv_total_power_01kW": 36,
+        "batt_conv_power_01kW": -34,
+        "grid_power_01kW": 0,
+        "load_power_01kW": 2,
+        "ac_active_power_01kW": 3,
+        "bat_use": 1,
+        "bat_status": 1,
+        "bat_user_soc": 46
+    },
+    "direction": {
+        "is_direct_consuming_": 1,
+        "is_battery_charging_": 1,
+        "is_battery_discharging_": 0,
+        "is_grid_selling_": 0,
+        "is_grid_buying_": 0,
+        "is_charging_from_grid_": 0,
+        "is_discharging_to_grid_": 0
+    },
+    "operation": {
+        "status": "start",
+        "mode": 1,
+        "oper_status": 3,
+        "simple_status": 1,
+        "backup_mode": 1,
+        "remote_mode": 0,
+        "demo_mode": 0,
+        "tou_period": 1,
+        "ripple_control": "0",
+        "ripple_level": "0"
+    },
+    "pcs_fault": {
+        "pcs_status": "pcs_ok",
+        "grid_fault": "0"
+    },
+    "heatpump": {
+        "heatpump_protocol": "2",
+        "heatpump_installed": "no",
+        "heatpump_activate": "off",
+        "current_temp": 0,
+        "heatpump_working": "off"
+    },
+    "evcharger": {
+        "ev_activate": "off",
+        "ev_power": 0
+    },
+    "gridWaitingTime": 0,
+    "coredump": "none",
+    "factory_test_mode": "none"
+}
+
+{
+    "statistics":
+    {
+        "pcs_pv_total_power": "0",
+        "batconv_power": "372",
+        "bat_use": "1",
+        "bat_status": "2",
+        "bat_user_soc": "14.58333",
+        "load_power": "361",
+        "load_today": "0.0",
+        "grid_power": "11",
+        "current_day_self_consumption": "94.8",
+        "current_pv_generation_sum": "7415",
+        "current_grid_feed_in_energy": "385"
+    },
+    "direction":
+    {
+        "is_direct_consuming_": "0",
+        "is_battery_charging_": "0",
+        "is_battery_discharging_": "1",
+        "is_grid_selling_": "0",
+        "is_grid_buying_": "0",
+        "is_charging_from_grid_": "0"
+    },
+    "operation":
+    {
+        "status": "start",
+        "mode": "1"
+    },
+    "wintermode":
+    {
+        "winter_status": "on"
+    },
+    "pcs_fault":
+    {
+        "pcs_status": "pcs_ok"
+    }
+}

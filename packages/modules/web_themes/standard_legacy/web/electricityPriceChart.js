@@ -53,7 +53,7 @@ function createPriceAnnotations(){
 
 function loadElectricityPriceChart() {
 	if (typeof electricityPriceList === 'undefined') {
-		console.error("'electricityPriceTimeline' not defined. Skipping chart update.");
+		console.error("'electricityPriceList' not defined. Skipping chart update.");
 		return
 	}
 
@@ -100,9 +100,9 @@ function loadElectricityPriceChart() {
 		],
 	}
 
-	var ctxElectricityPricechart = $('#electricityPriceChartCanvas')[0].getContext('2d');
+	var ctxElectricityPriceChart = $('#electricityPriceChartCanvas')[0].getContext('2d');
 
-	window.electricityPricechart = new Chart(ctxElectricityPricechart, {
+	window.electricityPriceChart = new Chart(ctxElectricityPriceChart, {
 		type: 'line',
 		data: electricityPriceChartData,
 		options: {

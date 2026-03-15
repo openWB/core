@@ -23,7 +23,9 @@ class TeslaSoc:
     def __init__(self,
                  name: str = "Tesla",
                  type: str = "tesla",
+                 official: bool = False,
                  configuration: TeslaSocConfiguration = None) -> None:
         self.name = name
         self.type = type
+        self.official = official
         self.configuration = configuration or TeslaSocConfiguration()

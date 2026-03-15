@@ -22,7 +22,7 @@ from modules.update_soc import UpdateSoc
 def mock_data() -> None:
     data.data_init(Mock())
 
-    SubData(*([Mock()]*18))
+    SubData(*([Mock()]*16))
     SubData.cp_data = {"cp0":  Mock(spec=ChargepointStateUpdate, chargepoint=Mock(
         spec=Chargepoint,
         id=id,
@@ -55,7 +55,7 @@ def test_get_ev_state(ev_num: int,
                       set_charge_state: bool,
                       expected_charge_state: bool):
     # setup
-    SubData.cp_data["cp0"].chargepoint.data.set.charging_ev = ev_num
+    SubData.cp_data["cp0"].chargepoint.data.config.ev = ev_num
     SubData.cp_data["cp0"].chargepoint.data.get.charge_state = set_charge_state
 
     # execution

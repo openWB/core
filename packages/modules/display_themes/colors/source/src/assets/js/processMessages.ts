@@ -1,11 +1,6 @@
 import { mqttRegister, mqttSubscribe, mqttUnsubscribe } from './mqttClient'
 import type { Hierarchy } from './types'
-import {
-	correctHouseConsumption,
-	globalData,
-	sourceSummary,
-	usageSummary,
-} from './model'
+import { globalData, sourceSummary, usageSummary } from './model'
 import { processLiveGraphMessages } from '../../components/powerGraph/processLiveGraphData'
 import { processDayGraphMessages } from '../../components/powerGraph/processDayGraphData'
 import { processMonthGraphMessages } from '../../components/powerGraph/processMonthYearGraphData'
@@ -35,7 +30,7 @@ const topicsToSubscribe = [
 	'openWB/chargepoint/#',
 	'openWB/vehicle/#',
 	'openWB/general/chargemode_config/pv_charging/#',
-	'openWB/optional/et/#',
+	'openWB/optional/ep/#',
 	'openWB/system/#',
 	'openWB/LegacySmartHome/#',
 	'openWB/command/' + mqttClientId() + '/#',
@@ -81,7 +76,7 @@ function processMqttMessage(topic: string, payload: Buffer) {
 		processMonthGraphMessages(topic, message)
 	} else if (topic.match(/^openwb\/log\/yearly\//i)) {
 		processYearGraphMessages(topic, message)
-	} else if (topic.match(/^openwb\/optional\/et\//i)) {
+	} else if (topic.match(/^openwb\/optional\/ep\//i)) {
 		processEtProviderMessages(topic, message)
 	} // else if ( mqttTopic.match( /^openwb\/global\//i) ) { processGlobalMessages(mqttTopic, message); }
 	else if (topic.match(/^openwb\/system\//i)) {
@@ -152,7 +147,6 @@ function processGlobalCounterMessages(topic: string, message: string) {
 		}
 	} else if (topic.match(/^openwb\/counter\/set\/home_consumption$/i)) {
 		usageSummary.house.power = +message
-		correctHouseConsumption()
 	} else if (
 		topic.match(/^openwb\/counter\/set\/daily_yield_home_consumption$/i)
 	) {

@@ -1,5 +1,4 @@
 import logging
-import threading
 from typing import List, Tuple
 import copy
 from threading import Event, Thread
@@ -13,12 +12,13 @@ from helpermodules.pub import Pub
 from helpermodules.utils import joined_thread_handler
 from modules.common.abstract_vehicle import VehicleUpdateData
 from modules.utils import wait_for_module_update_completed
+from helpermodules.logger import clear_in_memory_log_handler, write_logs_to_file
 
 log = logging.getLogger(__name__)
 
 
 class UpdateSoc:
-    def __init__(self, event_update_soc: threading.Event) -> None:
+    def __init__(self, event_update_soc: Event) -> None:
         self.heartbeat = False
         self.event_vehicle_update_completed = Event()
         self.event_vehicle_update_completed.set()
@@ -31,14 +31,17 @@ class UpdateSoc:
             self.event_update_soc.clear()
             topic = "openWB/set/vehicle/set/vehicle_update_completed"
             try:
+                clear_in_memory_log_handler("soc")
                 threads_update, threads_store = self._get_threads()
                 joined_thread_handler(threads_update, 300)
                 wait_for_module_update_completed(self.event_vehicle_update_completed, topic)
                 # threads_store = self._filter_failed_store_threads(threads_store)
                 joined_thread_handler(threads_store, data.data.general_data.data.control_interval/3)
                 wait_for_module_update_completed(self.event_vehicle_update_completed, topic)
+                write_logs_to_file("soc")
             except Exception:
                 log.exception("Fehler im update_soc-Modul")
+                write_logs_to_file("soc")
 
     def _get_threads(self) -> Tuple[List[Thread], List[Thread]]:
         threads_update, threads_store = [], []
@@ -59,7 +62,7 @@ class UpdateSoc:
                             log.debug(
                                 f"EV{ev.num}: Nach dreimaliger erfolgloser SoC-Abfrage wird ein SoC von 0% angenommen.")
                             Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc", 0)
-                            Pub().pub(f"openWB/set/vehicle/{ev.num}/get/range", 0)
+                            Pub().pub(f"openWB/set/vehicle/{ev.num}/get/range", None)
                         # Es wird ein Zeitstempel gesetzt, unabhängig ob die Abfrage erfolgreich war, da einige
                         # Hersteller bei zu häufigen Abfragen Accounts sperren.
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc_request_timestamp",
@@ -97,7 +100,7 @@ class UpdateSoc:
         ev_template = subdata.SubData.ev_template_data[f"et{ev.data.ev_template}"]
         for cp_state_update in list(subdata.SubData.cp_data.values()):
             cp = cp_state_update.chargepoint
-            if cp.data.set.charging_ev == ev_num or cp.data.set.charging_ev_prev == ev_num:
+            if cp.data.config.ev == ev_num:
                 plug_state = cp.data.get.plug_state
                 charge_state = cp.data.get.charge_state
                 imported = cp.data.get.imported
@@ -116,6 +119,7 @@ class UpdateSoc:
             timestamp_soc_from_cp = None
         battery_capacity = ev_template.data.battery_capacity
         efficiency = ev_template.data.efficiency
+        average_consump = ev_template.data.average_consump
         soc_timestamp = ev.data.get.soc_timestamp
         return VehicleUpdateData(plug_state=plug_state,
                                  charge_state=charge_state,
@@ -124,7 +128,9 @@ class UpdateSoc:
                                  battery_capacity=battery_capacity,
                                  soc_from_cp=soc_from_cp,
                                  timestamp_soc_from_cp=timestamp_soc_from_cp,
-                                 soc_timestamp=soc_timestamp)
+                                 last_soc_timestamp=soc_timestamp,
+                                 last_soc=ev.data.get.soc if ev.data.get.soc is not None else soc_from_cp,
+                                 average_consump=average_consump)
 
     def _filter_failed_store_threads(self, threads_store: List[Thread]) -> List[Thread]:
         ev_data = copy.deepcopy(subdata.SubData.ev_data)

@@ -118,7 +118,7 @@ const nameY = computed(() => {
 				return yScale.value(graphData.data[index]['soc' + vID.value] + 2)
 			case 2:
 				index = Math.round(graphData.data.length / 2)
-				return yScale.value(graphData.data[index].batSoc + 2)
+				return yScale.value((graphData.data[index]?.batSoc ?? 0) + 2)
 			default:
 				return 0
 		}

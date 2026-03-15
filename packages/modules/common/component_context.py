@@ -1,5 +1,5 @@
 import logging
-import threading
+from threading import local
 from typing import Optional, List, Union, Any, Dict
 from helpermodules.constants import NO_ERROR
 
@@ -17,7 +17,10 @@ class SingleComponentUpdateContext:
                 component.update()
     """
 
-    def __init__(self, fault_state: FaultState, update_always: bool = True, reraise: bool = False):
+    def __init__(self,
+                 fault_state: FaultState,
+                 update_always: bool = True,
+                 reraise: bool = False):
         self.__fault_state = fault_state
         self.update_always = update_always
         self.reraise = reraise
@@ -30,7 +33,7 @@ class SingleComponentUpdateContext:
 
     def __exit__(self, exception_type, exception, exception_traceback) -> bool:
         MultiComponentUpdateContext.override_subcomponent_state(self.__fault_state, exception, self.update_always)
-        if self.reraise is False:
+        if self.reraise is False or exception is None:
             return True
         else:
             return False
@@ -44,12 +47,13 @@ class MultiComponentUpdateContext:
             for component in self.components:
                 component.update()
     """
-    __thread_local = threading.local()
+    __thread_local = local()
 
-    def __init__(self, device_components: Union[Dict[Any, Any], List[Any]]):
+    def __init__(self, device_components: Union[Dict[Any, Any], List[Any]], error_handler: Optional[callable] = None):
         self.__device_components = \
             device_components.values() if isinstance(device_components, dict) else device_components
         self.__ignored_components = []  # type: List[ComponentInfo]
+        self.error_handler = error_handler
 
     def __enter__(self):
         if hasattr(self.__thread_local, "active_context"):
@@ -66,9 +70,12 @@ class MultiComponentUpdateContext:
         for component in self.__device_components:
             fault_state = component.fault_state
             if fault_state not in self.__ignored_components:
-                fault_state.from_exception(exception)
+                if exception:
+                    fault_state.from_exception(exception)
                 fault_state.store_error()
         delattr(MultiComponentUpdateContext.__thread_local, "active_context")
+        if isinstance(exception, Exception) and self.error_handler is not None:
+            self.error_handler()
         return True
 
     def ignore_subcomponent_state(self, component: ComponentInfo):
@@ -86,7 +93,7 @@ class MultiComponentUpdateContext:
 
         if exception:
             fault_state.from_exception(exception)
-        elif update_always is False:
+        elif update_always is False and fault_state.fault_state == 0:
             # Fehlerstatus nicht überschreiben
             return
         fault_state.store_error()

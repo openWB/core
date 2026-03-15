@@ -5,9 +5,10 @@ from ..vendor import vendor_descriptor
 
 
 class SonnenBatterieConfiguration:
-    def __init__(self, variant: int = 0, ip_address: Optional[str] = None):
+    def __init__(self, variant: int = 0, ip_address: Optional[str] = None, api_v2_token: Optional[str] = None):
         self.variant = variant
         self.ip_address = ip_address
+        self.api_v2_token = api_v2_token
 
 
 class SonnenBatterie:
@@ -44,11 +45,25 @@ class SonnenbatterieCounterConfiguration:
 
 class SonnenbatterieCounterSetup(ComponentSetup[SonnenbatterieCounterConfiguration]):
     def __init__(self,
-                 name: str = "SonnenBatterie Zähler",
+                 name: str = "SonnenBatterie EVU-Zähler",
                  type: str = "counter",
                  id: int = 0,
                  configuration: SonnenbatterieCounterConfiguration = None) -> None:
         super().__init__(name, type, id, configuration or SonnenbatterieCounterConfiguration())
+
+
+class SonnenbatterieConsumptionCounterConfiguration:
+    def __init__(self):
+        pass
+
+
+class SonnenbatterieConsumptionCounterSetup(ComponentSetup[SonnenbatterieConsumptionCounterConfiguration]):
+    def __init__(self,
+                 name: str = "SonnenBatterie Verbrauchs-Zähler",
+                 type: str = "counter_consumption",
+                 id: int = 0,
+                 configuration: SonnenbatterieConsumptionCounterConfiguration = None) -> None:
+        super().__init__(name, type, id, configuration or SonnenbatterieConsumptionCounterConfiguration())
 
 
 class SonnenbatterieInverterConfiguration:

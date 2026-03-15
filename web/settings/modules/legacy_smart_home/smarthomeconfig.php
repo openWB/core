@@ -93,6 +93,7 @@ $numDevices = 9;
 											<option value="viessmann" data-option="viessmann">Viessmann</option>
 											<option value="mqtt" data-option="mqtt">Mqtt</option>
 											<option value="askoheat" data-option="askoheat">Askoheat</option>
+											<option value="nibe" data-option="nibe">Nibe</option>
 										</select>
 										<span class="form-text small device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-none hide">
 											Dieser Gerätetyp wird nicht in die Regelung eingebunden und es können keine Schalthandlungen ausgeführt oder Sensoren eingelesen werden. Es ist jedoch eine separate Leistungsmessung möglich, um reine Verbraucher zu erfassen.
@@ -128,7 +129,7 @@ $numDevices = 9;
 											openWB/set/LegacySmartHome/Devices/2/Aktpower = in Watt erwartet<br>
 											openWB/set/LegacySmartHome/Devices/2/Tempa = Temperatur in C mit max 2 Nachkommastellen<br>
 											openWB/set/LegacySmartHome/Devices/2/Tempb = Temperatur in C mit max 2 Nachkommastellen<br>
-											openWB/set/LegacySmartHome/Devices/2/Tempc = Temperatur in C mit max 2 Nachkommastellen<br>										
+											openWB/set/LegacySmartHome/Devices/2/Tempc = Temperatur in C mit max 2 Nachkommastellen<br>
 											und der aktuelle Zähler in Wattstunden wird hier erwartet<br>
 											openWB/set/LegacySmartHome/Devices/2/Powerc<br>
 											wenn kein Zähler übergeben oder 0 übergeben wird, wird der Zähler selber gerechnet<br>
@@ -173,7 +174,7 @@ $numDevices = 9;
 											Wenn die Ausschaltbedingung erreicht ist wird einmalig 0 als Überschuss übertragen.
 											Die Ausschaltschwelle/ Ausschaltverzögerung in openWB ist sinnvoll zu wählen (z.B. 500 / 3) um die Regelung von Askoheat+ nicht zu stören.
 											Wenn Askoheat+ als Gerät 1 oder 2 definiert ist, wird die Temperatur von internen Sensort als Temp1 angezeigt (Modbusadresse 638).
-										</span>										
+										</span>
 										<span class="form-text small device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-idm hide">
 											Wärmepumpe der Firma IDM mit Navigatorregelung 1.7/2.0<br>
 											Im Web Frontend muss unter "Heizungsbauerebene / Konfiguration / PV-Signal": Auswahl "Gebäudeleittechnik / Smartfox" und unter "Heizungsbauerebene / Gebäudeleittechnik" der Parameter "Modbus TCP = Ein" und unter "Einstellungen / Photovoltaik" der Parameter "PV Überschuss = 0" gesetzt werden
@@ -202,6 +203,9 @@ $numDevices = 9;
 										</span>
 										<span class="form-text small device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-mystrom hide">
 											Mit diesem Typ werden SmartHome Geräte des Herstellers MyStrom unterstützt.<br>
+										</span>
+										<span class="form-text small device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-nibe hide">
+											Abfrage der aktuellen Leistung von Nibe S-Series Wärmepumpen.
 										</span>
 									</div>
 								</div>
@@ -291,7 +295,7 @@ $numDevices = 9;
 												<option value="0" data-option="0">N4Dac02</option>
 												<option value="1" data-option="1">DA02</option>
 												<option value="2" data-option="2">M120T von Pigeon</option>
-												<option value="3" data-option="3">AA02B</option>													
+												<option value="3" data-option="3">AA02B</option>
 											</select>
 											<span class="form-text small">
 												Hier ist das installierte Modell auszuwählen.
@@ -308,8 +312,8 @@ $numDevices = 9;
 									</div>
 								</div>
 							</div>
-							
-							<div class="device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-shelly device<?php echo $devicenum; ?>-option-tasmota device<?php echo $devicenum; ?>-option-acthor device<?php echo $devicenum; ?>-option-lambda device<?php echo $devicenum; ?>-option-elwa device<?php echo $devicenum; ?>-option-idm device<?php echo $devicenum; ?>-option-stiebel device<?php echo $devicenum; ?>-option-avm device<?php echo $devicenum; ?>-option-mystrom device<?php echo $devicenum; ?>-option-vampair device<?php echo $devicenum;  ?>-option-viessmann device<?php echo $devicenum;  ?>-option-ratiotherm device<?php echo $devicenum;  ?>-option-askoheat device<?php echo $devicenum;  ?>-option-NXDACXX hide">
+
+							<div class="device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-shelly device<?php echo $devicenum; ?>-option-tasmota device<?php echo $devicenum; ?>-option-acthor device<?php echo $devicenum; ?>-option-lambda device<?php echo $devicenum; ?>-option-elwa device<?php echo $devicenum; ?>-option-idm device<?php echo $devicenum; ?>-option-stiebel device<?php echo $devicenum; ?>-option-avm device<?php echo $devicenum; ?>-option-mystrom device<?php echo $devicenum; ?>-option-vampair device<?php echo $devicenum;  ?>-option-viessmann device<?php echo $devicenum;  ?>-option-ratiotherm device<?php echo $devicenum;  ?>-option-askoheat device<?php echo $devicenum;  ?>-option-nibe device<?php echo $devicenum;  ?>-option-NXDACXX hide">
 								<hr class="border-secondary">
 								<div class="form-row mb-1">
 									<label for="device_ipDevices<?php echo $devicenum; ?>" class="col-md-4 col-form-label">IP Adresse</label>
@@ -397,7 +401,7 @@ $numDevices = 9;
 											<input id="device_maxuebDevices<?php echo $devicenum; ?>" name="device_maxueb" class="form-control" type="number" min="0" max="30000" step="1" required="required" data-default="0" value="0" data-topicprefix="openWB/LegacySmartHome/config/get/" data-topicsubgroup="Devices/<?php echo $devicenum; ?>/">
 											<span class="form-text small">
 												Hier ist die maximale Leistungsaufnahme anzugeben, die idm bei PV Betrieb nicht überschreiten soll. Bei 0 gibt es keine Limitierung bezüglich dem maximal zu übergebenen Überschuss. <br>
-												Sonst wird der zu übergebene Überschuss wie folgt gerechnet: 										
+												Sonst wird der zu übergebene Überschuss wie folgt gerechnet:
 												maximal zu übergeber Überschuss = maximale Leistungsaufnahme - aktuelle Leistungsaufnahme
 												<br>
 												Sofern die aktuelle Leistungsaufnahme bereits grösser als die maximale Leistungsaufnahme ist, wird gar kein Überschuss mehr übergeben im PV Betrieb.
@@ -419,10 +423,10 @@ $numDevices = 9;
 												<option value="E2M3" data-option="M3">Elwa2 M3</option>
 												<option value="9s" data-option="9s">Acthor 9s</option>
 												<option value="E2M1" data-option="M1">Elwa2 M1</option>
-												<option value="E2M3" data-option="M3">Elwa2 M3</option>												
+												<option value="E2M3" data-option="M3">Elwa2 M3</option>
 												<option value="9s18" data-option="9s18">Acthor 9s Dual 18k</option>
-												<option value="9s27" data-option="9s27">Acthor 9s Boost 27k</option>												
-												<option value="9s45" data-option="9s45">Acthor 9s Boost 45k</option>																								
+												<option value="9s27" data-option="9s27">Acthor 9s Boost 27k</option>
+												<option value="9s45" data-option="9s45">Acthor 9s Boost 45k</option>
 											</select>
 											<span class="form-text small">
 												Hier ist das installierte Modell auszuwählen.
@@ -481,7 +485,7 @@ $numDevices = 9;
 									</div>
 								</div>
 							</div>
-							<div class="device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-shelly device<?php echo $devicenum; ?>-option-tasmota device<?php echo $devicenum; ?>-option-acthor device<?php echo $devicenum; ?>-option-lambda device<?php echo $devicenum; ?>-option-elwa device<?php echo $devicenum; ?>-option-idm device<?php echo $devicenum; ?>-option-stiebel device<?php echo $devicenum; ?>-option-vampair device<?php echo $devicenum; ?>-option-avm device<?php echo $devicenum; ?>-option-mystrom device<?php echo $devicenum; ?>-option-http device<?php echo $devicenum; ?>-option-mqtt device<?php echo $devicenum;  ?>-option-ratiotherm device<?php echo $devicenum;  ?>-option-NXDACXX device<?php echo $devicenum; ?>-option-askoheat device<?php echo $devicenum;  ?>-option-viessmann hide">
+							<div class="device<?php echo $devicenum; ?>-option device<?php echo $devicenum; ?>-option-shelly device<?php echo $devicenum; ?>-option-tasmota device<?php echo $devicenum; ?>-option-acthor device<?php echo $devicenum; ?>-option-lambda device<?php echo $devicenum; ?>-option-elwa device<?php echo $devicenum; ?>-option-idm device<?php echo $devicenum; ?>-option-stiebel device<?php echo $devicenum; ?>-option-vampair device<?php echo $devicenum; ?>-option-avm device<?php echo $devicenum; ?>-option-mystrom device<?php echo $devicenum; ?>-option-http device<?php echo $devicenum; ?>-option-mqtt device<?php echo $devicenum;  ?>-option-ratiotherm device<?php echo $devicenum;  ?>-option-NXDACXX device<?php echo $devicenum; ?>-option-askoheat device<?php echo $devicenum;  ?>-option-viessmann hide -option-nibe hide">
 								<hr class="border-secondary">
 								<div class="form-group">
 									<div class="form-row mb-1">
@@ -607,7 +611,7 @@ $numDevices = 9;
 													</div>
 													<span class="form-text small">
 														Durch diese Option wird das angeschlossene Gerät täglich um 0:01 Uhr eingeschaltet. Wenn erkannt wird, dass das Gerät aktiviert wird (Leistungsaufnahme ist länger als "Zeit im Standby" größer als eingetragener "Verbrauch im Standby"), wird das Gerät direkt ausgeschaltet, falls die Einschaltschwelle nicht erreicht ist. Sobald die Einschaltschwelle erreicht wird, wird das Gerät erneut aktiviert.<br>
-														Somit kann z. B. eine Waschmaschine am Morgen im Standby befüllt und eingeschaltet werden. Sie läuft aber erst richtig an, wenn genügend Überschuss vorhanden ist.
+														Somit kann z. B. eine Waschmaschine am Morgen im Standby befüllt und eingeschaltet werden. Das Gerät läuft aber erst richtig an, wenn genügend Überschuss vorhanden ist.
 												</div>
 											</div>
 											<div class="device<?php echo $devicenum; ?>startupDetection hide">
@@ -785,7 +789,7 @@ $numDevices = 9;
 															<input type="range" class="form-control-range rangeInput" id="device_speichersocbeforestartDevices<?php echo $devicenum; ?>" name="device_speichersocbeforestart" min="0" max="100" step="5" data-default="0" value="0" data-topicprefix="openWB/LegacySmartHome/config/get/" data-topicsubgroup="Devices/<?php echo $devicenum; ?>/">
 														</div>
 													</div>
-													<span class="form-text small">Parameter in % Ladezustand. 0% deaktiviert die Funktion. Bei deaktivierter Funktion oder wenn der Ladezustand grösser gleich dem Parameter ist, wird die Speicherleistung bei der Berechnung der Ein- und Ausschaltschwelle berücksichtigt<br> 
+													<span class="form-text small">Parameter in % Ladezustand. 0% deaktiviert die Funktion. Bei deaktivierter Funktion oder wenn der Ladezustand grösser gleich dem Parameter ist, wird die Speicherleistung bei der Berechnung der Ein- und Ausschaltschwelle berücksichtigt<br>
 													Uberschuss = evu + speicherleistung, wobei evu - > Bezug(-)/Einspeisung(+) und speicherleistung Entladung(-)/Ladung(+) ist .<br>
 													Unterhalb dieses Wertes ist für die Berechnung der obige Überschuss und die maximal mögliche Speicherladung (als Offset) relevant <br>Uberschussoffset = Uberschuss - maxspeicher<br>
 													Bei überschussgesteuerten Geräten wird dann der Ueberschuss oder der Ueberschuss mit Offset übertragen.</span>
@@ -901,12 +905,13 @@ $numDevices = 9;
 									<div class="col">
 										<select class="form-control" name="device_measureType" id="device_measureTypeDevices<?php echo $devicenum; ?>" data-default="sdm630" data-topicprefix="openWB/LegacySmartHome/config/get/" data-topicsubgroup="Devices/<?php echo $devicenum; ?>/">
 											<option value ="" data-option="" disabled="disabled" selected="selected">-- Bitte auswählen --</option>
+											<option value="elgris" data-option="fronius">Elgris</option>
 											<option value="fronius" data-option="fronius">Fronius</option>
 											<option value="http" data-option="http">Http</option>
 											<option value="json" data-option="json">Json</option>
 											<option value="mystrom" data-option="mystrom">MyStrom</option>
 											<option value="sdm630" data-option="sdm630">SDM630</option>
-											<option value="b23" data-option="b23">b23</option>											
+											<option value="b23" data-option="b23">b23</option>
 											<option value="shelly" data-option="shelly">Shelly oder Shelly plus</option>
 											<option value="tasmota" data-option="tasmota">tasmota</option>
 											<option value="we514" data-option="we514">WE514</option>
@@ -918,7 +923,7 @@ $numDevices = 9;
 										</select>
 									</div>
 								</div>
-								<div class="form-row mb-1 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-shelly deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-tasmota deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-sdm630 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-lovato deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-b23 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-sdm120 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-we514 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-mystrom deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-fronius deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-avm hide">
+								<div class="form-row mb-1 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-shelly deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-tasmota deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-sdm630 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-lovato deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-b23 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-sdm120 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-we514 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-mystrom deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-fronius deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-avm hide deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-elgris">
 									<label for="device_measureipDevices<?php echo $devicenum; ?>" class="col-md-4 col-form-label">IP Adresse</label>
 									<div class="col">
 										<input id="device_measureipDevices<?php echo $devicenum; ?>" name="device_measureip" class="form-control" type="text" required="required" pattern="^((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$" data-default="192.168.1.1" value="192.168.1.1" inputmode="text"  data-topicprefix="openWB/LegacySmartHome/config/get/" data-topicsubgroup="Devices/<?php echo $devicenum; ?>/">
@@ -972,13 +977,13 @@ $numDevices = 9;
 										</select>
 									</div>
 								</div>
-								<div class="form-row mb-1 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-sdm630 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-b23 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-lovato deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-sdm120 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-we514 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-fronius hide">
+								<div class="form-row mb-1 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-sdm630 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-b23 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-lovato deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-sdm120 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-we514 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-fronius hide deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-elgris ">
 									<label for="device_measureidDevices<?php echo $devicenum; ?>" class="col-md-4 col-form-label">ID des Zählers</label>
 									<div class="col">
 										<input id="device_measureidDevices<?php echo $devicenum; ?>" name="device_measureid" class="form-control naturalNumber" type="number" inputmode="decimal" required min="1" max="255" data-default="1" value="1"  data-topicprefix="openWB/LegacySmartHome/config/get/" data-topicsubgroup="Devices/<?php echo $devicenum; ?>/">
 									</div>
 								</div>
-								<div class="form-row mb-1 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-sdm120 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-b23 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-lovato deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-sdm630 hide">
+								<div class="form-row mb-1 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-sdm120 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-b23 deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-lovato deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-sdm630 hide deviceMeasureTypeDevices<?php echo $devicenum; ?>-option-elgris hide">
 									<label for="device_measurePortSdmDevices<?php echo $devicenum; ?>" class="col-md-4 col-form-label">Modbusport des Zählers</label>
 									<div class="col">
 										<input id="device_measurePortSdmDevices<?php echo $devicenum; ?>" name="device_measurePortSdm" class="form-control naturalNumber" type="number" inputmode="decimal" required min="1" max="9999" data-default="8899" value="8899"  data-topicprefix="openWB/LegacySmartHome/config/get/" data-topicsubgroup="Devices/<?php echo $devicenum; ?>/">
@@ -1151,7 +1156,7 @@ $numDevices = 9;
 						<!-- modal body -->
 						<div class="modal-body text-center">
 							<p>
-								Es wurden fehlerhafte Eingaben gefunden, speichern ist nicht möglich! Bitte überprüfen Sie alle Eingaben.
+								Es wurden fehlerhafte Eingaben gefunden, speichern ist nicht möglich! Bitte überprüfe alle Eingaben.
 							</p>
 						</div>
 						<!-- modal footer -->
@@ -1210,20 +1215,20 @@ $numDevices = 9;
 
 		<footer class="footer bg-dark text-light font-small">
 			<div class="container text-center">
-				<small>Sie befinden sich hier: Ladeeinstellungen/Smart Home 2.0</small>
+				<small>Du befindest dich hier: Ladeeinstellungen/Smart Home 2.0</small>
 			</div>
 		</footer>
 
 		<!-- load mqtt library -->
-		<script src = "modules/legacy_smart_home/js/mqttws31.js" ></script>
+		<script src = "modules/legacy_smart_home/js/mqtt-5.14.1.js" ></script>
 		<!-- load topics -->
 		<script src = "modules/legacy_smart_home/topicsToSubscribe_smarthomeconfig.js?ver=20210215" ></script>
 		<!-- load helper functions -->
-		<script src = "modules/legacy_smart_home/helperFunctions.js?ver=20210215" ></script>
+		<script src = "modules/legacy_smart_home/helperFunctions.js?ver=20260226" ></script>
 		<!-- load service -->
-		<script src = "modules/legacy_smart_home/setupMqttServices.js?ver=20201207" ></script>
+		<script src = "modules/legacy_smart_home/setupMqttServices.js?ver=20260226" ></script>
 		<!-- load mqtt handler-->
-		<script src = "modules/legacy_smart_home/processAllMqttMsg.js?ver=20210104" ></script>
+		<script src = "modules/legacy_smart_home/processAllMqttMsg.js?ver=20260226" ></script>
 
 		<script>
 			<?php for( $devicenum = 1; $devicenum <= $numDevices; $devicenum++ ) { ?>
@@ -1505,4 +1510,5 @@ $numDevices = 9;
 		</script>
 
 	</body>
+
 </html>

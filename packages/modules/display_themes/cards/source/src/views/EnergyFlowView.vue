@@ -1,5 +1,5 @@
 <script>
-import FlowCard from "@/components/DashBoard/FlowCard.vue";
+import FlowCard from "@/components/Dashboard/FlowCard.vue";
 
 export default {
   name: "EnergyFlowView",
@@ -13,7 +13,7 @@ export default {
 </script>
 
 <template>
-  <FlowCard />
+  <FlowCard :changes-locked="changesLocked" />
 </template>
 
 <style scoped></style>

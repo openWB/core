@@ -4,7 +4,7 @@
  * Copyright (c) 2022 Claus Hagen
  */
 
-import { usageSummary, sourceSummary, globalData } from '@/assets/js/model'
+import { registry, globalData } from '@/assets/js/model'
 import { batteries } from './model'
 export function processBatteryMessages(topic: string, message: string) {
 	const index = getIndex(topic)
@@ -17,18 +17,18 @@ export function processBatteryMessages(topic: string, message: string) {
 		globalData.isBatteryConfigured = message == 'true'
 	} else if (topic == 'openWB/bat/get/power') {
 		if (+message > 0) {
-			usageSummary.batIn.power = +message
-			sourceSummary.batOut.power = 0
+			registry.setPower('batIn', +message)
+			registry.setPower('batOut', 0)
 		} else {
-			usageSummary.batIn.power = 0
-			sourceSummary.batOut.power = -message
+			registry.setPower('batIn', 0)
+			registry.setPower('batOut', -message)
 		}
 	} else if (topic == 'openWB/bat/get/soc') {
 		globalData.batterySoc = +message
 	} else if (topic == 'openWB/bat/get/daily_exported') {
-		sourceSummary.batOut.energy = +message
+		registry.setEnergy('batOut', +message)
 	} else if (topic == 'openWB/bat/get/daily_imported') {
-		usageSummary.batIn.energy = +message
+		registry.setEnergy('batIn', +message)
 	} else if (index && batteries.value.has(index)) {
 		if (topic.match(/^openwb\/bat\/[0-9]+\/get\/daily_exported$/i)) {
 			batteries.value.get(index)!.dailyYieldExport = +message
