@@ -46,7 +46,7 @@
 		var themeTopicName = "openWB/optional/int_display/theme";
 		var isSSL = location.protocol === 'https:';
 		var port = parseInt(location.port) || (location.protocol === 'https:' ? 443 : 80);
-		var clientUid = crypto.randomUUID();
+		var clientUid = Math.random().toString(36).replace(/[^a-z]+/g, "").substring(0, 5);
 
 		var client = new Messaging.Client(location.hostname, port, clientUid);
 
