@@ -15,8 +15,7 @@ from control.chargepoint.chargepoint_all import AllChargepoints
 from control.chargepoint.chargepoint_data import Log
 from control.chargepoint.chargepoint_state_update import ChargepointStateUpdate
 from control.chargepoint.chargepoint_template import CpTemplate, CpTemplateData
-from control.ev.charge_template import (ChargeTemplate, ChargeTemplateData, instantiate_charge_template_with_metadata,
-                                        instantiate_charge_template_without_metadata)
+from control.ev.charge_template import ChargeTemplate, ChargeTemplateData
 from control.ev import ev
 from control.ev.ev_template import EvTemplate, EvTemplateData
 from control.limiting_value import LoadmanagementLimit
@@ -353,7 +352,7 @@ class SubData:
                     if "ct"+index in var:
                         var.pop("ct"+index)
                 if "ct"+index not in var:
-                    var["ct"+index] = instantiate_charge_template_without_metadata()
+                    var["ct"+index] = ChargeTemplate()
                 new_charge_template = dataclass_from_dict(ChargeTemplateData, decode_payload(msg.payload))
                 template_changed = new_charge_template != var["ct"+index].data
                 var["ct"+index].data = new_charge_template
@@ -434,8 +433,7 @@ class SubData:
                             var["cp"+index].chargepoint.data.set.log = dataclass_from_dict(
                                 Log, decode_payload(msg.payload))
                         elif "charge_template" in msg.topic:
-                            var["cp"+index].chargepoint.data.set.charge_template = \
-                                instantiate_charge_template_with_metadata()
+                            var["cp"+index].chargepoint.data.set.charge_template = ChargeTemplate()
                             var["cp"+index].chargepoint.data.set.charge_template.data = dataclass_from_dict(
                                 ChargeTemplateData, decode_payload(msg.payload))
                         else:

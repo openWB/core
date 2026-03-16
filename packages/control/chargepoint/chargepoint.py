@@ -1,4 +1,5 @@
 from dataclasses import asdict
+import dataclasses
 import logging
 from threading import Thread, Event
 import traceback
@@ -753,6 +754,8 @@ class Chargepoint(ChargepointRfidMixin):
     def update_charge_template(self, charge_template: ChargeTemplate) -> None:
         # Prüfen, ob ein temporäres Ladeprofil aktiv ist und dieses übernehmen
         self.data.set.charge_template = charge_template
+        Pub().pub(f"openWB/set/chargepoint/{self.num}/set/charge_template",
+                  dataclasses.asdict(charge_template.data))
 
     def _pub_connected_vehicle(self, vehicle: Ev):
         """ published die Daten, die zur Anzeige auf der Hauptseite benötigt werden.

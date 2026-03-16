@@ -4,7 +4,7 @@ from control.algorithm import additional_current
 from control.chargepoint.chargepoint import Chargepoint, ChargepointData
 from control.chargepoint.chargepoint_data import Set
 from control.chargepoint.control_parameter import ControlParameter
-from control.ev.charge_template import instantiate_charge_template_without_metadata
+from control.ev.charge_template import ChargeTemplate
 from control.ev.ev import Ev
 from control.limiting_value import LoadmanagementLimit
 from control.loadmanagement import LimitingValue
@@ -30,7 +30,7 @@ from control.loadmanagement import LimitingValue
 def test_set_loadmangement_message(set_current, limit, expected_msg, monkeypatch):
     # setup
     ev = Ev(0)
-    ev.charge_template = instantiate_charge_template_without_metadata()
+    ev.charge_template = ChargeTemplate()
     cp1 = Chargepoint(1, None)
     cp1.data = ChargepointData(set=Set(current=set_current),
                                control_parameter=ControlParameter(required_currents=[8]*3))

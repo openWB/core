@@ -133,7 +133,8 @@ class SelectedPlan:
 class ChargeTemplate:
     """ Klasse der Lade-Profile
     """
-    data: ChargeTemplateData = field(default_factory=charge_template_data_factory)
+    data: ChargeTemplateData = field(default_factory=charge_template_data_factory, metadata={
+        "topic": ""})
 
     CHARGING_PRICE_EXCEEDED = ("Der aktuelle Strompreis liegt über dem maximalen Strompreis. ")
     CHARGING_PRICE_LOW = "Laden, da der aktuelle Strompreis unter dem maximalen Strompreis liegt."
@@ -693,13 +694,3 @@ class ChargeTemplate:
         for plan in self.data.chargemode.scheduled_charging.plans:
             if plan.id == selected_plan:
                 return soc < plan.limit.soc_limit
-
-
-def instantiate_charge_template_with_metadata() -> ChargeTemplate:
-    template = ChargeTemplate()
-    template.__dataclass_fields__['data'].metadata = {"topic": "set/charge_template"}
-    return template
-
-
-def instantiate_charge_template_without_metadata() -> ChargeTemplate:
-    return ChargeTemplate()
