@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import pytest
 from unittest.mock import MagicMock
 from modules.common.utils.peak_filter import PeakFilter
@@ -39,65 +40,52 @@ def patch_data(monkeypatch):
     yield
 
 
-def test_check_power_valid():
+@dataclass
+class Params:
+    name: str
+    type: str
+    previous_imported: float
+    previous_exported: float
+    power: float
+    imported: float
+    exported: float
+    expected_imported: float
+    expected_exported: float
+    expect_exception: bool = False
+
+
+cases = [
+    Params("Power Peak Zähler positiv", "counter", 1000, 500, 11000, 1300, 800, None, None, True),
+    Params("Power Peak Zähler negativ", "counter", 1000, 500, -11000, 1300, 800, None, None, True),
+    Params("Power Peak Wechselrichter", "inverter", 1000, 500, 11000, 1005, 505, 1005, 505, True),
+    Params("Power Peak Speicher positiv", "bat", 1000, 500, 11000, 1005, 505, 1005, 505, True),
+    Params("Power Peak Speicher negativ", "bat", 1000, 500, -11000, 1005, 505, 1005, 505, True),
+    Params("Imp/ Exp Zähler - Werte valide", "counter", 1000, 500, 900, 1005, 505, 1005, 505),
+    Params("Imp/ Exp Wechselrichter - Werte valide", "inverter", 1000, 500, 1500, 1005, 505, 1005, 505),
+    Params("Imp/ Exp Speicher - Werte valide", "bat", 1000, 500, 400, 1005, 505, 1005, 505),
+    Params("Imp/ Exp Zähler - Werte invalide", "counter", 1000, 500, 1000, 1300, 800, None, None),
+    Params("Imp/ Exp Zähler - Import invalide", "counter", 1000, 500, 1000, 1300, 505, None, 505),
+    Params("Imp/ Exp Zähler - Export invalide", "counter", 1000, 500, 1000, 1005, 800, 1005, None),
+    Params("Imp/ Exp Wechselrichter - Werte invalide", "inverter", 1000, 500, 1500, 1300, 800, None, None),
+    Params("Imp/ Exp Wechselrichter - Import invalide", "inverter", 1000, 500, 1500, 1300, 505, None, 505),
+    Params("Imp/ Exp Wechselrichter - Export valide", "inverter", 1000, 500, 1500, 1005, 800, 1005, None),
+    Params("Imp/ Exp Speicher - Werte invalide", "bat", 1000, 500, 400, 1300, 800, None, None),
+    Params("Imp/ Exp Speicher - Import invalide", "bat", 1000, 500, 400, 1300, 505, None, 505),
+    Params("Imp/ Exp Speicher - Export invalide", "bat", 1000, 500, 400, 1005, 800, 1005, None),
+]
+
+
+@pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
+def test_check_values_valid(params):
     fs = DummyFaultState()
-    pf = PeakFilter("counter", 1, fs)
-    pf.check_power(1000, 1500)  # Should not raise
+    pf = PeakFilter(params.type, 1, fs)
+    pf.imported = params.previous_imported
+    pf.exported = params.previous_exported
+    if params.expect_exception:
+        with pytest.raises(Exception):
+            imp, exp = pf.check_values(params.power, params.imported, params.exported)
+    else:
+        imp, exp = pf.check_values(params.power, params.imported, params.exported)
+        assert imp == params.expected_imported
+        assert exp == params.expected_exported
 
-
-def test_check_power_invalid():
-    fs = DummyFaultState()
-    pf = PeakFilter("counter", 1, fs)
-    with pytest.raises(Exception):
-        pf.check_power(1000, 2500)
-
-
-def test_check_imported_exported_valid():
-    fs = DummyFaultState()
-    pf = PeakFilter("counter", 1, fs)
-    pf.imported = 1000
-    pf.exported = 500
-    imp, exp = pf.check_imported_exported(2000, 1010, 510)
-    assert imp == 1010
-    assert exp == 510
-
-
-def test_check_imported_exported_invalid():
-    fs = DummyFaultState()
-    pf = PeakFilter("counter", 1, fs)
-    pf.imported = 1000
-    pf.exported = 500
-    imp, exp = pf.check_imported_exported(1000, 1300, 800)
-    assert imp is None
-    assert exp is None
-    assert fs.warnings
-
-
-def test_check_values_counter():
-    fs = DummyFaultState()
-    pf = PeakFilter("counter", 1, fs)
-    pf.imported = 1000
-    pf.exported = 500
-    imp, exp = pf.check_values(900, 1005, 505)
-    assert imp == 1005
-    assert exp == 505
-
-
-def test_check_values_inverter():
-    fs = DummyFaultState()
-    pf = PeakFilter("inverter", 1, fs)
-    pf.imported = 1000
-    pf.exported = 500
-    imp, exp = pf.check_values(1500, 1005, 505)
-    assert imp == 1005
-    assert exp == 505
-
-
-def test_check_values_bat():
-    fs = DummyFaultState()
-    pf = PeakFilter("bat", 1, fs)
-    pf.imported = 1000
-    pf.exported = 500
-    imp, exp = pf.check_values(400, 1005, 505)
-    assert imp == 1005
-    assert exp == 505
