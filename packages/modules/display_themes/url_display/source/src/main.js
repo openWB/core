@@ -49,7 +49,7 @@ function validateUrl(candidateUrl, configuredValue) {
   try {
     parsedUrl = new URL(candidateUrl);
   } catch (error) {
-    setStatus(`Fehler: Ungueltige URL in der Konfiguration (Wert: ${configuredValue}).`);
+    setStatus(`Fehler: Ungültige URL in der Konfiguration (Wert: ${configuredValue}).`);
     return null;
   }
 
@@ -66,7 +66,7 @@ function validateUrl(candidateUrl, configuredValue) {
   const hasDotInHostname = hostname.includes(".");
 
   if (!isLocalhost && !isIpv4 && !isIpv6 && !hasDotInHostname) {
-    setStatus(`Fehler: Ungueltiger Hostname in der URL-Konfiguration (Wert: ${configuredValue}).`);
+    setStatus(`Fehler: Ungültiger Hostname in der URL-Konfiguration (Wert: ${configuredValue}).`);
     return null;
   }
 
@@ -77,7 +77,7 @@ function startMessageTimeout() {
   clearTimeout(messageTimeoutHandle);
   messageTimeoutHandle = setTimeout(() => {
     if (!hasProcessedValidUrl) {
-      setStatus("Warte auf gueltige URL-Konfiguration...");
+      setStatus("Warte auf gültige URL-Konfiguration...");
     }
   }, MESSAGE_TIMEOUT_MS);
 }
