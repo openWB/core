@@ -19,7 +19,7 @@ from typing import List, Optional, Tuple
 from fnmatch import fnmatch
 
 from control import data
-from control.ev.charge_template import ChargeTemplate
+from control.ev.charge_template import ChargeTemplate, instantiate_charge_template_without_metadata
 from control.algorithm.utils import get_medium_charging_current
 from control.chargepoint.chargepoint_state import ChargepointState, PHASE_SWITCH_STATES
 from control.chargepoint.charging_type import ChargingType
@@ -89,7 +89,7 @@ class Ev:
     def __init__(self, index: int):
         try:
             self.ev_template: EvTemplate = EvTemplate()
-            self.charge_template: ChargeTemplate = ChargeTemplate()
+            self.charge_template: ChargeTemplate = instantiate_charge_template_without_metadata()
             self.soc_module: ConfigurableVehicle = None
             self.num = index
             self.data = EvData()

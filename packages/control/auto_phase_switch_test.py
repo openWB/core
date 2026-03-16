@@ -6,7 +6,7 @@ from control.chargepoint.control_parameter import ControlParameter
 from control.counter import Counter, CounterData, Set
 
 from control.limiting_value import LoadmanagementLimit
-from control.ev.charge_template import ChargeTemplate
+from control.ev.charge_template import instantiate_charge_template_without_metadata
 from control.pv_all import PvAll
 from control.bat_all import BatAll
 from control.general import General
@@ -135,7 +135,7 @@ def test_auto_phase_switch(monkeypatch, vehicle: Ev, params: Params):
     control_parameter.state = params.state
 
     # execution
-    phases_to_use, current, message = vehicle.auto_phase_switch(ChargeTemplate(),
+    phases_to_use, current, message = vehicle.auto_phase_switch(instantiate_charge_template_without_metadata(),
                                                                 control_parameter,
                                                                 0,
                                                                 max(params.get_currents),
@@ -177,7 +177,7 @@ def test_check_phase_switch_conditions(evse_current: int,
 
     # execution
     phase_switch, condition_msg = ev._check_phase_switch_conditions(
-        ChargeTemplate(),
+        instantiate_charge_template_without_metadata(),
         ControlParameter(phases=3-get_currents.count(0)),
         evse_current,
         get_currents,

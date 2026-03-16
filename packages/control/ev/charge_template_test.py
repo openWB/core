@@ -7,7 +7,7 @@ import pytest
 from control import data
 from control import optional
 from control.chargepoint.control_parameter import ControlParameter
-from control.ev.charge_template import SelectedPlan
+from control.ev.charge_template import SelectedPlan, instantiate_charge_template_without_metadata
 from control.chargepoint.charging_type import ChargingType
 from control.ev.charge_template import ChargeTemplate
 from control.ev.ev_template import EvTemplate, EvTemplateData
@@ -61,7 +61,7 @@ def test_time_charging(plans: Dict[int, TimeChargingPlan], soc: float, used_amou
                        expected: Tuple[int, str, Optional[str], Optional[str]],
                        monkeypatch):
     # setup
-    ct = ChargeTemplate()
+    ct = instantiate_charge_template_without_metadata()
     ct.data.time_charging.plans = plans
     check_plans_timeframe_mock = Mock(return_value=plan_found)
     monkeypatch.setattr(timecheck, "check_plans_timeframe", check_plans_timeframe_mock)
@@ -88,7 +88,7 @@ def test_time_charging(plans: Dict[int, TimeChargingPlan], soc: float, used_amou
 def test_instant_charging(selected: str, current_soc: float, used_amount: float,
                           expected: Tuple[int, str, Optional[str]]):
     # setup
-    ct = ChargeTemplate()
+    ct = instantiate_charge_template_without_metadata()
     ct.data.chargemode.instant_charging.limit.selected = selected
     ct.data.chargemode.instant_charging.limit.amount = 1000
 
@@ -118,7 +118,7 @@ def test_pv_charging(min_soc: int,
                      used_amount: float,
                      expected: Tuple[int, str, Optional[str], int]):
     # setup
-    ct = ChargeTemplate()
+    ct = instantiate_charge_template_without_metadata()
     ct.data.chargemode.pv_charging.min_soc = min_soc
     ct.data.chargemode.pv_charging.min_current = min_current
     ct.data.chargemode.pv_charging.phases_to_use = 0
@@ -151,7 +151,7 @@ def test_calc_remaining_time(phases_to_use,
                              phase_switch_supported,
                              expected, monkeypatch):
     # setup
-    ct = ChargeTemplate()
+    ct = instantiate_charge_template_without_metadata()
     plan = ScheduledChargingPlan(phases_to_use=phases_to_use)
     calculate_duration_mock = Mock(side_effect=calc_duration)
     monkeypatch.setattr(ChargeTemplate, "_calculate_duration", calculate_duration_mock)
@@ -179,7 +179,7 @@ def test_calculate_duration(selected: str,
                             expected_duration: float,
                             expected_missing_amount: float):
     # setup
-    ct = ChargeTemplate()
+    ct = instantiate_charge_template_without_metadata()
     plan = ScheduledChargingPlan(bidi_charging_enabled=bidi_charging_enabled)
     plan.limit.selected = selected
     # execution
@@ -208,7 +208,7 @@ def test_scheduled_charging_recent_plan(end_time_mock,
     check_end_time_mock = Mock(side_effect=end_time_mock)
     monkeypatch.setattr(timecheck, "check_end_time", check_end_time_mock)
     control_parameter = ControlParameter()
-    ct = ChargeTemplate()
+    ct = instantiate_charge_template_without_metadata()
     plan_mock_0 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=0, limit=Limit(selected="amount"))
     plan_mock_1 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=1, limit=Limit(selected="amount"))
     plan_mock_2 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=2, limit=Limit(selected="amount"))
@@ -265,7 +265,7 @@ def test_scheduled_charging_calc_current(plan_data: SelectedPlan,
                                          bidi_charging_enabled: bool,
                                          expected: Tuple[float, str, str, int]):
     # setup
-    ct = ChargeTemplate()
+    ct = instantiate_charge_template_without_metadata()
     plan = ScheduledChargingPlan(active=True, id=0)
     plan.limit.selected = selected
     plan.bidi_charging_enabled = bidi_charging_enabled
@@ -284,7 +284,7 @@ def test_scheduled_charging_calc_current(plan_data: SelectedPlan,
 
 def test_scheduled_charging_calc_current_no_plans():
     # setup
-    ct = ChargeTemplate()
+    ct = instantiate_charge_template_without_metadata()
 
     # execution
     ret = ct.scheduled_charging_calc_current(
@@ -314,7 +314,7 @@ def test_scheduled_charging_calc_current_no_plans():
 def test_scheduled_charging_calc_current_consider_soc_request_interval_offset(
         selected_limit: str, charge_state: bool, expected: Tuple[float, str, str, int]):
     # setup
-    ct = ChargeTemplate()
+    ct = instantiate_charge_template_without_metadata()
     plan = ScheduledChargingPlan()
     plan.limit.selected = selected_limit
 
@@ -401,7 +401,7 @@ def test_scheduled_charging_calc_current_electricity_tariff(
     datetime_mock.now.return_value = datetime.datetime.fromtimestamp(LOADING_HOURS_TODAY[0])
     monkeypatch.setattr(datetime, "datetime", datetime_mock)
 
-    ct = ChargeTemplate()
+    ct = instantiate_charge_template_without_metadata()
     plan = ScheduledChargingPlan(active=True,
                                  limit=ScheduledLimit(selected="soc", soc_scheduled=soc_scheduled, soc_limit=sco_limit))
     plan.et_active = True

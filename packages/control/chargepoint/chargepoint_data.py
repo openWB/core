@@ -4,7 +4,7 @@ from typing import Dict, List, Optional, Protocol
 from control.chargepoint.chargepoint_template import CpTemplate
 
 from control.chargepoint.control_parameter import ControlParameter, control_parameter_factory
-from control.ev.charge_template import ChargeTemplate
+from control.ev.charge_template import ChargeTemplate, instantiate_charge_template_with_metadata
 from control.ev.ev import Ev
 from dataclass_utils.factories import currents_list_factory, empty_dict_factory, voltages_list_factory
 from helpermodules.constants import NO_ERROR
@@ -140,10 +140,6 @@ class Get:
     voltages: List[float] = field(default_factory=voltages_list_factory)
 
 
-def charge_template_factory() -> ChargeTemplate:
-    return ChargeTemplate()
-
-
 def ev_factory() -> Ev:
     return Ev(0)
 
@@ -154,8 +150,7 @@ def log_factory() -> Log:
 
 @dataclass
 class Set:
-    charge_template: ChargeTemplate = field(default_factory=charge_template_factory,
-                                            metadata={"topic": "set/charge_template"})
+    charge_template: ChargeTemplate = field(default_factory=instantiate_charge_template_with_metadata)
     current: float = field(default=0, metadata={"topic": "set/current"})
     ev_prev: int = field(default=0, metadata={"topic": "set/ev_prev"})
     log: Log = field(default_factory=log_factory, metadata={"topic": "set/log"})
