@@ -17,10 +17,12 @@ class UrlDisplayTheme:
                  name: str = "URL Display",
                  type: str = "url_display",
                  official: bool = False,
+                 userManagementSupported: bool = False,
                  configuration: UrlDisplayThemeConfiguration = None) -> None:
         self.name = name
         self.type = type
         self.official = official
+        self.userManagementSupported = userManagementSupported
         self.configuration = configuration or UrlDisplayThemeConfiguration()
 
 
