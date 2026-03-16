@@ -40,9 +40,10 @@ class Process:
                         if control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED and cp.data.set.current != 0:
                             control_parameter.state = ChargepointState.WAIT_FOR_USING_PHASES
                         cp.set_timestamp_charge_start()
+                        self._update_state(cp)
                     else:
                         control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
-                    self._update_state(cp)
+                        cp.data.set.current = 0
 
                     if cp.data.get.state_str is not None:
                         Pub().pub("openWB/set/chargepoint/"+str(cp.num)+"/get/state_str",
@@ -71,7 +72,7 @@ class Process:
                     for d in action.config.configuration.devices:
                         if d["type"] == "io":
                             data.data.io_states[f"io_states{d['id']}"].data.set.digital_output[d["digital_output"]] = (
-                                action.dimming_via_direct_control() is None  # active output (True) if no dimming
+                                action.dimming_via_direct_control()[0] is None  # active output (True) if no dimming
                             )
                 if isinstance(action, DimmingIo):
                     for d in action.config.configuration.devices:
@@ -84,7 +85,7 @@ class Process:
                     if action.config.configuration.passthrough_enabled:
                         # find output pattern by value
                         for pattern in action.config.configuration.output_pattern:
-                            if pattern["value"] == action.control_stepwise():
+                            if pattern["value"] == action.control_stepwise()[0]:
                                 # set digital outputs according to matching output_pattern
                                 for output in pattern["matrix"].keys():
                                     data.data.io_states[
@@ -135,7 +136,6 @@ class Process:
             current = 0
 
         chargepoint.data.set.current = current
-        Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num)+"/set/current", current)
         if chargepoint.data.get.plug_state:
             log.info(f"LP{chargepoint.num}: set current {current} A, "
                      f"state {ChargepointState(chargepoint.data.control_parameter.state).name}")

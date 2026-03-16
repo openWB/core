@@ -32,19 +32,23 @@ class Pub:
 
 
 def pub_single(topic, payload, hostname="localhost", port=1883, no_json=False, retain=True):
-    """ published eine einzelne Nachricht an einen Host, der nicht der localhost ist.
+    """ Sendet eine einzelne Nachricht an einen Host.
 
         Parameter
     ---------
     topic : str
-        Topic, an das gepusht werden soll
+        Topic, an das gesendet werden soll
     payload : int, str, list, float
-        Payload, der gepusht werden soll. Nicht als json, da ISSS kein json-Payload verwendet.
+        Payload, der gesendet werden soll. Nicht als json, da ISSS kein json-Payload verwendet.
     hostname: str
         IP des Hosts
     no_json: bool
         Kompatibilität mit ISSS, die ramdisk verwenden.
     """
+    if hostname == "localhost":
+        Pub().pub(topic, payload, qos=0, retain=retain)
+        return
+
     if no_json:
         publish.single(topic, payload, hostname=hostname, port=port, retain=retain)
     else:

@@ -48,7 +48,7 @@ function setCookie(cookieName, cookieValue, expireDays = 30, path = "/") {
 	let currentDate = new Date();
 	currentDate.setTime(currentDate.getTime() + (expireDays * 24 * 60 * 60 * 1000));
 	const expires = "expires=" + currentDate.toUTCString();
-	document.cookie = `${cookieName}=${encodeURIComponent(cookieValue)};${expires};path=${path}; SameSite=Lax; Secure`;
+	document.cookie = `${cookieName}=${encodeURIComponent(cookieValue)};${expires};path=${path}; SameSite=Lax${location.protocol === "https:" ? "; Secure" : ""}`;
 };
 
 function deleteCookie(cookieName, path = "/") {

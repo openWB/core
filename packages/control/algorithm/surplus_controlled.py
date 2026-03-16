@@ -5,7 +5,7 @@ from control import data
 from control.algorithm import common
 from control.algorithm.chargemodes import (CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE, CONSIDERED_CHARGE_MODES_PV_ONLY,
                                            CONSIDERED_CHARGE_MODES_SURPLUS)
-from control.algorithm.filter_chargepoints import (get_chargepoints_by_chargemodes,
+from control.algorithm.filter_chargepoints import (get_chargepoints_with_required_current_by_chargemode,
                                                    get_chargepoints_by_mode_and_counter,
                                                    get_preferenced_chargepoint_charging)
 from control.algorithm.utils import get_medium_charging_current
@@ -40,7 +40,7 @@ class SurplusControlled:
             if preferenced_cps_without_set_current:
                 for cp in preferenced_cps_without_set_current:
                     cp.data.set.current = cp.data.set.target_current
-        for cp in get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_SURPLUS):
+        for cp in get_chargepoints_with_required_current_by_chargemode(CONSIDERED_CHARGE_MODES_SURPLUS):
             if cp.data.control_parameter.state in CHARGING_STATES:
                 self._fix_deviating_evse_current(cp)
 
@@ -127,7 +127,7 @@ class SurplusControlled:
     def check_submode_pv_charging(self) -> None:
         evu_counter = data.data.counter_all_data.get_evu_counter()
 
-        for cp in get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_PV_ONLY):
+        for cp in get_chargepoints_with_required_current_by_chargemode(CONSIDERED_CHARGE_MODES_PV_ONLY):
             try:
                 def phase_switch_necessary() -> bool:
                     return (cp.cp_state_hw_support_phase_switch() and
@@ -159,8 +159,8 @@ class SurplusControlled:
                 log.exception(f"Fehler in der PV-gesteuerten Ladung bei {cp.num}")
 
     def set_required_current_to_max(self) -> None:
-        for cp in get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_SURPLUS +
-                                                  CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE):
+        for cp in get_chargepoints_with_required_current_by_chargemode(CONSIDERED_CHARGE_MODES_SURPLUS +
+                                                                       CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE):
             try:
                 charging_ev_data = cp.data.set.charging_ev_data
                 required_currents = cp.data.control_parameter.required_currents

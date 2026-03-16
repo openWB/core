@@ -120,6 +120,7 @@ export const useMqttStore = defineStore("mqtt", {
       ) => {
         var scaled = false;
         var value = state.topics[topic];
+        var textValue;
         if (
           value === undefined ||
           (topicElement !== undefined && value[topicElement] === undefined)
@@ -133,10 +134,6 @@ export const useMqttStore = defineStore("mqtt", {
           if (inverted) {
             value *= -1;
           }
-          var textValue = value.toLocaleString(undefined, {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-          });
           var scaledValue = value;
           while (scale && (scaledValue > 999 || scaledValue < -999)) {
             scaledValue = scaledValue / 1000;
@@ -1026,7 +1023,7 @@ export const useMqttStore = defineStore("mqtt", {
           .split(".")
           .reduce(
             (o, p, i) =>
-              (o[p] = path.split(".").length === ++i ? value : o[p] || {}),
+              (o[p] = path.split(".").length === i + 1 ? value : o[p] || {}),
             object,
           );
 

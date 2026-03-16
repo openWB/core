@@ -24,7 +24,7 @@ from typing import List, Optional
 
 from control import data
 from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_CHARGING
-from control.algorithm.filter_chargepoints import get_chargepoints_by_chargemodes
+from control.algorithm.filter_chargepoints import get_chargepoints_with_required_current_by_chargemode
 from control.pv import Pv
 from helpermodules.constants import NO_ERROR
 from modules.common.abstract_device import AbstractDevice
@@ -429,7 +429,8 @@ class BatAll:
             self.data.get.power_limit_controllable = False
 
     def get_charge_mode_vehicle_charge(self):
-        chargepoint_by_chargemodes = get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_CHARGING)
+        chargepoint_by_chargemodes = get_chargepoints_with_required_current_by_chargemode(
+            CONSIDERED_CHARGE_MODES_CHARGING)
         # Fahrzeuge laden
         vehicle_charging = (len(chargepoint_by_chargemodes) > 0 and
                             data.data.cp_all_data.data.get.power > 100)

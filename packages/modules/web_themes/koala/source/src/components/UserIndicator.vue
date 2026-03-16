@@ -1,10 +1,10 @@
 <template>
-  <div id="user-indicator" v-if="userManagementActive">
+  <div id="user-indicator" v-if="connected && userManagementActive">
     <q-dialog v-model="showLogoutDialog" persistent>
       <q-card>
         <q-card-section class="row items-center">
           <q-avatar icon="logout" color="negative" text-color="white" />
-          <span class="q-ml-sm">Willst Du Dich wirklich abmelden?</span>
+          <span class="text-h6 q-ml-sm">Willst Du Dich wirklich abmelden?</span>
         </q-card-section>
 
         <q-card-actions align="right">
@@ -23,7 +23,7 @@
       <q-card>
         <q-card-section class="row items-center">
           <q-avatar icon="login" color="positive" text-color="white" />
-          <span class="q-ml-sm">Gib Deine Anmeldedaten ein.</span>
+          <span class="text-h6 q-ml-sm">Gib Deine Anmeldedaten ein.</span>
         </q-card-section>
 
         <q-form @submit="login">
@@ -98,7 +98,7 @@
       <q-card>
         <q-card-section class="row items-center">
           <q-avatar icon="login" color="warning" text-color="white" />
-          <span class="q-ml-sm">Kennwort vergessen</span>
+          <span class="text-h6 q-ml-sm">Kennwort vergessen</span>
         </q-card-section>
 
         <q-form>
@@ -282,6 +282,8 @@ const resetPasswordDisabled = computed(() => {
   );
 });
 
+const connected = computed(() => mqttStore.mqttClientConnected);
+
 const stringIsEmpty = (myString: string) => {
   return !myString || myString.length === 0;
 };
@@ -386,6 +388,7 @@ watch(anonymousAccessAllowed, (newValue) => {
 
 onMounted(() => {
   if (
+    connected.value &&
     userManagementActive.value &&
     !anonymousAccessAllowed.value &&
     !loggedIn.value

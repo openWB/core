@@ -35,6 +35,12 @@
 				"allow": true
 			},
 			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/chargepoint/<id>/get/rfid",
+				"priority": 0,
+				"allow": true
+			},
+			{
 				"acltype": "publishClientReceive",
 				"topic": "openWB/chargepoint/<id>/#",
 				"priority": 0,

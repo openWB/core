@@ -2,7 +2,8 @@ import logging
 import traceback
 from typing import Optional, Callable, TypeVar
 
-from helpermodules import exceptions, pub
+from helpermodules import exceptions
+from helpermodules.pub import Pub
 from helpermodules.constants import NO_ERROR
 from modules.common import component_type
 from modules.common.component_setup import ComponentSetup
@@ -52,13 +53,13 @@ class FaultState(Exception):
                 topic_prefix = f"openWB/set/{topic}"
             else:
                 topic_prefix = f"openWB/set/{topic}/{self.component_info.id}"
-            pub.Pub().pub(f"{topic_prefix}/get/fault_str", self.fault_str)
-            pub.Pub().pub(f"{topic_prefix}/get/fault_state", self.fault_state.value)
+            Pub().pub(f"{topic_prefix}/get/fault_str", self.fault_str)
+            Pub().pub(f"{topic_prefix}/get/fault_state", self.fault_state.value)
             if self.component_info.type == "internal_chargepoint":
-                pub.pub_single(f"openWB/set/chargepoint/{self.component_info.hierarchy_id}/get/fault_str",
-                               self.fault_str)
-                pub.pub_single(f"openWB/set/chargepoint/{self.component_info.hierarchy_id}/get/fault_state",
-                               self.fault_state.value)
+                Pub().pub(f"openWB/set/chargepoint/{self.component_info.hierarchy_id}/get/fault_str",
+                          self.fault_str)
+                Pub().pub(f"openWB/set/chargepoint/{self.component_info.hierarchy_id}/get/fault_state",
+                          self.fault_state.value)
         except Exception:
             log.exception("Fehler im Modul fault_state")
 

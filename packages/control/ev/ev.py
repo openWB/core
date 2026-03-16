@@ -287,10 +287,15 @@ class Ev:
             if phases_in_use > 1 and all_surplus > 0:
                 # genug Leistung, um weiter mehrphasig zu laden
                 return False, self.ENOUGH_POWER
-            elif phases_in_use == 1 and all_surplus < required_surplus:
+            elif phases_in_use == 1 and (all_surplus < required_surplus or unbalanced_load_limit_reached):
                 # nicht genug Leistung, um mehrphasig zu laden, also einphasig laden
                 return False, self.NOT_ENOUGH_POWER
-            elif min_current == evse_current or max_current == evse_current:
+            elif ((get_medium_charging_current(get_currents) < max_current_range and
+                   evse_current > max_current_range and
+                   phases_in_use == 1) or
+                  (get_medium_charging_current(get_currents) > min_current_range and
+                   evse_current < min_current_range and
+                   phases_in_use > 1)):
                 # EV lädt nicht mit dem vorgegebenen Strom +/- der erlaubten Abweichung
                 return False, self.CURRENT_OUT_OF_NOMINAL_DIFFERENCE
             else:

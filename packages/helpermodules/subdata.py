@@ -439,8 +439,14 @@ class SubData:
                         else:
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.set, msg)
                     elif re.search("/chargepoint/[0-9]+/get/", msg.topic) is not None:
-                        if re.search("/chargepoint/[0-9]+/get/connected_vehicle/", msg.topic) is not None:
-                            self.set_json_payload_class(var["cp"+index].chargepoint.data.get.connected_vehicle, msg)
+                        if re.search("/chargepoint/[0-9]+/get/connected_vehicle/config", msg.topic) is not None:
+                            self.set_json_payload_class(
+                                var["cp"+index].chargepoint.data.get.connected_vehicle.config, msg)
+                        elif re.search("/chargepoint/[0-9]+/get/connected_vehicle/info", msg.topic) is not None:
+                            self.set_json_payload_class(
+                                var["cp"+index].chargepoint.data.get.connected_vehicle.info, msg)
+                        elif re.search("/chargepoint/[0-9]+/get/connected_vehicle/soc", msg.topic) is not None:
+                            self.set_json_payload_class(var["cp"+index].chargepoint.data.get.connected_vehicle.soc, msg)
                         elif (re.search("/chargepoint/[0-9]+/get/soc$", msg.topic) is not None and
                               decode_payload(msg.payload) != var["cp"+index].chargepoint.data.get.soc):
                             Pub().pub(f'openWB/set/vehicle/{var["cp"+index].chargepoint.data.config.ev}'

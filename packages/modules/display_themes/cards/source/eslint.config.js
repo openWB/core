@@ -1,8 +1,9 @@
+import { defineConfig } from "eslint/config"
 import js from "@eslint/js"
-import pluginVue from "eslint-plugin-vue"
 import globals from "globals"
+import pluginVue from "eslint-plugin-vue"
 
-export default [
+export default defineConfig([
   js.configs.recommended,
   ...pluginVue.configs['flat/recommended'],
   {
@@ -14,4 +15,4 @@ export default [
       },
     },
   }
-]
+]);

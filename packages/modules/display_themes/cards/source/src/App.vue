@@ -192,7 +192,7 @@ export default {
       this.client.on("message", (topic, message) => {
         console.debug(`Received message "${message}" from topic "${topic}"`);
         if (message.toString().length > 0) {
-          let myPayload = undefined;
+          let myPayload;
           try {
             myPayload = JSON.parse(message.toString());
           } catch (error) {

@@ -268,7 +268,6 @@ class Command:
         """
         def setup_added_chargepoint():
             Pub().pub(f'openWB/chargepoint/{new_id}/config', chargepoint_config)
-            Pub().pub(f'openWB/chargepoint/{new_id}/set/manual_lock', False)
             {Pub().pub(f"openWB/chargepoint/{new_id}/get/"+k, v) for (k, v) in asdict(chargepoint.Get()).items()}
             charge_template = SubData.ev_charge_template_data[f"ct{SubData.ev_data['ev0'].data.charge_template}"]
             charge_template = dataclass_utils.asdict(charge_template.data)
@@ -1238,15 +1237,15 @@ class ProcessBrokerBranch:
                 elif re.search("openWB/chargepoint/template/[0-9]+$", msg.topic) is not None:
                     for cp in SubData.cp_data.values():
                         if cp.chargepoint.data.config.template == int(msg.topic.split("/")[-1]):
-                            pub_single(f'openWB/set/chargepoint/{cp.chargepoint.num}/config/template', 0)
+                            Pub().pub(f'openWB/set/chargepoint/{cp.chargepoint.num}/config/template', 0)
                 elif re.search("openWB/vehicle/template/charge_template/[0-9]+$", msg.topic) is not None:
                     for vehicle in SubData.ev_data.values():
                         if vehicle.data.charge_template == int(msg.topic.split("/")[-1]):
-                            pub_single(f'openWB/set/vehicle/{vehicle.num}/charge_template', 0)
+                            Pub().pub(f'openWB/set/vehicle/{vehicle.num}/charge_template', 0)
                 elif re.search("openWB/vehicle/template/ev_template/[0-9]+$", msg.topic) is not None:
                     for vehicle in SubData.ev_data.values():
                         if vehicle.data.ev_template == int(msg.topic.split("/")[-1]):
-                            pub_single(f'openWB/set/vehicle/{vehicle.num}/ev_template', 0)
+                            Pub().pub(f'openWB/set/vehicle/{vehicle.num}/ev_template', 0)
         except Exception:
             log.exception("Fehler in ProcessBrokerBranch")
 

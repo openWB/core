@@ -2,7 +2,7 @@ import logging
 from typing import Iterable, List, Optional, Tuple
 
 from control import data
-from control.algorithm.filter_chargepoints import get_chargepoints_by_mode
+from control.algorithm.filter_chargepoints import get_chargepoints_with_required_current_by_chargemode
 from control.algorithm.utils import get_medium_charging_current
 from control.chargepoint.chargepoint import Chargepoint
 from control.counter import Counter
@@ -27,10 +27,9 @@ def reset_current():
             log.exception(f"Fehler im Algorithmus-Modul für Ladepunkt{cp.num}")
 
 
-def reset_current_by_chargemode(mode_tuple: Tuple[Optional[str], str, bool]) -> None:
-    for mode in mode_tuple:
-        for cp in get_chargepoints_by_mode(mode):
-            cp.data.set.current = None
+def reset_current_by_chargemode(modes: List[Tuple[Optional[str], str, bool]]) -> None:
+    for cp in get_chargepoints_with_required_current_by_chargemode(modes):
+        cp.data.set.current = None
 
 
 def mode_and_counter_generator(chargemodes: List) -> Iterable[Tuple[Tuple[Optional[str], str, bool], Counter]]:
