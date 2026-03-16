@@ -154,8 +154,7 @@ def log_factory() -> Log:
 
 @dataclass
 class Set:
-    charge_template: ChargeTemplate = field(default_factory=charge_template_factory,
-                                            metadata={"topic": "set/charge_template"})
+    charge_template: ChargeTemplate = field(default_factory=charge_template_factory)
     current: float = field(default=0, metadata={"topic": "set/current"})
     ev_prev: int = field(default=0, metadata={"topic": "set/ev_prev"})
     log: Log = field(default_factory=log_factory, metadata={"topic": "set/log"})

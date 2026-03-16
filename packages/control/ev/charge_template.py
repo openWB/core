@@ -134,7 +134,7 @@ class ChargeTemplate:
     """ Klasse der Lade-Profile
     """
     data: ChargeTemplateData = field(default_factory=charge_template_data_factory, metadata={
-        "topic": ""})
+        "topic": "set/charge_template"})
 
     CHARGING_PRICE_EXCEEDED = ("Der aktuelle Strompreis liegt über dem maximalen Strompreis. ")
     CHARGING_PRICE_LOW = "Laden, da der aktuelle Strompreis unter dem maximalen Strompreis liegt."
