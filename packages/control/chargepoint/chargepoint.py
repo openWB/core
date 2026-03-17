@@ -188,17 +188,21 @@ class Chargepoint(ChargepointRfidMixin):
         if self.data.get.plug_state is False and self.data.set.plug_state_prev is True:
             chargelog.save_and_reset_data(self, data.data.ev_data["ev"+str(self.data.config.ev)])
             self.data.control_parameter = control_parameter_factory()
+            # VOR Standard nach Abstecken
+            if (self.data.set.charging_ev_data.soc_module is not None and
+                self.data.set.charging_ev_data.soc_module.vehicle_config.type == "manual" and
+                    self.data.set.charging_ev_data.soc_module.vehicle_config.configuration.reset_after_unplug):
+                Pub().pub(f"openWB/set/vehicle/{self.data.config.ev}/soc_module/calculated_soc_state/manual_soc", 0)
             if self.data.set.charge_template.data.load_default:
                 self.data.config.ev = 0
             if self.template.data.disable_after_unplug:
                 self.data.set.manual_lock = True
                 log.debug("/set/manual_lock True")
+            # NACH Standard nach Abstecken
             if data.data.general_data.data.temporary_charge_templates_active:
                 self.update_charge_template(
                     data.data.ev_data["ev"+str(self.data.config.ev)].charge_template)
-            if (self.data.set.charging_ev_data.soc_module is not None and
-                    self.data.set.charging_ev_data.soc_module.vehicle_config.configuration.reset_after_unplug):
-                Pub().pub(f"openWB/set/vehicle/{self.data.config.ev}/soc_module/calculated_soc_state/manual_soc", 0)
+
             self.data.set.rfid = None
             self.data.set.plug_time = None
             self.data.set.phases_to_use = self.data.get.phases_in_use

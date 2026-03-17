@@ -19,6 +19,7 @@ def mock_data() -> None:
 
 def test_start_transaction(mock_data, monkeypatch):
     cp = Chargepoint(1, None)
+    cp.data.config.ev = 0
     cp.data.config.ocpp_chargebox_id = "cp1"
     cp.data.get.plug_state = True
     cp.template = CpTemplate()
@@ -29,7 +30,7 @@ def test_start_transaction(mock_data, monkeypatch):
     _pub_configured_ev_mock = Mock()
     monkeypatch.setattr(cp, "_pub_configured_ev", _pub_configured_ev_mock)
 
-    cp.update([])
+    cp.update({"ev0": Ev(0)})
 
     assert start_transaction_mock.call_args == (("cp1", cp.chargepoint_module.fault_state, 1, None, 0),)
 
