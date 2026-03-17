@@ -9,3 +9,4 @@ class Elgris(Sdm630_72):
         self.id = modbus_id
         self.serial_number = ""
         self.fault_state = fault_state
+        self.fast_mode = True

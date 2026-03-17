@@ -29,8 +29,7 @@ class ElgrisBat(AbstractBat):
         self.store = get_bat_value_store(self.component_config.id)
 
     def update(self):
-        with self.__tcp_client:
-            counter_state = self.elgris.get_counter_state()
+        counter_state = self.elgris.get_counter_state()
         bat_state = BatState(
             exported=counter_state.exported,
             imported=counter_state.imported,
