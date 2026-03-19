@@ -39,9 +39,9 @@ class PeakFilter:
         # Wenn die Leistung mehr als doppelt so hoch ist wie die
         # konfigurierte maximale Leistung, ist sie unplausibel.
         if max_power > 0 and abs(power) > 2 * max_power:
-            raise Exception(f"Unplausibler Leistungswert: {power}W überschreitet die konfigurierte max. "
-                            f"Gesamtleistung von {max_power}W um mehr als das Doppelte. "
-                            "Modulwerte dieses Regelintervalls werden verworfen.")
+            raise Exception(f"Peakfilter: Die Leistung von {power / 1000}kW überschreitet die konfigurierte max. "
+                            f"Gesamtleistung von {max_power / 1000}kW um mehr als das Doppelte. "
+                            "Werte werden noch nicht berücksichtigt.")
 
     def check_imported_exported(
             self,
@@ -68,7 +68,7 @@ class PeakFilter:
         allowed_deviation: float
     ) -> float:
         if total_energy is not None:
-            if previous_total_energy is None:
+            if allowed_deviation > 0 and previous_total_energy is None:
                 log.debug(f"PeakFilter: Vorheriger Wert None, aktueller Zählerwert: {total_energy / 1000 }kWh. "
                           "Warte einen Regelintervall.")
                 self.fault_state.warning(f"Peakfilter: {total_energy / 1000}kWh. "
