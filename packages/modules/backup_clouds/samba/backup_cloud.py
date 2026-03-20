@@ -31,8 +31,9 @@ def is_port_open(host: str, port: int):
 def _enforce_retention(conn, config: SambaBackupCloudConfiguration, backup_filename: str) -> None:
     """
     Löscht alte Backups auf dem SMB-Share, wenn mehr als max_backups vorhanden sind.
-    Es werden nur Dateien berücksichtigt, deren Dateiname mit dem Basisnamen der aktuellen
-    Backup-Datei beginnt (alles vor dem ersten Punkt).
+    Es werden nur Dateien berücksichtigt, die auf ".openwb-backup" bzw.
+    ".openwb-backup.gpg" enden (stabiler Filter; der Teil vor der Endung ist
+    timestamps-/versionspezifisch und darf nicht zum Gruppieren verwendet werden).
     """
     max_backups = getattr(config, "max_backups", None)
     if not max_backups or max_backups <= 0:
@@ -46,9 +47,16 @@ def _enforce_retention(conn, config: SambaBackupCloudConfiguration, backup_filen
     else:
         dir_path = smb_path
 
-    # Basispräfix der aktuellen Backup-Datei (z.B. "openwb-backup-2026-02-10" aus "openwb-backup-2026-02-10.tar.gz")
     base_name = os.path.basename(backup_filename)
-    base_prefix = base_name.split(".")[0]
+    if base_name.endswith(".openwb-backup.gpg"):
+        required_suffix = ".openwb-backup.gpg"
+    elif base_name.endswith(".openwb-backup"):
+        required_suffix = ".openwb-backup"
+    else:
+        # Wenn das Dateimuster nicht passt, vermeiden wir versehentliches
+        # Löschen fremder Dateien auf dem Share.
+        log.warning("Samba Retention: Unerwartetes Backup-Dateimuster: %s", base_name)
+        return []
 
     # Alle Einträge im Backup-Verzeichnis holen
     entries = conn.listPath(config.smb_share, dir_path)
@@ -58,17 +66,17 @@ def _enforce_retention(conn, config: SambaBackupCloudConfiguration, backup_filen
         e for e in entries
         if not e.isDirectory
         and e.filename not in (".", "..")
-        and e.filename.startswith(base_prefix)
+        and e.filename.endswith(required_suffix)
     ]
 
     if len(backup_files) <= max_backups:
         return
 
-    # Nach Änderungszeit sortieren (neueste zuerst)
-    backup_files.sort(key=lambda e: e.last_write_time, reverse=True)
+    # Nach Dateiname sortieren (Issue #2020: Dateiname enthält die Reihenfolge)
+    backup_files.sort(key=lambda e: e.filename)
 
-    # Ältere Backups über dem Limit löschen
-    for old_entry in backup_files[max_backups:]:
+    # Ältere Backups über dem Limit löschen (alles bis auf die letzten max_backups)
+    for old_entry in backup_files[:-max_backups]:
         if dir_path in ("", "/"):
             delete_path = f"/{old_entry.filename}"
         else:

@@ -28,10 +28,11 @@ def _parse_nextcloud_base_url_and_user(config: NextcloudBackupCloudConfiguration
     else:
         upload_url = config.ip_address
         user = config.user
-        # Für Benutzer-Accounts wird üblicherweise /remote.php/dav/files/<user>/ verwendet.
-        # Hier bleiben wir beim bisherigen Verhalten (/public.php/webdav/<filename>),
-        # d.h. base_path ist leer und backup_filename enthält ggf. Unterordner.
-        base_path = ""
+        # Für Benutzer-Accounts ist normalerweise /remote.php/dav/files/<user>/ üblich.
+        # In dieser Implementierung verwenden wir aber bewusst weiterhin den
+        # öffentlichen WebDAV-Pfad wie beim vorherigen Verhalten:
+        #   /public.php/webdav/<filename>
+        base_path = "/public.php/webdav"
 
     return upload_url, user, base_path
 
@@ -39,7 +40,7 @@ def _parse_nextcloud_base_url_and_user(config: NextcloudBackupCloudConfiguration
 def _list_backups(config: NextcloudBackupCloudConfiguration,
                   backup_filename: str) -> List[str]:
     """
-    Listet alle vorhandenen Backupdateien, die zum gleichen Präfix gehören
+    Listet alle vorhandenen Backupdateien, die zum gleichen OpenWB-Suffix gehören
     (Pattern-Match am Dateinamen) und gibt eine nach Dateinamen sortierte Liste zurück.
     """
     max_backups = getattr(config, "max_backups", None)
@@ -48,10 +49,18 @@ def _list_backups(config: NextcloudBackupCloudConfiguration,
 
     upload_url, user, base_path = _parse_nextcloud_base_url_and_user(config, backup_filename)
 
-    # Präfix aus aktuellem Backup ableiten (alles vor dem ersten Punkt)
-    # Beispiel: openwb-backup-2026-02-10.tar.gz -> openwb-backup-2026-02-10
+    # Robust gruppieren: OpenWB-Backups enden entweder auf ".openwb-backup"
+    # oder auf ".openwb-backup.gpg". Der Teil vor dem ersten Punkt kann
+    # timestamps-/versionspezifisch sein und darf daher nicht zum Gruppieren
+    # verwendet werden.
     base_name = backup_filename.split("/")[-1]
-    base_prefix = base_name.split(".")[0]
+    if base_name.endswith(".openwb-backup.gpg"):
+        required_suffix = ".openwb-backup.gpg"
+    elif base_name.endswith(".openwb-backup"):
+        required_suffix = ".openwb-backup"
+    else:
+        log.warning("Nextcloud Retention: Unerwartetes Backup-Dateimuster: %s", base_name)
+        return []
 
     # WebDAV PROPFIND, um Dateiliste zu bekommen
     list_path = f"{base_path}/"
@@ -78,11 +87,11 @@ def _list_backups(config: NextcloudBackupCloudConfiguration,
         return []
 
     # Sehr einfache Auswertung: nach <d:displayname>...</d:displayname> parsen
-    # und alle Einträge sammeln, die mit unserem Präfix beginnen.
+    # und alle Einträge sammeln, die auf unser Suffix enden.
     names: List[str] = []
     for match in re.finditer(r"<d:displayname>([^<]+)</d:displayname>", response.text):
         name = match.group(1)
-        if name.startswith(base_prefix):
+        if name.endswith(required_suffix):
             names.append(name)
 
     # Alphabetisch sortieren – entspricht der im Issue gewünschten Sortierung nach Dateinamen
@@ -93,7 +102,7 @@ def _list_backups(config: NextcloudBackupCloudConfiguration,
 def _enforce_retention(config: NextcloudBackupCloudConfiguration, backup_filename: str) -> None:
     """
     Löscht alte Nextcloud-Backups, so dass höchstens max_backups Dateien mit dem
-    gleichen Namenspräfix (Pattern-Match) übrig bleiben. Sortierung erfolgt nach
+    gleichen OpenWB-Suffix (Pattern-Match) übrig bleiben. Sortierung erfolgt nach
     Dateinamen, es bleiben die letzten N erhalten.
     """
     max_backups = getattr(config, "max_backups", None)
