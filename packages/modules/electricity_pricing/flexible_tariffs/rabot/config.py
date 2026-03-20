@@ -7,6 +7,7 @@ class RabotTariffConfiguration:
                  contract_number: Optional[str] = None):
         self.customer_number = customer_number
         self.contract_number = contract_number
+        self.update_hours = [0]  # Rabot publishes once daily at 00:00 for the following day
 
 
 class RabotTariff:
