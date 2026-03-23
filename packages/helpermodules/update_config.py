@@ -710,6 +710,9 @@ class UpdateConfig:
         try:
             # erst breaking changes auflösen, sonst sind alte Topics schon gelöscht
             self.__solve_breaking_changes()
+            # Normalisiere neue Felder auch im normalen Update-Pfad, nicht nur in
+            # upgrade_datastore_* (UI kann aktuell bei "Feld geleert" null übermitteln).
+            self.__normalize_backup_cloud_max_backups()
             self.__remove_outdated_topics()
             self._remove_invalid_topics()
             self.__pub_missing_defaults()
@@ -809,6 +812,31 @@ class UpdateConfig:
                 log.exception("Fehler bei der Aktualisierung des Brokers.")
                 pub_system_message(
                     {}, "Fehler bei der Aktualisierung der Konfiguration des Brokers.", MessageType.ERROR)
+
+    def __normalize_backup_cloud_max_backups(self) -> None:
+        """
+        Serverseitige Normalisierung für `configuration.max_backups` im
+        normalen Update-Pfad.
+
+        Semantik:
+        - `0` => automatische Löschung deaktiviert
+        """
+        for topic, payload in list(self.all_received_topics.items()):
+            if topic != "openWB/system/backup_cloud/config":
+                continue
+
+            configuration_payload = decode_payload(payload)
+            if not isinstance(configuration_payload, dict):
+                continue
+
+            cloud_type = configuration_payload.get("type")
+            if cloud_type not in ("nextcloud", "samba"):
+                continue
+
+            configuration_payload.setdefault("configuration", {})
+            if configuration_payload["configuration"].get("max_backups") is None:
+                configuration_payload["configuration"]["max_backups"] = 0
+                self.__update_topic(topic, configuration_payload)
 
     def _loop_all_received_topics(self, callback) -> None:
         modified_topics = {}
