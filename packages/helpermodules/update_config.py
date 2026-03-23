@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 114
+    DATASTORE_VERSION = 115
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -2967,3 +2967,30 @@ class UpdateConfig:
                 return {topic: config}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(114)
+
+    def upgrade_datastore_115(self) -> None:
+        """
+        Ensure new backup cloud configuration field `max_backups` is present.
+
+        For older datastores the field may be missing; normalizing to `0`
+        guarantees the semantics "0 = keine automatische Löschung" and
+        prevents null/undefined being written back from the UI.
+        """
+
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search(r"^openWB/system/backup_cloud/config$", topic) is None:
+                return None
+
+            configuration_payload = decode_payload(payload)
+            cloud_type = configuration_payload.get("type")
+            if cloud_type not in ("nextcloud", "samba"):
+                return None
+
+            configuration_payload.setdefault("configuration", {})
+            if configuration_payload["configuration"].get("max_backups") is None:
+                configuration_payload["configuration"]["max_backups"] = 0
+
+            return {topic: configuration_payload}
+
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(115)
