@@ -402,7 +402,6 @@ class Chargepoint(ChargepointRfidMixin):
                     self.data.set.phases_to_use = self.data.control_parameter.phases
                 if self.hw_supports_phase_switch():
                     if self._is_phase_switch_required():
-                        _set_failed_phase_switches()
                         # Wenn die Umschaltverzögerung aktiv ist, darf nicht umgeschaltet werden.
                         if (self.data.control_parameter.state != ChargepointState.PERFORMING_PHASE_SWITCH and
                                 (self.data.control_parameter.state != ChargepointState.WAIT_FOR_USING_PHASES or
