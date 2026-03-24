@@ -38,6 +38,8 @@ import {
 	axisLeft,
 	timeFormat,
 	line,
+	type Selection,
+	type BaseType,
 	type AxisContainerElement,
 } from 'd3'
 import { globalConfig } from '@/assets/js/themeConfig'
@@ -184,9 +186,9 @@ const draw = computed(() => {
 				: 'var(--color-charging)',
 		)
 	// X Axis
-	const xAxis = select<AxisContainerElement, number>(
-		'g#xaxis-' + props.id,
-	).call(xAxisGenerator.value)
+	const xAxis = select<AxisContainerElement, number>('g#xaxis-' + props.id)
+	xAxis.selectAll('*').remove()
+	xAxis.call(xAxisGenerator.value)
 	xAxis
 		.selectAll('.tick')
 		.attr('font-size', axisfontsize)
@@ -194,6 +196,8 @@ const draw = computed(() => {
 	xAxis
 		.selectAll('.tick line')
 		.attr('stroke', 'var(--color-bg)')
+		//.attr('stroke', 'red')
+
 		.attr('stroke-width', (d) =>
 			(d as Date).getMinutes() == 0
 				? (d as Date).getHours() % 6 == 0
@@ -203,9 +207,9 @@ const draw = computed(() => {
 		)
 	xAxis.select('.domain').attr('stroke', 'var(--color-bg')
 	// Y Axis
-	const yAxis = select<AxisContainerElement, number>(
-		'g#yaxis-' + props.id,
-	).call(yAxisGenerator.value)
+	const yAxis = select<AxisContainerElement, number>('g#yaxis-' + props.id)
+	yAxis.selectAll('*').remove()
+	yAxis.call(yAxisGenerator.value)
 	yAxis
 		.selectAll('.tick')
 		.attr('font-size', axisfontsize)
@@ -216,13 +220,11 @@ const draw = computed(() => {
 		.attr('stroke-width', (d) => ((d as number) % 5 == 0 ? '2' : '0.5'))
 	yAxis.select('.domain').attr('stroke', 'var(--color-bg)')
 	// Tooltips
-	const ttips = select('g#tooltips')
-		.selectAll('ttip')
-		.data(plotdata.value)
-		.enter()
-		.append('g')
-		.attr('class', 'ttarea')
+	const ttips: Selection<SVGGElement, [Date, number], BaseType, unknown> =
+		select('g#tooltips').selectAll('ttip')
 
+	ttips.selectAll('*').remove()
+	ttips.data(plotdata.value).enter().append('g').attr('class', 'ttarea')
 	ttips
 		.append('rect')
 		.attr('x', (d) => xScale.value(d[0]))

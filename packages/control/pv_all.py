@@ -70,7 +70,7 @@ class PvAll:
                             if fault_state < module.data.get.fault_state:
                                 fault_state = module.data.get.fault_state
                         limit = data.data.io_actions.stepwise_control(module.num)[1]
-                        if module.data.get.fault_state == 0:
+                        if module.data.get.fault_state == 0 and limit.message is not None:
                             # Fehlermeldung nicht überschreiben
                             module.data.get.fault_str = limit.message
                             Pub().pub(f"openWB/set/pv/{module.num}/get/fault_str", limit.message)

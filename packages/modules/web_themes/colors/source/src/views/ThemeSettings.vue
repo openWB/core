@@ -67,6 +67,18 @@
 						:options="shortListOptions"
 					/>
 				</ConfigItem>
+				<ConfigItem
+					:fullwidth="true"
+					title="Uhrzeit anzeigen"
+					icon="fa-clock"
+					infotext="Zeige die aktuelle Uhrzeit an. In der Menüleiste oder neben den Lade-Buttons."
+				>
+					<RadioInput2
+						v-model="globalConfig.showClock"
+						:options="clockModes"
+					></RadioInput2>
+					<hr />
+				</ConfigItem>
 			</div>
 			<div class="settingscolumn">
 				<ConfigItem
@@ -99,29 +111,6 @@
 						<SwitchInput v-model="globalConfig.showAnimations" />
 					</template>
 				</ConfigItem>
-				<ConfigItem
-					:fullwidth="true"
-					title="Uhrzeit anzeigen"
-					icon="fa-clock"
-					infotext="Zeige die aktuelle Uhrzeit an. In der Menüleiste oder neben den Lade-Buttons."
-				>
-					<RadioInput2
-						v-model="globalConfig.showClock"
-						:options="clockModes"
-					></RadioInput2>
-				</ConfigItem>
-			</div>
-			<div class="settingscolumn">
-				<ConfigItem
-					:fullwidth="true"
-					title="IFrame-Support für Einstellungen (Experimentell)"
-					icon="fa-gear"
-					infotext="Erlaubt das Lesen der Einstellungen, wenn das UI in andere Applikationen eingebettet ist (z.B. HomeAssistant). Erfordert eine mit SSL verschlüsselte Verbindung über HTTPS! Experimentelles Feature."
-				>
-					<template #inline-item>
-						<SwitchInput v-model="globalConfig.sslPrefs" />
-					</template>
-				</ConfigItem>
 				<hr />
 				<ConfigItem
 					:fullwidth="true"
@@ -133,7 +122,6 @@
 						<SwitchInput v-model="globalConfig.debug" />
 					</template>
 				</ConfigItem>
-				<hr />
 			</div>
 			<div class="grid-col-12 mb-3 me-3">
 				<button

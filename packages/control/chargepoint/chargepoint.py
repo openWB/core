@@ -326,7 +326,6 @@ class Chargepoint(ChargepointRfidMixin):
                         phase_switch_required = False
                         self.set_state_and_log(
                             "Keine Phasenumschaltung, da die maximale Anzahl an Fehlversuchen erreicht wurde.")
-                    self.data.control_parameter.failed_phase_switches += 1
                 else:
                     # Umschaltung vor Ladestart zulassen
                     if (self.data.set.log.imported_since_plugged != 0 and
@@ -336,7 +335,6 @@ class Chargepoint(ChargepointRfidMixin):
                             "Keine Phasenumschaltung, da wiederholtes Anstoßen der Umschaltung in den übergreifenden "
                             "Ladeeinstellungen deaktiviert wurde. Die aktuelle "
                             "Phasenzahl wird bis zum nächsten Lademoduswechsel beibehalten.")
-                    self.data.control_parameter.failed_phase_switches += 1
         return phase_switch_required
 
     STOP_CHARGING = ", dafür wird die Ladung unterbrochen."
@@ -380,6 +378,10 @@ class Chargepoint(ChargepointRfidMixin):
     def initiate_phase_switch(self):
         """prüft, ob eine Phasenumschaltung erforderlich ist und führt diese durch.
         """
+        def _set_failed_phase_switches() -> None:
+            # Umschaltung fehlgeschlagen
+            if self.data.set.phases_to_use != self.data.get.phases_in_use:
+                self.data.control_parameter.failed_phase_switches += 1
         try:
             if self.data.get.evse_signaling == EvseSignaling.HLC:
                 return
@@ -394,6 +396,7 @@ class Chargepoint(ChargepointRfidMixin):
                     self.data.set.phases_to_use = self.data.control_parameter.phases
                 if self.hw_supports_phase_switch():
                     if self._is_phase_switch_required():
+                        _set_failed_phase_switches()
                         # Wenn die Umschaltverzögerung aktiv ist, darf nicht umgeschaltet werden.
                         if (self.data.control_parameter.state != ChargepointState.PERFORMING_PHASE_SWITCH and
                                 (self.data.control_parameter.state != ChargepointState.WAIT_FOR_USING_PHASES or

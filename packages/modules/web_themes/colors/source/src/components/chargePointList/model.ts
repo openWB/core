@@ -30,7 +30,7 @@ export class ChargePoint implements PowerItem {
 	private _hasPriority = false
 	currentPlan = ''
 	averageConsumption = 0
-	vehicleName = ''
+	private _vehicleName = ''
 	rangeCharged = 0
 	rangeUnit = ''
 	counter = 0
@@ -91,6 +91,12 @@ export class ChargePoint implements PowerItem {
 
 	constructor(index: number) {
 		this.id = index
+	}
+	get vehicleName() {
+		return vehicles[this.connectedVehicle]?.name ?? ''
+	}
+	set vehicleName(name: string) {
+		this._vehicleName = name
 	}
 	get isLocked() {
 		return this._isLocked

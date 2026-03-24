@@ -19,11 +19,13 @@ export const useMqttStore = defineStore("mqtt", {
 
     getChargePointFilter: (state) => {
       let filter = [];
-      if (state.settings.parentChargePoint1 !== undefined) {
-        filter.push(state.settings.parentChargePoint1);
-      }
-      if (state.settings.parentChargePoint2 !== undefined) {
-        filter.push(state.settings.parentChargePoint2);
+      if (state.topics["openWB/optional/int_display/only_local_charge_points"] === true) {
+        if (state.settings.parentChargePoint1 !== undefined) {
+          filter.push(state.settings.parentChargePoint1);
+        }
+        if (state.settings.parentChargePoint2 !== undefined) {
+          filter.push(state.settings.parentChargePoint2);
+        }
       }
       return filter;
     },

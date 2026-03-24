@@ -64,6 +64,7 @@ export default {
         "openWB/general/chargemode_config/pv_charging/bat_mode",
         "openWB/optional/ep/configured",
         "openWB/optional/ep/get/prices",
+        "openWB/optional/int_display/only_local_charge_points",
         "openWB/optional/int_display/theme",
         "openWB/optional/int_display/standby",
         "openWB/optional/rfid/active",
