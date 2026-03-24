@@ -11,6 +11,7 @@ class StepwiseControlConfig:
     devices: List[Dict] = field(default_factory=empty_list_factory)
     # [{"type": "inverter", "id": 1},...]
     passthrough_enabled: bool = False
+    io_device_output: Optional[int] = None
     output_pattern: List[Dict] = field(default_factory=empty_io_pattern_stepwise_factory)
 
 

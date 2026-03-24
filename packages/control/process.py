@@ -89,7 +89,7 @@ class Process:
                                 # set digital outputs according to matching output_pattern
                                 for output in pattern["matrix"].keys():
                                     data.data.io_states[
-                                        f"io_states{action.config.configuration.io_device}"
+                                        f"io_states{action.config.configuration.io_device_output}"
                                     ].data.set.digital_output[output] = pattern["matrix"][output]
             for io in data.data.system_data.values():
                 if isinstance(io, AbstractIoDevice):
