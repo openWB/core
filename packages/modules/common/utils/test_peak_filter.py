@@ -68,7 +68,7 @@ cases = [
     Params("Imp/ Exp Zähler - Export invalide", "counter", 1000, 500, 1000, 1005, 800, 1005, None),
     Params("Imp/ Exp Wechselrichter - Werte invalide", "inverter", 1000, 500, 1500, 1300, 800, None, None),
     Params("Imp/ Exp Wechselrichter - Import invalide", "inverter", 1000, 500, 1500, 1300, 505, None, 505),
-    Params("Imp/ Exp Wechselrichter - Export valide", "inverter", 1000, 500, 1500, 1005, 800, 1005, None),
+    Params("Imp/ Exp Wechselrichter - Export invalide", "inverter", 1000, 500, 1500, 1005, 800, 1005, None),
     Params("Imp/ Exp Speicher - Werte invalide", "bat", 1000, 500, 400, 1300, 800, None, None),
     Params("Imp/ Exp Speicher - Import invalide", "bat", 1000, 500, 400, 1300, 505, None, 505),
     Params("Imp/ Exp Speicher - Export invalide", "bat", 1000, 500, 400, 1005, 800, 1005, None),
@@ -88,4 +88,3 @@ def test_check_values_valid(params):
         imp, exp = pf.check_values(params.power, params.imported, params.exported)
         assert imp == params.expected_imported
         assert exp == params.expected_exported
-
