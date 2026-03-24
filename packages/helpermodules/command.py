@@ -272,6 +272,7 @@ class Command:
             charge_template = SubData.ev_charge_template_data[f"ct{SubData.ev_data['ev0'].data.charge_template}"]
             charge_template = dataclass_utils.asdict(charge_template.data)
             Pub().pub(f'openWB/chargepoint/{new_id}/set/charge_template', charge_template)
+            Pub().pub(f'openWB/chargepoint/{new_id}/set/manual_lock', False)
             self.max_id_hierarchy = self.max_id_hierarchy + 1
             Pub().pub("openWB/set/command/max_id/hierarchy", self.max_id_hierarchy)
             if self.max_id_chargepoint_template == -1:

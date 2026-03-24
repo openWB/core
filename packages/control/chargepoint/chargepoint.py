@@ -340,6 +340,10 @@ class Chargepoint(ChargepointRfidMixin):
     STOP_CHARGING = ", dafür wird die Ladung unterbrochen."
 
     def check_phase_switch_completed(self):
+        def _set_failed_phase_switches() -> None:
+            # Umschaltung fehlgeschlagen
+            if self.data.set.phases_to_use != self.data.get.phases_in_use:
+                self.data.control_parameter.failed_phase_switches += 1
         try:
             evu_counter = data.data.counter_all_data.get_evu_counter()
             charging_ev = self.data.set.charging_ev_data
@@ -369,8 +373,10 @@ class Chargepoint(ChargepointRfidMixin):
                         if phase_switch.phase_switch_thread_alive(self.num) is False:
                             self.data.control_parameter.state = ChargepointState.PHASE_SWITCH_AWAITED
                             if self._is_phase_switch_required() is False:
+                                _set_failed_phase_switches()
                                 self.data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
                     else:
+                        _set_failed_phase_switches()
                         self.data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
