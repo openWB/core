@@ -35,7 +35,7 @@ def _enforce_retention(conn, config: SambaBackupCloudConfiguration, backup_filen
     ".openwb-backup.gpg" enden (stabiler Filter; der Teil vor der Endung ist
     timestamps-/versionspezifisch und darf nicht zum Gruppieren verwendet werden).
     """
-    max_backups = getattr(config, "max_backups", None)
+    max_backups = config.max_backups
     if not max_backups or max_backups <= 0:
         return
 

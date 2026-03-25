@@ -43,7 +43,7 @@ def _list_backups(config: NextcloudBackupCloudConfiguration,
     Listet alle vorhandenen Backupdateien, die zum gleichen OpenWB-Suffix gehören
     (Pattern-Match am Dateinamen) und gibt eine nach Dateinamen sortierte Liste zurück.
     """
-    max_backups = getattr(config, "max_backups", None)
+    max_backups = config.max_backups
     if not max_backups or max_backups <= 0:
         return []
 
@@ -105,7 +105,7 @@ def _enforce_retention(config: NextcloudBackupCloudConfiguration, backup_filenam
     gleichen OpenWB-Suffix (Pattern-Match) übrig bleiben. Sortierung erfolgt nach
     Dateinamen, es bleiben die letzten N erhalten.
     """
-    max_backups = getattr(config, "max_backups", None)
+    max_backups = config.max_backups
     if not max_backups or max_backups <= 0:
         return
 
