@@ -53,6 +53,10 @@ MY_DATACLASS_AS_DICT = {
         "D1": "value1",
         "D2": "value2"
     },
+    "dict_of_dataclass_value": {"a": {"nested_int": 42,
+                                      "nested_str": "nested string"},
+                                "b": {"nested_int": 42,
+                                      "nested_str": "nested string"}},
     "dict_value": {"a": "a", "b": 2},
     "dict2_value": {"a": 1, "b": 2},
     "list_value": ["a", 2, None],
