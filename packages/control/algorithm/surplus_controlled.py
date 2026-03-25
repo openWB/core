@@ -61,7 +61,9 @@ class SurplusControlled:
                 cp,
                 feed_in=feed_in_yield
             )
-            cp.data.control_parameter.limit = limit
+            # im PV-Laden wird der Strom immer durch die Leistung begrenzt
+            if limit.limiting_value is not None and limit.limiting_value != LimitingValue.POWER:
+                cp.data.control_parameter.limit = limit
             available_for_cp = common.available_current_for_cp(cp, counts, available_currents, missing_currents)
             if counter.get_control_range_state(feed_in_yield) == ControlRangeState.MIDDLE:
                 pv_charging = data.data.general_data.data.chargemode_config.pv_charging
