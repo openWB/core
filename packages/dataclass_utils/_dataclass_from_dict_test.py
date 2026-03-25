@@ -3,6 +3,7 @@ from typing import Dict, Generic, Optional, Type, TypeVar
 import pytest
 
 from dataclass_utils import dataclass_from_dict
+from dataclass_utils.conftest import MyDataclass
 
 T = TypeVar('T')
 
@@ -125,3 +126,33 @@ def test_from_dict_without_optional():
     # evaluation
     assert actual.a == "aValue"
     assert actual.o is None
+
+
+MY_DATACLASS_AS_DICT = {
+    "str_value": "string_value",
+    "float_value": 5.2,
+    "int_value": 6,
+    "enum_value": "value1",
+    "nested_dataclass": {
+        "nested_str": "nested string",
+        "nested_int": 42
+    },
+    "nested_dataclass_enum_value": {
+        "D1": "value1",
+        "D2": "value2"
+    },
+    "dict_value": {"a": "a", "b": 2},
+    "dict2_value": {"a": 1, "b": 2},
+    "list_value": ["a", 2, None],
+    "list2_value": ["a", 2, None],
+    "tuple_value": (None, "a", 2),
+    "tuple2_value": (None, "a", 2)
+}
+
+
+def test_dataclass_from_dict():
+    # execution
+    actual_dict = dataclass_from_dict(MyDataclass, MY_DATACLASS_AS_DICT)
+
+    # evaluation
+    assert vars(actual_dict) == vars(MyDataclass())

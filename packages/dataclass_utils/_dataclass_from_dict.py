@@ -1,7 +1,6 @@
 from enum import Enum
 import inspect
 from inspect import FullArgSpec, isclass
-import typing
 from typing import TypeVar, Type, Union, get_args, get_origin
 
 T = TypeVar('T')
@@ -46,26 +45,25 @@ def _get_argument_value(arg_spec: FullArgSpec, index: int, parameters: dict):
 
 
 def _dataclass_from_dict_recurse(value, requested_type: Type[T]):
-    if get_origin(requested_type) == list:
+    # Handle Optional types (Union[X, None]) - extract the actual type
+    actual_type = requested_type
+    if get_origin(requested_type) == Union:
+        args = get_args(requested_type)
+        if len(args) == 2 and args[1] is type(None):
+            actual_type = args[0]  # Extract X from Optional[X]
+
+    if get_origin(actual_type) == list:
         # Extrahiere den generischen Typ der Liste
-        if get_args(requested_type):
-            generic_type = get_args(requested_type)[0]
+        if get_args(actual_type):
+            generic_type = get_args(actual_type)[0]
             # Konvertiere jedes Element der Liste in den generischen Typ
             return [_dataclass_from_dict_recurse(item, generic_type) for item in value]
 
-    if isinstance(value, dict) and not (
-            _is_optional_of_dict(requested_type) or
-            issubclass(requested_type if isclass(requested_type) else type(bool), dict)):
-        return dataclass_from_dict(requested_type, value)
-    if isinstance(requested_type, type) and issubclass(requested_type, Enum):
-        return requested_type(value)
+    # Handle dict types (both direct and Optional[dict])
+    if isinstance(value, dict) and not issubclass(actual_type if isclass(actual_type) else type(bool), dict):
+        return dataclass_from_dict(actual_type, value)
+
+    # Handle Enum types (both direct and Optional[Enum])
+    if isinstance(actual_type, type) and issubclass(actual_type, Enum):
+        return actual_type(value)
     return value
-
-
-def _is_optional_of_dict(requested_type):
-    # Optional[dict] is an alias for Union[dict, None]
-    if typing.get_origin(requested_type) == Union:
-        args = typing.get_args(requested_type)
-        if len(args) == 2:
-            return issubclass(args[0], dict) and issubclass(args[1], type(None))
-    return False
