@@ -19,8 +19,9 @@ def dataclass_from_dict(cls: Type[T], args: Union[dict, T]) -> T:
         if isinstance(args, cls):
             return args
     elif get_origin(cls):
-        # Generische Typen wie Dict[int, float]
-        if isinstance(args, get_origin(cls)):
+        # Generische Typen wie Dict[int, float] - aber nicht Union, da isinstance mit Union fehlschlägt
+        origin = get_origin(cls)
+        if origin != Union and isinstance(args, origin):
             return args
     elif isinstance(args, type(cls)):
         return args
@@ -49,7 +50,7 @@ def _dataclass_from_dict_recurse(value, requested_type: Type[T]):
     actual_type = requested_type
     if get_origin(requested_type) == Union:
         args = get_args(requested_type)
-        if len(args) == 2 and args[1] is type(None):
+        if len(args) == 2 and isinstance(args[1], type(None)):
             actual_type = args[0]  # Extract X from Optional[X]
 
     if get_origin(actual_type) == list:
@@ -60,7 +61,7 @@ def _dataclass_from_dict_recurse(value, requested_type: Type[T]):
             return [_dataclass_from_dict_recurse(item, generic_type) for item in value]
 
     # Handle dict types (both direct and Optional[dict])
-    if isinstance(value, dict) and not issubclass(actual_type if isclass(actual_type) else type(bool), dict):
+    if isinstance(value, dict) and isclass(actual_type) and not issubclass(actual_type, dict):
         return dataclass_from_dict(actual_type, value)
 
     # Handle Enum types (both direct and Optional[Enum])
