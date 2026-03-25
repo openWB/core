@@ -1,6 +1,7 @@
 import pytest
 
 from dataclass_utils import asdict
+from dataclass_utils.conftest import MyDataclass
 
 
 class SingleValue:
@@ -37,3 +38,34 @@ def test_asdict(object, expected_dict: dict):
 
     # evaluation
     assert actual == expected_dict
+
+
+MY_DATACLASS_AS_DICT = {
+    "str_value": "string_value",
+    "float_value": 5.2,
+    "int_value": 6,
+    "enum_value": "value1",
+    "nested_dataclass": {
+        "nested_str": "nested string",
+        "nested_int": 42
+    },
+    "nested_dataclass_enum_value": {
+        "D1": "value1",
+        "D2": "value2"
+    },
+    "dict_value": {"a": "a", "b": 2},
+    "dict2_value": {"a": 1, "b": 2},
+    "list_value": ["a", 2, None],
+    "list2_value": ["a", 2, None],
+    # JSON kennt keine Tupel
+    "tuple_value": [None, "a", 2],
+    "tuple2_value": [None, "a", 2]
+}
+
+
+def test_dataclass_as_dict():
+    # execution
+    actual_dict = asdict(MyDataclass())
+
+    # evaluation
+    assert actual_dict == MY_DATACLASS_AS_DICT
