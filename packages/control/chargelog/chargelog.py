@@ -120,6 +120,7 @@ def collect_data(chargepoint):
                 log_data.ev = get_value_or_default(lambda: chargepoint.data.set.charging_ev_data.num, 0)
                 log_data.prio = get_value_or_default(lambda: chargepoint.data.control_parameter.prio, False)
                 log_data.rfid = get_value_or_default(lambda: chargepoint.data.set.rfid)
+                log_data.odometer = get_value_or_default(lambda: charging_ev.data.get.odometer)
                 log_data.imported_since_mode_switch = get_value_or_default(
                     lambda: chargepoint.data.get.imported - log_data.imported_at_mode_switch, 0)
                 log_data.exported_since_mode_switch = get_value_or_default(
@@ -270,6 +271,7 @@ def _create_entry(chargepoint, charging_ev):
             "chargemode": get_value_or_default(lambda: log_data.chargemode_log_entry),
             "prio": get_value_or_default(lambda: log_data.prio),
             "rfid": get_value_or_default(lambda: log_data.rfid),
+            "odometer": get_value_or_default(lambda: log_data.odometer),
             "soc_at_start": get_value_or_default(lambda: log_data.soc_at_start),
             "soc_at_end": get_value_or_default(lambda: charging_ev.data.get.soc),
             "range_at_start": get_value_or_default(lambda: log_data.range_at_start),

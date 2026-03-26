@@ -63,6 +63,7 @@ class Get:
     force_soc_update: bool = field(default=False, metadata={
                                    "topic": "get/force_soc_update"})
     range: Optional[float] = field(default=None, metadata={"topic": "get/range"})
+    odometer: Optional[float] = field(default=None, metadata={"topic": "get/odometer"})
     fault_state: int = field(default=0, metadata={"topic": "get/fault_state"})
     fault_str: str = field(default=NO_ERROR, metadata={"topic": "get/fault_str"})
 

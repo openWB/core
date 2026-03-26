@@ -96,6 +96,7 @@ class Log:
     soc_at_end: Optional[int] = None
     range_at_start: Optional[float] = None
     range_at_end: Optional[float] = None
+    odometer: Optional[float] = None
 
 
 def connected_vehicle_factory() -> ConnectedVehicle:
