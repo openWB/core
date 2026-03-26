@@ -25,13 +25,8 @@ class QCells:
 
 
 class QCellsBatConfiguration:
-    def __init__(self, max_power: int = 4000):
-        # Maximale Lade-/Entladeleistung des Speichers in Watt.
-        # Speichersteuerung via Solax Remote Control Mode 8 (Modbus).
-        # Unterstuetzte Hardware: QCells Q.VOLT HYB-G3-3P (Solax Gen4),
-        # Solax Gen4/Gen5/Gen6 Hybrid und AC Wechselrichter.
-        # Gen2/Gen3 werden nicht unterstuetzt (kein Remote Control).
-        self.max_power = max_power
+    def __init__(self):
+        pass
 
 
 class QCellsBatSetup(ComponentSetup[QCellsBatConfiguration]):
