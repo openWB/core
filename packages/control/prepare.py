@@ -35,6 +35,8 @@ class Prepare:
             data.data.cp_all_data.no_charge()
             data.data.counter_all_data.set_home_consumption()
             data.data.io_actions.setup()
+            for cp in data.data.cp_data.values():
+                cp.reset_values_before_algorithm()
         except Exception:
             log.exception("Fehler im Prepare-Modul")
         data.data.print_all()

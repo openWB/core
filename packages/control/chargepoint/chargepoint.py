@@ -19,6 +19,7 @@ from control.ev.charge_template import ChargeTemplate
 from control.ev.ev import Ev
 from control import phase_switch
 from control.chargepoint.chargepoint_state import CHARGING_STATES, ChargepointState
+from control.limiting_value import loadmanagement_limit_factory
 from control.text import BidiState
 from helpermodules.phase_handling import convert_single_evu_phase_to_cp_phase
 from helpermodules.pub import Pub
@@ -265,6 +266,9 @@ class Chargepoint(ChargepointRfidMixin):
         # gestartet wird.
         control_parameter = control_parameter_factory()
         self.data.control_parameter = control_parameter
+
+    def reset_values_before_algorithm(self) -> None:
+        self.data.control_parameter.limit = loadmanagement_limit_factory()
 
     def initiate_control_pilot_interruption(self):
         """ prüft, ob eine Control Pilot- Unterbrechung erforderlich ist und führt diese durch.
