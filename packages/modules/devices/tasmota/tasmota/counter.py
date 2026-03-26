@@ -10,6 +10,7 @@ from modules.common.store import get_counter_value_store
 from modules.common.simcount import SimCounter
 from modules.common import req
 from modules.common.component_state import CounterState
+from modules.common.utils.peak_filter import PeakFilter
 
 log = logging.getLogger(__name__)
 
@@ -32,6 +33,7 @@ class TasmotaCounter(AbstractCounter):
         self.__phase: int = self.kwargs['phase']
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter("counter", self.component_config.id, self.fault_state)
 
     def update(self):
         url = "http://" + self.__ip_address + "/cm?cmnd=Status%208"
@@ -49,15 +51,18 @@ class TasmotaCounter(AbstractCounter):
             currents[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Current'])
             power_factors[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Factor'])
             imported = float(response['StatusSNS']['ENERGY']['Total']*1000)
+            imported, _ = self.peak_filter.check_values(power, imported, None)
             _, exported = self.sim_counter.sim_count(power)
         elif 'Itron' in response['StatusSNS']:
             power = float(response['StatusSNS']['Itron']['Power'])
             imported = float(response['StatusSNS']['Itron']['E_in']*1000)
             exported = float(response['StatusSNS']['Itron']['E_out']*1000)
+            imported, exported = self.peak_filter.check_values(power, imported, exported)
         elif 'MT681' in response['StatusSNS']:
             power = float(response['StatusSNS']['MT681']['Watt_summe'])
             imported = float(response['StatusSNS']['MT681']['Total_in']*1000)
             exported = float(response['StatusSNS']['MT681']['Total_out']*1000)
+            imported, exported = self.peak_filter.check_values(power, imported, exported)
         else:
             raise ValueError("Nicht unterstützter Tasmota Zählertyp. Bitte an den Support wenden.")
 

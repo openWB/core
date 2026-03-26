@@ -10,6 +10,7 @@ from modules.common.modbus import ModbusDataType
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.huawei.huawei_smartlogger.config import Huawei_SmartloggerBatSetup
+from modules.common.utils.peak_filter import PeakFilter
 
 
 class KwargsDict(TypedDict):
@@ -28,12 +29,14 @@ class Huawei_SmartloggerBat(AbstractBat):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter("bat", self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         modbus_id = self.component_config.configuration.modbus_id
         power = self.__tcp_client.read_holding_registers(37765, ModbusDataType.INT_32, unit=modbus_id)
         soc = self.__tcp_client.read_holding_registers(37760, ModbusDataType.INT_16, unit=modbus_id) / 10
 
+        self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
         bat_state = BatState(
             power=power,

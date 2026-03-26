@@ -43,6 +43,6 @@ SAMPLE_RESPONSE = [{'accessMode': 'RO',
 SAMPLE_STATE = InverterState(
     currents=[0.0, 0.0, 0.0],
     dc_power=None,
-    exported=18988374,
+    exported=200000,
     power=9
 )

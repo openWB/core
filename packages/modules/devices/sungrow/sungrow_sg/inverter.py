@@ -9,6 +9,7 @@ from modules.common.modbus import ModbusDataType, Endian, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_inverter_value_store
 from modules.devices.sungrow.sungrow_sg.config import SungrowSGInverterSetup, SungrowSG
+from modules.common.utils.peak_filter import PeakFilter
 
 
 class KwargsDict(TypedDict):
@@ -27,6 +28,7 @@ class SungrowSGInverter(AbstractInverter):
         self.sim_counter = SimCounter(self.device_config.id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter("inverter", self.component_config.id, self.fault_state)
 
     def update(self) -> float:
         unit = self.device_config.configuration.modbus_id
@@ -40,8 +42,8 @@ class SungrowSGInverter(AbstractInverter):
 
         currents = [value * -0.1 for value in currents]
 
+        self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power, dc_power)
-
         inverter_state = InverterState(
             power=power,
             dc_power=dc_power,

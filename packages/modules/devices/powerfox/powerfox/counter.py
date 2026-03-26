@@ -8,6 +8,7 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_counter_value_store
 from modules.devices.powerfox.powerfox.config import PowerfoxCounterSetup
+from modules.common.utils.peak_filter import PeakFilter
 
 log = logging.getLogger(__name__)
 
@@ -19,14 +20,17 @@ class PowerfoxCounter(AbstractCounter):
     def initialize(self) -> None:
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter("counter", self.component_config.id, self.fault_state)
 
     def update(self, session: Session) -> None:
         response = session.get('https://backend.powerfox.energy/api/2.0/my/' + self.component_config.configuration.id +
                                '/current', timeout=3).json()
-
+        imported, exported = self.peak_filter.check_values(float(response['Watt']),
+                                                           float(response['A_Plus']),
+                                                           float(response['A_Minus']))
         self.store.set(CounterState(
-            imported=float(response['A_Plus']),
-            exported=float(response['A_Minus']),
+            imported=imported,
+            exported=exported,
             power=float(response['Watt'])
         ))
 

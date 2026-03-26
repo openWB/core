@@ -7,6 +7,7 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_counter_value_store
 from modules.devices.avm.avm.config import AvmCounterSetup
+from modules.common.utils.peak_filter import PeakFilter
 
 
 class AvmCounter(AbstractCounter):
@@ -16,6 +17,7 @@ class AvmCounter(AbstractCounter):
     def initialize(self) -> None:
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter("counter", self.component_config.id, self.fault_state)
 
     def update(self, deviceListElementTree: Element):
         for device in deviceListElementTree:
@@ -35,7 +37,7 @@ class AvmCounter(AbstractCounter):
                         voltages = [float(voltageInfo.text)/1000, 0, 0]
                     # AVM returns Wh
                     imported = float(powermeterBlock.find("energy").text)
-
+        imported, _ = self.peak_filter.check_values(power, imported, None)
         counter_state = CounterState(
             imported=imported,
             exported=0,

@@ -9,6 +9,7 @@ from modules.common.modbus import ModbusDataType, Endian, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_counter_value_store
 from modules.devices.sungrow.sungrow_ihm.config import SungrowIHM, SungrowIHMCounterSetup
+from modules.common.utils.peak_filter import PeakFilter
 
 
 class KwargsDict(TypedDict):
@@ -27,6 +28,7 @@ class SungrowIHMCounter(AbstractCounter):
         self.sim_counter = SimCounter(self.device_config.id, self.component_config.id, prefix="evu")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter("counter", self.component_config.id, self.fault_state)
 
     def update(self):
         unit = self.device_config.configuration.modbus_id
@@ -43,8 +45,8 @@ class SungrowIHMCounter(AbstractCounter):
 
         voltages = [value / 10 for value in voltages]
 
+        self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
-
         counter_state = CounterState(
             imported=imported,
             exported=exported,

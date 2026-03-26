@@ -10,6 +10,7 @@ from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_counter_value_store
 from modules.devices.solarmax.solarmax.config import SolarmaxMsCounterSetup
+from modules.common.utils.peak_filter import PeakFilter
 
 
 class KwargsDict(TypedDict):
@@ -30,10 +31,12 @@ class SolarmaxMsCounter(AbstractCounter):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter("counter", self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
         power = self.client.read_input_registers(118, ModbusDataType.INT_32, unit=unit, wordorder=Endian.Little) * -1
+        self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
 
         counter_state = CounterState(

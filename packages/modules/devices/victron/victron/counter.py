@@ -10,6 +10,7 @@ from modules.common.modbus import ModbusDataType
 from modules.common.simcount import SimCounter
 from modules.common.store import get_counter_value_store
 from modules.devices.victron.victron.config import VictronCounterSetup
+from modules.common.utils.peak_filter import PeakFilter
 
 
 class KwargsDict(TypedDict):
@@ -28,6 +29,7 @@ class VictronCounter(AbstractCounter):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter("counter", self.component_config.id, self.fault_state)
 
     def update(self):
         unit = self.component_config.configuration.modbus_id
@@ -46,6 +48,7 @@ class VictronCounter(AbstractCounter):
                 powers = self.__tcp_client.read_holding_registers(820, [ModbusDataType.INT_16]*3, unit=unit)
                 power = sum(powers)
 
+        self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
 
         if energy_meter:

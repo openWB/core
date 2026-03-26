@@ -11,6 +11,7 @@ from modules.common.modbus import ModbusDataType
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.victron.victron.config import VictronBatSetup
+from modules.common.utils.peak_filter import PeakFilter
 
 log = logging.getLogger(__name__)
 
@@ -32,13 +33,14 @@ class VictronBat(AbstractBat):
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.last_mode = 'Undefined'
+        self.peak_filter = PeakFilter("bat", self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         modbus_id = self.component_config.configuration.modbus_id
         with self.__tcp_client:
             power = self.__tcp_client.read_holding_registers(842, ModbusDataType.INT_16, unit=modbus_id)
             soc = self.__tcp_client.read_holding_registers(843, ModbusDataType.UINT_16, unit=modbus_id)
-
+        self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
         bat_state = BatState(
             power=power,

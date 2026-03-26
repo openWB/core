@@ -10,6 +10,7 @@ from modules.common.store import get_counter_value_store
 from modules.common.simcount._simcounter import SimCounter
 from modules.devices.shelly.shelly.config import ShellyCounterSetup
 from modules.devices.shelly.shelly.constants import ALPHABETICAL_INDEX
+from modules.common.utils.peak_filter import PeakFilter
 
 log = logging.getLogger(__name__)
 
@@ -36,6 +37,7 @@ class ShellyCounter(AbstractCounter):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter("counter", self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         power = 0
@@ -125,6 +127,7 @@ class ShellyCounter(AbstractCounter):
                 power = meters['act_power']  # shelly Pro EM Gen 2
                 frequency = meters['freq']
 
+            self.peak_filter.check_values(power)
             imported, exported = self.sim_counter.sim_count(power)
 
             counter_state = CounterState(

@@ -68,8 +68,8 @@ SAMPLE_RESPONSE = [{'accessMode': 'RO',
                     'value': 3202108}]
 
 SAMPLE_STATE = BatState(
-    exported=3202108,
-    imported=3013394,
+    exported=200000,
+    imported=100000,
     power=-28,
     soc=6
 )

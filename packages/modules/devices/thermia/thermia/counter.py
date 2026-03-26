@@ -9,6 +9,7 @@ from modules.common.simcount import SimCounter
 from modules.common.store import get_counter_value_store
 from modules.devices.thermia.thermia.config import ThermiaCounterSetup
 from pymodbus.constants import Endian
+from modules.common.utils.peak_filter import PeakFilter
 
 
 class KwargsDict(TypedDict):
@@ -29,6 +30,7 @@ class ThermiaCounter(AbstractCounter):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter("counter", self.component_config.id, self.fault_state)
 
     def update(self):
         with self.client:
@@ -44,6 +46,7 @@ class ThermiaCounter(AbstractCounter):
                 unit=self.modbus_id) * 100
             exported = 0
 
+        imported, _ = self.peak_filter.check_values(power, imported, None)
         counter_state = CounterState(
             currents=currents,
             imported=imported,

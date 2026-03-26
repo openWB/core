@@ -10,6 +10,7 @@ from modules.common.store import get_bat_value_store
 
 from modules.devices.sonnen.sonnenbatterie.api import JsonApi, JsonApiVersion, RestApi1, RestApi2
 from modules.devices.sonnen.sonnenbatterie.config import SonnenbatterieBatSetup
+from modules.common.utils.peak_filter import PeakFilter
 
 
 log = logging.getLogger(__name__)
@@ -45,10 +46,11 @@ class SonnenbatterieBat(AbstractBat):
             self.api = JsonApi(host=self.__device_address,
                                api_version=JsonApiVersion.V2 if self.__device_variant == 3 else JsonApiVersion.V1,
                                auth_token=self.__api_v2_token if self.__device_variant == 3 else None)
+        self.peak_filter = PeakFilter("bat", self.component_config.id, self.fault_state)
         self.last_mode = 'Undefined'
 
     def update(self) -> None:
-        self.store.set(self.api.update_battery(sim_counter=self.sim_counter))
+        self.store.set(self.api.update_battery(sim_counter=self.sim_counter, peak_filter=self.peak_filter))
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
         if power_limit is None:

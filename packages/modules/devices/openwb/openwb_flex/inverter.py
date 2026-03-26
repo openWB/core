@@ -12,6 +12,7 @@ from modules.common.simcount import SimCounter
 from modules.common.store import get_inverter_value_store
 from modules.devices.openwb.openwb_flex.config import PvKitFlexSetup
 from modules.devices.openwb.openwb_flex.versions import kit_inverter_version_factory
+from modules.common.utils.peak_filter import PeakFilter
 
 
 class KwargsDict(TypedDict):
@@ -33,6 +34,7 @@ class PvKitFlex(AbstractInverter):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.simulation = {}
         self.store = get_inverter_value_store(self.component_config.id)
+        self.peak_filter = PeakFilter("inverter", self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         """ liest die Werte des Moduls aus.
@@ -47,9 +49,10 @@ class PvKitFlex(AbstractInverter):
         if power > 10:
             power = power*-1
         if isinstance(self.__client, Lovato) or isinstance(self.__client, Sdm120):
+            self.peak_filter.check_values(power)
             _, exported = self.sim_counter.sim_count(power)
         else:
-            exported = counter_state.exported
+            _, exported = self.peak_filter.check_values(power, None, counter_state.exported)
 
         inverter_state = InverterState(
             power=power,

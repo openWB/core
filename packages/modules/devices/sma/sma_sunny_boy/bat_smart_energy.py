@@ -9,6 +9,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.component_state import BatState
 from modules.common.abstract_device import AbstractBat
+from modules.common.utils.peak_filter import PeakFilter
 
 
 log = logging.getLogger(__name__)
@@ -44,6 +45,7 @@ class SunnyBoySmartEnergyBat(AbstractBat):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.last_mode = 'Undefined'
         self.inverter_type = None
+        self.peak_filter = PeakFilter("bat", self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         self.store.set(self.read())
@@ -83,11 +85,14 @@ class SunnyBoySmartEnergyBat(AbstractBat):
                 'andernfalls kann ein Defekt vorliegen.'
             )
 
+        imported, exported = self.peak_filter.check_values(power,
+                                                           values["Battery_ChargedEnergy"],
+                                                           values["Battery_DischargedEnergy"])
         bat_state = BatState(
             power=power,
             soc=values["Battery_SoC"],
-            exported=values["Battery_DischargedEnergy"],
-            imported=values["Battery_ChargedEnergy"]
+            exported=exported,
+            imported=imported
         )
         if self.inverter_type is None:
             self.inverter_type = values["Inverter_Type"]

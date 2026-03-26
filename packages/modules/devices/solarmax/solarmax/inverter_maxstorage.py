@@ -10,6 +10,7 @@ from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_inverter_value_store
 from modules.devices.solarmax.solarmax.config import SolarmaxMsInverterSetup
+from modules.common.utils.peak_filter import PeakFilter
 
 
 class KwargsDict(TypedDict):
@@ -30,10 +31,12 @@ class SolarmaxMsInverter(AbstractInverter):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter("inverter", self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
         power = self.client.read_input_registers(120, ModbusDataType.INT_32, unit=unit, wordorder=Endian.Little) * -1
+        self.peak_filter.check_values(power)
         _, exported = self.sim_counter.sim_count(power)
 
         inverter_state = InverterState(
