@@ -31,7 +31,7 @@ class FemsInverter(AbstractInverter):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.peak_filter = PeakFilter("inverter", self.component_config.id, self.fault_state)
         self.version = get_version(self.get_data_by_multiple_segement_regex_query)
-        log.debug(f"{self.component_config.name} untersttzt {self.version.value}")
+        log.debug(f"{self.component_config.name} unterstützt {self.version.value}")
 
     def get_data_by_multiple_segement_regex_query(self):
         return self.session.get(

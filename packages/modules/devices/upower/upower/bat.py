@@ -38,7 +38,7 @@ class UPowerBat(AbstractBat):
                 31108, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
             exported = self.client.read_input_registers(
                 31110, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
-            imported, exported = self.peak_filter.filter(power, imported, exported)
+            imported, exported = self.peak_filter.check_values(power, imported, exported)
         else:
             # 1221 Total Bat Power
             # 1427 Battery 1 current power

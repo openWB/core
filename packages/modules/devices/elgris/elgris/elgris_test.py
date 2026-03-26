@@ -1,69 +1,11 @@
 from unittest.mock import Mock
 
-from unittest.mock import MagicMock
-import pytest
-
-from modules.common.fault_state import FaultState
-
 from modules.common.component_state import BatState, CounterState, InverterState
 from modules.common.modbus import ModbusTcpClient_
 
 from modules.common.sdm import SdmRegister
 from modules.devices.elgris.elgris.config import Elgris, ElgrisBatSetup, ElgrisCounterSetup, ElgrisInverterSetup
 from modules.devices.elgris.elgris.device import create_device
-
-
-# DummyPeakFilter für Tests
-class DummyPeakFilter():
-    def __init__(self, *args, **kwargs):
-        pass
-
-    def check_values(self, power, imported=None, exported=None):
-        return imported, exported
-
-    def check_power(self, max_power, power):
-        pass
-
-    def check_imported_exported(self, max_power, imported=None, exported=None):
-        return imported, exported
-
-    def check_total_energy(self, total_energy, previous_total_energy, allowed_deviation):
-        return total_energy
-
-
-class DummyFaultState(FaultState):
-    def __init__(self):
-        self.warnings = []
-
-    def warning(self, msg):
-        self.warnings.append(msg)
-
-
-class DummyConfig:
-    def __init__(self, max_power):
-        self.max_power = max_power
-        self.max_total_power = max_power
-        self.max_ac_out = max_power
-
-
-class DummyData:
-    def __init__(self, max_power):
-        self.data = MagicMock()
-        self.data.config = DummyConfig(max_power)
-
-
-@pytest.fixture(autouse=True)
-def patch_data(monkeypatch):
-    import modules.common.utils.peak_filter as pf
-    pf.data = MagicMock()
-    pf.data.data = MagicMock()
-    pf.data.data.counter_data = {"counter0": DummyData(30000)}
-    pf.data.data.pv_data = {"pv1": DummyData(30000)}
-    pf.data.data.bat_data = {"bat0": DummyData(30000)}
-    pf.data.data.general_data = MagicMock()
-    pf.data.data.general_data.data = MagicMock()
-    pf.data.data.general_data.data.control_interval = 10
-    yield
 
 
 def setup_modbus_mocks(monkeypatch):

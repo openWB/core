@@ -40,7 +40,7 @@ class MqttBat(AbstractBat):
                 received_topics.get(f"{topic_prefix}exported") is not None):
             imported = received_topics[f"{topic_prefix}imported"]
             exported = received_topics[f"{topic_prefix}exported"]
-            self.peak_filter.check_values(power, imported, exported)
+            imported, exported = self.peak_filter.check_values(power, imported, exported)
         else:
             self.peak_filter.check_values(power)
             imported, exported = self.sim_counter.sim_count(power)

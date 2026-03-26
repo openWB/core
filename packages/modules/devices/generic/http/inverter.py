@@ -42,7 +42,7 @@ class HttpInverter(AbstractInverter):
             # for compatibility: in 1.x power URL values are positive!
             power *= -1
         exported = self.__get_exported(session)
-        _, exported = self.peak_filter.check_values(power, None)
+        _, exported = self.peak_filter.check_values(power, None, exported)
         if exported is None:
             _, exported = self.sim_counter.sim_count(power)
 

@@ -39,7 +39,7 @@ class UPowerCounter(AbstractCounter):
                 10994, [ModbusDataType.INT_32] * 3, unit=self.__modbus_id)]
             exported = self.client.read_holding_registers(31102, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
             imported = self.client.read_holding_registers(31104, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
-            impoprted, exported = self.peak_filter.filter(power, imported, exported)
+            imported, exported = self.peak_filter.check_values(power, imported, exported)
         else:
             power = self.client.read_holding_registers(1219, ModbusDataType.INT_16, unit=self.__modbus_id) * -10
             frequency = self.client.read_holding_registers(

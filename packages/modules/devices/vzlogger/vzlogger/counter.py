@@ -33,7 +33,7 @@ class VZLoggerCounter(AbstractCounter):
 
         power = parse_line(response, config.line_power)
         if config.line_imported is None or config.line_exported is None:
-            self.peak_filter.filter(power)
+            self.peak_filter.check_values(power)
             imported, exported = self.sim_counter.sim_count(power)
         else:
             imported = parse_line(response, config.line_imported)

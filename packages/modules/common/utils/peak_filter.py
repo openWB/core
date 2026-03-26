@@ -20,7 +20,7 @@ class PeakFilter:
         power: float,
         imported: Optional[float] = None,
         exported: Optional[float] = None
-    ) -> tuple[float, float]:
+    ) -> tuple[Optional[float], Optional[float]]:
         # setze maximale Leistung je nach Komponente
         if self.type == "counter":
             counter = data.data.counter_data[f"counter{self.component_id}"]
@@ -31,6 +31,8 @@ class PeakFilter:
         elif self.type == "bat":
             bat = data.data.bat_data[f"bat{self.component_id}"]
             max_power = bat.data.config.max_power
+        else:
+            raise ValueError(f"Unsupported component type {self.type!r} in PeakFilter")
         # prüfe Leistung und importierte/exportierte Energie auf Plausibilität
         self.check_power(max_power, power)
         return self.check_imported_exported(max_power, imported, exported)
@@ -48,25 +50,27 @@ class PeakFilter:
             max_power: float,
             imported: Optional[float] = None,
             exported: Optional[float] = None,
-    ) -> tuple[float, float]:
-        # Die erlaubte Abweichung ist doppelt so groß wie die mögliche
-        # Energiemenge pro Intervall bei maximaler Leistung
-        control_interval = data.data.general_data.data.control_interval
-        allowed_deviation = 2 * (control_interval / 3600) * max_power
+    ) -> tuple[Optional[float], Optional[float]]:
+        if max_power > 0:
+            # Die erlaubte Abweichung ist doppelt so groß wie die mögliche
+            # Energiemenge pro Intervall bei maximaler Leistung
+            control_interval = data.data.general_data.data.control_interval
+            allowed_deviation = 2 * (control_interval / 3600) * max_power
 
-        imp = self.check_total_energy(imported, self.imported, allowed_deviation)
-        self.imported = imported
+            imp = self.check_total_energy(imported, self.imported, allowed_deviation)
+            self.imported = imported
 
-        exp = self.check_total_energy(exported, self.exported, allowed_deviation)
-        self.exported = exported
-        return imp, exp
+            exp = self.check_total_energy(exported, self.exported, allowed_deviation)
+            self.exported = exported
+            return imp, exp
+        return imported, exported
 
     def check_total_energy(
         self,
         total_energy: float,
         previous_total_energy: float,
         allowed_deviation: float
-    ) -> float:
+    ) -> Optional[float]:
         if total_energy is not None:
             if allowed_deviation > 0 and previous_total_energy is None:
                 log.debug(f"PeakFilter: Vorheriger Wert None, aktueller Zählerwert: {total_energy / 1000 }kWh. "
