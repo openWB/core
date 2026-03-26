@@ -3137,7 +3137,7 @@ class UpdateConfig:
                         colors[key] = DEFAULT_COLORS["CHARGEPOINT"]
                     elif "ev" in key:
                         colors[key] = DEFAULT_COLORS["VEHICLE"]
-                    elif "inverter" in key:
+                    elif "pv" in key:
                         colors[key] = DEFAULT_COLORS["INVERTER"]
                     else:
                         colors[key] = DEFAULT_COLORS["UNKNOWN"]
@@ -3176,11 +3176,12 @@ class UpdateConfig:
                 config = decode_payload(payload)
                 log.debug(f"Received component config topic '{topic}' with payload: {payload}")
                 if "color" not in config:
-                    if "counter" in config.get("type").lower():
+                    component_type = (config.get("type") or "").lower()
+                    if "counter" in component_type:
                         config.update({"color": DEFAULT_COLORS['COUNTER']})
-                    elif "bat" in config.get("type").lower():
+                    elif "bat" in component_type:
                         config.update({"color": DEFAULT_COLORS['BATTERY']})
-                    elif "inverter" in config.get("type").lower():
+                    elif "inverter" in component_type:
                         config.update({"color": DEFAULT_COLORS['INVERTER']})
                     else:
                         log.warning(f"Unknown component type '{config.get('type')}' for topic '{topic}'.")
