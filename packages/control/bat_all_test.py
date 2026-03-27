@@ -16,9 +16,8 @@ from modules.devices.generic.mqtt.bat import MqttBat
 from modules.devices.generic.mqtt.config import MqttBatSetup
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def data_fixture() -> None:
-    data.data_init(Mock())
     data.data.general_data = General()
     data.data.cp_all_data = Mock(spec=AllChargepoints, data=Mock(
         spec=AllChargepointData, get=Mock(spec=AllGet, power=0)))
@@ -35,7 +34,7 @@ def data_fixture() -> None:
         pytest.param(0, -6000, 0, id="max_ac_out ist 0"),
     ],
 )
-def test_inverter_limited_power(max_ac_out, power, expected_result):
+def test_pv_power_beyond_max_ac_out(max_ac_out: int, power: int, expected_result: int):
     # Mock für die Pv-Klasse
     inverter = Pv(1)
     inverter.data.config.max_ac_out = max_ac_out
@@ -43,26 +42,37 @@ def test_inverter_limited_power(max_ac_out, power, expected_result):
     bat_all = BatAll()
 
     # Aufruf der zu testenden Funktion
-    result = bat_all._inverter_limited_power(inverter)
+    result = bat_all._get_pv_power_beyond_max_ac_out(inverter)
 
     # Überprüfung des Ergebnisses
     assert result == expected_result
 
 
 @pytest.mark.parametrize(
-    "required_power, return_inverter_limited_power, expected_power",
+    "bat_power, required_power, return_pv_power_beyond_max_ac_out, expected_power",
     [
-        pytest.param(1000, 0, 1000, id="maximale Entladeleistung nicht erreicht"),
-        pytest.param(1000, 100, 900, id="maximale Entladeleistung erreicht"),
-        pytest.param(-1000, 10, -1000, id="Speicher soll nicht mehr entladen werden"),
+        pytest.param(1000, 1000, 0, 1000, id="exakt max Leistung des WR"),
+        pytest.param(1000, 1000, 100, 900, id="max Leistung des WR um 100W überschritten"),
+        pytest.param(1000, 1000, 1100, 0, id="maximale Entladeleistung erreicht"),
+        pytest.param(3000, 3000, 2000, 1000, id="max Leistung des WR um 2000W überschritten"),
+        pytest.param(3000, 5000, 2000, 1000, id="max Leistung des WR um 2000W überschritten, " +
+                     "erlaubte Entladeleistung höher als aktuelle Leistung"),
+        pytest.param(-1000, 1100, 0, 1100, id="Speicher entlädt, soll entladen"),
+        pytest.param(-1000, -600, 0, -600, id="Speicher entlädt, soll weniger entladen"),
+        pytest.param(0, 600, 0, 600, id="Speicher ruht, soll entladen"),
     ])
-def test_limit_bat_power_discharge(required_power, return_inverter_limited_power, expected_power, monkeypatch):
+def test_limit_bat_power_discharge(bat_power: int,
+                                   required_power: int,
+                                   return_pv_power_beyond_max_ac_out: int,
+                                   expected_power: int,
+                                   monkeypatch):
     # setup
     data.data.pv_data = {"pv2": Pv(2)}
-    mock_inverter_limited_power = Mock(return_value=return_inverter_limited_power)
-    monkeypatch.setattr(BatAll, "_inverter_limited_power", mock_inverter_limited_power)
+    mock_pv_power_beyond_max_ac_out = Mock(return_value=return_pv_power_beyond_max_ac_out)
+    monkeypatch.setattr(BatAll, "_get_pv_power_beyond_max_ac_out", mock_pv_power_beyond_max_ac_out)
 
     b = BatAll()
+    b.data.get.power = bat_power
 
     # execution
     power = b._limit_bat_power_discharge(required_power)
