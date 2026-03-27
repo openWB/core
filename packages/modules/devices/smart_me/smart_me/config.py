@@ -33,8 +33,9 @@ class SmartMeCounterSetup(ComponentSetup[SmartMeCounterConfiguration]):
                  name: str = "smart-me Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: SmartMeCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SmartMeCounterConfiguration())
+                 configuration: SmartMeCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SmartMeCounterConfiguration(), **kwargs)
 
 
 class SmartMeInverterConfiguration:
@@ -47,5 +48,6 @@ class SmartMeInverterSetup(ComponentSetup[SmartMeInverterConfiguration]):
                  name: str = "smart-me Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: SmartMeInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SmartMeInverterConfiguration())
+                 configuration: SmartMeInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SmartMeInverterConfiguration(), **kwargs)

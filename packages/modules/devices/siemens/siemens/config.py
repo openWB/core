@@ -34,8 +34,9 @@ class SiemensBatSetup(ComponentSetup[SiemensBatConfiguration]):
                  name: str = "Siemens Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: SiemensBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SiemensBatConfiguration())
+                 configuration: SiemensBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SiemensBatConfiguration(), **kwargs)
 
 
 class SiemensCounterConfiguration:
@@ -48,8 +49,9 @@ class SiemensCounterSetup(ComponentSetup[SiemensCounterConfiguration]):
                  name: str = "Siemens Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: SiemensCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SiemensCounterConfiguration())
+                 configuration: SiemensCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SiemensCounterConfiguration(), **kwargs)
 
 
 class SiemensInverterConfiguration:
@@ -62,5 +64,6 @@ class SiemensInverterSetup(ComponentSetup[SiemensInverterConfiguration]):
                  name: str = "Siemens Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: SiemensInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SiemensInverterConfiguration())
+                 configuration: SiemensInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SiemensInverterConfiguration(), **kwargs)

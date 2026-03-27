@@ -48,8 +48,9 @@ class EnphaseCounterSetup(ComponentSetup[EnphaseCounterConfiguration]):
                  name: str = "Enphase Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: EnphaseCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or EnphaseCounterConfiguration())
+                 configuration: EnphaseCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or EnphaseCounterConfiguration(), **kwargs)
 
 
 class EnphaseInverterConfiguration:
@@ -62,8 +63,9 @@ class EnphaseInverterSetup(ComponentSetup[EnphaseInverterConfiguration]):
                  name: str = "Enphase Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: EnphaseInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or EnphaseInverterConfiguration())
+                 configuration: EnphaseInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or EnphaseInverterConfiguration(), **kwargs)
 
 
 class EnphaseBatConfiguration:
@@ -76,5 +78,6 @@ class EnphaseBatSetup(ComponentSetup[EnphaseBatConfiguration]):
                  name: str = "Enphase Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: EnphaseBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or EnphaseBatConfiguration())
+                 configuration: EnphaseBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or EnphaseBatConfiguration(), **kwargs)

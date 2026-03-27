@@ -34,8 +34,9 @@ class SaxpowerCounterSetup(ComponentSetup[SaxpowerCounterConfiguration]):
                  name: str = "Saxpower Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: SaxpowerCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SaxpowerCounterConfiguration())
+                 configuration: SaxpowerCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SaxpowerCounterConfiguration(), **kwargs)
 
 
 class SaxpowerBatConfiguration:
@@ -48,5 +49,6 @@ class SaxpowerBatSetup(ComponentSetup[SaxpowerBatConfiguration]):
                  name: str = "Saxpower Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: SaxpowerBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SaxpowerBatConfiguration())
+                 configuration: SaxpowerBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SaxpowerBatConfiguration(), **kwargs)

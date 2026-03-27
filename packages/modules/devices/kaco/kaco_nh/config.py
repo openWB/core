@@ -37,8 +37,9 @@ class KacoNHBatSetup(ComponentSetup[KacoNHBatConfiguration]):
                  name: str = "Kaco NH Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: KacoNHBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or KacoNHBatConfiguration())
+                 configuration: KacoNHBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or KacoNHBatConfiguration(), **kwargs)
 
 
 class KacoNHCounterConfiguration:
@@ -51,8 +52,9 @@ class KacoNHCounterSetup(ComponentSetup[KacoNHCounterConfiguration]):
                  name: str = "Kaco NH Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: KacoNHCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or KacoNHCounterConfiguration())
+                 configuration: KacoNHCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or KacoNHCounterConfiguration(), **kwargs)
 
 
 class KacoNHInverterConfiguration:
@@ -65,5 +67,6 @@ class KacoNHInverterSetup(ComponentSetup[KacoNHInverterConfiguration]):
                  name: str = "KacoNH Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: KacoNHInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or KacoNHInverterConfiguration())
+                 configuration: KacoNHInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or KacoNHInverterConfiguration(), **kwargs)

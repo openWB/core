@@ -32,5 +32,6 @@ class SmaWebboxInverterSetup(ComponentSetup[SmaWebboxInverterConfiguration]):
                  name: str = "SMA Wechselrichter Webbox",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: SmaWebboxInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SmaWebboxInverterConfiguration())
+                 configuration: SmaWebboxInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SmaWebboxInverterConfiguration(), **kwargs)

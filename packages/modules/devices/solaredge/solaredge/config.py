@@ -34,8 +34,9 @@ class SolaredgeBatSetup(ComponentSetup[SolaredgeBatConfiguration]):
                  name: str = "SolarEdge Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: SolaredgeBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SolaredgeBatConfiguration())
+                 configuration: SolaredgeBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SolaredgeBatConfiguration(), **kwargs)
 
 
 class SolaredgeCounterConfiguration:
@@ -49,8 +50,9 @@ class SolaredgeCounterSetup(ComponentSetup[SolaredgeCounterConfiguration]):
                  name: str = "SolarEdge Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: SolaredgeCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SolaredgeCounterConfiguration())
+                 configuration: SolaredgeCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SolaredgeCounterConfiguration(), **kwargs)
 
 
 class SolaredgeExternalInverterConfiguration:
@@ -65,8 +67,9 @@ class SolaredgeExternalInverterSetup(ComponentSetup[SolaredgeExternalInverterCon
                  name: str = "SolarEdge externer Wechselrichter",
                  type: str = "external_inverter",
                  id: int = 0,
-                 configuration: SolaredgeExternalInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SolaredgeExternalInverterConfiguration())
+                 configuration: SolaredgeExternalInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SolaredgeExternalInverterConfiguration(), **kwargs)
 
 
 class SolaredgeInverterConfiguration:
@@ -79,5 +82,6 @@ class SolaredgeInverterSetup(ComponentSetup[SolaredgeInverterConfiguration]):
                  name: str = "SolarEdge Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: SolaredgeInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SolaredgeInverterConfiguration())
+                 configuration: SolaredgeInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SolaredgeInverterConfiguration(), **kwargs)

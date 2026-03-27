@@ -38,8 +38,9 @@ class SolakonOneBatSetup(ComponentSetup[SolakonOneBatConfiguration]):
                  name: str = "Solakon One Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: SolakonOneBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SolakonOneBatConfiguration())
+                 configuration: SolakonOneBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SolakonOneBatConfiguration(), **kwargs)
 
 
 @auto_str
@@ -54,5 +55,6 @@ class SolakonOneInverterSetup(ComponentSetup[SolakonOneInverterConfiguration]):
                  name: str = "Solakon One Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: SolakonOneInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SolakonOneInverterConfiguration())
+                 configuration: SolakonOneInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SolakonOneInverterConfiguration(), **kwargs)

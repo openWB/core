@@ -39,8 +39,9 @@ class Huawei_SmartloggerBatSetup(ComponentSetup[Huawei_SmartloggerBatConfigurati
                  name: str = "Huawei Luna",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: Huawei_SmartloggerBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or Huawei_SmartloggerBatConfiguration())
+                 configuration: Huawei_SmartloggerBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or Huawei_SmartloggerBatConfiguration(), **kwargs)
 
 
 @auto_str
@@ -56,8 +57,9 @@ class Huawei_SmartloggerCounterSetup(ComponentSetup[Huawei_SmartloggerCounterCon
                  name: str = "Huawei Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: Huawei_SmartloggerCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or Huawei_SmartloggerCounterConfiguration())
+                 configuration: Huawei_SmartloggerCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or Huawei_SmartloggerCounterConfiguration(), **kwargs)
 
 
 @auto_str
@@ -73,5 +75,6 @@ class Huawei_SmartloggerInverterSetup(ComponentSetup[Huawei_SmartloggerInverterC
                  name: str = "Huawei Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: Huawei_SmartloggerInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or Huawei_SmartloggerInverterConfiguration())
+                 configuration: Huawei_SmartloggerInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or Huawei_SmartloggerInverterConfiguration(), **kwargs)

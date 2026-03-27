@@ -40,8 +40,9 @@ class SungrowSHBatSetup(ComponentSetup[SungrowSHBatConfiguration]):
                  name: str = "Sungrow SH Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: SungrowSHBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SungrowSHBatConfiguration())
+                 configuration: SungrowSHBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SungrowSHBatConfiguration(), **kwargs)
 
 
 class SungrowSHCounterConfiguration:
@@ -54,8 +55,9 @@ class SungrowSHCounterSetup(ComponentSetup[SungrowSHCounterConfiguration]):
                  name: str = "Sungrow SH Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: SungrowSHCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SungrowSHCounterConfiguration())
+                 configuration: SungrowSHCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SungrowSHCounterConfiguration(), **kwargs)
 
 
 class SungrowSHInverterConfiguration:
@@ -68,5 +70,6 @@ class SungrowSHInverterSetup(ComponentSetup[SungrowSHInverterConfiguration]):
                  name: str = "Sungrow SH Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: SungrowSHInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SungrowSHInverterConfiguration())
+                 configuration: SungrowSHInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SungrowSHInverterConfiguration(), **kwargs)
