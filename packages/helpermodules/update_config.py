@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 114
+    DATASTORE_VERSION = 117
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -2956,11 +2956,57 @@ class UpdateConfig:
                                  f"'{device_name}' auf Typ '{new_type}'."),
                                 MessageType.INFO,
                             )
-
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(113)
 
     def upgrade_datastore_114(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if "openWB/general/charge_log_data_config" == topic:
+                config = decode_payload(payload)
+                if config.get("vehicle_odometer") is None:
+                    config["vehicle_odometer"] = False
+                return {topic: config}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(114)
+
+    def upgrade_datastore_115(self) -> None:
+        """
+        Ensure new backup cloud configuration field `max_backups` is present.
+
+        For older datastores the field may be missing; normalizing to `0`
+        guarantees the semantics "0 = keine automatische Löschung" and
+        prevents null/undefined being written back from the UI.
+        """
+
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search(r"^openWB/system/backup_cloud/config$", topic) is None:
+                return None
+
+            configuration_payload = decode_payload(payload)
+            cloud_type = configuration_payload.get("type")
+            if cloud_type not in ("nextcloud", "samba"):
+                return None
+
+            configuration_payload.setdefault("configuration", {})
+            if configuration_payload["configuration"].get("max_backups") is None:
+                configuration_payload["configuration"]["max_backups"] = 0
+
+            return {topic: configuration_payload}
+
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(115)
+
+    def upgrade_datastore_116(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/vehicle/[0-9]+/soc_module/config", topic) is not None:
+                payload = decode_payload(payload)
+                if payload.get("type") == "manual" and payload["configuration"].get("reset_after_unplug") is None:
+                    payload["configuration"]["reset_after_unplug"] = False
+                    return {topic: payload}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(116)
+
+    def upgrade_datastore_117(self) -> None:
         def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("^openWB/bat/[0-9]+/get/power$", topic) is not None:
                 index = get_index(topic)
@@ -2969,4 +3015,4 @@ class UpdateConfig:
                     new_topics[f"openWB/bat/{index}/config/max_power"] = 0
                 return new_topics if new_topics else None
         self._loop_all_received_topics(upgrade)
-        self._append_datastore_version(114)
+        self._append_datastore_version(117)

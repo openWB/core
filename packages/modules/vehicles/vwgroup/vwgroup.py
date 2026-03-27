@@ -86,6 +86,10 @@ class VwGroup(object):
                 soc_tsdtL = self.utc2local(soc_tsdtZ)
                 self.soc_tsX = datetime.timestamp(soc_tsdtL)
                 self.soc_ts = datetime.strftime(soc_tsdtL, ts_fmt)
+                if self.su.keys_exist(self.data, 'charging', 'batteryStatus', 'value', 'odometer'):
+                    self.odometer = float(self.data['charging']['batteryStatus']['value']['odometer'])
+                else:
+                    self.odometer = None
             except Exception as e:
                 raise Exception("soc/range/soc_ts field missing exception: e=" + str(e))
 
@@ -131,4 +135,4 @@ class VwGroup(object):
             if (library.tokens['accessToken'] != self.accessTokenOld):  # modified accessToken?
                 self.su.write_token_file(self.accessTokenFile, library.tokens['accessToken'])
 
-            return self.soc, self.range, self.soc_ts, self.soc_tsX
+            return self.soc, self.range, self.soc_ts, self.soc_tsX, self.odometer

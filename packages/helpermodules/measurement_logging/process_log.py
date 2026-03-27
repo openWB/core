@@ -34,6 +34,7 @@ def get_default_charge_log_columns() -> Dict:
         "vehicle_chargemode": True,
         "vehicle_prio": True,
         "vehicle_rfid": True,
+        "vehicle_odometer": False,
         "vehicle_soc_at_start": False,
         "vehicle_soc_at_end": False,
         "chargepoint_name": True,
