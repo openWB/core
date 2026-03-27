@@ -11,6 +11,7 @@ from modules.common.simcount import SimCounter
 from modules.common import req
 from modules.common.component_state import BatState
 from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -33,7 +34,7 @@ class TasmotaBat(AbstractBat):
         self.__phase: int = self.kwargs['phase']
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.peak_filter = PeakFilter("bat", self.component_config.id, self.fault_state)
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
     def update(self):
         url = "http://" + self.__ip_address + "/cm?cmnd=Status%208"

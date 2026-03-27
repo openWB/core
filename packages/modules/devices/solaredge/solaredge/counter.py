@@ -13,6 +13,7 @@ from modules.devices.solaredge.solaredge.config import SolaredgeCounterSetup
 from modules.devices.solaredge.solaredge.scale import scale_registers
 from modules.devices.solaredge.solaredge.meter import SolaredgeMeterRegisters, set_component_registers
 from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ class SolaredgeCounter(AbstractCounter):
         self.registers = SolaredgeMeterRegisters()
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.peak_filter = PeakFilter("counter", self.component_config.id, self.fault_state)
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
         components = list(self.kwargs['components'].values())
         components.append(self)

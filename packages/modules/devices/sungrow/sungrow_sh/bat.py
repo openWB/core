@@ -12,6 +12,7 @@ from modules.common.store import get_bat_value_store
 from modules.devices.sungrow.sungrow_sh.config import SungrowSHBatSetup, SungrowSH
 from modules.devices.sungrow.sungrow_sh.registers import RegMode
 from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ class SungrowSHBat(AbstractBat):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.last_mode = 'Undefined'
         self.register_check = self.detect_register_check()
-        self.peak_filter = PeakFilter("bat", self.component_config.id, self.fault_state)
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
     def detect_register_check(self) -> RegMode:
         # Battery register availability test

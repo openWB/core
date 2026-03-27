@@ -8,6 +8,7 @@ from modules.common.utils.peak_filter import PeakFilter
 from modules.devices.discovergy.discovergy import api
 from modules.devices.discovergy.discovergy.config import DiscovergyCounterSetup
 from modules.common.component_state import CounterState
+from modules.common.component_type import ComponentType
 
 
 class DiscovergyCounter(AbstractCounter):
@@ -17,7 +18,7 @@ class DiscovergyCounter(AbstractCounter):
     def initialize(self) -> None:
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.peak_filter = PeakFilter("counter", self.component_config.id, self.fault_state)
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self, session: Session):
         reading = api.get_last_reading(session, self.component_config.configuration.meter_id)

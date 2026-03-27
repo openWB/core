@@ -9,6 +9,7 @@ from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.marstek.venus_c_e.config import VenusCEBatSetup
 from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -27,7 +28,7 @@ class VenusCEBat(AbstractBat):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.peak_filter = PeakFilter("bat", self.component_config.id, self.fault_state)
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
     def _read_reg(self, addr: int, type_: ModbusDataType) -> Union[int, float]:
         return self.client.read_holding_registers(addr, type_, unit=self.component_config.configuration.modbus_id)

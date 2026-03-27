@@ -11,6 +11,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_counter_value_store
 from modules.devices.smartfox.smartfox.config import SmartfoxCounterSetup
 from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +29,7 @@ class SmartfoxCounter(AbstractCounter):
         self.ip_address: int = self.kwargs['ip_address']
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.peak_filter = PeakFilter("counter", self.component_config.id, self.fault_state)
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         def get_xml_text(attribute_value: str) -> str:

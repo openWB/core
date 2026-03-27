@@ -9,6 +9,7 @@ from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.store import get_bat_value_store
 from modules.devices.qcells.qcells.config import QCellsBatSetup
 from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -26,7 +27,7 @@ class QCellsBat(AbstractBat):
         self.client: ModbusTcpClient_ = self.kwargs['client']
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.peak_filter = PeakFilter("bat", self.component_config.id, self.fault_state)
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         power = self.client.read_input_registers(0x0016, ModbusDataType.INT_16, unit=self.__modbus_id)

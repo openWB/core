@@ -3,12 +3,13 @@ from control import data
 from typing import Optional
 
 from modules.common.fault_state import FaultState
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
 
 class PeakFilter:
-    def __init__(self, type: str, component_id: int, fault_state: FaultState):
+    def __init__(self, type: ComponentType, component_id: int, fault_state: FaultState):
         self.type = type
         self.component_id = component_id
         self.fault_state = fault_state
@@ -22,13 +23,13 @@ class PeakFilter:
         exported: Optional[float] = None
     ) -> tuple[Optional[float], Optional[float]]:
         # setze maximale Leistung je nach Komponente
-        if self.type == "counter":
+        if self.type == ComponentType.COUNTER:
             counter = data.data.counter_data[f"counter{self.component_id}"]
             max_power = counter.data.config.max_total_power
-        elif self.type == "inverter":
+        elif self.type == ComponentType.INVERTER:
             inverter = data.data.pv_data[f"pv{self.component_id}"]
             max_power = inverter.data.config.max_ac_out
-        elif self.type == "bat":
+        elif self.type == ComponentType.BAT:
             bat = data.data.bat_data[f"bat{self.component_id}"]
             max_power = bat.data.config.max_power
         else:

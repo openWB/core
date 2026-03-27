@@ -10,6 +10,7 @@ from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_inverter_value_store
 from modules.devices.mtec.mtec.config import MTecInverterSetup
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -28,7 +29,7 @@ class MTecInverter(AbstractInverter):
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
-        self.peak_filter = PeakFilter("inverter", self.component_config.id, self.fault_state)
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id

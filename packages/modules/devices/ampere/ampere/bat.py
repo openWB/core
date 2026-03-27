@@ -10,6 +10,7 @@ from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.ampere.ampere.config import AmpereBatSetup
 from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -31,7 +32,7 @@ class AmpereBat(AbstractBat):
         self.sim_counter = SimCounter(device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.peak_filter = PeakFilter("bat", self.component_config.id, self.fault_state)
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
         self.client = self.kwargs['client']
 
     def update(self) -> None:

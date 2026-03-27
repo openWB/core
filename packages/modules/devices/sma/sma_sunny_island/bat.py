@@ -10,6 +10,7 @@ from modules.common.modbus import ModbusDataType
 from modules.common.store import get_bat_value_store
 from modules.devices.sma.sma_sunny_island.config import SmaSunnyIslandBatSetup
 from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -25,7 +26,7 @@ class SunnyIslandBat(AbstractBat):
         self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['client']
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.peak_filter = PeakFilter("bat", self.component_config.id, self.fault_state)
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
     def read(self) -> BatState:
         unit = self.component_config.configuration.modbus_id

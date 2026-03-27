@@ -12,6 +12,7 @@ from modules.common.simcount import SimCounter
 from modules.common.store import get_counter_value_store
 from modules.devices.powerdog.powerdog.config import PowerdogCounterSetup
 from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ class PowerdogCounter(AbstractCounter):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.peak_filter = PeakFilter("counter", self.component_config.id, self.fault_state)
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self, inverter_power: float) -> None:
         with self.__tcp_client:

@@ -3,6 +3,7 @@ import pytest
 from unittest.mock import MagicMock
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.fault_state import FaultState
+from modules.common.component_type import ComponentType
 
 
 class DummyFaultState(FaultState):
@@ -55,23 +56,23 @@ class Params:
 
 
 cases = [
-    Params("Power Peak Zähler positiv", "counter", 1000, 500, 11000, 1300, 800, None, None, True),
-    Params("Power Peak Zähler negativ", "counter", 1000, 500, -11000, 1300, 800, None, None, True),
-    Params("Power Peak Wechselrichter", "inverter", 1000, 500, 11000, 1005, 505, 1005, 505, True),
-    Params("Power Peak Speicher positiv", "bat", 1000, 500, 11000, 1005, 505, 1005, 505, True),
-    Params("Power Peak Speicher negativ", "bat", 1000, 500, -11000, 1005, 505, 1005, 505, True),
-    Params("Imp/ Exp Zähler - Werte valide", "counter", 1000, 500, 900, 1005, 505, 1005, 505),
-    Params("Imp/ Exp Wechselrichter - Werte valide", "inverter", 1000, 500, 1500, 1005, 505, 1005, 505),
-    Params("Imp/ Exp Speicher - Werte valide", "bat", 1000, 500, 400, 1005, 505, 1005, 505),
-    Params("Imp/ Exp Zähler - Werte invalide", "counter", 1000, 500, 1000, 1300, 800, None, None),
-    Params("Imp/ Exp Zähler - Import invalide", "counter", 1000, 500, 1000, 1300, 505, None, 505),
-    Params("Imp/ Exp Zähler - Export invalide", "counter", 1000, 500, 1000, 1005, 800, 1005, None),
-    Params("Imp/ Exp Wechselrichter - Werte invalide", "inverter", 1000, 500, 1500, 1300, 800, None, None),
-    Params("Imp/ Exp Wechselrichter - Import invalide", "inverter", 1000, 500, 1500, 1300, 505, None, 505),
-    Params("Imp/ Exp Wechselrichter - Export invalide", "inverter", 1000, 500, 1500, 1005, 800, 1005, None),
-    Params("Imp/ Exp Speicher - Werte invalide", "bat", 1000, 500, 400, 1300, 800, None, None),
-    Params("Imp/ Exp Speicher - Import invalide", "bat", 1000, 500, 400, 1300, 505, None, 505),
-    Params("Imp/ Exp Speicher - Export invalide", "bat", 1000, 500, 400, 1005, 800, 1005, None),
+    Params("Power Peak Zähler positiv", ComponentType.COUNTER, 1000, 500, 11000, 1300, 800, None, None, True),
+    Params("Power Peak Zähler negativ", ComponentType.COUNTER, 1000, 500, -11000, 1300, 800, None, None, True),
+    Params("Power Peak Wechselrichter", ComponentType.INVERTER, 1000, 500, 11000, 1005, 505, 1005, 505, True),
+    Params("Power Peak Speicher positiv", ComponentType.BAT, 1000, 500, 11000, 1005, 505, 1005, 505, True),
+    Params("Power Peak Speicher negativ", ComponentType.BAT, 1000, 500, -11000, 1005, 505, 1005, 505, True),
+    Params("Imp/ Exp Zähler - Werte valide", ComponentType.COUNTER, 1000, 500, 900, 1005, 505, 1005, 505),
+    Params("Imp/ Exp Wechselrichter - Werte valide", ComponentType.INVERTER, 1000, 500, 1500, 1005, 505, 1005, 505),
+    Params("Imp/ Exp Speicher - Werte valide", ComponentType.BAT, 1000, 500, 400, 1005, 505, 1005, 505),
+    Params("Imp/ Exp Zähler - Werte invalide", ComponentType.COUNTER, 1000, 500, 1000, 1300, 800, None, None),
+    Params("Imp/ Exp Zähler - Import invalide", ComponentType.COUNTER, 1000, 500, 1000, 1300, 505, None, 505),
+    Params("Imp/ Exp Zähler - Export invalide", ComponentType.COUNTER, 1000, 500, 1000, 1005, 800, 1005, None),
+    Params("Imp/ Exp Wechselrichter - Werte invalide", ComponentType.INVERTER, 1000, 500, 1500, 1300, 800, None, None),
+    Params("Imp/ Exp Wechselrichter - Import invalide", ComponentType.INVERTER, 1000, 500, 1500, 1300, 505, None, 505),
+    Params("Imp/ Exp Wechselrichter - Export invalide", ComponentType.INVERTER, 1000, 500, 1500, 1005, 800, 1005, None),
+    Params("Imp/ Exp Speicher - Werte invalide", ComponentType.BAT, 1000, 500, 400, 1300, 800, None, None),
+    Params("Imp/ Exp Speicher - Import invalide", ComponentType.BAT, 1000, 500, 400, 1300, 505, None, 505),
+    Params("Imp/ Exp Speicher - Export invalide", ComponentType.BAT, 1000, 500, 400, 1005, 800, 1005, None),
 ]
 
 
