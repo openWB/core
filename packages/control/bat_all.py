@@ -179,7 +179,7 @@ class BatAll:
         except Exception:
             log.exception("Fehler im Bat-Modul")
 
-    def _inverter_limited_power(self, inverter: Pv) -> float:
+    def _get_pv_power_beyond_max_ac_out(self, inverter: Pv) -> float:
         """gibt die maximale Entladeleistung des Speichers zurück, bis die maximale Ausgangsleistung des WR erreicht
         ist."""
         # tested
@@ -193,18 +193,18 @@ class BatAll:
     def _limit_bat_power_discharge(self, required_power):
         """begrenzt die für den Algorithmus benötigte Entladeleistung des Speichers, wenn die maximale Ausgangsleistung
         des WR erreicht ist."""
-        inverter_limited_power = 0
+        pv_power_beyond_max_ac_out = 0
         if required_power > 0:
             # Nur wenn der Speicher entladen werden soll, fließt Leistung durch den WR.
             for inverter in data.data.pv_data.values():
                 try:
-                    inverter_limited_power += self._inverter_limited_power(inverter)
+                    pv_power_beyond_max_ac_out += self._get_pv_power_beyond_max_ac_out(inverter)
                 except Exception:
                     log.exception(f"Fehler im Bat-Modul {inverter.num}")
-            if inverter_limited_power > 0:
-                required_power = max(required_power-inverter_limited_power, 0)
-                log.debug(f"Verbleibende Speicher-Leistung durch maximale Ausgangsleistung auf {required_power}W"
-                          " begrenzt.")
+            max_inverter_power_for_bat = self.data.get.power - pv_power_beyond_max_ac_out
+            required_power = max(min(required_power, max_inverter_power_for_bat), 0)
+            log.debug(f"Verbleibende Speicher-Leistung durch maximale Ausgangsleistung auf {required_power}W"
+                      " begrenzt.")
         return required_power
 
     def _set_bat_power_active_control(self, power):
