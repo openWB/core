@@ -39,8 +39,9 @@ class HuaweiBatSetup(ComponentSetup[HuaweiBatConfiguration]):
                  name: str = "Huawei Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: HuaweiBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or HuaweiBatConfiguration())
+                 configuration: HuaweiBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or HuaweiBatConfiguration(), **kwargs)
 
 
 class HuaweiCounterConfiguration:
@@ -53,8 +54,9 @@ class HuaweiCounterSetup(ComponentSetup[HuaweiCounterConfiguration]):
                  name: str = "Huawei Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: HuaweiCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or HuaweiCounterConfiguration())
+                 configuration: HuaweiCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or HuaweiCounterConfiguration(), **kwargs)
 
 
 class HuaweiInverterConfiguration:
@@ -67,5 +69,6 @@ class HuaweiInverterSetup(ComponentSetup[HuaweiInverterConfiguration]):
                  name: str = "Huawei Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: HuaweiInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or HuaweiInverterConfiguration())
+                 configuration: HuaweiInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or HuaweiInverterConfiguration(), **kwargs)

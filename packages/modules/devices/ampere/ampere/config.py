@@ -34,8 +34,9 @@ class AmpereBatSetup(ComponentSetup[AmpereBatConfiguration]):
                  name: str = "Ampere Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: AmpereBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or AmpereBatConfiguration())
+                 configuration: AmpereBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or AmpereBatConfiguration(), **kwargs)
 
 
 class AmpereCounterConfiguration:
@@ -48,8 +49,9 @@ class AmpereCounterSetup(ComponentSetup[AmpereCounterConfiguration]):
                  name: str = "Ampere Pro Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: AmpereCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or AmpereCounterConfiguration())
+                 configuration: AmpereCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or AmpereCounterConfiguration(), **kwargs)
 
 
 class AmpereInverterConfiguration:
@@ -62,5 +64,6 @@ class AmpereInverterSetup(ComponentSetup[AmpereInverterConfiguration]):
                  name: str = "Ampere Pro Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: AmpereInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or AmpereInverterConfiguration())
+                 configuration: AmpereInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or AmpereInverterConfiguration(), **kwargs)

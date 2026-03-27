@@ -41,8 +41,9 @@ class SolisBatSetup(ComponentSetup[SolisBatConfiguration]):
                  name: str = "Solis Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: SolisBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SolisBatConfiguration())
+                 configuration: SolisBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SolisBatConfiguration(), **kwargs)
 
 
 @auto_str
@@ -57,8 +58,9 @@ class SolisCounterSetup(ComponentSetup[SolisCounterConfiguration]):
                  name: str = "Solis Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: SolisCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SolisCounterConfiguration())
+                 configuration: SolisCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SolisCounterConfiguration(), **kwargs)
 
 
 @auto_str
@@ -73,5 +75,6 @@ class SolisInverterSetup(ComponentSetup[SolisInverterConfiguration]):
                  name: str = "Solis Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: SolisInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SolisInverterConfiguration())
+                 configuration: SolisInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SolisInverterConfiguration(), **kwargs)

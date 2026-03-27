@@ -35,6 +35,7 @@ def get_chargepoint_config_default() -> dict:
         "name": "neuer Ladepunkt",
         "type": None,
         "ev": 0,
+        "color": "#007bff",
         "template": 0,
         "connected_phases": 3,
         "phase_1": 1,

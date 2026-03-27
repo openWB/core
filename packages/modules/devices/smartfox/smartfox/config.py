@@ -32,5 +32,6 @@ class SmartfoxCounterSetup(ComponentSetup[SmartfoxCounterConfiguration]):
                  name: str = "Smartfox Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: SmartfoxCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SmartfoxCounterConfiguration())
+                 configuration: SmartfoxCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SmartfoxCounterConfiguration(), **kwargs)

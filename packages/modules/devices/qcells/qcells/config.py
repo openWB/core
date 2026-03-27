@@ -34,8 +34,9 @@ class QCellsBatSetup(ComponentSetup[QCellsBatConfiguration]):
                  name: str = "QCells Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: QCellsBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or QCellsBatConfiguration())
+                 configuration: QCellsBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or QCellsBatConfiguration(), **kwargs)
 
 
 class QCellsCounterConfiguration:
@@ -48,8 +49,9 @@ class QCellsCounterSetup(ComponentSetup[QCellsCounterConfiguration]):
                  name: str = "QCells Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: QCellsCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or QCellsCounterConfiguration())
+                 configuration: QCellsCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or QCellsCounterConfiguration(), **kwargs)
 
 
 class QCellsInverterConfiguration:
@@ -62,5 +64,6 @@ class QCellsInverterSetup(ComponentSetup[QCellsInverterConfiguration]):
                  name: str = "QCells Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: QCellsInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or QCellsInverterConfiguration())
+                 configuration: QCellsInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or QCellsInverterConfiguration(), **kwargs)

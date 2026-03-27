@@ -33,8 +33,9 @@ class SolarWattBatSetup(ComponentSetup[SolarWattBatConfiguration]):
                  name: str = "Solarwatt/My Reserve Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: SolarWattBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SolarWattBatConfiguration())
+                 configuration: SolarWattBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SolarWattBatConfiguration(), **kwargs)
 
 
 class SolarWattCounterConfiguration:
@@ -47,8 +48,9 @@ class SolarWattCounterSetup(ComponentSetup[SolarWattCounterConfiguration]):
                  name: str = "Solarwatt/My Reserve Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: SolarWattCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SolarWattCounterConfiguration())
+                 configuration: SolarWattCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SolarWattCounterConfiguration(), **kwargs)
 
 
 class SolarWattInverterConfiguration:
@@ -61,5 +63,6 @@ class SolarWattInverterSetup(ComponentSetup[SolarWattInverterConfiguration]):
                  name: str = "Solarwatt/My Reserve Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: SolarWattInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SolarWattInverterConfiguration())
+                 configuration: SolarWattInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SolarWattInverterConfiguration(), **kwargs)

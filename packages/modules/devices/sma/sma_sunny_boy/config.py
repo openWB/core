@@ -34,8 +34,9 @@ class SmaSunnyBoyBatSetup(ComponentSetup[SmaSunnyBoyBatConfiguration]):
                  name: str = "Sma Sunny Boy/Tripower Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: SmaSunnyBoyBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SmaSunnyBoyBatConfiguration())
+                 configuration: SmaSunnyBoyBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SmaSunnyBoyBatConfiguration(), **kwargs)
 
 
 class SmaSunnyBoySmartEnergyBatConfiguration:
@@ -48,8 +49,9 @@ class SmaSunnyBoySmartEnergyBatSetup(ComponentSetup[SmaSunnyBoySmartEnergyBatCon
                  name: str = "Sma Sunny Boy Smart Energy Speicher",
                  type: str = "bat_smart_energy",
                  id: int = 0,
-                 configuration: SmaSunnyBoySmartEnergyBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SmaSunnyBoySmartEnergyBatConfiguration())
+                 configuration: SmaSunnyBoySmartEnergyBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SmaSunnyBoySmartEnergyBatConfiguration(), **kwargs)
 
 
 class SmaTesvoltBatConfiguration:
@@ -62,8 +64,9 @@ class SmaTesvoltBatSetup(ComponentSetup[SmaTesvoltBatConfiguration]):
                  name: str = "Sma Tripower/Tesvolt Speicher",
                  type: str = "bat_tesvolt",
                  id: int = 0,
-                 configuration: SmaTesvoltBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SmaTesvoltBatConfiguration())
+                 configuration: SmaTesvoltBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SmaTesvoltBatConfiguration(), **kwargs)
 
 
 class SmaSunnyBoyCounterConfiguration:
@@ -76,8 +79,9 @@ class SmaSunnyBoyCounterSetup(ComponentSetup[SmaSunnyBoyCounterConfiguration]):
                  name: str = "Sma Sunny Boy/Tripower Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: SmaSunnyBoyCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SmaSunnyBoyCounterConfiguration())
+                 configuration: SmaSunnyBoyCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SmaSunnyBoyCounterConfiguration(), **kwargs)
 
 
 class SmaSunnyBoyInverterConfiguration:
@@ -94,5 +98,6 @@ class SmaSunnyBoyInverterSetup(ComponentSetup[SmaSunnyBoyInverterConfiguration])
                  name: str = "Sma Sunny Boy/Tripower Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: SmaSunnyBoyInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SmaSunnyBoyInverterConfiguration())
+                 configuration: SmaSunnyBoyInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SmaSunnyBoyInverterConfiguration(), **kwargs)

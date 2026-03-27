@@ -47,8 +47,9 @@ class HttpBatSetup(ComponentSetup[HttpBatConfiguration]):
                  name: str = "HTTP Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: HttpBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or HttpBatConfiguration())
+                 configuration: HttpBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or HttpBatConfiguration(), **kwargs)
 
 
 @auto_str
@@ -74,8 +75,9 @@ class HttpCounterSetup(ComponentSetup[HttpCounterConfiguration]):
                  name: str = "HTTP Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: HttpCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or HttpCounterConfiguration())
+                 configuration: HttpCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or HttpCounterConfiguration(), **kwargs)
 
 
 @auto_str
@@ -91,5 +93,6 @@ class HttpInverterSetup(ComponentSetup[HttpInverterConfiguration]):
                  name: str = "HTTP Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: HttpInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or HttpInverterConfiguration())
+                 configuration: HttpInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or HttpInverterConfiguration(), **kwargs)
