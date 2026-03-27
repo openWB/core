@@ -18,7 +18,6 @@ from modules.devices.generic.mqtt.config import MqttBatSetup
 
 @pytest.fixture(autouse=True)
 def data_fixture() -> None:
-    data.data_init(Mock())
     data.data.general_data = General()
     data.data.cp_all_data = Mock(spec=AllChargepoints, data=Mock(
         spec=AllChargepointData, get=Mock(spec=AllGet, power=0)))

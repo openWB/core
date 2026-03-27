@@ -201,7 +201,6 @@ class BatAll:
                     pv_power_beyond_max_ac_out += self._get_pv_power_beyond_max_ac_out(inverter)
                 except Exception:
                     log.exception(f"Fehler im Bat-Modul {inverter.num}")
-            max_inverter_power_for_bat = self.data.get.power - pv_power_beyond_max_ac_out
             # Wenn max_inverter_power_for_bat nur deshalb negativ ist, weil der Speicher aktuell bereits entlädt
             # (self.data.get.power < 0) und keine PV-Leistung über der maximalen WR-Ausgangsleistung anliegt
             # (pv_power_beyond_max_ac_out == 0), dann würde eine Begrenzung auf 0W die noch verfügbare
