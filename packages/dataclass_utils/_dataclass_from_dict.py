@@ -50,7 +50,9 @@ def _dataclass_from_dict_recurse(value, requested_type: Type[T]):
     actual_type = requested_type
     if get_origin(requested_type) == Union:
         args = get_args(requested_type)
-        if len(args) == 2 and isinstance(args[1], type(None)):
+        if len(args) == 2 and args[1].__name__ == 'NoneType':
+            if value is None:
+                return None
             actual_type = args[0]  # Extract X from Optional[X]
 
     if get_origin(actual_type) == list:
