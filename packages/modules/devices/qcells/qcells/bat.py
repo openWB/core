@@ -65,11 +65,8 @@ class QCellsBat(AbstractBat):
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
         unit = self.__modbus_id
-        bat_get = data.data.bat_data[f"bat{self.component_config.id}"].data.get
-        max_charge = bat_get.max_charge_power
-        max_discharge = bat_get.max_discharge_power
         log.debug(f"QCells set_power_limit: power_limit={power_limit}, "
-                  f"max_charge={max_charge}W, max_discharge={max_discharge}W, last_mode={self.last_mode}")
+                  f"last_mode={self.last_mode}")
 
         if power_limit is None:
             log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
@@ -81,30 +78,24 @@ class QCellsBat(AbstractBat):
         elif power_limit == 0:
             log.debug("Aktive Batteriesteuerung. Batterie wird gestoppt (kein Entladen)")
             if self.last_mode != 'stop':
-                self._write_mode8(push_power=0, unit=unit)
+                self._write_mode8(power_value=0, unit=unit)
                 self.last_mode = 'stop'
         elif power_limit > 0:
-            if max_charge <= 0:
-                log.warning("Maximale Ladeleistung ist nicht konfiguriert (0W). "
-                            "Bitte unter Ladeeinstellungen > Speichersteuerung konfigurieren.")
-            clamped = int(min(power_limit, max_charge))
-            log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {clamped} W geladen")
+            power_value = int(power_limit) * -1
+            log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_value} W geladen")
             if self.last_mode != 'charge':
                 self.last_mode = 'charge'
             # Solax Mode 8: negativer Push Power Wert = Ladung
-            self._write_mode8(push_power=-clamped, unit=unit)
+            self._write_mode8(power_value, unit=unit)
         elif power_limit < 0:
-            if max_discharge <= 0:
-                log.warning("Maximale Entladeleistung ist nicht konfiguriert (0W). "
-                            "Bitte unter Ladeeinstellungen > Speichersteuerung konfigurieren.")
-            clamped = int(min(abs(power_limit), max_discharge))
-            log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {clamped} W entladen")
+            power_value = int(power_limit) * -1
+            log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_value} W entladen")
             if self.last_mode != 'discharge':
                 self.last_mode = 'discharge'
             # Solax Mode 8: positiver Push Power Wert = Entladung
-            self._write_mode8(push_power=clamped, unit=unit)
+            self._write_mode8(power_value, unit=unit)
 
-    def _write_mode8(self, push_power: int, unit: int) -> None:
+    def _write_mode8(self, power_value: int, unit: int) -> None:
         """Schreibt die Mode 8 Remote Control Register (0xA0-0xA7)."""
         with self.client:
             self.client.write_register(
@@ -117,7 +108,7 @@ class QCellsBat(AbstractBat):
                 REMOTE_CONTROL_PV_LIMIT_REG, PV_LIMIT_NO_CURTAILMENT,
                 data_type=ModbusDataType.UINT_32, unit=unit)
             self.client.write_register(
-                REMOTE_CONTROL_PUSH_POWER_REG, push_power,
+                REMOTE_CONTROL_PUSH_POWER_REG, power_value,
                 data_type=ModbusDataType.INT_32, unit=unit)
             self.client.write_register(
                 REMOTE_CONTROL_DURATION_REG, REMOTE_CONTROL_DURATION,
