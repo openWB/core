@@ -207,16 +207,19 @@ class BatAll:
             # (pv_power_beyond_max_ac_out == 0), dann würde eine Begrenzung auf 0W die noch verfügbare
             # Entladeleistung fälschlicherweise unterdrücken. In diesem Fall wenden wir keine zusätzliche
             # Begrenzung durch die WR-Ausgangsleistung an.
-            if not (max_inverter_power_for_bat < 0 and self.data.get.power < 0 and pv_power_beyond_max_ac_out == 0):
-                required_power = max(min(required_power, max_inverter_power_for_bat), 0)
+            if pv_power_beyond_max_ac_out > 0:
+                max_inverter_power_for_bat = self.data.get.power - pv_power_beyond_max_ac_out
+                # Negative Werte bedeuten, dass bereits mehr Leistung über den WR fließt, als für den Speicher
+                # zusätzlich verfügbar ist; in diesem Fall ist keine weitere Entladung möglich.
+                max_inverter_power_for_bat = max(max_inverter_power_for_bat, 0)
+                required_power = min(required_power, max_inverter_power_for_bat)
                 log.debug(
                     f"Verbleibende Speicher-Leistung durch maximale Ausgangsleistung auf {required_power}W begrenzt."
                 )
             else:
                 log.debug(
-                    "Speicher-Entladeleistung nicht durch maximale WR-Ausgangsleistung begrenzt, da der "
-                    "Speicher bereits entlädt und keine PV-Leistung über der maximalen WR-Ausgangsleistung anliegt."
-                )
+                    "Speicher-Entladeleistung nicht durch maximale WR-Ausgangsleistung begrenzt, da keine PV-Leistung "
+                    "über der maximalen WR-Ausgangsleistung anliegt.")
         return required_power
 
     def _set_bat_power_active_control(self, power):

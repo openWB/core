@@ -60,6 +60,7 @@ def test_pv_power_beyond_max_ac_out(max_ac_out: int, power: int, expected_result
                      "erlaubte Entladeleistung höher als aktuelle Leistung"),
         pytest.param(-1000, 1100, 0, 1100, id="Speicher entlädt, soll entladen"),
         pytest.param(-1000, -600, 0, -600, id="Speicher entlädt, soll weniger entladen"),
+        pytest.param(0, 600, 0, 600, id="Speicher ruht, soll entladen"),
     ])
 def test_limit_bat_power_discharge(bat_power: int,
                                    required_power: int,
