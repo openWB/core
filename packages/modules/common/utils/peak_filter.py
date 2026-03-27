@@ -72,12 +72,13 @@ class PeakFilter:
         allowed_deviation: float
     ) -> Optional[float]:
         if total_energy is not None:
-            if allowed_deviation > 0 and previous_total_energy is None:
-                log.debug(f"PeakFilter: Vorheriger Wert None, aktueller Zählerwert: {total_energy / 1000 }kWh. "
-                          "Warte einen Regelintervall.")
-                self.fault_state.warning(f"Peakfilter: {total_energy / 1000}kWh. "
-                                         "Die PV-Produktion erscheint höher, als laut Anlagenkonfiguration plausibel "
-                                         "ist. Erneute Prüfung im nächsten Regelintervall.")
+            if previous_total_energy is None:
+                if allowed_deviation > 0:
+                    log.debug(f"PeakFilter: Vorheriger Wert None, aktueller Zählerwert: {total_energy / 1000 }kWh. "
+                              "Warte einen Regelintervall.")
+                    self.fault_state.warning(f"Peakfilter: {total_energy / 1000}kWh. "
+                                             "Die PV-Produktion erscheint höher, als laut Anlagenkonfiguration "
+                                             "plausibel ist. Erneute Prüfung im nächsten Regelintervall.")
             elif allowed_deviation > 0 and (total_energy - previous_total_energy) > allowed_deviation:
                 log.debug(f"PeakFilter: Unplausibler Zählerwert: {total_energy / 1000}kWh. "
                           f"Differenz zum vorherigen Wert: {total_energy - previous_total_energy}Wh. "
