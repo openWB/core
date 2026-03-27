@@ -67,8 +67,8 @@ class PeakFilter:
 
     def check_total_energy(
         self,
-        total_energy: float,
-        previous_total_energy: float,
+        total_energy: Optional[float],
+        previous_total_energy: Optional[float],
         allowed_deviation: float
     ) -> Optional[float]:
         if total_energy is not None:

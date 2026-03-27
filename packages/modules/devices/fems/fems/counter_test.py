@@ -91,8 +91,8 @@ SAMPLE_RESPONSE = [{'accessMode': 'RO',
 
 SAMPLE_STATE = CounterState(
     currents=[24.29193899782135, 23.86829481029219, 26.78150894025294],
-    exported=200000,
-    imported=100000,
+    exported=11752059,
+    imported=1088853,
     power=17189,
     power_factors=[0.0, 0.0, 0.0],
     powers=[5575, 5473, 6141],

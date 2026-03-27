@@ -26,7 +26,7 @@ def test_vzlogger_counter_update(monkeypatch, requests_mock: requests_mock.mock)
     assert vars(mock_counter_value_store.set.call_args[0][0]) == vars(SAMPLE_COUNTER_STATE)
 
 
-SAMPLE_COUNTER_STATE = CounterState(power=-500.0, imported=100000.0, exported=200000.0)
+SAMPLE_COUNTER_STATE = CounterState(power=-500.0, imported=20000.0, exported=10000.0)
 SAMPLE = {
     "version": "0.8.0",
     "generator": "vzlogger",
