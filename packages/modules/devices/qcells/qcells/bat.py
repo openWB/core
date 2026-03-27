@@ -2,7 +2,6 @@
 import logging
 from typing import TypedDict, Any, Optional
 
-from control import data
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
