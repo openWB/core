@@ -35,8 +35,9 @@ class UPowerBatSetup(ComponentSetup[UPowerBatConfiguration]):
                  name: str = "UPower Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: UPowerBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or UPowerBatConfiguration())
+                 configuration: UPowerBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or UPowerBatConfiguration(), **kwargs)
 
 
 class UPowerCounterConfiguration:
@@ -49,8 +50,9 @@ class UPowerCounterSetup(ComponentSetup[UPowerCounterConfiguration]):
                  name: str = "UPower Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: UPowerCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or UPowerCounterConfiguration())
+                 configuration: UPowerCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or UPowerCounterConfiguration(), **kwargs)
 
 
 class UPowerInverterConfiguration:
@@ -63,5 +65,6 @@ class UPowerInverterSetup(ComponentSetup[UPowerInverterConfiguration]):
                  name: str = "UPower Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: UPowerInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or UPowerInverterConfiguration())
+                 configuration: UPowerInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or UPowerInverterConfiguration(), **kwargs)

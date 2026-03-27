@@ -33,8 +33,9 @@ class LgBatSetup(ComponentSetup[LgBatConfiguration]):
                  name: str = "LG ESS V1.0 Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: LgBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or LgBatConfiguration())
+                 configuration: LgBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or LgBatConfiguration(), **kwargs)
 
 
 class LgCounterConfiguration:
@@ -47,8 +48,9 @@ class LgCounterSetup(ComponentSetup[LgCounterConfiguration]):
                  name: str = "LG ESS V1.0 Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: LgCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or LgCounterConfiguration())
+                 configuration: LgCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or LgCounterConfiguration(), **kwargs)
 
 
 class LgInverterConfiguration:
@@ -61,5 +63,6 @@ class LgInverterSetup(ComponentSetup[LgInverterConfiguration]):
                  name: str = "LG ESS V1.0 Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: LgInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or LgInverterConfiguration())
+                 configuration: LgInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or LgInverterConfiguration(), **kwargs)

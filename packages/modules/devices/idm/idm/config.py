@@ -38,5 +38,6 @@ class IDMCounterSetup(ComponentSetup[IDMCounterConfiguration]):
                  name: str = "IDM Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: IDMCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or IDMCounterConfiguration())
+                 configuration: IDMCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or IDMCounterConfiguration(), **kwargs)

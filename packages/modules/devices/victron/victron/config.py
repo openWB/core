@@ -33,8 +33,9 @@ class VictronBatSetup(ComponentSetup[VictronBatConfiguration]):
                  name: str = "Victron Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: VictronBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or VictronBatConfiguration())
+                 configuration: VictronBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or VictronBatConfiguration(), **kwargs)
 
 
 class VictronCounterConfiguration:
@@ -48,8 +49,9 @@ class VictronCounterSetup(ComponentSetup[VictronCounterConfiguration]):
                  name: str = "Victron Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: VictronCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or VictronCounterConfiguration())
+                 configuration: VictronCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or VictronCounterConfiguration(), **kwargs)
 
 
 class VictronInverterConfiguration:
@@ -63,5 +65,6 @@ class VictronInverterSetup(ComponentSetup[VictronInverterConfiguration]):
                  name: str = "Victron Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: VictronInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or VictronInverterConfiguration())
+                 configuration: VictronInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or VictronInverterConfiguration(), **kwargs)

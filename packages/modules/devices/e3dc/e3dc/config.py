@@ -37,9 +37,10 @@ class E3dcBatSetup(ComponentSetup[E3dcBatConfiguration]):
                  name: str = "E3DC Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: E3dcBatConfiguration = None) -> None:
+                 configuration: E3dcBatConfiguration = None,
+                 **kwargs) -> None:
         super().__init__(name, type, id, configuration
-                         or E3dcBatConfiguration())
+                         or E3dcBatConfiguration(), **kwargs)
 
 
 @auto_str
@@ -54,9 +55,10 @@ class E3dcCounterSetup(ComponentSetup[E3dcCounterConfiguration]):
                  name: str = "E3DC Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: E3dcCounterConfiguration = None) -> None:
+                 configuration: E3dcCounterConfiguration = None,
+                 **kwargs) -> None:
         super().__init__(name, type, id, configuration or
-                         E3dcCounterConfiguration())
+                         E3dcCounterConfiguration(), **kwargs)
 
 
 @auto_str
@@ -71,8 +73,9 @@ class E3dcInverterSetup(ComponentSetup[E3dcInverterConfiguration]):
                  name: str = "E3DC Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: E3dcInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or E3dcInverterConfiguration())
+                 configuration: E3dcInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or E3dcInverterConfiguration(), **kwargs)
 
 
 @auto_str
@@ -87,5 +90,6 @@ class E3dcExternalInverterSetup(ComponentSetup[E3dcExternalInverterConfiguration
                  name: str = "E3DC externer Wechselrichter",
                  type: str = "external_inverter",
                  id: int = 0,
-                 configuration: E3dcExternalInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or E3dcExternalInverterConfiguration())
+                 configuration: E3dcExternalInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or E3dcExternalInverterConfiguration(), **kwargs)

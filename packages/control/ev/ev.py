@@ -34,6 +34,7 @@ def get_vehicle_default() -> dict:
         "charge_template": 0,
         "ev_template": 0,
         "name": "Fahrzeug",
+        "color": "#17a2b8",
         "info": {
             "manufacturer": None,
             "model": None,

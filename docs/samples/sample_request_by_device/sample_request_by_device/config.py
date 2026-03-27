@@ -37,8 +37,9 @@ class SampleBatSetup(ComponentSetup[SampleBatConfiguration]):
                  name: str = "Sample Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: SampleBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SampleBatConfiguration())
+                 configuration: SampleBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SampleBatConfiguration(), **kwargs)
 
 
 @auto_str
@@ -53,8 +54,9 @@ class SampleCounterSetup(ComponentSetup[SampleCounterConfiguration]):
                  name: str = "Sample Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: SampleCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SampleCounterConfiguration())
+                 configuration: SampleCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SampleCounterConfiguration(), **kwargs)
 
 
 @auto_str
@@ -69,5 +71,6 @@ class SampleInverterSetup(ComponentSetup[SampleInverterConfiguration]):
                  name: str = "Sample Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: SampleInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SampleInverterConfiguration())
+                 configuration: SampleInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SampleInverterConfiguration(), **kwargs)
