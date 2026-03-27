@@ -181,7 +181,7 @@ class BatAll:
 
     def _get_pv_power_beyond_max_ac_out(self, inverter: Pv) -> float:
         """gibt die PV-Leistung zurück, die über der maximalen Ausgangsleistung des Wechselrichters liegt und somit
-        nicht für die Entadung des Speichers genutzt werden kann."""
+        nicht für die Entladung des Speichers genutzt werden kann."""
         # tested
         # Wenn vom PV-Ertrag der Speicher geladen wird, kann diese Leistung bis zur max Ausgangsleistung des WR
         # genutzt werden.
