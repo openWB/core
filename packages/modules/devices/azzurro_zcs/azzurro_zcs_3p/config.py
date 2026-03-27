@@ -34,5 +34,6 @@ class ZCSPvInverterSetup(ComponentSetup[ZCSPvInverterConfiguration]):
                  name: str = "ZCS Azzurro Wechselrichter",
                  type: str = "pv_inverter",
                  id: int = 0,
-                 configuration: ZCSPvInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or ZCSPvInverterConfiguration())
+                 configuration: ZCSPvInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or ZCSPvInverterConfiguration(), **kwargs)

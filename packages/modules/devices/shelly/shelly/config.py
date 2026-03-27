@@ -39,8 +39,9 @@ class ShellyCounterSetup(ComponentSetup[ShellyCounterConfiguration]):
                  name: str = "Shelly Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: ShellyCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or ShellyCounterConfiguration())
+                 configuration: ShellyCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or ShellyCounterConfiguration(), **kwargs)
 
 
 @auto_str
@@ -55,8 +56,9 @@ class ShellyInverterSetup(ComponentSetup[ShellyInverterConfiguration]):
                  name: str = "Shelly Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: ShellyInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or ShellyInverterConfiguration())
+                 configuration: ShellyInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or ShellyInverterConfiguration(), **kwargs)
 
 
 @auto_str
@@ -71,5 +73,6 @@ class ShellyBatSetup(ComponentSetup[ShellyBatConfiguration]):
                  name: str = "Shelly Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: ShellyBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or ShellyBatConfiguration())
+                 configuration: ShellyBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or ShellyBatConfiguration(), **kwargs)

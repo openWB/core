@@ -37,5 +37,6 @@ class SungrowMicroInverterSetup(ComponentSetup[SungrowMicroInverterConfiguration
                  name: str = "Sungrow Microwechselrichter SxxxxS",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: SungrowMicroInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SungrowMicroInverterConfiguration())
+                 configuration: SungrowMicroInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SungrowMicroInverterConfiguration(), **kwargs)

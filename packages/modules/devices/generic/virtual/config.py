@@ -30,5 +30,6 @@ class VirtualCounterSetup(ComponentSetup[VirtualCounterConfiguration]):
                  name: str = "Virtueller Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: VirtualCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or VirtualCounterConfiguration())
+                 configuration: VirtualCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or VirtualCounterConfiguration(), **kwargs)

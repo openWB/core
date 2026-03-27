@@ -33,5 +33,6 @@ class SmaSunnyIslandBatSetup(ComponentSetup[SmaSunnyIslandBatConfiguration]):
                  name: str = "SMA Sunny Island Speicher, Sunny Tripower X",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: SmaSunnyIslandBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SmaSunnyIslandBatConfiguration())
+                 configuration: SmaSunnyIslandBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SmaSunnyIslandBatConfiguration(), **kwargs)

@@ -30,5 +30,6 @@ class BatKitBatSetup(ComponentSetup[BatKitBatConfiguration]):
                  name: str = "openWB Speicher-Kit",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: BatKitBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or BatKitBatConfiguration())
+                 configuration: BatKitBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or BatKitBatConfiguration(), **kwargs)
