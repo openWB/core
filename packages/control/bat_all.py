@@ -180,8 +180,8 @@ class BatAll:
             log.exception("Fehler im Bat-Modul")
 
     def _get_pv_power_beyond_max_ac_out(self, inverter: Pv) -> float:
-        """gibt die maximale Entladeleistung des Speichers zurück, bis die maximale Ausgangsleistung des WR erreicht
-        ist."""
+        """gibt die PV-Leistung zurück, die über der maximalen Ausgangsleistung des Wechselrichters liegt und somit
+        nicht für die Entadung des Speichers genutzt werden kann."""
         # tested
         # Wenn vom PV-Ertrag der Speicher geladen wird, kann diese Leistung bis zur max Ausgangsleistung des WR
         # genutzt werden.
@@ -202,9 +202,21 @@ class BatAll:
                 except Exception:
                     log.exception(f"Fehler im Bat-Modul {inverter.num}")
             max_inverter_power_for_bat = self.data.get.power - pv_power_beyond_max_ac_out
-            required_power = max(min(required_power, max_inverter_power_for_bat), 0)
-            log.debug(f"Verbleibende Speicher-Leistung durch maximale Ausgangsleistung auf {required_power}W"
-                      " begrenzt.")
+            # Wenn max_inverter_power_for_bat nur deshalb negativ ist, weil der Speicher aktuell bereits entlädt
+            # (self.data.get.power < 0) und keine PV-Leistung über der maximalen WR-Ausgangsleistung anliegt
+            # (pv_power_beyond_max_ac_out == 0), dann würde eine Begrenzung auf 0W die noch verfügbare
+            # Entladeleistung fälschlicherweise unterdrücken. In diesem Fall wenden wir keine zusätzliche
+            # Begrenzung durch die WR-Ausgangsleistung an.
+            if not (max_inverter_power_for_bat < 0 and self.data.get.power < 0 and pv_power_beyond_max_ac_out == 0):
+                required_power = max(min(required_power, max_inverter_power_for_bat), 0)
+                log.debug(
+                    f"Verbleibende Speicher-Leistung durch maximale Ausgangsleistung auf {required_power}W begrenzt."
+                )
+            else:
+                log.debug(
+                    "Speicher-Entladeleistung nicht durch maximale WR-Ausgangsleistung begrenzt, da der "
+                    "Speicher bereits entlädt und keine PV-Leistung über der maximalen WR-Ausgangsleistung anliegt."
+                )
         return required_power
 
     def _set_bat_power_active_control(self, power):

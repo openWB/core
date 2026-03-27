@@ -16,7 +16,7 @@ from modules.devices.generic.mqtt.bat import MqttBat
 from modules.devices.generic.mqtt.config import MqttBatSetup
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def data_fixture() -> None:
     data.data_init(Mock())
     data.data.general_data = General()
@@ -58,7 +58,8 @@ def test_pv_power_beyond_max_ac_out(max_ac_out: int, power: int, expected_result
         pytest.param(3000, 3000, 2000, 1000, id="max Leistung des WR um 2000W überschritten"),
         pytest.param(3000, 5000, 2000, 1000, id="max Leistung des WR um 2000W überschritten, " +
                      "erlaubte Entladeleistung höher als aktuelle Leistung"),
-        pytest.param(-1000, -1000, 10, -1000, id="Speicher soll nicht mehr entladen werden"),
+        pytest.param(-1000, 1100, 0, 1100, id="Speicher entlädt, soll entladen"),
+        pytest.param(-1000, -600, 0, -600, id="Speicher entlädt, soll weniger entladen"),
     ])
 def test_limit_bat_power_discharge(bat_power: int,
                                    required_power: int,
