@@ -220,11 +220,15 @@ const draw = computed(() => {
 		.attr('stroke-width', (d) => ((d as number) % 5 == 0 ? '2' : '0.5'))
 	yAxis.select('.domain').attr('stroke', 'var(--color-bg)')
 	// Tooltips
-	const ttips: Selection<SVGGElement, [Date, number], BaseType, unknown> =
-		select('g#tooltips').selectAll('ttip')
-
-	ttips.selectAll('*').remove()
-	ttips.data(plotdata.value).enter().append('g').attr('class', 'ttarea')
+	const ttarea: Selection<SVGGElement, [Date, number], BaseType, unknown> =
+		select('g#tooltips')
+	ttarea.selectAll('*').remove()
+	const ttips = ttarea
+		.selectAll('ttip')
+		.data(plotdata.value)
+		.enter()
+		.append('g')
+		.attr('class', 'ttarea')
 	ttips
 		.append('rect')
 		.attr('x', (d) => xScale.value(d[0]))
