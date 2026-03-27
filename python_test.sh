@@ -1,0 +1,1 @@
+PYTHONPATH="/var/www/html/openWB/packages" python3.9 -m pytest -vv -o log_cli=true --log-cli-level=DEBUG; python3.9 -m flake8 --max-line-length 120 /var/www/html/openWB/packages --exclude='/var/www/html/openWB/packages/modules/display_themes','/var/www/html/openWB/packages/modules/web_themes'
