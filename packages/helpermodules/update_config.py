@@ -3123,29 +3123,44 @@ class UpdateConfig:
 
         def _add_colors_to_log(file):
             colors = {}
-            with open(file, "r+") as jsonFile:
-                content_raw = jsonFile.read()
-                content = json.loads(content_raw)
-                if "colors" in content:
-                    return
-                for key in content["names"].keys():
-                    if "bat" in key:
-                        colors[key] = DEFAULT_COLORS["BATTERY"]
-                    elif "counter" in key:
-                        colors[key] = DEFAULT_COLORS["COUNTER"]
-                    elif "cp" in key:
-                        colors[key] = DEFAULT_COLORS["CHARGEPOINT"]
-                    elif "ev" in key:
-                        colors[key] = DEFAULT_COLORS["VEHICLE"]
-                    elif "pv" in key:
-                        colors[key] = DEFAULT_COLORS["INVERTER"]
-                    else:
-                        colors[key] = DEFAULT_COLORS["UNKNOWN"]
-                content["colors"] = colors
-                jsonFile.seek(0)
-                jsonFile.write(json.dumps(content))
-                jsonFile.truncate()
+            try:
+                with open(file, "r+") as jsonFile:
+                    content_raw = jsonFile.read()
+                    try:
+                        content = json.loads(content_raw)
+                    except json.JSONDecodeError:
+                        log.warning("Skipping invalid log file (JSON decode failed): %s", file)
+                        return
 
+                    if "colors" in content:
+                        return
+
+                    names = content.get("names", {})
+                    if not isinstance(names, dict):
+                        log.warning("Skipping log file without valid 'names' mapping: %s", file)
+                        return
+
+                    for key in names.keys():
+                        if "bat" in key:
+                            colors[key] = DEFAULT_COLORS["BATTERY"]
+                        elif "counter" in key:
+                            colors[key] = DEFAULT_COLORS["COUNTER"]
+                        elif "cp" in key:
+                            colors[key] = DEFAULT_COLORS["CHARGEPOINT"]
+                        elif "ev" in key:
+                            colors[key] = DEFAULT_COLORS["VEHICLE"]
+                        elif "inverter" in key:
+                            colors[key] = DEFAULT_COLORS["INVERTER"]
+                        else:
+                            colors[key] = DEFAULT_COLORS["UNKNOWN"]
+
+                    content["colors"] = colors
+                    jsonFile.seek(0)
+                    jsonFile.write(json.dumps(content))
+                    jsonFile.truncate()
+            except OSError:
+                # If the file cannot be opened or written, skip it without aborting the upgrade.
+                log.warning("Skipping log file due to I/O error: %s", file)
         def add_colors_to_logs():
             files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
             files.extend(glob.glob(str(self.base_path / "data" / "monthly_log") + "/*"))
