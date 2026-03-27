@@ -3357,6 +3357,7 @@ class UpdateConfig:
             except OSError:
                 # If the file cannot be opened or written, skip it without aborting the upgrade.
                 log.warning("Skipping log file due to I/O error: %s", file)
+
         def add_colors_to_logs():
             files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
             files.extend(glob.glob(str(self.base_path / "data" / "monthly_log") + "/*"))
