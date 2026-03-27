@@ -39,8 +39,9 @@ class VZLoggerCounterSetup(ComponentSetup[VZLoggerCounterConfiguration]):
                  name: str = "VZLogger Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: VZLoggerCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or VZLoggerCounterConfiguration())
+                 configuration: VZLoggerCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or VZLoggerCounterConfiguration(), **kwargs)
 
 
 @auto_str
@@ -56,5 +57,6 @@ class VZLoggerInverterSetup(ComponentSetup[VZLoggerInverterConfiguration]):
                  name: str = "VZLogger Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: VZLoggerInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or VZLoggerInverterConfiguration())
+                 configuration: VZLoggerInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or VZLoggerInverterConfiguration(), **kwargs)

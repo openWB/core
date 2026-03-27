@@ -43,8 +43,9 @@ class JsonBatSetup(ComponentSetup[JsonBatConfiguration]):
                  name: str = "Json Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: JsonBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or JsonBatConfiguration())
+                 configuration: JsonBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or JsonBatConfiguration(), **kwargs)
 
 
 class JsonCounterConfiguration:
@@ -78,8 +79,9 @@ class JsonCounterSetup(ComponentSetup[JsonCounterConfiguration]):
                  name: str = "Json Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: JsonCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or JsonCounterConfiguration())
+                 configuration: JsonCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or JsonCounterConfiguration(), **kwargs)
 
 
 class JsonInverterConfiguration:
@@ -99,5 +101,6 @@ class JsonInverterSetup(ComponentSetup[JsonInverterConfiguration]):
                  name: str = "Json Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: JsonInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or JsonInverterConfiguration())
+                 configuration: JsonInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or JsonInverterConfiguration(), **kwargs)

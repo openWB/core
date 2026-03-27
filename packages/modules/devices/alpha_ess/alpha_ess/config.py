@@ -39,8 +39,9 @@ class AlphaEssBatSetup(ComponentSetup[AlphaEssBatConfiguration]):
                  name: str = "Alpha ESS Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: AlphaEssBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or AlphaEssBatConfiguration())
+                 configuration: AlphaEssBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or AlphaEssBatConfiguration(), **kwargs)
 
 
 class AlphaEssCounterConfiguration:
@@ -53,8 +54,9 @@ class AlphaEssCounterSetup(ComponentSetup[AlphaEssCounterConfiguration]):
                  name: str = "Alpha ESS Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: AlphaEssCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or AlphaEssCounterConfiguration())
+                 configuration: AlphaEssCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or AlphaEssCounterConfiguration(), **kwargs)
 
 
 class AlphaEssInverterConfiguration:
@@ -67,5 +69,6 @@ class AlphaEssInverterSetup(ComponentSetup[AlphaEssInverterConfiguration]):
                  name: str = "Alpha ESS Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: AlphaEssInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or AlphaEssInverterConfiguration())
+                 configuration: AlphaEssInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or AlphaEssInverterConfiguration(), **kwargs)

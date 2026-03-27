@@ -38,8 +38,9 @@ class SigenergyBatSetup(ComponentSetup[SigenergyBatConfiguration]):
                  name: str = "Sigenergy Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: SigenergyBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SigenergyBatConfiguration())
+                 configuration: SigenergyBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SigenergyBatConfiguration(), **kwargs)
 
 
 @auto_str
@@ -54,8 +55,9 @@ class SigenergyCounterSetup(ComponentSetup[SigenergyCounterConfiguration]):
                  name: str = "Sigenergy Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: SigenergyCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SigenergyCounterConfiguration())
+                 configuration: SigenergyCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SigenergyCounterConfiguration(), **kwargs)
 
 
 @auto_str
@@ -70,5 +72,6 @@ class SigenergyInverterSetup(ComponentSetup[SigenergyInverterConfiguration]):
                  name: str = "Sigenergy Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: SigenergyInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SigenergyInverterConfiguration())
+                 configuration: SigenergyInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SigenergyInverterConfiguration(), **kwargs)

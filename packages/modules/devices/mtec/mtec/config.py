@@ -39,8 +39,9 @@ class MTecBatSetup(ComponentSetup[MTecBatConfiguration]):
                  name: str = "M-Tec Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: MTecBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or MTecBatConfiguration())
+                 configuration: MTecBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or MTecBatConfiguration(), **kwargs)
 
 
 @auto_str
@@ -55,8 +56,9 @@ class MTecCounterSetup(ComponentSetup[MTecCounterConfiguration]):
                  name: str = "M-Tec Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: MTecCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or MTecCounterConfiguration())
+                 configuration: MTecCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or MTecCounterConfiguration(), **kwargs)
 
 
 @auto_str
@@ -71,5 +73,6 @@ class MTecInverterSetup(ComponentSetup[MTecInverterConfiguration]):
                  name: str = "M-Tec Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: MTecInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or MTecInverterConfiguration())
+                 configuration: MTecInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or MTecInverterConfiguration(), **kwargs)

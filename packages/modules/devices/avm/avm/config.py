@@ -46,5 +46,6 @@ class AvmCounterSetup(ComponentSetup[AvmCounterConfiguration]):
                  name: str = "Avm Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: AvmCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or AvmCounterConfiguration())
+                 configuration: AvmCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or AvmCounterConfiguration(), **kwargs)
