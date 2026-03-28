@@ -1,6 +1,5 @@
 import json
 import logging
-import os
 import time
 import urllib.error
 import urllib.parse
@@ -19,19 +18,21 @@ log = logging.getLogger(__name__)
 
 BMW_AUTH_URL = "https://customer.bmwgroup.com/gcdm/oauth"
 BMW_API_URL = "https://api-cardata.bmwgroup.com"
-TOKEN_FILE = "/var/www/html/openWB/data/bmw_cardata_tokens.json"
 
 FIELD_SOC = "vehicle.drivetrain.electricEngine.charging.level"
 FIELD_SOC_ALT = "vehicle.drivetrain.batteryManagement.header"
 FIELD_RANGE = "vehicle.drivetrain.electricEngine.remainingElectricRange"
 FIELD_STATUS = "vehicle.drivetrain.electricEngine.charging.status"
+FIELD_ODOMETER = "vehicle.vehicle.travelledDistance"
 
-DEFAULT_CONTAINER_NAME = "ChargeStats"
-DEFAULT_CONTAINER_PURPOSE = "openWB"
-DEFAULT_CONTAINER_DESCRIPTORS = [
+CONTAINER_NAME = "ChargeStats"
+CONTAINER_PURPOSE = "openWB"
+CONTAINER_DESCRIPTORS = [
     "vehicle.drivetrain.electricEngine.charging.status",
+    "vehicle.drivetrain.electricEngine.charging.level",
     "vehicle.drivetrain.batteryManagement.header",
     "vehicle.drivetrain.electricEngine.remainingElectricRange",
+    "vehicle.vehicle.travelledDistance",
 ]
 
 
@@ -81,54 +82,12 @@ def http_get(url: str, token: str) -> dict:
         raise Exception(f"BMW CarData HTTP-GET Fehler {e.code}: {body[:300]}")
 
 
-def save_tokens(tokens: dict, container_id: str = None):
-    existing = load_tokens() or {}
-    data = {
-        "access_token": tokens["access_token"],
-        "refresh_token": tokens["refresh_token"],
-        "id_token": tokens.get("id_token"),
-        "expires_at": time.time() + tokens.get("expires_in", 3600) - 60,
-        "container_id": container_id if container_id is not None else existing.get("container_id"),
-    }
-    with open(TOKEN_FILE, "w") as f:
-        json.dump(data, f, indent=2)
-    os.chmod(TOKEN_FILE, 0o600)
-    log.debug("BMW CarData: Tokens gespeichert: %s", TOKEN_FILE)
+def get_valid_token(cfg: BmwCardataConfiguration) -> str:
+    if not cfg.access_token:
+        raise Exception("BMW CarData: Keine Tokens gefunden. Bitte BMW-Kopplung in der UI durchführen.")
 
-
-def load_tokens() -> dict:
-    if not os.path.exists(TOKEN_FILE):
-        return None
-    with open(TOKEN_FILE) as f:
-        return json.load(f)
-
-
-def update_container_id(container_id: str):
-    tokens = load_tokens() or {}
-    tokens["container_id"] = container_id
-    with open(TOKEN_FILE, "w") as f:
-        json.dump(tokens, f, indent=2)
-    os.chmod(TOKEN_FILE, 0o600)
-    log.info("BMW CarData: Container-ID gespeichert: %s", container_id)
-
-
-def clear_container_id():
-    tokens = load_tokens() or {}
-    if "container_id" in tokens:
-        tokens.pop("container_id", None)
-        with open(TOKEN_FILE, "w") as f:
-            json.dump(tokens, f, indent=2)
-        os.chmod(TOKEN_FILE, 0o600)
-        log.warning("BMW CarData: Gespeicherte Container-ID verworfen.")
-
-
-def get_valid_token(client_id: str) -> str:
-    tokens = load_tokens()
-    if not tokens:
-        raise Exception("BMW CarData: Keine Tokens gefunden. Bitte einmalig auth.py ausführen.")
-
-    if time.time() < tokens.get("expires_at", 0):
-        return tokens["access_token"]
+    if time.time() < cfg.expires_at:
+        return cfg.access_token
 
     log.info("BMW CarData: Token abgelaufen, führe Refresh durch...")
     try:
@@ -136,72 +95,55 @@ def get_valid_token(client_id: str) -> str:
             f"{BMW_AUTH_URL}/token",
             {
                 "grant_type": "refresh_token",
-                "refresh_token": tokens["refresh_token"],
-                "client_id": client_id,
+                "refresh_token": cfg.refresh_token,
+                "client_id": cfg.client_id,
             },
         )
-        save_tokens(new)
+        cfg.access_token = new["access_token"]
+        cfg.refresh_token = new.get("refresh_token", cfg.refresh_token)
+        cfg.expires_at = time.time() + new.get("expires_in", 3600) - 60
         log.info("BMW CarData: Token-Refresh erfolgreich.")
-        return new["access_token"]
+        return cfg.access_token
     except Exception as e:
         raise Exception(
-            f"BMW CarData: Token-Refresh fehlgeschlagen: {e}. Bitte auth.py erneut ausführen."
+            f"BMW CarData: Token-Refresh fehlgeschlagen: {e}. Bitte BMW-Kopplung erneut durchführen."
         )
 
 
-def list_containers(token: str) -> list:
-    raw = http_get(f"{BMW_API_URL}/customers/containers", token)
-    return raw if isinstance(raw, list) else raw.get("containers", [])
-
-
-def create_container(token: str) -> str:
-    body = {
-        "name": DEFAULT_CONTAINER_NAME,
-        "purpose": DEFAULT_CONTAINER_PURPOSE,
-        "technicalDescriptors": DEFAULT_CONTAINER_DESCRIPTORS,
-    }
-    log.info("BMW CarData: Erstelle Container automatisch...")
-    result = http_post_json(f"{BMW_API_URL}/customers/containers", token, body)
-    cid = result.get("containerId") or result.get("id")
-    if not cid:
-        raise Exception(f"BMW CarData: Container konnte nicht erstellt werden: {result}")
-    log.info("BMW CarData: Container erstellt: %s", cid)
-    return cid
-
-
-def get_container_id(token: str, allow_create: bool = True, force_refresh: bool = False) -> str:
-    tokens = load_tokens() or {}
-
-    if not force_refresh:
-        cid = tokens.get("container_id")
-        if cid:
-            log.debug("BMW CarData: Container-ID aus Datei: %s", cid)
-            return cid
+def get_container_id(cfg: BmwCardataConfiguration, token: str) -> str:
+    if cfg.container_id:
+        log.debug("BMW CarData: Container-ID aus Konfiguration: %s", cfg.container_id)
+        return cfg.container_id
 
     log.info("BMW CarData: Ermittle Container-ID via API...")
-    containers = list_containers(token)
+    raw = http_get(f"{BMW_API_URL}/customers/containers", token)
+    containers = raw if isinstance(raw, list) else raw.get("containers", [])
+
+    openwb = [
+        c for c in containers
+        if c.get("state") == "ACTIVE" and c.get("purpose") == CONTAINER_PURPOSE
+    ]
     active = [c for c in containers if c.get("state") == "ACTIVE"]
+    preferred = openwb if openwb else active
 
-    if active:
-        cid = active[0].get("containerId") or active[0].get("id")
+    if preferred:
+        cid = preferred[0].get("containerId") or preferred[0].get("id")
+        log.info("BMW CarData: Container-ID gefunden: %s", cid)
+    else:
+        log.warning("BMW CarData: Keine aktiven Container gefunden. Erstelle neuen Container...")
+        body = {
+            "name": CONTAINER_NAME,
+            "purpose": CONTAINER_PURPOSE,
+            "technicalDescriptors": CONTAINER_DESCRIPTORS,
+        }
+        result = http_post_json(f"{BMW_API_URL}/customers/containers", token, body)
+        cid = result.get("containerId") or result.get("id")
         if not cid:
-            raise Exception("BMW CarData: Aktiver Container gefunden, aber ohne containerId.")
-        update_container_id(cid)
-        return cid
+            raise Exception(f"BMW CarData: Container konnte nicht erstellt werden: {result}")
+        log.info("BMW CarData: Container erstellt: %s", cid)
 
-    if not allow_create:
-        raise Exception("BMW CarData: Keine aktiven Container gefunden!")
-
-    log.warning("BMW CarData: Keine aktiven Container gefunden. Versuche Auto-Create...")
-    cid = create_container(token)
-    update_container_id(cid)
+    cfg.container_id = cid
     return cid
-
-
-def fetch_telematic_data(token: str, vin: str, container_id: str) -> dict:
-    url = f"{BMW_API_URL}/customers/vehicles/{vin}/telematicData?containerId={container_id}"
-    log.debug("BMW CarData: GET %s", url)
-    return http_get(url, token)
 
 
 def fetch_soc(config: BmwCardataSetup) -> CarState:
@@ -220,18 +162,24 @@ def fetch_soc(config: BmwCardataSetup) -> CarState:
     if not cfg.vin:
         raise Exception("BMW CarData: VIN nicht konfiguriert!")
 
-    token = get_valid_token(cfg.client_id)
-    cid = get_container_id(token)
+    token = get_valid_token(cfg)
+    cid = get_container_id(cfg, token)
+
+    url = f"{BMW_API_URL}/customers/vehicles/{cfg.vin}/telematicData?containerId={cid}"
+    log.debug("BMW CarData: GET %s", url)
 
     try:
-        raw = fetch_telematic_data(token, cfg.vin, cid)
+        raw = http_get(url, token)
     except Exception as e:
         msg = str(e)
         if "HTTP-GET Fehler 404" in msg or "HTTP-GET Fehler 400" in msg:
-            log.warning("BMW CarData: Gespeicherter Container scheint ungültig. Versuche Neuermittlung...")
-            clear_container_id()
-            cid = get_container_id(token, allow_create=True, force_refresh=True)
-            raw = fetch_telematic_data(token, cfg.vin, cid)
+            log.warning("BMW CarData: Container ungültig, ermittle neu...")
+            cfg.container_id = ""
+            cid = get_container_id(cfg, token)
+            raw = http_get(
+                f"{BMW_API_URL}/customers/vehicles/{cfg.vin}/telematicData?containerId={cid}",
+                token
+            )
         else:
             raise
 
@@ -244,14 +192,17 @@ def fetch_soc(config: BmwCardataSetup) -> CarState:
     soc_raw = val(FIELD_SOC) or val(FIELD_SOC_ALT)
     rng_raw = val(FIELD_RANGE)
     status = val(FIELD_STATUS)
+    odo_raw = val(FIELD_ODOMETER)
 
     soc = int(float(soc_raw)) if soc_raw is not None else None
     rng = int(float(rng_raw)) if rng_raw is not None else None
+    odo = int(float(odo_raw)) if odo_raw is not None else None
 
     if soc is None:
         raise Exception("BMW CarData: Kein SoC-Wert in API-Antwort gefunden!")
 
-    log.info("BMW CarData: SoC=%s%%, Reichweite=%s km, Status=%s", soc, rng, status)
+    log.info("BMW CarData: SoC=%s%%, Reichweite=%s km, Status=%s, Odometer=%s km",
+             soc, rng, status, odo)
     return CarState(soc=soc, range=rng)
 
 
