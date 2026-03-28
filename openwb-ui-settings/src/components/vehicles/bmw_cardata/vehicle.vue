@@ -6,36 +6,9 @@
       SoC und Reichweite kommen aus den Testwerten.
     </openwb-base-alert>
 
-    <openwb-base-alert
-      v-else-if="authStatus.connected"
-      subtype="success"
-    >
+    <openwb-base-alert v-else-if="isConnected" subtype="success">
       <b>BMW verbunden</b><br />
       Tokens vorhanden. BMW CarData kann genutzt werden.
-      <template v-if="authStatus.message">
-        <br />
-        {{ authStatus.message }}
-      </template>
-    </openwb-base-alert>
-
-    <openwb-base-alert
-      v-else-if="authStatus.user_code"
-      subtype="info"
-    >
-      <b>BMW Auth läuft</b><br />
-      BMW-Seite öffnen und Code bestätigen.<br />
-      <span v-if="authStatus.verification_uri">
-        URL:
-        <a :href="authStatus.verification_uri" target="_blank" rel="noopener noreferrer">
-          {{ authStatus.verification_uri }}
-        </a>
-        <br />
-      </span>
-      Code: <b>{{ authStatus.user_code }}</b>
-      <template v-if="authStatus.message">
-        <br />
-        {{ authStatus.message }}
-      </template>
     </openwb-base-alert>
 
     <openwb-base-alert v-else subtype="warning">
@@ -50,7 +23,7 @@
         { buttonValue: false, text: 'Nein', class: 'btn-outline-danger' }
       ]"
       :model-value="vehicle.configuration.test_mode"
-      @update:model-value="handleTestModeChange"
+      @update:model-value="updateConfiguration($event, 'configuration.test_mode')"
     >
       <template #help>
         Im Testmodus werden keine BMW-Daten abgefragt.
@@ -112,19 +85,18 @@
       <openwb-base-alert subtype="secondary">
         <b>BMW Verbindung</b><br />
         Status:
-        <span v-if="isLoadingStatus"><b>Wird geprüft…</b></span>
-        <span v-else-if="authStatus.connected"><b>Verbunden</b></span>
-        <span v-else-if="authStatus.user_code"><b>Authentifizierung läuft</b></span>
+        <span v-if="isConnected"><b>Verbunden</b></span>
         <span v-else><b>Nicht verbunden</b></span>
-        <template v-if="authStatus.message">
-          <br />
-          {{ authStatus.message }}
-        </template>
+        <br />
+        <span v-if="authStatus.message">{{ authStatus.message }}</span>
       </openwb-base-alert>
 
       <openwb-base-button-group-input
         title="BMW Auth"
-        :buttons="authButtons"
+        :buttons="[
+          { buttonValue: 'start', text: 'BMW koppeln', class: 'btn-outline-primary' },
+          { buttonValue: 'refresh', text: 'Status aktualisieren', class: 'btn-outline-secondary' }
+        ]"
         :model-value="null"
         @update:model-value="handleAuthAction"
       >
@@ -133,9 +105,15 @@
         </template>
       </openwb-base-button-group-input>
 
-      <openwb-base-alert v-if="statusInfo" subtype="secondary">
-        <b>Statusinfo</b><br />
-        {{ statusInfo }}
+      <openwb-base-alert v-if="authStatus.user_code && !isConnected" subtype="info">
+        <b>BMW Auth läuft</b><br />
+        URL: {{ authStatus.verification_uri }}<br />
+        Code: <b>{{ authStatus.user_code }}</b>
+      </openwb-base-alert>
+
+      <openwb-base-alert v-if="authStatus.justConnected" subtype="success">
+        <b>BMW erfolgreich verbunden!</b><br />
+        Bitte jetzt auf <b>"Speichern"</b> klicken um die Verbindung dauerhaft zu sichern.
       </openwb-base-alert>
 
       <openwb-base-alert v-if="authStatus.error" subtype="danger">
@@ -161,9 +139,9 @@
     <openwb-base-alert subtype="secondary">
       <b>Technische Hinweise:</b><br />
       • Testmodus = 0 BMW-API-Calls<br />
-      • Auth-Status prüft nur die lokale Verbindung / Tokens<br />
-      • Live-Modus (mit Container-ID) ≈ 1 BMW-Call pro SoC-Abfrage<br />
-      • Bei Token-Refresh kurzzeitig zusätzlicher OAuth-Call möglich
+      • Live-Modus (mit Container-ID) ≈ 1 Call pro Abfrage<br />
+      • Bei Token-Refresh kurzzeitig mehr Calls möglich<br />
+      • Token läuft ab am: {{ tokenExpiry }}
     </openwb-base-alert>
   </div>
 </template>
@@ -177,217 +155,124 @@ export default {
   data() {
     return {
       authStatus: {
-        connected: false,
         message: "",
         user_code: "",
         verification_uri: "",
         error: "",
+        justConnected: false,
       },
       pollTimer: null,
-      isLoadingStatus: false,
-      isStartingAuth: false,
-      lastStatusCheckFailed: false,
     };
   },
   computed: {
-    authButtons() {
-      return [
-        {
-          buttonValue: "start",
-          text: this.isStartingAuth ? "BMW koppeln läuft…" : "BMW koppeln",
-          class: "btn-outline-primary",
-        },
-        {
-          buttonValue: "refresh",
-          text: this.isLoadingStatus ? "Status wird geladen…" : "Status aktualisieren",
-          class: "btn-outline-secondary",
-        },
-      ];
+    isConnected() {
+      return !!this.vehicle.configuration.access_token;
     },
-    statusInfo() {
-      if (this.isStartingAuth) {
-        return "BMW Auth wird gestartet…";
-      }
-      if (this.isLoadingStatus) {
-        return "Verbindungsstatus wird geprüft…";
-      }
-      if (this.lastStatusCheckFailed) {
-        return "Letzte Statusprüfung war nicht erfolgreich.";
-      }
-      return "";
+    tokenExpiry() {
+      const expires_at = this.vehicle.configuration.expires_at;
+      if (!expires_at) return "unbekannt";
+      const date = new Date(expires_at * 1000);
+      return date.toLocaleString("de-DE");
     },
-  },
-  mounted() {
-    if (!this.vehicle.configuration.test_mode) {
-      this.loadAuthStatus();
-    }
   },
   beforeUnmount() {
-    this.stopPolling();
+    if (this.pollTimer) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = null;
+    }
   },
   methods: {
-    handleTestModeChange(value) {
-      this.updateConfiguration(value, "configuration.test_mode");
-
-      if (value) {
-        this.stopPolling();
-        this.resetAuthUiState();
-      } else {
-        this.loadAuthStatus();
-      }
-    },
-
-    resetAuthUiState() {
-      this.authStatus = {
-        connected: false,
-        message: "",
-        user_code: "",
-        verification_uri: "",
-        error: "",
-      };
-      this.isLoadingStatus = false;
-      this.isStartingAuth = false;
-      this.lastStatusCheckFailed = false;
-    },
-
-    stopPolling() {
-      if (this.pollTimer) {
-        clearInterval(this.pollTimer);
-        this.pollTimer = null;
-      }
-    },
-
-    startPolling() {
-      if (!this.pollTimer) {
-        this.pollTimer = setInterval(() => {
-          this.loadAuthStatus({ silent: true });
-        }, 5000);
-      }
-    },
-
-    applyAuthStatus(data) {
-      this.authStatus = {
-        connected: !!data.connected,
-        message: data.message || "",
-        user_code: data.user_code || "",
-        verification_uri: data.verification_uri || "",
-        error: data.error || "",
-      };
-
-      if (this.authStatus.connected) {
-        this.stopPolling();
-      } else if (this.authStatus.user_code) {
-        this.startPolling();
-      } else {
-        this.stopPolling();
-      }
-    },
-
-    async parseJsonResponse(response, endpointName) {
-      const rawText = await response.text();
-
-      if (!response.ok) {
-        throw new Error(
-          `${endpointName} lieferte HTTP ${response.status}: ${rawText || "keine Antwort"}`
-        );
-      }
-
-      try {
-        return rawText ? JSON.parse(rawText) : {};
-      } catch (error) {
-        throw new Error(
-          `${endpointName} lieferte kein gültiges JSON. Antwort: ${rawText.substring(0, 500)}`
-        );
-      }
-    },
-
-    async loadAuthStatus(options = {}) {
-      const { silent = false } = options;
-
-      if (this.vehicle.configuration.test_mode) {
-        this.stopPolling();
-        return;
-      }
-
-      if (!silent) {
-        this.isLoadingStatus = true;
-      }
-
-      this.lastStatusCheckFailed = false;
-
-      try {
-        const response = await fetch("/openWB/web/bmw_cardata/bmw_cardata_auth_status.php", {
-          cache: "no-store",
-        });
-
-        const data = await this.parseJsonResponse(response, "Auth-Status");
-        this.applyAuthStatus(data);
-      } catch (error) {
-        console.error("BMW auth status error:", error);
-        this.stopPolling();
-        this.lastStatusCheckFailed = true;
-        this.authStatus = {
-          connected: false,
-          message: "",
-          user_code: "",
-          verification_uri: "",
-          error: "Auth-Status konnte nicht geladen werden.",
-        };
-      } finally {
-        if (!silent) {
-          this.isLoadingStatus = false;
-        }
-      }
-    },
-
     async handleAuthAction(action) {
       if (action === "refresh") {
-        if (this.isLoadingStatus || this.isStartingAuth) {
+        this.authStatus.message = this.isConnected ? "BMW verbunden." : "Keine gültige Verbindung hinterlegt.";
+        this.authStatus.error = "";
+        this.authStatus.justConnected = false;
+        return;
+      }
+      if (action === "start") {
+        if (!this.vehicle.configuration.client_id) {
+          this.authStatus.error = "Bitte zuerst die Client ID eintragen und speichern.";
           return;
         }
-        await this.loadAuthStatus();
-        return;
+        this.startAuth();
       }
+    },
 
-      if (action !== "start") {
-        return;
-      }
-
-      if (this.isStartingAuth || this.isLoadingStatus) {
-        return;
-      }
-
-      if (!this.vehicle.configuration.client_id) {
-        this.authStatus.error = "Bitte zuerst die Client ID eintragen und speichern.";
-        return;
-      }
-
-      this.isStartingAuth = true;
-      this.lastStatusCheckFailed = false;
-      this.authStatus.error = "";
+    async startAuth() {
+      this.authStatus = { message: "Auth wird gestartet...", user_code: "", verification_uri: "", error: "", justConnected: false };
 
       try {
         const response = await fetch("/openWB/web/bmw_cardata/bmw_cardata_auth_start.php", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            client_id: this.vehicle.configuration.client_id,
-          }),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ client_id: this.vehicle.configuration.client_id }),
         });
+        const data = await response.json();
 
-        const data = await this.parseJsonResponse(response, "BMW Auth Start");
-        this.applyAuthStatus(data);
-
-        if (!this.authStatus.connected) {
-          await this.loadAuthStatus({ silent: true });
+        if (data.error) {
+          this.authStatus.error = data.error;
+          return;
         }
-      } catch (error) {
-        console.error("BMW auth start error:", error);
+
+        this.authStatus = {
+          message: data.message || "",
+          user_code: data.user_code || "",
+          verification_uri: data.verification_uri || "",
+          error: "",
+          justConnected: false,
+        };
+
+        if (data.user_code && !this.pollTimer) {
+          this.pollTimer = setInterval(() => this.pollAuthStatus(), 5000);
+        }
+      } catch {
         this.authStatus.error = "BMW Auth konnte nicht gestartet werden.";
-      } finally {
-        this.isStartingAuth = false;
+      }
+    },
+
+    async pollAuthStatus() {
+      try {
+        const response = await fetch("/openWB/web/bmw_cardata/bmw_cardata_auth_status.php", {
+          cache: "no-store",
+        });
+        const data = await response.json();
+
+        if (data.error) {
+          this.authStatus.error = data.error;
+          this.authStatus.message = "";
+          clearInterval(this.pollTimer);
+          this.pollTimer = null;
+          return;
+        }
+
+        if (data.connected && data.access_token) {
+          clearInterval(this.pollTimer);
+          this.pollTimer = null;
+
+          // Tokens in Konfiguration speichern
+          this.updateConfiguration(data.access_token, "configuration.access_token");
+          this.updateConfiguration(data.refresh_token || "", "configuration.refresh_token");
+          this.updateConfiguration(data.expires_at || 0, "configuration.expires_at");
+          this.updateConfiguration("", "configuration.container_id");
+
+          this.authStatus = {
+            message: "",
+            user_code: "",
+            verification_uri: "",
+            error: "",
+            justConnected: true,
+          };
+          return;
+        }
+
+        this.authStatus.message = data.message || "Warte auf BMW-Bestätigung...";
+        this.authStatus.user_code = data.user_code || this.authStatus.user_code;
+        this.authStatus.verification_uri = data.verification_uri || this.authStatus.verification_uri;
+
+      } catch {
+        this.authStatus.error = "Auth-Status konnte nicht geladen werden.";
+        clearInterval(this.pollTimer);
+        this.pollTimer = null;
       }
     },
   },
