@@ -28,6 +28,6 @@ def fetch_soc(conf: Cupra, vehicle: int) -> Union[int, float, str]:
 
     # get soc, range from server
     a = api(conf, vehicle)
-    soc, range, soc_ts, soc_tsX = loop.run_until_complete(a._fetch_soc())
+    soc, range, soc_ts, soc_tsX, odometer = loop.run_until_complete(a._fetch_soc())
 
-    return soc, range, soc_ts, soc_tsX
+    return soc, range, soc_ts, soc_tsX, odometer
