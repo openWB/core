@@ -3,6 +3,7 @@ import logging
 import datetime
 import time
 from typing import List, Tuple, Dict
+from dataclasses import dataclass
 
 from modules.electricity_pricing.flexible_tariffs.fixed_hours.config import (FixedHoursTariff,
                                                                              FixedHoursTariffConfiguration)
@@ -11,6 +12,14 @@ from modules.common.component_state import TariffState
 
 log = logging.getLogger(__name__)
 AS_EURO_PER_WH = 1000
+
+
+@dataclass
+class TimeSlot:
+    start_time: datetime.time
+    end_time: datetime.time
+    weekdays: List[int]
+    dates: List[Tuple[str, str]]
 
 
 def _to_time(time_str: str) -> datetime.time:
@@ -26,17 +35,31 @@ def _to_date(date_str: str, time_slot: datetime.datetime) -> datetime.date:
     return date
 
 
+def _date_ranges_overlap(slot1: TimeSlot, slot2: TimeSlot) -> bool:
+    def _single_range_overlap(range1: Tuple[str, str], range2: Tuple[str, str]) -> bool:
+        start1, end1 = _to_date(range1[0], datetime.datetime.now()), _to_date(range1[1], datetime.datetime.now())
+        start2, end2 = _to_date(range2[0], datetime.datetime.now()), _to_date(range2[1], datetime.datetime.now())
+        return start1 <= end2 and end1 >= start2
+    return any(_single_range_overlap(r1, r2) for r1 in slot1.dates for r2 in slot2.dates)
+
+
 def _validate_tariff_times(config: FixedHoursTariffConfiguration) -> None:
-    time_slots: List[Tuple[datetime.time, datetime.time, List[Tuple[str, str]]]] = []
+    time_slots: List[TimeSlot] = []
     for tariff in config.tariffs:
         for start, end in tariff["active_times"]["times"]:
             start_time = _to_time(start)
             end_time = _to_time(end)
-            for existing_start, existing_end, existing_dates in time_slots:
-                if (start_time < existing_end and end_time > existing_start and
-                        any(start <= existing_end and end >= existing_start for start, end in existing_dates)):
-                    raise ValueError(f"Overlapping time window detected: {start} - {end} in tariff '{tariff['name']}'")
-            time_slots.append((start_time, end_time, tariff["active_times"]["dates"]))
+            weekdays = tariff["active_times"]["weekdays"]
+            dates = tariff["active_times"]["dates"]
+            current_slot = TimeSlot(start_time, end_time, weekdays, dates)
+            for existing in time_slots:
+                if (start_time < existing.end_time and end_time > existing.start_time and
+                        not set(weekdays).isdisjoint(existing.weekdays) and
+                        _date_ranges_overlap(current_slot, existing)):
+                    overlapping_weekdays = set(weekdays) & set(existing.weekdays)
+                    raise ValueError(f"Overlapping time window detected: {start} - {end}"
+                                     f" on weekdays {sorted(overlapping_weekdays)} in tariff '{tariff['name']}'")
+            time_slots.append(current_slot)
 
 
 def _fetch(config: FixedHoursTariffConfiguration) -> TariffState:
@@ -53,8 +76,11 @@ def _fetch_price_for_time_slot(config: FixedHoursTariffConfiguration,
             (_to_date(start, time_slot), _to_date(end, time_slot))
             for start, end in tariff["active_times"]["dates"]
         ]
+        # If no weekdays specified, assume all days are active
+        weekdays = tariff["active_times"]["weekdays"] or range(7)
         if (any(start <= time_slot.time() < end for start, end in active_times) and
-                any(start <= time_slot.date() <= end for start, end in active_dates)):
+                any(start <= time_slot.date() <= end for start, end in active_dates) and
+                time_slot.weekday() in weekdays):
             return tariff["price"]
     return config.default_price
 

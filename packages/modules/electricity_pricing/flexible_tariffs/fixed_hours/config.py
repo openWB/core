@@ -9,6 +9,12 @@ class FixedHoursTariffConfiguration:
         self.default_price = default_price
         self.tariffs = tariffs if tariffs is not None else []
         self.update_hours = update_hours if update_hours is not None else list(range(24))
+
+        # Process tariffs to ensure weekdays list is present
+        for tariff in self.tariffs:
+            if "active_times" in tariff and "weekdays" not in tariff["active_times"]:
+                tariff["active_times"]["weekdays"] = list(range(7))  # Default to all weekdays
+
         '''
         Example configuration:
         "tariffs": [
@@ -17,6 +23,7 @@ class FixedHoursTariffConfiguration:
                 "price": 0.20,
                 "active_times": {
                     "dates": [("01-01", "31-03"), ("01-07", "30-09")],  # applicable date ranges (day-month)
+                    "weekdays": [0, 1, 2, 3, 4],  # active on weekdays (0=Monday, ..., 6=Sunday)
                     "times": [("08:00", "12:00"), ("18:00", "22:00")]  # active times during the day
                 }
             },
@@ -25,6 +32,7 @@ class FixedHoursTariffConfiguration:
                 "price": 0.05,
                 "active_times": {
                     "dates": [("01-04", "30-06"), ("01-10", "31-12")],  # applicable date ranges (day-month)
+                    "weekdays": [5, 6],  # active on weekends (0=Monday, ..., 6=Sunday)
                     "times": [("00:00", "06:00"), ("22:00", "23:59")]  # active times during the day
                 }
             }
