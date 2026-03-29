@@ -133,6 +133,56 @@ class TestValidateTariffTimes:
                 True,
                 id="adjacent_times",
             ),
+            # Overlapping times but different weekdays
+            pytest.param(
+                [
+                    {
+                        "name": "tariff1",
+                        "price": 100,
+                        "active_times": {
+                            "dates": [("01-01", "31-12")],
+                            "times": [("08:00", "12:00")],
+                            "weekdays": [0, 1, 2, 3, 4],  # active on weekdays
+                        },
+                    },
+                    {
+                        "name": "tariff2",
+                        "price": 200,
+                        "active_times": {
+                            "dates": [("01-01", "31-12")],
+                            "times": [("08:00", "12:00")],
+                            "weekdays": [5, 6],  # active on weekends
+                        },
+                    },
+                ],
+                True,
+                id="differing weekdays allows overlap",
+            ),
+            # Overlapping times one day overlapping
+            pytest.param(
+                [
+                    {
+                        "name": "tariff1",
+                        "price": 100,
+                        "active_times": {
+                            "dates": [("01-01", "31-12")],
+                            "times": [("08:00", "12:00")],
+                            "weekdays": [0, 1, 2, 3, 4],  # active on weekdays
+                        },
+                    },
+                    {
+                        "name": "tariff2",
+                        "price": 200,
+                        "active_times": {
+                            "dates": [("01-01", "31-12")],
+                            "times": [("08:00", "12:00")],
+                            "weekdays": [4, 5, 6],  # active on weekends
+                        },
+                    },
+                ],
+                False,
+                id="differing weekdays one day overlaps",
+            ),
             # Empty tariffs
             pytest.param([], True, id="empty_tariffs"),
         ],

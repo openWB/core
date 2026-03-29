@@ -12,6 +12,7 @@ class FixedHoursTariffConfiguration:
             "price": 0.20,
             "active_times": {
                 "dates": [("01-01", "31-03"), ("01-07", "30-09")],  # applicable date ranges (day-month)
+                "weekdays": [0, 1, 2, 3, 4],  # active on weekdays (0=Monday, ..., 6=Sunday)
                 "times": [("08:00", "12:00"), ("18:00", "22:00")]  # active times during the day
             }
         },
@@ -20,6 +21,7 @@ class FixedHoursTariffConfiguration:
             "price": 0.05,
             "active_times": {
                 "dates": [("01-04", "30-06"), ("01-10", "31-12")],  # applicable date ranges (day-month)
+                "weekdays": [5, 6],  # active on weekends (0=Monday, ..., 6=Sunday)
                 "times": [("00:00", "06:00"), ("22:00", "23:59")]  # active times during the day
             }
         }
