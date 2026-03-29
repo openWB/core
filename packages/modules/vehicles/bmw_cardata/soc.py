@@ -203,7 +203,7 @@ def fetch_soc(config: BmwCardataSetup) -> CarState:
 
     log.info("BMW CarData: SoC=%s%%, Reichweite=%s km, Status=%s, Odometer=%s km",
              soc, rng, status, odo)
-    return CarState(soc=soc, range=rng)
+    return CarState(soc=soc, range=rng, odometer=odo)
 
 
 def create_vehicle(vehicle_config: BmwCardataSetup, vehicle: int):
