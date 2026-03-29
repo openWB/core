@@ -241,27 +241,35 @@ class skoda:
         maintenance_report_url = f"{API_BASE}/v3/vehicle-maintenance/vehicles/{self.vin}/report"
         response = await self.session.get(vehicle_status_url, headers=self.headers)
 
-        # If first attempt fails, try to refresh tokens
-        if response.status >= 400:
-            self.log.debug("Refreshing tokens")
-            if await self.refresh_tokens():
-                response = await self.session.get(vehicle_status_url, headers=self.headers)
+        if response.status == 403:
+            self.log.info("vehicle-status returned 403, trying charging_url")
+            status_data = {}
+        else:
+            # If first attempt fails, try to refresh tokens
+            if response.status >= 400:
+                self.log.debug("Refreshing tokens")
+                if await self.refresh_tokens():
+                    response = await self.session.get(vehicle_status_url, headers=self.headers)
 
-        # If refreshing tokens failed, try a full reconnect
-        if response.status >= 400:
-            self.log.info("Reconnecting")
-            if await self.reconnect():
-                response = await self.session.get(vehicle_status_url, headers=self.headers)
+            # If refreshing tokens failed, try a full reconnect
+            if response.status >= 400:
+                self.log.info("Reconnecting")
+                if await self.reconnect():
+                    response = await self.session.get(vehicle_status_url, headers=self.headers)
+                else:
+                    self.log.error("Reconnect failed")
+                    return {}
+
+            if response.status >= 400:
+                if response.status == 403:
+                    self.log.info("vehicle-status returned 403, trying charging_url")
+                    status_data = {}
+                else:
+                    self.log.error("Get status failed")
+                    return {}
             else:
-                self.log.error("Reconnect failed")
-                return {}
-
-        if response.status >= 400:
-            self.log.error("Get status failed")
-            return {}
-
-        status_data = await response.json()
-        self.log.debug(f"Status data from Skoda API (vehicle-status): {status_data}")
+                status_data = await response.json()
+                self.log.debug(f"Status data from Skoda API (vehicle-status): {status_data}")
 
         # check if all values are valid, otherwise use charging_url
         electric_engine_range = {}
