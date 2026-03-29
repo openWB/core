@@ -238,6 +238,7 @@ class skoda:
     async def get_status(self):
         vehicle_status_url = f"{API_BASE}/v2/vehicle-status/{self.vin}/driving-range"
         charging_url = f"{API_BASE}/v1/charging/{self.vin}"
+        maintenance_report_url = f"{API_BASE}/v3/vehicle-maintenance/vehicles/{self.vin}/report"
         response = await self.session.get(vehicle_status_url, headers=self.headers)
 
         # If first attempt fails, try to refresh tokens
@@ -293,6 +294,15 @@ class skoda:
         if not timestamp.endswith('Z'):
             timestamp += 'Z'
 
+        response = await self.session.get(maintenance_report_url, headers=self.headers)
+        if response.status >= 400:
+            self.log.error("Get status from maintenance_report_url failed")
+            odometer = None
+        else:
+            maintenance_data = await response.json()
+            self.log.debug(f"Status data from Skoda API (maintenance report): {maintenance_data}")
+            odometer = maintenance_data.get('mileageInKm', None)
+
         return {
             'charging': {
                 'batteryStatus': {
@@ -300,6 +310,7 @@ class skoda:
                         'currentSOC_pct': soc,
                         'cruisingRangeElectric_km': range_km,
                         'carCapturedTimestamp': timestamp,
+                        'odometer': odometer,
                     }
                 }
             }
