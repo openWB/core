@@ -91,21 +91,24 @@
         <span v-if="authStatus.message">{{ authStatus.message }}</span>
       </openwb-base-alert>
 
+      <openwb-base-alert v-if="isConnected" subtype="info">
+        Die BMW-Verbindung ist aktiv. Eine erneute Kopplung ist nur nötig wenn die Verbindung verloren gegangen ist.
+      </openwb-base-alert>
+
       <openwb-base-button-group-input
         title="BMW Auth"
         :buttons="[
-          { buttonValue: 'start', text: 'BMW koppeln', class: 'btn-outline-primary' },
-          { buttonValue: 'refresh', text: 'Status aktualisieren', class: 'btn-outline-secondary' }
+          { buttonValue: 'start', text: 'BMW koppeln', class: 'btn-outline-primary' }
         ]"
         :model-value="null"
         @update:model-value="handleAuthAction"
       >
         <template #help>
-          Startet die BMW-Kopplung oder aktualisiert den Verbindungsstatus.
+          Startet die BMW-Kopplung. Nur nötig bei erstmaliger Einrichtung oder wenn die Verbindung verloren gegangen ist.
         </template>
       </openwb-base-button-group-input>
 
-      <openwb-base-alert v-if="authStatus.user_code && !isConnected" subtype="info">
+      <openwb-base-alert v-if="authStatus.user_code" subtype="info">
         <b>BMW Auth läuft</b><br />
         URL: {{ authStatus.verification_uri }}<br />
         Code: <b>{{ authStatus.user_code }}</b>
