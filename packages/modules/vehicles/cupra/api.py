@@ -26,7 +26,7 @@ def fetch_soc(conf: Cupra, vehicle: int) -> Union[int, float, str]:
     loop = new_event_loop()
     set_event_loop(loop)
 
-    # get soc, range from server
+    # get soc, range, timestamp, and odometer from server
     a = api(conf, vehicle)
     soc, range, soc_ts, soc_tsX, odometer = loop.run_until_complete(a._fetch_soc())
 
