@@ -91,20 +91,32 @@
         <span v-if="authStatus.message">{{ authStatus.message }}</span>
       </openwb-base-alert>
 
-      <openwb-base-alert v-if="isConnected" subtype="info">
-        Die BMW-Verbindung ist aktiv. Eine erneute Kopplung ist nur nötig wenn die Verbindung verloren gegangen ist.
-      </openwb-base-alert>
-
       <openwb-base-button-group-input
+        v-if="!isConnected"
         title="BMW Auth"
         :buttons="[
-          { buttonValue: 'start', text: 'BMW koppeln', class: 'btn-outline-primary' }
+          { buttonValue: 'start', text: 'BMW koppeln', class: 'btn-outline-primary' },
+          { buttonValue: 'refresh', text: 'Status aktualisieren', class: 'btn-outline-secondary' }
         ]"
         :model-value="null"
         @update:model-value="handleAuthAction"
       >
         <template #help>
-          Startet die BMW-Kopplung. Nur nötig bei erstmaliger Einrichtung oder wenn die Verbindung verloren gegangen ist.
+          Startet die BMW-Kopplung oder aktualisiert den Verbindungsstatus.
+        </template>
+      </openwb-base-button-group-input>
+
+      <openwb-base-button-group-input
+        v-else
+        title="BMW Auth"
+        :buttons="[
+          { buttonValue: 'reauth', text: 'Neu koppeln', class: 'btn-outline-warning' }
+        ]"
+        :model-value="null"
+        @update:model-value="handleAuthAction"
+      >
+        <template #help>
+          Startet die BMW-Kopplung erneut. Nur nötig wenn die Verbindung verloren gegangen ist.
         </template>
       </openwb-base-button-group-input>
 
@@ -144,7 +156,6 @@
       • Testmodus = 0 BMW-API-Calls<br />
       • Live-Modus (mit Container-ID) ≈ 1 Call pro Abfrage<br />
       • Bei Token-Refresh kurzzeitig mehr Calls möglich<br />
-      • Token läuft ab am: {{ tokenExpiry }}
     </openwb-base-alert>
   </div>
 </template>
@@ -171,12 +182,7 @@ export default {
     isConnected() {
       return !!this.vehicle.configuration.access_token;
     },
-    tokenExpiry() {
-      const expires_at = this.vehicle.configuration.expires_at;
-      if (!expires_at) return "unbekannt";
-      const date = new Date(expires_at * 1000);
-      return date.toLocaleString("de-DE");
-    },
+
   },
   beforeUnmount() {
     if (this.pollTimer) {
@@ -192,6 +198,13 @@ export default {
         this.authStatus.justConnected = false;
         return;
       }
+      if (action === "reauth") {
+        const confirmed = window.confirm("BMW-Verbindung wirklich neu starten? Die bestehende Verbindung wird überschrieben.");
+        if (!confirmed) return;
+        this.startAuth();
+        return;
+      }
+
       if (action === "start") {
         if (!this.vehicle.configuration.client_id) {
           this.authStatus.error = "Bitte zuerst die Client ID eintragen und speichern.";
