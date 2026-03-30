@@ -75,25 +75,15 @@ class QCellsBat(AbstractBat):
                     self.client.write_register(
                         REMOTE_CONTROL_MODE_REG, 0, data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = None
-        elif power_limit == 0:
-            log.debug("Aktive Batteriesteuerung. Batterie wird gestoppt (kein Entladen)")
-            if self.last_mode != 'stop':
-                self._write_mode8(power_value=0, unit=unit)
-                self.last_mode = 'stop'
-        elif power_limit > 0:
-            power_value = int(power_limit) * -1
-            log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_value} W geladen")
-            if self.last_mode != 'charge':
-                self.last_mode = 'charge'
-            # Solax Mode 8: negativer Push Power Wert = Ladung
-            self._write_mode8(power_value, unit=unit)
-        elif power_limit < 0:
-            power_value = int(power_limit) * -1
-            log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_value} W entladen")
-            if self.last_mode != 'discharge':
-                self.last_mode = 'discharge'
-            # Solax Mode 8: positiver Push Power Wert = Entladung
-            self._write_mode8(power_value, unit=unit)
+    else:
+        log.debug("Aktive Batteriesteuerung aktiv")
+        if self.last_mode != 'limited':
+            self.last_mode = 'limited'
+        
+        # Berechne power value: 0 = stop, != 0 = multipliziere mit -1
+        power_value = 0 if power_limit == 0 else int(power_limit) * -1
+        
+        self._write_mode8(power_value, unit=unit)
 
     def _write_mode8(self, power_value: int, unit: int) -> None:
         """Schreibt die Mode 8 Remote Control Register (0xA0-0xA7)."""
