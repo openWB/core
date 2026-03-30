@@ -1,7 +1,4 @@
 import logging
-import random
-import requests
-import time
 from typing import Dict
 from datetime import datetime, timedelta
 from helpermodules import timecheck
