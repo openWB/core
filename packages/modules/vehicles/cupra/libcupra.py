@@ -253,7 +253,7 @@ class cupra:
 
     async def get_status(self):
         status_url = f"{API_BASE}/vehicles/{self.vin}/charging/status"
-        milage_url = f"{API_BASE}/v1/vehicles/{self.vin}/mileage"
+        mileage_url = f"{API_BASE}/v1/vehicles/{self.vin}/mileage"
         response = await self.session.get(status_url, headers=self.headers)
 
         # If first attempt fails, try to refresh tokens
@@ -279,7 +279,7 @@ class cupra:
         self.log.debug(f"Status data from Cupra API: {status_data}")
 
         # Fetch mileage data
-        response = await self.session.get(milage_url, headers=self.headers)
+        response = await self.session.get(mileage_url, headers=self.headers)
         if response.status >= 400:
             self.log.error("Get mileage failed")
             odometer = None
