@@ -122,6 +122,9 @@ class PriceValueStore(ValueStore[TariffState]):
                            in electricity_pricing.grid_fee.get.prices.items()}
 
         flexible_tariff_prices = __reduce_prices(flexible_tariff_prices)
+        if len(flexible_tariff_prices) == 0 and len(grid_fee_prices) == 0:
+            return {}
+
         if len(grid_fee_prices) == 0 and len(flexible_tariff_prices) > 0:
             return flexible_tariff_prices
 
