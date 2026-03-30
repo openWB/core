@@ -259,9 +259,9 @@ class Optional(OcppMixin):
             return False
         if len(self.data.electricity_pricing.get.prices) == 0:
             return True
-        return ((self._flexible_tariff_module and
+        return ((self._flexible_tariff_module is not None and
                 self._is_et_price_update_required_for_module(self.data.electricity_pricing.flexible_tariff)) or
-                (self._grid_fee_module and
+                (self._grid_fee_module is not None and
                 self._is_et_price_update_required_for_module(self.data.electricity_pricing.grid_fee)))
 
     def ocpp_transfer_meter_values(self):

@@ -8,8 +8,6 @@ from modules.common.component_state import TariffState
 from modules.electricity_pricing.flexible_tariffs.energycharts.config import EnergyChartsTariffConfiguration
 from modules.electricity_pricing.flexible_tariffs.energycharts.config import EnergyChartsTariff
 
-MAX_RETRIES = 10
-MAX_DELAY = 10
 log = logging.getLogger(__name__)
 
 
