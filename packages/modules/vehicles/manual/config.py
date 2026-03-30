@@ -1,6 +1,6 @@
 class ManualSocConfiguration:
-    def __init__(self) -> None:
-        pass
+    def __init__(self, reset_after_unplug: bool = False) -> None:
+        self.reset_after_unplug = reset_after_unplug
 
 
 class ManualSoc:

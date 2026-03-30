@@ -63,6 +63,7 @@ class Get:
     force_soc_update: bool = field(default=False, metadata={
                                    "topic": "get/force_soc_update"})
     range: Optional[float] = field(default=None, metadata={"topic": "get/range"})
+    odometer: Optional[float] = field(default=None, metadata={"topic": "get/odometer"})
     fault_state: int = field(default=0, metadata={"topic": "get/fault_state"})
     fault_str: str = field(default=NO_ERROR, metadata={"topic": "get/fault_str"})
 
@@ -276,8 +277,9 @@ class Ev:
         all_surplus = data.data.counter_all_data.get_evu_counter().get_usable_surplus(feed_in_yield)
         required_surplus = control_parameter.min_current * max_phases_ev * 230 - get_power
         unbalanced_load_limit_reached = limit.limiting_value == LimitingValue.UNBALANCED_LOAD
-        condition_1_to_3 = (((get_medium_charging_current(get_currents) > max_current_range and
-                            all_surplus > required_surplus) or unbalanced_load_limit_reached) and
+        current_limit_reached = limit.limiting_value == LimitingValue.CURRENT
+        condition_1_to_3 = ((((get_medium_charging_current(get_currents) > max_current_range or current_limit_reached)
+                            and all_surplus > required_surplus) or unbalanced_load_limit_reached) and
                             phases_in_use == 1)
         condition_3_to_1 = get_medium_charging_current(
             get_currents) < min_current_range and all_surplus <= 0 and phases_in_use > 1

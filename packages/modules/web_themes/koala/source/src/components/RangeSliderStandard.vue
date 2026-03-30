@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="text-subtitle2">{{ title }}</div>
-    <div class="row items-center justify-between q-ml-sm">
+    <div class="row items-center q-mx-sm">
       <q-range
         v-model="delayedValue"
         :min="props.min"
@@ -12,8 +12,9 @@
         :right-label-color="maxChanged ? 'negative' : 'primary'"
         label
         label-always
+        switch-label-side
         color="primary"
-        class="col"
+        class="col q-pb-xl"
         track-size="0.5em"
         thumb-size="1.7em"
         @touchstart.stop
@@ -58,15 +59,3 @@ const maxChanged = computed(() =>
   delayedValue.value.max !== props.modelValue.max
 )
 </script>
-<style scoped lang="scss">
-:deep(.q-slider__pin) {
-  top: 100%;
-  transform: scaleY(-1);
-}
-:deep(.q-slider__text-container) {
-  transform: scaleY(-1) !important;
-}
-:deep(.q-range) {
-  padding-bottom: 24px;
-}
-</style>

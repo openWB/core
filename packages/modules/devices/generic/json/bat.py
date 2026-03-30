@@ -9,6 +9,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.generic.json.config import JsonBatSetup
+from modules.common.utils.peak_filter import PeakFilter
 
 
 class KwargsDict(TypedDict):
@@ -34,6 +35,7 @@ class JsonBat(AbstractBat):
         self.store = get_bat_value_store(self.component_config.id)
         self._compile_jq_filters()
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter("bat", self.component_config.id, self.fault_state)
 
     def update(self, response) -> None:
         currents = (
@@ -46,10 +48,12 @@ class JsonBat(AbstractBat):
         soc = float(self.jq_soc.input(response).first()) if self.jq_soc else 0
 
         if self.jq_imported is None or self.jq_exported is None:
+            self.peak_filter.check_values(power)
             imported, exported = self.sim_counter.sim_count(power)
         else:
             imported = float(self.jq_imported.input(response).first())
             exported = float(self.jq_exported.input(response).first())
+            imported, exported = self.peak_filter.check_values(power, imported, exported)
 
         bat_state = BatState(
             currents=currents,

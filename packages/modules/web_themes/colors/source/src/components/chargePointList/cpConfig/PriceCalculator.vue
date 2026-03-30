@@ -85,7 +85,7 @@ import InfoItem from '@/components/shared/InfoItem.vue'
 import ConfigItem2 from '@/components/shared/ConfigItem2.vue'
 import RangeInput from '@/components/shared/RangeInput.vue'
 import DateRangeInput from '@/components/shared/DateRangeInput.vue'
-import { chargePoints, evTemplates, chargeTemplates } from '../model'
+import { chargePoints, evTemplates } from '../model'
 import { etData } from '@/components/priceChart/model'
 import { globalData } from '@/assets/js/model'
 const props = defineProps<{
@@ -98,7 +98,7 @@ const currentSoc = ref(cp.value.soc)
 var targetSoc = ref(currentSoc.value < 80 ? 80 : 100)
 const bufferMinutes = ref(30)
 const evTemplate = computed(() => evTemplates[cp.value.evTemplate])
-const chargeTemplate = computed(() => chargeTemplates[cp.value.evTemplate])
+//const chargeTemplate = computed(() => chargeTemplates[cp.value.evTemplate])
 
 const price = computed({
 	get() {
@@ -113,10 +113,9 @@ const chargeDuration = computed(() => {
 	if (evTemplate.value != null) {
 		const batteryCapacity = evTemplate.value.battery_capacity ?? 0 //in Wh
 		const charge_efficiency = evTemplate.value.efficiency ?? 90
-		const phases = Math.min(
-			evTemplate.value.max_phases,
-			chargeTemplate.value.chargemode.eco_charging.phases_to_use,
-		)
+		const phases = evTemplate.value.max_phases // Math.min( //,
+		//chargeTemplate.value.chargemode.eco_charging.phases_to_use,
+		//	)
 		const chargingPower =
 			((evTemplate.value.max_current_multi_phases *
 				phases *

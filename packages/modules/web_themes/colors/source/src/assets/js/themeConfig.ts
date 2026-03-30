@@ -36,7 +36,6 @@ export class Config {
 	private _showPrices = false
 	private _showInverters = false
 	private _alternativeEnergy = false
-	private _sslPrefs: boolean = false
 	private _debug: boolean = false
 	private _lowerPriceBound = 0
 	private _upperPriceBound = 0
@@ -187,16 +186,6 @@ export class Config {
 	}
 	setShowClock(mode: string) {
 		this._showClock = mode
-	}
-	get sslPrefs() {
-		return this._sslPrefs
-	}
-	set sslPrefs(on: boolean) {
-		this._sslPrefs = on
-		savePrefs()
-	}
-	setSslPrefs(on: boolean) {
-		this._sslPrefs = on
 	}
 	get debug() {
 		return this._debug
@@ -379,15 +368,6 @@ export function switchTheme(mode: string) {
 	doc.classed('theme-blue', mode == 'blue')
 	savePrefs()
 }
-/* export function toggleGrid() {
-	globalConfig.showGrid = !globalConfig.showGrid
-	savePrefs()
-} */
-/* export function toggleFixArcs() {
-	// globalConfig.etPrice = globalConfig.etPrice + 10
-	globalConfig.showRelativeArcs = !globalConfig.showRelativeArcs
-	savePrefs()
-} */
 export function resetArcs() {
 	globalConfig.maxPower =
 		registry.getPower('evuIn') +
@@ -395,14 +375,6 @@ export function resetArcs() {
 		registry.getPower('batOut')
 	savePrefs()
 }
-/* export function switchDecimalPlaces() {
-	if (globalConfig.decimalPlaces < 4) {
-		globalConfig.decimalPlaces = globalConfig.decimalPlaces + 1
-	} else {
-		globalConfig.decimalPlaces = 0
-	}
-	savePrefs()
-} */
 export function switchSmarthomeColors(setting: string) {
 	const doc = select('html')
 	doc.classed('shcolors-normal', setting == 'normal')
@@ -456,7 +428,6 @@ interface Preferences {
 	altEngy?: boolean
 	lowerP?: number
 	upperP?: number
-	sslPrefs?: boolean
 	pmLabels?: boolean
 	debug?: boolean
 }
@@ -470,12 +441,7 @@ function writeCookie() {
 		.filter((ctr) => ctr.showInGraph)
 		.map((ctr) => ctr.id.toString())
 	prefs.showLG = globalConfig.graphPreference == 'live'
-	//prefs.displayM = globalConfig.displayMode
 	prefs.stackO = globalConfig.usageStackOrder
-	//prefs.showGr = globalConfig.showGrid
-	//prefs.decimalP = globalConfig.decimalPlaces
-	//prefs.smartHomeC = globalConfig.smartHomeColors
-	//prefs.relPM = globalConfig.showRelativeArcs
 	prefs.maxPow = globalConfig.maxPower
 	prefs.showQA = globalConfig.showQuickAccess
 	prefs.simpleCP = globalConfig.simpleCpList
@@ -485,23 +451,13 @@ function writeCookie() {
 	prefs.fluidD = globalConfig.fluidDisplay
 	prefs.clock = globalConfig.showClock
 	prefs.showButtonBar = globalConfig.showButtonBar
-	//prefs.showCounters = globalConfig.showCounters
-	//prefs.showVehicles = globalConfig.showVehicles
-	//prefs.showStandardV = globalConfig.showStandardVehicle
-	//prefs.showPrices = globalConfig.showPrices
-	//prefs.showInv = globalConfig.showInverters
-	//prefs.altEngy = globalConfig.alternativeEnergy
 	prefs.lowerP = globalConfig.lowerPriceBound
 	prefs.upperP = globalConfig.upperPriceBound
-	prefs.sslPrefs = globalConfig.sslPrefs
 	prefs.pmLabels = globalConfig.showPmLabels
 	prefs.debug = globalConfig.debug
 
 	document.cookie =
-		'openWBColorTheme=' +
-		JSON.stringify(prefs) +
-		';max-age=16000000;' +
-		(globalConfig.sslPrefs ? 'SameSite=None;Secure' : 'SameSite=Strict')
+		'openWBColorTheme=' + JSON.stringify(prefs) + ';max-age=16000000;'
 }
 
 function readCookie() {
@@ -511,12 +467,6 @@ function readCookie() {
 	)
 	if (myCookie.length > 0) {
 		const prefs = JSON.parse(myCookie[0].split('=')[1]) as Preferences
-		/* if (prefs.decimalP !== undefined) {
-			globalConfig.setDecimalPlaces(+prefs.decimalP)
-		} */
-		/* if (prefs.smartHomeC !== undefined) {
-			globalConfig.setSmartHomeColors(prefs.smartHomeC)
-		} */
 		if (prefs.hideSH !== undefined) {
 			prefs.hideSH.forEach((i) => {
 				if (shDevices.get(i) == undefined) {
@@ -525,27 +475,18 @@ function readCookie() {
 				shDevices.get(i)!.setShowInGraph(false)
 			})
 		}
-		/* if (prefs.showCtr !== undefined) {
+		if (prefs.showCtr !== undefined) {
 			globalConfig.countersToShow = prefs.showCtr.map((i) => +i)
-		} */
+		}
 		if (prefs.showLG !== undefined) {
 			globalConfig.setGraphPreference(prefs.showLG ? 'live' : 'today')
 		}
 		if (prefs.maxPow !== undefined) {
 			globalConfig.setMaxPower(+prefs.maxPow)
 		}
-		/* if (prefs.relPM !== undefined) {
-			globalConfig.setShowRelativeArcs(prefs.relPM)
-		} */
-		/* if (prefs.displayM !== undefined) {
-			globalConfig.setDisplayMode(prefs.displayM)
-		} */
 		if (prefs.stackO !== undefined) {
 			globalConfig.setUsageStackOrder(prefs.stackO)
 		}
-		/* if (prefs.showGr !== undefined) {
-			globalConfig.setShowGrid(prefs.showGr)
-		} */
 		if (prefs.showQA !== undefined) {
 			globalConfig.setShowQuickAccess(prefs.showQA)
 		}
@@ -570,32 +511,11 @@ function readCookie() {
 		if (prefs.showButtonBar !== undefined) {
 			globalConfig.setShowButtonBar(prefs.showButtonBar)
 		}
-		/* if (prefs.showCounters !== undefined) {
-			globalConfig.setShowCounters(prefs.showCounters)
-		} */
-		/* if (prefs.showVehicles !== undefined) {
-			globalConfig.setShowVehicles(prefs.showVehicles)
-		} */
-		//if (prefs.showStandardV !== undefined) {
-		//	globalConfig.setShowStandardVehicle(prefs.showStandardV)
-		//}
-		/* if (prefs.showPrices !== undefined) {
-			globalConfig.setShowPrices(prefs.showPrices)
-		} */
-		/* if (prefs.showInv !== undefined) {
-			globalConfig.setShowInverters(prefs.showInv)
-		} */
-		/* if (prefs.altEngy !== undefined) {
-			globalConfig.setAlternativeEnergy(prefs.altEngy)
-		} */
 		if (prefs.lowerP !== undefined) {
 			globalConfig.setLowerPriceBound(prefs.lowerP)
 		}
 		if (prefs.upperP !== undefined) {
 			globalConfig.setUpperPriceBound(prefs.upperP)
-		}
-		if (prefs.sslPrefs !== undefined) {
-			globalConfig.setSslPrefs(prefs.sslPrefs)
 		}
 		if (prefs.pmLabels !== undefined) {
 			globalConfig.setShowPmLabels(prefs.pmLabels)

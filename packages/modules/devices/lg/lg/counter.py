@@ -8,6 +8,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount import SimCounter
 from modules.common.store import get_counter_value_store
 from modules.devices.lg.lg.config import LgCounterSetup
+from modules.common.utils.peak_filter import PeakFilter
 
 
 class KwargsDict(TypedDict):
@@ -24,6 +25,7 @@ class LgCounter(AbstractCounter):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter("counter", self.component_config.id, self.fault_state)
 
     def update(self, response) -> None:
         if 'grid_power' in response['statistics']:
@@ -32,6 +34,7 @@ class LgCounter(AbstractCounter):
                 power = power*-1
         else:
             power = float(response["statistics"]["grid_power_01kW"]) * 100  # Home 15
+        self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
         counter_state = CounterState(
             imported=imported,

@@ -8,6 +8,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount import SimCounter
 from modules.common.store import get_inverter_value_store
 from modules.devices.solar_world.solar_world.config import SolarWorldInverterSetup
+from modules.common.utils.peak_filter import PeakFilter
 
 
 class KwargsDict(TypedDict):
@@ -24,6 +25,7 @@ class SolarWorldInverter(AbstractInverter):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter("inverter", self.component_config.id, self.fault_state)
 
     def update(self, response) -> None:
         try:
@@ -31,6 +33,7 @@ class SolarWorldInverter(AbstractInverter):
         except ValueError:
             # wenn eManager aus bzw. keine Antwort ersetze leeren Wert durch eine 0
             power = 0
+        self.peak_filter.check_values(power)
         exported = self.sim_counter.sim_count(power)[1]
 
         inverter_state = InverterState(

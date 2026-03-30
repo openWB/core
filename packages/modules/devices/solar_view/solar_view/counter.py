@@ -8,6 +8,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_counter_value_store
 from modules.devices.solar_view.solar_view.api import request
 from modules.devices.solar_view.solar_view.config import SolarViewCounterSetup
+from modules.common.utils.peak_filter import PeakFilter
 
 log = logging.getLogger(__name__)
 
@@ -19,6 +20,7 @@ class SolarViewCounter(AbstractCounter):
     def initialize(self) -> None:
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter("counter", self.component_config.id, self.fault_state)
 
     def update(self, ip_address: str, port: int, timeout: int) -> None:
         exported_values = request(ip_address, port, timeout, '21*')
@@ -28,6 +30,7 @@ class SolarViewCounter(AbstractCounter):
         imported = 1000 * int(values[9])
         power = -1 * int(values[10])
 
+        imported, exported = self.peak_filter.check_values(power, imported, exported)
         if len(values) > 20:
             self.store.set(CounterState(
                 imported=imported,

@@ -1,13 +1,25 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 from unittest.mock import Mock
 import pytest
 
 from control import data
+from control.chargelog import chargelog
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state import ChargepointState
 from control.chargepoint.chargepoint_template import CpTemplate
+from control.counter import Counter
 from control.ev.ev import Ev
+from modules.common.configurable_vehicle import ConfigurableVehicle
+from modules.vehicles.manual.config import ManualSoc
+from modules.vehicles.manual.soc import create_vehicle as create_manual_vehicle
+from modules.vehicles.tesla.config import TeslaSoc
+from modules.vehicles.tesla.soc import create_vehicle as create_tesla_vehicle
+
+
+@pytest.fixture()
+def mock_data() -> None:
+    data.data_init(Mock())
 
 
 @pytest.mark.parametrize("phase_1, phases, expected_required_currents",
@@ -144,3 +156,43 @@ def test_is_phase_switch_required(params: Params):
 
     # assertion
     assert ret == params.phase_switch_required
+
+
+@pytest.mark.parametrize(
+    "soc_module, reset_after_unplug, expected_calls, expected_pub_call",
+    [
+        pytest.param(None, None, 0, None, id="kein SoC-Modul"),
+        pytest.param(create_manual_vehicle(ManualSoc(), 0), True, 1,
+                     ("openWB/set/vehicle/0/soc_module/calculated_soc_state/manual_soc", 0),
+                     id="manuelles SoC-Modul, Reset nach Abstecken"),
+        pytest.param(create_manual_vehicle(ManualSoc(), 0), False, 0, None,
+                     id="manuelles SoC-Modul, kein Reset nach Abstecken"),
+        pytest.param(create_tesla_vehicle(TeslaSoc(), 0), None, 0, None, id="Tesla SoC-Modul"),
+    ])
+def test_process_charge_stop_reset_manual_soc(soc_module: Optional[ConfigurableVehicle],
+                                              reset_after_unplug: Optional[bool],
+                                              expected_calls: int,
+                                              expected_pub_call: Optional[tuple],
+                                              mock_pub: Mock, mock_data, monkeypatch):
+    # setup
+    cp = Chargepoint(0, None)
+    cp.template = CpTemplate()
+    cp.data.config.ev = 0
+    cp.data.set.plug_state_prev = True
+    ev = Ev(0)
+    ev.soc_module = soc_module
+    if soc_module and soc_module.vehicle_config.type == "manual":
+        ev.soc_module.vehicle_config.configuration.reset_after_unplug = reset_after_unplug
+    cp.data.set.charging_ev_data = ev
+    data.data.ev_data["ev0"] = ev
+    monkeypatch.setattr(chargelog, "save_and_reset_data", Mock())
+    monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", Mock(
+        return_value=Mock(spec=Counter, reset_switch_on_off=Mock())))
+
+    # execution
+    cp._process_charge_stop()
+
+    # evaluation
+    assert len(mock_pub.method_calls) - 1 == expected_calls
+    if expected_calls > 0:
+        assert mock_pub.method_calls[1].args == expected_pub_call

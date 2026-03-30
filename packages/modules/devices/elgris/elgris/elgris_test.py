@@ -24,8 +24,9 @@ def setup_modbus_mocks(monkeypatch):
 def test_elgris_bat(monkeypatch):
     setup_modbus_mocks(monkeypatch)
 
+    elgris_bat = ElgrisBatSetup()
     device = create_device(Elgris())
-    device.add_component(ElgrisBatSetup())
+    device.add_component(elgris_bat)
 
     store_bat_mock = Mock()
     monkeypatch.setattr(device.components["component0"], "store", store_bat_mock)

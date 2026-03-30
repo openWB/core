@@ -393,6 +393,8 @@ class SetData:
                 self._validate_value(msg, float, [(0, 100)])
             elif "/get/range" in msg.topic:
                 self._validate_value(msg, float, [(0, 1000)])
+            elif "/get/odometer" in msg.topic:
+                self._validate_value(msg, float, [(0, 9999999)])
             elif "/get/force_soc_update" in msg.topic:
                 self._validate_value(msg, bool)
             else:

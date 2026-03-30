@@ -17,6 +17,7 @@ from modules.common.modbus import ModbusDataType
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.solaredge.solaredge.config import SolaredgeBatSetup
+from modules.common.utils.peak_filter import PeakFilter
 
 log = logging.getLogger(__name__)
 
@@ -59,12 +60,14 @@ class SolaredgeBat(AbstractBat):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter("bat", self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         self.store.set(self.read_state())
 
     def read_state(self):
         power, soc = self.get_values()
+        self.peak_filter.check_values(power)
         imported, exported = self.get_imported_exported(power)
         return BatState(
             power=power,

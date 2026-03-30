@@ -12,6 +12,7 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_inverter_value_store
 from modules.devices.kostal.kostal_steca.config import KostalStecaInverterSetup
+from modules.common.utils.peak_filter import PeakFilter
 
 log = logging.getLogger(__name__)
 
@@ -29,6 +30,7 @@ class KostalStecaInverter(AbstractInverter):
         self.ip_address: str = self.kwargs['ip_address']
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter("inverter", self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         power, exported = self.get_values()
@@ -64,7 +66,7 @@ class KostalStecaInverter(AbstractInverter):
             except AttributeError:
                 log.debug("PVkWh: Could not find 'data' in gen.yield.total.chart.js.")
                 exported = None
-
+        _, exported = self.peak_filter.check_values(power, None, exported)
         return power, exported
 
 

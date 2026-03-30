@@ -9,11 +9,11 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.lovato import Lovato
 from modules.common.mpm3pm import Mpm3pm
 from modules.common.sdm import Sdm120
-from modules.common.sdm import Sdm630_72
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.openwb.openwb_flex.config import BatKitFlexSetup
 from modules.devices.openwb.openwb_flex.versions import kit_bat_version_factory
+from modules.common.utils.peak_filter import PeakFilter
 
 
 class KwargsDict(TypedDict):
@@ -34,6 +34,7 @@ class BatKitFlex(AbstractBat):
         self.__client = factory(self.component_config.configuration.id, self.__tcp_client, self.fault_state)
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
+        self.peak_filter = PeakFilter("bat", self.component_config.id, self.fault_state)
 
     def update(self):
         # TCP-Verbindung schließen möglichst bevor etwas anderes gemacht wird, um im Fehlerfall zu verhindern,
@@ -42,9 +43,8 @@ class BatKitFlex(AbstractBat):
             counter_state = self.__client.get_counter_state()
 
         power = counter_state.power
-        if isinstance(self.__client, Sdm630_72):
-            power = power * -1
         if isinstance(self.__client, Lovato) or isinstance(self.__client, Sdm120):
+            self.peak_filter.check_values(power)
             imported, exported = self.sim_counter.sim_count(power)
         else:
             imported = counter_state.imported
@@ -52,7 +52,7 @@ class BatKitFlex(AbstractBat):
 
             voltages = self.__client.get_voltages()
             powers, power = self.__client.get_power()
-
+            imported, exported = self.peak_filter.check_values(power, imported, exported)
             if isinstance(self.__client, Mpm3pm):
                 currents = [powers[i] / voltages[i] for i in range(3)]
             else:

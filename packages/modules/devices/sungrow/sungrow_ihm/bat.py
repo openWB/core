@@ -10,6 +10,7 @@ from modules.common.modbus import ModbusDataType, Endian, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.sungrow.sungrow_ihm.config import SungrowIHMBatSetup, SungrowIHM
+from modules.common.utils.peak_filter import PeakFilter
 
 log = logging.getLogger(__name__)
 
@@ -30,6 +31,7 @@ class SungrowIHMBat(AbstractBat):
         self.sim_counter = SimCounter(self.device_config.id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter("bat", self.component_config.id, self.fault_state)
         self.last_mode = 'Undefined'
 
     def update(self) -> None:
@@ -39,8 +41,8 @@ class SungrowIHMBat(AbstractBat):
         bat_power = self.__tcp_client.read_input_registers(8160, ModbusDataType.INT_32,
                                                            wordorder=Endian.Little, unit=unit) * -10
 
+        self.peak_filter.check_values(bat_power)
         imported, exported = self.sim_counter.sim_count(bat_power)
-
         bat_state = BatState(
             power=bat_power,
             soc=soc,

@@ -155,11 +155,15 @@ class InverterState:
 
 @auto_str
 class CarState:
-    def __init__(self, soc: float, range: Optional[float] = None, soc_timestamp: Optional[float] = None):
+    def __init__(self, soc: float,
+                 range: Optional[float] = None,
+                 soc_timestamp: Optional[float] = None,
+                 odometer: Optional[float] = None):
         """Args:
             soc: actual state of charge in percent
             range: actual range in km
             soc_timestamp: timestamp of last request as unix timestamp
+            odometer: actual odometer of vehicle in km
         """
         self.soc = soc
         self.range = range
@@ -170,6 +174,7 @@ class CarState:
                 log.debug(f'Zeitstempel {soc_timestamp} ist in ms, wird in s gewandelt. Modul sollte angepasst werden.')
                 soc_timestamp /= 1000
             self.soc_timestamp = soc_timestamp
+        self.odometer = odometer
 
 
 @auto_str

@@ -25,8 +25,8 @@ def create_vehicle(vehicle_config: VWId, vehicle: int):
 
         loop = new_event_loop()
         set_event_loop(loop)
-        soc, range, soc_ts, soc_tsX = loop.run_until_complete(_fetch_soc())
-        return CarState(soc=soc, range=range, soc_timestamp=soc_tsX)
+        soc, range, soc_ts, soc_tsX, odometer = loop.run_until_complete(_fetch_soc())
+        return CarState(soc=soc, range=range, soc_timestamp=soc_tsX, odometer=odometer)
 
     vw_group = VwGroup(vehicle_config, vehicle)
 
