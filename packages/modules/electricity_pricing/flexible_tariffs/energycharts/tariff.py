@@ -39,19 +39,9 @@ def parse_response(config: EnergyChartsTariffConfiguration, raw_prices: dict) ->
 
 def fetch_prices(config: EnergyChartsTariffConfiguration) -> Dict[str, float]:
     url = create_request_url(config)
-    for attempt in range(MAX_RETRIES):
-        attempt += 1  # one-based indexing
-        try:
-            response = req.get_http_session().get(url, timeout=(10, 20))
-            response.raise_for_status()
-            return parse_response(config, response.json())
-        except requests.exceptions.Timeout as e:
-            if MAX_RETRIES > attempt:
-                delay = (attempt) * random.uniform(attempt, MAX_DELAY)
-                log.warning(f"Timeout beim Abrufen der Preise (Versuch {attempt}/{MAX_RETRIES}) : {str(e)}"
-                            f", neuer Versuch in {delay:.1f} Sekunden...")
-                time.sleep(delay)
-    raise Exception("Timeout beim Abrufen der Preise nach {MAX_RETRIES} Versuchen")
+    response = req.get_http_session().get(url, timeout=(10, 20))
+    response.raise_for_status()
+    return parse_response(config, response.json())
 
 
 def create_electricity_tariff(config: EnergyChartsTariff):
