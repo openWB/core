@@ -9,8 +9,8 @@ class HaVehicleSocConfiguration:
             calculate_soc: bool = False,
             url: Optional[str] = None,
             token: Optional[str] = None,
-            entity_soc: Optional[str] = None
-            entity_range: Optional[str] = None
+            entity_soc: Optional[str] = None,
+            entity_range: Optional[str] = None,
             entity_odometer: Optional[str] = None
             ):
         self.calculate_soc = calculate_soc
