@@ -9,8 +9,8 @@ log = logging.getLogger(__name__)
 
 
 class PeakFilter:
-    def __init__(self, type: ComponentType, component_id: int, fault_state: FaultState):
-        self.type = type
+    def __init__(self, component_type: ComponentType, component_id: int, fault_state: FaultState):
+        self.component_type = component_type
         self.component_id = component_id
         self.fault_state = fault_state
         self.imported = None
@@ -24,17 +24,17 @@ class PeakFilter:
         exported: Optional[float] = None
     ) -> tuple[Optional[float], Optional[float]]:
         # setze maximale Leistung je nach Komponente
-        if self.type == ComponentType.COUNTER:
+        if self.component_type == ComponentType.COUNTER:
             counter = data.data.counter_data[f"counter{self.component_id}"]
             max_power = counter.data.config.max_total_power
-        elif self.type == ComponentType.INVERTER:
+        elif self.component_type == ComponentType.INVERTER:
             inverter = data.data.pv_data[f"pv{self.component_id}"]
             max_power = inverter.data.config.max_ac_out
-        elif self.type == ComponentType.BAT:
+        elif self.component_type == ComponentType.BAT:
             bat = data.data.bat_data[f"bat{self.component_id}"]
             max_power = bat.data.config.max_power
         else:
-            raise ValueError(f"Unsupported component type {self.type!r} in PeakFilter")
+            raise ValueError(f"Unsupported component type {self.component_type!r} in PeakFilter")
         # prüfe Leistung und importierte/exportierte Energie auf Plausibilität
         self.check_power(max_power, power)
         return self.check_imported_exported(max_power, imported, exported)

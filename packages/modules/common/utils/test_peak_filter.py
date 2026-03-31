@@ -44,7 +44,7 @@ def patch_data(monkeypatch):
 @dataclass
 class Params:
     name: str
-    type: str
+    component_type: ComponentType
     previous_imported: float
     previous_exported: float
     power: float
@@ -79,7 +79,7 @@ cases = [
 @pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
 def test_check_values_valid(params):
     fs = DummyFaultState()
-    pf = PeakFilter(params.type, 1, fs)
+    pf = PeakFilter(params.component_type, 1, fs)
     pf.imported = params.previous_imported
     pf.exported = params.previous_exported
     pf.startup = False
