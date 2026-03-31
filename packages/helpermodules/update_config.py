@@ -3024,7 +3024,7 @@ class UpdateConfig:
                 if configuration_payload.get("type") == "homeassistant":
                     ha_config = configuration_payload.get("configuration", {})
                     if ha_config.get("entity_id") is not None:
-                        ha_config["entity_soc"] = ha_config["entity_id"]
+                        ha_config["entity_soc"] = ha_config.pop("entity_id")
                         return {topic: configuration_payload}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(118)
