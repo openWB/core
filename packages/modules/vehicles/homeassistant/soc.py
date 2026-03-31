@@ -38,10 +38,10 @@ def fetch_soc(config: HaVehicleSocSetup) -> CarState:
     token = config.configuration.token
     if url is None or url == "":
         raise ValueError("Keine URL zum Abrufen der Daten definiert. Bitte Konfiguration anpassen.")
-    if entity_soc is None or entity_soc == "":
-        raise ValueError("Keine Entitäts-ID definiert. Bitte Konfiguration anpassen.")
     if token is None or token == "":
         raise ValueError("Kein Token definiert. Bitte Konfiguration anpassen.")
+    if entity_soc is None or entity_soc == "":
+        raise ValueError("Keine Entitäts-ID für SoC definiert. Bitte Konfiguration anpassen.")
     url_soc = url + "/api/states/" + entity_soc
     response = req.get_http_session().get(url_soc, timeout=10,
                                           headers={
