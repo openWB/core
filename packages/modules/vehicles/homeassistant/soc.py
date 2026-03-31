@@ -60,6 +60,8 @@ def fetch_soc(config: HaVehicleSocSetup) -> CarState:
                                               )
         json = response.json()
         range = float(json['state'])
+    else:
+        range = None
     if not entity_odometer is None or entity_odometer == "":
         url_odometer = url + "/api/states/" + entity_odometer
         response = req.get_http_session().get(url_odometer, timeout=10,
@@ -69,6 +71,8 @@ def fetch_soc(config: HaVehicleSocSetup) -> CarState:
                                               )
         json = response.json()
         odometer = float(json['state'])
+    else:
+        odometer = None
     return CarState(soc=soc, range=range, odometer=odometer, soc_timestamp=soc_timestamp)
 
 
