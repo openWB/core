@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 117
+    DATASTORE_VERSION = 118
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -3016,3 +3016,15 @@ class UpdateConfig:
                 return new_topics if new_topics else None
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(117)
+
+    def upgrade_datastore_118(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("^openWB/vehicle/[0-9]+/soc_module/config$", topic) is not None:
+                configuration_payload = decode_payload(payload)
+                if configuration_payload.get("type") == "homeassistant":
+                    ha_config = configuration_payload.get("configuration", {})
+                    if ha_config.get("entity_id") is not None:
+                        ha_config["entity_soc"] = ha_config["entity_id"]
+                        return {topic: configuration_payload}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(118)
