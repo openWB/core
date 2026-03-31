@@ -14,7 +14,10 @@ class TestSkoda:
     @pytest.fixture(autouse=True)
     def set_up(self, monkeypatch):
         self.mock_context_exit = Mock(return_value=True)
-        self.mock_fetch_soc = Mock(name="fetch_soc", return_value=(50, 250, "2025-10-18T10:00:00Z", 1760822400.0))
+        self.mock_fetch_soc = Mock(
+            name="fetch_soc",
+            return_value=(50, 250, "2025-10-18T10:00:00Z", 1760822400.0, 12345),
+        )
         self.mock_value_store = Mock(name="value_store")
         monkeypatch.setattr(api, "fetch_soc", self.mock_fetch_soc)
         monkeypatch.setattr(store, "get_car_value_store", Mock(return_value=self.mock_value_store))
@@ -35,6 +38,7 @@ class TestSkoda:
         assert call_args.soc == 50
         assert call_args.range == 250
         assert call_args.soc_timestamp == 1760822400.0
+        assert call_args.odometer == 12345
 
     def test_update_passes_errors_to_context(self):
         # setup
@@ -105,7 +109,17 @@ class TestSkodaGetStatus:
             },
             "carCapturedTimestamp": "2025-10-17T15:40:35.679Z"
         }
-        mock_session.get.return_value = MockAiohttpResponse(response_data, 200)
+        maintenance_response_data = {
+            "mileageInKm": 54321
+        }
+        responses = [
+            MockAiohttpResponse(response_data, 200),
+            MockAiohttpResponse(maintenance_response_data, 200)
+        ]
+
+        async def side_effect_func(*args, **kwargs):
+            return responses.pop(0)
+        mock_session.get.side_effect = side_effect_func
 
         # execution
         status = asyncio.run(skoda_instance.get_status())
@@ -114,8 +128,14 @@ class TestSkodaGetStatus:
         assert status['charging']['batteryStatus']['value']['currentSOC_pct'] == 66
         assert status['charging']['batteryStatus']['value']['cruisingRangeElectric_km'] == 291
         assert status['charging']['batteryStatus']['value']['carCapturedTimestamp'] == "2025-10-17T15:40:35Z"
-        mock_session.get.assert_called_once_with(
+        assert status['charging']['batteryStatus']['value']['odometer'] == 54321
+        assert mock_session.get.call_count == 2
+        mock_session.get.assert_any_call(
             "https://mysmob.api.connect.skoda-auto.cz/api/v2/vehicle-status/test_vin/driving-range",
+            headers=skoda_instance.headers
+        )
+        mock_session.get.assert_any_call(
+            "https://mysmob.api.connect.skoda-auto.cz/api/v3/vehicle-maintenance/vehicles/test_vin/report",
             headers=skoda_instance.headers
         )
 
@@ -158,9 +178,13 @@ class TestSkodaGetStatus:
                 }
             ]
         }
+        maintenance_response_data = {
+            "mileageInKm": 123456
+        }
         responses = [
             MockAiohttpResponse(vehicle_status_response_data, 200),
-            MockAiohttpResponse(charging_url_response_data, 200)
+            MockAiohttpResponse(charging_url_response_data, 200),
+            MockAiohttpResponse(maintenance_response_data, 200)
         ]
 
         async def side_effect_func(*args, **kwargs):
@@ -174,13 +198,18 @@ class TestSkodaGetStatus:
         assert status['charging']['batteryStatus']['value']['currentSOC_pct'] == 66
         assert status['charging']['batteryStatus']['value']['cruisingRangeElectric_km'] == 291.0
         assert status['charging']['batteryStatus']['value']['carCapturedTimestamp'] == "2025-10-17T15:38:55Z"
-        assert mock_session.get.call_count == 2
+        assert status['charging']['batteryStatus']['value']['odometer'] == 123456
+        assert mock_session.get.call_count == 3
         mock_session.get.assert_any_call(
             "https://mysmob.api.connect.skoda-auto.cz/api/v2/vehicle-status/test_vin/driving-range",
             headers=skoda_instance.headers
         )
         mock_session.get.assert_any_call(
             "https://mysmob.api.connect.skoda-auto.cz/api/v1/charging/test_vin",
+            headers=skoda_instance.headers
+        )
+        mock_session.get.assert_any_call(
+            "https://mysmob.api.connect.skoda-auto.cz/api/v3/vehicle-maintenance/vehicles/test_vin/report",
             headers=skoda_instance.headers
         )
 
@@ -203,7 +232,17 @@ class TestSkodaGetStatus:
             },
             "carCapturedTimestamp": "2025-10-06T10:12:44Z"
         }
-        mock_session.get.return_value = MockAiohttpResponse(response_data, 200)
+        maintenance_response_data = {
+            "mileageInKm": 98765
+        }
+        responses = [
+            MockAiohttpResponse(response_data, 200),
+            MockAiohttpResponse(maintenance_response_data, 200)
+        ]
+
+        async def side_effect_func(*args, **kwargs):
+            return responses.pop(0)
+        mock_session.get.side_effect = side_effect_func
 
         # execution
         status = asyncio.run(skoda_instance.get_status())
@@ -212,3 +251,52 @@ class TestSkodaGetStatus:
         assert status['charging']['batteryStatus']['value']['currentSOC_pct'] == 42
         assert status['charging']['batteryStatus']['value']['cruisingRangeElectric_km'] == 47
         assert status['charging']['batteryStatus']['value']['carCapturedTimestamp'] == "2025-10-06T10:12:44Z"
+        assert status['charging']['batteryStatus']['value']['odometer'] == 98765
+
+    def test_get_status_fallback_to_charging_url_on_vehicle_status_403(self, skoda_instance, mock_session):
+        # setup
+        vehicle_status_error = {"error": "forbidden"}
+        charging_url_response_data = {
+            "status": {
+                "battery": {
+                    "remainingCruisingRangeInMeters": 302000,
+                    "stateOfChargeInPercent": 71
+                }
+            },
+            "carCapturedTimestamp": "2026-03-29T09:15:00Z"
+        }
+        maintenance_response_data = {
+            "mileageInKm": 65432
+        }
+
+        responses = [
+            MockAiohttpResponse(vehicle_status_error, 403),
+            MockAiohttpResponse(charging_url_response_data, 200),
+            MockAiohttpResponse(maintenance_response_data, 200)
+        ]
+
+        async def side_effect_func(*args, **kwargs):
+            return responses.pop(0)
+        mock_session.get.side_effect = side_effect_func
+
+        # execution
+        status = asyncio.run(skoda_instance.get_status())
+
+        # evaluation
+        assert status['charging']['batteryStatus']['value']['currentSOC_pct'] == 71
+        assert status['charging']['batteryStatus']['value']['cruisingRangeElectric_km'] == 302.0
+        assert status['charging']['batteryStatus']['value']['carCapturedTimestamp'] == "2026-03-29T09:15:00Z"
+        assert status['charging']['batteryStatus']['value']['odometer'] == 65432
+        assert mock_session.get.call_count == 3
+        mock_session.get.assert_any_call(
+            "https://mysmob.api.connect.skoda-auto.cz/api/v2/vehicle-status/test_vin/driving-range",
+            headers=skoda_instance.headers
+        )
+        mock_session.get.assert_any_call(
+            "https://mysmob.api.connect.skoda-auto.cz/api/v1/charging/test_vin",
+            headers=skoda_instance.headers
+        )
+        mock_session.get.assert_any_call(
+            "https://mysmob.api.connect.skoda-auto.cz/api/v3/vehicle-maintenance/vehicles/test_vin/report",
+            headers=skoda_instance.headers
+        )

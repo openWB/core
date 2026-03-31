@@ -76,8 +76,8 @@ class Optional(OcppMixin):
             module.get.fault_str = NO_ERROR
             Pub().pub(f"openWB/set/optional/ep/{module.name}/get/fault_state", 0)
             Pub().pub(f"openWB/set/optional/ep/{module.name}/get/fault_str", NO_ERROR)
-            Pub().pub(f"openWB/set/optional/ep/{module.name}/get/prices", {})
-            Pub().pub(f"openWB/set/optional/ep/{module.name}/get/next_query_time", None)
+        Pub().pub(f"openWB/set/optional/ep/{module.name}/get/prices", {})
+        Pub().pub(f"openWB/set/optional/ep/{module.name}/get/next_query_time", None)
         Pub().pub("openWB/set/optional/ep/get/prices", {})
 
     def monitoring_start(self):
@@ -242,8 +242,6 @@ class Optional(OcppMixin):
             return []
 
     def _is_et_price_update_required_for_module(self, module: Union[FlexibleTariff, GridFee]) -> bool:
-        if module is None:
-            return False
         if module.get.next_query_time is None:
             return True
         now = timecheck.create_timestamp()
@@ -261,8 +259,10 @@ class Optional(OcppMixin):
             return False
         if len(self.data.electricity_pricing.get.prices) == 0:
             return True
-        return (self._is_et_price_update_required_for_module(self.data.electricity_pricing.flexible_tariff) or
-                self._is_et_price_update_required_for_module(self.data.electricity_pricing.grid_fee))
+        return ((self._flexible_tariff_module is not None and
+                self._is_et_price_update_required_for_module(self.data.electricity_pricing.flexible_tariff)) or
+                (self._grid_fee_module is not None and
+                self._is_et_price_update_required_for_module(self.data.electricity_pricing.grid_fee)))
 
     def ocpp_transfer_meter_values(self):
         try:
