@@ -491,8 +491,9 @@ class SetData:
                     self._validate_value(msg, bool)
                 elif "/set/autolock_state" in msg.topic:
                     self._validate_value(msg, int, [(0, 4)])
-                elif ("/set/rfid" in msg.topic or
-                        "/set/plug_time" in msg.topic):
+                elif "/set/rfid" in msg.topic:
+                    self._validate_value(msg, str)
+                elif "/set/plug_time" in msg.topic:
                     self._validate_value(msg, float)
                 elif "/set/ocpp_transaction_id" in msg.topic:
                     self._validate_value(msg, int)
