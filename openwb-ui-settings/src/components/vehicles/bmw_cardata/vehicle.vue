@@ -155,6 +155,12 @@ export default {
           return;
         }
 
+        // Auth-Daten im Broker speichern
+        this.updateConfiguration(data.device_code || "", "configuration.auth_device_code");
+        this.updateConfiguration(data.code_verifier || "", "configuration.auth_code_verifier");
+        this.updateConfiguration(data.expires_at || 0, "configuration.auth_expires_at");
+        this.updateConfiguration(false, "configuration.auth_connected");
+
         this.authStatus = {
           message: data.message || "",
           user_code: data.user_code || "",
@@ -173,8 +179,17 @@ export default {
 
     async pollAuthStatus() {
       try {
+        // Auth-Daten aus Broker an PHP senden
         const response = await fetch("/openWB/web/bmw_cardata/bmw_cardata_auth_status.php", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           cache: "no-store",
+          body: JSON.stringify({
+            client_id:     this.vehicle.configuration.client_id,
+            device_code:   this.vehicle.configuration.auth_device_code,
+            code_verifier: this.vehicle.configuration.auth_code_verifier,
+            expires_at:    this.vehicle.configuration.auth_expires_at,
+          }),
         });
         const data = await response.json();
 
@@ -190,10 +205,15 @@ export default {
           clearInterval(this.pollTimer);
           this.pollTimer = null;
 
+          // Tokens + Auth-Cleanup im Broker speichern
           this.updateConfiguration(data.access_token, "configuration.access_token");
           this.updateConfiguration(data.refresh_token || "", "configuration.refresh_token");
           this.updateConfiguration(data.expires_at || 0, "configuration.expires_at");
           this.updateConfiguration("", "configuration.container_id");
+          this.updateConfiguration("", "configuration.auth_device_code");
+          this.updateConfiguration("", "configuration.auth_code_verifier");
+          this.updateConfiguration(0, "configuration.auth_expires_at");
+          this.updateConfiguration(true, "configuration.auth_connected");
 
           this.authStatus = {
             message: "",
@@ -206,8 +226,6 @@ export default {
         }
 
         this.authStatus.message = data.message || "Warte auf BMW-Bestätigung...";
-        this.authStatus.user_code = data.user_code || this.authStatus.user_code;
-        this.authStatus.verification_uri = data.verification_uri || this.authStatus.verification_uri;
 
       } catch {
         this.authStatus.error = "Auth-Status konnte nicht geladen werden.";
