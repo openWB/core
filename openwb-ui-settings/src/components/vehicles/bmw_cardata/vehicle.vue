@@ -1,141 +1,80 @@
 <template>
   <div class="vehicle-soc-bmw-cardata">
-    <openwb-base-alert v-if="vehicle.configuration.test_mode" subtype="info">
-      <b>Testmodus aktiv</b><br />
-      Es werden keine BMW-API-Abfragen ausgeführt.<br />
-      SoC und Reichweite kommen aus den Testwerten.
-    </openwb-base-alert>
-
-    <openwb-base-alert v-else-if="isConnected" subtype="success">
+    <openwb-base-alert v-if="isConnected" subtype="success">
       <b>BMW verbunden</b><br />
       Tokens vorhanden. BMW CarData kann genutzt werden.
     </openwb-base-alert>
 
     <openwb-base-alert v-else subtype="warning">
-      <b>Live-Modus aktiv</b><br />
-      Aktuell ist keine gültige BMW-Verbindung hinterlegt oder der Status ist noch unbekannt.
+      <b>Nicht verbunden</b><br />
+      Bitte BMW-Kopplung durchführen.
+    </openwb-base-alert>
+
+    <openwb-base-text-input
+      title="Client ID"
+      subtype="text"
+      required
+      :model-value="vehicle.configuration.client_id"
+      @update:model-value="updateConfiguration($event, 'configuration.client_id')"
+    >
+      <template #help>
+        BMW CarData Client ID aus dem BMW Portal.
+      </template>
+    </openwb-base-text-input>
+
+    <openwb-base-text-input
+      title="VIN"
+      subtype="text"
+      required
+      :model-value="vehicle.configuration.vin"
+      @update:model-value="updateConfiguration($event, 'configuration.vin')"
+    >
+      <template #help>
+        Fahrzeug-Identifikationsnummer (17 Zeichen).
+      </template>
+    </openwb-base-text-input>
+
+    <openwb-base-alert subtype="secondary">
+      <b>BMW Verbindung</b><br />
+      Status:
+      <span v-if="isConnected"><b>Verbunden</b></span>
+      <span v-else><b>Nicht verbunden</b></span>
+      <br />
+      <span v-if="authStatus.message">{{ authStatus.message }}</span>
+    </openwb-base-alert>
+
+    <openwb-base-alert v-if="isConnected" subtype="info">
+      Die BMW-Verbindung ist aktiv. Eine erneute Kopplung ist nur nötig wenn die Verbindung verloren gegangen ist.
     </openwb-base-alert>
 
     <openwb-base-button-group-input
-      title="Testmodus aktiv"
+      title="BMW Auth"
       :buttons="[
-        { buttonValue: true, text: 'Ja', class: 'btn-outline-success' },
-        { buttonValue: false, text: 'Nein', class: 'btn-outline-danger' }
+        { buttonValue: 'start', text: 'BMW koppeln', class: 'btn-outline-primary' }
       ]"
-      :model-value="vehicle.configuration.test_mode"
-      @update:model-value="updateConfiguration($event, 'configuration.test_mode')"
+      :model-value="null"
+      @update:model-value="handleAuthAction"
     >
       <template #help>
-        Im Testmodus werden keine BMW-Daten abgefragt.
+        Startet die BMW-Kopplung. Nur nötig bei erstmaliger Einrichtung oder wenn die Verbindung verloren gegangen ist.
       </template>
     </openwb-base-button-group-input>
 
-    <template v-if="vehicle.configuration.test_mode">
-      <openwb-base-number-input
-        title="Test SoC"
-        unit="%"
-        :min="0"
-        :max="100"
-        :model-value="vehicle.configuration.test_soc"
-        @update:model-value="updateConfiguration($event, 'configuration.test_soc')"
-      >
-        <template #help>
-          Simulierter Ladezustand (0–100 %).
-        </template>
-      </openwb-base-number-input>
+    <openwb-base-alert v-if="authStatus.user_code" subtype="info">
+      <b>BMW Auth läuft</b><br />
+      URL: {{ authStatus.verification_uri }}<br />
+      Code: <b>{{ authStatus.user_code }}</b>
+    </openwb-base-alert>
 
-      <openwb-base-number-input
-        title="Test Reichweite"
-        unit="km"
-        :min="0"
-        :model-value="vehicle.configuration.test_range"
-        @update:model-value="updateConfiguration($event, 'configuration.test_range')"
-      >
-        <template #help>
-          Simulierte Reichweite in km.
-        </template>
-      </openwb-base-number-input>
-    </template>
+    <openwb-base-alert v-if="authStatus.justConnected" subtype="success">
+      <b>BMW erfolgreich verbunden!</b><br />
+      Bitte jetzt auf <b>"Speichern"</b> klicken um die Verbindung dauerhaft zu sichern.
+    </openwb-base-alert>
 
-    <template v-else>
-      <openwb-base-text-input
-        title="Client ID"
-        subtype="text"
-        required
-        :model-value="vehicle.configuration.client_id"
-        @update:model-value="updateConfiguration($event, 'configuration.client_id')"
-      >
-        <template #help>
-          BMW CarData Client ID.
-        </template>
-      </openwb-base-text-input>
-
-      <openwb-base-text-input
-        title="VIN"
-        subtype="text"
-        required
-        :model-value="vehicle.configuration.vin"
-        @update:model-value="updateConfiguration($event, 'configuration.vin')"
-      >
-        <template #help>
-          Fahrzeug-VIN (FIN).
-        </template>
-      </openwb-base-text-input>
-
-      <openwb-base-alert subtype="secondary">
-        <b>BMW Verbindung</b><br />
-        Status:
-        <span v-if="isConnected"><b>Verbunden</b></span>
-        <span v-else><b>Nicht verbunden</b></span>
-        <br />
-        <span v-if="authStatus.message">{{ authStatus.message }}</span>
-      </openwb-base-alert>
-
-      <openwb-base-button-group-input
-        v-if="!isConnected"
-        title="BMW Auth"
-        :buttons="[
-          { buttonValue: 'start', text: 'BMW koppeln', class: 'btn-outline-primary' },
-          { buttonValue: 'refresh', text: 'Status aktualisieren', class: 'btn-outline-secondary' }
-        ]"
-        :model-value="null"
-        @update:model-value="handleAuthAction"
-      >
-        <template #help>
-          Startet die BMW-Kopplung oder aktualisiert den Verbindungsstatus.
-        </template>
-      </openwb-base-button-group-input>
-
-      <openwb-base-button-group-input
-        v-else
-        title="BMW Auth"
-        :buttons="[
-          { buttonValue: 'reauth', text: 'Neu koppeln', class: 'btn-outline-warning' }
-        ]"
-        :model-value="null"
-        @update:model-value="handleAuthAction"
-      >
-        <template #help>
-          Startet die BMW-Kopplung erneut. Nur nötig wenn die Verbindung verloren gegangen ist.
-        </template>
-      </openwb-base-button-group-input>
-
-      <openwb-base-alert v-if="authStatus.user_code" subtype="info">
-        <b>BMW Auth läuft</b><br />
-        URL: {{ authStatus.verification_uri }}<br />
-        Code: <b>{{ authStatus.user_code }}</b>
-      </openwb-base-alert>
-
-      <openwb-base-alert v-if="authStatus.justConnected" subtype="success">
-        <b>BMW erfolgreich verbunden!</b><br />
-        Bitte jetzt auf <b>"Speichern"</b> klicken um die Verbindung dauerhaft zu sichern.
-      </openwb-base-alert>
-
-      <openwb-base-alert v-if="authStatus.error" subtype="danger">
-        <b>Fehler</b><br />
-        {{ authStatus.error }}
-      </openwb-base-alert>
-    </template>
+    <openwb-base-alert v-if="authStatus.error" subtype="danger">
+      <b>Fehler</b><br />
+      {{ authStatus.error }}
+    </openwb-base-alert>
 
     <openwb-base-button-group-input
       title="SoC während der Ladung berechnen"
@@ -153,9 +92,9 @@
 
     <openwb-base-alert subtype="secondary">
       <b>Technische Hinweise:</b><br />
-      • Testmodus = 0 BMW-API-Calls<br />
-      • Live-Modus (mit Container-ID) ≈ 1 Call pro Abfrage<br />
-      • Bei Token-Refresh kurzzeitig mehr Calls möglich<br />
+      • BMW CarData API: max. 50 Abfragen pro Tag<br />
+      • Empfohlenes Intervall während Ladung: 30-60 Minuten<br />
+      • Empfohlenes Intervall ohne Ladung: 720 Minuten
     </openwb-base-alert>
   </div>
 </template>
@@ -182,7 +121,6 @@ export default {
     isConnected() {
       return !!this.vehicle.configuration.access_token;
     },
-
   },
   beforeUnmount() {
     if (this.pollTimer) {
@@ -192,19 +130,6 @@ export default {
   },
   methods: {
     async handleAuthAction(action) {
-      if (action === "refresh") {
-        this.authStatus.message = this.isConnected ? "BMW verbunden." : "Keine gültige Verbindung hinterlegt.";
-        this.authStatus.error = "";
-        this.authStatus.justConnected = false;
-        return;
-      }
-      if (action === "reauth") {
-        const confirmed = window.confirm("BMW-Verbindung wirklich neu starten? Die bestehende Verbindung wird überschrieben.");
-        if (!confirmed) return;
-        this.startAuth();
-        return;
-      }
-
       if (action === "start") {
         if (!this.vehicle.configuration.client_id) {
           this.authStatus.error = "Bitte zuerst die Client ID eintragen und speichern.";
@@ -265,7 +190,6 @@ export default {
           clearInterval(this.pollTimer);
           this.pollTimer = null;
 
-          // Tokens in Konfiguration speichern
           this.updateConfiguration(data.access_token, "configuration.access_token");
           this.updateConfiguration(data.refresh_token || "", "configuration.refresh_token");
           this.updateConfiguration(data.expires_at || 0, "configuration.expires_at");
