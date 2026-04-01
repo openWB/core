@@ -10,6 +10,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_inverter_value_store
 from modules.devices.sunways.sunways.config import SunwaysInverterSetup
 from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 """Example Output for ajax.txt
 109 W;103 W;111 VA;41 var;333.8;223.2;0.3;0.5;109.0;103.0;---;---;0.93 c;1.60;105.2;190.2;55342.2;132;0;0;NT 5000;1;
@@ -33,7 +34,7 @@ class SunwaysInverter(AbstractInverter):
         self.password: str = self.kwargs['password']
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.peak_filter = PeakFilter("inverter", self.component_config.id, self.fault_state)
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         params = (

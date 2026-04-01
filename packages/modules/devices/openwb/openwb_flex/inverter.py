@@ -13,6 +13,7 @@ from modules.common.store import get_inverter_value_store
 from modules.devices.openwb.openwb_flex.config import PvKitFlexSetup
 from modules.devices.openwb.openwb_flex.versions import kit_inverter_version_factory
 from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -34,7 +35,7 @@ class PvKitFlex(AbstractInverter):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.simulation = {}
         self.store = get_inverter_value_store(self.component_config.id)
-        self.peak_filter = PeakFilter("inverter", self.component_config.id, self.fault_state)
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         """ liest die Werte des Moduls aus.

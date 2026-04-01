@@ -10,6 +10,7 @@ from modules.common.simcount._simcounter import SimCounter
 from modules.common.store._inverter import get_inverter_value_store
 from modules.devices.generic.mqtt.config import MqttInverterSetup
 from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -24,7 +25,7 @@ class MqttInverter(AbstractInverter):
     def initialize(self) -> None:
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.sim_counter = SimCounter(self.kwargs['device_id'], self.component_config.id, prefix="pv")
-        self.peak_filter = PeakFilter("inverter", self.component_config.id, self.fault_state)
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
         self.store = get_inverter_value_store(self.component_config.id)
 
     def update(self, received_topics: Dict) -> None:

@@ -7,6 +7,8 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount import SimCounter
 from modules.common.store import get_inverter_value_store
 from modules.devices.sample_request_by_device.sample_request_by_device.config import SampleInverterSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -23,12 +25,14 @@ class SampleInverter(AbstractInverter):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self, response) -> None:
         # hier die Werte aus der response parsen
         power = response.get("power")
         currents = response.get("currents")
         dc_power = response.get("dc_power")
+        self.peak_filter.check_values(power)
         exported = self.sim_counter.sim_count(power)[1]
 
         inverter_state = InverterState(

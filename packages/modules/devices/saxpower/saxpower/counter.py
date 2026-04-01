@@ -10,6 +10,7 @@ from modules.common.simcount import SimCounter
 from modules.common.store import get_counter_value_store
 from modules.devices.saxpower.saxpower.config import SaxpowerCounterSetup
 from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -30,7 +31,7 @@ class SaxpowerCounter(AbstractCounter):
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
-        self.peak_filter = PeakFilter("counter", self.component_config.id, self.fault_state)
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         power = self.client.read_holding_registers(48, ModbusDataType.INT_16, unit=self.__modbus_id)

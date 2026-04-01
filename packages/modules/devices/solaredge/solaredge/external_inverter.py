@@ -13,6 +13,7 @@ from modules.devices.solaredge.solaredge.config import SolaredgeExternalInverter
 from modules.devices.solaredge.solaredge.scale import scale_registers
 from modules.devices.solaredge.solaredge.meter import SolaredgeMeterRegisters, set_component_registers
 from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ class SolaredgeExternalInverter(AbstractInverter):
         self.registers = SolaredgeMeterRegisters(self.component_config.configuration.meter_id)
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.peak_filter = PeakFilter("inverter", self.component_config.id, self.fault_state)
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
         components = list(self.kwargs['components'].values())
         components.append(self)
