@@ -1,14 +1,14 @@
 <?php
 header('Content-Type: application/json');
 
-// Auth-Daten kommen von der UI (aus dem Broker)
 $input = json_decode(file_get_contents('php://input'), true);
-$client_id    = $input['client_id'] ?? '';
-$device_code  = $input['device_code'] ?? '';
-$code_verifier = $input['code_verifier'] ?? '';
-$expires_at   = $input['expires_at'] ?? 0;
 
-if (!$client_id || !$device_code || !$code_verifier) {
+$client_id = trim((string)($input['client_id'] ?? ''));
+$device_code = trim((string)($input['device_code'] ?? ''));
+$code_verifier = trim((string)($input['code_verifier'] ?? ''));
+$expires_at = (int)($input['expires_at'] ?? 0);
+
+if ($client_id === '' || $device_code === '' || $code_verifier === '') {
     echo json_encode([
         'connected' => false,
         'message'   => 'Noch keine BMW Auth gestartet.',
@@ -17,8 +17,7 @@ if (!$client_id || !$device_code || !$code_verifier) {
     exit;
 }
 
-// Abgelaufen?
-if (time() > $expires_at) {
+if ($expires_at > 0 && time() > $expires_at) {
     echo json_encode([
         'connected' => false,
         'message'   => '',
@@ -27,7 +26,6 @@ if (time() > $expires_at) {
     exit;
 }
 
-// Token pollen
 $post_data = http_build_query([
     'client_id'     => $client_id,
     'device_code'   => $device_code,
@@ -54,17 +52,32 @@ curl_close($ch);
 if ($curl_error) {
     echo json_encode([
         'connected' => false,
-        'message'   => 'Warte auf BMW-Bestätigung...',
-        'error'     => '',
+        'message'   => '',
+        'error'     => 'Verbindungsfehler: ' . $curl_error,
     ]);
     exit;
 }
 
 $data = json_decode($response, true);
-$error = $data['error'] ?? '';
+if (!is_array($data)) {
+    $data = [];
+}
 
-// Noch nicht bestätigt
-if (in_array($error, ['authorization_pending', 'slow_down']) || $http_code === 400) {
+$error = (string)($data['error'] ?? '');
+
+if ($http_code === 200 && !empty($data['access_token'])) {
+    echo json_encode([
+        'connected'     => true,
+        'access_token'  => $data['access_token'],
+        'refresh_token' => $data['refresh_token'] ?? '',
+        'expires_at'    => time() + (($data['expires_in'] ?? 3600) - 60),
+        'message'       => 'BMW verbunden.',
+        'error'         => '',
+    ]);
+    exit;
+}
+
+if ($error === 'authorization_pending') {
     echo json_encode([
         'connected' => false,
         'message'   => 'Warte auf BMW-Bestätigung...',
@@ -73,22 +86,37 @@ if (in_array($error, ['authorization_pending', 'slow_down']) || $http_code === 4
     exit;
 }
 
-// Erfolgreich
-if ($http_code === 200 && !empty($data['access_token'])) {
+if ($error === 'slow_down') {
     echo json_encode([
-        'connected'     => true,
-        'access_token'  => $data['access_token'],
-        'refresh_token' => $data['refresh_token'] ?? '',
-        'expires_at'    => time() + ($data['expires_in'] ?? 3600) - 60,
-        'message'       => 'BMW verbunden.',
-        'error'         => '',
+        'connected' => false,
+        'message'   => 'Warte auf BMW-Bestätigung...',
+        'error'     => '',
     ]);
     exit;
 }
 
-// Sonstiger Fehler
+if ($error === 'authorization_declined') {
+    echo json_encode([
+        'connected' => false,
+        'message'   => '',
+        'error'     => 'BMW Auth wurde abgelehnt.',
+    ]);
+    exit;
+}
+
+if ($error === 'expired_token') {
+    echo json_encode([
+        'connected' => false,
+        'message'   => '',
+        'error'     => 'BMW Auth ist abgelaufen. Bitte erneut starten.',
+    ]);
+    exit;
+}
+
+$details = $error !== '' ? $error : ($response ?: ('HTTP ' . $http_code));
+
 echo json_encode([
     'connected' => false,
     'message'   => '',
-    'error'     => 'Fehler: ' . ($response ?: 'HTTP ' . $http_code),
+    'error'     => 'Fehler beim BMW-Token-Abruf: ' . $details,
 ]);
