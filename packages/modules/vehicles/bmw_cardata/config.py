@@ -6,13 +6,17 @@ class BmwCardataConfiguration:
     client_id: str = ""
     vin: str = ""
     calculate_soc: bool = False
-    test_mode: bool = True
-    test_soc: int = 80
-    test_range: int = 300
     access_token: str = ""
     refresh_token: str = ""
     expires_at: float = 0
     container_id: str = ""
+    # Auth-Status für UI (temporär während Device Code Flow)
+    auth_user_code: str = ""
+    auth_verification_uri: str = ""
+    auth_device_code: str = ""
+    auth_code_verifier: str = ""
+    auth_expires_at: float = 0
+    auth_connected: bool = False
 
 
 @dataclass
