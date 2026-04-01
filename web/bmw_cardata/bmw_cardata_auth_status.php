@@ -1,9 +1,14 @@
 <?php
 header('Content-Type: application/json');
 
-$status_file = '/var/www/html/openWB/data/bmw_cardata_auth_status.json';
+// Auth-Daten kommen von der UI (aus dem Broker)
+$input = json_decode(file_get_contents('php://input'), true);
+$client_id    = $input['client_id'] ?? '';
+$device_code  = $input['device_code'] ?? '';
+$code_verifier = $input['code_verifier'] ?? '';
+$expires_at   = $input['expires_at'] ?? 0;
 
-if (!file_exists($status_file)) {
+if (!$client_id || !$device_code || !$code_verifier) {
     echo json_encode([
         'connected' => false,
         'message'   => 'Noch keine BMW Auth gestartet.',
@@ -12,24 +17,8 @@ if (!file_exists($status_file)) {
     exit;
 }
 
-$status = json_decode(file_get_contents($status_file), true);
-if (!$status) {
-    echo json_encode(['connected' => false, 'error' => 'Status-Datei konnte nicht gelesen werden.']);
-    exit;
-}
-
-// Bereits verbunden?
-if (!empty($status['connected'])) {
-    echo json_encode([
-        'connected' => true,
-        'message'   => 'BMW verbunden.',
-        'error'     => '',
-    ]);
-    exit;
-}
-
 // Abgelaufen?
-if (time() > ($status['expires_at'] ?? 0)) {
+if (time() > $expires_at) {
     echo json_encode([
         'connected' => false,
         'message'   => '',
@@ -40,10 +29,10 @@ if (time() > ($status['expires_at'] ?? 0)) {
 
 // Token pollen
 $post_data = http_build_query([
-    'client_id'     => $status['client_id'],
-    'device_code'   => $status['device_code'],
+    'client_id'     => $client_id,
+    'device_code'   => $device_code,
     'grant_type'    => 'urn:ietf:params:oauth:grant-type:device_code',
-    'code_verifier' => $status['code_verifier'],
+    'code_verifier' => $code_verifier,
 ]);
 
 $ch = curl_init('https://customer.bmwgroup.com/gcdm/oauth/token');
@@ -66,8 +55,6 @@ if ($curl_error) {
     echo json_encode([
         'connected' => false,
         'message'   => 'Warte auf BMW-Bestätigung...',
-        'user_code' => $status['user_code'],
-        'verification_uri' => $status['verification_uri'],
         'error'     => '',
     ]);
     exit;
@@ -76,34 +63,23 @@ if ($curl_error) {
 $data = json_decode($response, true);
 $error = $data['error'] ?? '';
 
-// Noch nicht bestätigt oder zu schnelles Polling – kein Fehler!
+// Noch nicht bestätigt
 if (in_array($error, ['authorization_pending', 'slow_down']) || $http_code === 400) {
     echo json_encode([
-        'connected'        => false,
-        'user_code'        => $status['user_code'],
-        'verification_uri' => $status['verification_uri'],
-        'message'          => 'Warte auf BMW-Bestätigung...',
-        'error'            => '',
+        'connected' => false,
+        'message'   => 'Warte auf BMW-Bestätigung...',
+        'error'     => '',
     ]);
     exit;
 }
 
 // Erfolgreich
 if ($http_code === 200 && !empty($data['access_token'])) {
-    $expires_at = time() + ($data['expires_in'] ?? 3600) - 60;
-
-    // Status-Datei aktualisieren
-    $status['connected'] = true;
-    $status['message'] = 'BMW Auth erfolgreich abgeschlossen.';
-    $status['error'] = '';
-    file_put_contents($status_file, json_encode($status, JSON_PRETTY_PRINT));
-
-    // Tokens zurückgeben – UI speichert sie in der openWB-Konfiguration
     echo json_encode([
         'connected'     => true,
         'access_token'  => $data['access_token'],
         'refresh_token' => $data['refresh_token'] ?? '',
-        'expires_at'    => $expires_at,
+        'expires_at'    => time() + ($data['expires_in'] ?? 3600) - 60,
         'message'       => 'BMW verbunden.',
         'error'         => '',
     ]);

@@ -5,7 +5,7 @@ $input = json_decode(file_get_contents('php://input'), true);
 $client_id = $input['client_id'] ?? '';
 
 if (!$client_id) {
-    echo json_encode(['connected' => false, 'error' => 'Client ID fehlt.']);
+    echo json_encode(['error' => 'Client ID fehlt.']);
     exit;
 }
 
@@ -39,43 +39,29 @@ $curl_error = curl_error($ch);
 curl_close($ch);
 
 if ($curl_error) {
-    echo json_encode(['connected' => false, 'error' => 'Verbindungsfehler: ' . $curl_error]);
+    echo json_encode(['error' => 'Verbindungsfehler: ' . $curl_error]);
     exit;
 }
 
 if ($http_code >= 400) {
-    echo json_encode(['connected' => false, 'error' => 'BMW API Fehler: HTTP ' . $http_code . ' – ' . $response]);
+    echo json_encode(['error' => 'BMW API Fehler: HTTP ' . $http_code . ' – ' . $response]);
     exit;
 }
 
 $data = json_decode($response, true);
 if (!$data || empty($data['device_code'])) {
-    echo json_encode(['connected' => false, 'error' => 'Ungültige Antwort von BMW: ' . $response]);
+    echo json_encode(['error' => 'Ungültige Antwort von BMW: ' . $response]);
     exit;
 }
 
-// Status-Datei speichern (für Poll)
-$status = [
-    'connected'        => false,
-    'client_id'        => $client_id,
-    'device_code'      => $data['device_code'],
+// Alle Auth-Daten an die UI zurückgeben – UI speichert sie im Broker
+echo json_encode([
     'user_code'        => $data['user_code'],
     'verification_uri' => $data['verification_uri_complete'] ?? $data['verification_uri'] ?? '',
-    'interval'         => $data['interval'] ?? 5,
-    'expires_at'       => time() + ($data['expires_in'] ?? 300),
+    'device_code'      => $data['device_code'],
     'code_verifier'    => $code_verifier,
+    'expires_at'       => time() + ($data['expires_in'] ?? 300),
+    'interval'         => $data['interval'] ?? 5,
     'message'          => 'BMW Auth gestartet. Bitte BMW-Seite öffnen und Code eingeben.',
-    'error'            => '',
-];
-
-$status_file = '/var/www/html/openWB/data/bmw_cardata_auth_status.json';
-file_put_contents($status_file, json_encode($status, JSON_PRETTY_PRINT));
-chmod($status_file, 0600);
-
-echo json_encode([
-    'connected'        => false,
-    'user_code'        => $status['user_code'],
-    'verification_uri' => $status['verification_uri'],
-    'message'          => $status['message'],
     'error'            => '',
 ]);
