@@ -12,6 +12,7 @@ from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.victron.victron.config import VictronBatSetup
 from modules.common.utils.peak_filter import PeakFilter
+from control import data
 
 log = logging.getLogger(__name__)
 
@@ -34,6 +35,7 @@ class VictronBat(AbstractBat):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.last_mode = 'Undefined'
         self.peak_filter = PeakFilter("bat", self.component_config.id, self.fault_state)
+        self.current_power = 0
 
     def update(self) -> None:
         modbus_id = self.component_config.configuration.modbus_id
@@ -49,6 +51,7 @@ class VictronBat(AbstractBat):
             exported=exported
         )
         self.store.set(bat_state)
+        self.current_power = power
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
         modbus_id = self.component_config.configuration.modbus_id
@@ -79,43 +82,35 @@ class VictronBat(AbstractBat):
                 self.__tcp_client.write_register(39, 1, data_type=ModbusDataType.UINT_16, unit=vebus_id)
                 self.last_mode = 'stop'
         elif power_limit < 0:
+            evu_power = data.data.counter_all_data.get_evu_counter().data.get.power
+            set_power = (power_limit - self.current_power) + evu_power
+            log.debug(f"Aktive Batteriesteuerung Victron:"
+                      f"Speicher soll mit {power_limit} W geladen werden. \n"
+                      f"Aktueller Speicherleistung: {self.current_power} W, EVU-Leistung: {evu_power} W"
+                      f"EVU - Leistung um {power_limit - self.current_power} W anpassen auf {set_power} W")
             if self.last_mode != 'discharge':
-                # ESS Mode 3 für externe Steuerung und auf L1 wird entladen
-                self.__tcp_client.write_register(2902, 3, data_type=ModbusDataType.UINT_16, unit=modbus_id)
-                self.__tcp_client.write_register(39, 0, data_type=ModbusDataType.UINT_16, unit=vebus_id)
+                self.__tcp_client.write_register(2902, 2, data_type=ModbusDataType.UINT_16, unit=modbus_id)
                 self.last_mode = 'discharge'
-            # Die maximale Entladeleistung begrenzen auf 5000W
-            if phases == 3:
-                power_limit = power_limit / 3
-            power_value = int(min(power_limit, 5000))
+            power_value = int(max(set_power, -5000))
             log.debug(f"Aktive Batteriesteuerung. Victron mit {phases} Phase(n). "
-                      f"Batterie wird mit {power_value} W pro Phase entladen.")
+                      f"Batterie wird mit {power_value} W entladen.")
             self.__tcp_client.write_register(
-                37, power_value & 0xFFFF, data_type=ModbusDataType.INT_16, unit=vebus_id)
-            if phases == 3:
-                self.__tcp_client.write_register(
-                    40, power_value & 0xFFFF, data_type=ModbusDataType.INT_16, unit=vebus_id)
-                self.__tcp_client.write_register(
-                    41, power_value & 0xFFFF, data_type=ModbusDataType.INT_16, unit=vebus_id)
+                2716, power_value, data_type=ModbusDataType.INT_32, unit=modbus_id)
         elif power_limit > 0:
+            evu_power = data.data.counter_all_data.get_evu_counter().data.get.power
+            set_power = (power_limit - self.current_power) + evu_power
+            log.debug(f"Aktive Batteriesteuerung Victron:"
+                      f"Speicher soll mit {power_limit} W geladen werden. \n"
+                      f"Aktueller Speicherleistung: {self.current_power} W, EVU-Leistung: {evu_power} W"
+                      f"EVU - Leistung um {power_limit - self.current_power} W anpassen auf {set_power} W")
             if self.last_mode != 'charge':
-                # ESS Mode 3 für externe Steuerung und auf L1 wird entladen
-                self.__tcp_client.write_register(2902, 3, data_type=ModbusDataType.UINT_16, unit=modbus_id)
-                self.__tcp_client.write_register(39, 0, data_type=ModbusDataType.UINT_16, unit=vebus_id)
+                self.__tcp_client.write_register(2902, 2, data_type=ModbusDataType.UINT_16, unit=modbus_id)
                 self.last_mode = 'charge'
-            # Die maximale Entladeleistung begrenzen auf 5000W
-            if phases == 3:
-                power_limit = power_limit / 3
-            power_value = int(min(power_limit, 5000))
+            power_value = int(min(set_power, 5000))
             log.debug(f"Aktive Batteriesteuerung. Victron mit {phases} Phase(n). "
-                      f"Batterie wird mit {power_value} W pro Phase geladen.")
+                      f"Batterie wird mit {power_value} W geladen.")
             self.__tcp_client.write_register(
-                37, power_value & 0xFFFF, data_type=ModbusDataType.INT_16, unit=vebus_id)
-            if phases == 3:
-                self.__tcp_client.write_register(
-                    40, power_value & 0xFFFF, data_type=ModbusDataType.INT_16, unit=vebus_id)
-                self.__tcp_client.write_register(
-                    41, power_value & 0xFFFF, data_type=ModbusDataType.INT_16, unit=vebus_id)
+                2716, power_value, data_type=ModbusDataType.INT_32, unit=modbus_id)
 
     def power_limit_controllable(self) -> bool:
         return True
