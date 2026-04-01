@@ -65,18 +65,19 @@ class VictronBat(AbstractBat):
         if power_limit is None:
             log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
             if self.last_mode is not None:
-                # ESS Mode 2 und Leistung EVU auf 0 setzen für Selbstregelung
+                # ESS Mode 2 und Leistung EVU auf 0kW setzen für Selbstregelung
                 self.__tcp_client.write_register(2902, 2, data_type=ModbusDataType.UINT_16, unit=modbus_id)
                 self.__tcp_client.write_register(2702, 100, data_type=ModbusDataType.UINT_16, unit=modbus_id)
-                # self.__tcp_client.write_register(39, 0, data_type=ModbusDataType.UINT_16, unit=vebus_id)
                 self.__tcp_client.write_register(2716, 0, data_type=ModbusDataType.INT_32, unit=modbus_id)
                 self.last_mode = None
         elif power_limit == 0:
             log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt und nicht entladen")
             if self.last_mode != 'stop':
                 # ESS Mode 2 und Discharge Power 0% für externe Steuerung und keine Entladung
+                # Leistung an EVU-Punkt auf 0kW setzen -> Eigenregelung bei laden und Entladen verhindern
                 self.__tcp_client.write_register(2902, 2, data_type=ModbusDataType.UINT_16, unit=modbus_id)
                 self.__tcp_client.write_register(2702, 0, data_type=ModbusDataType.UINT_16, unit=modbus_id)
+                self.__tcp_client.write_register(2716, 0, data_type=ModbusDataType.INT_32, unit=modbus_id)
                 self.last_mode = 'stop'
         elif power_limit < 0:
             evu_power = data.data.counter_all_data.get_evu_counter().data.get.power
