@@ -59,10 +59,13 @@ class PeakFilter:
             control_interval = data.data.general_data.data.control_interval
             allowed_deviation = 2 * (control_interval / 3600) * max_power
 
-            imp = self.check_total_energy(imported, self.imported, allowed_deviation)
+            if self.startup:
+                imp, exp = None, None
+                self.startup = False
+            else:
+                imp = self.check_total_energy(imported, self.imported, allowed_deviation)
+                exp = self.check_total_energy(exported, self.exported, allowed_deviation)
             self.imported = imported
-
-            exp = self.check_total_energy(exported, self.exported, allowed_deviation)
             self.exported = exported
             return imp, exp
         return imported, exported
@@ -73,26 +76,23 @@ class PeakFilter:
         previous_total_energy: Optional[float],
         allowed_deviation: float
     ) -> Optional[float]:
-        if self.startup:
-            self.startup = False
-        else:
-            if total_energy is not None:
-                if previous_total_energy is None:
-                    if allowed_deviation > 0:
-                        log.debug(f"PeakFilter: Vorheriger Wert None, aktueller Zählerwert: {total_energy / 1000 }kWh. "
-                                  "Warte einen Regelintervall.")
-                        self.fault_state.warning(f"Peakfilter: {total_energy / 1000}kWh. "
-                                                 "Die Leistung erscheint höher, als laut Anlagenkonfiguration "
-                                                 "plausibel ist. Erneute Prüfung im nächsten Regelintervall.")
-                elif allowed_deviation > 0 and (total_energy - previous_total_energy) > allowed_deviation:
-                    log.debug(f"PeakFilter: Unplausibler Zählerwert: {total_energy / 1000}kWh. "
-                              f"Differenz zum vorherigen Wert: {total_energy - previous_total_energy}Wh. "
-                              f"erlaubte Differenz: {round(allowed_deviation, 2)}Wh.")
+        if total_energy is not None:
+            if previous_total_energy is None:
+                if allowed_deviation > 0:
+                    log.debug(f"PeakFilter: Vorheriger Wert None, aktueller Zählerwert: {total_energy / 1000 }kWh. "
+                              "Warte einen Regelintervall.")
                     self.fault_state.warning(f"Peakfilter: {total_energy / 1000}kWh. "
-                                             "Die Leistung erscheint höher, als laut Anlagenkonfiguration plausibel "
-                                             "ist. Erneute Prüfung im nächsten Regelintervall.")
-                else:
-                    log.debug(f"PeakFilter: Zählerwert: {total_energy}Wh innerhalb der zulässigen Grenzen. "
-                              f"Differenz zum vorherigen Wert: {total_energy - previous_total_energy}Wh.")
-                    return total_energy
+                                             "Die Leistung erscheint höher, als laut Anlagenkonfiguration "
+                                             "plausibel ist. Erneute Prüfung im nächsten Regelintervall.")
+            elif allowed_deviation > 0 and (total_energy - previous_total_energy) > allowed_deviation:
+                log.debug(f"PeakFilter: Unplausibler Zählerwert: {total_energy / 1000}kWh. "
+                          f"Differenz zum vorherigen Wert: {total_energy - previous_total_energy}Wh. "
+                          f"erlaubte Differenz: {round(allowed_deviation, 2)}Wh.")
+                self.fault_state.warning(f"Peakfilter: {total_energy / 1000}kWh. "
+                                         "Die Leistung erscheint höher, als laut Anlagenkonfiguration plausibel "
+                                         "ist. Erneute Prüfung im nächsten Regelintervall.")
+            else:
+                log.debug(f"PeakFilter: Zählerwert: {total_energy}Wh innerhalb der zulässigen Grenzen. "
+                          f"Differenz zum vorherigen Wert: {total_energy - previous_total_energy}Wh.")
+                return total_energy
         return None
