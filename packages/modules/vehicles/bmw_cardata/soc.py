@@ -1,13 +1,9 @@
-import json
 import logging
 import time
-import urllib.error
-import urllib.parse
-import urllib.request
 from typing import List
 
 from helpermodules.cli import run_using_positional_cli_args
-from modules.common import store
+from modules.common import req, store
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.abstract_vehicle import VehicleUpdateData
 from modules.common.component_state import CarState
@@ -36,52 +32,6 @@ CONTAINER_DESCRIPTORS = [
 ]
 
 
-def http_post(url: str, data: dict) -> dict:
-    encoded = urllib.parse.urlencode(data).encode()
-    req = urllib.request.Request(url, data=encoded, method="POST")
-    req.add_header("Content-Type", "application/x-www-form-urlencoded")
-    req.add_header("Accept", "application/json")
-    try:
-        with urllib.request.urlopen(req, timeout=30) as r:
-            return json.loads(r.read().decode())
-    except urllib.error.HTTPError as e:
-        body = e.read().decode(errors="ignore")
-        raise Exception(f"BMW CarData HTTP-POST Fehler {e.code}: {body[:300]}")
-
-
-def http_post_json(url: str, token: str, payload: dict) -> dict:
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        method="POST",
-    )
-    req.add_header("Authorization", f"Bearer {token}")
-    req.add_header("Accept", "application/json")
-    req.add_header("Content-Type", "application/json")
-    req.add_header("x-version", "v1")
-    try:
-        with urllib.request.urlopen(req, timeout=30) as r:
-            return json.loads(r.read().decode())
-    except urllib.error.HTTPError as e:
-        body = e.read().decode(errors="ignore")
-        raise Exception(f"BMW CarData HTTP-POST JSON Fehler {e.code}: {body[:300]}")
-
-
-def http_get(url: str, token: str) -> dict:
-    req = urllib.request.Request(url, method="GET")
-    req.add_header("Authorization", f"Bearer {token}")
-    req.add_header("Accept", "application/json")
-    req.add_header("x-version", "v1")
-    try:
-        with urllib.request.urlopen(req, timeout=30) as r:
-            return json.loads(r.read().decode())
-    except urllib.error.HTTPError as e:
-        body = e.read().decode(errors="ignore")
-        if e.code == 403 and "CU-429" in body:
-            raise Exception("BMW CarData: Tageslimit erreicht (CU-429).")
-        raise Exception(f"BMW CarData HTTP-GET Fehler {e.code}: {body[:300]}")
-
-
 def get_valid_token(cfg: BmwCardataConfiguration) -> str:
     if not cfg.access_token:
         raise Exception("BMW CarData: Keine Tokens gefunden. Bitte BMW-Kopplung in der UI durchführen.")
@@ -90,15 +40,17 @@ def get_valid_token(cfg: BmwCardataConfiguration) -> str:
         return cfg.access_token
 
     log.info("BMW CarData: Token abgelaufen, führe Refresh durch...")
+    session = req.get_http_session()
     try:
-        new = http_post(
+        response = session.post(
             f"{BMW_AUTH_URL}/token",
-            {
+            data={
                 "grant_type": "refresh_token",
                 "refresh_token": cfg.refresh_token,
                 "client_id": cfg.client_id,
             },
         )
+        new = response.json()
         cfg.access_token = new["access_token"]
         cfg.refresh_token = new.get("refresh_token", cfg.refresh_token)
         cfg.expires_at = time.time() + new.get("expires_in", 3600) - 60
@@ -116,13 +68,12 @@ def get_container_id(cfg: BmwCardataConfiguration, token: str) -> str:
         return cfg.container_id
 
     log.info("BMW CarData: Ermittle Container-ID via API...")
-    raw = http_get(f"{BMW_API_URL}/customers/containers", token)
+    session = req.get_http_session()
+    session.headers.update({"Authorization": f"Bearer {token}", "x-version": "v1"})
+    raw = session.get(f"{BMW_API_URL}/customers/containers").json()
     containers = raw if isinstance(raw, list) else raw.get("containers", [])
 
-    openwb = [
-        c for c in containers
-        if c.get("state") == "ACTIVE" and c.get("purpose") == CONTAINER_PURPOSE
-    ]
+    openwb = [c for c in containers if c.get("state") == "ACTIVE" and c.get("purpose") == CONTAINER_PURPOSE]
     active = [c for c in containers if c.get("state") == "ACTIVE"]
     preferred = openwb if openwb else active
 
@@ -131,12 +82,15 @@ def get_container_id(cfg: BmwCardataConfiguration, token: str) -> str:
         log.info("BMW CarData: Container-ID gefunden: %s", cid)
     else:
         log.warning("BMW CarData: Keine aktiven Container gefunden. Erstelle neuen Container...")
-        body = {
-            "name": CONTAINER_NAME,
-            "purpose": CONTAINER_PURPOSE,
-            "technicalDescriptors": CONTAINER_DESCRIPTORS,
-        }
-        result = http_post_json(f"{BMW_API_URL}/customers/containers", token, body)
+        response = session.post(
+            f"{BMW_API_URL}/customers/containers",
+            json={
+                "name": CONTAINER_NAME,
+                "purpose": CONTAINER_PURPOSE,
+                "technicalDescriptors": CONTAINER_DESCRIPTORS,
+            },
+        )
+        result = response.json()
         cid = result.get("containerId") or result.get("id")
         if not cid:
             raise Exception(f"BMW CarData: Container konnte nicht erstellt werden: {result}")
@@ -149,14 +103,6 @@ def get_container_id(cfg: BmwCardataConfiguration, token: str) -> str:
 def fetch_soc(config: BmwCardataSetup) -> CarState:
     cfg = config.configuration
 
-    if cfg.test_mode:
-        log.info(
-            "BMW CarData: TEST-MODUS – SoC=%s%%, Reichweite=%s km",
-            cfg.test_soc,
-            cfg.test_range,
-        )
-        return CarState(soc=cfg.test_soc, range=cfg.test_range)
-
     if not cfg.client_id:
         raise Exception("BMW CarData: client_id nicht konfiguriert!")
     if not cfg.vin:
@@ -165,21 +111,23 @@ def fetch_soc(config: BmwCardataSetup) -> CarState:
     token = get_valid_token(cfg)
     cid = get_container_id(cfg, token)
 
+    session = req.get_http_session()
+    session.headers.update({"Authorization": f"Bearer {token}", "x-version": "v1"})
+
     url = f"{BMW_API_URL}/customers/vehicles/{cfg.vin}/telematicData?containerId={cid}"
     log.debug("BMW CarData: GET %s", url)
 
     try:
-        raw = http_get(url, token)
+        raw = session.get(url).json()
     except Exception as e:
         msg = str(e)
-        if "HTTP-GET Fehler 404" in msg or "HTTP-GET Fehler 400" in msg:
+        if "404" in msg or "400" in msg:
             log.warning("BMW CarData: Container ungültig, ermittle neu...")
             cfg.container_id = ""
             cid = get_container_id(cfg, token)
-            raw = http_get(
-                f"{BMW_API_URL}/customers/vehicles/{cfg.vin}/telematicData?containerId={cid}",
-                token
-            )
+            raw = session.get(
+                f"{BMW_API_URL}/customers/vehicles/{cfg.vin}/telematicData?containerId={cid}"
+            ).json()
         else:
             raise
 
@@ -225,7 +173,6 @@ def bmw_cardata_update(client_id: str, vin: str, charge_point: int):
                 configuration=BmwCardataConfiguration(
                     client_id=client_id,
                     vin=vin,
-                    test_mode=False,
                 )
             )
         )
