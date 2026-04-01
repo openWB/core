@@ -53,11 +53,9 @@ class Params:
     expected_imported: float
     expected_exported: float
     expect_exception: bool = False
-    startup: bool = False
 
 
 cases = [
-    Params("Startup - No Peak", ComponentType.COUNTER, 1000, 500, 1000, 1300, 800, None, None, False, True),
     Params("Power Peak Zähler positiv", ComponentType.COUNTER, 1000, 500, 11000, 1300, 800, None, None, True),
     Params("Power Peak Zähler negativ", ComponentType.COUNTER, 1000, 500, -11000, 1300, 800, None, None, True),
     Params("Power Peak Wechselrichter", ComponentType.INVERTER, 1000, 500, 11000, 1005, 505, 1005, 505, True),
@@ -84,7 +82,7 @@ def test_check_values_valid(params):
     pf = PeakFilter(params.component_type, 1, fs)
     pf.imported = params.previous_imported
     pf.exported = params.previous_exported
-    pf.startup = params.startup
+    pf.startup = False
     if params.expect_exception:
         with pytest.raises(Exception):
             imp, exp = pf.check_values(params.power, params.imported, params.exported)
