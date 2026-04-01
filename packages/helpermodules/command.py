@@ -239,7 +239,7 @@ class Command:
         self.max_id_io_device = new_id
         Pub().pub("openWB/set/command/max_id/io_device", self.max_id_io_device)
         add_acl_role("io-device-<id>-access", new_id)
-        if device_default["output"].get("digital") is not None or device_default["output"].get("analog") is not None:
+        if device_default["output"]["digital"] or device_default["output"]["analog"]:
             add_acl_role("io-device-<id>-write-access", new_id)
         pub_user_message(
             payload, connection_id,
