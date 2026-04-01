@@ -68,6 +68,7 @@ class SampleBat(AbstractBat):
         # Einzelregister lesen (dauert länger, bei sehr weit >100 auseinanderliegenden Registern sinnvoll)
         power = self.client.read_holding_registers(reg, ModbusDataType.INT_32, unit=unit)
         soc = self.client.read_holding_registers(reg, ModbusDataType.INT_32, unit=unit)
+        self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
 
         bat_state = BatState(
