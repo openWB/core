@@ -83,7 +83,7 @@ class PeakFilter:
                           f"Differenz zum vorherigen Wert: {total_energy - previous_total_energy}Wh. "
                           f"erlaubte Differenz: {round(allowed_deviation, 2)}Wh.")
                 self.fault_state.warning(f"Peakfilter: {total_energy / 1000}kWh. "
-                                         "Die Leistung erscheint höher, als laut Anlagenkonfiguration plausibel "
+                                         "Die Energie erscheint höher, als laut Anlagenkonfiguration plausibel "
                                          "ist. Erneute Prüfung im nächsten Regelintervall.")
             else:
                 log.debug(f"PeakFilter: Zählerwert: {total_energy}Wh innerhalb der zulässigen Grenzen. "

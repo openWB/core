@@ -82,7 +82,6 @@ def test_check_values_valid(params):
     pf = PeakFilter(params.component_type, 1, fs)
     pf.imported = params.previous_imported
     pf.exported = params.previous_exported
-    pf.startup = False
     if params.expect_exception:
         with pytest.raises(Exception):
             imp, exp = pf.check_values(params.power, params.imported, params.exported)
