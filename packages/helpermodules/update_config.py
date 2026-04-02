@@ -3042,6 +3042,6 @@ class UpdateConfig:
                             if (config_payload["type"] == "bat" and
                                     config_payload["configuration"].get("vebus_id") is not None):
                                 config_payload["configuration"].pop("vebus_id", None)
-                                return {topic: config_payload}
+                                return {component_topic: config_payload}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(119)
