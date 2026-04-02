@@ -8,7 +8,7 @@
 	>
 		{{ name ? name : masterData[cat].icon }} &nbsp;
 	</tspan>
-	<tspan text-anchor="end" :x="width - indent">
+	<tspan text-anchor="end" :x="width - 5">
 		<FormatWatt v-if="cat != 'price' && props.power > 0" :watt="power * 1000" />
 		<tspan v-if="cat === 'price'">{{ formatPrice(props.power) }}</tspan>
 	</tspan>

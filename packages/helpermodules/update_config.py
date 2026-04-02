@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 117
+    DATASTORE_VERSION = 119
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -3016,3 +3016,32 @@ class UpdateConfig:
                 return new_topics if new_topics else None
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(117)
+
+    def upgrade_datastore_118(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("^openWB/vehicle/[0-9]+/soc_module/config$", topic) is not None:
+                configuration_payload = decode_payload(payload)
+                if configuration_payload.get("type") == "homeassistant":
+                    ha_config = configuration_payload.get("configuration", {})
+                    if ha_config.get("entity_id") is not None:
+                        ha_config["entity_soc"] = ha_config.pop("entity_id")
+                        return {topic: configuration_payload}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(118)
+
+    def upgrade_datastore_119(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/system/device/[0-9]+", topic) is not None:
+                payload = decode_payload(payload)
+                index = get_index(topic)
+                if payload.get("type") == "victron":
+                    for component_topic, component_payload in self.all_received_topics.items():
+                        if re.search(f"openWB/system/device/{index}/component/[0-9]+/config$",
+                                     component_topic) is not None:
+                            config_payload = decode_payload(component_payload)
+                            if (config_payload["type"] == "bat" and
+                                    config_payload["configuration"].get("vebus_id") is not None):
+                                config_payload["configuration"].pop("vebus_id", None)
+                                return {component_topic: config_payload}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(119)

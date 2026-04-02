@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import logging
+import platform
 import subprocess
 from threading import Thread
+from typing import Optional
 
 from control import data
 from dataclass_utils._dataclass_asdict import asdict
@@ -32,6 +34,26 @@ cert_path = f"{Path(__file__).resolve().parents[4]}/data/config/eebus/certs"
 # 8: "FEHLER: Der entfernte Dienst hat das Vertrauen verweigert."
 
 
+def get_executable_path() -> Optional[str]:
+    machine = platform.machine()
+    bits, linkage = platform.architecture()
+    eebus_executable = f"{Path(__file__).resolve().parents[0]}/eebus_hems_client-{machine}_{linkage}"
+
+    log.debug("System Info:")
+    log.debug(f"Architecture: ({(bits, linkage)})")
+    log.debug(f"Machine: {machine}")
+    log.debug(f"Node: {platform.node()}")
+    log.debug(f"Platform: {platform.platform()}")
+    log.debug(f"System: {platform.system()}")
+    log.debug(f"Release: {platform.release()}")
+    log.debug(f"using binary: '{eebus_executable}'")
+
+    if not Path(eebus_executable).is_file():
+        log.error(f"file '{eebus_executable}' does not exist!")
+        return None
+    return eebus_executable
+
+
 def create_io(config: Eebus):
     received_topics = {}
     broker = None
@@ -44,7 +66,7 @@ def create_io(config: Eebus):
                 log.debug(f"Starte EEbus-Client für Steuerbox mit ID {config.id} und "
                           f"SKI {config.configuration.remote_ski}")
                 subprocess.run(
-                    [f"{Path(__file__).resolve().parents[0]}/eebus_hems_client",
+                    [get_executable_path(),
                         str(config.configuration.port),
                         config.configuration.remote_ski,
                         f"{cert_path}/hems-cert-{config.id}.pem",

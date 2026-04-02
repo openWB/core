@@ -12,6 +12,7 @@ from modules.common.store import get_counter_value_store
 from modules.devices.upower.upower.config import UPowerCounterSetup
 from modules.devices.upower.upower.version import UPowerVersion
 from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class UPowerCounter(AbstractCounter):
@@ -28,7 +29,7 @@ class UPowerCounter(AbstractCounter):
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.sim_counter = SimCounter(device_id, self.component_config.id, prefix="bezug")
-        self.peak_filter = PeakFilter("counter", self.component_config.id, self.fault_state)
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self):
         if self.version == UPowerVersion.GEN_1:

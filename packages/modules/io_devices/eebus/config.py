@@ -44,6 +44,11 @@ def init_input():
             "digital": {pin.name: False for pin in DigitalInputMapping}}
 
 
+def init_output():
+    return {"analog": {},
+            "digital": {}}
+
+
 @auto_str
 class Eebus(IoDeviceSetup[EebusConfiguration]):
     def __init__(self,
@@ -55,4 +60,6 @@ class Eebus(IoDeviceSetup[EebusConfiguration]):
                  output: Dict[str, Dict[int, float]] = None) -> None:
         if input is None:
             input = init_input()
+        if output is None:
+            output = init_output()
         super().__init__(name, type, id, configuration or EebusConfiguration(), input=input, output=output)

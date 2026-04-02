@@ -11,6 +11,7 @@ from modules.common.simcount._simcounter import SimCounter
 from modules.devices.shelly.shelly.config import ShellyBatSetup
 from modules.devices.shelly.shelly.constants import ALPHABETICAL_INDEX
 from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -37,7 +38,7 @@ class ShellyBat(AbstractBat):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.peak_filter = PeakFilter("bat", self.component_config.id, self.fault_state)
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         if self.generation == 1:

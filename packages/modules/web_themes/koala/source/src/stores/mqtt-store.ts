@@ -81,11 +81,6 @@ export const useMqttStore = defineStore('mqtt', () => {
       mqttClient.on('connect', () => {
         console.debug('connected to broker');
         mqttClientConnected.value = true;
-        $q.notify({
-          type: 'positive',
-          message: `MQTT-Verbindung hergestellt.${mqttUser ? ` Angemeldet als ${mqttUser}.` : ''}`,
-          progress: true,
-        });
         if (mqttUser === 'admin' && mqttPass === 'openwb') {
           $q.notify({
             type: 'warning',

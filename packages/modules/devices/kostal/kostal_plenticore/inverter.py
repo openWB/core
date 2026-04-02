@@ -11,6 +11,7 @@ from modules.common.simcount import SimCounter
 from modules.common.store import get_inverter_value_store
 from modules.devices.kostal.kostal_plenticore.config import KostalPlenticoreInverterSetup
 from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -37,7 +38,7 @@ class KostalPlenticoreInverter(AbstractInverter):
             "Es kann keine DC-Leistung aus dem Wechselrichter ausgelesen werden, "
             "möglicherweise kann ein Firmware-Update für den Wechselrichter nötig sein."
         )
-        self.peak_filter = PeakFilter("inverter", self.component_config.id, self.fault_state)
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         power = self.client.read_holding_registers(

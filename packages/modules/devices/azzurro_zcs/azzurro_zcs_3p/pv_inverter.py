@@ -9,6 +9,7 @@ from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.store import get_inverter_value_store
 from modules.devices.azzurro_zcs.azzurro_zcs_3p.config import ZCSPvInverterSetup
 from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +29,7 @@ class ZCSPvInverter(AbstractInverter):
         self.client: ModbusTcpClient_ = self.kwargs['client']
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.peak_filter = PeakFilter("inverter", self.component_config.id, self.fault_state)
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         power = exported = 0

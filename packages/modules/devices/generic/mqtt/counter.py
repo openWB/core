@@ -10,6 +10,7 @@ from modules.common.simcount._simcounter import SimCounter
 from modules.common.store._counter import get_counter_value_store
 from modules.devices.generic.mqtt.config import MqttCounterSetup
 from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -24,7 +25,7 @@ class MqttCounter(AbstractCounter):
     def initialize(self) -> None:
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.sim_counter = SimCounter(self.kwargs['device_id'], self.component_config.id, prefix="bezug")
-        self.peak_filter = PeakFilter("counter", self.component_config.id, self.fault_state)
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
         self.store = get_counter_value_store(self.component_config.id)
 
     def update(self, received_topics: Dict) -> None:

@@ -2,10 +2,13 @@
 
 import aiohttp
 from asyncio import new_event_loop, set_event_loop
-from typing import Union
+from typing import Optional, Tuple
 from modules.vehicles.skoda import libskoda
 from modules.vehicles.skoda.config import Skoda
 from modules.vehicles.vwgroup.vwgroup import VwGroup
+
+
+SoCResult = Tuple[int, float, str, float, Optional[float]]
 
 
 class api(VwGroup):
@@ -14,20 +17,20 @@ class api(VwGroup):
         super().__init__(conf, vehicle)
 
     # async method, called from sync fetch_soc, required because libvwid/libskoda expect async environment
-    async def _fetch_soc(self) -> Union[int, float, str]:
+    async def _fetch_soc(self) -> SoCResult:
         async with aiohttp.ClientSession() as self.session:
             skoda = libskoda.skoda(self.session)
             return await super().request_data(skoda)
 
 
-def fetch_soc(conf: Skoda, vehicle: int) -> Union[int, float, str]:
+def fetch_soc(conf: Skoda, vehicle: int) -> SoCResult:
 
     # prepare and call async method
     loop = new_event_loop()
     set_event_loop(loop)
 
-    # get soc, range from server
+    # get soc, range, timestamp, and odometer from server
     a = api(conf, vehicle)
-    soc, range, soc_ts, soc_tsX = loop.run_until_complete(a._fetch_soc())
+    soc, range, soc_ts, soc_tsX, odometer = loop.run_until_complete(a._fetch_soc())
 
-    return soc, range, soc_ts, soc_tsX
+    return soc, range, soc_ts, soc_tsX, odometer
