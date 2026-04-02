@@ -225,4 +225,5 @@ class TestBmwCardata:
         assert self.mock_value_store.set.call_count == 1
         assert self.mock_value_store.set.call_args[0][0].soc == 47
         assert self.mock_value_store.set.call_args[0][0].range == 234
+        
         assert self.mock_value_store.set.call_args[0][0].odometer == 61762
