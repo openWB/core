@@ -79,10 +79,10 @@ class QCellsBat(AbstractBat):
             log.debug("Aktive Batteriesteuerung aktiv")
             if self.last_mode != 'limited':
                 self.last_mode = 'limited'
-            
+
             # Berechne power value: 0 = stop, != 0 = multipliziere mit -1
             power_value = 0 if power_limit == 0 else int(power_limit) * -1
-            
+
             self._write_mode8(power_value, unit=unit)
 
     def _write_mode8(self, power_value: int, unit: int) -> None:
