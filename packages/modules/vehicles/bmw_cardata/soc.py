@@ -4,16 +4,12 @@ from typing import List, Optional
 
 from requests.exceptions import HTTPError, RequestException
 
-from helpermodules.cli import run_using_positional_cli_args
 from modules.common import req, store
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.abstract_vehicle import VehicleUpdateData
 from modules.common.component_state import CarState
 from modules.common.configurable_vehicle import ConfigurableVehicle
-from modules.vehicles.bmw_cardata.config import (
-    BmwCardataConfiguration,
-    BmwCardataSetup,
-)
+from modules.vehicles.bmw_cardata.config import BmwCardataSetup, BmwCardataConfiguration
 
 log = logging.getLogger(__name__)
 
@@ -24,7 +20,6 @@ FIELD_SOC = "vehicle.drivetrain.electricEngine.charging.level"
 FIELD_SOC_ALT = "vehicle.drivetrain.batteryManagement.header"
 FIELD_RANGE = "vehicle.drivetrain.electricEngine.remainingElectricRange"
 FIELD_STATUS = "vehicle.drivetrain.electricEngine.charging.status"
-
 FIELD_ODOMETER_CANDIDATES = [
     "vehicle.vehicle.travelledDistance",
     "vehicle.trip.segment.end.travelledDistance",
@@ -52,32 +47,20 @@ def _get_session(token: Optional[str] = None):
     return session
 
 
-def _get_json(url: str, token: str):
-    session = _get_session(token)
-    response = session.get(url)
-    return response.json()
-
-
-def _post_form(url: str, data: dict):
-    session = _get_session()
-    response = session.post(url, data=data)
-    return response.json()
-
-
-def _post_json(url: str, token: str, payload: dict):
-    session = _get_session(token)
-    response = session.post(url, json=payload)
-    return response.json()
+def _response_text(exc: Exception) -> str:
+    response = getattr(exc, "response", None)
+    if response is None:
+        return str(exc)
+    try:
+        return response.text or str(exc)
+    except Exception:
+        return str(exc)
 
 
 def _extract_http_status(exc: Exception) -> Optional[int]:
-    if isinstance(exc, HTTPError) and exc.response is not None:
-        return exc.response.status_code
-
     response = getattr(exc, "response", None)
     if response is not None:
         return getattr(response, "status_code", None)
-
     return None
 
 
@@ -94,9 +77,26 @@ def _extract_first_value(td: dict, keys: List[str]):
     return None
 
 
+def _post_form(url: str, data: dict) -> dict:
+    session = _get_session()
+    response = session.post(url, data=data)
+    return response.json()
+
+
+def _get_json(url: str, token: str):
+    session = _get_session(token)
+    response = session.get(url)
+    return response.json()
+
+
+def _post_json(url: str, token: str, payload: dict) -> dict:
+    session = _get_session(token)
+    response = session.post(url, json=payload)
+    return response.json()
+
+
 def _create_container(token: str) -> str:
     log.warning("BMW CarData: Keine aktiven Container gefunden. Erstelle neuen Container...")
-
     result = _post_json(
         f"{BMW_API_URL}/customers/containers",
         token,
@@ -106,11 +106,9 @@ def _create_container(token: str) -> str:
             "technicalDescriptors": CONTAINER_DESCRIPTORS,
         },
     )
-
     container_id = result.get("containerId") or result.get("id")
     if not container_id:
         raise Exception(f"BMW CarData: Container konnte nicht erstellt werden: {result}")
-
     log.info("BMW CarData: Container erstellt: %s", container_id)
     return container_id
 
@@ -123,19 +121,16 @@ def _fetch_telematic_data(token: str, vin: str, container_id: str):
 
 def get_valid_token(cfg: BmwCardataConfiguration) -> str:
     if not cfg.access_token:
-        raise Exception(
-            "BMW CarData: Keine Tokens gefunden. Bitte BMW-Kopplung in der UI durchführen."
-        )
+        raise Exception("BMW CarData: Keine Tokens gefunden. Bitte BMW-Kopplung in der UI durchführen.")
 
     if time.time() < cfg.expires_at:
         return cfg.access_token
 
     log.info("BMW CarData: Token abgelaufen, führe Refresh durch...")
-
     try:
         new = _post_form(
             f"{BMW_AUTH_URL}/token",
-            data={
+            {
                 "grant_type": "refresh_token",
                 "refresh_token": cfg.refresh_token,
                 "client_id": cfg.client_id,
@@ -143,8 +138,7 @@ def get_valid_token(cfg: BmwCardataConfiguration) -> str:
         )
     except RequestException as e:
         raise Exception(
-            f"BMW CarData: Token-Refresh fehlgeschlagen: {e}. "
-            "Bitte BMW-Kopplung erneut durchführen."
+            f"BMW CarData: Token-Refresh fehlgeschlagen: {e}. Bitte BMW-Kopplung erneut durchführen."
         )
 
     cfg.access_token = new["access_token"]
@@ -161,13 +155,11 @@ def get_container_id(cfg: BmwCardataConfiguration, token: str) -> str:
         return cfg.container_id
 
     log.info("BMW CarData: Ermittle Container-ID via API...")
-
     raw = _get_json(f"{BMW_API_URL}/customers/containers", token)
     containers = raw if isinstance(raw, list) else raw.get("containers", [])
 
     openwb = [
-        c
-        for c in containers
+        c for c in containers
         if c.get("state") == "ACTIVE" and c.get("purpose") == CONTAINER_PURPOSE
     ]
     active = [c for c in containers if c.get("state") == "ACTIVE"]
@@ -209,9 +201,9 @@ def fetch_soc(config: BmwCardataSetup) -> CarState:
             container_id = get_container_id(cfg, token)
             raw = _fetch_telematic_data(token, cfg.vin, container_id)
         else:
-            if status_code == 403 and "CU-429" in str(e):
+            if status_code == 403 and "CU-429" in _response_text(e):
                 raise Exception("BMW CarData: Tageslimit erreicht (CU-429).")
-            raise
+            raise Exception(f"BMW CarData: API-Fehler beim Abruf der Telematikdaten: {e}")
 
     td = raw.get("telematicData", raw)
 
@@ -237,7 +229,6 @@ def fetch_soc(config: BmwCardataSetup) -> CarState:
         status,
         odometer,
     )
-
     return CarState(soc=soc, range=vehicle_range, odometer=odometer)
 
 
@@ -251,23 +242,6 @@ def create_vehicle(vehicle_config: BmwCardataSetup, vehicle: int):
         vehicle=vehicle,
         calc_while_charging=vehicle_config.configuration.calculate_soc,
     )
-
-
-def bmw_cardata_update(client_id: str, vin: str, charge_point: int):
-    store.get_car_value_store(charge_point).store.set(
-        fetch_soc(
-            BmwCardataSetup(
-                configuration=BmwCardataConfiguration(
-                    client_id=client_id,
-                    vin=vin,
-                )
-            )
-        )
-    )
-
-
-def main(argv: List[str]):
-    run_using_positional_cli_args(bmw_cardata_update, argv)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=BmwCardataSetup)
