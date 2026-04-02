@@ -5,6 +5,7 @@ $input = json_decode(file_get_contents('php://input'), true);
 $client_id = $input['client_id'] ?? '';
 
 if (!$client_id) {
+    http_response_code(400);
     echo json_encode(['error' => 'Client ID fehlt.']);
     exit;
 }
