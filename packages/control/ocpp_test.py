@@ -32,7 +32,7 @@ def test_start_transaction(mock_data, monkeypatch):
 
     cp.update([])
 
-    assert start_transaction_mock.call_args == (("cp1", cp.chargepoint_module.fault_state, 1, None, 0),)
+    assert start_transaction_mock.call_args == (("cp1", cp.chargepoint_module.fault_state, 1, "ABCDEF01234567", 0),)
 
 
 def test_stop_transaction(mock_data, monkeypatch):
