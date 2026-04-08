@@ -82,8 +82,8 @@ class Config:
                                        metadata={"topic": "config/bat_control_condition"})
     manual_mode: str = field(default=ManualMode.MANUAL_DISABLE.value,
                              metadata={"topic": "config/manual_mode"})
-    bat_control_min_soc: str = field(default=10, metadata={"topic": "config/bat_control_min_soc"})
-    bat_control_max_soc: str = field(default=90, metadata={"topic": "config/bat_control_max_soc"})
+    bat_control_min_soc: int = field(default=10, metadata={"topic": "config/bat_control_min_soc"})
+    bat_control_max_soc: int = field(default=90, metadata={"topic": "config/bat_control_max_soc"})
     price_limit_activated: bool = field(default=False, metadata={"topic": "config/price_limit_activated"})
     price_charge_activated: bool = field(default=False, metadata={"topic": "config/price_charge_activated"})
     price_limit: float = field(default=0.30, metadata={"topic": "config/price_limit"})
@@ -286,7 +286,7 @@ class BatAll:
                                    "befindet sich unterhalb minimal SoC - auf Eigenregelung gesetzt."))
                     # setze Entladeleistung als Bruchteil der möglichen Entladeleistung
                     else:
-                        factor = max(power / max_discharge_power_total, -1)
+                        factor = min(power / max_discharge_power_total, 1)
                         power_limit = bat_component_data.get.max_discharge_power * factor
                         bat_component_data.get.state_str = f"Entladung mit {power_limit}W"
                         log.debug(("Aktive Speichersteuerung: Entladung - "
@@ -584,7 +584,6 @@ class BatAll:
             self.data.current_state = CurrentState.IDLE
         else:
             self.data.current_state = CurrentState.ACTIVE
-        # self._set_bat_power_active_control(self.data.set.power_limit)
 
 
 def get_controllable_bat_components() -> List:
