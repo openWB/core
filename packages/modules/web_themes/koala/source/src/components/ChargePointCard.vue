@@ -1,8 +1,16 @@
 <template>
   <q-card
     ref="cardRef"
-    class="card-width"
-    :class="{ 'full-height': props.fullHeight }"
+    class="charge-point-card"
+    :class="[
+      { 'full-height': props.fullHeight },
+      chargePointUserDefinedColor && 'has-custom-color',
+    ]"
+    :style="
+      chargePointUserDefinedColor && {
+        '--cp-color': chargePointUserDefinedColor,
+      }
+    "
   >
     <q-card-section class="row no-wrap">
       <div class="text-h6 text-bold ellipsis" :title="name">
@@ -312,10 +320,19 @@ const refreshSoc = () => {
     message: 'SoC Update angefordert.',
   });
 };
+
+const chargePointUserDefinedColor = computed(() =>
+  mqttStore.chargePointUserDefinedColor(props.chargePointId),
+);
 </script>
 <style lang="scss" scoped>
-.card-width {
+.charge-point-card {
   width: 22em;
+  border: none;
+}
+
+.charge-point-card.has-custom-color {
+  border: 2px solid var(--cp-color);
 }
 
 .q-card__section {

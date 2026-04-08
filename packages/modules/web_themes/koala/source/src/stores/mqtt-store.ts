@@ -647,6 +647,12 @@ export const useMqttStore = defineStore('mqtt', () => {
       const path = objectPath.split('.');
       for (let i = 0; i < path.length; i++) {
         if (!Object.hasOwn(topicObject, path[i])) {
+          if (defaultValue !== undefined) {
+            // expected missing optional value - no error
+            console.debug('optional path not found', topicObject, path[i]);
+            return defaultValue;
+          }
+          // real error case
           console.error('path not found', topicObject, path[i]);
           return defaultValue;
         }
@@ -1212,6 +1218,21 @@ export const useMqttStore = defineStore('mqtt', () => {
           `openWB/chargepoint/${chargePointId}/get/fault_state`,
         ) as number) || 0
       );
+    };
+  });
+
+  /**
+   * Get the charge point user defined color identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns string | undefined
+   */
+  const chargePointUserDefinedColor = computed(() => {
+    return (chargePointId: number) => {
+      return getValue.value(
+        `openWB/chargepoint/${chargePointId}/config`,
+        'color',
+        null,
+      ) as string | undefined;
     };
   });
 
@@ -3986,6 +4007,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointChargingCurrent,
     chargePointStateMessage,
     chargePointFaultState,
+    chargePointUserDefinedColor,
     chargePointFaultMessage,
     temporaryChargeModeActive,
     chargePointChargeType,
