@@ -12,6 +12,7 @@ from control.chargepoint.chargepoint_state import ChargepointState
 from helpermodules.pub import Pub
 from helpermodules.utils._thread_handler import joined_thread_handler
 from modules.common.abstract_io import AbstractIoDevice
+from modules.common.configurable_device import set_power_limit_wrapper
 from modules.common.fault_state_level import FaultStateLevel
 from modules.io_actions.controllable_consumers.dimming.api_io import DimmingIo
 from modules.io_actions.controllable_consumers.dimming_direct_control.api import DimmingDirectControl
@@ -64,8 +65,9 @@ class Process:
             for bat_component in get_controllable_bat_components():
                 modules_threads.append(
                     Thread(
-                        target=bat_component.set_power_limit,
-                        args=(data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set.power_limit,),
+                        target=set_power_limit_wrapper,
+                        args=(bat_component,
+                              data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set.power_limit),
                         name=f"set power limit {bat_component.component_config.id}"))
             for action in data.data.io_actions.actions.values():
                 if isinstance(action, DimmingDirectControl):
