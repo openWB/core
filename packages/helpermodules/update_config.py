@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 119
+    DATASTORE_VERSION = 120
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -3045,3 +3045,13 @@ class UpdateConfig:
                                 return {component_topic: config_payload}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(119)
+
+    def upgrade_datastore_120(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/bat/[0-9]+/get/max_discharge_power$", topic) is not None:
+                payload = decode_payload(payload)
+                if payload is not None:
+                    payload = payload * -1
+                    return {topic: payload}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(120)
