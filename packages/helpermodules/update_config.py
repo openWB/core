@@ -3050,8 +3050,8 @@ class UpdateConfig:
         def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/bat/[0-9]+/get/max_discharge_power$", topic) is not None:
                 payload = decode_payload(payload)
-                if payload is not None:
-                    payload = payload * -1
+                if isinstance(payload, (int, float)):
+                    payload = -abs(payload)
                     return {topic: payload}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(120)

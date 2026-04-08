@@ -286,7 +286,7 @@ class BatAll:
                                    "befindet sich unterhalb minimal SoC - auf Eigenregelung gesetzt."))
                     # setze Entladeleistung als Bruchteil der möglichen Entladeleistung
                     else:
-                        factor = min(power / max_discharge_power_total, 1)
+                        factor = max(power / max_discharge_power_total, -1)
                         power_limit = bat_component_data.get.max_discharge_power * factor
                         bat_component_data.get.state_str = f"Entladung mit {power_limit}W"
                         log.debug(("Aktive Speichersteuerung: Entladung - "
@@ -570,6 +570,21 @@ class BatAll:
         elif charge_mode == BatChargeMode.BAT_FORCE_DISCHARGE:
             self.data.set.power_limit = None
             log.debug("Speicher-Leistung nicht begrenzen")
+
+        if ((self.data.config.bat_control_permitted is False or
+                self.data.config.bat_control_activated is False)
+                and self.data.current_state == CurrentState.STARTUP):
+            self.data.set_limit = False
+        elif self.data.current_state == CurrentState.IDLE and charge_mode == BatChargeMode.BAT_SELF_REGULATION:
+            self.data.set_limit = False
+        else:
+            self.data.set_limit = True
+
+        if charge_mode == BatChargeMode.BAT_SELF_REGULATION:
+            self.data.current_state = CurrentState.IDLE
+        else:
+            self.data.current_state = CurrentState.ACTIVE
+        # self._set_bat_power_active_control(self.data.set.power_limit)
 
 
 def get_controllable_bat_components() -> List:
