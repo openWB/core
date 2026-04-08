@@ -1,6 +1,7 @@
 class GroupeETariffConfiguration:
     def __init__(self):
         self.country = "ch"
+        self.unit = "Rp"
 
 
 class GroupeETariff:

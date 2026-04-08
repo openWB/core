@@ -8,9 +8,11 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType
 from modules.common.simcount import SimCounter
+from modules.common.utils.peak_filter import PeakFilter
 from modules.common.store import get_counter_value_store
 from modules.devices.good_we.good_we.config import GoodWeCounterSetup
 from modules.devices.good_we.good_we.version import GoodWeVersion
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -34,6 +36,7 @@ class GoodWeCounter(AbstractCounter):
         self.sim_counter = SimCounter(self.kwargs['device_id'], self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         with self.__tcp_client:
@@ -61,9 +64,11 @@ class GoodWeCounter(AbstractCounter):
                     36015, ModbusDataType.FLOAT_32, unit=self.__modbus_id)
                 imported = self.__tcp_client.read_holding_registers(
                     36017, ModbusDataType.FLOAT_32, unit=self.__modbus_id)
+                imported, exported = self.peak_filter.check_values(power, imported, exported)
             else:
                 # v1.0 und v1.1 liefern keine Werte zurueck obwohl Register laut Doku gleich
                 # Alternative Register für die BTC Serie liefern statische Werte
+                self.peak_filter.check_values(power)
                 imported, exported = self.sim_counter.sim_count(power)
 
         counter_state = CounterState(

@@ -11,6 +11,8 @@ from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.kostal.kostal_plenticore.config import KostalPlenticoreBatSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -35,6 +37,7 @@ class KostalPlenticoreBat(AbstractBat):
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         power = self.client.read_holding_registers(
@@ -44,8 +47,9 @@ class KostalPlenticoreBat(AbstractBat):
         if power < 0:
             power = self.client.read_holding_registers(
                 106, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=self.endianess) * -1
-        imported, exported = self.sim_counter.sim_count(power)
 
+        self.peak_filter.check_values(power)
+        imported, exported = self.sim_counter.sim_count(power)
         bat_state = BatState(
             power=power,
             soc=soc,
@@ -73,8 +77,15 @@ class KostalPlenticoreBat(AbstractBat):
         elif power_limit < 0:
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W entladen für den Hausverbrauch")
             # Die maximale Entladeleistung begrenzen auf 7000W
-            power_value = float(min(abs(power_limit), 7000)) * -1
+            power_value = float(min(abs(power_limit), 7000))
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_value} W entladen für den Hausverbrauch")
+            self.client.write_register(1034, power_value, data_type=ModbusDataType.FLOAT_32,
+                                       wordorder=self.endianess, unit=unit)
+        elif power_limit > 0:
+            log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W geladen")
+            # Die maximale Ladeleistung begrenzen auf 7000W
+            power_value = float(min(abs(power_limit), 7000)) * -1
+            log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_value} W geladen")
             self.client.write_register(1034, power_value, data_type=ModbusDataType.FLOAT_32,
                                        wordorder=self.endianess, unit=unit)
 

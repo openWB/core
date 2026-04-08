@@ -9,6 +9,8 @@ from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_inverter_value_store
 from modules.devices.ampere.ampere.config import AmpereInverterSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -31,6 +33,7 @@ class AmpereInverter(AbstractInverter):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         pv1_power = self.client.read_holding_registers(519, ModbusDataType.INT_16, unit=self.modbus_id) * -1
@@ -38,6 +41,7 @@ class AmpereInverter(AbstractInverter):
 
         power = pv1_power + pv2_power
 
+        self.peak_filter.check_values(power)
         _, exported = self.sim_counter.sim_count(power)
         inverter_state = InverterState(
             power=power,

@@ -16,10 +16,10 @@ export const useBatteryModes = () => {
     },
     {
       value: 'min_soc_bat_mode',
-      label: 'Mindest-SoC',
+      label: 'Nach SoC des Speichers',
       color: 'primary',
       icon: 'battery_4_bar',
-      tooltip: 'Mindest-SoC des Speichers',
+      tooltip: 'Nach SoC des Speichers',
     },
   ];
 

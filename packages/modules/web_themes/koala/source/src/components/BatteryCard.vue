@@ -36,16 +36,24 @@
         v-if="showSettings"
         class="row q-mt-md justify-between text-subtitle2"
       >
-        <div>Laden mit Überschuss:</div>
-        <div class="q-ml-sm row items-center">
-          <q-icon
-            :name="batteryMode.icon"
-            size="sm"
-            class="q-mr-sm"
-            color="primary"
-          />
+        <div>Ladepriorität:</div>
+        <div class="row items-center">
+          <q-icon :name="batteryMode.icon" size="sm" color="primary" />
           <div>
             {{ batteryMode.label }}
+          </div>
+        </div>
+        <div
+          v-if="batteryMode.value === 'min_soc_bat_mode'"
+          class="full-width q-mt-md"
+        >
+          <div class="row justify-between">
+            <div>Mindest-SoC des Speichers:</div>
+            <div>{{ batteryRange.min }}%</div>
+          </div>
+          <div class="row justify-between q-mt-sm">
+            <div>Maximal-SoC des Speichers:</div>
+            <div>{{ batteryRange.max }}%</div>
           </div>
         </div>
       </q-card-section>
@@ -68,7 +76,9 @@
     </q-card-section>
     <q-separator inset class="q-mt-sm" />
     <q-card-section>
-      <SliderDouble :current-value="soc" :readonly="true" limit-mode="none" />
+      <SliderDouble :current-value="soc" :readonly="true" limit-mode="none">
+        <template #value> {{ soc }}% </template>
+      </SliderDouble>
     </q-card-section>
   </q-card>
   <BatterySettingsDialog :battery-id="props.batteryId" ref="dialog" />
@@ -131,6 +141,8 @@ const power = computed(() => {
   }
   return mqttStore.batteryPower(props.batteryId, 'textValue') as string | '---';
 });
+
+const batteryRange = computed(() => mqttStore.batteryChargePriorityRange);
 
 const dailyImportedEnergy = computed(() => {
   if (isOverview.value) {

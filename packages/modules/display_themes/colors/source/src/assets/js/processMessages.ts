@@ -30,7 +30,7 @@ const topicsToSubscribe = [
 	'openWB/chargepoint/#',
 	'openWB/vehicle/#',
 	'openWB/general/chargemode_config/pv_charging/#',
-	'openWB/optional/et/#',
+	'openWB/optional/ep/#',
 	'openWB/system/#',
 	'openWB/LegacySmartHome/#',
 	'openWB/command/' + mqttClientId() + '/#',
@@ -76,7 +76,7 @@ function processMqttMessage(topic: string, payload: Buffer) {
 		processMonthGraphMessages(topic, message)
 	} else if (topic.match(/^openwb\/log\/yearly\//i)) {
 		processYearGraphMessages(topic, message)
-	} else if (topic.match(/^openwb\/optional\/et\//i)) {
+	} else if (topic.match(/^openwb\/optional\/ep\//i)) {
 		processEtProviderMessages(topic, message)
 	} // else if ( mqttTopic.match( /^openwb\/global\//i) ) { processGlobalMessages(mqttTopic, message); }
 	else if (topic.match(/^openwb\/system\//i)) {

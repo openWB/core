@@ -5,8 +5,12 @@ from modules.common.abstract_chargepoint import SetupChargepoint
 
 
 class OpenWBDcAdapterConfiguration:
-    def __init__(self, ip_address: Optional[str] = None):
-        self.ip_address = ip_address
+    def __init__(self, url: Optional[str] = None,
+                 user: Optional[str] = None,
+                 password: Optional[str] = None):
+        self.url = url
+        self.user = user
+        self.password = password
 
 
 class OpenWBDcAdapter(SetupChargepoint[OpenWBDcAdapterConfiguration]):

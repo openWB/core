@@ -9,6 +9,8 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount._simcounter import SimCounter
 from modules.common.store import get_counter_value_store
 from modules.devices.generic.json.config import JsonCounterSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -37,6 +39,7 @@ class JsonCounter(AbstractCounter):
         self.store = get_counter_value_store(self.component_config.id)
         self._compile_jq_filters()
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self, response) -> None:
         power = float(self.jq_power.input(response).first())
@@ -62,10 +65,12 @@ class JsonCounter(AbstractCounter):
         )
 
         if self.jq_imported is None or self.jq_exported is None:
+            self.peak_filter.check_values(power)
             imported, exported = self.sim_counter.sim_count(power)
         else:
             imported = float(self.jq_imported.input(response).first())
             exported = float(self.jq_exported.input(response).first())
+            imported, exported = self.peak_filter.check_values(power, imported, exported)
 
         counter_state = CounterState(
             imported=imported,

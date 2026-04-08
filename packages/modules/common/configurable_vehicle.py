@@ -1,6 +1,6 @@
 from enum import Enum
 import logging
-# import time
+import time
 from typing import Optional, TypeVar, Generic, Callable
 from helpermodules import timecheck
 
@@ -11,7 +11,7 @@ from modules.common.abstract_vehicle import CalculatedSocState, GeneralVehicleCo
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import CarState
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.vehicles.common.calc_soc import calc_soc
+from modules.vehicles.common.calc_vehicle_data import calc_vehicle_data
 from modules.vehicles.manual.config import ManualSoc
 from modules.vehicles.mqtt.config import MqttSocSetup
 
@@ -129,6 +129,27 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
         if source == SocSource.API:
             try:
                 _carState = self.__component_updater(vehicle_update_data)
+                if type(_carState) is CarState:
+                    _odometer = _carState.odometer
+                    _now = int(time.time())
+                    _diff = 0
+                    if _carState.soc_timestamp:
+                        _diff = int(_now - _carState.soc_timestamp)
+                    if _diff > self.general_config.request_interval_charging and\
+                       vehicle_update_data.plug_state and\
+                       vehicle_update_data.last_soc and\
+                       vehicle_update_data.last_soc_timestamp >= vehicle_update_data.plug_time and\
+                       vehicle_update_data.imported -\
+                       (self.calculated_soc_state.last_imported or vehicle_update_data.imported) > 0:
+                        _age = int(self.general_config.request_interval_charging / 60)
+                        _txt1 = "Ladestand und Reichweite sind berechnet, da der von der Online-Abfrage "
+                        _txt1 = _txt1 + f"gelieferte Zeitstempel mehr als {_age} min alt ist."
+                        self.fault_state.warning(f"{_txt1}")
+                        self.fault_state.store_error()
+                        _carState = calc_vehicle_data.calc_vehicle_data(vehicle_update_data,
+                                                                        self.calculated_soc_state.last_imported or
+                                                                        vehicle_update_data.imported)
+                        _carState.odometer = _odometer
             except Exception as e:
                 if vehicle_update_data.plug_state and\
                    vehicle_update_data.last_soc and\
@@ -136,11 +157,10 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                    (self.calculated_soc_state.last_imported or vehicle_update_data.imported):
                     _txt1 = "SoC FALLBACK: SoC wird berechnet, da ein Fehler bei der Abfrage aufgetreten ist:"
                     self.fault_state.warning(f"{_txt1} {e}")
-                    _carState = CarState(soc=calc_soc.calc_soc(
-                                         vehicle_update_data,
-                                         vehicle_update_data.efficiency,
-                                         self.calculated_soc_state.last_imported or vehicle_update_data.imported,
-                                         vehicle_update_data.battery_capacity))
+                    self.fault_state.store_error()
+                    _carState = calc_vehicle_data.calc_vehicle_data(vehicle_update_data,
+                                                                    self.calculated_soc_state.last_imported or
+                                                                    vehicle_update_data.imported)
                 else:
                     if not vehicle_update_data.plug_state:
                         reason = ", weil kein Fahrzeug eingesteckt ist."
@@ -156,11 +176,10 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
                     raise Exception(f"Der SoC kann nicht ausgelesen werden: {e}. {_txt1}{reason}")
             return _carState
         elif source == SocSource.CALCULATION:
-            return CarState(soc=calc_soc.calc_soc(
-                vehicle_update_data,
-                vehicle_update_data.efficiency,
-                self.calculated_soc_state.last_imported or vehicle_update_data.imported,
-                vehicle_update_data.battery_capacity))
+            _carState = calc_vehicle_data.calc_vehicle_data(vehicle_update_data,
+                                                            self.calculated_soc_state.last_imported or
+                                                            vehicle_update_data.imported)
+            return _carState
         elif source == SocSource.CP:
             return CarState(soc=vehicle_update_data.soc_from_cp,
                             soc_timestamp=vehicle_update_data.timestamp_soc_from_cp)

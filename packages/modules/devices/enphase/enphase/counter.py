@@ -6,8 +6,10 @@ from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
+from modules.common.utils.peak_filter import PeakFilter
 from modules.common.store import get_counter_value_store
 from modules.devices.enphase.enphase.config import EnphaseCounterSetup
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -19,6 +21,7 @@ class EnphaseCounter(AbstractCounter):
     def initialize(self) -> None:
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self, response: Dict[str, Any], live_data):
         meter = None
@@ -29,9 +32,12 @@ class EnphaseCounter(AbstractCounter):
         if meter is None:
             # configuration wrong or error
             raise ValueError("Es konnten keine Daten vom Messgerät gelesen werden.")
+        imported, exported = self.peak_filter.check_values(meter['activePower'],
+                                                           meter['actEnergyDlvd'],
+                                                           meter['actEnergyRcvd'])
         counter_state = CounterState(
-            imported=meter['actEnergyDlvd'],
-            exported=meter['actEnergyRcvd'],
+            imported=imported,
+            exported=exported,
             power=meter['activePower'],
             powers=[meter['channels'][0]['activePower'],
                     meter['channels'][1]['activePower'],

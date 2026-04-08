@@ -11,6 +11,8 @@ from modules.common.modbus import ModbusDataType
 from modules.common.store import get_inverter_value_store
 from modules.devices.solax.solax.config import SolaxInverterSetup, Solax
 from modules.devices.solax.solax.version import SolaxVersion
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -28,6 +30,7 @@ class SolaxInverter(AbstractInverter):
         self.device_config = self.kwargs['device_config']
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         unit = self.device_config.configuration.modbus_id
@@ -47,6 +50,7 @@ class SolaxInverter(AbstractInverter):
             exported = self.__tcp_client.read_input_registers(
                 0x042B, ModbusDataType.UINT_32, wordorder=Endian.Little, unit=unit) * 100
 
+        _, exported = self.peak_filter.check_values(power, None, exported)
         inverter_state = InverterState(
             power=power,
             exported=exported

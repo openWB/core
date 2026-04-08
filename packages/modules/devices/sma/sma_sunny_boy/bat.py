@@ -9,6 +9,8 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusTcpClient_, ModbusDataType
 from modules.common.store import get_bat_value_store
 from modules.devices.sma.sma_sunny_boy.config import SmaSunnyBoyBatSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -28,6 +30,7 @@ class SunnyBoyBat(AbstractBat):
         self.__tcp_client: ModbusTcpClient_ = self.kwargs['client']
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
     def read(self) -> BatState:
         unit = self.component_config.configuration.modbus_id
@@ -47,7 +50,7 @@ class SunnyBoyBat(AbstractBat):
             raise ValueError(f'Batterie lieferte nicht plausible Werte. Export: {exported}, Import: {imported}. ',
                              'Sobald die Batterie geladen/entladen wird sollte sich dieser Wert ändern, ',
                              'andernfalls kann ein Defekt vorliegen.')
-
+        imported, exported = self.peak_filter.check_values(power, imported, exported)
         bat_state = BatState(
             power=power,
             soc=soc,

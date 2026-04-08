@@ -25,6 +25,7 @@ from control import data, prepare, process
 from control.algorithm import algorithm
 from helpermodules import command, setdata, subdata, timecheck, update_config
 from helpermodules.changed_values_handler import ChangedValuesContext
+from helpermodules.mosquitto_dynsec.mosquitto_dynsec import check_roles_at_start
 from helpermodules.measurement_logging.update_yields import update_daily_yields, update_pv_monthly_yearly_yields
 from helpermodules.measurement_logging.write_log import LogType, save_log
 from helpermodules.modbusserver import start_modbus_server
@@ -197,6 +198,7 @@ class HandlerAlgorithm:
     def handler5Min(self):
         """ Handler, der alle 5 Minuten aufgerufen wird und die Heartbeats der Threads überprüft und die Aufgaben
         ausführt, die nur alle 5 Minuten ausgeführt werden müssen.
+        ChangedValuesHandler hier nicht verwenden, da secondaries data.data nicht aktualisieren.
         """
         try:
             log.debug("5 Minuten Handler ausführen.")
@@ -221,8 +223,7 @@ class HandlerAlgorithm:
                     general_internal_chargepoint_handler.event_start.set()
                 else:
                     general_internal_chargepoint_handler.internal_chargepoint_handler.heartbeat = False
-            with ChangedValuesContext(loadvars_.event_module_update_completed):
-                sub.system_data["system"].update_ip_address()
+            sub.system_data["system"].update_ip_address()
         except Exception:
             log.exception("Fehler im Main-Modul")
 
@@ -349,6 +350,7 @@ try:
     # Warten, damit subdata Zeit hat, alle Topics auf dem Broker zu empfangen.
     event_update_config_completed.wait(300)
     event_subdata_initialized.wait(300)
+    Thread(target=check_roles_at_start, args=(), name="check acl roles at start").start()
     Pub().pub("openWB/set/system/boot_done", True)
     Path(Path(__file__).resolve().parents[1]/"ramdisk"/"bootdone").touch()
     schedule_jobs()

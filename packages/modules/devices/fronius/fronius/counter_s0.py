@@ -9,6 +9,8 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount import SimCounter
 from modules.common.store import get_counter_value_store
 from modules.devices.fronius.fronius.config import FroniusConfiguration, FroniusS0CounterSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -27,6 +29,7 @@ class FroniusS0Counter(AbstractCounter):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         session = req.get_http_session()
@@ -36,6 +39,7 @@ class FroniusS0Counter(AbstractCounter):
         # Wenn WR aus bzw. im Standby (keine Antwort), ersetze leeren Wert durch eine 0.
         power = float(response.json()["Body"]["Data"]["Site"]["P_Grid"]) or 0
 
+        self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
 
         counter_state = CounterState(

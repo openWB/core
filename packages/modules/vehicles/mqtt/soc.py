@@ -29,7 +29,8 @@ def create_vehicle(vehicle_config: MqttSocSetup, vehicle: int):
             topic_prefix = f"openWB/mqtt/vehicle/{vehicle}/get/"
             return CarState(soc=received_topics.get(f"{topic_prefix}soc"),
                             range=received_topics.get(f"{topic_prefix}range"),
-                            soc_timestamp=received_topics.get(f"{topic_prefix}soc_timestamp"))
+                            soc_timestamp=received_topics.get(f"{topic_prefix}soc_timestamp"),
+                            odometer=received_topics.get(f"{topic_prefix}odometer"))
         else:
             configurable_vehicle.fault_state.warning(
                 f"Keine MQTT-Daten für Fahrzeug {vehicle_config.name} empfangen oder es werden "

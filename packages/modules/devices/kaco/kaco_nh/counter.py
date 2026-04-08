@@ -8,6 +8,8 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_counter_value_store
 from modules.devices.kaco.kaco_nh.config import KacoNHConfiguration, KacoNHCounterSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -23,6 +25,7 @@ class KacoNHCounter(AbstractCounter):
         self.device_config: KacoNHConfiguration = self.kwargs['device_config']
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         response = req.get_http_session().get(
@@ -33,6 +36,7 @@ class KacoNHCounter(AbstractCounter):
         imported = float(response["iet"]) * 100
         exported = float(response["oet"]) * 100
 
+        imported, exported = self.peak_filter.check_values(power, imported, exported)
         counter_state = CounterState(
             imported=imported,
             exported=exported,

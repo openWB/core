@@ -23,6 +23,7 @@ sys.modules['pycarwings3'] = type(sys)('pycarwings3')
 module = type(sys)('pymodbus.client.sync')
 module.ModbusSerialClient = Mock()
 module.ModbusTcpClient = Mock()
+module.ModbusUdpClient = Mock()
 sys.modules['pymodbus.client.sync'] = module
 
 module = type(sys)('pymodbus.constants')

@@ -9,6 +9,8 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.store import get_counter_value_store
 from modules.devices.azzurro_zcs.azzurro_zcs.config import ZCSCounterSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -28,6 +30,7 @@ class ZCSCounter(AbstractCounter):
         self.client: ModbusTcpClient_ = self.kwargs['client']
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         # 0x0212 Grid Power Int16 -10-10 kW Unit 0,01kW Feed in/out power
@@ -50,6 +53,7 @@ class ZCSCounter(AbstractCounter):
                         0x0220, [ModbusDataType.UINT_16] * 10,
                         wordorder=Endian.Little, unit=self.__modbus_id)]
 
+        imported, exported = self.peak_filter.check_values(power, imported, exported)
         counter_state = CounterState(
             imported=imported,
             exported=exported,

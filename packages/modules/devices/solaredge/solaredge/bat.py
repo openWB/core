@@ -8,9 +8,6 @@ from pymodbus.constants import Endian
 import pymodbus
 
 
-from control import data
-
-
 from modules.common import modbus
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
@@ -20,15 +17,18 @@ from modules.common.modbus import ModbusDataType
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.solaredge.solaredge.config import SolaredgeBatSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
 FLOAT32_UNSUPPORTED = -0xffffff00000000000000000000000000
-MAX_DISCHARGE_LIMIT = 5000
-DEFAULT_CONTROL_MODE = 1  # Control Mode Max Eigenverbrauch
-REMOTE_CONTROL_MODE = 4  # Control Mode Remotesteuerung
-DEFAULT_COMMAND_MODE = 0  # Command Mode ohne Steuerung
-ACTIVE_COMMAND_MODE = 7  # Command Mode Max Eigenverbrauch bei Steuerung
+MAX_CHARGEDISCHARGE_LIMIT = 5000
+CONTROL_MODE_MSC = 1  # Storage Control Mode Maximize Self Consumption
+CONTROL_MODE_REMOTE = 4  # Control Mode Remotesteuerung
+REMOTE_CONTROL_COMMAND_MODE_DEFAULT = 0  # Default RC Command Mode ohne Steuerung
+REMOTE_CONTROL_COMMAND_MODE_CHARGE = 3  # RC Command Mode Charge from PV+AC
+REMOTE_CONTROL_COMMAND_MODE_MSC = 7  # RC Command Mode Maximize Self Consumtion used for Limit Discharge
 
 
 class KwargsDict(TypedDict):
@@ -45,9 +45,10 @@ class SolaredgeBat(AbstractBat):
         "Battery2InstantaneousPower": (0xe274, ModbusDataType.FLOAT_32,),
         "StorageControlMode": (0xe004, ModbusDataType.UINT_16,),
         "StorageBackupReserved": (0xe008, ModbusDataType.FLOAT_32,),
-        "StorageChargeDischargeDefaultMode": (0xe00a, ModbusDataType.UINT_16,),
+        "RemoteControlCommandModeDefault": (0xe00a, ModbusDataType.UINT_16,),
         "RemoteControlCommandMode": (0xe00d, ModbusDataType.UINT_16,),
-        "RemoteControlCommandDischargeLimit": (0xe010, ModbusDataType.FLOAT_32,),
+        "RemoteControlChargeLimit": (0xe00e, ModbusDataType.FLOAT_32,),
+        "RemoteControlDischargeLimit": (0xe010, ModbusDataType.FLOAT_32,),
     }
 
     def __init__(self, component_config: SolaredgeBatSetup, **kwargs: Any) -> None:
@@ -60,15 +61,14 @@ class SolaredgeBat(AbstractBat):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.min_soc = 13
-        self.StorageControlMode_Read = DEFAULT_CONTROL_MODE
-        self.last_mode = 'undefined'
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         self.store.set(self.read_state())
 
     def read_state(self):
         power, soc = self.get_values()
+        self.peak_filter.check_values(power)
         imported, exported = self.get_imported_exported(power)
         return BatState(
             power=power,
@@ -110,9 +110,6 @@ class SolaredgeBat(AbstractBat):
             power = 0
         if soc == FLOAT32_UNSUPPORTED or not 0 <= soc <= 100:
             log.warning(f"Invalid SoC Speicher{battery_index}: {soc}")
-        else:
-            self.min_soc = min(int(soc), int(self.min_soc))
-            log.debug(f"Min-SoC Speicher{battery_index}: {int(self.min_soc)}%.")
 
         return power, soc
 
@@ -124,97 +121,81 @@ class SolaredgeBat(AbstractBat):
         # Use 1 as fallback if battery_index is not set
         battery_index = getattr(self.component_config.configuration, "battery_index", 1)
 
+        registers_to_read = [
+            "StorageControlMode",
+            "RemoteControlCommandMode",
+            "RemoteControlChargeLimit",
+            "RemoteControlDischargeLimit",
+        ]
         try:
-            power_limit_mode = data.data.bat_all_data.data.config.power_limit_mode
-        except AttributeError:
-            log.warning("power_limit_mode not found, assuming 'no_limit'")
-            power_limit_mode = 'no_limit'
-
-        if power_limit_mode == 'no_limit' and self.last_mode != 'limited':
-            """
-            Keine Speichersteuerung, andere Steuerungen zulassen (SolarEdge One, ioBroker, Node-Red etc.).
-            Falls andere Steuerungen vorhanden sind, sollten diese nicht beeinflusst werden,
-            daher erfolgt im Modus "Immer" der Speichersteuerung keine Steuerung.
-            """
+            values = self._read_registers(registers_to_read, unit)
+        except pymodbus.exceptions.ModbusException as e:
+            log.error(f"Failed to read registers: {e}")
+            self.fault_state.error(f"Modbus read error: {e}")
             return
 
-        if power_limit is None:
-            # Keine Ladung mit Speichersteuerung.
-            if self.last_mode == 'limited':
-                # Steuerung deaktivieren.
-                log.debug(f"Speicher{battery_index}:Keine Steuerung gefordert, Steuerung deaktivieren.")
+        if power_limit is None:  # No Bat Control should be used.
+            if values["StorageControlMode"] == CONTROL_MODE_MSC:
+                log.debug(f"Speicher{battery_index}:Keine Steuerung gefordert, bereits deaktiviert.")
+            else:
+                # Disable Bat Control
                 values_to_write = {
-                    "RemoteControlCommandDischargeLimit": MAX_DISCHARGE_LIMIT,
-                    "StorageChargeDischargeDefaultMode": DEFAULT_COMMAND_MODE,
-                    "RemoteControlCommandMode": DEFAULT_COMMAND_MODE,
-                    "StorageControlMode": self.StorageControlMode_Read,
+                    "RemoteControlChargeLimit": MAX_CHARGEDISCHARGE_LIMIT,
+                    "RemoteControlDischargeLimit": MAX_CHARGEDISCHARGE_LIMIT,
+                    "RemoteControlCommandModeDefault": REMOTE_CONTROL_COMMAND_MODE_DEFAULT,
+                    "RemoteControlCommandMode": REMOTE_CONTROL_COMMAND_MODE_DEFAULT,
+                    "StorageControlMode": CONTROL_MODE_MSC,
                 }
                 self._write_registers(values_to_write, unit)
-                self.last_mode = None
-            else:
-                return
+                log.debug(f"Speicher{battery_index}:Keine Steuerung gefordert, Steuerung deaktiviert.")
 
-        elif abs(power_limit) >= 0:
-            """
-            Ladung mit Speichersteuerung.
-            SolarEdge entlaedt den Speicher immer nur bis zur SoC-Reserve.
-            Steuerung beenden, wenn der SoC vom Speicher die SoC-Reserve unterschreitet.
-            """
-            registers_to_read = [
-                f"Battery{battery_index}StateOfEnergy",
-                "StorageControlMode",
-                "StorageBackupReserved",
-                "RemoteControlCommandDischargeLimit",
-            ]
-            try:
-                values = self._read_registers(registers_to_read, unit)
-            except pymodbus.exceptions.ModbusException as e:
-                log.error(f"Failed to read registers: {e}")
-                self.fault_state.error(f"Modbus read error: {e}")
-                return
-            soc = values[f"Battery{battery_index}StateOfEnergy"]
-            if soc == FLOAT32_UNSUPPORTED or not 0 <= soc <= 100:
-                log.warning(f"Speicher{battery_index}: Invalid SoC: {soc}")
-            soc_reserve = max(int(self.min_soc + 2), int(values["StorageBackupReserved"]))
-            log.debug(f"SoC-Reserve Speicher{battery_index}: {int(soc_reserve)}%.")
-            discharge_limit = int(values["RemoteControlCommandDischargeLimit"])
-
-            if values["StorageControlMode"] == REMOTE_CONTROL_MODE:  # Speichersteuerung ist aktiv.
-                if soc_reserve > soc:
-                    # Speichersteuerung erst deaktivieren, wenn SoC-Reserve unterschritten wird.
-                    # Darf wegen 2 Speichern nicht bereits bei SoC-Reserve deaktiviert werden!
-                    log.debug(f"Speicher{battery_index}: Steuerung deaktivieren. SoC-Reserve unterschritten")
+        elif power_limit <= 0:  # Limit Discharge Mode should be used.
+            if (values["StorageControlMode"] == CONTROL_MODE_REMOTE and
+                    values["RemoteControlCommandMode"] == REMOTE_CONTROL_COMMAND_MODE_MSC):
+                # Remote Control and Discharge Mode already active.
+                discharge_limit = int(values["RemoteControlDischargeLimit"])
+                if discharge_limit not in range(int(abs(power_limit)) - 10, int(abs(power_limit)) + 10):
+                    # Send Limit only if difference is more than 10W, needed with more than 1 battery.
                     values_to_write = {
-                        "RemoteControlCommandDischargeLimit": MAX_DISCHARGE_LIMIT,
-                        "StorageChargeDischargeDefaultMode": DEFAULT_COMMAND_MODE,
-                        "RemoteControlCommandMode": DEFAULT_COMMAND_MODE,
-                        "StorageControlMode": self.StorageControlMode_Read,
+                        "RemoteControlDischargeLimit": int(min(abs(power_limit), MAX_CHARGEDISCHARGE_LIMIT))
                     }
                     self._write_registers(values_to_write, unit)
-                    self.last_mode = None
+                    log.debug(f"Entlade-Limit Speicher{battery_index}: {int(abs(power_limit))}W.")
+                else:
+                    log.debug(f"Entlade-Limit Speicher{battery_index}: Abweichung unter  +/- 10W.")
+            else:  # Enable Remote Control and Discharge Mode.
+                values_to_write = {
+                    "StorageControlMode": CONTROL_MODE_REMOTE,
+                    "RemoteControlCommandModeDefault": REMOTE_CONTROL_COMMAND_MODE_MSC,
+                    "RemoteControlCommandMode": REMOTE_CONTROL_COMMAND_MODE_MSC,
+                    "RemoteControlDischargeLimit": int(min(abs(power_limit), MAX_CHARGEDISCHARGE_LIMIT))
+                }
+                self._write_registers(values_to_write, unit)
+                log.debug(f"Entlade-Limit aktiviert, Speicher{battery_index}: {int(abs(power_limit))}W.")
 
-                elif discharge_limit not in range(int(abs(power_limit)) - 10, int(abs(power_limit)) + 10):
-                    # Limit nur bei Abweichung von mehr als 10W, um Konflikte bei 2 Speichern zu verhindern.
-                    log.debug(f"Discharge-Limit Speicher{battery_index}: {int(abs(power_limit))}W.")
+        elif power_limit > 0:  # Charge Mode should be used
+            if (values["StorageControlMode"] == CONTROL_MODE_REMOTE and
+                    values["RemoteControlCommandMode"] == REMOTE_CONTROL_COMMAND_MODE_CHARGE):
+                # Remote Control and Charge Mode already active.
+                charge_limit = int(values["RemoteControlChargeLimit"])
+                if charge_limit not in range(int(abs(power_limit)) - 10, int(abs(power_limit)) + 10):
+                    # Send Limit only if difference is more than 10W.
                     values_to_write = {
-                        "RemoteControlCommandDischargeLimit": int(min(abs(power_limit), MAX_DISCHARGE_LIMIT))
+                        "RemoteControlChargeLimit": int(min(abs(power_limit), MAX_CHARGEDISCHARGE_LIMIT))
                     }
                     self._write_registers(values_to_write, unit)
-                self.last_mode = 'limited'
-
-            else:  # Speichersteuerung ist inaktiv.
-                if soc_reserve < soc:
-                    # Speichersteuerung nur aktivieren, wenn SoC ueber SoC-Reserve.
-                    log.debug(f"Discharge-Limit aktivieren, Speicher{battery_index}: {int(abs(power_limit))}W.")
-                    self.StorageControlMode_Read = values["StorageControlMode"]
-                    values_to_write = {
-                        "StorageControlMode": REMOTE_CONTROL_MODE,
-                        "StorageChargeDischargeDefaultMode": ACTIVE_COMMAND_MODE,
-                        "RemoteControlCommandMode": ACTIVE_COMMAND_MODE,
-                        "RemoteControlCommandDischargeLimit": int(min(abs(power_limit), MAX_DISCHARGE_LIMIT))
-                    }
-                    self._write_registers(values_to_write, unit)
-                    self.last_mode = 'limited'
+                    log.debug(f"Ladung Speicher{battery_index}: {int(abs(power_limit))}W.")
+                else:
+                    log.debug(f"Ladung Speicher{battery_index}: Abweichung unter  +/- 10W.")
+            else:  # Enable Remote Control and Charge Mode.
+                values_to_write = {
+                    "StorageControlMode": CONTROL_MODE_REMOTE,
+                    "RemoteControlCommandModeDefault": REMOTE_CONTROL_COMMAND_MODE_CHARGE,
+                    "RemoteControlCommandMode": REMOTE_CONTROL_COMMAND_MODE_CHARGE,
+                    "RemoteControlChargeLimit": int(min(abs(power_limit), MAX_CHARGEDISCHARGE_LIMIT))
+                }
+                self._write_registers(values_to_write, unit)
+                log.debug(f"Aktivierung Ladung Speicher{battery_index}: {int(abs(power_limit))}W.")
 
     def _read_registers(self, register_names: list, unit: int) -> Dict[str, Union[int, float]]:
         values = {}

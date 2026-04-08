@@ -49,6 +49,7 @@ $battery-fill: #ba712833;
 $battery-fill-flow-diagram: #c6a583;
 $charge-point-stroke: #5c93d1;
 $charge-point-fill: #5c93d14d;
+$charge-plan-link-button: #6b757d;
 // Light theme (default)
 :root {
   --q-primary: #{$primary};
@@ -78,6 +79,7 @@ $charge-point-fill: #5c93d14d;
   --q-battery-fill-flow-diagram: #{$battery-fill-flow-diagram};
   --q-charge-point-stroke: #{$charge-point-stroke};
   --q-charge-point-fill: #{$charge-point-fill};
+  --q-charge-plan-link-button: #{$charge-plan-link-button};
 
   // Main background
   background-color: var(--q-background-1);
@@ -245,17 +247,17 @@ $charge-point-fill: #5c93d14d;
   }
 }
 // Dark Theme Base Colors
-$dark-page: #000000; // This overrides Quasar's default dark page color
+$dark-page: #18191a; // This overrides Quasar's default dark page color - outer background
 $dark-primary: #3874db;
-$dark-secondary: #28293d;
+$dark-secondary: #3a3b3c; //cards - tabs background tables
 $dark-accent: #546e7a;
 $dark-positive: #3e8f5e;
 $dark-negative: #c54d57;
 $dark-info: #4b89aa;
 $dark-warning: #d98e44;
-$dark-background-1: #030627;
-$dark-background-2: #010322;
-$dark-list: rgb(40, 42, 62);
+$dark-background-1: #242526; // app background
+$dark-background-2: #242526; // app background 2
+$dark-list: #3a3b3c; // drawer, list background
 $dark-carousel: #8b8f9f;
 $dark-tab-icon: #d7d9e0;
 $battery-fill-flow-diagram: #b2885f;
@@ -266,6 +268,7 @@ $dark-daily-totals-battery-stroke: #e7c08a;
 $dark-daily-totals-pv-fill: #27623a;
 $dark-daily-totals-house-fill: #6e6e6e;
 $dark-daily-totals-chargepoint-fill: #254a8c;
+$dark-charge-plan-link-button: #75787a;
 
 // Dark theme
 .body--dark {
@@ -304,6 +307,7 @@ $dark-daily-totals-chargepoint-fill: #254a8c;
   --q-dark-daily-totals-pv-fill: #{$dark-daily-totals-pv-fill};
   --q-dark-daily-totals-house-fill: #{$dark-daily-totals-house-fill};
   --q-dark-daily-totals-chargepoint-fill: #{$dark-daily-totals-chargepoint-fill};
+  --q-charge-plan-link-button: #{$dark-charge-plan-link-button};
 
   // Main background
   background-color: $dark-page;
@@ -315,6 +319,7 @@ $dark-daily-totals-chargepoint-fill: #254a8c;
   // Header colors
   .q-header {
     color: var(--q-white);
+    background-color: var(--q-secondary);
   }
   // Drawer background
   .q-drawer {
@@ -328,7 +333,7 @@ $dark-daily-totals-chargepoint-fill: #254a8c;
   }
   // Tab active background color
   .q-tab--active {
-    background-color: color.scale($dark-secondary, $lightness: 10%);
+    background-color: var(--q-secondary);
   }
   // Carousel control arrows and buttons
   .q-carousel__control {

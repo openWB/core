@@ -12,6 +12,8 @@ from modules.common.store import get_inverter_value_store
 from modules.devices.sma.sma_sunny_boy.config import SmaSunnyBoyInverterSetup
 from modules.devices.sma.sma_sunny_boy.inv_version import SmaInverterVersion
 from modules.common.simcount import SimCounter
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -38,6 +40,7 @@ class SmaSunnyBoyInverter(AbstractInverter):
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.sim_counter = SimCounter(self.kwargs['device_id'], self.component_config.id, prefix="Wechselrichter")
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         self.store.set(self.read())
@@ -99,13 +102,13 @@ class SmaSunnyBoyInverter(AbstractInverter):
                 'Sobald PV Ertrag vorhanden ist sollte sich dieser Wert ändern, '
                 'andernfalls kann ein Defekt vorliegen.'
             )
-
+        _, exported = self.peak_filter.check_values(power_total * -1, None, energy)
         imported, _ = self.sim_counter.sim_count(power_total * -1)
 
         inverter_state = InverterState(
             power=power_total * -1,
             dc_power=dc_power * -1,
-            exported=energy,
+            exported=exported,
             imported=imported
         )
         if 'currents' in locals():

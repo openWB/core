@@ -6,6 +6,8 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_inverter_value_store
 from modules.devices.rct.rct.config import RctInverterSetup
 from modules.devices.rct.rct.rct_lib import RCT
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class RctInverter(AbstractInverter):
@@ -15,6 +17,7 @@ class RctInverter(AbstractInverter):
     def initialize(self) -> None:
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self, rct_client: RCT) -> None:
         my_tab = []
@@ -28,10 +31,12 @@ class RctInverter(AbstractInverter):
 
         # read all parameters
         rct_client.read(my_tab)
-
+        power = (power1.value + power2.value + power3.value) * -1
+        exported = (exported1.value + exported2.value + exported3.value)
+        _, exported = self.peak_filter.check_values(power, None, exported)
         inverter_state = InverterState(
-            power=(power1.value + power2.value + power3.value) * -1,
-            exported=(exported1.value + exported2.value + exported3.value),
+            power=power,
+            exported=exported,
         )
         self.store.set(inverter_state)
 

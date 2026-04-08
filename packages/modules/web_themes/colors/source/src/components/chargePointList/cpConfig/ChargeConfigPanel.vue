@@ -5,7 +5,7 @@
 		:fullwidth="true"
 		class="item"
 	>
-		<span class="status-string">{{ cp.stateStr }}</span>
+		<span class="status-string shadow m-0 mb-1 p-3">{{ cp.stateStr }}</span>
 	</ConfigItem>
 
 	<ConfigItem
@@ -17,9 +17,10 @@
 		<span style="color: red"> {{ cp.faultStr }} </span>
 	</ConfigItem>
 
-	<div class="m-0 mt-4 p-0 grid-col-12 tabarea">
+	<div :id="`cptabarea-${cpid}`" class="m-0 mt-4 p-0 grid-col-12 tabarea">
 		<nav class="nav nav-tabs nav-justified mx-1 mt-1" role="tablist">
 			<a
+				:id="`chSettings${cpid}`"
 				class="nav-link active"
 				data-bs-toggle="tab"
 				:data-bs-target="'#chargeSettings' + cpid"
@@ -27,6 +28,7 @@
 				<i class="fa-solid fa-charging-station" />
 			</a>
 			<a
+				:id="`inSettings${cpid}`"
 				class="nav-link"
 				data-bs-toggle="tab"
 				:data-bs-target="'#instantSettings' + cpid"
@@ -34,6 +36,7 @@
 				<i class="fa-solid fa-lg fa-bolt" />
 			</a>
 			<a
+				:id="`pvhSettings${cpid}`"
 				class="nav-link"
 				data-bs-toggle="tab"
 				:data-bs-target="'#pvSettings' + cpid"
@@ -41,6 +44,7 @@
 				<i class="fa-solid fa-solar-panel me-1" />
 			</a>
 			<a
+				:id="`scSettings${cpid}`"
 				class="nav-link"
 				data-bs-toggle="tab"
 				:data-bs-target="'#scheduledSettings' + cpid"
@@ -48,6 +52,7 @@
 				<i class="fa-solid fa-bullseye me-1" />
 			</a>
 			<a
+				:id="`ecSettings${cpid}`"
 				class="nav-link"
 				data-bs-toggle="tab"
 				:data-bs-target="'#ecoSettings' + cpid"
@@ -64,7 +69,7 @@
 		</nav>
 
 		<!-- Tab panes -->
-		<div id="settingsPanes" class="tab-content mx-1 p-1 pb-3">
+		<div :id="`cpsettingsPanes-${cpid}`" class="tab-content mx-1 p-1 pb-3">
 			<div
 				:id="'chargeSettings' + cpid"
 				class="tab-pane active"
@@ -80,7 +85,7 @@
 				aria-labelledby="instant-tab"
 			>
 				<ConfigInstant
-					:chargepoint="cp"
+					:chargepoint="cp as ChargePoint"
 					:vehicles="vehicles"
 					:charge-templates="chargeTemplates"
 				/>
@@ -93,7 +98,7 @@
 				aria-labelledby="pv-tab"
 			>
 				<ConfigPv
-					:chargepoint="cp"
+					:chargepoint="cp as ChargePoint"
 					:vehicles="vehicles"
 					:charge-templates="chargeTemplates"
 				/>
@@ -106,7 +111,7 @@
 			>
 				<ConfigScheduled
 					v-if="chargeTemplate != undefined"
-					:charge-point="cp"
+					:charge-point="cp as ChargePoint"
 				/>
 			</div>
 			<div
@@ -115,7 +120,10 @@
 				role="tabpanel"
 				aria-labelledby="eco-tab"
 			>
-				<ConfigEco v-if="chargeTemplate != undefined" :chargepoint="cp" />
+				<ConfigEco
+					v-if="chargeTemplate != undefined"
+					:chargepoint="cp as ChargePoint"
+				/>
 			</div>
 			<div
 				:id="'timedSettings' + cpid"
@@ -123,14 +131,18 @@
 				role="tabpanel"
 				aria-labelledby="scheduled-tab"
 			>
-				<ConfigTimed v-if="chargeTemplate != undefined" :charge-point="cp" />
+				<ConfigTimed
+					v-if="chargeTemplate != undefined"
+					:charge-point="cp as ChargePoint"
+				/>
 			</div>
 		</div>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { Tab } from 'bootstrap'
 import { ChargePoint, vehicles, chargeTemplates } from '../model'
 import ConfigItem from '../../shared/ConfigItem.vue'
 import ConfigInstant from './ConfigInstant.vue'
@@ -144,25 +156,57 @@ const props = defineProps<{
 }>()
 defineEmits(['closeConfig'])
 //state
-const cp = props.chargepoint
+const cp = ref(props.chargepoint)
 
 // computed
 const chargeTemplate = computed(() => {
-	return cp.chargeTemplate?.id ?? 0
+	return cp.value.chargeTemplate?.id ?? 0
 })
 const cpid = computed(() => {
-	return cp.id
+	return cp.value.id
 })
 // methods
+function selectStartTab() {
+	let chargePanelName = ''
+	switch (props.chargepoint.chargeMode) {
+		case 'instant_charging':
+			chargePanelName = '#inSettings' + props.chargepoint.id
+			break
+		case 'pv_charging':
+			chargePanelName = '#pvhSettings' + props.chargepoint.id
+			break
+		case 'scheduled_charging':
+			chargePanelName = '#scSettings' + props.chargepoint.id
+			break
+		case 'eco_charging':
+			chargePanelName = '#ecSettings' + props.chargepoint.id
+			break
+		default:
+			chargePanelName = '#chSettings' + props.chargepoint.id
+	}
+	const tabToActivate = document.querySelector(chargePanelName)
+	if (tabToActivate) {
+		var tab = new Tab(tabToActivate)
+		tab.show()
+	} else {
+		console.error('Could not find the Tab element to activate')
+	}
+}
 // lifecycle
-onMounted(() => {})
+onMounted(() => {
+	selectStartTab()
+})
 </script>
 
 <style scoped>
 .status-string {
 	font-size: var(--font-settings);
 	font-style: italic;
-	color: var(--color-battery);
+	color: var(--color-charging);
+	border-radius: 12px;
+	background: var(--color-input);
+	width: 100%;
+	text-align: center;
 }
 
 .nav-tabs .nav-link {

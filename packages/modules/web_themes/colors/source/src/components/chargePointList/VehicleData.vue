@@ -143,7 +143,7 @@
 			:id="'priceChartInline' + props.chargepoint.id"
 			class="d-flex flex-column rounded priceEditor grid-col-12"
 		>
-			<PriceChart
+			<PriceSelector
 				v-if="vehicles[props.chargepoint.connectedVehicle] != undefined"
 				:chargepoint="props.chargepoint"
 			/>
@@ -173,7 +173,7 @@ import RadioBarInput from '@/components/shared/RadioBarInput.vue'
 import RadioInput2 from '@/components/shared/RadioInput2.vue'
 import WbBadge from '../shared/WbBadge.vue'
 import RangeInput from '../shared/RangeInput.vue'
-import PriceChart from '../priceChart/PriceChart.vue'
+import PriceSelector from '../priceChart/PriceSelector.vue'
 import InfoItem from '@/components/shared/InfoItem.vue'
 import ChargingState from './ChargingState.vue'
 import { globalData } from '@/assets/js/model'

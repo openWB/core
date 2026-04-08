@@ -1,7 +1,7 @@
 class EkzTariffConfiguration:
     def __init__(self):
         self.country = "ch"
-        self.unit = "rp"
+        self.unit = "Rp"
 
 
 class EkzTariff:

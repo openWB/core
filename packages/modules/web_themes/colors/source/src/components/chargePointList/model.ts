@@ -30,7 +30,7 @@ export class ChargePoint implements PowerItem {
 	private _hasPriority = false
 	currentPlan = ''
 	averageConsumption = 0
-	vehicleName = ''
+	private _vehicleName = ''
 	rangeCharged = 0
 	rangeUnit = ''
 	counter = 0
@@ -92,6 +92,12 @@ export class ChargePoint implements PowerItem {
 	constructor(index: number) {
 		this.id = index
 	}
+	get vehicleName() {
+		return vehicles[this.connectedVehicle]?.name ?? ''
+	}
+	set vehicleName(name: string) {
+		this._vehicleName = name
+	}
 	get isLocked() {
 		return this._isLocked
 	}
@@ -133,21 +139,15 @@ export class ChargePoint implements PowerItem {
 			updateChargeTemplate(this.id)
 		}
 	}
-	/* updateChargeMode(cm: ChargeMode) {
-		this._chargeMode = cm
-	} */
 	get hasPriority() {
 		return this.chargeTemplate?.prio ?? false
 	}
 	set hasPriority(prio: boolean) {
 		if (this.chargeTemplate) {
 			this.chargeTemplate.prio = prio
-			updateServer('cpPriority', prio, this.id)
+			updateChargeTemplate(this.id)
 		}
 	}
-	/* updateCpPriority(prio: boolean) {
-		this._hasPriority = prio
-	} */
 	get timedCharging() {
 		if (this.chargeTemplate) {
 			return this.chargeTemplate.time_charging.active
@@ -156,9 +156,8 @@ export class ChargePoint implements PowerItem {
 		}
 	}
 	set timedCharging(setting: boolean) {
-		// chargeTemplates[this.chargeTemplate].time_charging.active = false
 		this.chargeTemplate!.time_charging.active = setting
-		updateServer('cpTimedCharging', setting, this.id)
+		updateChargeTemplate(this.id)
 	}
 	get instantTargetCurrent() {
 		return this.chargeTemplate?.chargemode.instant_charging.current ?? 0
@@ -169,10 +168,6 @@ export class ChargePoint implements PowerItem {
 			updateChargeTemplate(this.id)
 		}
 	}
-	/* updateInstantTargetCurrent(current: number) {
-		this._instantTargetCurrent = current
-	}
-	 */
 	get instantChargeLimitMode() {
 		return (
 			this.chargeTemplate?.chargemode.instant_charging.limit.selected ?? 'none'
@@ -184,9 +179,6 @@ export class ChargePoint implements PowerItem {
 			updateChargeTemplate(this.id)
 		}
 	}
-	/* updateInstantChargeLimitMode(mode: string) {
-		this._instantChargeLimitMode = mode
-	} */
 	get instantTargetSoc() {
 		return this.chargeTemplate?.chargemode.instant_charging.limit.soc ?? 0
 	}
@@ -196,9 +188,6 @@ export class ChargePoint implements PowerItem {
 			updateChargeTemplate(this.id)
 		}
 	}
-	/* updateInstantTargetSoc(soc: number) {
-		this._instantTargetSoc = soc
-	} */
 	get instantMaxEnergy() {
 		return this.chargeTemplate?.chargemode.instant_charging.limit.amount ?? 0
 	}
@@ -208,9 +197,6 @@ export class ChargePoint implements PowerItem {
 			updateChargeTemplate(this.id)
 		}
 	}
-	/* updateInstantMaxEnergy(max: number) {
-		this._instantMaxEnergy = max
-	} */
 	get instantTargetPhases() {
 		return this.chargeTemplate?.chargemode.instant_charging.phases_to_use ?? 0
 	}
@@ -220,7 +206,6 @@ export class ChargePoint implements PowerItem {
 			updateChargeTemplate(this.id)
 		}
 	}
-
 	get pvFeedInLimit() {
 		return this.chargeTemplate?.chargemode.pv_charging.feed_in_limit ?? false
 	}
@@ -230,9 +215,6 @@ export class ChargePoint implements PowerItem {
 			updateChargeTemplate(this.id)
 		}
 	}
-	/* updatePvFeedInLimit(setting: boolean) {
-		this._pvFeedInLimit = setting
-	} */
 	get pvMinCurrent() {
 		return this.chargeTemplate?.chargemode.pv_charging.min_current ?? 0
 	}
@@ -242,9 +224,6 @@ export class ChargePoint implements PowerItem {
 			updateChargeTemplate(this.id)
 		}
 	}
-	/* updatePvMinCurrent(min: number) {
-		this._pvMinCurrent = min
-	} */
 	get pvMaxSoc() {
 		return this._pvMaxSoc
 	}
@@ -264,9 +243,6 @@ export class ChargePoint implements PowerItem {
 			updateChargeTemplate(this.id)
 		}
 	}
-	/* updatePvMinSoc(min: number) {
-		this._pvMinSoc = min
-	} */
 	get pvMinSocCurrent() {
 		return this.chargeTemplate?.chargemode.pv_charging.min_soc_current ?? 0
 	}
@@ -400,28 +376,6 @@ export class ChargePoint implements PowerItem {
 				return 0
 		}
 	}
-	/* toPowerItem(): PowerItem {
-		return {
-			name: this.name,
-			type: PowerItemType.chargepoint,
-			power: this.power,
-			now : {
-				energy: this.dailyYield,
-				energyPv: this.energyPv,
-				energyBat: this.energyBat,
-				pvPercentage: this.pvPercentage,
-			},			
-			past: {
-				energy: this.dailyYield,
-				energyPv: this.energyPv,
-				energyBat: this.energyBat,
-				pvPercentage: this.pvPercentage,
-			},
-			color: this.color,
-			icon: this.icon,
-			showInGraph: true,
-		}
-	} */
 }
 export class Vehicle {
 	id: number
@@ -587,6 +541,7 @@ export interface EvTemplate {
 	min_current: number
 	max_current_one_phase: number
 	battery_capacity: number
+	efficiency: number
 	nominal_difference: number
 	request_interval_charging: number
 	request_interval_not_charging: number
@@ -627,37 +582,19 @@ export function resetChargePoints() {
 }
 
 export const topVehicles = computed(() => {
-	const result: number[] = []
-	const cps = Object.values(chargePoints)
-	const vhcls = Object.values(vehicles).filter((v) => v.visible)
-	// vehicle 1
-	let v1 = -1
-	switch (cps.length) {
-		case 0:
-			v1 = vhcls[0] ? vhcls[0].id : -1
-			break
-		default:
-			v1 = cps[0].connectedVehicle //?? vhcls[0] ? vhcls[0].id : -1
-	}
-	// vehicle 2
-	let v2 = -1
-	switch (cps.length) {
-		case 0:
-		case 1:
-			v2 = vhcls[0] ? vhcls[0].id : -1
-			break
-		default:
-			v2 = cps[1].connectedVehicle //?? vhcls[1] ? vhcls[1].id : -1
-	}
-	// change v2 if the same as v1
-	if (v1 == v2) {
-		v2 = vhcls[1] ? vhcls[1].id : -1
-	}
-	if (v1 != -1) {
-		result.push(v1)
-	}
-	if (v2 != -1) {
-		result.push(v2)
+	let result: number[] = []
+	const connectedVehicles = Object.values(chargePoints)
+		.filter((cp) => vehicles[cp.connectedVehicle] && vehicles[cp.connectedVehicle].isSocConfigured)
+		.map((cp) => cp.connectedVehicle)
+	console.log('connected vehicles', connectedVehicles)
+	const otherVehicles = Object.values(vehicles)
+		.filter((v) => v.visible && v.isSocConfigured && !connectedVehicles.includes(v.id)) // only show vehicles with configured soc and that are visible
+	console.log('other vehicles', otherVehicles)
+	result = connectedVehicles.concat(otherVehicles.map((v) => v.id)).slice(0, 2)
+	if (result.length == 0) {
+		result = [-1,-1]
+	} else if (result.length == 1) {
+		result.push(-1)
 	}
 	return result
 })

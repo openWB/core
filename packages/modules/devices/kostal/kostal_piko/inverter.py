@@ -8,6 +8,8 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_inverter_value_store
 from modules.common import req
 from modules.devices.kostal.kostal_piko.config import KostalPikoInverterSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -23,6 +25,7 @@ class KostalPikoInverter(AbstractInverter):
         self.ip_address: str = self.kwargs['ip_address']
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self) -> Tuple[float, float]:
         # Die Differenz der Einträge entspricht nicht der Batterieleistung.
@@ -37,6 +40,7 @@ class KostalPikoInverter(AbstractInverter):
 
         exported = float(resp["dxsEntries"][1]["value"]) * 1000
 
+        _, exported = self.peak_filter.check_values(power, None, exported)
         inverter = InverterState(
             exported=exported,
             power=power

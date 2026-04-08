@@ -62,6 +62,7 @@ class Services:
     CHARGING = "charging"
     PARAMETERS = "parameters"
     SERVICE_STATUS = "service_status"
+    MEASUREMENTS = "measurements"
 
 
 def find_path_in_dict(src, path) -> object:
@@ -310,6 +311,7 @@ class Vehicle:
                 self.get_selectivestatus(
                     [
                         Services.CHARGING,
+                        Services.MEASUREMENTS,
                     ]
                 )
             )
@@ -419,7 +421,7 @@ class Vehicle:
                 expiration = datetime.now(UTC) + timedelta(days=1)
             expiration = expiration.replace(tzinfo=None)
             if now >= expiration:
-                _LOGGER.warning("Access to %s has expired!", service)
+                _LOGGER.info("Access to %s has expired!", service)
                 self._discovered = False
                 return True
         except Exception:
@@ -1425,12 +1427,13 @@ class vwid():
                 data['charging']['batteryStatus']['value']['currentSOC_pct'] = str(0)
                 data['charging']['batteryStatus']['value']['cruisingRangeElectric_km'] = str(0)
                 data['charging']['batteryStatus']['value']['carCapturedTimestamp'] = _now
+                data['charging']['batteryStatus']['value']['odometer'] = None
 
                 _k = str(vwid.connection.keys())
-                _LOGGER.info(f"libvwid.get_status connections at entry: vwid.connections.keys={_k}")
+                _LOGGER.debug(f"libvwid.get_status connections at entry: vwid.connections.keys={_k}")
                 _update_result = False
                 if self.username not in vwid.connection:
-                    _LOGGER.info(f"create new connection, key={self.username}")
+                    _LOGGER.debug(f"create new connection, key={self.username}")
                     vwid.connection[self.username] = Connection(session, self.username, self.password)
                     self._connection = vwid.connection[self.username]
                     vwid.connection[self.username]._session_tokens['identity'] = {}
@@ -1440,7 +1443,7 @@ class vwid():
                         vwid.connection[self.username]._session_tokens['Legacy'][token] = self.tokens[token]
                     _conn_reuse = False
                 else:
-                    _LOGGER.info(f"reuse existing connection, key={self.username}")
+                    _LOGGER.debug(f"reuse existing connection, key={self.username}")
                     vwid.connection[self.username]._session = session
                     _conn_reuse = True
                 if not _conn_reuse:
@@ -1472,6 +1475,7 @@ class vwid():
                             range =\
                                 vehicle._states['charging']['batteryStatus']['value']['cruisingRangeElectric_km']
                             ts = vehicle._states['charging']['batteryStatus']['value']['carCapturedTimestamp']
+                            odometer = vehicle._states['measurements']['odometerStatus']['value']['odometer']
                             _LOGGER.debug("vehicle  =" + str(vehicle))
                             _LOGGER.debug("soc      =" + str(soc))
                             _LOGGER.debug("range    =" + str(range))
@@ -1481,10 +1485,13 @@ class vwid():
                             data['charging']['batteryStatus']['value']['currentSOC_pct'] = str(soc)
                             data['charging']['batteryStatus']['value']['cruisingRangeElectric_km'] = str(range)
                             data['charging']['batteryStatus']['value']['carCapturedTimestamp'] = str(tsxx)
+                            data['charging']['batteryStatus']['value']['odometer'] = str(odometer)
                             _LOGGER.debug("return data =" + to_json(data, indent=4))
                             for token in vwid.connection[self.username]._session_tokens['identity']:
                                 self.tokens[token] =\
                                     vwid.connection[self.username]._session_tokens['identity'][token]
+                            _LOGGER.info("VWID: soc=" + str(soc)+", range=" + str(range) + "@" + str(tsxx) +
+                                         ', odometer=' + str(odometer))
                             return data
                     else:
                         _LOGGER.error(f"SOCERR-02: Fahrzeug mit VIN {self.vin} nicht gefunden")

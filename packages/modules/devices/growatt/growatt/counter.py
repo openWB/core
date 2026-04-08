@@ -5,10 +5,12 @@ from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
+from modules.common.utils.peak_filter import PeakFilter
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.store import get_counter_value_store
 from modules.devices.growatt.growatt.config import GrowattCounterSetup
 from modules.devices.growatt.growatt.version import GrowattVersion
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -28,6 +30,7 @@ class GrowattCounter(AbstractCounter):
         self.client: ModbusTcpClient_ = self.kwargs['client']
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         if self.version == GrowattVersion.max_series:
@@ -66,6 +69,7 @@ class GrowattCounter(AbstractCounter):
             exported = self.client.read_input_registers(3073, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
             imported = self.client.read_input_registers(3069, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
 
+        imported, exported = self.peak_filter.check_values(power, imported, exported)
         counter_state = CounterState(
             imported=imported,
             exported=exported,

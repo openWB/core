@@ -1,164 +1,170 @@
 <template>
 	<WBWidget :full-width="true">
-		<template #title> Aktuelle Leistung </template>
+		<template #title> Aktuell </template>
 		<figure id="powermeter" class="p-0 m-0">
 			<svg :viewBox="'0 0 ' + width + ' ' + height">
 				<g :transform="'translate(' + width / 2 + ',' + height / 2 + ')'">
-					<!-- Show the two arcs -->
-					<PMSourceArc
-						:radius="radius"
-						:corner-radius="cornerRadius"
-						:circle-gap-size="circleGapSize"
-						:empty-power="emptyPower"
-					/>
-					<PMUsageArc
-						:radius="radius"
-						:corner-radius="cornerRadius"
-						:circle-gap-size="circleGapSize"
-						:empty-power="emptyPower"
-					/>
+					<g>
+						<!-- Show the two arcs -->
+						<PMSourceArc
+							:radius="radius"
+							:corner-radius="cornerRadius"
+							:circle-gap-size="circleGapSize"
+							:empty-power="emptyPower"
+						></PMSourceArc>
+						<PMUsageArc
+							:radius="radius"
+							:corner-radius="cornerRadius"
+							:circle-gap-size="circleGapSize"
+							:empty-power="emptyPower"
+						/>
 
-					<!-- Show the values for the different categories -->
-					<PMLabel
-						:x="0"
-						:y="(-height / 10) * 2"
-						:data="registry.getItem('pv')"
-						:props="masterData.pv"
-						:anchor="'middle'"
-						:config="globalConfig"
-					/>
-					<PMLabel
-						:x="0"
-						:y="(-height / 10) * 3"
-						:data="registry.getItem('evuIn')"
-						:props="masterData.evuIn"
-						:anchor="'middle'"
-						:config="globalConfig"
-					/>
-					<PMLabel
-						:x="0"
-						:y="-height / 10"
-						:data="registry.getItem('batOut')"
-						:props="masterData.batOut"
-						:anchor="'middle'"
-						:config="globalConfig"
-					/>
-					<PMLabel
-						v-if="etData.active"
-						:x="0"
-						:y="-height / 10"
-						:data="registry.getItem('batOut')"
-						:props="masterData.batOut"
-						:anchor="'middle'"
-						:config="globalConfig"
-					/>
-					<!-- iterate over all usage items-->
-					<PMLabel
-						v-for="(item, index) in valuesToDisplay"
-						:key="index"
-						:x="labelCoordinates(index).x"
-						:y="labelCoordinates(index).y"
-						:data="item"
-						:labelicon="item.icon"
-						:labelcolor="item.color"
-						:anchor="'middle'"
-						:config="globalConfig"
-					/>
+						<!-- Show the values for the different categories -->
+						<PMLabel
+							:x="0"
+							:y="(-height / 10) * 2"
+							:data="registry.getItem('pv')"
+							:props="masterData.pv"
+							:anchor="'middle'"
+							:config="globalConfig"
+						/>
+						<PMLabel
+							:x="0"
+							:y="(-height / 10) * 3"
+							:data="registry.getItem('evuIn')"
+							:props="masterData.evuIn"
+							:anchor="'middle'"
+							:config="globalConfig"
+						/>
+						<PMLabel
+							:x="0"
+							:y="-height / 10"
+							:data="registry.getItem('batOut')"
+							:props="masterData.batOut"
+							:anchor="'middle'"
+							:config="globalConfig"
+						/>
+						<PMLabel
+							v-if="etData.active"
+							:x="0"
+							:y="-height / 10"
+							:data="registry.getItem('batOut')"
+							:props="masterData.batOut"
+							:anchor="'middle'"
+							:config="globalConfig"
+						/>
+						<!-- iterate over all usage items-->
+						<PMLabel
+							v-for="(item, index) in valuesToDisplay"
+							:key="index"
+							:x="labelCoordinates(index).x"
+							:y="labelCoordinates(index).y"
+							:data="item"
+							:labelicon="item.icon"
+							:labelcolor="item.color"
+							:anchor="'middle'"
+							:config="globalConfig"
+						/>
 
-					<!-- Show the SoC for the first two cars -->
-					<PMLabel
-						v-if="
-							topVehicles[0] != undefined &&
-							vehicles[topVehicles[0]] != undefined &&
-							vehicles[topVehicles[0]].isSocConfigured
-						"
-						:x="-width / 2 - margin / 4 + 10"
-						:y="-height / 2 + margin + 5"
-						:labeltext="
-							trimName(vehicles[topVehicles[0]].name) +
-							': ' +
-							Math.round(vehicles[topVehicles[0]].soc) +
-							'%'
-						"
-						:labelcolor="
-							chargepoints[0] ? chargepoints[0].color : 'var(--color-charging)'
-						"
-						:anchor="'start'"
-						:config="globalConfig"
-					/>
-					<PMLabel
-						v-if="
-							topVehicles[1] != undefined &&
-							vehicles[topVehicles[1]] != undefined &&
-							vehicles[topVehicles[1]].isSocConfigured
-						"
-						:x="width / 2 + margin / 4 - 10"
-						:y="-height / 2 + margin + 5"
-						:labeltext="
-							trimName(vehicles[topVehicles[1]].name) +
-							': ' +
-							Math.round(vehicles[topVehicles[1]].soc) +
-							'%'
-						"
-						:labelcolor="
-							chargepoints[1] ? chargepoints[1].color : 'var(--color-charging)'
-						"
-						:anchor="'end'"
-						:config="globalConfig"
-					/>
-					<!-- Show the SoC of the batteries -->
-					<PMLabel
-						v-if="globalData.batterySoc > 0"
-						:x="-width / 2 - margin / 4 + 10"
-						:y="height / 2 - margin + 15"
-						:labeltext="'Speicher: ' + globalData.batterySoc + '%'"
-						:labelcolor="registry.getItem('batIn')!.color"
-						:anchor="'start'"
-						:config="globalConfig"
-					/>
-					<!-- Show the current energy price -->
-					<PMLabel
-						v-if="etData.active"
-						:x="width / 2 + margin / 4 - 10"
-						:y="height / 2 - margin + 15"
-						:value="currentPrice"
-						:labeltext="etData.etCurrentPriceString"
-						labelcolor="var(--color-charging)"
-						:anchor="'end'"
-						:config="globalConfig"
-					/>
-					<!-- Show the current consumption -->
-					<PMLabel
-						:x="0"
-						:y="0"
-						:labeltext="currentConsumptionString"
-						labelcolor="var(--color-fg)"
-						anchor="middle"
-						:config="globalConfig"
-					/>
-					<!-- Show the Peak value if we use relative arc lengths -->
-					<text
-						v-if="globalConfig.showRelativeArcs"
-						:x="width / 2 - 44"
-						y="2"
-						text-anchor="middle"
-						fill="var(--color-axis)"
-						font-size="12"
-					>
-						Peak: {{ maxPowerString }}
-					</text>
-					<text
-						:x="0"
-						:y="((height / 2) * 3.8) / 5"
-						text-anchor="middle"
-						fill="var(--color-menu)"
-						font-size="28"
-						class="fas"
-						type="button"
-						@click="toggleInfo"
-					>
-						{{ '\uf05a' }}
-					</text>
+						<!-- Show the SoC for the first two cars -->
+						<PMLabel
+							v-if="
+								topVehicles[0] != undefined &&
+								vehicles[topVehicles[0]] != undefined &&
+								vehicles[topVehicles[0]].isSocConfigured
+							"
+							:x="-width / 2 - margin / 4 + 10"
+							:y="-height / 2 + margin + 5"
+							:labeltext="
+								trimName(vehicles[topVehicles[0]].name) +
+								': ' +
+								Math.round(vehicles[topVehicles[0]].soc) +
+								'%'
+							"
+							:labelcolor="
+								chargepoints[0]
+									? chargepoints[0].color
+									: 'var(--color-charging)'
+							"
+							:anchor="'start'"
+							:config="globalConfig"
+						/>
+						<PMLabel
+							v-if="
+								topVehicles[1] != undefined &&
+								vehicles[topVehicles[1]] != undefined &&
+								vehicles[topVehicles[1]].isSocConfigured
+							"
+							:x="width / 2 + margin / 4 - 10"
+							:y="-height / 2 + margin + 5"
+							:labeltext="
+								trimName(vehicles[topVehicles[1]].name) +
+								': ' +
+								Math.round(vehicles[topVehicles[1]].soc) +
+								'%'
+							"
+							:labelcolor="
+								chargepoints[1]
+									? chargepoints[1].color
+									: 'var(--color-charging)'
+							"
+							:anchor="'end'"
+							:config="globalConfig"
+						/>
+						<!-- Show the SoC of the batteries -->
+						<PMLabel
+							v-if="globalData.batterySoc > 0"
+							:x="-width / 2 - margin / 4 + 10"
+							:y="height / 2 - margin + 15"
+							:labeltext="'Speicher: ' + globalData.batterySoc + '%'"
+							:labelcolor="registry.getItem('batIn')!.color"
+							:anchor="'start'"
+							:config="globalConfig"
+						/>
+						<!-- Show the current energy price -->
+						<PMLabel
+							v-if="etData.active"
+							:x="width / 2 + margin / 4 - 10"
+							:y="height / 2 - margin + 15"
+							:value="currentPrice"
+							:labeltext="etData.etCurrentPriceString"
+							labelcolor="var(--color-charging)"
+							:anchor="'end'"
+							:config="globalConfig"
+						/>
+						<!-- Show the current consumption -->
+						<PMLabel
+							:x="0"
+							:y="0"
+							:labeltext="currentConsumptionString"
+							labelcolor="var(--color-fg)"
+							anchor="middle"
+							:config="globalConfig"
+						/>
+						<!-- Show the Peak value if we use relative arc lengths -->
+						<text
+							v-if="globalConfig.showRelativeArcs"
+							:x="width / 2 - 44"
+							y="2"
+							text-anchor="middle"
+							fill="var(--color-axis)"
+							font-size="12"
+						>
+							Peak: {{ maxPowerString }}
+						</text>
+						<text
+							:x="0"
+							:y="((height / 2) * 3.8) / 5"
+							text-anchor="middle"
+							fill="var(--color-menu)"
+							font-size="28"
+							class="fas"
+							type="button"
+							@click="toggleInfo"
+						>
+							{{ '\uf05a' }}
+						</text>
+					</g>
 				</g>
 			</svg>
 		</figure>

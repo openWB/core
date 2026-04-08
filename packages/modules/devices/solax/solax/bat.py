@@ -10,6 +10,8 @@ from modules.common.modbus import ModbusDataType
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.solax.solax.config import SolaxBatSetup, Solax
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -28,6 +30,7 @@ class SolaxBat(AbstractBat):
         self.sim_counter = SimCounter(self.device_config.id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         unit = self.device_config.configuration.modbus_id
@@ -35,7 +38,7 @@ class SolaxBat(AbstractBat):
         # kein Speicher für Versionen G2 und G4
         power = self.__tcp_client.read_input_registers(0x0016, ModbusDataType.INT_16, unit=unit)
         soc = self.__tcp_client.read_input_registers(0x001C, ModbusDataType.UINT_16, unit=unit)
-
+        self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
         bat_state = BatState(
             power=power,

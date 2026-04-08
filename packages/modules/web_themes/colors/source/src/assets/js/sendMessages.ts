@@ -12,8 +12,6 @@ const topics: { [topic: string]: string } = {
 	chargeMode:
 		'openWB/set/vehicle/template/charge_template/%/chargemode/selected',
 	cpPriority: 'openWB/set/vehicle/template/charge_template/%/prio',
-	cpTimedCharging:
-		'openWB/set/vehicle/template/charge_template/%/time_charging/active',
 	pvBatteryPriority:
 		'openWB/set/general/chargemode_config/pv_charging/bat_mode',
 	cpVehicle: 'openWB/set/chargepoint/%/config/ev',

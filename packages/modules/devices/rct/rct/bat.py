@@ -8,6 +8,8 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_bat_value_store
 from modules.devices.rct.rct.config import RctBatSetup
 from modules.devices.rct.rct.rct_lib import RCT
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -19,6 +21,7 @@ class RctBat(AbstractBat):
     def initialize(self) -> None:
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
     def update(self, rct_client: RCT) -> None:
         my_tab = []
@@ -33,11 +36,12 @@ class RctBat(AbstractBat):
         # read all parameters
         rct_client.read(my_tab)
 
+        imported, exported = self.peak_filter.check_values(watt1.value * -1, watt2.value, watt3.value)
         bat_state = BatState(
             power=watt1.value * -1,
             soc=socx.value * 100,
-            imported=watt2.value,
-            exported=watt3.value
+            imported=imported,
+            exported=exported
         )
         self.store.set(bat_state)
         if (stat1.value + stat2.value + stat3.value) > 0:

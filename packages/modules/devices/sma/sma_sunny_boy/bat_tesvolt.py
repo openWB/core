@@ -10,6 +10,8 @@ from modules.common.modbus import ModbusTcpClient_, ModbusDataType
 from modules.common.simcount._simcounter import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.sma.sma_sunny_boy.config import SmaTesvoltBatSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -30,10 +32,12 @@ class TesvoltBat(AbstractBat):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         soc = self.__tcp_client.read_input_registers(1056, ModbusDataType.INT_32, unit=25) / 10
         power = self.__tcp_client.read_input_registers(1012, ModbusDataType.INT_32, unit=25) * -1
+        self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
 
         bat_state = BatState(

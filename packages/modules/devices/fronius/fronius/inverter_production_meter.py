@@ -13,6 +13,8 @@ from modules.common.simcount import SimCounter
 from modules.common.store import get_inverter_value_store
 from modules.devices.fronius.fronius.config import FroniusConfiguration, MeterLocation
 from modules.devices.fronius.fronius.config import FroniusProductionMeterSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -33,6 +35,7 @@ class FroniusProductionMeter(AbstractInverter):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         session = req.get_http_session()
@@ -77,6 +80,8 @@ class FroniusProductionMeter(AbstractInverter):
             power = response_json_id["PowerReal_P_Sum"] * -1
             voltages = [response_json_id["Voltage_AC_Phase_"+str(num)] for num in range(1, 4)]
             currents = [powers[i] / voltages[i] for i in range(0, 3)]
+
+            self.peak_filter.check_values(power)
             _, exported = self.sim_counter.sim_count(power)
         return InverterState(
             currents=currents,
@@ -102,6 +107,8 @@ class FroniusProductionMeter(AbstractInverter):
             power = response_json_id["SMARTMETER_POWERACTIVE_MEAN_SUM_F64"]
             voltages = [response_json_id["SMARTMETER_VOLTAGE_0"+str(num)+"_F64"] for num in range(1, 4)]
             currents = [powers[i] / voltages[i] for i in range(0, 3)]
+
+            self.peak_filter.check_values(power)
             _, exported = self.sim_counter.sim_count(power)
         return InverterState(
             currents=currents,

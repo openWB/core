@@ -12,6 +12,8 @@ from modules.common.simcount import SimCounter
 from modules.common.store import get_inverter_value_store
 from modules.devices.generic.http.api import create_request_function
 from modules.devices.generic.http.config import HttpInverterSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -30,6 +32,7 @@ class HttpInverter(AbstractInverter):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
         self.__get_power = create_request_function(self.url, self.component_config.configuration.power_path)
         self.__get_exported = create_request_function(self.url, self.component_config.configuration.exported_path)
@@ -40,6 +43,7 @@ class HttpInverter(AbstractInverter):
             # for compatibility: in 1.x power URL values are positive!
             power *= -1
         exported = self.__get_exported(session)
+        _, exported = self.peak_filter.check_values(power, None, exported)
         if exported is None:
             _, exported = self.sim_counter.sim_count(power)
 

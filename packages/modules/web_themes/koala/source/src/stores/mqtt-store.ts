@@ -1,11 +1,11 @@
 import { defineStore } from 'pinia';
 import { ref, computed, ComputedRef } from 'vue';
-import mqtt, { IClientPublishOptions } from 'mqtt';
+import mqtt, { IClientOptions, IClientPublishOptions } from 'mqtt';
 import { QoS } from 'mqtt-packet';
+import { useQuasar } from 'quasar';
 
 // import all type definitions from the mqtt-store-model
 import type {
-  ConnectionOptions,
   TopicObject,
   TopicList,
   TopicCount,
@@ -26,23 +26,43 @@ import type {
   TimeChargingPlan,
   VehicleChargeTarget,
   CalculatedSocState,
+  SystemCommandEvent,
+  RangeValue,
 } from './mqtt-store-model';
 
 export const useMqttStore = defineStore('mqtt', () => {
+  const $q = useQuasar();
+  let mqttUser = null;
+  let mqttPass = null;
+  if ($q.cookies.has('mqtt')) {
+    [mqttUser, mqttPass] = decodeURIComponent($q.cookies.get('mqtt'))
+      ?.match(/^([^:]+):(.+)$/)
+      ?.slice(1) || [null, null];
+  }
+
   // local variables
-  let mqttClient: mqtt.MqttClient | undefined = undefined;
-  const mqttConnectionOptions: ConnectionOptions = {
+  let mqttClient: mqtt.MqttClient | null = null;
+  const mqttConnectionOptions: IClientOptions = {
     protocol: location.protocol == 'https:' ? 'wss' : 'ws',
+    protocolVersion: 5,
     host: location.hostname,
     port: parseInt(location.port) || (location.protocol == 'https:' ? 443 : 80),
-    endpoint: '/ws',
+    path: '/ws',
+    username: mqttUser,
+    password: mqttPass,
     connectTimeout: 4000,
     reconnectPeriod: 4000,
+    resubscribe: true,
+    properties: {
+      requestResponseInformation: true,
+      requestProblemInformation: true,
+    },
   };
 
   // State
   const subscriptions = ref<TopicCount>({});
   const topics = ref<TopicList>({});
+  const mqttClientConnected = ref(false);
 
   // General functions and methods for the store - BEGIN
   /**
@@ -53,17 +73,61 @@ export const useMqttStore = defineStore('mqtt', () => {
    * initialize();
    */
   function initialize() {
-    const { protocol, host, port, endpoint, ...options } =
-      mqttConnectionOptions;
-    const connectUrl = `${protocol}://${host}:${port}${endpoint}`;
+    const { protocol, host, port, path, ...options } = mqttConnectionOptions;
+    const connectUrl = `${protocol}://${host}:${port}${path}`;
     console.debug('connecting to broker:', connectUrl);
     try {
       mqttClient = mqtt.connect(connectUrl, options);
       mqttClient.on('connect', () => {
         console.debug('connected to broker');
+        mqttClientConnected.value = true;
+        if (mqttUser === 'admin' && mqttPass === 'openwb') {
+          $q.notify({
+            type: 'warning',
+            message:
+              'Es werden die Standardzugangsdaten verwendet! Bitte ändere diese aus Sicherheitsgründen.',
+            closeBtn: 'Ok',
+            timeout: 0,
+            progress: false,
+          });
+        }
       });
       mqttClient.on('error', (error) => {
         console.error('Client error', error);
+        mqttClientConnected.value = false;
+        $q.notify({
+          type: 'negative',
+          message:
+            'Es ist ein Fehler aufgetreten!' +
+            (error instanceof mqtt.ErrorWithReasonCode
+              ? `(${(error as mqtt.ErrorWithReasonCode).code})`
+              : ''),
+          caption: (error as Error).message,
+          progress: true,
+        });
+        // handle not authorized error (code 135 or 137)
+        if (
+          [135, 137].includes((error as mqtt.ErrorWithReasonCode).code) &&
+          mqttUser != null
+        ) {
+          mqttClient.end();
+          if ($q.cookies.has('mqtt')) {
+            $q.cookies.remove('mqtt', { path: '/' });
+            console.warn('removed mqtt cookie due to error');
+            $q.notify({
+              type: 'warning',
+              message: 'Die Anmeldeinformationen wurden entfernt.',
+              timeout: 2500,
+              progress: true,
+              closeBtn: 'Seite neu laden',
+              onDismiss: () => {
+                // not functional in Safari browser?
+                // this.router.go(0);
+                location.reload();
+              },
+            });
+          }
+        }
       });
       mqttClient.on('message', (topic: string, message) => {
         console.debug(`Received message "${message}" from topic "${topic}"`);
@@ -84,8 +148,33 @@ export const useMqttStore = defineStore('mqtt', () => {
           removeTopic(topic);
         }
       });
+      mqttClient.on('end', () => {
+        mqttClientConnected.value = false;
+        console.error('mqtt connection ended');
+      });
+      mqttClient.on('close', () => {
+        mqttClientConnected.value = false;
+        console.error('mqtt connection closed');
+      });
+      mqttClient.on('offline', () => {
+        mqttClientConnected.value = false;
+        console.error('mqtt connection offline');
+      });
+      mqttClient.on('disconnect', () => {
+        mqttClientConnected.value = false;
+        console.error('mqtt connection disconnected');
+      });
+      mqttClient.on('reconnect', () => {
+        console.error('mqtt connection reconnecting...');
+      });
     } catch (error) {
       console.error('error connecting to broker:', error);
+      $q.notify({
+        type: 'negative',
+        message: 'Verbindungsfehler!',
+        caption: (error as Error).message,
+        progress: true,
+      });
     }
   }
 
@@ -160,14 +249,20 @@ export const useMqttStore = defineStore('mqtt', () => {
       }, object);
     };
     if (topic in topics.value) {
+      const originalValue = JSON.parse(JSON.stringify(getValue.value(topic)));
       if (objectPath != undefined) {
         setPath(topics.value[topic], objectPath, payload);
       } else {
         topics.value[topic] = payload;
       }
       if (publish) {
-        console.debug('publish topic', topic, topics.value[topic]);
-        sendTopicToBroker(topic, topics.value[topic]);
+        console.debug(
+          'publish topic',
+          topic,
+          topics.value[topic],
+          originalValue,
+        );
+        sendTopicToBroker(topic, topics.value[topic], originalValue);
       }
     } else {
       console.warn('topic not found', topic);
@@ -207,6 +302,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   function subscribe(
     topics: string[] | string,
     defaultValue: unknown = undefined,
+    silent: boolean = true,
   ): void {
     if (!Array.isArray(topics)) {
       topics = [topics];
@@ -219,7 +315,25 @@ export const useMqttStore = defineStore('mqtt', () => {
         } else {
           mqttClient.subscribe(topics, {}, (error) => {
             if (error) {
-              console.error('Subscribe to topics error', error);
+              console.error('Subscribe to topics error', topic, error);
+              if (!silent) {
+                if (mqttUser) {
+                  $q.notify({
+                    type: 'negative',
+                    message: `Fehler beim Abonnieren der Daten "${topic}"`,
+                    caption: error.message,
+                    progress: true,
+                  });
+                } else {
+                  $q.notify({
+                    type: 'warning',
+                    message:
+                      'Fehler beim Abonnieren von Daten. Möglicherweise ist eine Anmeldung erforderlich.',
+                    caption: error.message,
+                    progress: true,
+                  });
+                }
+              }
             }
           });
         }
@@ -249,7 +363,13 @@ export const useMqttStore = defineStore('mqtt', () => {
         } else {
           mqttClient.unsubscribe(topic, (error) => {
             if (error) {
-              console.error('Unsubscribe error', error);
+              console.error('Unsubscribe error', topic, error);
+              $q.notify({
+                type: 'negative',
+                message: `Fehler beim Abbestellen der Daten "${topic}"`,
+                caption: error.message,
+                progress: true,
+              });
             }
           });
         }
@@ -311,49 +431,97 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param payload data to send, should be a valid JSON string
    * @param retain send message as retained
    * @param qos quality of service to use (0, 1, 2)
+   * @returns Promise<boolean> success status
    */
-  function doPublish(
+  async function doPublish(
     topic: string,
     payload: unknown,
     retain: boolean = true,
     qos: QoS = 2,
-  ) {
+  ): Promise<boolean> {
     console.debug('doPublish', topic, payload);
     if (!mqttClient) {
       console.error('mqttClient is not initialized');
-      return;
+      return Promise.resolve(false);
     }
     const options: IClientPublishOptions = {
       qos: qos,
       retain: retain,
     };
-    mqttClient.publish(topic, JSON.stringify(payload), options, (error) => {
-      if (error) {
-        console.error('Publish error', error);
+    // Fehlerbehandlung mit Promise und Rückgabewert
+    try {
+      try {
+        await mqttClient.publishAsync(topic, JSON.stringify(payload), options);
+        console.debug('Publish successful', topic);
+        return true;
+      } catch (error) {
+        console.error('Publish error', topic, error);
+        $q.notify({
+          type: 'negative',
+          message: `Fehler beim Senden der Daten "${topic}"`,
+          caption: error.message,
+          progress: true,
+        });
+        return false;
       }
-    });
+    } catch (error: unknown) {
+      console.error('Publish exception', topic, error);
+      let message = '';
+      if (error instanceof Error) {
+        message = error.message;
+      } else {
+        message = String(error);
+      }
+      $q.notify({
+        type: 'negative',
+        message: `Fehler beim Senden der Daten "${topic}"`,
+        caption: message,
+        progress: true,
+      });
+      return Promise.resolve(false);
+    }
   }
 
   /**
    * replaces "openWB/" with "openWB/set/" and publishes this topic
    * @param topic mqtt topic to send
    * @param payload payload, should be a valid JSON string
+   * @param originalValue original value to restore on failure
+   * @returns Promise<boolean> success status
    */
-  function sendTopicToBroker(topic: string, payload: unknown = undefined) {
+  async function sendTopicToBroker(
+    topic: string,
+    payload: unknown = undefined,
+    originalValue?: unknown,
+  ): Promise<boolean> {
     const setTopic = topic.replace('openWB/', 'openWB/set/');
     if (payload === undefined) {
       payload = topics.value[topic];
     }
-    doPublish(setTopic, payload);
+    const success = await doPublish(setTopic, payload);
+    if (!success && originalValue !== undefined) {
+      console.warn(
+        'restoring original value due to publish failure',
+        topic,
+        originalValue,
+      );
+      topics.value[topic] = originalValue;
+    }
+    return success;
   }
 
   /**
    * Sends a command via broker to the backend
    * @param event Command object to send
    */
-  function sendCommand(event: unknown) {
+  function sendCommand(event: SystemCommandEvent) {
+    console.log(
+      'sendCommand',
+      `openWB/set/command/${mqttClient?.options.clientId}/todo/${event.command}`,
+      event,
+    );
     doPublish(
-      'openWB/set/command/' + mqttClient?.options.clientId + '/todo',
+      `openWB/set/command/${mqttClient?.options.clientId}/todo/${event.command}`,
       event,
       false,
     );
@@ -384,7 +552,11 @@ export const useMqttStore = defineStore('mqtt', () => {
    * getWildcardValues('openWB/pv/[0-9]+/config/m,ax_ac_out', true);
    */
   const getWildcardValues = computed(() => {
-    return (baseTopic: string, isRegex: boolean = false): TopicList => {
+    return (
+      baseTopic: string,
+      isRegex: boolean = false,
+      autoSubscribe: boolean = true,
+    ): TopicList => {
       let baseTopicRegex = baseTopic;
       if (!isRegex) {
         // build a valid regex based on the provided wildcard topic
@@ -396,7 +568,10 @@ export const useMqttStore = defineStore('mqtt', () => {
             .replaceAll('#', '[^#/]+') +
           '$';
         // check if baseTopic is already subscribed
-        if (!Object.keys(subscriptions.value).includes(baseTopic)) {
+        if (
+          !Object.keys(subscriptions.value).includes(baseTopic) &&
+          autoSubscribe
+        ) {
           console.debug('auto subscription of wildcard topic', baseTopic);
           subscribe(baseTopic);
         }
@@ -495,7 +670,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const getValueObject = computed(() => {
     return (
-      value: number,
+      value: number | undefined,
       unit: string = 'W',
       unitPrefix: string = '',
       scale: boolean = true,
@@ -568,6 +743,111 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
+   * Check if data protection is acknowledged
+   * Defaults to false if the value is not set as this may be due to insufficient permissions
+   * @returns boolean
+   */
+  const dataProtectionAcknowledged: ComputedRef<boolean> = computed(() => {
+    return (
+      getValue.value(
+        'openWB/system/dataprotection_acknowledged',
+        undefined,
+        false,
+      ) === true
+    );
+  });
+
+  /**
+   * Check if user management is active
+   * Defaults to true if the value is not set as this may be due to insufficient permissions
+   * @returns boolean
+   */
+  const userManagementActive: ComputedRef<boolean> = computed(() => {
+    return (
+      getValue.value(
+        'openWB/system/security/user_management_active',
+        undefined,
+        true,
+      ) === true
+    );
+  });
+
+  /**
+   * Check if access is allowed
+   * Defaults to false if the value is not set as this may be due to insufficient permissions
+   * @returns boolean
+   */
+  const accessAllowed: ComputedRef<boolean> = computed(() => {
+    return (
+      getValue.value(
+        'openWB/system/security/access_allowed',
+        undefined,
+        false,
+      ) === true
+    );
+  });
+
+  /**
+   * Check if access to settings is allowed
+   * Defaults to false if the value is not set as this may be due to insufficient permissions
+   * @returns boolean
+   */
+  const accessSettingsAllowed: ComputedRef<boolean> = computed(() => {
+    return (
+      getValue.value(
+        'openWB/system/security/access/Settings',
+        undefined,
+        false,
+      ) === true
+    );
+  });
+
+  /**
+   * Check if access to status is allowed
+   * Defaults to false if the value is not set as this may be due to insufficient permissions
+   * @returns boolean
+   */
+  const accessStatusAllowed: ComputedRef<boolean> = computed(() => {
+    return (
+      getValue.value(
+        'openWB/system/security/access/Status',
+        undefined,
+        false,
+      ) === true
+    );
+  });
+
+  /**
+   * Check if access to charge log is allowed
+   * Defaults to false if the value is not set as this may be due to insufficient permissions
+   * @returns boolean
+   */
+  const accessChargeLogAllowed: ComputedRef<boolean> = computed(() => {
+    return (
+      getValue.value(
+        'openWB/system/security/access/ChargeLog',
+        undefined,
+        false,
+      ) === true
+    );
+  });
+
+  /**
+   * Check if access to chart is allowed
+   * Defaults to false if the value is not set as this may be due to insufficient permissions
+   * @returns boolean
+   */
+  const accessChartAllowed: ComputedRef<boolean> = computed(() => {
+    return (
+      getValue.value(
+        'openWB/system/security/access/Chart',
+        undefined,
+        false,
+      ) === true
+    );
+  });
+
+  /**
    * Get the system version
    * @returns string | undefined
    */
@@ -633,7 +913,20 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @returns number[]
    */
   const chargePointIds = computed(() => {
-    return getObjectIds.value('cp');
+    return getObjectIds.value('cp').filter((id) => {
+      return accessChargePointAllowed.value(id);
+    });
+  });
+
+  /**
+   * Check if access to a specific charge point is allowed
+   * @param chargePointId charge point id
+   * @returns boolean
+   */
+  const accessChargePointAllowed = computed(() => {
+    return (chargePointId: number) => {
+      return chargePointName.value(chargePointId) !== undefined;
+    };
   });
 
   /**
@@ -710,12 +1003,9 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const chargePointSumPower = computed(() => {
     return (returnType: string = 'textValue') => {
-      const power =
-        (getValue.value(
-          'openWB/chargepoint/get/power',
-          undefined,
-          0,
-        ) as number) || 0;
+      const power = getValue.value('openWB/chargepoint/get/power') as
+        | number
+        | undefined;
       const valueObject = getValueObject.value(power);
       if (Object.hasOwn(valueObject, returnType)) {
         return valueObject[returnType as keyof ValueObject];
@@ -733,10 +1023,13 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @returns string | number | ValueObject
    */
   const chargePointDailyImported = computed(() => {
-    return (returnType: string = 'textValue') => {
+    return (
+      returnType: string = 'textValue',
+      id: number | undefined = undefined,
+    ) => {
       const energy =
         (getValue.value(
-          'openWB/chargepoint/get/daily_imported',
+          `openWB/chargepoint/${id !== undefined ? `${id}/` : ''}get/daily_imported`,
           undefined,
           0,
         ) as number) || 0;
@@ -757,10 +1050,13 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @returns string | number | ValueObject
    */
   const chargePointDailyExported = computed(() => {
-    return (returnType: string = 'textValue') => {
+    return (
+      returnType: string = 'textValue',
+      id: number | undefined = undefined,
+    ) => {
       const energy =
         (getValue.value(
-          'openWB/chargepoint/get/daily_exported',
+          `openWB/chargepoint/${id !== undefined ? `${id}/` : ''}get/daily_exported`,
           undefined,
           0,
         ) as number) || 0;
@@ -1622,6 +1918,39 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
+   * Get or set the battery charge priority SoC range for PV charging
+   * @returns RangeValue
+   */
+  const batteryChargePriorityRange = computed<RangeValue>({
+    get() {
+      const minSoc = getValue.value(
+        'openWB/general/chargemode_config/pv_charging/min_bat_soc',
+      ) as number | undefined;
+      const maxSoc = getValue.value(
+        'openWB/general/chargemode_config/pv_charging/max_bat_soc',
+      ) as number | undefined;
+      return {
+        min: minSoc ?? 0,
+        max: maxSoc ?? 100,
+      };
+    },
+    set(newRange: RangeValue) {
+      updateTopic(
+        'openWB/general/chargemode_config/pv_charging/min_bat_soc',
+        newRange.min,
+        undefined,
+        true,
+      );
+      updateTopic(
+        'openWB/general/chargemode_config/pv_charging/max_bat_soc',
+        newRange.max,
+        undefined,
+        true,
+      );
+    },
+  });
+
+  /**
    * Get or set the charge point connected vehicle eco energy limit identified by the charge point id
    * @param chargePointId charge point id
    * @returns object | undefined
@@ -1725,7 +2054,8 @@ export const useMqttStore = defineStore('mqtt', () => {
     });
   };
 
-  /** * Get the charge point connected vehicle bidi enabled state from vehicle template identified by the charge point id
+  /**
+   * Get the charge point connected vehicle bidi enabled state from vehicle template identified by the charge point id
    * @param chargePointId charge point id
    * @returns boolean
    */
@@ -1798,6 +2128,20 @@ export const useMqttStore = defineStore('mqtt', () => {
       changed_in_theme: true,
     });
   };
+
+  /**
+   * Get temporary charge settings mode selected
+   * @returns boolean
+   */
+  const temporaryChargeModeActive: ComputedRef<boolean> = computed(() => {
+    return (
+      getValue.value(
+        'openWB/general/temporary_charge_templates_active',
+        undefined,
+        false,
+      ) === true
+    );
+  });
 
   /**
    * Helper function to update a subtopic of a time charging plan
@@ -2294,7 +2638,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   /**
    * Get the battery name identified by the battery ID
    * @param batteryId battery ID
-   * @returns string
+   * @returns string || undefined
    */
   const batteryName = computed(() => {
     return (batteryId: number): string => {
@@ -2302,7 +2646,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         `openWB/system/device/+/component/${batteryId}/config`,
       ) as { [key: string]: BatteryConfiguration };
       if (Object.keys(configurations).length === 0) {
-        return `Speicher ${batteryId}`;
+        return undefined;
       }
       return Object.values(configurations)[0].name;
     };
@@ -2416,7 +2760,20 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @returns number[]
    */
   const batteryIds = computed(() => {
-    return (getObjectIds.value('bat') as number[]) || [];
+    return getObjectIds.value('bat').filter((id) => {
+      return accessBatteryAllowed.value(id);
+    });
+  });
+
+  /**
+   * Check if access to a specific battery data is allowed
+   * @param batteryId battery ID
+   * @returns boolean
+   */
+  const accessBatteryAllowed = computed(() => {
+    return (batteryId: number) => {
+      return batteryName.value(batteryId) !== undefined;
+    };
   });
 
   /**
@@ -2532,13 +2889,15 @@ export const useMqttStore = defineStore('mqtt', () => {
         )
       : list;
     // generate an array of objects, containing vehicle index and name
-    return Object.keys(filteredList).map((key) => {
-      const vehicleIndex = parseInt(key.split('/')[2]);
-      return {
-        id: vehicleIndex,
-        name: filteredList[key],
-      } as Vehicle;
-    });
+    return Object.keys(filteredList)
+      .map((key) => {
+        const vehicleIndex = parseInt(key.split('/')[2]);
+        return {
+          id: vehicleIndex,
+          name: filteredList[key],
+        } as Vehicle;
+      })
+      .filter((vehicle) => vehicleInfo.value(vehicle.id) !== undefined);
   });
 
   /**
@@ -2582,7 +2941,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   /**
    * Get or set the manual SoC by vehicle id
    * @param vehicleId vehicle id
-   * @param chargePointId charge point id
+   * @param chargePointId charge point id, only necessary for updating the charge point connected vehicle soc value
    * @returns number | undefined
    */
   const vehicleSocManualValue = (
@@ -2601,15 +2960,16 @@ export const useMqttStore = defineStore('mqtt', () => {
         doPublish(
           `openWB/set/vehicle/${vehicleId}/soc_module/calculated_soc_state/manual_soc`,
           newValue,
-        );
-        // Also update the charge point connected vehicle soc to prevent long delay in display update
-        if (chargePointId !== undefined) {
-          const cpTopic = `openWB/chargepoint/${chargePointId}/get/connected_vehicle/soc`;
-          const cpSoc = getValue.value(cpTopic) as { soc?: number };
-          if (cpSoc && cpSoc.soc !== undefined) {
-            updateTopic(cpTopic, newValue, 'soc', true);
+        ).then((success) => {
+          // Also update the charge point connected vehicle soc to prevent long delay in display update
+          if (success && chargePointId !== undefined) {
+            const cpTopic = `openWB/chargepoint/${chargePointId}/get/connected_vehicle/soc`;
+            const cpSoc = getValue.value(cpTopic) as { soc?: number };
+            if (cpSoc && cpSoc.soc !== undefined) {
+              updateTopic(cpTopic, newValue, 'soc', false);
+            }
           }
-        }
+        });
       },
     });
   };
@@ -2635,6 +2995,8 @@ export const useMqttStore = defineStore('mqtt', () => {
     return (vehicleId: number) => {
       const connectedVehicles = getWildcardValues.value(
         'openWB/chargepoint/+/get/connected_vehicle/info',
+        false,
+        false,
       );
       // find the vehicle id in the connected vehicles
       const vehicleInfo = Object.entries(connectedVehicles)
@@ -3347,10 +3709,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       const configurations = getWildcardValues.value(
         `openWB/system/device/+/component/${componentId}/config`,
       ) as { [key: string]: CounterConfiguration };
-      if (Object.keys(configurations).length === 0) {
-        return `Zähler ${componentId}`;
-      }
-      return Object.values(configurations)[0].name;
+      return Object.values(configurations)[0]?.name || undefined;
     };
   });
 
@@ -3363,15 +3722,12 @@ export const useMqttStore = defineStore('mqtt', () => {
   const getCounterPower = computed(() => {
     return (returnType: string = 'textValue', counterId?: number) => {
       const id = counterId ?? getGridId.value;
-      if (id === undefined) {
-        return '---';
+      let power = undefined;
+      if (id !== undefined) {
+        power = getValue.value(`openWB/counter/${id}/get/power`) as
+          | number
+          | undefined;
       }
-      const power =
-        (getValue.value(
-          `openWB/counter/${id}/get/power`,
-          undefined,
-          0,
-        ) as number) || 0;
       const valueObject = getValueObject.value(power);
       if (returnType in valueObject) {
         return valueObject[returnType as keyof ValueObject];
@@ -3450,12 +3806,9 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const getHomePower = computed(() => {
     return (returnType: string = 'textValue') => {
-      const power =
-        (getValue.value(
-          'openWB/counter/set/home_consumption',
-          undefined,
-          0,
-        ) as number) || 0;
+      const power = getValue.value('openWB/counter/set/home_consumption') as
+        | number
+        | undefined;
       const valueObject = getValueObject.value(power);
       if (returnType in valueObject) {
         return valueObject[returnType as keyof ValueObject];
@@ -3593,6 +3946,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   return {
     topics,
     subscriptions,
+    mqttClientConnected,
     initialize,
     updateTopic,
     updateState: updateTopic, // alias for compatibility with older code
@@ -3607,8 +3961,17 @@ export const useMqttStore = defineStore('mqtt', () => {
     systemCommit,
     themeConfiguration,
     systemDateTime,
+    dataProtectionAcknowledged,
+    // security settings
+    userManagementActive,
+    accessAllowed,
+    accessSettingsAllowed,
+    accessStatusAllowed,
+    accessChargeLogAllowed,
+    accessChartAllowed,
     // charge point data
     chargePointIds,
+    accessChargePointAllowed,
     chargePointName,
     chargePointManualLock,
     chargePointPlugState,
@@ -3624,6 +3987,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointStateMessage,
     chargePointFaultState,
     chargePointFaultMessage,
+    temporaryChargeModeActive,
     chargePointChargeType,
     dcChargingEnabled,
     chargePointConnectedVehicleInfo,
@@ -3720,6 +4084,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     batteryDailyImportedTotal,
     batteryDailyExportedTotal,
     batteryTotalPower,
+    batteryChargePriorityRange,
     batteryMode,
     // Grid data
     getGridId,

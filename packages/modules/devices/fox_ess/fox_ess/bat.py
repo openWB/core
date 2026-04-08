@@ -7,7 +7,9 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.store import get_bat_value_store
+from modules.common.utils.peak_filter import PeakFilter
 from modules.devices.fox_ess.fox_ess.config import FoxEssBatSetup
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -25,6 +27,7 @@ class FoxEssBat(AbstractBat):
         self.client: ModbusTcpClient_ = self.kwargs['client']
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
@@ -36,6 +39,7 @@ class FoxEssBat(AbstractBat):
         # Entladen in kWh * 0,1
         exported = self.client.read_holding_registers(32006, ModbusDataType.UINT_32, unit=unit) * 100
 
+        imported, exported = self.peak_filter.check_values(power, imported, exported)
         bat_state = BatState(
             power=power,
             soc=soc,

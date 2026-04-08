@@ -9,12 +9,16 @@ class HaVehicleSocConfiguration:
             calculate_soc: bool = False,
             url: Optional[str] = None,
             token: Optional[str] = None,
-            entity_id: Optional[str] = None
+            entity_soc: Optional[str] = None,
+            entity_range: Optional[str] = None,
+            entity_odometer: Optional[str] = None
             ):
         self.calculate_soc = calculate_soc
         self.url = url
         self.token = token
-        self.entity_id = entity_id
+        self.entity_soc = entity_soc
+        self.entity_range = entity_range
+        self.entity_odometer = entity_odometer
 
 
 @auto_str

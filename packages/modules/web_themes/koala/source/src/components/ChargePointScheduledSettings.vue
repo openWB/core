@@ -9,15 +9,11 @@
       @click="addScheduledChargingPlan"
     />
   </div>
-  <div
+    <BaseMessage
     v-if="plans.length === 0"
-    class="row q-mt-sm q-pa-sm bg-primary text-white no-wrap message-text"
-    color="primary"
-    style="border-radius: 10px"
-  >
-    <q-icon name="info" size="sm" class="q-mr-xs" />
-    Keine Ladeziele festgelegt.
-  </div>
+    message="Keine Zeitpläne vorhanden."
+    type="info"
+  />
   <div v-else>
     <div v-for="plan in plans" :key="plan.id" class="row q-mt-sm">
       <ChargePointScheduledPlanButton
@@ -47,6 +43,7 @@ import { ref, computed } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import ChargePointScheduledPlanButton from './ChargePointScheduledPlanButton.vue';
 import ChargePointScheduledPlanDetails from './ChargePointScheduledPlanDetails.vue';
+import BaseMessage from './BaseMessage.vue';
 import { Screen } from 'quasar';
 
 const props = defineProps<{

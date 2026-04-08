@@ -8,6 +8,8 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.store import get_bat_value_store
 from modules.devices.azzurro_zcs.azzurro_zcs.config import ZCSBatSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -25,6 +27,7 @@ class ZCSBat(AbstractBat):
         self.client: ModbusTcpClient_ = self.kwargs['client']
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         # 0x020D Battery charge-discharge power Int16 -10-10 kW accuracy 0,01 kW pos charge, neg discharge
@@ -40,6 +43,7 @@ class ZCSBat(AbstractBat):
         exported = self.client.read_input_registers(
             0x0229, ModbusDataType.UINT_16, unit=self.__modbus_id) * 100
 
+        imported, exported = self.peak_filter.check_values(power, imported, exported)
         bat_state = BatState(
             power=power,
             soc=soc,

@@ -9,6 +9,8 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType
 from modules.common.store import get_bat_value_store
 from modules.devices.siemens.siemens_sentron.config import SiemensSentronBatSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -26,6 +28,7 @@ class SiemensSentronBat(AbstractBat):
         self.__modbus_id: int = self.kwargs['modbus_id']
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         with self.__tcp_client:
@@ -33,6 +36,7 @@ class SiemensSentronBat(AbstractBat):
             imported = self.__tcp_client.read_holding_registers(801, ModbusDataType.FLOAT_64, unit=self.__modbus_id)
             exported = self.__tcp_client.read_holding_registers(809, ModbusDataType.FLOAT_64, unit=self.__modbus_id)
 
+        imported, exported = self.peak_filter.check_values(power, imported, exported)
         bat_state = BatState(
             imported=imported,
             exported=exported,

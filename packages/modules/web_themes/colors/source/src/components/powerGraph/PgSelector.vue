@@ -100,11 +100,11 @@ import {
 	dayGraph,
 	graphData,
 	initGraph,
-	liveGraph,
 	setGraphDate,
 	yearGraph,
 } from './model'
 import { monthGraph } from './model'
+import { globalConfig } from '@/assets/js/themeConfig'
 
 const props = defineProps<{
 	widgetid: string
@@ -129,7 +129,9 @@ const displayDate = computed(() => {
 				console.warn('Graph Data empty.')
 				return '???'
 			} */
-				return props.ignoreLive ? 'heute' : `${liveGraph.duration} min`
+				return props.ignoreLive
+					? 'heute'
+					: `${Math.floor(globalConfig.liveGraphDuration / 60)} min`
 			case 'today':
 				return 'heute'
 			case 'day':

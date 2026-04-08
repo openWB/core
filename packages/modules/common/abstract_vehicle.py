@@ -14,6 +14,7 @@ class VehicleUpdateData:
     timestamp_soc_from_cp: Optional[int] = None
     last_soc_timestamp: Optional[int] = None
     last_soc: float = None
+    average_consump: int = None
 
 
 @dataclass

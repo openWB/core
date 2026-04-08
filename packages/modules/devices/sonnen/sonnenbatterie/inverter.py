@@ -10,6 +10,8 @@ from modules.common.store import get_inverter_value_store
 
 from modules.devices.sonnen.sonnenbatterie.api import JsonApi, RestApi2, JsonApiVersion
 from modules.devices.sonnen.sonnenbatterie.config import SonnenbatterieInverterSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -38,6 +40,7 @@ class SonnenbatterieInverter(AbstractInverter):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
         if self.__device_variant == 2:
             self.api = RestApi2(host=self.__device_address)
         else:
@@ -46,7 +49,7 @@ class SonnenbatterieInverter(AbstractInverter):
                                auth_token=self.__api_v2_token if self.__device_variant == 3 else None)
 
     def update(self) -> None:
-        self.store.set(self.api.update_inverter(sim_counter=self.sim_counter))
+        self.store.set(self.api.update_inverter(sim_counter=self.sim_counter, peak_filter=self.peak_filter))
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=SonnenbatterieInverterSetup)

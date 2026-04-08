@@ -9,6 +9,8 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.simcount._simcounter import SimCounter
 from modules.common.store._counter import get_counter_value_store
 from modules.devices.generic.mqtt.config import MqttCounterSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -23,6 +25,7 @@ class MqttCounter(AbstractCounter):
     def initialize(self) -> None:
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.sim_counter = SimCounter(self.kwargs['device_id'], self.component_config.id, prefix="bezug")
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
         self.store = get_counter_value_store(self.component_config.id)
 
     def update(self, received_topics: Dict) -> None:
@@ -38,9 +41,11 @@ class MqttCounter(AbstractCounter):
         voltages = parse_received_topics("voltages")
         if (received_topics.get(f"{topic_prefix}imported") and
                 received_topics.get(f"{topic_prefix}exported")):
-            imported = received_topics[f"{topic_prefix}imported"]
-            exported = received_topics[f"{topic_prefix}exported"]
+            imported, exported = self.peak_filter.check_values(power,
+                                                               received_topics[f"{topic_prefix}imported"],
+                                                               received_topics[f"{topic_prefix}exported"])
         else:
+            self.peak_filter.check_values(power)
             imported, exported = self.sim_counter.sim_count(power)
 
         counter_state = CounterState(

@@ -133,7 +133,7 @@ def test_get_chargepoints_by_mode(set_mode_tuple: Tuple[Optional[str], str, bool
                          "cp2": setup_cp(mock_cp2, 6, mode_tuple_2)}
 
     # evaluation
-    valid_chargepoints = filter_chargepoints.get_chargepoints_by_mode(set_mode_tuple)
+    valid_chargepoints = filter_chargepoints.get_chargepoints_with_required_current_by_chargemode(set_mode_tuple)
 
     # assertion
     assert valid_chargepoints == expected_valid_chargepoints
@@ -154,8 +154,8 @@ def test_get_chargepoints_by_mode_and_counter(chargepoints_of_counter: List[str]
     # setup
     get_chargepoints_of_counter_mock = Mock(return_value=chargepoints_of_counter)
     monkeypatch.setattr(CounterAll, "get_chargepoints_of_counter", get_chargepoints_of_counter_mock)
-    get_chargepoints_by_mode_mock = Mock(return_value=chargepoints_by_mode)
-    monkeypatch.setattr(filter_chargepoints, "get_chargepoints_by_mode", get_chargepoints_by_mode_mock)
+    get_chargepoints_by_chargemode_mock = Mock(return_value=chargepoints_by_mode)
+    monkeypatch.setattr(filter_chargepoints, "get_chargepoints_by_chargemode", get_chargepoints_by_chargemode_mock)
     data.data.counter_all_data = CounterAll()
 
     # evaluation

@@ -10,6 +10,8 @@ from modules.common.store import get_inverter_value_store
 from modules.common.simcount import SimCounter
 from modules.common import req
 from modules.common.component_state import InverterState
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -32,6 +34,7 @@ class TasmotaInverter(AbstractInverter):
         self.__phase: int = self.kwargs['phase']
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self):
         url = "http://" + self.__ip_address + "/cm?cmnd=Status%208"
@@ -42,6 +45,7 @@ class TasmotaInverter(AbstractInverter):
 
             power = float(response['StatusSNS']['ENERGY']['Power']) * -1
             currents[self.__phase-1] = (response['StatusSNS']['ENERGY']['Current']), 0.0, 0.0
+            self.peak_filter.check_values(power)
             _, exported = self.sim_counter.sim_count(power)
 
             inverter_state = InverterState(
@@ -52,7 +56,7 @@ class TasmotaInverter(AbstractInverter):
         else:
             power = float(response['StatusSNS']['Itron']['Power']) * -1
             exported = float(response['StatusSNS']['Itron']['E_out']*1000)
-
+            _, exported = self.peak_filter.check_values(power, None, exported)
             inverter_state = InverterState(
                 power=power,
                 exported=exported

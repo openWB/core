@@ -9,6 +9,15 @@ log = logging.getLogger(__name__)
 
 
 @dataclass
+class Config:
+    max_power: float = 0
+
+
+def config_factory() -> Config:
+    return Config()
+
+
+@dataclass
 class Get:
     currents: List[float] = field(default_factory=currents_list_factory, metadata={
                                   "topic": "get/currents"})
@@ -23,6 +32,7 @@ class Get:
     power_limit_controllable: bool = field(default=False, metadata={"topic": "get/power_limit_controllable"})
     max_charge_power: float = field(default=0, metadata={"topic": "get/max_charge_power"})
     max_discharge_power: float = field(default=0, metadata={"topic": "get/max_discharge_power"})
+    state_str: str = field(default="Keine Steuerung", metadata={"topic": "get/state_str"})
 
 
 def get_factory() -> Get:
@@ -40,6 +50,7 @@ def set_factory() -> Set:
 
 @dataclass
 class BatData:
+    config: Config = field(default_factory=config_factory)
     get: Get = field(default_factory=get_factory)
     set: Set = field(default_factory=set_factory)
 

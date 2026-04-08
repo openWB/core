@@ -1,5 +1,10 @@
 <?php
+
 header("Content-Type: application/json; charset=UTF-8");
+
+// HTTP Basic Auth prüfen bei Apache2
+$auth_user = isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : null;
+$auth_pass = isset($_SERVER['PHP_AUTH_PW']) ? $_SERVER['PHP_AUTH_PW'] : null;
 
 function exit_with_error(array $response, int $code = 400)
 {
@@ -34,11 +39,10 @@ if ($input !== false) {
 
 // validate topic string
 if (!isset($_REQUEST["topic"]) || strlen($_REQUEST["topic"]) < 3) {
-	$response = array(
+	exit_with_error(array(
 		"status" => "failed",
 		"error" => "Missing or invalid topic."
-	);
-	exit_with_error($response);
+	));
 }
 
 if (!isset($_REQUEST["message"])) {
@@ -50,13 +54,18 @@ if (!isset($_REQUEST["message"])) {
 		));
 	}
 	// read topic request
-	$response = exec("mosquitto_sub -C 1 -W 1 --quiet -t " . escapeshellarg($_REQUEST["topic"]), $output, $result_code);
+	$cmd = "mosquitto_sub -h 127.0.0.1 -p 8883 -V mqttv5 --insecure -C 1 -W 1 --quiet -t " . escapeshellarg($_REQUEST["topic"]);
+	if ($auth_user !== null && $auth_pass !== null) {
+		$cmd .= " -u " . escapeshellarg($auth_user) . " -P " . escapeshellarg($auth_pass);
+	}
+	$response = exec($cmd, $output, $result_code);
 	if ($result_code > 0) {
 		// an error occurred
 		exit_with_error(array(
 			"status" => "failed",
 			"topic" => $_REQUEST["topic"],
-			"error" => "Topic not found!"
+			"error" => "Topic not found!",
+			"user" => $auth_user
 		));
 	} else {
 		// decode message
@@ -66,7 +75,8 @@ if (!isset($_REQUEST["message"])) {
 			exit_with_error(array(
 				"status" => "failed",
 				"topic" => $_REQUEST["topic"],
-				"error" => "Failed to decode message: " . json_last_error_msg()
+				"error" => "Failed to decode message: " . json_last_error_msg(),
+				"user" => $auth_user
 			));
 		}
 		// return the message
@@ -87,12 +97,17 @@ if (!isset($_REQUEST["message"])) {
 		));
 	} else {
 		// topic is valid
-		$response = exec("mosquitto_pub -t " . escapeshellarg($_REQUEST["topic"]) . " -m " . escapeshellarg($_REQUEST["message"]), $output, $result_code);
+		$cmd = "mosquitto_pub -h 127.0.0.1 -p 8883 -V mqttv5 --insecure -t " . escapeshellarg($_REQUEST["topic"]) . " -m " . escapeshellarg($_REQUEST["message"]);
+		if ($auth_user !== null && $auth_pass !== null) {
+			$cmd .= " -u " . escapeshellarg($auth_user) . " -P " . escapeshellarg($auth_pass);
+		}
+		$response = exec($cmd, $output, $result_code);
 		if ($result_code > 0) {
 			exit_with_error(array(
 				"status" => "failed",
 				"topic" => $_REQUEST["topic"],
-				"error" => "Failed to publish message."
+				"error" => "Failed to publish message.",
+				"user" => $auth_user
 			));
 		} else {
 			return_result(array(
