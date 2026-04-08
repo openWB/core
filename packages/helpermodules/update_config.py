@@ -3047,13 +3047,13 @@ class UpdateConfig:
         self._append_datastore_version(119)
 
     def upgrade_datastore_120(self) -> None:
-        def upgrade(topic: str, payload) -> None:
-            if re.search("openWB/bat/config/power_limit_mode", topic) is not None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("^openWB/bat/config/power_limit_mode$", topic) is not None:
                 mode = decode_payload(payload)
                 if mode == "no_limit" or mode == "limit_stop":
                     mode = "mode_no_discharge"
                     return {topic: mode}
-                else:
+                elif mode == "limit_home_consumption":
                     mode = "mode_discharge_home_consumption"
                     return {topic: mode}
         self._loop_all_received_topics(upgrade)
