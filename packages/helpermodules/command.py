@@ -38,7 +38,7 @@ from helpermodules.create_debug import create_debug_log
 from helpermodules.pub import Pub, pub_single
 from helpermodules.subdata import SubData
 from helpermodules.utils.topic_parser import decode_payload, get_index
-from control import bat, bridge, data, counter, counter_all, pv
+from control import bat, bridge, counter, counter_all, pv
 from control.ev import ev
 from modules.chargepoints.internal_openwb.chargepoint_module import ChargepointModule
 from modules.chargepoints.internal_openwb.config import InternalChargepointMode
@@ -301,10 +301,10 @@ class Command:
         chargepoint_config["id"] = new_id
         chargepoint_config["name"] = f'{chargepoint_config["name"]} {new_id}'
         try:
-            evu_counter = data.data.counter_all_data.get_id_evu_counter()
-            data.data.counter_all_data.hierarchy_add_item_below(
+            evu_counter = SubData.counter_all_data.get_id_evu_counter()
+            SubData.counter_all_data.hierarchy_add_item_below(
                 new_id, ComponentType.CHARGEPOINT, evu_counter)
-            Pub().pub("openWB/set/counter/get/hierarchy", data.data.counter_all_data.data.get.hierarchy)
+            Pub().pub("openWB/set/counter/get/hierarchy", SubData.counter_all_data.data.get.hierarchy)
             setup_added_chargepoint()
         except (TypeError, IndexError):
             if chargepoint_config["type"] == 'internal_openwb' and SubData.general_data.data.extern:
@@ -314,9 +314,9 @@ class Command:
                               "type": ComponentType.CHARGEPOINT.value,
                               "children": []
                               }] +
-                             data.data.counter_all_data.data.get.hierarchy)
+                             SubData.counter_all_data.data.get.hierarchy)
                 Pub().pub("openWB/set/counter/get/hierarchy", hierarchy)
-                data.data.counter_all_data.data.get.hierarchy = hierarchy
+                SubData.counter_all_data.data.get.hierarchy = hierarchy
                 setup_added_chargepoint()
             else:
                 pub_user_message(payload, connection_id,
@@ -389,8 +389,8 @@ class Command:
         remove_acl_role("chargepoint-<id>-access", cp_id)
         remove_acl_role("chargepoint-<id>-write-access", cp_id)
         ProcessBrokerBranch(f'chargepoint/{cp_id}/').remove_topics()
-        data.data.counter_all_data.hierarchy_remove_item(cp_id, ComponentType.CHARGEPOINT)
-        Pub().pub("openWB/set/counter/get/hierarchy", data.data.counter_all_data.data.get.hierarchy)
+        SubData.counter_all_data.hierarchy_remove_item(cp_id, ComponentType.CHARGEPOINT)
+        Pub().pub("openWB/set/counter/get/hierarchy", SubData.counter_all_data.data.get.hierarchy)
         pub_user_message(payload, connection_id,
                          f'Ladepunkt mit ID \'{cp_id}\' gelöscht.', MessageType.SUCCESS)
 
@@ -400,24 +400,22 @@ class Command:
         new_id = self.max_id_chargepoint_template + 1
         # check if "payload" contains "data.copy"
         if "data" in payload and "copy" in payload["data"]:
-            new_chargepoint_template = asdict(data.data.cp_template_data[f'cpt{payload["data"]["copy"]}'].data).copy()
+            new_chargepoint_template = asdict(SubData.cp_template_data[f'cpt{payload["data"]["copy"]}'].data).copy()
             new_chargepoint_template["name"] = f'Kopie von {new_chargepoint_template["name"]}'
         else:
             new_chargepoint_template = get_chargepoint_template_default()
             new_chargepoint_template["name"] = f'{new_chargepoint_template["name"]} {new_id}'
         new_chargepoint_template["id"] = new_id
+        # if copying a template, increase id of autolock plans
+        if "data" in payload and "copy" in payload["data"]:
+            for plan in new_chargepoint_template["autolock"]["plans"]:
+                plan["id"] = self.max_id_autolock_plan + 1
+                self.max_id_autolock_plan += 1
+            Pub().pub("openWB/set/command/max_id/autolock_plan", self.max_id_autolock_plan)
         Pub().pub(f'openWB/set/chargepoint/template/{new_id}', new_chargepoint_template)
         self.max_id_chargepoint_template = self.max_id_chargepoint_template + 1
         Pub().pub("openWB/set/command/max_id/chargepoint_template",
                   self.max_id_chargepoint_template)
-        # if copying a template, copy autolock plans
-        if "data" in payload and "copy" in payload["data"]:
-            for plan in data.data.cp_template_data[f'cpt{payload["data"]["copy"]}'].data.autolock.plans:
-                new_plan = asdict(plan).copy()
-                new_plan["id"] = self.max_id_autolock_plan + 1
-                Pub().pub(f'openWB/set/chargepoint/template/{new_id}/autolock/{new_plan["id"]}', new_plan)
-                self.max_id_autolock_plan += 1
-            Pub().pub("openWB/set/command/max_id/autolock_plan", new_id)
         pub_user_message(
             payload, connection_id,
             f'Neues Ladepunkt-Profil mit ID \'{new_id}\' hinzugefügt.',
@@ -445,7 +443,7 @@ class Command:
         """
         # check if "payload" contains "data.copy"
         if "data" in payload and "copy" in payload["data"]:
-            for plan in data.data.cp_template_data[f'cpt{payload["data"]["template"]}'].data.autolock.plans:
+            for plan in SubData.cp_template_data[f'cpt{payload["data"]["template"]}'].data.autolock.plans:
                 if plan.id == payload["data"]["copy"]:
                     new_autolock_plan = copy.deepcopy(plan)
                     break
@@ -454,10 +452,10 @@ class Command:
             new_autolock_plan = AutolockPlan()
         new_id = self.max_id_autolock_plan + 1
         new_autolock_plan.id = new_id
-        data.data.cp_template_data[f'cpt{payload["data"]["template"]}'].data.autolock.plans.append(
+        SubData.cp_template_data[f'cpt{payload["data"]["template"]}'].data.autolock.plans.append(
             new_autolock_plan)
         Pub().pub(f'openWB/set/chargepoint/template/{payload["data"]["template"]}',
-                  asdict(data.data.cp_template_data[f'cpt{payload["data"]["template"]}'].data))
+                  asdict(SubData.cp_template_data[f'cpt{payload["data"]["template"]}'].data))
         self.max_id_autolock_plan = new_id
         Pub().pub("openWB/set/command/max_id/autolock_plan", new_id)
         pub_user_message(
@@ -474,13 +472,13 @@ class Command:
                 payload, connection_id,
                 f'Die ID \'{payload["data"]["plan"]}\' ist größer als die '
                 f'maximal vergebene ID \'{self.max_id_autolock_plan}\'.', MessageType.ERROR)
-        for plan in data.data.cp_template_data[f'cpt{payload["data"]["template"]}'].data.autolock.plans:
+        for plan in SubData.cp_template_data[f'cpt{payload["data"]["template"]}'].data.autolock.plans:
             if plan.id == payload["data"]["plan"]:
-                data.data.cp_template_data[f'cpt{payload["data"]["template"]}'].data.autolock.plans.remove(plan)
+                SubData.cp_template_data[f'cpt{payload["data"]["template"]}'].data.autolock.plans.remove(plan)
                 break
         Pub().pub(
             f'openWB/chargepoint/template/{payload["data"]["template"]}',
-            dataclass_utils.asdict(data.data.cp_template_data[f'cpt{payload["data"]["template"]}'].data))
+            dataclass_utils.asdict(SubData.cp_template_data[f'cpt{payload["data"]["template"]}'].data))
         pub_user_message(
             payload, connection_id,
             f'Plan für Sperren nach Uhrzeit mit ID \'{payload["data"]["plan"]}\' vom Profil '
@@ -494,7 +492,7 @@ class Command:
         self.max_id_charge_template = new_id
         # check if "payload" contains "data.copy"
         if "data" in payload and "copy" in payload["data"]:
-            new_charge_template = copy.deepcopy(data.data.ev_charge_template_data[f'ct{payload["data"]["copy"]}'].data)
+            new_charge_template = copy.deepcopy(SubData.ev_charge_template_data[f'ct{payload["data"]["copy"]}'].data)
             new_charge_template.name = f'Kopie von {new_charge_template.name}'
             for plan in new_charge_template.chargemode.scheduled_charging.plans:
                 plan.id = self.max_id_charge_template_scheduled_plan + 1
@@ -537,9 +535,10 @@ class Command:
         Ladeprofil des Ladepunkts handelt.
         """
         if payload["data"]["changed_in_theme"]:
-            charge_template = data.data.cp_data[f"cp{payload['data']['chargepoint']}"].data.set.charge_template
+            charge_template = SubData.cp_data[
+                f"cp{payload['data']['chargepoint']}"].chargepoint.data.set.charge_template
         else:
-            charge_template = data.data.ev_charge_template_data[f'ct{payload["data"]["template"]}']
+            charge_template = SubData.ev_charge_template_data[f'ct{payload["data"]["template"]}']
         return charge_template
 
     def _pub_charge_template_to_source(self, payload: dict, charge_template: ChargeTemplate) -> None:
@@ -657,8 +656,8 @@ class Command:
         component_default["id"] = new_id
         general_type = special_to_general_type_mapping(payload["data"]["type"])
         try:
-            data.data.counter_all_data.hierarchy_add_item_below_evu(new_id, general_type)
-            Pub().pub("openWB/set/counter/get/hierarchy", data.data.counter_all_data.data.get.hierarchy)
+            SubData.counter_all_data.hierarchy_add_item_below_evu(new_id, general_type)
+            Pub().pub("openWB/set/counter/get/hierarchy", SubData.counter_all_data.data.get.hierarchy)
         except ValueError:
             pub_user_message(payload, connection_id, counter_all.CounterAll.MISSING_EVU_COUNTER, MessageType.ERROR)
             return
@@ -707,7 +706,7 @@ class Command:
         new_id = self.max_id_ev_template + 1
         # check if "payload" contains "data.copy"
         if "data" in payload and "copy" in payload["data"]:
-            new_ev_template = asdict(data.data.ev_template_data[f"et{payload['data']['copy']}"].data).copy()
+            new_ev_template = asdict(SubData.ev_template_data[f"et{payload['data']['copy']}"].data).copy()
             new_ev_template["name"] = f'Kopie von {new_ev_template["name"]}'
         else:
             new_ev_template = dataclass_utils.asdict(EvTemplateData())
@@ -1225,8 +1224,8 @@ class ProcessBrokerBranch:
                 if "openWB/system/device/" in msg.topic and "component" in msg.topic and "config" in msg.topic:
                     payload = decode_payload(msg.payload)
                     topic = type_to_topic_mapping(payload["type"])
-                    data.data.counter_all_data.hierarchy_remove_item(payload["id"])
-                    Pub().pub("openWB/set/counter/get/hierarchy", data.data.counter_all_data.data.get.hierarchy)
+                    SubData.counter_all_data.hierarchy_remove_item(payload["id"])
+                    Pub().pub("openWB/set/counter/get/hierarchy", SubData.counter_all_data.data.get.hierarchy)
                     client.subscribe(f'openWB/{topic}/{payload["id"]}/#', 2)
                 elif re.search("openWB/chargepoint/[0-9]+/config$", msg.topic) is not None:
                     payload = decode_payload(msg.payload)
