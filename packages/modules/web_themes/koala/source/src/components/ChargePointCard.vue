@@ -8,7 +8,7 @@
     ]"
     :style="
       chargePointUserDefinedColor && {
-        '--cp-color': chargePointUserDefinedColor,
+        '--component-color': chargePointUserDefinedColor,
       }
     "
   >
@@ -332,7 +332,7 @@ const chargePointUserDefinedColor = computed(() =>
 }
 
 .charge-point-card.has-custom-color {
-  border: 2px solid var(--cp-color);
+  border-left: 4px solid var(--component-color);
 }
 
 .q-card__section {

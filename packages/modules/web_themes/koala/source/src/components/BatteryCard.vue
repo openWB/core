@@ -1,11 +1,12 @@
 <template>
   <q-card
     ref="cardRef"
-    class="card-width"
-    :class="{
+    class="battery-card"
+    :class="[{
       'battery-sum': props.batteryId === -1,
       'full-height': props.fullHeight,
-    }"
+    }, batteryUserDefinedColor && 'has-custom-color']"
+    :style="batteryUserDefinedColor && { '--component-color': batteryUserDefinedColor }"
   >
     <q-card-section class="row no-wrap items-center justify-between">
       <div class="text-h6 text-bold ellipsis" :title="cardTitle">
@@ -163,11 +164,20 @@ const dailyExportedEnergy = computed(() => {
     '---'
   );
 });
+
+const batteryUserDefinedColor = computed(() =>
+  mqttStore.batteryUserDefinedColor(props.batteryId)
+);
 </script>
 
 <style scoped lang="scss">
-.card-width {
+.battery-card {
   width: 22em;
+  border: none;
+}
+
+.battery-card.has-custom-color {
+  border-left: 4px solid var(--component-color);
 }
 
 .q-card__section {

@@ -2890,6 +2890,17 @@ export const useMqttStore = defineStore('mqtt', () => {
     });
   };
 
+  const batteryUserDefinedColor = computed(() => {
+  return (batteryId: number): string | null => {
+    if (batteryId === -1) return null;
+    const configurations = getWildcardValues.value(
+      `openWB/system/device/+/component/${batteryId}/config`,
+    ) as Record<string, BatteryConfiguration>;
+    const config = Object.values(configurations)[0];
+    return config?.color ?? null;
+  };
+});
+
   ////////////////////////////// vehicle data ////////////////////////////////
 
   /**
@@ -4108,6 +4119,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     batteryTotalPower,
     batteryChargePriorityRange,
     batteryMode,
+    batteryUserDefinedColor,
     // Grid data
     getGridId,
     getAllCounterIds,

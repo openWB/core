@@ -212,6 +212,7 @@ export interface BatteryConfiguration {
   type: string;
   id: number;
   configuration: object;
+  color: string;
 }
 
 export interface CounterConfiguration {
