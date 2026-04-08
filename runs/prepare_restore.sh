@@ -42,6 +42,12 @@ declare resultStatus
 			if [[ ! -d "$WORKING_DIR/boot" ]]; then
 				echo "boot file missing; continue anyway"
 			fi
+			if [[ ! -f "$WORKING_DIR/mosquitto_ctrl" ]]; then
+				echo "mosquitto_ctrl file missing; continue anyway"
+			fi
+			if [[ ! -f "$WORKING_DIR/dynamic-security.json" ]]; then
+				echo "dynamic-security.json file missing; continue anyway"
+			fi
 			if ! (cd "$WORKING_DIR" && sudo sha256sum --quiet --check "SHA256SUM"); then
 				resultMessage="Einige Dateien wurden gelöscht oder bearbeitet!"
 				resultStatus=1
@@ -61,6 +67,10 @@ declare resultStatus
 						resultMessage="Der Entwicklungszweig \"$BRANCH\" des Archivs ist ungültig."
 						resultStatus=1
 					else
+						echo "Step 5.3: clean mosquitto configuration, will be recreated on next boot"
+						sudo rm -v -f /etc/mosquitto/conf.d/openwb-*.conf
+						sudo rm -v -f "/var/lib/mosquitto/dynamic-security.json"
+						rm -v -f "/home/openwb/.config/mosquitto_ctrl"
 						# set trigger for restore (checked in atreboot.sh)
 						touch "${OPENWB_BASE_DIR}/data/restore/run_on_boot"
 						resultMessage="Wiederherstellung vorbereitet. System wird neu gestartet."

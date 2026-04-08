@@ -24,7 +24,7 @@ from typing import List, Optional
 
 from control import data
 from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_CHARGING
-from control.algorithm.filter_chargepoints import get_chargepoints_by_chargemodes
+from control.algorithm.filter_chargepoints import get_chargepoints_with_required_current_by_chargemode
 from control.pv import Pv
 from helpermodules.constants import NO_ERROR
 from modules.common.abstract_device import AbstractDevice
@@ -179,9 +179,9 @@ class BatAll:
         except Exception:
             log.exception("Fehler im Bat-Modul")
 
-    def _inverter_limited_power(self, inverter: Pv) -> float:
-        """gibt die maximale Entladeleistung des Speichers zurück, bis die maximale Ausgangsleistung des WR erreicht
-        ist."""
+    def _get_pv_power_beyond_max_ac_out(self, inverter: Pv) -> float:
+        """gibt die PV-Leistung zurück, die über der maximalen Ausgangsleistung des Wechselrichters liegt und somit
+        nicht für die Entladung des Speichers genutzt werden kann."""
         # tested
         # Wenn vom PV-Ertrag der Speicher geladen wird, kann diese Leistung bis zur max Ausgangsleistung des WR
         # genutzt werden.
@@ -193,18 +193,32 @@ class BatAll:
     def _limit_bat_power_discharge(self, required_power):
         """begrenzt die für den Algorithmus benötigte Entladeleistung des Speichers, wenn die maximale Ausgangsleistung
         des WR erreicht ist."""
-        inverter_limited_power = 0
+        pv_power_beyond_max_ac_out = 0
         if required_power > 0:
             # Nur wenn der Speicher entladen werden soll, fließt Leistung durch den WR.
             for inverter in data.data.pv_data.values():
                 try:
-                    inverter_limited_power += self._inverter_limited_power(inverter)
+                    pv_power_beyond_max_ac_out += self._get_pv_power_beyond_max_ac_out(inverter)
                 except Exception:
                     log.exception(f"Fehler im Bat-Modul {inverter.num}")
-            if inverter_limited_power > 0:
-                required_power = max(required_power-inverter_limited_power, 0)
-                log.debug(f"Verbleibende Speicher-Leistung durch maximale Ausgangsleistung auf {required_power}W"
-                          " begrenzt.")
+            # Wenn max_inverter_power_for_bat nur deshalb negativ ist, weil der Speicher aktuell bereits entlädt
+            # (self.data.get.power < 0) und keine PV-Leistung über der maximalen WR-Ausgangsleistung anliegt
+            # (pv_power_beyond_max_ac_out == 0), dann würde eine Begrenzung auf 0W die noch verfügbare
+            # Entladeleistung fälschlicherweise unterdrücken. In diesem Fall wenden wir keine zusätzliche
+            # Begrenzung durch die WR-Ausgangsleistung an.
+            if pv_power_beyond_max_ac_out > 0:
+                max_inverter_power_for_bat = self.data.get.power - pv_power_beyond_max_ac_out
+                # Negative Werte bedeuten, dass bereits mehr Leistung über den WR fließt, als für den Speicher
+                # zusätzlich verfügbar ist; in diesem Fall ist keine weitere Entladung möglich.
+                max_inverter_power_for_bat = max(max_inverter_power_for_bat, 0)
+                required_power = min(required_power, max_inverter_power_for_bat)
+                log.debug(
+                    f"Verbleibende Speicher-Leistung durch maximale Ausgangsleistung auf {required_power}W begrenzt."
+                )
+            else:
+                log.debug(
+                    "Speicher-Entladeleistung nicht durch maximale WR-Ausgangsleistung begrenzt, da keine PV-Leistung "
+                    "über der maximalen WR-Ausgangsleistung anliegt.")
         return required_power
 
     def _set_bat_power_active_control(self, power):
@@ -429,7 +443,8 @@ class BatAll:
             self.data.get.power_limit_controllable = False
 
     def get_charge_mode_vehicle_charge(self):
-        chargepoint_by_chargemodes = get_chargepoints_by_chargemodes(CONSIDERED_CHARGE_MODES_CHARGING)
+        chargepoint_by_chargemodes = get_chargepoints_with_required_current_by_chargemode(
+            CONSIDERED_CHARGE_MODES_CHARGING)
         # Fahrzeuge laden
         vehicle_charging = (len(chargepoint_by_chargemodes) > 0 and
                             data.data.cp_all_data.data.get.power > 100)

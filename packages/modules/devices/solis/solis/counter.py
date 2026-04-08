@@ -7,6 +7,8 @@ from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.store import get_counter_value_store
 from modules.devices.solis.solis.config import SolisCounterSetup
 from modules.devices.solis.solis.version import SolisVersion
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -26,6 +28,7 @@ class SolisCounter:
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.version = self.kwargs['version']
         self.client = self.kwargs['client']
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self):
         unit = self.component_config.configuration.modbus_id
@@ -40,6 +43,7 @@ class SolisCounter:
         imported = self.client.read_input_registers(3283 + register_offset, ModbusDataType.UINT_32, unit=unit) * 10
         exported = self.client.read_input_registers(3285 + register_offset, ModbusDataType.UINT_32, unit=unit) * 10
 
+        imported, exported = self.peak_filter.check_values(power, imported, exported)
         counter_state = CounterState(
             imported=imported,
             exported=exported,

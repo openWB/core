@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
 import logging
+import pytz
+from datetime import datetime, timedelta, timezone
+from typing import Dict, Optional
 
 from modules.electricity_pricing.flexible_tariffs.octopusenergy.config import (OctopusEnergyTariffConfiguration,
                                                                                OctopusEnergyTariff)
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
-from typing import Dict
-from datetime import datetime, timedelta, timezone
 
 log = logging.getLogger(__name__)
+
+GERMAN_TZ = pytz.timezone("Europe/Berlin")
 
 
 class OctopusEnergyClient:
@@ -115,45 +118,52 @@ def get_rate_from_simple_product(unit_rate_info: dict) -> float:
     return float(unit_rate_info['latestGrossUnitRateCentsPerKwh']) / 100 / 1000
 
 
-def get_rate_from_time_of_use_product(unit_rate_info: dict, hour_time: datetime) -> float:
+def get_rate_from_time_of_use_product(unit_rate_info: dict, hour_time_utc: datetime) -> Optional[float]:
+    local_hour_time = hour_time_utc.astimezone(GERMAN_TZ).time()  # hour_time is UTC, time of use returns local time
+
     for rate_info in unit_rate_info['rates']:
         active_from = datetime.strptime(rate_info['timeslotActivationRules'][0]['activeFromTime'], '%H:%M:%S').time()
         active_to = datetime.strptime(rate_info['timeslotActivationRules'][0]['activeToTime'], '%H:%M:%S').time()
-        local_hour_time = hour_time.astimezone().time()  # hour_time is UTC, time of use returns local time
-        if active_from <= local_hour_time < active_to or (
-           active_to == datetime.min.time() and hour_time.time() >= active_from):
+        # Mitternachts-Überlauf korrekt behandeln
+        if active_from <= active_to:
+            in_slot = active_from <= local_hour_time < active_to
+        else:
+            in_slot = local_hour_time >= active_from or local_hour_time < active_to
+
+        if in_slot:
             return float(rate_info['latestGrossUnitRateCentsPerKwh']) / 100 / 1000
     return None
 
 
-def process_agreement(agreement: dict, hour_time: datetime, prices: Dict[str, float]):
+def process_agreement(agreement: dict, hour_time_utc: datetime, prices: Dict[str, float]):
     if agreement['validTo'] is None:
         valid = True
     else:
         valid_from = parse_datetime(agreement['validFrom'])
         valid_to = parse_datetime(agreement['validTo'])
-        valid = valid_from <= hour_time <= valid_to
+        valid = valid_from <= hour_time_utc <= valid_to
 
     if valid:
         unit_rate_info = agreement['unitRateInformation']
-        timestamp = str(int(hour_time.replace(minute=0, second=0, microsecond=0).timestamp()))
+        local_hour_time = hour_time_utc.astimezone(GERMAN_TZ)
+        timestamp = str(int(local_hour_time.replace(minute=0, second=0, microsecond=0).timestamp()))
         if unit_rate_info['__typename'] == 'SimpleProductUnitRateInformation':
             prices[timestamp] = get_rate_from_simple_product(unit_rate_info)
         elif unit_rate_info['__typename'] == 'TimeOfUseProductUnitRateInformation':
-            rate = get_rate_from_time_of_use_product(unit_rate_info, hour_time)
+            rate = get_rate_from_time_of_use_product(unit_rate_info, hour_time_utc)
             if rate is not None:
-                log.debug(f"Adding rate: {rate} for timestamp: {timestamp} with hour_time: {hour_time}")
+                log.debug(f"Adding rate: {rate} for timestamp: {timestamp} with hour_time_utc: {hour_time_utc}")
                 prices[timestamp] = rate
 
 
 def build_tariff_state(data) -> Dict[str, float]:
-    current_time = datetime.now(timezone.utc)
+    current_utc = datetime.now(timezone.utc)
     prices: Dict[str, float] = {}
 
     for hour in range(28):
-        hour_time = current_time + timedelta(hours=hour)
+        hour_time_utc = current_utc + timedelta(hours=hour)
         for agreement in data['account']['property']['electricityMalos'][0]['agreements']:
-            process_agreement(agreement, hour_time, prices)
+            process_agreement(agreement, hour_time_utc, prices)
 
     sorted_prices = dict(sorted(prices.items()))
     return sorted_prices

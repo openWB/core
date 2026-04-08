@@ -9,6 +9,8 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.component_state import BatState
 from modules.common.abstract_device import AbstractBat
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 log = logging.getLogger(__name__)
@@ -31,7 +33,7 @@ class SunnyBoySmartEnergyBat(AbstractBat):
         "Battery_DischargedEnergy": (31401, ModbusDataType.UINT_64),
         "Inverter_Type": (30053, ModbusDataType.UINT_32),
         "Externe_Steuerung": (40151, ModbusDataType.UINT_32),
-        "Wirkleistungsvorgabe": (40149, ModbusDataType.UINT_32),
+        "Wirkleistungsvorgabe": (40149, ModbusDataType.INT_32),
     }
 
     def __init__(self, component_config: SmaSunnyBoySmartEnergyBatSetup, **kwargs: Any) -> None:
@@ -44,6 +46,7 @@ class SunnyBoySmartEnergyBat(AbstractBat):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.last_mode = 'Undefined'
         self.inverter_type = None
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         self.store.set(self.read())
@@ -83,11 +86,14 @@ class SunnyBoySmartEnergyBat(AbstractBat):
                 'andernfalls kann ein Defekt vorliegen.'
             )
 
+        imported, exported = self.peak_filter.check_values(power,
+                                                           values["Battery_ChargedEnergy"],
+                                                           values["Battery_DischargedEnergy"])
         bat_state = BatState(
             power=power,
             soc=values["Battery_SoC"],
-            exported=values["Battery_DischargedEnergy"],
-            imported=values["Battery_ChargedEnergy"]
+            exported=exported,
+            imported=imported
         )
         if self.inverter_type is None:
             self.inverter_type = values["Inverter_Type"]
@@ -113,7 +119,7 @@ class SunnyBoySmartEnergyBat(AbstractBat):
             log.debug("Aktive Batteriesteuerung vorhanden. Setze externe Steuerung.")
             values_to_write = {
                 "Externe_Steuerung": 802,
-                "Wirkleistungsvorgabe": abs(power_limit)
+                "Wirkleistungsvorgabe": int(power_limit) * -1
             }
             self._write_registers(values_to_write, unit)
             self.last_mode = 'limited'

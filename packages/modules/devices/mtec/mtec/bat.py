@@ -10,6 +10,8 @@ from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.mtec.mtec.config import MTecBatSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -30,6 +32,7 @@ class MTecBat(AbstractBat):
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
@@ -42,8 +45,9 @@ class MTecBat(AbstractBat):
         else:
             power = self.client.read_holding_registers(30258, ModbusDataType.INT_32, unit=unit) * -1
             soc = self.client.read_holding_registers(33000, ModbusDataType.UINT_16, unit=unit) / 100
-        imported, exported = self.sim_counter.sim_count(power)
 
+        self.peak_filter.check_values(power)
+        imported, exported = self.sim_counter.sim_count(power)
         bat_state = BatState(
             power=power,
             soc=soc,

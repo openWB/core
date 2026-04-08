@@ -11,6 +11,8 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_inverter_value_store
 from modules.common.simcount._simcounter import SimCounter
 from modules.devices.e3dc.e3dc.config import E3dcExternalInverterSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -39,6 +41,7 @@ class E3dcExternalInverter(AbstractInverter):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         pv_external = read_external_inverter(self.client, self.__modbus_id)
@@ -46,6 +49,7 @@ class E3dcExternalInverter(AbstractInverter):
         # die als externe Produktion an e3dc angeschlossen ist
         # Im gegensatz zur Implementierung in Version 1.9 wird nicht mehr die PV
         # Leistung vom WR1 gelesen, da die durch v2.0 separat gehandelt wird
+        self.peak_filter.check_values(pv_external)
         _, pv_exported = self.sim_counter.sim_count(pv_external)
         inverter_state = InverterState(
             power=pv_external,

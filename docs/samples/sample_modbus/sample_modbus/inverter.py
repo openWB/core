@@ -9,6 +9,8 @@ from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_inverter_value_store
 from modules.devices.sample_modbus.sample_modbus.config import SampleInverterSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -41,6 +43,7 @@ class SampleInverter(AbstractInverter):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
@@ -49,16 +52,18 @@ class SampleInverter(AbstractInverter):
         # Register-Mapping und die Modbus-ID
         resp = self.client.read_input_registers_bulk(
             Register.CURRENT_L1, 70, mapping=self.REG_MAPPING, unit=self.id)
+        _, exported = self.peak_filter.check_values(resp[Register.POWER], None, resp[Register.EXPORTED])
         inverter_state = InverterState(
             power=resp[Register.POWER],
             currents=resp[Register.CURRENT_L1],
             dc_power=resp[Register.DC_POWER],
-            exported=resp[Register.EXPORTED],
+            exported=exported,
         )
         self.store.set(inverter_state)
 
         # Einzelregister lesen (dauert länger, bei sehr weit >100 auseinanderliegenden Registern sinnvoll)
         power = self.client.read_holding_registers(reg, ModbusDataType.INT_32, unit=unit)
+        self.peak_filter.check_values(power)
         exported = self.sim_counter.sim_count(power)[1]
 
         inverter_state = InverterState(

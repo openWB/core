@@ -59,9 +59,11 @@ def connected_soc_factory() -> ConnectedSoc:
 
 @dataclass
 class ConnectedVehicle:
-    config: ConnectedConfig = field(default_factory=connected_config_factory)
-    info: ConnectedInfo = field(default_factory=connected_info_factory)
-    soc: ConnectedSoc = field(default_factory=connected_soc_factory)
+    config: ConnectedConfig = field(default_factory=connected_config_factory,
+                                    metadata={"topic": "get/connected_vehicle/config"})
+    info: ConnectedInfo = field(default_factory=connected_info_factory,
+                                metadata={"topic": "get/connected_vehicle/info"})
+    soc: ConnectedSoc = field(default_factory=connected_soc_factory, metadata={"topic": "get/connected_vehicle/soc"})
 
 
 def empty_enery_source_dict_factory():
@@ -94,6 +96,7 @@ class Log:
     soc_at_end: Optional[int] = None
     range_at_start: Optional[float] = None
     range_at_end: Optional[float] = None
+    odometer: Optional[float] = None
 
 
 def connected_vehicle_factory() -> ConnectedVehicle:
@@ -153,24 +156,22 @@ def log_factory() -> Log:
 @dataclass
 class Set:
     charge_template: ChargeTemplate = field(default_factory=charge_template_factory)
-    current: float = 0
-    energy_to_charge: float = 0
-    ev_prev: int = 0
-    loadmanagement_available: bool = True
-    log: Log = field(default_factory=log_factory)
-    manual_lock: bool = False
-    phases_to_use: int = 0
-    plug_state_prev: bool = False
-    plug_time: Optional[float] = None
-    required_power: float = 0
-    rfid: Optional[str] = None
+    current: float = field(default=0, metadata={"topic": "set/current"})
+    ev_prev: int = field(default=0, metadata={"topic": "set/ev_prev"})
+    log: Log = field(default_factory=log_factory, metadata={"topic": "set/log"})
+    manual_lock: bool = field(default=False, metadata={"topic": "set/manual_lock"})
+    phases_to_use: int = field(default=0, metadata={"topic": "set/phases_to_use"})
+    plug_state_prev: bool = field(default=False, metadata={"topic": "set/plug_state_prev"})
+    plug_time: Optional[float] = field(default=None, metadata={"topic": "set/plug_time"})
+    required_power: float = field(default=0, metadata={"topic": "set/required_power"})
+    rfid: Optional[str] = field(default=None, metadata={"topic": "set/rfid"})
     # set current aus dem vorherigen Zyklus, um zu wissen, ob am Ende des Zyklus die Ladung freigegeben wird
     # (für Control-Pilot-Unterbrechung)
-    current_prev: float = 0.0
-    target_current: float = 0  # Soll-Strom aus fest vorgegebener Stromstärke
+    current_prev: float = field(default=0.0, metadata={"topic": "set/current_prev"})
+    target_current: float = field(default=0)  # Zwischenergebnis vom Algorithmus
     charging_ev_data: Ev = field(default_factory=ev_factory)
-    ocpp_transaction_id: Optional[int] = None
-    charge_state_prev: bool = False
+    ocpp_transaction_id: Optional[int] = field(default=None, metadata={"topic": "set/ocpp_transaction_id"})
+    charge_state_prev: bool = field(default=False, metadata={"topic": "set/charge_state_prev"})
 
 
 @dataclass
@@ -229,7 +230,7 @@ class ChargepointData:
     control_parameter: ControlParameter = field(default_factory=control_parameter_factory)
     get: Get = field(default_factory=get_factory)
     set: Set = field(default_factory=set_factory)
-    config: Config = field(default_factory=config_factory)
+    config: Config = field(default_factory=config_factory, metadata={"topic": "config"})
 
     def set_event(self, event: Optional[Event] = None) -> None:
         self.event_update_state = event

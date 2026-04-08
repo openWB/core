@@ -9,6 +9,9 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_inverter_value_store
 from modules.common.simcount._simcounter import SimCounter
 from modules.devices.shelly.shelly.config import ShellyInverterSetup
+from modules.devices.shelly.shelly.constants import ALPHABETICAL_INDEX
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -35,6 +38,7 @@ class ShellyInverter(AbstractInverter):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         power = 0
@@ -44,32 +48,28 @@ class ShellyInverter(AbstractInverter):
             status_url = "http://" + self.address + "/rpc/Shelly.GetStatus"
         status = req.get_http_session().get(status_url, timeout=3).json()
         try:
-            alphabetical_index = ['a', 'b', 'c']
             currents = [0.0, 0.0, 0.0]
             # GEN 1
             if "meters" in status:
                 meters = status['meters']  # einphasiger shelly?
-                for i in range(len(meters)):
-                    currents[(i+self.phase-1) % 3] += ((float(meters[i]['power']) * self.factor) / 230
-                                                       if meters[i].get('power') else 0)
-                    power = power + (float(meters[i]['power'] * self.factor))
+                for i in range(0, min(3, len(meters))):
+                    currents[(i+self.phase-1) % 3] += (float(meters[i].get('power', 0)) * self.factor) / 230
+                    power = power + float(meters[i].get('power', 0)) * self.factor
             elif "emeters" in status:
                 meters = status['emeters']  # shellyEM & shelly3EM
                 # shellyEM has one meter, shelly3EM has three meters
-                for i in range(len(meters)):
-                    currents[(i+self.phase-1) % 3] = (float(meters[i]['current']) * self.factor
-                                                      if meters[i].get('current') else 0)
-                    power = power + (float(meters[i]['power'] * self.factor))
+                for i in range(0, min(3, len(meters))):
+                    currents[(i+self.phase-1) % 3] = float(meters[i].get('current', 0)) * self.factor
+                    power = power + float(meters[i].get('power', 0)) * self.factor
             # GEN 2+
             # shelly Pro3EM
             elif "em:0" in status:
                 meters = status['em:0']
-                for i in range(len(meters)):
-                    if meters.get(f'{alphabetical_index[i]}_current') is None:
+                for i, alphabetical_index in enumerate(ALPHABETICAL_INDEX):
+                    if meters.get(f'{alphabetical_index}_current') is None:
                         continue
-                    currents[(i+self.phase-1) % 3] = (float(meters[f'{alphabetical_index[i]}_current']) * self.factor
-                                                      if meters.get(f'{alphabetical_index[i]}_current') else 0)
-                power = float(meters['total_act_power']) * self.factor
+                    currents[(i+self.phase-1) % 3] = float(meters.get(f'{alphabetical_index}_current', 0)) * self.factor
+                power = float(meters.get('total_act_power', 0)) * self.factor
             # Shelly MiniPM G3
             elif "pm1:0" in status:
                 log.debug("single phase shelly")
@@ -86,6 +86,8 @@ class ShellyInverter(AbstractInverter):
                 meters = status['em1:0']
                 currents[self.phase-1] = meters['current'] * self.factor
                 power = meters['act_power'] * self.factor  # shelly Pro EM Gen 2
+
+            self.peak_filter.check_values(power)
             _, exported = self.sim_counter.sim_count(power)
 
             inverter_state = InverterState(

@@ -10,6 +10,8 @@ from modules.common.store import get_bat_value_store
 from modules.common.simcount import SimCounter
 from modules.common import req
 from modules.common.component_state import BatState
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -32,6 +34,7 @@ class TasmotaBat(AbstractBat):
         self.__phase: int = self.kwargs['phase']
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
     def update(self):
         url = "http://" + self.__ip_address + "/cm?cmnd=Status%208"
@@ -43,6 +46,7 @@ class TasmotaBat(AbstractBat):
             power = float(response['StatusSNS']['ENERGY']['Power'])
             currents[self.__phase-1] = (response['StatusSNS']['ENERGY']['Current']), 0.0, 0.0
             imported = float(response['StatusSNS']['ENERGY']['Total']*1000)
+            imported, _ = self.peak_filter.check_values(power, imported, None)
             _, exported = self.sim_counter.sim_count(power)
 
             bat_state = BatState(
@@ -55,6 +59,7 @@ class TasmotaBat(AbstractBat):
             power = float(response['StatusSNS']['Itron']['Power'])
             imported = float(response['StatusSNS']['Itron']['E_in']*1000)
             exported = float(response['StatusSNS']['Itron']['E_out']*1000)
+            imported, exported = self.peak_filter.check_values(power, imported, exported)
 
             bat_state = BatState(
                 power=power,

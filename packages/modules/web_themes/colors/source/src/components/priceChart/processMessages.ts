@@ -7,8 +7,14 @@ export function processEtProviderMessages(topic: string, message: string) {
 	} else if (topic == 'openWB/optional/ep/flexible_tariff/provider') {
 		const data = JSON.parse(message)
 		etData.etProvider = data.name
-		if (data.configuration && data.configuration.country != null) {
-			globalData.country = data.configuration.country
+		if (data.configuration) {
+			if (data.configuration.country != null) {
+				globalData.country = data.configuration.country
+				etData.country = data.configuration.country
+			}
+			if (data.configuration.unit != null) {
+				etData.unit = data.configuration.unit
+			}
 		}
 	} else if (topic == 'openWB/optional/ep/get/prices') {
 		const plist = JSON.parse(message)

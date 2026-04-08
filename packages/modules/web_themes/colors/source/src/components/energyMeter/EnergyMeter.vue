@@ -21,7 +21,7 @@
 					class="ms-1 p-0 pt-1"
 					@click="zoomGraph"
 				>
-					<span class="fa-solid fa-lg ps-1 fa-magnifying-glass" />
+					<span class="fa-solid fa-lg ps-1" :class="zoomIcon()" />
 				</span>
 			</div>
 		</template>
@@ -168,10 +168,16 @@ function zoomGraph() {
 	globalConfig.zoomedWidget = 2
 	globalConfig.zoomGraph = !globalConfig.zoomGraph
 }
+function zoomIcon() {
+	return globalConfig.zoomGraph ? 'fa-minimize' : 'fa-maximize'
+}
 </script>
 
 <style scoped>
-.fa-magnifying-glass {
+.fa-maximize {
 	color: var(--color-menu);
+}
+.fa-minimize {
+	color: var(--color-charging);
 }
 </style>

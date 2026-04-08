@@ -30,7 +30,7 @@ function processMessages(mqtttopic, mqttpayload) {
 	 * @requires function:setInputValue - is declared in pvconfig.html
 	 * @requires function:setToggleBtnGroup  - is declared in pvconfig.html
 	 */
-	console.log("new message: " + mqtttopic + ": " + mqttpayload);
+	console.log("new message: " + mqtttopic + ": " + mqttpayload, typeof mqttpayload);
 	checkAllSaved(mqtttopic, mqttpayload);
 	// first part of topic after openWB/
 	var section = mqtttopic.match(/^openWB\/([^/]+)\//)[1];

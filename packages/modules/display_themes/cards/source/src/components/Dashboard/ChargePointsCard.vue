@@ -25,12 +25,17 @@ export default {
       mqttStore: useMqttStore(),
     };
   },
+  computed: {
+    chargePointSumPower() {
+      return this.mqttStore.getChargePointSumPower("object");
+    },
+  },
 };
 </script>
 
 <template>
   <dashboard-card
-    v-if="mqttStore.getChargePointIds.length > 0"
+    v-if="mqttStore.getChargePointIds.length == 1 || chargePointSumPower.value !== undefined"
     color="primary"
   >
     <template #headerLeft>
@@ -48,7 +53,7 @@ export default {
       {{
         mqttStore.getChargePointIds.length == 1
           ? mqttStore.getChargePointPower(mqttStore.getChargePointIds[0])
-          : mqttStore.getChargePointSumPower()
+          : chargePointSumPower.textValue
       }}
       <charge-point-plug-badge
         :charge-point-id="mqttStore.getChargePointIds"

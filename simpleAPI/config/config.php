@@ -4,7 +4,8 @@ return [
     // MQTT Broker Konfiguration
     'mqtt' => [
         'server' => 'localhost',
-        'port' => 1883,
+        'port' => 1884,
+        'validate_cert' => false,
         'username' => '',
         'password' => '',
         'clientid' => 'SimpleAPI_' . uniqid()

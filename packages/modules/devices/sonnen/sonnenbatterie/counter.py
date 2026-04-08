@@ -10,6 +10,8 @@ from modules.common.store import get_counter_value_store
 
 from modules.devices.sonnen.sonnenbatterie.api import JsonApi, RestApi2, JsonApiVersion
 from modules.devices.sonnen.sonnenbatterie.config import SonnenbatterieCounterSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -44,9 +46,10 @@ class SonnenbatterieCounter(AbstractCounter):
             self.api = JsonApi(host=self.__device_address,
                                api_version=JsonApiVersion.V2 if self.__device_variant == 3 else JsonApiVersion.V1,
                                auth_token=self.__api_v2_token if self.__device_variant == 3 else None)
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
-        self.store.set(self.api.update_grid_counter(sim_counter=self.sim_counter))
+        self.store.set(self.api.update_grid_counter(sim_counter=self.sim_counter, peak_filter=self.peak_filter))
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=SonnenbatterieCounterSetup)

@@ -11,6 +11,8 @@ from modules.common.modbus import ModbusDataType
 from modules.common.simcount import SimCounter
 from modules.common.store import get_inverter_value_store
 from modules.devices.powerdog.powerdog.config import PowerdogInverterSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -33,11 +35,13 @@ class PowerdogInverter(AbstractInverter):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self) -> float:
         with self.__tcp_client:
             power = self.__tcp_client.read_input_registers(40002, ModbusDataType.INT_32, unit=self.__modbus_id) * -1
 
+        self.peak_filter.check_values(power)
         _, exported = self.sim_counter.sim_count(power)
         inverter_state = InverterState(
             power=power,

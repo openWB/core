@@ -6,6 +6,7 @@ import DateTime from "@/components/DateTime.vue";
 import NavBar from "@/components/NavBar.vue";
 import LockNavItem from "@/components/LockNavItem.vue";
 import TouchBlocker from "@/components/TouchBlocker.vue";
+import UserIndicator from "@/components/UserIndicator.vue";
 
 import { useMqttStore } from "@/stores/mqtt.js";
 
@@ -17,6 +18,7 @@ export default {
     NavBar,
     LockNavItem,
     TouchBlocker,
+    UserIndicator,
   },
   data() {
     return {
@@ -25,12 +27,17 @@ export default {
       },
       connection: {
         protocol: location.protocol == "https:" ? "wss" : "ws",
+        protocolVersion: 5,
         host: location.hostname,
-        port:
-          parseInt(location.port) || (location.protocol == "https:" ? 443 : 80),
-        endpoint: "/ws",
+        port: parseInt(location.port) || (location.protocol == "https:" ? 443 : 80),
+        path: "/ws",
         connectTimeout: 4000,
         reconnectPeriod: 4000,
+        resubscribe: true,
+        properties: {
+          requestResponseInformation: true,
+          requestProblemInformation: true,
+        },
       },
       mqttTopicsToSubscribe: [
         "openWB/bat/config/configured",
@@ -57,6 +64,7 @@ export default {
         "openWB/general/chargemode_config/pv_charging/bat_mode",
         "openWB/optional/ep/configured",
         "openWB/optional/ep/get/prices",
+        "openWB/optional/int_display/only_local_charge_points",
         "openWB/optional/int_display/theme",
         "openWB/optional/int_display/standby",
         "openWB/optional/rfid/active",
@@ -67,8 +75,11 @@ export default {
         "openWB/system/ip_address",
         "openWB/system/time",
         "openWB/system/version",
+        "openWB/system/security/user_management_active",
+        "openWB/system/security/access_allowed",
         "openWB/vehicle/+/get/fault_state",
         "openWB/vehicle/+/name",
+        "openWB/vehicle/+/info",
         "openWB/vehicle/+/soc_module/config",
       ],
       mqttStore: useMqttStore(),
@@ -90,18 +101,21 @@ export default {
     // parse and add url parameters to store
     let uri = window.location.search;
     if (uri != "") {
-      console.debug("search", uri);
       let params = new URLSearchParams(uri);
       if (params.has("data")) {
         let data = JSON.parse(params.get("data"));
         Object.entries(data).forEach(([key, value]) => {
-          console.log("updateSetting", key, value);
           if (key.startsWith("parentChargePoint")) {
             this.mqttStore.updateSetting(key, parseInt(value));
           } else {
             this.mqttStore.updateSetting(key, value);
           }
         });
+      }
+      if (params.has("hide_login")) {
+        const hideLogin = params.get("hide_login");
+        console.debug("hide_login from url param:", hideLogin);
+        this.mqttStore.updateSetting("hideLogin", hideLogin === "1");
       }
     }
     // subscribe our topics
@@ -144,8 +158,23 @@ export default {
      * Establishes a connection to the configured broker
      */
     createConnection() {
-      const { protocol, host, port, endpoint, ...options } = this.connection;
-      const connectUrl = `${protocol}://${host}:${port}${endpoint}`;
+      const { protocol, host, port, path, ...options } = this.connection;
+      const connectUrl = `${protocol}://${host}:${port}${path}`;
+      const [user, pass] = this.$cookies
+        .get("mqtt")
+        ?.match(/^([^:]+):(.+)$/)
+        ?.slice(1) || [null, null];
+      if (!(user && pass)) {
+        console.debug("Anonymous mqtt connection (no cookie set)");
+      }
+      if ((this.nodeEnv !== "production" || protocol == "wss") && user && pass) {
+        console.debug(`Using mqtt credentials from cookie: "${user}" / "${pass.charAt(0)}..."`);
+        options.username = user;
+        options.password = pass;
+        if (user === "admin" && pass === "openwb") {
+          console.warn("Using default mqtt credentials! This is insecure and not recommended for production systems.");
+        }
+      }
       console.debug("connecting to broker:", connectUrl);
       try {
         this.client = mqtt.connect(connectUrl, options);
@@ -164,7 +193,7 @@ export default {
       this.client.on("message", (topic, message) => {
         console.debug(`Received message "${message}" from topic "${topic}"`);
         if (message.toString().length > 0) {
-          let myPayload = undefined;
+          let myPayload;
           try {
             myPayload = JSON.parse(message.toString());
           } catch (error) {
@@ -276,6 +305,7 @@ export default {
           </i-column>
         </i-row>
       </i-container>
+      <UserIndicator />
       <LockNavItem />
       <NavBar :changes-locked="changesLocked" />
       <TouchBlocker />

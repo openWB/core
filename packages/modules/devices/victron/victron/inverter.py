@@ -11,6 +11,8 @@ from modules.common.modbus import ModbusDataType
 from modules.common.simcount import SimCounter
 from modules.common.store import get_inverter_value_store
 from modules.devices.victron.victron.config import VictronInverterSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -31,6 +33,7 @@ class VictronInverter(AbstractInverter):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         modbus_id = self.component_config.configuration.modbus_id
@@ -53,6 +56,7 @@ class VictronInverter(AbstractInverter):
                 power_temp2 = self.__tcp_client.read_holding_registers(850, ModbusDataType.UINT_16, unit=100)
                 power = (sum(power_temp1)+power_temp2) * -1
 
+        self.peak_filter.check_values(power)
         _, exported = self.sim_counter.sim_count(power)
         inverter_state = InverterState(
             power=power,

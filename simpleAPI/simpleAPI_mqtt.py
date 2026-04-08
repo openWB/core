@@ -70,6 +70,7 @@ class SimpleMQTTDaemon:
                 self.username = config['username']
                 self.password = config['password']
                 self.use_tls = config['use_tls']
+                self.validate_cert = config.get('validate_cert', False)
             except KeyError as e:
                 log.exception(f"Missing required config parameter: {e}")
                 sys.exit(1)
@@ -885,6 +886,8 @@ class SimpleMQTTDaemon:
                 self.client.tls_set(ca_certs=None, certfile=None, keyfile=None,
                                     cert_reqs=ssl.CERT_REQUIRED, tls_version=ssl.PROTOCOL_TLS,
                                     ciphers=None)
+                if not self.validate_cert:
+                    self.client.tls_insecure_set(True)
 
             # Setup authentication if provided
             if self.username and self.password:

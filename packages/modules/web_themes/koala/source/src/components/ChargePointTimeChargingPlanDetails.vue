@@ -1,5 +1,5 @@
 <template>
-  <q-card class="rounded-borders-md">
+  <q-card class="rounded-borders-md card-width">
     <q-card-section>
       <div class="row no-wrap">
         <div class="text-h6 ellipsis" :title="planName.value">
@@ -8,6 +8,12 @@
         <q-space />
         <q-btn icon="close" flat round dense v-close-popup />
       </div>
+      <BaseMessage
+        :show-message="temporaryChargeModeActive"
+        message="Temporärer Modus aktiv. Alle Planänderungen werden nach dem Abstecken verworfen."
+        type="warning"
+        :collapsed="false"
+      />
     </q-card-section>
     <q-separator />
     <q-card-section>
@@ -181,6 +187,18 @@
           >Plan löschen</q-btn
         >
       </div>
+      <div
+        v-if="temporaryChargeModeActive && chargeTemplateId != null"
+        class="row q-mt-md"
+      >
+        <q-btn
+          size="sm"
+          class="col charge-plan-link-button"
+          :href="`/openWB/web/settings/#/VehicleConfiguration/charge_template/${chargeTemplateId ?? ''}`"
+          ><q-icon left size="xs" name="settings" /> Persistente
+          Ladeplan-Einstellungen</q-btn
+        >
+      </div>
     </q-card-section>
   </q-card>
 </template>
@@ -189,6 +207,7 @@
 import { useMqttStore } from 'src/stores/mqtt-store';
 import SliderStandard from './SliderStandard.vue';
 import ToggleStandard from './ToggleStandard.vue';
+import BaseMessage from './BaseMessage.vue';
 import { type TimeChargingPlan } from '../stores/mqtt-store-model';
 import { computed } from 'vue';
 
@@ -298,6 +317,16 @@ const acChargingEnabled = computed(
   () => mqttStore.chargePointChargeType(props.chargePointId).value === 'AC',
 );
 
+const temporaryChargeModeActive = computed(
+  () => mqttStore.temporaryChargeModeActive,
+);
+
+const chargeTemplateId = computed(
+  () =>
+    mqttStore.chargePointConnectedVehicleChargeTemplate(props.chargePointId)
+      .value?.id,
+);
+
 const removeTimeChargingPlan = (planId: number) => {
   mqttStore.removeTimeChargingPlanForChargePoint(props.chargePointId, planId);
   emit('close');
@@ -305,9 +334,18 @@ const removeTimeChargingPlan = (planId: number) => {
 </script>
 
 <style scoped>
+.card-width {
+  max-width: 26em;
+}
+
 .q-btn-group .q-btn {
   min-width: 100px !important;
   font-size: 10px !important;
+}
+
+.charge-plan-link-button {
+  background-color: var(--q-charge-plan-link-button);
+  color: white;
 }
 
 .flex-grow {

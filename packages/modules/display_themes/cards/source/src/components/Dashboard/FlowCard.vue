@@ -61,11 +61,17 @@ export default {
     gridPower() {
       return this.mqttStore.getGridPower("object");
     },
+    showGridPower() {
+      return this.gridPower.value !== undefined;
+    },
     pvPower() {
       return this.mqttStore.getPvPower("object");
     },
     homePower() {
       return this.mqttStore.getHomePower("object");
+    },
+    showHomePower() {
+      return this.homePower.value !== undefined;
     },
     batteryPower() {
       return this.mqttStore.getBatteryPower("object");
@@ -247,7 +253,10 @@ export default {
     svgComponents() {
       var components = [];
       // add grid component
-      if (this.mqttStore.getThemeConfiguration.enable_dashboard_card_grid) {
+      if (
+        this.showGridPower &&
+        this.mqttStore.getThemeConfiguration.enable_dashboard_card_grid
+      ) {
         components.push({
           id: "grid",
           class: {
@@ -266,6 +275,7 @@ export default {
       }
       // add home component
       if (
+        this.showHomePower &&
         this.mqttStore.getThemeConfiguration
           .enable_dashboard_card_home_consumption
       ) {
@@ -471,7 +481,7 @@ export default {
               }
             }
           }
-        } else {
+        } else if (this.chargePointSumPower.value !== undefined) {
           // add charge point sum component
           components.push({
             id: "charge-point-sum",

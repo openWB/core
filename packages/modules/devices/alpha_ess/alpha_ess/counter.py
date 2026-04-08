@@ -10,6 +10,8 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType
 from modules.common.store import get_counter_value_store
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -29,6 +31,7 @@ class AlphaEssCounter(AbstractCounter):
         self.__modbus_id: int = self.kwargs['modbus_id']
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self):
         time.sleep(0.1)
@@ -53,6 +56,7 @@ class AlphaEssCounter(AbstractCounter):
                 0x0014, [ModbusDataType.UINT_16]*3, unit=self.__modbus_id)
             frequency = self.__tcp_client.read_holding_registers(
                 0x001A, ModbusDataType.UINT_16, unit=self.__modbus_id) / 100
+        imported, exported = self.peak_filter.check_values(power, imported, exported)
         counter_state = CounterState(
             currents=currents,
             imported=imported,

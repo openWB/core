@@ -9,6 +9,8 @@ from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_counter_value_store
 from modules.devices.kostal.kostal_piko_ci.config import KostalPikoCiCounterSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -27,6 +29,7 @@ class KostalPikoCiCounter(AbstractCounter):
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
@@ -35,8 +38,9 @@ class KostalPikoCiCounter(AbstractCounter):
         powers = [self.client.read_holding_registers(
             reg, ModbusDataType.FLOAT_32, unit=unit) for reg in [224, 234, 244]]
         frequency = self.client.read_holding_registers(220, ModbusDataType.FLOAT_32, unit=unit)
-        imported, exported = self.sim_counter.sim_count(power)
 
+        self.peak_filter.check_values(power)
+        imported, exported = self.sim_counter.sim_count(power)
         counter_state = CounterState(
             power=power,
             powers=powers,

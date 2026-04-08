@@ -8,6 +8,8 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.store import get_inverter_value_store
 from modules.devices.studer.studer.config import StuderInverterSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -23,6 +25,7 @@ class StuderInverter(AbstractInverter):
         self.__tcp_client: ModbusTcpClient_ = self.kwargs['client']
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         vc_count = self.component_config.configuration.vc_count
@@ -54,6 +57,7 @@ class StuderInverter(AbstractInverter):
                                                                    unit=mb_unit_dev)
             exported = exported * 1000000
 
+        _, exported = self.peak_filter.check_values(power, None, exported)
         inverter_state = InverterState(
             power=power,
             exported=exported

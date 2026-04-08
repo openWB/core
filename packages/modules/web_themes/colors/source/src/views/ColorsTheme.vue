@@ -292,23 +292,14 @@ onMounted(() => {
 	init()
 	window.addEventListener('resize', updateDimensions)
 	window.addEventListener('focus', haveFocus)
-	//window.addEventListener('blur',lostFocus)
 	msgInit()
 })
 
 function haveFocus() {
 	if (document.hasFocus()) {
-		//	console.log('I have focus')
 		initGraph(true) // reload only
 	}
-	//msgInit()
 }
-/* function lostFocus() {
-	if (!document.hasFocus()) {
-		console.log('I lost focus')
-	}
-//	msgStop()
-} */
 </script>
 
 <style scoped>

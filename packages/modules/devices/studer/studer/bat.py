@@ -9,6 +9,8 @@ from modules.common.modbus import ModbusDataType
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_bat_value_store
 from modules.devices.studer.studer.config import StuderBatSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -24,6 +26,7 @@ class StuderBat(AbstractBat):
         self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['client']
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
@@ -34,6 +37,7 @@ class StuderBat(AbstractBat):
             exported = self.__tcp_client.read_input_registers(16, ModbusDataType.FLOAT_32, unit=unit) * 48
             soc = self.__tcp_client.read_input_registers(4, ModbusDataType.FLOAT_32, unit=unit)
 
+        imported, exported = self.peak_filter.check_values(power, imported, exported)
         bat_state = BatState(
             power=power,
             soc=soc,

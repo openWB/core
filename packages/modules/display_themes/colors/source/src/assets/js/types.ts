@@ -38,6 +38,7 @@ export class GlobalData {
 	cpDailyExported = 0
 	evuId = 0
 	etProvider = ''
+	country = 'de'
 	ipAddress = ''
 	systemTime = 0.0
 	version = ''

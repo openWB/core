@@ -1,11 +1,11 @@
 import pytest
 from threading import Event
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from unittest.mock import Mock
 from control.chargepoint.control_parameter import ControlParameter
 from control.counter import Counter, CounterData, Set
 
-from control.limiting_value import LoadmanagementLimit
+from control.limiting_value import LimitingValue, LoadmanagementLimit
 from control.ev.charge_template import ChargeTemplate
 from control.pv_all import PvAll
 from control.bat_all import BatAll
@@ -150,3 +150,51 @@ def test_auto_phase_switch(monkeypatch, vehicle: Ev, params: Params):
     assert current == params.expected_current
     assert message == params.expected_message
     assert control_parameter.state == params.expected_state
+
+
+@pytest.mark.parametrize(
+    "evse_current, get_currents, all_surplus, limit, expected",
+    [
+        pytest.param(8, [7.7]*3, 100, LoadmanagementLimit(None, None), (False, Ev.ENOUGH_POWER),
+                     id="kein 1p3p, genug Leistung für mehrphasige Ladung"),
+        pytest.param(10, [9.8, 0, 0], 50, LoadmanagementLimit(None, None), (False, Ev.NOT_ENOUGH_POWER),
+                     id="kein 1p3p, nicht genug Leistung, um auf 3p zu schalten"),
+        pytest.param(16, [14, 0, 0], 5000, LoadmanagementLimit(None, None),
+                     (False, Ev.CURRENT_OUT_OF_NOMINAL_DIFFERENCE),
+                     id="kein 1p3p, Auto lädt nicht mit vorgegebener Maximalstromstärke"),
+        pytest.param(6, [7.5]*3, -20, LoadmanagementLimit(None, None), (False, Ev.CURRENT_OUT_OF_NOMINAL_DIFFERENCE),
+                     id="kein 1p3p, Auto lädt nicht mit vorgegebener Minimalstromstärke"),
+        pytest.param(16, [15.8, 0, 0], 5000, LoadmanagementLimit(None, None), (True, None), id="1p3p"),
+        pytest.param(6, [5.8]*3, -10, LoadmanagementLimit(None, None), (True, None), id="3p1p"),
+        pytest.param(10, [9.8, 0, 0], 5000,
+                     LoadmanagementLimit(message=", da der Maximal-Strom an Zähler Test erreicht ist.",
+                                         limiting_value=LimitingValue.CURRENT), (True, None),
+                     id="1p3p, da durch die Begrenzung des LM nicht mit maximalem Strom geladen wird"),
+        pytest.param(10, [9.8, 0, 0], 5000,
+                     LoadmanagementLimit(message=", da die maximale Schieflast an Zähler Test erreicht ist.",
+                                         limiting_value=LimitingValue.UNBALANCED_LOAD), (True, None),
+                     id="1p3p, da durch die Begrenzung der Schieflast nicht mit maximalem Strom geladen wird"),
+    ])
+def test_check_phase_switch_conditions(evse_current: int,
+                                       get_currents: List[float],
+                                       all_surplus: int,
+                                       limit: LoadmanagementLimit,
+                                       expected: Tuple[bool, Optional[str]],
+                                       monkeypatch):
+    # setup
+    ev = Ev(0)
+    mock_get_evu_counter = Mock(return_value=Mock(get_usable_surplus=Mock(return_value=all_surplus)))
+    monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", mock_get_evu_counter)
+
+    # execution
+    phase_switch, condition_msg = ev._check_phase_switch_conditions(
+        ChargeTemplate(),
+        ControlParameter(phases=3-get_currents.count(0)),
+        evse_current,
+        get_currents,
+        sum(get_currents)*230,
+        16,
+        limit)
+
+    # evaluation
+    assert (phase_switch, condition_msg) == expected

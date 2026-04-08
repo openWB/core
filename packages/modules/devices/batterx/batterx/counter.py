@@ -9,6 +9,8 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount import SimCounter
 from modules.common.store import get_counter_value_store
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -27,6 +29,7 @@ class BatterXCounter(AbstractCounter):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self, resp: Dict) -> None:
         power = resp["2913"]["0"]
@@ -40,6 +43,7 @@ class BatterXCounter(AbstractCounter):
             log.debug(
                 "Leistungsfaktor sollte laut Doku enthalten sein, ID 2881 kann aber nicht ermittelt werden.")
             power_factors = None
+        self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
 
         counter_state = CounterState(

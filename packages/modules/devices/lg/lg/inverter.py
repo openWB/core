@@ -5,9 +5,11 @@ from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
+from modules.common.utils.peak_filter import PeakFilter
 from modules.common.simcount import SimCounter
 from modules.common.store import get_inverter_value_store
 from modules.devices.lg.lg.config import LgInverterSetup
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -24,12 +26,15 @@ class LgInverter(AbstractInverter):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self, response: Dict) -> None:
         if 'pcs_pv_total_power' in response['statistics']:
             power = float(response["statistics"]["pcs_pv_total_power"]) * -1
         else:
             power = float(response["statistics"]["pv_total_power_01kW"]) * -100  # Home 15
+
+        self.peak_filter.check_values(power)
         _, exported = self.sim_counter.sim_count(power)
         inverter_state = InverterState(
             exported=exported,

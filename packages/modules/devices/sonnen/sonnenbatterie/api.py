@@ -5,6 +5,7 @@ from typing import Dict, List, Optional, TypedDict, Union
 from modules.common import req
 from modules.common.component_state import BatState, CounterState, InverterState
 from modules.common.simcount import SimCounter
+from modules.common.utils.peak_filter import PeakFilter
 
 
 log = logging.getLogger(__name__)
@@ -34,7 +35,7 @@ class RestApi1():
             f'http://{self.host}:7979/rest/devices/{device_endpoint}',
             timeout=5).json()
 
-    def update_battery(self, sim_counter: SimCounter) -> BatState:
+    def update_battery(self, sim_counter: SimCounter, peak_filter: PeakFilter) -> BatState:
         """
         Updates the battery state by reading data from the REST API.
         Returns:
@@ -45,6 +46,7 @@ class RestApi1():
         battery_export_power = int(battery_state["M34"])
         battery_import_power = int(battery_state["M35"])
         battery_power = battery_import_power - battery_export_power
+        peak_filter.check_values(battery_power)
         imported, exported = sim_counter.sim_count(battery_power)
         return BatState(power=battery_power,
                         soc=battery_soc,
@@ -79,18 +81,19 @@ class RestApi2():
         response.encoding = 'utf-8'
         return response.text.strip(" \n\r")
 
-    def update_inverter(self, sim_counter: SimCounter) -> InverterState:
+    def update_inverter(self, sim_counter: SimCounter, peak_filter: PeakFilter) -> InverterState:
         """
         Updates the inverter state by reading data from the REST API v2.
         Returns:
             InverterState: The updated inverter state.
         """
         pv_power = -int(float(self.__read_element(device="battery", element="M03")))
+        peak_filter.check_values(pv_power)
         _, exported = sim_counter.sim_count(pv_power)
         return InverterState(exported=exported,
                              power=pv_power)
 
-    def update_grid_counter(self, sim_counter: SimCounter) -> CounterState:
+    def update_grid_counter(self, sim_counter: SimCounter, peak_filter: PeakFilter) -> CounterState:
         """
         Updates the grid counter state by reading data from the REST API v2.
         Returns:
@@ -99,12 +102,13 @@ class RestApi2():
         grid_export_power = int(float(self.__read_element(device="battery", element="M38")))
         grid_import_power = int(float(self.__read_element(device="battery", element="M39")))
         grid_power = grid_import_power - grid_export_power  # export power must be negative
+        peak_filter.check_values(grid_power)
         imported, exported = sim_counter.sim_count(grid_power)
         return CounterState(power=grid_power,
                             imported=imported,
                             exported=exported)
 
-    def update_battery(self, sim_counter: SimCounter) -> BatState:
+    def update_battery(self, sim_counter: SimCounter, peak_filter: PeakFilter) -> BatState:
         """
         Updates the battery state by reading data from the REST API v2.
         Returns:
@@ -114,6 +118,7 @@ class RestApi2():
         battery_export_power = int(float(self.__read_element(device="battery", element="M01")))
         battery_import_power = int(float(self.__read_element(device="battery", element="M02")))
         battery_power = battery_import_power - battery_export_power
+        peak_filter.check_values(battery_power)
         imported, exported = sim_counter.sim_count(battery_power)
         return BatState(power=battery_power,
                         soc=battery_soc,
@@ -340,7 +345,7 @@ class JsonApi():
         """
         return self.api_version == JsonApiVersion.V2 and self.auth_token is not None
 
-    def update_battery(self, sim_counter: SimCounter) -> BatState:
+    def update_battery(self, sim_counter: SimCounter, peak_filter: PeakFilter) -> BatState:
         """
         Updates the battery state by reading data from the JSON API.
         Returns:
@@ -357,6 +362,7 @@ class JsonApi():
         currents = [float(battery_state[f"Sac{phase}"]) / battery_ac_voltage
                     if battery_state.get(f"Sac{phase}") else None
                     for phase in range(1, 4)]
+        peak_filter.check_values(battery_power)
         imported, exported = sim_counter.sim_count(battery_power)
         return BatState(power=battery_power,
                         currents=currents if None not in currents else None,
@@ -364,7 +370,7 @@ class JsonApi():
                         imported=imported,
                         exported=exported)
 
-    def update_grid_counter(self, sim_counter: SimCounter) -> CounterState:
+    def update_grid_counter(self, sim_counter: SimCounter, peak_filter: PeakFilter) -> CounterState:
         """
         Updates the grid counter state by reading data from the JSON API.
         Returns:
@@ -374,6 +380,7 @@ class JsonApi():
         grid_power = -counter_state["GridFeedIn_W"]
         grid_voltage = counter_state["Uac"]
         grid_frequency = counter_state["Fac"]
+        peak_filter.check_values(grid_power)
         imported, exported = sim_counter.sim_count(grid_power)
         return CounterState(power=grid_power,
                             voltages=[grid_voltage]*3,
@@ -381,7 +388,7 @@ class JsonApi():
                             imported=imported,
                             exported=exported)
 
-    def update_inverter(self, sim_counter: SimCounter) -> InverterState:
+    def update_inverter(self, sim_counter: SimCounter, peak_filter: PeakFilter) -> InverterState:
         """
         Updates the inverter state by reading data from the JSON API.
         Returns:
@@ -390,6 +397,7 @@ class JsonApi():
         if self.api_version == JsonApiVersion.V1:
             inverter_state = self.__read_status()
             pv_power = -inverter_state["Production_W"]
+            peak_filter.check_values(pv_power)
             _, exported = sim_counter.sim_count(pv_power)
             return InverterState(exported=exported,
                                  power=pv_power)
@@ -400,7 +408,7 @@ class JsonApi():
             _, inverter_state.exported = sim_counter.sim_count(inverter_state.power)
             return inverter_state
 
-    def update_consumption_counter(self, sim_counter: SimCounter) -> CounterState:
+    def update_consumption_counter(self, sim_counter: SimCounter, peak_filter: PeakFilter) -> CounterState:
         """
         Updates the consumption counter state by reading data from the JSON API.
         Returns:
@@ -409,6 +417,7 @@ class JsonApi():
         counter_state = self.__state_from_channel(
             self.__read_power_meter(direction=self.PowerMeterDirection.CONSUMPTION)[0])
         # meter value is updated way too slow, so we use a sim counter to get the im-/exported energy
+        peak_filter.check_values(counter_state.power)
         counter_state.imported, counter_state.exported = sim_counter.sim_count(counter_state.power)
         return counter_state
 

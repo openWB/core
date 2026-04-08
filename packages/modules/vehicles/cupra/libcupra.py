@@ -253,6 +253,7 @@ class cupra:
 
     async def get_status(self):
         status_url = f"{API_BASE}/vehicles/{self.vin}/charging/status"
+        mileage_url = f"{API_BASE}/v1/vehicles/{self.vin}/mileage"
         response = await self.session.get(status_url, headers=self.headers)
 
         # If first attempt fails, try to refresh tokens
@@ -277,10 +278,27 @@ class cupra:
         status_data = await response.json()
         self.log.debug(f"Status data from Cupra API: {status_data}")
 
+        # Fetch mileage data
+        response = await self.session.get(mileage_url, headers=self.headers)
+        if response.status >= 400:
+            self.log.error("Get mileage failed")
+            odometer = None
+        else:
+            mileage_data = await response.json()
+            self.log.debug(f"Mileage data from Cupra API: {mileage_data}")
+            odometer = mileage_data.get('mileageKm', None)
+
+        battery_value = {
+            'currentSOC_pct': status_data['status']['battery']['currentSOC_pct'],
+            'cruisingRangeElectric_km': status_data['status']['battery']['cruisingRangeElectric_km'],
+            'carCapturedTimestamp': status_data['status']['battery']['carCapturedTimestamp'],
+            'odometer': odometer,
+        }
+
         return {
             'charging': {
                 'batteryStatus': {
-                    'value': status_data['status']['battery']
+                    'value': battery_value,
                 }
             }
         }

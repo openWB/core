@@ -1,3 +1,5 @@
+from helpermodules.utils.json_file_handler import write_and_check
+from helpermodules import timecheck
 import copy
 import datetime
 from enum import Enum
@@ -8,13 +10,8 @@ import pathlib
 from typing import Any, Dict, List, Optional, Tuple
 
 from control import data
-from dataclass_utils import asdict
 from helpermodules.measurement_logging.process_log import (
-    FILE_ERRORS, CalculationType, _analyse_energy_source,
-    _process_entries, analyse_percentage, get_log_from_date_until_now, get_totals)
-from helpermodules.pub import Pub
-from helpermodules import timecheck
-from helpermodules.utils.json_file_handler import write_and_check
+    FILE_ERRORS, CalculationType, _analyse_energy_source, _process_entries, get_totals)
 
 # alte Daten: Startzeitpunkt der Ladung, Endzeitpunkt, Geladene Reichweite, Energie, Leistung, Ladedauer, LP-Nummer,
 # Lademodus, ID-Tag
@@ -123,6 +120,7 @@ def collect_data(chargepoint):
                 log_data.ev = get_value_or_default(lambda: chargepoint.data.set.charging_ev_data.num, 0)
                 log_data.prio = get_value_or_default(lambda: chargepoint.data.control_parameter.prio, False)
                 log_data.rfid = get_value_or_default(lambda: chargepoint.data.set.rfid)
+                log_data.odometer = get_value_or_default(lambda: charging_ev.data.get.odometer)
                 log_data.imported_since_mode_switch = get_value_or_default(
                     lambda: chargepoint.data.get.imported - log_data.imported_at_mode_switch, 0)
                 log_data.exported_since_mode_switch = get_value_or_default(
@@ -135,7 +133,6 @@ def collect_data(chargepoint):
                     log_data.time_charged = get_value_or_default(lambda: log_data.time_charged + time_diff, 0)
                     log_data.timestamp_start_charging = None
                     log_data.end = now
-            Pub().pub(f"openWB/set/chargepoint/{chargepoint.num}/set/log", asdict(log_data))
     except Exception:
         log.exception("Fehler im Ladelog-Modul")
 
@@ -203,6 +200,13 @@ def _get_range_charged(log_data, charging_ev) -> float:
         return None
 
 
+def _calc_power_source_percentages(log_data) -> Dict[str, float]:
+    power_source = {}
+    for source in ENERGY_SOURCES:
+        power_source[source] = log_data.charged_energy_by_source[source] / log_data.imported_since_mode_switch
+    return power_source
+
+
 def save_data(chargepoint, charging_ev):
     """ json-Objekt für den Log-Eintrag erstellen, an die Datei anhängen und die Daten, die sich auf den Ladevorgang
     beziehen, löschen.
@@ -245,8 +249,8 @@ def _create_entry(chargepoint, charging_ev):
         # log_data.imported_since_mode_switch / (duration / 3600)
         power = get_value_or_default(lambda: round(log_data.imported_since_mode_switch / (time_charged / 3600), 2))
     calc_energy_costs(chargepoint, True)
-    energy_source = get_value_or_default(lambda: analyse_percentage(get_log_from_date_until_now(
-        log_data.timestamp_mode_switch)["totals"])["energy_source"])
+    energy_source = get_value_or_default(lambda: _calc_power_source_percentages(log_data), {
+                                         source: 0 for source in ENERGY_SOURCES})
     costs = round(log_data.costs, 2)
 
     new_entry = {
@@ -267,6 +271,7 @@ def _create_entry(chargepoint, charging_ev):
             "chargemode": get_value_or_default(lambda: log_data.chargemode_log_entry),
             "prio": get_value_or_default(lambda: log_data.prio),
             "rfid": get_value_or_default(lambda: log_data.rfid),
+            "odometer": get_value_or_default(lambda: log_data.odometer),
             "soc_at_start": get_value_or_default(lambda: log_data.soc_at_start),
             "soc_at_end": get_value_or_default(lambda: charging_ev.data.get.soc),
             "range_at_start": get_value_or_default(lambda: log_data.range_at_start),
@@ -330,7 +335,6 @@ def calc_energy_costs(cp, create_log_entry: bool = False):
                       f"total charged_energy_by_source {cp.data.set.log.charged_energy_by_source}")
             costs = _calc_costs(charged_energy_by_source, reference_entries[-1]["prices"])
             cp.data.set.log.costs += costs
-            Pub().pub(f"openWB/set/chargepoint/{cp.num}/set/log", asdict(cp.data.set.log))
     except Exception:
         log.exception(f"Fehler beim Berechnen der Ladekosten für Ladepunkt {cp.num}")
 

@@ -16,9 +16,9 @@ log = logging.getLogger(__name__)
 
 
 def fetch(vehicle_update_data: VehicleUpdateData, config: Skoda, vehicle: int) -> CarState:
-    soc, range, soc_ts, soc_tsX = api.fetch_soc(config, vehicle)
-    log.info("Result: soc=" + str(soc)+", range=" + str(range) + "@" + soc_ts)
-    return CarState(soc=soc, range=range, soc_timestamp=soc_tsX)
+    soc, range, soc_ts, soc_tsX, odometer = api.fetch_soc(config, vehicle)
+    log.info("Result: soc=" + str(soc)+", range=" + str(range) + "@" + soc_ts + ", odometer=" + str(odometer))
+    return CarState(soc=soc, range=range, soc_timestamp=soc_tsX, odometer=odometer)
 
 
 def create_vehicle(vehicle_config: Skoda, vehicle: int):

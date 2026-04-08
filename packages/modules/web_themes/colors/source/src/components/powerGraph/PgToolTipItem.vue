@@ -7,7 +7,9 @@
 			fill="var(--color-bg)"
 			opacity="90%"
 			stroke="var(--color-menu)"
+			stroke-width="1"
 		/>
+
 		<text
 			text-anchor="start"
 			x="5"
@@ -104,14 +106,23 @@
 				:power="entry.evuOut"
 				:width="boxwidth"
 			/>
+			<PgToolTipLine
+				v-if="etData.active"
+				cat="price"
+				:indent="5"
+				:power="entry.price"
+				name="Preis"
+				:width="boxwidth"
+			/>
 		</text>
 	</g>
 </template>
 
 <script setup lang="ts">
-import { itemNames, type GraphDataItem } from './model'
 import type { ScaleTime } from 'd3'
 import { timeFormat } from 'd3'
+import { itemNames, type GraphDataItem } from './model'
+import { etData } from '@/components/priceChart/model'
 import PgToolTipLine from './PgToolTipLine.vue'
 
 const props = defineProps<{
@@ -120,11 +131,13 @@ const props = defineProps<{
 	xScale: ScaleTime<number, number>
 }>()
 
-//function linecount() {
-//	return Object.values(props.entry).filter((v) => v > 0).length
-//}
 function height() {
-	return Object.values(props.entry).filter((v) => v > 0).length * 18 + 40
+	return (
+		Object.entries(props.entry).filter(
+			([k, v]) =>
+				k != 'selfUsage' && !k.startsWith('soc') && v != null && v > 0,
+		).length * 20 + 2
+	)
 }
 function pvs() {
 	return Object.entries(props.entry)

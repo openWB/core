@@ -187,17 +187,18 @@ class api:
         if float(self.range) > 1000.0:
             self.range = str(float(self.range) / 10)
 
-        self.kms = float(statusDict['odometer']) / 10
+        self.odometer = float(statusDict['odometer']) / 10
         self.vehicle12v = statusDict['vehicle12v']
         self.soc_ts = statusDict['m_msgtime_s']
         self.soc_tsdt = datetime.strptime(self.soc_ts, date_fmt)
         self.soc_tsdtL = utc2local(self.soc_tsdt)
         self.soc_tsX = datetime.timestamp(self.soc_tsdtL)
 
-        log.info("soc=" + self.soc + ", range=" + self.range + ", soc_ts=" + str(self.soc_tsdtL))
+        log.info("OVMS: soc=" + self.soc + ", range=" + self.range + ", soc_ts=" + str(self.soc_tsdtL) +
+                 ", odometer=" + str(self.odometer))
         log.debug("statusDict=\n" + dumps(statusDict, indent=4))
 
-        return int(float(self.soc)), float(self.range), self.soc_tsX
+        return int(float(self.soc)), float(self.range), self.soc_tsX, float(self.odometer)
 
 
 # sync function
@@ -209,6 +210,6 @@ def fetch_soc(conf: OVMS, vehicle: int) -> Union[int, float, str]:
 
     # get soc, range from server
     a = api()
-    soc, range, soc_ts = loop.run_until_complete(a._fetch_soc(conf, vehicle))
+    soc, range, soc_ts, odometer = loop.run_until_complete(a._fetch_soc(conf, vehicle))
 
-    return soc, range, soc_ts
+    return soc, range, soc_ts, odometer

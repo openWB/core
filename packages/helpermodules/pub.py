@@ -13,8 +13,8 @@ class PubSingleton:
         self.publisher = InternalBrokerPublisher()
         self.publisher.start_loop()
 
-    def pub(self, topic: str, payload, qos: int = 0, retain: bool = True) -> None:
-        if payload == "":
+    def pub(self, topic: str, payload, qos: int = 0, retain: bool = True, no_json: bool = False) -> None:
+        if payload == "" or no_json:
             self.publisher.client.publish(topic, payload, qos=qos, retain=retain)
         else:
             self.publisher.client.publish(topic, payload=json.dumps(payload), qos=qos, retain=retain)
@@ -31,21 +31,23 @@ class Pub:
         return getattr(self.instance, name)
 
 
-def pub_single(topic, payload, hostname="localhost", port=1883, no_json=False, retain=True):
-    """ published eine einzelne Nachricht an einen Host, der nicht der localhost ist.
+def pub_single(topic: str, payload, hostname: str = "localhost", port: int = 1883,
+               no_json: bool = False, retain: bool = True):
+    """ Sendet eine einzelne Nachricht an einen Host.
 
         Parameter
     ---------
     topic : str
-        Topic, an das gepusht werden soll
+        Topic, an das gesendet werden soll
     payload : int, str, list, float
-        Payload, der gepusht werden soll. Nicht als json, da ISSS kein json-Payload verwendet.
+        Payload, der gesendet werden soll. Nicht als json, da ISSS kein json-Payload verwendet.
     hostname: str
         IP des Hosts
     no_json: bool
         Kompatibilität mit ISSS, die ramdisk verwenden.
     """
-    if no_json:
-        publish.single(topic, payload, hostname=hostname, port=port, retain=retain)
-    else:
-        publish.single(topic, json.dumps(payload), hostname=hostname, port=port, retain=retain)
+    if hostname == "localhost":
+        Pub().pub(topic, payload, qos=0, no_json=no_json, retain=retain)
+        return
+
+    publish.single(topic, payload if no_json else json.dumps(payload), hostname=hostname, port=port, retain=retain)

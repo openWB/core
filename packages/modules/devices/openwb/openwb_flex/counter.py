@@ -11,6 +11,8 @@ from modules.common.simcount import SimCounter
 from modules.common.store import get_counter_value_store
 from modules.devices.openwb.openwb_flex.config import EvuKitFlexSetup
 from modules.devices.openwb.openwb_flex.versions import kit_counter_version_factory
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -31,6 +33,7 @@ class EvuKitFlex(AbstractCounter):
         self.__client = factory(self.component_config.configuration.id, self.__tcp_client, self.fault_state)
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self):
         # TCP-Verbindung schließen möglichst bevor etwas anderes gemacht wird, um im Fehlerfall zu verhindern,
@@ -38,9 +41,13 @@ class EvuKitFlex(AbstractCounter):
         with self.__tcp_client:
             counter_state = self.__client.get_counter_state()
 
-        if isinstance(self.__client, Mpm3pm or B23):
+        if isinstance(self.__client, Mpm3pm) or isinstance(self.__client, B23):
             counter_state.currents = [counter_state.powers[i] / counter_state.voltages[i] for i in range(3)]
+            counter_state.imported, counter_state.exported = self.peak_filter.check_values(counter_state.power,
+                                                                                           counter_state.imported,
+                                                                                           counter_state.exported)
         else:
+            self.peak_filter.check_values(counter_state.power)
             counter_state.imported, counter_state.exported = self.sim_counter.sim_count(counter_state.power)
 
         self.store.set(counter_state)

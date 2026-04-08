@@ -9,6 +9,8 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_counter_value_store
 from modules.devices.smart_me.smart_me.config import SmartMeCounterSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -20,6 +22,7 @@ class SmartMeCounter(AbstractCounter):
     def initialize(self) -> None:
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self, session: Session) -> None:
         def parse_phase_values(key: str) -> List[float]:
@@ -37,10 +40,14 @@ class SmartMeCounter(AbstractCounter):
         if powers[0] == 0:
             powers[0] = response["ActivePower"]
 
+        imported = response["CounterReadingImport"] * 1000
+        exported = response["CounterReadingExport"] * 1000
+        power = response["ActivePower"] * 1000
+        imported, exported = self.peak_filter.check_values(power, imported, exported)
         self.store.set(CounterState(
-            imported=response["CounterReadingImport"] * 1000,
-            exported=response["CounterReadingExport"] * 1000,
-            power=response["ActivePower"] * 1000,
+            imported=imported,
+            exported=exported,
+            power=power,
             powers=powers,
             currents=currents,
             power_factors=parse_phase_values("PowerFactorL"),

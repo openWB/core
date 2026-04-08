@@ -9,6 +9,8 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount import SimCounter
 from modules.common.store import get_counter_value_store
 from modules.devices.solar_log.solar_log.config import SolarLogCounterSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -27,11 +29,13 @@ class SolarLogCounter(AbstractCounter):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self, response: Dict) -> None:
         self.store_values(self.get_power(response))
 
     def store_values(self, power) -> None:
+        self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
 
         self.store.set(CounterState(

@@ -9,6 +9,8 @@ from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.varta.varta.config import VartaBatModbusSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -29,6 +31,7 @@ class VartaBatModbus(AbstractBat):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         self.set_state(self.get_state())
@@ -36,6 +39,7 @@ class VartaBatModbus(AbstractBat):
     def get_state(self) -> BatState:
         soc = self.client.read_holding_registers(1068, ModbusDataType.INT_16, unit=self.__modbus_id)
         power = self.client.read_holding_registers(1066, ModbusDataType.INT_16, unit=self.__modbus_id)
+        self.peak_filter.check_values(power)
         return BatState(
             power=power,
             soc=soc,

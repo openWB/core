@@ -10,6 +10,8 @@ from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.kaco.kaco_nh.config import KacoNHBatSetup
 from modules.devices.kaco.kaco_nh.config import KacoNHConfiguration
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -28,6 +30,7 @@ class KacoNHBat(AbstractBat):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         response = req.get_http_session().get(
@@ -37,6 +40,7 @@ class KacoNHBat(AbstractBat):
         power = int(response["pb"]) * -1
         soc = float(response["soc"])
 
+        self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
         bat_state = BatState(
             power=power,

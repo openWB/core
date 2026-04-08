@@ -8,7 +8,7 @@ class TestSoc(unittest.TestCase):
     def setUp(self):
         self.test_cases = [{
             "sample_data": {
-                "entity_id": "sensor.ioniq_ev_battery_level",
+                "entity_soc": "sensor.ioniq_ev_battery_level",
                 "state": "84",
                 "attributes": {
                     "state_class": "measurement",
@@ -26,7 +26,7 @@ class TestSoc(unittest.TestCase):
                 }
             },
             "url": "http://1.1.1.1:4711",
-            "entity_id": "sensor.ioniq_ev_battery_level",
+            "entity_soc": "sensor.ioniq_ev_battery_level",
             "token": "testtoken",
             "expected_soc": 84,
             "expected_range": None,
@@ -43,7 +43,7 @@ class TestSoc(unittest.TestCase):
             vehicle_config = HaVehicleSocSetup(configuration=HaVehicleSocConfiguration(
                 url=case['url'],
                 token=case['token'],
-                entity_id=case['entity_id']
+                entity_soc=case['entity_soc']
             ))
             car_state = fetch_soc(vehicle_config)
 

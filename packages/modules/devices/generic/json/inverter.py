@@ -9,6 +9,8 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount import SimCounter
 from modules.common.store import get_inverter_value_store
 from modules.devices.generic.json.config import JsonInverterSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -32,6 +34,7 @@ class JsonInverter(AbstractInverter):
         self.store = get_inverter_value_store(self.component_config.id)
         self._compile_jq_filters()
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self, response) -> None:
         power = float(self.jq_power.input(response).first())
@@ -44,9 +47,11 @@ class JsonInverter(AbstractInverter):
         )
 
         if self.jq_exported is None:
+            self.peak_filter.check_values(power)
             _, exported = self.sim_counter.sim_count(power)
         else:
             exported = float(self.jq_exported.input(response).first())
+            _, exported = self.peak_filter.check_values(power, None, exported)
 
         inverter_state = InverterState(
             power=power,

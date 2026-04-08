@@ -11,6 +11,8 @@ from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.upower.upower.config import UPowerBatSetup
 from modules.devices.upower.upower.version import UPowerVersion
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class UPowerBat(AbstractBat):
@@ -27,6 +29,7 @@ class UPowerBat(AbstractBat):
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.sim_counter = SimCounter(device_id, self.component_config.id, prefix="speicher")
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         if self.version == UPowerVersion.GEN_1:
@@ -36,12 +39,14 @@ class UPowerBat(AbstractBat):
                 31108, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
             exported = self.client.read_input_registers(
                 31110, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
+            imported, exported = self.peak_filter.check_values(power, imported, exported)
         else:
             # 1221 Total Bat Power
             # 1427 Battery 1 current power
             # Bat 1 (additional batteries offset by 50)
             power = self.client.read_input_registers(1427, ModbusDataType.INT_16, unit=self.__modbus_id)
             soc = self.client.read_input_registers(1402, ModbusDataType.UINT_16, unit=self.__modbus_id) / 10
+            self.peak_filter.check_values(power)
             imported, exported = self.sim_counter.sim_count(power)
 
         bat_state = BatState(

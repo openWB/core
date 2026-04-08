@@ -1,14 +1,7 @@
-**Herzlich Willkommen im openWB2 Wiki!**
+**Herzlich Willkommen im GitHub-Wiki für openWB software2!**
 
-In openWB2 sind Ladepunkte, Module und Fahrzeuge flexibel konfigurierbar. In diesem Wiki wird das zugrundeliegende Konzept und das Zusammenspiel der verschiedenen Einstellungen erläutert. Details zu den einzelnen Einstellungen erhält man durch Klick auf das Fragezeichen neben der Einstellung direkt im User Interface.
+Die komplette Anleitung und Nutzerdokumentation für openWB software2 findet Ihr im neuen [openWB-Wiki für Endanwender](https://wiki.openwb.de/).
 
-Die ersten Schritte in openWB 2 sind [hier](https://openwb.de/main/?page_id=1942) erklärt. Eine Anleitung zum Anbinden von Wechselrichtern, Speichern und Zählern findet Ihr [hier](https://openwb.de/main/?page_id=970).
+Auch Ihr als Community könnt an den Artikeln im Wiki für Endanwender mitwirken. Sendet dazu einen Artikel-Vorschlag oder einen Textvorschlag (gerne auch mit Bildern) zur Aktualisierung bzw. Korrektur an unseren Support unter [support@openwb.de](mailto:support@openwb.de).
 
-Die Einstellungsseiten und Konfigurationsmöglichkeiten wurden im Vergleich zu 1.9 grundlegend überarbeitet.
-Eine Übersicht über die wichtigsten Features findet Ihr [hier](https://openwb.de/forum/viewtopic.php?f=3&t=3170).
-
-Unterstützung und Infos zu neuen Releases gibt's im Forum [Software 2.x](https://openwb.de/forum/viewforum.php?f=13).
-
-Die Erstellung von Wiki-Beiträgen ist [hier](https://github.com/openWB/core/wiki/Wiki-Eintrag_erstellen) beschrieben.
-
-_Das Wiki befindet sich aktuell noch im Aufbau._
+Hier im GitHub-Wiki findet Ihr ausschließlich technische Informationen für Entwickler, wie Ihr mit euren eigenen Pull Requests zur Weiterentwicklung des openWB-Codes beitragen könnt.

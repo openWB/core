@@ -63,6 +63,7 @@ class UpdateSoc:
                                 f"EV{ev.num}: Nach dreimaliger erfolgloser SoC-Abfrage wird ein SoC von 0% angenommen.")
                             Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc", 0)
                             Pub().pub(f"openWB/set/vehicle/{ev.num}/get/range", None)
+                            Pub().pub(f"openWB/set/vehicle/{ev.num}/get/odometer", None)
                         # Es wird ein Zeitstempel gesetzt, unabhängig ob die Abfrage erfolgreich war, da einige
                         # Hersteller bei zu häufigen Abfragen Accounts sperren.
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc_request_timestamp",
@@ -86,6 +87,8 @@ class UpdateSoc:
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc_request_timestamp", None)
                     if ev.data.get.range is not None:
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/get/range", None)
+                    if ev.data.get.odometer is not None:
+                        Pub().pub(f"openWB/set/vehicle/{ev.num}/get/odometer", None)
             except Exception:
                 log.exception("Fehler im update_soc-Modul")
         return threads_update, threads_store
@@ -119,6 +122,7 @@ class UpdateSoc:
             timestamp_soc_from_cp = None
         battery_capacity = ev_template.data.battery_capacity
         efficiency = ev_template.data.efficiency
+        average_consump = ev_template.data.average_consump
         soc_timestamp = ev.data.get.soc_timestamp
         return VehicleUpdateData(plug_state=plug_state,
                                  charge_state=charge_state,
@@ -128,7 +132,8 @@ class UpdateSoc:
                                  soc_from_cp=soc_from_cp,
                                  timestamp_soc_from_cp=timestamp_soc_from_cp,
                                  last_soc_timestamp=soc_timestamp,
-                                 last_soc=ev.data.get.soc if ev.data.get.soc is not None else soc_from_cp)
+                                 last_soc=ev.data.get.soc if ev.data.get.soc is not None else soc_from_cp,
+                                 average_consump=average_consump)
 
     def _filter_failed_store_threads(self, threads_store: List[Thread]) -> List[Thread]:
         ev_data = copy.deepcopy(subdata.SubData.ev_data)

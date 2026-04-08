@@ -9,6 +9,8 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.simcount._simcounter import SimCounter
 from modules.common.store._inverter import get_inverter_value_store
 from modules.devices.generic.mqtt.config import MqttInverterSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -23,6 +25,7 @@ class MqttInverter(AbstractInverter):
     def initialize(self) -> None:
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.sim_counter = SimCounter(self.kwargs['device_id'], self.component_config.id, prefix="pv")
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
         self.store = get_inverter_value_store(self.component_config.id)
 
     def update(self, received_topics: Dict) -> None:
@@ -33,6 +36,7 @@ class MqttInverter(AbstractInverter):
         power = received_topics[f"{topic_prefix}power"]
 
         if received_topics.get(f"{topic_prefix}exported") is None:
+            self.peak_filter.check_values(power)
             imported, exported = self.sim_counter.sim_count(power)
         else:
             exported = received_topics[f"{topic_prefix}exported"]
@@ -40,6 +44,7 @@ class MqttInverter(AbstractInverter):
                 imported = 0
             else:
                 imported = received_topics[f"{topic_prefix}imported"]
+            imported, exported = self.peak_filter.check_values(power, imported, exported)
 
         currents = parse_received_topics("currents")
         dc_power = parse_received_topics("dc_power")

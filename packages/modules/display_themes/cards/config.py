@@ -50,10 +50,12 @@ class CardsDisplayTheme:
                  name: str = "Cards",
                  type: str = "cards",
                  official: bool = True,
+                 userManagementSupported: bool = True,
                  configuration: CardsDisplayThemeConfiguration = None) -> None:
         self.name = name
         self.type = type
         self.official = official
+        self.userManagementSupported = userManagementSupported
         self.configuration = configuration or CardsDisplayThemeConfiguration()
 
 

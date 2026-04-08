@@ -9,6 +9,8 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.store import get_inverter_value_store
 from modules.devices.azzurro_zcs.azzurro_zcs.config import ZCSInverterSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -26,6 +28,7 @@ class ZCSInverter(AbstractInverter):
         self.client: ModbusTcpClient_ = self.kwargs['client']
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         # 0x0252 PV1 Power UInt16 0-100kW Unit 0,01kW
@@ -45,6 +48,7 @@ class ZCSInverter(AbstractInverter):
         exported = self.client.read_input_registers(0x0215, ModbusDataType.UINT_16, wordorder=Endian.Little,
                                                     unit=self.__modbus_id) * 100
 
+        _, exported = self.peak_filter.check_values(power, None, exported)
         inverter_state = InverterState(
             power=power,
             exported=exported

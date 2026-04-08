@@ -1,6 +1,6 @@
 # tested
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 from control import data
 from control.chargepoint.chargepoint import Chargepoint
@@ -12,26 +12,37 @@ def get_chargepoints_by_mode_and_counter(mode_tuple: Tuple[Optional[str], str, b
                                          counter: str) -> List[Chargepoint]:
     cps_to_counter = data.data.counter_all_data.get_chargepoints_of_counter(counter)
     cps_to_counter_ids = [int(cp[2:]) for cp in cps_to_counter]
-    cps_by_mode = get_chargepoints_by_mode(mode_tuple)
+    cps_by_mode = get_chargepoints_with_required_current_by_chargemode(mode_tuple)
     return list(filter(lambda cp: cp.num in cps_to_counter_ids, cps_by_mode))
 
 # tested
 
 
-def get_chargepoints_by_mode(mode_tuple: Tuple[Optional[str], str, bool]) -> List[Chargepoint]:
-    mode = mode_tuple[0]
-    submode = mode_tuple[1]
-    prio = mode_tuple[2]
-    # enthält alle LP, auf die das Tupel zutrifft
-    valid_chargepoints = []
-    for cp in data.data.cp_data.values():
-        if cp.data.control_parameter.required_current != 0:
+def get_chargepoints_by_chargemode(
+        modes: Union[Tuple[Optional[str], str, bool],
+                     Tuple[Tuple[Optional[str], str, bool]]]) -> List[Chargepoint]:
+    modes = modes if isinstance(modes[0], Tuple) else (modes,)
+    valid_chargepoints: List[Chargepoint] = []
+
+    for mode_tuple in modes:
+        mode = mode_tuple[0]
+        submode = mode_tuple[1]
+        prio = mode_tuple[2]
+
+        for cp in data.data.cp_data.values():
             if ((cp.data.control_parameter.prio == prio) and
-                (cp.data.control_parameter.chargemode == mode or
-                    mode is None) and
-                    (cp.data.control_parameter.submode == submode)):
+                (cp.data.control_parameter.chargemode == mode or mode is None) and
+                (cp.data.control_parameter.submode == submode) and
+                    cp not in valid_chargepoints):
                 valid_chargepoints.append(cp)
     return valid_chargepoints
+
+
+def get_chargepoints_with_required_current_by_chargemode(
+        modes: Union[Tuple[Optional[str], str, bool],
+                     Tuple[Tuple[Optional[str], str, bool]]]) -> List[Chargepoint]:
+    cps_by_mode = get_chargepoints_by_chargemode(modes)
+    return list(filter(lambda cp: cp.data.control_parameter.required_current != 0, cps_by_mode))
 
 
 def get_preferenced_chargepoint_charging(
@@ -104,10 +115,3 @@ def _get_preferenced_chargepoint(valid_chargepoints: List[Chargepoint]) -> List:
     except Exception:
         log.exception("Fehler im Algorithmus-Modul")
         return preferenced_chargepoints
-
-
-def get_chargepoints_by_chargemodes(modes) -> List[Chargepoint]:
-    chargepoints: List[Chargepoint] = []
-    for mode in modes:
-        chargepoints.extend(get_chargepoints_by_mode(mode))
-    return chargepoints
