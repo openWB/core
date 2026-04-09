@@ -497,11 +497,13 @@ class Command:
             for plan in new_charge_template.chargemode.scheduled_charging.plans:
                 plan.id = self.max_id_charge_template_scheduled_plan + 1
                 self.max_id_charge_template_scheduled_plan += 1
-            Pub().pub("openWB/set/command/max_id/charge_template_scheduled_plan", self.max_id_charge_template_scheduled_plan)
+            Pub().pub("openWB/set/command/max_id/charge_template_scheduled_plan",
+                      self.max_id_charge_template_scheduled_plan)
             for plan in new_charge_template.time_charging.plans:
                 plan.id = self.max_id_charge_template_time_charging_plan + 1
                 self.max_id_charge_template_time_charging_plan += 1
-            Pub().pub("openWB/set/command/max_id/charge_template_time_charging_plan", self.max_id_charge_template_time_charging_plan)
+            Pub().pub("openWB/set/command/max_id/charge_template_time_charging_plan",
+                      self.max_id_charge_template_time_charging_plan)
             new_charge_template = asdict(new_charge_template)
         else:
             new_charge_template = get_new_charge_template()
