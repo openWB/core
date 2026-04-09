@@ -389,7 +389,7 @@ class Command:
         remove_acl_role("chargepoint-<id>-access", cp_id)
         remove_acl_role("chargepoint-<id>-write-access", cp_id)
         ProcessBrokerBranch(f'chargepoint/{cp_id}/').remove_topics()
-        SubData.counter_all_data.hierarchy_remove_item(cp_id, ComponentType.CHARGEPOINT)
+        SubData.counter_all_data.hierarchy_remove_item(cp_id)
         Pub().pub("openWB/set/counter/get/hierarchy", SubData.counter_all_data.data.get.hierarchy)
         pub_user_message(payload, connection_id,
                          f'Ladepunkt mit ID \'{cp_id}\' gelöscht.', MessageType.SUCCESS)
@@ -477,7 +477,7 @@ class Command:
                 SubData.cp_template_data[f'cpt{payload["data"]["template"]}'].data.autolock.plans.remove(plan)
                 break
         Pub().pub(
-            f'openWB/chargepoint/template/{payload["data"]["template"]}',
+            f'openWB/set/chargepoint/template/{payload["data"]["template"]}',
             dataclass_utils.asdict(SubData.cp_template_data[f'cpt{payload["data"]["template"]}'].data))
         pub_user_message(
             payload, connection_id,
@@ -497,11 +497,11 @@ class Command:
             for plan in new_charge_template.chargemode.scheduled_charging.plans:
                 plan.id = self.max_id_charge_template_scheduled_plan + 1
                 self.max_id_charge_template_scheduled_plan += 1
-            Pub().pub("openWB/set/command/max_id/charge_template_scheduled_plan", new_id)
+            Pub().pub("openWB/set/command/max_id/charge_template_scheduled_plan", self.max_id_charge_template_scheduled_plan)
             for plan in new_charge_template.time_charging.plans:
                 plan.id = self.max_id_charge_template_time_charging_plan + 1
                 self.max_id_charge_template_time_charging_plan += 1
-            Pub().pub("openWB/set/command/max_id/charge_template_time_charging_plan", new_id)
+            Pub().pub("openWB/set/command/max_id/charge_template_time_charging_plan", self.max_id_charge_template_time_charging_plan)
             new_charge_template = asdict(new_charge_template)
         else:
             new_charge_template = get_new_charge_template()
