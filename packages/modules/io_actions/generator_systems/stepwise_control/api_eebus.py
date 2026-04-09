@@ -44,49 +44,50 @@ class StepwiseControlEebus(AbstractIoAction):
 
     def setup(self) -> None:
         with ModifyLoglevelContext(control_command_log, logging.DEBUG):
-            self.lpp_value = data.data.io_states[f"io_states{self.config.configuration.io_device}"
-                                                 ].data.get.analog_input[AnalogInputMapping.LPP_VALUE.name]
-            lpp_value_prev = data.data.io_states[f"io_states{self.config.configuration.io_device}"
-                                                 ].data.get.analog_input_prev[AnalogInputMapping.LPP_VALUE.name]
-            self.lpp_active = data.data.io_states[f"io_states{self.config.configuration.io_device}"
-                                                  ].data.get.digital_input[DigitalInputMapping.LPP_ACTIVE.name]
-            lpp_active_prev = data.data.io_states[f"io_states{self.config.configuration.io_device}"
-                                                  ].data.get.digital_input_prev[DigitalInputMapping.LPP_ACTIVE.name]
-            changed = True if self.lpp_value != lpp_value_prev or self.lpp_active != lpp_active_prev else False
-
-            max_output_inverter = 0
-            for inverter in self.config.configuration.devices:
-                max_output_inverter += data.data.pv_data[f"pv{inverter['id']}"].data.config.max_ac_out
-
-            if self.lpp_active or check_fault_state_io_device(self.config.configuration.io_device):
-                try:
-                    self.step = self.lpp_value / max_output_inverter
-                except ZeroDivisionError:
-                    msg = ("Bitte unter Konfiguration -> Lastmanagement die maximale Ausgangsleistung"
-                           " des Wechselrichters angeben.")
-                    log.exception(msg)
-                    control_command_log.info(msg)
-                    self.step = 0
-                for s in [0, 0.25, 0.5, 0.75, 1.0]:
-                    if self.step <= s:
-                        self.step = s
-                        break
-                if check_fault_state_io_device(self.config.configuration.io_device):
-                    control_command_log.info("Fehler des IO-Geräts: EZA-Begrenzung kann nicht erfasst werden.")
-                if changed:
-                    Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
-                    control_command_log.info(f"EEBus-Steuerung: LPP-Wert {self.lpp_value} / "
-                                             f"max. PV-Leistung {max_output_inverter} = {self.step}")
-                    control_command_log.info(f"EZA-Begrenzung mit Wert {self.step*100}% aktiviert.")
-                    for device in self.config.configuration.devices:
-                        control_command_log.info(
-                            f"Erzeugungsanlage {get_component_name_by_id(device)} "
-                            f"auf {self.step*100}% begrenzt."
-                        )
+            if check_fault_state_io_device(self.config.configuration.io_device):
+                control_command_log.info("Fehler des IO-Geräts: EZA-Begrenzung kann nicht erfasst werden.")
             else:
-                if changed:
-                    Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", None)
-                    control_command_log.info("EZA-Begrenzung aufgehoben.")
+                self.lpp_value = data.data.io_states[f"io_states{self.config.configuration.io_device}"
+                                                     ].data.get.analog_input[AnalogInputMapping.LPP_VALUE.name]
+                lpp_value_prev = data.data.io_states[f"io_states{self.config.configuration.io_device}"
+                                                     ].data.get.analog_input_prev[AnalogInputMapping.LPP_VALUE.name]
+                self.lpp_active = data.data.io_states[f"io_states{self.config.configuration.io_device}"
+                                                      ].data.get.digital_input[DigitalInputMapping.LPP_ACTIVE.name]
+                lpp_active_prev = data.data.io_states[f"io_states{self.config.configuration.io_device}"
+                                                      ].data.get.digital_input_prev[DigitalInputMapping.LPP_ACTIVE.name]
+                changed = True if self.lpp_value != lpp_value_prev or self.lpp_active != lpp_active_prev else False
+
+                max_output_inverter = 0
+                for inverter in self.config.configuration.devices:
+                    max_output_inverter += data.data.pv_data[f"pv{inverter['id']}"].data.config.max_ac_out
+
+                if self.lpp_active:
+                    try:
+                        self.step = self.lpp_value / max_output_inverter
+                    except ZeroDivisionError:
+                        msg = ("Bitte unter Konfiguration -> Lastmanagement die maximale Ausgangsleistung"
+                               " des Wechselrichters angeben.")
+                        log.exception(msg)
+                        control_command_log.info(msg)
+                        self.step = 0
+                    for s in [0, 0.25, 0.5, 0.75, 1.0]:
+                        if self.step <= s:
+                            self.step = s
+                            break
+                    if changed:
+                        Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
+                        control_command_log.info(f"EEBus-Steuerung: LPP-Wert {self.lpp_value} / "
+                                                 f"max. PV-Leistung {max_output_inverter} = {self.step}")
+                        control_command_log.info(f"EZA-Begrenzung mit Wert {self.step*100}% aktiviert.")
+                        for device in self.config.configuration.devices:
+                            control_command_log.info(
+                                f"Erzeugungsanlage {get_component_name_by_id(device)} "
+                                f"auf {self.step*100}% begrenzt."
+                            )
+                else:
+                    if changed:
+                        Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", None)
+                        control_command_log.info("EZA-Begrenzung aufgehoben.")
 
     def control_stepwise(self) -> Tuple[Optional[float], LoadmanagementLimit]:
         if check_fault_state_io_device(self.config.configuration.io_device):

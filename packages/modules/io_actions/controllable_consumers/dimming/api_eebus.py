@@ -36,23 +36,28 @@ class DimmingEebus(AbstractIoAction):
         super().__init__()
 
     def setup(self) -> None:
-        lpc_value = data.data.io_states[f"io_states{self.config.configuration.io_device}"
-                                        ].data.get.analog_input[AnalogInputMapping.LPC_VALUE.name]
+
         surplus = calc_dimming_surplus()
-        self.import_power_left = lpc_value + surplus
-        self.import_power_left -= self.config.configuration.fixed_import_power
+        if check_fault_state_io_device(self.config.configuration.io_device):
+            self.import_power_left = surplus
+        else:
+            lpc_value = data.data.io_states[f"io_states{self.config.configuration.io_device}"
+                                            ].data.get.analog_input[AnalogInputMapping.LPC_VALUE.name]
+            self.import_power_left = lpc_value + surplus
+            self.import_power_left -= self.config.configuration.fixed_import_power
         log.debug(
             f"Dimmen: Überschuss von {surplus}W berücksichtigt, verbleibende Dimm-Leistung: {self.import_power_left}W")
 
         with ModifyLoglevelContext(control_command_log, logging.DEBUG):
-            if self.dimming_active() or check_fault_state_io_device(self.config.configuration.io_device):
+            if check_fault_state_io_device(self.config.configuration.io_device) or self.dimming_active():
                 if self.timestamp is None:
                     Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
                     if check_fault_state_io_device(self.config.configuration.io_device):
                         control_command_log.info(
                             "Fehler des IO-Geräts: Dimmen aktiviert für Failsafe-Modus.")
-                    control_command_log.info(f"Dimmen aktiviert. Übermittelter LPC-Wert: {lpc_value/1000}kWh. "
-                                             "Leistungswerte vor Ausführung des Steuerbefehls:")
+                    else:
+                        control_command_log.info(f"Dimmen aktiviert. Übermittelter LPC-Wert: {lpc_value/1000}kWh. "
+                                                 "Leistungswerte vor Ausführung des Steuerbefehls:")
 
                 evu_counter = data.data.counter_data[data.data.counter_all_data.get_evu_counter_str()]
                 msg = f"EVU-Zähler: {evu_counter.data.get.powers}W, {evu_counter.data.get.power}W"
