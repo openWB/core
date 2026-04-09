@@ -117,6 +117,8 @@ class Set:
     power_limit: Optional[float] = field(default=None, metadata={"topic": "set/power_limit"})
     regulate_up: bool = field(default=False, metadata={"topic": "set/regulate_up"})
     hysteresis_discharge: bool = field(default=False, metadata={"topic": "set/hysteresis_discharge"})
+    current_state: str = field(default=CurrentState.STARTUP.value, metadata={"topic": "set/current_state"})
+    set_limit: bool = field(default=False, metadata={"topic": "set/set_limit"})
 
 
 def set_factory() -> Set:
@@ -137,8 +139,6 @@ class BatAll:
 
     def __init__(self):
         self.data = BatAllData()
-        self.current_state: CurrentState = CurrentState.STARTUP
-        self.set_limit: bool = False
 
     def calc_power_for_all_components(self):
         try:
@@ -595,17 +595,18 @@ class BatAll:
 
         if ((self.data.config.bat_control_permitted is False or
                 self.data.config.bat_control_activated is False)
-                and self.current_state == CurrentState.STARTUP):
-            self.set_limit = False
-        elif self.current_state == CurrentState.IDLE and charge_mode == BatChargeMode.BAT_SELF_REGULATION:
-            self.set_limit = False
+                and self.data.set.current_state == CurrentState.STARTUP.value):
+            self.data.set.set_limit = False
+        elif (self.data.set.current_state == CurrentState.IDLE.value and
+                charge_mode == BatChargeMode.BAT_SELF_REGULATION):
+            self.data.set.set_limit = False
         else:
-            self.set_limit = True
+            self.data.set.set_limit = True
 
         if charge_mode == BatChargeMode.BAT_SELF_REGULATION:
-            self.current_state = CurrentState.IDLE
+            self.data.set.current_state = CurrentState.IDLE.value
         else:
-            self.current_state = CurrentState.ACTIVE
+            self.data.set.current_state = CurrentState.ACTIVE.value
 
 
 def get_controllable_bat_components() -> List:
