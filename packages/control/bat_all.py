@@ -128,8 +128,6 @@ class BatAllData:
     config: Config = field(default_factory=config_factory)
     get: Get = field(default_factory=get_factory)
     set: Set = field(default_factory=set_factory)
-    current_state: CurrentState = CurrentState.STARTUP
-    set_limit: bool = False
 
 
 class BatAll:
@@ -139,6 +137,8 @@ class BatAll:
 
     def __init__(self):
         self.data = BatAllData()
+        self.current_state: CurrentState = CurrentState.STARTUP
+        self.set_limit: bool = False
 
     def calc_power_for_all_components(self):
         try:
@@ -595,17 +595,17 @@ class BatAll:
 
         if ((self.data.config.bat_control_permitted is False or
                 self.data.config.bat_control_activated is False)
-                and self.data.current_state == CurrentState.STARTUP):
-            self.data.set_limit = False
-        elif self.data.current_state == CurrentState.IDLE and charge_mode == BatChargeMode.BAT_SELF_REGULATION:
-            self.data.set_limit = False
+                and self.current_state == CurrentState.STARTUP):
+            self.set_limit = False
+        elif self.current_state == CurrentState.IDLE and charge_mode == BatChargeMode.BAT_SELF_REGULATION:
+            self.set_limit = False
         else:
-            self.data.set_limit = True
+            self.set_limit = True
 
         if charge_mode == BatChargeMode.BAT_SELF_REGULATION:
-            self.data.current_state = CurrentState.IDLE
+            self.current_state = CurrentState.IDLE
         else:
-            self.data.current_state = CurrentState.ACTIVE
+            self.current_state = CurrentState.ACTIVE
 
 
 def get_controllable_bat_components() -> List:

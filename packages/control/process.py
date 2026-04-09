@@ -61,7 +61,7 @@ class Process:
                     cp.remember_previous_values()
                 except Exception:
                     log.exception("Fehler im Process-Modul für Ladepunkt "+str(cp))
-            if data.data.bat_all_data.data.set_limit:
+            if data.data.bat_all_data.set_limit:
                 for bat_component in get_controllable_bat_components():
                     modules_threads.append(
                         Thread(
