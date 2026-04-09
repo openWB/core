@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 import logging
-from typing import List
+from typing import List, Optional
 
 from dataclass_utils.factories import currents_list_factory
 from helpermodules.constants import NO_ERROR
@@ -41,7 +41,7 @@ def get_factory() -> Get:
 
 @dataclass
 class Set:
-    power_limit: float = field(default=None, metadata={"topic": "set/power_limit"})
+    power_limit: Optional[int] = field(default=None, metadata={"topic": "set/power_limit"})
 
 
 def set_factory() -> Set:

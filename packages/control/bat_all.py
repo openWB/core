@@ -287,8 +287,8 @@ class BatAll:
                     # setze Entladeleistung als Bruchteil der möglichen Entladeleistung
                     else:
                         factor = min(power / max_discharge_power_total, 1)
-                        power_limit = bat_component_data.get.max_discharge_power * factor
-                        bat_component_data.get.state_str = f"Entladung mit {power_limit}W"
+                        power_limit = int(bat_component_data.get.max_discharge_power * factor)
+                        bat_component_data.get.state_str = f"Entladung mit {round(power_limit / 1000, 3)} kW"
                         log.debug(("Aktive Speichersteuerung: Entladung - "
                                    f"Speicher (ID: {bat_component.component_config.id}) "
                                    f"entlädt mit {power_limit} ({factor} x "
@@ -304,8 +304,8 @@ class BatAll:
                                "befindet sich oberhalb maximal SoC - Speicher sperren."))
                 else:
                     factor = min(power / max_charge_power_total, 1)
-                    power_limit = bat_component_data.get.max_charge_power * factor
-                    bat_component_data.get.state_str = f"Ladung mit {power_limit}W "
+                    power_limit = int(bat_component_data.get.max_charge_power * factor)
+                    bat_component_data.get.state_str = f"Ladung mit {round(power_limit / 1000, 3)} kW "
                     log.debug(("Aktive Speichersteuerung: Ladung - "
                                f"Speicher (ID: {bat_component.component_config.id}) "
                                f"lädt mit {power_limit} ({factor} x {bat_component_data.get.max_charge_power})"))

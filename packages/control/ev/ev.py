@@ -443,13 +443,7 @@ class Ev:
                 log.debug(
                     "Zurücksetzen der reservierten Leistung für die Phasenumschaltung. reservierte Leistung: " +
                     str(data.data.counter_all_data.get_evu_counter().data.set.reserved_surplus))
-            else:
-                reserved = self.ev_template.data.max_current_single_phase * \
-                    230 - control_parameter.required_current * 3 * 230
-                data.data.counter_all_data.get_evu_counter().data.set.reserved_surplus -= reserved
-                log.debug(
-                    "Zurücksetzen der reservierten Leistung für die Phasenumschaltung. reservierte Leistung: " +
-                    str(data.data.counter_all_data.get_evu_counter().data.set.reserved_surplus))
+            # bei der Umschaltung 3p1p wird keine Leistung reserviert
 
 
 def get_ev_to_rfid(rfid: Optional[str] = None, vehicle_id: Optional[str] = None) -> Optional[int]:
