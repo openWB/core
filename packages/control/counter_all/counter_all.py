@@ -50,8 +50,9 @@ class Set:
 
 @dataclass
 class Get:
-    hierarchy: List = field(default_factory=empty_list_factory, metadata={
-                            "topic": "get/hierarchy"})
+    hierarchy: List = field(default_factory=empty_list_factory, metadata={"topic": "get/hierarchy"})
+    loadmanagement_prios: List[Dict] = field(
+        default_factory=empty_list_factory, metadata={"topic": "get/loadmanagement_prios"})
 
 
 def get_factory() -> Get:

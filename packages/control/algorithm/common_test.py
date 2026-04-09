@@ -8,7 +8,7 @@ from control.algorithm import common
 from control.chargepoint.chargepoint import Chargepoint
 from control.ev.ev import Ev
 from control.counter import Counter
-from control.counter_all import CounterAll
+from control.counter_all.counter_all import CounterAll
 from control.io_device import IoActions
 
 
