@@ -209,7 +209,7 @@ class Command:
         self.max_id_io_action = new_id
         Pub().pub("openWB/set/command/max_id/io_action", self.max_id_io_action)
         # add ACL roles for IO action access, if user management is active
-        if data.data.system_data["system"].data["security"]["user_management_active"]:
+        if SubData.system_data["system"].data["security"]["user_management_active"]:
             add_acl_role("io-action-<id>-access", new_id)
         pub_user_message(
             payload, connection_id,
@@ -220,7 +220,7 @@ class Command:
         if self.max_id_io_action >= payload["data"]["id"]:
             ProcessBrokerBranch(f'io/action/{payload["data"]["id"]}/').remove_topics()
             # remove ACL roles for IO action access, if user management is active
-            if data.data.system_data["system"].data["security"]["user_management_active"]:
+            if SubData.system_data["system"].data["security"]["user_management_active"]:
                 remove_acl_role("io-action-<id>-access", payload["data"]["id"])
             pub_user_message(payload, connection_id, f'IO-Aktion mit ID \'{payload["data"]["id"]}\' gelöscht.',
                              MessageType.SUCCESS)
@@ -243,7 +243,7 @@ class Command:
         self.max_id_io_device = new_id
         Pub().pub("openWB/set/command/max_id/io_device", self.max_id_io_device)
         # add ACL roles for IO device access, if user management is active
-        if data.data.system_data["system"].data["security"]["user_management_active"]:
+        if SubData.system_data["system"].data["security"]["user_management_active"]:
             add_acl_role("io-device-<id>-access", new_id)
             if device_default["output"]["digital"] or device_default["output"]["analog"]:
                 add_acl_role("io-device-<id>-write-access", new_id)
@@ -259,7 +259,7 @@ class Command:
             ProcessBrokerBranch(f'system/io/{payload["data"]["id"]}/').remove_topics()
             ProcessBrokerBranch(f'io/states/{payload["data"]["id"]}/').remove_topics()
             # remove ACL roles for IO device access, if user management is active
-            if data.data.system_data["system"].data["security"]["user_management_active"]:
+            if SubData.system_data["system"].data["security"]["user_management_active"]:
                 remove_acl_role("io-device-<id>-access", payload["data"]["id"])
                 remove_acl_role("io-device-<id>-write-access", payload["data"]["id"])
             pub_user_message(payload, connection_id, f'IO-Gerät mit ID \'{payload["data"]["id"]}\' gelöscht.',
@@ -288,7 +288,7 @@ class Command:
             if self.max_id_vehicle == -1:
                 self.addVehicle("addChargepoint", {})
             # add ACL roles for charge point access, if user management is active
-            if data.data.system_data["system"].data["security"]["user_management_active"]:
+            if SubData.system_data["system"].data["security"]["user_management_active"]:
                 add_acl_role("chargepoint-<id>-access", new_id)
                 if chargepoint_config["type"] == "mqtt":
                     add_acl_role("chargepoint-<id>-write-access", new_id)
@@ -397,7 +397,7 @@ class Command:
                 else:
                     remove_display_user(cp_ip)
         # remove ACL roles for charge point access, if user management is active
-        if data.data.system_data["system"].data["security"]["user_management_active"]:
+        if SubData.system_data["system"].data["security"]["user_management_active"]:
             remove_acl_role("chargepoint-<id>-access", cp_id)
             remove_acl_role("chargepoint-<id>-write-access", cp_id)
         ProcessBrokerBranch(f'chargepoint/{cp_id}/').remove_topics()
@@ -692,7 +692,7 @@ class Command:
         Pub().pub("openWB/set/command/max_id/hierarchy",
                   self.max_id_hierarchy)
         # add ACL roles for component access, if user management is active
-        if data.data.system_data["system"].data["security"]["user_management_active"]:
+        if SubData.system_data["system"].data["security"]["user_management_active"]:
             add_acl_role(f"{general_type.value}-<id>-access", new_id)
         pub_user_message(
             payload, connection_id,
@@ -708,7 +708,7 @@ class Command:
         branch = f'system/device/{payload["data"]["deviceId"]}/component/{payload["data"]["id"]}/'
         ProcessBrokerBranch(branch).remove_topics()
         # remove ACL roles for component access, if user management is active
-        if data.data.system_data["system"].data["security"]["user_management_active"]:
+        if SubData.system_data["system"].data["security"]["user_management_active"]:
             remove_acl_role(f"{special_to_general_type_mapping(payload['data']['type']).value}-<id>-access",
                             payload["data"]["id"])
             remove_acl_role(f"{special_to_general_type_mapping(payload['data']['type']).value}-<id>-write-access",
@@ -770,7 +770,7 @@ class Command:
         if self.max_id_ev_template == -1:
             self.addEvTemplate("addVehicle", {})
         # add ACL roles for vehicle access, if user management is active
-        if data.data.system_data["system"].data["security"]["user_management_active"]:
+        if SubData.system_data["system"].data["security"]["user_management_active"]:
             add_acl_role("vehicle-<id>-access", new_id)
         pub_user_message(payload, connection_id, f'Neues EV mit ID \'{new_id}\' hinzugefügt.', MessageType.SUCCESS)
 
@@ -784,7 +784,7 @@ class Command:
             Pub().pub(f'openWB/vehicle/{payload["data"]["id"]}', "")
             ProcessBrokerBranch(f'vehicle/{payload["data"]["id"]}/').remove_topics()
             # remove ACL roles for vehicle access, if user management is active
-            if data.data.system_data["system"].data["security"]["user_management_active"]:
+            if SubData.system_data["system"].data["security"]["user_management_active"]:
                 remove_acl_role("vehicle-<id>-access", payload["data"]["id"])
                 remove_acl_role("vehicle-<id>-write-access", payload["data"]["id"])
             pub_user_message(
