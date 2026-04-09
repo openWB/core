@@ -305,7 +305,7 @@ class BatAll:
                 else:
                     factor = min(power / max_charge_power_total, 1)
                     power_limit = bat_component_data.get.max_charge_power * factor
-                    bat_component_data.get.state_str = f"Ladung mit {power_limit}W"
+                    bat_component_data.get.state_str = f"Ladung mit {power_limit}W "
                     log.debug(("Aktive Speichersteuerung: Ladung - "
                                f"Speicher (ID: {bat_component.component_config.id}) "
                                f"lädt mit {power_limit} ({factor} x {bat_component_data.get.max_charge_power})"))
