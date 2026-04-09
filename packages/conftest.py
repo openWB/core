@@ -12,7 +12,7 @@ from control.counter import Counter, CounterData
 from control.counter import Config as CounterConfig
 from control.counter import Get as CounterGet
 from control.counter import Set as CounterSet
-from control.counter_all import CounterAll
+from control.counter_all.counter_all import CounterAll
 from control.pv import Pv, PvData
 from control.pv import Config as PvConfig
 from control.pv import Get as PvGet
