@@ -314,8 +314,11 @@ class SubData:
                             var["ev"+index].soc_module = mod.create_vehicle(config, index)
                             client.subscribe(f"openWB/vehicle/{index}/soc_module/calculated_soc_state", 2)
                             client.subscribe(f"openWB/vehicle/{index}/soc_module/general_config", 2)
-                            if config.type == "mqtt":
-                                add_acl_role("vehicle-<id>-write-access", int(index))
+                            if self.system_data["system"].data["security"]["user_management_active"]:
+                                if config.type == "mqtt":
+                                    add_acl_role("vehicle-<id>-write-access", int(index))
+                                else:
+                                    remove_acl_role("vehicle-<id>-write-access", int(index))
                             self.processing_counter.add_task()
                             Pub().pub("openWB/system/subdata_initialized", True)
                         self.event_soc.set()

@@ -28,7 +28,7 @@
         <BatteryModeButtons />
           <RangeSliderStandard  v-if="batteryMode === 'min_soc_bat_mode'" class="q-pt-md"
             v-model="batteryRange"
-            title="SoC-Grenzen des Speichers % :"
+            title="SoC-Grenzen des Speichers:"
             :min="0"
             :max="100"
             :step="1"

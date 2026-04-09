@@ -43,7 +43,7 @@ export default {
       EVU
     </template>
     <template #headerRight>
-      {{ gridPower.value.textValue }}
+      {{ gridPower.textValue }}
     </template>
     <spark-line
       color="var(--color--danger)"

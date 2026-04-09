@@ -284,6 +284,9 @@ class Optional(OcppMixin):
                 if cp.data.set.ocpp_transaction_id is not None:
                     self.send_heart_beat(cp.data.config.ocpp_chargebox_id, cp.chargepoint_module.fault_state)
                     self.transfer_values(cp.data.config.ocpp_chargebox_id,
-                                         cp.chargepoint_module.fault_state, cp.num, int(cp.data.get.imported))
+                                         cp.chargepoint_module.fault_state,
+                                         cp.num,
+                                         cp.data.set.ocpp_transaction_id,
+                                         int(cp.data.get.imported))
             except Exception:
                 log.exception("Fehler im OCPP-Optional-Modul")

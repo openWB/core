@@ -18,6 +18,7 @@ from modules.devices.generic.mqtt.config import MqttBatSetup
 
 @pytest.fixture(autouse=True)
 def data_fixture() -> None:
+    data.data_init(Mock())
     data.data.general_data = General()
     data.data.cp_all_data = Mock(spec=AllChargepoints, data=Mock(
         spec=AllChargepointData, get=Mock(spec=AllGet, power=0)))
@@ -194,7 +195,7 @@ class BatControlParams:
     bat_control_permitted: bool = True
     bat_control_activated: bool = True
     max_charge_power: float = 5000
-    max_discharge_power: float = 5000
+    max_discharge_power: float = -5000
     bat_control_min_soc: float = 10.0
     bat_control_max_soc: float = 90.0
     price_limit_activated: bool = False
