@@ -17,6 +17,7 @@ from control.chargelog.process_chargelog import get_log_data
 from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
 
+from control.counter_all import counter_all
 from control.ev.charge_template import ChargeTemplate, get_new_charge_template
 from control.ev.ev_template import EvTemplateData
 from helpermodules import pub
@@ -39,7 +40,7 @@ from helpermodules.create_debug import create_debug_log
 from helpermodules.pub import Pub, pub_single
 from helpermodules.subdata import SubData
 from helpermodules.utils.topic_parser import decode_payload, get_index
-from control import bat, bridge, counter, counter_all, pv
+from control import bat, bridge, counter, counter_all, data, pv
 from control.ev import ev
 from modules.chargepoints.internal_openwb.chargepoint_module import ChargepointModule
 from modules.chargepoints.internal_openwb.config import InternalChargepointMode
