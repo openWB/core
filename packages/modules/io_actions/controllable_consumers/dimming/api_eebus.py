@@ -52,12 +52,12 @@ class DimmingEebus(AbstractIoAction):
 
         with ModifyLoglevelContext(control_command_log, logging.DEBUG):
             if check_fault_state_io_device(self.config.configuration.io_device) or self.dimming_active():
+                if check_fault_state_io_device(self.config.configuration.io_device):
+                    control_command_log.info(
+                        "Fehler des IO-Geräts: Dimmen aktiviert für Failsafe-Modus.")
                 if self.timestamp is None:
                     Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
-                    if check_fault_state_io_device(self.config.configuration.io_device):
-                        control_command_log.info(
-                            "Fehler des IO-Geräts: Dimmen aktiviert für Failsafe-Modus.")
-                    else:
+                    if check_fault_state_io_device(self.config.configuration.io_device) is False:
                         control_command_log.info(f"Dimmen aktiviert. Übermittelter LPC-Wert: {lpc_value/1000}kWh. "
                                                  "Leistungswerte vor Ausführung des Steuerbefehls:")
 
