@@ -19,7 +19,7 @@ import dataclass_utils
 from helpermodules.graph import Graph
 from helpermodules.subdata import SubData
 from control.counter import Counter
-from control.counter_all import CounterAll
+from control.counter_all.counter_all import CounterAll
 from control.ev.charge_template import ChargeTemplate
 from control.ev.ev import Ev
 from control.ev.ev_template import EvTemplate

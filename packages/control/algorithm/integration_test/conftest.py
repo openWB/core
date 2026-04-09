@@ -8,7 +8,7 @@ from control.bat import Bat
 from control.bat_all import BatAll
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_template import CpTemplate
-from control.counter_all import CounterAll
+from control.counter_all.counter_all import CounterAll
 from control.counter import Counter
 from control.ev.ev import Ev
 from control.io_device import IoActions
