@@ -43,10 +43,12 @@ class DimmingEebus(AbstractIoAction):
         else:
             lpc_value = data.data.io_states[f"io_states{self.config.configuration.io_device}"
                                             ].data.get.analog_input[AnalogInputMapping.LPC_VALUE.name]
-            self.import_power_left = lpc_value + surplus
-            self.import_power_left -= self.config.configuration.fixed_import_power
-        log.debug(
-            f"Dimmen: Überschuss von {surplus}W berücksichtigt, verbleibende Dimm-Leistung: {self.import_power_left}W")
+            if surplus > 0:
+                self.import_power_left = lpc_value + surplus
+            else:
+                self.import_power_left = lpc_value
+            self.import_power_left = max(0, self.import_power_left - self.config.configuration.fixed_import_power)
+        log.debug(f"Dimmen: {self.import_power_left}W inkl. Überschuss")
 
         with ModifyLoglevelContext(control_command_log, logging.DEBUG):
             if check_fault_state_io_device(self.config.configuration.io_device) or self.dimming_active():

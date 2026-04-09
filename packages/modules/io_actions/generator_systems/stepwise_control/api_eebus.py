@@ -81,7 +81,7 @@ class StepwiseControlEebus(AbstractIoAction):
                         control_command_log.info(f"EZA-Begrenzung mit Wert {self.step*100}% aktiviert.")
                         for device in self.config.configuration.devices:
                             control_command_log.info(
-                                f"Erzeugungsanlage {get_component_name_by_id(device)} "
+                                f"Erzeugungsanlage {get_component_name_by_id(device['id'])} "
                                 f"auf {self.step*100}% begrenzt."
                             )
                 else:
