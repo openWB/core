@@ -1,0 +1,95 @@
+from dataclasses import dataclass, field
+from typing import Callable, Dict, List, Optional, Protocol, Union
+
+from dataclass_utils.factories import empty_list_factory
+from modules.common.component_type import ComponentType
+
+
+@dataclass
+class Config:
+    home_consumption_source_id: Optional[str] = field(
+        default=None, metadata={"topic": "config/home_consumption_source_id"})
+    consider_less_charging: bool = field(
+        default=False, metadata={"topic": "config/consider_less_charging"})
+
+
+def config_factory() -> Config:
+    return Config()
+
+
+@dataclass
+class Set:
+    loadmanagement_active: bool = field(
+        default=False, metadata={"topic": "set/loadmanagement_active"})
+    home_consumption: float = field(default=0, metadata={"topic": "set/home_consumption"})
+    smarthome_power_excluded_from_home_consumption: float = field(
+        default=0,
+        metadata={"topic": "set/smarthome_power_excluded_from_home_consumption"})
+    invalid_home_consumption: int = field(
+        default=0, metadata={"topic": "set/invalid_home_consumption"})
+    daily_yield_home_consumption: float = field(
+        default=0, metadata={"topic": "set/daily_yield_home_consumption"})
+    imported_home_consumption: float = field(
+        default=0, metadata={"topic": "set/imported_home_consumption"})
+    disengageable_smarthome_power: float = field(
+        default=0, metadata={"topic": "set/disengageable_smarthome_power"})
+
+
+@dataclass
+class Get:
+    hierarchy: List = field(default_factory=empty_list_factory, metadata={"topic": "get/hierarchy"})
+    loadmanagement_prios: List[Dict] = field(
+        default_factory=empty_list_factory, metadata={"topic": "get/loadmanagement_prios"})
+
+
+def get_factory() -> Get:
+    return Get()
+
+
+def set_factory() -> Set:
+    return Set()
+
+
+@dataclass
+class CounterAllData:
+    config: Config = field(default_factory=config_factory)
+    get: Get = field(default_factory=get_factory)
+    set: Set = field(default_factory=set_factory)
+
+
+class HierarchyProtocol(Protocol):
+    @property
+    def childless(self) -> List: ...
+    @property
+    def connected_chargepoints(self) -> List: ...
+    @property
+    def connected_counters(self) -> List: ...
+    @property
+    def data(self) -> CounterAllData: ...
+    @property
+    def MISSING_EVU_COUNTER(self) -> str: ...
+
+    def _add_item_aside(self, child: Dict, current_entry: Dict, id_to_find: int,
+                        new_id: int, new_type: ComponentType) -> bool: ...
+    def _add_item_below(self, child: Dict, current_entry: Dict, id_to_find: int,
+                        new_id: int, new_type: ComponentType) -> bool: ...
+
+    def _add_missing_entries(self): ...
+    def _delete_obsolete_entries(self): ...
+    def _edit_element_in_hierarchy(self, current_entry: Dict, id_to_find: int, func: Callable, *args) -> bool: ...
+    def _get_all_counter_in_branch(self, child: Dict, id_to_find: int) -> bool: ...
+    def _get_all_cp_connected_to_counter(self, child: Dict) -> None: ...
+    def _get_all_elements_without_children_recursive(self, child: Dict) -> None: ...
+    def _get_entry(self, child: Dict, id_to_find: int, func: Callable[[Dict, int], bool]) -> Dict: ...
+    def _get_entry_of_element(self, child: Dict, id_to_find: int) -> bool: ...
+    def _get_entry_of_parent(self, child: Dict, id_to_find: int) -> bool: ...
+    def _get_list_of_elements_per_level(self, elements_per_level: List, child: Dict, index: int) -> List: ...
+    def _is_id_in_top_level(self, id_to_find: int) -> Dict: ...
+    def _remove_item(self, child: Dict, current_entry: Dict, id: str, keep_children: bool) -> bool: ...
+    def get_entry_of_element(self, id: int) -> Dict: ...
+    def get_evu_counter_str(self) -> str: ...
+    def get_id_evu_counter(self) -> int: ...
+    def get_list_of_elements_per_level(self) -> List[List[Dict[str, Union[int, str]]]]: ...
+    def hierarchy_add_item_below(self, new_id: int, new_type: ComponentType, id_to_find: int) -> None: ...
+    def hierarchy_add_item_below_evu(self, new_id: int, new_type: ComponentType) -> None: ...
+    def hierarchy_remove_item(self, id_to_find: int, keep_children: bool = True) -> None: ...
