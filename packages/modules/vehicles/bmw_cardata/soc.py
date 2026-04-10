@@ -2,9 +2,9 @@ import logging
 import time
 from typing import List, Optional
 
-from requests.exceptions import HTTPError, RequestException
+from requests.exceptions import RequestException
 
-from modules.common import req, store
+from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.abstract_vehicle import VehicleUpdateData
 from modules.common.component_state import CarState
