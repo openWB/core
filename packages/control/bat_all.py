@@ -78,8 +78,8 @@ class Config:
     bat_control_activated: bool = field(default=False, metadata={"topic": "config/bat_control_activated"})
     power_limit_mode: str = field(default=BatPowerLimitMode.MODE_NO_DISCHARGE.value,
                                   metadata={"topic": "config/power_limit_mode"})
-    bat_control_condition: str = field(default=BatPowerLimitCondition.VEHICLE_CHARGING.value,
-                                       metadata={"topic": "config/bat_control_condition"})
+    power_limit_condition: str = field(default=BatPowerLimitCondition.VEHICLE_CHARGING.value,
+                                       metadata={"topic": "config/power_limit_condition"})
     manual_mode: str = field(default=ManualMode.MANUAL_DISABLE.value,
                              metadata={"topic": "config/manual_mode"})
     bat_control_min_soc: int = field(default=10, metadata={"topic": "config/bat_control_min_soc"})
