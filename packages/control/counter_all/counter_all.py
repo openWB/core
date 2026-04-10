@@ -8,6 +8,7 @@ from control import data
 from control.counter import Counter
 from control.counter_all.counter_all_data import CounterAllData
 from control.counter_all.hierarchy import HierarchyMixin
+from control.counter_all.loadmanagement_prio import LoadmanagementPrioMixin
 from helpermodules.pub import Pub
 from modules.common.component_type import ComponentType
 from modules.common.fault_state import FaultStateLevel
@@ -16,7 +17,7 @@ from modules.common.simcount import SimCounter
 log = logging.getLogger(__name__)
 
 
-class CounterAll(HierarchyMixin):
+class CounterAll(HierarchyMixin, LoadmanagementPrioMixin):
     MISSING_EVU_COUNTER = "Bitte erst einen EVU-Zähler konfigurieren."
 
     def __init__(self):
