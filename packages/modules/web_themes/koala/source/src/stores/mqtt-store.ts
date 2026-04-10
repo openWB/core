@@ -19,8 +19,7 @@ import type {
   ScheduledChargingPlan,
   ChargePointConnectedVehicleSoc,
   GraphDataPoint,
-  BatteryConfiguration,
-  CounterConfiguration,
+  ComponentConfiguration,
   ThemeConfiguration,
   VehicleActivePlan,
   TimeChargingPlan,
@@ -764,6 +763,20 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
+   * Get component attributes
+   * @param componentId component ID
+   * @returns ComponentConfiguration | undefined
+   */
+  const getComponentAttributes = computed(() => {
+    return (componentId: number): ComponentConfiguration | undefined => {
+      const configurations = getWildcardValues.value(
+        `openWB/system/device/+/component/${componentId}/config`,
+      ) as Record<string, ComponentConfiguration>;
+      return Object.values(configurations)[0];
+    };
+  });
+
+  /**
    * Check if user management is active
    * Defaults to true if the value is not set as this may be due to insufficient permissions
    * @returns boolean
@@ -1224,15 +1237,20 @@ export const useMqttStore = defineStore('mqtt', () => {
   /**
    * Get the charge point user defined color identified by the charge point id
    * @param chargePointId charge point id
-   * @returns string | undefined
+   * @returns string | null
    */
   const chargePointUserDefinedColor = computed(() => {
-    return (chargePointId: number) => {
-      return getValue.value(
+    return (chargePointId: number): string | null => {
+      const DEFAULT_COLOR = '#007bff';
+      const color = getValue.value(
         `openWB/chargepoint/${chargePointId}/config`,
         'color',
         null,
-      ) as string | undefined;
+      ) as string | null;
+      if (!color || color === DEFAULT_COLOR) {
+        return null;
+      }
+      return color;
     };
   });
 
@@ -2665,7 +2683,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     return (batteryId: number): string => {
       const configurations = getWildcardValues.value(
         `openWB/system/device/+/component/${batteryId}/config`,
-      ) as { [key: string]: BatteryConfiguration };
+      ) as { [key: string]: ComponentConfiguration };
       if (Object.keys(configurations).length === 0) {
         return undefined;
       }
@@ -2890,16 +2908,22 @@ export const useMqttStore = defineStore('mqtt', () => {
     });
   };
 
+  /**
+   * Get the battery user defined color identified by the battery id
+   * @param batteryId battery id
+   * @returns string | null
+   */
   const batteryUserDefinedColor = computed(() => {
-  return (batteryId: number): string | null => {
-    if (batteryId === -1) return null;
-    const configurations = getWildcardValues.value(
-      `openWB/system/device/+/component/${batteryId}/config`,
-    ) as Record<string, BatteryConfiguration>;
-    const config = Object.values(configurations)[0];
-    return config?.color ?? null;
-  };
-});
+    return (batteryId: number): string | null => {
+      const DEFAULT_COLOR = '#ffc107';
+      if (batteryId === -1) return null;
+      const configurations = getWildcardValues.value(
+        `openWB/system/device/+/component/${batteryId}/config`,
+      ) as Record<string, ComponentConfiguration>;
+      const config = Object.values(configurations)[0];
+      return config?.color === DEFAULT_COLOR ? null : (config?.color ?? null);
+    };
+  });
 
   ////////////////////////////// vehicle data ////////////////////////////////
 
@@ -3740,8 +3764,22 @@ export const useMqttStore = defineStore('mqtt', () => {
     return (componentId: number): string => {
       const configurations = getWildcardValues.value(
         `openWB/system/device/+/component/${componentId}/config`,
-      ) as { [key: string]: CounterConfiguration };
+      ) as { [key: string]: ComponentConfiguration };
       return Object.values(configurations)[0]?.name || undefined;
+    };
+  });
+
+  /**
+   * Get pv component color
+   * @param componentId component ID
+   * @returns GridConfiguration | null
+   */
+  const getGridComponentColor = computed(() => {
+    return (componentId: number) => {
+      const DEFAULT_COLOR = '#dc3545';
+      return getComponentAttributes.value(componentId)?.color === DEFAULT_COLOR
+        ? null
+        : (getComponentAttributes.value(componentId)?.color ?? null);
     };
   });
 
@@ -3890,6 +3928,41 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
+   * Get PV id from root of component hierarchy
+   * @returns number | undefined
+   */
+  const getPvId = computed(() => {
+    const hierarchy = getValue.value(
+      'openWB/counter/get/hierarchy',
+    ) as Hierarchy[];
+    if (hierarchy && hierarchy.length > 0) {
+      const firstElement = hierarchy[0];
+      // Filtere alle Kinder mit type === 'inverter'
+      const inverterChild = firstElement.children.find(
+        (child) => child.type === 'inverter',
+      );
+      if (inverterChild) {
+        return inverterChild.id;
+      }
+    }
+    return undefined;
+  });
+
+  /**
+   * Get pv component color
+   * @param componentId component ID
+   * @returns string | null
+   */
+  const getPvComponentColor = computed(() => {
+    return (componentId: number) => {
+      const DEFAULT_COLOR = '#28a745';
+      return getComponentAttributes.value(componentId)?.color === DEFAULT_COLOR
+        ? null
+        : (getComponentAttributes.value(componentId)?.color ?? null);
+    };
+  });
+
+  /**
    * Get pv power
    * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
    * @returns string | number | ValueObject | undefined
@@ -3994,6 +4067,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     themeConfiguration,
     systemDateTime,
     dataProtectionAcknowledged,
+    getComponentAttributes,
     // security settings
     userManagementActive,
     accessAllowed,
@@ -4125,6 +4199,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     getAllCounterIds,
     getSecondaryCounterIds,
     getComponentName,
+    getGridComponentColor,
     getCounterPower,
     counterDailyImported,
     counterDailyExported,
@@ -4133,6 +4208,8 @@ export const useMqttStore = defineStore('mqtt', () => {
     homeDailyYield,
     // PV data
     getPvConfigured,
+    getPvId,
+    getPvComponentColor,
     getPvPower,
     pvDailyExported,
     // Chart data

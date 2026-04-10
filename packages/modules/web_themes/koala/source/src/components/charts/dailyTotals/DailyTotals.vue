@@ -55,7 +55,11 @@
           v-model="expanded[item.id]"
           :class="[item.id, 'card']"
           :header-class="
-            item.id === 'chargepoint' ? 'cursor-pointer' : 'no-pointer'
+            item.id === 'chargepoint' && individualChargePointData.length > 1
+              ? 'cursor-pointer'
+              : item.id === 'battery' && individualBatteryData.length > 1
+                ? 'cursor-pointer'
+                : 'no-pointer'
           "
         >
           <template #header>
@@ -65,8 +69,10 @@
               :rowExpanded="expanded[item.id]"
               :secondaryComponentsConfigured="
                 item.id === 'chargepoint'
-                  ? individualChargePointData.length > 0
-                  : false
+                  ? individualChargePointData.length > 1
+                  : item.id === 'battery'
+                    ? individualBatteryData.length > 1
+                    : false
               "
               :componentNameVisible="componentNameVisible"
               :currentPowerVisible="currentPowerVisible"
@@ -137,6 +143,26 @@
               </template>
             </DailyTotalsRow>
           </div>
+          <div v-if="item.id === 'battery'">
+            <DailyTotalsRow
+              v-for="batteryData in individualBatteryData"
+              :key="batteryData.id"
+              :item="batteryData"
+              :rowHeight="rowHeight"
+              :componentNameVisible="componentNameVisible"
+              :currentPowerVisible="currentPowerVisible"
+              :socValueVisible="socValueVisible"
+            >
+              <template #right-label>
+                <div>Geladen:</div>
+                <div>Entladen:</div>
+              </template>
+              <template #right-value>
+                <div>{{ batteryData.today?.imported }}</div>
+                <div>{{ batteryData.today?.exported }}</div>
+              </template>
+            </DailyTotalsRow>
+          </div>
         </q-expansion-item>
       </div>
     </div>
@@ -170,7 +196,7 @@ const expanded = ref({
   pv: false,
 });
 
-const componentNameVisible = computed(() => $q.screen.width >= 375);
+const componentNameVisible = computed(() => $q.screen.width >= 300);
 const currentPowerVisible = computed(() => $q.screen.width >= 500);
 const socValueVisible = computed(() => $q.screen.width >= 700);
 
@@ -189,23 +215,28 @@ const secondaryCountersConfigured = computed(
   () => secondaryCounterData.value.length > 0,
 );
 
+const gridID = computed(() => mqttStore.getGridId).value;
+const pvID = computed(() => mqttStore.getPvId).value;
+
 const gridData = computed((): DailyTotalsItem => {
   let data: DailyTotalsItem = {
     id: 'grid',
     title: 'Zähler',
-    icon: 'icons/owbCounter.svg',
+    level: 'primary',
+    icon: 'speed',
   };
   if (gridPower.value !== undefined) {
     data = {
       ...data,
       title: 'Netz',
-      icon: 'icons/owbGrid.svg',
+      icon: 'factory',
       power: mqttStore.getCounterPower('textValue') as string,
       powerValue: mqttStore.getCounterPower('value') as number,
       today: {
         imported: mqttStore.counterDailyImported('textValue') as string,
         exported: mqttStore.counterDailyExported('textValue') as string,
       },
+      color: mqttStore.getGridComponentColor(gridID)
     };
   }
   return data;
@@ -219,13 +250,15 @@ const secondaryCounterData = computed((): DailyTotalsItem[] => {
       counters.push({
         id: `counter-${id}`,
         title: name,
-        icon: 'icons/owbCounter.svg',
+        level: 'secondary',
+        icon: 'speed',
         power: mqttStore.getCounterPower('textValue', id) as string,
         powerValue: mqttStore.getCounterPower('value', id) as number,
         today: {
           imported: mqttStore.counterDailyImported('textValue', id) as string,
           exported: mqttStore.counterDailyExported('textValue', id) as string,
         },
+        color: mqttStore.getGridComponentColor(id),
       });
     }
   });
@@ -240,7 +273,8 @@ const individualChargePointData = computed((): DailyTotalsItem[] => {
       chargePoints.push({
         id: `chargepoint-${id}`,
         title: name,
-        icon: 'icons/owbChargePoint.svg',
+        level: 'secondary',
+        icon: 'ev_station',
         power: mqttStore.chargePointPower(id, 'textValue') as string,
         powerValue: mqttStore.chargePointPower(id, 'value') as number,
         today: {
@@ -253,38 +287,74 @@ const individualChargePointData = computed((): DailyTotalsItem[] => {
             id,
           ) as string,
         },
+        color: mqttStore.chargePointUserDefinedColor(id),
       });
     }
   });
   return chargePoints;
 });
 
+const individualBatteryData = computed((): DailyTotalsItem[] => {
+  const batteries: DailyTotalsItem[] = [];
+
+  mqttStore.batteryIds.forEach((id) => {
+    const name = mqttStore.batteryName(id);
+    if (name !== undefined) {
+      batteries.push({
+        id: `battery-${id}`,
+        title: name,
+        level: 'secondary',
+        icon: 'battery_full',
+        soc: mqttStore.batterySoc(id),
+        power: mqttStore.batteryPower(id, 'textValue') as string,
+        powerValue: mqttStore.batteryPower(id, 'value') as number,
+        today: {
+          imported: mqttStore.batteryDailyImported(id, 'textValue') as string,
+          exported: mqttStore.batteryDailyExported(id, 'textValue') as string,
+        },
+        color: mqttStore.batteryUserDefinedColor(id),
+      });
+    }
+  });
+  return batteries;
+});
+
 const componentData = computed((): DailyTotalsItem[] => {
   const components: DailyTotalsItem[] = [];
 
   if (batteryConfigured.value) {
-    components.push({
+    let item: DailyTotalsItem = {
       id: 'battery',
       title: 'Speicher',
-      icon: 'icons/owbBattery.svg',
-      soc: mqttStore.batterySocTotal as number,
+      level: 'primary',
+      icon: 'battery_full',
+    };
+    item = {
+      ...item,
+      soc: mqttStore.batterySocTotal,
       power: mqttStore.batteryTotalPower('textValue') as string,
       powerValue: mqttStore.batteryTotalPower('value') as number,
       today: {
         imported: mqttStore.batteryDailyImportedTotal('textValue') as string,
         exported: mqttStore.batteryDailyExportedTotal('textValue') as string,
       },
-    });
+    };
+    if (mqttStore.batteryIds.length === 1) {
+      item.color = mqttStore.batteryUserDefinedColor(mqttStore.batteryIds[0]);
+    }
+    components.push(item);
   }
 
   if (pvConfigured.value) {
     components.push({
       id: 'pv',
       title: 'PV',
-      icon: 'icons/owbPV.svg',
+      level: 'primary',
+      icon: 'solar_power',
       power: mqttStore.getPvPower('textValue') as string,
       powerValue: mqttStore.getPvPower('value') as number,
       today: { exported: mqttStore.pvDailyExported('textValue') as string },
+      color: mqttStore.getPvComponentColor(pvID),
     });
   }
 
@@ -292,7 +362,8 @@ const componentData = computed((): DailyTotalsItem[] => {
     components.push({
       id: 'house',
       title: 'Haus',
-      icon: 'icons/owbHouse.svg',
+      level: 'primary',
+      icon: 'home',
       power: mqttStore.getHomePower('textValue') as string,
       powerValue: mqttStore.getHomePower('value') as number,
       today: { imported: mqttStore.homeDailyYield('textValue') as string },
@@ -302,8 +373,9 @@ const componentData = computed((): DailyTotalsItem[] => {
   if (chargePointConfigured.value || chargePointSumPowerAvailable.value) {
     let item: DailyTotalsItem = {
       id: 'chargepoint',
-      title: 'Ladepunkte',
-      icon: 'icons/owbChargePoint.svg',
+      title: mqttStore.chargePointIds.length > 1  ? 'Ladepunkte' : 'Ladepunkt',
+      level: 'primary',
+      icon: 'ev_station',
     };
     if (chargePointSumPowerAvailable.value) {
       item = {
@@ -315,6 +387,11 @@ const componentData = computed((): DailyTotalsItem[] => {
           exported: mqttStore.chargePointDailyExported('textValue') as string,
         },
       };
+      if (mqttStore.chargePointIds.length === 1) {
+        item.color = mqttStore.chargePointUserDefinedColor(
+          mqttStore.chargePointIds[0],
+        );
+      }
     }
     components.push(item);
   }
@@ -381,11 +458,11 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', calculateRowHeight);
 });
 
-// Recompute when rows or grid expansion change
+// Recompute when rows or grid / chargepoint / battery expansion change
 watch(
   () => ({
     rows: componentData.value.length + secondaryCounterData.value.length,
-    expanded: expanded.value.grid,
+    expanded: expanded.value,
   }),
   () => calculateRowHeight(),
 );

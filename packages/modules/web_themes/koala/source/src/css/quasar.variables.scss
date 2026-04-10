@@ -50,6 +50,7 @@ $battery-fill-flow-diagram: #c6a583;
 $charge-point-stroke: #5c93d1;
 $charge-point-fill: #5c93d14d;
 $charge-plan-link-button: #6b757d;
+$diagram-icon: #717171;
 // Light theme (default)
 :root {
   --q-primary: #{$primary};
@@ -80,6 +81,7 @@ $charge-plan-link-button: #6b757d;
   --q-charge-point-stroke: #{$charge-point-stroke};
   --q-charge-point-fill: #{$charge-point-fill};
   --q-charge-plan-link-button: #{$charge-plan-link-button};
+  --q-diagram-icon: #{$diagram-icon};
 
   // Main background
   background-color: var(--q-background-1);
@@ -308,6 +310,7 @@ $dark-charge-plan-link-button: #75787a;
   --q-dark-daily-totals-house-fill: #{$dark-daily-totals-house-fill};
   --q-dark-daily-totals-chargepoint-fill: #{$dark-daily-totals-chargepoint-fill};
   --q-charge-plan-link-button: #{$dark-charge-plan-link-button};
+  --q-diagram-icon: #{$white};
 
   // Main background
   background-color: $dark-page;

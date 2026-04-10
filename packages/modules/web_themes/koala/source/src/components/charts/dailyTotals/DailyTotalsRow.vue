@@ -2,12 +2,17 @@
   <div class="component-container">
     <!-- Icon -->
     <div class="col-icon">
-      <img :src="props.item.icon" class="icon" />
+      <q-icon
+        :name="props.item.icon"
+        class="icon"
+        size="2rem"
+        :style="props.item.color && { color: props.item.color }"
+      />
     </div>
     <!-- Title -->
     <div class="col-title text-weight-bold">
       <div v-if="componentNameVisible" class="title-wrapper">
-        <template v-if="props.item.id.startsWith('counter-')">
+        <template v-if="props.item.level === 'secondary'">
           <div class="ellipsis-wrapper">
             {{ props.item.title }}
             <q-tooltip>{{ props.item.title }}</q-tooltip>
@@ -159,10 +164,7 @@ const arrowDirection = (id: string) => {
 }
 .icon {
   width: 1.75rem;
-  filter: brightness(0.4);
-}
-.body--dark .icon {
-  filter: brightness(1);
+  color: var(--q-diagram-icon);
 }
 .col-title {
   flex: 0 0 5.5rem;
