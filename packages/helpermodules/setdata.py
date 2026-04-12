@@ -687,6 +687,8 @@ class SetData:
                 self._validate_value(msg, int, [(0, 100)])
             elif "openWB/set/bat/set/charging_power_left" in msg.topic:
                 self._validate_value(msg, float)
+            elif "openWB/set/bat/set/current_state" in msg.topic:
+                self._validate_value(msg, str)
             elif "openWB/set/bat/get/soc" in msg.topic:
                 self._validate_value(msg, float, [(0, 100)])
             elif ("openWB/set/bat/get/power" in msg.topic or
