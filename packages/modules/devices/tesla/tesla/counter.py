@@ -74,23 +74,23 @@ class TeslaCounter(AbstractCounter):
         return currents, pfs
 
     def update(self, client: PowerwallHttpClient, aggregate):
-        # read firmware version
-        # - only once after startup (no firmware known yet)
-        # - and whenever a new auth cookie was negotiated (startup or reauth)
-        need_status = False
-        if getattr(client, "cookie_renewed", False):
-            need_status = True
-        elif not getattr(self.store, "firmware", ""):
-            need_status = True
+							   
+														   
+																			 
+						   
+													
+							  
+													 
+							  
 
-        if need_status:
-            try:
-                status = client.get_json("/api/status", fail_fast=False)
-                self.store.firmware = status.get("version", "")
-                log.debug("Firmware: %s", self.store.firmware)
-            except Exception:
-                # /api/status is non-critical and must not trigger fail-fast
-                pass
+					   
+				
+																		
+															   
+															  
+							 
+																			
+					
 
         try:
             meters_site = client.get_json("/api/meters/site")
@@ -115,7 +115,7 @@ class TeslaCounter(AbstractCounter):
                 q_list=q_list,
             )
 
-																						  
+						
             if all(self._nearly_zero(i) for i in api_currents):
                 currents = calculated_currents
                 log.debug(

@@ -24,11 +24,13 @@ def __update_components(
     aggregate = client.get_json("/api/meters/aggregates")
 
     for component in components:
-        with SingleComponentUpdateContext(component.fault_state):
-            component.update(client, aggregate)
-
-        # FAIL-FAST: abort remaining components if any critical request failed in this cycle
-        if client.cycle_failed:
+        try:
+            # For Tesla/Powerwall we want fail-fast behaviour:
+            # if one critical component update fails (especially EVU / house transition point),
+            # abort the remaining Tesla component updates in this cycle.
+            with SingleComponentUpdateContext(component.fault_state, reraise=True):
+                component.update(client, aggregate)
+        except Exception:
             break
 
 
@@ -60,12 +62,12 @@ def create_device(device_config: Tesla):
     def create_inverter_component(component_config: TeslaInverterSetup):
         return TeslaInverter(component_config)
 
-    def _ensure_initialized():
-        nonlocal http_client, session
-        if session is None or http_client is None:
-            initializer()
-        if session is None or http_client is None:
-            raise Exception("Powerwall device initializer did not create session/http_client")
+							  
+									 
+												  
+						 
+												  
+																							  
 
     def update_components(components: Iterable[Union[TeslaBat, TeslaCounter, TeslaInverter]]):
         nonlocal http_client, session
@@ -74,15 +76,15 @@ def create_device(device_config: Tesla):
         email = device_config.configuration.email
         password = device_config.configuration.password
 
-        _ensure_initialized()
+							 
 
-        # Reset per-cycle flags (fail-fast + cookie-renewed marker)
-        http_client.reset_cycle()
+																   
+								 
 
         # First run after process start: no cookies -> authenticate once
         if http_client.cookies is None:
             http_client.cookies = _authenticate(session, address, email, password)
-            http_client.mark_cookie_renewed()
+											 
             __update_components(http_client, components)
             return
 
@@ -100,7 +102,7 @@ def create_device(device_config: Tesla):
             )
 
         http_client.cookies = _authenticate(session, address, email, password)
-        http_client.mark_cookie_renewed()
+										 
         __update_components(http_client, components)
 
     def initializer():
