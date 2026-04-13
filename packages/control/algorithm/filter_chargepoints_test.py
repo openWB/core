@@ -78,7 +78,7 @@ def test_get_preferenced_chargepoint(params: PreferencedParams):
     cp2 = mock_cp(mock_cp2, 2)
     cp3 = mock_cp(mock_cp3, 3)
     # execution
-    preferenced_chargepoints = filter_chargepoints._get_preferenced_chargepoint([cp1, cp2, cp3])
+    preferenced_chargepoints = filter_chargepoints.get_preferenced_chargepoint([cp1, cp2, cp3])
 
     # evaluation
     assert preferenced_chargepoints == params.expected_sort
