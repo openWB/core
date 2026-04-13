@@ -3,7 +3,6 @@ import logging
 from control import data
 from control.algorithm import common
 from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_MIN_CURRENT, CONSIDERED_CHARGE_MODES_PV_ONLY
-from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state import ChargepointState
 from control.loadmanagement import Loadmanagement
 from control.algorithm.filter_chargepoints import get_chargepoints_by_mode_and_counter
@@ -22,7 +21,8 @@ class MinCurrent:
             if preferenced_chargepoints:
                 log.info(f"Mode-Tuple {mode_tuple[0]} - {mode_tuple[1]} - {mode_tuple[2]}, Zähler {counter.num}")
                 common.update_raw_data(preferenced_chargepoints, diff_to_zero=True)
-                for cp, group in data.data.counter_all_data.generator_cps_by_loadmanagement_prios(preferenced_chargepoints):
+                for cp, group in data.data.counter_all_data.generator_cps_by_loadmanagement_prios(
+                        preferenced_chargepoints):
                     missing_currents, counts = common.get_min_current(cp)
                     if max(missing_currents) > 0:
                         available_currents, limit = Loadmanagement().get_available_currents(
