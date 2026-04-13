@@ -1,5 +1,6 @@
 
 from typing import Dict, List
+from unittest.mock import Mock
 
 import pytest
 
@@ -211,3 +212,54 @@ def test_sort_cps_by_loadmanagement_prios_nested_with_group(cp1, cp2, cp3):
     assert len(result) == 2
     assert result[0] == [cp3]        # vehicle id=3 einzeln
     assert result[1] == [cp1, cp2]   # vehicles id=1,2 in der Gruppe
+
+
+def test_generator_cps_by_loadmanagement_prios(cp1, cp2, cp3, monkeypatch):
+    # setup
+    mock_sort_cps = Mock(return_value=[[cp3], [cp1, cp2]])
+    monkeypatch.setattr(CounterAll, "sort_cps_by_loadmanagement_prios_nested", mock_sort_cps)
+
+    c = CounterAll()
+
+    # execution
+    result = list(c.generator_cps_by_loadmanagement_prios([cp1, cp2, cp3]))
+
+    # assert
+    assert len(result) == 3
+    assert result[0] == (cp3, [cp3])
+    assert result[1] == (cp1, [cp1, cp2])
+    assert result[2] == (cp2, [cp2])
+
+
+def test_generator_cps_by_loadmanagement_prios_flat(cp1, cp2, cp3, monkeypatch):
+    # setup
+    mock_sort_cps = Mock(return_value=[[cp3], [cp1], [cp2]])
+    monkeypatch.setattr(CounterAll, "sort_cps_by_loadmanagement_prios_nested", mock_sort_cps)
+
+    c = CounterAll()
+
+    # execution
+    result = list(c.generator_cps_by_loadmanagement_prios([cp1, cp2, cp3]))
+
+    # assert
+    assert len(result) == 3
+    assert result[0] == (cp3, [cp3])
+    assert result[1] == (cp1, [cp1])
+    assert result[2] == (cp2, [cp2])
+
+
+def test_generator_cps_by_loadmanagement_prios_one_group(cp1, cp2, cp3, monkeypatch):
+    # setup
+    mock_sort_cps = Mock(return_value=[[cp3, cp1, cp2]])
+    monkeypatch.setattr(CounterAll, "sort_cps_by_loadmanagement_prios_nested", mock_sort_cps)
+
+    c = CounterAll()
+
+    # execution
+    result = list(c.generator_cps_by_loadmanagement_prios([cp1, cp2, cp3]))
+
+    # assert
+    assert len(result) == 3
+    assert result[0] == (cp3, [cp3, cp1, cp2])
+    assert result[1] == (cp1, [cp1, cp2])
+    assert result[2] == (cp2, [cp2])
