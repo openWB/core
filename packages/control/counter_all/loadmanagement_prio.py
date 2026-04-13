@@ -39,8 +39,10 @@ class LoadmanagementPrioMixin:
         log.debug([[f"LP {cp.num}" for cp in group] for group in sorted_cps])
         for group in sorted_cps:
             cp: Chargepoint
-            for cp in group:
-                yield cp, group
+            while len(group) > 0:
+                cp = group[0]
+                yield cp, group.copy()
+                group.pop(0)
 
     def sort_cps_by_loadmanagement_prios_nested(self: LoadmanagementPrioProtocol,
                                                 filtered_cps: List[Chargepoint]) -> List[List[Chargepoint]]:
