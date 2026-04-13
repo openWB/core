@@ -25,7 +25,8 @@ class AdditionalCurrent:
             if preferenced_chargepoints:
                 common.update_raw_data(preferenced_chargepoints)
                 log.info(f"Mode-Tuple {mode_tuple[0]} - {mode_tuple[1]} - {mode_tuple[2]}, Zähler {counter.num}")
-                for cp, group in data.data.counter_all_data.generator_cps_by_loadmanagement_prios(preferenced_chargepoints):
+                for cp, group in data.data.counter_all_data.generator_cps_by_loadmanagement_prios(
+                        preferenced_chargepoints):
                     missing_currents, counts = common.get_missing_currents_left(group)
                     available_currents, limit = Loadmanagement().get_available_currents(missing_currents, counter, cp)
                     log.debug(f"cp {cp.num} available currents {available_currents} missing currents "
