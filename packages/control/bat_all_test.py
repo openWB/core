@@ -184,9 +184,9 @@ def default_chargepoint_factory() -> List[Chargepoint]:
 class BatControlParams:
     name: str
     expected_power_limit_bat: Optional[float]
-    power_limit_mode: str = BatPowerLimitMode.MODE_NO_DISCHARGE.value
-    power_limit_condition: str = BatPowerLimitCondition.VEHICLE_CHARGING.value
-    bat_manual_mode: str = ManualMode.MANUAL_DISABLE.value
+    power_limit_mode: str = BatPowerLimitMode.MODE_NO_DISCHARGE
+    power_limit_condition: str = BatPowerLimitCondition.VEHICLE_CHARGING
+    bat_manual_mode: str = ManualMode.MANUAL_DISABLE
     cps: List[Chargepoint] = field(default_factory=default_chargepoint_factory)
     power_limit_controllable: bool = True
     bat_power: float = -10
@@ -206,42 +206,42 @@ class BatControlParams:
 
 cases = [
     BatControlParams("Speicher nicht regelbar", None, power_limit_controllable=False,
-                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
+                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE),
     BatControlParams("Disclaimer nicht akzeptiert", None, bat_control_permitted=False,
-                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
+                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE),
     BatControlParams("Speichersteuerung deaktiviert", None, bat_control_activated=False,
-                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
+                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE),
     # Manuelle Steuerung
     BatControlParams("Manuelle Steuerung, Speichersteuerung deaktiviert", None,
-                     power_limit_condition=BatPowerLimitCondition.MANUAL.value,
-                     bat_manual_mode=ManualMode.MANUAL_DISABLE.value),
+                     power_limit_condition=BatPowerLimitCondition.MANUAL,
+                     bat_manual_mode=ManualMode.MANUAL_DISABLE),
     BatControlParams("Manuelle Steuerung, Entladung sperren", 0,
-                     power_limit_condition=BatPowerLimitCondition.MANUAL.value,
-                     bat_manual_mode=ManualMode.MANUAL_LIMIT.value),
+                     power_limit_condition=BatPowerLimitCondition.MANUAL,
+                     bat_manual_mode=ManualMode.MANUAL_LIMIT),
     BatControlParams("Manuelle Steuerung, Begrenzung Hausverbrauch", -456,
-                     power_limit_condition=BatPowerLimitCondition.MANUAL.value,
-                     bat_manual_mode=ManualMode.MANUAL_LIMIT.value,
-                     power_limit_mode=BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION.value),
+                     power_limit_condition=BatPowerLimitCondition.MANUAL,
+                     bat_manual_mode=ManualMode.MANUAL_LIMIT,
+                     power_limit_mode=BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION),
     BatControlParams("Manuelle Steuerung, Ladung PV Überschuss", 654,
-                     power_limit_condition=BatPowerLimitCondition.MANUAL.value,
-                     bat_manual_mode=ManualMode.MANUAL_LIMIT.value,
-                     power_limit_mode=BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value),
+                     power_limit_condition=BatPowerLimitCondition.MANUAL,
+                     bat_manual_mode=ManualMode.MANUAL_LIMIT,
+                     power_limit_mode=BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION),
     BatControlParams("Manuelle Steuerung, Aktive Ladung", 5000,
-                     power_limit_condition=BatPowerLimitCondition.MANUAL.value,
-                     bat_manual_mode=ManualMode.MANUAL_CHARGE.value),
+                     power_limit_condition=BatPowerLimitCondition.MANUAL,
+                     bat_manual_mode=ManualMode.MANUAL_CHARGE),
     # Wenn Fahrzeuge Laden
     BatControlParams("Fahrzeuge laden, Begrenzung immer, keine LP im Sofortladen", None, cps=[],
-                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
+                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE),
     BatControlParams("Fahrzeuge laden, Begrenzung immer, Speicher lädt", None, bat_power=100,
-                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
+                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE),
     BatControlParams("Fahrzeuge laden, Begrenzung immer,Einspeisung", None, evu_power=-110,
-                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
+                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE),
     BatControlParams("Fahrzeuge laden, Begrenzung immer", 0,
-                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
+                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE),
     BatControlParams("Fahrzeuge laden, Begrenzung Hausverbrauch", -456,
-                     power_limit_mode=BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION.value),
+                     power_limit_mode=BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION),
     BatControlParams("Fahrzeuge laden, Ladung PV Überschuss", 654,
-                     power_limit_mode=BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value),
+                     power_limit_mode=BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION),
 ]
 
 
@@ -290,36 +290,36 @@ def test_active_bat_control(params: BatControlParams, data_, monkeypatch):
 cases = [
     # Nach Preisgrenze
     BatControlParams("Preisgrenze, Grenze deaktiviert, Eigenregelung", None,
-                     power_limit_condition=BatPowerLimitCondition.PRICE_LIMIT.value,
+                     power_limit_condition=BatPowerLimitCondition.PRICE_LIMIT,
                      price_limit_activated=False,
                      price_limit=0.40,
-                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
+                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE),
     BatControlParams("Preisgrenze, Entladung sperren, Grenze unterschritten", 0,
-                     power_limit_condition=BatPowerLimitCondition.PRICE_LIMIT.value,
+                     power_limit_condition=BatPowerLimitCondition.PRICE_LIMIT,
                      price_limit_activated=True,
                      price_limit=0.30,
-                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
+                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE),
     BatControlParams("Preisgrenze, Überschuss Laden, Grenze unterschritten", 654,
-                     power_limit_condition=BatPowerLimitCondition.PRICE_LIMIT.value,
+                     power_limit_condition=BatPowerLimitCondition.PRICE_LIMIT,
                      price_limit_activated=True,
                      price_limit=0.30,
-                     power_limit_mode=BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value),
+                     power_limit_mode=BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION),
     BatControlParams("Preisgrenze, Entladung sperren, Grenze greift nicht", None,
-                     power_limit_condition=BatPowerLimitCondition.PRICE_LIMIT.value,
+                     power_limit_condition=BatPowerLimitCondition.PRICE_LIMIT,
                      price_limit_activated=True,
                      price_limit=0.10,
-                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
+                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE),
     # Aktive Ladung
     BatControlParams("Preisgrenze, Grenze deaktiviert, Eigenregelung", None,
-                     power_limit_condition=BatPowerLimitCondition.PRICE_LIMIT.value,
+                     power_limit_condition=BatPowerLimitCondition.PRICE_LIMIT,
                      price_charge_activated=False,
                      charge_limit=0.40),
     BatControlParams("Preisgrenze, Grenze unterschritten, Ladung", 5000,
-                     power_limit_condition=BatPowerLimitCondition.PRICE_LIMIT.value,
+                     power_limit_condition=BatPowerLimitCondition.PRICE_LIMIT,
                      price_charge_activated=True,
                      charge_limit=0.30),
     BatControlParams("Preisgrenze, Grenze greift nicht, Eigenregelung", None,
-                     power_limit_condition=BatPowerLimitCondition.PRICE_LIMIT.value,
+                     power_limit_condition=BatPowerLimitCondition.PRICE_LIMIT,
                      price_charge_activated=True,
                      charge_limit=0.10),
 ]
