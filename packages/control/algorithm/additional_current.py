@@ -1,5 +1,6 @@
 import logging
 
+from control import data
 from control.algorithm import common
 from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_ADDITIONAL_CURRENT
 from control.limiting_value import LoadmanagementLimit
@@ -24,9 +25,8 @@ class AdditionalCurrent:
             if preferenced_chargepoints:
                 common.update_raw_data(preferenced_chargepoints)
                 log.info(f"Mode-Tuple {mode_tuple[0]} - {mode_tuple[1]} - {mode_tuple[2]}, Zähler {counter.num}")
-                while len(preferenced_chargepoints):
-                    cp = preferenced_chargepoints[0]
-                    missing_currents, counts = common.get_missing_currents_left(preferenced_chargepoints)
+                for cp, group in data.data.counter_all_data.generator_cps_by_loadmanagement_prios(preferenced_chargepoints):
+                    missing_currents, counts = common.get_missing_currents_left(group)
                     available_currents, limit = Loadmanagement().get_available_currents(missing_currents, counter, cp)
                     log.debug(f"cp {cp.num} available currents {available_currents} missing currents "
                               f"{missing_currents} limit {limit.message}")
@@ -40,7 +40,6 @@ class AdditionalCurrent:
                         cp.data.control_parameter.min_current,
                         current,
                         cp)
-                    preferenced_chargepoints.pop(0)
             if preferenced_cps_without_set_current:
                 for cp in preferenced_cps_without_set_current:
                     cp.data.set.current = cp.data.set.target_current
