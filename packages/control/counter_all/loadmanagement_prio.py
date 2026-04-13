@@ -1,6 +1,5 @@
 import logging
-from pprint import pprint
-from typing import Dict, Generator, Iterable, List, Tuple
+from typing import Dict, Generator, List, Tuple
 
 from control.algorithm.filter_chargepoints import get_preferenced_chargepoint
 from control.chargepoint.chargepoint import Chargepoint
@@ -37,7 +36,7 @@ class LoadmanagementPrioMixin:
             filtered_cps: List[Chargepoint]) -> Generator[Tuple[Chargepoint, List[Chargepoint]], None, None]:
         sorted_cps = self.sort_cps_by_loadmanagement_prios_nested(filtered_cps)
         log.debug("Ladepunkte sortiert nach Prioritätensteuerung: ")
-        log.debug(pprint({[f"LP {cp.num}" for group in sorted_cps for cp in group]}))
+        log.debug([[f"LP {cp.num}" for cp in group] for group in sorted_cps])
         for group in sorted_cps:
             cp: Chargepoint
             for cp in group:
@@ -56,13 +55,14 @@ class LoadmanagementPrioMixin:
                     sorted_grouped_cps = get_preferenced_chargepoint(grouped_cps)
                     sorted_cps.append(sorted_grouped_cps)
             elif entry["type"] == "group":
-                grouped_cps, sorted_grouped_cps = [], []
+                sorted_grouped_cps = []
                 for group_entry in entry["children"]:
+                    grouped_cps = []
                     for cp in filtered_cps:
                         if cp.data.config.ev == group_entry["id"]:
                             grouped_cps.append(cp)
                     sorted_grouped_cps.extend(get_preferenced_chargepoint(grouped_cps))
-                if len(grouped_cps) > 0:
+                if len(sorted_grouped_cps) > 0:
                     sorted_cps.append(sorted_grouped_cps)
         return sorted_cps
 
