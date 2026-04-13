@@ -223,7 +223,7 @@ const gridData = computed((): DailyTotalsItem => {
     id: 'grid',
     title: 'Zähler',
     level: 'primary',
-    icon: 'speed',
+    icon: 'grid',
   };
   if (gridPower.value !== undefined) {
     data = {
@@ -236,7 +236,7 @@ const gridData = computed((): DailyTotalsItem => {
         imported: mqttStore.counterDailyImported('textValue') as string,
         exported: mqttStore.counterDailyExported('textValue') as string,
       },
-      color: mqttStore.getGridComponentColor(gridID)
+      color: mqttStore.getGridComponentColor(gridID),
     };
   }
   return data;
@@ -251,7 +251,7 @@ const secondaryCounterData = computed((): DailyTotalsItem[] => {
         id: `counter-${id}`,
         title: name,
         level: 'secondary',
-        icon: 'speed',
+        icon: 'counter',
         power: mqttStore.getCounterPower('textValue', id) as string,
         powerValue: mqttStore.getCounterPower('value', id) as number,
         today: {
@@ -274,7 +274,7 @@ const individualChargePointData = computed((): DailyTotalsItem[] => {
         id: `chargepoint-${id}`,
         title: name,
         level: 'secondary',
-        icon: 'ev_station',
+        icon: 'chargepoint',
         power: mqttStore.chargePointPower(id, 'textValue') as string,
         powerValue: mqttStore.chargePointPower(id, 'value') as number,
         today: {
@@ -304,7 +304,7 @@ const individualBatteryData = computed((): DailyTotalsItem[] => {
         id: `battery-${id}`,
         title: name,
         level: 'secondary',
-        icon: 'battery_full',
+        icon: 'battery',
         soc: mqttStore.batterySoc(id),
         power: mqttStore.batteryPower(id, 'textValue') as string,
         powerValue: mqttStore.batteryPower(id, 'value') as number,
@@ -327,7 +327,7 @@ const componentData = computed((): DailyTotalsItem[] => {
       id: 'battery',
       title: 'Speicher',
       level: 'primary',
-      icon: 'battery_full',
+      icon: 'battery',
     };
     item = {
       ...item,
@@ -350,7 +350,7 @@ const componentData = computed((): DailyTotalsItem[] => {
       id: 'pv',
       title: 'PV',
       level: 'primary',
-      icon: 'solar_power',
+      icon: 'pv',
       power: mqttStore.getPvPower('textValue') as string,
       powerValue: mqttStore.getPvPower('value') as number,
       today: { exported: mqttStore.pvDailyExported('textValue') as string },
@@ -363,7 +363,7 @@ const componentData = computed((): DailyTotalsItem[] => {
       id: 'house',
       title: 'Haus',
       level: 'primary',
-      icon: 'home',
+      icon: 'house',
       power: mqttStore.getHomePower('textValue') as string,
       powerValue: mqttStore.getHomePower('value') as number,
       today: { imported: mqttStore.homeDailyYield('textValue') as string },
@@ -373,9 +373,9 @@ const componentData = computed((): DailyTotalsItem[] => {
   if (chargePointConfigured.value || chargePointSumPowerAvailable.value) {
     let item: DailyTotalsItem = {
       id: 'chargepoint',
-      title: mqttStore.chargePointIds.length > 1  ? 'Ladepunkte' : 'Ladepunkt',
+      title: mqttStore.chargePointIds.length > 1 ? 'Ladepunkte' : 'Ladepunkt',
       level: 'primary',
-      icon: 'ev_station',
+      icon: 'chargepoint',
     };
     if (chargePointSumPowerAvailable.value) {
       item = {

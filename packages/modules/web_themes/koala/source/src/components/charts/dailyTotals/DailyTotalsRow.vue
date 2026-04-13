@@ -3,7 +3,7 @@
     <!-- Icon -->
     <div class="col-icon">
       <BaseIcon
-        :type="props.item.id"
+        :iconName="props.item.icon"
         :color="props.item.color"
         class="base-icon"
       />

@@ -16,7 +16,7 @@ import PvIcon from 'src/components/svgIcons/PvIcon.vue';
 import HouseIcon from 'src/components/svgIcons/HouseIcon.vue';
 
 const props = defineProps<{
-  type: string;
+  iconName: string;
   color?: string | null;
 }>();
 
@@ -31,8 +31,6 @@ const iconMap = {
 };
 
 const iconComponent = computed(() => {
-  // handle secondary IDs like "battery-1"
-  const iconName = props.type.split('-')[0];
-  return iconMap[iconName] || null;
+  return iconMap[props.iconName] || null;
 });
 </script>
