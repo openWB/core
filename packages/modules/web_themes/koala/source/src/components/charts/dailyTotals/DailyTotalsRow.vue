@@ -2,12 +2,7 @@
   <div class="component-container">
     <!-- Icon -->
     <div class="col-icon">
-      <q-icon
-        :name="props.item.icon"
-        class="icon"
-        size="2rem"
-        :style="props.item.color && { color: props.item.color }"
-      />
+      <BaseIcon :type="props.item.id" :color="props.item.color" class="base-icon" />
     </div>
     <!-- Title -->
     <div class="col-title text-weight-bold">
@@ -92,6 +87,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
+import BaseIcon from 'src/components/icons/BaseIcon.vue';
 import type { DailyTotalsItem } from 'src/components/models/daily-totals-model';
 
 const mqttStore = useMqttStore();
@@ -162,9 +158,18 @@ const arrowDirection = (id: string) => {
   display: flex;
   justify-content: center;
 }
-.icon {
+.base-icon {
   width: 1.75rem;
+  height: 1.75rem;
   color: var(--q-diagram-icon);
+}
+
+:deep(.base-icon svg)  {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+  vertical-align: middle;
+  overflow: hidden;
 }
 .col-title {
   flex: 0 0 5.5rem;

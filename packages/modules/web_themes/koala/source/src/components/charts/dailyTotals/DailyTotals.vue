@@ -229,7 +229,7 @@ const gridData = computed((): DailyTotalsItem => {
     data = {
       ...data,
       title: 'Netz',
-      icon: 'factory',
+      icon: 'grid',
       power: mqttStore.getCounterPower('textValue') as string,
       powerValue: mqttStore.getCounterPower('value') as number,
       today: {
