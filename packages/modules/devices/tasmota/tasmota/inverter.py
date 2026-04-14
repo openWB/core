@@ -47,20 +47,27 @@ class TasmotaInverter(AbstractInverter):
             currents[self.__phase-1] = (response['StatusSNS']['ENERGY']['Current']), 0.0, 0.0
             self.peak_filter.check_values(power)
             _, exported = self.sim_counter.sim_count(power)
-
-            inverter_state = InverterState(
-                power=power,
-                currents=currents,
-                exported=exported
-            )
-        else:
+        elif 'Itron' in response['StatusSNS']:
             power = float(response['StatusSNS']['Itron']['Power']) * -1
             exported = float(response['StatusSNS']['Itron']['E_out']*1000)
             _, exported = self.peak_filter.check_values(power, None, exported)
-            inverter_state = InverterState(
-                power=power,
-                exported=exported
-            )
+        elif 'MT681' in response['StatusSNS']:
+            power = float(response['StatusSNS']['MT681']['Watt_summe'])
+            exported = float(response['StatusSNS']['MT681']['Total_out']*1000)
+            _, exported = self.peak_filter.check_values(power, None, exported)
+        elif 'eBZ' in response['StatusSNS']:
+            power = float(response['StatusSNS']['eBZ']['Power'])
+            exported = float(response['StatusSNS']['eBZ']['E_out']*1000)
+            _, exported = self.peak_filter.check_values(power, None, exported)
+        else:
+            raise ValueError("Nicht unterstützter Tasmota Zählertyp. Bitte an den Support wenden.")
+
+        inverter_state = InverterState(
+            power=power,
+            exported=exported
+        )
+        if 'currents' in locals():
+            inverter_state.currents = currents
 
         self.store.set(inverter_state)
 
