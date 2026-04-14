@@ -1247,10 +1247,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         'color',
         null,
       ) as string | null;
-      if (!color || color === DEFAULT_COLOR) {
-        return null;
-      }
-      return color;
+      return resolveComponentColor(color, DEFAULT_COLOR);
     };
   });
 
@@ -2921,7 +2918,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         `openWB/system/device/+/component/${batteryId}/config`,
       ) as Record<string, ComponentConfiguration>;
       const config = Object.values(configurations)[0];
-      return config?.color === DEFAULT_COLOR ? null : (config?.color ?? null);
+      return resolveComponentColor(config?.color, DEFAULT_COLOR);
     };
   });
 
@@ -2978,6 +2975,23 @@ export const useMqttStore = defineStore('mqtt', () => {
         `openWB/vehicle/${vehicleId}/soc_module/config`,
       ) as { type: string } | null;
       return socConfig?.type;
+    };
+  });
+
+  /**
+   * Get the vehicle user defined color identified by the vehicle id
+   * @param vehicleId vehicle id
+   * @returns string | null
+   */
+  const vehicleUserDefinedColor = computed(() => {
+    return (vehicleId: number): string | null => {
+      const DEFAULT_COLOR = '#007bff';
+      const color = getValue.value(
+        `openWB/vehicle/${vehicleId}/color`,
+        undefined,
+        null,
+      ) as string | null;
+      return resolveComponentColor(color, DEFAULT_COLOR);
     };
   });
 
@@ -3756,6 +3770,19 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
+   * Get the secondary counter color identified by the component ID
+   * @param componentId component ID
+   * @returns string | null
+   */
+  const getSecondaryCounterColor = computed(() => {
+    return (componentId: number) => {
+      const DEFAULT_COLOR = '#dc3545';
+      const color = getComponentAttributes.value(componentId)?.color;
+      return resolveComponentColor(color, DEFAULT_COLOR);
+    };
+  });
+
+  /**
    * Get the power meter(counter) name identified by the Grid ID
    * @param counterId counter ID
    * @returns string
@@ -3770,16 +3797,15 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
-   * Get pv component color
+   * Get grid component color
    * @param componentId component ID
    * @returns GridConfiguration | null
    */
   const getGridComponentColor = computed(() => {
     return (componentId: number) => {
       const DEFAULT_COLOR = '#dc3545';
-      return getComponentAttributes.value(componentId)?.color === DEFAULT_COLOR
-        ? null
-        : (getComponentAttributes.value(componentId)?.color ?? null);
+      const color = getComponentAttributes.value(componentId)?.color;
+      return resolveComponentColor(color, DEFAULT_COLOR);
     };
   });
 
@@ -3956,9 +3982,8 @@ export const useMqttStore = defineStore('mqtt', () => {
   const getPvComponentColor = computed(() => {
     return (componentId: number) => {
       const DEFAULT_COLOR = '#28a745';
-      return getComponentAttributes.value(componentId)?.color === DEFAULT_COLOR
-        ? null
-        : (getComponentAttributes.value(componentId)?.color ?? null);
+      const color = getComponentAttributes.value(componentId)?.color;
+    return resolveComponentColor(color, DEFAULT_COLOR);
     };
   });
 
@@ -4047,6 +4072,15 @@ export const useMqttStore = defineStore('mqtt', () => {
     };
   });
 
+  /* helpers */
+  const resolveComponentColor = (
+    color: string | null | undefined,
+    defaultColor: string,
+  ) => {
+    if (!color || color === defaultColor) return null;
+    return color;
+  };
+
   // exports
   return {
     topics,
@@ -4134,6 +4168,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     vehicleInfo,
     vehicleConnectionState,
     vehicleSocType,
+    vehicleUserDefinedColor,
     vehicleSocValue,
     vehicleSocManualValue,
     vehicleForceSocUpdate,
@@ -4198,6 +4233,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     getGridId,
     getAllCounterIds,
     getSecondaryCounterIds,
+    getSecondaryCounterColor,
     getComponentName,
     getGridComponentColor,
     getCounterPower,
@@ -4217,5 +4253,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     // electricity tariff provider
     etProviderConfigured,
     etPrices,
+    // helpers
+    resolveComponentColor,
   };
 });

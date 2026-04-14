@@ -101,6 +101,8 @@ const selectedData = computed((): GraphDataPoint[] => {
 });
 
 const chargePointIds = computed(() => mqttStore.chargePointIds);
+const gridId = computed(() => mqttStore.getGridId);
+const pvId = computed(() => mqttStore.getPvId);
 const chargePointNames = computed(() => mqttStore.chargePointName);
 
 const gridMeterName = computed(() => {
@@ -126,15 +128,27 @@ const getGlobalColor = (name: string, fallback?: string) => {
   return fromRoot || fallback;
 };
 
+const hexColorToRgba = (hex: string, opacity = 1) => {
+  hex = hex.replace('#', '');
+  const num = parseInt(hex, 16);
+  const r = (num >> 16) & 255;
+  const g = (num >> 8) & 255;
+  const b = num & 255;
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+};
+
 const secondaryCounterDatasets = computed(() =>
   mqttStore.getSecondaryCounterIds
     .map((id) => {
+      const baseColor =
+        mqttStore.getSecondaryCounterColor(id) ||
+        getGlobalColor('--q-secondary-counter-stroke');
       return {
         label: mqttStore.getComponentName(id),
         category: 'component',
         unit: 'kW',
-        borderColor: getGlobalColor('--q-secondary-counter-stroke'),
-        backgroundColor: getGlobalColor('--q-secondary-counter-fill'),
+        borderColor: baseColor,
+        backgroundColor: hexColorToRgba(baseColor, 0.1),
         data: selectedData.value.map((item) => ({
           x: item.timestamp * 1000,
           y: item[`counter${id}-power`] ?? 0,
@@ -151,23 +165,29 @@ const secondaryCounterDatasets = computed(() =>
 );
 
 const chargePointDatasets = computed(() =>
-  chargePointIds.value.map((cpId) => ({
-    label: `${chargePointNames.value(cpId)}`,
-    category: 'chargepoint',
-    unit: 'kW',
-    borderColor: getGlobalColor('--q-charge-point-stroke'),
-    backgroundColor: getGlobalColor('--q-charge-point-fill'),
-    data: selectedData.value.map((item) => ({
-      x: item.timestamp * 1000,
-      y: item[`cp${cpId}-power`] || 0,
-    })),
-    borderWidth: 2,
-    pointRadius: 0,
-    pointHoverRadius: 4,
-    pointHitRadius: 5,
-    fill: true,
-    yAxisID: 'y',
-  })),
+  chargePointIds.value.map((cpId) => {
+    const baseColor =
+      mqttStore.chargePointUserDefinedColor(cpId) ||
+      getGlobalColor('--q-charge-point-stroke');
+
+    return {
+      label: `${chargePointNames.value(cpId)}`,
+      category: 'chargepoint',
+      unit: 'kW',
+      borderColor: baseColor,
+      backgroundColor: hexColorToRgba(baseColor, 0.1),
+      data: selectedData.value.map((item) => ({
+        x: item.timestamp * 1000,
+        y: item[`cp${cpId}-power`] || 0,
+      })),
+      borderWidth: 2,
+      pointRadius: 0,
+      pointHoverRadius: 4,
+      pointHitRadius: 5,
+      fill: true,
+      yAxisID: 'y',
+    };
+  }),
 );
 
 const vehicleDatasets = computed(() =>
@@ -175,11 +195,14 @@ const vehicleDatasets = computed(() =>
     .map((vehicle) => {
       const socKey = `ev${vehicle.id}-soc` as keyof GraphDataPoint;
       if (selectedData.value.some((item) => socKey in item)) {
+        const baseColor =
+          mqttStore.vehicleUserDefinedColor(vehicle.id) ||
+          getGlobalColor('--q-vehicle-stroke');
         return {
           label: `${vehicle.name} SoC`,
           category: 'vehicle',
           unit: '%',
-          borderColor: '#9F8AFF',
+          borderColor: baseColor,
           borderWidth: 2,
           borderDash: [10, 5],
           pointRadius: 0,
@@ -230,12 +253,15 @@ const chartLabels = computed(() => {
 const lineChartData = computed(() => {
   let datasets = [];
   if (gridMeterName.value !== undefined) {
+    const baseColor =
+      mqttStore.getGridComponentColor(gridId.value) ||
+      getGlobalColor('--q-grid-stroke');
     datasets.push({
       label: gridMeterName.value,
       category: 'component',
       unit: 'kW',
-      borderColor: getGlobalColor('--q-grid-stroke'),
-      backgroundColor: getGlobalColor('--q-grid-fill'),
+      borderColor: baseColor,
+      backgroundColor: hexColorToRgba(baseColor, 0.1),
       data: selectedData.value.map((item) => ({
         x: item.timestamp * 1000,
         y: item.grid,
@@ -269,12 +295,15 @@ const lineChartData = computed(() => {
   }
   datasets.push(...secondaryCounterDatasets.value);
   if (mqttStore.getPvConfigured) {
+    const baseColor =
+      mqttStore.getPvComponentColor(pvId.value) ||
+      getGlobalColor('--q-pv-stroke');
     datasets.push({
       label: 'PV ges.',
       category: 'component',
       unit: 'kW',
-      borderColor: getGlobalColor('--q-pv-stroke'),
-      backgroundColor: getGlobalColor('--q-pv-fill'),
+      borderColor: baseColor,
+      backgroundColor: hexColorToRgba(baseColor, 0.1),
       data: selectedData.value.map((item) => ({
         x: item.timestamp * 1000,
         y: item['pv-all'],

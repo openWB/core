@@ -49,6 +49,7 @@ $battery-fill: #ba712833;
 $battery-fill-flow-diagram: #c6a583;
 $charge-point-stroke: #5c93d1;
 $charge-point-fill: #5c93d14d;
+$vehicle-stroke: #9F8AFF;
 $charge-plan-link-button: #6b757d;
 $diagram-icon: #717171;
 // Light theme (default)
@@ -80,6 +81,7 @@ $diagram-icon: #717171;
   --q-battery-fill-flow-diagram: #{$battery-fill-flow-diagram};
   --q-charge-point-stroke: #{$charge-point-stroke};
   --q-charge-point-fill: #{$charge-point-fill};
+  --q-vehicle-stroke: #{$vehicle-stroke};
   --q-charge-plan-link-button: #{$charge-plan-link-button};
   --q-diagram-icon: #{$diagram-icon};
 
@@ -301,6 +303,7 @@ $dark-charge-plan-link-button: #75787a;
   --q-battery-fill: #{$battery-fill};
   --q-charge-point-stroke: #{$charge-point-stroke};
   --q-charge-point-fill: #{$charge-point-fill};
+  --q-vehicle-stroke: #{$vehicle-stroke};
   --q-battery-fill-flow-diagram: #{$battery-fill-flow-diagram};
   --q-dark-daily-totals-grid-fill: #{$dark-daily-totals-grid-fill};
   --q-dark-daily-totals-grid-stroke: #{$dark-daily-totals-grid-stroke};
