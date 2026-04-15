@@ -342,7 +342,9 @@ const svgComponents = computed((): FlowComponent[] => {
       label: ['EVU', absoluteValueObject(gridPower.value).textValue],
       powerValue: Number(gridPower.value.value),
       iconComponent: GridIcon,
-      iconColor: mqttStore.getGridComponentColor(gridID.value) || 'var(--q-diagram-icon)',
+      iconColor:
+        mqttStore.getGridComponentColor(gridID.value) ||
+        'var(--q-diagram-icon)',
     });
   }
 
@@ -376,7 +378,8 @@ const svgComponents = computed((): FlowComponent[] => {
       label: ['PV', absoluteValueObject(pvPower.value).textValue],
       powerValue: Number(pvPower.value.value),
       iconComponent: PvIcon,
-      iconColor: mqttStore.getPvComponentColor(pvId.value) || 'var(--q-diagram-icon)',
+      iconColor:
+        mqttStore.getPvComponentColor(pvId.value) || 'var(--q-diagram-icon)',
     });
   }
 
@@ -822,16 +825,7 @@ const svgRectWidth = computed(
               :width="svgIconWidth"
               :height="svgIconHeight"
             >
-              <div
-                style="
-                  width: 100%;
-                  height: 100%;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                "
-                :style="{ color: component.iconColor }"
-              >
+              <div class="icon-wrapper" :style="{ color: component.iconColor }">
                 <component
                   :is="component.iconComponent"
                   style="width: 100%; height: 100%"
@@ -1113,5 +1107,12 @@ text .fill-dark {
 
 .vehicle circle:not(.soc) {
   fill: color-mix(in srgb, var(--q-accent) 50%, transparent);
+}
+.icon-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>
