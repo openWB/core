@@ -5,6 +5,7 @@ from modules.common.configurable_device import ComponentFactoryByType, Configura
 from modules.common.abstract_device import DeviceDescriptor
 from modules.devices.kostal.kostal_piko import counter
 from modules.devices.kostal.kostal_piko import inverter
+from modules.devices.kostal.kostal_piko import bat
 from modules.devices.kostal.kostal_piko.config import (KostalPiko, KostalPikoCounterSetup,
                                                        KostalPikoInverterSetup, KostalPikoBatSetup)
 
@@ -22,9 +23,9 @@ def create_device(device_config: KostalPiko):
                                            ip_address=device_config.configuration.ip_address)
 
     def create_bat_component(component_config: KostalPikoBatSetup):
-        return inverter.KostalPikoBat(component_config,
-                                      device_id=device_config.id,
-                                      ip_address=device_config.configuration.ip_address)
+        return bat.KostalPikoBat(component_config,
+                                 device_id=device_config.id,
+                                 ip_address=device_config.configuration.ip_address)
 
     return ConfigurableDevice(
         device_config=device_config,

@@ -3,7 +3,7 @@ import logging
 from typing import Any, List, Tuple, TypedDict
 
 from modules.common import req
-from modules.common.abstract_device import AbstractCounter
+from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -21,7 +21,7 @@ class KwargsDict(TypedDict):
     ip_address: str
 
 
-class KostalPikoBat(AbstractCounter):
+class KostalPikoBat(AbstractBat):
     def __init__(self, component_config: KostalPikoBatSetup, **kwargs: Any) -> None:
         self.component_config = component_config
         self.kwargs: KwargsDict = kwargs
