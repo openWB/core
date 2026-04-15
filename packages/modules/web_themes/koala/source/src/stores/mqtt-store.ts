@@ -2985,7 +2985,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const vehicleUserDefinedColor = computed(() => {
     return (vehicleId: number): string | null => {
-      const DEFAULT_COLOR = '#007bff';
+      const DEFAULT_COLOR = '#17a2b8';
       const color = getValue.value(
         `openWB/vehicle/${vehicleId}/color`,
         undefined,
