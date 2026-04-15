@@ -3,6 +3,13 @@ import { useMqttStore } from 'src/stores/mqtt-store';
 import { ref, computed, watch } from 'vue';
 import type { SvgSize, FlowComponent } from './energy-flow-chart-models';
 import type { ValueObject } from 'src/stores/mqtt-store-model';
+//SVG Icons
+import GridIcon from 'src/components/svgIcons/GridIcon.vue';
+import HouseIcon from 'src/components/svgIcons/HouseIcon.vue';
+import PvIcon from 'src/components/svgIcons/PvIcon.vue';
+import BatteryIcon from 'src/components/svgIcons/BatteryIcon.vue';
+import ChargePointIcon from 'src/components/svgIcons/ChargePointIcon.vue';
+import VehicleIcon from 'src/components/svgIcons/VehicleIcon.vue';
 
 const mqttStore = useMqttStore();
 
@@ -189,11 +196,10 @@ const chargePoint1ConnectedVehicleChargeMode = computed(() => {
   return translateChargeMode(mode.value || '');
 });
 
-const chargePoint1ConnectedVehicleName = computed(
-  () =>
-    mqttStore.chargePointConnectedVehicleInfo(connectedChargePoints.value[0])
-      .value?.name || '---',
-);
+const chargePoint1ConnectedVehicle = computed(() => {
+  const cpId = connectedChargePoints.value[0];
+  return mqttStore.chargePointConnectedVehicleInfo(cpId).value || null;
+});
 
 const chargePoint1ConnectedVehicleSoc = computed(() =>
   mqttStore.chargePointConnectedVehicleSoc(connectedChargePoints.value[0]),
@@ -213,10 +219,10 @@ const chargePoint2ConnectedVehicleChargeMode = computed(() => {
   return translateChargeMode(mode.value || '');
 });
 
-const chargePoint2ConnectedVehicleName = computed(
+const chargePoint2ConnectedVehicle = computed(
   () =>
     mqttStore.chargePointConnectedVehicleInfo(connectedChargePoints.value[1])
-      .value?.name || '---',
+      .value || null,
 );
 
 const chargePoint2ConnectedVehicleSoc = computed(() =>
@@ -237,10 +243,10 @@ const chargePoint3ConnectedVehicleChargeMode = computed(() => {
   return translateChargeMode(mode.value || '');
 });
 
-const chargePoint3ConnectedVehicleName = computed(
+const chargePoint3ConnectedVehicle = computed(
   () =>
     mqttStore.chargePointConnectedVehicleInfo(connectedChargePoints.value[2])
-      .value?.name || '---',
+      .value || null,
 );
 
 const chargePoint3ConnectedVehicleSoc = computed(() =>
@@ -257,6 +263,9 @@ const chargePointSumDischarging = computed(
 const chargePointSumCharging = computed(
   () => Number(chargePointSumPower.value.value) > 0,
 );
+
+const gridID = computed(() => mqttStore.getGridId);
+const pvId = computed(() => mqttStore.getPvId);
 
 ///////////////////// Set animation speed //////////////////////////
 
@@ -332,7 +341,8 @@ const svgComponents = computed((): FlowComponent[] => {
       position: { row: 0, column: 0 },
       label: ['EVU', absoluteValueObject(gridPower.value).textValue],
       powerValue: Number(gridPower.value.value),
-      icon: 'icons/owbGrid.svg',
+      iconComponent: GridIcon,
+      iconColor: mqttStore.getGridComponentColor(gridID.value) || 'var(--q-diagram-icon)',
     });
   }
 
@@ -348,7 +358,8 @@ const svgComponents = computed((): FlowComponent[] => {
       position: { row: 0, column: 2 },
       label: ['Haus', absoluteValueObject(homePower.value).textValue],
       powerValue: Number(homePower.value.value),
-      icon: 'icons/owbHouse.svg',
+      iconComponent: HouseIcon,
+      iconColor: 'var(--q-diagram-icon)',
     });
   }
 
@@ -364,7 +375,8 @@ const svgComponents = computed((): FlowComponent[] => {
       position: { row: 1, column: 0 },
       label: ['PV', absoluteValueObject(pvPower.value).textValue],
       powerValue: Number(pvPower.value.value),
-      icon: 'icons/owbPV.svg',
+      iconComponent: PvIcon,
+      iconColor: mqttStore.getPvComponentColor(pvId.value) || 'var(--q-diagram-icon)',
     });
   }
 
@@ -381,7 +393,8 @@ const svgComponents = computed((): FlowComponent[] => {
       label: ['Speicher', absoluteValueObject(batteryPower.value).textValue],
       powerValue: Number(batteryPower.value.value),
       soc: batterySoc.value,
-      icon: 'icons/owbBattery.svg',
+      iconComponent: BatteryIcon,
+      iconColor: 'var(--q-diagram-icon)',
     });
   }
 
@@ -406,7 +419,11 @@ const svgComponents = computed((): FlowComponent[] => {
           absoluteValueObject(chargePoint1Power.value).textValue,
         ],
         powerValue: Number(chargePoint1Power.value.value),
-        icon: 'icons/owbChargePoint.svg',
+        iconComponent: ChargePointIcon,
+        iconColor:
+          mqttStore.chargePointUserDefinedColor(
+            connectedChargePoints.value[0],
+          ) || 'var(--q-diagram-icon)',
       });
 
       if (chargePoint1VehicleConnected.value) {
@@ -426,11 +443,15 @@ const svgComponents = computed((): FlowComponent[] => {
             column: connectedChargePoints.value.length > 1 ? 0 : 1,
           },
           label: [
-            chargePoint1ConnectedVehicleName.value || '---',
+            chargePoint1ConnectedVehicle.value?.name || '---',
             chargePoint1ConnectedVehicleChargeMode.value.label || '---',
           ],
           soc: (chargePoint1ConnectedVehicleSoc.value.value?.soc || 0) / 100,
-          icon: 'icons/owbVehicle.svg',
+          iconComponent: VehicleIcon,
+          iconColor:
+            mqttStore.vehicleUserDefinedColor(
+              chargePoint1ConnectedVehicle.value?.id,
+            ) || 'var(--q-diagram-icon)',
           powerValue: Number(chargePoint1Power.value.value),
         });
       }
@@ -455,7 +476,11 @@ const svgComponents = computed((): FlowComponent[] => {
             absoluteValueObject(chargePoint2Power.value).textValue,
           ],
           powerValue: Number(chargePoint2Power.value.value),
-          icon: 'icons/owbChargePoint.svg',
+          iconComponent: ChargePointIcon,
+          iconColor:
+            mqttStore.chargePointUserDefinedColor(
+              connectedChargePoints.value[1],
+            ) || 'var(--q-diagram-icon)',
         });
       }
 
@@ -476,11 +501,15 @@ const svgComponents = computed((): FlowComponent[] => {
             column: connectedChargePoints.value.length > 2 ? 1 : 2,
           },
           label: [
-            chargePoint2ConnectedVehicleName.value || '---',
+            chargePoint2ConnectedVehicle.value?.name || '---',
             chargePoint2ConnectedVehicleChargeMode.value.label || '---',
           ],
           soc: (chargePoint2ConnectedVehicleSoc.value.value?.soc || 0) / 100,
-          icon: 'icons/owbVehicle.svg',
+          iconComponent: VehicleIcon,
+          iconColor:
+            mqttStore.vehicleUserDefinedColor(
+              chargePoint2ConnectedVehicle.value?.id,
+            ) || 'var(--q-diagram-icon)',
           powerValue: Number(chargePoint2Power.value.value),
         });
       }
@@ -502,7 +531,11 @@ const svgComponents = computed((): FlowComponent[] => {
             absoluteValueObject(chargePoint3Power.value).textValue,
           ],
           powerValue: Number(chargePoint3Power.value.value),
-          icon: 'icons/owbChargePoint.svg',
+          iconComponent: ChargePointIcon,
+          iconColor:
+            mqttStore.chargePointUserDefinedColor(
+              connectedChargePoints.value[2],
+            ) || 'var(--q-diagram-icon)',
         });
       }
 
@@ -523,11 +556,15 @@ const svgComponents = computed((): FlowComponent[] => {
             column: 2,
           },
           label: [
-            chargePoint3ConnectedVehicleName.value || '---',
+            chargePoint3ConnectedVehicle.value?.name || '---',
             chargePoint3ConnectedVehicleChargeMode.value.label || '---',
           ],
           soc: (chargePoint3ConnectedVehicleSoc.value.value?.soc || 0) / 100,
-          icon: 'icons/owbVehicle.svg',
+          iconComponent: VehicleIcon,
+          iconColor:
+            mqttStore.vehicleUserDefinedColor(
+              chargePoint3ConnectedVehicle.value?.id,
+            ) || 'var(--q-diagram-icon)',
           powerValue: Number(chargePoint3Power.value.value),
         });
       }
@@ -548,7 +585,8 @@ const svgComponents = computed((): FlowComponent[] => {
           absoluteValueObject(chargePointSumPower.value).textValue,
         ],
         powerValue: Number(chargePointSumPower.value.value),
-        icon: 'icons/owbChargePoint.svg',
+        iconComponent: ChargePointIcon,
+        iconColor: 'var(--q-diagram-icon)',
       });
     }
   }
@@ -778,13 +816,28 @@ const svgRectWidth = computed(
               :clip-path="`url(#clip-soc-${component.id})`"
             />
 
-            <image
-              :href="component.icon"
+            <foreignObject
               :x="-svgIconWidth / 2"
               :y="-svgIconHeight / 2"
-              :height="svgIconHeight"
               :width="svgIconWidth"
-            />
+              :height="svgIconHeight"
+            >
+              <div
+                style="
+                  width: 100%;
+                  height: 100%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                "
+                :style="{ color: component.iconColor }"
+              >
+                <component
+                  :is="component.iconComponent"
+                  style="width: 100%; height: 100%"
+                />
+              </div>
+            </foreignObject>
           </g>
         </g>
       </g>
