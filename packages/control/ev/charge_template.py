@@ -145,8 +145,8 @@ class ChargeTemplate:
     TIME_CHARGING_AMOUNT_REACHED = "Die gewünschte Energiemenge für das Zeitladen wurde geladen."
     TIME_CHARGING_CONFLICT_ACTIVE_BAT_CONTROL = ("Laden mit Zeitladen nach Speicher-SoC nicht möglich, da dies im "
                                                  "Konflikt mit der aktiven Speichersteuerung steht.")
-    TIME_CHARGING_MIN_BAT_SOC_REACHED = ("Laden mit Zeitladen nach Speicher-SoC nicht möglich, da der minimale SoC des"
-                                         " Speichers erreicht wurde.")
+    TIME_CHARGING_MIN_BAT_SOC_REACHED = ("Laden mit Zeitladen nach Speicher-SoC nicht möglich, da der SoC des"
+                                         " Speichers unter dem minimalen SoC liegt.")
 
     def time_charging(self,
                       soc: Optional[float],
