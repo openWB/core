@@ -35,7 +35,7 @@
           <div
             v-for="item in secondaryCounterData"
             :key="item.id"
-            class="counter"
+            class="counter sub-row"
           >
             <DailyTotalsRow
               :item="item"
@@ -118,50 +118,58 @@
             </DailyTotalsRow>
           </template>
           <div v-if="item.id === 'chargepoint'">
-            <DailyTotalsRow
+            <div
               v-for="chargePointData in individualChargePointData"
               :key="chargePointData.id"
-              :item="chargePointData"
-              :rowHeight="rowHeight"
-              :componentNameVisible="componentNameVisible"
-              :currentPowerVisible="currentPowerVisible"
-              :socValueVisible="socValueVisible"
+              class="sub-row"
             >
-              <template #right-label>
-                <template v-if="chargePointData.today !== undefined">
+              <DailyTotalsRow
+                :item="chargePointData"
+                :rowHeight="rowHeight"
+                :componentNameVisible="componentNameVisible"
+                :currentPowerVisible="currentPowerVisible"
+                :socValueVisible="socValueVisible"
+              >
+                <template #right-label>
+                  <template v-if="chargePointData.today !== undefined">
+                    <div>Geladen:</div>
+                    <div>Entladen:</div>
+                  </template>
+                </template>
+                <template #right-value>
+                  <div v-if="chargePointData.today !== undefined">
+                    {{ chargePointData.today.imported }}
+                  </div>
+                  <div v-if="chargePointData.today !== undefined">
+                    {{ chargePointData.today.exported }}
+                  </div>
+                </template>
+              </DailyTotalsRow>
+            </div>
+          </div>
+          <div v-if="item.id === 'battery'">
+            <div
+              v-for="batteryData in individualBatteryData"
+              :key="batteryData.id"
+              class="sub-row"
+            >
+              <DailyTotalsRow
+                :item="batteryData"
+                :rowHeight="rowHeight"
+                :componentNameVisible="componentNameVisible"
+                :currentPowerVisible="currentPowerVisible"
+                :socValueVisible="socValueVisible"
+              >
+                <template #right-label>
                   <div>Geladen:</div>
                   <div>Entladen:</div>
                 </template>
-              </template>
-              <template #right-value>
-                <div v-if="chargePointData.today !== undefined">
-                  {{ chargePointData.today.imported }}
-                </div>
-                <div v-if="chargePointData.today !== undefined">
-                  {{ chargePointData.today.exported }}
-                </div>
-              </template>
-            </DailyTotalsRow>
-          </div>
-          <div v-if="item.id === 'battery'">
-            <DailyTotalsRow
-              v-for="batteryData in individualBatteryData"
-              :key="batteryData.id"
-              :item="batteryData"
-              :rowHeight="rowHeight"
-              :componentNameVisible="componentNameVisible"
-              :currentPowerVisible="currentPowerVisible"
-              :socValueVisible="socValueVisible"
-            >
-              <template #right-label>
-                <div>Geladen:</div>
-                <div>Entladen:</div>
-              </template>
-              <template #right-value>
-                <div>{{ batteryData.today?.imported }}</div>
-                <div>{{ batteryData.today?.exported }}</div>
-              </template>
-            </DailyTotalsRow>
+                <template #right-value>
+                  <div>{{ batteryData.today?.imported }}</div>
+                  <div>{{ batteryData.today?.exported }}</div>
+                </template>
+              </DailyTotalsRow>
+            </div>
           </div>
         </q-expansion-item>
       </div>
@@ -522,7 +530,6 @@ watch(
 }
 .counter {
   background: var(--q-secondary-counter-fill);
-  border-top: 0.125rem solid var(--q-secondary-counter-stroke);
   border-left: 0;
   border-right: 0;
   border-bottom: 0;
@@ -542,6 +549,15 @@ watch(
 .chargepoint {
   background: var(--q-charge-point-fill);
   border: 0.125rem solid var(--q-charge-point-stroke);
+}
+.counter.sub-row {
+  border-top: 0.12rem solid var(--q-secondary-counter-stroke);
+}
+.battery .sub-row {
+  border-top: 0.12rem solid var(--q-battery-stroke);
+}
+.chargepoint .sub-row {
+  border-top: 0.12rem solid var(--q-charge-point-stroke);
 }
 .rotate-180 {
   transform: rotate(180deg);
