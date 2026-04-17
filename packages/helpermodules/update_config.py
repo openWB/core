@@ -58,7 +58,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 131
+    DATASTORE_VERSION = 132
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -3395,3 +3395,14 @@ class UpdateConfig:
         self._loop_all_received_topics(upgrade)
         add_colors_to_logs()
         self._append_datastore_version(131)
+
+    def upgrade_datastore_132(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/vehicle/template/charge_template/[0-9]+$", topic) is not None:
+                payload = decode_payload(payload)
+                for plan in payload["time_charging"]["plans"]:
+                    if plan.get("min_bat_soc") is None:
+                        plan.update({"min_bat_soc": None})
+                return {topic: payload}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(132)
