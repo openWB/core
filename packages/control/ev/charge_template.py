@@ -176,6 +176,7 @@ class ChargeTemplate:
                             if data.data.bat_all_data.data.get.soc < plan.min_bat_soc:
                                 message = self.TIME_CHARGING_MIN_BAT_SOC_REACHED
                             else:
+                                log.debug("Zeitladen: minimaler Speicher-SoC überschritten, Laden mit Zeitladen möglich.")
                                 current = plan.current if charging_type == ChargingType.AC.value else plan.dc_current
                                 sub_mode = "time_charging"
                         else:
