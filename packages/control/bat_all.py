@@ -654,6 +654,26 @@ class BatAll:
         else:
             self.data.set.current_state = CurrentState.ACTIVE.value
 
+    def time_charging_min_bat_soc_allowed(self) -> bool:
+        if self.data.config.configured and self.data.config.bat_control_permitted and self.data.config.bat_control_activated:
+            if (self.data.config.power_limit_condition == BatPowerLimitCondition.MANUAL.value or
+                    self.data.config.power_limit_condition == BatPowerLimitCondition.VEHICLE_CHARGING.value):
+                return False
+            elif self.data.config.power_limit_condition == BatPowerLimitCondition.PRICE_LIMIT.value:
+                if self.data.config.power_limit_mode == BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value:
+                    if ((self.data.config.price_limit_activated and
+                            data.data.optional_data.ep_is_charging_allowed_price_threshold(
+                                self.data.config.price_limit))
+                        or (self.data.config.price_charge_activated and
+                            data.data.optional_data.ep_is_charging_allowed_price_threshold(
+                                self.data.config.charge_limit))):
+                        return True
+                    else:
+                        return False
+                else:
+                    return
+        return True
+
 
 def get_bat_components_by_controllability() -> Tuple[List, List]:
     bat_components_controllable, bat_components_not_controllable = [], []
