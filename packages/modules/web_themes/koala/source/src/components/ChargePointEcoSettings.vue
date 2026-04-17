@@ -39,40 +39,6 @@
       </q-btn-group>
     </div>
   </div>
-
-  <div class="text-subtitle2 q-mt-sm q-mr-sm">Begrenzung</div>
-  <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
-    <q-btn-group class="col">
-      <q-btn
-        v-for="mode in limitModes"
-        :key="mode.value"
-        :color="limitMode.value === mode.value ? 'primary' : 'grey'"
-        :label="mode.label"
-        size="sm"
-        class="col"
-        @click="limitMode.value = mode.value"
-      />
-    </q-btn-group>
-  </div>
-  <SliderStandard
-    v-if="limitMode.value === 'soc'"
-    title="SoC-Limit für das Fahrzeug"
-    :min="5"
-    :max="100"
-    :step="5"
-    unit="%"
-    v-model="limitSoC.value"
-    class="q-mt-md"
-  />
-  <SliderStandard
-    v-if="limitMode.value === 'amount'"
-    title="Energie-Limit"
-    :min="1"
-    :max="50"
-    unit="kWh"
-    v-model="limitEnergy.value"
-    class="q-mt-md"
-  />
   <div v-if="etConfigured">
     <div class="text-subtitle2 q-my-sm">
       Preisgrenze für strompreisbasiertes Laden
@@ -166,21 +132,6 @@ const props = defineProps<{
 
 const mqttStore = useMqttStore();
 
-const limitModes = computed(() => {
-  let modes = [
-    { value: 'none', label: 'keine', color: 'primary' },
-    { value: 'soc', label: 'EV-SoC', color: 'primary' },
-    { value: 'amount', label: 'Energie', color: 'primary' },
-  ];
-  if (vehicleSocType.value === undefined) {
-    modes = modes.filter((mode) => mode.value !== 'soc');
-  }
-  return modes;
-});
-
-const vehicleSocType = computed(() =>
-  mqttStore.chargePointConnectedVehicleSocType(props.chargePointId),
-)?.value;
 
 const phaseOptions = [
   { value: 1, label: '1' },
@@ -206,20 +157,6 @@ const dcPower = computed(() =>
 
 const numPhases = computed(() =>
   mqttStore.chargePointConnectedVehicleEcoChargePhases(props.chargePointId),
-);
-
-const limitMode = computed(() =>
-  mqttStore.chargePointConnectedVehicleEcoChargeLimit(props.chargePointId),
-);
-
-const limitSoC = computed(() =>
-  mqttStore.chargePointConnectedVehicleEcoChargeLimitSoC(props.chargePointId),
-);
-
-const limitEnergy = computed(() =>
-  mqttStore.chargePointConnectedVehicleEcoChargeLimitEnergy(
-    props.chargePointId,
-  ),
 );
 
 const etConfigured = computed(() => mqttStore.etProviderConfigured);

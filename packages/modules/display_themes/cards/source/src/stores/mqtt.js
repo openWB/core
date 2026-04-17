@@ -461,6 +461,14 @@ export const useMqttStore = defineStore("mqtt", {
         return state.getChargePointName(chargePointId) !== undefined;
       };
     },
+    getChargePointFaultState(state) {
+      return (chargePointId) => {
+        if (state.topics[`openWB/chargepoint/${chargePointId}/get/fault_state`]) {
+          return state.topics[`openWB/chargepoint/${chargePointId}/get/fault_state`];
+        }
+        return 0;
+      };
+    },
     getChargePointName(state) {
       return (chargePointId) => {
         if (

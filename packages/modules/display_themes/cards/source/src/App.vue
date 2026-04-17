@@ -49,6 +49,8 @@ export default {
         "openWB/chargepoint/+/set/charge_template",
         "openWB/chargepoint/+/set/charge_template/chargemode/scheduled_charging/plans/+",
         "openWB/chargepoint/+/set/charge_template/time_charging/plans/+",
+        "openWB/chargepoint/+/get/fault_state",
+        "openWB/chargepoint/+/get/fault_str",
         "openWB/chargepoint/+/get/phases_in_use",
         "openWB/chargepoint/+/get/plug_state",
         "openWB/chargepoint/+/get/power",
