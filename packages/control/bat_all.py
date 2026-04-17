@@ -655,7 +655,9 @@ class BatAll:
             self.data.set.current_state = CurrentState.ACTIVE.value
 
     def time_charging_min_bat_soc_allowed(self) -> bool:
-        if self.data.config.configured and self.data.config.bat_control_permitted and self.data.config.bat_control_activated:
+        if (self.data.config.configured and
+                self.data.config.bat_control_permitted and
+                self.data.config.bat_control_activated):
             if (self.data.config.power_limit_condition == BatPowerLimitCondition.MANUAL.value or
                     self.data.config.power_limit_condition == BatPowerLimitCondition.VEHICLE_CHARGING.value):
                 return False
@@ -671,7 +673,7 @@ class BatAll:
                     else:
                         return False
                 else:
-                    return
+                    return False
         return True
 
 

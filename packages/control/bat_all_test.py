@@ -349,25 +349,39 @@ def test_control_price_limit(params: BatControlParams, data_, monkeypatch):
 @pytest.mark.parametrize(
     "control_permitted, control_activated, condition, limit, expected_result",
     [
-        pytest.param(False, True, BatPowerLimitCondition.MANUAL.value, BatPowerLimitMode.MODE_NO_DISCHARGE.value, True,
+        pytest.param(False, True,
+                     BatPowerLimitCondition.MANUAL.value, BatPowerLimitMode.MODE_NO_DISCHARGE.value, True,
                      id="Speichersteuerung nicht erlaubt, aber aktiviert -> laden"),
-        pytest.param(True, False, BatPowerLimitCondition.MANUAL.value, BatPowerLimitMode.MODE_NO_DISCHARGE.value, True,
+        pytest.param(True, False,
+                     BatPowerLimitCondition.MANUAL.value, BatPowerLimitMode.MODE_NO_DISCHARGE.value, True,
                      id="Speichersteuerung erlaubt, aber nicht aktiviert -> laden"),
-        pytest.param(True, True, BatPowerLimitCondition.MANUAL.value, BatPowerLimitMode.MODE_NO_DISCHARGE.value, False,
+        pytest.param(True, True,
+                     BatPowerLimitCondition.MANUAL.value, BatPowerLimitMode.MODE_NO_DISCHARGE.value, False,
                      id="Manuell, volle Entladesperre -> nicht laden"),
-        pytest.param(True, True, BatPowerLimitCondition.MANUAL.value, BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION.value, False,
+        pytest.param(True, True,
+                     BatPowerLimitCondition.MANUAL.value,
+                     BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION.value, False,
                      id="Manuell, Entladung in Fahrzeuge sperren -> nicht laden"),
-        pytest.param(True, True, BatPowerLimitCondition.MANUAL.value, BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value, False,
+        pytest.param(True, True,
+                     BatPowerLimitCondition.MANUAL.value, BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value, False,
                      id="Manuell, PV-Ertrag speichern -> nicht laden"),
-        pytest.param(True, True, BatPowerLimitCondition.VEHICLE_CHARGING.value, BatPowerLimitMode.MODE_NO_DISCHARGE.value, False,
+        pytest.param(True, True,
+                     BatPowerLimitCondition.VEHICLE_CHARGING.value, BatPowerLimitMode.MODE_NO_DISCHARGE.value, False,
                      id="Fahrzeuge laden, volle Entladesperre -> nicht laden"),
-        pytest.param(True, True, BatPowerLimitCondition.VEHICLE_CHARGING.value, BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION.value, False,
+        pytest.param(True, True,
+                     BatPowerLimitCondition.VEHICLE_CHARGING.value,
+                     BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION.value, False,
                      id="Fahrzeuge laden, Entladung in Fahrzeuge sperren -> nicht laden"),
-        pytest.param(True, True, BatPowerLimitCondition.VEHICLE_CHARGING.value, BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value, False,
+        pytest.param(True, True,
+                     BatPowerLimitCondition.VEHICLE_CHARGING.value,
+                     BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value, False,
                      id="Fahrzeuge laden, PV-Ertrag speichern -> nicht laden"),
-        pytest.param(True, True, BatPowerLimitCondition.PRICE_LIMIT.value, BatPowerLimitMode.MODE_NO_DISCHARGE.value, False,
+        pytest.param(True, True,
+                     BatPowerLimitCondition.PRICE_LIMIT.value, BatPowerLimitMode.MODE_NO_DISCHARGE.value, False,
                      id="Preislimit, volle Entladesperre -> nicht laden"),
-        pytest.param(True, True, BatPowerLimitCondition.PRICE_LIMIT.value, BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION.value, False,
+        pytest.param(True, True,
+                     BatPowerLimitCondition.PRICE_LIMIT.value,
+                     BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION.value, False,
                      id="Preislimit, Entladung in Fahrzeuge sperren -> nicht laden"),
 
     ]
@@ -379,6 +393,7 @@ def test_time_charging_min_bat_soc_allowed(control_permitted: bool,
                                            expected_result: bool):
     # setup
     b = BatAll()
+    b.data.config.configured = True
     b.data.config.power_limit_condition = condition
     b.data.config.power_limit_mode = limit
     b.data.config.bat_control_permitted = control_permitted
@@ -408,14 +423,15 @@ def test_time_charging_min_bat_soc_allowed(control_permitted: bool,
                      id="beide Strompreise deaktiviert -> nicht laden"),
     ]
 )
-def test_time_charging_min_bat_soc_allowed(ep_configured: bool,
-                                           price_limit_activated: bool,
-                                           price_charge_activated: bool,
-                                           price_threshold_mock: List[bool],
-                                           expected_result: bool,
-                                           monkeypatch):
+def test_time_charging_min_bat_soc_allowed_pricing(ep_configured: bool,
+                                                   price_limit_activated: bool,
+                                                   price_charge_activated: bool,
+                                                   price_threshold_mock: List[bool],
+                                                   expected_result: bool,
+                                                   monkeypatch):
     # setup
     b = BatAll()
+    b.data.config.configured = True
     b.data.config.power_limit_condition = BatPowerLimitCondition.PRICE_LIMIT.value
     b.data.config.power_limit_mode = BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value
     b.data.config.price_limit_activated = price_limit_activated
