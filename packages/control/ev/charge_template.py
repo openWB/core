@@ -171,12 +171,13 @@ class ChargeTemplate:
                     elif plan.limit.selected == "amount" and used_amount_time_charging >= plan.limit.amount:
                         # Energie-Limit erreicht
                         message = self.TIME_CHARGING_AMOUNT_REACHED
-                    elif plan.min_bat_soc is not None:
+                    elif plan.min_bat_soc is not None and data.data.bat_all_data.data.config.configured:
                         if data.data.bat_all_data.time_charging_min_bat_soc_allowed():
                             if data.data.bat_all_data.data.get.soc < plan.min_bat_soc:
                                 message = self.TIME_CHARGING_MIN_BAT_SOC_REACHED
                             else:
-                                log.debug("Zeitladen: minimaler Speicher-SoC überschritten, Laden mit Zeitladen möglich.")
+                                log.debug(
+                                    "Zeitladen: minimaler Speicher-SoC überschritten, Laden mit Zeitladen möglich.")
                                 current = plan.current if charging_type == ChargingType.AC.value else plan.dc_current
                                 sub_mode = "time_charging"
                         else:
