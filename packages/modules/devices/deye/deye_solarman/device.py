@@ -32,10 +32,9 @@ def create_device(device_config: DeyeSolarman):
 
     def update_components(components: Iterable[Union[DeyeSolarmanBat, DeyeSolarmanCounter, DeyeSolarmanInverter]]):
         nonlocal client
-        with client:
-            for component in components:
-                with SingleComponentUpdateContext(component.fault_state):
-                    component.update()
+        for component in components:
+            with SingleComponentUpdateContext(component.fault_state):
+                component.update()
 
     def initializer():
         nonlocal client
