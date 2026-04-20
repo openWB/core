@@ -298,8 +298,9 @@ class BatAll:
                 # oberhalb des max_soc soll Speicher nicht entladen wenn andere Speicher laden
                 if bat_component_data.get.soc >= self.data.config.bat_control_max_soc:
                     power_limit = 0
-                    bat_component_data.get.state_str = ("Speicher befindet sich oberhalb "
-                                                        "des maximalen SoC - Ladung gesperrt")
+                    bat_component_data.get.state_str = ("Speicher hat maximalen SoC erreicht "
+                                                        "und wird nicht mehr aktiv geladen! Überschüssiger "
+                                                        "PV-Ertrag kann noch gespeichert werden.")
                     log.debug(("Aktive Speichersteuerung: Ladung - "
                                f"Speicher (ID: {bat_component.component_config.id}) "
                                "befindet sich oberhalb maximal SoC - Speicher sperren."))
