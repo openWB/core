@@ -9,7 +9,7 @@ class DeyeSolarmanConfiguration:
     def __init__(self,
                  ip_address: Optional[str] = None,
                  serial: int = None,
-                 port: int = 502,
+                 port: int = 8899,
                  modbus_id: int = 1):
         self.ip_address = ip_address
         self.serial = serial
