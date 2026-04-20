@@ -192,7 +192,8 @@ class Chargepoint(ChargepointRfidMixin):
             # VOR Standard nach Abstecken
             if (data.data.ev_data[f"ev{self.data.config.ev}"].soc_module is not None and
                 data.data.ev_data[f"ev{self.data.config.ev}"].soc_module.vehicle_config.type == "manual" and
-                    data.data.ev_data[f"ev{self.data.config.ev}"].soc_module.vehicle_config.configuration.reset_after_unplug):
+                    data.data.ev_data[
+                        f"ev{self.data.config.ev}"].soc_module.vehicle_config.configuration.reset_after_unplug):
                 Pub().pub(f"openWB/set/vehicle/{self.data.config.ev}/soc_module/calculated_soc_state/manual_soc", 0)
             if self.data.set.charge_template.data.load_default:
                 self.data.config.ev = 0
