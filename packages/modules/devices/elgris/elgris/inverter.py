@@ -3,7 +3,7 @@ from typing import Any, TypedDict
 
 from modules.common.component_state import InverterState
 from modules.devices.elgris.elgris.elgris import Elgris
-from modules.common.store._inverter import get_inverter_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.elgris.elgris.config import ElgrisInverterSetup
 from modules.common import modbus
 from modules.common.abstract_device import AbstractInverter
@@ -29,7 +29,7 @@ class ElgrisInverter(AbstractInverter):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
         self.elgris = Elgris(self.__modbus_id, self.__tcp_client, self.fault_state)
-        self.store = get_inverter_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
 
     def update(self):
         counter_state = self.elgris.get_counter_state()

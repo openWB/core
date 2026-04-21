@@ -6,7 +6,7 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount import SimCounter
-from modules.common.store import get_inverter_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.sigenergy.sigenergy.config import SigenergyInverterSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
@@ -25,10 +25,10 @@ class SigenergyInverter:
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
         self.client: ModbusTcpClient_ = self.kwargs['client']
-        self.store = get_inverter_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
         self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, self.component_config.type)
 
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id

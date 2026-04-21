@@ -7,7 +7,7 @@ from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.modbus import ModbusDataType, Endian
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.store import get_bat_value_store
+from modules.common.store import get_component_value_store
 from modules.common.simcount._simcounter import SimCounter
 from modules.common.utils.peak_filter import PeakFilter
 from modules.devices.e3dc.e3dc.config import E3dcBatSetup
@@ -39,10 +39,10 @@ class E3dcBat(AbstractBat):
         self.__device_id: int = self.kwargs['device_id']
         self.__modbus_id: int = self.kwargs['modbus_id']
         self.client: modbus.ModbusTcpClient_ = self.kwargs['client']
-        self.store = get_bat_value_store(self.component_config.id)
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, self.component_config.type)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
 
     def update(self) -> None:
         soc, power = read_bat(self.client, self.__modbus_id)
