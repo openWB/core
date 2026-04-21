@@ -21,7 +21,11 @@ log = logging.getLogger(__name__)
 REMOTE_CONTROL_MODE_REG = 0x7C           # U16: 0=Disabled, 1=Enabled Power Control
 REMOTE_CONTROL_SET_TYPE_REG = 0x7D       # U16: 1=Set
 REMOTE_CONTROL_ACTIVE_POWER_REG = 0x7E   # S32: Active Power Sollwert in Watt
+REMOTE_CONTROL_REACTIVE_POWER_REG = 0x80  # S32: Reactive Power Sollwert (0)
 REMOTE_CONTROL_DURATION_REG = 0x82       # U16: Dauer in Sekunden
+REMOTE_CONTROL_TARGET_SOC_REG = 0x83     # U16: Target SoC (Dummy 0)
+REMOTE_CONTROL_TARGET_ENERGY_REG = 0x84  # U32: Target Energy (Dummy 0)
+REMOTE_CONTROL_TARGET_POWER_REG = 0x86   # S32: Target Charge/Discharge Power (Dummy 0)
 REMOTE_CONTROL_TIMEOUT_REG = 0x88        # U16: Timeout in Sekunden
 
 MODE_1_DISABLED = 0
@@ -97,7 +101,8 @@ class QCellsBat(AbstractBat):
         cp_power = int(data.data.cp_all_data.data.get.power)
         house_load = max(0, home_consumption + cp_power)
         pv_generation = max(0, int(data.data.pv_all_data.data.get.power * -1))
-        ap_target = power_limit + house_load - pv_generation
+        # Mode 1 / Enabled Battery Control: house_load wird inverter-intern bereits berücksichtigt.
+        ap_target = power_limit - pv_generation
 
         try:
             evu_counter = data.data.counter_all_data.get_evu_counter()
@@ -105,19 +110,27 @@ class QCellsBat(AbstractBat):
         except Exception:
             import_limit = 0
 
-        if import_limit > 0:
-            ap_target = min(ap_target, import_limit)
+        import_bound = None
+        if import_limit > 0 and ap_target > 0:
+            import_bound = import_limit - house_load
+            ap_target = min(ap_target, import_bound)
 
         log.debug((
             f"QCells Mode1 target: power_limit={power_limit}W, home_consumption={home_consumption}W, "
             f"cp_power={cp_power}W, house_load={house_load}W, "
-            f"pv_generation={pv_generation}W, import_limit={import_limit}W -> ap_target={ap_target}W"
+            f"pv_generation={pv_generation}W, import_limit={import_limit}W, "
+            f"import_bound={import_bound}W -> ap_target={ap_target}W"
         ))
         return int(ap_target)
 
     def _write_mode1(self, ap_target: int, unit: int) -> None:
         """Schreibt die Mode 1 Remote Control Register (0x7C-0x88)."""
         duration, timeout = self._get_mode1_timing()
+        log.debug((
+            f"QCells Mode1 write: mode={MODE_1_ENABLED_POWER_CONTROL}, set_type={SET_TYPE_SET}, "
+            f"active_power={ap_target}W, reactive_power=0var, duration={duration}s, "
+            f"target_soc=0, target_energy=0Wh, target_power=0W, timeout={timeout}s"
+        ))
         with self.client:
             self.client.write_register(
                 REMOTE_CONTROL_MODE_REG, MODE_1_ENABLED_POWER_CONTROL,
@@ -129,8 +142,20 @@ class QCellsBat(AbstractBat):
                 REMOTE_CONTROL_ACTIVE_POWER_REG, ap_target,
                 data_type=ModbusDataType.INT_32, wordorder=Endian.Little, unit=unit)
             self.client.write_register(
+                REMOTE_CONTROL_REACTIVE_POWER_REG, 0,
+                data_type=ModbusDataType.INT_32, wordorder=Endian.Little, unit=unit)
+            self.client.write_register(
                 REMOTE_CONTROL_DURATION_REG, duration,
                 data_type=ModbusDataType.UINT_16, unit=unit)
+            self.client.write_register(
+                REMOTE_CONTROL_TARGET_SOC_REG, 0,
+                data_type=ModbusDataType.UINT_16, unit=unit)
+            self.client.write_register(
+                REMOTE_CONTROL_TARGET_ENERGY_REG, 0,
+                data_type=ModbusDataType.UINT_32, wordorder=Endian.Little, unit=unit)
+            self.client.write_register(
+                REMOTE_CONTROL_TARGET_POWER_REG, 0,
+                data_type=ModbusDataType.INT_32, wordorder=Endian.Little, unit=unit)
             self.client.write_register(
                 REMOTE_CONTROL_TIMEOUT_REG, timeout,
                 data_type=ModbusDataType.UINT_16, unit=unit)
