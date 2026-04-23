@@ -153,6 +153,7 @@ class ChargepointModule(AbstractChargepoint):
         time.sleep(5)
         GPIO.output(gpio_cp, GPIO.LOW)  # CP on
         time.sleep(1)
+        self.old_phases_in_use = phases_to_use
 
     def perform_cp_interruption(self, duration: int) -> None:
         gpio_cp = self._client.get_pins_cp_interruption()
