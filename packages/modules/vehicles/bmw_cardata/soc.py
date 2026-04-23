@@ -4,6 +4,8 @@ from typing import List, Optional
 
 from requests.exceptions import RequestException
 
+from dataclass_utils import asdict
+from helpermodules.pub import Pub
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.abstract_vehicle import GeneralVehicleConfig, VehicleUpdateData
@@ -19,6 +21,7 @@ BMW_API_URL = "https://api-cardata.bmwgroup.com"
 FIELD_SOC = "vehicle.drivetrain.electricEngine.charging.level"
 FIELD_SOC_ALT = "vehicle.drivetrain.batteryManagement.header"
 FIELD_RANGE = "vehicle.drivetrain.electricEngine.remainingElectricRange"
+FIELD_RANGE_ALT = "vehicle.drivetrain.electricEngine.kombiRemainingElectricRange"
 FIELD_STATUS = "vehicle.drivetrain.electricEngine.charging.status"
 FIELD_ODOMETER_CANDIDATES = [
     "vehicle.vehicle.travelledDistance",
@@ -119,7 +122,7 @@ def _fetch_telematic_data(token: str, vin: str, container_id: str):
     return _get_json(url, token)
 
 
-def get_valid_token(cfg: BmwCardataConfiguration) -> str:
+def get_valid_token(cfg: BmwCardataConfiguration, vehicle: int, config: BmwCardataSetup) -> str:
     if not cfg.access_token:
         raise Exception("BMW CarData: Keine Tokens gefunden. Bitte BMW-Kopplung in der UI durchführen.")
 
@@ -146,6 +149,35 @@ def get_valid_token(cfg: BmwCardataConfiguration) -> str:
     cfg.expires_at = time.time() + new.get("expires_in", 3600) - 60
 
     log.info("BMW CarData: Token-Refresh erfolgreich.")
+
+    # Neuen Token zurück in MQTT schreiben – auch für alle anderen BMW CarData
+    # Fahrzeuge mit derselben Client ID damit diese nicht invalidiert werden
+    try:
+        from control import data as control_data
+        for ev_key, ev in control_data.data.ev_data.items():
+            try:
+                soc_module = ev.soc_module
+                if soc_module is None:
+                    continue
+                other_config = soc_module.vehicle_config
+                if (hasattr(other_config, 'type') and
+                        other_config.type == "bmw_cardata" and
+                        other_config.configuration.client_id == cfg.client_id):
+                    other_config.configuration.access_token = cfg.access_token
+                    other_config.configuration.refresh_token = cfg.refresh_token
+                    other_config.configuration.expires_at = cfg.expires_at
+                    Pub().pub(
+                        f"openWB/set/vehicle/{ev.num}/soc_module/config",
+                        asdict(other_config)
+                    )
+                    log.info(
+                        "BMW CarData: Token in MQTT aktualisiert für Fahrzeug %s.", ev.num
+                    )
+            except Exception as e:
+                log.warning("BMW CarData: Token-Sync für Fahrzeug %s fehlgeschlagen: %s", ev_key, e)
+    except Exception as e:
+        log.warning("BMW CarData: Token-Sync fehlgeschlagen: %s", e)
+
     return cfg.access_token
 
 
@@ -175,7 +207,7 @@ def get_container_id(cfg: BmwCardataConfiguration, token: str) -> str:
     return container_id
 
 
-def fetch_soc(config: BmwCardataSetup) -> CarState:
+def fetch_soc(config: BmwCardataSetup, vehicle: int = 0) -> CarState:
     cfg = config.configuration
 
     if not cfg.client_id:
@@ -183,7 +215,7 @@ def fetch_soc(config: BmwCardataSetup) -> CarState:
     if not cfg.vin:
         raise Exception("BMW CarData: VIN nicht konfiguriert!")
 
-    token = get_valid_token(cfg)
+    token = get_valid_token(cfg, vehicle, config)
     container_id = get_container_id(cfg, token)
 
     try:
@@ -212,6 +244,8 @@ def fetch_soc(config: BmwCardataSetup) -> CarState:
         soc_raw = _extract_value(td, FIELD_SOC_ALT)
 
     range_raw = _extract_value(td, FIELD_RANGE)
+    if range_raw is None:
+        range_raw = _extract_value(td, FIELD_RANGE_ALT)
     status = _extract_value(td, FIELD_STATUS)
     odometer_raw = _extract_first_value(td, FIELD_ODOMETER_CANDIDATES)
 
@@ -234,7 +268,7 @@ def fetch_soc(config: BmwCardataSetup) -> CarState:
 
 def create_vehicle(vehicle_config: BmwCardataSetup, vehicle: int):
     def updater(vehicle_update_data: VehicleUpdateData) -> CarState:
-        return fetch_soc(vehicle_config)
+        return fetch_soc(vehicle_config, vehicle)
 
     return ConfigurableVehicle(
         vehicle_config=vehicle_config,
