@@ -26,13 +26,14 @@ REMOTE_CONTROL_DURATION_REG = 0x82       # U16: Dauer in Sekunden
 REMOTE_CONTROL_TARGET_SOC_REG = 0x83     # U16: Target SoC (Dummy 0)
 REMOTE_CONTROL_TARGET_ENERGY_REG = 0x84  # U32: Target Energy (Dummy 0)
 REMOTE_CONTROL_TARGET_POWER_REG = 0x86   # S32: Target Charge/Discharge Power (Dummy 0)
-REMOTE_CONTROL_TIMEOUT_REG = 0x88        # U16: Timeout in Sekunden
+REMOTE_CONTROL_TIMEOUT_REG = 0x88        # U16: Timeout in Sekunden (0 = deaktiviert)
 
 MODE_1_DISABLED = 0
 MODE_1_ENABLED_POWER_CONTROL = 1
 SET_TYPE_SET = 1
 MIN_REMOTE_CONTROL_DURATION = 20
-MIN_REMOTE_CONTROL_TIMEOUT = 60
+DURATION_SAFETY_BUFFER = 10
+MODE_1_TIMEOUT_DISABLED = 0
 
 
 class KwargsDict(TypedDict):
@@ -101,35 +102,42 @@ class QCellsBat(AbstractBat):
         cp_power = int(data.data.cp_all_data.data.get.power)
         house_load = max(0, home_consumption + cp_power)
         pv_generation = max(0, int(data.data.pv_all_data.data.get.power * -1))
-        # Mode 1 / Enabled Battery Control: house_load wird inverter-intern bereits berücksichtigt.
-        ap_target = power_limit - pv_generation
+        bat_power = int(data.data.bat_all_data.data.get.power)
+        ap_target_raw = power_limit
 
         try:
             evu_counter = data.data.counter_all_data.get_evu_counter()
+            evu_power = int(evu_counter.data.get.power)
             import_limit = int(evu_counter.data.config.max_total_power)
         except Exception:
+            evu_power = 0
             import_limit = 0
 
         import_bound = None
-        if import_limit > 0 and ap_target > 0:
-            import_bound = import_limit - house_load
-            ap_target = min(ap_target, import_bound)
+        if power_limit == 0:
+            ap_target = 0
+        elif power_limit > 0 and import_limit > 0:
+            import_bound = max(0, import_limit - house_load)
+            ap_target = min(ap_target_raw, import_bound)
+        else:
+            ap_target = ap_target_raw
 
         log.debug((
-            f"QCells Mode1 target: power_limit={power_limit}W, home_consumption={home_consumption}W, "
+            f"QCells Mode1 target: power_limit={power_limit}W, bat_power={bat_power}W, evu_power={evu_power}W, "
+            f"home_consumption={home_consumption}W, "
             f"cp_power={cp_power}W, house_load={house_load}W, "
             f"pv_generation={pv_generation}W, import_limit={import_limit}W, "
-            f"import_bound={import_bound}W -> ap_target={ap_target}W"
+            f"import_bound={import_bound}W, ap_target_raw={ap_target_raw}W -> ap_target={ap_target}W"
         ))
         return int(ap_target)
 
     def _write_mode1(self, ap_target: int, unit: int) -> None:
         """Schreibt die Mode 1 Remote Control Register (0x7C-0x88)."""
-        duration, timeout = self._get_mode1_timing()
+        duration = self._get_mode1_duration()
         log.debug((
             f"QCells Mode1 write: mode={MODE_1_ENABLED_POWER_CONTROL}, set_type={SET_TYPE_SET}, "
             f"active_power={ap_target}W, reactive_power=0var, duration={duration}s, "
-            f"target_soc=0, target_energy=0Wh, target_power=0W, timeout={timeout}s"
+            f"target_soc=0, target_energy=0Wh, target_power=0W, timeout={MODE_1_TIMEOUT_DISABLED}s"
         ))
         with self.client:
             self.client.write_register(
@@ -157,18 +165,16 @@ class QCellsBat(AbstractBat):
                 REMOTE_CONTROL_TARGET_POWER_REG, 0,
                 data_type=ModbusDataType.INT_32, wordorder=Endian.Little, unit=unit)
             self.client.write_register(
-                REMOTE_CONTROL_TIMEOUT_REG, timeout,
+                REMOTE_CONTROL_TIMEOUT_REG, MODE_1_TIMEOUT_DISABLED,
                 data_type=ModbusDataType.UINT_16, unit=unit)
 
-    def _get_mode1_timing(self) -> tuple[int, int]:
+    def _get_mode1_duration(self) -> int:
         try:
             control_interval = int(data.data.general_data.data.control_interval)
         except Exception:
             control_interval = 10
 
-        duration = max(MIN_REMOTE_CONTROL_DURATION, control_interval * 2)
-        timeout = max(MIN_REMOTE_CONTROL_TIMEOUT, control_interval * 3)
-        return duration, timeout
+        return max(MIN_REMOTE_CONTROL_DURATION, control_interval + DURATION_SAFETY_BUFFER)
 
     def power_limit_controllable(self) -> bool:
         return True
