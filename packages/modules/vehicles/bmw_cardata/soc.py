@@ -6,7 +6,7 @@ from requests.exceptions import RequestException
 
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.abstract_vehicle import VehicleUpdateData
+from modules.common.abstract_vehicle import GeneralVehicleConfig, VehicleUpdateData
 from modules.common.component_state import CarState
 from modules.common.configurable_vehicle import ConfigurableVehicle
 from modules.vehicles.bmw_cardata.config import BmwCardataSetup, BmwCardataConfiguration
@@ -241,6 +241,10 @@ def create_vehicle(vehicle_config: BmwCardataSetup, vehicle: int):
         component_updater=updater,
         vehicle=vehicle,
         calc_while_charging=vehicle_config.configuration.calculate_soc,
+        general_config=GeneralVehicleConfig(
+            request_interval_charging=1800,
+            request_interval_not_charging=43200,
+        ),
     )
 
 
