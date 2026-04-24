@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-from typing import TypedDict, Any
+from typing import TypedDict, Any, Optional
+import logging
 
 from modules.common import modbus
 from modules.common.abstract_device import AbstractBat
@@ -11,6 +12,8 @@ from modules.common.store import get_bat_value_store
 from modules.devices.sma.sma_sunny_island.config import SmaSunnyIslandBatSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
+
+log = logging.getLogger(__name__)
 
 
 class KwargsDict(TypedDict):
@@ -27,6 +30,7 @@ class SunnyIslandBat(AbstractBat):
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
+        self.last_mode = 'Undefined'
 
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
