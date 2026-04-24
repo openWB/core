@@ -42,7 +42,7 @@ class SunnyIslandBat(AbstractBat):
             imported, exported = self.__tcp_client.read_holding_registers(30595, [ModbusDataType.INT_32]*2, unit=unit)
 
         imported, exported = self.peak_filter.check_values(power, imported, exported)
-        return BatState(
+        bat_state = BatState(
             power=power,
             soc=soc,
             imported=imported,
@@ -65,7 +65,7 @@ class SunnyIslandBat(AbstractBat):
             self.__tcp_client.write_register(40151, 802, data_type=ModbusDataType.UINT_32, unit=unit)
             power_value = int(power_limit) * -1
             self.__tcp_client.write_register(40149, power_value, data_type=ModbusDataType.INT_32, unit=unit)
-            log.debug("Aktive Batteriesteuerung vorhanden. Setze externe Steuerung. Angeforderte Leistung: {power_value}")
+            log.debug("Aktive Batteriesteuerung vorhanden. Setze externe Steuerung. Leistung: {power_value}")
             self.last_mode = 'limited'
 
     def power_limit_controllable(self) -> bool:
