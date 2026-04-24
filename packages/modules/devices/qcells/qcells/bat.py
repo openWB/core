@@ -1,39 +1,38 @@
 #!/usr/bin/env python3
 import logging
-from typing import TypedDict, Any, Optional
-from pymodbus.constants import Endian
+from typing import Any, Optional, TypedDict
 
-from control import data
+from pymodbus.constants import Endian
+from pymodbus.payload import BinaryPayloadBuilder
+
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
-from modules.common.component_type import ComponentDescriptor
+from modules.common.component_type import ComponentDescriptor, ComponentType
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.store import get_bat_value_store
-from modules.devices.qcells.qcells.config import QCellsBatSetup
 from modules.common.utils.peak_filter import PeakFilter
-from modules.common.component_type import ComponentType
+from modules.devices.qcells.qcells.config import QCellsBatSetup
 
 log = logging.getLogger(__name__)
 
-# Solax/QCells Mode 1 Remote Control Registers (Holding Registers)
-# Speichersteuerung via Active Power Sollwert.
-REMOTE_CONTROL_MODE_REG = 0x7C           # U16: 0=Disabled, 1=Enabled Power Control
-REMOTE_CONTROL_SET_TYPE_REG = 0x7D       # U16: 1=Set
-REMOTE_CONTROL_ACTIVE_POWER_REG = 0x7E   # S32: Active Power Sollwert in Watt
-REMOTE_CONTROL_REACTIVE_POWER_REG = 0x80  # S32: Reactive Power Sollwert (0)
-REMOTE_CONTROL_DURATION_REG = 0x82       # U16: Dauer in Sekunden
-REMOTE_CONTROL_TARGET_SOC_REG = 0x83     # U16: Target SoC (Dummy 0)
-REMOTE_CONTROL_TARGET_ENERGY_REG = 0x84  # U32: Target Energy (Dummy 0)
-REMOTE_CONTROL_TARGET_POWER_REG = 0x86   # S32: Target Charge/Discharge Power (Dummy 0)
-REMOTE_CONTROL_TIMEOUT_REG = 0x88        # U16: Timeout in Sekunden (0 = deaktiviert)
+# Solax/QCells Remote Control Registers (Holding Registers)
+REMOTE_CONTROL_MODE_REG = 0x7C
+REMOTE_CONTROL_SET_TYPE_REG = 0x7D
+REMOTE_CONTROL_ACTIVE_POWER_REG = 0x7E
+REMOTE_CONTROL_REACTIVE_POWER_REG = 0x80
+REMOTE_CONTROL_DURATION_REG = 0x82
+REMOTE_CONTROL_TARGET_SOC_REG = 0x83
+REMOTE_CONTROL_TARGET_ENERGY_REG = 0x84
+REMOTE_CONTROL_TARGET_POWER_REG = 0x86
+REMOTE_CONTROL_TIMEOUT_REG = 0x88
+REMOTE_CONTROL_PUSH_POWER_MODE4_REG = 0x89
 
-MODE_1_DISABLED = 0
-MODE_1_ENABLED_POWER_CONTROL = 1
+MODE_DISABLED = 0
+MODE_4_PUSH_POWER = 4
 SET_TYPE_SET = 1
-MIN_REMOTE_CONTROL_DURATION = 20
-DURATION_SAFETY_BUFFER = 10
-MODE_1_TIMEOUT_DISABLED = 0
+MODE_4_TIMEOUT_DISABLED = 0
+MODE4_BLOCK_REG_COUNT = 15
 
 
 class KwargsDict(TypedDict):
@@ -47,134 +46,91 @@ class QCellsBat(AbstractBat):
         self.kwargs: KwargsDict = kwargs
 
     def initialize(self) -> None:
-        self.__modbus_id: int = self.kwargs['modbus_id']
-        self.client: ModbusTcpClient_ = self.kwargs['client']
+        self.__modbus_id: int = self.kwargs["modbus_id"]
+        self.client: ModbusTcpClient_ = self.kwargs["client"]
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
-        self.last_mode: Optional[str] = 'Undefined'
+        self.last_mode: Optional[str] = "Undefined"
 
     def update(self) -> None:
         power = self.client.read_input_registers(0x0016, ModbusDataType.INT_16, unit=self.__modbus_id)
         soc = self.client.read_input_registers(0x001C, ModbusDataType.UINT_16, unit=self.__modbus_id)
-        imported = self.client.read_input_registers(
-            0x0021, ModbusDataType.UINT_16, unit=self.__modbus_id) * 100
-        exported = self.client.read_input_registers(
-            0x001D, ModbusDataType.UINT_16, unit=self.__modbus_id) * 100
+        imported = self.client.read_input_registers(0x0021, ModbusDataType.UINT_16, unit=self.__modbus_id) * 100
+        exported = self.client.read_input_registers(0x001D, ModbusDataType.UINT_16, unit=self.__modbus_id) * 100
 
         imported, exported = self.peak_filter.check_values(power, imported, exported)
         bat_state = BatState(
             power=power,
             soc=soc,
             imported=imported,
-            exported=exported
+            exported=exported,
         )
         self.store.set(bat_state)
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
         unit = self.__modbus_id
-        log.debug(f"QCells set_power_limit: power_limit={power_limit}, "
-                  f"last_mode={self.last_mode}")
+        log.debug(f"QCells set_power_limit: power_limit={power_limit}, last_mode={self.last_mode}")
 
         if power_limit is None:
             log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
             if self.last_mode is not None:
                 with self.client:
                     self.client.write_register(
-                        REMOTE_CONTROL_MODE_REG, MODE_1_DISABLED,
-                        data_type=ModbusDataType.UINT_16, unit=unit)
+                        REMOTE_CONTROL_MODE_REG,
+                        MODE_DISABLED,
+                        data_type=ModbusDataType.UINT_16,
+                        unit=unit,
+                    )
                 self.last_mode = None
+            return
+
+        if power_limit < 0:
+            self.last_mode = "discharge"
+        elif power_limit > 0:
+            self.last_mode = "charge"
         else:
-            if power_limit < 0:
-                self.last_mode = 'discharge'
-            elif power_limit > 0:
-                self.last_mode = 'charge'
-            else:
-                self.last_mode = 'stop'
+            self.last_mode = "stop"
 
-            ap_target = self._get_active_power_target(int(power_limit))
-            self._write_mode1(ap_target, unit=unit)
+        push_power = self._get_mode4_push_power(int(power_limit))
+        self._write_mode4(push_power, unit)
 
-    def _get_active_power_target(self, power_limit: int) -> int:
-        # openWB-Werte verwenden (nicht WR-Berechnungen):
-        # power_limit < 0 = Entladen, 0 = Stop, > 0 = Laden
-        home_consumption = int(data.data.counter_all_data.data.set.home_consumption)
-        cp_power = int(data.data.cp_all_data.data.get.power)
-        house_load = max(0, home_consumption + cp_power)
-        pv_generation = max(0, int(data.data.pv_all_data.data.get.power * -1))
-        bat_power = int(data.data.bat_all_data.data.get.power)
-        ap_target_raw = power_limit
+    def _get_mode4_push_power(self, power_limit: int) -> int:
+        # openWB power_limit semantics:
+        # <0 discharge, 0 stop, >0 charge
+        # Mode 4 push_power semantics:
+        # >0 discharge, 0 stop, <0 charge
+        push_power = int(power_limit * -1)
+        log.debug(f"QCells Mode4 target: power_limit={power_limit}W -> push_power={push_power}W")
+        return push_power
 
-        try:
-            evu_counter = data.data.counter_all_data.get_evu_counter()
-            evu_power = int(evu_counter.data.get.power)
-            import_limit = int(evu_counter.data.config.max_total_power)
-        except Exception:
-            evu_power = 0
-            import_limit = 0
+    def _write_mode4(self, push_power: int, unit: int) -> None:
+        log.debug(
+            (
+                f"QCells Mode4 write: mode={MODE_4_PUSH_POWER}, set_type={SET_TYPE_SET}, "
+                f"timeout={MODE_4_TIMEOUT_DISABLED}s, push_power={push_power}W"
+            )
+        )
+        builder = BinaryPayloadBuilder(byteorder=Endian.Big, wordorder=Endian.Little)
+        builder.add_16bit_uint(MODE_4_PUSH_POWER)
+        builder.add_16bit_uint(SET_TYPE_SET)
+        builder.add_32bit_int(0)
+        builder.add_32bit_int(0)
+        builder.add_16bit_uint(0)
+        builder.add_16bit_uint(0)
+        builder.add_32bit_uint(0)
+        builder.add_32bit_int(0)
+        builder.add_16bit_uint(MODE_4_TIMEOUT_DISABLED)
+        builder.add_32bit_int(push_power)
+        payload = builder.to_registers()
+        if len(payload) != MODE4_BLOCK_REG_COUNT:
+            raise RuntimeError(
+                f"Unexpected mode4 payload size {len(payload)}, expected {MODE4_BLOCK_REG_COUNT}"
+            )
 
-        import_bound = None
-        if power_limit == 0:
-            ap_target = 0
-        elif power_limit > 0 and import_limit > 0:
-            import_bound = max(0, import_limit - house_load)
-            ap_target = min(ap_target_raw, import_bound)
-        else:
-            ap_target = ap_target_raw
-
-        log.debug((
-            f"QCells Mode1 target: power_limit={power_limit}W, bat_power={bat_power}W, evu_power={evu_power}W, "
-            f"home_consumption={home_consumption}W, "
-            f"cp_power={cp_power}W, house_load={house_load}W, "
-            f"pv_generation={pv_generation}W, import_limit={import_limit}W, "
-            f"import_bound={import_bound}W, ap_target_raw={ap_target_raw}W -> ap_target={ap_target}W"
-        ))
-        return int(ap_target)
-
-    def _write_mode1(self, ap_target: int, unit: int) -> None:
-        """Schreibt die Mode 1 Remote Control Register (0x7C-0x88)."""
-        duration = self._get_mode1_duration()
-        log.debug((
-            f"QCells Mode1 write: mode={MODE_1_ENABLED_POWER_CONTROL}, set_type={SET_TYPE_SET}, "
-            f"active_power={ap_target}W, reactive_power=0var, duration={duration}s, "
-            f"target_soc=0, target_energy=0Wh, target_power=0W, timeout={MODE_1_TIMEOUT_DISABLED}s"
-        ))
         with self.client:
-            self.client.write_register(
-                REMOTE_CONTROL_MODE_REG, MODE_1_ENABLED_POWER_CONTROL,
-                data_type=ModbusDataType.UINT_16, unit=unit)
-            self.client.write_register(
-                REMOTE_CONTROL_SET_TYPE_REG, SET_TYPE_SET,
-                data_type=ModbusDataType.UINT_16, unit=unit)
-            self.client.write_register(
-                REMOTE_CONTROL_ACTIVE_POWER_REG, ap_target,
-                data_type=ModbusDataType.INT_32, wordorder=Endian.Little, unit=unit)
-            self.client.write_register(
-                REMOTE_CONTROL_REACTIVE_POWER_REG, 0,
-                data_type=ModbusDataType.INT_32, wordorder=Endian.Little, unit=unit)
-            self.client.write_register(
-                REMOTE_CONTROL_DURATION_REG, duration,
-                data_type=ModbusDataType.UINT_16, unit=unit)
-            self.client.write_register(
-                REMOTE_CONTROL_TARGET_SOC_REG, 0,
-                data_type=ModbusDataType.UINT_16, unit=unit)
-            self.client.write_register(
-                REMOTE_CONTROL_TARGET_ENERGY_REG, 0,
-                data_type=ModbusDataType.UINT_32, wordorder=Endian.Little, unit=unit)
-            self.client.write_register(
-                REMOTE_CONTROL_TARGET_POWER_REG, 0,
-                data_type=ModbusDataType.INT_32, wordorder=Endian.Little, unit=unit)
-            self.client.write_register(
-                REMOTE_CONTROL_TIMEOUT_REG, MODE_1_TIMEOUT_DISABLED,
-                data_type=ModbusDataType.UINT_16, unit=unit)
-
-    def _get_mode1_duration(self) -> int:
-        try:
-            control_interval = int(data.data.general_data.data.control_interval)
-        except Exception:
-            control_interval = 10
-
-        return max(MIN_REMOTE_CONTROL_DURATION, control_interval + DURATION_SAFETY_BUFFER)
+            # data_type=None with list payload writes a contiguous FC16 block.
+            self.client.write_register(REMOTE_CONTROL_MODE_REG, payload, unit=unit)
 
     def power_limit_controllable(self) -> bool:
         return True
