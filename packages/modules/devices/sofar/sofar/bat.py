@@ -9,6 +9,7 @@ from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.store import get_bat_value_store
 from modules.devices.sofar.sofar.config import SofarBatSetup
 from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -26,7 +27,7 @@ class SofarBat(AbstractBat):
         self.__modbus_id: int = self.kwargs['modbus_id']
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.peak_filter = PeakFilter("bat", self.component_config.id, self.fault_state)
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         # 0x900D High 8 bits: the number of battery packs in parallel

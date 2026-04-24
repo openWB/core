@@ -57,17 +57,17 @@ declare resultStatus
 				GIT_REMOTE="origin"
 				BRANCH=$(<"$WORKING_DIR/GIT_BRANCH")
 				# TAG=$(<"$WORKING_DIR/GIT_HASH")
-				echo "Step 5.1: fetch info from git"
+				echo "Step 4.1: fetch info from git"
 				if ! git -C "$OPENWB_BASE_DIR" fetch -v "$GIT_REMOTE"; then
 					resultMessage="Beim Abgleich mit dem openWB Git ist ein Fehler aufgetreten!"
 					resultStatus=1
 				else
-					echo "Step 5.2: verify branch \"$BRANCH\" from archive"
+					echo "Step 4.2: verify branch \"$BRANCH\" from archive"
 					if ! git -C "$OPENWB_BASE_DIR" branch | grep "$BRANCH"; then
 						resultMessage="Der Entwicklungszweig \"$BRANCH\" des Archivs ist ungültig."
 						resultStatus=1
 					else
-						echo "Step 5.3: clean mosquitto configuration, will be recreated on next boot"
+						echo "Step 4.3: clean mosquitto configuration, will be recreated on next boot"
 						sudo rm -v -f /etc/mosquitto/conf.d/openwb-*.conf
 						sudo rm -v -f "/var/lib/mosquitto/dynamic-security.json"
 						rm -v -f "/home/openwb/.config/mosquitto_ctrl"

@@ -70,7 +70,7 @@
 	"anonymousGroup": "anonymous",
 	"roles": [
 		{
-			"rolename": "openwb-version:2",
+			"rolename": "openwb-version:3",
 			"textname": "openWB Versionsnummer",
 			"textdescription": "Diese Rolle ist ein Platzhalter für die openWB Versionsnummer und wird automatisch aktualisiert. Sie hat keine direkten Berechtigungen.",
 			"acls": []
@@ -1474,6 +1474,12 @@
 			"acls": [
 				{
 					"acltype": "publishClientSend",
+					"topic": "openWB/set/bat/+/config/max_power",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
 					"topic": "openWB/set/counter/config/home_consumption_source_id",
 					"priority": 0,
 					"allow": true
@@ -1517,6 +1523,12 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/access/LoadManagementConfiguration",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/bat/+/config/max_power",
 					"priority": 0,
 					"allow": true
 				},

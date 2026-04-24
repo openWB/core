@@ -13,6 +13,7 @@ from modules.devices.sma.sma_sunny_boy.config import SmaSunnyBoyInverterSetup
 from modules.devices.sma.sma_sunny_boy.inv_version import SmaInverterVersion
 from modules.common.simcount import SimCounter
 from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ class SmaSunnyBoyInverter(AbstractInverter):
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.sim_counter = SimCounter(self.kwargs['device_id'], self.component_config.id, prefix="Wechselrichter")
-        self.peak_filter = PeakFilter("inverter", self.component_config.id, self.fault_state)
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         self.store.set(self.read())

@@ -12,6 +12,7 @@ from modules.common.store import get_counter_value_store
 from modules.devices.generic.http.api import create_request_function, create_request_function_array
 from modules.devices.generic.http.config import HttpCounterSetup
 from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -30,7 +31,7 @@ class HttpCounter(AbstractCounter):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.peak_filter = PeakFilter("counter", self.component_config.id, self.fault_state)
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
         self.__get_power = create_request_function(self.url, self.component_config.configuration.power_path)
         self.__get_imported = create_request_function(self.url, self.component_config.configuration.imported_path)

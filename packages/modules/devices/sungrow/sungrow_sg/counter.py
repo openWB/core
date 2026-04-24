@@ -10,6 +10,7 @@ from modules.common.simcount import SimCounter
 from modules.common.store import get_counter_value_store
 from modules.devices.sungrow.sungrow_sg.config import SungrowSG, SungrowSGCounterSetup
 from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -31,7 +32,7 @@ class SungrowSGCounter(AbstractCounter):
         self.fault_text = "Dieser Sungrow Zähler liefert von Werk aus (entgegen der Dokumentation) "\
             "keine Leistung der einzelnen Phasen. "\
             "Das Lastmanagement ist daher nur anhand der Gesamtleistung (nicht phasenbasiert) möglich."
-        self.peak_filter = PeakFilter("counter", self.component_config.id, self.fault_state)
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self):
         unit = self.device_config.configuration.modbus_id

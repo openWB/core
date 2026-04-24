@@ -7,6 +7,7 @@ from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from typing import TypedDict, Any
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -22,7 +23,7 @@ class FoxEssCounter(AbstractCounter):
         self.client: ModbusTcpClient_ = self.kwargs['client']
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.peak_filter = PeakFilter("counter", self.component_config.id, self.fault_state)
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id

@@ -8,6 +8,7 @@ from modules.common.store import get_inverter_value_store
 from modules.common.utils.peak_filter import PeakFilter
 from modules.devices.discovergy.discovergy import api
 from modules.devices.discovergy.discovergy.config import DiscovergyInverterSetup
+from modules.common.component_type import ComponentType
 
 
 class DiscovergyInverter(AbstractInverter):
@@ -17,7 +18,7 @@ class DiscovergyInverter(AbstractInverter):
     def initialize(self) -> None:
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.peak_filter = PeakFilter("inverter", self.component_config.id, self.fault_state)
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self, session: Session):
         reading = api.get_last_reading(session, self.component_config.configuration.meter_id)

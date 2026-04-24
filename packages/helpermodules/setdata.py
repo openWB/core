@@ -491,8 +491,9 @@ class SetData:
                     self._validate_value(msg, bool)
                 elif "/set/autolock_state" in msg.topic:
                     self._validate_value(msg, int, [(0, 4)])
-                elif ("/set/rfid" in msg.topic or
-                        "/set/plug_time" in msg.topic):
+                elif "/set/rfid" in msg.topic:
+                    self._validate_value(msg, str)
+                elif "/set/plug_time" in msg.topic:
                     self._validate_value(msg, float)
                 elif "/set/ocpp_transaction_id" in msg.topic:
                     self._validate_value(msg, int)
@@ -672,9 +673,10 @@ class SetData:
                     "openWB/set/bat/set/regulate_up" in msg.topic or
                     "openWB/set/bat/set/hysteresis_discharge" in msg.topic):
                 self._validate_value(msg, bool)
-            elif (re.search("openWB/set/bat/[0-9]+/get/max_charge_power$", msg.topic) is not None or
-                  re.search("openWB/set/bat/[0-9]+/get/max_discharge_power$", msg.topic) is not None):
+            elif re.search("^openWB/set/bat/[0-9]+/get/max_charge_power$", msg.topic) is not None:
                 self._validate_value(msg, float, [(0, float("inf"))])
+            elif re.search("^openWB/set/bat/[0-9]+/get/max_discharge_power$", msg.topic) is not None:
+                self._validate_value(msg, float, [(None, 0)])
             elif (re.search("openWB/set/bat/[0-9]+/get/state_str$", msg.topic) is not None):
                 self._validate_value(msg, str)
             elif ("openWB/set/bat/config/price_limit" in msg.topic or
@@ -685,6 +687,8 @@ class SetData:
                 self._validate_value(msg, int, [(0, 100)])
             elif "openWB/set/bat/set/charging_power_left" in msg.topic:
                 self._validate_value(msg, float)
+            elif "openWB/set/bat/set/current_state" in msg.topic:
+                self._validate_value(msg, str)
             elif "openWB/set/bat/get/soc" in msg.topic:
                 self._validate_value(msg, float, [(0, 100)])
             elif ("openWB/set/bat/get/power" in msg.topic or
@@ -768,7 +772,7 @@ class SetData:
             elif "openWB/set/general/chargemode_config/pv_charging/switch_off_threshold" in msg.topic:
                 self._validate_value(msg, float)
             elif "openWB/set/general/chargemode_config/pv_charging/phase_switch_delay" in msg.topic:
-                self._validate_value(msg, int, [(5, 60)])
+                self._validate_value(msg, int, [(5, 180)])
             elif "openWB/set/general/chargemode_config/pv_charging/control_range" in msg.topic:
                 self._validate_value(msg, int, collection=list)
             elif ("openWB/set/general/chargemode_config/pv_charging/min_bat_soc" in msg.topic or

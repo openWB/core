@@ -1,11 +1,11 @@
 import inspect
 import logging
-from typing import TypeVar, Generic, Dict, Any, Callable, Iterable, List
+from typing import Optional, TypeVar, Generic, Dict, Any, Callable, Iterable, List
 
 from dataclass_utils import dataclass_from_dict
 from helpermodules import timecheck
 from helpermodules.pub import Pub
-from modules.common.abstract_device import AbstractDevice
+from modules.common.abstract_device import AbstractBat, AbstractDevice
 from modules.common.component_context import SingleComponentUpdateContext, MultiComponentUpdateContext
 from modules.common.fault_state import ComponentInfo, FaultState
 
@@ -128,3 +128,11 @@ class ConfigurableDevice(Generic[T_COMPONENT, T_DEVICE_CONFIG, T_COMPONENT_CONFI
                 except Exception:
                     log.exception(f"Initialisierung der Komponente {component} fehlgeschlagen")
         self.__component_updater(initialized_components, self.error_handler)
+
+
+def set_power_limit_wrapper(bat_component: AbstractBat, power_limit: Optional[int]):
+    """set_power_limit innerhalb des SingleComponentUpdateContext aufrufen,
+    damit Fehler im fault_state-Handler behandelt werden
+    """
+    with SingleComponentUpdateContext(bat_component.fault_state, update_always=False):
+        bat_component.set_power_limit(power_limit)

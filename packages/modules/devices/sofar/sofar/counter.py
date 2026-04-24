@@ -9,6 +9,7 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.component_state import CounterState
 from modules.common.abstract_device import AbstractCounter
 from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -26,7 +27,7 @@ class SofarCounter(AbstractCounter):
         self.__modbus_id: int = self.kwargs['modbus_id']
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.peak_filter = PeakFilter("counter", self.component_config.id, self.fault_state)
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self):
         # 0x0485 ActivePower_output_total Int16 in kW accuracy 0,01 discharge + charge -

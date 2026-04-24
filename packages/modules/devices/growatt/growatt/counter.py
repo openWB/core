@@ -10,6 +10,7 @@ from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.store import get_counter_value_store
 from modules.devices.growatt.growatt.config import GrowattCounterSetup
 from modules.devices.growatt.growatt.version import GrowattVersion
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -29,7 +30,7 @@ class GrowattCounter(AbstractCounter):
         self.client: ModbusTcpClient_ = self.kwargs['client']
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.peak_filter = PeakFilter("counter", self.component_config.id, self.fault_state)
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         if self.version == GrowattVersion.max_series:

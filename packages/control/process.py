@@ -12,6 +12,7 @@ from control.chargepoint.chargepoint_state import ChargepointState
 from helpermodules.pub import Pub
 from helpermodules.utils._thread_handler import joined_thread_handler
 from modules.common.abstract_io import AbstractIoDevice
+from modules.common.configurable_device import set_power_limit_wrapper
 from modules.common.fault_state_level import FaultStateLevel
 from modules.io_actions.controllable_consumers.dimming.api_io import DimmingIo
 from modules.io_actions.controllable_consumers.dimming_direct_control.api import DimmingDirectControl
@@ -61,12 +62,14 @@ class Process:
                     cp.remember_previous_values()
                 except Exception:
                     log.exception("Fehler im Process-Modul für Ladepunkt "+str(cp))
-            for bat_component in get_controllable_bat_components():
-                modules_threads.append(
-                    Thread(
-                        target=bat_component.set_power_limit,
-                        args=(data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set.power_limit,),
-                        name=f"set power limit {bat_component.component_config.id}"))
+            if data.data.bat_all_data.data.set.set_limit:
+                for bat_component in get_controllable_bat_components():
+                    modules_threads.append(
+                        Thread(
+                            target=set_power_limit_wrapper,
+                            args=(bat_component,
+                                  data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set.power_limit),
+                            name=f"set power limit {bat_component.component_config.id}"))
             for action in data.data.io_actions.actions.values():
                 if isinstance(action, DimmingDirectControl):
                     for d in action.config.configuration.devices:

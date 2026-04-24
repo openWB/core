@@ -408,7 +408,7 @@ class JsonApi():
             _, inverter_state.exported = sim_counter.sim_count(inverter_state.power)
             return inverter_state
 
-    def update_consumption_counter(self, sim_counter: SimCounter) -> CounterState:
+    def update_consumption_counter(self, sim_counter: SimCounter, peak_filter: PeakFilter) -> CounterState:
         """
         Updates the consumption counter state by reading data from the JSON API.
         Returns:
@@ -417,6 +417,7 @@ class JsonApi():
         counter_state = self.__state_from_channel(
             self.__read_power_meter(direction=self.PowerMeterDirection.CONSUMPTION)[0])
         # meter value is updated way too slow, so we use a sim counter to get the im-/exported energy
+        peak_filter.check_values(counter_state.power)
         counter_state.imported, counter_state.exported = sim_counter.sim_count(counter_state.power)
         return counter_state
 

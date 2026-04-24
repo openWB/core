@@ -21,6 +21,7 @@ def test_start_transaction(mock_data, monkeypatch):
     cp = Chargepoint(1, None)
     cp.data.config.ev = 0
     cp.data.config.ocpp_chargebox_id = "cp1"
+    cp.data.set.rfid = "ABCDEF01234567"
     cp.data.get.plug_state = True
     cp.template = CpTemplate()
     cp.chargepoint_module = ChargepointModule(Mqtt())
@@ -32,7 +33,7 @@ def test_start_transaction(mock_data, monkeypatch):
 
     cp.update({"ev0": Ev(0)})
 
-    assert start_transaction_mock.call_args == (("cp1", cp.chargepoint_module.fault_state, 1, None, 0),)
+    assert start_transaction_mock.call_args == (("cp1", cp.chargepoint_module.fault_state, 1, "ABCDEF01234567", 0),)
 
 
 def test_stop_transaction(mock_data, monkeypatch):

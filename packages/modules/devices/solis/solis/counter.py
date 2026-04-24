@@ -8,6 +8,7 @@ from modules.common.store import get_counter_value_store
 from modules.devices.solis.solis.config import SolisCounterSetup
 from modules.devices.solis.solis.version import SolisVersion
 from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -27,7 +28,7 @@ class SolisCounter:
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.version = self.kwargs['version']
         self.client = self.kwargs['client']
-        self.peak_filter = PeakFilter("counter", self.component_config.id, self.fault_state)
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self):
         unit = self.component_config.configuration.modbus_id

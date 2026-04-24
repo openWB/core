@@ -7,6 +7,8 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount import SimCounter
 from modules.common.store import get_bat_value_store
 from modules.devices.sample_request_by_device.sample_request_by_device.config import SampleBatSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -23,11 +25,13 @@ class SampleBat(AbstractBat):
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
     def update(self, response) -> None:
         # hier die Werte aus der response parsen
         power = response.get("power")
         soc = response.get("soc")
+        self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
 
         bat_state = BatState(

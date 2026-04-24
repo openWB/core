@@ -3,6 +3,7 @@ import { useMqttStore } from "@/stores/mqtt.js";
 import DashboardCard from "@/components/DashboardCard.vue";
 import SparkLine from "@/components/SparkLine.vue";
 import ChargePointPlugBadge from "@/components/ChargePointPlugBadge.vue";
+import ChargePointFaultBadge from "@/components/ChargePointFaultBadge.vue";
 import ChargePointLockButton from "@/components/ChargePointLockButton.vue";
 import ChargePointCodeButton from "@/components/ChargePointCodeButton.vue";
 
@@ -45,6 +46,7 @@ export default {
     DashboardCard,
     SparkLine,
     ChargePointPlugBadge,
+    ChargePointFaultBadge,
     ChargePointLockButton,
     ChargePointCodeButton,
     FontAwesomeIcon,
@@ -93,6 +95,7 @@ export default {
       {{ mqttStore.getChargePointName(chargePointId) }}
     </template>
     <template #headerRight>
+      <charge-point-fault-badge :charge-point-id="[chargePointId]" />
       <charge-point-plug-badge :charge-point-id="[chargePointId]" />
     </template>
     <i-container>

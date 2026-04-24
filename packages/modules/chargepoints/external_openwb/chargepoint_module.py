@@ -70,7 +70,8 @@ class ChargepointModule(AbstractChargepoint):
                              on_connect,
                              on_message,
                              host=self.config.configuration.ip_address,
-                             port=1883).start_finite_loop()
+                             port=1886 if self.config.configuration.ip_address == "localhost" else 1883
+                             ).start_finite_loop()
 
                 if received_topics:
                     log.debug(f"Empfange MQTT Daten für Ladepunkt {self.config.id}: {received_topics}")

@@ -36,7 +36,7 @@ class Huawei_SmartloggerBatConfiguration:
 @auto_str
 class Huawei_SmartloggerBatSetup(ComponentSetup[Huawei_SmartloggerBatConfiguration]):
     def __init__(self,
-                 name: str = " Huawei Luna",
+                 name: str = "Huawei Luna",
                  type: str = "bat",
                  id: int = 0,
                  configuration: Huawei_SmartloggerBatConfiguration = None) -> None:
