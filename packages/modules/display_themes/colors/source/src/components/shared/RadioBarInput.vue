@@ -70,6 +70,7 @@ export type InfoItemValues = {
 	opacity: 1;
 	font-size: var(--font-chargebutton);
 	width: 75px;
+	touch-action: manipulation;
 }
 .btn-outline-secondary.active {
 	background-color: var(--color-bg);
