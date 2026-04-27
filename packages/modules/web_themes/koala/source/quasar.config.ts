@@ -4,7 +4,6 @@
 // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js
 
 import { defineConfig } from '#q-app/wrappers';
-import removeConsole from 'vite-plugin-remove-console';
 
 export default defineConfig((ctx) => {
   return {
@@ -60,11 +59,6 @@ export default defineConfig((ctx) => {
       // viteVuePluginOptions: {},
 
       vitePlugins: [
-        ctx.prod &&
-          removeConsole({
-            // Entfernt alle console.* Methoden
-            includes: ['log', 'debug', 'table'],
-          }),
         [
           'vite-plugin-checker',
           {
@@ -77,6 +71,13 @@ export default defineConfig((ctx) => {
           },
           { server: false },
         ],
+        ctx.prod ? [
+          'vite-plugin-remove-console',
+          {
+            includes: ['log', 'debug', 'table'],
+          },
+          { server: false },
+        ] : null,
       ],
     },
 

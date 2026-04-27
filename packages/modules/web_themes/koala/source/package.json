@@ -40,6 +40,7 @@
     "prettier": "^3.6.2",
     "typescript": "^5.9.2",
     "vite-plugin-checker": "^0.10.2",
+    "vite-plugin-remove-console": "^2.2.0",
     "vitest": "^3.2.4",
     "vue-tsc": "^3.0.5",
     "workbox-build": "^7.3.0",
