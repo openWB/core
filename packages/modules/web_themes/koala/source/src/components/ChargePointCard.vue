@@ -179,7 +179,9 @@ const settingsVisible = ref<boolean>(false);
 const chargeLimitsVisible = ref<boolean>(false);
 
 const limitEditable = computed(() => {
-  return chargeMode.value ? !['scheduled_charging', 'stop'].includes(chargeMode.value) : false;
+  return chargeMode.value
+    ? !['scheduled_charging', 'stop'].includes(chargeMode.value)
+    : false;
 });
 
 const openLimitDialog = () => {

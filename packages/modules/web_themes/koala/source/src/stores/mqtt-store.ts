@@ -695,7 +695,11 @@ export const useMqttStore = defineStore('mqtt', () => {
           minimumFractionDigits: 0,
           maximumFractionDigits: 0,
         });
-        while (scale && scaledValue && (scaledValue > 999 || scaledValue < -999)) {
+        while (
+          scale &&
+          scaledValue &&
+          (scaledValue > 999 || scaledValue < -999)
+        ) {
           scaledValue = scaledValue / 1000;
           scaled = true;
           switch (unitPrefix) {
@@ -717,10 +721,12 @@ export const useMqttStore = defineStore('mqtt', () => {
           const hasDecimalPlaces = scaledValue !== Math.floor(scaledValue || 0);
           outputDecimalPlaces = hasDecimalPlaces ? decimalPlaces : 0;
         }
-        textValue = scaledValue ? scaledValue.toLocaleString(undefined, {
-          minimumFractionDigits: outputDecimalPlaces,
-          maximumFractionDigits: outputDecimalPlaces,
-        }) : defaultString;
+        textValue = scaledValue
+          ? scaledValue.toLocaleString(undefined, {
+              minimumFractionDigits: outputDecimalPlaces,
+              maximumFractionDigits: outputDecimalPlaces,
+            })
+          : defaultString;
       }
       return {
         textValue: `${textValue} ${unitPrefix}${unit}`,
