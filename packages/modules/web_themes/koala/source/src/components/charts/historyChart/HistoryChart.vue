@@ -19,7 +19,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useQuasar } from 'quasar';
-import type { ChartOptions } from 'chart.js';
+import type { ChartOptions, Point } from 'chart.js';
 import { Line as ChartjsLine } from 'vue-chartjs';
 import {
   Chart,
@@ -137,8 +137,8 @@ const secondaryCounterDatasets = computed(() =>
         backgroundColor: getGlobalColor('--q-secondary-counter-fill'),
         data: selectedData.value.map((item) => ({
           x: item.timestamp * 1000,
-          y: item[`counter${id}-power`] ?? 0,
-        })),
+          y: item[`counter${id}-power` as keyof GraphDataPoint] ?? 0,
+        } as Point)),
         borderWidth: 2,
         pointRadius: 0,
         pointHoverRadius: 4,
@@ -159,8 +159,8 @@ const chargePointDatasets = computed(() =>
     backgroundColor: getGlobalColor('--q-charge-point-fill'),
     data: selectedData.value.map((item) => ({
       x: item.timestamp * 1000,
-      y: item[`cp${cpId}-power`] || 0,
-    })),
+      y: item[`cp${cpId}-power` as keyof GraphDataPoint] || 0,
+    } as Point)),
     borderWidth: 2,
     pointRadius: 0,
     pointHoverRadius: 4,
@@ -188,7 +188,7 @@ const vehicleDatasets = computed(() =>
           data: selectedData.value.map((item) => ({
             x: item.timestamp * 1000,
             y: Number(item[socKey] ?? 0),
-          })),
+          } as Point)),
           fill: false,
           yAxisID: 'y2',
         };
@@ -239,7 +239,7 @@ const lineChartData = computed(() => {
       data: selectedData.value.map((item) => ({
         x: item.timestamp * 1000,
         y: item.grid,
-      })),
+      } as Point)),
       borderWidth: 2,
       pointRadius: 0,
       pointHoverRadius: 4,
@@ -258,7 +258,7 @@ const lineChartData = computed(() => {
       data: selectedData.value.map((item) => ({
         x: item.timestamp * 1000,
         y: item['house-power'],
-      })),
+      } as Point)),
       borderWidth: 2,
       pointRadius: 0,
       pointHoverRadius: 4,
@@ -278,7 +278,7 @@ const lineChartData = computed(() => {
       data: selectedData.value.map((item) => ({
         x: item.timestamp * 1000,
         y: item['pv-all'],
-      })),
+      } as Point)),
       borderWidth: 2,
       pointRadius: 0,
       pointHoverRadius: 4,
@@ -298,7 +298,7 @@ const lineChartData = computed(() => {
         data: selectedData.value.map((item) => ({
           x: item.timestamp * 1000,
           y: item['bat-all-power'],
-        })),
+        } as Point)),
         borderWidth: 2,
         pointRadius: 0,
         pointHoverRadius: 4,
@@ -319,7 +319,7 @@ const lineChartData = computed(() => {
         data: selectedData.value.map((item) => ({
           x: item.timestamp * 1000,
           y: item['bat-all-soc'],
-        })),
+        } as Point)),
         fill: false,
         yAxisID: 'y2',
       },

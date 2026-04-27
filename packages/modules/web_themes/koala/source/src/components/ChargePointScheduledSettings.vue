@@ -20,7 +20,7 @@
         class="full-width"
         :charge-point-id="props.chargePointId"
         :plan="plan"
-        @edit-plan="openPlanDialog(plan)"
+        @edit-plan="openPlanDialog(plan.id)"
       />
     </div>
     <q-dialog
@@ -67,8 +67,8 @@ const selectedPlan = computed(() => {
 
 const currentPlanDetailsVisible = ref(false);
 
-const openPlanDialog = (plan) => {
-  selectedPlanId.value = plan.id;
+const openPlanDialog = (planId: number) => {
+  selectedPlanId.value = planId;
   currentPlanDetailsVisible.value = true;
 };
 

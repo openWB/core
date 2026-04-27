@@ -39,7 +39,7 @@ defineOptions({
 const props = withDefaults(
   defineProps<{
     title?: string;
-    modelValue: number;
+    modelValue?: number;
     max: number;
     min: number;
     step?: number;
@@ -54,6 +54,7 @@ const props = withDefaults(
   }>(),
   {
     title: 'title',
+    modelValue: 0,
     step: 1,
     unit: '',
     offValueRight: 105,

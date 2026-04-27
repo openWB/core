@@ -96,10 +96,12 @@ const chartDataObject = computed<ChartData<'line'>>(() => {
     }
     // repeat last dataset with 59min 59sec offset
     const lastData = myData.slice(-1)[0];
-    myData.push({
-      x: lastData.x + (60 * 60 - 1) * 1000,
-      y: lastData.y,
-    });
+    if (lastData && typeof lastData.x === 'number' && typeof lastData.y === 'number') {
+      myData.push({
+        x: lastData.x + (60 * 60 - 1) * 1000,
+        y: lastData.y,
+      });
+    }
   }
   const dataObject = chartDatasets.value;
   dataObject.datasets[0].data = myData;
@@ -124,7 +126,7 @@ const priceAnnotations = computed(() => {
 
   const colorUnblocked = 'rgba(73, 238, 73, 0.2)'; // ToDo: use theme color
   const colorBlocked = 'rgba(255, 10, 13, 0.2)'; // ToDo: use theme color
-  const myData = chartDataObject.value.datasets[0].data as Point[];
+  const myData = chartDataObject.value.datasets[0].data as { x: number; y: number }[];
   let annotations: Annotation[] = [];
   if (props.modelValue !== undefined) {
     for (let i = 0; i < myData.length; i++) {
@@ -274,7 +276,7 @@ function chartClick(event: MouseEvent) {
   if (points.length > 0) {
     const dataPoint = chartDataObject.value.datasets[0].data[
       points[0].index
-    ] as Point;
+    ] as { x: number; y: number };
     emit('update:modelValue', Math.ceil(dataPoint.y * 100) / 100);
   }
 }
