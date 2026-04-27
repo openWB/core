@@ -9,7 +9,7 @@
       @click="addScheduledChargingPlan"
     />
   </div>
-    <BaseMessage
+  <BaseMessage
     v-if="plans.length === 0"
     message="Keine Zeitpläne vorhanden."
     type="info"
