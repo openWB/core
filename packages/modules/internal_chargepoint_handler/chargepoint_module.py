@@ -153,9 +153,7 @@ class ChargepointModule(AbstractChargepoint):
                 time.sleep(0.5)
                 evse.set_current(0)
             else:
-                log.error("CP%d: EVSE did not reach 0 A within 10s — aborting phase switch.",
-                          self.local_charge_point_num)
-                return
+                raise Exception("Ladung konnte nicht gestoppt werden - Phasenumschaltung abgebrochen.")
         GPIO.output(gpio_cp, GPIO.HIGH)  # CP off
         GPIO.output(gpio_relay, GPIO.HIGH)  # 3 on/off
         time.sleep(5)
