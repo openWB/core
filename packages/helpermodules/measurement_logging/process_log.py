@@ -1,5 +1,3 @@
-import datetime
-from decimal import Decimal
 from enum import Enum
 import json
 import logging
@@ -10,6 +8,7 @@ from helpermodules import timecheck
 from helpermodules.measurement_logging.write_log import (LegacySmartHomeLogData, LogType, create_entry,
                                                          get_previous_entry)
 from helpermodules.messaging import MessageType, pub_system_message
+from helpermodules.utils.precision_math import decimal_add, decimal_multiply, decimal_subtract
 
 log = logging.getLogger(__name__)
 
@@ -48,18 +47,14 @@ def get_default_charge_log_columns() -> Dict:
     }
 
 
-def string_to_float(value: str, default: float = 0) -> float:
-    try:
-        return float(value)
-    except ValueError:
-        return default
-
-
-def string_to_int(value: str, default: int = 0) -> int:
-    try:
-        return int(value)
-    except ValueError:
-        return default
+def safe_get_nested(data: Dict, *keys, default: Union[int, float] = 0) -> Union[int, float]:
+    current = data
+    for key in keys:
+        if isinstance(current, dict) and key in current:
+            current = current[key]
+        else:
+            return default
+    return current if isinstance(current, (int, float)) else default
 
 
 def get_totals(entries: List, process_entries: bool = True) -> Dict:
@@ -88,13 +83,9 @@ def get_totals(entries: List, process_entries: bool = True) -> Dict:
                         for entry_module_key, entry_module_value in entry[totals_group][entry_module].items():
                             if "grid" != entry_module_key and entry_module_key in totals[totals_group][entry_module]:
                                 # avoid floating point issues with using Decimal
-                                value = (Decimal(str(totals[totals_group][entry_module][entry_module_key]))
-                                         + Decimal(str(entry_module_value * 1000)))  # totals in Wh!
-                                value.quantize(Decimal('0.001'))
-                                value = f'{value: f}'
-                                # remove trailing zeros
-                                totals[totals_group][entry_module][entry_module_key] = string_to_float(
-                                    value) if "." in value else string_to_int(value)
+                                current_total = totals[totals_group][entry_module][entry_module_key]
+                                totals[totals_group][entry_module][entry_module_key] = decimal_add(
+                                    current_total, entry_module_value)  # totals in Wh!
 
                     except Exception:
                         log.exception(f"Fehler beim Berechnen der Summe von {entry_module}; "
@@ -194,7 +185,7 @@ def _collect_daily_log_data(date: str):
                 except FILE_ERRORS:
                     pass
     except FILE_ERRORS:
-        log_data = {"entries": [], "totals": {}, "names": {}}
+        log_data = {"entries": [], "names": {}}
     return log_data
 
 
@@ -233,7 +224,7 @@ def _collect_monthly_log_data(date: str):
             except FILE_ERRORS:
                 pass
     except FILE_ERRORS:
-        log_data = {"entries": [], "totals": {}, "names": {}}
+        log_data = {"entries": [], "names": {}}
     return log_data
 
 
@@ -243,66 +234,6 @@ def get_yearly_log(year: str):
     data["totals"] = get_totals(data["entries"], False)
     data = _analyse_energy_source(data)
     return data
-
-
-def get_log_from_date_until_now(timestamp: int):
-    data = {}
-    try:
-        entries = _collect_log_data_from_date_until_now(timestamp)
-        data["entries"] = _process_entries(entries, CalculationType.ENERGY)
-        data["totals"] = get_totals(data["entries"], False)
-        data = _analyse_energy_source(data)
-    except Exception:
-        log.exception(f"Fehler beim Zusammenstellen der Logdaten von {timestamp}")
-    finally:
-        return data
-
-
-def _collect_log_data_from_date_until_now(timestamp: int):
-    def add_to_list(log_data: List, data: Union[Dict, List]):
-        if isinstance(data, list):
-            log_data.extend(data)
-        else:
-            log_data.append(data)
-        return log_data
-    log_data = []
-    try:
-        date = datetime.datetime.fromtimestamp(timestamp).strftime("%Y%m%d")
-        try:
-            with open(f"{_get_data_folder_path()}/daily_log/{date}.json", "r") as jsonFile:
-                entries = json.load(jsonFile)["entries"]
-        except FILE_ERRORS:
-            pass
-        for index, entry in enumerate(entries):
-            if entry["timestamp"] > timestamp:
-                log_data = add_to_list(log_data, entries[index:])
-                break
-        else:
-            try:
-                # Wenn der Ladevorgang nicht über volle 5 Minuten ging, wurde während dem Laden kein Eintrag ins
-                # daily-log geschrieben.
-                log_data = add_to_list(log_data, entries[-1])
-            except KeyError:
-                log.exception(f"Fehler beim Zusammenstellen der Logdaten. Bitte Logdatei daily_log/{date}.json prüfen.")
-        # Das Teillog vom ersten Tag wurde bereits ermittelt.
-        start_date = datetime.datetime.fromtimestamp(timestamp) + datetime.timedelta(days=1)
-        end_date = datetime.datetime.now()
-        current_date = start_date
-        date_list = []
-        while current_date <= end_date:
-            date_list.append(current_date.strftime('%Y%m%d'))
-            current_date += datetime.timedelta(days=1)
-        for date_str in date_list:
-            try:
-                with open(f"{_get_data_folder_path()}/daily_log/{date_str}.json", "r") as jsonFile:
-                    log_data = add_to_list(log_data, json.load(jsonFile)["entries"])
-            except FILE_ERRORS:
-                pass
-        log_data = add_to_list(log_data, create_entry(LogType.DAILY, LegacySmartHomeLogData(), log_data[-1]))
-    except Exception:
-        log.exception(f"Fehler beim Zusammenstellen der Logdaten von {timestamp}")
-    finally:
-        return log_data
 
 
 def _collect_yearly_log_data(year: str):
@@ -382,6 +313,7 @@ def _analyse_energy_source(data) -> Dict:
         try:
             for i in range(0, len(data["entries"])):
                 data["entries"][i] = analyse_percentage(data["entries"][i])
+                data["entries"][i] = calc_energy_imported_by_source(data["entries"][i])
             data["totals"] = analyse_percentage_totals(data["entries"], data["totals"])
         except Exception:
             pub_system_message({}, "Fehler beim Berechnen des Strom-Mix", MessageType.ERROR)
@@ -398,65 +330,57 @@ def analyse_percentage(entry):
             raise KeyError(f"Kein Zähler für das Netz gefunden in Eintrag '{entry['timestamp']}'.")
         return sum(grid["energy_imported"] for grid in grids), sum(grid["energy_exported"] for grid in grids)
 
-    def calc_energy_imported_by_source(energy_imported, energy_source):
-        value = (Decimal(str(energy_imported)) *
-                 Decimal(str(energy_source))).quantize(Decimal('0.001'))  # limit precision
-        value = f'{value: f}'
-        value = string_to_float(value) if "." in value else string_to_int(value)
-        return value
-
     try:
-        bat_imported = entry["bat"]["all"]["energy_imported"] if "all" in entry["bat"].keys() else 0
-        bat_exported = entry["bat"]["all"]["energy_exported"] if "all" in entry["bat"].keys() else 0
-        cp_exported = entry["cp"]["all"]["energy_exported"] if "all" in entry["cp"].keys() else 0
-        pv = entry["pv"]["all"]["energy_exported"] if "all" in entry["pv"].keys() else 0
+        bat_imported = safe_get_nested(entry, "bat", "all", "energy_imported")
+        bat_exported = safe_get_nested(entry, "bat", "all", "energy_exported")
+        cp_exported = safe_get_nested(entry, "cp", "all", "energy_exported")
+        pv_exported = safe_get_nested(entry, "pv", "all", "energy_exported")
         grid_imported, grid_exported = get_grid_from(entry)
-        consumption = grid_imported - grid_exported + pv + bat_exported - bat_imported + cp_exported
-        for type in ("bat", "cp"):
-            if entry[type]["all"]["energy_imported"] > consumption:
-                consumption += entry[type]["all"]["energy_imported"] - consumption
-                grid_imported += entry[type]["all"]["energy_imported"] - grid_imported
-                log.debug(f"Angepasste Verbrauchswerte für {type} um "
-                          f"{entry[type]['all']['energy_imported'] - consumption} kWh")
-        for counter in entry["counter"].values():
-            if counter["grid"] is False:
-                if counter["energy_imported"] > consumption:
-                    consumption += counter["energy_imported"] - consumption
-                    grid_imported += counter["energy_imported"] - grid_imported
-                    log.debug(f"Angepasste Verbrauchswerte für {type} um "
-                              f"{entry[type]['all']['energy_imported'] - consumption} kWh")
+        consumption = grid_imported - grid_exported + pv_exported + bat_exported - bat_imported + cp_exported
+        if consumption < 0:
+            consumption = 0
+
         try:
-            if grid_exported > pv:
-                # Ins Netz eingespeiste Leistung kam nicht von der PV-Anlage sondern aus dem Speicher
-                consumption += grid_exported - pv
-            elif bat_imported > pv:
-                # Die geladene Energie des Speichers kam nicht von der PV-Anlage sondern aus dem Netz
-                consumption += bat_imported - pv
-            grid_energy_source = format(grid_imported / consumption)
-            cp_energy_source = format(cp_exported/consumption)
-            bat_energy_source = format(bat_exported/consumption)
-            pv_energy_source = format(1 - grid_energy_source - bat_energy_source - cp_energy_source)
+            pv_direct = min(pv_exported, consumption)
+            remaining = consumption - pv_direct
+
+            bat_direct = min(bat_exported, remaining)
+            remaining -= bat_direct
+
+            cp_direct = min(cp_exported, remaining)
+            remaining -= cp_direct
+
+            grid_direct = min(grid_imported, remaining)
+
             entry["energy_source"] = {
-                "grid": grid_energy_source,
-                "pv": pv_energy_source,
-                "bat": bat_energy_source,
-                "cp": cp_energy_source}
+                "grid": format(grid_direct / consumption),
+                "pv": format(pv_direct / consumption),
+                "bat": format(bat_direct / consumption),
+                "cp": format(cp_direct / consumption)}
         except ZeroDivisionError:
             entry["energy_source"] = {"grid": 0, "pv": 0, "bat": 0, "cp": 0}
+    except Exception:
+        log.exception(f"Fehler beim Berechnen des Strom-Mix von {entry['timestamp']}")
+    finally:
+        return entry
+
+
+def calc_energy_imported_by_source(entry):
+
+    try:
         for source in ("grid", "pv", "bat", "cp"):
             if "all" in entry["hc"].keys():
-                entry["hc"]["all"][f"energy_imported_{source}"] = calc_energy_imported_by_source(
+                entry["hc"]["all"][f"energy_imported_{source}"] = decimal_multiply(
                     entry["hc"]["all"]["energy_imported"], entry["energy_source"][source])
             for key in entry["cp"].keys():
-                entry["cp"][key][f"energy_imported_{source}"] = calc_energy_imported_by_source(
+                entry["cp"][key][f"energy_imported_{source}"] = decimal_multiply(
                     entry["cp"][key]["energy_imported"], entry["energy_source"][source])
             for counter in entry["counter"].values():
                 if counter["grid"] is False:
-                    counter[f"energy_imported_{source}"] = calc_energy_imported_by_source(
+                    counter[f"energy_imported_{source}"] = decimal_multiply(
                         counter["energy_imported"], entry["energy_source"][source])
-
     except Exception:
-        log.exception(f"Fehler beim Berechnen des Strom-Mix von {entry['timestamp']}")
+        log.exception(f"Fehler beim Berechnen der Engergie-Anteile aus dem Strom-Mix von {entry['timestamp']}")
     finally:
         return entry
 
@@ -469,18 +393,26 @@ def analyse_percentage_totals(entries, totals):
         totals["hc"]["all"].update({f"energy_imported_{source}": 0})
         for entry in entries:
             if "hc" in entry.keys() and "all" in entry["hc"].keys():
-                totals["hc"]["all"][f"energy_imported_{source}"] += entry["hc"]["all"].get(
-                    f"energy_imported_{source}", 0)*1000
+                current_value = totals["hc"]["all"][f"energy_imported_{source}"]
+                add_value = entry["hc"]["all"].get(f"energy_imported_{source}", 0)
+                totals["hc"]["all"][f"energy_imported_{source}"] = decimal_add(
+                    current_value, add_value)
             for key in entry["cp"].keys():
                 if f"energy_imported_{source}" in entry["cp"][key].keys():
                     if totals["cp"][key].get(f"energy_imported_{source}") is None:
                         totals["cp"][key].update({f"energy_imported_{source}": 0})
-                    totals["cp"][key][f"energy_imported_{source}"] += entry["cp"][key][f"energy_imported_{source}"]*1000
+                    current_value = totals["cp"][key][f"energy_imported_{source}"]
+                    add_value = entry["cp"][key][f"energy_imported_{source}"]
+                    totals["cp"][key][f"energy_imported_{source}"] = decimal_add(
+                        current_value, add_value)
             for key, counter in entry["counter"].items():
                 if counter["grid"] is False:
                     if totals["counter"][key].get(f"energy_imported_{source}") is None:
                         totals["counter"][key].update({f"energy_imported_{source}": 0})
-                    totals["counter"][key][f"energy_imported_{source}"] += counter[f"energy_imported_{source}"]*1000
+                    current_value = totals["counter"][key][f"energy_imported_{source}"]
+                    add_value = counter[f"energy_imported_{source}"]
+                    totals["counter"][key][f"energy_imported_{source}"] = decimal_add(
+                        current_value, add_value)
     return totals
 
 
@@ -536,8 +468,8 @@ def process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
                                 average_power = 0
                             else:
                                 average_power = _calculate_average_power(
-                                    time_diff, value_imported / 1000, next_value_imported / 1000,
-                                    value_exported / 1000, next_value_exported / 1000)
+                                    time_diff, value_imported, next_value_imported,
+                                    value_exported, next_value_exported)
                             new_data.update({
                                 "power_average": average_power,
                                 "power_imported": average_power if average_power >= 0 else 0,
@@ -548,14 +480,14 @@ def process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
                                 # do not calculate as we have a backwards jump in our meter value!
                                 energy_imported = 0
                             else:
-                                energy_imported = _calculate_energy_difference(value_imported / 1000,
-                                                                               next_value_imported / 1000)
+                                energy_imported = decimal_subtract(next_value_imported,
+                                                                   value_imported)
                             if next_value_exported < value_exported:
                                 # do not calculate as we have a backwards jump in our meter value!
                                 energy_exported = 0
                             else:
-                                energy_exported = _calculate_energy_difference(value_exported / 1000,
-                                                                               next_value_exported / 1000)
+                                energy_exported = decimal_subtract(next_value_exported,
+                                                                   value_exported)
                             new_data.update({
                                 "energy_imported": energy_imported,
                                 "energy_exported": energy_exported
@@ -579,20 +511,12 @@ def process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
     return entry
 
 
-def _calculate_energy_difference(current_value: float, next_value: float) -> float:
-    value = (Decimal(str(next_value)) - Decimal(str(current_value)))
-    value = value.quantize(Decimal('0.001'))  # limit precision
-    value = f'{value: f}'
-    return string_to_float(value) if "." in value else string_to_int(value)
-
-
 def _calculate_average_power(time_diff: float, current_imported: float = 0, next_imported: float = 0,
                              current_exported: float = 0, next_exported: float = 0) -> float:
-    power = (Decimal(str(next_imported)) - Decimal(str(current_imported))
-             - (Decimal(str(next_exported)) - Decimal(str(current_exported)))) * Decimal(str(3600 / time_diff))  # Ws
-    power = power.quantize(Decimal('0.001'))  # limit precision
-    power = f'{power: f}'
-    return string_to_float(power) if "." in power else string_to_int(power)
+    imported_diff = decimal_subtract(next_imported, current_imported)
+    exported_diff = decimal_subtract(next_exported, current_exported)
+    energy_diff = decimal_subtract(imported_diff, exported_diff)
+    return decimal_multiply(energy_diff, 3600 / time_diff)  # Ws -> W
 
 
 def _get_data_folder_path() -> str:

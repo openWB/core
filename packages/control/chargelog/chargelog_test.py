@@ -62,7 +62,7 @@ def test_calc_charge_cost_reference_middle(mock_data, monkeypatch):
         calc_energy_costs(cp)
 
     assert cp.data.set.log.charged_energy_by_source == {
-        'grid': 1243, 'pv': 386, 'bat': 671, 'cp': 0.0}
+        'grid': 1242.8, 'pv': 385.8, 'bat': 671.4, 'cp': 0.0}
     assert round(cp.data.set.log.costs, 5) == 0.5
 
 
@@ -77,8 +77,7 @@ def test_calc_charge_cost_reference_start(mock_data, monkeypatch):
     with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
         calc_energy_costs(cp)
 
-    assert cp.data.set.log.charged_energy_by_source == {
-        'bat': 28.549999999999997, 'cp': 0.0, 'grid': 57.15, 'pv': 14.299999999999999}
+    assert cp.data.set.log.charged_energy_by_source == {'bat': 28.57, 'cp': 0.0, 'grid': 57.14, 'pv': 14.29}
     assert round(cp.data.set.log.costs, 5) == 0.025
 
 
@@ -93,7 +92,7 @@ def test_calc_charge_cost_reference_end(mock_data, monkeypatch):
     with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
         calc_energy_costs(cp, True)
 
-    assert cp.data.set.log.charged_energy_by_source == {'bat': 699.55, 'cp': 0.0, 'grid': 1300.15, 'pv': 400.3}
+    assert cp.data.set.log.charged_energy_by_source == {'bat': 699.57, 'cp': 0.0, 'grid': 1300.14, 'pv': 400.29}
     assert round(cp.data.set.log.costs, 5) == 0.025
 
 
@@ -144,5 +143,5 @@ def test_calc_charge_cost_reference_middle_day_change(mock_data, monkeypatch):
         calc_energy_costs(cp)
 
     assert cp.data.set.log.charged_energy_by_source == {
-        'grid': 1243, 'pv': 386, 'bat': 671, 'cp': 0.0}
+        'grid': 1242.8, 'pv': 385.8, 'bat': 671.4, 'cp': 0.0}
     assert round(cp.data.set.log.costs, 5) == 0.5
