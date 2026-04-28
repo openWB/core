@@ -71,13 +71,15 @@ export default defineConfig((ctx) => {
           },
           { server: false },
         ],
-        ctx.prod ? [
-          'vite-plugin-remove-console',
-          {
-            includes: ['log', 'debug', 'table'],
-          },
-          { server: false },
-        ] : null,
+        ctx.prod
+          ? [
+              'vite-plugin-remove-console',
+              {
+                includes: ['log', 'debug', 'table'],
+              },
+              { server: false },
+            ]
+          : null,
       ],
     },
 
