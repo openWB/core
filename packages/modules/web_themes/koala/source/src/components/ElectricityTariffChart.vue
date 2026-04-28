@@ -201,6 +201,7 @@ const myChartOptions = computed<ChartOptions<'line'>>(() => {
       mode: 'index',
       intersect: false,
     },
+    animation: false,
     scales: {
       x: {
         type: 'time',
