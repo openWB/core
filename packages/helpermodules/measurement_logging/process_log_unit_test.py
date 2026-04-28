@@ -1,7 +1,6 @@
 from copy import deepcopy
 import json
 import os
-from pprint import pprint
 from typing import Dict
 from unittest.mock import Mock, mock_open
 import pytest
@@ -220,7 +219,7 @@ def test_analyse_percentage_totals():
 def test_convert(daily_log_entry_processed, daily_log_sample):
     # setup and execution
     entry = process_entry(daily_log_sample[0], daily_log_sample[1], CalculationType.ALL)
-    pprint(entry)
+
     # evaluation
     assert entry == daily_log_entry_processed
 

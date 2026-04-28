@@ -366,8 +366,9 @@ def analyse_percentage(entry):
 
 
 def calc_energy_imported_by_source(entry):
-
     try:
+        if "energy_source" not in entry.keys():
+            return
         for source in ("grid", "pv", "bat", "cp"):
             if "all" in entry["hc"].keys():
                 entry["hc"]["all"][f"energy_imported_{source}"] = decimal_multiply(
@@ -380,7 +381,7 @@ def calc_energy_imported_by_source(entry):
                     counter[f"energy_imported_{source}"] = decimal_multiply(
                         counter["energy_imported"], entry["energy_source"][source])
     except Exception:
-        log.exception(f"Fehler beim Berechnen der Engergie-Anteile aus dem Strom-Mix von {entry['timestamp']}")
+        log.exception(f"Fehler beim Berechnen der Energie-Anteile aus dem Strom-Mix von {entry['timestamp']}")
     finally:
         return entry
 

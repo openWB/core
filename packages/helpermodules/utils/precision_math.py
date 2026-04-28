@@ -20,8 +20,10 @@ def string_to_int(value: str, default: int = 0) -> int:
 
 def _decimal_to_number(decimal_value: Decimal) -> Union[int, float]:
     """Convert Decimal to int or float, removing trailing zeros."""
-    value_str = f'{decimal_value: f}'
-    return string_to_float(value_str) if "." in value_str else string_to_int(value_str)
+    normalized_value = decimal_value.normalize()
+    value_str = format(normalized_value, 'f')
+    return (string_to_int(value_str) if normalized_value == normalized_value.to_integral()
+            else string_to_float(value_str))
 
 
 def decimal_add(current_value: Union[int, float], add_value: Union[int, float]) -> Union[int, float]:
