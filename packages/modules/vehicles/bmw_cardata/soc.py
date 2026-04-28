@@ -4,6 +4,7 @@ from typing import List, Optional
 
 from requests.exceptions import RequestException
 
+from control import data as control_data
 from dataclass_utils import asdict
 from helpermodules.pub import Pub
 from modules.common import req
@@ -35,6 +36,7 @@ CONTAINER_DESCRIPTORS = [
     "vehicle.drivetrain.electricEngine.charging.level",
     "vehicle.drivetrain.batteryManagement.header",
     "vehicle.drivetrain.electricEngine.remainingElectricRange",
+    "vehicle.drivetrain.electricEngine.kombiRemainingElectricRange",
     "vehicle.vehicle.travelledDistance",
 ]
 
@@ -153,7 +155,6 @@ def get_valid_token(cfg: BmwCardataConfiguration, vehicle: int, config: BmwCarda
     # Neuen Token zurück in MQTT schreiben – auch für alle anderen BMW CarData
     # Fahrzeuge mit derselben Client ID damit diese nicht invalidiert werden
     try:
-        from control import data as control_data
         for ev_key, ev in control_data.data.ev_data.items():
             try:
                 soc_module = ev.soc_module
@@ -255,6 +256,13 @@ def fetch_soc(config: BmwCardataSetup, vehicle: int = 0) -> CarState:
 
     if soc is None:
         raise Exception("BMW CarData: Kein SoC-Wert in API-Antwort gefunden!")
+
+    if vehicle_range is None and cfg.container_id:
+        log.warning(
+            "BMW CarData: Kein Reichweitenwert im Container gefunden – "
+            "Container wird neu erstellt um fehlende Datenpunkte zu ergänzen."
+        )
+        cfg.container_id = ""
 
     log.info(
         "BMW CarData: SoC=%s%%, Reichweite=%s km, Status=%s, Odometer=%s km",
