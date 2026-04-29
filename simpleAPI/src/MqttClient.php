@@ -29,6 +29,15 @@ class MqttClient
     }
 
     /**
+     * MQTT-Anmeldedaten aktualisieren
+     */
+    public function setCredentials($username, $password)
+    {
+        $this->username = $username;
+        $this->password = $password;
+    }
+
+    /**
      * Verbindung testen
      */
     public function connect()
@@ -39,6 +48,28 @@ class MqttClient
 
         // Wenn kein Fehler zurückkommt, ist die Verbindung OK
         return !preg_match('/error|failed|unable/i', $result ?? '');
+    }
+
+    /**
+     * Anmeldedaten am MQTT Broker testen
+     */
+    public function testCredentials($username, $password)
+    {
+        // Test-Verbindung mit mosquitto_sub (sehr kurzes Timeout)
+        $cmd = $this->buildMosquittoCommandWithCredentials('sub', '$SYS/broker/uptime', '', 1, 2, $username, $password);
+        $result = shell_exec($cmd . ' 2>&1');
+        
+        // Prüfen auf Authentifizierungsfehler
+        if (preg_match('/not authorised|connection refused|authentication failed|username or password invalid/i', $result ?? '')) {
+            return false;
+        }
+        
+        // Prüfen auf andere schwerwiegende Fehler
+        if (preg_match('/connection error|network unreachable|no such host/i', $result ?? '')) {
+            return false;
+        }
+        
+        return true;
     }
 
     /**
@@ -108,6 +139,14 @@ class MqttClient
      */
     private function buildMosquittoCommand($type, $topics, $message = '', $count = null, $timeout = 1, $extraArgs = [])
     {
+        return $this->buildMosquittoCommandWithCredentials($type, $topics, $message, $count, $timeout, $this->username, $this->password, $extraArgs);
+    }
+
+    /**
+     * Mosquitto-Kommando mit spezifischen Anmeldedaten erstellen
+     */
+    private function buildMosquittoCommandWithCredentials($type, $topics, $message = '', $count = null, $timeout = 1, $username = null, $password = null, $extraArgs = [])
+    {
         $binary = $type === 'sub' ? 'mosquitto_sub' : 'mosquitto_pub';
 
         $cmd = sprintf(
@@ -123,11 +162,14 @@ class MqttClient
         }
 
         // Username/Passwort hinzufügen falls konfiguriert
-        if (!empty($this->username)) {
-            $cmd .= sprintf(" -u %s", escapeshellarg($this->username));
+        $useUsername = $username !== null ? $username : $this->username;
+        $usePassword = $password !== null ? $password : $this->password;
+        
+        if (!empty($useUsername)) {
+            $cmd .= sprintf(" -u %s", escapeshellarg($useUsername));
         }
-        if (!empty($this->password)) {
-            $cmd .= sprintf(" -P %s", escapeshellarg($this->password));
+        if (!empty($usePassword)) {
+            $cmd .= sprintf(" -P %s", escapeshellarg($usePassword));
         }
 
         // Topic(s) hinzufügen
