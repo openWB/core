@@ -327,7 +327,7 @@ def write_new_entry(new_entry):
 def calc_energy_costs(cp, create_log_entry: bool = False):
     try:
         if cp.data.set.log.imported_since_plugged != 0 and cp.data.set.log.imported_since_mode_switch != 0:
-            processed_entries, reference_entries = _get_reference_entries()
+            processed_entries, reference_entries = _get_reference_entries(cp)
             charged_energy_by_source = calculate_charged_energy_by_source(
                 cp, processed_entries, reference_entries, create_log_entry)
             _add_charged_energy_by_source(cp, charged_energy_by_source)
@@ -396,7 +396,7 @@ def _get_reference_position(cp, create_log_entry: bool) -> ReferenceTime:
             return ReferenceTime.MIDDLE
 
 
-def _get_reference_entries() -> Tuple[List[Dict], List]:
+def _get_reference_entries(cp) -> Tuple[List[Dict], List]:
     processed_entries = {}
     reference_entries = []
     try:
@@ -410,7 +410,7 @@ def _get_reference_entries() -> Tuple[List[Dict], List]:
         processed_entries["entries"] = copy.deepcopy(reference_entries)
         processed_entries["entries"] = _process_entries(processed_entries["entries"], CalculationType.ENERGY)
         processed_entries["totals"] = get_totals(processed_entries["entries"], False)
-        processed_entries = _analyse_energy_source(processed_entries)
+        processed_entries = _analyse_energy_source(processed_entries, f"cp{cp.num}")
     except Exception:
         log.exception("Fehler beim Zusammenstellen der zwei letzten Logeinträge")
     finally:

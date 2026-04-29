@@ -2,7 +2,7 @@ from enum import Enum
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 from helpermodules import timecheck
 from helpermodules.measurement_logging.write_log import (LegacySmartHomeLogData, LogType, create_entry,
@@ -308,19 +308,27 @@ def _collect_yearly_log_data(year: str):
     return {"entries": entries, "names": names}
 
 
-def _analyse_energy_source(data) -> Dict:
+def _analyse_energy_source(data, calc_cp: Optional[str] = None) -> Dict:
     if data and len(data["entries"]) > 0:
         try:
             for i in range(0, len(data["entries"])):
-                data["entries"][i] = analyse_percentage(data["entries"][i])
-                data["entries"][i] = calc_energy_imported_by_source(data["entries"][i])
+                data["entries"][i], message_analyse = analyse_percentage(data["entries"][i])
+                if calc_cp is not None:
+                    data["entries"][i], message_calc = calc_energy_imported_by_source_cp(data["entries"][i], calc_cp)
+                else:
+                    data["entries"][i], message_calc = calc_energy_imported_by_source_all(data["entries"][i])
             data["totals"] = analyse_percentage_totals(data["entries"], data["totals"])
         except Exception:
             pub_system_message({}, "Fehler beim Berechnen des Strom-Mix", MessageType.ERROR)
+    data["message"] = message_analyse + message_calc
     return data
 
 
-def analyse_percentage(entry):
+def analyse_percentage(entry) -> Tuple[Dict, str]:
+    EOOR_STATE_MSG = ("Der Strom-Mix um " + entry["date"] +
+                      " konnte nicht berechnet werden, da sich {} im Fehlerzustand befindet. Alle Verbräuche werden" +
+                      " dem Netz zugerechnet.\n")
+
     def format(value):
         return round(value, 4)
 
@@ -330,72 +338,142 @@ def analyse_percentage(entry):
             raise KeyError(f"Kein Zähler für das Netz gefunden in Eintrag '{entry['timestamp']}'.")
         return sum(grid["energy_imported"] for grid in grids), sum(grid["energy_exported"] for grid in grids)
 
+    def get_grid_error_state(entry) -> int:
+        grids = [counter for counter in entry["counter"].values() if counter.get("grid")]
+        if not grids:
+            raise KeyError(f"Kein Zähler für das Netz gefunden in Eintrag '{entry['timestamp']}'.")
+        max_grid = max(grids, key=lambda g: g.get("fault_state", 0))
+        return max_grid.get("fault_state", 0)
+
     try:
-        bat_imported = safe_get_nested(entry, "bat", "all", "energy_imported")
-        bat_exported = safe_get_nested(entry, "bat", "all", "energy_exported")
-        cp_exported = safe_get_nested(entry, "cp", "all", "energy_exported")
-        pv_exported = safe_get_nested(entry, "pv", "all", "energy_exported")
-        grid_imported, grid_exported = get_grid_from(entry)
-        consumption = grid_imported - grid_exported + pv_exported + bat_exported - bat_imported + cp_exported
-        if consumption < 0:
-            consumption = 0
+        message = ""
+        if (safe_get_nested(entry, "bat", "all", "fault_state") == 2 or
+                safe_get_nested(entry, "cp", "all", "fault_state") == 2 or
+                safe_get_nested(entry, "pv", "all", "fault_state") == 2 or
+                get_grid_error_state(entry) == 2):
 
-        try:
-            pv_direct = min(pv_exported, consumption)
-            remaining = consumption - pv_direct
+            entry["energy_source"] = {"grid": 1, "pv": 0, "bat": 0, "cp": 0}
+            if safe_get_nested(entry, "bat", "all", "fault_state") == 2:
+                message += EOOR_STATE_MSG.format("mind. einer der Speicher")
+            if safe_get_nested(entry, "cp", "all", "fault_state") == 2:
+                message += EOOR_STATE_MSG.format("mind. einer der Ladepunkte")
+            if safe_get_nested(entry, "pv", "all", "fault_state") == 2:
+                message += EOOR_STATE_MSG.format("mind. einer der Wechselrichter")
+            if get_grid_error_state(entry) == 2:
+                message += EOOR_STATE_MSG.format("der Zähler für das Netz")
 
-            bat_direct = min(bat_exported, remaining)
-            remaining -= bat_direct
+        else:
+            bat_imported = safe_get_nested(entry, "bat", "all", "energy_imported")
+            bat_exported = safe_get_nested(entry, "bat", "all", "energy_exported")
+            cp_exported = safe_get_nested(entry, "cp", "all", "energy_exported")
+            pv_exported = safe_get_nested(entry, "pv", "all", "energy_exported")
+            grid_imported, grid_exported = get_grid_from(entry)
+            consumption = grid_imported - grid_exported + pv_exported + bat_exported - bat_imported + cp_exported
+            if consumption < 0:
+                consumption = 0
 
-            cp_direct = min(cp_exported, remaining)
-            remaining -= cp_direct
+            try:
+                pv_direct = min(pv_exported, consumption)
+                remaining = consumption - pv_direct
 
-            grid_direct = min(grid_imported, remaining)
+                bat_direct = min(bat_exported, remaining)
+                remaining -= bat_direct
 
-            entry["energy_source"] = {
-                "grid": format(grid_direct / consumption),
-                "pv": format(pv_direct / consumption),
-                "bat": format(bat_direct / consumption),
-                "cp": format(cp_direct / consumption)}
-        except ZeroDivisionError:
-            entry["energy_source"] = {"grid": 0, "pv": 0, "bat": 0, "cp": 0}
+                cp_direct = min(cp_exported, remaining)
+                remaining -= cp_direct
+
+                grid_direct = min(grid_imported, remaining)
+
+                entry["energy_source"] = {
+                    "grid": format(grid_direct / consumption),
+                    "pv": format(pv_direct / consumption),
+                    "bat": format(bat_direct / consumption),
+                    "cp": format(cp_direct / consumption)}
+            except ZeroDivisionError:
+                entry["energy_source"] = {"grid": 0, "pv": 0, "bat": 0, "cp": 0}
     except Exception:
         log.exception(f"Fehler beim Berechnen des Strom-Mix von {entry['timestamp']}")
     finally:
-        return entry
+        return entry, message
 
 
-def calc_energy_imported_by_source(entry):
+ERROR_STATE_MESSAGE = ("Die Anteile der Energiequellen für {} konnten nicht berechnet werden, da er sich im " +
+                       "Fehlerzustand befindet. Die Verbräuche werden mit 0 kWh angesetzt.\n")
+
+
+def calc_energy_imported_by_source_all(entry) -> Tuple[Dict, str]:
     try:
         if "energy_source" not in entry.keys():
-            return entry
-
+            return entry, ""
         energy_source = entry["energy_source"]
-        for source in ("grid", "pv", "bat", "cp"):
-            hc_section = entry.get("hc")
-            if isinstance(hc_section, dict) and "all" in hc_section:
-                hc_all = hc_section["all"]
-                if isinstance(hc_all, dict) and "energy_imported" in hc_all:
-                    hc_all[f"energy_imported_{source}"] = decimal_multiply(
-                        hc_all["energy_imported"], energy_source[source])
+        message = ""
 
-            cp_section = entry.get("cp")
-            if isinstance(cp_section, dict):
-                for cp_data in cp_section.values():
-                    if isinstance(cp_data, dict) and "energy_imported" in cp_data:
-                        cp_data[f"energy_imported_{source}"] = decimal_multiply(
-                            cp_data["energy_imported"], energy_source[source])
+        hc_section = entry.get("hc")
+        if isinstance(hc_section, dict) and "all" in hc_section:
+            hc_all = hc_section["all"]
+            if isinstance(hc_all, dict):
+                if hc_all.get("fault_state", 0) == 0 and "energy_imported" in hc_all:
+                    for source in ("grid", "pv", "bat", "cp"):
+                        hc_all[f"energy_imported_{source}"] = decimal_multiply(
+                            hc_all["energy_imported"], energy_source[source])
+                else:
+                    for source in ("grid", "pv", "bat", "cp"):
+                        hc_all[f"energy_imported_{source}"] = 0
+                    message += ERROR_STATE_MESSAGE.format("den Hausverbrauch")
 
-            counter_section = entry.get("counter")
-            if isinstance(counter_section, dict):
-                for counter in counter_section.values():
-                    if isinstance(counter, dict) and counter.get("grid") is False and "energy_imported" in counter:
-                        counter[f"energy_imported_{source}"] = decimal_multiply(
-                            counter["energy_imported"], energy_source[source])
+        cp_section = entry.get("cp")
+        if isinstance(cp_section, dict):
+            for cp_key, cp_data in cp_section.items():
+                if isinstance(cp_data, dict):
+                    if cp_data.get("fault_state", 0) == 0 and "energy_imported" in cp_data:
+                        for source in ("grid", "pv", "bat", "cp"):
+                            cp_data[f"energy_imported_{source}"] = decimal_multiply(
+                                cp_data["energy_imported"], energy_source[source])
+                    else:
+                        for source in ("grid", "pv", "bat", "cp"):
+                            cp_data[f"energy_imported_{source}"] = 0
+                        message += ERROR_STATE_MESSAGE.format(f"Ladepunkt {entry['names'][cp_key]}")
+
+        counter_section = entry.get("counter")
+        if isinstance(counter_section, dict):
+            for counter in counter_section.values():
+                if isinstance(counter, dict) and counter.get("grid") is False:
+                    if counter.get("fault_state", 0) == 0 and "energy_imported" in counter:
+                        for source in ("grid", "pv", "bat", "cp"):
+                            counter[f"energy_imported_{source}"] = decimal_multiply(
+                                counter["energy_imported"], energy_source[source])
+                    else:
+                        for source in ("grid", "pv", "bat", "cp"):
+                            counter[f"energy_imported_{source}"] = 0
+                        message += ERROR_STATE_MESSAGE.format(f"Zähler {entry['names'][counter]}")
     except Exception:
         log.exception(f"Fehler beim Berechnen der Energie-Anteile aus dem Strom-Mix von {entry['timestamp']}")
     finally:
-        return entry
+        return entry, message
+
+
+def calc_energy_imported_by_source_cp(entry, cp: str) -> Tuple[Dict, str]:
+    try:
+        if "energy_source" not in entry.keys():
+            return entry, ""
+
+        energy_source = entry["energy_source"]
+        message = ""
+
+        cp_data = entry["cp"][cp]
+        if cp_data.get("fault_state", 0) == 0 and "energy_imported" in cp_data:
+            for source in ("grid", "pv", "bat", "cp"):
+                cp_data[f"energy_imported_{source}"] = decimal_multiply(
+                    cp_data["energy_imported"], energy_source[source])
+        else:
+            for source in ("grid", "pv", "bat", "cp"):
+                cp_data[f"energy_imported_{source}"] = 0
+            message += ERROR_STATE_MESSAGE.format(f"Ladepunkt {entry['names'][cp]}")
+
+    except Exception:
+        log.exception(f"Fehler beim Berechnen der Energie-Anteile aus dem Strom-Mix von {entry['timestamp']}")
+    finally:
+        return entry, message
 
 
 def analyse_percentage_totals(entries, totals):

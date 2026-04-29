@@ -11,7 +11,7 @@ from helpermodules.measurement_logging.process_log import (
     process_entry,
     get_totals,
     _collect_daily_log_data,
-    calc_energy_imported_by_source,
+    calc_energy_imported_by_source_all,
     analyse_percentage_totals,
     CalculationType)
 
@@ -48,10 +48,11 @@ def test_analyse_percentage(name: str,
         expected.update({"energy_source": {'bat': 0.2006, 'cp': 0.1459, 'grid': 0.5441, 'pv': 0.1094}})
 
     # execution
-    entry = analyse_percentage(data)
+    entry, message = analyse_percentage(data)
 
     # evaluation
     assert entry == expected
+    assert message == ""
 
 
 @pytest.mark.parametrize("test_case, entry_data, expected_energy_source, should_be_unchanged", [
@@ -59,10 +60,11 @@ def test_analyse_percentage(name: str,
         "zero_consumption",
         {
             "timestamp": 1234567890,
-            "bat": {"all": {"energy_imported": 5.0, "energy_exported": 5.0}},
-            "cp": {"all": {"energy_exported": 0.0}},
-            "pv": {"all": {"energy_exported": 0.0}},
-            "counter": {"counter0": {"grid": True, "energy_imported": 5.0, "energy_exported": 5.0}}
+            "date": "00:31",
+            "bat": {"all": {"energy_imported": 5.0, "energy_exported": 5.0, "fault_state": 0}},
+            "cp": {"all": {"energy_exported": 0.0, "fault_state": 0}},
+            "pv": {"all": {"energy_exported": 0.0, "fault_state": 0}},
+            "counter": {"counter0": {"grid": True, "energy_imported": 5.0, "energy_exported": 5.0, "fault_state": 0}}
         },
         {"grid": 0, "pv": 0, "bat": 0, "cp": 0},
         False
@@ -71,7 +73,8 @@ def test_analyse_percentage(name: str,
         "missing_sections",
         {
             "timestamp": 1234567890,
-            "counter": {"counter0": {"grid": True, "energy_imported": 10.0, "energy_exported": 2.0}}
+            "date": "00:31",
+            "counter": {"counter0": {"grid": True, "energy_imported": 10.0, "energy_exported": 2.0, "fault_state": 0}}
         },
         {"grid": 1.0, "pv": 0.0, "bat": 0.0, "cp": 0.0},
         False
@@ -80,8 +83,9 @@ def test_analyse_percentage(name: str,
         "no_grid_counter",
         {
             "timestamp": 1234567890,
-            "bat": {"all": {"energy_imported": 0.0, "energy_exported": 5.0}},
-            "counter": {"counter0": {"grid": False, "energy_imported": 10.0, "energy_exported": 2.0}}
+            "date": "00:31",
+            "bat": {"all": {"energy_imported": 0.0, "energy_exported": 5.0, "fault_state": 0}},
+            "counter": {"counter0": {"grid": False, "energy_imported": 10.0, "energy_exported": 2.0, "fault_state": 0}}
         },
         None,
         True
@@ -89,7 +93,7 @@ def test_analyse_percentage(name: str,
 ])
 def test_analyse_percentage_edge_cases(test_case, entry_data, expected_energy_source, should_be_unchanged):
     # execution
-    result = analyse_percentage(entry_data)
+    result, message = analyse_percentage(entry_data)
 
     # evaluation
     if should_be_unchanged:
@@ -99,6 +103,7 @@ def test_analyse_percentage_edge_cases(test_case, entry_data, expected_energy_so
     else:
         # Energy source should be calculated correctly
         assert result["energy_source"] == expected_energy_source
+        assert message == ""
 
 
 def test_calculate_average_power():
@@ -109,24 +114,24 @@ def test_calculate_average_power():
     assert power == 1800
 
 
-def test_calc_energy_imported_by_source():
+def test_calc_energy_imported_by_source_all():
     # setup
     entry = {
         "timestamp": 1234567890,
         "energy_source": {"grid": 0.6523, "pv": 0.2487, "bat": 0.0789, "cp": 0.0201},
-        "hc": {"all": {"energy_imported": 2345.6}},
+        "hc": {"all": {"energy_imported": 2345.6, "fault_state": 0}},
         "cp": {
-            "cp1": {"energy_imported": 15723.4},
-            "cp2": {"energy_imported": 22108.7}
+            "cp1": {"energy_imported": 15723.4, "fault_state": 0},
+            "cp2": {"energy_imported": 22108.7, "fault_state": 0}
         },
         "counter": {
-            "counter0": {"grid": True, "energy_imported": 45892.3},
-            "counter1": {"grid": False, "energy_imported": 8956.7}
+            "counter0": {"grid": True, "energy_imported": 45892.3, "fault_state": 0},
+            "counter1": {"grid": False, "energy_imported": 8956.7, "fault_state": 0}
         }
     }
 
     # execution
-    result = calc_energy_imported_by_source(entry)
+    result, message = calc_energy_imported_by_source_all(entry)
 
     # evaluation - realistic Wh values with decimal precision
     assert result["hc"]["all"]["energy_imported_grid"] == 1530.035
@@ -153,6 +158,7 @@ def test_calc_energy_imported_by_source():
     assert "energy_imported_pv" not in result["counter"]["counter0"]
     assert "energy_imported_bat" not in result["counter"]["counter0"]
     assert "energy_imported_cp" not in result["counter"]["counter0"]
+    assert message == ""
 
 
 def test_analyse_percentage_totals():

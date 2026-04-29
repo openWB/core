@@ -1,3 +1,4 @@
+from pprint import pprint
 from unittest.mock import Mock
 import pytest
 
@@ -20,6 +21,6 @@ def test_get_daily_log(data, expected, monkeypatch):
 
     # execution
     daily_log_processed = process_log.get_daily_log("20250616")
-
+    pprint(daily_log_processed)
     # evaluation
     assert daily_log_processed == expected

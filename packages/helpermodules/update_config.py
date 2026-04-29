@@ -3068,3 +3068,35 @@ class UpdateConfig:
                     return {topic: payload}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(121)
+
+    def upgrade_datastore_122(self) -> None:
+        def convert_file(file):
+            try:
+                with open(file, "r+") as jsonFile:
+                    content = json.load(jsonFile)
+                    for entry in content["entries"]:
+                        if entry.get("prices") is not None:
+                            entry["prices"]["fault_state"] = None
+                        for cp in entry["cp"].values():
+                            cp["fault_state"] = None
+                        for ev_data in entry["ev"].values():
+                            ev_data["fault_state"] = None
+                        for counter in entry["counter"].values():
+                            counter["fault_state"] = None
+                        for pv in entry["pv"].values():
+                            pv["fault_state"] = None
+                        for bat in entry["bat"].values():
+                            bat["fault_state"] = None
+                        if entry.get("hc") is not None and entry["hc"].get("all") is not None:
+                            entry["hc"]["all"]["fault_state"] = None
+
+                    jsonFile.seek(0)
+                    json.dump(content, jsonFile)
+                    jsonFile.truncate()
+                    log.debug(f"Format der Logdatei '{file}' aktualisiert.")
+            except FileNotFoundError:
+                pass
+            except Exception:
+                log.exception(f"Logdatei '{file}' konnte nicht konvertiert werden.")
+        convert_file(f"{str(self.base_path / 'data' / 'daily_log')}/{timecheck.create_timestamp_YYYYMMDD()}.json")
+        self._append_datastore_version(122)
