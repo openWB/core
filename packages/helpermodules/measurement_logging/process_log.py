@@ -368,18 +368,33 @@ def analyse_percentage(entry):
 def calc_energy_imported_by_source(entry):
     try:
         if "energy_source" not in entry.keys():
-            return
+            return entry
+
+        energy_source = entry["energy_source"]
         for source in ("grid", "pv", "bat", "cp"):
-            if "all" in entry["hc"].keys():
-                entry["hc"]["all"][f"energy_imported_{source}"] = decimal_multiply(
-                    entry["hc"]["all"]["energy_imported"], entry["energy_source"][source])
-            for key in entry["cp"].keys():
-                entry["cp"][key][f"energy_imported_{source}"] = decimal_multiply(
-                    entry["cp"][key]["energy_imported"], entry["energy_source"][source])
-            for counter in entry["counter"].values():
-                if counter["grid"] is False:
-                    counter[f"energy_imported_{source}"] = decimal_multiply(
-                        counter["energy_imported"], entry["energy_source"][source])
+            # Handle hc section
+            hc_section = entry.get("hc")
+            if isinstance(hc_section, dict) and "all" in hc_section:
+                hc_all = hc_section["all"]
+                if isinstance(hc_all, dict) and "energy_imported" in hc_all:
+                    hc_all[f"energy_imported_{source}"] = decimal_multiply(
+                        hc_all["energy_imported"], energy_source[source])
+
+            # Handle cp section
+            cp_section = entry.get("cp")
+            if isinstance(cp_section, dict):
+                for cp_data in cp_section.values():
+                    if isinstance(cp_data, dict) and "energy_imported" in cp_data:
+                        cp_data[f"energy_imported_{source}"] = decimal_multiply(
+                            cp_data["energy_imported"], energy_source[source])
+
+            # Handle counter section
+            counter_section = entry.get("counter")
+            if isinstance(counter_section, dict):
+                for counter in counter_section.values():
+                    if isinstance(counter, dict) and counter.get("grid") is False and "energy_imported" in counter:
+                        counter[f"energy_imported_{source}"] = decimal_multiply(
+                            counter["energy_imported"], energy_source[source])
     except Exception:
         log.exception(f"Fehler beim Berechnen der Energie-Anteile aus dem Strom-Mix von {entry['timestamp']}")
     finally:

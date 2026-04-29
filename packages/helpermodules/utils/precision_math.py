@@ -6,7 +6,7 @@ def string_to_float(value: str, default: float = 0) -> float:
     """Convert string to float with fallback to default value."""
     try:
         return float(value)
-    except ValueError:
+    except (ValueError, TypeError):
         return default
 
 
@@ -14,7 +14,7 @@ def string_to_int(value: str, default: int = 0) -> int:
     """Convert string to int with fallback to default value."""
     try:
         return int(value)
-    except ValueError:
+    except (ValueError, TypeError):
         return default
 
 

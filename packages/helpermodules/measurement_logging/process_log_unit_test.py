@@ -101,7 +101,7 @@ def test_analyse_percentage_edge_cases(test_case, entry_data, expected_energy_so
         assert result["energy_source"] == expected_energy_source
 
 
-def test_convert_value_to_kW():
+def test_calculate_average_power():
     # setup and execution
     power = _calculate_average_power(100, 250, 300)
 
@@ -114,14 +114,14 @@ def test_calc_energy_imported_by_source():
     entry = {
         "timestamp": 1234567890,
         "energy_source": {"grid": 0.6523, "pv": 0.2487, "bat": 0.0789, "cp": 0.0201},
-        "hc": {"all": {"energy_imported": 2345.6}},  # Wh
+        "hc": {"all": {"energy_imported": 2345.6}},
         "cp": {
-            "cp1": {"energy_imported": 15723.4},  # Wh
-            "cp2": {"energy_imported": 22108.7}   # Wh
+            "cp1": {"energy_imported": 15723.4},
+            "cp2": {"energy_imported": 22108.7}
         },
         "counter": {
-            "counter0": {"grid": True, "energy_imported": 45892.3},  # Wh
-            "counter1": {"grid": False, "energy_imported": 8956.7}   # Wh
+            "counter0": {"grid": True, "energy_imported": 45892.3},
+            "counter1": {"grid": False, "energy_imported": 8956.7}
         }
     }
 
@@ -129,25 +129,25 @@ def test_calc_energy_imported_by_source():
     result = calc_energy_imported_by_source(entry)
 
     # evaluation - realistic Wh values with decimal precision
-    assert result["hc"]["all"]["energy_imported_grid"] == 1530.035   # 2345.6 * 0.6523
-    assert result["hc"]["all"]["energy_imported_pv"] == 583.351     # 2345.6 * 0.2487
-    assert result["hc"]["all"]["energy_imported_bat"] == 185.068    # 2345.6 * 0.0789
-    assert result["hc"]["all"]["energy_imported_cp"] == 47.147     # 2345.6 * 0.0201
+    assert result["hc"]["all"]["energy_imported_grid"] == 1530.035
+    assert result["hc"]["all"]["energy_imported_pv"] == 583.351
+    assert result["hc"]["all"]["energy_imported_bat"] == 185.068
+    assert result["hc"]["all"]["energy_imported_cp"] == 47.147
 
-    assert result["cp"]["cp1"]["energy_imported_grid"] == 10256.374  # 15723.4 * 0.6523
-    assert result["cp"]["cp1"]["energy_imported_pv"] == 3910.41     # 15723.4 * 0.2487
-    assert result["cp"]["cp1"]["energy_imported_bat"] == 1240.576    # 15723.4 * 0.0789
-    assert result["cp"]["cp1"]["energy_imported_cp"] == 316.04     # 15723.4 * 0.0201
+    assert result["cp"]["cp1"]["energy_imported_grid"] == 10256.374
+    assert result["cp"]["cp1"]["energy_imported_pv"] == 3910.41
+    assert result["cp"]["cp1"]["energy_imported_bat"] == 1240.576
+    assert result["cp"]["cp1"]["energy_imported_cp"] == 316.04
 
-    assert result["cp"]["cp2"]["energy_imported_grid"] == 14421.505  # 22108.7 * 0.6523
-    assert result["cp"]["cp2"]["energy_imported_pv"] == 5498.434     # 22108.7 * 0.2487
-    assert result["cp"]["cp2"]["energy_imported_bat"] == 1744.376    # 22108.7 * 0.0789
-    assert result["cp"]["cp2"]["energy_imported_cp"] == 444.385     # 22108.7 * 0.0201
+    assert result["cp"]["cp2"]["energy_imported_grid"] == 14421.505
+    assert result["cp"]["cp2"]["energy_imported_pv"] == 5498.434
+    assert result["cp"]["cp2"]["energy_imported_bat"] == 1744.376
+    assert result["cp"]["cp2"]["energy_imported_cp"] == 444.385
 
-    assert result["counter"]["counter1"]["energy_imported_grid"] == 5842.455   # 8956.7 * 0.6523
-    assert result["counter"]["counter1"]["energy_imported_pv"] == 2227.531     # 8956.7 * 0.2487
-    assert result["counter"]["counter1"]["energy_imported_bat"] == 706.684    # 8956.7 * 0.0789
-    assert result["counter"]["counter1"]["energy_imported_cp"] == 180.03    # 8956.7 * 0.0201
+    assert result["counter"]["counter1"]["energy_imported_grid"] == 5842.455
+    assert result["counter"]["counter1"]["energy_imported_pv"] == 2227.531
+    assert result["counter"]["counter1"]["energy_imported_bat"] == 706.684
+    assert result["counter"]["counter1"]["energy_imported_cp"] == 180.03
     # counter0 should not have these fields as it's a grid counter
     assert "energy_imported_grid" not in result["counter"]["counter0"]
     assert "energy_imported_pv" not in result["counter"]["counter0"]
@@ -163,16 +163,16 @@ def test_analyse_percentage_totals():
         entries = json.load(f)
 
     totals = {
-        "hc": {"all": {"energy_imported": 3500}},  # realistic household total in Wh
+        "hc": {"all": {"energy_imported": 3500}},
         "cp": {
-            "cp1": {"energy_imported": 18500},    # realistic EV charging total in Wh
-            "cp2": {"energy_imported": 29000},     # another EV total in Wh
-            "cp3": {"energy_imported": 11433}     # another EV total in Wh
+            "cp1": {"energy_imported": 18500},
+            "cp2": {"energy_imported": 29000},
+            "cp3": {"energy_imported": 11433}
         },
         "counter": {
-            "counter0": {"grid": True, "energy_imported": 45892},  # grid counter total in Wh
-            "counter1": {"grid": False, "energy_imported": 10000},  # sub-meter total in Wh
-            "counter2": {"grid": False, "energy_imported": 8735}   # another sub-meter total in Wh
+            "counter0": {"grid": True, "energy_imported": 45892},
+            "counter1": {"grid": False, "energy_imported": 10000},
+            "counter2": {"grid": False, "energy_imported": 8735}
         }
     }
 
@@ -181,39 +181,39 @@ def test_analyse_percentage_totals():
 
     # evaluation
     # Check hc totals (sum of both entries in Wh)
-    assert result["hc"]["all"]["energy_imported_grid"] == 7909   # (4820.5 + 3087.9) Wh = 7908.4 Wh
-    assert result["hc"]["all"]["energy_imported_pv"] == 2980     # (1734.2 + 1245.6) Wh = 2979.8 Wh
-    assert result["hc"]["all"]["energy_imported_bat"] == 912    # (287.8 + 623.7) Wh = 911.5 Wh
-    assert result["hc"]["all"]["energy_imported_cp"] == 273     # (95.3 + 178.4) Wh = 273.7 Wh
+    assert result["hc"]["all"]["energy_imported_grid"] == 7909
+    assert result["hc"]["all"]["energy_imported_pv"] == 2980
+    assert result["hc"]["all"]["energy_imported_bat"] == 912
+    assert result["hc"]["all"]["energy_imported_cp"] == 273
 
     # Check cp totals (in Wh)
-    assert result["cp"]["cp1"]["energy_imported_grid"] == 22222  # (12345.7 + 9876.2) Wh = 22221.9 Wh
-    assert result["cp"]["cp1"]["energy_imported_pv"] == 8354     # (4632.1 + 3721.8) Wh = 8353.9 Wh
-    assert result["cp"]["cp1"]["energy_imported_bat"] == 3300    # (1876.4 + 1423.5) Wh = 3299.9 Wh
-    assert result["cp"]["cp1"]["energy_imported_cp"] == 802     # (234.6 + 567.1) Wh = 801.7 Wh
+    assert result["cp"]["cp1"]["energy_imported_grid"] == 22222
+    assert result["cp"]["cp1"]["energy_imported_pv"] == 8354
+    assert result["cp"]["cp1"]["energy_imported_bat"] == 3300
+    assert result["cp"]["cp1"]["energy_imported_cp"] == 802
 
-    assert result["cp"]["cp2"]["energy_imported_grid"] == 18721  # 18721.3 Wh (only in first entry)
-    assert result["cp"]["cp2"]["energy_imported_pv"] == 7124    # 7123.8 Wh
-    assert result["cp"]["cp2"]["energy_imported_bat"] == 2955    # 2954.7 Wh
-    assert result["cp"]["cp2"]["energy_imported_cp"] == 313     # 312.9 Wh
+    assert result["cp"]["cp2"]["energy_imported_grid"] == 18721
+    assert result["cp"]["cp2"]["energy_imported_pv"] == 7124
+    assert result["cp"]["cp2"]["energy_imported_bat"] == 2955
+    assert result["cp"]["cp2"]["energy_imported_cp"] == 313
 
     # 11432.6 Wh (only in second entry)
     assert result["cp"]["cp3"]["energy_imported_grid"] == 11433
-    assert result["cp"]["cp3"]["energy_imported_pv"] == 4824    # 4823.9 Wh
-    assert result["cp"]["cp3"]["energy_imported_bat"] == 2135   # 2134.7 Wh
-    assert result["cp"]["cp3"]["energy_imported_cp"] == 689    # 689.2 Wh
+    assert result["cp"]["cp3"]["energy_imported_pv"] == 4824
+    assert result["cp"]["cp3"]["energy_imported_bat"] == 2135
+    assert result["cp"]["cp3"]["energy_imported_cp"] == 689
 
     # Check counter totals (in Wh, only non-grid counters)
-    assert result["counter"]["counter1"]["energy_imported_grid"] == 12158  # (6234.8 + 5923.1) Wh = 12157.9 Wh
-    assert result["counter"]["counter1"]["energy_imported_pv"] == 5123     # (2387.5 + 2734.8) Wh = 5122.3 Wh
-    assert result["counter"]["counter1"]["energy_imported_bat"] == 2011    # (923.4 + 1087.6) Wh = 2011.0 Wh
-    assert result["counter"]["counter1"]["energy_imported_cp"] == 744     # (445.7 + 298.3) Wh = 744.0 Wh
+    assert result["counter"]["counter1"]["energy_imported_grid"] == 12158
+    assert result["counter"]["counter1"]["energy_imported_pv"] == 5123
+    assert result["counter"]["counter1"]["energy_imported_bat"] == 2011
+    assert result["counter"]["counter1"]["energy_imported_cp"] == 744
 
     # 8734.5 Wh (only in second entry)
     assert result["counter"]["counter2"]["energy_imported_grid"] == 8735
-    assert result["counter"]["counter2"]["energy_imported_pv"] == 3290     # 3289.7 Wh
-    assert result["counter"]["counter2"]["energy_imported_bat"] == 1634    # 1634.2 Wh
-    assert result["counter"]["counter2"]["energy_imported_cp"] == 824     # 823.6 Wh
+    assert result["counter"]["counter2"]["energy_imported_pv"] == 3290
+    assert result["counter"]["counter2"]["energy_imported_bat"] == 1634
+    assert result["counter"]["counter2"]["energy_imported_cp"] == 824
 
 
 def test_convert(daily_log_entry_processed, daily_log_sample):
