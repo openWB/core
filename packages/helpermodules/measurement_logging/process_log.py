@@ -372,7 +372,6 @@ def calc_energy_imported_by_source(entry):
 
         energy_source = entry["energy_source"]
         for source in ("grid", "pv", "bat", "cp"):
-            # Handle hc section
             hc_section = entry.get("hc")
             if isinstance(hc_section, dict) and "all" in hc_section:
                 hc_all = hc_section["all"]
@@ -380,7 +379,6 @@ def calc_energy_imported_by_source(entry):
                     hc_all[f"energy_imported_{source}"] = decimal_multiply(
                         hc_all["energy_imported"], energy_source[source])
 
-            # Handle cp section
             cp_section = entry.get("cp")
             if isinstance(cp_section, dict):
                 for cp_data in cp_section.values():
@@ -388,7 +386,6 @@ def calc_energy_imported_by_source(entry):
                         cp_data[f"energy_imported_{source}"] = decimal_multiply(
                             cp_data["energy_imported"], energy_source[source])
 
-            # Handle counter section
             counter_section = entry.get("counter")
             if isinstance(counter_section, dict):
                 for counter in counter_section.values():
