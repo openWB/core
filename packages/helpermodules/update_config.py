@@ -3077,15 +3077,15 @@ class UpdateConfig:
                     for entry in content["entries"]:
                         if entry.get("prices") is not None:
                             entry["prices"]["fault_state"] = None
-                        for cp in entry["cp"].values():
+                        for cp in entry.get("cp", {}).values():
                             cp["fault_state"] = None
-                        for ev_data in entry["ev"].values():
+                        for ev_data in entry.get("ev", {}).values():
                             ev_data["fault_state"] = None
-                        for counter in entry["counter"].values():
+                        for counter in entry.get("counter", {}).values():
                             counter["fault_state"] = None
-                        for pv in entry["pv"].values():
+                        for pv in entry.get("pv", {}).values():
                             pv["fault_state"] = None
-                        for bat in entry["bat"].values():
+                        for bat in entry.get("bat", {}).values():
                             bat["fault_state"] = None
                         if entry.get("hc") is not None and entry["hc"].get("all") is not None:
                             entry["hc"]["all"]["fault_state"] = None

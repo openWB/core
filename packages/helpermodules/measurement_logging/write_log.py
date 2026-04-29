@@ -211,7 +211,7 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
                        "fault_state": fault_state}
     except Exception:
         log.exception("Fehler im Werte-Logging-Modul für Preise")
-        prices_dict = {}
+        prices_dict = {"fault_state": 0}
 
     try:
         cp_dict = {"all": {"imported": data.data.cp_all_data.data.get.imported,
@@ -254,7 +254,8 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
             log.exception("Fehler im Werte-Logging-Modul für Zähler "+str(counter))
 
     try:
-        pv_dict = {"all": {"exported": data.data.pv_all_data.data.get.exported}}
+        pv_dict = {"all": {"exported": data.data.pv_all_data.data.get.exported,
+                           "fault_state": data.data.pv_all_data.data.get.fault_state}}
     except Exception:
         log.exception("Fehler im Werte-Logging-Modul für PV-Daten")
         pv_dict = {}
