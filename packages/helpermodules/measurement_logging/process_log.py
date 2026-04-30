@@ -336,25 +336,21 @@ def analyse_percentage(entry) -> Tuple[Dict, str]:
     def format(value):
         return round(value, 4)
 
-    def get_grid_from(entry) -> Tuple[float, float]:
-        grids = [counter for counter in entry["counter"].values() if counter.get("grid")]
-        if not grids:
+    def get_grid_counter(entry) -> Dict:
+        # es gibt nur einen Zähler am EVU-Punkt
+        for counter in entry["counter"].values():
+            if counter.get("grid") is True:
+                return counter
+        else:
             raise KeyError(f"Kein Zähler für das Netz gefunden in Eintrag '{entry['timestamp']}'.")
-        return sum(grid["energy_imported"] for grid in grids), sum(grid["energy_exported"] for grid in grids)
-
-    def get_grid_error_state(entry) -> int:
-        grids = [counter for counter in entry["counter"].values() if counter.get("grid")]
-        if not grids:
-            raise KeyError(f"Kein Zähler für das Netz gefunden in Eintrag '{entry['timestamp']}'.")
-        max_grid = max(grids, key=lambda g: g.get("fault_state", 0))
-        return max_grid.get("fault_state", 0)
 
     try:
         message = ""
+        grid_counter = get_grid_counter(entry)
         if (safe_get_nested(entry, "bat", "all", "fault_state") == 2 or
                 safe_get_nested(entry, "cp", "all", "fault_state") == 2 or
                 safe_get_nested(entry, "pv", "all", "fault_state") == 2 or
-                get_grid_error_state(entry) == 2):
+                grid_counter.get("fault_state", None) == 2):
 
             entry["energy_source"] = {"grid": 1, "pv": 0, "bat": 0, "cp": 0}
             if safe_get_nested(entry, "bat", "all", "fault_state") == 2:
@@ -363,7 +359,7 @@ def analyse_percentage(entry) -> Tuple[Dict, str]:
                 message += EOOR_STATE_MSG.format("mind. einer der Ladepunkte")
             if safe_get_nested(entry, "pv", "all", "fault_state") == 2:
                 message += EOOR_STATE_MSG.format("mind. einer der Wechselrichter")
-            if get_grid_error_state(entry) == 2:
+            if grid_counter.get("fault_state", None) == 2:
                 message += EOOR_STATE_MSG.format("der Zähler für das Netz")
 
         else:
@@ -371,7 +367,8 @@ def analyse_percentage(entry) -> Tuple[Dict, str]:
             bat_exported = safe_get_nested(entry, "bat", "all", "energy_exported")
             cp_exported = safe_get_nested(entry, "cp", "all", "energy_exported")
             pv_exported = safe_get_nested(entry, "pv", "all", "energy_exported")
-            grid_imported, grid_exported = get_grid_from(entry)
+            grid_imported = grid_counter.get("energy_imported", 0)
+            grid_exported = grid_counter.get("energy_exported", 0)
             consumption = grid_imported - grid_exported + pv_exported + bat_exported - bat_imported + cp_exported
             if consumption < 0:
                 consumption = 0

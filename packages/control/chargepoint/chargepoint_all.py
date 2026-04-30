@@ -78,18 +78,19 @@ class AllChargepoints:
                         imported = imported + cp.data.get.imported
                         exported = exported + cp.data.get.exported
                     except Exception:
-                        log.exception("Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt "+cp)
+                        log.exception("Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt "+cp.num)
                     try:
                         power = power + cp.data.get.power
                     except Exception:
-                        log.exception("Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt "+cp)
+                        log.exception("Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt "+cp.num)
                 else:
                     if fault_state < cp.data.get.fault_state:
                         fault_state = cp.data.get.fault_state
+            # Ladepunkte setzen ihre Werte im Fehlerfall selbst zurück
+            self.data.get.power = power
+            self.data.get.imported = imported
+            self.data.get.exported = exported
             if fault_state == 0:
-                self.data.get.power = power
-                self.data.get.imported = imported
-                self.data.get.exported = exported
                 self.data.get.fault_state = 0
                 self.data.get.fault_str = NO_ERROR
             else:
