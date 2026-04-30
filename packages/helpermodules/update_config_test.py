@@ -110,6 +110,8 @@ def test_upgrade_datastore_122(name, monkeypatch):
 
     mock_dump = Mock()
     monkeypatch.setattr(update_config.json, "dump", mock_dump)
+    mock_glob = Mock(return_value=["dummy_path"])
+    monkeypatch.setattr(update_config.Path, "glob", mock_glob)
 
     # Act
     with patch("builtins.open", mock_open(read_data=json.dumps(log_content))):
