@@ -3106,4 +3106,4 @@ class UpdateConfig:
                         pass
                     except Exception:
                         log.exception(f"Logdatei '{path}' konnte nicht konvertiert werden.")
-        # self._append_datastore_version(122)
+        self._append_datastore_version(122)
