@@ -3070,33 +3070,34 @@ class UpdateConfig:
         self._append_datastore_version(121)
 
     def upgrade_datastore_122(self) -> None:
-        def convert_file(file):
-            try:
-                with open(file, "r+") as jsonFile:
-                    content = json.load(jsonFile)
-                    for entry in content["entries"]:
-                        if entry.get("prices") is not None:
-                            entry["prices"]["fault_state"] = None
-                        for cp in entry.get("cp", {}).values():
-                            cp["fault_state"] = None
-                        for ev_data in entry.get("ev", {}).values():
-                            ev_data["fault_state"] = None
-                        for counter in entry.get("counter", {}).values():
-                            counter["fault_state"] = None
-                        for pv in entry.get("pv", {}).values():
-                            pv["fault_state"] = None
-                        for bat in entry.get("bat", {}).values():
-                            bat["fault_state"] = None
-                        if entry.get("hc") is not None and entry["hc"].get("all") is not None:
-                            entry["hc"]["all"]["fault_state"] = None
+        for folder in ("daily_log", "monthly_log"):
+            path_list = Path(Path(__file__).resolve().parents[2]/"data"/folder).glob('**/*.json')
+            for path in path_list:
+                with open(path, "r+") as jsonFile:
+                    try:
+                        content = json.load(jsonFile)
+                        for entry in content["entries"]:
+                            if entry.get("prices") is not None:
+                                entry["prices"]["fault_state"] = None
+                            for cp in entry.get("cp", {}).values():
+                                cp["fault_state"] = None
+                            for ev_data in entry.get("ev", {}).values():
+                                ev_data["fault_state"] = None
+                            for counter in entry.get("counter", {}).values():
+                                counter["fault_state"] = None
+                            for pv in entry.get("pv", {}).values():
+                                pv["fault_state"] = None
+                            for bat in entry.get("bat", {}).values():
+                                bat["fault_state"] = None
+                            if entry.get("hc") is not None and entry["hc"].get("all") is not None:
+                                entry["hc"]["all"]["fault_state"] = None
 
-                    jsonFile.seek(0)
-                    json.dump(content, jsonFile)
-                    jsonFile.truncate()
-                    log.debug(f"Format der Logdatei '{file}' aktualisiert.")
-            except FileNotFoundError:
-                pass
-            except Exception:
-                log.exception(f"Logdatei '{file}' konnte nicht konvertiert werden.")
-        convert_file(f"{str(self.base_path / 'data' / 'daily_log')}/{timecheck.create_timestamp_YYYYMMDD()}.json")
-        self._append_datastore_version(122)
+                        jsonFile.seek(0)
+                        json.dump(content, jsonFile)
+                        jsonFile.truncate()
+                        log.debug(f"Format der Logdatei '{path}' aktualisiert.")
+                    except FileNotFoundError:
+                        pass
+                    except Exception:
+                        log.exception(f"Logdatei '{path}' konnte nicht konvertiert werden.")
+        # self._append_datastore_version(122)

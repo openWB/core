@@ -324,7 +324,9 @@ def _analyse_energy_source(data, calc_cp: Optional[str] = None) -> Dict:
                 data["message"] += message_analyse + message_calc
             data["totals"] = analyse_percentage_totals(data["entries"], data["totals"])
         except Exception:
+            log.exception("Fehler beim Analysieren der Energiequellen")
             pub_system_message({}, "Fehler beim Berechnen des Strom-Mix", MessageType.ERROR)
+            data["message"] = "Fehler beim Berechnen des Strom-Mix."
     return data
 
 
@@ -394,6 +396,7 @@ def analyse_percentage(entry) -> Tuple[Dict, str]:
                 entry["energy_source"] = {"grid": 0, "pv": 0, "bat": 0, "cp": 0}
     except Exception:
         log.exception(f"Fehler beim Berechnen des Strom-Mix von {entry['timestamp']}")
+        message += f"Fehler beim Berechnen des Strom-Mix von {entry['timestamp']}.\n"
     finally:
         return entry, message
 
@@ -449,6 +452,7 @@ def calc_energy_imported_by_source_all(entry, names) -> Tuple[Dict, str]:
                         message += ERROR_STATE_MESSAGE.format(f"Zähler {names[counter_key]}")
     except Exception:
         log.exception(f"Fehler beim Berechnen der Energie-Anteile aus dem Strom-Mix von {entry['timestamp']}")
+        message += f"Fehler beim Berechnen des Strom-Mix von {entry['timestamp']}.\n"
     finally:
         return entry, message
 
@@ -473,6 +477,7 @@ def calc_energy_imported_by_source_cp(entry, cp: str, name: str) -> Tuple[Dict, 
 
     except Exception:
         log.exception(f"Fehler beim Berechnen der Energie-Anteile aus dem Strom-Mix von {entry['timestamp']}")
+        message += f"Fehler beim Berechnen des Strom-Mix von {entry['timestamp']}.\n"
     finally:
         return entry, message
 
