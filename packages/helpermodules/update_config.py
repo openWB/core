@@ -3077,20 +3077,26 @@ class UpdateConfig:
                     try:
                         content = json.load(jsonFile)
                         for entry in content["entries"]:
-                            if entry.get("prices") is not None:
+                            if entry.get("prices") is not None and entry["prices"].get("fault_state") is None:
                                 entry["prices"]["fault_state"] = None
                             for cp in entry.get("cp", {}).values():
-                                cp["fault_state"] = None
+                                if cp.get("fault_state") is None:
+                                    cp["fault_state"] = None
                             for ev_data in entry.get("ev", {}).values():
-                                ev_data["fault_state"] = None
+                                if ev_data.get("fault_state") is None:
+                                    ev_data["fault_state"] = None
                             for counter in entry.get("counter", {}).values():
-                                counter["fault_state"] = None
+                                if counter.get("fault_state") is None:
+                                    counter["fault_state"] = None
                             for pv in entry.get("pv", {}).values():
-                                pv["fault_state"] = None
+                                if pv.get("fault_state") is None:
+                                    pv["fault_state"] = None
                             for bat in entry.get("bat", {}).values():
-                                bat["fault_state"] = None
+                                if bat.get("fault_state") is None:
+                                    bat["fault_state"] = None
                             if entry.get("hc") is not None and entry["hc"].get("all") is not None:
-                                entry["hc"]["all"]["fault_state"] = None
+                                if entry["hc"]["all"].get("fault_state") is None:
+                                    entry["hc"]["all"]["fault_state"] = None
 
                         jsonFile.seek(0)
                         json.dump(content, jsonFile)

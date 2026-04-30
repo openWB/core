@@ -354,7 +354,7 @@ def calculate_charged_energy_by_source(cp, processed_entries, reference_entries,
             charged_energy = (reference_entries[-1]["cp"][f"cp{cp.num}"]["imported"] -
                               reference_entries[0]["cp"][f"cp{cp.num}"]["imported"])
         elif reference == ReferenceTime.END:
-            if ((timecheck.create_timestamp()-cp.data.set.log.timestamp_mode_switch) < MEASUREMENT_LOGGING_INTERVAL):
+            if sum(cp.data.set.log.charged_energy_by_source.values()) == 0:
                 charged_energy = cp.data.set.log.imported_since_mode_switch
             else:
                 log.debug(f"cp.data.get.imported {cp.data.get.imported}")
