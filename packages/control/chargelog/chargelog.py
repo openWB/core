@@ -400,8 +400,9 @@ def _get_reference_entries(cp) -> Tuple[List[Dict], List]:
     processed_entries = {}
     reference_entries = []
     try:
-        entries = get_todays_daily_log()["entries"]
-        reference_entries["names"] = entries["names"]
+        log_data = get_todays_daily_log()
+        names = log_data["names"]
+        entries = log_data["entries"]
         if len(entries) >= 2:
             reference_entries = [entries[-2], entries[-1]]
         else:
@@ -410,6 +411,7 @@ def _get_reference_entries(cp) -> Tuple[List[Dict], List]:
             reference_entries = [entries_day_before[-1], entries[0]]
         processed_entries["entries"] = copy.deepcopy(reference_entries)
         processed_entries["entries"] = _process_entries(processed_entries["entries"], CalculationType.ENERGY)
+        processed_entries["names"] = names
         processed_entries["totals"] = get_totals(processed_entries["entries"], False)
         processed_entries = _analyse_energy_source(processed_entries, f"cp{cp.num}")
     except Exception:

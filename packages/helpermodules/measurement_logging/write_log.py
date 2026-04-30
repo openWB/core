@@ -288,8 +288,9 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
                 log.exception("Fehler im Werte-Logging-Modul für Speicher "+str(bat))
 
     try:
-        hc_dict = {"all": {"imported": data.data.counter_all_data.data.set.imported_home_consumption,
-                           "fault_state": data.data.counter_all_data.data.set.invalid_home_consumption}}
+        hc_dict = {"all": {
+            "imported": data.data.counter_all_data.data.set.imported_home_consumption,
+            "fault_state": 3 if data.data.counter_all_data.data.set.invalid_home_consumption >= 3 else 0}}
     except Exception:
         log.exception("Fehler im Werte-Logging-Modul für Hausverbrauch")
         hc_dict = {}

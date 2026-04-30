@@ -131,7 +131,7 @@ def test_calc_energy_imported_by_source_all():
     }
 
     # execution
-    result, message = calc_energy_imported_by_source_all(entry)
+    result, message = calc_energy_imported_by_source_all(entry, {})
 
     # evaluation - realistic Wh values with decimal precision
     assert result["hc"]["all"]["energy_imported_grid"] == 1530.035
