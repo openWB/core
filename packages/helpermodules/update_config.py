@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 121
+    DATASTORE_VERSION = 122
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
