@@ -433,7 +433,7 @@ def calc_energy_imported_by_source_all(entry, names) -> Tuple[Dict, str]:
                     else:
                         for source in ("grid", "pv", "bat", "cp"):
                             cp_data[f"energy_imported_{source}"] = 0
-                        message += ERROR_STATE_MESSAGE.format(f"Ladepunkt {names[cp_key]}")
+                        message += ERROR_STATE_MESSAGE.format(f"Ladepunkt {names.get(cp_key, cp_key)}")
 
         counter_section = entry.get("counter")
         if isinstance(counter_section, dict):
