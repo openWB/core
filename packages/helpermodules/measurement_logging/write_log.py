@@ -204,6 +204,7 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
                               data.data.optional_data.data.electricity_pricing.grid_fee.get.fault_state)
         except Exception:
             grid_price = prices.grid
+            fault_state = 0
         prices_dict = {"grid": grid_price,
                        "pv": prices.pv,
                        "bat": prices.bat,

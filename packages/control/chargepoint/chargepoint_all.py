@@ -71,6 +71,7 @@ class AllChargepoints:
         """
         imported, exported, power = 0, 0, 0
         try:
+            fault_state = 0
             for cp in data.data.cp_data.values():
                 if cp.data.get.fault_state < 2:
                     try:

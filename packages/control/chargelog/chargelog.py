@@ -401,6 +401,7 @@ def _get_reference_entries(cp) -> Tuple[List[Dict], List]:
     reference_entries = []
     try:
         entries = get_todays_daily_log()["entries"]
+        reference_entries["names"] = entries["names"]
         if len(entries) >= 2:
             reference_entries = [entries[-2], entries[-1]]
         else:

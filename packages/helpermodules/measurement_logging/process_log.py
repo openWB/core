@@ -311,6 +311,8 @@ def _collect_yearly_log_data(year: str):
 def _analyse_energy_source(data, calc_cp: Optional[str] = None) -> Dict:
     if data and len(data["entries"]) > 0:
         try:
+            if data.get("message") is None:
+                data["message"] = ""
             for i in range(0, len(data["entries"])):
                 data["entries"][i], message_analyse = analyse_percentage(data["entries"][i])
                 if calc_cp is not None:
@@ -438,23 +440,23 @@ def calc_energy_imported_by_source_all(entry, names) -> Tuple[Dict, str]:
 
         counter_section = entry.get("counter")
         if isinstance(counter_section, dict):
-            for counter in counter_section.values():
-                if isinstance(counter, dict) and counter.get("grid") is False:
-                    if counter.get("fault_state", 0) != 2 and "energy_imported" in counter:
+            for counter_key, counter_data in counter_section.items():
+                if isinstance(counter_data, dict) and counter_data.get("grid") is False:
+                    if counter_data.get("fault_state", 0) != 2 and "energy_imported" in counter_data:
                         for source in ("grid", "pv", "bat", "cp"):
-                            counter[f"energy_imported_{source}"] = decimal_multiply(
-                                counter["energy_imported"], energy_source[source])
+                            counter_data[f"energy_imported_{source}"] = decimal_multiply(
+                                counter_data["energy_imported"], energy_source[source])
                     else:
                         for source in ("grid", "pv", "bat", "cp"):
-                            counter[f"energy_imported_{source}"] = 0
-                        message += ERROR_STATE_MESSAGE.format(f"Zähler {names[counter]}")
+                            counter_data[f"energy_imported_{source}"] = 0
+                        message += ERROR_STATE_MESSAGE.format(f"Zähler {names[counter_key]}")
     except Exception:
         log.exception(f"Fehler beim Berechnen der Energie-Anteile aus dem Strom-Mix von {entry['timestamp']}")
     finally:
         return entry, message
 
 
-def calc_energy_imported_by_source_cp(entry, cp: str, name) -> Tuple[Dict, str]:
+def calc_energy_imported_by_source_cp(entry, cp: str, name: str) -> Tuple[Dict, str]:
     try:
         if "energy_source" not in entry.keys():
             return entry, ""
@@ -470,7 +472,7 @@ def calc_energy_imported_by_source_cp(entry, cp: str, name) -> Tuple[Dict, str]:
         else:
             for source in ("grid", "pv", "bat", "cp"):
                 cp_data[f"energy_imported_{source}"] = 0
-            message += ERROR_STATE_MESSAGE.format(f"Ladepunkt {name[cp]}")
+            message += ERROR_STATE_MESSAGE.format(f"Ladepunkt {name}")
 
     except Exception:
         log.exception(f"Fehler beim Berechnen der Energie-Anteile aus dem Strom-Mix von {entry['timestamp']}")
