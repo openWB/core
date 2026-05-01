@@ -1,0 +1,79 @@
+[
+    {
+        "hc": {
+            "all": {
+                "energy_imported_grid": 4821,
+                "energy_imported_pv": 1734,
+                "energy_imported_bat": 288,
+                "energy_imported_cp": 95
+            }
+        },
+        "cp": {
+            "cp1": {
+                "energy_imported_grid": 12346,
+                "energy_imported_pv": 4632,
+                "energy_imported_bat": 1876,
+                "energy_imported_cp": 235
+            },
+            "cp2": {
+                "energy_imported_grid": 18721,
+                "energy_imported_pv": 7124,
+                "energy_imported_bat": 2955,
+                "energy_imported_cp": 313
+            }
+        },
+        "counter": {
+            "counter0": {
+                "grid": true,
+                "energy_imported": 48367
+            },
+            "counter1": {
+                "grid": false,
+                "energy_imported_grid": 6235,
+                "energy_imported_pv": 2388,
+                "energy_imported_bat": 923,
+                "energy_imported_cp": 446
+            }
+        }
+    },
+    {
+        "hc": {
+            "all": {
+                "energy_imported_grid": 3088,
+                "energy_imported_pv": 1246,
+                "energy_imported_bat": 624,
+                "energy_imported_cp": 178
+            }
+        },
+        "cp": {
+            "cp1": {
+                "energy_imported_grid": 9876,
+                "energy_imported_pv": 3722,
+                "energy_imported_bat": 1424,
+                "energy_imported_cp": 567
+            },
+            "cp3": {
+                "energy_imported_grid": 11433,
+                "energy_imported_pv": 4824,
+                "energy_imported_bat": 2135,
+                "energy_imported_cp": 689
+            }
+        },
+        "counter": {
+            "counter1": {
+                "grid": false,
+                "energy_imported_grid": 5923,
+                "energy_imported_pv": 2735,
+                "energy_imported_bat": 1088,
+                "energy_imported_cp": 298
+            },
+            "counter2": {
+                "grid": false,
+                "energy_imported_grid": 8735,
+                "energy_imported_pv": 3290,
+                "energy_imported_bat": 1634,
+                "energy_imported_cp": 824
+            }
+        }
+    }
+]
