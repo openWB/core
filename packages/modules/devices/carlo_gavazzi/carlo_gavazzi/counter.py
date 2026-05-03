@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from typing import Any, TypedDict
 
-from pymodbus.constants import Endian
+from modules.common.pymodbus_compat import Endian
 
 from modules.devices.carlo_gavazzi.carlo_gavazzi.config import CarloGavazziCounterSetup
 from modules.common import modbus
@@ -39,13 +39,13 @@ class CarloGavazziCounter(AbstractCounter):
     def update(self):
         with self.__tcp_client:
             voltages = [val / 10 for val in self.__tcp_client.read_input_registers(
-                0x00, [ModbusDataType.INT_32] * 3, wordorder=Endian.Little, unit=self.__modbus_id)]
+                0x00, [ModbusDataType.INT_32] * 3, wordorder=Endian.Little, device_id=self.__modbus_id)]
             powers = [val / 10 for val in self.__tcp_client.read_input_registers(
-                0x12, [ModbusDataType.INT_32] * 3, wordorder=Endian.Little, unit=self.__modbus_id)]
+                0x12, [ModbusDataType.INT_32] * 3, wordorder=Endian.Little, device_id=self.__modbus_id)]
             power = sum(powers)
             currents = [(val / 1000) for val in self.__tcp_client.read_input_registers(
-                0x0C, [ModbusDataType.INT_32] * 3, wordorder=Endian.Little, unit=self.__modbus_id)]
-            frequency = self.__tcp_client.read_input_registers(0x33, ModbusDataType.INT_16, unit=self.__modbus_id) / 10
+                0x0C, [ModbusDataType.INT_32] * 3, wordorder=Endian.Little, device_id=self.__modbus_id)]
+            frequency = self.__tcp_client.read_input_registers(0x33, ModbusDataType.INT_16, device_id=self.__modbus_id) / 10
             if frequency > 100:
                 frequency = frequency / 10
 

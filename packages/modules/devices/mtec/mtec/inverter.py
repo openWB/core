@@ -34,7 +34,7 @@ class MTecInverter(AbstractInverter):
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
 
-        power = self.client.read_holding_registers(11028, ModbusDataType.UINT_32, unit=unit) * -1
+        power = self.client.read_holding_registers(11028, ModbusDataType.UINT_32, device_id=unit) * -1
 
         self.peak_filter.check_values(power)
         _, exported = self.sim_counter.sim_count(power)

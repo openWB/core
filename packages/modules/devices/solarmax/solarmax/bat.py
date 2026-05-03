@@ -2,7 +2,7 @@
 import logging
 from typing import TypedDict, Any, Optional
 
-from pymodbus.constants import Endian
+from modules.common.pymodbus_compat import Endian
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
@@ -37,8 +37,8 @@ class SolarmaxBat(AbstractBat):
 
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
-        power = self.client.read_input_registers(114, ModbusDataType.INT_32, unit=unit, wordorder=Endian.Little)
-        soc = self.client.read_input_registers(122, ModbusDataType.INT_16, unit=unit)
+        power = self.client.read_input_registers(114, ModbusDataType.INT_32, device_id=unit, wordorder=Endian.Little)
+        soc = self.client.read_input_registers(122, ModbusDataType.INT_16, device_id=unit)
         self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
 
@@ -57,24 +57,24 @@ class SolarmaxBat(AbstractBat):
         if power_limit is None:
             log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
             if self.last_mode is not None:
-                self.client.write_register(142, 0, data_type=ModbusDataType.INT_16, unit=unit)
+                self.client.write_register(142, 0, data_type=ModbusDataType.INT_16, device_id=unit)
                 self.last_mode = None
         elif power_limit >= 0:
             # Solarmax kann nicht aktiv laden
             log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt und nicht entladen")
-            self.client.write_register(140, 0, data_type=ModbusDataType.INT_16, unit=unit)
-            self.client.write_register(141, 0, data_type=ModbusDataType.INT_16, unit=unit)
-            self.client.write_register(142, 1, data_type=ModbusDataType.INT_16, unit=unit)
+            self.client.write_register(140, 0, data_type=ModbusDataType.INT_16, device_id=unit)
+            self.client.write_register(141, 0, data_type=ModbusDataType.INT_16, device_id=unit)
+            self.client.write_register(142, 1, data_type=ModbusDataType.INT_16, device_id=unit)
             self.last_mode = 'stop'
         elif power_limit < 0:
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W entladen für den Hausverbrauch")
-            self.client.write_register(142, 1, data_type=ModbusDataType.INT_16, unit=unit)
+            self.client.write_register(142, 1, data_type=ModbusDataType.INT_16, device_id=unit)
             self.last_mode = 'discharge'
             # Die maximale Entladeleistung begrenzen auf 5000W, maximaler Wertebereich Modbusregister.
             power_value = int(min(abs(power_limit), 7000))
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_value} W entladen für den Hausverbrauch")
-            self.client.write_register(140, power_value, data_type=ModbusDataType.INT_16, unit=unit)
-            self.client.write_register(141, power_value, data_type=ModbusDataType.INT_16, unit=unit)
+            self.client.write_register(140, power_value, data_type=ModbusDataType.INT_16, device_id=unit)
+            self.client.write_register(141, power_value, data_type=ModbusDataType.INT_16, device_id=unit)
 
     def power_limit_controllable(self) -> bool:
         return self.component_config.configuration.power_limit_controllable

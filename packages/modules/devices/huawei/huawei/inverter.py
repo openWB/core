@@ -40,7 +40,7 @@ class HuaweiInverter(AbstractInverter):
     def update(self) -> None:
         if self.type == HuaweiType.SDongle:
             time.sleep(1)
-        power = self.client.read_holding_registers(32064, ModbusDataType.INT_32, unit=self.modbus_id) * -1
+        power = self.client.read_holding_registers(32064, ModbusDataType.INT_32, device_id=self.modbus_id) * -1
 
         self.peak_filter.check_values(power)
         _, exported = self.sim_counter.sim_count(power)

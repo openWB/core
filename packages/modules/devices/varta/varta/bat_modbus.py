@@ -37,8 +37,8 @@ class VartaBatModbus(AbstractBat):
         self.set_state(self.get_state())
 
     def get_state(self) -> BatState:
-        soc = self.client.read_holding_registers(1068, ModbusDataType.INT_16, unit=self.__modbus_id)
-        power = self.client.read_holding_registers(1066, ModbusDataType.INT_16, unit=self.__modbus_id)
+        soc = self.client.read_holding_registers(1068, ModbusDataType.INT_16, device_id=self.__modbus_id)
+        power = self.client.read_holding_registers(1066, ModbusDataType.INT_16, device_id=self.__modbus_id)
         self.peak_filter.check_values(power)
         return BatState(
             power=power,

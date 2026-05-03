@@ -35,8 +35,8 @@ class TesvoltBat(AbstractBat):
         self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
-        soc = self.__tcp_client.read_input_registers(1056, ModbusDataType.INT_32, unit=25) / 10
-        power = self.__tcp_client.read_input_registers(1012, ModbusDataType.INT_32, unit=25) * -1
+        soc = self.__tcp_client.read_input_registers(1056, ModbusDataType.INT_32, device_id=25) / 10
+        power = self.__tcp_client.read_input_registers(1012, ModbusDataType.INT_32, device_id=25) * -1
         self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
 

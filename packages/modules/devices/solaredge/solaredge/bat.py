@@ -4,7 +4,7 @@ import logging
 from typing import Any, TypedDict, Dict, Union, Optional, Tuple
 
 
-from pymodbus.constants import Endian
+from modules.common.pymodbus_compat import Endian
 import pymodbus
 
 
@@ -99,10 +99,10 @@ class SolaredgeBat(AbstractBat):
 
         # Read SoC and Power from the appropriate registers
         soc = self.__tcp_client.read_holding_registers(
-            soc_reg, ModbusDataType.FLOAT_32, wordorder=Endian.Little, unit=unit
+            soc_reg, ModbusDataType.FLOAT_32, wordorder=Endian.Little, device_id=unit
         )
         power = self.__tcp_client.read_holding_registers(
-            power_reg, ModbusDataType.FLOAT_32, wordorder=Endian.Little, unit=unit
+            power_reg, ModbusDataType.FLOAT_32, wordorder=Endian.Little, device_id=unit
         )
 
         # Handle unsupported case
@@ -203,7 +203,7 @@ class SolaredgeBat(AbstractBat):
             address, data_type = self.REGISTERS[key]
             try:
                 values[key] = self.__tcp_client.read_holding_registers(
-                    address, data_type, wordorder=Endian.Little, unit=unit
+                    address, data_type, wordorder=Endian.Little, device_id=unit
                 )
             except pymodbus.exceptions.ModbusException as e:
                 log.error(f"Failed to read register {key} at address {address}: {e}")
@@ -217,7 +217,7 @@ class SolaredgeBat(AbstractBat):
         for key, value in values_to_write.items():
             address, data_type = self.REGISTERS[key]
             try:
-                self.__tcp_client.write_register(address, value, data_type, wordorder=Endian.Little, unit=unit)
+                self.__tcp_client.write_register(address, value, data_type, wordorder=Endian.Little, device_id=unit)
                 log.debug(f"Neuer Wert {value} in Register {address} geschrieben.")
             except pymodbus.exceptions.ModbusException as e:
                 log.error(f"Failed to write register {key} at address {address}: {e}")

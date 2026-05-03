@@ -128,14 +128,14 @@ class SunnyBoySmartEnergyBat(AbstractBat):
         values = {}
         for key in register_names:
             address, data_type = self.REGISTERS[key]
-            values[key] = self.__tcp_client.read_holding_registers(address, data_type, unit=unit)
+            values[key] = self.__tcp_client.read_holding_registers(address, data_type, device_id=unit)
         log.debug(f"Bat raw values {self.__tcp_client.address}: {values}")
         return values
 
     def _write_registers(self, values_to_write: Dict[str, Union[int, float]], unit: int) -> None:
         for key, value in values_to_write.items():
             address, data_type = self.REGISTERS[key]
-            self.__tcp_client.write_register(address, value, data_type, unit=unit)
+            self.__tcp_client.write_register(address, value, data_type, device_id=unit)
             log.debug(f"Neuer Wert {value} in Register {address} geschrieben.")
 
     def power_limit_controllable(self) -> bool:

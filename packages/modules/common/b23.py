@@ -46,7 +46,7 @@ class B23(AbstractCounter):
         # Modbus mapping version: 0x8910, 1 Register, only 2 bytes
         data_type = ModbusDataType.UINT_32
         time.sleep(0.1)
-        value = self.client.read_holding_registers(0x8900, data_type, unit=self.id)
+        value = self.client.read_holding_registers(0x8900, data_type, device_id=self.id)
         return str(self.check_nan(value, value, data_type))
 
     def get_currents(self) -> List[float]:
@@ -55,14 +55,14 @@ class B23(AbstractCounter):
         data_type = ModbusDataType.UINT_32
         time.sleep(0.1)
         return [self.check_nan(val, val / 100, data_type)
-                for val in self.client.read_holding_registers(0x5B0C, [data_type]*3, unit=self.id)]
+                for val in self.client.read_holding_registers(0x5B0C, [data_type]*3, device_id=self.id)]
 
     def get_frequency(self) -> float:
         """Returns frequency in Hz.
         """
         data_type = ModbusDataType.UINT_16
         time.sleep(0.1)
-        raw_value = self.client.read_holding_registers(0x5B2C, data_type, unit=self.id)
+        raw_value = self.client.read_holding_registers(0x5B2C, data_type, device_id=self.id)
         return self.check_nan(raw_value, raw_value / 100, data_type)
 
     def get_imported(self) -> float:
@@ -70,12 +70,12 @@ class B23(AbstractCounter):
         """
         data_type = ModbusDataType.UINT_64
         time.sleep(0.1)
-        raw_value = self.client.read_holding_registers(0x5000, data_type, unit=self.id)
+        raw_value = self.client.read_holding_registers(0x5000, data_type, device_id=self.id)
         return self.check_nan(raw_value, raw_value * 10, data_type)
 
     def get_exported(self) -> float:
         time.sleep(0.1)
-        return self.client.read_holding_registers(0x5004, ModbusDataType.UINT_64, unit=self.id) * 10
+        return self.client.read_holding_registers(0x5004, ModbusDataType.UINT_64, device_id=self.id) * 10
 
     def get_power(self) -> Tuple[List[float], float]:
         """Returns power per phase and total power.
@@ -84,7 +84,7 @@ class B23(AbstractCounter):
         time.sleep(0.1)
         # reading of total power and power per phase in one call
         powers = [self.check_nan(val, val / 100, data_type)
-                  for val in self.client.read_holding_registers(0x5B14, [data_type]*4, unit=self.id)]
+                  for val in self.client.read_holding_registers(0x5B14, [data_type]*4, device_id=self.id)]
         return powers[1:4], powers[0]
 
     def get_power_factors(self) -> List[float]:
@@ -95,7 +95,7 @@ class B23(AbstractCounter):
         data_type = ModbusDataType.INT_16
         time.sleep(0.1)
         return [self.check_nan(val, val / 1000, data_type)
-                for val in self.client.read_holding_registers(0x5B3B, [data_type]*3, unit=self.id)]
+                for val in self.client.read_holding_registers(0x5B3B, [data_type]*3, device_id=self.id)]
 
     def get_voltages(self) -> List[float]:
         """Returns voltages for all 3 phases.
@@ -103,7 +103,7 @@ class B23(AbstractCounter):
         data_type = ModbusDataType.UINT_32
         time.sleep(0.1)
         values = [self.check_nan(val, val / 10, data_type)
-                  for val in self.client.read_holding_registers(0x5B00, [data_type]*3, unit=self.id)]
+                  for val in self.client.read_holding_registers(0x5B00, [data_type]*3, device_id=self.id)]
         return values
 
     def get_counter_state(self) -> CounterState:

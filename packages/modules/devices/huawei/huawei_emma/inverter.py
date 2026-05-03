@@ -32,8 +32,8 @@ class Huawei_EmmaInverter(AbstractInverter):
         self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
-        power = self.client.read_holding_registers(30354, ModbusDataType.INT_32, unit=self.modbus_id) * -1
-        exported = self.client.read_holding_registers(30348, ModbusDataType.UINT_64, unit=self.modbus_id) * 10
+        power = self.client.read_holding_registers(30354, ModbusDataType.INT_32, device_id=self.modbus_id) * -1
+        exported = self.client.read_holding_registers(30348, ModbusDataType.UINT_64, device_id=self.modbus_id) * 10
         _, exported = self.peak_filter.check_values(power, None, exported)
         inverter_state = InverterState(
             power=power,

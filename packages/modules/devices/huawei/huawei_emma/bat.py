@@ -34,8 +34,8 @@ class Huawei_EmmaBat(AbstractBat):
         self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
-        power = self.client.read_holding_registers(30360, ModbusDataType.INT_32, unit=self.modbus_id)
-        soc = self.client.read_holding_registers(30368, ModbusDataType.UINT_16, unit=self.modbus_id) * 0.01
+        power = self.client.read_holding_registers(30360, ModbusDataType.INT_32, device_id=self.modbus_id)
+        soc = self.client.read_holding_registers(30368, ModbusDataType.UINT_16, device_id=self.modbus_id) * 0.01
 
         self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)

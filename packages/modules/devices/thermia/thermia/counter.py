@@ -8,7 +8,7 @@ from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_counter_value_store
 from modules.devices.thermia.thermia.config import ThermiaCounterSetup
-from pymodbus.constants import Endian
+from modules.common.pymodbus_compat import Endian
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
 
@@ -36,15 +36,15 @@ class ThermiaCounter(AbstractCounter):
     def update(self):
         with self.client:
             voltages = [val / 100 for val in self.client.read_input_registers(
-                72, [ModbusDataType.INT_16] * 3, unit=self.modbus_id)]
+                72, [ModbusDataType.INT_16] * 3, device_id=self.modbus_id)]
             powers = [val / 1 for val in self.client.read_input_registers(
-                78, [ModbusDataType.INT_16] * 3, unit=self.modbus_id)]
+                78, [ModbusDataType.INT_16] * 3, device_id=self.modbus_id)]
             power = sum(powers)
             currents = [(val / 100) for val in self.client.read_input_registers(
-                69, [ModbusDataType.INT_16] * 3, unit=self.modbus_id)]
+                69, [ModbusDataType.INT_16] * 3, device_id=self.modbus_id)]
             imported = self.client.read_input_registers(
                 83, ModbusDataType.INT_32, wordorder=Endian.Little,
-                unit=self.modbus_id) * 100
+                device_id=self.modbus_id) * 100
             exported = 0
 
         imported, _ = self.peak_filter.check_values(power, imported, None)

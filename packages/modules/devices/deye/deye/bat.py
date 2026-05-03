@@ -33,18 +33,18 @@ class DeyeBat(AbstractBat):
         self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.device_type = DeviceType(self.client.read_holding_registers(
-            0, ModbusDataType.INT_16, unit=self.component_config.configuration.modbus_id))
+            0, ModbusDataType.INT_16, device_id=self.component_config.configuration.modbus_id))
 
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
 
         if self.device_type == DeviceType.SINGLE_PHASE_STRING or self.device_type == DeviceType.SINGLE_PHASE_HYBRID:
-            power = self.client.read_holding_registers(190, ModbusDataType.INT_16, unit=unit) * -1
-            soc = self.client.read_holding_registers(184, ModbusDataType.INT_16, unit=unit)
+            power = self.client.read_holding_registers(190, ModbusDataType.INT_16, device_id=unit) * -1
+            soc = self.client.read_holding_registers(184, ModbusDataType.INT_16, device_id=unit)
 
             if self.device_type == DeviceType.SINGLE_PHASE_HYBRID:
-                imported = self.client.read_holding_registers(72, ModbusDataType.UINT_16, unit=unit) * 100
-                exported = self.client.read_holding_registers(74, ModbusDataType.UINT_16, unit=unit) * 100
+                imported = self.client.read_holding_registers(72, ModbusDataType.UINT_16, device_id=unit) * 100
+                exported = self.client.read_holding_registers(74, ModbusDataType.UINT_16, device_id=unit) * 100
                 imported, exported = self.peak_filter.check_values(power, imported, exported)
 
             elif self.device_type == DeviceType.SINGLE_PHASE_STRING:
@@ -52,11 +52,11 @@ class DeyeBat(AbstractBat):
                 imported, exported = self.sim_counter.sim_count(power)
 
         else:  # THREE_PHASE_LV (0x0500, 0x0005), THREE_PHASE_HV (0x0006)
-            power = self.client.read_holding_registers(590, ModbusDataType.INT_16, unit=unit) * -1
+            power = self.client.read_holding_registers(590, ModbusDataType.INT_16, device_id=unit) * -1
 
             if self.device_type == DeviceType.THREE_PHASE_HV:
                 power = power * 10
-            soc = self.client.read_holding_registers(588, ModbusDataType.INT_16, unit=unit)
+            soc = self.client.read_holding_registers(588, ModbusDataType.INT_16, device_id=unit)
             self.peak_filter.check_values(power)
             imported, exported = self.sim_counter.sim_count(power)
 

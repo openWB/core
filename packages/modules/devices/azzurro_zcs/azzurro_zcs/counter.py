@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from typing import TypedDict, Any
-from pymodbus.constants import Endian
+from modules.common.pymodbus_compat import Endian
 
 from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
@@ -36,22 +36,22 @@ class ZCSCounter(AbstractCounter):
         # 0x0212 Grid Power Int16 -10-10 kW Unit 0,01kW Feed in/out power
         # 0x0214 Input/Output power Int16 -10-10kW 0,01kW Energy storage power inverter
         power = self.client.read_input_registers(0x0212, ModbusDataType.INT_16, wordorder=Endian.Little,
-                                                 unit=self.__modbus_id) * -1
+                                                 device_id=self.__modbus_id) * -1
         # 0x020C Grid frequency UInt 0-100 Hz Unit 0,01 Hz
         frequency = self.client.read_input_registers(
-            0x020C, ModbusDataType.UINT_16, unit=self.__modbus_id) / 100
+            0x020C, ModbusDataType.UINT_16, device_id=self.__modbus_id) / 100
         exported = [value * 10
                     for value in self.client.read_input_registers(
                         # 0x021E Total energy injected into the grid UInt16 Unit 1kWh high
                         # 0x021F Total energy injected into the grid UInt16 Unit 1kWh low
                         0x021E, [ModbusDataType.UINT_16] * 10,
-                        wordorder=Endian.Little, unit=self.__modbus_id)]
+                        wordorder=Endian.Little, device_id=self.__modbus_id)]
         imported = [value * 10
                     for value in self.client.read_input_registers(
                         # 0x0220 Total energy taken from the grid UInt16 Unit 1kWh high
                         # 0x0221 Total energy taken from the grid UInt16 Unit 1kWh low
                         0x0220, [ModbusDataType.UINT_16] * 10,
-                        wordorder=Endian.Little, unit=self.__modbus_id)]
+                        wordorder=Endian.Little, device_id=self.__modbus_id)]
 
         imported, exported = self.peak_filter.check_values(power, imported, exported)
         counter_state = CounterState(

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from typing import Any, TypedDict
-from pymodbus.constants import Endian
+from modules.common.pymodbus_compat import Endian
 
 from modules.common import modbus
 from modules.common.abstract_device import AbstractInverter
@@ -36,19 +36,19 @@ class SolaxInverter(AbstractInverter):
         unit = self.device_config.configuration.modbus_id
 
         if SolaxVersion(self.device_config.configuration.version) == SolaxVersion.G2:
-            power = self.__tcp_client.read_input_registers(0x0413, ModbusDataType.UINT_16, unit=unit) * -1
+            power = self.__tcp_client.read_input_registers(0x0413, ModbusDataType.UINT_16, device_id=unit) * -1
             exported = self.__tcp_client.read_input_registers(
-                0x0423, ModbusDataType.UINT_32, wordorder=Endian.Little, unit=unit) * 100
+                0x0423, ModbusDataType.UINT_32, wordorder=Endian.Little, device_id=unit) * 100
         elif SolaxVersion(self.device_config.configuration.version) == SolaxVersion.G3:
-            power_temp = self.__tcp_client.read_input_registers(0x000A, [ModbusDataType.UINT_16] * 2, unit=unit)
+            power_temp = self.__tcp_client.read_input_registers(0x000A, [ModbusDataType.UINT_16] * 2, device_id=unit)
             power = sum(power_temp) * -1
             exported = self.__tcp_client.read_input_registers(
-                0x0052, ModbusDataType.UINT_32, wordorder=Endian.Little, unit=unit) * 100
+                0x0052, ModbusDataType.UINT_32, wordorder=Endian.Little, device_id=unit) * 100
         else:
-            power_temp = self.__tcp_client.read_input_registers(0x0410, [ModbusDataType.UINT_16] * 2, unit=unit)
+            power_temp = self.__tcp_client.read_input_registers(0x0410, [ModbusDataType.UINT_16] * 2, device_id=unit)
             power = sum(power_temp) * -1
             exported = self.__tcp_client.read_input_registers(
-                0x042B, ModbusDataType.UINT_32, wordorder=Endian.Little, unit=unit) * 100
+                0x042B, ModbusDataType.UINT_32, wordorder=Endian.Little, device_id=unit) * 100
 
         _, exported = self.peak_filter.check_values(power, None, exported)
         inverter_state = InverterState(

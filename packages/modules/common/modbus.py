@@ -11,10 +11,10 @@ import time
 from typing import Any, Callable, Iterable, Optional, Union, overload, List
 
 import pymodbus
-from pymodbus.client.sync import ModbusTcpClient, ModbusUdpClient, ModbusSerialClient
-from pymodbus.constants import Endian
-from pymodbus.payload import BinaryPayloadBuilder, BinaryPayloadDecoder
-from pymodbus.transaction import ModbusSocketFramer
+from pymodbus.client import ModbusTcpClient, ModbusUdpClient, ModbusSerialClient
+from modules.common.pymodbus_compat import Endian
+from modules.common.pymodbus_compat import BinaryPayloadBuilder, BinaryPayloadDecoder
+from pymodbus.framer import FramerType
 from urllib3.util import parse_url
 
 log = logging.getLogger(__name__)
@@ -102,8 +102,7 @@ class ModbusClient:
 
             number_of_addresses = sum(divide_rounding_up(
                 t.bits, _MODBUS_HOLDING_REGISTER_SIZE) for t in types)
-            response = read_register_method(
-                address, number_of_addresses, **kwargs)
+            response = read_register_method(`n                address, count=number_of_addresses, **kwargs)
             if response.isError():
                 raise Exception(__name__+" "+str(response))
             decoder = BinaryPayloadDecoder.fromRegisters(response.registers, byteorder, wordorder)
@@ -176,7 +175,7 @@ class ModbusClient:
 
     def read_coils(self, address: int, count: int, **kwargs):
         try:
-            response = self._delegate.read_coils(address, count, **kwargs)
+            response = self._delegate.read_coils(address, count=count, **kwargs)
             if response.isError():
                 raise Exception(__name__+" "+str(response))
             return response.bits[0] if count == 1 else response.bits[:count]
@@ -235,7 +234,7 @@ class ModbusClient:
         if self.is_socket_open() is False:
             self.connect()
         try:
-            response = read_register_method(start_address, count, **kwargs)
+            response = read_register_method(start_address, count=count, **kwargs)
             if response.isError():
                 raise Exception(__name__+" "+str(response))
             decoder = BinaryPayloadDecoder.fromRegisters(response.registers, byteorder, wordorder)
@@ -299,13 +298,13 @@ class ModbusTcpClient_(ModbusClient):
                  address: str,
                  port: int = 502,
                  sleep_after_connect: Optional[int] = 0,
-                 framer: type[ModbusSocketFramer] = ModbusSocketFramer,
+                 framer=FramerType.SOCKET,
                  **kwargs):
         parsed_url = parse_url(address)
         host = parsed_url.host
         if parsed_url.port is not None:
             port = parsed_url.port
-        super().__init__(ModbusTcpClient(host, port, framer, **kwargs), address, port, sleep_after_connect)
+        super().__init__(ModbusTcpClient(host, port=port, framer=framer, **kwargs), address, port, sleep_after_connect)
 
 
 class ModbusUdpClient_(ModbusClient):
@@ -318,7 +317,7 @@ class ModbusUdpClient_(ModbusClient):
         host = parsed_url.host
         if parsed_url.port is not None:
             port = parsed_url.port
-        super().__init__(ModbusUdpClient(host, port, **kwargs), address, port, sleep_after_connect)
+        super().__init__(ModbusUdpClient(host, port=port, **kwargs), address, port, sleep_after_connect)
 
 
 class ModbusSerialClient_(ModbusClient):
@@ -326,8 +325,8 @@ class ModbusSerialClient_(ModbusClient):
                  port: int,
                  sleep_after_connect: Optional[int] = 0,
                  **kwargs):
-        super().__init__(ModbusSerialClient(method="rtu",
-                                            port=port,
+        super().__init__(ModbusSerialClient(port,
+                                            framer=FramerType.RTU,
                                             baudrate=9600,
                                             stopbits=1,
                                             bytesize=8,

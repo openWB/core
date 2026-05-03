@@ -57,7 +57,7 @@ class SolaredgeCounter(AbstractCounter):
             (self.registers.imp_exp_scale, ModbusDataType.INT_16),
         )
         resp = self.__tcp_client.read_holding_registers_bulk(
-            self.registers.currents, 52, mapping=reg_mapping, unit=self.component_config.configuration.modbus_id)
+            self.registers.currents, 52, mapping=reg_mapping, device_id=self.component_config.configuration.modbus_id)
 
         imported = scale_registers(resp[self.registers.imported], resp[self.registers.imp_exp_scale])
         exported = scale_registers(resp[self.registers.exported], resp[self.registers.imp_exp_scale])

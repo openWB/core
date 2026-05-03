@@ -34,9 +34,9 @@ class Huawei_EmmaCounter(AbstractCounter):
         self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
-        currents = self.client.read_holding_registers(31651, [ModbusDataType.INT_32]*3, unit=self.modbus_id)
+        currents = self.client.read_holding_registers(31651, [ModbusDataType.INT_32]*3, device_id=self.modbus_id)
         currents = [val * 0.1 for val in currents]
-        power = self.client.read_holding_registers(31657, ModbusDataType.INT_32, unit=self.modbus_id)
+        power = self.client.read_holding_registers(31657, ModbusDataType.INT_32, device_id=self.modbus_id)
         self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
 

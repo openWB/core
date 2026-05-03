@@ -36,8 +36,8 @@ class AmpereInverter(AbstractInverter):
         self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
-        pv1_power = self.client.read_holding_registers(519, ModbusDataType.INT_16, unit=self.modbus_id) * -1
-        pv2_power = self.client.read_holding_registers(522, ModbusDataType.INT_16, unit=self.modbus_id) * -1
+        pv1_power = self.client.read_holding_registers(519, ModbusDataType.INT_16, device_id=self.modbus_id) * -1
+        pv2_power = self.client.read_holding_registers(522, ModbusDataType.INT_16, device_id=self.modbus_id) * -1
 
         power = pv1_power + pv2_power
 

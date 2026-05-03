@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 import sys
-from pymodbus.client.sync import ModbusTcpClient
+from pymodbus.client import ModbusTcpClient
 import logging
 
 log = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ log.debug(
     f"[Viessmann {devicenumber}] devicenr {devicenumber} ipadr {ipadr} "
     f"ueberschuss {uberschuss:6d} try to connect (modbus)")
 client = ModbusTcpClient(ipadr, port=502)
-rq = client.write_coil(16, True, unit=1)
+rq = client.write_coil(16, True, device_id=1)
 log.debug(f"[Viessmann {devicenumber}] Modbus write_coil response: {rq}")
 client.close()
 log.debug(
