@@ -20,11 +20,17 @@ sys.modules['pycarwings3'] = type(sys)('pycarwings3')
 
 # sys.modules['telnetlib3'] = type(sys)('telnetlib3')
 
-module = type(sys)('pymodbus.client.sync')
+module = type(sys)('pymodbus.client')
 module.ModbusSerialClient = Mock()
 module.ModbusTcpClient = Mock()
 module.ModbusUdpClient = Mock()
-sys.modules['pymodbus.client.sync'] = module
+sys.modules['pymodbus.client'] = module
+
+module = type(sys)('pymodbus.framer')
+module.FramerType = Mock()
+module.FramerType.SOCKET = 'socket'
+module.FramerType.RTU = 'rtu'
+sys.modules['pymodbus.framer'] = module
 
 module = type(sys)('pymodbus.constants')
 module.Endian = Mock()
@@ -35,8 +41,6 @@ module.BinaryPayloadDecoder = Mock()
 sys.modules['pymodbus.payload'] = module
 
 module = type(sys)('pymodbus.transaction')
-module.ModbusSocketFramer = Mock()
-module.ModbusRtuFramer = Mock()
 sys.modules['pymodbus.transaction'] = module
 
 module = type(sys)('socketserver')

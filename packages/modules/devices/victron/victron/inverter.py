@@ -40,7 +40,7 @@ class VictronInverter(AbstractInverter):
         with self.__tcp_client:
             if self.component_config.configuration.mppt:
                 try:
-                    power = self.__tcp_client.read_holding_registers(789, ModbusDataType.UINT_16, unit=modbus_id) / -10
+                    power = self.__tcp_client.read_holding_registers(789, ModbusDataType.UINT_16, device_id=modbus_id) / -10
                 except Exception as e:
                     if "GatewayPathUnavailable" in str(e):
                         power = 0
@@ -52,8 +52,8 @@ class VictronInverter(AbstractInverter):
                 # Adresse 808-810 ac output connected pv
                 # Adresse 811-813 ac input connected pv
                 # Adresse 850 mppt Leistung
-                power_temp1 = self.__tcp_client.read_holding_registers(808, [ModbusDataType.UINT_16]*6, unit=100)
-                power_temp2 = self.__tcp_client.read_holding_registers(850, ModbusDataType.UINT_16, unit=100)
+                power_temp1 = self.__tcp_client.read_holding_registers(808, [ModbusDataType.UINT_16]*6, device_id=100)
+                power_temp2 = self.__tcp_client.read_holding_registers(850, ModbusDataType.UINT_16, device_id=100)
                 power = (sum(power_temp1)+power_temp2) * -1
 
         self.peak_filter.check_values(power)

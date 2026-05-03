@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from typing import TypedDict, Any
-from pymodbus.constants import Endian
+from modules.common.pymodbus_compat import Endian
 
 from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
@@ -37,7 +37,7 @@ class IDMCounter(AbstractCounter):
     def update(self):
         unit = self.modbus_id
         power = self.client.read_input_registers(4122, ModbusDataType.FLOAT_32,
-                                                 wordorder=Endian.Little, unit=unit) * 1000
+                                                 wordorder=Endian.Little, device_id=unit) * 1000
         self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
 

@@ -1,5 +1,4 @@
 from datetime import datetime, timezone
-import json
 import logging
 
 from helpermodules.utils.error_handling import ImportErrorContext
@@ -25,22 +24,22 @@ try:
         def _process_call(self: OptionalProtocol,
                           chargebox_id: str,
                           fault_state: FaultState,
-                          func: Callable) -> Optional[websockets.WebSocketClientProtocol]:
-            async def make_call() -> websockets.WebSocketClientProtocol:
+                          func: Callable) -> Optional[tuple]:
+            async def make_call():
                 url = self.data.ocpp.config.url
                 async with websockets.connect(f"{url}{'' if url.endswith('/') else '/'}{chargebox_id}",
                                               subprotocols=[self.data.ocpp.config.version]) as ws:
+                    response = None
                     try:
                         cp = OcppChargepoint(chargebox_id, ws, 2)
-                        await cp.call(func)
+                        response = await cp.call(func)
                     except asyncio.exceptions.TimeoutError:
-                        # log.exception("Erwarteter TimeOut StartTransaction")
                         pass
-                    return ws
+                    return ws, response
             try:
                 if self.data.ocpp.config.active and chargebox_id:
                     return asyncio.run(make_call())
-            except websockets.exceptions.InvalidStatusCode:
+            except websockets.exceptions.InvalidStatus:
                 fault_state.warning(f"Chargebox ID {chargebox_id} konnte nicht im OCPP-Backend gefunden werden oder "
                                     "URL des Backends ist falsch.")
             return None
@@ -68,14 +67,17 @@ try:
                               id_tag: str,
                               imported: int) -> Optional[int]:
             try:
-                ws = self._process_call(chargebox_id, fault_state, call.StartTransaction(
+                result = self._process_call(chargebox_id, fault_state, call.StartTransaction(
                     connector_id=connector_id,
                     id_tag=id_tag if id_tag else "",
                     meter_start=int(imported),
                     timestamp=self._get_formatted_time()
                 ))
-                if ws:
-                    transaction_id = json.loads(ws.messages[0])[2]["transactionId"]
+                if result:
+                    _ws, response = result
+                    if response is None:
+                        return None
+                    transaction_id = response.transaction_id
                     log.debug(f"Transaction ID: {transaction_id} für Chargebox ID: {chargebox_id} mit Tag: {id_tag} "
                               f"und Zählerstand: {imported} erhalten.")
                     return transaction_id

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from typing import TypedDict, Any
-from pymodbus.constants import Endian
+from modules.common.pymodbus_compat import Endian
 
 from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
@@ -38,17 +38,17 @@ class KostalPlenticoreCounter(AbstractCounter):
 
     def update(self) -> None:
         power = self.client.read_holding_registers(
-            252, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=self.endianess)
+            252, ModbusDataType.FLOAT_32, device_id=self.modbus_id, wordorder=self.endianess)
         power_factor = self.client.read_holding_registers(
-            150, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=self.endianess)
+            150, ModbusDataType.FLOAT_32, device_id=self.modbus_id, wordorder=self.endianess)
         currents = [self.client.read_holding_registers(
-            reg, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=self.endianess) for reg in [222, 232, 242]]
+            reg, ModbusDataType.FLOAT_32, device_id=self.modbus_id, wordorder=self.endianess) for reg in [222, 232, 242]]
         voltages = [self.client.read_holding_registers(
-            reg, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=self.endianess) for reg in [230, 240, 250]]
+            reg, ModbusDataType.FLOAT_32, device_id=self.modbus_id, wordorder=self.endianess) for reg in [230, 240, 250]]
         powers = [self.client.read_holding_registers(
-            reg, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=self.endianess) for reg in [224, 234, 244]]
+            reg, ModbusDataType.FLOAT_32, device_id=self.modbus_id, wordorder=self.endianess) for reg in [224, 234, 244]]
         frequency = self.client.read_holding_registers(
-            220, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=self.endianess)
+            220, ModbusDataType.FLOAT_32, device_id=self.modbus_id, wordorder=self.endianess)
 
         self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)

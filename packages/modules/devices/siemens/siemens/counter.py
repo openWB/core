@@ -36,7 +36,7 @@ class SiemensCounter(AbstractCounter):
 
     def update(self) -> None:
         with self.__tcp_client:
-            power = self.__tcp_client.read_holding_registers(14, ModbusDataType.INT_32, unit=self.__modbus_id)
+            power = self.__tcp_client.read_holding_registers(14, ModbusDataType.INT_32, device_id=self.__modbus_id)
 
         self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)

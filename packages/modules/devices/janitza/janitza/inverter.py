@@ -34,7 +34,7 @@ class JanitzaInverter(AbstractInverter):
         self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self):
-        power = self.__tcp_client.read_holding_registers(19026, ModbusDataType.FLOAT_32, unit=self.__modbus_id) * -1
+        power = self.__tcp_client.read_holding_registers(19026, ModbusDataType.FLOAT_32, device_id=self.__modbus_id) * -1
         self.peak_filter.check_values(power)
         _, exported = self.sim_counter.sim_count(power)
 

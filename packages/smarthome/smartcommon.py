@@ -205,7 +205,7 @@ def pub(client: mqtt.Client, key: str, value: str) -> None:
 
 def sendmq(mqtt_input: Dict[str, str]) -> None:
     global mqtt_cache
-    client = mqtt.Client("openWB-SmartHome-bulkpublisher-" + str(os.getpid()))
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, client_id="openWB-SmartHome-bulkpublisher-" + str(os.getpid()))
     client.connect("localhost", mqttport)
     for key, value in mqtt_input.items():
         valueold = mqtt_cache.get(key, 'not in cache')
@@ -233,7 +233,7 @@ def update_devices() -> None:
     global parammqtt
     global mydevices
     global mqtt_cache
-    client = mqtt.Client("openWB-SmartHome-bulkpublisher-" + str(os.getpid()))
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, client_id="openWB-SmartHome-bulkpublisher-" + str(os.getpid()))
     client.connect("localhost", mqttport)
     # statische daten einschaltgruppe
     Sbase.ausdevices = 0
@@ -347,7 +347,7 @@ def readmq() -> None:
         with open(bp+'/ramdisk/smartparam.sh', 'w') as f:
             print('%s' % ('#!/bin/bash'), file=f)
     parammqtt = []
-    client = mqtt.Client("openWB-mqttsmarthome")
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, client_id="openWB-mqttsmarthome")
     client.on_connect = on_connect
     client.on_message = on_message
     startTime = time.time()

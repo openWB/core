@@ -33,11 +33,10 @@ Bei fertig erworbenen openWB ist die Software bereits vorinstalliert.
 Software:
 
 - Installiertes Raspberry Pi OS auf einem Raspberry Pi 3b oder besser.
-- Raspberry Pi OS Lite installieren. Aktuell wird in der Version 2.1 nur **Debian 11 "Bullseye"** (derzeit "oldstable") unterstützt.
-<https://downloads.raspberrypi.org/raspios_oldstable_lite_armhf/>
-- alternativ kann auch ein x86_64 System (Hardware oder als VM) mit installiertem **Debian 11 "Bullseye"** als Basis verwendet werden.
-- Eine Installation unter **Debian 12 "Bookworm"** wird noch nicht unterstützt!
-- Bitte beachten das **Debian 11 "Bullseye"** nur mit erheblichem Aufwand mit einem Raspberry Pi 5 kompatibel ist. Wir empfehlen die Nutzung von einem Raspberry Pi 3b.
+- Raspberry Pi OS Lite installieren. Unterstützt werden **Debian 12 "Bookworm"** und **Debian 13 "Trixie"**.
+- alternativ kann auch ein x86_64 System (Hardware oder als VM) mit installiertem **Debian 12 "Bookworm"** oder **Debian 13 "Trixie"** als Basis verwendet werden.
+- **Python 3.10 oder neuer** wird benötigt (Python 3.13 empfohlen).
+- Die Installation richtet automatisch ein Python Virtual Environment unter `/opt/openwb-venv` ein.
 
 In der Shell folgendes eingeben:
 

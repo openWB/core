@@ -49,19 +49,19 @@ class GoodWeBat(AbstractBat):
             if battery_index == 1:
                 if self.version == GoodWeVersion.V_1_7:
                     power = self.__tcp_client.read_holding_registers(
-                        35183, ModbusDataType.INT_16, unit=self.__modbus_id)*-1
+                        35183, ModbusDataType.INT_16, device_id=self.__modbus_id)*-1
                 else:
                     power = self.__tcp_client.read_holding_registers(
-                        35182, ModbusDataType.INT_32, unit=self.__modbus_id)*-1
-                soc = self.__tcp_client.read_holding_registers(37007, ModbusDataType.UINT_16, unit=self.__modbus_id)
+                        35182, ModbusDataType.INT_32, device_id=self.__modbus_id)*-1
+                soc = self.__tcp_client.read_holding_registers(37007, ModbusDataType.UINT_16, device_id=self.__modbus_id)
                 imported = self.__tcp_client.read_holding_registers(
-                    35206, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
+                    35206, ModbusDataType.UINT_32, device_id=self.__modbus_id) * 100
                 exported = self.__tcp_client.read_holding_registers(
-                    35209, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
+                    35209, ModbusDataType.UINT_32, device_id=self.__modbus_id) * 100
                 imported, exported = self.peak_filter.check_values(power, imported, exported)
             else:
-                power = self.__tcp_client.read_holding_registers(35264, ModbusDataType.INT_32, unit=self.__modbus_id)*-1
-                soc = self.__tcp_client.read_holding_registers(39005, ModbusDataType.UINT_16, unit=self.__modbus_id)
+                power = self.__tcp_client.read_holding_registers(35264, ModbusDataType.INT_32, device_id=self.__modbus_id)*-1
+                soc = self.__tcp_client.read_holding_registers(39005, ModbusDataType.UINT_16, device_id=self.__modbus_id)
                 self.peak_filter.check_values(power)
                 imported, exported = self.sim_counter.sim_count(power)
 
@@ -80,31 +80,31 @@ class GoodWeBat(AbstractBat):
         if power_limit is None:
             log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
             if self.last_mode is not None:
-                self.__tcp_client.write_register(47511, 1, data_type=ModbusDataType.UINT_16, unit=unit)
-                self.__tcp_client.write_register(47512, 0, data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_register(47511, 1, data_type=ModbusDataType.UINT_16, device_id=unit)
+                self.__tcp_client.write_register(47512, 0, data_type=ModbusDataType.UINT_16, device_id=unit)
                 self.last_mode = None
         elif power_limit == 0:
             log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt und nicht entladen")
             if self.last_mode != 'stop':
-                self.__tcp_client.write_register(47511, 2, data_type=ModbusDataType.UINT_16, unit=unit)
-                self.__tcp_client.write_register(47512, 0, data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_register(47511, 2, data_type=ModbusDataType.UINT_16, device_id=unit)
+                self.__tcp_client.write_register(47512, 0, data_type=ModbusDataType.UINT_16, device_id=unit)
                 self.last_mode = 'stop'
         elif power_limit < 0:
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W entladen für den Hausverbrauch")
             if self.last_mode != 'discharge':
-                self.__tcp_client.write_register(47511, 3, data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_register(47511, 3, data_type=ModbusDataType.UINT_16, device_id=unit)
                 self.last_mode = 'discharge'
             # Die maximale Entladeleistung begrenzen auf 5000W, maximaler Wertebereich Modbusregister.
             power_value = int(min(abs(power_limit), 10000))
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_value} W entladen für den Hausverbrauch")
-            self.__tcp_client.write_register(47512, power_value, data_type=ModbusDataType.UINT_16, unit=unit)
+            self.__tcp_client.write_register(47512, power_value, data_type=ModbusDataType.UINT_16, device_id=unit)
         elif power_limit > 0:
             if self.last_mode != 'charge':
-                self.__tcp_client.write_register(47511, 2, data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_register(47511, 2, data_type=ModbusDataType.UINT_16, device_id=unit)
                 self.last_mode = 'charge'
             power_value = int(min(abs(power_limit), 10000))
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_value} W entladen für den Hausverbrauch")
-            self.__tcp_client.write_register(47512, power_value, data_type=ModbusDataType.UINT_16, unit=unit)
+            self.__tcp_client.write_register(47512, power_value, data_type=ModbusDataType.UINT_16, device_id=unit)
 
     def power_limit_controllable(self) -> bool:
         return True

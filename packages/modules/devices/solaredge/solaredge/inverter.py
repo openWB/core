@@ -62,7 +62,7 @@ class SolaredgeInverter(AbstractInverter):
 
     def read_state(self):
         resp = self.__tcp_client.read_holding_registers_bulk(
-            Register.CURRENTS, 30, mapping=self.REG_MAPPING, unit=self.component_config.configuration.modbus_id)
+            Register.CURRENTS, 30, mapping=self.REG_MAPPING, device_id=self.component_config.configuration.modbus_id)
 
         power = scale_registers(resp[Register.POWER], resp[Register.POWER_SCALE]) * -1
         self.peak_filter.check_values(power)

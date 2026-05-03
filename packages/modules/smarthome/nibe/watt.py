@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import sys
 import json
-from pymodbus.client.sync import ModbusTcpClient
+from pymodbus.client import ModbusTcpClient
 
 # get variables from arguments
 devicenumber = str(sys.argv[1])  # SmartHome device number
@@ -18,10 +18,10 @@ SERVER_PORT = "502"  # TCP port to connect to, should be moved into argument as 
 CurrentPowerRegisterAddress = 2166  # register for current power reading
 
 # need to specify framer to enable RTUoverTCP
-client = ModbusTcpClient(SERVER_HOST, SERVER_PORT)
+client = ModbusTcpClient(SERVER_HOST, port=SERVER_PORT)
 
 # Aktueller Verbrauch
-resp = client.read_input_registers(CurrentPowerRegisterAddress, 1, unit=1)
+resp = client.read_input_registers(CurrentPowerRegisterAddress, count=1, device_id=1)
 
 if resp and hasattr(resp, "registers"):
     CurrentPower = resp.registers[0]  # Get the first register value

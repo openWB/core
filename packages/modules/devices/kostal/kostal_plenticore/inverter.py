@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from typing import TypedDict, Any
-from pymodbus.constants import Endian
+from modules.common.pymodbus_compat import Endian
 
 from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
@@ -42,13 +42,13 @@ class KostalPlenticoreInverter(AbstractInverter):
 
     def update(self) -> None:
         power = self.client.read_holding_registers(
-            575, ModbusDataType.INT_16, unit=self.modbus_id, wordorder=self.endianess) * -1
+            575, ModbusDataType.INT_16, device_id=self.modbus_id, wordorder=self.endianess) * -1
         exported = self.client.read_holding_registers(
-            320, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=self.endianess)
+            320, ModbusDataType.FLOAT_32, device_id=self.modbus_id, wordorder=self.endianess)
         # Try to read dc_power, if it fails just skip it and set to None
         try:
             dc_power = self.client.read_holding_registers(
-                1066, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=self.endianess) * -1
+                1066, ModbusDataType.FLOAT_32, device_id=self.modbus_id, wordorder=self.endianess) * -1
             self.fault_state.no_error()
         except Exception:
             dc_power = None

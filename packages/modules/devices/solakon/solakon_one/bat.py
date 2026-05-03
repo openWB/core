@@ -34,13 +34,13 @@ class SolakonOneBat(AbstractBat):
 
         # AC Leistung am Stecker, Batterie aus dem Netz aufladen hat positive Werte,
         # Leistung aus der Batterie und/oder aus PV ins Netz abgeben hat negative Werte
-        power = self.client.read_holding_registers(39134, ModbusDataType.INT_32, unit=unit) * -1
+        power = self.client.read_holding_registers(39134, ModbusDataType.INT_32, device_id=unit) * -1
         # SoC Ladezustand der Batterie in %
-        soc = self.client.read_holding_registers(39424, ModbusDataType.INT_16, unit=unit)
+        soc = self.client.read_holding_registers(39424, ModbusDataType.INT_16, device_id=unit)
         # gesamte DC Ladung der Batterie in Wh
-        imported = self.client.read_holding_registers(39605, ModbusDataType.UINT_32, unit=unit) * 10
+        imported = self.client.read_holding_registers(39605, ModbusDataType.UINT_32, device_id=unit) * 10
         # gesamte DC Entladung der Batterie in Wh
-        exported = self.client.read_holding_registers(39609, ModbusDataType.UINT_32, unit=unit) * 10
+        exported = self.client.read_holding_registers(39609, ModbusDataType.UINT_32, device_id=unit) * 10
 
         imported, exported = self.peak_filter.check_values(power, imported, exported)
         bat_state = BatState(

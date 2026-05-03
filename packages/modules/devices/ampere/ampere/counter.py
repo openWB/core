@@ -36,8 +36,8 @@ class AmpereCounter(AbstractCounter):
         self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self):
-        powers = self.client.read_input_registers(1349, [ModbusDataType.INT_16]*3, unit=self.modbus_id)
-        power = self.client.read_input_registers(1348, ModbusDataType.INT_16, unit=self.modbus_id)
+        powers = self.client.read_input_registers(1349, [ModbusDataType.INT_16]*3, device_id=self.modbus_id)
+        power = self.client.read_input_registers(1348, ModbusDataType.INT_16, device_id=self.modbus_id)
 
         self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)

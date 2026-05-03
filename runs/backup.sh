@@ -298,7 +298,7 @@ create_archive() {
 
 	fix_permissions() {
 		echo "setting permissions of new backup file"
-		sudo chown openwb:www-data "$BACKUPFILE$FILENAMESUFFIX"
+		sudo chown openwb:caddy "$BACKUPFILE$FILENAMESUFFIX"
 		sudo chmod 664 "$BACKUPFILE$FILENAMESUFFIX"
 	}
 

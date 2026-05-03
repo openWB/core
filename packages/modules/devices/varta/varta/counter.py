@@ -34,7 +34,7 @@ class VartaCounter(AbstractCounter):
         self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self):
-        power = self.client.read_holding_registers(1078, ModbusDataType.INT_16, unit=self.__modbus_id) * -1
+        power = self.client.read_holding_registers(1078, ModbusDataType.INT_16, device_id=self.__modbus_id) * -1
         self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
 

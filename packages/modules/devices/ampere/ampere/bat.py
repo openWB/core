@@ -36,8 +36,8 @@ class AmpereBat(AbstractBat):
         self.client = self.kwargs['client']
 
     def update(self) -> None:
-        power = self.client.read_input_registers(535, ModbusDataType.INT_16, unit=self.modbus_id) * -1
-        soc = self.client.read_input_registers(1339, ModbusDataType.UINT_16, unit=self.modbus_id)
+        power = self.client.read_input_registers(535, ModbusDataType.INT_16, device_id=self.modbus_id) * -1
+        soc = self.client.read_input_registers(1339, ModbusDataType.UINT_16, device_id=self.modbus_id)
 
         self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)

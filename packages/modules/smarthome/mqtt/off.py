@@ -16,7 +16,7 @@ def on_message(client, userdata, msg) -> None:
 devicenumber = str(sys.argv[1])
 ipadr = str(sys.argv[2])
 uberschuss = int(sys.argv[3])
-client = mqtt.Client("openWB-mqttsmarthomecust")
+client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, client_id="openWB-mqttsmarthomecust")
 client.on_connect = on_connect
 client.on_message = on_message
 startTime = time.time()

@@ -35,7 +35,7 @@ class SungrowIHMInverter(AbstractInverter):
         unit = self.device_config.configuration.modbus_id
 
         power = self.__tcp_client.read_input_registers(8154, ModbusDataType.INT_32,
-                                                       wordorder=Endian.Little, unit=unit) * -10
+                                                       wordorder=Endian.Little, device_id=unit) * -10
 
         self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)

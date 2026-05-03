@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from pymodbus.transaction import ModbusRtuFramer
+from pymodbus.framer import FramerType
 from typing import Iterable
 
 from modules.common.abstract_device import DeviceDescriptor
@@ -29,7 +29,7 @@ def create_device(device_config: Orno):
     def initializer():
         nonlocal client
         client = ModbusTcpClient_(device_config.configuration.ip_address,
-                                  device_config.configuration.port, framer=ModbusRtuFramer)
+                                  device_config.configuration.port, framer=FramerType.RTU)
 
     return ConfigurableDevice(
         device_config=device_config,
