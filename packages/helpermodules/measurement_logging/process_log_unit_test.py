@@ -11,7 +11,7 @@ from helpermodules.measurement_logging.process_log import (
     process_entry,
     get_totals,
     _collect_daily_log_data,
-    calc_energy_imported_by_source_all,
+    calc_energy_imported_by_source,
     analyse_percentage_totals,
     CalculationType)
 
@@ -114,7 +114,7 @@ def test_calculate_average_power():
     assert power == 1800
 
 
-def test_calc_energy_imported_by_source_all():
+def test_calc_energy_imported_by_source():
     # setup
     entry = {
         "timestamp": 1234567890,
@@ -131,7 +131,7 @@ def test_calc_energy_imported_by_source_all():
     }
 
     # execution
-    result, message = calc_energy_imported_by_source_all(entry, {})
+    result, message = calc_energy_imported_by_source(entry, {})
 
     # evaluation - realistic Wh values with decimal precision
     assert result["hc"]["all"]["energy_imported_grid"] == 1530.035
