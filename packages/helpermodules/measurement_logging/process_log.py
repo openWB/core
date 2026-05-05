@@ -316,7 +316,7 @@ def _analyse_energy_source(data, calc_cp: Optional[str] = None) -> Dict:
             for i in range(0, len(data["entries"])):
                 data["entries"][i], message_analyse = analyse_percentage(data["entries"][i])
                 data["entries"][i], message_calc = calc_energy_imported_by_source(
-                    data["entries"][i], data["names"], calc_cp)
+                    data["entries"][i], data["names"], message_key_filter=calc_cp)
                 data["message"] += message_analyse + message_calc
             data["totals"] = analyse_percentage_totals(data["entries"], data["totals"])
         except Exception:
@@ -401,7 +401,7 @@ ERROR_STATE_MESSAGE = ("Die Anteile der Energiequellen für {} konnten nicht ber
                        "Fehlerzustand befindet. Die Verbräuche werden mit 0 kWh angesetzt.\n")
 
 
-def calc_energy_imported_by_source(entry, names, messages_only: Optional[str] = None) -> Tuple[Dict, str]:
+def calc_energy_imported_by_source(entry, names, message_key_filter: Optional[str] = None) -> Tuple[Dict, str]:
     try:
         if "energy_source" not in entry.keys():
             return entry, ""
@@ -419,7 +419,7 @@ def calc_energy_imported_by_source(entry, names, messages_only: Optional[str] = 
                 else:
                     for source in ("grid", "pv", "bat", "cp"):
                         hc_all[f"energy_imported_{source}"] = 0
-                    if messages_only is None or messages_only == "hc":
+                    if message_key_filter is None or message_key_filter == "hc":
                         message += ERROR_STATE_MESSAGE.format("den Hausverbrauch")
 
         cp_section = entry.get("cp")
@@ -433,7 +433,7 @@ def calc_energy_imported_by_source(entry, names, messages_only: Optional[str] = 
                     else:
                         for source in ("grid", "pv", "bat", "cp"):
                             cp_data[f"energy_imported_{source}"] = 0
-                        if messages_only is None or messages_only == cp_key:
+                        if message_key_filter is None or message_key_filter == cp_key:
                             message += ERROR_STATE_MESSAGE.format(f"Ladepunkt {names.get(cp_key, cp_key)}")
 
         counter_section = entry.get("counter")
@@ -447,8 +447,8 @@ def calc_energy_imported_by_source(entry, names, messages_only: Optional[str] = 
                     else:
                         for source in ("grid", "pv", "bat", "cp"):
                             counter_data[f"energy_imported_{source}"] = 0
-                        if messages_only is None or messages_only == counter_key:
-                            message += ERROR_STATE_MESSAGE.format(f"Zähler {names[counter_key]}")
+                        if message_key_filter is None or message_key_filter == counter_key:
+                            message += ERROR_STATE_MESSAGE.format(f"Zähler {names.get(counter_key, counter_key)}")
     except Exception:
         log.exception(f"Fehler beim Berechnen der Energie-Anteile aus dem Strom-Mix von {entry['timestamp']}")
         message += f"Fehler beim Berechnen des Strom-Mix von {entry['timestamp']}.\n"
