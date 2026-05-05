@@ -250,7 +250,8 @@ def test_calc_energy_imported_by_source_message_filtering():
 
     # evaluation
     # Should only get message for cp2, not counter1 (due to filtering)
-    expected_message = "Die Anteile der Energiequellen für Ladepunkt cp2 konnten nicht berechnet werden, da er sich im Fehlerzustand befindet. Die Verbräuche werden mit 0 kWh angesetzt.\n"
+    expected_message = ("Die Anteile der Energiequellen für Ladepunkt cp2 konnten nicht berechnet werden, da er sich "
+                        "im Fehlerzustand befindet. Die Verbräuche werden mit 0 kWh angesetzt.\n")
     assert message == expected_message
 
     # cp2 should have zero values for all energy sources due to fault state
