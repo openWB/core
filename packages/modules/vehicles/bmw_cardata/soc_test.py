@@ -123,6 +123,23 @@ class TestBmwCardata:
         with pytest.raises(Exception, match="Kein SoC"):
             fetch_soc(self._make_config())
 
+    def test_range_fallback_kombi_field(self, monkeypatch):
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "telematicData": {
+                "vehicle.drivetrain.electricEngine.charging.level": {"value": "80", "unit": "%"},
+                "vehicle.drivetrain.electricEngine.kombiRemainingElectricRange": {"value": "190", "unit": "km"},
+            }
+        }
+        mock_session = Mock()
+        mock_session.get.return_value = mock_response
+        mock_session.headers = {}
+        monkeypatch.setattr("modules.vehicles.bmw_cardata.soc.req.get_http_session", Mock(return_value=mock_session))
+
+        result = fetch_soc(self._make_config())
+        assert result.soc == 80
+        assert result.range == 190
+
     def test_token_refresh_on_expired(self, monkeypatch):
         mock_response = Mock()
         mock_response.json.return_value = {

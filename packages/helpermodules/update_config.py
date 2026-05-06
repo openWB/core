@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 121
+    DATASTORE_VERSION = 122
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -3068,3 +3068,42 @@ class UpdateConfig:
                     return {topic: payload}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(121)
+
+    def upgrade_datastore_122(self) -> None:
+        for folder in ("daily_log", "monthly_log"):
+            path_list = Path(Path(__file__).resolve().parents[2]/"data"/folder).glob('**/*.json')
+            for path in path_list:
+                with open(path, "r+") as jsonFile:
+                    try:
+                        content = json.load(jsonFile)
+                        for entry in content["entries"]:
+                            if entry.get("prices") is not None and entry["prices"].get("fault_state") is None:
+                                entry["prices"]["fault_state"] = None
+                            for cp in entry.get("cp", {}).values():
+                                if cp.get("fault_state") is None:
+                                    cp["fault_state"] = None
+                            for ev_data in entry.get("ev", {}).values():
+                                if ev_data.get("fault_state") is None:
+                                    ev_data["fault_state"] = None
+                            for counter in entry.get("counter", {}).values():
+                                if counter.get("fault_state") is None:
+                                    counter["fault_state"] = None
+                            for pv in entry.get("pv", {}).values():
+                                if pv.get("fault_state") is None:
+                                    pv["fault_state"] = None
+                            for bat in entry.get("bat", {}).values():
+                                if bat.get("fault_state") is None:
+                                    bat["fault_state"] = None
+                            if entry.get("hc") is not None and entry["hc"].get("all") is not None:
+                                if entry["hc"]["all"].get("fault_state") is None:
+                                    entry["hc"]["all"]["fault_state"] = None
+
+                        jsonFile.seek(0)
+                        json.dump(content, jsonFile)
+                        jsonFile.truncate()
+                        log.debug(f"Format der Logdatei '{path}' aktualisiert.")
+                    except FileNotFoundError:
+                        pass
+                    except Exception:
+                        log.exception(f"Logdatei '{path}' konnte nicht konvertiert werden.")
+        self._append_datastore_version(122)

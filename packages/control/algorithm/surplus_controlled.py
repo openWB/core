@@ -207,11 +207,11 @@ def limit_adjust_current(chargepoint: Chargepoint, new_current: float) -> float:
         else:
             if new_current < get_medium_charging_current(chargepoint.data.get.currents):
                 current = get_medium_charging_current(chargepoint.data.get.currents) - MAX_CURRENT
-                msg = f"Es darf um max {MAX_CURRENT}A unter den aktuell genutzten Strom geregelt werden."
+                msg = "Fahrzeug lädt (noch) nicht mit dem vorgegebenen Ladestrom."
 
             else:
                 current = get_medium_charging_current(chargepoint.data.get.currents) + MAX_CURRENT
-                msg = f"Es darf um max {MAX_CURRENT}A über den aktuell genutzten Strom geregelt werden."
+                msg = "Fahrzeug lädt (noch) nicht mit dem vorgegebenen Ladestrom."
         chargepoint.set_state_and_log(msg)
         return max(current,
                    chargepoint.data.control_parameter.min_current,
