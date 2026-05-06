@@ -276,7 +276,7 @@ class BatAll:
                                f"SoC. Eigenregelung des Speichers (ID: {bat_component.component_config.id})"))
                 else:
                     # unterhalb des minimal SoC greift die Eigenregelung
-                    # das verhindert Tief-Entladung
+                    # das verhindert Tiefentladung
                     if bat_component_data.get.soc <= self.data.config.bat_control_min_soc:
                         power_limit = None
                         bat_component_data.get.state_str = ("Keine Steuerung - dieser Speicher "
