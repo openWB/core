@@ -11,7 +11,7 @@ from helpermodules.measurement_logging.process_log import (
     process_entry,
     get_totals,
     _collect_daily_log_data,
-    calc_energy_imported_by_source_all,
+    calc_energy_imported_by_source,
     analyse_percentage_totals,
     CalculationType)
 
@@ -114,7 +114,7 @@ def test_calculate_average_power():
     assert power == 1800
 
 
-def test_calc_energy_imported_by_source_all():
+def test_calc_energy_imported_by_source():
     # setup
     entry = {
         "timestamp": 1234567890,
@@ -131,7 +131,7 @@ def test_calc_energy_imported_by_source_all():
     }
 
     # execution
-    result, message = calc_energy_imported_by_source_all(entry, {})
+    result, message = calc_energy_imported_by_source(entry, {})
 
     # evaluation - realistic Wh values with decimal precision
     assert result["hc"]["all"]["energy_imported_grid"] == 1530.035
@@ -220,6 +220,54 @@ def test_analyse_percentage_totals():
     assert result["counter"]["counter2"]["energy_imported_pv"] == 3290
     assert result["counter"]["counter2"]["energy_imported_bat"] == 1634
     assert result["counter"]["counter2"]["energy_imported_cp"] == 824
+
+
+def test_calc_energy_imported_by_source_message_filtering():
+    """Test message filtering when component is in fault state and name is missing."""
+    # setup
+    entry = {
+        "timestamp": 1234567890,
+        "energy_source": {"grid": 0.6523, "pv": 0.2487, "bat": 0.0789, "cp": 0.0201},
+        "cp": {
+            "cp1": {"energy_imported": 15723.4, "fault_state": 0},
+            "cp2": {"energy_imported": 22108.7, "fault_state": 2}  # fault state
+        },
+        "counter": {
+            "counter0": {"grid": True, "energy_imported": 45892.3, "fault_state": 0},
+            "counter1": {"grid": False, "energy_imported": 8956.7, "fault_state": 2}  # fault state
+        }
+    }
+
+    # Names dict is missing keys for cp2 and counter1
+    names = {
+        "cp1": "Ladepunkt 1",
+        "counter0": "EVU-Zähler"
+        # cp2 and counter1 intentionally missing
+    }
+
+    # execution - filter messages only for cp2
+    result, message = calc_energy_imported_by_source(entry, names, message_key_filter="cp2")
+
+    # evaluation
+    # Should only get message for cp2, not counter1 (due to filtering)
+    expected_message = ("Die Anteile der Energiequellen für Ladepunkt cp2 konnten nicht berechnet werden, da er sich "
+                        "im Fehlerzustand befindet. Die Verbräuche werden mit 0 kWh angesetzt.\n")
+    assert message == expected_message
+
+    # cp2 should have zero values for all energy sources due to fault state
+    assert result["cp"]["cp2"]["energy_imported_grid"] == 0
+    assert result["cp"]["cp2"]["energy_imported_pv"] == 0
+    assert result["cp"]["cp2"]["energy_imported_bat"] == 0
+    assert result["cp"]["cp2"]["energy_imported_cp"] == 0
+
+    # cp1 should have normal calculated values (not in fault state)
+    assert result["cp"]["cp1"]["energy_imported_grid"] == 10256.374
+
+    # counter1 should have zero values but no message (filtered out)
+    assert result["counter"]["counter1"]["energy_imported_grid"] == 0
+    assert result["counter"]["counter1"]["energy_imported_pv"] == 0
+    assert result["counter"]["counter1"]["energy_imported_bat"] == 0
+    assert result["counter"]["counter1"]["energy_imported_cp"] == 0
 
 
 def test_convert(daily_log_entry_processed, daily_log_sample):

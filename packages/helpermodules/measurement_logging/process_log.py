@@ -315,12 +315,8 @@ def _analyse_energy_source(data, calc_cp: Optional[str] = None) -> Dict:
                 data["message"] = ""
             for i in range(0, len(data["entries"])):
                 data["entries"][i], message_analyse = analyse_percentage(data["entries"][i])
-                if calc_cp is not None:
-                    data["entries"][i], message_calc = calc_energy_imported_by_source_cp(
-                        data["entries"][i], calc_cp, data["names"][calc_cp])
-                else:
-                    data["entries"][i], message_calc = calc_energy_imported_by_source_all(
-                        data["entries"][i], data["names"])
+                data["entries"][i], message_calc = calc_energy_imported_by_source(
+                    data["entries"][i], data["names"], message_key_filter=calc_cp)
                 data["message"] += message_analyse + message_calc
             data["totals"] = analyse_percentage_totals(data["entries"], data["totals"])
         except Exception:
@@ -405,76 +401,53 @@ ERROR_STATE_MESSAGE = ("Die Anteile der Energiequellen für {} konnten nicht ber
                        "Fehlerzustand befindet. Die Verbräuche werden mit 0 kWh angesetzt.\n")
 
 
-def calc_energy_imported_by_source_all(entry, names) -> Tuple[Dict, str]:
+def calc_energy_imported_by_source(entry, names, message_key_filter: Optional[str] = None) -> Tuple[Dict, str]:
     try:
-        if "energy_source" not in entry.keys():
-            return entry, ""
-        energy_source = entry["energy_source"]
         message = ""
 
-        hc_section = entry.get("hc")
-        if isinstance(hc_section, dict) and "all" in hc_section:
-            hc_all = hc_section["all"]
-            if isinstance(hc_all, dict):
-                if hc_all.get("fault_state", 0) != 2 and "energy_imported" in hc_all:
-                    for source in ("grid", "pv", "bat", "cp"):
-                        hc_all[f"energy_imported_{source}"] = decimal_multiply(
-                            hc_all["energy_imported"], energy_source[source])
-                else:
-                    for source in ("grid", "pv", "bat", "cp"):
-                        hc_all[f"energy_imported_{source}"] = 0
-                    message += ERROR_STATE_MESSAGE.format("den Hausverbrauch")
-
-        cp_section = entry.get("cp")
-        if isinstance(cp_section, dict):
-            for cp_key, cp_data in cp_section.items():
-                if isinstance(cp_data, dict):
-                    if cp_data.get("fault_state", 0) != 2 and "energy_imported" in cp_data:
+        if "energy_source" in entry.keys():
+            energy_source = entry["energy_source"]
+            hc_section = entry.get("hc")
+            if isinstance(hc_section, dict) and "all" in hc_section:
+                hc_all = hc_section["all"]
+                if isinstance(hc_all, dict):
+                    if hc_all.get("fault_state", 0) != 2 and "energy_imported" in hc_all:
                         for source in ("grid", "pv", "bat", "cp"):
-                            cp_data[f"energy_imported_{source}"] = decimal_multiply(
-                                cp_data["energy_imported"], energy_source[source])
+                            hc_all[f"energy_imported_{source}"] = decimal_multiply(
+                                hc_all["energy_imported"], energy_source[source])
                     else:
                         for source in ("grid", "pv", "bat", "cp"):
-                            cp_data[f"energy_imported_{source}"] = 0
-                        message += ERROR_STATE_MESSAGE.format(f"Ladepunkt {names.get(cp_key, cp_key)}")
+                            hc_all[f"energy_imported_{source}"] = 0
+                        if message_key_filter is None or message_key_filter == "hc":
+                            message += ERROR_STATE_MESSAGE.format("den Hausverbrauch")
 
-        counter_section = entry.get("counter")
-        if isinstance(counter_section, dict):
-            for counter_key, counter_data in counter_section.items():
-                if isinstance(counter_data, dict) and counter_data.get("grid") is False:
-                    if counter_data.get("fault_state", 0) != 2 and "energy_imported" in counter_data:
-                        for source in ("grid", "pv", "bat", "cp"):
-                            counter_data[f"energy_imported_{source}"] = decimal_multiply(
-                                counter_data["energy_imported"], energy_source[source])
-                    else:
-                        for source in ("grid", "pv", "bat", "cp"):
-                            counter_data[f"energy_imported_{source}"] = 0
-                        message += ERROR_STATE_MESSAGE.format(f"Zähler {names[counter_key]}")
-    except Exception:
-        log.exception(f"Fehler beim Berechnen der Energie-Anteile aus dem Strom-Mix von {entry['timestamp']}")
-        message += f"Fehler beim Berechnen des Strom-Mix von {entry['timestamp']}.\n"
-    finally:
-        return entry, message
+            cp_section = entry.get("cp")
+            if isinstance(cp_section, dict):
+                for cp_key, cp_data in cp_section.items():
+                    if isinstance(cp_data, dict):
+                        if cp_data.get("fault_state", 0) != 2 and "energy_imported" in cp_data:
+                            for source in ("grid", "pv", "bat", "cp"):
+                                cp_data[f"energy_imported_{source}"] = decimal_multiply(
+                                    cp_data["energy_imported"], energy_source[source])
+                        else:
+                            for source in ("grid", "pv", "bat", "cp"):
+                                cp_data[f"energy_imported_{source}"] = 0
+                            if message_key_filter is None or message_key_filter == cp_key:
+                                message += ERROR_STATE_MESSAGE.format(f"Ladepunkt {names.get(cp_key, cp_key)}")
 
-
-def calc_energy_imported_by_source_cp(entry, cp: str, name: str) -> Tuple[Dict, str]:
-    try:
-        if "energy_source" not in entry.keys():
-            return entry, ""
-
-        energy_source = entry["energy_source"]
-        message = ""
-
-        cp_data = entry["cp"][cp]
-        if cp_data.get("fault_state", 0) != 2 and "energy_imported" in cp_data:
-            for source in ("grid", "pv", "bat", "cp"):
-                cp_data[f"energy_imported_{source}"] = decimal_multiply(
-                    cp_data["energy_imported"], energy_source[source])
-        else:
-            for source in ("grid", "pv", "bat", "cp"):
-                cp_data[f"energy_imported_{source}"] = 0
-            message += ERROR_STATE_MESSAGE.format(f"Ladepunkt {name}")
-
+            counter_section = entry.get("counter")
+            if isinstance(counter_section, dict):
+                for counter_key, counter_data in counter_section.items():
+                    if isinstance(counter_data, dict) and counter_data.get("grid") is False:
+                        if counter_data.get("fault_state", 0) != 2 and "energy_imported" in counter_data:
+                            for source in ("grid", "pv", "bat", "cp"):
+                                counter_data[f"energy_imported_{source}"] = decimal_multiply(
+                                    counter_data["energy_imported"], energy_source[source])
+                        else:
+                            for source in ("grid", "pv", "bat", "cp"):
+                                counter_data[f"energy_imported_{source}"] = 0
+                            if message_key_filter is None or message_key_filter == counter_key:
+                                message += ERROR_STATE_MESSAGE.format(f"Zähler {names.get(counter_key, counter_key)}")
     except Exception:
         log.exception(f"Fehler beim Berechnen der Energie-Anteile aus dem Strom-Mix von {entry['timestamp']}")
         message += f"Fehler beim Berechnen des Strom-Mix von {entry['timestamp']}.\n"
