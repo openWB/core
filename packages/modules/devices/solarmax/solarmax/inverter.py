@@ -35,7 +35,7 @@ class SolarmaxInverter(AbstractInverter):
 
     def update(self) -> None:
         power = self.client.read_holding_registers(4151, ModbusDataType.UINT_32,
-                                                   unit=self.component_config.configuration.modbus_id) * -1
+                                                   device_id=self.component_config.configuration.modbus_id) * -1
         power = power / 10
         self.peak_filter.check_values(power)
         _, exported = self.sim_counter.sim_count(power)

@@ -5,15 +5,19 @@ on: pull_request
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python 3.9
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
-          python-version: "3.9.12"
+          python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
           pip3 install -r "/home/runner/work/core/core/requirements.txt"
+          pip3 install -r "/home/runner/work/core/core/requirements-dev.txt"
       - name: Flake8 with annotations in packages folder
         uses: TrueBrain/actions-flake8@v2.1
         with:

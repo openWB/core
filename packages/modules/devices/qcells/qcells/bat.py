@@ -30,12 +30,12 @@ class QCellsBat(AbstractBat):
         self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
-        power = self.client.read_input_registers(0x0016, ModbusDataType.INT_16, unit=self.__modbus_id)
-        soc = self.client.read_input_registers(0x001C, ModbusDataType.UINT_16, unit=self.__modbus_id)
+        power = self.client.read_input_registers(0x0016, ModbusDataType.INT_16, device_id=self.__modbus_id)
+        soc = self.client.read_input_registers(0x001C, ModbusDataType.UINT_16, device_id=self.__modbus_id)
         imported = self.client.read_input_registers(
-            0x0021, ModbusDataType.UINT_16, unit=self.__modbus_id) * 100
+            0x0021, ModbusDataType.UINT_16, device_id=self.__modbus_id) * 100
         exported = self.client.read_input_registers(
-            0x001D, ModbusDataType.UINT_16, unit=self.__modbus_id) * 100
+            0x001D, ModbusDataType.UINT_16, device_id=self.__modbus_id) * 100
 
         imported, exported = self.peak_filter.check_values(power, imported, exported)
         bat_state = BatState(

@@ -222,7 +222,7 @@ log.debug("registering signal handlers")
 signal(SIGTERM, handle_terminate)  # Handle SIGTERM from systemctl for graceful shutdown
 signal(SIGINT, handle_terminate)  # Handle SIGINT from keyboard (Strg+C) for graceful shutdown
 lt_executable = get_lt_executable()
-client = mqtt.Client(f"openWB-remote-{get_serial()}-{datetime.today().timestamp()}")
+client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, client_id=f"openWB-remote-{get_serial()}-{datetime.today().timestamp()}")
 client.on_connect = on_connect
 client.on_message = on_message
 client.will_set(STATE_TOPIC, json.dumps("offline"), qos=2, retain=True)

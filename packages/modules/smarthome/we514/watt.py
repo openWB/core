@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 import sys
 import json
-from pymodbus.transaction import ModbusRtuFramer
-from pymodbus.client.sync import ModbusTcpClient
+from pymodbus.framer import FramerType
+from pymodbus.client import ModbusTcpClient
 
 # get variables from arguments
 devicenumber = str(sys.argv[1])  # SmartHome device number
@@ -23,14 +23,14 @@ CurrentPowerRegisterAddress = 0x141  # register for current power reading
 
 
 # need to specify framer to enable RTUoverTCP
-client = ModbusTcpClient(SERVER_HOST, SERVER_PORT, framer=ModbusRtuFramer)
+client = ModbusTcpClient(SERVER_HOST, port=SERVER_PORT, framer=FramerType.RTU)
 
 # KWH Total Import
-resp = client.read_holding_registers(TotalEnergyRegisterAddress, 1, unit=MODBUS_DEVICEID)
+resp = client.read_holding_registers(TotalEnergyRegisterAddress, count=1, device_id=MODBUS_DEVICEID)
 TotalEnergy = int(resp.registers[0]) * 10  # Value is in 0.01kWh, need to convert to Wh
 
 # Aktueller Verbrauch
-resp = client.read_holding_registers(CurrentPowerRegisterAddress, 1, unit=MODBUS_DEVICEID)
+resp = client.read_holding_registers(CurrentPowerRegisterAddress, count=1, device_id=MODBUS_DEVICEID)
 CurrentPower = int(resp.registers[0])
 
 answer = {"power": CurrentPower, "powerc": TotalEnergy}

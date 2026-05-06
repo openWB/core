@@ -63,8 +63,11 @@ def get_common_data():
 
 def get_hardware_data():
     parsed_data = ""
-    temp = run_shell_command(["vcgencmd measure_temp"]).removeprefix("temp=").removesuffix("\n")
-    throttled = int(run_shell_command("vcgencmd get_throttled").removeprefix("throttled="), 16)
+    try:
+        temp = run_shell_command(["vcgencmd", "measure_temp"]).removeprefix("temp=").removesuffix("\n")
+        throttled = int(run_shell_command(["vcgencmd", "get_throttled"]).removeprefix("throttled="), 16)
+    except Exception:
+        return "Hardware data not available (vcgencmd not found or not a Raspberry Pi)\n"
     parsed_data += f"Temperature_C: {temp}"
     mask_undervoltage = 0b0001
     mask_temp_limit = 0b1000

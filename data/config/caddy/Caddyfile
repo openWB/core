@@ -1,0 +1,212 @@
+# openwb-version:1
+# openWB Caddy configuration
+# Replaces all Apache vhosts + .htaccess files
+
+# Global options
+{
+	# Use snakeoil certs for HTTPS (LAN device, no public domain)
+	# Caddy auto-HTTPS needs to be disabled for internal IPs
+	auto_https off
+}
+
+# PHP-FPM upstream
+# Detect PHP version dynamically via php-fpm socket symlink
+{$PHP_FPM_SOCK:unix//run/php/php-fpm.sock}
+
+# --- Main site: HTTP (:80) ---
+# openwb-version:http-unencrypted:1
+:80 {
+	root * /var/www/html
+
+	php_fastcgi {$PHP_FPM_SOCK:unix//run/php/php-fpm.sock}
+
+	file_server {
+		index index.php index.html
+	}
+
+	# ramdisk and backup allow directory listing
+	@ramdisk path /openWB/ramdisk/*
+	handle_path @ramdisk {
+		root * /var/www/html/openWB/ramdisk
+		file_server browse
+	}
+	@backup path /openWB/data/backup/*
+	handle_path @backup {
+		root * /var/www/html/openWB/data/backup
+		file_server browse
+	}
+
+	# WebSocket/MQTT proxy to mosquitto
+	# TODO: remove /mqtt target once all clients use /ws
+	handle_path /ws/* {
+		reverse_proxy 127.0.0.1:9003
+	}
+	handle_path /mqtt/* {
+		reverse_proxy 127.0.0.1:9003
+	}
+
+	# .htaccess: no-cache headers
+	header {
+		Cache-Control "no-cache, no-store, must-revalidate"
+		Pragma "no-cache"
+		Expires 0
+	}
+
+	# .htaccess: block sensitive file types
+	@blocked {
+		path *.conf
+		path *.ini
+		path *.py
+		path *.sh
+	}
+	respond @blocked 404
+
+	# Custom 404
+	handle_errors {
+		@404 expression {http.error.status_code} == 404
+		handle @404 {
+			rewrite * /openWB/web/error.html
+			file_server
+		}
+	}
+
+	log {
+		output file /var/log/caddy/access.log
+	}
+}
+
+# --- Main site: HTTPS (:443) ---
+# openwb-version:https-main:1
+:443 {
+	root * /var/www/html
+
+	tls /etc/ssl/certs/ssl-cert-snakeoil.pem /etc/ssl/private/ssl-cert-snakeoil.key
+
+	php_fastcgi {$PHP_FPM_SOCK:unix//run/php/php-fpm.sock}
+
+	file_server {
+		index index.php index.html
+	}
+
+	@ramdisk path /openWB/ramdisk/*
+	handle_path @ramdisk {
+		root * /var/www/html/openWB/ramdisk
+		file_server browse
+	}
+	@backup path /openWB/data/backup/*
+	handle_path @backup {
+		root * /var/www/html/openWB/data/backup
+		file_server browse
+	}
+
+	handle_path /ws/* {
+		reverse_proxy 127.0.0.1:9003
+	}
+	handle_path /mqtt/* {
+		reverse_proxy 127.0.0.1:9003
+	}
+
+	header {
+		Cache-Control "no-cache, no-store, must-revalidate"
+		Pragma "no-cache"
+		Expires 0
+	}
+
+	@blocked {
+		path *.conf
+		path *.ini
+		path *.py
+		path *.sh
+	}
+	respond @blocked 404
+
+	handle_errors {
+		@404 expression {http.error.status_code} == 404
+		handle @404 {
+			rewrite * /openWB/web/error.html
+			file_server
+		}
+	}
+
+	log {
+		output file /var/log/caddy/ssl-access.log
+	}
+}
+
+# --- HTTP redirect to HTTPS (enabled when unencrypted access is disabled) ---
+# This block is only activated by setup_caddy.sh based on MQTT config
+# When active, :80 is replaced by the redirect block above
+# openwb-version:http-redirect:1
+# Uncommented by setup_caddy.sh when allow_unencrypted_access != "true"
+#:80 {
+#	redir https://{host}{uri} permanent
+#}
+
+# --- Localhost internal (:81) ---
+# openwb-version:localhost:1
+127.0.0.1:81 {
+	root * /var/www/html
+
+	php_fastcgi {$PHP_FPM_SOCK:unix//run/php/php-fpm.sock}
+
+	file_server {
+		index index.php index.html
+	}
+
+	@ramdisk path /openWB/ramdisk/*
+	handle_path @ramdisk {
+		root * /var/www/html/openWB/ramdisk
+		file_server browse
+	}
+	@backup path /openWB/data/backup/*
+	handle_path @backup {
+		root * /var/www/html/openWB/data/backup
+		file_server browse
+	}
+
+	handle_path /ws/* {
+		reverse_proxy 127.0.0.1:9003
+	}
+	handle_path /mqtt/* {
+		reverse_proxy 127.0.0.1:9003
+	}
+
+	header {
+		Cache-Control "no-cache, no-store, must-revalidate"
+		Pragma "no-cache"
+		Expires 0
+	}
+
+	@blocked {
+		path *.conf
+		path *.ini
+		path *.py
+		path *.sh
+	}
+	respond @blocked 404
+}
+
+# --- HTTP API over HTTPS (:8443) ---
+# openwb-version:http-api:1
+:8443 {
+	root * /var/www/html/openWB/runs/http-api
+
+	tls /etc/ssl/certs/ssl-cert-snakeoil.pem /etc/ssl/private/ssl-cert-snakeoil.key
+
+	php_fastcgi {$PHP_FPM_SOCK:unix//run/php/php-fpm.sock}
+
+	file_server {
+		index index.php index.html
+	}
+
+	log {
+		output file /var/log/caddy/api-access.log
+	}
+}
+
+# --- Pro+ reverse proxy (:8080) ---
+# Enabled only when USB network adapter is detected
+# openwb-version:proplus:1
+#:8080 {
+#	reverse_proxy 192.168.192.50:80
+#}

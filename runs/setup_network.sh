@@ -1,23 +1,12 @@
 #!/bin/bash
 OPENWBBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+source "${OPENWBBASEDIR}/runs/platform_detect.sh"
 
 dhcpcd_config_source="${OPENWBBASEDIR}/data/config/dhcpcd.conf"
 dhcpcd_config_target="/etc/dhcpcd.conf"
 
 dnsmasq_config_source="${OPENWBBASEDIR}/data/config/dnsmasq.conf"
 dnsmasq_config_target="/etc/dnsmasq.conf"
-
-function versionMatch() {
-	file=$1
-	target=$2
-	currentVersion=$(grep -o "openwb-version:[0-9]\+" "$file" | grep -o "[0-9]\+$")
-	installedVersion=$(grep -o "openwb-version:[0-9]\+" "$target" | grep -o "[0-9]\+$")
-	if ((currentVersion == installedVersion)); then
-		return 0
-	else
-		return 1
-	fi
-}
 
 function update_file() {
 	file=$1

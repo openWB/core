@@ -32,8 +32,8 @@ class SiemensSentronInverter(AbstractInverter):
 
     def update(self) -> None:
         with self.__tcp_client:
-            power = self.__tcp_client.read_holding_registers(65, ModbusDataType.FLOAT_32, unit=self.__modbus_id) * -1
-            exported = self.__tcp_client.read_holding_registers(809, ModbusDataType.FLOAT_64, unit=self.__modbus_id)
+            power = self.__tcp_client.read_holding_registers(65, ModbusDataType.FLOAT_32, device_id=self.__modbus_id) * -1
+            exported = self.__tcp_client.read_holding_registers(809, ModbusDataType.FLOAT_64, device_id=self.__modbus_id)
 
         _, exported = self.peak_filter.check_values(power, None, exported)
         inverter_state = InverterState(

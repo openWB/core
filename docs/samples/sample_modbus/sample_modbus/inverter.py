@@ -51,7 +51,7 @@ class SampleInverter(AbstractInverter):
         # read_input_registers_bulk benötigit als Parameter das Startregister, die Anzahl der Register,
         # Register-Mapping und die Modbus-ID
         resp = self.client.read_input_registers_bulk(
-            Register.CURRENT_L1, 70, mapping=self.REG_MAPPING, unit=self.id)
+            Register.CURRENT_L1, 70, mapping=self.REG_MAPPING, device_id=self.id)
         _, exported = self.peak_filter.check_values(resp[Register.POWER], None, resp[Register.EXPORTED])
         inverter_state = InverterState(
             power=resp[Register.POWER],
@@ -62,7 +62,7 @@ class SampleInverter(AbstractInverter):
         self.store.set(inverter_state)
 
         # Einzelregister lesen (dauert länger, bei sehr weit >100 auseinanderliegenden Registern sinnvoll)
-        power = self.client.read_holding_registers(reg, ModbusDataType.INT_32, unit=unit)
+        power = self.client.read_holding_registers(reg, ModbusDataType.INT_32, device_id=unit)
         self.peak_filter.check_values(power)
         exported = self.sim_counter.sim_count(power)[1]
 

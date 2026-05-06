@@ -37,21 +37,21 @@ class SungrowSGCounter(AbstractCounter):
     def update(self):
         unit = self.device_config.configuration.modbus_id
         power = self.__tcp_client.read_input_registers(5082, ModbusDataType.INT_32,
-                                                       wordorder=Endian.Little, unit=unit)
+                                                       wordorder=Endian.Little, device_id=unit)
 
         try:
             powers = self.__tcp_client.read_input_registers(5084, [ModbusDataType.INT_32] * 3,
-                                                            wordorder=Endian.Little, unit=unit)
+                                                            wordorder=Endian.Little, device_id=unit)
         except Exception:
             powers = None
             self.fault_state.no_error(self.fault_text)
 
-        frequency = self.__tcp_client.read_input_registers(5035, ModbusDataType.UINT_16, unit=unit) / 10
+        frequency = self.__tcp_client.read_input_registers(5035, ModbusDataType.UINT_16, device_id=unit) / 10
 
-        power_factor = self.__tcp_client.read_input_registers(5034, ModbusDataType.INT_16, unit=unit) / 1000
+        power_factor = self.__tcp_client.read_input_registers(5034, ModbusDataType.INT_16, device_id=unit) / 1000
 
         voltages = self.__tcp_client.read_input_registers(5018, [ModbusDataType.UINT_16] * 3,
-                                                          wordorder=Endian.Little, unit=unit)
+                                                          wordorder=Endian.Little, device_id=unit)
 
         voltages = [value / 10 for value in voltages]
 

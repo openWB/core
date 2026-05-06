@@ -25,7 +25,7 @@ class BrokerClient:
                  port: int = 1886) -> None:
         try:
             self.name = f"openWB-{name}-{get_name_suffix()}"
-            self.client = mqtt.Client(self.name)
+            self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, client_id=self.name)
             self.client.on_connect = on_connect
             self.client.on_message = on_message
             self.client.connect(host, port)
@@ -48,7 +48,7 @@ class BrokerClient:
 class InternalBrokerPublisher:
     def __init__(self) -> None:
         try:
-            self.client = mqtt.Client(f"openWB-python-bulk-publisher-{get_name_suffix()}")
+            self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, client_id=f"openWB-python-bulk-publisher-{get_name_suffix()}")
             self.client.connect("localhost", 1886)
         except Exception:
             log.exception("Fehler beim Verbindungsaufbau zum Bulk-Publisher")

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from datetime import datetime
+from datetime import datetime, timezone
 from json import dumps
 import logging
 from time import mktime, time
@@ -32,7 +32,7 @@ class VwGroup(object):
     # convert utc timestamp to local time
     def utc2local(self, utc):
         epoch = mktime(utc.timetuple())
-        offset = datetime.fromtimestamp(epoch) - datetime.utcfromtimestamp(epoch)
+        offset = datetime.fromtimestamp(epoch) - datetime.fromtimestamp(epoch, tz=timezone.utc).replace(tzinfo=None)
         return utc + offset
 
     # async method, called from sync fetch_soc, required because libvwid/libskoda expect async environment

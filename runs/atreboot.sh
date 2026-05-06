@@ -1,5 +1,7 @@
 #!/bin/bash
 OPENWBBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+source "${OPENWBBASEDIR}/runs/platform_detect.sh"
+detect_platform
 hasInet=0
 
 # setup log file
@@ -8,19 +10,6 @@ touch "$LOGFILE"
 chmod 666 "$LOGFILE"
 
 {
-	versionMatch() {
-		file=$1
-		target=$2
-		currentVersion=$(grep -o "openwb-version:[0-9]\+" "$file" | grep -o "[0-9]\+$")
-		installedVersion=$(sudo grep -o "openwb-version:[0-9]\+" "$target" | grep -o "[0-9]\+$")
-		# echo "$currentVersion == $installedVersion ?"
-		if ((currentVersion == installedVersion)); then
-			return 0
-		else
-			return 1
-		fi
-	}
-
 	if ! id -u openwb >/dev/null 2>&1; then
 		echo "user 'openwb' missing"
 		echo "starting upgrade script..."
@@ -72,18 +61,22 @@ chmod 666 "$LOGFILE"
 
 	boot_config_source="${OPENWBBASEDIR}/data/config/boot_config.txt"
 	boot_config_target="/boot/config.txt"
-	echo "checking init in $boot_config_target..."
-	if versionMatch "$boot_config_source" "$boot_config_target"; then
-		echo "already up to date"
+	if [ "$PLATFORM_IS_RPI" = true ]; then
+		echo "checking init in $boot_config_target..."
+		if versionMatch "$boot_config_source" "$boot_config_target"; then
+			echo "already up to date"
+		else
+			echo "openwb section not found or outdated"
+			pattern_begin=$(grep -m 1 '#' "$boot_config_source")
+			pattern_end=$(grep '#' "$boot_config_source" | tail -n 1)
+			sudo sed -i "/$pattern_begin/,/$pattern_end/d" "$boot_config_target"
+			echo "adding init to $boot_config_target..."
+			sudo tee -a "$boot_config_target" <"$boot_config_source" >/dev/null
+			echo "done"
+			sudo reboot now
+		fi
 	else
-		echo "openwb section not found or outdated"
-		pattern_begin=$(grep -m 1 '#' "$boot_config_source")
-		pattern_end=$(grep '#' "$boot_config_source" | tail -n 1)
-		sudo sed -i "/$pattern_begin/,/$pattern_end/d" "$boot_config_target"
-		echo "adding init to $boot_config_target..."
-		sudo tee -a "$boot_config_target" <"$boot_config_source" >/dev/null
-		echo "done"
-		sudo reboot now
+		echo "not a Raspberry Pi, skipping boot config"
 	fi
 
 	ramdisk_config_source="${OPENWBBASEDIR}/data/config/ramdisk_config.txt"
@@ -126,14 +119,14 @@ chmod 666 "$LOGFILE"
 	echo -n "Final group membership: "
 	groups openwb
 
-	# allow apache to restart some services
-	echo "Apache service restart permissions..."
-	if versionMatch "${OPENWBBASEDIR}/data/config/sudoers/apache2" "/etc/sudoers.d/apache2"; then
-		echo "apache2 sudoers already up to date"
+	# allow caddy to restart some services
+	echo "Caddy service restart permissions..."
+	if versionMatch "${OPENWBBASEDIR}/data/config/sudoers/caddy" "/etc/sudoers.d/caddy"; then
+		echo "caddy sudoers already up to date"
 	else
-		echo "updating apache2 sudoers"
-		sudo cp "${OPENWBBASEDIR}/data/config/sudoers/apache2" "/etc/sudoers.d/apache2"
-		sudo chmod 440 /etc/sudoers.d/apache2
+		echo "updating caddy sudoers"
+		sudo cp "${OPENWBBASEDIR}/data/config/sudoers/caddy" "/etc/sudoers.d/caddy"
+		sudo chmod 440 /etc/sudoers.d/caddy
 	fi
 
 	# network setup
@@ -148,6 +141,35 @@ chmod 666 "$LOGFILE"
 		echo "#### continue anyway..."
 	fi
 
+	# run stack upgrade (Python, Caddy, PHP-FPM, Chrony, etc.)
+	# idempotent - only changes what's needed
+	echo "Checking for stack upgrades..."
+	if ((hasInet == 1)); then
+		sudo "${OPENWBBASEDIR}/runs/upgrade_stack.sh"
+	else
+		echo "no internet connection, skipping stack upgrade"
+	fi
+
+	# chrony NTP setup
+	echo "NTP time synchronization..."
+	if versionMatch "${OPENWBBASEDIR}/data/config/chrony/chrony.conf" "/etc/chrony/chrony.conf"; then
+		echo "chrony config already up to date"
+	else
+		echo "configuring chrony NTP..."
+		sudo systemctl stop systemd-timesyncd 2>/dev/null || true
+		sudo systemctl disable systemd-timesyncd 2>/dev/null || true
+		sudo cp "${OPENWBBASEDIR}/data/config/chrony/chrony.conf" /etc/chrony/chrony.conf
+		sudo systemctl enable chrony
+		sudo systemctl restart chrony
+		echo "chrony configured"
+	fi
+
+	# MOTD setup
+	echo "MOTD setup..."
+	sudo cp "${OPENWBBASEDIR}/data/config/profile.d/99-openwb-motd.sh" /etc/profile.d/99-openwb-motd.sh
+	sudo chmod 755 /etc/profile.d/99-openwb-motd.sh
+	echo "done"
+
 	# tune apt configuration and install required packages
 	if [ -d "/etc/apt/apt.conf.d" ]; then
 		if versionMatch "${OPENWBBASEDIR}/data/config/apt/99openwb" "/etc/apt/apt.conf.d/99openwb"; then
@@ -160,8 +182,8 @@ chmod 666 "$LOGFILE"
 		echo "path '/etc/apt/apt.conf.d' is missing! unsupported system!"
 	fi
 	if ((hasInet == 1)); then
-		# remove urllib3 version to avoid conflicts
-		pip uninstall urllib3 -y
+		echo "ensuring python virtual environment..."
+		ensure_venv "$PLATFORM_VENV"
 		"${OPENWBBASEDIR}/runs/install_packages.sh"
 	else
 		echo "no internet connection, skipping package installation"
@@ -241,7 +263,7 @@ chmod 666 "$LOGFILE"
 	# detect connected displays
 	# set default to "true" as fallback if "tvservice" is missing
 	displayDetected="true"
-	if which tvservice >/dev/null; then
+	if [ "$PLATFORM_IS_RPI" = true ] && which tvservice >/dev/null; then
 		echo "detected 'tvservice', query for connected displays"
 		output=$(tvservice -l)
 		echo "$output"
@@ -251,8 +273,11 @@ chmod 666 "$LOGFILE"
 		else
 			echo "detected HDMI or LCD display(s)"
 		fi
+	elif [ "$PLATFORM_VIRT" != "none" ]; then
+		echo "virtualized environment detected, no physical display"
+		displayDetected="false"
 	else
-		echo "'tvservice' not found, assuming a display is present"
+		echo "no tvservice, assuming a display is present"
 	fi
 	echo "displayDetected: $displayDetected"
 	forceDisplaySetup=0
@@ -303,8 +328,8 @@ chmod 666 "$LOGFILE"
 		"${OPENWBBASEDIR}/runs/update_local_display.sh" $forceDisplaySetup
 	fi
 
-	# check apache configuration
-	"${OPENWBBASEDIR}/runs/setup_apache2.sh"
+	# check caddy configuration
+	"${OPENWBBASEDIR}/runs/setup_caddy.sh"
 
 	# check for mosquitto configuration
 	"${OPENWBBASEDIR}/runs/setup_mosquitto.sh" 1
@@ -316,12 +341,12 @@ chmod 666 "$LOGFILE"
 
 	# check for python dependencies
 	if ((hasInet == 1)); then
-		echo "install required python packages with 'pip3'..."
-		if pip3 install --only-binary :all: -r "${OPENWBBASEDIR}/requirements.txt"; then
+		echo "install required python packages into venv..."
+		if $PLATFORM_VENV/bin/python3 -m pip install --only-binary :all: -r "${OPENWBBASEDIR}/requirements.txt"; then
 			echo "done"
 		else
 			echo "failed!"
-			message="Bei der Installation der benötigten Python-Bibliotheken ist ein Fehler aufgetreten! Bitte die Logdateien prüfen."
+			message="Bei der Installation der benoetigten Python-Bibliotheken ist ein Fehler aufgetreten! Bitte die Logdateien pruefen."
 			payload=$(printf '{"source": "system", "type": "danger", "message": "%s", "timestamp": %d}' "$message" "$(date +"%s")")
 			mosquitto_pub -p 1886 -t "openWB/system/messages/$(date +"%s%3N")" -r -m "$payload"
 		fi
@@ -340,8 +365,8 @@ chmod 666 "$LOGFILE"
 		echo "no internet connection, skipping version update"
 	fi
 
-	# set restore dir permissions to allow file upload for apache
-	sudo chgrp -R www-data "${OPENWBBASEDIR}/data/restore/." "${OPENWBBASEDIR}/data/data_migration/."
+	# set restore dir permissions to allow file upload for caddy
+	sudo chgrp -R caddy "${OPENWBBASEDIR}/data/restore/." "${OPENWBBASEDIR}/data/data_migration/."
 	sudo chmod -R g+w "${OPENWBBASEDIR}/data/restore/." "${OPENWBBASEDIR}/data/data_migration/."
 
 	# cleanup some folders

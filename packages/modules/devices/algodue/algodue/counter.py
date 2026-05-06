@@ -35,15 +35,15 @@ class AlgodueCounter(AbstractCounter):
         self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self):
-        frequency = self.__tcp_client.read_input_registers(0x1038, ModbusDataType.FLOAT_32, unit=self.__modbus_id)
+        frequency = self.__tcp_client.read_input_registers(0x1038, ModbusDataType.FLOAT_32, device_id=self.__modbus_id)
         currents = self.__tcp_client.read_input_registers(
-            0x100E, [ModbusDataType.FLOAT_32]*3, unit=self.__modbus_id)
-        powers = self.__tcp_client.read_input_registers(0x1020, [ModbusDataType.FLOAT_32]*3, unit=self.__modbus_id)
+            0x100E, [ModbusDataType.FLOAT_32]*3, device_id=self.__modbus_id)
+        powers = self.__tcp_client.read_input_registers(0x1020, [ModbusDataType.FLOAT_32]*3, device_id=self.__modbus_id)
         power = sum(powers)
         voltages = self.__tcp_client.read_input_registers(
-            0x1000, [ModbusDataType.FLOAT_32]*3, unit=self.__modbus_id)
+            0x1000, [ModbusDataType.FLOAT_32]*3, device_id=self.__modbus_id)
         power_factors = self.__tcp_client.read_input_registers(
-            0x1018, [ModbusDataType.FLOAT_32]*3, unit=self.__modbus_id)
+            0x1018, [ModbusDataType.FLOAT_32]*3, device_id=self.__modbus_id)
 
         self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
@@ -63,8 +63,8 @@ class AlgodueCounter(AbstractCounter):
 
 component_descriptor = ComponentDescriptor(configuration_factory=AlgodueCounterSetup)
 
-# serial_chars = self.client.read_holding_registers(0x500, [ModbusDataType.UINT_8]*10, unit=self.id)
-# model_id = self.client.read_holding_registers(0x505, ModbusDataType.UINT_16, unit=self.id)
+# serial_chars = self.client.read_holding_registers(0x500, [ModbusDataType.UINT_8]*10, device_id=self.id)
+# model_id = self.client.read_holding_registers(0x505, ModbusDataType.UINT_16, device_id=self.id)
 # model_string = "unknown"
 # if model_id == 0x03:
 #     model_string = "6 A, 3 phases, 4 wires"
@@ -77,7 +77,7 @@ component_descriptor = ComponentDescriptor(configuration_factory=AlgodueCounterS
 # elif model_id == 0x12:
 #     model_string = "63 A, 3 phases, 4 wires"
 
-# type_id = self.client.read_holding_registers(0x506, ModbusDataType.UINT_16, unit=self.id)
+# type_id = self.client.read_holding_registers(0x506, ModbusDataType.UINT_16, device_id=self.id)
 # type_string = "unknown"
 # if type_id == 0x00:
 #     type_string = "NO MID, RESET"

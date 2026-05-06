@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from typing import TypedDict, Any
 
-from pymodbus.constants import Endian
+from modules.common.pymodbus_compat import Endian
 from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
@@ -36,7 +36,7 @@ class SolarmaxMsCounter(AbstractCounter):
 
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
-        power = self.client.read_input_registers(118, ModbusDataType.INT_32, unit=unit, wordorder=Endian.Little) * -1
+        power = self.client.read_input_registers(118, ModbusDataType.INT_32, device_id=unit, wordorder=Endian.Little) * -1
         self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
 

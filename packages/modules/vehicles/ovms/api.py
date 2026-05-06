@@ -4,7 +4,7 @@ from logging import getLogger
 from typing import Union
 from asyncio import new_event_loop, set_event_loop
 from time import mktime
-from datetime import datetime
+from datetime import datetime, timezone
 from json import loads, dumps
 from modules.vehicles.ovms.config import OVMS
 from helpermodules.pub import Pub
@@ -34,7 +34,7 @@ def write_config(topic: str, config: dict):
 
 def utc2local(utc):
     epoch = mktime(utc.timetuple())
-    offset = datetime.fromtimestamp(epoch) - datetime.utcfromtimestamp(epoch)
+    offset = datetime.fromtimestamp(epoch) - datetime.fromtimestamp(epoch, tz=timezone.utc).replace(tzinfo=None)
     return utc + offset
 
 

@@ -1,19 +1,8 @@
 #!/bin/bash
 OPENWBBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+source "${OPENWBBASEDIR}/runs/platform_detect.sh"
 USER_MANAGEMENT_INIT_FILE="${OPENWBBASEDIR}/ramdisk/init_user_management"
 automaticServiceRestart=${1:-0}
-
-versionMatch() {
-	file=$1
-	target=$2
-	currentVersion=$(grep -o "openwb-version:[0-9]\+" "$file" | grep -o "[0-9]\+$")
-	installedVersion=$(sudo grep -o "openwb-version:[0-9]\+" "$target" | grep -o "[0-9]\+$")
-	if ((currentVersion == installedVersion)); then
-		return 0
-	else
-		return 1
-	fi
-}
 
 waitForServiceStop() {
 	# this function waits for a service to stop and kills the process if it takes too long

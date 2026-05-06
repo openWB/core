@@ -36,8 +36,8 @@ class AlgodueBat(AbstractBat):
 
     def update(self):
         currents = self.__tcp_client.read_input_registers(
-            0x100E, [ModbusDataType.FLOAT_32]*3, unit=self.__modbus_id)
-        powers = self.__tcp_client.read_input_registers(0x1020, [ModbusDataType.FLOAT_32]*3, unit=self.__modbus_id)
+            0x100E, [ModbusDataType.FLOAT_32]*3, device_id=self.__modbus_id)
+        powers = self.__tcp_client.read_input_registers(0x1020, [ModbusDataType.FLOAT_32]*3, device_id=self.__modbus_id)
         power = sum(powers)
 
         self.peak_filter.check_values(power)

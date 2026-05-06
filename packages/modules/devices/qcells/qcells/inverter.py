@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from typing import TypedDict, Any
-from pymodbus.constants import Endian
+from modules.common.pymodbus_compat import Endian
 
 from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
@@ -32,14 +32,14 @@ class QCellsInverter(AbstractInverter):
 
     def update(self) -> None:
         power_string1 = (self.client.read_input_registers(
-            0x0003, ModbusDataType.INT_16, unit=self.__modbus_id) / 10) * \
-            (self.client.read_input_registers(0x0005, ModbusDataType.INT_16, unit=self.__modbus_id) / 10)
+            0x0003, ModbusDataType.INT_16, device_id=self.__modbus_id) / 10) * \
+            (self.client.read_input_registers(0x0005, ModbusDataType.INT_16, device_id=self.__modbus_id) / 10)
         power_string2 = (self.client.read_input_registers(
-            0x0004, ModbusDataType.INT_16, unit=self.__modbus_id) / 10) * \
-            (self.client.read_input_registers(0x0006, ModbusDataType.INT_16, unit=self.__modbus_id) / 10)
+            0x0004, ModbusDataType.INT_16, device_id=self.__modbus_id) / 10) * \
+            (self.client.read_input_registers(0x0006, ModbusDataType.INT_16, device_id=self.__modbus_id) / 10)
         power = (power_string1 + power_string2) * -1
         exported = self.client.read_input_registers(0x0094, ModbusDataType.UINT_32, wordorder=Endian.Little,
-                                                    unit=self.__modbus_id) * 100
+                                                    device_id=self.__modbus_id) * 100
 
         _, exported = self.peak_filter.check_values(power, None, exported)
         inverter_state = InverterState(

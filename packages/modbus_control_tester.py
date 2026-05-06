@@ -4,7 +4,7 @@ from enum import Enum
 import logging
 import struct
 from typing import Optional
-from pymodbus.client.sync import ModbusTcpClient
+from pymodbus.client import ModbusTcpClient
 import time
 from modules.common import modbus
 from modules.common.modbus import ModbusDataType
@@ -54,7 +54,7 @@ REGISTERS = (
 
 
 def heartbeat_read():
-    read_client.read_input_registers(10104, modbus.ModbusDataType.INT_16, unit=slave_id)
+    read_client.read_input_registers(10104, modbus.ModbusDataType.INT_16, device_id=slave_id)
 
 
 def read_reg(register: int,
@@ -66,28 +66,28 @@ def read_reg(register: int,
         if action == Actions.READ_NUMBER:
             if read_mode == ReadMode.READ_INPUT_REG:
                 if length > 1:
-                    resp = read_client.read_input_registers(register, [data_type]*length, unit=slave_id)
+                    resp = read_client.read_input_registers(register, [data_type]*length, device_id=slave_id)
                 else:
-                    resp = read_client.read_input_registers(register, data_type, unit=slave_id)
+                    resp = read_client.read_input_registers(register, data_type, device_id=slave_id)
             elif read_mode == ReadMode.READ_HOLDING_REG:
                 if length > 1:
-                    resp = read_client.read_holding_registers(register, [data_type]*length, unit=slave_id)
+                    resp = read_client.read_holding_registers(register, [data_type]*length, device_id=slave_id)
                 else:
-                    resp = read_client.read_holding_registers(register, data_type, unit=slave_id)
+                    resp = read_client.read_holding_registers(register, data_type, device_id=slave_id)
             return resp
         elif action == Actions.READ_STR:
             if read_mode == ReadMode.READ_INPUT_REG:
-                resp = read_client.read_input_registers(register, [modbus.ModbusDataType.INT_16]*length, unit=slave_id)
+                resp = read_client.read_input_registers(register, [modbus.ModbusDataType.INT_16]*length, device_id=slave_id)
             elif read_mode == ReadMode.READ_HOLDING_REG:
                 resp = read_client.read_holding_registers(
-                    register, [modbus.ModbusDataType.INT_16]*length, unit=slave_id)
+                    register, [modbus.ModbusDataType.INT_16]*length, device_id=slave_id)
             string = ""
             for word in resp:
                 string += struct.pack(">h", word).decode("utf-8")
             return resp
         elif action == Actions.WRITE_VALUE:
             client = ModbusTcpClient(host, port=port)
-            client.write_registers(register, write_value, unit=slave_id)
+            client.write_registers(register, write_value, device_id=slave_id)
             return None
     except Exception:
         log.exception("Fehler")

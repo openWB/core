@@ -8,7 +8,7 @@ from modules.common import req
 from modules.common.abstract_vehicle import VehicleUpdateData
 from modules.vehicles.tronity.config import TronityVehicleSocConfiguration, TronityVehicleSoc
 from modules.common.component_state import CarState
-from datetime import datetime
+from datetime import datetime, timezone
 
 log = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ def is_token_valid(access_token: str) -> bool:
         log.debug("Found Token: %s", access_token)
 
     decoded_data = jwt.decode(jwt=access_token, verify=False, algorithms=['HS256'], options={"verify_signature": False})
-    if datetime.utcfromtimestamp(decoded_data['exp']) < datetime.utcnow():
+    if datetime.fromtimestamp(decoded_data['exp'], tz=timezone.utc) < datetime.now(timezone.utc):
         log.debug("Token expired: %s", decoded_data)
         return False
     else:

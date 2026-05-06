@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 import copy
 import logging
 from threading import Event, Thread

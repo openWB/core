@@ -20,12 +20,12 @@ class Sdm(AbstractCounter):
         self.id = modbus_id
         self.fast_mode = True
         with client:
-            self.serial_number = str(self.client.read_holding_registers(0xFC00, ModbusDataType.UINT_32, unit=self.id))
+            self.serial_number = str(self.client.read_holding_registers(0xFC00, ModbusDataType.UINT_32, device_id=self.id))
 
     def get_imported(self) -> float:
         # smarthome legacy
         time.sleep(0.1)
-        return self.client.read_input_registers(0x0048, ModbusDataType.FLOAT_32, unit=self.id) * 1000
+        return self.client.read_input_registers(0x0048, ModbusDataType.FLOAT_32, device_id=self.id) * 1000
 
 
 class SdmRegister(IntEnum):
@@ -57,14 +57,14 @@ class Sdm630_72(Sdm):
     def get_power(self) -> Tuple[List[float], float]:
         # smarthome legacy
         time.sleep(0.1)
-        powers = self.client.read_input_registers(0x0C, [ModbusDataType.FLOAT_32]*3, unit=self.id)
+        powers = self.client.read_input_registers(0x0C, [ModbusDataType.FLOAT_32]*3, device_id=self.id)
         power = sum(powers)
         return powers, power
 
     def get_voltages(self) -> Tuple[List[float], float]:
         # client handler
         time.sleep(0.1)
-        return self.client.read_input_registers(0x00, [ModbusDataType.FLOAT_32]*3, unit=self.id)
+        return self.client.read_input_registers(0x00, [ModbusDataType.FLOAT_32]*3, device_id=self.id)
 
     def get_counter_state(self) -> CounterState:
         # entgegen der Doku können nicht bei allen SDM72 80 Register auf einmal gelesen werden,
@@ -73,18 +73,18 @@ class Sdm630_72(Sdm):
             try:
                 time.sleep(0.1)
                 bulk_1 = self.client.read_input_registers_bulk(
-                    SdmRegister.VOLTAGE_L1, 18, mapping=self.REG_MAPPING_BULK_1, unit=self.id)
+                    SdmRegister.VOLTAGE_L1, 18, mapping=self.REG_MAPPING_BULK_1, device_id=self.id)
                 time.sleep(0.1)
                 power_factors = self.client.read_input_registers(
-                    SdmRegister.POWER_FACTOR_L1, [ModbusDataType.FLOAT_32]*3, unit=self.id)
+                    SdmRegister.POWER_FACTOR_L1, [ModbusDataType.FLOAT_32]*3, device_id=self.id)
                 time.sleep(0.1)
                 bulk_2 = self.client.read_input_registers_bulk(
-                    SdmRegister.FREQUENCY, 6, mapping=self.REG_MAPPING_BULK_2, unit=self.id)
+                    SdmRegister.FREQUENCY, 6, mapping=self.REG_MAPPING_BULK_2, device_id=self.id)
                 resp = {**bulk_1, **bulk_2}
             except Exception:
                 log.exception("Fehler beim Auslesen des Zählers")
                 self.client.read_input_registers(
-                    SdmRegister.VOLTAGE_L1, [ModbusDataType.FLOAT_32]*3, unit=self.id)
+                    SdmRegister.VOLTAGE_L1, [ModbusDataType.FLOAT_32]*3, device_id=self.id)
                 self.fast_mode = False
         if self.fast_mode is False:
             # im gleichen Durchlauf noch im slow mode versuchen, sonst schlägt der Hardware-Check fehl
@@ -92,23 +92,23 @@ class Sdm630_72(Sdm):
             resp = {}
             time.sleep(0.1)
             resp[SdmRegister.VOLTAGE_L1] = self.client.read_input_registers(
-                SdmRegister.VOLTAGE_L1, [ModbusDataType.FLOAT_32]*3, unit=self.id)
+                SdmRegister.VOLTAGE_L1, [ModbusDataType.FLOAT_32]*3, device_id=self.id)
             time.sleep(0.1)
             resp[SdmRegister.CURRENT_L1] = self.client.read_input_registers(
-                SdmRegister.CURRENT_L1, [ModbusDataType.FLOAT_32]*3, unit=self.id)
+                SdmRegister.CURRENT_L1, [ModbusDataType.FLOAT_32]*3, device_id=self.id)
             time.sleep(0.1)
             resp[SdmRegister.POWER_L1] = self.client.read_input_registers(
-                SdmRegister.POWER_L1, [ModbusDataType.FLOAT_32]*3, unit=self.id)
+                SdmRegister.POWER_L1, [ModbusDataType.FLOAT_32]*3, device_id=self.id)
             time.sleep(0.1)
             power_factors = self.client.read_input_registers(
-                SdmRegister.POWER_FACTOR_L1, [ModbusDataType.FLOAT_32]*3, unit=self.id)
+                SdmRegister.POWER_FACTOR_L1, [ModbusDataType.FLOAT_32]*3, device_id=self.id)
             time.sleep(0.1)
             # frequency noch mit auslesen klappt nicht
             resp[SdmRegister.IMPORTED], resp[SdmRegister.EXPORTED] = self.client.read_input_registers(
-                SdmRegister.IMPORTED, [ModbusDataType.FLOAT_32]*2, unit=self.id)
+                SdmRegister.IMPORTED, [ModbusDataType.FLOAT_32]*2, device_id=self.id)
             time.sleep(0.1)
             resp[SdmRegister.FREQUENCY] = self.client.read_input_registers(
-                SdmRegister.FREQUENCY, ModbusDataType.FLOAT_32, unit=self.id)
+                SdmRegister.FREQUENCY, ModbusDataType.FLOAT_32, device_id=self.id)
 
         frequency = resp[SdmRegister.FREQUENCY]
         if frequency > 100:
@@ -147,19 +147,19 @@ class Sdm120(Sdm):
     def get_power(self) -> Tuple[List[float], float]:
         # smarthome legacy
         time.sleep(0.1)
-        power = self.client.read_input_registers(0x0C, ModbusDataType.FLOAT_32, unit=self.id)
+        power = self.client.read_input_registers(0x0C, ModbusDataType.FLOAT_32, device_id=self.id)
         return [power, 0, 0], power
 
     def get_counter_state(self) -> CounterState:
         # beim SDM120 steht nichts von Bulk-Reads in der Doku, daher auch auf 20 Register limitiert
         time.sleep(0.1)
         bulk_1 = self.client.read_input_registers_bulk(
-            SdmRegister.VOLTAGE_L1, 14, mapping=self.REG_MAPPING_BULK_1, unit=self.id)
+            SdmRegister.VOLTAGE_L1, 14, mapping=self.REG_MAPPING_BULK_1, device_id=self.id)
         time.sleep(0.1)
-        power_factor = self.client.read_input_registers(0x1E, ModbusDataType.FLOAT_32, unit=self.id)
+        power_factor = self.client.read_input_registers(0x1E, ModbusDataType.FLOAT_32, device_id=self.id)
         time.sleep(0.1)
         bulk_2 = self.client.read_input_registers_bulk(
-            SdmRegister.FREQUENCY, 6, mapping=self.REG_MAPPING_BULK_2, unit=self.id)
+            SdmRegister.FREQUENCY, 6, mapping=self.REG_MAPPING_BULK_2, device_id=self.id)
         resp = {**bulk_1, **bulk_2}
         frequency = resp[SdmRegister.FREQUENCY]
         if frequency > 100:

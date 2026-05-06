@@ -39,9 +39,9 @@ class AlphaEssBat(AbstractBat):
         # keine Unterschiede zwischen den Versionen
 
         time.sleep(0.1)
-        voltage = self.__tcp_client.read_holding_registers(0x0100, ModbusDataType.INT_16, unit=self.__modbus_id)
+        voltage = self.__tcp_client.read_holding_registers(0x0100, ModbusDataType.INT_16, device_id=self.__modbus_id)
         time.sleep(0.1)
-        current = self.__tcp_client.read_holding_registers(0x0101, ModbusDataType.INT_16, unit=self.__modbus_id)
+        current = self.__tcp_client.read_holding_registers(0x0101, ModbusDataType.INT_16, device_id=self.__modbus_id)
 
         power = voltage * current * -1 / 100
         log.debug(
@@ -49,7 +49,7 @@ class AlphaEssBat(AbstractBat):
             (power, voltage, current)
         )
         time.sleep(0.1)
-        soc_reg = self.__tcp_client.read_holding_registers(0x0102, ModbusDataType.INT_16, unit=self.__modbus_id)
+        soc_reg = self.__tcp_client.read_holding_registers(0x0102, ModbusDataType.INT_16, device_id=self.__modbus_id)
         soc = int(soc_reg * 0.1)
 
         self.peak_filter.check_values(power)
@@ -69,7 +69,7 @@ class AlphaEssBat(AbstractBat):
             # Kein Powerlimit gefordert, externe Steuerung deaktivieren
             log.debug("Keine Batteriesteuerung gefordert, deaktiviere externe Steuerung.")
             if self.last_mode is not None:
-                self.__tcp_client.write_register(2127, 0, data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_register(2127, 0, data_type=ModbusDataType.UINT_16, device_id=unit)
                 self.last_mode = None
         elif power_limit <= 0:
             # AlphaESS kann die Entladung nur über den SoC verhindern (komplette Entladesperre)
@@ -77,15 +77,15 @@ class AlphaEssBat(AbstractBat):
             # Zeiten für Netzladung müssen im Wechselrichter aktiviert werden
             log.debug("Aktive Batteriesteuerung angestoßen. Setze Entladesperre.")
             if self.last_mode != 'stop':
-                self.__tcp_client.write_register(2127, 1, data_type=ModbusDataType.UINT_16, unit=unit)
-                self.__tcp_client.write_register(2133, 10, data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_register(2127, 1, data_type=ModbusDataType.UINT_16, device_id=unit)
+                self.__tcp_client.write_register(2133, 10, data_type=ModbusDataType.UINT_16, device_id=unit)
                 self.last_mode = 'stop'
         else:
             # Aktive Ladung
             log.debug("Aktive Batteriesteuerung angestoßen. Setze aktive Ladung.")
             if self.last_mode != 'charge':
-                self.__tcp_client.write_register(2127, 1, data_type=ModbusDataType.UINT_16, unit=unit)
-                self.__tcp_client.write_register(2133, 100, data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_register(2127, 1, data_type=ModbusDataType.UINT_16, device_id=unit)
+                self.__tcp_client.write_register(2133, 100, data_type=ModbusDataType.UINT_16, device_id=unit)
                 self.last_mode = 'charge'
 
     def power_limit_controllable(self) -> bool:

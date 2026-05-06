@@ -92,34 +92,50 @@ cp -a "${SRC}/openwb_local.conf" /etc/mosquitto/conf_local.d/
 systemctl start mosquitto_local
 echo "mosquitto done"
 
-# apache
-echo -n "replacing apache default page..."
-cp "${OPENWBBASEDIR}/data/config/apache/000-default.conf" "/etc/apache2/sites-available/"
+# caddy + php-fpm
+echo -n "configuring caddy web server..."
 cp "${OPENWBBASEDIR}/index.html" /var/www/html/index.html
-echo "done"
-echo -n "fix upload limit..."
-if [ -d "/etc/php/7.3/" ]; then
-	echo "upload_max_filesize = 300M" > /etc/php/7.3/apache2/conf.d/20-uploadlimit.ini
-	echo "post_max_size = 300M" >> /etc/php/7.3/apache2/conf.d/20-uploadlimit.ini
-	echo "done (OS Buster)"
-elif [ -d "/etc/php/7.4/" ]; then
-	echo "upload_max_filesize = 300M" > /etc/php/7.4/apache2/conf.d/20-uploadlimit.ini
-	echo "post_max_size = 300M" >> /etc/php/7.4/apache2/conf.d/20-uploadlimit.ini
-	echo "done (OS Bullseye)"
+# ensure caddy can read webroot without changing file ownership
+chmod -R a+rX /var/www/html
+# fix php-fpm upload limit
+php_dir=""
+for dir in /etc/php/*/fpm/conf.d; do
+	if [ -d "$dir" ]; then
+		php_dir="$dir"
+		break
+	fi
+done
+if [ -n "$php_dir" ]; then
+	cp "${OPENWBBASEDIR}/data/config/php/fpm/20-uploadlimit.ini" "${php_dir}/20-uploadlimit.ini"
+	echo "PHP upload limit set ($(basename $(dirname $(dirname "$php_dir"))))"
+else
+	echo "no PHP-FPM config directory found, skipping upload limit"
 fi
-echo -n "enabling apache ssl module..."
-a2enmod ssl
-a2enmod proxy_wstunnel
-sudo a2dissite default-ssl
-sudo cp "${OPENWBBASEDIR}/data/config/apache/apache-openwb-ssl.conf" /etc/apache2/sites-available/ 
-sudo a2ensite apache-openwb-ssl
-echo "done"
-echo -n "restarting apache..."
-systemctl restart apache2
+# start php-fpm
+systemctl enable php*-fpm 2>/dev/null
+systemctl start php*-fpm 2>/dev/null
+# generate and install caddyfile
+"${OPENWBBASEDIR}/runs/setup_caddy.sh"
 echo "done"
 
-echo "installing python requirements..."
-sudo -u "$OPENWB_USER" pip install -r "${OPENWBBASEDIR}/requirements.txt"
+echo "installing python requirements into venv..."
+python3 -m venv /opt/openwb-venv
+chown -R "$OPENWB_USER:$OPENWB_GROUP" /opt/openwb-venv
+sudo -u "$OPENWB_USER" /opt/openwb-venv/bin/python3 -m pip install --upgrade pip
+sudo -u "$OPENWB_USER" /opt/openwb-venv/bin/python3 -m pip install -r "${OPENWBBASEDIR}/requirements.txt"
+
+echo "configuring chrony NTP..."
+systemctl stop systemd-timesyncd 2>/dev/null || true
+systemctl disable systemd-timesyncd 2>/dev/null || true
+cp "${OPENWBBASEDIR}/data/config/chrony/chrony.conf" /etc/chrony/chrony.conf
+systemctl enable chrony
+systemctl restart chrony
+echo "done"
+
+echo "installing MOTD..."
+cp "${OPENWBBASEDIR}/data/config/profile.d/99-openwb-motd.sh" /etc/profile.d/99-openwb-motd.sh
+chmod 755 /etc/profile.d/99-openwb-motd.sh
+echo "done"
 
 echo "installing openwb2 system service..."
 ln -s "${OPENWBBASEDIR}/data/config/openwb2.service" /etc/systemd/system/openwb2.service

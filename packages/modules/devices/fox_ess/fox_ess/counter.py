@@ -29,11 +29,11 @@ class FoxEssCounter(AbstractCounter):
         unit = self.component_config.configuration.modbus_id
 
         powers = [val * -1 for val in
-                  self.client.read_holding_registers(31026, [ModbusDataType.INT_16]*3, unit=unit)]
+                  self.client.read_holding_registers(31026, [ModbusDataType.INT_16]*3, device_id=unit)]
         power = sum(powers)
-        frequency = self.client.read_holding_registers(31015, ModbusDataType.UINT_16, unit=unit) / 100
-        imported = self.client.read_holding_registers(32018, ModbusDataType.UINT_32, unit=unit) * 100
-        exported = self.client.read_holding_registers(32015, ModbusDataType.UINT_32, unit=unit) * 100
+        frequency = self.client.read_holding_registers(31015, ModbusDataType.UINT_16, device_id=unit) / 100
+        imported = self.client.read_holding_registers(32018, ModbusDataType.UINT_32, device_id=unit) * 100
+        exported = self.client.read_holding_registers(32015, ModbusDataType.UINT_32, device_id=unit) * 100
 
         imported, exported = self.peak_filter.check_values(power, imported, exported)
         counter_state = CounterState(
