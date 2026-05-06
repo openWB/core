@@ -34,7 +34,7 @@ class SungrowIHMCounter(AbstractCounter):
     def update(self):
         unit = self.device_config.configuration.modbus_id
         power = self.__tcp_client.read_input_registers(8156, ModbusDataType.INT_32,
-                                                       wordorder=Endian.Little, unit=unit) * -10
+                                                       wordorder=Endian.Little, unit=unit) * 10
 
         powers = self.__tcp_client.read_input_registers(8558, [ModbusDataType.UINT_32] * 3,
                                                         wordorder=Endian.Little, unit=unit)
@@ -43,8 +43,8 @@ class SungrowIHMCounter(AbstractCounter):
 
         voltages = self.__tcp_client.read_input_registers(8554, [ModbusDataType.UINT_16] * 3,
                                                           wordorder=Endian.Little, unit=unit)
-
-        voltages = [value / 10 for value in voltages]
+        # Die Register liefern nur Spannung Phase zu Phase und nicht Phase zu N, daher durch Wurzel 3
+        voltages = [value / 10 / (3 ** 0.5) for value in voltages]
 
         self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
