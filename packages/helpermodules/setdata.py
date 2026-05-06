@@ -668,8 +668,7 @@ class SetData:
             enthält Topic und Payload
         """
         try:
-            if ("openWB/set/bat/config/bat_control_permitted" in msg.topic or
-                "openWB/set/bat/config/bat_control_activated" in msg.topic or
+            if ("openWB/set/bat/config/bat_control_activated" in msg.topic or
                 "openWB/set/bat/config/price_limit_activated" in msg.topic or
                 "openWB/set/bat/config/price_charge_activated" in msg.topic or
                 "openWB/set/bat/config/configured" in msg.topic or
