@@ -28,8 +28,16 @@
     </template>
     <template #body-cell-name="slotProps">
       <q-td :class="[`text-${slotProps.col.align}`, 'max-width-0']">
-        <div class="ellipsis" :title="slotProps.row.name">
-          {{ slotProps.row.name }}
+        <div class="row items-center no-wrap">
+          <div
+            class="row-color-bar"
+            :style="{
+              backgroundColor: slotProps.row.color || 'transparent',
+            }"
+          />
+          <div class="ellipsis q-ml-sm" :title="slotProps.row.name">
+            {{ slotProps.row.name }}
+          </div>
         </div>
       </q-td>
     </template>
@@ -110,6 +118,7 @@ const tableRowData = computed<(id: number) => VehicleRow>(() => {
     const model = info?.model || 'keine Angabe';
     const soc = mqttStore.vehicleSocValue(id);
     const vehicleSocValue = soc !== undefined ? `${Math.round(soc)}%` : '–';
+    const color = mqttStore.vehicleUserDefinedColor(id);
     return {
       id,
       name,
@@ -118,6 +127,7 @@ const tableRowData = computed<(id: number) => VehicleRow>(() => {
       plugState,
       chargeState,
       vehicleSocValue,
+      color,
     };
   };
 });
@@ -145,5 +155,11 @@ const onRowClick = (row: VehicleRow) => {
 <style scoped lang="scss">
 .max-width-0 {
   max-width: 0;
+}
+.row-color-bar {
+  width: 4px;
+  height: 100%;
+  min-height: 24px;
+  border-radius: 2px;
 }
 </style>
