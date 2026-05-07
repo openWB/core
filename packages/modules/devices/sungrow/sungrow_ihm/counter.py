@@ -34,7 +34,7 @@ class SungrowIHMCounter(AbstractCounter):
     def update(self):
         unit = self.device_config.configuration.modbus_id
         power = self.__tcp_client.read_input_registers(8156, ModbusDataType.INT_32,
-                                                       wordorder=Endian.Little, unit=unit) * -10
+                                                       wordorder=Endian.Little, unit=unit) * 10
 
         powers = self.__tcp_client.read_input_registers(8558, [ModbusDataType.UINT_32] * 3,
                                                         wordorder=Endian.Little, unit=unit)
@@ -43,8 +43,12 @@ class SungrowIHMCounter(AbstractCounter):
 
         voltages = self.__tcp_client.read_input_registers(8554, [ModbusDataType.UINT_16] * 3,
                                                           wordorder=Endian.Little, unit=unit)
-
-        voltages = [value / 10 for value in voltages]
+        # Die Register liefern nur Spannung Phase zu Phase und nicht Phase zu N, daher durch Wurzel 3.
+        # Dies setzt voraus, dass die Phasen symmetrisch belastet sind, was in der Praxis nicht
+        # der Fall sein muss, es ist jedoch eine gute Näherung.
+        # Bei einer erlaubten Schieflast von 20A (allgemeine Vorgabe in Deutschland) könnte die Spannung
+        # auf einer Phase um 5 bis zu 20% höher sein als auf den anderen Phasen.
+        voltages = [value / 10 / (3 ** 0.5) for value in voltages]
 
         self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
