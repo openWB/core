@@ -43,7 +43,11 @@ class SungrowIHMCounter(AbstractCounter):
 
         voltages = self.__tcp_client.read_input_registers(8554, [ModbusDataType.UINT_16] * 3,
                                                           wordorder=Endian.Little, unit=unit)
-        # Die Register liefern nur Spannung Phase zu Phase und nicht Phase zu N, daher durch Wurzel 3
+        # Die Register liefern nur Spannung Phase zu Phase und nicht Phase zu N, daher durch Wurzel 3.
+        # Dies setzt voraus, dass die Phasen symmetrisch belastet sind, was in der Praxis nicht
+        # der Fall sein muss, es ist jedoch eine gute Näherung.
+        # Bei einer erlaubten Schieflast von 20A (allgemeine Vorgabe in Deutschland) könnte die Spannung
+        # auf einer Phase um 5 bis zu 20% höher sein als auf den anderen Phasen.
         voltages = [value / 10 / (3 ** 0.5) for value in voltages]
 
         self.peak_filter.check_values(power)
