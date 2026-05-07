@@ -30,7 +30,7 @@ class SolakonOneInverter(AbstractInverter):
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
         # Gesamte DC PV Leistung aller vier MPPT in W
-        power = self.client.read_holding_registers(39118, ModbusDataType.INT_32, unit=unit)
+        power = self.client.read_holding_registers(39118, ModbusDataType.INT_32, unit=unit) * -1
         # Gesamte DC PV Produktion in Wh
         exported = self.client.read_holding_registers(39601, ModbusDataType.UINT_32, unit=unit) * 10
 

@@ -1,7 +1,10 @@
 <template>
 	<div class="pt-2 d-flex flex-column">
 		<div class="heading ms-1">Eco-Laden:</div>
-		<PriceSelector v-if="etData.active" :chargepoint="cp as ChargePoint" />
+		<PriceSelector
+			v-if="etData.active && etData.etPriceList.size > 0"
+			:chargepoint="cp as ChargePoint"
+		/>
 		<!-- Minimal current -->
 		<ConfigItem
 			v-if="etData.active"

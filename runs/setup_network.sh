@@ -164,7 +164,7 @@ fi
 
 # check for pro plus
 echo "ProPlus..."
-if lsusb | grep -q 'RTL8153'; then
+if lsusb | grep -Eq 'RTL8153|AX88179'; then
 	echo "second network for pro plus detected"
 	setup_dnsmasq
 	setup_dhcpcd_proplus

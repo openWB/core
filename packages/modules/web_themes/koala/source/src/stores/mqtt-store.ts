@@ -1984,7 +1984,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   /**
    * Get or set the charge point connected vehicle eco charging max price identified by the charge point id
    * @param chargePointId charge point id
-   * @returns string | undefined
+   * @returns number | undefined
    */
   const chargePointConnectedVehicleEcoChargeMaxPrice = (
     chargePointId: number,

@@ -467,6 +467,10 @@ class SetData:
                 self._validate_value(msg, float)
             elif re.search("chargepoint/[0-9]+/config/template$", msg.topic) is not None:
                 self._validate_value(msg, int, pub_json=True)
+            elif "openWB/set/chargepoint/get/fault_state" in msg.topic:
+                self._validate_value(msg, int, [(0, 2)])
+            elif "openWB/set/chargepoint/get/fault_str" in msg.topic:
+                self._validate_value(msg, str)
             elif "template" in msg.topic:
                 self._validate_value(msg, "json")
             elif re.search("chargepoint/[0-9]+/config$", msg.topic) is not None:
