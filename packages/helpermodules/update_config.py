@@ -3073,7 +3073,7 @@ class UpdateConfig:
     def upgrade_datastore_122(self) -> None:
         """Process log files with fault_state updates. Latest file first (synchronous),
         then process remaining files asynchronously."""
-        
+       
         def process_file(file_path: Path) -> bool:
             """Process a single file and return True if successful, False otherwise."""
             try:
