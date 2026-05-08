@@ -2,6 +2,7 @@ from unittest.mock import Mock, patch, mock_open
 from helpermodules import update_config
 import json
 from pathlib import Path
+import time
 
 import pytest
 from helpermodules.update_config import UpdateConfig
@@ -116,6 +117,7 @@ def test_upgrade_datastore_122(name, monkeypatch):
     # Act
     with patch("builtins.open", mock_open(read_data=json.dumps(log_content))):
         uc.upgrade_datastore_122()
+        time.sleep(2)
 
         # Assert
         assert mock_dump.call_args_list[0].args[0] == expected_content
