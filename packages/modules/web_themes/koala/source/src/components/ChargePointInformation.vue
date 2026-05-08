@@ -92,11 +92,21 @@
     <!-- compact view charge point name and vehicle name displayed in one field -->
     <template #body-cell-nameAndVehicle="slotProps">
       <q-td :class="[`text-${slotProps.col.align}`, 'max-width-0']">
-        <div class="ellipsis" :title="slotProps.row.name">
-          {{ slotProps.row.name }}
-        </div>
-        <div class="ellipsis text-caption" :title="slotProps.row.vehicle">
-          {{ slotProps.row.vehicle }}
+        <div class="row items-center">
+          <div
+            class="row-color-bar q-mr-sm"
+            :style="{
+              backgroundColor: slotProps.row.color || 'transparent',
+            }"
+          />
+          <div>
+            <div class="ellipsis" :title="slotProps.row.name">
+              {{ slotProps.row.name }}
+            </div>
+            <div class="ellipsis text-caption" :title="slotProps.row.vehicle">
+              {{ slotProps.row.vehicle }}
+            </div>
+          </div>
         </div>
       </q-td>
     </template>
