@@ -56,14 +56,18 @@
     </template>
 
     <!-- body ------------------------------------------------------------->
-    <template v-if="props.rowExpandable" #body="rowProps: BodySlotProps<T>">
+    <template #body="rowProps: BodySlotProps<T>">
       <q-tr
         :key="`main-${rowProps.key}`"
         :props="rowProps"
         @click="onRowClick($event, rowProps.row)"
         class="clickable"
       >
-        <q-td auto-width>
+        <q-td
+          v-if="props.rowExpandable"
+          auto-width
+          :style="rowBorderStyle(rowProps.row)"
+        >
           <q-btn
             dense
             flat
@@ -75,66 +79,69 @@
             @click.stop="rowProps.expand = !rowProps.expand"
           />
         </q-td>
-
-        <template v-for="column in rowProps.cols" :key="column.name">
-          <!-- custom body-cell slot -->
-          <template v-if="$slots[`body-cell-${column.name}`]">
-            <slot
-              :name="`body-cell-${column.name}`"
-              v-bind="{
-                ...rowProps,
-                col: column,
-              }"
-            >
-            </slot>
-          </template>
-
-          <!-- all other column data -->
+        <!-- DATA COLUMNS -->
+        <template v-for="(column, index) in rowProps.cols" :key="column.name">
           <q-td
-            v-else
             :props="{
               ...rowProps,
               col: column,
-              // cast necessary as field comes from q-table and is defined: field: string | ((row: any) => any);
-              value: rowProps.row[column.field as string],
+              value:
+                typeof column.field === 'string'
+                  ? rowProps.row[column.field]
+                  : undefined,
             }"
+            :class="[
+              `text-${column.align || 'left'}`,
+              column.shrink ? 'max-width-0' : '',
+            ]"
+            :auto-width="column.autoWidth"
+            :style="
+              index === 0 && !props.rowExpandable
+                ? rowBorderStyle(rowProps.row)
+                : {}
+            "
           >
-            <!-- cast necessary as field comes from q-table and is defined: field: string | ((row: any) => any); -->
-            {{ rowProps.row[column.field as string] }}
+            <!-- Custom slot -->
+            <template v-if="$slots[`body-cell-${column.name}`]">
+              <slot
+                :name="`body-cell-${column.name}`"
+                v-bind="{ ...rowProps, col: column }"
+              />
+            </template>
+            <!-- Default render -->
+            <template v-else>
+              {{
+                typeof column.field === 'string'
+                  ? rowProps.row[column.field]
+                  : ''
+              }}
+            </template>
           </q-td>
         </template>
       </q-tr>
-
-      <!-- expansion row -->
+      <!-- Expansion row -->
       <q-tr
+        v-if="props.rowExpandable"
         v-show="rowProps.expand"
         :key="`xp-${rowProps.key}`"
         :props="rowProps"
         class="q-virtual-scroll--with-prev"
       >
         <q-td :colspan="rowProps.cols.length + 1">
-          <slot name="row-expand" v-bind="rowProps"> </slot>
+          <slot name="row-expand" v-bind="rowProps" />
         </q-td>
       </q-tr>
-    </template>
-
-    <!-- forward any other slots not related to table  e.g top search field -------------------->
-    <template
-      v-for="slotName in forwardedSlotNames"
-      :key="slotName"
-      v-slot:[slotName]="slotProps"
-    >
-      <slot :name="slotName" v-bind="slotProps"></slot>
     </template>
   </q-table>
 </template>
 
 <script setup lang="ts" generic="T extends Record<string, unknown>">
-import { computed, ComputedRef, ref, useSlots } from 'vue';
-import type { QTableColumn, QTableProps } from 'quasar';
+import { computed, ComputedRef, ref } from 'vue';
+import type { QTableProps } from 'quasar';
 import {
   ColumnConfiguration,
   BodySlotProps,
+  ExtendedQTableColumn,
 } from 'src/components/models/table-model';
 
 /* ------------------------------------------------------------------ props */
@@ -150,18 +157,11 @@ const props = defineProps<{
   rowExpandable?: boolean;
   dense?: boolean;
   square?: boolean;
+  rowColor?: (row: T) => string | undefined;
 }>();
 
 /* ------------------------------------------------------------------ state */
 const expanded = ref<(string | number)[]>([]);
-const slots = useSlots();
-
-const forwardedSlotNames = computed(() => {
-  if (props.rowExpandable)
-    return Object.keys(slots).filter((name) => !name.startsWith('body'));
-  return Object.keys(slots);
-});
-
 const emit = defineEmits<{
   (event: 'row-click', row: T): void;
   (event: 'update:filter', value: string): void;
@@ -179,7 +179,7 @@ const mappedRows = computed(() =>
   ),
 );
 
-const mappedColumns = computed<QTableColumn[]>(() =>
+const mappedColumns = computed<ExtendedQTableColumn[]>(() =>
   props.columnConfig
     .filter((column) => !column.expandField) // main table columns only
     .map((column) => ({
@@ -189,6 +189,8 @@ const mappedColumns = computed<QTableColumn[]>(() =>
       align: column.align ?? 'left',
       sortable: true,
       headerStyle: 'font-weight: bold',
+      autoWidth: column.autoWidth,
+      shrink: column.shrink ?? false,
     })),
 );
 
@@ -213,6 +215,17 @@ const customFilterMethod: NonNullable<QTableProps['filterMethod']> = (
 };
 
 const onRowClick = (evt: Event, row: T) => emit('row-click', row);
+
+const rowBorderStyle = (row: T) => {
+  const color = props.rowColor?.(row);
+  if (!color) return {};
+  return {
+    backgroundImage: `linear-gradient(${color}, ${color})`,
+    backgroundRepeat: 'no-repeat',
+    backgroundSize: '4px 70%',
+    backgroundPosition: '4px center',
+  };
+};
 </script>
 
 <style scoped lang="scss">
@@ -231,5 +244,9 @@ const onRowClick = (evt: Event, row: T) => emit('row-click', row);
 
 .custom-table-height {
   height: v-bind('tableHeight');
+}
+
+.max-width-0 {
+  max-width: 0;
 }
 </style>
