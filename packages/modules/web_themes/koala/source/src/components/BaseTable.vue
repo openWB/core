@@ -127,7 +127,10 @@
         :props="rowProps"
         class="q-virtual-scroll--with-prev"
       >
-        <q-td :colspan="rowProps.cols.length + 1">
+        <q-td
+          :colspan="rowProps.cols.length + 1"
+          :style="rowBorderStyle(rowProps.row)"
+        >
           <slot name="row-expand" v-bind="rowProps" />
         </q-td>
       </q-tr>
