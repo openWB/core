@@ -33,13 +33,13 @@ class ErrorTimerContext:
                 # keine Werte mehr gepublished.
                 return False
             else:
-                log.error(exception)
+                log.exception(exception)
                 return True
         return True
 
     def error_counter_exceeded(self) -> bool:
         if self.error_timestamp is not None and timecheck.check_timestamp(self.error_timestamp, self.timeout) is False:
-            log.error(self.__exceeded_msg)
+            log.exception(self.__exceeded_msg)
             return True
         else:
             return False

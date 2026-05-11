@@ -19,7 +19,7 @@ RS485_ADAPTER_BROKEN = "Erneutes Auslesen des {}"
 USB_ADAPTER_BROKEN = RS485_ADAPTER_BROKEN.format('USB-Adapters')
 LAN_ADAPTER_BROKEN = RS485_ADAPTER_BROKEN.format('LAN-Konverters')
 METER_PROBLEM = "Erneutes Auslesen des Zählers"
-METER_BROKEN_VOLTAGES = "Erneutes Auslesen der Spannungen am Zähler"
+METER_BROKEN_VOLTAGES = "Erneutes Auslesen der Spannungen am Zähler: {}V"
 METER_NO_SERIAL_NUMBER = ("Die Seriennummer des Zählers für das Ladelog kann nicht ausgelesen werden. Wenn Du die "
                           "Seriennummer für Abrechnungszwecke benötigst, wende Dich bitte an unseren Support. Die "
                           "Funktionalität wird dadurch nicht beeinträchtigt!")
