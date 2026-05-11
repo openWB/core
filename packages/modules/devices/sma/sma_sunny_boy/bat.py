@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import TypedDict, Any, Dict, Union, Optional
+from typing import TypedDict, Any, Dict, Optional
 
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
