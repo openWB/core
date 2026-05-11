@@ -35,11 +35,9 @@ class SunnyIslandBat(AbstractBat):
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
 
-        with self.__tcp_client:
-            soc = self.__tcp_client.read_holding_registers(30845, ModbusDataType.INT_32, unit=unit)
-
-            power = self.__tcp_client.read_holding_registers(30775, ModbusDataType.INT_32, unit=unit) * -1
-            imported, exported = self.__tcp_client.read_holding_registers(30595, [ModbusDataType.INT_32]*2, unit=unit)
+        soc = self.__tcp_client.read_holding_registers(30845, ModbusDataType.INT_32, unit=unit)
+        power = self.__tcp_client.read_holding_registers(30775, ModbusDataType.INT_32, unit=unit) * -1
+        imported, exported = self.__tcp_client.read_holding_registers(30595, [ModbusDataType.INT_32]*2, unit=unit)
 
         imported, exported = self.peak_filter.check_values(power, imported, exported)
         bat_state = BatState(
