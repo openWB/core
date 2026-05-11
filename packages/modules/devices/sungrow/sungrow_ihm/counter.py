@@ -36,7 +36,7 @@ class SungrowIHMCounter(AbstractCounter):
         power = self.__tcp_client.read_input_registers(8156, ModbusDataType.INT_32,
                                                        wordorder=Endian.Little, unit=unit) * 10
 
-        powers = self.__tcp_client.read_input_registers(8558, [ModbusDataType.UINT_32] * 3,
+        powers = self.__tcp_client.read_input_registers(8558, [ModbusDataType.INT_32] * 3,
                                                         wordorder=Endian.Little, unit=unit)
 
         frequency = self.__tcp_client.read_input_registers(8557, ModbusDataType.UINT_16, unit=unit) / 10
