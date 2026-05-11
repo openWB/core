@@ -79,7 +79,7 @@
             @click.stop="rowProps.expand = !rowProps.expand"
           />
         </q-td>
-        <!-- DATA COLUMNS -->
+        <!-- Data Columns -->
         <template v-for="(column, index) in rowProps.cols" :key="column.name">
           <q-td
             :props="{
