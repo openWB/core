@@ -3128,7 +3128,7 @@ class UpdateConfig:
                         return None
                     
                     device_config = decode_payload(self.all_received_topics[device_topic])
-                    if not str(device_config.get("type", "")).startswith("sma"):
+                    if not str(device_config.get("type", "")).startswith("sma_sunny_boy"):
                         return None
     
                     if component.get("type") == "bat_tesvolt":
