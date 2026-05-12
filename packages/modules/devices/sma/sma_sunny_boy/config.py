@@ -26,7 +26,7 @@ class SmaSunnyBoy:
 
 
 class SmaSunnyBoyBatConfiguration:
-    def __init__(self, 
+    def __init__(self,
                  version: SmaBatVersion = SmaBatVersion.hybrid,
                  modbus_id: int = 3):
         self.version = version
