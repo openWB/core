@@ -43,7 +43,7 @@ class DimmingIo(AbstractIoAction):
         super().__init__()
 
     def calc_dimming_surplus(self) -> float:
-        surplus = data.data.pv_all_data.data.get.power
+        surplus = data.data.pv_all_data.data.get.power * -1
         if data.data.bat_all_data.data.get.power < 0:
             surplus += -data.data.bat_all_data.data.get.power
         return surplus
