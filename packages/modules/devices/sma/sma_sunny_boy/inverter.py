@@ -89,6 +89,7 @@ class SmaSunnyBoyInverter(AbstractInverter):
         inverter_state = InverterState(
             power=power_total,
             dc_power=dc_power,
+            currents=currents,
             exported=exported,
             imported=imported
         )
