@@ -11,6 +11,7 @@ from modules.common.abstract_io import AbstractIoAction
 from modules.common.utils.component_parser import get_io_name_by_id
 from modules.io_actions.common import check_fault_state_io_device
 from modules.io_actions.controllable_consumers.dimming.config import DimmingSetup
+from modules.io_actions.controllable_consumers.dimming.utils import calc_dimming_surplus
 
 log = logging.getLogger(__name__)
 control_command_log = logging.getLogger("steuve_control_command")
@@ -42,14 +43,8 @@ class DimmingIo(AbstractIoAction):
 
         super().__init__()
 
-    def calc_dimming_surplus(self) -> float:
-        surplus = data.data.pv_all_data.data.get.power * -1
-        if data.data.bat_all_data.data.get.power < 0:
-            surplus += -data.data.bat_all_data.data.get.power
-        return surplus
-
     def setup(self) -> None:
-        surplus = self.calc_dimming_surplus()
+        surplus = calc_dimming_surplus()
         self.import_power_left = self.config.configuration.max_import_power + surplus
         self.import_power_left -= self.config.configuration.fixed_import_power
 
