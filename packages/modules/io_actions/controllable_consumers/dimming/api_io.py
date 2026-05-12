@@ -42,15 +42,19 @@ class DimmingIo(AbstractIoAction):
 
         super().__init__()
 
+    def calc_dimming_surplus(self) -> float:
+        surplus = data.data.pv_all_data.data.get.power
+        if data.data.bat_all_data.data.get.power < 0:
+            surplus += -data.data.bat_all_data.data.get.power
+        return surplus
+
     def setup(self) -> None:
-        surplus = data.data.counter_data[data.data.counter_all_data.get_evu_counter_str()].calc_raw_surplus()
-        if surplus > 0:
-            self.import_power_left = self.config.configuration.max_import_power + surplus
-        else:
-            self.import_power_left = self.config.configuration.max_import_power
+        surplus = self.calc_dimming_surplus()
+        self.import_power_left = self.config.configuration.max_import_power + surplus
         self.import_power_left -= self.config.configuration.fixed_import_power
 
-        log.debug(f"Dimmen: {self.import_power_left}W inkl. Überschuss")
+        log.debug(
+            f"Dimmen: Überschuss von {surplus}W berücksichtigt, verbleibende Dimm-Leistung: {self.import_power_left}W")
 
         with ModifyLoglevelContext(control_command_log, logging.DEBUG):
             if self.dimming_active() or check_fault_state_io_device(self.config.configuration.io_device):
