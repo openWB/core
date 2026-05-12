@@ -46,10 +46,10 @@ class SmaSunnyBoyInverter(AbstractInverter):
         unit = self.component_config.configuration.modbus_id
 
         if self.component_config.configuration.version == SmaInverterVersion.default:
-            power_total = self.tcp_client.read_holding_registers(30775, ModbusDataType.INT_32, unit=unit)  * -1
+            power_total = self.tcp_client.read_holding_registers(30775, ModbusDataType.INT_32, unit=unit) * -1
             energy = self.tcp_client.read_holding_registers(30529, ModbusDataType.UINT_32, unit=unit)
             dc_power = (self.tcp_client.read_holding_registers(30773, ModbusDataType.INT_32, unit=unit) +
-                        self.tcp_client.read_holding_registers(30961, ModbusDataType.INT_32, unit=unit))  * -1
+                        self.tcp_client.read_holding_registers(30961, ModbusDataType.INT_32, unit=unit)) * -1
 
             currents = self.tcp_client.read_holding_registers(30977, [ModbusDataType.INT_32]*3, unit=unit)
             if all(c == self.SMA_INT32_NAN for c in currents):
