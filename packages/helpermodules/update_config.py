@@ -8,8 +8,8 @@ import logging
 from pathlib import Path
 import re
 import time
+import threading
 from typing import List, Optional
-import asyncio
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
 
 from control.limiting_value import LoadmanagementLimit
@@ -3072,7 +3072,7 @@ class UpdateConfig:
 
     def upgrade_datastore_122(self) -> None:
         """Process log files with fault_state updates. Latest file first (synchronous),
-        then process remaining files asynchronously."""
+        then process remaining files in a background thread."""
 
         def process_file(file_path: Path) -> bool:
             """Process a single file and return True if successful, False otherwise."""
@@ -3112,18 +3112,18 @@ class UpdateConfig:
                 log.exception(f"Logdatei '{file_path}' konnte nicht konvertiert werden.")
             return False
 
-        async def process_files_async(file_paths: List[Path]) -> None:
-            """Asynchronously process remaining files."""
+        def process_files(file_paths: List[Path]) -> None:
+            """Process remaining files and append datastore version afterwards."""
             for file_path in file_paths:
                 process_file(file_path)
-                await asyncio.sleep(0)  # Yield control to event loop
+            self._append_datastore_version(122)
 
         for folder in ("daily_log", "monthly_log"):
             folder_path = self.base_path / "data" / folder
-            # Get all JSON files and sort by modification time (newest first)
+            # Get all JSON files and sort by name (date format yyyymm(dd).json, newest first)
             path_list = sorted(
                 folder_path.glob('**/*.json'),
-                key=lambda p: p.stat().st_mtime,
+                key=lambda p: p.name,
                 reverse=True
             )
 
@@ -3135,16 +3135,11 @@ class UpdateConfig:
             log.debug(f"Processing latest file synchronously: {latest_file}")
             process_file(latest_file)
 
-            # Start async task to process remaining files
+            # Process remaining files in background to avoid blocking startup
             if len(path_list) > 1:
                 remaining_files = path_list[1:]
-                log.debug(f"Starting async task to process {len(remaining_files)} remaining files")
-                try:
-                    asyncio.create_task(process_files_async(remaining_files))
-                except RuntimeError:
-                    # If no event loop is running, process remaining files synchronously
-                    log.debug("No event loop running, processing remaining files synchronously")
-                    for file_path in remaining_files:
-                        process_file(file_path)
-
-        self._append_datastore_version(122)
+                log.debug(f"Starting background thread to process {len(remaining_files)} remaining files")
+                threading.Thread(target=process_files, args=(remaining_files,), daemon=True).start()
+            else:
+                # No remaining files, just append datastore version
+                self._append_datastore_version(122)

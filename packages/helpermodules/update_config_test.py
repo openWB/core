@@ -1,8 +1,8 @@
 from unittest.mock import Mock, patch, mock_open
+import threading
 from helpermodules import update_config
 import json
 from pathlib import Path
-import time
 
 import pytest
 from helpermodules.update_config import UpdateConfig
@@ -111,13 +111,27 @@ def test_upgrade_datastore_122(name, monkeypatch):
 
     mock_dump = Mock()
     monkeypatch.setattr(update_config.json, "dump", mock_dump)
-    mock_glob = Mock(return_value=["dummy_path"])
+    mock_glob = Mock(return_value=[Path("20240512.json")])
     monkeypatch.setattr(update_config.Path, "glob", mock_glob)
+    original_thread = threading.Thread
+
+    def immediate_thread(*args, **kwargs):
+        thread = original_thread(*args, **kwargs)
+
+        def immediate_start():
+            target = kwargs.get("target")
+            thread_args = kwargs.get("args", ())
+            if target is not None:
+                target(*thread_args)
+
+        thread.start = immediate_start
+        return thread
+
+    monkeypatch.setattr(update_config.threading, "Thread", immediate_thread)
 
     # Act
     with patch("builtins.open", mock_open(read_data=json.dumps(log_content))):
         uc.upgrade_datastore_122()
-        time.sleep(2)
 
         # Assert
         assert mock_dump.call_args_list[0].args[0] == expected_content
