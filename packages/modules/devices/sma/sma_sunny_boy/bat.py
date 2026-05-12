@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import TypedDict, Any, Dict, Optional
+from typing import Any, Dict, Optional
 
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
@@ -71,7 +71,7 @@ class SunnyBoyBat(AbstractBat):
             self.peak_filter.check_values(power)
             imported, exported = self.sim_counter.sim_count(power)
         else:
-            raise ValueError(f'Unbekannte Batterie Version')
+            raise ValueError('Unbekannte Batterie Version')
 
         bat_state = BatState(
             power=power,
@@ -101,7 +101,7 @@ class SunnyBoyBat(AbstractBat):
 
     def power_limit_controllable(self) -> bool:
         return self.component_config.configuration.version in (
-            SmaBatVersion.hybrid, 
+            SmaBatVersion.hybrid,
             SmaBatVersion.sbs
         )
 
