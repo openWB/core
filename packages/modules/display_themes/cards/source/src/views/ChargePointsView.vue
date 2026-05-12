@@ -371,6 +371,20 @@ export default {
         template,
       );
     },
+    setChargePointConnectedVehicleScheduledChargingPlanTime(
+      id,
+      plan_id,
+      newTime,
+    ) {
+      console.log(`setScheduledTime: ${id} ${plan_id}`, newTime);
+      const templateTopic = `openWB/chargepoint/${id}/set/charge_template`;
+      const template = this.mqttStore.updateState(
+        templateTopic,
+        newTime,
+        `chargemode.scheduled_charging.plans.${plan_id}.time`,
+      );
+      this.$root.sendTopicToBroker(templateTopic, template);
+    },
   },
 };
 </script>
@@ -1287,7 +1301,7 @@ export default {
           Es wurden noch keine Zeitpläne für das Zielladen eingerichtet.
         </i-alert>
         <i-form v-else>
-          <i-form-group
+          <div
             v-for="(
               plan, planKey
             ) in mqttStore.getChargePointConnectedVehicleScheduledChargingPlans(
@@ -1295,76 +1309,92 @@ export default {
             )"
             :key="planKey"
           >
-            <i-container>
-              <i-row>
-                <i-button
-                  size="lg"
-                  block
-                  :color="plan.active ? 'success' : 'danger'"
-                  @click="
-                    setChargePointConnectedVehicleScheduledChargingPlanActive(
-                      modalChargePointId,
-                      planKey,
-                      !plan.active,
-                    )
-                  "
-                >
-                  <div class="plan-name">
-                    {{ plan.name }}
-                  </div>
-                  <div class="plan-details">
-                    <div v-if="plan.frequency.selected == 'once'">
-                      <font-awesome-icon
-                        :icon="['fas', 'calendar-day']"
-                      />
-                      {{ mqttStore.formatDate(plan.frequency.once) }}
+            <i-form-group>
+              <i-container>
+                <i-row>
+                  <i-button
+                    size="lg"
+                    block
+                    :color="plan.active ? 'success' : 'danger'"
+                    @click="
+                      setChargePointConnectedVehicleScheduledChargingPlanActive(
+                        modalChargePointId,
+                        planKey,
+                        !plan.active,
+                      )
+                    "
+                  >
+                    <div class="plan-name">
+                      {{ plan.name }}
                     </div>
-                    <div v-if="plan.frequency.selected == 'daily'">
-                      <font-awesome-icon
-                        :icon="['fas', 'calendar-week']"
-                      />
-                      täglich
+                    <div class="plan-details">
+                      <div v-if="plan.frequency.selected == 'once'">
+                        <font-awesome-icon
+                          :icon="['fas', 'calendar-day']"
+                        />
+                        {{ mqttStore.formatDate(plan.frequency.once) }}
+                      </div>
+                      <div v-if="plan.frequency.selected == 'daily'">
+                        <font-awesome-icon
+                          :icon="['fas', 'calendar-week']"
+                        />
+                        täglich
+                      </div>
+                      <div v-if="plan.frequency.selected == 'weekly'">
+                        <font-awesome-icon
+                          :icon="['fas', 'calendar-alt']"
+                        />
+                        {{
+                          mqttStore.formatWeeklyScheduleDays(plan.frequency.weekly)
+                        }}
+                      </div>
+                      <div>
+                        <font-awesome-icon
+                          :icon="['fas', 'clock']"
+                        />
+                        {{ plan.time }}
+                      </div>
+                      <div v-if="plan.limit.selected == 'soc'">
+                        <font-awesome-icon
+                          :icon="['fas', 'car-battery']"
+                        />
+                        {{ plan.limit.soc_scheduled }}&nbsp;%
+                        <font-awesome-icon
+                          :icon="['fas', plan.bidi_charging_enabled ? 'right-left' : 'right-long']"
+                        />
+                        {{ plan.limit.soc_limit }}&nbsp;%
+                      </div>
+                      <div v-if="plan.limit.selected == 'amount'">
+                        <font-awesome-icon
+                          :icon="['fas', 'bolt']"
+                        />
+                        {{ plan.limit.amount / 1000 }}&nbsp;kWh
+                      </div>
+                      <div v-if="plan.et_active">
+                        <font-awesome-icon
+                          :icon="['fas', 'coins']"
+                        />
+                      </div>
                     </div>
-                    <div v-if="plan.frequency.selected == 'weekly'">
-                      <font-awesome-icon
-                        :icon="['fas', 'calendar-alt']"
-                      />
-                      {{
-                        mqttStore.formatWeeklyScheduleDays(plan.frequency.weekly)
-                      }}
-                    </div>
-                    <div>
-                      <font-awesome-icon
-                        :icon="['fas', 'clock']"
-                      />
-                      {{ plan.time }}
-                    </div>
-                    <div v-if="plan.limit.selected == 'soc'">
-                      <font-awesome-icon
-                        :icon="['fas', 'car-battery']"
-                      />
-                      {{ plan.limit.soc_scheduled }}&nbsp;%
-                      <font-awesome-icon
-                        :icon="['fas', plan.bidi_charging_enabled ? 'right-left' : 'right-long']"
-                      />
-                      {{ plan.limit.soc_limit }}&nbsp;%
-                    </div>
-                    <div v-if="plan.limit.selected == 'amount'">
-                      <font-awesome-icon
-                        :icon="['fas', 'bolt']"
-                      />
-                      {{ plan.limit.amount / 1000 }}&nbsp;kWh
-                    </div>
-                    <div v-if="plan.et_active">
-                      <font-awesome-icon
-                        :icon="['fas', 'coins']"
-                      />
-                    </div>
-                  </div>
-                </i-button>
-              </i-row>
-            </i-container>
-          </i-form-group>
+                  </i-button>
+                </i-row>
+              </i-container>
+            </i-form-group>
+            <i-form-group class="_margin-bottom:2">
+              <i-form-label>Ziel-Termin</i-form-label>
+              <i-input
+                type="time"
+                :model-value="plan.time"
+                @update:model-value="
+                  setChargePointConnectedVehicleScheduledChargingPlanTime(
+                    modalChargePointId,
+                    planKey,
+                    $event,
+                  )
+                "
+              />
+            </i-form-group>
+          </div>
         </i-form>
       </i-tab>
       <i-tab
@@ -1547,3 +1577,4 @@ export default {
   margin-right: 0.5em;
 }
 </style>
+
