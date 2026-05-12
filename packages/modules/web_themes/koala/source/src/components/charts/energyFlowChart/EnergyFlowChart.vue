@@ -3,13 +3,6 @@ import { useMqttStore } from 'src/stores/mqtt-store';
 import { ref, computed, watch } from 'vue';
 import type { SvgSize, FlowComponent } from './energy-flow-chart-models';
 import type { ValueObject } from 'src/stores/mqtt-store-model';
-//SVG Icons
-import GridIcon from 'src/components/svgIcons/GridIcon.vue';
-import HouseIcon from 'src/components/svgIcons/HouseIcon.vue';
-import PvIcon from 'src/components/svgIcons/PvIcon.vue';
-import BatteryIcon from 'src/components/svgIcons/BatteryIcon.vue';
-import ChargePointIcon from 'src/components/svgIcons/ChargePointIcon.vue';
-import VehicleIcon from 'src/components/svgIcons/VehicleIcon.vue';
 
 const mqttStore = useMqttStore();
 
@@ -341,7 +334,7 @@ const svgComponents = computed((): FlowComponent[] => {
       position: { row: 0, column: 0 },
       label: ['EVU', absoluteValueObject(gridPower.value).textValue],
       powerValue: Number(gridPower.value.value),
-      iconComponent: GridIcon,
+      iconName: 'grid',
       iconColor:
         mqttStore.getGridComponentColor(gridID.value) ||
         'var(--q-diagram-icon)',
@@ -360,7 +353,7 @@ const svgComponents = computed((): FlowComponent[] => {
       position: { row: 0, column: 2 },
       label: ['Haus', absoluteValueObject(homePower.value).textValue],
       powerValue: Number(homePower.value.value),
-      iconComponent: HouseIcon,
+      iconName: 'house',
       iconColor: 'var(--q-diagram-icon)',
     });
   }
@@ -377,7 +370,7 @@ const svgComponents = computed((): FlowComponent[] => {
       position: { row: 1, column: 0 },
       label: ['PV', absoluteValueObject(pvPower.value).textValue],
       powerValue: Number(pvPower.value.value),
-      iconComponent: PvIcon,
+      iconName: 'pv',
       iconColor:
         mqttStore.getPvComponentColor(pvId.value) || 'var(--q-diagram-icon)',
     });
@@ -396,7 +389,7 @@ const svgComponents = computed((): FlowComponent[] => {
       label: ['Speicher', absoluteValueObject(batteryPower.value).textValue],
       powerValue: Number(batteryPower.value.value),
       soc: batterySoc.value,
-      iconComponent: BatteryIcon,
+      iconName: 'battery',
       iconColor: 'var(--q-diagram-icon)',
     });
   }
@@ -422,7 +415,7 @@ const svgComponents = computed((): FlowComponent[] => {
           absoluteValueObject(chargePoint1Power.value).textValue,
         ],
         powerValue: Number(chargePoint1Power.value.value),
-        iconComponent: ChargePointIcon,
+        iconName: 'chargepoint',
         iconColor:
           mqttStore.chargePointUserDefinedColor(
             connectedChargePoints.value[0],
@@ -450,7 +443,7 @@ const svgComponents = computed((): FlowComponent[] => {
             chargePoint1ConnectedVehicleChargeMode.value.label || '---',
           ],
           soc: (chargePoint1ConnectedVehicleSoc.value.value?.soc || 0) / 100,
-          iconComponent: VehicleIcon,
+          iconName: 'vehicle',
           iconColor:
             mqttStore.vehicleUserDefinedColor(
               chargePoint1ConnectedVehicle.value?.id,
@@ -479,7 +472,7 @@ const svgComponents = computed((): FlowComponent[] => {
             absoluteValueObject(chargePoint2Power.value).textValue,
           ],
           powerValue: Number(chargePoint2Power.value.value),
-          iconComponent: ChargePointIcon,
+          iconName: 'chargepoint',
           iconColor:
             mqttStore.chargePointUserDefinedColor(
               connectedChargePoints.value[1],
@@ -508,7 +501,7 @@ const svgComponents = computed((): FlowComponent[] => {
             chargePoint2ConnectedVehicleChargeMode.value.label || '---',
           ],
           soc: (chargePoint2ConnectedVehicleSoc.value.value?.soc || 0) / 100,
-          iconComponent: VehicleIcon,
+          iconName: 'vehicle',
           iconColor:
             mqttStore.vehicleUserDefinedColor(
               chargePoint2ConnectedVehicle.value?.id,
@@ -534,7 +527,7 @@ const svgComponents = computed((): FlowComponent[] => {
             absoluteValueObject(chargePoint3Power.value).textValue,
           ],
           powerValue: Number(chargePoint3Power.value.value),
-          iconComponent: ChargePointIcon,
+          iconName: 'chargepoint',
           iconColor:
             mqttStore.chargePointUserDefinedColor(
               connectedChargePoints.value[2],
@@ -563,7 +556,7 @@ const svgComponents = computed((): FlowComponent[] => {
             chargePoint3ConnectedVehicleChargeMode.value.label || '---',
           ],
           soc: (chargePoint3ConnectedVehicleSoc.value.value?.soc || 0) / 100,
-          iconComponent: VehicleIcon,
+          iconName: 'vehicle',
           iconColor:
             mqttStore.vehicleUserDefinedColor(
               chargePoint3ConnectedVehicle.value?.id,
@@ -588,7 +581,7 @@ const svgComponents = computed((): FlowComponent[] => {
           absoluteValueObject(chargePointSumPower.value).textValue,
         ],
         powerValue: Number(chargePointSumPower.value.value),
-        iconComponent: ChargePointIcon,
+        iconName: 'chargepoint',
         iconColor: 'var(--q-diagram-icon)',
       });
     }
@@ -819,19 +812,15 @@ const svgRectWidth = computed(
               :clip-path="`url(#clip-soc-${component.id})`"
             />
 
-            <foreignObject
+            <use
+              v-if="component.iconName"
+              :href="`#icon-${component.iconName}`"
               :x="-svgIconWidth / 2"
               :y="-svgIconHeight / 2"
               :width="svgIconWidth"
               :height="svgIconHeight"
-            >
-              <div class="icon-wrapper" :style="{ color: component.iconColor }">
-                <component
-                  :is="component.iconComponent"
-                  style="width: 100%; height: 100%"
-                />
-              </div>
-            </foreignObject>
+              :style="{ color: component.iconColor }"
+            />
           </g>
         </g>
       </g>
@@ -987,18 +976,6 @@ rect {
   fill: var(--q-secondary);
 }
 
-:root {
-  image {
-    filter: brightness(0.4); /* Creates a dark grey icons in light theme */
-  }
-}
-
-.body--dark {
-  image {
-    filter: brightness(1); /* white icons in dark theme */
-  }
-}
-
 text {
   font-size: v-bind(svgFontSize);
   line-height: 1.25;
@@ -1108,11 +1085,8 @@ text .fill-dark {
 .vehicle circle:not(.soc) {
   fill: color-mix(in srgb, var(--q-accent) 50%, transparent);
 }
-.icon-wrapper {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+
+use {
+  fill: currentColor;
 }
 </style>

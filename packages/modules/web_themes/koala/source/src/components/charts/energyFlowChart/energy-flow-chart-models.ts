@@ -1,5 +1,3 @@
-import type { Component } from 'vue';
-
 export interface SvgSize {
   xMin: number;
   xMax: number;
@@ -33,6 +31,6 @@ export interface FlowComponent {
   label: string[];
   powerValue?: number;
   soc?: number;
-  iconComponent?: Component;
+  iconName?: string;
   iconColor?: string | null;
 }

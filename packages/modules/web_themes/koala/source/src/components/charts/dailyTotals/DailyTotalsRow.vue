@@ -167,14 +167,6 @@ const arrowDirection = (id: string) => {
   height: 1.75rem;
   color: var(--q-diagram-icon);
 }
-
-:deep(.base-icon svg) {
-  width: 100%;
-  height: 100%;
-  fill: currentColor;
-  vertical-align: middle;
-  overflow: hidden;
-}
 .col-title {
   flex: 0 0 5.5rem;
 }

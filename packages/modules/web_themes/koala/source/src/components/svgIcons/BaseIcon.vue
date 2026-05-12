@@ -1,36 +1,26 @@
 <template>
-  <div :style="color ? { color } : undefined">
-    <component :is="iconComponent" v-if="iconComponent" />
-  </div>
+  <svg
+    class="base-icon"
+    :style="color ? { color } : undefined"
+    aria-hidden="true"
+  >
+    <use :href="`#icon-${iconName}`" />
+  </svg>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-
-import GridIcon from 'src/components/svgIcons/GridIcon.vue';
-import CounterIcon from 'src/components/svgIcons/CounterIcon.vue';
-import BatteryIcon from 'src/components/svgIcons/BatteryIcon.vue';
-import ChargePointIcon from 'src/components/svgIcons/ChargePointIcon.vue';
-import VehicleIcon from 'src/components/svgIcons/VehicleIcon.vue';
-import PvIcon from 'src/components/svgIcons/PvIcon.vue';
-import HouseIcon from 'src/components/svgIcons/HouseIcon.vue';
-
-const props = defineProps<{
+defineProps<{
   iconName: string;
   color?: string | null;
 }>();
-
-const iconMap = {
-  grid: GridIcon,
-  counter: CounterIcon,
-  battery: BatteryIcon,
-  chargepoint: ChargePointIcon,
-  pv: PvIcon,
-  house: HouseIcon,
-  vehicle: VehicleIcon,
-};
-
-const iconComponent = computed(() => {
-  return iconMap[props.iconName] || null;
-});
 </script>
+
+<style scoped>
+.base-icon {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+  vertical-align: middle;
+  overflow: hidden;
+}
+</style>
