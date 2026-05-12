@@ -31,7 +31,7 @@ class SunnyBoyBat(AbstractBat):
 
     def initialize(self) -> None:
         self.__tcp_client: ModbusTcpClient_ = self.kwargs['client']
-        self.sim_counter = SimCounter(self.device_config.id, self.component_config.id, prefix="speicher")
+        self.sim_counter = SimCounter(self.kwargs['device_id'], self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
