@@ -96,7 +96,7 @@ class SunnyBoyBat(AbstractBat):
             self.__tcp_client.write_register(40151, 802, data_type=ModbusDataType.UINT_32, unit=unit)
             power_value = int(power_limit) * -1
             self.__tcp_client.write_register(40149, power_value, data_type=ModbusDataType.INT_32, unit=unit)
-            log.debug("Aktive Batteriesteuerung vorhanden. Setze externe Steuerung. Leistung: {power_value}")
+            log.debug(f"Aktive Batteriesteuerung vorhanden. Setze externe Steuerung. Leistung: {power_value}")
             self.last_mode = 'limited'
 
     def power_limit_controllable(self) -> bool:
