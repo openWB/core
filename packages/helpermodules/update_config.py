@@ -3109,70 +3109,71 @@ class UpdateConfig:
         self._append_datastore_version(122)
 
     def upgrade_datastore_123(self) -> None:
-            """
-            Consolidate 3 separate SMA battery modules (bat, bat_tesvolt, bat_smart_energy)
-            into single unified bat module with version field.
-            Maps old component types to new versioned structure:
-            - bat (with hybrid=True in inverter) -> bat with version:0 (hybrid)
-            - bat (with hybrid=False in inverter) -> bat with version:1 (sbs - standalone battery)
-            - bat_smart_energy -> bat with version:0 (hybrid)
-            - bat_tesvolt -> bat with version:2 (tesvolt)
-            """
-            def upgrade_component(topic: str, payload) -> Optional[dict]:
-                if re.search(r"^openWB/system/device/[0-9]+/component/[0-9]+/config$", topic) is not None:
-                    component = decode_payload(payload)
-                    device_id = get_index(topic)
-                    device_topic = f"openWB/system/device/{device_id}/config"
-                    if device_topic not in self.all_received_topics:
-                        return None
+        """
+        Consolidate 3 separate SMA battery modules (bat, bat_tesvolt, bat_smart_energy)
+        into single unified bat module with version field.
+        Maps old component types to new versioned structure:
+        - bat (with hybrid=True in inverter) -> bat with version:0 (hybrid)
+        - bat (with hybrid=False in inverter) -> bat with version:1 (sbs - standalone battery)
+        - bat_smart_energy -> bat with version:0 (hybrid)
+        - bat_tesvolt -> bat with version:2 (tesvolt)
+        """
+        def upgrade_component(topic: str, payload) -> Optional[dict]:
+            if re.search(r"^openWB/system/device/[0-9]+/component/[0-9]+/config$", topic) is not None:
+                component = decode_payload(payload)
+                device_id = get_index(topic)
+                device_topic = f"openWB/system/device/{device_id}/config"
+                if device_topic not in self.all_received_topics:
+                    return None
 
-                    device_config = decode_payload(self.all_received_topics[device_topic])
-                    if not str(device_config.get("type", "")).startswith("sma_sunny_boy"):
-                        return None
+                device_config = decode_payload(self.all_received_topics[device_topic])
+                if not str(device_config.get("type", "")).startswith("sma_sunny_boy"):
+                    return None
 
-                    if component.get("type") == "bat_tesvolt":
-                        component["type"] = "bat"
-                        component["configuration"] = {
-                            "version": 2,
-                            "modbus_id": 25
-                        }
-                        return {topic: component}
+                if component.get("type") == "bat_tesvolt":
+                    component["type"] = "bat"
+                    component["configuration"] = {
+                        "version": 2,
+                        "modbus_id": 25
+                    }
+                    return {topic: component}
 
-                    elif component.get("type") == "bat_smart_energy":
-                        component["type"] = "bat"
-                        old_config = component.get("configuration", {})
-                        component["configuration"] = {
-                            "version": 0,
-                            "modbus_id": old_config.get("modbus_id", 3)
-                        }
-                        return {topic: component}
+                elif component.get("type") == "bat_smart_energy":
+                    component["type"] = "bat"
+                    old_config = component.get("configuration", {})
+                    component["configuration"] = {
+                        "version": 0,
+                        "modbus_id": old_config.get("modbus_id", 3)
+                    }
+                    return {topic: component}
 
-                    elif component.get("type") == "bat":
-                        is_hybrid = False
+                elif component.get("type") == "bat":
+                    is_hybrid = False
 
-                        for t, p in self.all_received_topics.items():
-                            if re.search(f"^openWB/system/device/{device_id}/component/[0-9]+/config$", t):
-                                comp_check = decode_payload(p)
-                                if comp_check.get("type") == "inverter":
-                                    is_hybrid = comp_check.get("configuration", {}).get("hybrid", False)
-                                    break
+                    for t, p in self.all_received_topics.items():
+                        if re.search(f"^openWB/system/device/{device_id}/component/[0-9]+/config$", t):
+                            comp_check = decode_payload(p)
+                            if comp_check.get("type") == "inverter":
+                                is_hybrid = comp_check.get("configuration", {}).get("hybrid", False)
+                                break
 
-                        old_config = component.get("configuration", {})
+                    old_config = component.get("configuration", {})
 
-                        component["configuration"] = {
-                            "version": 0 if is_hybrid else 1,
-                            "modbus_id": old_config.get("modbus_id", 3)
-                        }
-                        return {topic: component}
+                    component["configuration"] = {
+                        "version": 0 if is_hybrid else 1,
+                        "modbus_id": old_config.get("modbus_id", 3)
+                    }
+                    return {topic: component}
 
-                return None
+            return None
 
-            self._loop_all_received_topics(upgrade_component)
+        self._loop_all_received_topics(upgrade_component)
 
-            pub_system_message(
-                {},
-                "Die SMA Speicher-Module wurden erfolgreich zusammengeführt. Deine bestehenden Einstellungen wurden automatisch übernommen.",
-                MessageType.INFO
-            )
+        pub_system_message(
+            {},
+            "Die SMA Speicher-Module wurden erfolgreich zusammengeführt. "
+            "Deine bestehenden Einstellungen wurden automatisch übernommen.",
+            MessageType.INFO
+        )
 
-            self._append_datastore_version(123)
+        self._append_datastore_version(123)
