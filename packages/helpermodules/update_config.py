@@ -3118,6 +3118,7 @@ class UpdateConfig:
                 process_file(file_path)
             self._append_datastore_version(122)
 
+        all_remaining_files = []
         for folder in ("daily_log", "monthly_log"):
             folder_path = self.base_path / "data" / folder
             # Get all JSON files and sort by name (date format yyyymm(dd).json, newest first)
@@ -3134,12 +3135,12 @@ class UpdateConfig:
             latest_file = path_list[0]
             log.debug(f"Processing latest file synchronously: {latest_file}")
             process_file(latest_file)
+            all_remaining_files.extend(path_list[1:])
 
-            # Process remaining files in background to avoid blocking startup
-            if len(path_list) > 1:
-                remaining_files = path_list[1:]
-                log.debug(f"Starting background thread to process {len(remaining_files)} remaining files")
-                threading.Thread(target=process_files, args=(remaining_files,), daemon=True).start()
-            else:
-                # No remaining files, just append datastore version
-                self._append_datastore_version(122)
+        # Process all remaining files in background to avoid blocking startup
+        if len(all_remaining_files) > 0:
+            log.debug(f"Starting background thread to process {len(all_remaining_files)} remaining files")
+            threading.Thread(target=process_files, args=(all_remaining_files,), daemon=True).start()
+        else:
+            # No remaining files, just append datastore version
+            self._append_datastore_version(122)

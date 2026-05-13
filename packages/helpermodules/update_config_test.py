@@ -1,10 +1,12 @@
-from unittest.mock import Mock, patch, mock_open
-import threading
-from helpermodules import update_config
 import json
+import random
+import threading
 from pathlib import Path
+from unittest.mock import Mock, mock_open, patch
 
 import pytest
+
+from helpermodules import update_config
 from helpermodules.update_config import UpdateConfig
 
 
@@ -113,10 +115,9 @@ def test_upgrade_datastore_122(name, monkeypatch):
     monkeypatch.setattr(update_config.json, "dump", mock_dump)
     mock_glob = Mock(return_value=[Path("20240512.json")])
     monkeypatch.setattr(update_config.Path, "glob", mock_glob)
-    original_thread = threading.Thread
 
     def immediate_thread(*args, **kwargs):
-        thread = original_thread(*args, **kwargs)
+        thread = threading.Thread(*args, **kwargs)
 
         def immediate_start():
             target = kwargs.get("target")
@@ -136,3 +137,90 @@ def test_upgrade_datastore_122(name, monkeypatch):
         # Assert
         assert mock_dump.call_args_list[0].args[0] == expected_content
         assert uc.all_received_topics["openWB/system/datastore_version"] == [122]
+
+
+@pytest.mark.parametrize(
+    "folders",
+    [
+        pytest.param(
+            {
+                "daily_log": [
+                    "20240501.json"
+                ],
+                "monthly_log": [
+                    "202401.json"
+                ],
+            },
+            id="single_file_in_each_log_folder",
+        ),
+        pytest.param(
+            {
+                "daily_log": [
+                    "20240501.json", "20240502.json", "20240503.json", "20240504.json",
+                    "20240505.json", "20240506.json", "20240507.json", "20240508.json",
+                    "20240509.json", "20240510.json", "20240511.json", "20240512.json",
+                    "20240513.json",
+                ],
+                "monthly_log": [
+                    "202401.json", "202402.json", "202403.json", "202404.json",
+                    "202405.json", "202406.json", "202407.json", "202408.json",
+                    "202409.json", "202410.json", "202411.json", "202412.json",
+                ],
+            },
+            id="multiple_files_in_log_folders",
+        ),
+    ],
+)
+def test_latest_file_processed_sync_rest_async(monkeypatch, folders):
+    """Verify latest file per folder is processed synchronously and the rest in one async batch."""
+    uc = UpdateConfig()
+    uc.base_path = Path("/mock_base")
+    uc.all_received_topics = {"openWB/system/datastore_version": []}
+
+    shuffled_paths_by_folder = {}
+    for folder_name, file_names in folders.items():
+        shuffled_names = file_names[:]
+        random.shuffle(shuffled_names)
+        shuffled_paths_by_folder[folder_name] = [
+            Path(f"/mock_base/data/{folder_name}/{file_name}")
+            for file_name in shuffled_names
+        ]
+
+    def mock_glob(self, pattern):
+        folder_name = self.name
+        return shuffled_paths_by_folder.get(folder_name, [])
+
+    monkeypatch.setattr(update_config.Path, "glob", mock_glob)
+    monkeypatch.setattr(
+        "builtins.open",
+        mock_open(read_data=json.dumps({"entries": [{"prices": {}}]})),
+    )
+
+    thread_calls = []
+
+    def capture_thread(*args, **kwargs):
+        thread_calls.append(kwargs)
+        return type("MockThread", (), {"start": lambda self: None})()
+
+    monkeypatch.setattr(update_config.threading, "Thread", capture_thread)
+
+    uc.upgrade_datastore_122()
+
+    expected_remaining_count = (
+        sum(len(file_names) for file_names in folders.values()) - len(folders)
+    )
+    if expected_remaining_count == 0:
+        assert thread_calls == [], "No thread should be created when there are no remaining files to process"
+        return
+
+    remaining_files = thread_calls[0]["args"][0]
+    assert len(remaining_files) == expected_remaining_count
+    assert thread_calls[0].get("daemon") is True, "Thread should be created as daemon"
+
+    expected_remaining = []
+    for folder_name, file_names in folders.items():
+        expected_remaining.extend(
+            Path(f"/mock_base/data/{folder_name}/{file_name}")
+            for file_name in sorted(file_names, reverse=True)[1:]
+        )
+    assert remaining_files == expected_remaining
