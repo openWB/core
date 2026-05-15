@@ -4,11 +4,11 @@
     class="charge-point-card"
     :class="[
       { 'full-height': props.fullHeight },
-      chargePointUserDefinedColor && 'has-custom-color',
+      chargePointColor && 'has-custom-color',
     ]"
     :style="
-      chargePointUserDefinedColor && {
-        '--component-color': chargePointUserDefinedColor,
+      chargePointColor && {
+        '--component-color': chargePointColor,
       }
     "
   >
@@ -321,8 +321,8 @@ const refreshSoc = () => {
   });
 };
 
-const chargePointUserDefinedColor = computed(() =>
-  mqttStore.chargePointUserDefinedColor(props.chargePointId),
+const chargePointColor = computed(() =>
+  mqttStore.chargePointColor(props.chargePointId),
 );
 </script>
 <style lang="scss" scoped>

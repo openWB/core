@@ -295,7 +295,7 @@ const individualChargePointData = computed((): DailyTotalsItem[] => {
             id,
           ) as string,
         },
-        color: mqttStore.chargePointUserDefinedColor(id),
+        color: mqttStore.chargePointColor(id),
       });
     }
   });
@@ -396,7 +396,7 @@ const componentData = computed((): DailyTotalsItem[] => {
         },
       };
       if (mqttStore.chargePointIds.length === 1) {
-        item.color = mqttStore.chargePointUserDefinedColor(
+        item.color = mqttStore.chargePointColor(
           mqttStore.chargePointIds[0],
         );
       }

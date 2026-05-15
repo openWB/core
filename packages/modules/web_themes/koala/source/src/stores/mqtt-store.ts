@@ -1237,7 +1237,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param chargePointId charge point id
    * @returns string | null
    */
-  const chargePointUserDefinedColor = computed(() => {
+  const chargePointColor = computed(() => {
     return (chargePointId: number): string | null => {
       const DEFAULT_COLOR = '#007bff';
       const color = getValue.value(
@@ -2990,7 +2990,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param vehicleId vehicle id
    * @returns string | null
    */
-  const vehicleUserDefinedColor = computed(() => {
+  const vehicleColor = computed(() => {
     return (vehicleId: number): string | null => {
       const DEFAULT_COLOR = '#17a2b8';
       const color = getValue.value(
@@ -4124,7 +4124,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointChargingCurrent,
     chargePointStateMessage,
     chargePointFaultState,
-    chargePointUserDefinedColor,
+    chargePointColor,
     chargePointFaultMessage,
     temporaryChargeModeActive,
     chargePointChargeType,
@@ -4166,7 +4166,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     vehicleInfo,
     vehicleConnectionState,
     vehicleSocType,
-    vehicleUserDefinedColor,
+    vehicleColor,
     vehicleSocValue,
     vehicleSocManualValue,
     vehicleForceSocUpdate,

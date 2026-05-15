@@ -189,7 +189,7 @@ const tableRowData = computed<(id: number) => ChargePointRow>(() => {
     // typecasting necessary as chargePointChargingCurrent has a union type in store and needs to be narrowed to string
     const current = mqttStore.chargePointChargingCurrent(id) as string;
     const powerColumn = '';
-    const color = mqttStore.chargePointUserDefinedColor(id);
+    const color = mqttStore.chargePointColor(id);
     return {
       id,
       name,

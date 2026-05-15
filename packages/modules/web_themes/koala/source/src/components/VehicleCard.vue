@@ -4,11 +4,11 @@
     class="vehicle-card"
     :class="[
       { 'full-height': props.fullHeight },
-      vehicleUserDefinedColor && 'has-custom-color',
+      vehicleColor && 'has-custom-color',
     ]"
     :style="
-      vehicleUserDefinedColor && {
-        '--component-color': vehicleUserDefinedColor,
+      vehicleColor && {
+        '--component-color': vehicleColor,
       }
     "
   >
@@ -113,8 +113,8 @@ const refreshSoc = () => {
   });
 };
 
-const vehicleUserDefinedColor = computed(() => {
-  return mqttStore.vehicleUserDefinedColor(props.vehicleId);
+const vehicleColor = computed(() => {
+  return mqttStore.vehicleColor(props.vehicleId);
 });
 </script>
 

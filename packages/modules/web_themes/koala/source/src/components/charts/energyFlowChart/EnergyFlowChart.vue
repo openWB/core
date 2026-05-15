@@ -422,7 +422,7 @@ const svgComponents = computed((): FlowComponent[] => {
         powerValue: Number(chargePoint1Power.value.value),
         iconComponent: ChargePointIcon,
         iconColor:
-          mqttStore.chargePointUserDefinedColor(
+          mqttStore.chargePointColor(
             connectedChargePoints.value[0],
           ) || 'var(--q-diagram-icon)',
       });
@@ -450,7 +450,7 @@ const svgComponents = computed((): FlowComponent[] => {
           soc: (chargePoint1ConnectedVehicleSoc.value.value?.soc || 0) / 100,
           iconComponent: VehicleIcon,
           iconColor:
-            mqttStore.vehicleUserDefinedColor(
+            mqttStore.vehicleColor(
               chargePoint1ConnectedVehicle.value?.id,
             ) || 'var(--q-diagram-icon)',
           powerValue: Number(chargePoint1Power.value.value),
@@ -479,7 +479,7 @@ const svgComponents = computed((): FlowComponent[] => {
           powerValue: Number(chargePoint2Power.value.value),
           iconComponent: ChargePointIcon,
           iconColor:
-            mqttStore.chargePointUserDefinedColor(
+            mqttStore.chargePointColor(
               connectedChargePoints.value[1],
             ) || 'var(--q-diagram-icon)',
         });
@@ -508,7 +508,7 @@ const svgComponents = computed((): FlowComponent[] => {
           soc: (chargePoint2ConnectedVehicleSoc.value.value?.soc || 0) / 100,
           iconComponent: VehicleIcon,
           iconColor:
-            mqttStore.vehicleUserDefinedColor(
+            mqttStore.vehicleColor(
               chargePoint2ConnectedVehicle.value?.id,
             ) || 'var(--q-diagram-icon)',
           powerValue: Number(chargePoint2Power.value.value),
@@ -534,7 +534,7 @@ const svgComponents = computed((): FlowComponent[] => {
           powerValue: Number(chargePoint3Power.value.value),
           iconComponent: ChargePointIcon,
           iconColor:
-            mqttStore.chargePointUserDefinedColor(
+            mqttStore.chargePointColor(
               connectedChargePoints.value[2],
             ) || 'var(--q-diagram-icon)',
         });
@@ -563,7 +563,7 @@ const svgComponents = computed((): FlowComponent[] => {
           soc: (chargePoint3ConnectedVehicleSoc.value.value?.soc || 0) / 100,
           iconComponent: VehicleIcon,
           iconColor:
-            mqttStore.vehicleUserDefinedColor(
+            mqttStore.vehicleColor(
               chargePoint3ConnectedVehicle.value?.id,
             ) || 'var(--q-diagram-icon)',
           powerValue: Number(chargePoint3Power.value.value),

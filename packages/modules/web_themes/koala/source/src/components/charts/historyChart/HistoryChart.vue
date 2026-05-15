@@ -169,7 +169,7 @@ const secondaryCounterDatasets = computed(() =>
 const chargePointDatasets = computed(() =>
   chargePointIds.value.map((cpId) => {
     const baseColor =
-      mqttStore.chargePointUserDefinedColor(cpId) ||
+      mqttStore.chargePointColor(cpId) ||
       getGlobalColor('--q-charge-point-stroke');
 
     return {
@@ -198,7 +198,7 @@ const vehicleDatasets = computed(() =>
       const socKey = `ev${vehicle.id}-soc` as keyof GraphDataPoint;
       if (selectedData.value.some((item) => socKey in item)) {
         const baseColor =
-          mqttStore.vehicleUserDefinedColor(vehicle.id) ||
+          mqttStore.vehicleColor(vehicle.id) ||
           getGlobalColor('--q-vehicle-stroke');
         return {
           label: `${vehicle.name} SoC`,
