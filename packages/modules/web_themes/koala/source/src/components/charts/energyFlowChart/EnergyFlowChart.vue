@@ -55,7 +55,7 @@ const absoluteValueObject = (valueObject: ValueObject): ValueObject => {
 };
 
 const gridPower = computed(
-  () => mqttStore.getCounterPower('object') as ValueObject,
+  () => mqttStore.counterPower('object') as ValueObject,
 );
 const showGridPower = computed(() => {
   return gridPower.value.value !== undefined;
@@ -76,7 +76,7 @@ const batteryCharging = computed(
 const batterySoc = computed(() => Number(mqttStore.batterySocTotal) / 100);
 
 const homePower = computed(
-  () => mqttStore.getHomePower('object') as ValueObject,
+  () => mqttStore.homePower('object') as ValueObject,
 );
 const showHomePower = computed(() => {
   return homePower.value.value !== undefined;
@@ -263,7 +263,7 @@ const chargePointSumCharging = computed(
   () => Number(chargePointSumPower.value.value) > 0,
 );
 
-const gridID = computed(() => mqttStore.getGridId);
+const gridID = computed(() => mqttStore.gridId);
 const pvColor = computed(() => mqttStore.pvAggregateColor);
 
 ///////////////////// Set animation speed //////////////////////////
@@ -342,7 +342,7 @@ const svgComponents = computed((): FlowComponent[] => {
       powerValue: Number(gridPower.value.value),
       iconComponent: GridIcon,
       iconColor:
-        mqttStore.getGridComponentColor(gridID.value) ||
+        mqttStore.gridComponentColor(gridID.value) ||
         'var(--q-diagram-icon)',
     });
   }
@@ -364,7 +364,7 @@ const svgComponents = computed((): FlowComponent[] => {
     });
   }
 
-  if (mqttStore.getPvConfigured) {
+  if (mqttStore.pvConfigured) {
     components.push({
       id: 'pv',
       class: {

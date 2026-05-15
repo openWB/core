@@ -3731,7 +3731,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * Get counter id from root of component hierarchy
    * @returns number | undefined
    */
-  const getGridId = computed(() => {
+  const gridId = computed(() => {
     const hierarchy = getValue.value(
       'openWB/counter/get/hierarchy',
     ) as Hierarchy[];
@@ -3771,8 +3771,8 @@ export const useMqttStore = defineStore('mqtt', () => {
    * Get all secondary counter ids from all configured counters excluding the grid counter
    * @returns number[]
    */
-  const getSecondaryCounterIds = computed(() => {
-    const rootCounter = getGridId.value;
+  const secondaryCounterIds = computed(() => {
+    const rootCounter = gridId.value;
     return getAllCounterIds.value.filter((id) => id !== rootCounter);
   });
 
@@ -3781,7 +3781,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param componentId component ID
    * @returns string | null
    */
-  const getSecondaryCounterColor = computed(() => {
+  const secondaryCounterColor = computed(() => {
     return (componentId: number) => {
       const DEFAULT_COLOR = '#dc3545';
       const color = getComponentConfiguration.value(componentId)?.color;
@@ -3794,7 +3794,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param counterId counter ID
    * @returns string
    */
-  const getComponentName = computed(() => {
+  const componentName = computed(() => {
     return (componentId: number): string => {
       const configurations = getWildcardValues.value(
         `openWB/system/device/+/component/${componentId}/config`,
@@ -3808,7 +3808,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param componentId component ID
    * @returns GridConfiguration | null
    */
-  const getGridComponentColor = computed(() => {
+  const gridComponentColor = computed(() => {
     return (componentId: number) => {
       const DEFAULT_COLOR = '#dc3545';
       const color = getComponentConfiguration.value(componentId)?.color;
@@ -3822,9 +3822,9 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param counterId counter ID
    * @returns string | number | ValueObject | undefined
    */
-  const getCounterPower = computed(() => {
+  const counterPower = computed(() => {
     return (returnType: string = 'textValue', counterId?: number) => {
-      const id = counterId ?? getGridId.value;
+      const id = counterId ?? gridId.value;
       let power = undefined;
       if (id !== undefined) {
         power = getValue.value(`openWB/counter/${id}/get/power`) as
@@ -3850,7 +3850,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const counterDailyImported = computed(() => {
     return (returnType: string = 'textValue', counterId?: number) => {
-      const id = counterId ?? getGridId.value;
+      const id = counterId ?? gridId.value;
       if (id === undefined) {
         return '---';
       }
@@ -3879,7 +3879,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const counterDailyExported = computed(() => {
     return (returnType: string = 'textValue', counterId?: number) => {
-      const id = counterId ?? getGridId.value;
+      const id = counterId ?? gridId.value;
       if (id === undefined) {
         return '---';
       }
@@ -3907,7 +3907,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
    * @returns string | number | ValueObject | undefined
    */
-  const getHomePower = computed(() => {
+  const homePower = computed(() => {
     return (returnType: string = 'textValue') => {
       const power = getValue.value('openWB/counter/set/home_consumption') as
         | number
@@ -3953,7 +3953,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * Get pv configured true or false
    * @returns boolean
    */
-  const getPvConfigured = computed(() => {
+  const pvConfigured = computed(() => {
     return (
       (getValue.value('openWB/pv/config/configured', undefined) as boolean) ||
       false
@@ -4228,20 +4228,19 @@ export const useMqttStore = defineStore('mqtt', () => {
     batteryAggregateColor,
     batteryColor,
     // Grid data
-    getGridId,
-    getAllCounterIds,
-    getSecondaryCounterIds,
-    getSecondaryCounterColor,
-    getComponentName,
-    getGridComponentColor,
-    getCounterPower,
+    gridId,
+    secondaryCounterIds,
+    secondaryCounterColor,
+    componentName,
+    gridComponentColor,
+    counterPower,
     counterDailyImported,
     counterDailyExported,
     // Home data
-    getHomePower,
+    homePower,
     homeDailyYield,
     // PV data
-    getPvConfigured,
+    pvConfigured,
     pvAggregateColor,
     pvColor,
     getPvPower,

@@ -101,16 +101,16 @@ const selectedData = computed((): GraphDataPoint[] => {
 });
 
 const chargePointIds = computed(() => mqttStore.chargePointIds);
-const gridId = computed(() => mqttStore.getGridId);
+const gridId = computed(() => mqttStore.gridId);
 const pvColor = computed(() => mqttStore.pvAggregateColor);
 const batteryColor = computed(() => mqttStore.batteryAggregateColor);
 
 const chargePointNames = computed(() => mqttStore.chargePointName);
 
 const gridMeterName = computed(() => {
-  const gridId = mqttStore.getGridId;
+  const gridId = mqttStore.gridId;
   if (gridId !== undefined) {
-    return mqttStore.getComponentName(gridId);
+    return mqttStore.componentName(gridId);
   }
   return 'Zähler';
 });
@@ -140,13 +140,13 @@ const hexColorToRgba = (hex: string, opacity = 1) => {
 };
 
 const secondaryCounterDatasets = computed(() =>
-  mqttStore.getSecondaryCounterIds
+  mqttStore.secondaryCounterIds
     .map((id) => {
       const baseColor =
-        mqttStore.getSecondaryCounterColor(id) ||
+        mqttStore.secondaryCounterColor(id) ||
         getGlobalColor('--q-secondary-counter-stroke');
       return {
-        label: mqttStore.getComponentName(id),
+        label: mqttStore.componentName(id),
         category: 'component',
         unit: 'kW',
         borderColor: baseColor,
@@ -256,7 +256,7 @@ const lineChartData = computed(() => {
   let datasets = [];
   if (gridMeterName.value !== undefined) {
     const baseColor =
-      mqttStore.getGridComponentColor(gridId.value) ||
+      mqttStore.gridComponentColor(gridId.value) ||
       getGlobalColor('--q-grid-stroke');
     datasets.push({
       label: gridMeterName.value,
@@ -276,7 +276,7 @@ const lineChartData = computed(() => {
       yAxisID: 'y',
     });
   }
-  if (mqttStore.getHomePower('value') !== undefined) {
+  if (mqttStore.homePower('value') !== undefined) {
     datasets.push({
       label: 'Hausverbrauch',
       category: 'component',
@@ -296,7 +296,7 @@ const lineChartData = computed(() => {
     });
   }
   datasets.push(...secondaryCounterDatasets.value);
-  if (mqttStore.getPvConfigured) {
+  if (mqttStore.pvConfigured) {
     const baseColor =
       pvColor.value ||
       getGlobalColor('--q-pv-stroke');

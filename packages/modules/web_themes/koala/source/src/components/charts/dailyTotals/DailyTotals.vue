@@ -193,7 +193,7 @@ import type { DailyTotalsItem } from 'src/components/models/daily-totals-model';
 
 const $q = useQuasar();
 const mqttStore = useMqttStore();
-const gridPower = computed(() => mqttStore.getCounterPower('value'));
+const gridPower = computed(() => mqttStore.counterPower('value'));
 const showGrid = computed(
   () => gridPower.value !== undefined || secondaryCountersConfigured.value,
 );
@@ -209,10 +209,10 @@ const currentPowerVisible = computed(() => $q.screen.width >= 500);
 const socValueVisible = computed(() => $q.screen.width >= 700);
 
 const showHomePower = computed(() => {
-  return mqttStore.getHomePower('value') !== undefined;
+  return mqttStore.homePower('value') !== undefined;
 });
 const batteryConfigured = computed(() => mqttStore.batteryConfigured);
-const pvConfigured = computed(() => mqttStore.getPvConfigured);
+const pvConfigured = computed(() => mqttStore.pvConfigured);
 const chargePointSumPowerAvailable = computed(
   () => mqttStore.chargePointSumPower('value') !== undefined,
 );
@@ -223,8 +223,7 @@ const secondaryCountersConfigured = computed(
   () => secondaryCounterData.value.length > 0,
 );
 
-const gridID = computed(() => mqttStore.getGridId).value;
-
+const gridID = computed(() => mqttStore.gridId).value;
 
 const gridData = computed((): DailyTotalsItem => {
   let data: DailyTotalsItem = {
@@ -238,13 +237,13 @@ const gridData = computed((): DailyTotalsItem => {
       ...data,
       title: 'Netz',
       icon: 'grid',
-      power: mqttStore.getCounterPower('textValue') as string,
-      powerValue: mqttStore.getCounterPower('value') as number,
+      power: mqttStore.counterPower('textValue') as string,
+      powerValue: mqttStore.counterPower('value') as number,
       today: {
         imported: mqttStore.counterDailyImported('textValue') as string,
         exported: mqttStore.counterDailyExported('textValue') as string,
       },
-      color: mqttStore.getGridComponentColor(gridID),
+      color: mqttStore.gridComponentColor(gridID),
     };
   }
   return data;
@@ -252,21 +251,21 @@ const gridData = computed((): DailyTotalsItem => {
 
 const secondaryCounterData = computed((): DailyTotalsItem[] => {
   const counters: DailyTotalsItem[] = [];
-  mqttStore.getSecondaryCounterIds.forEach((id) => {
-    const name = mqttStore.getComponentName(id);
+  mqttStore.secondaryCounterIds.forEach((id) => {
+    const name = mqttStore.componentName(id);
     if (name !== undefined) {
       counters.push({
         id: `counter-${id}`,
         title: name,
         level: 'secondary',
         icon: 'counter',
-        power: mqttStore.getCounterPower('textValue', id) as string,
-        powerValue: mqttStore.getCounterPower('value', id) as number,
+        power: mqttStore.counterPower('textValue', id) as string,
+        powerValue: mqttStore.counterPower('value', id) as number,
         today: {
           imported: mqttStore.counterDailyImported('textValue', id) as string,
           exported: mqttStore.counterDailyExported('textValue', id) as string,
         },
-        color: mqttStore.getGridComponentColor(id),
+        color: mqttStore.gridComponentColor(id),
       });
     }
   });
@@ -372,8 +371,8 @@ const componentData = computed((): DailyTotalsItem[] => {
       title: 'Haus',
       level: 'primary',
       icon: 'house',
-      power: mqttStore.getHomePower('textValue') as string,
-      powerValue: mqttStore.getHomePower('value') as number,
+      power: mqttStore.homePower('textValue') as string,
+      powerValue: mqttStore.homePower('value') as number,
       today: { imported: mqttStore.homeDailyYield('textValue') as string },
     });
   }

@@ -119,7 +119,7 @@ const arrowDirection = (id: string) => {
   let value = 0;
   switch (id) {
     case 'grid':
-      value = mqttStore.getCounterPower('value') as number;
+      value = mqttStore.counterPower('value') as number;
       break;
     case 'battery':
       value = mqttStore.batteryTotalPower('value') as number;
@@ -128,7 +128,7 @@ const arrowDirection = (id: string) => {
       value = mqttStore.getPvPower('value') as number;
       break;
     case 'house':
-      value = mqttStore.getHomePower('value') as number;
+      value = mqttStore.homePower('value') as number;
       break;
     case 'chargepoint':
       value = mqttStore.chargePointSumPower('value') as number;
@@ -136,7 +136,7 @@ const arrowDirection = (id: string) => {
     default:
       if (id.startsWith('counter-')) {
         const counterId = Number(id.replace('counter-', ''));
-        value = mqttStore.getCounterPower('value', counterId) as number;
+        value = mqttStore.counterPower('value', counterId) as number;
       }
   }
   const noCurrent = value === 0;
