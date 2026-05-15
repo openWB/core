@@ -362,7 +362,7 @@ const componentData = computed((): DailyTotalsItem[] => {
       power: mqttStore.getPvPower('textValue') as string,
       powerValue: mqttStore.getPvPower('value') as number,
       today: { exported: mqttStore.pvDailyExported('textValue') as string },
-      color: mqttStore.pvColor || 'var(--q-diagram-icon)',
+      color: mqttStore.pvAggregateColor || 'var(--q-diagram-icon)',
     });
   }
 

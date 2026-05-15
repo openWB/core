@@ -264,7 +264,7 @@ const chargePointSumCharging = computed(
 );
 
 const gridID = computed(() => mqttStore.getGridId);
-const pvColor = computed(() => mqttStore.pvColor);
+const pvColor = computed(() => mqttStore.pvAggregateColor);
 
 ///////////////////// Set animation speed //////////////////////////
 

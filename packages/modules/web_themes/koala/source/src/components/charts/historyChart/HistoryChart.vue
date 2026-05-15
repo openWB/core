@@ -102,7 +102,7 @@ const selectedData = computed((): GraphDataPoint[] => {
 
 const chargePointIds = computed(() => mqttStore.chargePointIds);
 const gridId = computed(() => mqttStore.getGridId);
-const pvColor = computed(() => mqttStore.pvColor);
+const pvColor = computed(() => mqttStore.pvAggregateColor);
 const batteryColor = computed(() => mqttStore.batteryAggregateColor);
 
 const chargePointNames = computed(() => mqttStore.chargePointName);

@@ -2906,7 +2906,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
-   * Get the battery color for the battery if one or more batteries are configured
+   * Get the battery color if exactly one battery is configured
    * @param batteryId battery id
    * @returns string | null
    */
@@ -3963,15 +3963,26 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
-   * Get pv color (check if multiple inverters are present).
+   * Get the pv color identified by the inverter id
+   * @param inverterId inverter id
    * @returns string | null
    */
   const pvColor = computed(() => {
+    return (inverterId: number): string | null => {
+      const DEFAULT_COLOR = '#28a745';
+      const config = getComponentAttributes.value(inverterId);
+      return resolveComponentColor(config?.color, DEFAULT_COLOR);
+    };
+  });
+
+  /**
+   * Get the pv color for the pv if exactly one inverter is configured
+   * @returns string | null
+   */
+  const pvAggregateColor = computed((): string | null => {
     const ids = getObjectIds.value('inverter');
     if (ids.length === 1) {
-      const DEFAULT_COLOR = '#28a745';
-      const color = getComponentAttributes.value(ids[0])?.color;
-      return resolveComponentColor(color, DEFAULT_COLOR);
+      return pvColor.value(ids[0]);
     }
     return null;
   });
@@ -4234,6 +4245,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     homeDailyYield,
     // PV data
     getPvConfigured,
+    pvAggregateColor,
     pvColor,
     getPvPower,
     pvDailyExported,
