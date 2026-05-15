@@ -647,12 +647,10 @@ export const useMqttStore = defineStore('mqtt', () => {
       for (let i = 0; i < path.length; i++) {
         if (!Object.hasOwn(topicObject, path[i])) {
           if (defaultValue !== undefined) {
-            // expected missing optional value - no error
             console.debug('optional path not found', topicObject, path[i]);
-            return defaultValue;
+          } else {
+            console.error('path not found', topicObject, path[i]);
           }
-          // real error case
-          console.error('path not found', topicObject, path[i]);
           return defaultValue;
         }
         topicObject = topicObject[path[i]];
