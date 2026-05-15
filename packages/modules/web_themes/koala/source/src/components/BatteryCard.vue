@@ -5,7 +5,7 @@
     :class="{
       'battery-sum': props.batteryId === -1,
       'full-height': props.fullHeight,
-      'has-custom-color': batteryUserDefinedColor,
+      'has-custom-color': batteryColor,
     }"
   >
     <q-card-section class="row no-wrap items-center justify-between">
@@ -165,7 +165,7 @@ const dailyExportedEnergy = computed(() => {
   );
 });
 
-const batteryUserDefinedColor = computed(() =>
+const batteryColor = computed(() =>
   mqttStore.batteryColor(props.batteryId)
 );
 </script>
@@ -177,7 +177,7 @@ const batteryUserDefinedColor = computed(() =>
 }
 
 .battery-card.has-custom-color {
-  border-left: 4px solid v-bind(batteryUserDefinedColor);
+  border-left: 4px solid v-bind(batteryColor);
 }
 
 .q-card__section {
