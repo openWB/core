@@ -99,6 +99,7 @@ import PvIcon from 'src/assets/icons/owbPV.svg?component';
 import HouseIcon from 'src/assets/icons/owbHouse.svg?component';
 import VehicleIcon from 'src/assets/icons/owbVehicle.svg?component';
 import ChargePointIcon from 'src/assets/icons/owbChargePoint_2.svg?component';
+import CounterIcon from 'src/assets/icons/owbCounter.svg?component';
 
 const mqttStore = useMqttStore();
 
@@ -154,6 +155,7 @@ const iconMap = {
   vehicle: VehicleIcon,
   pv: PvIcon,
   house: HouseIcon,
+  counter: CounterIcon,
 };
 </script>
 
