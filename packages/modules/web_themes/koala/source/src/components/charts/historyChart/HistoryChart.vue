@@ -102,7 +102,9 @@ const selectedData = computed((): GraphDataPoint[] => {
 
 const chargePointIds = computed(() => mqttStore.chargePointIds);
 const gridId = computed(() => mqttStore.getGridId);
-const pvId = computed(() => mqttStore.getPvId);
+const pvColor = computed(() => mqttStore.pvColor);
+const batteryColor = computed(() => mqttStore.batteryAggregateColor);
+
 const chargePointNames = computed(() => mqttStore.chargePointName);
 
 const gridMeterName = computed(() => {
@@ -296,7 +298,7 @@ const lineChartData = computed(() => {
   datasets.push(...secondaryCounterDatasets.value);
   if (mqttStore.getPvConfigured) {
     const baseColor =
-      mqttStore.getPvComponentColor(pvId.value) ||
+      pvColor.value ||
       getGlobalColor('--q-pv-stroke');
     datasets.push({
       label: 'PV ges.',
@@ -317,13 +319,16 @@ const lineChartData = computed(() => {
     });
   }
   if (mqttStore.batteryConfigured) {
+    const baseColor =
+      batteryColor.value ||
+      getGlobalColor('--q-battery-stroke');
     datasets.push(
       {
         label: 'Speicher ges.',
         category: 'component',
         unit: 'kW',
-        borderColor: getGlobalColor('--q-battery-stroke'),
-        backgroundColor: getGlobalColor('--q-battery-fill'),
+        borderColor: baseColor,
+        backgroundColor: hexColorToRgba(baseColor, 0.1),
         data: selectedData.value.map((item) => ({
           x: item.timestamp * 1000,
           y: item['bat-all-power'],

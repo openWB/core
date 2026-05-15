@@ -224,7 +224,7 @@ const secondaryCountersConfigured = computed(
 );
 
 const gridID = computed(() => mqttStore.getGridId).value;
-const pvID = computed(() => mqttStore.getPvId).value;
+
 
 const gridData = computed((): DailyTotalsItem => {
   let data: DailyTotalsItem = {
@@ -320,7 +320,7 @@ const individualBatteryData = computed((): DailyTotalsItem[] => {
           imported: mqttStore.batteryDailyImported(id, 'textValue') as string,
           exported: mqttStore.batteryDailyExported(id, 'textValue') as string,
         },
-        color: mqttStore.batteryUserDefinedColor(id),
+        color: mqttStore.batteryColor(id),
       });
     }
   });
@@ -348,7 +348,7 @@ const componentData = computed((): DailyTotalsItem[] => {
       },
     };
     if (mqttStore.batteryIds.length === 1) {
-      item.color = mqttStore.batteryUserDefinedColor(mqttStore.batteryIds[0]);
+      item.color = mqttStore.batteryColor(mqttStore.batteryIds[0]);
     }
     components.push(item);
   }
@@ -362,7 +362,7 @@ const componentData = computed((): DailyTotalsItem[] => {
       power: mqttStore.getPvPower('textValue') as string,
       powerValue: mqttStore.getPvPower('value') as number,
       today: { exported: mqttStore.pvDailyExported('textValue') as string },
-      color: mqttStore.getPvComponentColor(pvID),
+      color: mqttStore.pvColor || 'var(--q-diagram-icon)',
     });
   }
 

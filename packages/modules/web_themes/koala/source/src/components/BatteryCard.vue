@@ -166,7 +166,7 @@ const dailyExportedEnergy = computed(() => {
 });
 
 const batteryUserDefinedColor = computed(() =>
-  mqttStore.batteryUserDefinedColor(props.batteryId)
+  mqttStore.batteryColor(props.batteryId)
 );
 </script>
 

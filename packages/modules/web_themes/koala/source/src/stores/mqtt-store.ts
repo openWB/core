@@ -2906,18 +2906,27 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
-   * Get the battery user defined color identified by the battery id
+   * Get the battery color for the battery if one or more batteries are configured
    * @param batteryId battery id
    * @returns string | null
    */
-  const batteryUserDefinedColor = computed(() => {
-    return (batteryId: number): string | null => {
+  const batteryAggregateColor = computed(() => {
+    const ids = batteryIds.value;
+    if (ids.length === 1) {
+      return batteryColor.value(ids[0]);
+    }
+    return null;
+  });
+
+  /**
+   * Get the battery color identified by the battery id
+   * @param batteryId battery id
+   * @returns string
+   */
+  const batteryColor = computed(() => {
+    return (batteryId: number): string => {
       const DEFAULT_COLOR = '#ffc107';
-      if (batteryId === -1) return null;
-      const configurations = getWildcardValues.value(
-        `openWB/system/device/+/component/${batteryId}/config`,
-      ) as Record<string, ComponentConfiguration>;
-      const config = Object.values(configurations)[0];
+      const config = getComponentAttributes.value(batteryId);
       return resolveComponentColor(config?.color, DEFAULT_COLOR);
     };
   });
@@ -3954,37 +3963,17 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
-   * Get PV id from root of component hierarchy
-   * @returns number | undefined
-   */
-  const getPvId = computed(() => {
-    const hierarchy = getValue.value(
-      'openWB/counter/get/hierarchy',
-    ) as Hierarchy[];
-    if (hierarchy && hierarchy.length > 0) {
-      const firstElement = hierarchy[0];
-      // Filtere alle Kinder mit type === 'inverter'
-      const inverterChild = firstElement.children.find(
-        (child) => child.type === 'inverter',
-      );
-      if (inverterChild) {
-        return inverterChild.id;
-      }
-    }
-    return undefined;
-  });
-
-  /**
-   * Get pv component color
-   * @param componentId component ID
+   * Get pv color (check if multiple inverters are present).
    * @returns string | null
    */
-  const getPvComponentColor = computed(() => {
-    return (componentId: number) => {
+  const pvColor = computed(() => {
+    const ids = getObjectIds.value('inverter');
+    if (ids.length === 1) {
       const DEFAULT_COLOR = '#28a745';
-      const color = getComponentAttributes.value(componentId)?.color;
-    return resolveComponentColor(color, DEFAULT_COLOR);
-    };
+      const color = getComponentAttributes.value(ids[0])?.color;
+      return resolveComponentColor(color, DEFAULT_COLOR);
+    }
+    return null;
   });
 
   /**
@@ -4228,7 +4217,8 @@ export const useMqttStore = defineStore('mqtt', () => {
     batteryTotalPower,
     batteryChargePriorityRange,
     batteryMode,
-    batteryUserDefinedColor,
+    batteryAggregateColor,
+    batteryColor,
     // Grid data
     getGridId,
     getAllCounterIds,
@@ -4244,8 +4234,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     homeDailyYield,
     // PV data
     getPvConfigured,
-    getPvId,
-    getPvComponentColor,
+    pvColor,
     getPvPower,
     pvDailyExported,
     // Chart data
