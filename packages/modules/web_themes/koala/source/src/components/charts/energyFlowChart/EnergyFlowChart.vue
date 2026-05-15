@@ -3,6 +3,12 @@ import { useMqttStore } from 'src/stores/mqtt-store';
 import { ref, computed, watch } from 'vue';
 import type { SvgSize, FlowComponent } from './energy-flow-chart-models';
 import type { ValueObject } from 'src/stores/mqtt-store-model';
+import BatteryIcon from 'src/assets/icons/owbBattery_2.svg?component';
+import GridIcon from 'src/assets/icons/owbGrid.svg?component';
+import PvIcon from 'src/assets/icons/owbPV.svg?component';
+import HouseIcon from 'src/assets/icons/owbHouse.svg?component';
+import VehicleIcon from 'src/assets/icons/owbVehicle.svg?component';
+import ChargePointIcon from 'src/assets/icons/owbChargePoint_2.svg?component';
 
 const mqttStore = useMqttStore();
 
@@ -334,7 +340,7 @@ const svgComponents = computed((): FlowComponent[] => {
       position: { row: 0, column: 0 },
       label: ['EVU', absoluteValueObject(gridPower.value).textValue],
       powerValue: Number(gridPower.value.value),
-      iconName: 'grid',
+      iconComponent: GridIcon,
       iconColor:
         mqttStore.getGridComponentColor(gridID.value) ||
         'var(--q-diagram-icon)',
@@ -353,7 +359,7 @@ const svgComponents = computed((): FlowComponent[] => {
       position: { row: 0, column: 2 },
       label: ['Haus', absoluteValueObject(homePower.value).textValue],
       powerValue: Number(homePower.value.value),
-      iconName: 'house',
+      iconComponent: HouseIcon,
       iconColor: 'var(--q-diagram-icon)',
     });
   }
@@ -370,7 +376,7 @@ const svgComponents = computed((): FlowComponent[] => {
       position: { row: 1, column: 0 },
       label: ['PV', absoluteValueObject(pvPower.value).textValue],
       powerValue: Number(pvPower.value.value),
-      iconName: 'pv',
+      iconComponent: PvIcon,
       iconColor:
         mqttStore.getPvComponentColor(pvId.value) || 'var(--q-diagram-icon)',
     });
@@ -389,7 +395,7 @@ const svgComponents = computed((): FlowComponent[] => {
       label: ['Speicher', absoluteValueObject(batteryPower.value).textValue],
       powerValue: Number(batteryPower.value.value),
       soc: batterySoc.value,
-      iconName: 'battery',
+      iconComponent: BatteryIcon,
       iconColor: 'var(--q-diagram-icon)',
     });
   }
@@ -415,7 +421,7 @@ const svgComponents = computed((): FlowComponent[] => {
           absoluteValueObject(chargePoint1Power.value).textValue,
         ],
         powerValue: Number(chargePoint1Power.value.value),
-        iconName: 'chargepoint',
+        iconComponent: ChargePointIcon,
         iconColor:
           mqttStore.chargePointUserDefinedColor(
             connectedChargePoints.value[0],
@@ -443,7 +449,7 @@ const svgComponents = computed((): FlowComponent[] => {
             chargePoint1ConnectedVehicleChargeMode.value.label || '---',
           ],
           soc: (chargePoint1ConnectedVehicleSoc.value.value?.soc || 0) / 100,
-          iconName: 'vehicle',
+          iconComponent: VehicleIcon,
           iconColor:
             mqttStore.vehicleUserDefinedColor(
               chargePoint1ConnectedVehicle.value?.id,
@@ -472,7 +478,7 @@ const svgComponents = computed((): FlowComponent[] => {
             absoluteValueObject(chargePoint2Power.value).textValue,
           ],
           powerValue: Number(chargePoint2Power.value.value),
-          iconName: 'chargepoint',
+          iconComponent: ChargePointIcon,
           iconColor:
             mqttStore.chargePointUserDefinedColor(
               connectedChargePoints.value[1],
@@ -501,7 +507,7 @@ const svgComponents = computed((): FlowComponent[] => {
             chargePoint2ConnectedVehicleChargeMode.value.label || '---',
           ],
           soc: (chargePoint2ConnectedVehicleSoc.value.value?.soc || 0) / 100,
-          iconName: 'vehicle',
+          iconComponent: VehicleIcon,
           iconColor:
             mqttStore.vehicleUserDefinedColor(
               chargePoint2ConnectedVehicle.value?.id,
@@ -527,7 +533,7 @@ const svgComponents = computed((): FlowComponent[] => {
             absoluteValueObject(chargePoint3Power.value).textValue,
           ],
           powerValue: Number(chargePoint3Power.value.value),
-          iconName: 'chargepoint',
+          iconComponent: ChargePointIcon,
           iconColor:
             mqttStore.chargePointUserDefinedColor(
               connectedChargePoints.value[2],
@@ -556,7 +562,7 @@ const svgComponents = computed((): FlowComponent[] => {
             chargePoint3ConnectedVehicleChargeMode.value.label || '---',
           ],
           soc: (chargePoint3ConnectedVehicleSoc.value.value?.soc || 0) / 100,
-          iconName: 'vehicle',
+          iconComponent: VehicleIcon,
           iconColor:
             mqttStore.vehicleUserDefinedColor(
               chargePoint3ConnectedVehicle.value?.id,
@@ -581,7 +587,7 @@ const svgComponents = computed((): FlowComponent[] => {
           absoluteValueObject(chargePointSumPower.value).textValue,
         ],
         powerValue: Number(chargePointSumPower.value.value),
-        iconName: 'chargepoint',
+        iconComponent: ChargePointIcon,
         iconColor: 'var(--q-diagram-icon)',
       });
     }
@@ -710,7 +716,10 @@ const svgRectWidth = computed(
           @click="beginAnimation(`animate-label-${component.id}`)"
         >
           <defs>
-            <clipPath v-if="component.soc !== undefined" :id="`clip-soc-${component.id}`">
+            <clipPath
+              v-if="component.soc !== undefined"
+              :id="`clip-soc-${component.id}`"
+            >
               <rect
                 :x="-svgSize.circleRadius - svgSize.strokeWidth"
                 :y="
@@ -811,16 +820,16 @@ const svgRectWidth = computed(
               :r="svgSize.circleRadius"
               :clip-path="`url(#clip-soc-${component.id})`"
             />
-
-            <use
-              v-if="component.iconName"
-              :href="`#icon-${component.iconName}`"
-              :x="-svgIconWidth / 2"
-              :y="-svgIconHeight / 2"
-              :width="svgIconWidth"
-              :height="svgIconHeight"
-              :style="{ color: component.iconColor }"
-            />
+            <g
+              :transform="`translate(${-svgIconWidth / 2}, ${-svgIconHeight / 2})`"
+            >
+              <component
+                :is="component.iconComponent"
+                :width="svgIconWidth"
+                :height="svgIconHeight"
+                :style="{ color: component.iconColor }"
+              />
+            </g>
           </g>
         </g>
       </g>

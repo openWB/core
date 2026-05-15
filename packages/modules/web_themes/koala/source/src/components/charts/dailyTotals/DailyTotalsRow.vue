@@ -2,10 +2,11 @@
   <div class="component-container">
     <!-- Icon -->
     <div class="col-icon">
-      <BaseIcon
-        :iconName="props.item.icon"
-        :color="props.item.color"
+      <component
+        :is="iconMap[props.item.icon]"
         class="base-icon"
+        :style="{ color: props.item.color || 'var(--q-diagram-icon)' }"
+
       />
     </div>
     <!-- Title -->
@@ -91,8 +92,13 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
-import BaseIcon from 'src/components/svgIcons/BaseIcon.vue';
 import type { DailyTotalsItem } from 'src/components/models/daily-totals-model';
+import BatteryIcon from 'src/assets/icons/owbBattery_2.svg?component';
+import GridIcon from 'src/assets/icons/owbGrid.svg?component';
+import PvIcon from 'src/assets/icons/owbPV.svg?component';
+import HouseIcon from 'src/assets/icons/owbHouse.svg?component';
+import VehicleIcon from 'src/assets/icons/owbVehicle.svg?component';
+import ChargePointIcon from 'src/assets/icons/owbChargePoint_2.svg?component';
 
 const mqttStore = useMqttStore();
 
@@ -139,6 +145,15 @@ const arrowDirection = (id: string) => {
   else rotate180 = value > 0;
 
   return { noCurrent, rotate180 };
+};
+
+const iconMap = {
+  grid: GridIcon,
+  battery: BatteryIcon,
+  chargepoint: ChargePointIcon,
+  vehicle: VehicleIcon,
+  pv: PvIcon,
+  house: HouseIcon,
 };
 </script>
 

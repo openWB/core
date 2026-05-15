@@ -86,6 +86,7 @@ export default defineConfig((ctx) => {
           },
           { server: false },
         ],
+        ['vite-svg-loader'],
       ],
     },
 
