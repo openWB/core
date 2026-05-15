@@ -2,15 +2,10 @@
   <q-card
     ref="cardRef"
     class="charge-point-card"
-    :class="[
-      { 'full-height': props.fullHeight },
-      chargePointColor && 'has-custom-color',
-    ]"
-    :style="
-      chargePointColor && {
-        '--component-color': chargePointColor,
-      }
-    "
+    :class="{
+      'full-height': props.fullHeight,
+      'has-custom-color': chargePointColor,
+    }"
   >
     <q-card-section class="row no-wrap">
       <div class="text-h6 text-bold ellipsis" :title="name">
@@ -332,7 +327,7 @@ const chargePointColor = computed(() =>
 }
 
 .charge-point-card.has-custom-color {
-  border-left: 4px solid var(--component-color);
+  border-left: 4px solid v-bind(chargePointColor);
 }
 
 .q-card__section {

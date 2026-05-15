@@ -2,11 +2,11 @@
   <q-card
     ref="cardRef"
     class="battery-card"
-    :class="[{
+    :class="{
       'battery-sum': props.batteryId === -1,
       'full-height': props.fullHeight,
-    }, batteryUserDefinedColor && 'has-custom-color']"
-    :style="batteryUserDefinedColor && { '--component-color': batteryUserDefinedColor }"
+      'has-custom-color': batteryUserDefinedColor,
+    }"
   >
     <q-card-section class="row no-wrap items-center justify-between">
       <div class="text-h6 text-bold ellipsis" :title="cardTitle">
@@ -177,7 +177,7 @@ const batteryUserDefinedColor = computed(() =>
 }
 
 .battery-card.has-custom-color {
-  border-left: 4px solid var(--component-color);
+  border-left: 4px solid v-bind(batteryUserDefinedColor);
 }
 
 .q-card__section {

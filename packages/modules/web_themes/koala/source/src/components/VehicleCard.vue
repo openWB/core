@@ -2,15 +2,10 @@
   <q-card
     ref="cardRef"
     class="vehicle-card"
-    :class="[
-      { 'full-height': props.fullHeight },
-      vehicleColor && 'has-custom-color',
-    ]"
-    :style="
-      vehicleColor && {
-        '--component-color': vehicleColor,
-      }
-    "
+    :class="{
+      'full-height': props.fullHeight,
+      'has-custom-color': vehicleColor,
+    }"
   >
     <q-card-section class="row no-wrap">
       <div class="text-h6 text-bold ellipsis" :title="vehicle?.name">
@@ -125,7 +120,7 @@ const vehicleColor = computed(() => {
 }
 
 .vehicle-card.has-custom-color {
-  border-left: 4px solid var(--component-color);
+  border-left: 4px solid v-bind(vehicleColor);
 }
 
 .q-card__section {
