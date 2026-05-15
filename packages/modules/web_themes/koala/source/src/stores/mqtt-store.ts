@@ -4099,7 +4099,6 @@ export const useMqttStore = defineStore('mqtt', () => {
     themeConfiguration,
     systemDateTime,
     dataProtectionAcknowledged,
-    getComponentConfiguration,
     // security settings
     userManagementActive,
     accessAllowed,
@@ -4252,7 +4251,5 @@ export const useMqttStore = defineStore('mqtt', () => {
     // electricity tariff provider
     etProviderConfigured,
     etPrices,
-    // helpers
-    resolveComponentColor,
   };
 });
