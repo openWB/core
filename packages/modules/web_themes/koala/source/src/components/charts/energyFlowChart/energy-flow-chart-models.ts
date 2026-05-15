@@ -34,5 +34,5 @@ export interface FlowComponent {
   powerValue?: number;
   soc?: number;
   iconComponent?: Component;
-  iconColor?: string | null;
+  iconColor?: string;
 }
