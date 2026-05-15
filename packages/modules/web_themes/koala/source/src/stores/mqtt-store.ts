@@ -765,7 +765,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param componentId component ID
    * @returns ComponentConfiguration | undefined
    */
-  const getComponentAttributes = computed(() => {
+  const getComponentConfiguration = computed(() => {
     return (componentId: number): ComponentConfiguration | undefined => {
       const configurations = getWildcardValues.value(
         `openWB/system/device/+/component/${componentId}/config`,
@@ -2924,7 +2924,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   const batteryColor = computed(() => {
     return (batteryId: number): string => {
       const DEFAULT_COLOR = '#ffc107';
-      const config = getComponentAttributes.value(batteryId);
+      const config = getComponentConfiguration.value(batteryId);
       return resolveComponentColor(config?.color, DEFAULT_COLOR);
     };
   });
@@ -3784,7 +3784,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   const getSecondaryCounterColor = computed(() => {
     return (componentId: number) => {
       const DEFAULT_COLOR = '#dc3545';
-      const color = getComponentAttributes.value(componentId)?.color;
+      const color = getComponentConfiguration.value(componentId)?.color;
       return resolveComponentColor(color, DEFAULT_COLOR);
     };
   });
@@ -3811,7 +3811,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   const getGridComponentColor = computed(() => {
     return (componentId: number) => {
       const DEFAULT_COLOR = '#dc3545';
-      const color = getComponentAttributes.value(componentId)?.color;
+      const color = getComponentConfiguration.value(componentId)?.color;
       return resolveComponentColor(color, DEFAULT_COLOR);
     };
   });
@@ -3968,7 +3968,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   const pvColor = computed(() => {
     return (inverterId: number): string | null => {
       const DEFAULT_COLOR = '#28a745';
-      const config = getComponentAttributes.value(inverterId);
+      const config = getComponentConfiguration.value(inverterId);
       return resolveComponentColor(config?.color, DEFAULT_COLOR);
     };
   });
@@ -4099,7 +4099,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     themeConfiguration,
     systemDateTime,
     dataProtectionAcknowledged,
-    getComponentAttributes,
+    getComponentConfiguration,
     // security settings
     userManagementActive,
     accessAllowed,
