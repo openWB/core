@@ -35,7 +35,7 @@
           <div
             v-for="item in secondaryCounterData"
             :key="item.id"
-            class="counter sub-row"
+            class="sub-row"
           >
             <DailyTotalsRow
               :item="item"
@@ -528,12 +528,6 @@ watch(
   background: var(--q-grid-fill);
   border: 0.125rem solid var(--q-grid-stroke);
 }
-.counter {
-  background: var(--q-secondary-counter-fill);
-  border-left: 0;
-  border-right: 0;
-  border-bottom: 0;
-}
 .battery {
   background: var(--q-battery-fill);
   border: 0.125rem solid var(--q-battery-stroke);
@@ -550,7 +544,8 @@ watch(
   background: var(--q-charge-point-fill);
   border: 0.125rem solid var(--q-charge-point-stroke);
 }
-.counter.sub-row {
+.grid .sub-row {
+  background: var(--q-secondary-counter-fill);
   border-top: 0.12rem solid var(--q-secondary-counter-stroke);
 }
 .battery .sub-row {
