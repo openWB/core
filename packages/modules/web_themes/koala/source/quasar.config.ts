@@ -56,21 +56,6 @@ export default defineConfig((ctx) => {
       distDir: '../web/',
 
       // extendViteConf (viteConf) {},
-      extendViteConf(viteConf) {
-        if (ctx.prod === true) {
-          // drop console statements in production build
-          viteConf.esbuild = {
-            ...viteConf.esbuild,
-            drop: ['debugger'],
-            pure: [
-              'console.log',
-              'console.info',
-              'console.debug',
-              'console.table',
-            ],
-          };
-        }
-      },
       // viteVuePluginOptions: {},
 
       vitePlugins: [
@@ -87,6 +72,15 @@ export default defineConfig((ctx) => {
           { server: false },
         ],
         ['vite-svg-loader'],
+        ctx.prod
+          ? [
+              'vite-plugin-remove-console',
+              {
+                includes: ['log', 'debug', 'table'],
+              },
+              { server: false },
+            ]
+          : null,
       ],
     },
 

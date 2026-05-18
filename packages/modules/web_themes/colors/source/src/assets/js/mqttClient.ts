@@ -12,7 +12,7 @@ import { type QoS } from 'mqtt-packet'
 const defaultQoS: QoS = 0
 const mqttConnection = {
 	host: location.hostname,
-	port: location.protocol == 'https:' ? 443 : 80,
+	port: parseInt(location.port) || (location.protocol == 'https:' ? 443 : 80),
 	endpoint: '/ws',
 	protocol: (location.protocol == 'https:' ? 'wss' : 'ws') as mqtt.MqttProtocol,
 	connectTimeout: 4000,

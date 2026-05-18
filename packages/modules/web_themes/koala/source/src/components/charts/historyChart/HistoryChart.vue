@@ -19,7 +19,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useQuasar } from 'quasar';
-import type { ChartOptions } from 'chart.js';
+import type { ChartOptions, Point } from 'chart.js';
 import { Line as ChartjsLine } from 'vue-chartjs';
 import {
   Chart,
@@ -151,10 +151,13 @@ const secondaryCounterDatasets = computed(() =>
         unit: 'kW',
         borderColor: baseColor,
         backgroundColor: hexColorToRgba(baseColor, 0.1),
-        data: selectedData.value.map((item) => ({
-          x: item.timestamp * 1000,
-          y: item[`counter${id}-power`] ?? 0,
-        })),
+        data: selectedData.value.map(
+          (item) =>
+            ({
+              x: item.timestamp * 1000,
+              y: item[`counter${id}-power` as keyof GraphDataPoint] ?? 0,
+            }) as Point,
+        ),
         borderWidth: 2,
         pointRadius: 0,
         pointHoverRadius: 4,
@@ -178,10 +181,13 @@ const chargePointDatasets = computed(() =>
       unit: 'kW',
       borderColor: baseColor,
       backgroundColor: hexColorToRgba(baseColor, 0.1),
-      data: selectedData.value.map((item) => ({
-        x: item.timestamp * 1000,
-        y: item[`cp${cpId}-power`] || 0,
-      })),
+      data: selectedData.value.map(
+        (item) =>
+          ({
+            x: item.timestamp * 1000,
+            y: item[`cp${cpId}-power` as keyof GraphDataPoint] || 0,
+          }) as Point,
+      ),
       borderWidth: 2,
       pointRadius: 0,
       pointHoverRadius: 4,
@@ -210,10 +216,13 @@ const vehicleDatasets = computed(() =>
           pointRadius: 0,
           pointHoverRadius: 4,
           pointHitRadius: 5,
-          data: selectedData.value.map((item) => ({
-            x: item.timestamp * 1000,
-            y: Number(item[socKey] ?? 0),
-          })),
+          data: selectedData.value.map(
+            (item) =>
+              ({
+                x: item.timestamp * 1000,
+                y: Number(item[socKey] ?? 0),
+              }) as Point,
+          ),
           fill: false,
           yAxisID: 'y2',
         };
@@ -264,10 +273,13 @@ const lineChartData = computed(() => {
       unit: 'kW',
       borderColor: baseColor,
       backgroundColor: hexColorToRgba(baseColor, 0.1),
-      data: selectedData.value.map((item) => ({
-        x: item.timestamp * 1000,
-        y: item.grid,
-      })),
+      data: selectedData.value.map(
+        (item) =>
+          ({
+            x: item.timestamp * 1000,
+            y: item.grid,
+          }) as Point,
+      ),
       borderWidth: 2,
       pointRadius: 0,
       pointHoverRadius: 4,
@@ -283,10 +295,13 @@ const lineChartData = computed(() => {
       unit: 'kW',
       borderColor: getGlobalColor('--q-home-stroke'),
       backgroundColor: getGlobalColor('--q-home-fill'),
-      data: selectedData.value.map((item) => ({
-        x: item.timestamp * 1000,
-        y: item['house-power'],
-      })),
+      data: selectedData.value.map(
+        (item) =>
+          ({
+            x: item.timestamp * 1000,
+            y: item['house-power'],
+          }) as Point,
+      ),
       borderWidth: 2,
       pointRadius: 0,
       pointHoverRadius: 4,
@@ -306,10 +321,13 @@ const lineChartData = computed(() => {
       unit: 'kW',
       borderColor: baseColor,
       backgroundColor: hexColorToRgba(baseColor, 0.1),
-      data: selectedData.value.map((item) => ({
-        x: item.timestamp * 1000,
-        y: item['pv-all'],
-      })),
+      data: selectedData.value.map(
+        (item) =>
+          ({
+            x: item.timestamp * 1000,
+            y: item['pv-all'],
+          }) as Point,
+      ),
       borderWidth: 2,
       pointRadius: 0,
       pointHoverRadius: 4,
@@ -329,10 +347,13 @@ const lineChartData = computed(() => {
         unit: 'kW',
         borderColor: baseColor,
         backgroundColor: hexColorToRgba(baseColor, 0.1),
-        data: selectedData.value.map((item) => ({
-          x: item.timestamp * 1000,
-          y: item['bat-all-power'],
-        })),
+        data: selectedData.value.map(
+          (item) =>
+            ({
+              x: item.timestamp * 1000,
+              y: item['bat-all-power'],
+            }) as Point,
+        ),
         borderWidth: 2,
         pointRadius: 0,
         pointHoverRadius: 4,
@@ -350,10 +371,13 @@ const lineChartData = computed(() => {
         pointRadius: 0,
         pointHoverRadius: 4,
         pointHitRadius: 5,
-        data: selectedData.value.map((item) => ({
-          x: item.timestamp * 1000,
-          y: item['bat-all-soc'],
-        })),
+        data: selectedData.value.map(
+          (item) =>
+            ({
+              x: item.timestamp * 1000,
+              y: item['bat-all-soc'],
+            }) as Point,
+        ),
         fill: false,
         yAxisID: 'y2',
       },

@@ -197,7 +197,7 @@ const gridPower = computed(() => mqttStore.counterPower('value'));
 const showGrid = computed(
   () => gridPower.value !== undefined || secondaryCountersConfigured.value,
 );
-const expanded = ref({
+const expanded = ref<Record<string, boolean>>({
   grid: false,
   chargepoint: false,
   battery: false,

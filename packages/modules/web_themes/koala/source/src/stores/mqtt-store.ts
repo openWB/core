@@ -31,12 +31,12 @@ import type {
 
 export const useMqttStore = defineStore('mqtt', () => {
   const $q = useQuasar();
-  let mqttUser = null;
-  let mqttPass = null;
+  let mqttUser: string | undefined = undefined;
+  let mqttPass: string | undefined = undefined;
   if ($q.cookies.has('mqtt')) {
     [mqttUser, mqttPass] = decodeURIComponent($q.cookies.get('mqtt'))
       ?.match(/^([^:]+):(.+)$/)
-      ?.slice(1) || [null, null];
+      ?.slice(1) || [undefined, undefined];
   }
 
   // local variables
@@ -109,7 +109,7 @@ export const useMqttStore = defineStore('mqtt', () => {
           [135, 137].includes((error as mqtt.ErrorWithReasonCode).code) &&
           mqttUser != null
         ) {
-          mqttClient.end();
+          mqttClient?.end();
           if ($q.cookies.has('mqtt')) {
             $q.cookies.remove('mqtt', { path: '/' });
             console.warn('removed mqtt cookie due to error');
@@ -120,8 +120,6 @@ export const useMqttStore = defineStore('mqtt', () => {
               progress: true,
               closeBtn: 'Seite neu laden',
               onDismiss: () => {
-                // not functional in Safari browser?
-                // this.router.go(0);
                 location.reload();
               },
             });
@@ -453,12 +451,12 @@ export const useMqttStore = defineStore('mqtt', () => {
         await mqttClient.publishAsync(topic, JSON.stringify(payload), options);
         console.debug('Publish successful', topic);
         return true;
-      } catch (error) {
+      } catch (error: Error | unknown) {
         console.error('Publish error', topic, error);
         $q.notify({
           type: 'negative',
           message: `Fehler beim Senden der Daten "${topic}"`,
-          caption: error.message,
+          caption: error instanceof Error ? error.message : String(error),
           progress: true,
         });
         return false;
@@ -698,7 +696,11 @@ export const useMqttStore = defineStore('mqtt', () => {
           minimumFractionDigits: 0,
           maximumFractionDigits: 0,
         });
-        while (scale && (scaledValue > 999 || scaledValue < -999)) {
+        while (
+          scale &&
+          scaledValue &&
+          (scaledValue > 999 || scaledValue < -999)
+        ) {
           scaledValue = scaledValue / 1000;
           scaled = true;
           switch (unitPrefix) {
@@ -717,13 +719,15 @@ export const useMqttStore = defineStore('mqtt', () => {
         if (scaled) {
           outputDecimalPlaces = decimalPlaces > 0 ? decimalPlaces : 2;
         } else {
-          const hasDecimalPlaces = scaledValue !== Math.floor(scaledValue);
+          const hasDecimalPlaces = scaledValue !== Math.floor(scaledValue || 0);
           outputDecimalPlaces = hasDecimalPlaces ? decimalPlaces : 0;
         }
-        textValue = scaledValue.toLocaleString(undefined, {
-          minimumFractionDigits: outputDecimalPlaces,
-          maximumFractionDigits: outputDecimalPlaces,
-        });
+        textValue = scaledValue
+          ? scaledValue.toLocaleString(undefined, {
+              minimumFractionDigits: outputDecimalPlaces,
+              maximumFractionDigits: outputDecimalPlaces,
+            })
+          : defaultString;
       }
       return {
         textValue: `${textValue} ${unitPrefix}${unit}`,
@@ -2096,7 +2100,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   const chargePointConnectedVehicleBidiEnabled = (chargePointId: number) => {
     return computed(() => {
       const connectedVehicleEvTemplateId =
-        chargePointConnectedVehicleConfig(chargePointId).value.ev_template;
+        chargePointConnectedVehicleConfig(chargePointId).value?.ev_template;
       return getValue.value(
         `openWB/vehicle/template/ev_template/${connectedVehicleEvTemplateId}`,
         'bidi',
@@ -2548,7 +2552,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         const plans = vehicleTimeChargingPlans.value(chargePointId);
         const plan = plans.find((plane) => plane.id === planId);
         const current = plan?.dc_current;
-        const power = convertDcCurrentToPower(current);
+        const power = convertDcCurrentToPower(current ?? 0);
         const valueObject = getValueObject.value(power, 'W', '', true);
         return valueObject.scaledValue;
       },
@@ -2675,7 +2679,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @returns string || undefined
    */
   const batteryName = computed(() => {
-    return (batteryId: number): string => {
+    return (batteryId: number): string | undefined => {
       const configurations = getWildcardValues.value(
         `openWB/system/device/+/component/${batteryId}/config`,
       ) as { [key: string]: ComponentConfiguration };
@@ -3709,7 +3713,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         const plans = vehicleScheduledChargingPlans.value(chargePointId);
         const plan = plans.find((plan) => plan.id === planId);
         const current = plan?.dc_current;
-        const power = convertDcCurrentToPower(current);
+        const power = convertDcCurrentToPower(current ?? 0);
         const valueObject = getValueObject.value(power, 'W', '', true);
         return valueObject.scaledValue;
       },
@@ -3795,7 +3799,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @returns string
    */
   const componentName = computed(() => {
-    return (componentId: number): string => {
+    return (componentId: number): string | undefined => {
       const configurations = getWildcardValues.value(
         `openWB/system/device/+/component/${componentId}/config`,
       ) as { [key: string]: ComponentConfiguration };
