@@ -676,7 +676,10 @@ const svgRectWidth = computed(
           @click="beginAnimation(`animate-label-${component.id}`)"
         >
           <defs>
-            <clipPath v-if="component.soc !== undefined" :id="`clip-soc-${component.id}`">
+            <clipPath
+              v-if="component.soc !== undefined"
+              :id="`clip-soc-${component.id}`"
+            >
               <rect
                 :x="-svgSize.circleRadius - svgSize.strokeWidth"
                 :y="
