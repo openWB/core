@@ -10,7 +10,7 @@ def _get_data_path() -> Path:
     if running_on_github():
         return Path("/home/runner/work/core/core/data")
     else:
-        return Path(__file__).resolve().parents[2]/"data"
+        return Path(__file__).resolve().parents[3]/"data"
 
 
 DEFAULT_DYNAMIC_SECURITY_PATH = _get_data_path()/"config/mosquitto/public/default-dynamic-security.json"
@@ -155,7 +155,7 @@ def test_valid_topics_vs_role_topics():
     for role in security.get("roles", []):
         for acl in role.get("acls", []):
             if "topic" in acl:
-                topic_regex = parse_acl_topic_to_regex(acl)
+                topic_regex = parse_acl_topic_to_regex(acl["topic"])
                 if topic_regex:
                     role_topics.append(topic_regex)
     with open(ROLE_TEMPLATES_PATH, "r") as f:
@@ -163,7 +163,7 @@ def test_valid_topics_vs_role_topics():
     for role in roles:
         for acl in role.get("acls", []):
             if "topic" in acl:
-                topic_regex = parse_acl_topic_to_regex(acl)
+                topic_regex = parse_acl_topic_to_regex(acl["topic"])
                 if topic_regex:
                     role_topics.append(topic_regex)
     # execution
