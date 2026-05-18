@@ -99,6 +99,26 @@ INTERNAL_TOPICS = ['openWB/bat/set/charging_power_left',
                    'openWB/system/lastlivevaluesJson',
                    'openWB/system/release_train']
 
+NOT_PERSISTENT_TOPICS = ['openWB/system/messages/[^/]+',
+                         'openWB/system/messages/.*',
+                         'openWB/command/[^/]+/messages/[^/]+',
+                         'openWB/command/[^/]+/messages/.*',
+                         'openWB/system/serial_number',
+                         'openWB/system/mac_address',
+                         'openWB/optional/dc_charging',
+                         'others/.*',
+                         '$CONTROL/dynamic-security/.*',
+                         '$SYS/.*',
+                         'openWB/simpleAPI/set/.*',
+                         'openWB-remote/.*',
+                         'openWB/log/[^/]+/data',
+                         'openWB/log/daily/.*',
+                         'openWB/log/monthly/.*',
+                         'openWB/log/yearly/.*',
+                         '$CONTROL/dynamic-security/v1',
+                         '$CONTROL/dynamic-security/v1/response',
+                         ]
+
 
 def test_valid_topics_vs_role_topics():
     def parse_acl_topic_to_regex(acl_topic):
@@ -148,6 +168,17 @@ def test_valid_topics_vs_role_topics():
                 break
         if not found:
             missing_valid_topic.append(valid_topic)
+    # prüfen, ob alle role_topics in den valid_topics vorkommen, damit keine ungültigen Topics in der BV sind
+    missing_role_topic = []
+    for role_topic in role_topics:
+        found = False
+        for valid_topic in valid_topics:
+            if re.fullmatch(role_topic, valid_topic) or role_topic in NOT_PERSISTENT_TOPICS:
+                found = True
+                break
+        if not found:
+            missing_role_topic.append(role_topic)
 
     # assertion
     assert len(missing_valid_topic) == 0, f"Fehlende Topics in der Benutzerverwaltung: {missing_valid_topic}"
+    assert len(missing_role_topic) == 0, f"Obsolete Topics in der Benutzerverwaltung: {missing_role_topic}"

@@ -1120,12 +1120,6 @@
 					"topic": "openWB/general/chargemode_config/pv_charging/switch_off_delay",
 					"priority": 0,
 					"allow": true
-				},
-				{
-					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/phases_to_use",
-					"priority": 0,
-					"allow": true
 				}
 			]
 		},
