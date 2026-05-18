@@ -44,7 +44,7 @@ INTERNAL_TOPICS = ['openWB/bat/set/charging_power_left',
                    'openWB/general/grid_protection_active',
                    'openWB/general/grid_protection_timestamp',
                    'openWB/general/grid_protection_random_stop',
-                   'openWB/general/price_kwh',  # obsolet topic
+                   'openWB/general/price_kwh',  # obsolete topic
                    'openWB/graph/config/duration',
                    'openWB/internal_chargepoint/+/data/cp_interruption_duration',
                    'openWB/internal_chargepoint/+/data/set_current',
@@ -138,7 +138,7 @@ def test_valid_topics_vs_role_topics():
             return topic_regex
         return None
     # setup
-    valid_topics = UpdateConfig.valid_topic
+    valid_topics = list(UpdateConfig.valid_topic)
     for i, valid_topic in enumerate(valid_topics):
         if valid_topic.startswith("^"):
             valid_topic = valid_topic[1:]
