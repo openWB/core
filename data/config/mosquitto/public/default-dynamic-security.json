@@ -112,13 +112,13 @@
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/internal_chargepoint/global_data",
+					"topic": "openWB/internal_chargepoint/global_data",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/internal_chargepoint/+/data/parent_cp",
+					"topic": "openWB/internal_chargepoint/+/data/parent_cp",
 					"priority": 0,
 					"allow": true
 				}
