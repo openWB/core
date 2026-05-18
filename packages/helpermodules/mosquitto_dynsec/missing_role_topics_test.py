@@ -132,10 +132,9 @@ NOT_PERSISTENT_TOPICS = ['openWB/system/messages/[^/]+',
 
 def test_valid_topics_vs_role_topics():
     def parse_acl_topic_to_regex(acl_topic):
-        if "openWB/set" not in acl["topic"] and "#" != acl["topic"] and "openWB/#" != acl["topic"]:
-            topic = acl["topic"]
+        if "openWB/set" not in acl_topic and "#" != acl_topic and "openWB/#" != acl_topic:
             # convert mqtt topic pattern to regex pattern
-            topic_regex = topic.replace("+", "[^/]+").replace("#", ".*").replace("<id>", "[^/]+")
+            topic_regex = acl_topic.replace("+", "[^/]+").replace("#", ".*").replace("<id>", "[^/]+")
             return topic_regex
         return None
     # setup
