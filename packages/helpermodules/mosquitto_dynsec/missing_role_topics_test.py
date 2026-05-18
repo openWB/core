@@ -1,11 +1,21 @@
 import json
+from pathlib import Path
 import re
 
 from helpermodules.update_config import UpdateConfig
+from test_utils.test_environment import running_on_github
 
 
-DEFAULT_DYNAMIC_SECURITY_PATH = "/var/www/html/openWB/data/config/mosquitto/public/default-dynamic-security.json"
-ROLE_TEMPLATES_PATH = "/var/www/html/openWB/data/config/mosquitto/public/role-templates.json"
+def _get_data_path() -> Path:
+    if running_on_github():
+        return Path("/home/runner/work/core/core/data")
+    else:
+        return Path(__file__).resolve().parents[2]/"data"
+
+
+DEFAULT_DYNAMIC_SECURITY_PATH = _get_data_path()/"config/mosquitto/public/default-dynamic-security.json"
+ROLE_TEMPLATES_PATH = _get_data_path()/"config/mosquitto/public/role-templates.json"
+
 
 INTERNAL_TOPICS = ['openWB/bat/set/charging_power_left',
                    'openWB/bat/set/regulate_up',
