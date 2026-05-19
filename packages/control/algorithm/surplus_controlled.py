@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Final
 
 from control import data
 from control.algorithm import common
@@ -19,6 +19,8 @@ from helpermodules.phase_handling import voltages_mean
 
 
 log = logging.getLogger(__name__)
+
+MAX_EVSE_CURRENT_CHANGE: Final[float] = 2  # Ampere
 
 
 class SurplusControlled:
@@ -120,6 +122,7 @@ class SurplusControlled:
         evse_current = chargepoint.data.get.evse_current
         if evse_current and chargepoint.data.set.current != chargepoint.data.set.current_prev:
             offset = evse_current - get_medium_charging_current(chargepoint.data.get.currents)
+            offset = min(offset, MAX_EVSE_CURRENT_CHANGE)
             current_with_offset = chargepoint.data.set.current + offset
             current = min(current_with_offset, chargepoint.data.control_parameter.required_current)
             if current != chargepoint.data.set.current:
