@@ -243,7 +243,9 @@ const gridData = computed((): DailyTotalsItem => {
         imported: mqttStore.counterDailyImported('textValue') as string,
         exported: mqttStore.counterDailyExported('textValue') as string,
       },
-      color: mqttStore.gridComponentColor(gridID),
+      color: gridID
+        ? mqttStore.gridComponentColor(gridID) || undefined
+        : undefined,
     };
   }
   return data;
@@ -265,7 +267,7 @@ const secondaryCounterData = computed((): DailyTotalsItem[] => {
           imported: mqttStore.counterDailyImported('textValue', id) as string,
           exported: mqttStore.counterDailyExported('textValue', id) as string,
         },
-        color: mqttStore.gridComponentColor(id),
+        color: mqttStore.gridComponentColor(id) || undefined,
       });
     }
   });
@@ -294,7 +296,7 @@ const individualChargePointData = computed((): DailyTotalsItem[] => {
             id,
           ) as string,
         },
-        color: mqttStore.chargePointColor(id),
+        color: mqttStore.chargePointColor(id) || undefined,
       });
     }
   });
@@ -395,9 +397,8 @@ const componentData = computed((): DailyTotalsItem[] => {
         },
       };
       if (mqttStore.chargePointIds.length === 1) {
-        item.color = mqttStore.chargePointColor(
-          mqttStore.chargePointIds[0],
-        );
+        item.color =
+          mqttStore.chargePointColor(mqttStore.chargePointIds[0]) || undefined;
       }
     }
     components.push(item);

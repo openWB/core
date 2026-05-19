@@ -3,10 +3,9 @@
     <!-- Icon -->
     <div class="col-icon">
       <component
-        :is="iconMap[props.item.icon]"
+        :is="iconMap[props.item.icon as keyof typeof iconMap]"
         class="base-icon"
         :style="{ color: props.item.color || 'var(--q-diagram-icon)' }"
-
       />
     </div>
     <!-- Title -->

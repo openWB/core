@@ -75,9 +75,7 @@ const batteryCharging = computed(
 
 const batterySoc = computed(() => Number(mqttStore.batterySocTotal) / 100);
 
-const homePower = computed(
-  () => mqttStore.homePower('object') as ValueObject,
-);
+const homePower = computed(() => mqttStore.homePower('object') as ValueObject);
 const showHomePower = computed(() => {
   return homePower.value.value !== undefined;
 });
@@ -263,7 +261,7 @@ const chargePointSumCharging = computed(
   () => Number(chargePointSumPower.value.value) > 0,
 );
 
-const gridID = computed(() => mqttStore.gridId);
+const gridId = computed(() => mqttStore.gridId);
 const pvColor = computed(() => mqttStore.pvAggregateColor);
 
 ///////////////////// Set animation speed //////////////////////////
@@ -341,9 +339,9 @@ const svgComponents = computed((): FlowComponent[] => {
       label: ['EVU', absoluteValueObject(gridPower.value).textValue],
       powerValue: Number(gridPower.value.value),
       iconComponent: GridIcon,
-      iconColor:
-        mqttStore.gridComponentColor(gridID.value) ||
-        'var(--q-diagram-icon)',
+      iconColor: gridId.value
+        ? mqttStore.gridComponentColor(gridId.value) || 'var(--q-diagram-icon)'
+        : 'var(--q-diagram-icon)',
     });
   }
 
@@ -422,9 +420,8 @@ const svgComponents = computed((): FlowComponent[] => {
         powerValue: Number(chargePoint1Power.value.value),
         iconComponent: ChargePointIcon,
         iconColor:
-          mqttStore.chargePointColor(
-            connectedChargePoints.value[0],
-          ) || 'var(--q-diagram-icon)',
+          mqttStore.chargePointColor(connectedChargePoints.value[0]) ||
+          'var(--q-diagram-icon)',
       });
 
       if (chargePoint1VehicleConnected.value) {
@@ -449,10 +446,10 @@ const svgComponents = computed((): FlowComponent[] => {
           ],
           soc: (chargePoint1ConnectedVehicleSoc.value.value?.soc || 0) / 100,
           iconComponent: VehicleIcon,
-          iconColor:
-            mqttStore.vehicleColor(
-              chargePoint1ConnectedVehicle.value?.id,
-            ) || 'var(--q-diagram-icon)',
+          iconColor: chargePoint1ConnectedVehicle.value?.id
+            ? mqttStore.vehicleColor(chargePoint1ConnectedVehicle.value?.id) ||
+              'var(--q-diagram-icon)'
+            : 'var(--q-diagram-icon)',
           powerValue: Number(chargePoint1Power.value.value),
         });
       }
@@ -479,9 +476,8 @@ const svgComponents = computed((): FlowComponent[] => {
           powerValue: Number(chargePoint2Power.value.value),
           iconComponent: ChargePointIcon,
           iconColor:
-            mqttStore.chargePointColor(
-              connectedChargePoints.value[1],
-            ) || 'var(--q-diagram-icon)',
+            mqttStore.chargePointColor(connectedChargePoints.value[1]) ||
+            'var(--q-diagram-icon)',
         });
       }
 
@@ -507,10 +503,10 @@ const svgComponents = computed((): FlowComponent[] => {
           ],
           soc: (chargePoint2ConnectedVehicleSoc.value.value?.soc || 0) / 100,
           iconComponent: VehicleIcon,
-          iconColor:
-            mqttStore.vehicleColor(
-              chargePoint2ConnectedVehicle.value?.id,
-            ) || 'var(--q-diagram-icon)',
+          iconColor: chargePoint2ConnectedVehicle.value?.id
+            ? mqttStore.vehicleColor(chargePoint2ConnectedVehicle.value?.id) ||
+              'var(--q-diagram-icon)'
+            : 'var(--q-diagram-icon)',
           powerValue: Number(chargePoint2Power.value.value),
         });
       }
@@ -534,9 +530,8 @@ const svgComponents = computed((): FlowComponent[] => {
           powerValue: Number(chargePoint3Power.value.value),
           iconComponent: ChargePointIcon,
           iconColor:
-            mqttStore.chargePointColor(
-              connectedChargePoints.value[2],
-            ) || 'var(--q-diagram-icon)',
+            mqttStore.chargePointColor(connectedChargePoints.value[2]) ||
+            'var(--q-diagram-icon)',
         });
       }
 
@@ -562,10 +557,10 @@ const svgComponents = computed((): FlowComponent[] => {
           ],
           soc: (chargePoint3ConnectedVehicleSoc.value.value?.soc || 0) / 100,
           iconComponent: VehicleIcon,
-          iconColor:
-            mqttStore.vehicleColor(
-              chargePoint3ConnectedVehicle.value?.id,
-            ) || 'var(--q-diagram-icon)',
+          iconColor: chargePoint3ConnectedVehicle.value?.id
+            ? mqttStore.vehicleColor(chargePoint3ConnectedVehicle.value?.id) ||
+              'var(--q-diagram-icon)'
+            : 'var(--q-diagram-icon)',
           powerValue: Number(chargePoint3Power.value.value),
         });
       }

@@ -123,7 +123,7 @@ const chartRange = computed(
   () => mqttStore.themeConfiguration?.history_chart_range || 3600,
 );
 
-const getGlobalColor = (name: string, fallback?: string) => {
+const getGlobalColor = (name: string, fallback: string = '#888888') => {
   const fromRoot = getComputedStyle(document.documentElement)
     .getPropertyValue(name)
     .trim();
@@ -264,9 +264,10 @@ const chartLabels = computed(() => {
 const lineChartData = computed(() => {
   let datasets = [];
   if (gridMeterName.value !== undefined) {
-    const baseColor =
-      mqttStore.gridComponentColor(gridId.value) ||
-      getGlobalColor('--q-grid-stroke');
+    const baseColor = gridId.value
+      ? mqttStore.gridComponentColor(gridId.value) ||
+        getGlobalColor('--q-grid-stroke')
+      : getGlobalColor('--q-grid-stroke');
     datasets.push({
       label: gridMeterName.value,
       category: 'component',
@@ -312,9 +313,7 @@ const lineChartData = computed(() => {
   }
   datasets.push(...secondaryCounterDatasets.value);
   if (mqttStore.pvConfigured) {
-    const baseColor =
-      pvColor.value ||
-      getGlobalColor('--q-pv-stroke');
+    const baseColor = pvColor.value || getGlobalColor('--q-pv-stroke');
     datasets.push({
       label: 'PV ges.',
       category: 'component',
@@ -338,8 +337,7 @@ const lineChartData = computed(() => {
   }
   if (mqttStore.batteryConfigured) {
     const baseColor =
-      batteryColor.value ||
-      getGlobalColor('--q-battery-stroke');
+      batteryColor.value || getGlobalColor('--q-battery-stroke');
     datasets.push(
       {
         label: 'Speicher ges.',

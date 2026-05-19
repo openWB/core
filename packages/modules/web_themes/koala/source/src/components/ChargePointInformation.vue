@@ -82,16 +82,16 @@
 
     <!-- compact view charge point charge mode, plug status and time charging displayed in one field -->
     <template #body-cell-modePluggedTimeCharging="slotProps">
-        <div class="items-center">
-          <ChargePointMode :charge-point-id="slotProps.row.id" />
-          <ChargePointStateIcon :charge-point-id="slotProps.row.id" />
-          <ChargePointTimeCharging
-            :charge-point-id="slotProps.row.id"
-            :readonly="true"
-            :toolTip="true"
-            :icon-size="'xs'"
-          />
-        </div>
+      <div class="items-center">
+        <ChargePointMode :charge-point-id="slotProps.row.id" />
+        <ChargePointStateIcon :charge-point-id="slotProps.row.id" />
+        <ChargePointTimeCharging
+          :charge-point-id="slotProps.row.id"
+          :readonly="true"
+          :toolTip="true"
+          :icon-size="'xs'"
+        />
+      </div>
     </template>
 
     <!-- Pass expansion row data to BaseTable.vue -->
@@ -189,7 +189,7 @@ const tableRowData = computed<(id: number) => ChargePointRow>(() => {
     // typecasting necessary as chargePointChargingCurrent has a union type in store and needs to be narrowed to string
     const current = mqttStore.chargePointChargingCurrent(id) as string;
     const powerColumn = '';
-    const color = mqttStore.chargePointColor(id);
+    const color = mqttStore.chargePointColor(id) || undefined;
     return {
       id,
       name,
@@ -213,7 +213,12 @@ const columnConfig: ColumnConfiguration[] = [
   { field: 'vehicle', label: 'Fahrzeug', autoWidth: true },
   { field: 'plugged', label: 'Status', align: 'center', autoWidth: true },
   { field: 'chargeMode', label: 'Lademodus', autoWidth: true },
-  { field: 'timeCharging', label: 'Zeitladen', align: 'center', autoWidth: true },
+  {
+    field: 'timeCharging',
+    label: 'Zeitladen',
+    align: 'center',
+    autoWidth: true,
+  },
   { field: 'powerColumn', label: 'Leistung', align: 'right', autoWidth: true },
   { field: 'charged', label: 'Geladen', align: 'right', autoWidth: true },
   { field: 'soc', label: 'Ladestand', align: 'right', autoWidth: true },
@@ -221,7 +226,12 @@ const columnConfig: ColumnConfiguration[] = [
 
 const columnConfigCompact: ColumnConfiguration[] = [
   { field: 'nameAndVehicle', label: 'Ladepunkt', shrink: true },
-  { field: 'modePluggedTimeCharging', label: 'Lademodus', align: 'center', autoWidth: true },
+  {
+    field: 'modePluggedTimeCharging',
+    label: 'Lademodus',
+    align: 'center',
+    autoWidth: true,
+  },
   {
     field: 'powerColumn',
     label: 'Leistung',
