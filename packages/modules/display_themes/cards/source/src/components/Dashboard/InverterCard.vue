@@ -24,7 +24,7 @@ export default {
 
 <template>
   <dashboard-card
-    v-if="mqttStore.pvConfigured"
+    v-if="mqttStore.getPvConfigured"
     color="success"
   >
     <template #headerLeft>

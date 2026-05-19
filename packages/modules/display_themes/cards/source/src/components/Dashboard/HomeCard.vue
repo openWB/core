@@ -21,7 +21,7 @@ export default {
   },
   computed: {
     homePower() {
-      return this.mqttStore.homePower("object");
+      return this.mqttStore.getHomePower("object");
     },
     showHomePower() {
       return this.homePower.value !== undefined;
@@ -47,7 +47,7 @@ export default {
     </template>
     <spark-line
       color="var(--color--light)"
-      :data="mqttStore.homePowerChartData"
+      :data="mqttStore.getHomePowerChartData"
     />
   </dashboard-card>
 </template>

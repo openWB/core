@@ -68,7 +68,7 @@ export default {
       return this.mqttStore.getPvPower("object");
     },
     homePower() {
-      return this.mqttStore.homePower("object");
+      return this.mqttStore.getHomePower("object");
     },
     showHomePower() {
       return this.homePower.value !== undefined;
@@ -297,7 +297,7 @@ export default {
       }
       // add pv sum component
       if (
-        this.mqttStore.pvConfigured &&
+        this.mqttStore.getPvConfigured &&
         this.mqttStore.getThemeConfiguration.enable_dashboard_card_inverter_sum
       ) {
         components.push({
