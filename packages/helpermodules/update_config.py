@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 122
+    DATASTORE_VERSION = 123
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -3107,3 +3107,14 @@ class UpdateConfig:
                     except Exception:
                         log.exception(f"Logdatei '{path}' konnte nicht konvertiert werden.")
         self._append_datastore_version(122)
+
+    def upgrade_datastore_123(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/system/backup_cloud/config", topic) is not None:
+                configuration_payload = decode_payload(payload)
+                if (configuration_payload.get("type") == "nextcloud" and
+                        configuration_payload["configuration"].get("base_path") is None):
+                    configuration_payload["configuration"].update({"base_path": None})
+                    return {topic: configuration_payload}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(123)
