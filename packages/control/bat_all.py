@@ -619,9 +619,12 @@ def get_bat_components_by_controllability() -> Tuple[List, List]:
         if isinstance(value, AbstractDevice):
             for comp_value in value.components.values():
                 if "bat" in comp_value.component_config.type:
-                    with SingleComponentUpdateContext(comp_value.fault_state, update_always=False):
-                        if comp_value.power_limit_controllable():
-                            bat_components_controllable.append(comp_value)
-                        else:
-                            bat_components_not_controllable.append(comp_value)
+                    try:
+                        with SingleComponentUpdateContext(comp_value.fault_state, update_always=False, reraise=True):
+                            if comp_value.power_limit_controllable():
+                                bat_components_controllable.append(comp_value)
+                            else:
+                                bat_components_not_controllable.append(comp_value)
+                    except Exception:
+                        bat_components_not_controllable.append(comp_value)
     return bat_components_controllable, bat_components_not_controllable
