@@ -4,7 +4,7 @@ import logging
 from threading import Thread
 from typing import List
 
-from control.bat_all import get_controllable_bat_components
+from control.bat_all import get_bat_components_by_controllability
 from control.chargelog import chargelog
 from control.chargepoint import chargepoint
 from control import data
@@ -63,7 +63,7 @@ class Process:
                 except Exception:
                     log.exception("Fehler im Process-Modul für Ladepunkt "+str(cp))
             if data.data.bat_all_data.data.set.set_limit:
-                for bat_component in get_controllable_bat_components():
+                for bat_component in get_bat_components_by_controllability()[0]:
                     modules_threads.append(
                         Thread(
                             target=set_power_limit_wrapper,

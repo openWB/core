@@ -275,11 +275,12 @@ def test_active_bat_control(params: BatControlParams, data_, monkeypatch):
                         get_chargepoints_with_required_current_by_chargemode_mock)
     get_evu_counter_mock = Mock(return_value=data.data.counter_data["counter0"])
     monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", get_evu_counter_mock)
-    get_controllable_bat_components_mock = Mock(return_value=[MqttBat(MqttBatSetup(id=2), device_id=0)])
+    get_bat_components_by_controllability_mock = Mock(return_value=([MqttBat(MqttBatSetup(id=2), device_id=0)], []))
     data.data.bat_data["bat2"].data.get.soc = params.bat_soc
     data.data.bat_data["bat2"].data.get.max_charge_power = params.max_charge_power
     data.data.bat_data["bat2"].data.get.max_discharge_power = params.max_discharge_power
-    monkeypatch.setattr(bat_all, "get_controllable_bat_components", get_controllable_bat_components_mock)
+    monkeypatch.setattr(bat_all, "get_bat_components_by_controllability",
+                        get_bat_components_by_controllability_mock)
 
     data.data.bat_all_data.get_power_limit()
     data.data.bat_all_data._set_bat_power_active_control(data.data.bat_all_data.data.set.power_limit)
@@ -357,11 +358,12 @@ def test_control_price_limit(params: BatControlParams, data_, monkeypatch):
                         get_chargepoints_with_required_current_by_chargemode_mock)
     get_evu_counter_mock = Mock(return_value=data.data.counter_data["counter0"])
     monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", get_evu_counter_mock)
-    get_controllable_bat_components_mock = Mock(return_value=[MqttBat(MqttBatSetup(id=2), device_id=0)])
+    get_bat_components_by_controllability_mock = Mock(return_value=([MqttBat(MqttBatSetup(id=2), device_id=0)], []))
     data.data.bat_data["bat2"].data.get.soc = params.bat_soc
     data.data.bat_data["bat2"].data.get.max_charge_power = params.max_charge_power
     data.data.bat_data["bat2"].data.get.max_discharge_power = params.max_discharge_power
-    monkeypatch.setattr(bat_all, "get_controllable_bat_components", get_controllable_bat_components_mock)
+    monkeypatch.setattr(bat_all, "get_bat_components_by_controllability",
+                        get_bat_components_by_controllability_mock)
 
     data.data.bat_all_data.get_power_limit()
     data.data.bat_all_data._set_bat_power_active_control(data.data.bat_all_data.data.set.power_limit)

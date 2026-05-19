@@ -20,7 +20,7 @@ Je nach Speicher 1-4 Sekunden.
 from dataclasses import dataclass, field
 from enum import Enum
 import logging
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from control import data
 from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_CHARGING
@@ -28,6 +28,7 @@ from control.algorithm.filter_chargepoints import get_chargepoints_with_required
 from control.pv import Pv
 from helpermodules.constants import NO_ERROR
 from modules.common.abstract_device import AbstractDevice
+from modules.common.component_context import SingleComponentUpdateContext
 
 log = logging.getLogger(__name__)
 
@@ -230,7 +231,7 @@ class BatAll:
         return required_power
 
     def _set_bat_power_active_control(self, power):
-        controllable_bat_components = get_controllable_bat_components()
+        controllable_bat_components, _ = get_bat_components_by_controllability()
         # maximal mögliche Lade- und Entladeleistung des Systems unter Einbeziehung
         # der erlaubten Lade-/ Entladeleistung und SoC der regelbaren Speicher ermitteln
         max_charge_power_total = 0
@@ -317,8 +318,8 @@ class BatAll:
         """
         try:
             if self.data.config.configured is True:
+                self.set_power_limit_controllable_state()
                 if self.data.get.fault_state == 0:
-                    self.set_power_limit_controllable()
                     self.get_power_limit()
                     self._set_bat_power_active_control(self.data.set.power_limit)
                     self._get_charging_power_left()
@@ -441,14 +442,17 @@ class BatAll:
             log.exception("Fehler im Bat-Modul")
             return 0
 
-    def set_power_limit_controllable(self):
-        controllable_bat_components = get_controllable_bat_components()
-        if len(controllable_bat_components) > 0:
+    def set_power_limit_controllable_state(self):
+        bat_components_controllable, bat_components_not_controllable = get_bat_components_by_controllability()
+        if len(bat_components_controllable) > 0:
             self.data.get.power_limit_controllable = True
-            for bat in controllable_bat_components:
-                data.data.bat_data[f"bat{bat.component_config.id}"].data.get.power_limit_controllable = True
         else:
             self.data.get.power_limit_controllable = False
+
+        for bat in bat_components_controllable:
+            data.data.bat_data[f"bat{bat.component_config.id}"].data.get.power_limit_controllable = True
+        for bat in bat_components_not_controllable:
+            data.data.bat_data[f"bat{bat.component_config.id}"].data.get.power_limit_controllable = False
 
     def get_charge_mode_vehicle_charge(self):
         chargepoint_by_chargemodes = get_chargepoints_with_required_current_by_chargemode(
@@ -568,7 +572,7 @@ class BatAll:
                 charge_mode = self.get_charge_mode_scheduled()
 
         # calculate power_limit
-        controllable_bat_components = get_controllable_bat_components()
+        controllable_bat_components, _ = get_bat_components_by_controllability()
         if charge_mode == BatChargeMode.BAT_SELF_REGULATION:
             self.data.set.power_limit = None
             log.debug("Speicher-Leistung nicht begrenzen")
@@ -609,12 +613,15 @@ class BatAll:
             self.data.set.current_state = CurrentState.ACTIVE.value
 
 
-def get_controllable_bat_components() -> List:
-    bat_components = []
+def get_bat_components_by_controllability() -> Tuple[List, List]:
+    bat_components_controllable, bat_components_not_controllable = [], []
     for value in data.data.system_data.values():
         if isinstance(value, AbstractDevice):
             for comp_value in value.components.values():
                 if "bat" in comp_value.component_config.type:
-                    if comp_value.power_limit_controllable():
-                        bat_components.append(comp_value)
-    return bat_components
+                    with SingleComponentUpdateContext(comp_value.fault_state, update_always=False):
+                        if comp_value.power_limit_controllable():
+                            bat_components_controllable.append(comp_value)
+                        else:
+                            bat_components_not_controllable.append(comp_value)
+    return bat_components_controllable, bat_components_not_controllable
