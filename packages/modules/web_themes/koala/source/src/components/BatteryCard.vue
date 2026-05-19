@@ -165,9 +165,7 @@ const dailyExportedEnergy = computed(() => {
   );
 });
 
-const batteryColor = computed(() =>
-  mqttStore.batteryColor(props.batteryId)
-);
+const batteryColor = computed(() => mqttStore.batteryColor(props.batteryId));
 </script>
 
 <style scoped lang="scss">

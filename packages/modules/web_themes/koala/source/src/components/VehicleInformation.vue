@@ -103,7 +103,7 @@ const tableRowData = computed<(id: number) => VehicleRow>(() => {
     const model = info?.model || 'keine Angabe';
     const soc = mqttStore.vehicleSocValue(id);
     const vehicleSocValue = soc !== undefined ? `${Math.round(soc)}%` : '–';
-    const color = mqttStore.vehicleColor(id);
+    const color = mqttStore.vehicleColor(id) || undefined;
     return {
       id,
       name,
@@ -122,13 +122,23 @@ const columnConfig: ColumnConfiguration[] = [
   { field: 'manufacturer', label: 'Hersteller', autoWidth: true },
   { field: 'model', label: 'Modell', autoWidth: true },
   { field: 'plugged', label: 'Status', align: 'center', autoWidth: true },
-  { field: 'vehicleSocValue', label: 'Ladestand', align: 'right', autoWidth: true },
+  {
+    field: 'vehicleSocValue',
+    label: 'Ladestand',
+    align: 'right',
+    autoWidth: true,
+  },
 ];
 
 const columnConfigCompact: ColumnConfiguration[] = [
   { field: 'name', label: 'Fahrzeug' },
   { field: 'plugged', label: 'Status', align: 'center', autoWidth: true },
-  { field: 'vehicleSocValue', label: 'Ladestand', align: 'right', autoWidth: true },
+  {
+    field: 'vehicleSocValue',
+    label: 'Ladestand',
+    align: 'right',
+    autoWidth: true,
+  },
 ];
 
 const onRowClick = (row: VehicleRow) => {
