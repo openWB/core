@@ -2,6 +2,7 @@ export interface DailyTotalsItem {
   id: string;
   title: string;
   icon: string;
+  level: 'primary' | 'secondary';
   soc?: number;
   power?: string;
   powerValue?: number;
@@ -14,4 +15,5 @@ export interface DailyTotalsItem {
   rightLabel?: string;
   rightValue?: string;
   arrow?: string;
+  color?: string;
 }
