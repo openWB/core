@@ -161,8 +161,9 @@ def _determine_working_base_path(config: NextcloudBackupCloud,
         try:
             if base_path:
                 upload_call(base_path)
-                config.configuration.base_path = base_path
-                Pub().pub("openWB/set/system/backup_cloud/config", asdict(config))
+                if base_path != config.configuration.base_path:
+                    config.configuration.base_path = base_path
+                    Pub().pub("openWB/set/system/backup_cloud/config", asdict(config))
                 return
         except Exception as error:
             log.warning("Fehler beim Upload des Nextcloud-Backups mit base_path '%s': %s",

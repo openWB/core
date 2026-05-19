@@ -3110,7 +3110,7 @@ class UpdateConfig:
 
     def upgrade_datastore_123(self) -> None:
         def upgrade(topic: str, payload) -> Optional[dict]:
-            if re.search("openWB/system/backup_cloud/config", topic) is not None:
+            if re.search("^openWB/system/backup_cloud/config$", topic) is not None:
                 configuration_payload = decode_payload(payload)
                 if (configuration_payload.get("type") == "nextcloud" and
                         configuration_payload["configuration"].get("base_path") is None):
