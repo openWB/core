@@ -184,6 +184,9 @@ class Chargepoint(ChargepointRfidMixin):
                 self.data.set.ocpp_transaction_id,
                 self.data.set.rfid)
             self.data.set.ocpp_transaction_id = None
+        # muss vor dem Zurücksetzen der control parameter aufgerufen werden
+        self.data.set.charging_ev_data.reset_phase_switch(self.data.control_parameter)
+        self.data.set.charging_ev_data.reset_phase_switch_delay(self.data.control_parameter, self.get_max_phase_hw())
         self.reset_control_parameter_at_charge_stop()
         data.data.counter_all_data.get_evu_counter().reset_switch_on_off(self)
         if self.data.get.plug_state is False and self.data.set.plug_state_prev is True:
@@ -666,7 +669,7 @@ class Chargepoint(ChargepointRfidMixin):
 
                     if self.chargemode_changed or self.submode_changed:
                         data.data.counter_all_data.get_evu_counter().reset_switch_on_off(self)
-                        charging_ev.reset_phase_switch(self.data.control_parameter)
+                        charging_ev.reset_phase_switch_delay(self.data.control_parameter, self.get_max_phase_hw())
                     if self.chargemode_changed:
                         self.data.control_parameter.failed_phase_switches = 0
                     message = message_ev if message_ev else message
