@@ -1,5 +1,6 @@
 from datetime import timedelta
 import datetime
+from types import SimpleNamespace
 from typing import Dict
 from unittest.mock import Mock
 
@@ -30,12 +31,16 @@ def mock_data() -> None:
     data.data_init(Mock())
     data.data.optional_data = Optional()
     data.data.optional_data.grid_fee_module = Mock()
-    data.data.optional_data.grid_fee_module.config = Mock()
-    data.data.optional_data.grid_fee_module.config.default_price = None
+    data.data.optional_data.grid_fee_module.config = SimpleNamespace(
+        configuration=SimpleNamespace(default_price=None)
+    )
     data.data.optional_data.flexible_tariff_module = Mock()
-    data.data.optional_data.flexible_tariff_module.config = Mock()
-    data.data.optional_data.flexible_tariff_module.config.default_price = None
-    data.data.optional_data.flexible_tariff_module.config.includes_grid_fee = True
+    data.data.optional_data.flexible_tariff_module.config = SimpleNamespace(
+        configuration=SimpleNamespace(
+            default_price=None,
+            includes_grid_fee=True
+        )
+    )
 
 
 @pytest.mark.parametrize(
@@ -118,11 +123,11 @@ def mock_data() -> None:
             True,
             10,  # default_grid_fee_price overrides median grid fee price of 14
             {
-                1761128100: 14,
-                1761127200: 14,
-                1761129000: 14,
-                1761129900: 14,
-                1761130800: 14,
+                1761128100: 10,
+                1761127200: 10,
+                1761129000: 10,
+                1761129900: 10,
+                1761130800: 10,
             },
             id="median 14 of grid fee prices overridden by default grid fee price 10",
         ),

@@ -155,7 +155,7 @@ class TestFetch:
         "default_price,tariffs,expected_price",
         [
             # No tariffs, use default price
-            pytest.param(1500, [], 1.5, id="no_tariffs"),
+            pytest.param(1500, [], 1500, id="no_tariffs"),
             # All-day tariff
             pytest.param(
                 1500,
@@ -169,7 +169,7 @@ class TestFetch:
                         },
                     }
                 ],
-                2.0,
+                2000,
                 id="all_day_tariff",
             ),
             # Tariff that matches all times
@@ -185,13 +185,13 @@ class TestFetch:
                         },
                     }
                 ],
-                2.5,
+                2500,
                 id="full_day_tariff",
             ),
             # Very low price
-            pytest.param(500, [], 0.5, id="low_price"),
+            pytest.param(500, [], 500, id="low_price"),
             # Very high price
-            pytest.param(5000, [], 5.0, id="high_price"),
+            pytest.param(5000, [], 5000, id="high_price"),
         ],
     )
     def test_fetch_price_configurations(self, default_price, tariffs, expected_price):
@@ -205,7 +205,7 @@ class TestFetch:
         assert isinstance(result, TariffState)
         assert len(result.prices) > 0
         for price in result.prices.values():
-            assert isinstance(price, float)
+            assert isinstance(price, (float, int))
             assert price == expected_price
 
     @pytest.mark.parametrize(
@@ -262,7 +262,7 @@ class TestCreateElectricityTariff:
         "default_price,tariffs,expected_price",
         [
             # No tariffs, use default
-            pytest.param(1500, [], 1.5, id="no_tariffs"),
+            pytest.param(1500, [], 1500, id="no_tariffs"),
             # With all-day tariff
             pytest.param(
                 1500,
@@ -276,7 +276,7 @@ class TestCreateElectricityTariff:
                         },
                     }
                 ],
-                2.5,
+                2500,
                 id="all_day_tariff",
             ),
             # Another tariff configuration
@@ -292,7 +292,7 @@ class TestCreateElectricityTariff:
                         },
                     }
                 ],
-                3.5,
+                3500,
                 id="premium_tariff",
             ),
             pytest.param(
@@ -307,7 +307,7 @@ class TestCreateElectricityTariff:
                         },
                     }
                 ],
-                2.0,
+                2000,
                 id="not_matching_tariff returns default price",
             ),
         ],

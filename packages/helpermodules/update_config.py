@@ -3142,7 +3142,8 @@ class UpdateConfig:
                     if surcharge > 0.1:  # entspricht mehr als 0.1ct/kWh konfiguriertem Zuschlag
                         provider["configuration"]["surcharge"] = surcharge / 100000
                         return {topic: provider}
-            if "openWB/optional/ep/flexible_tariff/provider" == topic or "openWB/optional/ep/grid_fee/provider" == topic:
+            if ("openWB/optional/ep/flexible_tariff/provider" == topic or
+                    "openWB/optional/ep/grid_fee/provider" == topic):
                 provider = decode_payload(payload)
                 if provider["type"] == "fixed_hours":
                     changed = False
