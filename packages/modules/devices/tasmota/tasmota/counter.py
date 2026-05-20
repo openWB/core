@@ -40,6 +40,10 @@ class TasmotaCounter(AbstractCounter):
         url = "http://" + self.__ip_address + "/cm?cmnd=Status%208"
         response = req.get_http_session().get(url, timeout=5).json()
 
+        voltages = None
+        currents = None
+        powers = None
+        power_factors = None
         if 'ENERGY' in response['StatusSNS']:
             voltages = [0.0, 0.0, 0.0]
             powers = [0.0, 0.0, 0.0]
@@ -84,16 +88,12 @@ class TasmotaCounter(AbstractCounter):
         counter_state = CounterState(
             power=power,
             imported=imported,
-            exported=exported
+            exported=exported,
+            voltages=voltages,
+            currents=currents,
+            powers=powers,
+            power_factors=power_factors
         )
-        if 'voltages' in locals():
-            counter_state.voltages = voltages
-        if 'currents' in locals():
-            counter_state.currents = currents
-        if 'powers' in locals():
-            counter_state.powers = powers
-        if 'power_factors' in locals():
-            counter_state.power_factors = power_factors
 
         self.store.set(counter_state)
 

@@ -40,6 +40,7 @@ class TasmotaBat(AbstractBat):
         url = "http://" + self.__ip_address + "/cm?cmnd=Status%208"
         response = req.get_http_session().get(url, timeout=5).json()
 
+        currents = None
         if 'ENERGY' in response['StatusSNS']:
             currents = [0.0, 0.0, 0.0]
 
@@ -69,10 +70,9 @@ class TasmotaBat(AbstractBat):
         bat_state = BatState(
             power=power,
             imported=imported,
-            exported=exported
+            exported=exported,
+            currents=currents
         )
-        if 'currents' in locals():
-            bat_state.currents = currents
 
         self.store.set(bat_state)
 

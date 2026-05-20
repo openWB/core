@@ -40,9 +40,8 @@ class TasmotaInverter(AbstractInverter):
         url = "http://" + self.__ip_address + "/cm?cmnd=Status%208"
         response = req.get_http_session().get(url, timeout=5).json()
 
+        currents = None
         if 'ENERGY' in response['StatusSNS']:
-            currents = [0.0, 0.0, 0.0]
-
             power = float(response['StatusSNS']['ENERGY']['Power']) * -1
             currents[self.__phase-1] = (response['StatusSNS']['ENERGY']['Current']), 0.0, 0.0
             self.peak_filter.check_values(power)
@@ -52,11 +51,11 @@ class TasmotaInverter(AbstractInverter):
             exported = float(response['StatusSNS']['Itron']['E_out']*1000)
             _, exported = self.peak_filter.check_values(power, None, exported)
         elif 'MT681' in response['StatusSNS']:
-            power = float(response['StatusSNS']['MT681']['Watt_summe'])
+            power = float(response['StatusSNS']['MT681']['Watt_summe']) * -1
             exported = float(response['StatusSNS']['MT681']['Total_out']*1000)
             _, exported = self.peak_filter.check_values(power, None, exported)
         elif 'eBZ' in response['StatusSNS']:
-            power = float(response['StatusSNS']['eBZ']['Power'])
+            power = float(response['StatusSNS']['eBZ']['Power']) * -1
             exported = float(response['StatusSNS']['eBZ']['E_out']*1000)
             _, exported = self.peak_filter.check_values(power, None, exported)
         else:
@@ -64,10 +63,9 @@ class TasmotaInverter(AbstractInverter):
 
         inverter_state = InverterState(
             power=power,
-            exported=exported
+            exported=exported,
+            currents=currents
         )
-        if 'currents' in locals():
-            inverter_state.currents = currents
 
         self.store.set(inverter_state)
 
