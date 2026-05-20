@@ -42,6 +42,7 @@ class TasmotaInverter(AbstractInverter):
 
         currents = None
         if 'ENERGY' in response['StatusSNS']:
+            currents = [0.0, 0.0, 0.0]
             power = float(response['StatusSNS']['ENERGY']['Power']) * -1
             currents[self.__phase-1] = (response['StatusSNS']['ENERGY']['Current']), 0.0, 0.0
             self.peak_filter.check_values(power)
