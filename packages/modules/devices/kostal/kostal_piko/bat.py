@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import Any, List, Tuple, TypedDict
+from typing import Any, Tuple, TypedDict
 
 from modules.common import req
 from modules.common.abstract_device import AbstractBat
