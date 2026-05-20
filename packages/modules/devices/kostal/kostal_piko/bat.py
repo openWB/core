@@ -34,7 +34,7 @@ class KostalPikoBat(AbstractBat):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
-    def get_values(self) -> Tuple[float, List[float]]:
+    def get_values(self) -> Tuple[float, float]:
         # Bat Current, Bat Voltage, Bat SoC
         params = (('dxsEntries', ['33556225', '33556226', '33556229']),)
         resp = req.get_http_session().get('http://'+self.ip_address+'/api/dxs.json',
