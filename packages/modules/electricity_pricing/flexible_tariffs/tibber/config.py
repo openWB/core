@@ -1,25 +1,22 @@
+from dataclasses import dataclass, field
 from typing import Optional
 
 
+@dataclass
 class TibberTariffConfiguration:
-    def __init__(self, token: Optional[str] = None, home_id: Optional[str] = None):
-        self.token = token
-        self.home_id = home_id
-        self.update_hours = [14]  # tibber publishes once daily before 14:00
-        '''
+    token: Optional[str] = None
+    home_id: Optional[str] = None
+    update_hours: list[int] = field(default_factory=lambda: [14])  # tibber publishes once daily before 14:00
+    '''
          dynamische Netzentgelte müssen umgerechnet werden,
          damit der Gesamtpreis nicht um den Normalpreis der Netzentgelte verzerrt wird.
         '''
-        self.includes_grid_fee = True
+    includes_grid_fee: bool = True
 
 
+@dataclass
 class TibberTariff:
-    def __init__(self,
-                 name: str = "Tibber",
-                 type: str = "tibber",
-                 official: bool = True,
-                 configuration: TibberTariffConfiguration = None) -> None:
-        self.name = name
-        self.type = type
-        self.official = official
-        self.configuration = configuration or TibberTariffConfiguration()
+    name: str = "Tibber"
+    type: str = "tibber"
+    official: bool = True
+    configuration: TibberTariffConfiguration = field(default_factory=TibberTariffConfiguration)

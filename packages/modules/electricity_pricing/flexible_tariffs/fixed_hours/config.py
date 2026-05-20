@@ -1,15 +1,13 @@
-from typing import List, Dict
+from dataclasses import dataclass, field
+from typing import Any
 
 
+@dataclass
 class FixedHoursTariffConfiguration:
-    def __init__(self,
-                 default_price: float = 0,
-                 tariffs: List[Dict[str, any]] = None,
-                 update_hours: List[int] = None) -> None:
-        self.default_price = default_price
-        self.tariffs = tariffs if tariffs is not None else []
-        self.update_hours = update_hours if update_hours is not None else list(range(24))
-        '''
+    default_price: float = 0
+    tariffs: list[dict[str, Any]] = field(default_factory=list)
+    update_hours: list[int] = field(default_factory=lambda: list(range(24)))
+    '''
         Example configuration:
         "tariffs": [
             {
@@ -32,13 +30,9 @@ class FixedHoursTariffConfiguration:
         '''
 
 
+@dataclass
 class FixedHoursTariff:
-    def __init__(self,
-                 name: str = "Feste Tarifstunden (z.b. §14a EnWG Modul3)",
-                 type: str = "fixed_hours",
-                 official: bool = False,
-                 configuration: FixedHoursTariffConfiguration = None) -> None:
-        self.name = name
-        self.type = type
-        self.official = official
-        self.configuration = configuration or FixedHoursTariffConfiguration()
+    name: str = "Feste Tarifstunden (z.b. §14a EnWG Modul3)"
+    type: str = "fixed_hours"
+    official: bool = False
+    configuration: FixedHoursTariffConfiguration = field(default_factory=FixedHoursTariffConfiguration)

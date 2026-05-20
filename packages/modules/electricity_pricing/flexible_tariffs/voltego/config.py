@@ -1,33 +1,24 @@
+from dataclasses import dataclass, field
 from typing import Optional
 
 
-class VoltegoToken():
-    def __init__(self,
-                 access_token: Optional[str] = None,
-                 expires_in: Optional[str] = None,
-                 created_at: Optional[str] = None) -> None:
-        self.access_token = access_token  # don't show in UI
-        self.expires_in = expires_in  # don't show in UI
-        self.created_at = created_at  # don't show in UI
+@dataclass
+class VoltegoToken:
+    access_token: Optional[str] = field(default=None, compare=False, repr=False)  # don't show in UI
+    expires_in: Optional[str] = field(default=None, compare=False)  # don't show in UI
+    created_at: Optional[str] = field(default=None, compare=False)  # don't show in UI
 
 
+@dataclass
 class VoltegoTariffConfiguration:
-    def __init__(self,
-                 client_id: Optional[str] = None,
-                 client_secret: Optional[str] = None,
-                 token: VoltegoToken = None):
-        self.client_id = client_id
-        self.client_secret = client_secret
-        self.token = token or VoltegoToken()
+    client_id: Optional[str] = None
+    client_secret: Optional[str] = None
+    token: VoltegoToken = field(default_factory=VoltegoToken)
 
 
+@dataclass
 class VoltegoTariff:
-    def __init__(self,
-                 name: str = "Voltego",
-                 type: str = "voltego",
-                 official: bool = True,
-                 configuration: VoltegoTariffConfiguration = None) -> None:
-        self.name = name
-        self.type = type
-        self.official = official
-        self.configuration = configuration or VoltegoTariffConfiguration()
+    name: str = "Voltego"
+    type: str = "voltego"
+    official: bool = True
+    configuration: VoltegoTariffConfiguration = field(default_factory=VoltegoTariffConfiguration)
