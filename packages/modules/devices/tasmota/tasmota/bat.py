@@ -40,32 +40,39 @@ class TasmotaBat(AbstractBat):
         url = "http://" + self.__ip_address + "/cm?cmnd=Status%208"
         response = req.get_http_session().get(url, timeout=5).json()
 
+        currents = None
         if 'ENERGY' in response['StatusSNS']:
             currents = [0.0, 0.0, 0.0]
 
             power = float(response['StatusSNS']['ENERGY']['Power'])
-            currents[self.__phase-1] = (response['StatusSNS']['ENERGY']['Current']), 0.0, 0.0
+            currents[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Current'])
             imported = float(response['StatusSNS']['ENERGY']['Total']*1000)
             imported, _ = self.peak_filter.check_values(power, imported, None)
             _, exported = self.sim_counter.sim_count(power)
-
-            bat_state = BatState(
-                power=power,
-                currents=currents,
-                imported=imported,
-                exported=exported
-            )
-        else:
+        elif 'Itron' in response['StatusSNS']:
             power = float(response['StatusSNS']['Itron']['Power'])
             imported = float(response['StatusSNS']['Itron']['E_in']*1000)
             exported = float(response['StatusSNS']['Itron']['E_out']*1000)
             imported, exported = self.peak_filter.check_values(power, imported, exported)
+        elif 'MT681' in response['StatusSNS']:
+            power = float(response['StatusSNS']['MT681']['Watt_summe'])
+            imported = float(response['StatusSNS']['MT681']['Total_in']*1000)
+            exported = float(response['StatusSNS']['MT681']['Total_out']*1000)
+            imported, exported = self.peak_filter.check_values(power, imported, exported)
+        elif 'eBZ' in response['StatusSNS']:
+            power = float(response['StatusSNS']['eBZ']['Power'])
+            imported = float(response['StatusSNS']['eBZ']['E_in']*1000)
+            exported = float(response['StatusSNS']['eBZ']['E_out']*1000)
+            imported, exported = self.peak_filter.check_values(power, imported, exported)
+        else:
+            raise ValueError("Nicht unterstützter Tasmota Zählertyp. Bitte an den Support wenden.")
 
-            bat_state = BatState(
-                power=power,
-                imported=imported,
-                exported=exported
-            )
+        bat_state = BatState(
+            power=power,
+            imported=imported,
+            exported=exported,
+            currents=currents
+        )
 
         self.store.set(bat_state)
 
