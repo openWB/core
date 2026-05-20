@@ -123,11 +123,11 @@ def mock_data() -> None:
             True,
             10,  # default_grid_fee_price overrides median grid fee price of 14
             {
-                1761128100: 10,
-                1761127200: 10,
-                1761129000: 10,
-                1761129900: 10,
-                1761130800: 10,
+                1761128100: 14,
+                1761127200: 14,
+                1761129000: 14,
+                1761129900: 14,
+                1761130800: 14,
             },
             id="median 14 of grid fee prices overridden by default grid fee price 10",
         ),
@@ -151,8 +151,8 @@ def test_sum_prices(
         flexible_tariff
     )
     data.data.optional_data.data.electricity_pricing.grid_fee.get.prices = grid_fee
-    data.data.optional_data.flexible_tariff_module.config.includes_grid_fee = includes_grid_fee
-    data.data.optional_data.grid_fee_module.config.default_price = default_grid_fee_price
+    data.data.optional_data.flexible_tariff_module.config.configuration.includes_grid_fee = includes_grid_fee
+    data.data.optional_data.grid_fee_module.config.configuration.default_price = default_grid_fee_price
     summed = value_Store.sum_prices()
     assert summed == expected_prices
 
