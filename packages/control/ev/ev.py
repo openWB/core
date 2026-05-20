@@ -435,6 +435,7 @@ class Ev:
         Die Phasenumschaltung kann nicht abgebrochen werden!
         """
         control_parameter.timestamp_phase_switch_buffer_start = None
+        control_parameter.state = ChargepointState.CHARGING_ALLOWED
         if control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY and control_parameter.phases == 1:
             # Wenn der Timer läuft, ist den Control-Parametern die alte Phasenzahl hinterlegt.
             # bei der Umschaltung 3p1p wird keine Leistung reserviert
@@ -444,7 +445,6 @@ class Ev:
             evu_counter.data.set.reserved_surplus -= reserved
             log.debug(f"Zurücksetzen von {reserved}W reservierter Leistung für die Phasenumschaltung. "
                       f"reservierte Leistung: {evu_counter.data.set.reserved_surplus} W")
-            control_parameter.state = ChargepointState.CHARGING_ALLOWED
 
     def reset_phase_switch(self, control_parameter: ControlParameter):
         if control_parameter.state == ChargepointState.PERFORMING_PHASE_SWITCH:
