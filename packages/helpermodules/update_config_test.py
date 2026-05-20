@@ -149,3 +149,87 @@ def test_upgrade_datastore_122(name, monkeypatch):
         # Assert
         assert mock_dump.call_args_list[0].args[0] == expected_content
         assert uc.all_received_topics["openWB/system/datastore_version"] == [122]
+
+
+def test_upgrade_datastore_124_converts_only_tariff_prices_and_persists(mock_pub):
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        "openWB/optional/ep/flexible_tariff/provider": {
+            "type": "fixed_hours",
+            "configuration": {
+                "tariffs": [
+                    {"price": 0.15},
+                    {"price": 0.09},
+                ],
+                "default_price": 0.01,
+            },
+        },
+        "openWB/system/datastore_version": [123],
+    }
+
+    uc.upgrade_datastore_124()
+
+    provider = uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"]
+    assert provider["configuration"]["tariffs"][0]["price"] == pytest.approx(0.00015)
+    assert provider["configuration"]["tariffs"][1]["price"] == pytest.approx(0.00009)
+    assert provider["configuration"]["default_price"] == pytest.approx(0.00001)
+    assert uc.all_received_topics["openWB/system/datastore_version"] == [123, 124]
+
+    updated_topics = [call.args[0] for call in mock_pub.pub.call_args_list]
+    assert "openWB/optional/ep/flexible_tariff/provider" in updated_topics
+    assert "openWB/system/datastore_version" in updated_topics
+
+
+def test_upgrade_datastore_124_converts_energycharts_surcharge(mock_pub):
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        "openWB/optional/ep/flexible_tariff/provider": {
+            "type": "energycharts",
+            "configuration": {
+                "surcharge": 10,
+            },
+        },
+        "openWB/system/datastore_version": [123],
+    }
+
+    uc.upgrade_datastore_124()
+
+    provider = uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"]
+    assert provider["configuration"]["surcharge"] == pytest.approx(0.0001)
+    assert uc.all_received_topics["openWB/system/datastore_version"] == [123, 124]
+
+    updated_topics = [call.args[0] for call in mock_pub.pub.call_args_list]
+    assert "openWB/optional/ep/flexible_tariff/provider" in updated_topics
+
+
+def test_upgrade_datastore_124_is_idempotent_for_already_converted_values(mock_pub):
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        "openWB/optional/ep/flexible_tariff/provider": {
+            "type": "energycharts",
+            "configuration": {
+                "surcharge": 0.00015,
+            },
+        },
+        "openWB/optional/ep/grid_fee/provider": {
+            "type": "fixed_hours",
+            "configuration": {
+                "tariffs": [
+                    {"price": 0.00006},
+                    {"price": 0.00099},
+                ],
+                "default_price": 0.00008,
+            },
+        },
+        "openWB/system/datastore_version": [123, 124],
+    }
+
+    expected_flexible = json.loads(json.dumps(uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"]))
+    expected_grid_fee = json.loads(json.dumps(uc.all_received_topics["openWB/optional/ep/grid_fee/provider"]))
+
+    uc.upgrade_datastore_124()
+
+    assert uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"] == expected_flexible
+    assert uc.all_received_topics["openWB/optional/ep/grid_fee/provider"] == expected_grid_fee
+    assert uc.all_received_topics["openWB/system/datastore_version"] == [123, 124]
+    assert mock_pub.pub.call_count == 0

@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 124
+    DATASTORE_VERSION = 125
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -3132,3 +3132,30 @@ class UpdateConfig:
                         return {topic: configuration_payload}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(124)
+
+    def upgrade_datastore_125(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if "openWB/optional/ep/flexible_tariff/provider" == topic:
+                provider = decode_payload(payload)
+                if provider["type"] == "energycharts":
+                    surcharge = provider["configuration"]["surcharge"]
+                    if surcharge > 0.1:  # entspricht mehr als 0.1ct/kWh konfiguriertem Zuschlag
+                        provider["configuration"]["surcharge"] = surcharge / 100000
+                        return {topic: provider}
+            if "openWB/optional/ep/flexible_tariff/provider" == topic or "openWB/optional/ep/grid_fee/provider" == topic:
+                provider = decode_payload(payload)
+                if provider["type"] == "fixed_hours":
+                    changed = False
+                    for i, tarif in enumerate(provider["configuration"]["tariffs"]):
+                        price = tarif.get("price", 0)
+                        if price > 0.001:  # entspricht mehr als 0,1ct/kWh konfiguriertem Tarifpreis
+                            provider["configuration"]["tariffs"][i]["price"] = price / 1000
+                            changed = True
+                    default_price = provider["configuration"].get("default_price", 0)
+                    if default_price > 0.001:
+                        provider["configuration"]["default_price"] = default_price / 1000
+                        changed = True
+                    if changed:
+                        return {topic: provider}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(125)
