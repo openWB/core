@@ -57,7 +57,10 @@ def test_check_max_num_of_internal_chargepoints(additional_cp_mode, config, expe
     assert msg == expected_msg
 
 
-def test_getDailyLog(regular_daily_log_entry, regular_daily_log_entry_processed_legacy_converted, mock_pub, monkeypatch):
+def test_getDailyLog(regular_daily_log_entry,
+                     regular_daily_log_entry_processed_legacy_converted,
+                     mock_pub,
+                     monkeypatch):
     # setup
     c = Command(Mock())
     mock_pub.reset_mock()
