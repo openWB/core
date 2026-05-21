@@ -47,6 +47,131 @@ def get_default_charge_log_columns() -> Dict:
     }
 
 
+# {'entries': [{'bat': {'all': {'energy_exported': 0.0, # kWh
+#                               'energy_imported': 0.0, # kWh
+#                               'exported': 50.75, # Wh
+#                               'imported': 2551.98, # Wh
+#                               'power_average': 0.0, # kWh
+#                               'power_exported': 0, # kWh
+#                               'power_imported': 0.0, # kWh
+#                               'soc': 100}, # %
+#                       'bat2': {'energy_exported': 0.0, # kWh
+#                                'energy_imported': 0.0, # kWh
+#                                'exported': 50.75, # Wh
+#                                'imported': 2551.98, # Wh
+#                                'power_average': 0.0, # kWh
+#                                'power_exported': 0, # kWh
+#                                'power_imported': 0.0, # kWh
+#                                'soc': 100}}, # %
+#               'counter': {'counter0': {'energy_exported': 4.421, # kWh
+#                                        'energy_imported': 0.0, # kWh
+#                                        'exported': 24425.677, # Wh
+#                                        'grid': True,
+#                                        'imported': 90.379, # Wh
+#                                        'power_average': -7.139, # kWh
+#                                        'power_exported': 7.139, # kWh
+#                                        'power_imported': 0}}, # kWh
+#               'cp': {'all': {'energy_exported': 0.0, # kWh
+#                              'energy_imported': 0.081, # kWh
+#                              'energy_imported_bat': 0.0, # kWh
+#                              'energy_imported_cp': 0.0, # kWh
+#                              'energy_imported_grid': 0.0, # kWh
+#                              'energy_imported_pv': 0.081, # kWh
+#                              'exported': 0, # Wh
+#                              'imported': 29123.5, # Wh
+#                              'power_average': 0.131, # kWh
+#                              'power_exported': 0, # kWh
+#                              'power_imported': 0.131}, # kWh
+#                      'cp3': {'energy_exported': 0.0, # kWh
+#                              'energy_imported': 0.0, # kWh
+#                              'energy_imported_bat': 0.0, # kWh
+#                              'energy_imported_cp': 0.0, # kWh
+#                              'energy_imported_grid': 0.0, # kWh
+#                              'energy_imported_pv': 0.0, # kWh
+#                              'exported': 0, # Wh
+#                              'imported': 10638.5, # Wh
+#                              'power_average': 0.0, # kWh
+#                              'power_exported': 0, # kWh
+#                              'power_imported': 0.0}}, # kWh
+#               'date': '10:11',
+#               'energy_source': {'bat': 0.0, 'cp': 0.0, 'grid': 0.0, 'pv': 1.0}, # %
+#               'ev': {'ev0': {'soc': None}},
+#               'hc': {'all': {'energy_exported': 0.0, # kWh
+#                              'energy_imported': 0.004, # kWh
+#                              'energy_imported_bat': 0.0, # kWh
+#                              'energy_imported_cp': 0.0, # kWh
+#                              'energy_imported_grid': 0.0, # kWh
+#                              'energy_imported_pv': 0.004, # kWh
+#                              'imported': 32922.337425797836, # Wh
+#                              'power_average': 0.006, # kWh
+#                              'power_exported': 0, # kWh
+#                              'power_imported': 0.006}}, # kWh
+#               'prices': {'bat': 0.0002, # €/Wh
+#                          'cp': 0, # €/Wh
+#                          'grid': 0.00014862, # €/Wh
+#                          'pv': 0.00015}, # €/Wh
+#               'pv': {'all': {'energy_exported': 4.697, # kWh
+#                              'energy_imported': 0.0, # kWh
+#                              'exported': 45013, # Wh
+#                              'power_average': -7.586, # kWh
+#                              'power_exported': 7.586, # kWh
+#                              'power_imported': 0}, # kWh
+#                      'pv1': {'energy_exported': 4.697, # kWh
+#                              'energy_imported': 0.0, # kWh
+#                              'exported': 45013, # Wh
+#                              'power_average': -7.586, # kWh
+#                              'power_exported': 7.586, # kWh
+#                              'power_imported': 0}}, # kWh
+#               'sh': {},
+#               'timestamp': 1779351076}],
+#  'names': {'bat2': 'MQTT-Speicher',
+#            'counter0': 'MQTT-Zähler',
+#            'cp3': 'MQTT-Ladepunkt 3',
+#            'ev0': 'Standard-Fahrzeug',
+#            'pv1': 'MQTT-Wechselrichter'},
+#  'totals': {'bat': {'all': {'energy_exported': 0.0, # Wh
+#                             'energy_imported': 52.0}, # Wh
+#                     'bat2': {'energy_exported': 0.0, # Wh
+#                              'energy_imported': 0.0}}, # Wh
+#             'counter': {'counter0': {'energy_exported': 6280.0, # Wh
+#                                      'energy_imported': 0.0, # Wh
+#                                      'grid': True}},
+#             'cp': {'all': {'energy_exported': 0.0, # Wh
+#                            'energy_imported': 341.0, # Wh
+#                            'energy_imported_bat': 0.0, # Wh
+#                            'energy_imported_cp': 0.0, # Wh
+#                            'energy_imported_grid': 260.0, # Wh
+#                            'energy_imported_pv': 81.0}, # Wh
+#                    'cp3': {'energy_exported': 0.0, # Wh
+#                            'energy_imported': 0.0, # Wh
+#                            'energy_imported_bat': 0.0, # Wh
+#                            'energy_imported_cp': 0.0, # Wh
+#                            'energy_imported_grid': 0.0, # Wh
+#                            'energy_imported_pv': 0.0}}, # Wh
+#             'hc': {'all': {'energy_imported': 39.0, # Wh
+#                            'energy_imported_bat': 0.0, # Wh
+#                            'energy_imported_cp': 0.0, # Wh
+#                            'energy_imported_grid': 35.0, # Wh
+#                            'energy_imported_pv': 4.0}}, # Wh
+#             'pv': {'all': {'energy_exported': 6673.0}, # Wh
+#                    'pv1': {'energy_exported': 6673.0}}, # Wh
+#             'sh': {}}}
+
+def convert_legacy_units(data: dict) -> dict:
+    for entry in data["entries"]:
+        for type in ("bat", "counter", "cp", "pv", "sh", "hc"):
+            if type in entry:
+                for module in entry[type].keys():
+                    try:
+                        for value in ("energy_imported", "energy_exported", "power_average", "power_imported", "power_exported"):
+                            if value in entry[type][module].keys():
+                                entry[type][module][value] = entry[type][module][value] / 1000
+                    except KeyError:
+                        log.exception(
+                            f"Fehler beim Konvertieren der Einheiten von {type} {module} in Eintrag {entry['timestamp']}")
+    return data
+
+
 def safe_get_nested(data: Dict, *keys, default: Union[int, float] = 0) -> Union[int, float]:
     current = data
     for key in keys:
@@ -91,70 +216,6 @@ def get_totals(entries: List, process_entries: bool = True) -> Dict:
                         log.exception(f"Fehler beim Berechnen der Summe von {entry_module}; "
                                       f"group:{totals_group}, module:{entry_module}, key:{entry_module_key}")
     return totals
-
-#     {"entries": [
-#         {
-#             "timestamp": int,
-#             "date": str,
-#             "cp": {
-#                 "cp1": {"imported": Zählerstand in kW, "exported": Zählerstand in kW}
-#                 ... (dynamisch, je nach konfigurierter Anzahl)
-#                 "all": {
-#                     "imported": Zählerstand in kW,
-#                     "exported": Zählerstand in kW
-#                     }
-#             }
-#             "ev": {
-#                 "ev1": {"soc": int in %}
-#                 ... (dynamisch, je nach konfigurierter Anzahl)
-#             }
-#             "counter": {
-#                 "counter0": {"imported": kW, "exported": kW}
-#                 ... (dynamisch, je nach konfigurierter Anzahl)
-#             }
-#             "pv": {
-#                 "all": {"exported": kW}
-#                 "pv0": {"exported": kW}
-#                 ... (dynamisch, je nach konfigurierter Anzahl)
-#             }
-#             "bat": {
-#                 "all": {"imported": kW, "exported": kW,  "soc": int in %}
-#                 "bat0": {"imported": kW, "exported": kW, "soc": int in %}
-#                 ... (dynamisch, je nach konfigurierter Anzahl)
-#             }
-#             "sh": {
-#                 "sh1": {
-#                     "exported": kW,
-#                     "imported": kW,
-#                     wenn konfiguriert:
-#                     "temp1": int in °C,
-#                     "temp2": int in °C,
-#                     "temp3": int in °C
-#                 },
-#                 ... (dynamisch, je nach Anzahl konfigurierter Geräte)
-#             },
-#             "energy_source": {"grid": %, "pv": %, "bat": %, "cp": %}
-#         }],
-#         "totals": {
-#             {'bat': {'all': {'exported': 0, 'imported': 175.534},
-#             'bat2': {'exported': 0, 'imported': 172.556}},
-#             'counter': {'counter0': {'exported': 1.105, 'imported': 1.1}},
-#             'cp': {'all': {'exported': 0, 'imported': 105},
-#                     'cp3': {'exported': 0, 'imported': 10},
-#                     'cp4': {'exported': 0, 'imported': 85},
-#                     'cp5': {'exported': 0, 'imported': 0},
-#                     'cp6': {'exported': 0, 'imported': 64}},
-#             'ev': {'ev1': {}},
-#             'pv': {'all': {'imported': 251}, 'pv1': {'imported': 247}}},
-#             'sh': { 'sh1': {'exported': 123, 'imported': 123}},
-#             "energy_source": {"grid": %, "pv": %, "bat": %, "cp": %}
-#         },
-#         "names": {
-#             "counter0": "Mein EVU-Zähler",
-#             "bat2": "Mein toller Speicher",
-#             ...
-#         }
-#     }
 
 
 def get_daily_log(date: str):
