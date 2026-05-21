@@ -51,26 +51,26 @@ def get_default_charge_log_columns() -> Dict:
 #                               'energy_imported': 0.0, # kWh
 #                               'exported': 50.75, # Wh
 #                               'imported': 2551.98, # Wh
-#                               'power_average': 0.0, # kWh
-#                               'power_exported': 0, # kWh
-#                               'power_imported': 0.0, # kWh
+#                               'power_average': 0.0, # kW
+#                               'power_exported': 0, # kW
+#                               'power_imported': 0.0, # kW
 #                               'soc': 100}, # %
 #                       'bat2': {'energy_exported': 0.0, # kWh
 #                                'energy_imported': 0.0, # kWh
 #                                'exported': 50.75, # Wh
 #                                'imported': 2551.98, # Wh
-#                                'power_average': 0.0, # kWh
-#                                'power_exported': 0, # kWh
-#                                'power_imported': 0.0, # kWh
+#                                'power_average': 0.0, # kW
+#                                'power_exported': 0, # kW
+#                                'power_imported': 0.0, # kW
 #                                'soc': 100}}, # %
 #               'counter': {'counter0': {'energy_exported': 4.421, # kWh
 #                                        'energy_imported': 0.0, # kWh
 #                                        'exported': 24425.677, # Wh
 #                                        'grid': True,
 #                                        'imported': 90.379, # Wh
-#                                        'power_average': -7.139, # kWh
-#                                        'power_exported': 7.139, # kWh
-#                                        'power_imported': 0}}, # kWh
+#                                        'power_average': -7.139, # kW
+#                                        'power_exported': 7.139, # kW
+#                                        'power_imported': 0}}, # kW
 #               'cp': {'all': {'energy_exported': 0.0, # kWh
 #                              'energy_imported': 0.081, # kWh
 #                              'energy_imported_bat': 0.0, # kWh
@@ -79,9 +79,9 @@ def get_default_charge_log_columns() -> Dict:
 #                              'energy_imported_pv': 0.081, # kWh
 #                              'exported': 0, # Wh
 #                              'imported': 29123.5, # Wh
-#                              'power_average': 0.131, # kWh
-#                              'power_exported': 0, # kWh
-#                              'power_imported': 0.131}, # kWh
+#                              'power_average': 0.131, # kW
+#                              'power_exported': 0, # kW
+#                              'power_imported': 0.131}, # kW
 #                      'cp3': {'energy_exported': 0.0, # kWh
 #                              'energy_imported': 0.0, # kWh
 #                              'energy_imported_bat': 0.0, # kWh
@@ -90,9 +90,9 @@ def get_default_charge_log_columns() -> Dict:
 #                              'energy_imported_pv': 0.0, # kWh
 #                              'exported': 0, # Wh
 #                              'imported': 10638.5, # Wh
-#                              'power_average': 0.0, # kWh
-#                              'power_exported': 0, # kWh
-#                              'power_imported': 0.0}}, # kWh
+#                              'power_average': 0.0, # kW
+#                              'power_exported': 0, # kW
+#                              'power_imported': 0.0}}, # kW
 #               'date': '10:11',
 #               'energy_source': {'bat': 0.0, 'cp': 0.0, 'grid': 0.0, 'pv': 1.0}, # %
 #               'ev': {'ev0': {'soc': None}},
@@ -103,9 +103,9 @@ def get_default_charge_log_columns() -> Dict:
 #                              'energy_imported_grid': 0.0, # kWh
 #                              'energy_imported_pv': 0.004, # kWh
 #                              'imported': 32922.337425797836, # Wh
-#                              'power_average': 0.006, # kWh
-#                              'power_exported': 0, # kWh
-#                              'power_imported': 0.006}}, # kWh
+#                              'power_average': 0.006, # kW
+#                              'power_exported': 0, # kW
+#                              'power_imported': 0.006}}, # kW
 #               'prices': {'bat': 0.0002, # €/Wh
 #                          'cp': 0, # €/Wh
 #                          'grid': 0.00014862, # €/Wh
@@ -113,15 +113,15 @@ def get_default_charge_log_columns() -> Dict:
 #               'pv': {'all': {'energy_exported': 4.697, # kWh
 #                              'energy_imported': 0.0, # kWh
 #                              'exported': 45013, # Wh
-#                              'power_average': -7.586, # kWh
-#                              'power_exported': 7.586, # kWh
-#                              'power_imported': 0}, # kWh
+#                              'power_average': -7.586, # kW
+#                              'power_exported': 7.586, # kW
+#                              'power_imported': 0}, # kW
 #                      'pv1': {'energy_exported': 4.697, # kWh
 #                              'energy_imported': 0.0, # kWh
 #                              'exported': 45013, # Wh
-#                              'power_average': -7.586, # kWh
-#                              'power_exported': 7.586, # kWh
-#                              'power_imported': 0}}, # kWh
+#                              'power_average': -7.586, # kW
+#                              'power_exported': 7.586, # kW
+#                              'power_imported': 0}}, # kW
 #               'sh': {},
 #               'timestamp': 1779351076}],
 #  'names': {'bat2': 'MQTT-Speicher',
