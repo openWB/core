@@ -8,7 +8,7 @@ from helpermodules import timecheck
 from helpermodules.measurement_logging.write_log import (LegacySmartHomeLogData, LogType, create_entry,
                                                          get_previous_entry)
 from helpermodules.messaging import MessageType, pub_system_message
-from helpermodules.utils.precision_math import decimal_add, decimal_multiply, decimal_subtract
+from helpermodules.utils.precision_math import decimal_add, decimal_divide, decimal_multiply, decimal_subtract
 
 log = logging.getLogger(__name__)
 
@@ -157,15 +157,15 @@ def get_default_charge_log_columns() -> Dict:
 #                    'pv1': {'energy_exported': 6673.0}}, # Wh
 #             'sh': {}}}
 
-KWH_KEYS = ("energy_imported",
-            "energy_imported_grid",
-            "energy_imported_pv",
-            "energy_imported_bat",
-            "energy_imported_cp",
-            "energy_exported",
-            "power_average",
-            "power_imported",
-            "power_exported")
+UNIT_KEYS_KILO = ("energy_imported",
+                  "energy_imported_grid",
+                  "energy_imported_pv",
+                  "energy_imported_bat",
+                  "energy_imported_cp",
+                  "energy_exported",
+                  "power_average",
+                  "power_imported",
+                  "power_exported")
 
 
 def convert_legacy_units(data: dict) -> dict:
@@ -174,9 +174,9 @@ def convert_legacy_units(data: dict) -> dict:
             if group in entry:
                 for module in entry[group].keys():
                     try:
-                        for value in KWH_KEYS:
+                        for value in UNIT_KEYS_KILO:
                             if value in entry[group][module].keys():
-                                entry[group][module][value] = entry[group][module][value] / 1000
+                                entry[group][module][value] = decimal_divide(entry[group][module][value], 1000)
                     except KeyError:
                         log.exception(
                             f"Fehler beim Konvertieren der Einheiten von {group} {module} in Eintrag "
