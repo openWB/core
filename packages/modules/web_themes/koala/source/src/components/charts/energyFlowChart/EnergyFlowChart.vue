@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useMqttStore } from 'src/stores/mqtt-store';
 import { ref, computed, watch } from 'vue';
-import { useQuasar } from 'quasar';
 import type { SvgSize, FlowComponent } from './energy-flow-chart-models';
 import type { ValueObject } from 'src/stores/mqtt-store-model';
 import BatteryIcon from 'src/assets/icons/owbBattery_2.svg?component';
@@ -12,15 +11,6 @@ import VehicleIcon from 'src/assets/icons/owbVehicle.svg?component';
 import ChargePointIcon from 'src/assets/icons/owbChargePoint_2.svg?component';
 
 const mqttStore = useMqttStore();
-const $q = useQuasar();
-
-// Drop shadow for the boxes/circles is rendered with a native SVG <feDropShadow>
-// (referenced via filter="url(#flow-box-shadow)") rather than CSS
-// `filter: drop-shadow()`, which WebKit/Safari renders inconsistently on SVG
-// sub-elements. A literal hex is bound to flood-color to also avoid Safari's
-// var()-inside-filter bug. Light theme uses --q-secondary (#d2d2d7), dark uses
-// --q-white (#ffffff).
-const shadowColor = computed(() => ($q.dark.isActive ? '#ffffff' : '#d2d2d7'));
 
 const svgSize = ref<SvgSize>({
   xMin: 0,
@@ -683,7 +673,6 @@ const svgRectWidth = computed(
       xmlns:svg="http://www.w3.org/2000/svg"
     >
       <defs>
-        <!-- Native drop shadow for boxes/circles; Safari-safe (see shadowColor) -->
         <filter
           id="flow-box-shadow"
           x="-50%"
@@ -692,13 +681,7 @@ const svgRectWidth = computed(
           height="200%"
           filterUnits="objectBoundingBox"
         >
-          <feDropShadow
-            dx="0"
-            dy="0"
-            stdDeviation="1"
-            :flood-color="shadowColor"
-            flood-opacity="1"
-          />
+          <feDropShadow dx="0" dy="0" stdDeviation="1" />
         </filter>
       </defs>
 
@@ -1016,6 +999,16 @@ circle:not(.soc) {
 rect {
   stroke-width: v-bind(svgStrokeWidth);
   fill: var(--q-background);
+}
+
+/* Drop shadow by way of feDropShadow for browser compatibility (safari webkit) */
+feDropShadow {
+  flood-color: var(--q-secondary);
+  flood-opacity: 1;
+}
+
+.body--dark feDropShadow {
+  flood-color: var(--q-white);
 }
 
 text {
