@@ -51,7 +51,7 @@ class KostalStecaInverter(AbstractInverter):
 
         with req.get_http_session() as session:
             session.default_timeout = 2
-            session.mount("http://", HTTPAdapter(max_retries=1))
+            session.mount("http://", HTTPAdapter(max_retries=2))
             # call for XML file and parse it for current PV power
             measurements = session.get("http://" + self.ip_address + "/measurements.xml").text
             power_raw = ET.fromstring(measurements).find(".//Measurement[@Type='AC_Power']").get("Value")
