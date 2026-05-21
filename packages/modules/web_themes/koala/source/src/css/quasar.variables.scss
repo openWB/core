@@ -29,6 +29,7 @@ $positive: #66bd7a;
 $negative: #db4f5f;
 $info: #7dc5d4;
 $warning: #d98e44;
+$background: #ffffff;
 $background-1: #e3e3ec;
 $background-2: #eeeef3;
 $brown-text: #524f57;
@@ -61,6 +62,7 @@ $diagram-icon: #717171;
   --q-negative: #{$negative};
   --q-info: #{$info};
   --q-warning: #{$warning};
+  --q-background: #{$background};
   --q-background-1: #{$background-1};
   --q-background-2: #{$background-2};
   --q-brown-text: #{$brown-text};
@@ -259,6 +261,7 @@ $dark-positive: #3e8f5e;
 $dark-negative: #c54d57;
 $dark-info: #4b89aa;
 $dark-warning: #d98e44;
+$dark-background: #242526;
 $dark-background-1: #242526; // app background
 $dark-background-2: #242526; // app background 2
 $dark-list: #3a3b3c; // drawer, list background
@@ -283,6 +286,7 @@ $dark-charge-plan-link-button: #75787a;
   --q-negative: #{$dark-negative};
   --q-info: #{$dark-info};
   --q-warning: #{$dark-warning};
+  --q-background: #{$dark-background};
   --q-background-1: #{$dark-background-1};
   --q-background-2: #{$dark-background-2};
   --q-white: #{$white};

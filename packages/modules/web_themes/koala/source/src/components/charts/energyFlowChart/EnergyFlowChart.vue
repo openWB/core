@@ -339,7 +339,7 @@ const svgComponents = computed((): FlowComponent[] => {
       label: ['EVU', absoluteValueObject(gridPower.value).textValue],
       powerValue: Number(gridPower.value.value),
       iconComponent: GridIcon,
-      iconColor: gridId.value
+      iconColor: gridId.value !== undefined
         ? mqttStore.gridComponentColor(gridId.value) || 'var(--q-diagram-icon)'
         : 'var(--q-diagram-icon)',
     });
@@ -393,7 +393,7 @@ const svgComponents = computed((): FlowComponent[] => {
       powerValue: Number(batteryPower.value.value),
       soc: batterySoc.value,
       iconComponent: BatteryIcon,
-      iconColor: mqttStore.batteryAggregateColor || 'var(--q-diagram-icon)',
+      iconColor: 'var(--q-battery-stroke)',
     });
   }
 
@@ -738,6 +738,24 @@ const svgRectWidth = computed(
                 :ry="svgSize.circleRadius"
               />
             </clipPath>
+            <linearGradient
+              :id="`gradient-soc-${component.id}`"
+              x1="0%"
+              y1="0%"
+              x2="0%"
+              y2="100%"
+            >
+              <stop
+                offset="0%"
+                stop-color="var(--soc-color)"
+                stop-opacity="25%"
+              />
+              <stop
+                offset="100%"
+                stop-color="var(--soc-color)"
+                stop-opacity="50%"
+              />
+            </linearGradient>
           </defs>
           <rect
             :x="-svgRectWidth / 2"
@@ -795,24 +813,15 @@ const svgRectWidth = computed(
           <g
             :transform="`translate(${svgSize.circleRadius - svgRectWidth / 2}, 0)`"
           >
-            <circle
-              cx="0"
-              cy="0"
-              :r="svgSize.circleRadius"
-              class="background-circle"
-            />
-            <circle
-              cx="0"
-              cy="0"
-              :r="svgSize.circleRadius"
-              :class="{ soc: component.soc !== undefined }"
-            />
+            <circle cx="0" cy="0" :r="svgSize.circleRadius - 1" />
             <circle
               v-if="component.soc !== undefined"
+              :class="{ soc: component.soc !== undefined }"
               cx="0"
               cy="0"
-              :r="svgSize.circleRadius"
+              :r="svgSize.circleRadius - 2"
               :clip-path="`url(#clip-soc-${component.id})`"
+              :fill="`url(#gradient-soc-${component.id})`"
             />
             <g
               :transform="`translate(${-svgIconWidth / 2}, ${-svgIconHeight / 2})`"
@@ -850,7 +859,7 @@ svg {
 path {
   fill: none;
   fill-rule: evenodd;
-  stroke: rgb(64, 64, 64);
+  stroke: var(--q-secondary);
   stroke-width: 0.75;
   stroke-linecap: butt;
   stroke-linejoin: miter;
@@ -872,67 +881,69 @@ path.animatedReverse {
   stroke-dasharray: 5;
 }
 
-path.animated.grid {
-  stroke: var(--q-negative);
-  animation-duration: v-bind('animationDurations.grid');
+path.animated,
+path.animatedReverse {
+  stroke: var(--q-brown-text);
+  opacity: 0.7;
 }
+
+.body--dark {
+  path {
+    stroke: var(--q-white);
+  }
+  path.animated,
+  path.animatedReverse {
+    stroke: var(--q-white);
+  }
+}
+
+path.animated.grid,
 path.animatedReverse.grid {
-  stroke: var(--q-positive);
   animation-duration: v-bind('animationDurations.grid');
 }
 
 path.animated.home,
 path.animatedReverse.home {
-  stroke: var(--q-home-stroke);
   animation-duration: v-bind('animationDurations.home');
 }
 
 path.animated.pv,
 path.animatedReverse.pv {
-  stroke: var(--q-positive);
   animation-duration: v-bind('animationDurations.pv');
 }
 
 path.animated.battery,
 path.animatedReverse.battery {
-  stroke: var(--q-battery-stroke);
   animation-duration: v-bind('animationDurations.battery');
 }
 
 path.animated.charge-point-1,
 path.animatedReverse.charge-point-1 {
-  stroke: var(--q-charge-point-stroke);
   animation-duration: v-bind('animationDurations.chargePoint1');
 }
 path.animated.charge-point-2,
 path.animatedReverse.charge-point-2 {
-  stroke: var(--q-charge-point-stroke);
   animation-duration: v-bind('animationDurations.chargePoint2');
 }
 path.animated.charge-point-3,
 path.animatedReverse.charge-point-3 {
-  stroke: var(--q-charge-point-stroke);
   animation-duration: v-bind('animationDurations.chargePoint3');
 }
 path.animated.charge-point-sum,
 path.animatedReverse.charge-point-sum {
-  stroke: var(--q-charge-point-stroke);
   animation-duration: v-bind('animationDurations.chargePointSum');
 }
 
 path.animated.vehicle-1,
 path.animatedReverse.vehicle-1 {
-  stroke: var(--q-accent);
   animation-duration: v-bind('animationDurations.vehicle1');
 }
 path.animated.vehicle-2,
 path.animatedReverse.vehicle-2 {
-  stroke: var(--q-accent);
   animation-duration: v-bind('animationDurations.vehicle2');
 }
 path.animated.vehicle-3,
 path.animatedReverse.vehicle-3 {
-  stroke: var(--q-accent);
   animation-duration: v-bind('animationDurations.vehicle3');
 }
 
@@ -953,38 +964,39 @@ path.animatedReverse.vehicle-3 {
   }
 }
 
-:root {
-  path.home {
-    stroke: var(--q-home-stroke);
-  }
-}
-
-.body--dark {
-  path.home {
-    stroke: var(--q-white);
-  }
-}
-
 circle {
-  fill: var(--q-secondary);
   fill-opacity: 1;
-  stroke: var(--q-grey);
   stroke-width: v-bind(svgStrokeWidth);
   stroke-miterlimit: 2;
   stroke-opacity: 1;
+  filter: drop-shadow(0 0 1px var(--q-secondary));
+}
+
+.body--dark circle,
+.body--dark rect {
+  filter: drop-shadow(0 0 1px var(--q-white));
+}
+
+circle:not(.soc) {
+  fill: var(--q-background);
 }
 
 rect {
   stroke-width: v-bind(svgStrokeWidth);
-  fill: var(--q-secondary);
+  fill: var(--q-background);
+  filter: drop-shadow(0 0 1px var(--q-secondary));
 }
 
 text {
   font-size: v-bind(svgFontSize);
   line-height: 1.25;
   font-family: Arial;
-  fill: var(--q-white);
+  fill: var(--q-brown-text);
   fill-opacity: 1;
+}
+
+.body--dark text {
+  fill: var(--q-white);
 }
 
 text .fill-success {
@@ -995,101 +1007,20 @@ text .fill-danger {
   fill: var(--q-grid-stroke);
 }
 
-text .fill-dark {
-  fill: var(--q-brown-text);
-}
-
-.grid text {
-  fill: var(--q-grid-stroke);
-}
-
-.grid circle,
-.grid rect {
-  stroke: var(--q-grid-stroke);
-}
-
-.grid circle {
-  fill: var(--q-grid-fill);
-}
-
-.pv text {
-  fill: var(--q-pv-stroke);
-}
-
-.pv circle,
-.pv rect {
-  stroke: var(--q-pv-stroke);
-}
-
-.pv circle {
-  fill: var(--q-pv-fill);
-}
-
-.battery text {
-  fill: var(--q-battery-stroke);
-}
-
-.battery circle,
-.battery rect {
-  stroke: var(--q-battery-stroke);
-}
-
-.battery circle:not(.soc) {
-  fill: var(--q-battery-fill-flow-diagram);
-}
-
-:root {
-  .home text {
-    fill: var(--q-brown-text); /* Brown text in light theme */
-  }
-}
-
-.body--dark {
-  .home text {
-    fill: var(--q-white); /* White text in dark theme */
-  }
-}
-
-.home circle,
-.home rect {
-  stroke: var(--q-home-stroke);
-}
-
-.home circle {
-  fill: var(--q-home-fill);
-}
-
-.charge-point text {
-  fill: var(--q-charge-point-stroke);
-}
-
-.charge-point circle,
-.charge-point rect {
-  stroke: var(--q-charge-point-stroke);
-}
-
-.charge-point circle {
-  fill: var(--q-charge-point-fill);
-}
-
 .background-circle {
   fill: var(--q-secondary) !important;
 }
 
-.vehicle text {
-  fill: var(--q-accent);
+.battery {
+  --soc-color: var(--q-battery-stroke);
 }
 
-.vehicle circle,
-.vehicle rect {
-  stroke: var(--q-accent);
-}
-
-.vehicle circle:not(.soc) {
-  fill: color-mix(in srgb, var(--q-accent) 50%, transparent);
+.vehicle {
+  --soc-color: var(--q-vehicle-stroke);
 }
 
 use {
   fill: currentColor;
 }
 </style>
+
