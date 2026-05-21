@@ -157,21 +157,29 @@ def get_default_charge_log_columns() -> Dict:
 #                    'pv1': {'energy_exported': 6673.0}}, # Wh
 #             'sh': {}}}
 
-KW_KWH_KEYS = ("energy_imported", "energy_exported", "power_average", "power_imported", "power_exported")
+KWH_KEYS = ("energy_imported",
+            "energy_imported_grid",
+            "energy_imported_pv",
+            "energy_imported_bat",
+            "energy_imported_cp",
+            "energy_exported",
+            "power_average",
+            "power_imported",
+            "power_exported")
 
 
 def convert_legacy_units(data: dict) -> dict:
     for entry in data["entries"]:
-        for type in ("bat", "counter", "cp", "pv", "sh", "hc"):
-            if type in entry:
-                for module in entry[type].keys():
+        for group in ("bat", "counter", "cp", "pv", "sh", "hc"):
+            if group in entry:
+                for module in entry[group].keys():
                     try:
-                        for value in KW_KWH_KEYS:
-                            if value in entry[type][module].keys():
-                                entry[type][module][value] = entry[type][module][value] / 1000
+                        for value in KWH_KEYS:
+                            if value in entry[group][module].keys():
+                                entry[group][module][value] = entry[group][module][value] / 1000
                     except KeyError:
                         log.exception(
-                            f"Fehler beim Konvertieren der Einheiten von {type} {module} in Eintrag "
+                            f"Fehler beim Konvertieren der Einheiten von {group} {module} in Eintrag "
                             f"{entry['timestamp']}")
     return data
 
