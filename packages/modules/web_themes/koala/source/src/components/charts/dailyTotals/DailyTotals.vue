@@ -321,7 +321,7 @@ const individualBatteryData = computed((): DailyTotalsItem[] => {
           imported: mqttStore.batteryDailyImported(id, 'textValue') as string,
           exported: mqttStore.batteryDailyExported(id, 'textValue') as string,
         },
-        color: mqttStore.batteryColor(id),
+        color: mqttStore.batteryColor(id) || undefined,
       });
     }
   });
@@ -349,7 +349,7 @@ const componentData = computed((): DailyTotalsItem[] => {
       },
     };
     if (mqttStore.batteryIds.length === 1) {
-      item.color = mqttStore.batteryColor(mqttStore.batteryIds[0]);
+      item.color = mqttStore.batteryColor(mqttStore.batteryIds[0]) || undefined;
     }
     components.push(item);
   }
@@ -493,6 +493,7 @@ watch(
 .scroll-container {
   width: 100%;
   max-height: 100%;
+  padding: 0 0.5rem 0.5rem 0.5rem;
   overflow-y: auto; /* show scrollbar when needed */
 }
 /* Hide expansion item chevron */
@@ -519,60 +520,20 @@ watch(
   cursor: default !important;
   pointer-events: none;
 }
-.card,
-.grid {
+.card {
   border-radius: 0.5rem;
-  margin-bottom: 0.125rem;
+  background: var(--q-background);
+  filter: drop-shadow(0 0 0.3rem var(--q-secondary));
+  border: 0.125rem solid var(--q-primary);
+  margin-bottom: 0.25rem;
 }
-.grid {
-  background: var(--q-grid-fill);
-  border: 0.125rem solid var(--q-grid-stroke);
+.body--dark .card {
+  filter: drop-shadow(0 0 0.3rem var(--q-white));
 }
-.battery {
-  background: var(--q-battery-fill);
-  border: 0.125rem solid var(--q-battery-stroke);
-}
-.pv {
-  background: var(--q-pv-fill);
-  border: 0.125rem solid var(--q-pv-stroke);
-}
-.house {
-  background: var(--q-home-fill);
-  border: 0.125rem solid var(--q-home-stroke);
-}
-.chargepoint {
-  background: var(--q-charge-point-fill);
-  border: 0.125rem solid var(--q-charge-point-stroke);
-}
-.grid .sub-row {
-  background: var(--q-secondary-counter-fill);
-  border-top: 0.12rem solid var(--q-secondary-counter-stroke);
-}
-.battery .sub-row {
-  border-top: 0.12rem solid var(--q-battery-stroke);
-}
-.chargepoint .sub-row {
-  border-top: 0.12rem solid var(--q-charge-point-stroke);
+.sub-row {
+  border-top: 0.12rem solid var(--q-primary);
 }
 .rotate-180 {
   transform: rotate(180deg);
-}
-/* Dark mode overrides */
-.body--dark .grid {
-  background: var(--q-dark-daily-totals-grid-fill);
-  border: 0.125rem solid var(--q-dark-daily-totals-grid-stroke);
-}
-.body--dark .battery {
-  background: var(--q-dark-daily-totals-battery-fill);
-  border: 0.125rem solid var(--q-dark-daily-totals-battery-stroke);
-}
-.body--dark .pv {
-  background: var(--q-dark-daily-totals-pv-fill);
-}
-.body--dark .house {
-  background: var(--q-dark-daily-totals-house-fill);
-}
-.body--dark .chargepoint {
-  background: var(--q-dark-daily-totals-chargepoint-fill);
 }
 </style>

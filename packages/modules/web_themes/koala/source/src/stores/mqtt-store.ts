@@ -2925,13 +2925,11 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param batteryId battery id
    * @returns string
    */
-  const batteryColor = computed(() => {
-    return (batteryId: number): string => {
+   const batteryColor = computed(() => {
+    return (batteryId: number): string | null => {
       const DEFAULT_COLOR = '#ffc107';
       const config = getComponentConfiguration.value(batteryId);
-      return (
-        resolveComponentColor(config?.color, DEFAULT_COLOR) || DEFAULT_COLOR
-      );
+      return resolveComponentColor(config?.color, DEFAULT_COLOR);
     };
   });
 
