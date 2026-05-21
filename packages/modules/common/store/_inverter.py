@@ -19,7 +19,7 @@ class InverterValueStoreRamdisk(ValueStore[InverterState]):
         self.__pv.power.write(int(inverter_state.power))
         self.__pv.energy.write(inverter_state.exported)
         self.__pv.energy_k.write(
-            inverter_state.exported if inverter_state.exported is None 
+            inverter_state.exported if inverter_state.exported is None
             else inverter_state.exported / 1000
         )
         if inverter_state.currents:
