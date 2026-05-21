@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useMqttStore } from 'src/stores/mqtt-store';
 import { ref, computed, watch } from 'vue';
+import { useQuasar } from 'quasar';
 import type { SvgSize, FlowComponent } from './energy-flow-chart-models';
 import type { ValueObject } from 'src/stores/mqtt-store-model';
 import BatteryIcon from 'src/assets/icons/owbBattery_2.svg?component';
@@ -11,6 +12,15 @@ import VehicleIcon from 'src/assets/icons/owbVehicle.svg?component';
 import ChargePointIcon from 'src/assets/icons/owbChargePoint_2.svg?component';
 
 const mqttStore = useMqttStore();
+const $q = useQuasar();
+
+// Drop shadow for the boxes/circles is rendered with a native SVG <feDropShadow>
+// (referenced via filter="url(#flow-box-shadow)") rather than CSS
+// `filter: drop-shadow()`, which WebKit/Safari renders inconsistently on SVG
+// sub-elements. A literal hex is bound to flood-color to also avoid Safari's
+// var()-inside-filter bug. Light theme uses --q-secondary (#d2d2d7), dark uses
+// --q-white (#ffffff).
+const shadowColor = computed(() => ($q.dark.isActive ? '#ffffff' : '#d2d2d7'));
 
 const svgSize = ref<SvgSize>({
   xMin: 0,
@@ -672,6 +682,26 @@ const svgRectWidth = computed(
       xmlns="http://www.w3.org/2000/svg"
       xmlns:svg="http://www.w3.org/2000/svg"
     >
+      <defs>
+        <!-- Native drop shadow for boxes/circles; Safari-safe (see shadowColor) -->
+        <filter
+          id="flow-box-shadow"
+          x="-50%"
+          y="-50%"
+          width="200%"
+          height="200%"
+          filterUnits="objectBoundingBox"
+        >
+          <feDropShadow
+            dx="0"
+            dy="0"
+            stdDeviation="1"
+            :flood-color="shadowColor"
+            flood-opacity="1"
+          />
+        </filter>
+      </defs>
+
       <g id="layer1" style="display: inline">
         <path
           v-for="component in svgComponents"
@@ -700,6 +730,7 @@ const svgRectWidth = computed(
           :cx="calcColumnX(1)"
           :cy="calcRowY(1)"
           :r="svgSize.circleRadius / 3"
+          filter="url(#flow-box-shadow)"
         />
 
         <!-- components -->
@@ -765,6 +796,7 @@ const svgRectWidth = computed(
             :height="svgSize.circleRadius * 2"
             :rx="svgSize.circleRadius"
             :ry="svgSize.circleRadius"
+            filter="url(#flow-box-shadow)"
           />
           <text :clip-path="`url(#clip-label-${component.id})`">
             <tspan
@@ -814,7 +846,12 @@ const svgRectWidth = computed(
           <g
             :transform="`translate(${svgSize.circleRadius - svgRectWidth / 2}, 0)`"
           >
-            <circle cx="0" cy="0" :r="svgSize.circleRadius - 1" />
+            <circle
+              cx="0"
+              cy="0"
+              :r="svgSize.circleRadius - 1"
+              filter="url(#flow-box-shadow)"
+            />
             <circle
               v-if="component.soc !== undefined"
               :class="{ soc: component.soc !== undefined }"
@@ -970,12 +1007,6 @@ circle {
   stroke-width: v-bind(svgStrokeWidth);
   stroke-miterlimit: 2;
   stroke-opacity: 1;
-  filter: drop-shadow(0 0 1px var(--q-secondary));
-}
-
-.body--dark circle,
-.body--dark rect {
-  filter: drop-shadow(0 0 1px var(--q-white));
 }
 
 circle:not(.soc) {
@@ -985,7 +1016,6 @@ circle:not(.soc) {
 rect {
   stroke-width: v-bind(svgStrokeWidth);
   fill: var(--q-background);
-  filter: drop-shadow(0 0 1px var(--q-secondary));
 }
 
 text {
