@@ -18,7 +18,7 @@
   >
     <template #label>
       <span class="block ellipsis" :title="connectedVehicle?.name">
-        <q-icon name="directions_car" />
+        <q-icon name="directions_car" color="primary" />
         {{ connectedVehicle?.name }}
       </span>
     </template>
@@ -50,7 +50,7 @@
   >
     <template #label>
       <span class="ellipsis q-ml-xs" :title="connectedVehicle?.name">
-        <q-icon name="directions_car" />
+        <q-icon name="directions_car" color="primary"/>
         {{ connectedVehicle?.name }}
       </span>
     </template>
