@@ -222,7 +222,7 @@ cases = [
                      power_limit_condition=BatPowerLimitCondition.MANUAL.value,
                      bat_manual_mode=ManualMode.MANUAL_LIMIT.value,
                      power_limit_mode=BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION.value),
-    BatControlParams("Manuelle Steuerung, Ladung PV Überschuss", 654,
+    BatControlParams("Manuelle Steuerung, Ladung PV Überschuss", 1110,
                      power_limit_condition=BatPowerLimitCondition.MANUAL.value,
                      bat_manual_mode=ManualMode.MANUAL_LIMIT.value,
                      power_limit_mode=BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value),
@@ -240,7 +240,7 @@ cases = [
                      power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
     BatControlParams("Fahrzeuge laden, Begrenzung Hausverbrauch", -456,
                      power_limit_mode=BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION.value),
-    BatControlParams("Fahrzeuge laden, Ladung PV Überschuss", 654,
+    BatControlParams("Fahrzeuge laden, Ladung PV Überschuss", 1110,
                      power_limit_mode=BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value),
 ]
 
@@ -300,7 +300,7 @@ cases = [
                      price_limit_activated=True,
                      price_limit=0.30,
                      power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
-    BatControlParams("Preisgrenze, Überschuss Laden, Grenze unterschritten", 654,
+    BatControlParams("Preisgrenze, Überschuss Laden, Grenze unterschritten", 1110,
                      power_limit_condition=BatPowerLimitCondition.PRICE_LIMIT.value,
                      price_limit_activated=True,
                      price_limit=0.30,
