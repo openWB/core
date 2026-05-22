@@ -192,7 +192,6 @@ class BatControlParams:
     bat_power: float = -10
     bat_soc: float = 50.0
     evu_power: float = 200
-    bat_control_permitted: bool = True
     bat_control_activated: bool = True
     max_charge_power: float = 5000
     max_discharge_power: float = -5000
@@ -206,8 +205,6 @@ class BatControlParams:
 
 cases = [
     BatControlParams("Speicher nicht regelbar", None, power_limit_controllable=False,
-                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
-    BatControlParams("Disclaimer nicht akzeptiert", None, bat_control_permitted=False,
                      power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
     BatControlParams("Speichersteuerung deaktiviert", None, bat_control_activated=False,
                      power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
@@ -248,7 +245,6 @@ cases = [
 @pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
 def test_active_bat_control(params: BatControlParams, data_, monkeypatch):
     b_all = BatAll()
-    b_all.data.config.bat_control_permitted = params.bat_control_permitted
     b_all.data.config.bat_control_activated = params.bat_control_activated
     b_all.data.config.power_limit_mode = params.power_limit_mode
     b_all.data.config.power_limit_condition = params.power_limit_condition
@@ -330,7 +326,6 @@ cases = [
 def test_control_price_limit(params: BatControlParams, data_, monkeypatch):
     monkeypatch.setattr(data.data.optional_data, "ep_get_current_price", Mock(return_value=0.2))
     b_all = BatAll()
-    b_all.data.config.bat_control_permitted = params.bat_control_permitted
     b_all.data.config.bat_control_activated = params.bat_control_activated
     b_all.data.config.power_limit_mode = params.power_limit_mode
     b_all.data.config.power_limit_condition = params.power_limit_condition
