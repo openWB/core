@@ -75,7 +75,6 @@ class CurrentState(Enum):
 @dataclass
 class Config:
     configured: bool = field(default=False, metadata={"topic": "config/configured"})
-    bat_control_permitted: bool = field(default=False, metadata={"topic": "config/bat_control_permitted"})
     bat_control_activated: bool = field(default=False, metadata={"topic": "config/bat_control_activated"})
     power_limit_mode: str = field(default=BatPowerLimitMode.MODE_NO_DISCHARGE.value,
                                   metadata={"topic": "config/power_limit_mode"})
@@ -278,7 +277,7 @@ class BatAll:
                                f"SoC. Eigenregelung des Speichers (ID: {bat_component.component_config.id})"))
                 else:
                     # unterhalb des minimal SoC greift die Eigenregelung
-                    # das verhindert Tiefenentladung
+                    # das verhindert Tiefentladung
                     if bat_component_data.get.soc <= self.data.config.bat_control_min_soc:
                         power_limit = None
                         bat_component_data.get.state_str = ("Keine Steuerung - dieser Speicher "
@@ -544,18 +543,14 @@ class BatAll:
         return BatChargeMode.BAT_SELF_REGULATION
 
     def get_power_limit(self):
-        # Falls kein steuerbarer Speicher installiert ist, der Disclaimer nicht akzeptiert wurde
-        # oder die aktive Speichersteuerung deaktiviert wurde
+        # Falls kein steuerbarer Speicher installiert oder die aktive Speichersteuerung deaktiviert ist
         if (self.data.get.power_limit_controllable is False or
-                self.data.config.bat_control_permitted is False or
                 self.data.config.bat_control_activated is False):
             charge_mode = BatChargeMode.BAT_SELF_REGULATION
             if self.data.get.power_limit_controllable is False:
                 log.debug("Speicher-Leistung nicht begrenzen, da keine regelbaren Speicher vorhanden sind.")
-            elif self.data.config.bat_control_permitted is False:
-                log.debug("Speicher-Leistung nicht begrenzen, da der aktiven Speichersteuerung nicht zugestimmt wurde.")
             elif self.data.config.bat_control_activated is False:
-                log.debug("Speicher-Leistung nicht begrenzen, da aktive Speichersteuerung deaktiviert wurde.")
+                log.debug("Speicher-Leistung nicht begrenzen, da aktive Speichersteuerung deaktiviert ist.")
         else:
             charge_mode = BatChargeMode.BAT_SELF_REGULATION
             if self.data.config.power_limit_condition == BatPowerLimitCondition.MANUAL.value:
@@ -607,8 +602,7 @@ class BatAll:
             self.data.set.power_limit = None
             log.debug("Speicher-Leistung nicht begrenzen")
 
-        if ((self.data.config.bat_control_permitted is False or
-                self.data.config.bat_control_activated is False)
+        if (self.data.config.bat_control_activated is False
                 and self.data.set.current_state == CurrentState.STARTUP.value):
             self.data.set.set_limit = False
         elif (self.data.set.current_state == CurrentState.IDLE.value and
