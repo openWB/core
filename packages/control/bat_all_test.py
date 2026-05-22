@@ -243,7 +243,7 @@ cases = [
                      power_limit_mode=BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION.value),
     BatControlParams("Fahrzeuge laden, Ladung PV Überschuss", 198,
                      power_limit_mode=BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value),
-    BatControlParams("Fahrzeuge laden, Ladung PV Überschuss, PV-Negativ", -456,
+    BatControlParams("Fahrzeuge laden, Ladung PV Überschuss, Eigenverbrauch PV-Anlage", -456,
                      power_limit_mode=BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value,
                      pv_power=100),
 ]
