@@ -20,6 +20,8 @@ class InverterValueStoreRamdisk(ValueStore[InverterState]):
         if inverter_state.exported is not None:
             self.__pv.energy.write(inverter_state.exported)
             self.__pv.energy_k.write(inverter_state.exported / 1000)
+        else:
+            log.debug("Kein gültiger Zählerstand. Wert wird nicht aktualisiert.")
         if inverter_state.currents:
             self.__pv.currents.write(inverter_state.currents)
 
