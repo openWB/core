@@ -584,8 +584,8 @@ class BatAll:
                 self.data.set.power_limit = data.data.counter_all_data.data.set.home_consumption * -1
                 log.debug(f"Speicher-Leistung begrenzen auf {self.data.set.power_limit/1000}kW")
             elif self.data.config.power_limit_mode == BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value:
-                # PV-Ueberschuss abzueglich Hausverbrauch als Ladeleistung des Speichers nutzen.
-                # Bei geringem Ueberschuss wird Hausverbrauch durch Speicher ausgeglichen
+                # PV-Überschuss abzüglich Hausverbrauch als Ladeleistung des Speichers nutzen.
+                # Bei geringem Überschuss wird Hausverbrauch durch Speicher ausgeglichen
                 pv_power = min(data.data.pv_all_data.data.get.power, 0)
                 left_pv_power = (pv_power +
                                  data.data.counter_all_data.data.set.home_consumption) * -1
