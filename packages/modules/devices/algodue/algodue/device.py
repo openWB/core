@@ -45,7 +45,9 @@ def create_device(device_config: Algodue):
         device_config=device_config,
         initializer=initializer,
         component_factory=ComponentFactoryByType(
-            counter=create_counter_component
+            counter=create_counter_component,
+            inverter=create_inverter_component,
+            bat=create_bat_component
         ),
         component_updater=MultiComponentUpdater(update_components)
     )
