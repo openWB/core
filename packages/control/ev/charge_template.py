@@ -470,7 +470,7 @@ class ChargeTemplate:
                 plan, soc, ev_template.data.battery_capacity,
                 used_amount, min(plan.phases_to_use, max_hw_phases), charging_type, ev_template, bidi)
             remaining_time = plan_end_time - duration
-            phases = plan.phases_to_use
+            phases = min(plan.phases_to_use, max_hw_phases)
 
         log.debug(f"Verbleibende Zeit bis zum Ladestart [s]:{remaining_time}, Dauer [h]: {duration/3600}")
         return remaining_time, missing_amount, phases, duration
