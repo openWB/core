@@ -40,7 +40,7 @@
       </template>
     </q-list>
   </q-btn-dropdown>
-  <q-btn-dropdown v-else color="grey" dense no-caps>
+  <q-btn-dropdown v-else color="grey" dense no-caps outline>
     <template #label>
       <span class="ellipsis q-ml-xs" :title="connectedVehicle?.name">
         <q-icon name="directions_car" />

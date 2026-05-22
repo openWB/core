@@ -30,9 +30,10 @@
       </q-list>
     </q-btn-dropdown>
   </div>
-  <q-btn-group v-else class="row col q-mt-sm" spread>
+  <q-btn-group v-else class="row col q-mt-sm" spread outline>
     <q-btn
       v-for="mode in chargeModes"
+      :outline="chargeMode.value !== mode.value"
       :key="mode.value"
       :color="chargeMode.value === mode.value ? 'primary' : 'grey'"
       :label="mode.label"

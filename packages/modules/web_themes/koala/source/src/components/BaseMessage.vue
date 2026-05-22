@@ -1,12 +1,14 @@
 <template>
   <div
     v-if="showMessage"
-    class="row q-mt-sm q-pa-sm text-white no-wrap cursor-pointer rounded-borders"
-    :class="[{ 'items-center': collapsed }, messageClass]"
+    class="message-bar row q-mt-sm q-pa-sm no-wrap cursor-pointer rounded-borders"
+    :class="{ 'items-center': collapsed }"
     @click="toggleCollapse"
   >
-    <q-icon :name="iconName" size="sm" class="q-mr-xs" />
-    <div :class="{ ellipsis: collapsed }">
+    <div class="flex flex-center q-mr-sm">
+      <q-icon :name="iconName" size="sm" class="message-icon" />
+    </div>
+    <div class="message-text self-center" :class="{ ellipsis: collapsed }">
       {{ message }}
     </div>
   </div>
@@ -34,14 +36,14 @@ const toggleCollapse = () => {
   collapsed.value = !collapsed.value;
 };
 
-const messageClass = computed(() => {
+const messageColor = computed(() => {
   switch (props.type) {
     case 'warning':
-      return 'bg-warning';
+      return 'var(--q-warning)';
     case 'error':
-      return 'bg-negative';
+      return 'var(--q-negative)';
     default:
-      return 'bg-primary';
+      return 'var(--q-primary)';
   }
 });
 
@@ -56,3 +58,22 @@ const iconName = computed(() => {
   }
 });
 </script>
+
+<style scoped>
+.message-bar {
+  background-color: color-mix(in srgb, v-bind(messageColor) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--q-brown-text) 35%, transparent);
+}
+
+.message-text {
+  color: color-mix(in srgb, var(--q-brown-text)75%, transparent);
+}
+
+.body--dark .message-text {
+  color: var(--q-white);
+}
+
+.message-icon {
+  color: v-bind(messageColor);
+}
+</style>
