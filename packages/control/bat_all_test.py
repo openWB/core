@@ -192,6 +192,8 @@ class BatControlParams:
     bat_power: float = -10
     bat_soc: float = 50.0
     evu_power: float = 200
+    pv_power: float = -654
+    bat_control_permitted: bool = True
     bat_control_activated: bool = True
     max_charge_power: float = 5000
     max_discharge_power: float = -5000
@@ -219,7 +221,7 @@ cases = [
                      power_limit_condition=BatPowerLimitCondition.MANUAL.value,
                      bat_manual_mode=ManualMode.MANUAL_LIMIT.value,
                      power_limit_mode=BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION.value),
-    BatControlParams("Manuelle Steuerung, Ladung PV Überschuss", 654,
+    BatControlParams("Manuelle Steuerung, Ladung PV Überschuss", 198,
                      power_limit_condition=BatPowerLimitCondition.MANUAL.value,
                      bat_manual_mode=ManualMode.MANUAL_LIMIT.value,
                      power_limit_mode=BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value),
@@ -237,8 +239,11 @@ cases = [
                      power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
     BatControlParams("Fahrzeuge laden, Begrenzung Hausverbrauch", -456,
                      power_limit_mode=BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION.value),
-    BatControlParams("Fahrzeuge laden, Ladung PV Überschuss", 654,
+    BatControlParams("Fahrzeuge laden, Ladung PV Überschuss", 198,
                      power_limit_mode=BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value),
+    BatControlParams("Fahrzeuge laden, Ladung PV Überschuss, Eigenverbrauch PV-Anlage", -456,
+                     power_limit_mode=BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value,
+                     pv_power=100),
 ]
 
 
@@ -261,7 +266,7 @@ def test_active_bat_control(params: BatControlParams, data_, monkeypatch):
     # b_all.data.get.soc = 50.0
     data.data.counter_all_data = hierarchy_standard()
     data.data.counter_all_data.data.set.home_consumption = 456
-    data.data.pv_all_data.data.get.power = -654
+    data.data.pv_all_data.data.get.power = params.pv_power
     data.data.cp_all_data.data.get.power = 1400
     data.data.counter_data["counter0"].data.get.power = params.evu_power
     data.data.bat_all_data = b_all
@@ -296,7 +301,7 @@ cases = [
                      price_limit_activated=True,
                      price_limit=0.30,
                      power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
-    BatControlParams("Preisgrenze, Überschuss Laden, Grenze unterschritten", 654,
+    BatControlParams("Preisgrenze, Überschuss Laden, Grenze unterschritten", 198,
                      power_limit_condition=BatPowerLimitCondition.PRICE_LIMIT.value,
                      price_limit_activated=True,
                      price_limit=0.30,
