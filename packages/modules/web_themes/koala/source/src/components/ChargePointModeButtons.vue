@@ -10,7 +10,7 @@
       size="md"
       dropdown-icon="none"
       cover
-      push
+      content-class="charge-mode-dropdown-menu"
     >
       <q-list>
         <template v-for="(mode, index) in chargeModes" :key="mode.value">
@@ -19,7 +19,6 @@
             v-close-popup
             @click="chargeMode.value = mode.value"
             :active="chargeMode.value === mode.value"
-            active-class="bg-primary text-white"
           >
             <q-item-section class="text-center text-weight-bold">
               <q-item-label>{{ mode.label.toLocaleUpperCase() }}</q-item-label>
@@ -73,4 +72,13 @@ const currentModeLabel = computed(
   padding: 0;
   margin: 0;
 }
+.charge-mode-dropdown-menu .q-item--active {
+  color: var(--q-primary);
+}
+
+.body--dark .charge-mode-dropdown-menu .q-item--active .q-item__section {
+  color: var(--q-primary) !important;
+}
 </style>
+
+

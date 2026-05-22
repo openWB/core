@@ -154,7 +154,7 @@ $diagram-icon: #717171;
   }
   // List background color, for menus etc
   .q-list {
-    background-color: var(--q-background-2);
+    background-color: color-mix(in srgb, var(--q-grey) 5%, transparent);
   }
   // Toggle button color in off position
   .q-toggle__thumb:after {

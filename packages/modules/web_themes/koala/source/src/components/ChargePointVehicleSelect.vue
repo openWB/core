@@ -12,8 +12,9 @@
     size="md"
     dropdown-icon="none"
     cover
-    push
+    outline
     class="no-drop-down-arrow"
+    content-class="vehicle-select-dropdown-menu"
   >
     <template #label>
       <span class="block ellipsis" :title="connectedVehicle?.name">
@@ -28,7 +29,6 @@
           v-close-popup
           @click="connectedVehicle = vehicle"
           :active="connectedVehicle?.id === vehicle.id"
-          active-class="bg-primary text-white"
         >
           <q-item-section class="text-center text-weight-bold">
             <q-item-label class="ellipsis" :title="vehicle.name">{{
@@ -40,7 +40,14 @@
       </template>
     </q-list>
   </q-btn-dropdown>
-  <q-btn-dropdown v-else color="grey" dense no-caps outline>
+  <q-btn-dropdown
+    v-else
+    color="grey"
+    dense
+    no-caps
+    outline
+    content-class="vehicle-select-dropdown-menu"
+  >
     <template #label>
       <span class="ellipsis q-ml-xs" :title="connectedVehicle?.name">
         <q-icon name="directions_car" />
@@ -54,6 +61,7 @@
         clickable
         v-close-popup
         dense
+        :active="connectedVehicle?.id === vehicle.id"
         @click="connectedVehicle = vehicle"
       >
         <q-item-section>
@@ -98,5 +106,11 @@ const vehicles = computed(() => mqttStore.vehicleList);
   width: 0;
   padding: 0;
   margin: 0;
+}
+.vehicle-select-dropdown-menu .q-item--active .q-item__section {
+  color: var(--q-primary) !important;
+}
+.body--dark .vehicle-select-dropdown-menu .q-item--active .q-item__section {
+  color: var(--q-primary) !important;
 }
 </style>
