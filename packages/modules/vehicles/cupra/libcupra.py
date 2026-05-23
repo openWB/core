@@ -17,12 +17,15 @@ LOGIN_BASE = "https://identity.vwgroup.io/oidc/v1"
 LOGIN_HANDLER_BASE = "https://identity.vwgroup.io"
 API_BASE = "https://ola.prod.code.seat.cloud.vwgroup.com"
 CLIENT_ID = "99a5b77d-bd88-4d53-b4e5-a539c60694a3@apps_vw-dilab_com"
+USER_AGENT = "OLACupra/2.16.0 (Android 14; Pixel 8; Google) Mobile"
 
 
 class cupra:
     def __init__(self, session):
         self.session = session
-        self.headers = {}
+        self.headers = {
+            'app-market': 'android'
+        }
         self.log = logging.getLogger(__name__)
         self.jobs_string = 'all'
 
@@ -96,6 +99,14 @@ class cupra:
             return parts[0] + ''.join(word.capitalize() for word in parts[1:])
 
         return {to_camel_case(k): v for k, v in json.items()}
+
+    def token_headers(self):
+        basic_auth = base64.b64encode(f"{CLIENT_ID}:".encode('utf-8')).decode('utf-8')
+        return {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': f'BASIC {basic_auth}',
+            'User-Agent': USER_AGENT,
+        }
 
     async def connect(self, username, password):
         self.set_credentials(username, password)
@@ -200,13 +211,7 @@ class cupra:
         form['redirect_uri'] = "seat://oauth-callback"
         form['grant_type'] = 'authorization_code'
         form['code_verifier'] = code_verifier
-        headers = {}
-        headers['Content-Type'] = 'application/x-www-form-urlencoded'
-        headers['Authorization'] = 'BASIC OTlhNWI3N2QtYmQ4OC00ZDUzLWI0ZTUtYTUzOWM2MDY5NGEzQGFwcHNfdnctZGlsYWJfY29tOg=='
-        headers['User-Agent'] = (
-            'SEATApp/2.5.0 (com.seat.myseat.ola; build:202410171614; '
-            'iOS 15.8.3) Alamofire/5.7.0 Mobile'
-        )
+        headers = self.token_headers()
 
         response = await self.session.post(API_BASE + '/authorization/api/v1/token',
                                            headers=headers, data=form)
@@ -233,12 +238,7 @@ class cupra:
         form['client_id'] = CLIENT_ID
         form['grant_type'] = 'refresh_token'
         form['refresh_token'] = self.tokens["refreshToken"]
-        headers = {}
-        headers['Content-Type'] = 'application/x-www-form-urlencoded'
-        headers['User-Agent'] = (
-            'SEATApp/2.5.0 (com.seat.myseat.ola; build:202410171614; '
-            'iOS 15.8.3) Alamofire/5.7.0 Mobile'
-        )
+        headers = self.token_headers()
 
         response = await self.session.post(API_BASE + '/authorization/api/v1/token',
                                            headers=headers, data=form)

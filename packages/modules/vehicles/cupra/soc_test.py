@@ -7,7 +7,8 @@ from modules.common.component_context import SingleComponentUpdateContext
 from modules.vehicles.cupra import api
 from modules.vehicles.cupra.soc import create_vehicle
 from modules.vehicles.cupra.config import Cupra, CupraConfiguration
-from modules.vehicles.cupra.libcupra import cupra as CupraApi
+from modules.vehicles.cupra.libcupra import cupra as CupraApi, CLIENT_ID, USER_AGENT
+import base64
 
 
 class TestCupra:
@@ -93,8 +94,19 @@ class TestCupraGetStatus:
     def cupra_instance(self, mock_session):
         instance = CupraApi(mock_session)
         instance.set_vin("test_vin")
-        instance.headers = {"Authorization": "Bearer test_token"}
+        instance.headers = {
+            "Authorization": "Bearer test_token",
+            "app-market": "android",
+        }
         return instance
+
+    def test_token_headers_use_dynamic_basic_auth_and_user_agent(self, cupra_instance):
+        headers = cupra_instance.token_headers()
+        expected_basic = base64.b64encode(f"{CLIENT_ID}:".encode("utf-8")).decode("utf-8")
+
+        assert headers["Content-Type"] == "application/x-www-form-urlencoded"
+        assert headers["Authorization"] == f"BASIC {expected_basic}"
+        assert headers["User-Agent"] == USER_AGENT
 
     def test_get_status_success(self, cupra_instance, mock_session):
         # setup
