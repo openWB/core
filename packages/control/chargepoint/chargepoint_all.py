@@ -3,6 +3,7 @@ import logging
 
 from control import data
 from control.chargepoint.chargepoint_state import ChargepointState
+from helpermodules.constants import NO_ERROR
 
 
 log = logging.getLogger(__name__)
@@ -15,6 +16,8 @@ class AllGet:
     power: float = field(default=0, metadata={"topic": "get/power"})
     imported: float = field(default=0, metadata={"topic": "get/imported"})
     exported: float = field(default=0, metadata={"topic": "get/exported"})
+    fault_state: int = field(default=0, metadata={"topic": "get/fault_state"})
+    fault_str: str = field(default=NO_ERROR, metadata={"topic": "get/fault_str"})
 
 
 def all_get_factory() -> AllGet:
@@ -68,18 +71,32 @@ class AllChargepoints:
         """
         imported, exported, power = 0, 0, 0
         try:
+            fault_state = 0
             for cp in data.data.cp_data.values():
-                try:
-                    imported = imported + cp.data.get.imported
-                    exported = exported + cp.data.get.exported
-                except Exception:
-                    log.exception("Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt "+cp)
-                try:
-                    power = power + cp.data.get.power
-                except Exception:
-                    log.exception("Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt "+cp)
+                if cp.data.get.fault_state < 2:
+                    try:
+                        imported = imported + cp.data.get.imported
+                        exported = exported + cp.data.get.exported
+                    except Exception:
+                        log.exception(f"Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt {cp.num}")
+                    try:
+                        power = power + cp.data.get.power
+                    except Exception:
+                        log.exception(f"Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt {cp.num}")
+                else:
+                    if fault_state < cp.data.get.fault_state:
+                        fault_state = cp.data.get.fault_state
+            # Ladepunkte setzen ihre Werte im Fehlerfall selbst zurück
             self.data.get.power = power
             self.data.get.imported = imported
             self.data.get.exported = exported
+            if fault_state == 0:
+                self.data.get.fault_state = 0
+                self.data.get.fault_str = NO_ERROR
+            else:
+                self.data.get.fault_state = fault_state
+                self.data.get.fault_str = ("Bitte die Statusmeldungen der Ladepunkte prüfen. Es konnte kein "
+                                           "aktueller Zählerstand ermittelt werden, da nicht alle Ladepunkte Werte "
+                                           "liefern.")
         except Exception:
             log.exception("Fehler in der allgemeinen Ladepunkt-Klasse")

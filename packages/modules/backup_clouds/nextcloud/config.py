@@ -6,12 +6,14 @@ class NextcloudBackupCloudConfiguration:
                  ip_address: Optional[str] = None,
                  user: Optional[str] = None,
                  password: Optional[str] = None,
-                 max_backups: Optional[int] = None):
+                 max_backups: Optional[int] = None,
+                 base_path: Optional[str] = None) -> None:
         self.ip_address = ip_address
         self.user = user
         self.password = password
         # None oder <= 0 bedeutet: keine automatische Löschung alter Backups
         self.max_backups = max_backups
+        self.base_path = base_path  # don't show in UI
 
 
 class NextcloudBackupCloud:

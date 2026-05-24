@@ -668,7 +668,7 @@ export default {
             >
               <defs>
                 <clipPath
-                  v-if="component.soc"
+                  v-if="component.soc !== undefined"
                   :id="`clip-soc-${component.id}`"
                 >
                   <rect
@@ -754,10 +754,10 @@ export default {
                   cx="0"
                   cy="0"
                   :r="svgSize.circleRadius"
-                  :class="{ soc: component.soc }"
+                  :class="{ soc: component.soc !== undefined }"
                 />
                 <circle
-                  v-if="component.soc"
+                  v-if="component.soc !== undefined"
                   cx="0"
                   cy="0"
                   :r="svgSize.circleRadius"

@@ -115,7 +115,7 @@ class Get:
     currents: List[float] = field(default_factory=currents_list_factory)
     daily_imported: float = 0
     daily_exported: float = 0
-    error_timestamp: int = 0
+    error_timestamp: Optional[int] = None
     evse_current: Optional[float] = None
     # kann auch zur Laufzeit geändert werden
     evse_signaling: Optional[EvseSignaling] = None

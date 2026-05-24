@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Final
 
 from control import data
 from control.algorithm import common
@@ -19,6 +19,8 @@ from helpermodules.phase_handling import voltages_mean
 
 
 log = logging.getLogger(__name__)
+
+MAX_EVSE_CURRENT_CHANGE: Final[float] = 2  # Ampere
 
 
 class SurplusControlled:
@@ -120,6 +122,7 @@ class SurplusControlled:
         evse_current = chargepoint.data.get.evse_current
         if evse_current and chargepoint.data.set.current != chargepoint.data.set.current_prev:
             offset = evse_current - get_medium_charging_current(chargepoint.data.get.currents)
+            offset = min(offset, MAX_EVSE_CURRENT_CHANGE)
             current_with_offset = chargepoint.data.set.current + offset
             current = min(current_with_offset, chargepoint.data.control_parameter.required_current)
             if current != chargepoint.data.set.current:
@@ -207,11 +210,11 @@ def limit_adjust_current(chargepoint: Chargepoint, new_current: float) -> float:
         else:
             if new_current < get_medium_charging_current(chargepoint.data.get.currents):
                 current = get_medium_charging_current(chargepoint.data.get.currents) - MAX_CURRENT
-                msg = f"Es darf um max {MAX_CURRENT}A unter den aktuell genutzten Strom geregelt werden."
+                msg = "Fahrzeug lädt (noch) nicht mit dem vorgegebenen Ladestrom."
 
             else:
                 current = get_medium_charging_current(chargepoint.data.get.currents) + MAX_CURRENT
-                msg = f"Es darf um max {MAX_CURRENT}A über den aktuell genutzten Strom geregelt werden."
+                msg = "Fahrzeug lädt (noch) nicht mit dem vorgegebenen Ladestrom."
         chargepoint.set_state_and_log(msg)
         return max(current,
                    chargepoint.data.control_parameter.min_current,

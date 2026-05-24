@@ -1,3 +1,5 @@
+from unittest.mock import Mock, patch, mock_open
+from helpermodules import update_config
 import json
 from pathlib import Path
 
@@ -54,3 +56,67 @@ def test_upgrade_datastore_94(index_test_template, expected_index):
             "scheduled_charging"]["plans"]:
         plan_ids.append(plan["id"])
     assert plan_ids == expected_index
+
+
+@pytest.mark.parametrize("name", [
+    "happy_path",
+    "missing_prices_dict",
+    "empty_entry"])
+def test_upgrade_datastore_122(name, monkeypatch):
+    if name == "happy_path":
+        log_content = {
+            "entries": [
+                {
+                    "prices": {}, "cp": {"cp1": {}}, "ev": {"ev1": {}}, "counter": {"counter1": {}},
+                    "pv": {"pv1": {}}, "bat": {"bat1": {}}, "hc": {"all": {}}
+                }
+            ]
+        }
+        expected_content = {
+            "entries": [
+                {
+                    "prices": {"fault_state": None}, "cp": {"cp1": {"fault_state": None}},
+                    "ev": {"ev1": {"fault_state": None}}, "counter": {"counter1": {"fault_state": None}},
+                    "pv": {"pv1": {"fault_state": None}}, "bat": {"bat1": {"fault_state": None}},
+                    "hc": {"all": {"fault_state": None}}
+                }
+            ]
+        }
+    elif name == "missing_prices_dict":
+        log_content = {
+            "entries": [
+                {
+                    "cp": {"cp1": {}}, "ev": {"ev1": {}}, "counter": {"counter1": {}},
+                    "pv": {"pv1": {}}, "bat": {"bat1": {}}, "hc": {"all": {}}
+                }
+            ]
+        }
+        expected_content = {
+            "entries": [
+                {
+                    "cp": {"cp1": {"fault_state": None}},
+                    "ev": {"ev1": {"fault_state": None}}, "counter": {"counter1": {"fault_state": None}},
+                    "pv": {"pv1": {"fault_state": None}}, "bat": {"bat1": {"fault_state": None}},
+                    "hc": {"all": {"fault_state": None}}
+                }
+            ]
+        }
+    elif name == "empty_entry":
+        log_content = {"entries": []}
+        expected_content = {"entries": []}
+    # Arrange
+    uc = UpdateConfig()
+    uc.all_received_topics = {"openWB/system/datastore_version": []}
+
+    mock_dump = Mock()
+    monkeypatch.setattr(update_config.json, "dump", mock_dump)
+    mock_glob = Mock(return_value=["dummy_path"])
+    monkeypatch.setattr(update_config.Path, "glob", mock_glob)
+
+    # Act
+    with patch("builtins.open", mock_open(read_data=json.dumps(log_content))):
+        uc.upgrade_datastore_122()
+
+        # Assert
+        assert mock_dump.call_args_list[0].args[0] == expected_content
+        assert uc.all_received_topics["openWB/system/datastore_version"] == [122]

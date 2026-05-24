@@ -27,7 +27,7 @@
           clickable
           v-close-popup
           @click="connectedVehicle = vehicle"
-          :active="connectedVehicle.id === vehicle.id"
+          :active="connectedVehicle?.id === vehicle.id"
           active-class="bg-primary text-white"
         >
           <q-item-section class="text-center text-weight-bold">

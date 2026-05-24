@@ -444,7 +444,7 @@ const planDcPower = computed(() =>
   ),
 );
 
-const removeScheduledChargingPlan = (planId) => {
+const removeScheduledChargingPlan = (planId: number) => {
   mqttStore.removeScheduledChargingPlanForChargePoint(
     props.chargePointId,
     planId,

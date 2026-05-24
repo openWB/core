@@ -262,7 +262,7 @@ const loggedIn = computed(() => {
 
 const username = computed(() => {
   if (loggedIn.value) {
-    return $q.cookies.get('mqtt').split(':')[0];
+    return $q.cookies.get('mqtt')?.split(':')[0];
   }
   return '';
 });

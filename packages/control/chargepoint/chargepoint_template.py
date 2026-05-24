@@ -1,7 +1,7 @@
 from dataclasses import asdict, dataclass, field
 import logging
 import traceback
-from typing import List
+from typing import List, Tuple
 
 from control import data
 from control.ev import ev as ev_module
@@ -71,7 +71,7 @@ class CpTemplate:
         else:
             return False
 
-    def get_ev(self, rfid: str, vehicle_id: str, assigned_ev: int) -> int:
+    def get_ev(self, rfid: str, vehicle_id: str, assigned_ev: int) -> Tuple[int, str]:
         """ermittelt das dem Ladepunkt zugeordnete EV
 
         Parameter

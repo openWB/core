@@ -184,15 +184,19 @@ class Chargepoint(ChargepointRfidMixin):
                 self.data.set.ocpp_transaction_id,
                 self.data.set.rfid)
             self.data.set.ocpp_transaction_id = None
+        # muss vor dem Zurücksetzen der control parameter aufgerufen werden
+        self.data.set.charging_ev_data.reset_phase_switch(self.data.control_parameter)
+        self.data.set.charging_ev_data.reset_phase_switch_delay(self.data.control_parameter, self.get_max_phase_hw())
         self.reset_control_parameter_at_charge_stop()
         data.data.counter_all_data.get_evu_counter().reset_switch_on_off(self)
         if self.data.get.plug_state is False and self.data.set.plug_state_prev is True:
-            chargelog.save_and_reset_data(self, data.data.ev_data["ev"+str(self.data.config.ev)])
+            charging_ev = data.data.ev_data[f"ev{self.data.config.ev}"]
+            chargelog.save_and_reset_data(self, charging_ev)
             self.data.control_parameter = control_parameter_factory()
             # VOR Standard nach Abstecken
-            if (self.data.set.charging_ev_data.soc_module is not None and
-                self.data.set.charging_ev_data.soc_module.vehicle_config.type == "manual" and
-                    self.data.set.charging_ev_data.soc_module.vehicle_config.configuration.reset_after_unplug):
+            if (charging_ev.soc_module is not None and
+                charging_ev.soc_module.vehicle_config.type == "manual" and
+                    charging_ev.soc_module.vehicle_config.configuration.reset_after_unplug):
                 Pub().pub(f"openWB/set/vehicle/{self.data.config.ev}/soc_module/calculated_soc_state/manual_soc", 0)
             if self.data.set.charge_template.data.load_default:
                 self.data.config.ev = 0
@@ -200,9 +204,9 @@ class Chargepoint(ChargepointRfidMixin):
                 self.data.set.manual_lock = True
                 log.debug("/set/manual_lock True")
             # NACH Standard nach Abstecken
+            ev_after_load_default = data.data.ev_data[f"ev{self.data.config.ev}"]
             if data.data.general_data.data.temporary_charge_templates_active:
-                self.update_charge_template(
-                    data.data.ev_data["ev"+str(self.data.config.ev)].charge_template)
+                self.update_charge_template(ev_after_load_default.charge_template)
 
             self.data.set.rfid = None
             self.data.set.plug_time = None
@@ -635,12 +639,12 @@ class Chargepoint(ChargepointRfidMixin):
             vehicle, message_ev = self.template.get_ev(self.data.set.rfid or self.data.get.rfid,
                                                        self.data.get.vehicle_id,
                                                        self.data.config.ev)
-            charging_ev = self._get_charging_ev(vehicle, ev_list)
             if message_ev:
                 message += message_ev
 
             if charging_possible:
                 try:
+                    charging_ev = self._get_charging_ev(vehicle, ev_list)
                     state, message_ev, submode, required_current, template_phases = charging_ev.get_required_current(
                         self.data.set.charge_template,
                         self.data.control_parameter,
@@ -665,7 +669,7 @@ class Chargepoint(ChargepointRfidMixin):
 
                     if self.chargemode_changed or self.submode_changed:
                         data.data.counter_all_data.get_evu_counter().reset_switch_on_off(self)
-                        charging_ev.reset_phase_switch(self.data.control_parameter)
+                        charging_ev.reset_phase_switch_delay(self.data.control_parameter, self.get_max_phase_hw())
                     if self.chargemode_changed:
                         self.data.control_parameter.failed_phase_switches = 0
                     message = message_ev if message_ev else message

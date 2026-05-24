@@ -34,7 +34,7 @@ class AvmCounter(AbstractCounter):
                     power = float(powermeterBlock.find("power").text)/1000
                     # AVM returns mV, convert to V here
                     voltageInfo = powermeterBlock.find("voltage")
-                    if voltageInfo is not None:
+                    if voltageInfo is not None and voltageInfo.text is not None:
                         voltages = [float(voltageInfo.text)/1000, 0, 0]
                     # AVM returns Wh
                     imported = float(powermeterBlock.find("energy").text)
@@ -42,9 +42,10 @@ class AvmCounter(AbstractCounter):
         counter_state = CounterState(
             imported=imported,
             exported=0,
-            power=power,
-            voltages=voltages
+            power=power
         )
+        if "voltages" in locals():
+            counter_state.voltages = voltages
         self.store.set(counter_state)
 
 
