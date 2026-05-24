@@ -55,7 +55,7 @@ client.on_connect = on_connect
 client.on_message = on_message
 startTime = time.time()
 waitTime = 5
-client.connect("localhost")
+client.connect(host="localhost", port=1886)
 while True:
     client.loop()
     elapsedTime = time.time() - startTime

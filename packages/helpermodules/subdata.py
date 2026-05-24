@@ -277,7 +277,8 @@ class SubData:
                 if decode_payload(msg.payload) == "":
                     if re.search("/vehicle/[0-9]+/soc_module/config$", msg.topic) is not None:
                         var["ev"+index].soc_module = None
-                        remove_acl_role("vehicle-<id>-write-access", int(index))
+                        if self.system_data["system"].data["security"]["user_management_active"]:
+                            remove_acl_role("vehicle-<id>-write-access", int(index))
                     elif re.search("/vehicle/[0-9]+/get", msg.topic) is not None:
                         self.set_json_payload_class(var["ev"+index].data.get, msg)
                     else:
@@ -502,10 +503,10 @@ class SubData:
             self.event_start_internal_chargepoint.set()
         if (payload["type"] == "external_openwb"):
             new_ip = payload["configuration"].get("ip_address", None)
-            if old_ip != new_ip:
+            if self.system_data["system"].data["security"]["user_management_active"] and old_ip != new_ip:
                 log.debug(f"IP of chargepoint {index} changed, modifying display user")
                 if old_ip is not None:
-                    # check if ip is used in other chargepoints, if not remove display user
+                    # check if ip is used in other charge points, if not remove display user
                     for cp in var:
                         if (
                             var[cp].chargepoint.data.config.configuration.get("ip_address", None) == old_ip

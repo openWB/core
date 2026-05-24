@@ -1,7 +1,11 @@
-# openwb-version:1
+# openwb-version:2
 # may speedup booting
 Acquire::http::Timeout "10";
 Acquire::ftp::Timeout "10";
 # keep system light and clean
 APT::Get::Install-Recommends "false";
 APT::Get::Install-Suggests "false";
+Dpkg::Options {
+   "--force-confold";
+   "--force-confdef";
+};

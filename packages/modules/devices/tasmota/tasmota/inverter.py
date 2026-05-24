@@ -40,27 +40,33 @@ class TasmotaInverter(AbstractInverter):
         url = "http://" + self.__ip_address + "/cm?cmnd=Status%208"
         response = req.get_http_session().get(url, timeout=5).json()
 
+        currents = None
         if 'ENERGY' in response['StatusSNS']:
             currents = [0.0, 0.0, 0.0]
-
             power = float(response['StatusSNS']['ENERGY']['Power']) * -1
-            currents[self.__phase-1] = (response['StatusSNS']['ENERGY']['Current']), 0.0, 0.0
+            currents[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Current'])
             self.peak_filter.check_values(power)
             _, exported = self.sim_counter.sim_count(power)
-
-            inverter_state = InverterState(
-                power=power,
-                currents=currents,
-                exported=exported
-            )
-        else:
+        elif 'Itron' in response['StatusSNS']:
             power = float(response['StatusSNS']['Itron']['Power']) * -1
             exported = float(response['StatusSNS']['Itron']['E_out']*1000)
             _, exported = self.peak_filter.check_values(power, None, exported)
-            inverter_state = InverterState(
-                power=power,
-                exported=exported
-            )
+        elif 'MT681' in response['StatusSNS']:
+            power = float(response['StatusSNS']['MT681']['Watt_summe']) * -1
+            exported = float(response['StatusSNS']['MT681']['Total_out']*1000)
+            _, exported = self.peak_filter.check_values(power, None, exported)
+        elif 'eBZ' in response['StatusSNS']:
+            power = float(response['StatusSNS']['eBZ']['Power']) * -1
+            exported = float(response['StatusSNS']['eBZ']['E_out']*1000)
+            _, exported = self.peak_filter.check_values(power, None, exported)
+        else:
+            raise ValueError("Nicht unterstützter Tasmota Zählertyp. Bitte an den Support wenden.")
+
+        inverter_state = InverterState(
+            power=power,
+            exported=exported,
+            currents=currents
+        )
 
         self.store.set(inverter_state)
 

@@ -47,7 +47,7 @@ import { Screen } from 'quasar';
 const props = defineProps<{ items: number[] }>();
 
 const carouselRef = ref<{ $el: HTMLElement } | null>(null);
-const itemRef = ref<HTMLElement | null>(null);
+const itemRef = ref<HTMLElement[] | null>(null);
 const currentSlide = ref(0);
 
 const itemWidth = ref(100);
@@ -120,8 +120,8 @@ const groupedItems = computed(() => {
   return result;
 });
 
-function handleSlideChange(val: number) {
-  currentSlide.value = val;
+function handleSlideChange(val: string | number) {
+  currentSlide.value = typeof val === 'number' ? val : parseInt(val, 10) || 0;
 }
 
 watch(groupedItems, (groups) => {

@@ -59,6 +59,7 @@ import ChargePointTimeChargingPlanButton from './ChargePointTimeChargingPlanButt
 import ChargePointTimeChargingPlanDetails from './ChargePointTimeChargingPlanDetails.vue';
 import BaseMessage from './BaseMessage.vue';
 import { Screen } from 'quasar';
+import { TimeChargingPlan } from 'src/stores/mqtt-store-model';
 
 const props = defineProps<{
   chargePointId: number;
@@ -67,7 +68,7 @@ const props = defineProps<{
 const isSmallScreen = computed(() => Screen.lt.sm);
 
 const currentPlanDetailsVisible = ref<boolean>(false);
-const selectedPlan = ref(null);
+const selectedPlan = ref<TimeChargingPlan | null>(null);
 
 const mqttStore = useMqttStore();
 
@@ -83,7 +84,7 @@ const addScheduledChargingPlan = () => {
   mqttStore.addTimeChargingPlanForChargePoint(props.chargePointId);
 };
 
-const openPlanDialog = (plan) => {
+const openPlanDialog = (plan: TimeChargingPlan) => {
   selectedPlan.value = plan;
   currentPlanDetailsVisible.value = true;
 };

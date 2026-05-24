@@ -102,7 +102,7 @@ const chartCarouselItems = computed(() => {
   return slideOrder
     .map((name) => ({
       name,
-      component: componentMap[name],
+      component: componentMap[name as keyof typeof componentMap],
     }))
     .filter((item) => !!item.component);
 });

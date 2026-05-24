@@ -70,7 +70,7 @@
 	"anonymousGroup": "anonymous",
 	"roles": [
 		{
-			"rolename": "openwb-version:3",
+			"rolename": "openwb-version:4",
 			"textname": "openWB Versionsnummer",
 			"textdescription": "Diese Rolle ist ein Platzhalter für die openWB Versionsnummer und wird automatisch aktualisiert. Sie hat keine direkten Berechtigungen.",
 			"acls": []
@@ -112,13 +112,13 @@
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/internal_chargepoint/global_data",
+					"topic": "openWB/internal_chargepoint/global_data",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/internal_chargepoint/+/data/parent_cp",
+					"topic": "openWB/internal_chargepoint/+/data/parent_cp",
 					"priority": 0,
 					"allow": true
 				}
@@ -1120,12 +1120,6 @@
 					"topic": "openWB/general/chargemode_config/pv_charging/switch_off_delay",
 					"priority": 0,
 					"allow": true
-				},
-				{
-					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/phases_to_use",
-					"priority": 0,
-					"allow": true
 				}
 			]
 		},
@@ -1161,12 +1155,6 @@
 				{
 					"acltype": "publishClientSend",
 					"topic": "openWB/set/bat/config/bat_control_min_soc",
-					"priority": 0,
-					"allow": true
-				},
-				{
-					"acltype": "publishClientSend",
-					"topic": "openWB/set/bat/config/bat_control_permitted",
 					"priority": 0,
 					"allow": true
 				},
@@ -1293,12 +1281,6 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/bat/config/bat_control_min_soc",
-					"priority": 0,
-					"allow": true
-				},
-				{
-					"acltype": "publishClientReceive",
-					"topic": "openWB/bat/config/bat_control_permitted",
 					"priority": 0,
 					"allow": true
 				},

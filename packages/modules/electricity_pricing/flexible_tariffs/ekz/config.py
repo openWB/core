@@ -2,6 +2,7 @@ class EkzTariffConfiguration:
     def __init__(self):
         self.country = "ch"
         self.unit = "Rp"
+        self.update_hours = [18, 19]
 
 
 class EkzTariff:

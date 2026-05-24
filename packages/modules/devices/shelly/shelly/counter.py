@@ -111,9 +111,11 @@ class ShellyCounter(AbstractCounter):
                 powers[self.phase-1] = meters['apower'] * self.factor
                 voltages[self.phase-1] = meters['voltage']
                 currents[self.phase-1] = meters['current'] * self.factor
-                # power_factors[self.phase-1] = meters['pf']
+                if 'pf' in meters:
+                    power_factors[self.phase-1] = meters['pf']
                 power = meters['apower'] * self.factor
-                frequency = meters['freq']
+                if 'freq' in meters:
+                    frequency = meters['freq']
             else:
                 log.debug("single phase shelly")
                 powers = [0.0, 0.0, 0.0]
