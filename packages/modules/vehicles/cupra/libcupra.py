@@ -16,18 +16,18 @@ with ImportErrorContext():
 LOGIN_BASE = "https://identity.vwgroup.io/oidc/v1"
 LOGIN_HANDLER_BASE = "https://identity.vwgroup.io"
 API_BASE = "https://ola.prod.code.seat.cloud.vwgroup.com"
-CLIENT_ID = "99a5b77d-bd88-4d53-b4e5-a539c60694a3@apps_vw-dilab_com"
-USER_AGENT = (
-    "SEATApp/2.5.0 (com.seat.myseat.ola; build:202410171614; "
-    "iOS 15.8.3) Alamofire/5.7.0 Mobile"
-)
+CLIENT_ID = "3c756d46-f1ba-4d78-9f9a-cff0d5292d51@apps_vw-dilab_com"
+USER_AGENT = "OLACupra/2.16.0 (Android 14; Pixel 8; Google) Mobile"
 
 
 class cupra:
     def __init__(self, session):
         self.session = session
         self.headers = {
-            'app-market': 'android'
+            'user-agent': USER_AGENT,
+            'app-brand': 'cupra',
+            'app-market': 'android',
+            'app-version': '2.16.0',
         }
         self.log = logging.getLogger(__name__)
         self.jobs_string = 'all'
@@ -121,13 +121,16 @@ class cupra:
         self.log.debug("Starting Cupra reconnect/auth flow")
 
         # Get authorize page
-        _scope = 'openid profile nickname birthdate phone'
+        _scope = (
+            'openid profile nickname birthdate phone mbb cars address '
+            'nationalIdentifier nationality profession badge driversLicense'
+        )
         payload = {
             'client_id': CLIENT_ID,
             'scope': _scope,
             'response_type': 'code',
             'nonce': secrets.token_urlsafe(12),
-            'redirect_uri': 'seat://oauth-callback',
+            'redirect_uri': 'cupra://oauth-callback',
             'state': str(uuid.uuid4()),
             'code_challenge': code_challenge,
             'code_challenge_method': 'S256'
@@ -191,7 +194,7 @@ class cupra:
 
             url = response.headers['Location']
             self.log.debug("Redirect: status=%s location=%s", response.status, url)
-            if (url.split(':')[0] == "seat"):
+            if (url.split(':')[0] == "cupra"):
                 if not ('code' in url):
                     self.log.error("Missing authorization code")
                     return False
@@ -211,7 +214,7 @@ class cupra:
         form = {}
         form['code'] = query['code']
         form['client_id'] = CLIENT_ID
-        form['redirect_uri'] = "seat://oauth-callback"
+        form['redirect_uri'] = "cupra://oauth-callback"
         form['grant_type'] = 'authorization_code'
         form['code_verifier'] = code_verifier
         headers = self.token_headers()
@@ -258,7 +261,7 @@ class cupra:
         return True
 
     async def get_status(self):
-        status_url = f"{API_BASE}/vehicles/{self.vin}/charging/status"
+        status_url = f"{API_BASE}/v1/vehicles/{self.vin}/charging/status"
         mileage_url = f"{API_BASE}/v1/vehicles/{self.vin}/mileage"
         response = await self.session.get(status_url, headers=self.headers)
 

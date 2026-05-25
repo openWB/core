@@ -141,7 +141,7 @@ class TestCupraGetStatus:
         assert status['charging']['batteryStatus']['value']['odometer'] == 77889
         assert mock_session.get.call_count == 2
         mock_session.get.assert_any_call(
-            "https://ola.prod.code.seat.cloud.vwgroup.com/vehicles/test_vin/charging/status",
+            "https://ola.prod.code.seat.cloud.vwgroup.com/v1/vehicles/test_vin/charging/status",
             headers=cupra_instance.headers
         )
         mock_session.get.assert_any_call(
