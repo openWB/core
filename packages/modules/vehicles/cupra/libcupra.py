@@ -123,7 +123,10 @@ class cupra:
         self.log.debug("Starting Cupra reconnect/auth flow")
 
         # Get authorize page
-        _scope = 'openid profile nickname birthdate phone mbb cars address nationalIdentifier nationality profession email'
+        _scope = (
+            'openid profile nickname birthdate phone mbb cars address '
+            'nationalIdentifier nationality profession email'
+        )
         payload = {
             'client_id': CLIENT_ID,
             'scope': _scope,
