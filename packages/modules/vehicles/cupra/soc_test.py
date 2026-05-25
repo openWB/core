@@ -97,9 +97,6 @@ class TestCupraGetStatus:
         instance.headers = {
             "Authorization": "Bearer test_token",
             "app-market": "android",
-            "app-version": "2.16.0",
-            "origin": "app",
-            "VIN": "test_vin",
         }
         return instance
 
@@ -107,11 +104,9 @@ class TestCupraGetStatus:
         headers = cupra_instance.token_headers()
         expected_basic = base64.b64encode(f"{CLIENT_ID}:".encode("utf-8")).decode("utf-8")
 
-        assert headers["accept"] == "*/*"
-        assert headers["content-type"] == "application/x-www-form-urlencoded; charset=utf-8"
-        assert headers["authorization"] == f"Basic {expected_basic}"
-        assert headers["user-agent"] == USER_AGENT
-        assert headers["accept-language"] == "de-de"
+        assert headers["Content-Type"] == "application/x-www-form-urlencoded"
+        assert headers["Authorization"] == f"Basic {expected_basic}"
+        assert headers["User-Agent"] == USER_AGENT
 
     def test_get_status_success(self, cupra_instance, mock_session):
         # setup

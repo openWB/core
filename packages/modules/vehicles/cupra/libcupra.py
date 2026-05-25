@@ -24,9 +24,7 @@ class cupra:
     def __init__(self, session):
         self.session = session
         self.headers = {
-            'app-market': 'android',
-            'app-version': '2.16.0',
-            'origin': 'app',
+            'app-market': 'android'
         }
         self.log = logging.getLogger(__name__)
         self.jobs_string = 'all'
@@ -81,7 +79,6 @@ class cupra:
 
     def set_vin(self, vin):
         self.vin = vin
-        self.headers['VIN'] = vin
 
     def set_credentials(self, username, password):
         self.username = username
@@ -106,11 +103,9 @@ class cupra:
     def token_headers(self):
         basic_auth = base64.b64encode(f"{CLIENT_ID}:".encode('utf-8')).decode('utf-8')
         return {
-            'accept': '*/*',
-            'content-type': 'application/x-www-form-urlencoded; charset=utf-8',
-            'authorization': f'Basic {basic_auth}',
-            'user-agent': USER_AGENT,
-            'accept-language': 'de-de',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': f'Basic {basic_auth}',
+            'User-Agent': USER_AGENT,
         }
 
     async def connect(self, username, password):
@@ -123,10 +118,7 @@ class cupra:
         self.log.debug("Starting Cupra reconnect/auth flow")
 
         # Get authorize page
-        _scope = (
-            'openid profile nickname birthdate phone mbb cars address '
-            'nationalIdentifier nationality profession email'
-        )
+        _scope = 'openid profile nickname birthdate phone'
         payload = {
             'client_id': CLIENT_ID,
             'scope': _scope,
