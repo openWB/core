@@ -17,7 +17,10 @@ LOGIN_BASE = "https://identity.vwgroup.io/oidc/v1"
 LOGIN_HANDLER_BASE = "https://identity.vwgroup.io"
 API_BASE = "https://ola.prod.code.seat.cloud.vwgroup.com"
 CLIENT_ID = "99a5b77d-bd88-4d53-b4e5-a539c60694a3@apps_vw-dilab_com"
-USER_AGENT = "OLACupra/2.16.0 (Android 14; Pixel 8; Google) Mobile"
+USER_AGENT = (
+    "SEATApp/2.5.0 (com.seat.myseat.ola; build:202410171614; "
+    "iOS 15.8.3) Alamofire/5.7.0 Mobile"
+)
 
 
 class cupra:
