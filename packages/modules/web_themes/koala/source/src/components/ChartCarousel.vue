@@ -5,7 +5,6 @@
     v-model="currentSlide"
     v-model:fullscreen="fullscreen"
     swipeable
-    control-color="primary"
     padding
     animated
     infinite
@@ -140,5 +139,12 @@ watch(
 
 .legend-button-text {
   color: var(--q-carousel-control);
+}
+/* Arrows */
+:deep(.q-carousel__arrow .q-btn),
+/* Fullscreen button (direct child of control) */
+:deep(.q-carousel__control > .q-btn) {
+  background: var(--q-background) !important;
+  color: var(--q-carousel-control) !important;
 }
 </style>

@@ -4,7 +4,6 @@
     v-model="currentSlide"
     swipeable
     :animated="true"
-    control-color="primary"
     infinite
     @update:model-value="handleSlideChange"
     padding
@@ -144,5 +143,11 @@ watch(groupedItems, (groups) => {
 .carousel-height {
   min-height: fit-content;
   height: 100%;
+}
+
+/* Arrows */
+:deep(.q-carousel__arrow .q-btn) {
+  background: var(--q-background) !important;
+  color: var(--q-carousel-control) !important;
 }
 </style>
