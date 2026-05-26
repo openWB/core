@@ -330,7 +330,7 @@ const chargePointColor = computed(() =>
 }
 
 .charge-point-card.has-custom-color {
-  border-left: 3px solid v-bind(chargePointColor);
+  border-left: 4px solid v-bind(chargePointColor);
 }
 
 .q-card__section {
