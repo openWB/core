@@ -53,6 +53,7 @@ $charge-point-fill: #5c93d14d;
 $vehicle-stroke: #9f8aff;
 $charge-plan-link-button: #6b757d;
 $diagram-icon: #717171;
+$table-hover: #f9f8f8;
 // Light theme (default)
 :root {
   --q-primary: #{$primary};
@@ -86,6 +87,7 @@ $diagram-icon: #717171;
   --q-vehicle-stroke: #{$vehicle-stroke};
   --q-charge-plan-link-button: #{$charge-plan-link-button};
   --q-diagram-icon: #{$diagram-icon};
+  --q-table-hover: #{$table-hover};
 
   // Main background
   background-color: var(--q-background-1);
@@ -210,11 +212,11 @@ $diagram-icon: #717171;
       .q-virtual-scroll
       .q-virtual-scroll--vertical
       scroll {
-      background-color: var(--q-secondary);
+      background-color: var(--q-background);
     }
 
     tbody tr:hover {
-      background-color: rgba(0, 0, 0, 0.05);
+      background-color: var(--q-table-hover);
     }
 
     // Scrollbar styling for tables - Light Theme
