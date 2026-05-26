@@ -172,10 +172,11 @@ const batteryColor = computed(() => mqttStore.batteryColor(props.batteryId));
 .battery-card {
   width: 22em;
   border: none;
+  border-radius: 15px;
 }
 
 .battery-card.has-custom-color {
-  border-left: 4px solid v-bind(batteryColor);
+  border-left: 3px solid v-bind(batteryColor);
 }
 
 .q-card__section {
