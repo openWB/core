@@ -417,7 +417,7 @@ class ChargeTemplate:
                              charging_type: str,
                              control_parameter_phases: int,
                              soc_request_interval_offset: int,
-                             bidi_state: BidiState) -> SelectedPlan:
+                             bidi_state: BidiState) -> Tuple[float, float, int, float]:
         bidi = bidi_state == BidiState.BIDI_CAPABLE and plan.bidi_charging_enabled
         battery_capacity = ev_template.data.battery_capacity
         efficiency = ev_template.data.efficiency
@@ -493,7 +493,7 @@ class ChargeTemplate:
             else:
                 raise ValueError("Um Zielladen mit SoC-Ziel nutzen zu können, bitte ein SoC-Modul konfigurieren.")
         else:
-            missing_amount = (plan.limit.amount - used_amount) / (efficiency / 100)
+            missing_amount = plan.limit.amount - used_amount
         if bidi:
             duration = missing_amount/plan.bidi_power * 3600
         else:
