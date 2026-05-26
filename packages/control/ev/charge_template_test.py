@@ -169,9 +169,9 @@ def test_calc_remaining_time(phases_to_use,
 @pytest.mark.parametrize(
     "selected, phases, bidi_charging_enabled, expected_duration, expected_missing_amount",
     [
-        pytest.param("soc", 1, False, 10062.111801242236, 9000, id="soc, one phase"),
-        pytest.param("amount", 2, False, 447.2049689440994, 800, id="amount, two phases"),
-        pytest.param("soc", 2, True, 3240.0, 9000, id="bidi"),
+        pytest.param("soc", 1, False, 11180.124223602485, 10000, id="soc, one phase"),
+        pytest.param("amount", 2, False, 496.8944099378882, 888.8888888888889, id="amount, two phases"),
+        pytest.param("soc", 2, True, 3600.0, 10000, id="bidi"),
     ])
 def test_calculate_duration(selected: str,
                             phases: int,
@@ -184,7 +184,7 @@ def test_calculate_duration(selected: str,
     plan.limit.selected = selected
     # execution
     duration, missing_amount = ct._calculate_duration(
-        plan, 60, 45000, 200, phases, ChargingType.AC.value, EvTemplate(), bidi_charging_enabled)
+        plan, 60, 45000, 90, 200, phases, ChargingType.AC.value, EvTemplate(), bidi_charging_enabled)
 
     # evaluation
     assert duration == expected_duration
