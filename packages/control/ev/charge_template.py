@@ -417,41 +417,44 @@ class ChargeTemplate:
                              charging_type: str,
                              control_parameter_phases: int,
                              soc_request_interval_offset: int,
-                             bidi_state: BidiState) -> SelectedPlan:
+                             bidi_state: BidiState) -> Tuple[float, float, int, float]:
         bidi = bidi_state == BidiState.BIDI_CAPABLE and plan.bidi_charging_enabled
+        battery_capacity = ev_template.data.battery_capacity
+        efficiency = ev_template.data.efficiency
+
+        def calc_for_phases(phases_to_use: int) -> Tuple[float, float]:
+            return self._calculate_duration(
+                plan,
+                soc,
+                battery_capacity,
+                efficiency,
+                used_amount,
+                phases_to_use,
+                charging_type,
+                ev_template,
+                bidi)
+
         if bidi:
-            duration, missing_amount = self._calculate_duration(
-                plan, soc, ev_template.data.battery_capacity,
-                used_amount, control_parameter_phases, charging_type, ev_template, bidi)
+            duration, missing_amount = calc_for_phases(control_parameter_phases)
             remaining_time = plan_end_time - duration
             phases = control_parameter_phases
         elif plan.phases_to_use == 0:
             if max_hw_phases == 1:
-                duration, missing_amount = self._calculate_duration(
-                    plan, soc, ev_template.data.battery_capacity,
-                    used_amount, 1, charging_type, ev_template, bidi)
+                duration, missing_amount = calc_for_phases(1)
                 remaining_time = plan_end_time - duration
                 phases = 1
             elif phase_switch_supported is False:
-                duration, missing_amount = self._calculate_duration(
-                    plan, soc, ev_template.data.battery_capacity, used_amount, control_parameter_phases,
-                    charging_type, ev_template, bidi)
+                duration, missing_amount = calc_for_phases(control_parameter_phases)
                 phases = control_parameter_phases
                 remaining_time = plan_end_time - duration
             elif plan.et_active:
-                duration, missing_amount = self._calculate_duration(
-                    plan, soc, ev_template.data.battery_capacity, used_amount, max_hw_phases,
-                    charging_type, ev_template, bidi)
+                duration, missing_amount = calc_for_phases(max_hw_phases)
                 phases = max_hw_phases
                 remaining_time = plan_end_time - duration
             else:
-                duration_3p, missing_amount = self._calculate_duration(
-                    plan, soc, ev_template.data.battery_capacity, used_amount, max_hw_phases,
-                    charging_type, ev_template, bidi)
+                duration_3p, missing_amount = calc_for_phases(max_hw_phases)
                 remaining_time_3p = plan_end_time - duration_3p
-                duration_1p, missing_amount = self._calculate_duration(
-                    plan, soc, ev_template.data.battery_capacity, used_amount, 1,
-                    charging_type, ev_template, bidi)
+                duration_1p, missing_amount = calc_for_phases(1)
                 remaining_time_1p = plan_end_time - duration_1p
                 # Kurz vor dem nächsten Abfragen des SoC, wenn noch der alte SoC da ist, kann es sein, dass die Zeit
                 # für 1p nicht mehr reicht, weil die Regelung den neuen SoC noch nicht kennt.
@@ -466,11 +469,9 @@ class ChargeTemplate:
                     phases = 1
                 log.debug(f"Dauer 1p: {duration_1p}, Dauer 3p: {duration_3p}")
         elif plan.phases_to_use == 3 or plan.phases_to_use == 1:
-            duration, missing_amount = self._calculate_duration(
-                plan, soc, ev_template.data.battery_capacity,
-                used_amount, min(plan.phases_to_use, max_hw_phases), charging_type, ev_template, bidi)
-            remaining_time = plan_end_time - duration
             phases = min(plan.phases_to_use, max_hw_phases)
+            duration, missing_amount = calc_for_phases(phases)
+            remaining_time = plan_end_time - duration
 
         log.debug(f"Verbleibende Zeit bis zum Ladestart [s]:{remaining_time}, Dauer [h]: {duration/3600}")
         return remaining_time, missing_amount, phases, duration
@@ -479,6 +480,7 @@ class ChargeTemplate:
                             plan: ScheduledChargingPlan,
                             soc: Optional[float],
                             battery_capacity: float,
+                            efficiency: float,
                             used_amount: float,
                             phases: int,
                             charging_type: str,
@@ -487,7 +489,7 @@ class ChargeTemplate:
 
         if plan.limit.selected == "soc":
             if soc is not None:
-                missing_amount = ((plan.limit.soc_scheduled - soc) / 100) * battery_capacity
+                missing_amount = ((plan.limit.soc_scheduled - soc) / 100) * battery_capacity / (efficiency / 100)
             else:
                 raise ValueError("Um Zielladen mit SoC-Ziel nutzen zu können, bitte ein SoC-Modul konfigurieren.")
         else:
