@@ -7,8 +7,8 @@ import json
 import uuid
 import base64
 import hashlib
-import datetime
 
+from datetime import datetime, timezone
 from helpermodules.utils.error_handling import ImportErrorContext
 with ImportErrorContext():
     import lxml.html
@@ -303,7 +303,7 @@ class cupra:
             # use current timestamp as a fallback, as the API field is missing
             'carCapturedTimestamp': status_data['battery'].get(
                 'carCapturedTimestamp',
-                datetime.datetime.now(datetime.UTC).isoformat() + 'Z'),
+                datetime.now(timezone.utc).isoformat() + 'Z'),
             'odometer': odometer,
         }
 
