@@ -303,7 +303,7 @@ class cupra:
             # use current timestamp as a fallback, as the API field is missing
             'carCapturedTimestamp': status_data['battery'].get(
                 'carCapturedTimestamp',
-                datetime.now(timezone.utc).isoformat() + 'Z'),
+                datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")),
             'odometer': odometer,
         }
 
