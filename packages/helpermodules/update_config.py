@@ -60,7 +60,6 @@ class UpdateConfig:
     DATASTORE_VERSION = 123
 
     valid_topic = [
-        "^openWB/bat/config/bat_control_permitted$",
         "^openWB/bat/config/bat_control_activated$",
         "^openWB/bat/config/power_limit_mode$",
         "^openWB/bat/config/power_limit_condition$",
@@ -565,7 +564,6 @@ class UpdateConfig:
         "^openWB/system/version$",
     ]
     default_topic = (
-        ("openWB/bat/config/bat_control_permitted", False),
         ("openWB/bat/config/bat_control_activated", False),
         ("openWB/bat/config/power_limit_mode", "mode_no_discharge"),
         ("openWB/bat/config/power_limit_condition", "vehicle_charging"),
@@ -2435,13 +2433,8 @@ class UpdateConfig:
     def upgrade_datastore_86(self) -> None:
         if "openWB/bat/get/power_limit_controllable" not in self.all_received_topics:
             self.__update_topic("openWB/bat/get/power_limit_controllable", False)
-        if "openWB/bat/config/bat_control_permitted" not in self.all_received_topics.keys():
-            self.__update_topic("openWB/bat/config/bat_control_permitted", False)
-            if decode_payload(self.all_received_topics["openWB/bat/get/power_limit_controllable"]) is True:
-                pub_system_message({}, "Bitte akzeptiere zunächst die "
-                                   "<a href=\"/openWB/web/settings/#/GeneralChargeConfig\">rechtlichen Hinweise</a> "
-                                   "für die Speichersteuerung. Die Speichersteuerung war bisher bereits verfügbar, ist"
-                                   " jedoch bis zum Akzeptieren standardmäßig deaktiviert.", MessageType.WARNING)
+        # 2026-05-06: Topic "openWB/bat/config/bat_control_permitted" wurde später entfernt
+        # und wird daher nicht mehr in upgrade_datastore_86 hinzugefügt
         self._append_datastore_version(86)
 
     def upgrade_datastore_87(self) -> None:

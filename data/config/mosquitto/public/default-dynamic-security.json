@@ -1160,12 +1160,6 @@
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/bat/config/bat_control_permitted",
-					"priority": 0,
-					"allow": true
-				},
-				{
-					"acltype": "publishClientSend",
 					"topic": "openWB/set/bat/config/charge_limit",
 					"priority": 0,
 					"allow": true
@@ -1287,12 +1281,6 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/bat/config/bat_control_min_soc",
-					"priority": 0,
-					"allow": true
-				},
-				{
-					"acltype": "publishClientReceive",
-					"topic": "openWB/bat/config/bat_control_permitted",
 					"priority": 0,
 					"allow": true
 				},
