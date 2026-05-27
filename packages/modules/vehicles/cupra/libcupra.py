@@ -309,6 +309,9 @@ class cupra:
             carCapturedTimestamp = statusv2_data.get(
                 'updatedAt',
                 datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"))
+            carCapturedTimestamp = carCapturedTimestamp.split('.')[0]
+            if not carCapturedTimestamp.endswith('Z'):
+                carCapturedTimestamp += 'Z'
             
         battery_value = {
             'currentSOC_pct': status_data['battery']['currentSocPercentage'],
