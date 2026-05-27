@@ -120,7 +120,7 @@ class SurplusControlled:
         nicht erreicht wird.
         Wenn die Soll-Stromstärke nicht angepasst worden ist, nicht den ungenutzten EVSE-Strom aufschlagen."""
         evse_current = chargepoint.data.get.evse_current
-        if evse_current and chargepoint.data.set.current != chargepoint.data.set.current_prev:
+        if evse_current is not None and chargepoint.data.set.current != chargepoint.data.set.current_prev:
             offset = evse_current - get_medium_charging_current(chargepoint.data.get.currents)
             offset = min(offset, MAX_EVSE_CURRENT_CHANGE)
             current_with_offset = chargepoint.data.set.current + offset
