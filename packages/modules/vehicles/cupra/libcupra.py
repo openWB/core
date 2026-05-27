@@ -306,10 +306,7 @@ class cupra:
             statusv2_data = await response.json()
             self.log.debug(f"Status v2 data from Cupra API: {statusv2_data}")
             # use current timestamp as a fallback, as the API field is missing
-            carCapturedTimestamp = statusv2_data.get(
-                'updatedAt',
-                datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"))
-            carCapturedTimestamp = carCapturedTimestamp.split('.')[0]
+            carCapturedTimestamp = statusv2_data.get('updatedAt', datetime.now(timezone.utc).isoformat()).split('.')[0]
             if not carCapturedTimestamp.endswith('Z'):
                 carCapturedTimestamp += 'Z'
             
