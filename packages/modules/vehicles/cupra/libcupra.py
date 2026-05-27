@@ -23,12 +23,7 @@ USER_AGENT = "OLACupra/2.16.0 (Android 14; Pixel 8; Google) Mobile"
 class cupra:
     def __init__(self, session):
         self.session = session
-        self.headers = {
-            'user-agent': USER_AGENT,
-            'app-brand': 'cupra',
-            'app-market': 'android',
-            'app-version': '2.16.0',
-        }
+        self.headers = {}
         self.log = logging.getLogger(__name__)
         self.jobs_string = 'all'
 
@@ -261,6 +256,10 @@ class cupra:
         return True
 
     async def get_status(self):
+        self.headers['user-agent'] = USER_AGENT
+        self.headers['app-brand'] = 'cupra'
+        self.headers['app-market'] = 'android'
+        self.headers['app-version'] = '2.16.0'
         status_url = f"{API_BASE}/v1/vehicles/{self.vin}/charging/status"
         mileage_url = f"{API_BASE}/v1/vehicles/{self.vin}/mileage"
         response = await self.session.get(status_url, headers=self.headers)
