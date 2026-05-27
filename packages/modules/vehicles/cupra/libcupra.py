@@ -297,9 +297,9 @@ class cupra:
             odometer = mileage_data.get('mileageKm', None)
 
         battery_value = {
-            'currentSOC_pct': status_data['status']['battery']['currentSOC_pct'],
-            'cruisingRangeElectric_km': status_data['status']['battery']['cruisingRangeElectric_km'],
-            'carCapturedTimestamp': status_data['status']['battery']['carCapturedTimestamp'],
+            'currentSOC_pct': status_data['battery']['currentSocPercentage'],
+            'cruisingRangeElectric_km': status_data['battery']['estimatedRangeInKm'],
+            # 'carCapturedTimestamp': status_data['status']['battery']['carCapturedTimestamp'],
             'odometer': odometer,
         }
 
