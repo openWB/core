@@ -111,12 +111,10 @@ class TestCupraGetStatus:
     def test_get_status_success(self, cupra_instance, mock_session):
         # setup
         status_response_data = {
-            "status": {
-                "battery": {
-                    "currentSOC_pct": 67,
-                    "cruisingRangeElectric_km": 305,
-                    "carCapturedTimestamp": "2026-03-29T11:20:00Z"
-                }
+            "battery": {
+                "currentSocPercentage": 67,
+                "estimatedRangeInKm": 305,
+                "carCapturedTimestamp": "2026-03-29T11:20:00Z"
             }
         }
         mileage_response_data = {
@@ -152,12 +150,10 @@ class TestCupraGetStatus:
     def test_get_status_mileage_error_sets_odometer_none(self, cupra_instance, mock_session):
         # setup
         status_response_data = {
-            "status": {
-                "battery": {
-                    "currentSOC_pct": 67,
-                    "cruisingRangeElectric_km": 305,
-                    "carCapturedTimestamp": "2026-03-29T11:20:00Z"
-                }
+            "battery": {
+                "currentSocPercentage": 67,
+                "estimatedRangeInKm": 305,
+                "carCapturedTimestamp": "2026-03-29T11:20:00Z"
             }
         }
         mileage_error_response = {

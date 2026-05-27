@@ -7,6 +7,7 @@ import json
 import uuid
 import base64
 import hashlib
+import datetime
 
 from helpermodules.utils.error_handling import ImportErrorContext
 with ImportErrorContext():
@@ -299,7 +300,10 @@ class cupra:
         battery_value = {
             'currentSOC_pct': status_data['battery']['currentSocPercentage'],
             'cruisingRangeElectric_km': status_data['battery']['estimatedRangeInKm'],
-            # 'carCapturedTimestamp': status_data['status']['battery']['carCapturedTimestamp'],
+            # use current timestamp as a fallback, as the API field is missing
+            'carCapturedTimestamp': status_data['battery'].get(
+                'carCapturedTimestamp',
+                datetime.datetime.now(datetime.UTC).isoformat() + 'Z'),
             'odometer': odometer,
         }
 
