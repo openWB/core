@@ -385,9 +385,7 @@ class BatAll:
                     # Speicher darf wegen Hysterese bis min_bat_soc entladen werden.
                     else:
                         if self.data.set.power_limit is None:
-                            active_bat_control = (self.data.config.bat_control_permitted and
-                                                  self.data.config.bat_control_activated)
-                            if config.bat_power_discharge_active and not active_bat_control:
+                            if config.bat_power_discharge_active and not self.data.config.bat_control_activated:
                                 # Wenn der Speicher mit mehr als der erlaubten Entladeleistung entladen wird, muss das
                                 # vom Überschuss subtrahiert werden.
                                 charging_power_left = config.bat_power_discharge + self.data.get.power
@@ -403,9 +401,7 @@ class BatAll:
                 else:
                     self.data.set.hysteresis_discharge = True
                     if self.data.set.power_limit is None:
-                        active_bat_control = (self.data.config.bat_control_permitted and
-                                              self.data.config.bat_control_activated)
-                        if config.bat_power_discharge_active and not active_bat_control:
+                        if config.bat_power_discharge_active and not self.data.config.bat_control_activated:
                             # Wenn der Speicher mit mehr als der erlaubten Entladeleistung entladen wird, muss das
                             # vom Überschuss subtrahiert werden.
                             charging_power_left = config.bat_power_discharge + self.data.get.power
