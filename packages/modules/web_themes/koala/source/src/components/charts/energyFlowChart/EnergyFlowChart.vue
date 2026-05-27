@@ -289,8 +289,8 @@ const maxSystemPower = computed(() => {
 });
 
 function calcDuration(power: number, maxPower: number) {
-  const minDuration = 0.4;
-  const maxDuration = 4.0;
+  const minDuration = 3;
+  const maxDuration = 10;
   const absPower = Math.abs(power || 0);
   if (absPower >= maxPower) return `${minDuration}s`;
   if (absPower > 0)
@@ -633,6 +633,15 @@ const calcFlowLineAnchorX = (column: number): number => {
   return columnX;
 };
 
+const calcFlowPath = (component: FlowComponent): string => {
+  const x1 = calcFlowLineAnchorX(component.position.column);
+  const y1 = calcRowY(component.position.row);
+  if (component.class.base === 'vehicle') {
+    return `M ${x1}, ${y1} ${x1}, ${calcRowY(component.position.row - 1)}`;
+  }
+  return `M ${x1}, ${y1} ${calcColumnX(1)}, ${calcRowY(1)}`;
+};
+
 const calcSvgElementBoundingBox = (elementId: string) => {
   const element = document.getElementById(elementId);
   if (element == undefined || !(element instanceof SVGGraphicsElement)) {
@@ -686,24 +695,29 @@ const svgRectWidth = computed(
       </defs>
 
       <g id="layer1" style="display: inline">
-        <path
-          v-for="component in svgComponents"
-          :key="component.id"
-          :id="`flow-path-${component.id}`"
-          :class="[
-            component.class.base,
-            component.class.animationId,
-            { animated: component.class.animated },
-            { animatedReverse: component.class.animatedReverse },
-          ]"
-          :d="
-            component.class.base !== 'vehicle'
-              ? `M ${calcFlowLineAnchorX(component.position.column)}, ` +
-                `${calcRowY(component.position.row)} ${calcColumnX(1)}, ${calcRowY(1)}`
-              : `M ${calcFlowLineAnchorX(component.position.column)}, ` +
-                `${calcRowY(component.position.row)} ${calcFlowLineAnchorX(component.position.column)}, ${calcRowY(component.position.row - 1)}`
-          "
-        />
+        <g v-for="component in svgComponents" :key="component.id">
+          <!-- static background line -->
+          <path
+            class="flow-base"
+            :class="{
+              animated: component.class.animated,
+              animatedReverse: component.class.animatedReverse,
+            }"
+            :d="calcFlowPath(component)"
+          />
+          <!-- glowing flow overlay -->
+          <path
+            :id="`flow-path-${component.id}`"
+            class="flow-animated"
+            :class="[
+              component.class.base,
+              component.class.animationId,
+              { animated: component.class.animated },
+              { animatedReverse: component.class.animatedReverse },
+            ]"
+            :d="calcFlowPath(component)"
+          />
+        </g>
       </g>
 
       <g id="layer2" style="display: inline">
@@ -877,111 +891,128 @@ svg {
   object-fit: contain;
 }
 
-path {
+.flow-base {
   fill: none;
-  fill-rule: evenodd;
   stroke: var(--q-secondary);
   stroke-width: 0.75;
-  stroke-linecap: butt;
-  stroke-linejoin: miter;
-  stroke-miterlimit: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
   transition: stroke 0.5s;
 }
 
-/* Basis for all animated lines */
-path.animated {
-  animation-name: dash;
+.body--dark .flow-base {
+  stroke: var(--q-white);
+}
+
+/* slightly darker solid line beneath an active flow */
+.flow-base.animated,
+.flow-base.animatedReverse {
+  stroke: var(--q-grey);
+}
+
+/* overlay stays hidden until energy is flowing */
+.flow-animated {
+  fill: none;
+  stroke: none;
+}
+
+/* Animated energy flow: glowing dots traveling along the line */
+.flow-animated.animated,
+.flow-animated.animatedReverse {
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-dasharray: 2 50;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
-  stroke-dasharray: 5;
-}
-path.animatedReverse {
-  animation-name: dashReverse;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-  stroke-dasharray: 5;
+  filter: drop-shadow(0 0 2px currentColor) drop-shadow(0 0 6px currentColor);
 }
 
-path.animated,
-path.animatedReverse {
-  stroke: var(--q-brown-text);
-  opacity: 0.7;
+.flow-animated.animated {
+  animation-name: energyFlow;
+}
+.flow-animated.animatedReverse {
+  animation-name: energyFlowReverse;
 }
 
-.body--dark {
-  path {
-    stroke: var(--q-white);
-  }
-  path.animated,
-  path.animatedReverse {
-    stroke: var(--q-white);
-  }
+path.animated.grid {
+  color: var(--q-negative);
+  animation-duration: v-bind('animationDurations.grid');
 }
-
-path.animated.grid,
 path.animatedReverse.grid {
+  color: var(--q-positive);
   animation-duration: v-bind('animationDurations.grid');
 }
 
 path.animated.home,
 path.animatedReverse.home {
+  color: var(--q-home-stroke);
   animation-duration: v-bind('animationDurations.home');
 }
 
 path.animated.pv,
 path.animatedReverse.pv {
+  color: var(--q-positive);
   animation-duration: v-bind('animationDurations.pv');
 }
 
 path.animated.battery,
 path.animatedReverse.battery {
+  color: var(--q-battery-stroke);
   animation-duration: v-bind('animationDurations.battery');
 }
 
 path.animated.charge-point-1,
 path.animatedReverse.charge-point-1 {
+  color: var(--q-charge-point-stroke);
   animation-duration: v-bind('animationDurations.chargePoint1');
 }
 path.animated.charge-point-2,
 path.animatedReverse.charge-point-2 {
+  color: var(--q-charge-point-stroke);
   animation-duration: v-bind('animationDurations.chargePoint2');
 }
 path.animated.charge-point-3,
 path.animatedReverse.charge-point-3 {
+  color: var(--q-charge-point-stroke);
   animation-duration: v-bind('animationDurations.chargePoint3');
 }
 path.animated.charge-point-sum,
 path.animatedReverse.charge-point-sum {
+  color: var(--q-charge-point-stroke);
   animation-duration: v-bind('animationDurations.chargePointSum');
 }
 
 path.animated.vehicle-1,
 path.animatedReverse.vehicle-1 {
+  color: var(--q-vehicle-stroke);
   animation-duration: v-bind('animationDurations.vehicle1');
 }
 path.animated.vehicle-2,
 path.animatedReverse.vehicle-2 {
+  color: var(--q-vehicle-stroke);
   animation-duration: v-bind('animationDurations.vehicle2');
 }
 path.animated.vehicle-3,
 path.animatedReverse.vehicle-3 {
+  color: var(--q-vehicle-stroke);
   animation-duration: v-bind('animationDurations.vehicle3');
 }
 
-@keyframes dash {
-  from {
-    stroke-dashoffset: 10;
-  }
-  to {
+@keyframes energyFlow {
+  0% {
     stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -200;
   }
 }
-@keyframes dashReverse {
-  from {
-    stroke-dashoffset: 0;
+@keyframes energyFlowReverse {
+  0% {
+    stroke-dashoffset: -200;
   }
-  to {
-    stroke-dashoffset: 10;
+  100% {
+    stroke-dashoffset: 0;
   }
 }
 
