@@ -113,16 +113,19 @@ class TestCupraGetStatus:
         status_response_data = {
             "battery": {
                 "currentSocPercentage": 67,
-                "estimatedRangeInKm": 305,
-                "carCapturedTimestamp": "2026-03-29T11:20:00Z"
+                "estimatedRangeInKm": 305
             }
         }
         mileage_response_data = {
             "mileageKm": 77889
         }
+        statusv2_response_data = {
+            "updatedAt": "2026-03-29T11:20:00Z"
+        }
         responses = [
             MockAiohttpResponse(status_response_data, 200),
-            MockAiohttpResponse(mileage_response_data, 200)
+            MockAiohttpResponse(mileage_response_data, 200),
+            MockAiohttpResponse(statusv2_response_data, 200)
         ]
 
         async def side_effect_func(*args, **kwargs):
@@ -137,13 +140,17 @@ class TestCupraGetStatus:
         assert status['charging']['batteryStatus']['value']['cruisingRangeElectric_km'] == 305
         assert status['charging']['batteryStatus']['value']['carCapturedTimestamp'] == "2026-03-29T11:20:00Z"
         assert status['charging']['batteryStatus']['value']['odometer'] == 77889
-        assert mock_session.get.call_count == 2
+        assert mock_session.get.call_count == 3
         mock_session.get.assert_any_call(
             "https://ola.prod.code.seat.cloud.vwgroup.com/v1/vehicles/test_vin/charging/status",
             headers=cupra_instance.headers
         )
         mock_session.get.assert_any_call(
             "https://ola.prod.code.seat.cloud.vwgroup.com/v1/vehicles/test_vin/mileage",
+            headers=cupra_instance.headers
+        )
+        mock_session.get.assert_any_call(
+            "https://ola.prod.code.seat.cloud.vwgroup.com/v2/vehicles/test_vin/status",
             headers=cupra_instance.headers
         )
 
@@ -153,15 +160,19 @@ class TestCupraGetStatus:
             "battery": {
                 "currentSocPercentage": 67,
                 "estimatedRangeInKm": 305,
-                "carCapturedTimestamp": "2026-03-29T11:20:00Z"
+                "updatedAt": "2026-03-29T11:20:00Z"
             }
         }
         mileage_error_response = {
             "error": "service_unavailable"
         }
+        statusv2_response_data = {
+            "error": "service_unavailable"
+        }
         responses = [
             MockAiohttpResponse(status_response_data, 200),
-            MockAiohttpResponse(mileage_error_response, 503)
+            MockAiohttpResponse(mileage_error_response, 503),
+            MockAiohttpResponse(statusv2_response_data, 200)
         ]
 
         async def side_effect_func(*args, **kwargs):

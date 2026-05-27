@@ -262,6 +262,7 @@ class cupra:
         self.headers['app-market'] = 'android'
         self.headers['app-version'] = '2.16.0'
         status_url = f"{API_BASE}/v1/vehicles/{self.vin}/charging/status"
+        statusv2_url = f"{API_BASE}/v2/vehicles/{self.vin}/status"
         mileage_url = f"{API_BASE}/v1/vehicles/{self.vin}/mileage"
         response = await self.session.get(status_url, headers=self.headers)
 
@@ -297,13 +298,22 @@ class cupra:
             self.log.debug(f"Mileage data from Cupra API: {mileage_data}")
             odometer = mileage_data.get('mileageKm', None)
 
+        # Fetch additional status data from v2 endpoint
+        response = await self.session.get(statusv2_url, headers=self.headers)
+        if response.status >= 400:
+            self.log.error("Get status v2 failed")
+        else:
+            statusv2_data = await response.json()
+            self.log.debug(f"Status v2 data from Cupra API: {statusv2_data}")
+            # use current timestamp as a fallback, as the API field is missing
+            carCapturedTimestamp = statusv2_data.get(
+                'updatedAt',
+                datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"))
+            
         battery_value = {
             'currentSOC_pct': status_data['battery']['currentSocPercentage'],
             'cruisingRangeElectric_km': status_data['battery']['estimatedRangeInKm'],
-            # use current timestamp as a fallback, as the API field is missing
-            'carCapturedTimestamp': status_data['battery'].get(
-                'carCapturedTimestamp',
-                datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")),
+            'carCapturedTimestamp': status_data['battery'].get('updatedAt', carCapturedTimestamp),
             'odometer': odometer,
         }
 
