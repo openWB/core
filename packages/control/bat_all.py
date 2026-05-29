@@ -385,7 +385,13 @@ class BatAll:
                     # Speicher darf wegen Hysterese bis min_bat_soc entladen werden.
                     else:
                         if self.data.set.power_limit is None:
-                            if config.bat_power_discharge_active and not self.data.config.bat_control_activated:
+                            # Aktive Steuerung nicht konfiguriert oder
+                            # Aktive Steuerung + Preisgrenze aktiv + Grenze nicht unterschritten
+                            # -> dann erlaubte Speicherentladeleistung addieren
+                            power_discharge_allowed = (self.data.config.bat_control_activated is False or
+                                                      (self.data.config.power_limit_condition == BatPowerLimitCondition.PRICE_LIMIT.value and
+                                                       self.data.set.power_limit is None))
+                            if config.bat_power_discharge_active and power_discharge_allowed:
                                 # Wenn der Speicher mit mehr als der erlaubten Entladeleistung entladen wird, muss das
                                 # vom Überschuss subtrahiert werden.
                                 charging_power_left = config.bat_power_discharge + self.data.get.power
@@ -401,7 +407,13 @@ class BatAll:
                 else:
                     self.data.set.hysteresis_discharge = True
                     if self.data.set.power_limit is None:
-                        if config.bat_power_discharge_active and not self.data.config.bat_control_activated:
+                        # Aktive Steuerung nicht konfiguriert oder
+                        # Aktive Steuerung + Preisgrenze aktiv + Grenze nicht unterschritten
+                        # -> dann erlaubte Speicherentladeleistung addieren
+                        power_discharge_allowed = (self.data.config.bat_control_activated is False or
+                                                  (self.data.config.power_limit_condition == BatPowerLimitCondition.PRICE_LIMIT.value and
+                                                   self.data.set.power_limit is None))
+                        if config.bat_power_discharge_active and power_discharge_allowed:
                             # Wenn der Speicher mit mehr als der erlaubten Entladeleistung entladen wird, muss das
                             # vom Überschuss subtrahiert werden.
                             charging_power_left = config.bat_power_discharge + self.data.get.power
