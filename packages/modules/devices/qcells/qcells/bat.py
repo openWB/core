@@ -11,7 +11,6 @@ from modules.common.component_type import ComponentDescriptor, ComponentType
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.store import get_component_value_store
-from modules.devices.qcells.qcells.config import QCellsBatSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.devices.qcells.qcells.config import QCellsBatSetup
 
