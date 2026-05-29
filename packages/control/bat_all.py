@@ -187,7 +187,7 @@ class BatAll:
         except Exception:
             log.exception("Fehler im Bat-Modul")
 
-    def get_bat_power_of_hybrid_system(self, inverter) -> float:
+    def get_bat_power_of_hybrid_system(self, inverter: Pv) -> float:
         """ ermittelt die Leistung des Speichers, die über den Wechselrichter fließt, um die Leistung des Speichers
         bei einem Hybrid-System zu berücksichtigen, wenn die maximale Ausgangsleistung des Wechselrichters erreicht ist.
         """
@@ -195,7 +195,7 @@ class BatAll:
         try:
             children = data.data.counter_all_data.get_entry_of_element(inverter.num)["children"]
             if len(children):
-                hybrid = []
+                hybrid: List[str] = []
                 for c in children:
                     if c.get("type") == "bat":
                         hybrid.append(f'bat{c["id"]}')
@@ -209,7 +209,7 @@ class BatAll:
             log.exception(f"Fehler im Bat-Modul {inverter.num}")
         return bat_power
 
-    def _limit_bat_power_discharge(self, required_power) -> float:
+    def _limit_bat_power_discharge(self, required_power: float) -> float:
         """begrenzt die für den Algorithmus benötigte Entladeleistung des Speichers, wenn die maximale Ausgangsleistung
         des WR erreicht ist."""
         if required_power > 0:

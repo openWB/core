@@ -248,7 +248,7 @@ class CounterAll:
         self.__get_all_counter_in_branch(self.data.get.hierarchy[0], num)
         return self.connected_counters
 
-    def get_entry_of_element(self, id_to_find: int) -> Dict:
+    def get_entry_of_element(self, id_to_find: int) -> Dict[str, List[Dict[str, Union[int, str]]]]:
         item = self.__is_id_in_top_level(id_to_find)
         if item:
             return item
