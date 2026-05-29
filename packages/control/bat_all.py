@@ -389,8 +389,9 @@ class BatAll:
                             # Aktive Steuerung + Preisgrenze aktiv + Grenze nicht unterschritten
                             # -> dann erlaubte Speicherentladeleistung addieren
                             power_discharge_allowed = (self.data.config.bat_control_activated is False or
-                                                      (self.data.config.power_limit_condition == BatPowerLimitCondition.PRICE_LIMIT.value and
-                                                       self.data.set.power_limit is None))
+                                                       (self.data.config.power_limit_condition ==
+                                                        BatPowerLimitCondition.PRICE_LIMIT.value and
+                                                        self.data.set.power_limit is None))
                             if config.bat_power_discharge_active and power_discharge_allowed:
                                 # Wenn der Speicher mit mehr als der erlaubten Entladeleistung entladen wird, muss das
                                 # vom Überschuss subtrahiert werden.
@@ -411,8 +412,9 @@ class BatAll:
                         # Aktive Steuerung + Preisgrenze aktiv + Grenze nicht unterschritten
                         # -> dann erlaubte Speicherentladeleistung addieren
                         power_discharge_allowed = (self.data.config.bat_control_activated is False or
-                                                  (self.data.config.power_limit_condition == BatPowerLimitCondition.PRICE_LIMIT.value and
-                                                   self.data.set.power_limit is None))
+                                                   (self.data.config.power_limit_condition ==
+                                                    BatPowerLimitCondition.PRICE_LIMIT.value and
+                                                    self.data.set.power_limit is None))
                         if config.bat_power_discharge_active and power_discharge_allowed:
                             # Wenn der Speicher mit mehr als der erlaubten Entladeleistung entladen wird, muss das
                             # vom Überschuss subtrahiert werden.
