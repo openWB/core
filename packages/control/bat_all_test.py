@@ -37,7 +37,7 @@ def test_limit_bat_power_discharge(bat_power: int,
                                    required_power: int,
                                    pv_power: int,
                                    expected_power: int,
-                                   monkeypatch):
+                                   monkeypatch: pytest.MonkeyPatch):
     # setup
     data.data.pv_data = {"pv2": Pv(2)}
     data.data.pv_data["pv2"].data.get.power = pv_power
@@ -51,7 +51,7 @@ def test_limit_bat_power_discharge(bat_power: int,
     b.data.get.power = bat_power
 
     # execution
-    power = b._limit_bat_power_discharge(required_power)
+    power = b._limit_bat_power_discharge(required_power)  # pyright: ignore[reportPrivateUsage]
 
     # evaluation
     assert power == expected_power
