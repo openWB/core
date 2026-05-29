@@ -44,8 +44,8 @@ def test_limit_bat_power_discharge(bat_power: int,
     data.data.pv_data["pv2"].data.config.max_ac_out = 5000
     data.data.bat_data["bat1"] = Bat(1)
     data.data.bat_data["bat1"].data.get.power = bat_power
-    mock_enty_children = Mock(return_value={"children": [{"id": 1, "type": "bat"}]})
-    monkeypatch.setattr(data.data.counter_all_data, "get_entry_of_element", mock_enty_children)
+    mock_entry_children = Mock(return_value={"children": [{"id": 1, "type": "bat"}]})
+    monkeypatch.setattr(data.data.counter_all_data, "get_entry_of_element", mock_entry_children)
 
     b = BatAll()
     b.data.get.power = bat_power
