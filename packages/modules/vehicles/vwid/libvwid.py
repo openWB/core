@@ -12,11 +12,13 @@ import uuid
 import logging
 from random import randint, random
 from urllib.parse import parse_qs, urljoin, urlparse
-
-from aiohttp import ClientSession, ClientTimeout, client_exceptions
-from aiohttp.hdrs import METH_GET, METH_POST, METH_PUT
-from bs4 import BeautifulSoup
+import aiohttp
+import bs4
 import jwt
+
+METH_GET = "GET"
+METH_POST = "POST"
+METH_PUT = "PUT"
 
 ANDROID_PACKAGE_NAME = "com.volkswagen.weconnect"
 APP_URI = "weconnect://authenticated"
@@ -661,7 +663,7 @@ class Connection:
 
     def extract_state_token(self, page_content: str) -> str | None:
         """Extract state token from a page."""
-        soup = BeautifulSoup(page_content, "html.parser")
+        soup = bs4.BeautifulSoup(page_content, "html.parser")
         state_input = soup.select_one('input[name="state"]')
         if not state_input or not state_input.get("value"):
             _LOGGER.debug("State token not found.")
@@ -683,7 +685,7 @@ class Connection:
         # Handle explicit error 400 (form validation failure)
         if req.status == 400:
             page_content = await req.text()
-            soup = BeautifulSoup(page_content, "html.parser")
+            soup = bs4.BeautifulSoup(page_content, "html.parser")
 
             # Try both username + password fields in one pass
             for field_id in ("error-element-username", "error-element-password"):
@@ -882,7 +884,7 @@ class Connection:
             _LOGGER.error("Authentication error during login: %s", error)
             self._session_logged_in = False
             return False
-        except client_exceptions.ClientError as error:
+        except aiohttp.client_exceptions.ClientError as error:
             _LOGGER.error("Network error during login: %s", error)
             self._session_logged_in = False
             return False
@@ -931,7 +933,7 @@ class Connection:
                 method,
                 url,
                 headers=self._session_headers,
-                timeout=ClientTimeout(total=TIMEOUT.seconds),
+                timeout=aiohttp.ClientTimeout(total=TIMEOUT.seconds),
                 cookies=self._jarCookie,
                 raise_for_status=False,
                 **kwargs,
@@ -984,7 +986,7 @@ class Connection:
                 if return_raw:
                     res = response
                 return res
-        except client_exceptions.ClientResponseError as httperror:
+        except aiohttp.client_exceptions.ClientResponseError as httperror:
             # Update service status
             await self.update_service_status(url, httperror.status)
             raise httperror from None
@@ -997,7 +999,7 @@ class Connection:
         """Perform a get query."""
         try:
             return await self._request(METH_GET, url)
-        except client_exceptions.ClientResponseError as error:
+        except aiohttp.client_exceptions.ClientResponseError as error:
             if error.status == 400:
                 _LOGGER.error(
                     'Got HTTP 400 "Bad Request" from server, this request might be malformed or not implemented'
@@ -1035,7 +1037,7 @@ class Connection:
                     METH_POST, url, return_raw=return_raw, **data
                 )
             return await self._request(METH_POST, url, return_raw=return_raw)
-        except client_exceptions.ClientResponseError as error:
+        except aiohttp.client_exceptions.ClientResponseError as error:
             if error.status == 429 and tries < MAX_RETRIES_ON_RATE_LIMIT:
                 delay = randint(1, 3 + tries * 2)
                 _LOGGER.debug(
@@ -1053,7 +1055,7 @@ class Connection:
             if data:
                 return await self._request(METH_PUT, url, return_raw=return_raw, **data)
             return await self._request(METH_PUT, url, return_raw=return_raw)
-        except client_exceptions.ClientResponseError as error:
+        except aiohttp.client_exceptions.ClientResponseError as error:
             if error.status == 429 and tries < MAX_RETRIES_ON_RATE_LIMIT:
                 delay = randint(1, 3 + tries * 2)
                 _LOGGER.debug(
@@ -1730,7 +1732,7 @@ class vwid():
         # SOCERR-01: login problem, username, password wrong, account locked, etc.
         # SOCERR-02: vehicle not found in account, VIN wrong?
         try:
-            async with ClientSession(headers={'Connection': 'keep-alive'}) as session:
+            async with aiohttp.ClientSession(headers={'Connection': 'keep-alive'}) as session:
                 _now = datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
                 data = {}
                 data['charging'] = {}
