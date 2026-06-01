@@ -223,7 +223,7 @@ const secondaryCountersConfigured = computed(
   () => secondaryCounterData.value.length > 0,
 );
 
-const gridID = computed(() => mqttStore.gridId).value;
+const gridID = computed(() => mqttStore.gridId);
 
 const gridData = computed((): DailyTotalsItem => {
   let data: DailyTotalsItem = {
@@ -243,9 +243,10 @@ const gridData = computed((): DailyTotalsItem => {
         imported: mqttStore.counterDailyImported('textValue') as string,
         exported: mqttStore.counterDailyExported('textValue') as string,
       },
-      color: gridID
-        ? mqttStore.gridComponentColor(gridID) || undefined
-        : undefined,
+            color:
+        gridID.value !== undefined
+          ? mqttStore.gridComponentColor(gridID.value) || undefined
+          : undefined,
     };
   }
   return data;
