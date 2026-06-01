@@ -394,31 +394,27 @@ $dark-charge-plan-link-button: #75787a;
 CSS for all themes
 
 // Carousel controls — all themes
-.q-carousel__control {
-  // Icon color + no shadow for every control button, including the navigation
-  // dots (descendant selector reaches the dots nested deeper in the control).
-  .q-btn {
+
+// Solid backing pill for the large controls. Arrows and the fullscreen button
+// are both direct children of a .q-carousel__control, so `>` matches them; the
+// navigation dots sit one level deeper (inside .q-carousel__navigation-inner),
+// so `>` skips them — removes the background dot.
+.q-carousel__arrow .q-btn,
+.q-carousel__control > .q-btn {
+  background: var(--q-background) !important;
+  color: var(--q-carousel-control) !important;
+}
+
+// Every control button (arrows, dots, fullscreen): strip Quasar's default
+// elevation shadow and color the icon.
+.q-carousel__control .q-btn {
+  &:before {
+    box-shadow: none;
+  }
+  .q-icon {
+    color: var(--q-carousel-control);
     &:before {
       box-shadow: none;
     }
-    .q-icon {
-      color: var(--q-carousel-control);
-      &:before {
-        box-shadow: none;
-      }
-    }
   }
-  // Solid backing for the direct-child buttons only (fullscreen/bottom), so the
-  // nested dots don't get a background box.
-  > .q-btn {
-    background: var(--q-background) !important;
-    color: var(--q-carousel-control) !important;
-  }
-}
-
-// Arrows are outside .q-carousel__control in the DOM, so the backing is
-// applied to them separately.
-.q-carousel__arrow .q-btn {
-  background: var(--q-background) !important;
-  color: var(--q-carousel-control) !important;
 }
