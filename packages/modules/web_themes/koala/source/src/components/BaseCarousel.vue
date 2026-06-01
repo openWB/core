@@ -144,10 +144,4 @@ watch(groupedItems, (groups) => {
   min-height: fit-content;
   height: 100%;
 }
-
-/* Arrows */
-:deep(.q-carousel__arrow .q-btn) {
-  background: var(--q-background) !important;
-  color: var(--q-carousel-control) !important;
-}
 </style>

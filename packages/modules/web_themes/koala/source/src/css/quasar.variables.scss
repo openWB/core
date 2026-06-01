@@ -127,21 +127,6 @@ $table-hover: #f9f8f8;
   .q-tab--active {
     background-color: color.scale($secondary, $lightness: -2%);
   }
-  // Carousel control arrows and buttons
-  .q-carousel__control {
-    .q-btn {
-      &:before {
-        box-shadow: none;
-      }
-      .q-icon {
-        color: var(--q-primary);
-        &:before {
-          color: var(--q-primary);
-          box-shadow: none;
-        }
-      }
-    }
-  }
   // Slide container background
   .q-carousel__slide {
     background-color: var(--q-background-2);
@@ -347,22 +332,6 @@ $dark-charge-plan-link-button: #75787a;
   .q-tab--active {
     background-color: var(--q-secondary);
   }
-  // Carousel control arrows and buttons
-  .q-carousel__control {
-    .q-btn {
-      .q-icon {
-        color: var(--q-carousel-control);
-        &:before {
-          color: var(--q-carousel-control);
-        }
-      }
-    }
-  }
-  // Slide arrow buttons background
-  :deep(.q-carousel__arrow .q-btn) {
-    background: var(--q-background) !important;
-    color: var(--q-carousel-control) !important;
-  }
   // Slide container background
   .q-carousel__slide {
     color: var(--q-white);
@@ -419,4 +388,37 @@ $dark-charge-plan-link-button: #75787a;
   .q-list {
     scrollbar-color: var(--q-primary) var(--q-list);
   }
+}
+
+/////////////////////////////////////////////////////////////////
+CSS for all themes
+
+// Carousel controls — all themes
+.q-carousel__control {
+  // Icon color + no shadow for every control button, including the navigation
+  // dots (descendant selector reaches the dots nested deeper in the control).
+  .q-btn {
+    &:before {
+      box-shadow: none;
+    }
+    .q-icon {
+      color: var(--q-carousel-control);
+      &:before {
+        box-shadow: none;
+      }
+    }
+  }
+  // Solid backing for the direct-child buttons only (fullscreen/bottom), so the
+  // nested dots don't get a background box.
+  > .q-btn {
+    background: var(--q-background) !important;
+    color: var(--q-carousel-control) !important;
+  }
+}
+
+// Arrows are outside .q-carousel__control in the DOM, so the backing is
+// applied to them separately.
+.q-carousel__arrow .q-btn {
+  background: var(--q-background) !important;
+  color: var(--q-carousel-control) !important;
 }
