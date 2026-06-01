@@ -80,5 +80,3 @@ const currentModeLabel = computed(
   color: var(--q-primary) !important;
 }
 </style>
-
-

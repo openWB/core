@@ -50,7 +50,7 @@
   >
     <template #label>
       <span class="ellipsis q-ml-xs" :title="connectedVehicle?.name">
-        <q-icon name="directions_car" color="primary"/>
+        <q-icon name="directions_car" color="primary" />
         {{ connectedVehicle?.name }}
       </span>
     </template>

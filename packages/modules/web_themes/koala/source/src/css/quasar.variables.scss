@@ -358,6 +358,11 @@ $dark-charge-plan-link-button: #75787a;
       }
     }
   }
+  // Slide arrow buttons background
+  :deep(.q-carousel__arrow .q-btn) {
+    background: var(--q-background) !important;
+    color: var(--q-carousel-control) !important;
+  }
   // Slide container background
   .q-carousel__slide {
     color: var(--q-white);

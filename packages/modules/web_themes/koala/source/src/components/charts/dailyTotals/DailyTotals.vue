@@ -243,7 +243,7 @@ const gridData = computed((): DailyTotalsItem => {
         imported: mqttStore.counterDailyImported('textValue') as string,
         exported: mqttStore.counterDailyExported('textValue') as string,
       },
-            color:
+      color:
         gridID.value !== undefined
           ? mqttStore.gridComponentColor(gridID.value) || undefined
           : undefined,
