@@ -64,7 +64,7 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
         tariff_state = self._remove_outdated_prices(tariff_state, timeslot_length_seconds)
         return tariff_state, timeslot_length_seconds
 
-    def __calculate_next_query_time(self) -> None:
+    def _calculate_next_query_time(self, latest_price_timestamp: datetime) -> None:
         now = datetime.now()
         current_hour = now.hour + 1  # next full hour
         log.debug(f"Aktuelle Tarif Update Stunde: {current_hour} Uhr."
@@ -81,6 +81,10 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
                            timedelta(days=day_offset, minutes=random.randint(1, 7) * -5))
         if next_query_time <= now:
             next_query_time += timedelta(hours=1)
+        if next_query_time < latest_price_timestamp:
+            # Falls die Preise nicht bis zum nächsten geplanten Abruf gültig sind,
+            # den Abruf auf die Gültigkeitsdauer der Preise setzen
+            next_query_time = latest_price_timestamp
         self.get.next_query_time = int(next_query_time.timestamp())
         log.debug(f"Nächster Abruf der {self.tariff_type} Strompreise geplant für:"
                   f" {next_query_time} (Unix Timestamp: {self.get.next_query_time})")
@@ -89,8 +93,10 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
     def __call_component_updater(self) -> TariffState:
         last_known_timestamp = datetime.fromtimestamp(int(max(self.get.prices.keys()) if self.get.prices else 0))
         tariff_state = self._component_updater()
-        if last_known_timestamp < datetime.fromtimestamp(int(max(tariff_state.prices.keys()))):
-            self.__calculate_next_query_time()
+        latest_price_timestamp = datetime.fromtimestamp(
+            int(max(tariff_state.prices.keys()) if tariff_state.prices else 0))
+        if last_known_timestamp < latest_price_timestamp:
+            self._calculate_next_query_time(latest_price_timestamp)
         return tariff_state
 
     def __log_and_publish_progress(self, timeslot_length_seconds, tariff_state):

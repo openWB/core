@@ -1,8 +1,11 @@
+from datetime import datetime, tzinfo
+from typing import Optional
 from unittest.mock import Mock
 from helpermodules import timecheck
 import pytest
 
 from modules.common.component_state import TariffState
+from modules.common import configurable_tariff
 from modules.common.configurable_tariff import ConfigurableFlexibleTariff
 from modules.electricity_pricing.flexible_tariffs.awattar.config import AwattarTariff
 
@@ -94,9 +97,8 @@ def test_remove_outdated_prices(
     monkeypatch.setattr(timecheck, "create_timestamp", Mock(return_value=now))
 
     # test
-    result = tariff._remove_outdated_prices(
-        tariff_state, time_slot_seconds[1] - time_slot_seconds[0]
-    )
+    # pyright: ignore[reportPrivateUsage]
+    result = tariff._remove_outdated_prices(tariff_state, time_slot_seconds[1] - time_slot_seconds[0])
 
     # assert
     assert result.prices == expected.prices
@@ -117,4 +119,54 @@ def test_accept_no_prices_at_start(monkeypatch):
     monkeypatch.setattr(timecheck, "create_timestamp", Mock(return_value=5))
 
     # test - do not fail
-    tariff._remove_outdated_prices(TariffState(), 1)
+    tariff._remove_outdated_prices(TariffState(), 1)  # pyright: ignore[reportPrivateUsage]
+
+
+def test_calculate_next_query_time(monkeypatch: pytest.MonkeyPatch):
+    # setup
+    fixed_now = datetime(2022, 5, 16, 10, 10, 0)
+
+    class FixedDateTime(datetime):
+        @classmethod
+        def now(cls, tz: Optional[tzinfo] = None):
+            return fixed_now if tz is None else fixed_now.replace(tzinfo=tz)
+
+    monkeypatch.setattr(configurable_tariff, "datetime", FixedDateTime)
+    monkeypatch.setattr(configurable_tariff.random, "randint", Mock(return_value=1))
+
+    tariff = ConfigurableFlexibleTariff(AwattarTariff(), Mock(return_value=Mock()))
+    tariff.tariff_update_hours = [14]
+
+    latest_price_timestamp = datetime(2022, 5, 16, 13, 55, 0)
+
+    # execution
+    tariff._calculate_next_query_time(latest_price_timestamp)  # pyright: ignore[reportPrivateUsage]
+
+    # evaluation
+    expected_timestamp = int(datetime(2022, 5, 16, 13, 55, 0).timestamp())
+    assert tariff.get.next_query_time == expected_timestamp
+
+
+def test_calculate_next_query_time_uses_latest_price_timestamp(monkeypatch: pytest.MonkeyPatch):
+    # setup
+    fixed_now = datetime(2022, 5, 16, 10, 10, 0)
+
+    class FixedDateTime(datetime):
+        @classmethod
+        def now(cls, tz: Optional[tzinfo] = None):
+            return fixed_now if tz is None else fixed_now.replace(tzinfo=tz)
+
+    monkeypatch.setattr(configurable_tariff, "datetime", FixedDateTime)
+    monkeypatch.setattr(configurable_tariff.random, "randint", Mock(return_value=1))
+
+    tariff = ConfigurableFlexibleTariff(AwattarTariff(), Mock(return_value=Mock()))
+    tariff.tariff_update_hours = [14]
+
+    latest_price_timestamp = datetime(2022, 5, 16, 14, 30, 0)
+
+    # execution
+    tariff._calculate_next_query_time(latest_price_timestamp)  # pyright: ignore[reportPrivateUsage]
+
+    # evaluation
+    expected_timestamp = int(latest_price_timestamp.timestamp())
+    assert tariff.get.next_query_time == expected_timestamp
