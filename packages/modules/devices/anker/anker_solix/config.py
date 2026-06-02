@@ -13,7 +13,7 @@ class AnkerConfiguration:
 class Anker:
     def __init__(self,
                  name: str = "Anker",
-                 type: str = "anker",
+                 type: str = "anker_solix",
                  id: int = 0,
                  configuration: AnkerConfiguration = None) -> None:
         self.name = name
