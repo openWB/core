@@ -75,8 +75,7 @@ const currentModeLabel = computed(
 .charge-mode-dropdown-menu .q-item--active {
   color: var(--q-primary);
 }
-
-.body--dark .charge-mode-dropdown-menu .q-item--active .q-item__section {
+.body--dark .charge-mode-dropdown-menu .q-item--active {
   color: var(--q-primary) !important;
 }
 </style>

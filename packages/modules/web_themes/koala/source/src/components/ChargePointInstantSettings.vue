@@ -27,6 +27,7 @@
           :key="option.value"
           :color="numPhases.value === option.value ? 'primary' : 'grey'"
           :label="option.label"
+          outline
           size="sm"
           class="col"
           @click="numPhases.value = option.value"

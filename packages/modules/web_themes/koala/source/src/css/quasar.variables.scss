@@ -358,12 +358,6 @@ $dark-charge-plan-link-button: #75787a;
   .q-list {
     background-color: var(--q-list);
   }
-  // Menu text color
-  .q-menu {
-    .q-item__section {
-      color: var(--q-white) !important;
-    }
-  }
   // Toggle button color in off position
   .q-toggle__thumb:after {
     background: var(--q-toggle-off);

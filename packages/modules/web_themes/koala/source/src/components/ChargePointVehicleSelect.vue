@@ -107,10 +107,10 @@ const vehicles = computed(() => mqttStore.vehicleList);
   padding: 0;
   margin: 0;
 }
-.vehicle-select-dropdown-menu .q-item--active .q-item__section {
+.vehicle-select-dropdown-menu .q-item--active {
   color: var(--q-primary) !important;
 }
-.body--dark .vehicle-select-dropdown-menu .q-item--active .q-item__section {
+.body--dark .vehicle-select-dropdown-menu .q-item--active {
   color: var(--q-primary) !important;
 }
 </style>
