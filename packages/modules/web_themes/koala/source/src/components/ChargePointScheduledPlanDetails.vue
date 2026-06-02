@@ -31,22 +31,25 @@
       <q-separator />
       <div class="q-mb-sm">
         <div class="text-subtitle2 q-mb-sm q-mt-sm">Wiederholungen</div>
-        <q-btn-group spread>
+        <q-btn-group outline spread>
           <q-btn
             size="sm"
             :color="planFrequency.value === 'once' ? 'primary' : 'grey'"
+            :outline="planFrequency.value !== 'once'"
             @click="planFrequency.value = 'once'"
             label="Einmalig"
           />
           <q-btn
             size="sm"
             :color="planFrequency.value === 'daily' ? 'primary' : 'grey'"
+            :outline="planFrequency.value !== 'daily'"
             @click="planFrequency.value = 'daily'"
             label="Täglich"
           />
           <q-btn
             size="sm"
             :color="planFrequency.value === 'weekly' ? 'primary' : 'grey'"
+            :outline="planFrequency.value !== 'weekly'"
             @click="planFrequency.value = 'weekly'"
             label="Wöchentlich"
           />
@@ -131,12 +134,13 @@
         <div
           class="row items-center justify-center q-ma-none q-pa-none no-wrap"
         >
-          <q-btn-group class="col">
+          <q-btn-group class="col" outline>
             <q-btn
               v-for="option in phaseOptions"
               :key="option.value"
               :color="planNumPhases.value === option.value ? 'primary' : 'grey'"
               :label="option.label"
+              :outline="planNumPhases.value !== option.value"
               size="sm"
               class="col"
               @click="planNumPhases.value = option.value"
@@ -149,7 +153,7 @@
         <div
           class="row items-center justify-center q-ma-none q-pa-none no-wrap"
         >
-          <q-btn-group class="col">
+          <q-btn-group class="col" outline>
             <q-btn
               v-for="option in phaseOptions"
               :key="option.value"
@@ -157,6 +161,7 @@
                 planNumPhasesPv.value === option.value ? 'primary' : 'grey'
               "
               :label="option.label"
+              :outline="planNumPhasesPv.value !== option.value"
               size="sm"
               class="col"
               @click="planNumPhasesPv.value = option.value"
@@ -165,11 +170,12 @@
         </div>
       </div>
       <div class="text-subtitle2 q-mt-sm q-mr-sm">Ziel</div>
-      <q-btn-group class="full-width">
+      <q-btn-group class="full-width" outline>
         <q-btn
           size="sm"
           class="flex-grow"
           :color="planLimitSelected.value === 'soc' ? 'primary' : 'grey'"
+          :outline="planLimitSelected.value !== 'soc'"
           @click="planLimitSelected.value = 'soc'"
           label="EV-SoC"
         />
@@ -177,6 +183,7 @@
           size="sm"
           class="flex-grow"
           :color="planLimitSelected.value === 'amount' ? 'primary' : 'grey'"
+          :outline="planLimitSelected.value !== 'amount'"
           @click="planLimitSelected.value = 'amount'"
           label="Energie"
         />

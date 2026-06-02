@@ -110,7 +110,4 @@ const vehicles = computed(() => mqttStore.vehicleList);
 .vehicle-select-dropdown-menu .q-item--active {
   color: var(--q-primary) !important;
 }
-.body--dark .vehicle-select-dropdown-menu .q-item--active {
-  color: var(--q-primary) !important;
-}
 </style>
