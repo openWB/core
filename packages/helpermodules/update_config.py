@@ -58,7 +58,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 135
+    DATASTORE_VERSION = 136
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -3450,3 +3450,28 @@ class UpdateConfig:
                 return {topic: configuration_payload}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(135)
+
+    def upgrade_datastore_136(self) -> None:
+        CHARGEMODES = ((Chargemode.SCHEDULED_CHARGING.value, True),
+                       (Chargemode.SCHEDULED_CHARGING.value, False),
+                       (Chargemode.INSTANT_CHARGING.value, True),
+                       (Chargemode.INSTANT_CHARGING.value, False),
+                       (Chargemode.ECO_CHARGING.value, True),
+                       (Chargemode.PV_CHARGING.value, True),
+                       (Chargemode.PV_CHARGING.value, False),
+                       (Chargemode.STOP.value, True),
+                       (Chargemode.STOP.value, False),)
+
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/vehicle/[0-9]+/charge_template", topic) is not None:
+                charge_template_id = decode_payload(payload)
+                charge_template = decode_payload(
+                    self.all_received_topics[f"openWB/vehicle/template/charge_template/{charge_template_id}"])
+                if charge_template["chargemode"]["selected"] == chargemode and charge_template["prio"] == prio:
+                    loadmanagement_prios.append({"type": "vehicle", "id": int(get_index(topic))})
+
+        loadmanagement_prios = []
+        for chargemode, prio in CHARGEMODES:
+            self._loop_all_received_topics(upgrade)
+        self.__update_topic("openWB/counter/get/loadmanagement_prios", loadmanagement_prios)
+        self._append_datastore_version(136)
