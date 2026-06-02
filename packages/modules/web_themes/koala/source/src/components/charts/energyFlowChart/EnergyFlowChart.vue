@@ -29,8 +29,6 @@ const svgViewBox = computed(
     `${svgSize.value.xMin} ${svgSize.value.yMin} ${svgSize.value.xMax} ${svgSize.value.yMax}`,
 );
 
-const svgStrokeWidth = computed(() => svgSize.value.strokeWidth);
-
 const svgIconWidth = computed(() => svgSize.value.circleRadius);
 
 const svgIconHeight = computed(() => svgSize.value.circleRadius);
@@ -747,16 +745,9 @@ const svgRectWidth = computed(
             >
               <rect
                 :x="-svgSize.circleRadius - svgSize.strokeWidth"
-                :y="
-                  (svgSize.circleRadius + svgSize.strokeWidth) *
-                  (1 - 2 * component.soc)
-                "
+                :y="(svgSize.circleRadius - 1) * (1 - 2 * component.soc)"
                 :width="(svgSize.circleRadius + svgSize.strokeWidth) * 2"
-                :height="
-                  (svgSize.circleRadius + svgSize.strokeWidth) *
-                  2 *
-                  component.soc
-                "
+                :height="(svgSize.circleRadius - 1) * 2 * component.soc"
               />
             </clipPath>
             <clipPath :id="`clip-label-${component.id}`">
@@ -851,12 +842,15 @@ const svgRectWidth = computed(
               :r="svgSize.circleRadius - 1"
               filter="url(#flow-box-shadow)"
             />
+            <!-- SoC fill: radius must match the clip-soc reference above so the
+                 fill level is accurate, and the background circle below so it
+                 reaches the inner edge of the border instead of leaving a rim -->
             <circle
               v-if="component.soc !== undefined"
               :class="{ soc: component.soc !== undefined }"
               cx="0"
               cy="0"
-              :r="svgSize.circleRadius - 2"
+              :r="svgSize.circleRadius - 1"
               :clip-path="`url(#clip-soc-${component.id})`"
               :fill="`url(#gradient-soc-${component.id})`"
             />
@@ -1020,9 +1014,6 @@ path.animatedReverse.vehicle-3 {
 
 circle {
   fill-opacity: 1;
-  stroke-width: v-bind(svgStrokeWidth);
-  stroke-miterlimit: 2;
-  stroke-opacity: 1;
 }
 
 circle:not(.soc) {
@@ -1030,7 +1021,6 @@ circle:not(.soc) {
 }
 
 rect {
-  stroke-width: v-bind(svgStrokeWidth);
   fill: var(--q-background);
 }
 
@@ -1038,10 +1028,6 @@ rect {
 feDropShadow {
   flood-color: var(--q-secondary);
   flood-opacity: 1;
-}
-
-.body--dark feDropShadow {
-  flood-color: var(--q-white);
 }
 
 text {
@@ -1062,10 +1048,6 @@ text .fill-success {
 
 text .fill-danger {
   fill: var(--q-grid-stroke);
-}
-
-.background-circle {
-  fill: var(--q-secondary) !important;
 }
 
 .battery {
