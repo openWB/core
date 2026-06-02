@@ -528,9 +528,7 @@ watch(
   border: 0.125rem solid var(--q-primary);
   margin-bottom: 0.25rem;
 }
-.body--dark .card {
-  filter: drop-shadow(0 0 0.3rem var(--q-white));
-}
+
 .sub-row {
   border-top: 0.12rem solid var(--q-primary);
 }

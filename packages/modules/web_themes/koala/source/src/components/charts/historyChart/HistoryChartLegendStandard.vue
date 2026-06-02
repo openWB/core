@@ -78,9 +78,7 @@ defineProps<{
 }
 
 /* The q-list has its own (grey) background that would otherwise paint over the
-   rounded white .chart-container behind it, making the legend look like it sits
-   outside the box. Keep it transparent in both themes so the container shows
-   through. */
+   rounded white chart-container behind it*/
 .q-list {
   background-color: transparent;
 }
