@@ -11,6 +11,7 @@ import time
 from typing import List, Optional
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
 
+from control.chargemode import Chargemode
 from control.limiting_value import LoadmanagementLimit
 import dataclass_utils
 
