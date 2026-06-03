@@ -89,7 +89,7 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
         if next_query_time <= now:
             # Zeit um so viele volle Stunden erhöhen, bis sie in der Zukunft liegt, Minute-Offset bleibt erhalten
             delta_seconds = (now - next_query_time).total_seconds()
-            hours_to_add = max(1, math.ceil(delta_seconds / ONE_HOUR_SECONDS))
+            hours_to_add = max(1, math.floor(delta_seconds / ONE_HOUR_SECONDS) + 1)
             next_query_time = next_query_time + timedelta(hours=hours_to_add)
         self.get.next_query_time = int(next_query_time.timestamp())
         log.debug(f"Nächster Abruf der {self.tariff_type} Strompreise geplant für:"
