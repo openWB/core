@@ -8,6 +8,7 @@ import uuid
 import base64
 import hashlib
 
+from datetime import datetime, timezone
 from helpermodules.utils.error_handling import ImportErrorContext
 with ImportErrorContext():
     import lxml.html
@@ -16,7 +17,8 @@ with ImportErrorContext():
 LOGIN_BASE = "https://identity.vwgroup.io/oidc/v1"
 LOGIN_HANDLER_BASE = "https://identity.vwgroup.io"
 API_BASE = "https://ola.prod.code.seat.cloud.vwgroup.com"
-CLIENT_ID = "99a5b77d-bd88-4d53-b4e5-a539c60694a3@apps_vw-dilab_com"
+CLIENT_ID = "3c756d46-f1ba-4d78-9f9a-cff0d5292d51@apps_vw-dilab_com"
+USER_AGENT = "OLACupra/2.16.0 (Android 14; Pixel 8; Google) Mobile"
 
 
 class cupra:
@@ -97,6 +99,14 @@ class cupra:
 
         return {to_camel_case(k): v for k, v in json.items()}
 
+    def token_headers(self):
+        basic_auth = base64.b64encode(f"{CLIENT_ID}:".encode('utf-8')).decode('utf-8')
+        return {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': f'Basic {basic_auth}',
+            'User-Agent': USER_AGENT,
+        }
+
     async def connect(self, username, password):
         self.set_credentials(username, password)
         return (await self.reconnect())
@@ -107,13 +117,16 @@ class cupra:
         self.log.debug("Starting Cupra reconnect/auth flow")
 
         # Get authorize page
-        _scope = 'openid profile nickname birthdate phone'
+        _scope = (
+            'openid profile nickname birthdate phone mbb cars address '
+            'nationalIdentifier nationality profession badge driversLicense'
+        )
         payload = {
             'client_id': CLIENT_ID,
             'scope': _scope,
             'response_type': 'code',
             'nonce': secrets.token_urlsafe(12),
-            'redirect_uri': 'seat://oauth-callback',
+            'redirect_uri': 'cupra://oauth-callback',
             'state': str(uuid.uuid4()),
             'code_challenge': code_challenge,
             'code_challenge_method': 'S256'
@@ -177,7 +190,7 @@ class cupra:
 
             url = response.headers['Location']
             self.log.debug("Redirect: status=%s location=%s", response.status, url)
-            if (url.split(':')[0] == "seat"):
+            if (url.split(':')[0] == "cupra"):
                 if not ('code' in url):
                     self.log.error("Missing authorization code")
                     return False
@@ -197,22 +210,17 @@ class cupra:
         form = {}
         form['code'] = query['code']
         form['client_id'] = CLIENT_ID
-        form['redirect_uri'] = "seat://oauth-callback"
+        form['redirect_uri'] = "cupra://oauth-callback"
         form['grant_type'] = 'authorization_code'
         form['code_verifier'] = code_verifier
-        headers = {}
-        headers['Content-Type'] = 'application/x-www-form-urlencoded'
-        headers['Authorization'] = 'BASIC OTlhNWI3N2QtYmQ4OC00ZDUzLWI0ZTUtYTUzOWM2MDY5NGEzQGFwcHNfdnctZGlsYWJfY29tOg=='
-        headers['User-Agent'] = (
-            'SEATApp/2.5.0 (com.seat.myseat.ola; build:202410171614; '
-            'iOS 15.8.3) Alamofire/5.7.0 Mobile'
-        )
+        headers = self.token_headers()
 
         response = await self.session.post(API_BASE + '/authorization/api/v1/token',
                                            headers=headers, data=form)
         self.log.debug("Authorization code exchange status=%s", response.status)
         if response.status >= 400:
-            self.log.error("Login: Non-2xx response")
+            self.log.error("Login: Non-2xx response (%s), body=%s",
+                           response.status, await response.text())
             # Non 2xx response, failed
             return False
         self.tokens = self.convert_to_camel_case(await response.json())
@@ -233,16 +241,13 @@ class cupra:
         form['client_id'] = CLIENT_ID
         form['grant_type'] = 'refresh_token'
         form['refresh_token'] = self.tokens["refreshToken"]
-        headers = {}
-        headers['Content-Type'] = 'application/x-www-form-urlencoded'
-        headers['User-Agent'] = (
-            'SEATApp/2.5.0 (com.seat.myseat.ola; build:202410171614; '
-            'iOS 15.8.3) Alamofire/5.7.0 Mobile'
-        )
+        headers = self.token_headers()
 
         response = await self.session.post(API_BASE + '/authorization/api/v1/token',
                                            headers=headers, data=form)
         if response.status >= 400:
+            self.log.error("Refresh token exchange failed (%s), body=%s",
+                           response.status, await response.text())
             return False
         self.tokens = self.convert_to_camel_case(await response.json())
 
@@ -252,7 +257,12 @@ class cupra:
         return True
 
     async def get_status(self):
-        status_url = f"{API_BASE}/vehicles/{self.vin}/charging/status"
+        self.headers['user-agent'] = USER_AGENT
+        self.headers['app-brand'] = 'cupra'
+        self.headers['app-market'] = 'android'
+        self.headers['app-version'] = '2.16.0'
+        status_url = f"{API_BASE}/v1/vehicles/{self.vin}/charging/status"
+        statusv2_url = f"{API_BASE}/v2/vehicles/{self.vin}/status"
         mileage_url = f"{API_BASE}/v1/vehicles/{self.vin}/mileage"
         response = await self.session.get(status_url, headers=self.headers)
 
@@ -288,10 +298,22 @@ class cupra:
             self.log.debug(f"Mileage data from Cupra API: {mileage_data}")
             odometer = mileage_data.get('mileageKm', None)
 
+        # Fetch additional status data from v2 endpoint
+        response = await self.session.get(statusv2_url, headers=self.headers)
+        if response.status >= 400:
+            self.log.error("Get status v2 failed")
+        else:
+            statusv2_data = await response.json()
+            self.log.debug(f"Status v2 data from Cupra API: {statusv2_data}")
+            # use current timestamp as a fallback, as the API field is missing
+            carCapturedTimestamp = statusv2_data.get('updatedAt', datetime.now(timezone.utc).isoformat()).split('.')[0]
+            if not carCapturedTimestamp.endswith('Z'):
+                carCapturedTimestamp += 'Z'
+
         battery_value = {
-            'currentSOC_pct': status_data['status']['battery']['currentSOC_pct'],
-            'cruisingRangeElectric_km': status_data['status']['battery']['cruisingRangeElectric_km'],
-            'carCapturedTimestamp': status_data['status']['battery']['carCapturedTimestamp'],
+            'currentSOC_pct': status_data['battery']['currentSocPercentage'],
+            'cruisingRangeElectric_km': status_data['battery']['estimatedRangeInKm'],
+            'carCapturedTimestamp': status_data['battery'].get('updatedAt', carCapturedTimestamp),
             'odometer': odometer,
         }
 
