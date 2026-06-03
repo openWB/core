@@ -13,7 +13,6 @@ from modules.common.component_type import ComponentType
 
 class KwargsDict(TypedDict):
     client: ModbusTcpClient_
-    version: SolisVersion
 
 
 class SolisCounter:
@@ -23,18 +22,16 @@ class SolisCounter:
 
     def initialize(self) -> None:
         self.client: ModbusTcpClient_ = self.kwargs['client']
-        self.version: SolisVersion = self.kwargs['version']
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.version = self.kwargs['version']
-        self.client = self.kwargs['client']
         self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self):
         unit = self.component_config.configuration.modbus_id
+        version = SolisVersion(self.component_config.configuration.version)
 
         register_offset = 30000
-        if self.version == SolisVersion.inverter:
+        if version == SolisVersion.inverter:
             register_offset = -1
 
         power = self.client.read_input_registers(3263 + register_offset, ModbusDataType.INT_32, unit=unit) * -1
