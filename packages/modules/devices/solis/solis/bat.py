@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 
 class KwargsDict(TypedDict):
     client: ModbusTcpClient_
-    version: SolisVersion
+    device_id: int
 
 
 class SolisBat(AbstractBat):
@@ -29,8 +29,7 @@ class SolisBat(AbstractBat):
 
     def initialize(self) -> None:
         self.client: ModbusTcpClient_ = self.kwargs['client']
-        self.version: SolisVersion = self.kwargs['version']
-        self.sim_counter = SimCounter(self.component_config.id)
+        self.sim_counter = SimCounter(self.kwargs['device_id'], self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
@@ -78,7 +77,7 @@ class SolisBat(AbstractBat):
 
     def power_limit_controllable(self) -> bool:
         # Nur die S-Serie sollte die Speichersteuerung können
-        return self.version == SolisVersion.hybrid_s
+        return SolisVersion(self.component_config.configuration.version) == SolisVersion.hybrid_s
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=SolisBatSetup)
