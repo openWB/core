@@ -5,7 +5,7 @@
   </div>
   <q-btn-dropdown
     v-else-if="isMobile"
-    color="grey"
+    color="var(--q-text)"
     transition-show="scale"
     transition-hide="scale"
     transition-duration="500"

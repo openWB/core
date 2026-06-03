@@ -896,10 +896,6 @@ svg {
   transition: stroke 0.5s;
 }
 
-.body--dark .flow-base {
-  stroke: var(--q-white);
-}
-
 /* slightly darker solid line beneath an active flow */
 .flow-base.animated,
 .flow-base.animatedReverse {
@@ -1036,10 +1032,6 @@ text {
   font-family: Arial;
   fill: var(--q-text);
   fill-opacity: 1;
-}
-
-.body--dark text {
-  fill: var(--q-white);
 }
 
 text .fill-success {

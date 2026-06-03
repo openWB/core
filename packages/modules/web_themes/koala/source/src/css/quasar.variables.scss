@@ -91,6 +91,7 @@ $table-hover: #f9f8f8;
   --q-charge-plan-link-button: #{$charge-plan-link-button};
   --q-diagram-icon: #{$diagram-icon};
   --q-table-hover: #{$table-hover};
+  --q-tab-icon: #{$primary};
 
   // Main background
   background-color: var(--q-background-1);
@@ -121,10 +122,6 @@ $table-hover: #f9f8f8;
     border-top-left-radius: 10px;
     border-top-right-radius: 10px;
     border: 1px solid var(--q-secondary);
-  }
-  // Tab icon color
-  .q-tab-icon {
-    color: var(--q-primary);
   }
   // Tab active background color
   .q-tab--active {
@@ -257,13 +254,6 @@ $dark-background-1: #242526; // app background
 $dark-background-2: #242526; // app background 2
 $dark-tab-icon: #d7d9e0;
 $battery-fill-flow-diagram: #b2885f;
-$dark-daily-totals-grid-fill: #a13a41;
-$dark-daily-totals-grid-stroke: #da959a;
-$dark-daily-totals-battery-fill: #b97a1f;
-$dark-daily-totals-battery-stroke: #e7c08a;
-$dark-daily-totals-pv-fill: #27623a;
-$dark-daily-totals-house-fill: #6e6e6e;
-$dark-daily-totals-chargepoint-fill: #254a8c;
 $dark-charge-plan-link-button: #75787a;
 $dark-table-hover: #ffffff12;
 
@@ -321,12 +311,6 @@ $dark-table-hover: #ffffff12;
   // Drawer background
   .q-drawer {
     background-color: var(--q-list);
-  }
-  // Tab icon color
-  .q-tab {
-    .q-icon {
-      color: var(--q-tab-icon) !important;
-    }
   }
   // Tab active background color
   .q-tab--active {
@@ -391,6 +375,11 @@ $dark-table-hover: #ffffff12;
 // Active tab underline indicator — all themes.
 .q-tab__indicator {
   background: var(--q-primary);
+}
+
+// Tab icon color — all themes
+.q-tab .q-icon {
+  color: var(--q-tab-icon) !important;
 }
 
 // Carousel controls — all themes

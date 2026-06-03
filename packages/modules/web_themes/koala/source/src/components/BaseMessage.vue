@@ -66,11 +66,7 @@ const iconName = computed(() => {
 }
 
 .message-text {
-  color: color-mix(in srgb, var(--q-text) 75%, transparent);
-}
-
-.body--dark .message-text {
-  color: var(--q-white);
+  color: var(--q-text);
 }
 
 .message-icon {
