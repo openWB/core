@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import math
 import random
 from typing import TypeVar, Generic, Callable
 from helpermodules import timecheck
@@ -64,7 +65,7 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
         tariff_state = self._remove_outdated_prices(tariff_state, timeslot_length_seconds)
         return tariff_state, timeslot_length_seconds
 
-    def __calculate_next_query_time(self) -> None:
+    def _calculate_next_query_time(self, latest_price_timestamp: datetime) -> None:
         now = datetime.now()
         current_hour = now.hour + 1  # next full hour
         log.debug(f"Aktuelle Tarif Update Stunde: {current_hour} Uhr."
@@ -79,18 +80,28 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
         # reduce serverload on their site by trying early and randomizing query time minutes and seconds
         next_query_time = (now.replace(hour=next_hour, minute=0, second=0, microsecond=0) +
                            timedelta(days=day_offset, minutes=random.randint(1, 7) * -5))
+        if latest_price_timestamp < next_query_time:
+            # Falls die Preise nicht bis zum nächsten geplanten Abruf gültig sind,
+            # den Abruf auf die Gültigkeitsdauer der Preise setzen
+            log.debug(f"Die Preise sind nur bis {latest_price_timestamp} gültig, "
+                      f"setze nächsten Abruf auf dieses Datum.")
+            next_query_time = latest_price_timestamp
         if next_query_time <= now:
-            next_query_time += timedelta(hours=1)
+            # Zeit um so viele volle Stunden erhöhen, bis sie in der Zukunft liegt, Minute-Offset bleibt erhalten
+            delta_seconds = (now - next_query_time).total_seconds()
+            hours_to_add = max(1, math.floor(delta_seconds / ONE_HOUR_SECONDS) + 1)
+            next_query_time = next_query_time + timedelta(hours=hours_to_add)
         self.get.next_query_time = int(next_query_time.timestamp())
         log.debug(f"Nächster Abruf der {self.tariff_type} Strompreise geplant für:"
                   f" {next_query_time} (Unix Timestamp: {self.get.next_query_time})")
         Pub().pub(f"openWB/set/optional/ep/{self.tariff_type}/get/next_query_time", int(next_query_time.timestamp()))
 
     def __call_component_updater(self) -> TariffState:
-        last_known_timestamp = datetime.fromtimestamp(int(max(self.get.prices.keys()) if self.get.prices else 0))
+        last_known_timestamp = datetime.fromtimestamp(max((int(ts) for ts in self.get.prices.keys()), default=0))
         tariff_state = self._component_updater()
-        if last_known_timestamp < datetime.fromtimestamp(int(max(tariff_state.prices.keys()))):
-            self.__calculate_next_query_time()
+        latest_price_timestamp = datetime.fromtimestamp(max((int(ts) for ts in tariff_state.prices.keys()), default=0))
+        if last_known_timestamp < latest_price_timestamp:
+            self._calculate_next_query_time(latest_price_timestamp)
         return tariff_state
 
     def __log_and_publish_progress(self, timeslot_length_seconds, tariff_state):
