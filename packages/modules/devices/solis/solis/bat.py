@@ -43,8 +43,7 @@ class SolisBat(AbstractBat):
 
         currents = [bat_current / 3] * 3
 
-        self.peak_filter.check_values(power)
-        imported, exported = self.sim_counter.sim_count(power)
+        imported, exported = self.peak_filter.check_values(power, imported, exported)
         bat_state = BatState(
             power=power,
             soc=soc,
