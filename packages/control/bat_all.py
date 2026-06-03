@@ -354,7 +354,7 @@ class BatAll:
                 # wenn aktive Speichersteuerung in Höhe PV-Leistung lädt 
                 # hat Speicher Priorität vor EV-Ladung
                 if (self.data.config.bat_control_activated and
-                    self.data.config.power_limit_mode == BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value):
+                        self.data.config.power_limit_mode == BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value):
                     charging_power_left = 0
                 else:
                     charging_power_left = self.data.get.power
@@ -393,7 +393,7 @@ class BatAll:
                         if self.data.set.power_limit is None:
                             # set allowed power
                             if (self.data.config.bat_control_activated and
-                                self.data.config.power_limit_mode == BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value):
+                                    self.data.config.power_limit_mode == BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value):
                                 base_power = 0
                             else:
                                 base_power = self.data.get.power
