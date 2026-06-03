@@ -64,9 +64,10 @@ $table-hover: #f9f8f8;
   --q-info: #{$info};
   --q-warning: #{$warning};
   --q-background: #{$background};
-  --q-card-background: #{$background};
   --q-background-1: #{$background-1};
   --q-background-2: #{$background-2};
+  --q-card-background: #{$background};
+  --q-list: color-mix(in srgb, var(--q-grey) 5%, transparent);
   --q-shadow: #{$secondary};
   --q-text: #{$brown-text};
   --q-white: #{$white};
@@ -90,7 +91,6 @@ $table-hover: #f9f8f8;
   --q-charge-plan-link-button: #{$charge-plan-link-button};
   --q-diagram-icon: #{$diagram-icon};
   --q-table-hover: #{$table-hover};
-  --q-list: color-mix(in srgb, var(--q-grey) 5%, transparent);
 
   // Main background
   background-color: var(--q-background-1);
@@ -280,14 +280,13 @@ $dark-table-hover: #ffffff12;
   --q-background-1: #{$dark-background-1};
   --q-background-2: #{$dark-background-2};
   --q-card-background: #{$dark-secondary};
+  --q-list: #{$dark-secondary}; // drawer, list background
   --q-shadow: #{$dark-shadow};
   --q-text: #{$white};
   --q-white: #{$white};
   --q-grey: #{$grey};
   --q-carousel-control: #{$dark-primary};
   --q-toggle-off: #{$toggle-off};
-  --q-list: #{$dark-secondary}; // drawer, list background
-  --q-tab-icon: #{$dark-tab-icon};
   --q-grid-fill: #{$grid-fill};
   --q-grid-stroke: #{$grid-stroke};
   --q-home-fill: #{$home-fill};
@@ -298,20 +297,14 @@ $dark-table-hover: #ffffff12;
   --q-pv-fill: #{$pv-fill};
   --q-battery-stroke: #{$battery-stroke};
   --q-battery-fill: #{$battery-fill};
+  --q-battery-fill-flow-diagram: #{$battery-fill-flow-diagram};
   --q-charge-point-stroke: #{$charge-point-stroke};
   --q-charge-point-fill: #{$charge-point-fill};
   --q-vehicle-stroke: #{$vehicle-stroke};
-  --q-battery-fill-flow-diagram: #{$battery-fill-flow-diagram};
-  --q-dark-daily-totals-grid-fill: #{$dark-daily-totals-grid-fill};
-  --q-dark-daily-totals-grid-stroke: #{$dark-daily-totals-grid-stroke};
-  --q-dark-daily-totals-battery-fill: #{$dark-daily-totals-battery-fill};
-  --q-dark-daily-totals-battery-stroke: #{$dark-daily-totals-battery-stroke};
-  --q-dark-daily-totals-pv-fill: #{$dark-daily-totals-pv-fill};
-  --q-dark-daily-totals-house-fill: #{$dark-daily-totals-house-fill};
-  --q-dark-daily-totals-chargepoint-fill: #{$dark-daily-totals-chargepoint-fill};
   --q-charge-plan-link-button: #{$dark-charge-plan-link-button};
   --q-diagram-icon: #{$white};
   --q-table-hover: #{$dark-table-hover};
+  --q-tab-icon: #{$dark-tab-icon};
 
   // Main background
   background-color: $dark-page;
