@@ -1034,7 +1034,7 @@ text {
   font-size: v-bind(svgFontSize);
   line-height: 1.25;
   font-family: Arial;
-  fill: var(--q-brown-text);
+  fill: var(--q-text);
   fill-opacity: 1;
 }
 

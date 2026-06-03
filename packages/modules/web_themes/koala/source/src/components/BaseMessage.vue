@@ -62,11 +62,11 @@ const iconName = computed(() => {
 <style scoped>
 .message-bar {
   background-color: color-mix(in srgb, v-bind(messageColor) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--q-brown-text) 35%, transparent);
+  border: 1px solid color-mix(in srgb, var(--q-text) 35%, transparent);
 }
 
 .message-text {
-  color: color-mix(in srgb, var(--q-brown-text) 75%, transparent);
+  color: color-mix(in srgb, var(--q-text) 75%, transparent);
 }
 
 .body--dark .message-text {

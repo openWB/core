@@ -68,7 +68,7 @@ $table-hover: #f9f8f8;
   --q-background-1: #{$background-1};
   --q-background-2: #{$background-2};
   --q-shadow: #{$secondary};
-  --q-brown-text: #{$brown-text};
+  --q-text: #{$brown-text};
   --q-white: #{$white};
   --q-grey: #{$grey};
   --q-carousel-control: #{$primary};
@@ -90,13 +90,14 @@ $table-hover: #f9f8f8;
   --q-charge-plan-link-button: #{$charge-plan-link-button};
   --q-diagram-icon: #{$diagram-icon};
   --q-table-hover: #{$table-hover};
+  --q-list: color-mix(in srgb, var(--q-grey) 5%, transparent);
 
   // Main background
   background-color: var(--q-background-1);
   // Text color
-  color: var(--q-brown-text);
+  color: var(--q-text);
   .theme-text {
-    color: var(--q-brown-text) !important;
+    color: var(--q-text) !important;
   }
   .deselected {
     color: var(--q-grey) !important;
@@ -104,7 +105,7 @@ $table-hover: #f9f8f8;
   // Header colors
   .q-header {
     background-color: var(--q-background-2);
-    color: var(--q-brown-text);
+    color: var(--q-text);
   }
   // Drawer background
   .q-drawer {
@@ -143,7 +144,7 @@ $table-hover: #f9f8f8;
   }
   // List background color, for menus etc
   .q-list {
-    background-color: color-mix(in srgb, var(--q-grey) 5%, transparent);
+    background-color: var(--q-list);
   }
   // Toggle button color in off position
   .q-toggle__thumb:after {
@@ -190,7 +191,7 @@ $table-hover: #f9f8f8;
       /* height of all previous header rows */
       scroll-margin-top: 48px;
       background-color: var(--q-secondary);
-      color: var(--q-brown-text);
+      color: var(--q-text);
     }
 
     tbody tr,
@@ -199,7 +200,7 @@ $table-hover: #f9f8f8;
       .q-virtual-scroll
       .q-virtual-scroll--vertical
       scroll {
-      background-color: var(--q-background);
+      background-color: var(--q-card-background);
     }
 
     tbody tr:hover {
@@ -254,8 +255,6 @@ $dark-warning: #d98e44;
 $dark-background: #242526;
 $dark-background-1: #242526; // app background
 $dark-background-2: #242526; // app background 2
-$dark-list: #3a3b3c; // drawer, list background
-$dark-carousel: #8b8f9f;
 $dark-tab-icon: #d7d9e0;
 $battery-fill-flow-diagram: #b2885f;
 $dark-daily-totals-grid-fill: #a13a41;
@@ -266,6 +265,7 @@ $dark-daily-totals-pv-fill: #27623a;
 $dark-daily-totals-house-fill: #6e6e6e;
 $dark-daily-totals-chargepoint-fill: #254a8c;
 $dark-charge-plan-link-button: #75787a;
+$dark-table-hover: #ffffff12;
 
 // Dark theme
 .body--dark {
@@ -281,11 +281,12 @@ $dark-charge-plan-link-button: #75787a;
   --q-background-2: #{$dark-background-2};
   --q-card-background: #{$dark-secondary};
   --q-shadow: #{$dark-shadow};
+  --q-text: #{$white};
   --q-white: #{$white};
   --q-grey: #{$grey};
-  --q-carousel-control: #{$dark-carousel};
+  --q-carousel-control: #{$dark-primary};
   --q-toggle-off: #{$toggle-off};
-  --q-list: #{$dark-list};
+  --q-list: #{$dark-secondary}; // drawer, list background
   --q-tab-icon: #{$dark-tab-icon};
   --q-grid-fill: #{$grid-fill};
   --q-grid-stroke: #{$grid-stroke};
@@ -310,6 +311,7 @@ $dark-charge-plan-link-button: #75787a;
   --q-dark-daily-totals-chargepoint-fill: #{$dark-daily-totals-chargepoint-fill};
   --q-charge-plan-link-button: #{$dark-charge-plan-link-button};
   --q-diagram-icon: #{$white};
+  --q-table-hover: #{$dark-table-hover};
 
   // Main background
   background-color: $dark-page;
@@ -380,7 +382,7 @@ $dark-charge-plan-link-button: #75787a;
     }
 
     tbody tr:hover {
-      background-color: rgba(255, 255, 255, 0.07);
+      background-color: var(--q-table-hover);
     }
   }
 
@@ -393,6 +395,11 @@ $dark-charge-plan-link-button: #75787a;
 /////////////////////////////////////////////////////////////////
 //CSS for all themes
 
+// Active tab underline indicator — all themes.
+.q-tab__indicator {
+  background: var(--q-primary);
+}
+
 // Carousel controls — all themes
 
 // Solid backing pill for the large controls. Arrows and the fullscreen button
@@ -401,7 +408,7 @@ $dark-charge-plan-link-button: #75787a;
 // so `>` skips them — removes the background dot.
 .q-carousel__arrow .q-btn,
 .q-carousel__control > .q-btn {
-  background: var(--q-background) !important;
+  background: var(--q-card-background) !important;
   color: var(--q-carousel-control) !important;
 }
 
