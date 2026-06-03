@@ -46,7 +46,8 @@ class SolisInverter:
 
         currents = [value * -0.1 for value in currents]
 
-        imported, exported = self.peak_filter.check_values(power, imported, exported)
+        self.peak_filter.check_values(power)
+        imported, exported = self.sim_counter.sim_count(power)
         inverter_state = InverterState(
             power=power,
             dc_power=dc_power,
