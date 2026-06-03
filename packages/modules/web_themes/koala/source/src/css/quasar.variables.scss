@@ -64,8 +64,10 @@ $table-hover: #f9f8f8;
   --q-info: #{$info};
   --q-warning: #{$warning};
   --q-background: #{$background};
+  --q-card-background: #{$background};
   --q-background-1: #{$background-1};
   --q-background-2: #{$background-2};
+  --q-shadow: #{$secondary};
   --q-brown-text: #{$brown-text};
   --q-white: #{$white};
   --q-grey: #{$grey};
@@ -243,6 +245,7 @@ $table-hover: #f9f8f8;
 $dark-page: #18191a; // This overrides Quasar's default dark page color - outer background
 $dark-primary: #3874db;
 $dark-secondary: #3a3b3c; //cards - tabs background tables
+$dark-shadow: #7a7c80; // shadow color for dark theme
 $dark-accent: #546e7a;
 $dark-positive: #3e8f5e;
 $dark-negative: #c54d57;
@@ -276,6 +279,8 @@ $dark-charge-plan-link-button: #75787a;
   --q-background: #{$dark-background};
   --q-background-1: #{$dark-background-1};
   --q-background-2: #{$dark-background-2};
+  --q-card-background: #{$dark-secondary};
+  --q-shadow: #{$dark-shadow};
   --q-white: #{$white};
   --q-grey: #{$grey};
   --q-carousel-control: #{$dark-carousel};

@@ -523,8 +523,8 @@ watch(
 }
 .card {
   border-radius: 0.5rem;
-  background: var(--q-background);
-  filter: drop-shadow(0 0 0.3rem var(--q-secondary));
+  background: var(--q-card-background);
+  filter: drop-shadow(0 0 0.3rem var(--q-shadow));
   border: 0.125rem solid var(--q-primary);
   margin-bottom: 0.25rem;
 }

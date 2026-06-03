@@ -1017,16 +1017,16 @@ circle {
 }
 
 circle:not(.soc) {
-  fill: var(--q-background);
+  fill: var(--q-card-background);
 }
 
 rect {
-  fill: var(--q-background);
+  fill: var(--q-card-background);
 }
 
 /* Drop shadow by way of feDropShadow for browser compatibility (safari webkit) */
 feDropShadow {
-  flood-color: var(--q-secondary);
+  flood-color: var(--q-shadow);
   flood-opacity: 1;
 }
 
