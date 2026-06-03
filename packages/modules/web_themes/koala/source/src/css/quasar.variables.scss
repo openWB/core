@@ -95,9 +95,6 @@ $table-hover: #f9f8f8;
   background-color: var(--q-background-1);
   // Text color
   color: var(--q-text);
-  .theme-text {
-    color: var(--q-text) !important;
-  }
   .deselected {
     color: var(--q-grey) !important;
   }
@@ -129,25 +126,9 @@ $table-hover: #f9f8f8;
   .q-carousel__slide {
     background-color: var(--q-background-2);
   }
-  // Slide background
-  .q-card {
-    background-color: var(--q-background);
-  }
   // Expansion item (expand arrow)
   .q-expansion-item__toggle-icon {
     color: var(--q-white);
-  }
-  // List background color, for menus etc
-  .q-list {
-    background-color: var(--q-list);
-  }
-  // Toggle button color in off position
-  .q-toggle__thumb:after {
-    background: var(--q-toggle-off);
-  }
-  // Toggle button color in on position
-  .q-toggle__inner--truthy .q-toggle__thumb:after {
-    background-color: currentColor;
   }
   // Search input border color for table view
   .white-outline-input.q-field--outlined .q-field__control:before {
@@ -296,9 +277,6 @@ $dark-table-hover: #ffffff12;
   background-color: $dark-page;
   // Text color
   color: var(--q-white);
-  .theme-text {
-    color: var(--q-white) !important;
-  }
   // Header colors
   .q-header {
     color: var(--q-white);
@@ -316,11 +294,6 @@ $dark-table-hover: #ffffff12;
   .q-carousel__slide {
     color: var(--q-white);
   }
-  // Slide background
-  .q-card {
-    color: var(--q-white);
-    background-color: var(--q-secondary);
-  }
   // Input field text label color
   .q-field__label {
     color: var(--q-white);
@@ -335,19 +308,6 @@ $dark-table-hover: #ffffff12;
   .q-placeholder {
     color: var(--q-white);
   }
-  // List background color, for menus etc
-  .q-list {
-    background-color: var(--q-list);
-  }
-  // Toggle button color in off position
-  .q-toggle__thumb:after {
-    background: var(--q-toggle-off);
-  }
-  // Toggle button color in on position
-  .q-toggle__inner--truthy .q-toggle__thumb:after {
-    background-color: currentColor;
-  }
-
   // Table styling - Dark Theme
   .sticky-header-table {
     tbody {
@@ -376,6 +336,30 @@ $dark-table-hover: #ffffff12;
 // Tab icon color — all themes
 .q-tab .q-icon {
   color: var(--q-tab-icon) !important;
+}
+
+// Theme-aware text helper — all themes (value via --q-text).
+.theme-text {
+  color: var(--q-text) !important;
+}
+
+// Card background + text — all themes (values via --q-card-background / --q-text).
+.q-card {
+  background-color: var(--q-card-background);
+  color: var(--q-text);
+}
+
+// List background, for menus etc — all themes (value via --q-list).
+.q-list {
+  background-color: var(--q-list);
+}
+
+// Toggle thumb color — off (base) and on (truthy) — all themes.
+.q-toggle__thumb:after {
+  background: var(--q-toggle-off);
+}
+.q-toggle__inner--truthy .q-toggle__thumb:after {
+  background-color: currentColor;
 }
 
 // Carousel controls — all themes
