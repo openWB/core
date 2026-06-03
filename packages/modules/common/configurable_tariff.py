@@ -81,9 +81,11 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
                            timedelta(days=day_offset, minutes=random.randint(1, 7) * -5))
         if next_query_time <= now:
             next_query_time += timedelta(hours=1)
-        if next_query_time < latest_price_timestamp:
+        if latest_price_timestamp < next_query_time:
             # Falls die Preise nicht bis zum nächsten geplanten Abruf gültig sind,
             # den Abruf auf die Gültigkeitsdauer der Preise setzen
+            log.debug(f"Die Preise sind nur bis {latest_price_timestamp} gültig, "
+                      f"setze nächsten Abruf auf dieses Datum.")
             next_query_time = latest_price_timestamp
         self.get.next_query_time = int(next_query_time.timestamp())
         log.debug(f"Nächster Abruf der {self.tariff_type} Strompreise geplant für:"

@@ -137,7 +137,7 @@ def test_calculate_next_query_time(monkeypatch: pytest.MonkeyPatch):
     tariff = ConfigurableFlexibleTariff(AwattarTariff(), Mock(return_value=Mock()))
     tariff.tariff_update_hours = [14]
 
-    latest_price_timestamp = datetime(2022, 5, 16, 13, 55, 0)
+    latest_price_timestamp = datetime(2022, 5, 17, 13, 55, 0)
 
     # execution
     tariff._calculate_next_query_time(latest_price_timestamp)  # pyright: ignore[reportPrivateUsage]
@@ -162,7 +162,7 @@ def test_calculate_next_query_time_uses_latest_price_timestamp(monkeypatch: pyte
     tariff = ConfigurableFlexibleTariff(AwattarTariff(), Mock(return_value=Mock()))
     tariff.tariff_update_hours = [14]
 
-    latest_price_timestamp = datetime(2022, 5, 16, 14, 30, 0)
+    latest_price_timestamp = datetime(2022, 5, 16, 12, 30, 0)
 
     # execution
     tariff._calculate_next_query_time(latest_price_timestamp)  # pyright: ignore[reportPrivateUsage]
