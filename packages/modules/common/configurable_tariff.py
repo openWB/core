@@ -79,24 +79,23 @@ class ConfigurableTariff(Generic[T_TARIFF_CONFIG]):
         # reduce serverload on their site by trying early and randomizing query time minutes and seconds
         next_query_time = (now.replace(hour=next_hour, minute=0, second=0, microsecond=0) +
                            timedelta(days=day_offset, minutes=random.randint(1, 7) * -5))
-        if next_query_time <= now:
-            next_query_time += timedelta(hours=1)
         if latest_price_timestamp < next_query_time:
             # Falls die Preise nicht bis zum nächsten geplanten Abruf gültig sind,
             # den Abruf auf die Gültigkeitsdauer der Preise setzen
             log.debug(f"Die Preise sind nur bis {latest_price_timestamp} gültig, "
                       f"setze nächsten Abruf auf dieses Datum.")
             next_query_time = latest_price_timestamp
+        if next_query_time <= now:
+            next_query_time = now + timedelta(hours=1)
         self.get.next_query_time = int(next_query_time.timestamp())
         log.debug(f"Nächster Abruf der {self.tariff_type} Strompreise geplant für:"
                   f" {next_query_time} (Unix Timestamp: {self.get.next_query_time})")
         Pub().pub(f"openWB/set/optional/ep/{self.tariff_type}/get/next_query_time", int(next_query_time.timestamp()))
 
     def __call_component_updater(self) -> TariffState:
-        last_known_timestamp = datetime.fromtimestamp(int(max(self.get.prices.keys()) if self.get.prices else 0))
+        last_known_timestamp = datetime.fromtimestamp(max((int(ts) for ts in self.get.prices.keys()), default=0))
         tariff_state = self._component_updater()
-        latest_price_timestamp = datetime.fromtimestamp(
-            int(max(tariff_state.prices.keys()) if tariff_state.prices else 0))
+        latest_price_timestamp = datetime.fromtimestamp(max((int(ts) for ts in tariff_state.prices.keys()), default=0))
         if last_known_timestamp < latest_price_timestamp:
             self._calculate_next_query_time(latest_price_timestamp)
         return tariff_state
