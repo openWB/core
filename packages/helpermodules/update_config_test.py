@@ -58,6 +58,35 @@ def test_upgrade_datastore_94(index_test_template, expected_index):
     assert plan_ids == expected_index
 
 
+def test_upgrade_datastore_124_adds_missing_odometer_pattern_for_json_soc_module():
+    update_con = UpdateConfig()
+    update_con.all_received_topics = {
+        "openWB/system/datastore_version": list(range(124)),
+        "openWB/vehicle/0/soc_module/config": {
+            "type": "json",
+            "configuration": {
+                "url": "https://example.invalid/soc",
+                "soc_pattern": ".soc",
+            }
+        },
+        "openWB/vehicle/1/soc_module/config": {
+            "type": "homeassistant",
+            "configuration": {
+                "url": "http://ha.local"
+            }
+        }
+    }
+
+    update_con.upgrade_datastore_124()
+
+    json_config = update_con.all_received_topics["openWB/vehicle/0/soc_module/config"]["configuration"]
+    assert "odometer_pattern" in json_config
+    assert json_config["odometer_pattern"] is None
+
+    ha_config = update_con.all_received_topics["openWB/vehicle/1/soc_module/config"]["configuration"]
+    assert "odometer_pattern" not in ha_config
+
+
 @pytest.mark.parametrize("name", [
     "happy_path",
     "missing_prices_dict",
