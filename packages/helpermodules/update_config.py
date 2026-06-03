@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 123
+    DATASTORE_VERSION = 124
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -3120,3 +3120,15 @@ class UpdateConfig:
                     return {topic: configuration_payload}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(123)
+
+    def upgrade_datastore_124(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("^openWB/vehicle/[0-9]+/soc_module/config$", topic) is not None:
+                configuration_payload = decode_payload(payload)
+                if configuration_payload.get("type") == "json":
+                    json_config = configuration_payload.get("configuration", {})
+                    if "odometer_pattern" not in json_config:
+                        json_config["odometer_pattern"] = None
+                        return {topic: configuration_payload}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(124)
