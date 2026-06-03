@@ -434,17 +434,18 @@ class Ev:
 
         Die Phasenumschaltung kann nicht abgebrochen werden!
         """
-        control_parameter.timestamp_phase_switch_buffer_start = None
-        control_parameter.state = ChargepointState.CHARGING_ALLOWED
-        if control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY and control_parameter.phases == 1:
-            # Wenn der Timer läuft, ist den Control-Parametern die alte Phasenzahl hinterlegt.
-            # bei der Umschaltung 3p1p wird keine Leistung reserviert
-            evu_counter = data.data.counter_all_data.get_evu_counter()
-            reserved = max(0, control_parameter.min_current * max_phases * 230 -
-                           self.ev_template.data.max_current_single_phase * 230)
-            evu_counter.data.set.reserved_surplus -= reserved
-            log.debug(f"Zurücksetzen von {reserved}W reservierter Leistung für die Phasenumschaltung. "
-                      f"reservierte Leistung: {evu_counter.data.set.reserved_surplus} W")
+        if control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY:
+            control_parameter.timestamp_phase_switch_buffer_start = None
+            control_parameter.state = ChargepointState.CHARGING_ALLOWED
+            if control_parameter.phases == 1:
+                # Wenn der Timer läuft, ist den Control-Parametern die alte Phasenzahl hinterlegt.
+                # bei der Umschaltung 3p1p wird keine Leistung reserviert
+                evu_counter = data.data.counter_all_data.get_evu_counter()
+                reserved = max(0, control_parameter.min_current * max_phases * 230 -
+                               self.ev_template.data.max_current_single_phase * 230)
+                evu_counter.data.set.reserved_surplus -= reserved
+                log.debug(f"Zurücksetzen von {reserved}W reservierter Leistung für die Phasenumschaltung. "
+                          f"reservierte Leistung: {evu_counter.data.set.reserved_surplus} W")
 
     def reset_phase_switch(self, control_parameter: ControlParameter):
         if control_parameter.state == ChargepointState.PERFORMING_PHASE_SWITCH:
