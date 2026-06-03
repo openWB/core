@@ -47,7 +47,6 @@ $pv-fill: #90ee9033;
 $battery: #ba7128;
 $battery-stroke: #ba7128;
 $battery-fill: #ba712833;
-$battery-fill-flow-diagram: #c6a583;
 $charge-point-stroke: #5c93d1;
 $charge-point-fill: #5c93d14d;
 $vehicle-stroke: #4f99af;
@@ -84,7 +83,6 @@ $table-hover: #f9f8f8;
   --q-pv-fill: #{$pv-fill};
   --q-battery-stroke: #{$battery-stroke};
   --q-battery-fill: #{$battery-fill};
-  --q-battery-fill-flow-diagram: #{$battery-fill-flow-diagram};
   --q-charge-point-stroke: #{$charge-point-stroke};
   --q-charge-point-fill: #{$charge-point-fill};
   --q-vehicle-stroke: #{$vehicle-stroke};
@@ -250,10 +248,9 @@ $dark-negative: #c54d57;
 $dark-info: #4b89aa;
 $dark-warning: #d98e44;
 $dark-background: #242526;
-$dark-background-1: #242526; // app background
-$dark-background-2: #242526; // app background 2
+$dark-background-1: #242526;
+$dark-background-2: #242526;
 $dark-tab-icon: #d7d9e0;
-$battery-fill-flow-diagram: #b2885f;
 $dark-charge-plan-link-button: #75787a;
 $dark-table-hover: #ffffff12;
 
@@ -287,7 +284,6 @@ $dark-table-hover: #ffffff12;
   --q-pv-fill: #{$pv-fill};
   --q-battery-stroke: #{$battery-stroke};
   --q-battery-fill: #{$battery-fill};
-  --q-battery-fill-flow-diagram: #{$battery-fill-flow-diagram};
   --q-charge-point-stroke: #{$charge-point-stroke};
   --q-charge-point-fill: #{$charge-point-fill};
   --q-vehicle-stroke: #{$vehicle-stroke};
