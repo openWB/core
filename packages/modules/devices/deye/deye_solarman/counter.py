@@ -42,7 +42,7 @@ class DeyeSolarmanCounter(AbstractCounter):
                 powers = [0]*3
                 currents = [0]*3
                 voltages = [0]*3
-                power = [0]
+                power = 0
 
             elif self.device_type == DeviceType.SINGLE_PHASE_STRING:
                 currents = [c / 100 for c in self.client.read_holding_registers(76, 3)]
