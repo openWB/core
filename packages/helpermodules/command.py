@@ -28,7 +28,8 @@ from modules.io_devices.eebus.api import create_pub_cert_ski
 
 from helpermodules.broker import BrokerClient
 from helpermodules.data_migration.data_migration import MigrateData
-from helpermodules.measurement_logging.process_log import get_daily_log, get_monthly_log, get_yearly_log
+from helpermodules.measurement_logging.process_log import (convert_legacy_units, get_daily_log, get_monthly_log,
+                                                           get_yearly_log)
 from helpermodules.messaging import MessageType, pub_user_message
 from helpermodules.mosquitto_dynsec.mosquitto_dynsec import (generate_password_reset_token, get_user_email,
                                                              send_password_reset_to_server, verify_password_reset_token)
@@ -822,15 +823,15 @@ class Command:
 
     def getDailyLog(self, connection_id: str, payload: dict) -> None:
         Pub().pub(f'openWB/set/log/daily/{payload["data"]["date"]}',
-                  get_daily_log(payload["data"]["date"]))
+                  convert_legacy_units(get_daily_log(payload["data"]["date"])))
 
     def getMonthlyLog(self, connection_id: str, payload: dict) -> None:
         Pub().pub(f'openWB/set/log/monthly/{payload["data"]["date"]}',
-                  get_monthly_log(payload["data"]["date"]))
+                  convert_legacy_units(get_monthly_log(payload["data"]["date"])))
 
     def getYearlyLog(self, connection_id: str, payload: dict) -> None:
         Pub().pub(f'openWB/set/log/yearly/{payload["data"]["date"]}',
-                  get_yearly_log(payload["data"]["date"]))
+                  convert_legacy_units(get_yearly_log(payload["data"]["date"])))
 
     def initCloud(self, connection_id: str, payload: dict) -> None:
         parent_file = Path(__file__).resolve().parents[2]

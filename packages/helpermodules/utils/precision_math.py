@@ -38,6 +38,14 @@ def decimal_multiply(value1: Union[int, float], value2: Union[int, float]) -> Un
     return _decimal_to_number(result)
 
 
+def decimal_divide(numerator: Union[int, float], denominator: Union[int, float]) -> Union[int, float]:
+    """Divide two values using Decimal to avoid floating point issues."""
+    if denominator == 0:
+        raise ValueError("Denominator cannot be zero.")
+    result = (Decimal(str(numerator)) / Decimal(str(denominator))).quantize(Decimal('0.001'))
+    return _decimal_to_number(result)
+
+
 def decimal_subtract(value1: Union[int, float], value2: Union[int, float]) -> Union[int, float]:
     """Subtract two values using Decimal to avoid floating point issues."""
     result = (Decimal(str(value1)) - Decimal(str(value2))).quantize(Decimal('0.001'))

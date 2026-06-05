@@ -6,12 +6,16 @@ from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state_update import ChargepointStateUpdate
 import dataclass_utils
 from helpermodules.command import Command
+from helpermodules.measurement_logging import process_log
 from helpermodules.subdata import SubData
 from modules.chargepoints.external_openwb.config import OpenWBSeries
 from modules.chargepoints.internal_openwb.config import (InternalOpenWB, InternalOpenWBConfiguration,
                                                          InternalChargepointMode)
 from modules.chargepoints.openwb_pro.chargepoint_module import ChargepointModule as ChargepointModulePro
 from modules.chargepoints.internal_openwb.chargepoint_module import ChargepointModule as ChargepointModuleInternal
+
+
+pytest_plugins = ["helpermodules.measurement_logging.process_log_testdata", "helpermodules.command_test_data"]
 
 
 @pytest.fixture
@@ -51,3 +55,22 @@ def test_check_max_num_of_internal_chargepoints(additional_cp_mode, config, expe
 
     # evaluation
     assert msg == expected_msg
+
+
+def test_getDailyLog(regular_daily_log_entry,
+                     regular_daily_log_entry_processed_legacy_converted,
+                     mock_pub,
+                     monkeypatch):
+    # setup
+    c = Command(Mock())
+    mock_pub.reset_mock()
+    collect_daily_log_data_mock = Mock(return_value=regular_daily_log_entry)
+    monkeypatch.setattr(process_log, "_collect_daily_log_data", collect_daily_log_data_mock)
+
+    # execution
+    c.getDailyLog("test", {"data": {"date": "20250616"}})
+
+    # evaluation
+    assert len(mock_pub.method_calls) == 1
+    assert mock_pub.method_calls[0][1][0] == 'openWB/set/log/daily/20250616'
+    assert mock_pub.method_calls[0][1][1] == regular_daily_log_entry_processed_legacy_converted

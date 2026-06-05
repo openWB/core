@@ -57,10 +57,9 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 124
+    DATASTORE_VERSION = 125
 
     valid_topic = [
-        "^openWB/bat/config/bat_control_permitted$",
         "^openWB/bat/config/bat_control_activated$",
         "^openWB/bat/config/power_limit_mode$",
         "^openWB/bat/config/power_limit_condition$",
@@ -551,6 +550,7 @@ class UpdateConfig:
         "^openWB/system/security/access/IoConfiguration$",
         "^openWB/system/security/access/LegacySmartHomeConfiguration$",
         "^openWB/system/security/access/InstallAssistant$",
+        "^openWB/system/security/access/TenantEnergyConfiguration$",
         "^openWB/system/security/access/CloudConfiguration$",
         "^openWB/system/security/access/MqttBridgeConfiguration$",
         "^openWB/system/security/access/DebugConfiguration$",
@@ -565,7 +565,6 @@ class UpdateConfig:
         "^openWB/system/version$",
     ]
     default_topic = (
-        ("openWB/bat/config/bat_control_permitted", False),
         ("openWB/bat/config/bat_control_activated", False),
         ("openWB/bat/config/power_limit_mode", "mode_no_discharge"),
         ("openWB/bat/config/power_limit_condition", "vehicle_charging"),
@@ -684,6 +683,7 @@ class UpdateConfig:
         ("openWB/system/security/access/IoConfiguration", True),
         ("openWB/system/security/access/LegacySmartHomeConfiguration", True),
         ("openWB/system/security/access/InstallAssistant", True),
+        ("openWB/system/security/access/TenantEnergyConfiguration", True),
         ("openWB/system/security/access/CloudConfiguration", True),
         ("openWB/system/security/access/MqttBridgeConfiguration", True),
         ("openWB/system/security/access/DebugConfiguration", True),
@@ -2435,13 +2435,8 @@ class UpdateConfig:
     def upgrade_datastore_86(self) -> None:
         if "openWB/bat/get/power_limit_controllable" not in self.all_received_topics:
             self.__update_topic("openWB/bat/get/power_limit_controllable", False)
-        if "openWB/bat/config/bat_control_permitted" not in self.all_received_topics.keys():
-            self.__update_topic("openWB/bat/config/bat_control_permitted", False)
-            if decode_payload(self.all_received_topics["openWB/bat/get/power_limit_controllable"]) is True:
-                pub_system_message({}, "Bitte akzeptiere zunächst die "
-                                   "<a href=\"/openWB/web/settings/#/GeneralChargeConfig\">rechtlichen Hinweise</a> "
-                                   "für die Speichersteuerung. Die Speichersteuerung war bisher bereits verfügbar, ist"
-                                   " jedoch bis zum Akzeptieren standardmäßig deaktiviert.", MessageType.WARNING)
+        # 2026-05-06: Topic "openWB/bat/config/bat_control_permitted" wurde später entfernt
+        # und wird daher nicht mehr in upgrade_datastore_86 hinzugefügt
         self._append_datastore_version(86)
 
     def upgrade_datastore_87(self) -> None:
@@ -3127,6 +3122,18 @@ class UpdateConfig:
         self._append_datastore_version(123)
 
     def upgrade_datastore_124(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("^openWB/vehicle/[0-9]+/soc_module/config$", topic) is not None:
+                configuration_payload = decode_payload(payload)
+                if configuration_payload.get("type") == "json":
+                    json_config = configuration_payload.get("configuration", {})
+                    if "odometer_pattern" not in json_config:
+                        json_config["odometer_pattern"] = None
+                        return {topic: configuration_payload}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(124)
+
+    def upgrade_datastore_125(self) -> None:
         def upgrade(topic: str, payload) -> None:
             if "openWB/optional/ep/grid_fee/provider" == topic:
                 provider = decode_payload(payload)
@@ -3138,4 +3145,4 @@ class UpdateConfig:
                                     tariff["weekdays"] = list(range(7))
                             return {topic: provider}
         self._loop_all_received_topics(upgrade)
-        self._append_datastore_version(124)
+        self._append_datastore_version(125)
