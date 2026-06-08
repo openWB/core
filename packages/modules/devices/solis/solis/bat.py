@@ -68,7 +68,7 @@ class SolisBat(AbstractBat):
             log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt und nicht geladen/entladen")
         elif power_limit < 0:
             self.client.write_register(43135, 2, data_type=ModbusDataType.UINT_16, unit=unit)
-            power_value = int(power_limit / 10)
+            power_value = int(abs(power_limit) / 10)
             self.client.write_register(43129, power_value, data_type=ModbusDataType.UINT_16, unit=unit)
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_value} W entladen für den Hausverbrauch")
         elif power_limit > 0:
