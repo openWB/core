@@ -16,6 +16,7 @@ from modules.common.component_type import ComponentType
 class KwargsDict(TypedDict):
     client: ModbusTcpClient_
     device_id: int
+    version: SolisVersion
 
 
 class SolisInverter:
@@ -25,6 +26,7 @@ class SolisInverter:
 
     def initialize(self) -> None:
         self.client: ModbusTcpClient_ = self.kwargs['client']
+        self.version: SolisVersion = self.kwargs['version']
         self.sim_counter = SimCounter(self.kwargs['device_id'], self.component_config.id, prefix="pv")
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
@@ -32,14 +34,13 @@ class SolisInverter:
 
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
-        version = SolisVersion(self.component_config.configuration.version)
 
-        if version == SolisVersion.inverter:
+        if self.version == SolisVersion.inverter:
             # Für Stringwechselrichter -1 bei Modbus Registers
             power = self.client.read_input_registers(3004, ModbusDataType.INT_32, unit=unit) * -1
             dc_power = self.client.read_input_registers(3006, ModbusDataType.UINT_32, unit=unit) * -1
             currents = self.client.read_input_registers(3036, [ModbusDataType.UINT_16]*3, unit=unit)
-        elif version in (SolisVersion.hybrid, SolisVersion.hybrid_s):
+        elif self.version in (SolisVersion.hybrid, SolisVersion.hybrid_s):
             power = self.client.read_input_registers(33079, ModbusDataType.INT_32, unit=unit) * -1
             dc_power = self.client.read_input_registers(33057, ModbusDataType.UINT_32, unit=unit) * -1
             currents = self.client.read_input_registers(33076, [ModbusDataType.UINT_16]*3, unit=unit)
