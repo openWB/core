@@ -19,7 +19,10 @@ def create_device(device_config: Solis):
 
     def create_bat_component(component_config: SolisBatSetup):
         nonlocal client
-        return SolisBat(component_config, client=client, device_id=device_config.id)
+        return SolisBat(component_config,
+                        client=client,
+                        device_id=device_config.id,
+                        version=device_config.configuration.version)
 
     def create_counter_component(component_config: SolisCounterSetup):
         nonlocal client
