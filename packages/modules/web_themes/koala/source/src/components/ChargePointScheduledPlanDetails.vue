@@ -99,7 +99,7 @@
           />
         </div>
         <div
-          class="row q-mt-sm q-pa-sm text-white no-wrap items-center bg-primary rounded-borders"
+          class="info-box row q-mt-sm q-pa-sm no-wrap items-center rounded-borders"
         >
           <q-icon name="info" size="sm" class="q-mr-xs" />
           <ChargePointScheduledPlanSummary
@@ -486,5 +486,14 @@ const chargeTemplateId = computed(
 
 .flex-grow {
   flex-grow: 1;
+}
+
+.info-box {
+  background-color: color-mix(in srgb, var(--q-primary) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--q-text) 35%, transparent);
+  color: color-mix(in srgb, var(--q-text) 80%, transparent);
+}
+.info-box :deep(.q-icon) {
+  color: var(--q-primary);
 }
 </style>

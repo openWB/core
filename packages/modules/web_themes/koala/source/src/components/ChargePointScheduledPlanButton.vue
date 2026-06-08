@@ -1,9 +1,10 @@
 <template>
   <q-btn
+    flat
     no-caps
     align="center"
-    class="cursor-pointer"
-    :color="planActive.value ? 'positive' : 'negative'"
+    class="scheduled-plan-button cursor-pointer"
+    :class="planActive.value ? 'is-active' : 'is-inactive'"
     @click="$emit('editPlan', plan)"
   >
     <ChargePointScheduledPlanSummary
@@ -33,3 +34,17 @@ const planActive = computed(() =>
   ),
 );
 </script>
+
+<style scoped lang="scss">
+.scheduled-plan-button.is-active {
+  --plan-state: var(--q-positive);
+}
+.scheduled-plan-button.is-inactive {
+  --plan-state: var(--q-negative);
+}
+.scheduled-plan-button {
+  background-color: color-mix(in srgb, var(--plan-state) 30%, transparent);
+  border: 1px solid color-mix(in srgb, var(--q-text) 35%, transparent);
+  color: color-mix(in srgb, var(--q-text) 90%, transparent);
+}
+</style>
