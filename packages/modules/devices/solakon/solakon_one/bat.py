@@ -32,9 +32,10 @@ class SolakonOneBat(AbstractBat):
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
 
-        # AC Leistung am Stecker, Batterie aus dem Netz aufladen hat positive Werte,
+        # Reg 39134 AC Leistung am Stecker, Batterie aus dem Netz aufladen hat positive Werte,
         # Leistung aus der Batterie und/oder aus PV ins Netz abgeben hat negative Werte
-        power = self.client.read_holding_registers(39134, ModbusDataType.INT_32, unit=unit) * -1
+        # Reg 39237 Battery Combined Power
+        power = self.client.read_holding_registers(39237, ModbusDataType.INT_32, unit=unit)
         # SoC Ladezustand der Batterie in %
         soc = self.client.read_holding_registers(39424, ModbusDataType.INT_16, unit=unit)
         # gesamte DC Ladung der Batterie in Wh
