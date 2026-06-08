@@ -343,6 +343,21 @@ $dark-table-hover: #ffffff12;
   color: var(--q-text) !important;
 }
 
+// Tinted state/info box — all themes. A component opts in with the class
+// "tinted-box" and supplies the accent via --tint-accent; it may override the
+// tint strength (--tint-amount) and text shade (--tint-text). The neutral
+// border and the tint formula are shared so every box stays consistent. Icon
+// color is left to each component, as it varies by context.
+.tinted-box {
+  background-color: color-mix(
+    in srgb,
+    var(--tint-accent, var(--q-primary)) var(--tint-amount, 12%),
+    transparent
+  );
+  border: 1px solid color-mix(in srgb, var(--q-text) 35%, transparent);
+  color: var(--tint-text, var(--q-text));
+}
+
 // Card background + text — all themes (values via --q-card-background / --q-text).
 .q-card {
   background-color: var(--q-card-background);

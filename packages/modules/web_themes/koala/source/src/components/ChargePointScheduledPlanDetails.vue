@@ -99,7 +99,7 @@
           />
         </div>
         <div
-          class="info-box row q-mt-sm q-pa-sm no-wrap items-center rounded-borders"
+          class="info-box tinted-box row q-mt-sm q-pa-sm no-wrap items-center rounded-borders"
         >
           <q-icon name="info" size="sm" class="q-mr-xs" />
           <ChargePointScheduledPlanSummary
@@ -489,9 +489,8 @@ const chargeTemplateId = computed(
 }
 
 .info-box {
-  background-color: color-mix(in srgb, var(--q-primary) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--q-text) 35%, transparent);
-  color: color-mix(in srgb, var(--q-text) 80%, transparent);
+  --tint-accent: var(--q-primary);
+  --tint-text: color-mix(in srgb, var(--q-text) 80%, transparent);
 }
 .info-box :deep(.q-icon) {
   color: var(--q-primary);

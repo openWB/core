@@ -3,7 +3,7 @@
     flat
     no-caps
     align="center"
-    class="scheduled-plan-button cursor-pointer"
+    class="scheduled-plan-button tinted-box cursor-pointer"
     :class="planActive.value ? 'is-active' : 'is-inactive'"
     @click="$emit('editPlan', plan)"
   >
@@ -37,14 +37,13 @@ const planActive = computed(() =>
 
 <style scoped lang="scss">
 .scheduled-plan-button.is-active {
-  --plan-state: var(--q-positive);
+  --tint-accent: var(--q-positive);
 }
 .scheduled-plan-button.is-inactive {
-  --plan-state: var(--q-negative);
+  --tint-accent: var(--q-negative);
 }
 .scheduled-plan-button {
-  background-color: color-mix(in srgb, var(--plan-state) 30%, transparent);
-  border: 1px solid color-mix(in srgb, var(--q-text) 35%, transparent);
-  color: color-mix(in srgb, var(--q-text) 90%, transparent);
+  --tint-amount: 30%;
+  --tint-text: color-mix(in srgb, var(--q-text) 90%, transparent);
 }
 </style>

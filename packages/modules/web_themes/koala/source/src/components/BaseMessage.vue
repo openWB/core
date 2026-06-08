@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="showMessage"
-    class="message-bar row q-mt-sm q-pa-sm no-wrap cursor-pointer rounded-borders"
+    class="message-bar tinted-box row q-mt-sm q-pa-sm no-wrap cursor-pointer rounded-borders"
     :class="{ 'items-center': collapsed }"
     @click="toggleCollapse"
   >
@@ -61,8 +61,7 @@ const iconName = computed(() => {
 
 <style scoped>
 .message-bar {
-  background-color: color-mix(in srgb, v-bind(messageColor) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--q-text) 35%, transparent);
+  --tint-accent: v-bind(messageColor);
 }
 
 .message-text {
