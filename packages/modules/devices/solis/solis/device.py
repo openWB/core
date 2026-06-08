@@ -27,7 +27,10 @@ def create_device(device_config: Solis):
 
     def create_inverter_component(component_config: SolisInverterSetup):
         nonlocal client
-        return SolisInverter(component_config, client=client, device_id=device_config.id, version=device_config.configuration.version)
+        return SolisInverter(component_config,
+                             client=client,
+                             device_id=device_config.id,
+                             version=device_config.configuration.version)
 
     def update_components(components: Iterable[Union[SolisBat, SolisCounter, SolisInverter]]):
         nonlocal client
