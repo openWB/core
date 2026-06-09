@@ -1391,7 +1391,6 @@ export default {
               <i-form-label>Ziel-Termin</i-form-label>
               <i-row>
                 <i-column class="_margin-bottom:1">
-                  <i-form-label>Stunde</i-form-label>
                   <extended-number-input
                     unit="Uhr"
                     :min="0"
@@ -1409,7 +1408,6 @@ export default {
                   />
                 </i-column>
                 <i-column class="_margin-bottom:1">
-                  <i-form-label>Minute</i-form-label>
                   <extended-number-input
                     unit="Min."
                     :min="0"
