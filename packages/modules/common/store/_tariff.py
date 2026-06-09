@@ -72,11 +72,11 @@ class PriceValueStore(ValueStore[TariffState]):
 
         def __get_default_grid_fee_price(prices: Dict[str, float]) -> float:
             if (data.data.optional_data.grid_fee_module is not None and
-                hasattr(data.data.optional_data.grid_fee_module.config, "default_price") and
-                    data.data.optional_data.grid_fee_module.config.default_price is not None):
+                hasattr(data.data.optional_data.grid_fee_module.config.configuration, "default_price") and
+                    data.data.optional_data.grid_fee_module.config.configuration.default_price is not None):
                 log.debug("Using default grid fee price from configuration: " +
-                          f"{data.data.optional_data.grid_fee_module.config.default_price}")
-                return data.data.optional_data.grid_fee_module.config.default_price
+                          f"{data.data.optional_data.grid_fee_module.config.configuration.default_price}")
+                return data.data.optional_data.grid_fee_module.config.configuration.default_price
             else:
                 # Fallback: Median der vorhandenen Netzentgelte wird
                 # als Schätzung für das Standard-Netzentgelt verwenden
@@ -95,8 +95,8 @@ class PriceValueStore(ValueStore[TariffState]):
             grid_fee_prices = {int(float(k)): v for k, v in grid_fee_prices.items() if int(float(k)) <= max_timestamp}
 
             if (data.data.optional_data.flexible_tariff_module is not None and
-                hasattr(data.data.optional_data.flexible_tariff_module.config, "includes_grid_fee") and
-                    data.data.optional_data.flexible_tariff_module.config.includes_grid_fee is False):
+                hasattr(data.data.optional_data.flexible_tariff_module.config.configuration, "includes_grid_fee") and
+                    data.data.optional_data.flexible_tariff_module.config.configuration.includes_grid_fee is False):
                 return grid_fee_prices
             else:
                 #  Bei flexiblen Tarifen, die das Netzentgelt _nicht_ enthalten,

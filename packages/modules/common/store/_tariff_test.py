@@ -1,5 +1,6 @@
 from datetime import timedelta
 import datetime
+from types import SimpleNamespace
 from typing import Dict
 from unittest.mock import Mock
 
@@ -30,12 +31,16 @@ def mock_data() -> None:
     data.data_init(Mock())
     data.data.optional_data = Optional()
     data.data.optional_data.grid_fee_module = Mock()
-    data.data.optional_data.grid_fee_module.config = Mock()
-    data.data.optional_data.grid_fee_module.config.default_price = None
+    data.data.optional_data.grid_fee_module.config = SimpleNamespace(
+        configuration=SimpleNamespace(default_price=None)
+    )
     data.data.optional_data.flexible_tariff_module = Mock()
-    data.data.optional_data.flexible_tariff_module.config = Mock()
-    data.data.optional_data.flexible_tariff_module.config.default_price = None
-    data.data.optional_data.flexible_tariff_module.config.includes_grid_fee = True
+    data.data.optional_data.flexible_tariff_module.config = SimpleNamespace(
+        configuration=SimpleNamespace(
+            default_price=None,
+            includes_grid_fee=True
+        )
+    )
 
 
 @pytest.mark.parametrize(
@@ -146,8 +151,8 @@ def test_sum_prices(
         flexible_tariff
     )
     data.data.optional_data.data.electricity_pricing.grid_fee.get.prices = grid_fee
-    data.data.optional_data.flexible_tariff_module.config.includes_grid_fee = includes_grid_fee
-    data.data.optional_data.grid_fee_module.config.default_price = default_grid_fee_price
+    data.data.optional_data.flexible_tariff_module.config.configuration.includes_grid_fee = includes_grid_fee
+    data.data.optional_data.grid_fee_module.config.configuration.default_price = default_grid_fee_price
     summed = value_Store.sum_prices()
     assert summed == expected_prices
 
