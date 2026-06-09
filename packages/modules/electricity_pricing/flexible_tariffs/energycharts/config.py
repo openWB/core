@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 class EnergyChartsTariffConfiguration:
     country: str = "DE-LU"
     surcharge: float = 0
+    net: bool = True
+    tax: float = 19
 
 
 @dataclass
