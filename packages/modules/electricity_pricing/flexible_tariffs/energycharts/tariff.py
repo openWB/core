@@ -24,8 +24,8 @@ def create_request_url(config: EnergyChartsTariffConfiguration) -> str:
     return url
 
 
-def parse_response(config: EnergyChartsTariffConfiguration, raw_prices: dict) -> Dict[str, float]:
-    prices: Dict[int, float] = {}
+def parse_response(config: EnergyChartsTariffConfiguration, raw_prices: Dict[str, float]) -> Dict[str, float]:
+    prices: Dict[str, float] = {}
     for timestamp, price_per_MWh in zip(raw_prices['unix_seconds'],  raw_prices['price']):
         prices[str(int(timestamp))] = float(price_per_MWh)/1000000 + config.surcharge
     log.debug("converted prices: %s : %s", len(prices), prices)
