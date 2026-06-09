@@ -26,8 +26,6 @@ class SolisCounter:
         self.version: SolisVersion = self.kwargs['version']
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.version = self.kwargs['version']
-        self.client = self.kwargs['client']
         self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self):
