@@ -10,7 +10,6 @@ from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
 
 log = logging.getLogger(__name__)
-AS_EURO_PER_WH = 1000
 
 
 def _to_time(time_str: str) -> datetime.time:
@@ -69,7 +68,7 @@ def _calculate_price_timeslots(config: FixedHoursTariffConfiguration) -> TariffS
         for j in range(4):  # get prices for quarter hours
             time_slot = current_hour + datetime.timedelta(hours=i, minutes=j * 15)
             epoch_time = int(time.mktime(time_slot.timetuple()))
-            prices[str(epoch_time)] = _fetch_price_for_time_slot(config, time_slot) / AS_EURO_PER_WH
+            prices[str(epoch_time)] = _fetch_price_for_time_slot(config, time_slot)
     return TariffState(prices=prices)
 
 
