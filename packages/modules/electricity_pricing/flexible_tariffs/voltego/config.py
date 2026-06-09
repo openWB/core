@@ -5,8 +5,8 @@ from typing import Optional
 @dataclass
 class VoltegoToken:
     access_token: Optional[str] = field(default=None, repr=False)  # don't show in UI
-    expires_in: Optional[str] = field(default=None)  # don't show in UI
-    created_at: Optional[str] = field(default=None)  # don't show in UI
+    expires_in: Optional[int] = field(default=None)  # don't show in UI
+    created_at: Optional[int] = field(default=None)  # don't show in UI
 
 
 @dataclass
