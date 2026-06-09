@@ -371,12 +371,19 @@ export default {
         template,
       );
     },
+    scheduledChargingPlanHours(time) {
+      return parseInt(time.split(":")[0], 10);
+    },
+    scheduledChargingPlanMinutes(time) {
+      return parseInt(time.split(":")[1], 10);
+    },
     setChargePointConnectedVehicleScheduledChargingPlanTime(
       id,
       plan_id,
-      newTime,
+      hours,
+      minutes,
     ) {
-      console.log(`setScheduledTime: ${id} ${plan_id}`, newTime);
+      const newTime = `${String(hours).padStart(2, "0")}:${String(minutes,).padStart(2, "0")}`;
       const templateTopic = `openWB/chargepoint/${id}/set/charge_template`;
       const template = this.mqttStore.updateState(
         templateTopic,
@@ -1382,17 +1389,44 @@ export default {
             </i-form-group>
             <i-form-group class="_margin-bottom:2">
               <i-form-label>Ziel-Termin</i-form-label>
-              <i-input
-                type="time"
-                :model-value="plan.time"
-                @update:model-value="
-                  setChargePointConnectedVehicleScheduledChargingPlanTime(
-                    modalChargePointId,
-                    planKey,
-                    $event,
-                  )
-                "
-              />
+              <i-row>
+                <i-column class="_margin-bottom:1">
+                  <i-form-label>Stunde</i-form-label>
+                  <extended-number-input
+                    unit="Uhr"
+                    :min="0"
+                    :max="23"
+                    :step="1"
+                    :model-value="scheduledChargingPlanHours(plan.time)"
+                    @update:model-value="
+                      setChargePointConnectedVehicleScheduledChargingPlanTime(
+                        modalChargePointId,
+                        planKey,
+                        $event,
+                        scheduledChargingPlanMinutes(plan.time),
+                      )
+                    "
+                  />
+                </i-column>
+                <i-column class="_margin-bottom:1">
+                  <i-form-label>Minute</i-form-label>
+                  <extended-number-input
+                    unit="Min."
+                    :min="0"
+                    :max="55"
+                    :step="5"
+                    :model-value="scheduledChargingPlanMinutes(plan.time)"
+                    @update:model-value="
+                      setChargePointConnectedVehicleScheduledChargingPlanTime(
+                        modalChargePointId,
+                        planKey,
+                        scheduledChargingPlanHours(plan.time),
+                        $event,
+                      )
+                    "
+                  />
+                </i-column>
+              </i-row>
             </i-form-group>
           </div>
         </i-form>
