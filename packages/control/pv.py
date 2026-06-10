@@ -49,6 +49,6 @@ class PvData:
 
 
 class Pv:
-    def __init__(self, index):
+    def __init__(self, index: int):
         self.data = PvData()
         self.num = index

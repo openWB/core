@@ -27,56 +27,31 @@ def data_fixture() -> None:
 
 
 @pytest.mark.parametrize(
-    "max_ac_out, power, expected_result",
+    "bat_power, required_power, pv_power, expected_power",
     [
-        pytest.param(5000, -6000, 1000, id="Leistung überschreitet max_ac_out"),
-        pytest.param(5000, -4000, 0, id="Leistung liegt unter max_ac_out"),
-        pytest.param(5000, 0, 0, id="Keine Leistung (power = 0)"),
-        pytest.param(0, -6000, 0, id="max_ac_out ist 0"),
-    ],
-)
-def test_pv_power_beyond_max_ac_out(max_ac_out: int, power: int, expected_result: int):
-    # Mock für die Pv-Klasse
-    inverter = Pv(1)
-    inverter.data.config.max_ac_out = max_ac_out
-    inverter.data.get.power = power
-    bat_all = BatAll()
-
-    # Aufruf der zu testenden Funktion
-    result = bat_all._get_pv_power_beyond_max_ac_out(inverter)
-
-    # Überprüfung des Ergebnisses
-    assert result == expected_result
-
-
-@pytest.mark.parametrize(
-    "bat_power, required_power, return_pv_power_beyond_max_ac_out, expected_power",
-    [
-        pytest.param(1000, 1000, 0, 1000, id="exakt max Leistung des WR"),
-        pytest.param(1000, 1000, 100, 900, id="max Leistung des WR um 100W überschritten"),
-        pytest.param(1000, 1000, 1100, 0, id="maximale Entladeleistung erreicht"),
-        pytest.param(3000, 3000, 2000, 1000, id="max Leistung des WR um 2000W überschritten"),
-        pytest.param(3000, 5000, 2000, 1000, id="max Leistung des WR um 2000W überschritten, " +
-                     "erlaubte Entladeleistung höher als aktuelle Leistung"),
-        pytest.param(-1000, 1100, 0, 1100, id="Speicher entlädt, soll entladen"),
-        pytest.param(-1000, -600, 0, -600, id="Speicher entlädt, soll weniger entladen"),
-        pytest.param(0, 600, 0, 600, id="Speicher ruht, soll entladen"),
+        pytest.param(-1000, 1000, 0, 1000, id="Leistung verfügbar"),
+        pytest.param(-4900, 5100, -100, 4900, id="max Leistung des WR um 100W überschritten, Speicher entlädt"),
+        pytest.param(1000, 1600, -4500, 500, id="Speicher lädt, soll entladen"),
     ])
 def test_limit_bat_power_discharge(bat_power: int,
                                    required_power: int,
-                                   return_pv_power_beyond_max_ac_out: int,
+                                   pv_power: int,
                                    expected_power: int,
-                                   monkeypatch):
+                                   monkeypatch: pytest.MonkeyPatch):
     # setup
     data.data.pv_data = {"pv2": Pv(2)}
-    mock_pv_power_beyond_max_ac_out = Mock(return_value=return_pv_power_beyond_max_ac_out)
-    monkeypatch.setattr(BatAll, "_get_pv_power_beyond_max_ac_out", mock_pv_power_beyond_max_ac_out)
+    data.data.pv_data["pv2"].data.get.power = pv_power
+    data.data.pv_data["pv2"].data.config.max_ac_out = 5000
+    data.data.bat_data["bat1"] = Bat(1)
+    data.data.bat_data["bat1"].data.get.power = bat_power
+    mock_entry_children = Mock(return_value={"children": [{"id": 1, "type": "bat"}]})
+    monkeypatch.setattr(data.data.counter_all_data, "get_entry_of_element", mock_entry_children)
 
     b = BatAll()
     b.data.get.power = bat_power
 
     # execution
-    power = b._limit_bat_power_discharge(required_power)
+    power = b._limit_bat_power_discharge(required_power)  # pyright: ignore[reportPrivateUsage]
 
     # evaluation
     assert power == expected_power
