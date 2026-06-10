@@ -33,6 +33,7 @@ class VartaBatModbus(AbstractBat):
         self.client: ModbusTcpClient_ = self.kwargs['client']
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.store = get_bat_value_store(self.component_config.id)
+        self.last_mode = 'Undefined'
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
