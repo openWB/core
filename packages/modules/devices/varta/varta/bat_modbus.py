@@ -60,12 +60,12 @@ class VartaBatModbus(AbstractBat):
                 # hier muss die maximale Entladeleistung des Systems gesetzt werden
                 # Wir nehmen default -4000W an. Nach 120s setzt sich das Register
                 # automatisch zurück
-                self.__tcp_client.write_register(1074, -4000, data_type=ModbusDataType.INT_16, unit=unit)
+                self.client.write_register(1074, -4000, data_type=ModbusDataType.INT_16, unit=unit)
                 self.last_mode = None
         else:
             log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt und nicht entladen. "
                       "Leistungsübergabe und aktive Ladung nicht möglich.")
-            self.__tcp_client.write_register(1074, 0, data_type=ModbusDataType.INT_16, unit=unit)
+            self.client.write_register(1074, 0, data_type=ModbusDataType.INT_16, unit=unit)
             self.last_mode = 'stop'
 
     def power_limit_controllable(self) -> bool:
