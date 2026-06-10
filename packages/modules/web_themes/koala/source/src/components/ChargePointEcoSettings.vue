@@ -6,7 +6,7 @@
     :max="16"
     :step="1"
     unit="A"
-    v-model="current.value"
+    v-model="current"
     class="q-mt-md"
   />
 
@@ -30,11 +30,11 @@
         <q-btn
           v-for="option in phaseOptions"
           :key="option.value"
-          :color="numPhases.value === option.value ? 'primary' : 'grey'"
+          :color="numPhases === option.value ? 'primary' : 'grey'"
           :label="option.label"
           size="sm"
           class="col"
-          @click="numPhases.value = option.value"
+          @click="numPhases = option.value"
         />
       </q-btn-group>
     </div>
@@ -46,36 +46,33 @@
     <div class="row no-wrap items-center justify-between q-mb-xs q-gutter-x-xs">
       <div class="col-auto">
         <q-btn
-          v-if="maxPrice.value"
           class="col-auto q-mr-xs disable-zoom"
           label="-1,00"
           color="grey"
           size="sm"
           dense
-          @click="maxPrice.value = maxPrice.value - 1"
+          @click="modifyMaxPrice(-1)"
         />
         <q-btn
-          v-if="maxPrice.value"
           class="col-auto q-mr-xs disable-zoom"
           label="-0,10"
           color="grey"
           size="sm"
           dense
-          @click="maxPrice.value = maxPrice.value - 0.1"
+          @click="modifyMaxPrice(-0.1)"
         />
         <q-btn
-          v-if="maxPrice.value"
           class="col-auto disable-zoom"
           label="-0,01"
           color="grey"
           size="sm"
           dense
-          @click="maxPrice.value = maxPrice.value - 0.01"
+          @click="modifyMaxPrice(-0.01)"
         />
       </div>
       <div class="col-auto q-mx-sm">
         {{
-          maxPrice.value?.toLocaleString(undefined, {
+          maxPrice?.toLocaleString(undefined, {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
           }) + ' ct/kWh'
@@ -83,38 +80,35 @@
       </div>
       <div class="col-auto">
         <q-btn
-          v-if="maxPrice.value"
           class="col-auto q-mr-xs disable-zoom"
           label="+0,01"
           color="grey"
           size="sm"
           dense
-          @click="maxPrice.value = maxPrice.value + 0.01"
+          @click="modifyMaxPrice(0.01)"
         />
         <q-btn
-          v-if="maxPrice.value"
           class="col-auto q-mr-xs disable-zoom"
           label="+0,10"
           color="grey"
           size="sm"
           dense
-          @click="maxPrice.value = maxPrice.value + 0.1"
+          @click="modifyMaxPrice(0.1)"
         />
         <q-btn
-          v-if="maxPrice.value"
           class="col-auto disable-zoom"
           label="+1,00"
           color="grey"
           size="sm"
           dense
-          @click="maxPrice.value = maxPrice.value + 1"
+          @click="modifyMaxPrice(1)"
         />
       </div>
     </div>
     <q-field filled class="q-mt-sm">
       <ElectricityTariffChart
-        :modelValue="maxPrice.value"
-        @update:modelValue="maxPrice.value = $event"
+        :modelValue="maxPrice"
+        @update:modelValue="maxPrice = $event"
       />
     </q-field>
   </div>
@@ -132,15 +126,14 @@ const props = defineProps<{
 
 const mqttStore = useMqttStore();
 
-
 const phaseOptions = [
   { value: 1, label: '1' },
   { value: 3, label: 'Maximum' },
   { value: 0, label: 'Automatik' },
 ];
 
-const current = computed(() =>
-  mqttStore.chargePointConnectedVehicleEcoChargeCurrent(props.chargePointId),
+const current = mqttStore.chargePointConnectedVehicleEcoChargeCurrent(
+  props.chargePointId,
 );
 
 const dcChargingEnabled = computed(
@@ -155,15 +148,19 @@ const dcPower = computed(() =>
   mqttStore.chargePointConnectedVehicleEcoChargeDcPower(props.chargePointId),
 );
 
-const numPhases = computed(() =>
-  mqttStore.chargePointConnectedVehicleEcoChargePhases(props.chargePointId),
+const numPhases = mqttStore.chargePointConnectedVehicleEcoChargePhases(
+  props.chargePointId,
 );
 
 const etConfigured = computed(() => mqttStore.etProviderConfigured);
 
-const maxPrice = computed(() =>
-  mqttStore.chargePointConnectedVehicleEcoChargeMaxPrice(props.chargePointId),
+const maxPrice = mqttStore.chargePointConnectedVehicleEcoChargeMaxPrice(
+  props.chargePointId,
 );
+
+const modifyMaxPrice = (delta: number) => {
+  maxPrice.value = (maxPrice.value || 0) + delta;
+};
 </script>
 
 <style scoped>

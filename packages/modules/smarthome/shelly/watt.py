@@ -116,7 +116,7 @@ try:
         else:
             workchan = chan
         sw = 'switch:' + str(workchan)
-        if ("SPEM-003CE" in model):
+        if ("SPEM-003CE" in model or "S3EM-003CXCEU63" in model):
             if (workchan == 1):
                 aktpower = int(answer['em:0']['a_act_power'])
             elif (workchan == 2):

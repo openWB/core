@@ -106,7 +106,12 @@ def test_set_required_current_to_max(phases: int,
         pytest.param(13, 13, 13, id="Auto lädt mit Soll-Stromstärke"),
         pytest.param(12.5, 12.5, 12.0, id="Auto lädt mit 0.5A Abweichung von der Soll-Stromstärke"),
         pytest.param(11.8, 11.8, 10.600000000000001, id="Auto lädt mit mehr als Soll-Stromstärke"),
-        pytest.param(14.2, 14.2, 15.399999999999999, id="Auto lädt mit weniger als Soll-Stromstärke"),
+        pytest.param(14.2, 14.2, 15.399999999999999,
+                     id="Auto lädt mit weniger als Soll-Stromstärke, "
+                        "diff kleiner als max_current_change, aber EVSE-Begrenzung ist nicht erreicht."),
+        pytest.param(14.5, 14.2, 15.7,
+                     id="Auto lädt mit weniger als Soll-Stromstärke, "
+                        "diff größer als max_current_change, aber EVSE-Begrenzung ist nicht erreicht."),
         pytest.param(15, 15, 16,
                      id="Auto lädt mit weniger als Soll-Stromstärke, aber EVSE-Begrenzung ist erreicht.")
     ])
@@ -145,7 +150,7 @@ def test_get_chargepoints_submode_pv_charging(submode_1: Chargemode,
         cp.data.control_parameter.submode = submode
         cp.data.control_parameter.required_current = 6
         return cp
-    data.data.cp_data = {"cp1": setup_cp(mock_cp1, submode_1),
+    data.Data.cp_data = {"cp1": setup_cp(mock_cp1, submode_1),
                          "cp2": setup_cp(mock_cp2, submode_2)}
 
     # evaluation

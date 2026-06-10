@@ -192,6 +192,7 @@ class BatControlParams:
     bat_power: float = -10
     bat_soc: float = 50.0
     evu_power: float = 200
+    pv_power: float = -654
     bat_control_permitted: bool = True
     bat_control_activated: bool = True
     max_charge_power: float = 5000
@@ -207,8 +208,6 @@ class BatControlParams:
 cases = [
     BatControlParams("Speicher nicht regelbar", None, power_limit_controllable=False,
                      power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
-    BatControlParams("Disclaimer nicht akzeptiert", None, bat_control_permitted=False,
-                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
     BatControlParams("Speichersteuerung deaktiviert", None, bat_control_activated=False,
                      power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
     # Manuelle Steuerung
@@ -222,7 +221,7 @@ cases = [
                      power_limit_condition=BatPowerLimitCondition.MANUAL.value,
                      bat_manual_mode=ManualMode.MANUAL_LIMIT.value,
                      power_limit_mode=BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION.value),
-    BatControlParams("Manuelle Steuerung, Ladung PV Überschuss", 654,
+    BatControlParams("Manuelle Steuerung, Ladung PV Überschuss", 198,
                      power_limit_condition=BatPowerLimitCondition.MANUAL.value,
                      bat_manual_mode=ManualMode.MANUAL_LIMIT.value,
                      power_limit_mode=BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value),
@@ -240,15 +239,17 @@ cases = [
                      power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
     BatControlParams("Fahrzeuge laden, Begrenzung Hausverbrauch", -456,
                      power_limit_mode=BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION.value),
-    BatControlParams("Fahrzeuge laden, Ladung PV Überschuss", 654,
+    BatControlParams("Fahrzeuge laden, Ladung PV Überschuss", 198,
                      power_limit_mode=BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value),
+    BatControlParams("Fahrzeuge laden, Ladung PV Überschuss, Eigenverbrauch PV-Anlage", -456,
+                     power_limit_mode=BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value,
+                     pv_power=100),
 ]
 
 
 @pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
 def test_active_bat_control(params: BatControlParams, data_, monkeypatch):
     b_all = BatAll()
-    b_all.data.config.bat_control_permitted = params.bat_control_permitted
     b_all.data.config.bat_control_activated = params.bat_control_activated
     b_all.data.config.power_limit_mode = params.power_limit_mode
     b_all.data.config.power_limit_condition = params.power_limit_condition
@@ -265,7 +266,7 @@ def test_active_bat_control(params: BatControlParams, data_, monkeypatch):
     # b_all.data.get.soc = 50.0
     data.data.counter_all_data = hierarchy_standard()
     data.data.counter_all_data.data.set.home_consumption = 456
-    data.data.pv_all_data.data.get.power = -654
+    data.data.pv_all_data.data.get.power = params.pv_power
     data.data.cp_all_data.data.get.power = 1400
     data.data.counter_data["counter0"].data.get.power = params.evu_power
     data.data.bat_all_data = b_all
@@ -275,11 +276,12 @@ def test_active_bat_control(params: BatControlParams, data_, monkeypatch):
                         get_chargepoints_with_required_current_by_chargemode_mock)
     get_evu_counter_mock = Mock(return_value=data.data.counter_data["counter0"])
     monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", get_evu_counter_mock)
-    get_controllable_bat_components_mock = Mock(return_value=[MqttBat(MqttBatSetup(id=2), device_id=0)])
+    get_bat_components_by_controllability_mock = Mock(return_value=([MqttBat(MqttBatSetup(id=2), device_id=0)], []))
     data.data.bat_data["bat2"].data.get.soc = params.bat_soc
     data.data.bat_data["bat2"].data.get.max_charge_power = params.max_charge_power
     data.data.bat_data["bat2"].data.get.max_discharge_power = params.max_discharge_power
-    monkeypatch.setattr(bat_all, "get_controllable_bat_components", get_controllable_bat_components_mock)
+    monkeypatch.setattr(bat_all, "get_bat_components_by_controllability",
+                        get_bat_components_by_controllability_mock)
 
     data.data.bat_all_data.get_power_limit()
     data.data.bat_all_data._set_bat_power_active_control(data.data.bat_all_data.data.set.power_limit)
@@ -299,7 +301,7 @@ cases = [
                      price_limit_activated=True,
                      price_limit=0.30,
                      power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
-    BatControlParams("Preisgrenze, Überschuss Laden, Grenze unterschritten", 654,
+    BatControlParams("Preisgrenze, Überschuss Laden, Grenze unterschritten", 198,
                      power_limit_condition=BatPowerLimitCondition.PRICE_LIMIT.value,
                      price_limit_activated=True,
                      price_limit=0.30,
@@ -329,7 +331,6 @@ cases = [
 def test_control_price_limit(params: BatControlParams, data_, monkeypatch):
     monkeypatch.setattr(data.data.optional_data, "ep_get_current_price", Mock(return_value=0.2))
     b_all = BatAll()
-    b_all.data.config.bat_control_permitted = params.bat_control_permitted
     b_all.data.config.bat_control_activated = params.bat_control_activated
     b_all.data.config.power_limit_mode = params.power_limit_mode
     b_all.data.config.power_limit_condition = params.power_limit_condition
@@ -357,11 +358,12 @@ def test_control_price_limit(params: BatControlParams, data_, monkeypatch):
                         get_chargepoints_with_required_current_by_chargemode_mock)
     get_evu_counter_mock = Mock(return_value=data.data.counter_data["counter0"])
     monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", get_evu_counter_mock)
-    get_controllable_bat_components_mock = Mock(return_value=[MqttBat(MqttBatSetup(id=2), device_id=0)])
+    get_bat_components_by_controllability_mock = Mock(return_value=([MqttBat(MqttBatSetup(id=2), device_id=0)], []))
     data.data.bat_data["bat2"].data.get.soc = params.bat_soc
     data.data.bat_data["bat2"].data.get.max_charge_power = params.max_charge_power
     data.data.bat_data["bat2"].data.get.max_discharge_power = params.max_discharge_power
-    monkeypatch.setattr(bat_all, "get_controllable_bat_components", get_controllable_bat_components_mock)
+    monkeypatch.setattr(bat_all, "get_bat_components_by_controllability",
+                        get_bat_components_by_controllability_mock)
 
     data.data.bat_all_data.get_power_limit()
     data.data.bat_all_data._set_bat_power_active_control(data.data.bat_all_data.data.set.power_limit)

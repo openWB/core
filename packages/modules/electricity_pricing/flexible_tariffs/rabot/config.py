@@ -1,22 +1,18 @@
+from dataclasses import dataclass, field
 from typing import Optional
 
 
+@dataclass
 class RabotTariffConfiguration:
-    def __init__(self,
-                 customer_number: Optional[str] = None,
-                 contract_number: Optional[str] = None):
-        self.customer_number = customer_number
-        self.contract_number = contract_number
-        self.update_hours = [0]  # Rabot publishes once daily at 00:00 for the following day
+    customer_number: Optional[str] = None
+    contract_number: Optional[str] = None
+    # Rabot publishes once daily at 00:00 for the following day
+    update_hours: list[int] = field(default_factory=lambda: [0])
 
 
+@dataclass
 class RabotTariff:
-    def __init__(self,
-                 name: str = "Rabot",
-                 type: str = "rabot",
-                 official: bool = True,
-                 configuration: RabotTariffConfiguration = None) -> None:
-        self.name = name
-        self.type = type
-        self.official = official
-        self.configuration = configuration or RabotTariffConfiguration()
+    name: str = "Rabot"
+    type: str = "rabot"
+    official: bool = True
+    configuration: RabotTariffConfiguration = field(default_factory=RabotTariffConfiguration)

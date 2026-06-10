@@ -7,7 +7,8 @@ from modules.common.component_context import SingleComponentUpdateContext
 from modules.vehicles.cupra import api
 from modules.vehicles.cupra.soc import create_vehicle
 from modules.vehicles.cupra.config import Cupra, CupraConfiguration
-from modules.vehicles.cupra.libcupra import cupra as CupraApi
+from modules.vehicles.cupra.libcupra import cupra as CupraApi, CLIENT_ID, USER_AGENT
+import base64
 
 
 class TestCupra:
@@ -93,26 +94,38 @@ class TestCupraGetStatus:
     def cupra_instance(self, mock_session):
         instance = CupraApi(mock_session)
         instance.set_vin("test_vin")
-        instance.headers = {"Authorization": "Bearer test_token"}
+        instance.headers = {
+            "Authorization": "Bearer test_token",
+            "app-market": "android",
+        }
         return instance
+
+    def test_token_headers_use_dynamic_basic_auth_and_user_agent(self, cupra_instance):
+        headers = cupra_instance.token_headers()
+        expected_basic = base64.b64encode(f"{CLIENT_ID}:".encode("utf-8")).decode("utf-8")
+
+        assert headers["Content-Type"] == "application/x-www-form-urlencoded"
+        assert headers["Authorization"] == f"Basic {expected_basic}"
+        assert headers["User-Agent"] == USER_AGENT
 
     def test_get_status_success(self, cupra_instance, mock_session):
         # setup
         status_response_data = {
-            "status": {
-                "battery": {
-                    "currentSOC_pct": 67,
-                    "cruisingRangeElectric_km": 305,
-                    "carCapturedTimestamp": "2026-03-29T11:20:00Z"
-                }
+            "battery": {
+                "currentSocPercentage": 67,
+                "estimatedRangeInKm": 305
             }
         }
         mileage_response_data = {
             "mileageKm": 77889
         }
+        statusv2_response_data = {
+            "updatedAt": "2026-03-29T11:20:00Z"
+        }
         responses = [
             MockAiohttpResponse(status_response_data, 200),
-            MockAiohttpResponse(mileage_response_data, 200)
+            MockAiohttpResponse(mileage_response_data, 200),
+            MockAiohttpResponse(statusv2_response_data, 200)
         ]
 
         async def side_effect_func(*args, **kwargs):
@@ -127,33 +140,39 @@ class TestCupraGetStatus:
         assert status['charging']['batteryStatus']['value']['cruisingRangeElectric_km'] == 305
         assert status['charging']['batteryStatus']['value']['carCapturedTimestamp'] == "2026-03-29T11:20:00Z"
         assert status['charging']['batteryStatus']['value']['odometer'] == 77889
-        assert mock_session.get.call_count == 2
+        assert mock_session.get.call_count == 3
         mock_session.get.assert_any_call(
-            "https://ola.prod.code.seat.cloud.vwgroup.com/vehicles/test_vin/charging/status",
+            "https://ola.prod.code.seat.cloud.vwgroup.com/v1/vehicles/test_vin/charging/status",
             headers=cupra_instance.headers
         )
         mock_session.get.assert_any_call(
             "https://ola.prod.code.seat.cloud.vwgroup.com/v1/vehicles/test_vin/mileage",
             headers=cupra_instance.headers
         )
+        mock_session.get.assert_any_call(
+            "https://ola.prod.code.seat.cloud.vwgroup.com/v2/vehicles/test_vin/status",
+            headers=cupra_instance.headers
+        )
 
     def test_get_status_mileage_error_sets_odometer_none(self, cupra_instance, mock_session):
         # setup
         status_response_data = {
-            "status": {
-                "battery": {
-                    "currentSOC_pct": 67,
-                    "cruisingRangeElectric_km": 305,
-                    "carCapturedTimestamp": "2026-03-29T11:20:00Z"
-                }
+            "battery": {
+                "currentSocPercentage": 67,
+                "estimatedRangeInKm": 305,
+                "updatedAt": "2026-03-29T11:20:00Z"
             }
         }
         mileage_error_response = {
             "error": "service_unavailable"
         }
+        statusv2_response_data = {
+            "error": "service_unavailable"
+        }
         responses = [
             MockAiohttpResponse(status_response_data, 200),
-            MockAiohttpResponse(mileage_error_response, 503)
+            MockAiohttpResponse(mileage_error_response, 503),
+            MockAiohttpResponse(statusv2_response_data, 200)
         ]
 
         async def side_effect_func(*args, **kwargs):

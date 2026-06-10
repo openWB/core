@@ -47,11 +47,15 @@ class KostalPlenticoreBat(AbstractBat):
         if power < 0:
             power = self.client.read_holding_registers(
                 106, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=self.endianess) * -1
+        bat_current = self.client.read_holding_registers(200, ModbusDataType.FLOAT_32,
+                                                         unit=self.modbus_id, wordorder=self.endianess) * -1
+        currents = [bat_current / 3] * 3
 
         self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
         bat_state = BatState(
             power=power,
+            currents=currents,
             soc=soc,
             imported=imported,
             exported=exported
@@ -75,16 +79,12 @@ class KostalPlenticoreBat(AbstractBat):
             self.client.write_register(1034, 0.0, data_type=ModbusDataType.FLOAT_32,
                                        wordorder=self.endianess, unit=unit)
         elif power_limit < 0:
-            log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W entladen für den Hausverbrauch")
-            # Die maximale Entladeleistung begrenzen auf 7000W
-            power_value = float(min(abs(power_limit), 7000))
+            power_value = float(abs(power_limit))
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_value} W entladen für den Hausverbrauch")
             self.client.write_register(1034, power_value, data_type=ModbusDataType.FLOAT_32,
                                        wordorder=self.endianess, unit=unit)
         elif power_limit > 0:
-            log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W geladen")
-            # Die maximale Ladeleistung begrenzen auf 7000W
-            power_value = float(min(abs(power_limit), 7000)) * -1
+            power_value = float(abs(power_limit)) * -1
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_value} W geladen")
             self.client.write_register(1034, power_value, data_type=ModbusDataType.FLOAT_32,
                                        wordorder=self.endianess, unit=unit)
