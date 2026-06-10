@@ -26,12 +26,13 @@
       Anzahl Phasen bei Überschuss
     </div>
     <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
-      <q-btn-group class="col">
+      <q-btn-group class="col" outline>
         <q-btn
           v-for="option in phaseOptions"
           :key="option.value"
           :color="numPhases === option.value ? 'primary' : 'grey'"
           :label="option.label"
+          :outline="numPhases !== option.value"
           size="sm"
           class="col"
           @click="numPhases = option.value"

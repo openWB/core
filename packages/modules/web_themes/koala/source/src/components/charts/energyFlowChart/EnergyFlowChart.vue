@@ -29,8 +29,6 @@ const svgViewBox = computed(
     `${svgSize.value.xMin} ${svgSize.value.yMin} ${svgSize.value.xMax} ${svgSize.value.yMax}`,
 );
 
-const svgStrokeWidth = computed(() => svgSize.value.strokeWidth);
-
 const svgIconWidth = computed(() => svgSize.value.circleRadius);
 
 const svgIconHeight = computed(() => svgSize.value.circleRadius);
@@ -263,6 +261,7 @@ const chargePointSumCharging = computed(
 
 const gridId = computed(() => mqttStore.gridId);
 const pvColor = computed(() => mqttStore.pvAggregateColor);
+const batteryColor = computed(() => mqttStore.batteryAggregateColor);
 
 ///////////////////// Set animation speed //////////////////////////
 
@@ -288,8 +287,8 @@ const maxSystemPower = computed(() => {
 });
 
 function calcDuration(power: number, maxPower: number) {
-  const minDuration = 0.4;
-  const maxDuration = 4.0;
+  const minDuration = 3;
+  const maxDuration = 10;
   const absPower = Math.abs(power || 0);
   if (absPower >= maxPower) return `${minDuration}s`;
   if (absPower > 0)
@@ -339,9 +338,11 @@ const svgComponents = computed((): FlowComponent[] => {
       label: ['EVU', absoluteValueObject(gridPower.value).textValue],
       powerValue: Number(gridPower.value.value),
       iconComponent: GridIcon,
-      iconColor: gridId.value
-        ? mqttStore.gridComponentColor(gridId.value) || 'var(--q-diagram-icon)'
-        : 'var(--q-diagram-icon)',
+      iconColor:
+        gridId.value !== undefined
+          ? mqttStore.gridComponentColor(gridId.value) ||
+            'var(--q-diagram-icon)'
+          : 'var(--q-diagram-icon)',
     });
   }
 
@@ -393,7 +394,7 @@ const svgComponents = computed((): FlowComponent[] => {
       powerValue: Number(batteryPower.value.value),
       soc: batterySoc.value,
       iconComponent: BatteryIcon,
-      iconColor: mqttStore.batteryAggregateColor || 'var(--q-diagram-icon)',
+      iconColor: batteryColor.value || 'var(--q-diagram-icon)',
     });
   }
 
@@ -632,6 +633,15 @@ const calcFlowLineAnchorX = (column: number): number => {
   return columnX;
 };
 
+const calcFlowPath = (component: FlowComponent): string => {
+  const x1 = calcFlowLineAnchorX(component.position.column);
+  const y1 = calcRowY(component.position.row);
+  if (component.class.base === 'vehicle') {
+    return `M ${x1}, ${y1} ${x1}, ${calcRowY(component.position.row - 1)}`;
+  }
+  return `M ${x1}, ${y1} ${calcColumnX(1)}, ${calcRowY(1)}`;
+};
+
 const calcSvgElementBoundingBox = (elementId: string) => {
   const element = document.getElementById(elementId);
   if (element == undefined || !(element instanceof SVGGraphicsElement)) {
@@ -671,25 +681,43 @@ const svgRectWidth = computed(
       xmlns="http://www.w3.org/2000/svg"
       xmlns:svg="http://www.w3.org/2000/svg"
     >
+      <defs>
+        <filter
+          id="flow-box-shadow"
+          x="-50%"
+          y="-50%"
+          width="200%"
+          height="200%"
+          filterUnits="objectBoundingBox"
+        >
+          <feDropShadow dx="0" dy="0" stdDeviation="1" />
+        </filter>
+      </defs>
+
       <g id="layer1" style="display: inline">
-        <path
-          v-for="component in svgComponents"
-          :key="component.id"
-          :id="`flow-path-${component.id}`"
-          :class="[
-            component.class.base,
-            component.class.animationId,
-            { animated: component.class.animated },
-            { animatedReverse: component.class.animatedReverse },
-          ]"
-          :d="
-            component.class.base !== 'vehicle'
-              ? `M ${calcFlowLineAnchorX(component.position.column)}, ` +
-                `${calcRowY(component.position.row)} ${calcColumnX(1)}, ${calcRowY(1)}`
-              : `M ${calcFlowLineAnchorX(component.position.column)}, ` +
-                `${calcRowY(component.position.row)} ${calcFlowLineAnchorX(component.position.column)}, ${calcRowY(component.position.row - 1)}`
-          "
-        />
+        <g v-for="component in svgComponents" :key="component.id">
+          <!-- static background line -->
+          <path
+            class="flow-base"
+            :class="{
+              animated: component.class.animated,
+              animatedReverse: component.class.animatedReverse,
+            }"
+            :d="calcFlowPath(component)"
+          />
+          <!-- glowing flow overlay -->
+          <path
+            :id="`flow-path-${component.id}`"
+            class="flow-animated"
+            :class="[
+              component.class.base,
+              component.class.animationId,
+              { animated: component.class.animated },
+              { animatedReverse: component.class.animatedReverse },
+            ]"
+            :d="calcFlowPath(component)"
+          />
+        </g>
       </g>
 
       <g id="layer2" style="display: inline">
@@ -699,6 +727,7 @@ const svgRectWidth = computed(
           :cx="calcColumnX(1)"
           :cy="calcRowY(1)"
           :r="svgSize.circleRadius / 3"
+          filter="url(#flow-box-shadow)"
         />
 
         <!-- components -->
@@ -716,16 +745,9 @@ const svgRectWidth = computed(
             >
               <rect
                 :x="-svgSize.circleRadius - svgSize.strokeWidth"
-                :y="
-                  (svgSize.circleRadius + svgSize.strokeWidth) *
-                  (1 - 2 * component.soc)
-                "
+                :y="(svgSize.circleRadius - 1) * (1 - 2 * component.soc)"
                 :width="(svgSize.circleRadius + svgSize.strokeWidth) * 2"
-                :height="
-                  (svgSize.circleRadius + svgSize.strokeWidth) *
-                  2 *
-                  component.soc
-                "
+                :height="(svgSize.circleRadius - 1) * 2 * component.soc"
               />
             </clipPath>
             <clipPath :id="`clip-label-${component.id}`">
@@ -738,6 +760,24 @@ const svgRectWidth = computed(
                 :ry="svgSize.circleRadius"
               />
             </clipPath>
+            <linearGradient
+              :id="`gradient-soc-${component.id}`"
+              x1="0%"
+              y1="0%"
+              x2="0%"
+              y2="100%"
+            >
+              <stop
+                offset="0%"
+                stop-color="var(--soc-color)"
+                stop-opacity="25%"
+              />
+              <stop
+                offset="100%"
+                stop-color="var(--soc-color)"
+                stop-opacity="50%"
+              />
+            </linearGradient>
           </defs>
           <rect
             :x="-svgRectWidth / 2"
@@ -746,6 +786,7 @@ const svgRectWidth = computed(
             :height="svgSize.circleRadius * 2"
             :rx="svgSize.circleRadius"
             :ry="svgSize.circleRadius"
+            filter="url(#flow-box-shadow)"
           />
           <text :clip-path="`url(#clip-label-${component.id})`">
             <tspan
@@ -798,21 +839,20 @@ const svgRectWidth = computed(
             <circle
               cx="0"
               cy="0"
-              :r="svgSize.circleRadius"
-              class="background-circle"
+              :r="svgSize.circleRadius - 1"
+              filter="url(#flow-box-shadow)"
             />
-            <circle
-              cx="0"
-              cy="0"
-              :r="svgSize.circleRadius"
-              :class="{ soc: component.soc !== undefined }"
-            />
+            <!-- SoC fill: radius must match the clip-soc reference above so the
+                 fill level is accurate, and the background circle below so it
+                 reaches the inner edge of the border instead of leaving a rim -->
             <circle
               v-if="component.soc !== undefined"
+              :class="{ soc: component.soc !== undefined }"
               cx="0"
               cy="0"
-              :r="svgSize.circleRadius"
+              :r="svgSize.circleRadius - 1"
               :clip-path="`url(#clip-soc-${component.id})`"
+              :fill="`url(#gradient-soc-${component.id})`"
             />
             <g
               :transform="`translate(${-svgIconWidth / 2}, ${-svgIconHeight / 2})`"
@@ -847,143 +887,150 @@ svg {
   object-fit: contain;
 }
 
-path {
+.flow-base {
   fill: none;
-  fill-rule: evenodd;
-  stroke: rgb(64, 64, 64);
+  stroke: var(--q-secondary);
   stroke-width: 0.75;
-  stroke-linecap: butt;
-  stroke-linejoin: miter;
-  stroke-miterlimit: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
   transition: stroke 0.5s;
 }
 
-/* Basis for all animated lines */
-path.animated {
-  animation-name: dash;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-  stroke-dasharray: 5;
+/* slightly darker solid line beneath an active flow */
+.flow-base.animated,
+.flow-base.animatedReverse {
+  stroke: var(--q-grey);
 }
-path.animatedReverse {
-  animation-name: dashReverse;
+
+/* overlay stays hidden until energy is flowing */
+.flow-animated {
+  fill: none;
+  stroke: none;
+}
+
+/* Animated energy flow: glowing dots traveling along the line */
+.flow-animated.animated,
+.flow-animated.animatedReverse {
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-dasharray: 2 50;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
-  stroke-dasharray: 5;
+  filter: drop-shadow(0 0 2px currentColor) drop-shadow(0 0 6px currentColor);
+}
+
+.flow-animated.animated {
+  animation-name: energyFlow;
+}
+.flow-animated.animatedReverse {
+  animation-name: energyFlowReverse;
 }
 
 path.animated.grid {
-  stroke: var(--q-negative);
+  color: var(--q-negative);
   animation-duration: v-bind('animationDurations.grid');
 }
 path.animatedReverse.grid {
-  stroke: var(--q-positive);
+  color: var(--q-positive);
   animation-duration: v-bind('animationDurations.grid');
 }
 
 path.animated.home,
 path.animatedReverse.home {
-  stroke: var(--q-home-stroke);
+  color: var(--q-home-stroke);
   animation-duration: v-bind('animationDurations.home');
 }
 
 path.animated.pv,
 path.animatedReverse.pv {
-  stroke: var(--q-positive);
+  color: var(--q-positive);
   animation-duration: v-bind('animationDurations.pv');
 }
 
 path.animated.battery,
 path.animatedReverse.battery {
-  stroke: var(--q-battery-stroke);
+  color: var(--q-battery-stroke);
   animation-duration: v-bind('animationDurations.battery');
 }
 
 path.animated.charge-point-1,
 path.animatedReverse.charge-point-1 {
-  stroke: var(--q-charge-point-stroke);
+  color: var(--q-charge-point-stroke);
   animation-duration: v-bind('animationDurations.chargePoint1');
 }
 path.animated.charge-point-2,
 path.animatedReverse.charge-point-2 {
-  stroke: var(--q-charge-point-stroke);
+  color: var(--q-charge-point-stroke);
   animation-duration: v-bind('animationDurations.chargePoint2');
 }
 path.animated.charge-point-3,
 path.animatedReverse.charge-point-3 {
-  stroke: var(--q-charge-point-stroke);
+  color: var(--q-charge-point-stroke);
   animation-duration: v-bind('animationDurations.chargePoint3');
 }
 path.animated.charge-point-sum,
 path.animatedReverse.charge-point-sum {
-  stroke: var(--q-charge-point-stroke);
+  color: var(--q-charge-point-stroke);
   animation-duration: v-bind('animationDurations.chargePointSum');
 }
 
 path.animated.vehicle-1,
 path.animatedReverse.vehicle-1 {
-  stroke: var(--q-accent);
+  color: var(--q-vehicle-stroke);
   animation-duration: v-bind('animationDurations.vehicle1');
 }
 path.animated.vehicle-2,
 path.animatedReverse.vehicle-2 {
-  stroke: var(--q-accent);
+  color: var(--q-vehicle-stroke);
   animation-duration: v-bind('animationDurations.vehicle2');
 }
 path.animated.vehicle-3,
 path.animatedReverse.vehicle-3 {
-  stroke: var(--q-accent);
+  color: var(--q-vehicle-stroke);
   animation-duration: v-bind('animationDurations.vehicle3');
 }
 
-@keyframes dash {
-  from {
-    stroke-dashoffset: 10;
-  }
-  to {
+@keyframes energyFlow {
+  0% {
     stroke-dashoffset: 0;
   }
+  100% {
+    stroke-dashoffset: -200;
+  }
 }
-@keyframes dashReverse {
-  from {
+@keyframes energyFlowReverse {
+  0% {
+    stroke-dashoffset: -200;
+  }
+  100% {
     stroke-dashoffset: 0;
-  }
-  to {
-    stroke-dashoffset: 10;
-  }
-}
-
-:root {
-  path.home {
-    stroke: var(--q-home-stroke);
-  }
-}
-
-.body--dark {
-  path.home {
-    stroke: var(--q-white);
   }
 }
 
 circle {
-  fill: var(--q-secondary);
   fill-opacity: 1;
-  stroke: var(--q-grey);
-  stroke-width: v-bind(svgStrokeWidth);
-  stroke-miterlimit: 2;
-  stroke-opacity: 1;
+}
+
+circle:not(.soc) {
+  fill: var(--q-card-background);
 }
 
 rect {
-  stroke-width: v-bind(svgStrokeWidth);
-  fill: var(--q-secondary);
+  fill: var(--q-card-background);
+}
+
+/* Drop shadow by way of feDropShadow for browser compatibility (safari webkit) */
+feDropShadow {
+  flood-color: var(--q-shadow);
+  flood-opacity: 1;
 }
 
 text {
   font-size: v-bind(svgFontSize);
   line-height: 1.25;
   font-family: Arial;
-  fill: var(--q-white);
+  fill: var(--q-text);
   fill-opacity: 1;
 }
 
@@ -995,98 +1042,12 @@ text .fill-danger {
   fill: var(--q-grid-stroke);
 }
 
-text .fill-dark {
-  fill: var(--q-brown-text);
+.battery {
+  --soc-color: var(--q-battery-stroke);
 }
 
-.grid text {
-  fill: var(--q-grid-stroke);
-}
-
-.grid circle,
-.grid rect {
-  stroke: var(--q-grid-stroke);
-}
-
-.grid circle {
-  fill: var(--q-grid-fill);
-}
-
-.pv text {
-  fill: var(--q-pv-stroke);
-}
-
-.pv circle,
-.pv rect {
-  stroke: var(--q-pv-stroke);
-}
-
-.pv circle {
-  fill: var(--q-pv-fill);
-}
-
-.battery text {
-  fill: var(--q-battery-stroke);
-}
-
-.battery circle,
-.battery rect {
-  stroke: var(--q-battery-stroke);
-}
-
-.battery circle:not(.soc) {
-  fill: var(--q-battery-fill-flow-diagram);
-}
-
-:root {
-  .home text {
-    fill: var(--q-brown-text); /* Brown text in light theme */
-  }
-}
-
-.body--dark {
-  .home text {
-    fill: var(--q-white); /* White text in dark theme */
-  }
-}
-
-.home circle,
-.home rect {
-  stroke: var(--q-home-stroke);
-}
-
-.home circle {
-  fill: var(--q-home-fill);
-}
-
-.charge-point text {
-  fill: var(--q-charge-point-stroke);
-}
-
-.charge-point circle,
-.charge-point rect {
-  stroke: var(--q-charge-point-stroke);
-}
-
-.charge-point circle {
-  fill: var(--q-charge-point-fill);
-}
-
-.background-circle {
-  fill: var(--q-secondary) !important;
-}
-
-.vehicle text {
-  fill: var(--q-accent);
-}
-
-.vehicle circle,
-.vehicle rect {
-  stroke: var(--q-accent);
-}
-
-.vehicle circle:not(.soc) {
-  fill: color-mix(in srgb, var(--q-accent) 50%, transparent);
+.vehicle {
+  --soc-color: var(--q-vehicle-stroke);
 }
 
 use {
