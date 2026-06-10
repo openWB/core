@@ -52,7 +52,7 @@ class DimmingIo(AbstractIoAction):
             f"Dimmen: Überschuss von {surplus}W berücksichtigt, verbleibende Dimm-Leistung: {self.import_power_left}W")
 
         with ModifyLoglevelContext(control_command_log, logging.DEBUG):
-            if self.dimming_active() or check_fault_state_io_device(self.config.configuration.io_device):
+            if check_fault_state_io_device(self.config.configuration.io_device) or self.dimming_active():
                 if self.timestamp is None:
                     Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
                     if check_fault_state_io_device(self.config.configuration.io_device):

@@ -47,41 +47,43 @@ class StepwiseControlIo(AbstractIoAction):
 
     def setup(self) -> None:
         with ModifyLoglevelContext(control_command_log, logging.DEBUG):
-            digital_input = (
-                data.data.io_states[
-                    f"io_states{self.config.configuration.io_device}"
-                ].data.get.digital_input
-            )
-            digital_input_prev = data.data.io_states[
-                f"io_states{self.config.configuration.io_device}"].data.get.digital_input_prev
-            changed = len([
-                input_name for input_name in self.__unique_inputs
-                if digital_input[input_name] != digital_input_prev[input_name]
-            ]) > 0
-
             if check_fault_state_io_device(self.config.configuration.io_device):
                 control_command_log.info("Fehler des IO-Geräts: EZA-Begrenzung kann nicht erfasst werden.")
-            for pattern in self.config.configuration.input_pattern:
-                for action_input, value in pattern["matrix"].items():
-                    if digital_input[action_input] != value:
-                        break
-                else:
-                    # Alle digitalen Eingänge entsprechen dem Pattern
-                    if pattern["value"] != 1:
-                        if changed:
-                            Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
-                            control_command_log.info(f"EZA-Begrenzung mit Wert {int(pattern['value']*100)}% aktiviert.")
-                            for device in self.config.configuration.devices:
-                                if device["type"] == "inverter":
-                                    control_command_log.info(
-                                        f"Erzeugungsanlage {get_component_name_by_id(device['id'])} "
-                                        f"auf {int(pattern['value']*100)}% begrenzt."
-                                    )
-                        break
             else:
-                if changed:
-                    Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", None)
-                    control_command_log.info("EZA-Begrenzung aufgehoben.")
+                digital_input = (
+                    data.data.io_states[
+                        f"io_states{self.config.configuration.io_device}"
+                    ].data.get.digital_input
+                )
+                digital_input_prev = data.data.io_states[
+                    f"io_states{self.config.configuration.io_device}"].data.get.digital_input_prev
+                changed = len([
+                    input_name for input_name in self.__unique_inputs
+                    if digital_input[input_name] != digital_input_prev[input_name]
+                ]) > 0
+
+                for pattern in self.config.configuration.input_pattern:
+                    for action_input, value in pattern["matrix"].items():
+                        if digital_input[action_input] != value:
+                            break
+                    else:
+                        # Alle digitalen Eingänge entsprechen dem Pattern
+                        if pattern["value"] != 1:
+                            if changed:
+                                Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
+                                control_command_log.info(
+                                    f"EZA-Begrenzung mit Wert {int(pattern['value']*100)}% aktiviert.")
+                                for device in self.config.configuration.devices:
+                                    if device["type"] == "inverter":
+                                        control_command_log.info(
+                                            f"Erzeugungsanlage {get_component_name_by_id(device['id'])} "
+                                            f"auf {int(pattern['value']*100)}% begrenzt."
+                                        )
+                            break
+                else:
+                    if changed:
+                        Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", None)
+                        control_command_log.info("EZA-Begrenzung aufgehoben.")
 
     def control_stepwise(self) -> Tuple[Optional[float], LoadmanagementLimit]:
         if check_fault_state_io_device(self.config.configuration.io_device):
