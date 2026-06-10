@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-from typing import TypedDict, Any
+from typing import TypedDict, Any, Optional
+import logging
 
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
@@ -11,6 +12,8 @@ from modules.common.store import get_bat_value_store
 from modules.devices.varta.varta.config import VartaBatModbusSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
+
+log = logging.getLogger(__name__)
 
 
 class KwargsDict(TypedDict):
@@ -34,20 +37,38 @@ class VartaBatModbus(AbstractBat):
         self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
-        self.set_state(self.get_state())
-
-    def get_state(self) -> BatState:
         soc = self.client.read_holding_registers(1068, ModbusDataType.INT_16, unit=self.__modbus_id)
         power = self.client.read_holding_registers(1066, ModbusDataType.INT_16, unit=self.__modbus_id)
         self.peak_filter.check_values(power)
-        return BatState(
+        imported, exported = self.sim_counter.sim_count(power)
+        bat_state = BatState(
             power=power,
             soc=soc,
+            imported=imported,
+            exported=exported
         )
+        self.store.set(bat_state)
 
-    def set_state(self, state: BatState) -> None:
-        state.imported, state.exported = self.sim_counter.sim_count(state.power)
-        self.store.set(state)
+    def set_power_limit(self, power_limit: Optional[int]) -> None:
+        unit=self.__modbus_id
+        log.debug(f'last_mode: {self.last_mode}')
+
+        if power_limit is None:
+            log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
+            if self.last_mode is not None:
+                # hier muss die maximale Entladeleistung des Systems gesetzt werden
+                # Wir nehmen default -4000W an. Nach 120s setzt sich das Register 
+                # automatisch zurück
+                self.__tcp_client.write_register(1074, -4000, data_type=ModbusDataType.INT_16, unit=unit)
+                self.last_mode = None
+        else:
+            log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt und nicht entladen. "
+                      "Leistungsübergabe und aktive Ladung nicht möglich.")
+            self.__tcp_client.write_register(1074, 0, data_type=ModbusDataType.INT_16, unit=unit)
+            self.last_mode = 'stop'
+
+    def power_limit_controllable(self) -> bool:
+        return True
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=VartaBatModbusSetup)
