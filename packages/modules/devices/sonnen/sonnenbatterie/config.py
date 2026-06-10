@@ -53,8 +53,8 @@ class SonnenbatterieCounterSetup(ComponentSetup[SonnenbatterieCounterConfigurati
 
 
 class SonnenbatterieConsumptionCounterConfiguration:
-    def __init__(self):
-        pass
+    def __init__(self, counter_id: int = 0):
+        self.counter_id = counter_id
 
 
 class SonnenbatterieConsumptionCounterSetup(ComponentSetup[SonnenbatterieConsumptionCounterConfiguration]):

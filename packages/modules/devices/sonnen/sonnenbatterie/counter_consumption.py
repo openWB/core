@@ -17,9 +17,11 @@ log = logging.getLogger(__name__)
 
 
 class KwargsDict(TypedDict):
+    device_id: int
     device_address: str
     device_variant: int
-    api_v2_token: Optional[str]
+    device_api_v2_token: Optional[str]
+    counter_id: int
 
 
 class SonnenbatterieConsumptionCounter(AbstractCounter):
@@ -32,6 +34,7 @@ class SonnenbatterieConsumptionCounter(AbstractCounter):
         self.__device_address: str = self.kwargs['device_address']
         self.__device_variant: int = self.kwargs['device_variant']
         self.__api_v2_token: Optional[str] = self.kwargs['device_api_v2_token']
+        self.counter_id: int = self.kwargs['counter_id']
         if self.__device_variant in [0, 1, 2]:
             raise ValueError("Die ausgewählte API bietet keine Verbrauchsdaten!")
         if self.__device_variant != 3:
@@ -45,7 +48,11 @@ class SonnenbatterieConsumptionCounter(AbstractCounter):
         self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
-        self.store.set(self.api.update_consumption_counter(sim_counter=self.sim_counter, peak_filter=self.peak_filter))
+        self.store.set(
+            self.api.update_consumption_counter(sim_counter=self.sim_counter,
+                                                peak_filter=self.peak_filter,
+                                                counter_id=self.counter_id)
+        )
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=SonnenbatterieConsumptionCounterSetup)
