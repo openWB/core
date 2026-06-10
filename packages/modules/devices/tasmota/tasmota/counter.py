@@ -40,6 +40,10 @@ class TasmotaCounter(AbstractCounter):
         url = "http://" + self.__ip_address + "/cm?cmnd=Status%208"
         response = req.get_http_session().get(url, timeout=5).json()
 
+        voltages = None
+        currents = None
+        powers = None
+        power_factors = None
         if 'ENERGY' in response['StatusSNS']:
             voltages = [0.0, 0.0, 0.0]
             powers = [0.0, 0.0, 0.0]
@@ -64,22 +68,32 @@ class TasmotaCounter(AbstractCounter):
             imported = float(response['StatusSNS']['MT681']['Total_in']*1000)
             exported = float(response['StatusSNS']['MT681']['Total_out']*1000)
             imported, exported = self.peak_filter.check_values(power, imported, exported)
+        elif 'eBZ' in response['StatusSNS']:
+            powers = [0.0, 0.0, 0.0]
+            power = float(response['StatusSNS']['eBZ']['Power'])
+            imported = float(response['StatusSNS']['eBZ']['E_in']*1000)
+            exported = float(response['StatusSNS']['eBZ']['E_out']*1000)
+            imported, exported = self.peak_filter.check_values(power, imported, exported)
+            if (
+                '36_7_0' in response['StatusSNS']['eBZ'] and
+                '56_7_0' in response['StatusSNS']['eBZ'] and
+                '76_7_0' in response['StatusSNS']['eBZ']
+            ):
+                powers = [float(response['StatusSNS']['eBZ']['36_7_0']),
+                          float(response['StatusSNS']['eBZ']['56_7_0']),
+                          float(response['StatusSNS']['eBZ']['76_7_0'])]
         else:
             raise ValueError("Nicht unterstützter Tasmota Zählertyp. Bitte an den Support wenden.")
 
         counter_state = CounterState(
             power=power,
             imported=imported,
-            exported=exported
+            exported=exported,
+            voltages=voltages,
+            currents=currents,
+            powers=powers,
+            power_factors=power_factors
         )
-        if 'voltages' in locals():
-            counter_state.voltages = voltages
-        if 'currents' in locals():
-            counter_state.currents = currents
-        if 'powers' in locals():
-            counter_state.powers = powers
-        if 'power_factors' in locals():
-            counter_state.power_factors = power_factors
 
         self.store.set(counter_state)
 

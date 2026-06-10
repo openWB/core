@@ -31,8 +31,8 @@ class SimpleAPI
         // Parameter Handler initialisieren
         $this->parameterHandler = new ParameterHandler($this->mqttClient);
 
-        // Authenticator initialisieren
-        $this->authenticator = new Authenticator($this->config);
+        // Authenticator initialisieren (mit MqttClient für Anmeldedaten-Test)
+        $this->authenticator = new Authenticator($this->config, $this->mqttClient);
     }
 
     /**
@@ -61,6 +61,7 @@ class SimpleAPI
             $params = array_merge($_GET, $_POST);
 
             // Debug-Modus
+            $debugInfo = [];
             if (isset($params['debug']) && $params['debug'] === 'true') {
                 $this->config['debug'] = true;
             }
@@ -73,6 +74,20 @@ class SimpleAPI
                     'message' => 'Authentication failed'
                 ]);
                 return;
+            }
+
+            // MQTT-Anmeldedaten aus Parametern übernehmen falls vorhanden
+            if (isset($params['username']) && isset($params['password'])) {
+                $this->mqttClient->setCredentials($params['username'], $params['password']);
+                
+                if ($this->config['debug']) {
+                    $debugInfo[] = "Using MQTT credentials from parameters: username={$params['username']}";
+                }
+            } else {
+                // Keine Parameter-Anmeldedaten vorhanden
+                if ($this->config['debug']) {
+                    $debugInfo[] = "No credentials provided via parameters, using config or anonymous access";
+                }
             }
 
             // Schreibvorgänge prüfen
@@ -96,7 +111,7 @@ class SimpleAPI
             // Lesevorgänge verarbeiten
             $readParams = $this->getReadParameters($params);
             if (!empty($readParams)) {
-                $result = $this->handleReadRequest($readParams, $params);
+                $result = $this->handleReadRequest($readParams, $params, $debugInfo);
 
                 // Raw-Ausgabe Validierung
                 if (isset($params['raw']) && $params['raw'] === 'true') {
@@ -345,9 +360,14 @@ class SimpleAPI
     /**
      * Leseanfrage verarbeiten
      */
-    private function handleReadRequest($readParams, $allParams)
+    private function handleReadRequest($readParams, $allParams, $debugInfo = [])
     {
         $result = [];
+        
+        // Debug-Informationen hinzufügen wenn vorhanden
+        if (!empty($debugInfo) && $this->config['debug']) {
+            $result['debug_info'] = $debugInfo;
+        }
 
         foreach ($readParams as $param => $id) {
             try {

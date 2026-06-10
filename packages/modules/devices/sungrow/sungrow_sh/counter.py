@@ -47,8 +47,11 @@ class SungrowSHCounter(AbstractCounter):
             self.fault_state.no_error(self.fault_text)
 
         frequency = self.__tcp_client.read_input_registers(5035, ModbusDataType.UINT_16, unit=unit) / 10
-        if self.device_config.configuration.version == Version.SH_winet_dongle:
-            # On WiNet-S, the frequency accuracy is higher by one place
+        if self.device_config.configuration.version == Version.SH_winet_dongle and frequency >= 400:
+            # On WiNet-S, the frequency accuracy is sometimes higher by one place
+            # For some SDongle Firmware Versions it is not. Frequency should roughly
+            # range between 40 and 60. Therefore, if the value is above 400, we assume
+            # it is actually 10 times higher than it should be and adjust it accordingly.
             frequency /= 10
 
         power_factor = self.__tcp_client.read_input_registers(5034, ModbusDataType.INT_16, unit=unit) / 1000

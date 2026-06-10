@@ -988,7 +988,8 @@ class SubData:
                 index = get_index(msg.topic)
                 if decode_payload(msg.payload) == "":
                     if "io"+index in var:
-                        if var[f"io{index}"].config.configuration.host == "localhost":
+                        if (var[f"io{index}"].config.type == "add_on" and
+                                var[f"io{index}"].config.configuration.host == "localhost"):
                             var.pop("iolocal")
                         var.pop("io"+index)
                     else:

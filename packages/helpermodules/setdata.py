@@ -668,8 +668,7 @@ class SetData:
             enthält Topic und Payload
         """
         try:
-            if ("openWB/set/bat/config/bat_control_permitted" in msg.topic or
-                "openWB/set/bat/config/bat_control_activated" in msg.topic or
+            if ("openWB/set/bat/config/bat_control_activated" in msg.topic or
                 "openWB/set/bat/config/price_limit_activated" in msg.topic or
                 "openWB/set/bat/config/price_charge_activated" in msg.topic or
                 "openWB/set/bat/config/configured" in msg.topic or
@@ -759,8 +758,6 @@ class SetData:
                 self._validate_value(msg, bool)
             elif "openWB/set/general/control_interval" in msg.topic:
                 self._validate_value(msg, int, [(10, 10), (20, 20), (60, 60)])
-            elif "openWB/set/general/external_buttons_hw" in msg.topic:
-                self._validate_value(msg, bool)
             elif "openWB/set/general/chargemode_config/unbalanced_load_limit" in msg.topic:
                 self._validate_value(msg, int, [(10, 32)])
             elif ("openWB/set/general/chargemode_config/unbalanced_load" in msg.topic or
@@ -790,22 +787,12 @@ class SetData:
             elif "openWB/set/general/chargemode_config/" in msg.topic and "/phases_to_use" in msg.topic:
                 self._validate_value(msg, int, [(1, 1), (3, 3)])
             elif ("openWB/set/general/grid_protection_configured" in msg.topic or
-                    "openWB/set/general/grid_protection_active" in msg.topic or
-                    "openWB/set/general/mqtt_bridge" in msg.topic):
+                    "openWB/set/general/grid_protection_active" in msg.topic):
                 self._validate_value(msg, bool)
             elif "openWB/set/general/grid_protection_timestamp" in msg.topic:
                 self._validate_value(msg, float, [(0, TIMESTAMP_2100)])
             elif "openWB/set/general/grid_protection_random_stop" in msg.topic:
                 self._validate_value(msg, int, [(0, 90)])
-            elif "openWB/set/general/notifications/selected" in msg.topic:
-                self._validate_value(msg, str)
-            elif "openWB/set/general/notifications/configuration" in msg.topic:
-                self._validate_value(msg, "json")
-            elif ("openWB/set/general/notifications/start_charging" in msg.topic or
-                    "openWB/set/general/notifications/stop_charging" in msg.topic or
-                    "openWB/set/general/notifications/plug" in msg.topic or
-                    "openWB/set/general/notifications/smart_home" in msg.topic):
-                self._validate_value(msg, bool)
             elif ("openWB/set/general/prices/bat" in msg.topic or
                   "openWB/set/general/prices/grid" in msg.topic or
                   "openWB/set/general/prices/pv" in msg.topic):
