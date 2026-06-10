@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 124
+    DATASTORE_VERSION = 125
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -3132,3 +3132,22 @@ class UpdateConfig:
                         return {topic: configuration_payload}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(124)
+
+    def upgrade_datastore_125(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/system/device/[0-9]+", topic) is not None:
+                payload = decode_payload(payload)
+                index = get_index(topic)
+                if payload.get("type") == "sonnenbatterie":
+                    for component_topic, component_payload in self.all_received_topics.items():
+                        if re.search(f"openWB/system/device/{index}/component/[0-9]+/config$",
+                                     component_topic) is not None:
+                            config_payload = decode_payload(component_payload)
+                            if (config_payload["type"] == "counter_consumption" and
+                                    config_payload["configuration"].get("counter_id") is None):
+                                config_payload["configuration"].update({
+                                    "counter_id": 0,
+                                })
+                                return {component_topic: config_payload}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(125)
