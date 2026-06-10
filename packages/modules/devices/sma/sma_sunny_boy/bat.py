@@ -12,7 +12,7 @@ from modules.devices.sma.sma_sunny_boy.config import SmaSunnyBoyBatSetup
 from modules.common.simcount import SimCounter
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
-from modules.devices.sma.sma_sunny_boy.bat_version import SmaBatVersion
+from modules.devices.sma.sma_sunny_boy.version import SmaBatVersion
 
 log = logging.getLogger(__name__)
 

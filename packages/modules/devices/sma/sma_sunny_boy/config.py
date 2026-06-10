@@ -2,7 +2,7 @@ from typing import Optional
 
 from modules.common.component_setup import ComponentSetup
 from modules.devices.sma.sma_sunny_boy.inv_version import SmaInverterVersion
-from modules.devices.sma.sma_sunny_boy.bat_version import SmaBatVersion
+from modules.devices.sma.sma_sunny_boy.version import SmaBatVersion
 from ..vendor import vendor_descriptor
 
 
