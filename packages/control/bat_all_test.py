@@ -437,7 +437,6 @@ def test_time_charging_min_bat_soc_allowed_pricing(ep_configured: bool,
     b.data.config.price_limit_activated = price_limit_activated
     b.data.config.price_charge_activated = price_charge_activated
     data.data.optional_data.data.electricity_pricing.configured = ep_configured
-    b.data.config.bat_control_permitted = True
     b.data.config.bat_control_activated = True
 
     monkeypatch.setattr(data.data.optional_data, "ep_is_charging_allowed_price_threshold",
