@@ -2923,7 +2923,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   /**
    * Get the battery color identified by the battery id
    * @param batteryId battery id
-   * @returns string
+   * @returns string | null
    */
   const batteryColor = computed(() => {
     return (batteryId: number): string | null => {
