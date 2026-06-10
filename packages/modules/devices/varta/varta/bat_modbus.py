@@ -50,14 +50,14 @@ class VartaBatModbus(AbstractBat):
         self.store.set(bat_state)
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
-        unit=self.__modbus_id
+        unit = self.__modbus_id
         log.debug(f'last_mode: {self.last_mode}')
 
         if power_limit is None:
             log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
             if self.last_mode is not None:
                 # hier muss die maximale Entladeleistung des Systems gesetzt werden
-                # Wir nehmen default -4000W an. Nach 120s setzt sich das Register 
+                # Wir nehmen default -4000W an. Nach 120s setzt sich das Register
                 # automatisch zurück
                 self.__tcp_client.write_register(1074, -4000, data_type=ModbusDataType.INT_16, unit=unit)
                 self.last_mode = None
