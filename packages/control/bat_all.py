@@ -652,8 +652,14 @@ class BatAll:
                     self.data.config.power_limit_condition == BatPowerLimitCondition.VEHICLE_CHARGING.value):
                 return False
             elif self.data.config.power_limit_condition == BatPowerLimitCondition.PRICE_LIMIT.value:
-                # Preisgrenze aktiv und Ladeleistung des Speichers vorgegeben
-                if self.data.set.power_limit is not None:
+                if ((self.data.config.price_limit_activated and
+                        data.data.optional_data.ep_is_charging_allowed_price_threshold(
+                            self.data.config.price_limit))
+                    or (self.data.config.price_charge_activated and
+                        data.data.optional_data.ep_is_charging_allowed_price_threshold(
+                            self.data.config.charge_limit))):
+                    return True
+                else:
                     return False
         return True
 
