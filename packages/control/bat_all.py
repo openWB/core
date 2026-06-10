@@ -187,46 +187,49 @@ class BatAll:
         except Exception:
             log.exception("Fehler im Bat-Modul")
 
-    def _get_pv_power_beyond_max_ac_out(self, inverter: Pv) -> float:
-        """gibt die PV-Leistung zurück, die über der maximalen Ausgangsleistung des Wechselrichters liegt und somit
-        nicht für die Entladung des Speichers genutzt werden kann."""
-        # tested
-        # Wenn vom PV-Ertrag der Speicher geladen wird, kann diese Leistung bis zur max Ausgangsleistung des WR
-        # genutzt werden.
-        if inverter.data.config.max_ac_out > 0:
-            return max(inverter.data.get.power * -1 - inverter.data.config.max_ac_out, 0)
-        else:
-            return 0
+    def get_bat_power_of_hybrid_system(self, inverter: Pv) -> float:
+        """ ermittelt die Leistung des Speichers, die über den Wechselrichter fließt, um die Leistung des Speichers
+        bei einem Hybrid-System zu berücksichtigen, wenn die maximale Ausgangsleistung des Wechselrichters erreicht ist.
+        """
+        bat_power = 0
+        try:
+            children = data.data.counter_all_data.get_entry_of_element(inverter.num)["children"]
+            if len(children):
+                hybrid: List[str] = []
+                for c in children:
+                    if c.get("type") == "bat":
+                        hybrid.append(f'bat{c["id"]}')
+                        break
+                if len(hybrid):
+                    for bat in hybrid:
+                        # nur wenn der Speicher entlädt, fließt Leistung über den WR
+                        if data.data.bat_data[bat].data.get.power < 0:
+                            bat_power += data.data.bat_data[bat].data.get.power
+        except Exception:
+            log.exception(f"Fehler im Bat-Modul {inverter.num}")
+        return bat_power
 
-    def _limit_bat_power_discharge(self, required_power):
+    def _limit_bat_power_discharge(self, required_power: float) -> float:
         """begrenzt die für den Algorithmus benötigte Entladeleistung des Speichers, wenn die maximale Ausgangsleistung
         des WR erreicht ist."""
-        pv_power_beyond_max_ac_out = 0
         if required_power > 0:
             # Nur wenn der Speicher entladen werden soll, fließt Leistung durch den WR.
+            remaining_inverter_ac_out_power = 0
             for inverter in data.data.pv_data.values():
                 try:
-                    pv_power_beyond_max_ac_out += self._get_pv_power_beyond_max_ac_out(inverter)
+                    bat_power = self.get_bat_power_of_hybrid_system(inverter)
+                    inverter_power = max((inverter.data.get.power + bat_power) * -1, 0)
+                    remaining_inverter_ac_out_power += inverter.data.config.max_ac_out - inverter_power + bat_power * -1
                 except Exception:
                     log.exception(f"Fehler im Bat-Modul {inverter.num}")
-            # Wenn max_inverter_power_for_bat nur deshalb negativ ist, weil der Speicher aktuell bereits entlädt
-            # (self.data.get.power < 0) und keine PV-Leistung über der maximalen WR-Ausgangsleistung anliegt
-            # (pv_power_beyond_max_ac_out == 0), dann würde eine Begrenzung auf 0W die noch verfügbare
-            # Entladeleistung fälschlicherweise unterdrücken. In diesem Fall wenden wir keine zusätzliche
-            # Begrenzung durch die WR-Ausgangsleistung an.
-            if pv_power_beyond_max_ac_out > 0:
-                max_inverter_power_for_bat = self.data.get.power - pv_power_beyond_max_ac_out
-                # Negative Werte bedeuten, dass bereits mehr Leistung über den WR fließt, als für den Speicher
-                # zusätzlich verfügbar ist; in diesem Fall ist keine weitere Entladung möglich.
-                max_inverter_power_for_bat = max(max_inverter_power_for_bat, 0)
-                required_power = min(required_power, max_inverter_power_for_bat)
+            if remaining_inverter_ac_out_power > 0:
+                required_power = min(required_power, remaining_inverter_ac_out_power)
                 log.debug(
                     f"Verbleibende Speicher-Leistung durch maximale Ausgangsleistung auf {required_power}W begrenzt."
                 )
             else:
                 log.debug(
-                    "Speicher-Entladeleistung nicht durch maximale WR-Ausgangsleistung begrenzt, da keine PV-Leistung "
-                    "über der maximalen WR-Ausgangsleistung anliegt.")
+                    "Speicher-Entladeleistung nicht durch maximale WR-Ausgangsleistung begrenzt.")
         return required_power
 
     def _set_bat_power_active_control(self, power):
