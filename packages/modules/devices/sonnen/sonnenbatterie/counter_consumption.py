@@ -17,9 +17,11 @@ log = logging.getLogger(__name__)
 
 
 class KwargsDict(TypedDict):
+    device_id: int
     device_address: str
     device_variant: int
-    api_v2_token: Optional[str]
+    device_api_v2_token: Optional[str]
+    counter_id: int
 
 
 class SonnenbatterieConsumptionCounter(AbstractCounter):
