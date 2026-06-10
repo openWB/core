@@ -34,20 +34,70 @@ BASE_URL = "https://eu-data-act.drivesomethinggreater.com"
 IDENTITY_BASE = "https://identity.vwgroup.io"
 
 # Brand is part of the OIDC state; VW passenger cars by default.
-BRAND = "VOLKSWAGEN_PASSENGER_CARS"
+# BRAND = "VOLKSWAGEN_PASSENGER_CARS"
 CALLBACK_LOGIN_PATH = "/services/callbacklogin"
+
+BRANDS: dict[str, dict[str, str]] = {
+    "volkswagen": {
+        "display_name": "Volkswagen",
+        "client_id": "9b58543e-1c15-4193-91d5-8a14145bebb0@apps_vw-dilab_com",
+        "state": "VOLKSWAGEN_PASSENGER_CARS",
+    },
+    "audi": {
+        "display_name": "Audi",
+        "client_id": "cc29b87a-5e9a-4362-aecf-5adea6b01bbb@apps_vw-dilab_com",
+        "state": "AUDI",
+    },
+    "skoda": {
+        "display_name": "Škoda",
+        "client_id": "3ea88bf9-1d4e-4a68-b3ad-4098c1f1d246@apps_vw-dilab_com",
+        "state": "SKODA",
+    },
+    "seat": {
+        "display_name": "SEAT",
+        "client_id": "f85e5b69-e3b2-43aa-9c0d-1b7d0e0b576f@apps_vw-dilab_com",
+        "state": "SEAT",
+    },
+    "cupra": {
+        "display_name": "CUPRA",
+        "client_id": "f85e5b69-e3b2-43aa-9c0d-1b7d0e0b576f@apps_vw-dilab_com",
+        "state": "CUPRA",
+    },
+}
+
+
+DEFAULT_BRAND = "volkswagen"
+DEFAULT_COUNTRY = "de"
+DEFAULT_LANGUAGE = "en"
+
+
+def get_oidc_client_id(brand: str = DEFAULT_BRAND) -> str:
+    """Return the OIDC client_id for the given brand."""
+    return BRANDS.get(brand, BRANDS[DEFAULT_BRAND])["client_id"]
+
+
+def get_oidc_state(brand: str = DEFAULT_BRAND) -> str:
+    """Return the OIDC state for the given brand."""
+    brand_state = BRANDS.get(brand, BRANDS[DEFAULT_BRAND])["state"]
+    return f"{DEFAULT_COUNTRY}__{DEFAULT_LANGUAGE}__{brand_state}"
+
 
 # OIDC: we build the authorize URL directly instead of using the portal's
 # /services/redirect/authentication servlet, which returns HTTP 500 for
 # non-browser clients (it depends on AEM browser session state).
 OIDC_AUTHORIZE_URL = IDENTITY_BASE + "/oidc/v1/authorize"
-OIDC_CLIENT_ID = "9b58543e-1c15-4193-91d5-8a14145bebb0@apps_vw-dilab_com"
+# OIDC_CLIENT_ID = "9b58543e-1c15-4193-91d5-8a14145bebb0@apps_vw-dilab_com"
 OIDC_SCOPE = "openid cars profile"
 OIDC_REDIRECT_URI = BASE_URL + "/login"
 # state encodes country__language__brand (echoed back to the portal callback).
-DEFAULT_COUNTRY = "si"
-DEFAULT_LANGUAGE = "sl"
-OIDC_STATE = f"{DEFAULT_COUNTRY}__{DEFAULT_LANGUAGE}__{BRAND}"
+# DEFAULT_COUNTRY = "si"
+# DEFAULT_LANGUAGE = "sl"
+CONF_BRAND = "brand"
+# OIDC_STATE = f"{DEFAULT_COUNTRY}__{DEFAULT_LANGUAGE}__{BRAND}"
+
+# Legacy constants for backward compatibility (default to VW)
+OIDC_CLIENT_ID = BRANDS[DEFAULT_BRAND]["client_id"]
+OIDC_STATE = get_oidc_state(DEFAULT_BRAND)
 
 # proxy_api paths (relative to BASE_URL)
 VEHICLES_PATH = "/proxy_api/consent/me/vehicles"
@@ -86,6 +136,29 @@ KEEP_JSON = 30
 DATA_PATH = Path(__file__).resolve().parents[4] / "data" / "modules" / "vwid"
 JSON_PATH = Path(str(RAMDISK_PATH) + '/vweuda')
 storeFileName = '/data_'
+
+# VIN-Brand map
+VIN_BRAND_MAP = {
+    "WAU": "audi",           # Audi car
+    "WA1": "audi",           # Audi SUV
+    "WUA": "audi",           # Audi Sport car
+    "WU1": "audi",           # Audi Sport SUV
+    "99A": "audi",           # Audi 2016-
+    "AAA": "audi",           # Audi South-Africa-
+    "TRU": "audi",           # Audi Hungary
+    "VSS": "cupra",          # Seat/Cupra - assume cupra as default
+    "NAD": "skoda",          # Skoda
+    "TMB": "skoda",          # Skoda (Czech Republic)
+    "Y6U": "skoda",          # Skoda Auto made by Eurocar (Ukraine)
+    "VWV": "volkswagen",     # Volkswagen Spain
+    "WVG": "volkswagen",     # SUV/Touran
+    "WVW": "volkswagen",     # Passenger Cars
+    "WV1": "volkswagen",     # Commercial Vehicles
+    "WV2": "volkswagen",     # Commercial Vehicles
+    "WV3": "volkswagen",     # Commercial Vehicles
+    "WV4": "volkswagen",     # Commercial Vehicles
+    "WV5": "volkswagen",     # Commercial Vehicles
+}
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -228,10 +301,11 @@ def _extract_vins(payload) -> list[dict]:
 class EudaApiClient:
     """Authenticated client for the EU Data Act portal."""
 
-    def __init__(self, session: aiohttp.ClientSession, email: str, password: str) -> None:
+    def __init__(self, session: aiohttp.ClientSession, email: str, password: str, brand: str = "volkswagen") -> None:
         self._session = session
         self._email = email
         self._password = password
+        self._brand = brand
         self._logged_in = False
 
     # -- low level ---------------------------------------------------------
@@ -263,7 +337,7 @@ class EudaApiClient:
         #    authorize URL ourselves because the portal's
         #    /services/redirect/authentication servlet returns HTTP 500 for
         #    non-browser clients.
-        authorize_url = self._build_authorize_url()
+        authorize_url = self._build_authorize_url(self._brand)
         _LOGGER.debug("login step1: authorize url = %s", authorize_url)
         async with await self._get(authorize_url) as resp:
             signin_url = str(resp.url)
@@ -341,13 +415,13 @@ class EudaApiClient:
             raise AuthError(f"Login did not complete (ended at {landing})")
 
     @staticmethod
-    def _build_authorize_url() -> str:
+    def _build_authorize_url(brand: str = "volkswagen") -> str:
         """Construct the OIDC authorize URL (bypasses the broken AEM servlet)."""
         params = {
-            "client_id": OIDC_CLIENT_ID,
+            "client_id": get_oidc_client_id(brand),
             "response_type": "code",
             "scope": OIDC_SCOPE,
-            "state": OIDC_STATE,
+            "state": get_oidc_state(brand),
             "redirect_uri": OIDC_REDIRECT_URI,
             "prompt": "login",
         }
@@ -603,16 +677,20 @@ class euda():
         _l.sort()
         _len = len(_l)
         _del = _len - KEEP_JSON
-        _del_list = _l[0:_del]
-        for f in _del_list:
-            os.remove(f)
-            _LOGGER.debug(f"delete json file {f}")
+        _LOGGER.debug(f"cleanup: KEEP_JSON={KEEP_JSON}, _l={_l}\n _len ={_len}, _del={_del}")
+        if _del > 0:
+            _del_list = _l[0:_del]
+            _LOGGER.debug(f"cleanup: _del_list={_del_list}")
+            for f in _del_list:
+                os.remove(f)
+                _LOGGER.debug(f"delete json file {f}")
 
         return status
 
     # eudaThread
     async def async_eudaThread(self, username: str, password: str, vin: str):
-        _LOGGER.debug("async Thread started")
+        brand = VIN_BRAND_MAP[vin[0:3]]
+        _LOGGER.info(f"async Thread started, brand={brand}")
         try:
             async with aiohttp.ClientSession(headers={'Connection': 'keep-alive'}) as session:
                 _k = str(euda.client.keys())
@@ -620,7 +698,7 @@ class euda():
                 if username not in euda.client:
                     _LOGGER.debug(f"create new client, key={self.username}")
                     euda.client[username] = {}
-                    euda.client[username] = EudaApiClient(session, username, password)
+                    euda.client[username] = EudaApiClient(session, username, password, brand)
                     _k = str(euda.client.keys())
                     _LOGGER.info(f"libeuda.Thread client: euda.client.keys={_k}")
                     meta = None
@@ -672,6 +750,8 @@ class euda():
                             if soc is None:
                                 soc = get_field_value_by_key(_Data, 'ac1108b1-b8cc-3db9-a663-03d387e42223')
                             range = get_field_value_by_key(_Data, '153e8c40-4c6c-3c17-a11b-0ecc35d55b81')
+                            if range is None:
+                                range = get_field_value_by_key(_Data, '0ca40e18-0564-3eda-bcc0-7aee9ef44f04')
                             odometer = get_field_value_by_key(_Data, '30cc36fd-71ca-3c09-9296-e94ebd47bd2b')
                             soc_timestamp = get_field_value_by_key(_Data, '7b76a2c8-162c-3438-814b-0768f6cc6649')
                             car_timestamp = get_field_value_by_key(_Data, '2496cd73-8a68-318c-a159-200ecfd0e47d')
