@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 125
+    DATASTORE_VERSION = 126
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -3135,19 +3135,45 @@ class UpdateConfig:
 
     def upgrade_datastore_125(self) -> None:
         def upgrade(topic: str, payload) -> None:
-            if re.search("openWB/system/device/[0-9]+", topic) is not None:
-                payload = decode_payload(payload)
-                index = get_index(topic)
-                if payload.get("type") == "sonnenbatterie":
-                    for component_topic, component_payload in self.all_received_topics.items():
-                        if re.search(f"openWB/system/device/{index}/component/[0-9]+/config$",
-                                     component_topic) is not None:
-                            config_payload = decode_payload(component_payload)
-                            if (config_payload["type"] == "counter_consumption" and
-                                    config_payload["configuration"].get("counter_id") is None):
-                                config_payload["configuration"].update({
-                                    "counter_id": 0,
-                                })
-                                return {component_topic: config_payload}
+            if "openWB/optional/ep/flexible_tariff/provider" == topic:
+                provider = decode_payload(payload)
+                if provider["type"] == "energycharts":
+                    surcharge = provider["configuration"]["surcharge"]
+                    if surcharge > 0.1:  # entspricht mehr als 0.1ct/kWh konfiguriertem Zuschlag
+                        provider["configuration"]["surcharge"] = surcharge / 100000
+                        return {topic: provider}
+            if ("openWB/optional/ep/flexible_tariff/provider" == topic or
+                    "openWB/optional/ep/grid_fee/provider" == topic):
+                provider = decode_payload(payload)
+                if provider["type"] == "fixed_hours":
+                    changed = False
+                    for i, tarif in enumerate(provider["configuration"]["tariffs"]):
+                        price = tarif.get("price", 0)
+                        if price > 0.001:  # entspricht mehr als 0,1ct/kWh konfiguriertem Tarifpreis
+                            provider["configuration"]["tariffs"][i]["price"] = price / 1000
+                            changed = True
+                    default_price = provider["configuration"].get("default_price", 0)
+                    if default_price > 0.001:
+                        provider["configuration"]["default_price"] = default_price / 1000
+                        changed = True
+                    if changed:
+                        return {topic: provider}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(125)
+
+    def upgrade_datastore_126(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if "openWB/optional/ep/flexible_tariff/provider" == topic:
+                provider = decode_payload(payload)
+                if provider.get("type") == "energycharts":
+                    changed = False
+                    if provider["configuration"].get("net") is None:
+                        provider["configuration"]["net"] = True
+                        changed = True
+                    if provider["configuration"].get("tax") is None:
+                        provider["configuration"]["tax"] = 19
+                        changed = True
+                    if changed:
+                        return {topic: provider}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(126)
