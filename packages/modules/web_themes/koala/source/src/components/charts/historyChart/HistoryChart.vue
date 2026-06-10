@@ -471,6 +471,9 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
   height: 100%;
   display: flex;
   flex-direction: column;
+  background: var(--q-card-background);
+  border-radius: 15px;
+  filter: drop-shadow(0 0 0.3rem var(--q-shadow));
 }
 
 .legend-wrapper {

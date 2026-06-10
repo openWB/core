@@ -4,6 +4,7 @@
     <q-chip
       v-if="vehicleState.length < 1"
       label="Nicht zugeordnet"
+      outline
       color="primary"
       class="q-ml-auto"
     >
@@ -12,6 +13,7 @@
       v-for="(chargePoint, index) in vehicleState"
       :key="index"
       :icon="chargePoint.plugged ? 'power' : 'power_off'"
+      outline
       class="ellipsis"
       :class="[{ 'q-ml-auto': index === 0, 'q-ml-none': index !== 0 }]"
       :color="

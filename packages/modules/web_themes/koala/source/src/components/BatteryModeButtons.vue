@@ -1,11 +1,12 @@
 <template>
-  <q-btn-group class="q-mt-md">
+  <q-btn-group class="q-mt-md" outline>
     <q-btn
       v-for="mode in batteryModes"
       :key="mode.value"
       :color="batMode.value === mode.value ? 'primary' : 'grey'"
       :label="mode.label"
       :icon="mode.icon"
+      :outline="batMode.value !== mode.value"
       size="sm"
       @click="batMode.value = mode.value"
     >

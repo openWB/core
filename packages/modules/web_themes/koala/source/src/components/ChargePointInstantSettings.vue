@@ -21,12 +21,13 @@
   <div v-if="acChargingEnabled">
     <div class="text-subtitle2 q-mt-sm q-mr-sm">Anzahl Phasen</div>
     <div class="row items-center justify-center q-ma-none q-pa-none no-wrap">
-      <q-btn-group class="col">
+      <q-btn-group class="col" outline>
         <q-btn
           v-for="option in phaseOptions"
           :key="option.value"
           :color="numPhases.value === option.value ? 'primary' : 'grey'"
           :label="option.label"
+          :outline="numPhases.value !== option.value"
           size="sm"
           class="col"
           @click="numPhases.value = option.value"
