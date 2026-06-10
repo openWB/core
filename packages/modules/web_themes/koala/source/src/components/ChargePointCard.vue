@@ -326,6 +326,7 @@ const chargePointColor = computed(() =>
 .charge-point-card {
   width: 22em;
   border: none;
+  border-radius: 15px;
 }
 
 .charge-point-card.has-custom-color {

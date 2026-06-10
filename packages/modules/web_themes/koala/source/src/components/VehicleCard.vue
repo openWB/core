@@ -117,6 +117,7 @@ const vehicleColor = computed(() => {
 .vehicle-card {
   width: 22em;
   border: none;
+  border-radius: 15px;
 }
 
 .vehicle-card.has-custom-color {
