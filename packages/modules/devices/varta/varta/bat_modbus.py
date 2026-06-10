@@ -38,17 +38,20 @@ class VartaBatModbus(AbstractBat):
         self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
+        self.set_state(self.get_state())
+
+    def get_state(self) -> BatState:
         soc = self.client.read_holding_registers(1068, ModbusDataType.INT_16, unit=self.__modbus_id)
         power = self.client.read_holding_registers(1066, ModbusDataType.INT_16, unit=self.__modbus_id)
         self.peak_filter.check_values(power)
-        imported, exported = self.sim_counter.sim_count(power)
-        bat_state = BatState(
+        return BatState(
             power=power,
             soc=soc,
-            imported=imported,
-            exported=exported
         )
-        self.store.set(bat_state)
+
+    def set_state(self, state: BatState) -> None:
+        state.imported, state.exported = self.sim_counter.sim_count(state.power)
+        self.store.set(state)
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
         unit = self.__modbus_id
