@@ -64,8 +64,8 @@ class VartaBatModbus(AbstractBat):
                 # hier muss die maximale Entladeleistung des Systems einmalig gesetzt werden
                 # Wir nehmen default -4000W an. Nach 120s setzt sich das Register
                 # automatisch zurück
-                packed = struct.pack(">h", int(-4000))
-                uint16_value = struct.unpack(">H", packed)[0]
+                max_discharge_w = -4000
+                uint16_value = struct.unpack(">H", struct.pack(">h", max_discharge_w))[0]
                 self.client.write_register(1074, uint16_value, data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = None
         else:
