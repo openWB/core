@@ -347,57 +347,68 @@ def test_control_price_limit(params: BatControlParams, data_, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "control_permitted, control_activated, condition, limit, expected_result",
+    "control_activated, condition, limit, manual_mode, expected_result",
     [
-        pytest.param(False, True,
-                     BatPowerLimitCondition.MANUAL.value, BatPowerLimitMode.MODE_NO_DISCHARGE.value, True,
-                     id="Speichersteuerung nicht erlaubt, aber aktiviert -> laden"),
-        pytest.param(True, False,
-                     BatPowerLimitCondition.MANUAL.value, BatPowerLimitMode.MODE_NO_DISCHARGE.value, True,
-                     id="Speichersteuerung erlaubt, aber nicht aktiviert -> laden"),
-        pytest.param(True, True,
-                     BatPowerLimitCondition.MANUAL.value, BatPowerLimitMode.MODE_NO_DISCHARGE.value, False,
-                     id="Manuell, volle Entladesperre -> nicht laden"),
-        pytest.param(True, True,
+        pytest.param(False,
                      BatPowerLimitCondition.MANUAL.value,
-                     BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION.value, False,
+                     BatPowerLimitMode.MODE_NO_DISCHARGE.value,
+                     ManualMode.MANUAL_DISABLE.value, True,
+                     id="Speichersteuerung nicht aktiviert, aber aktiviert -> laden"),
+        pytest.param(True,
+                     BatPowerLimitCondition.MANUAL.value,
+                     BatPowerLimitMode.MODE_NO_DISCHARGE.value,
+                     ManualMode.MANUAL_DISABLE.value, True,
+                     id="Manuell, Eigenregelung, volle Entladesperre -> nicht laden"),
+        pytest.param(True,
+                     BatPowerLimitCondition.MANUAL.value,
+                     BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION.value,
+                     ManualMode.MANUAL_LIMIT.value, False,
                      id="Manuell, Entladung in Fahrzeuge sperren -> nicht laden"),
-        pytest.param(True, True,
-                     BatPowerLimitCondition.MANUAL.value, BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value, False,
+        pytest.param(True,
+                     BatPowerLimitCondition.MANUAL.value,
+                     BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value,
+                     ManualMode.MANUAL_CHARGE.value, False,
                      id="Manuell, PV-Ertrag speichern -> nicht laden"),
-        pytest.param(True, True,
-                     BatPowerLimitCondition.VEHICLE_CHARGING.value, BatPowerLimitMode.MODE_NO_DISCHARGE.value, False,
+        pytest.param(True,
+                     BatPowerLimitCondition.VEHICLE_CHARGING.value,
+                     BatPowerLimitMode.MODE_NO_DISCHARGE.value,
+                     ManualMode.MANUAL_DISABLE.value, False,
                      id="Fahrzeuge laden, volle Entladesperre -> nicht laden"),
-        pytest.param(True, True,
+        pytest.param(True,
                      BatPowerLimitCondition.VEHICLE_CHARGING.value,
-                     BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION.value, False,
+                     BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION.value,
+                     ManualMode.MANUAL_DISABLE.value, False,
                      id="Fahrzeuge laden, Entladung in Fahrzeuge sperren -> nicht laden"),
-        pytest.param(True, True,
+        pytest.param(True,
                      BatPowerLimitCondition.VEHICLE_CHARGING.value,
-                     BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value, False,
+                     BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value,
+                     ManualMode.MANUAL_DISABLE.value, False,
                      id="Fahrzeuge laden, PV-Ertrag speichern -> nicht laden"),
-        pytest.param(True, True,
-                     BatPowerLimitCondition.PRICE_LIMIT.value, BatPowerLimitMode.MODE_NO_DISCHARGE.value, False,
-                     id="Preislimit, volle Entladesperre -> nicht laden"),
-        pytest.param(True, True,
+        pytest.param(True,
                      BatPowerLimitCondition.PRICE_LIMIT.value,
-                     BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION.value, False,
+                     BatPowerLimitMode.MODE_NO_DISCHARGE.value,
+                     ManualMode.MANUAL_DISABLE.value, False,
+                     id="Preislimit, volle Entladesperre -> nicht laden"),
+        pytest.param(True,
+                     BatPowerLimitCondition.PRICE_LIMIT.value,
+                     BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION.value,
+                     ManualMode.MANUAL_DISABLE.value, False,
                      id="Preislimit, Entladung in Fahrzeuge sperren -> nicht laden"),
 
     ]
 )
-def test_time_charging_min_bat_soc_allowed(control_permitted: bool,
-                                           control_activated: bool,
-                                           condition: BatPowerLimitCondition,
-                                           limit: BatPowerLimitMode,
+def test_time_charging_min_bat_soc_allowed(control_activated: bool,
+                                           condition: str,
+                                           limit: str,
+                                           manual_mode: str,
                                            expected_result: bool):
     # setup
     b = BatAll()
     b.data.config.configured = True
     b.data.config.power_limit_condition = condition
     b.data.config.power_limit_mode = limit
-    b.data.config.bat_control_permitted = control_permitted
     b.data.config.bat_control_activated = control_activated
+    b.data.config.manual_mode = manual_mode
 
     # execution
     result = b.time_charging_min_bat_soc_allowed()
@@ -428,7 +439,7 @@ def test_time_charging_min_bat_soc_allowed_pricing(ep_configured: bool,
                                                    price_charge_activated: bool,
                                                    price_threshold_mock: List[bool],
                                                    expected_result: bool,
-                                                   monkeypatch):
+                                                   monkeypatch: pytest.MonkeyPatch):
     # setup
     b = BatAll()
     b.data.config.configured = True
