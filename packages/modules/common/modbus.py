@@ -197,7 +197,7 @@ class ModbusClient:
             packed = struct.pack(">h", int(value))
             uint16_value = struct.unpack(">H", packed)[0]
             builder.add_16bit_uint(uint16_value)
-        if data_type == ModbusDataType.FLOAT_16:
+        elif data_type == ModbusDataType.FLOAT_16:
             # FLOAT_16 (IEEE 754 Half-Precision) manuelle Konvertierung
             packed = struct.pack(">e", float(value))
             uint16_value = struct.unpack(">H", packed)[0]
