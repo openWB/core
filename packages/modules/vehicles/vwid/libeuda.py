@@ -895,7 +895,7 @@ class euda():
             # _LOGGER.info(f"get_status: publish soc_timestamp as 0: topic: {topic}, message: {ep0}")
             # Pub().pub(topic, ep0)
 
-            return int(soc), float(range), int(ts), tsxx, float(odometer)
+            return float(soc), float(range), float(ts), tsxx, float(odometer)
         except Exception as e:
             _LOGGER.exception(f"get_status failed 0, exception={e}")
             # if exception is a SOCERR reraise it, otherwise raise general SOCERR-00
