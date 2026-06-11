@@ -193,6 +193,10 @@ class ModbusClient:
                               byteorder: Endian = Endian.Big,
                               wordorder: Endian = Endian.Big) -> list:
         builder = BinaryPayloadBuilder(byteorder=byteorder, wordorder=wordorder)
+        if data_type == ModbusDataType.INT_16:
+            packed = struct.pack(">h", int(value))
+            uint16_value = struct.unpack(">H", packed)[0]
+            builder.add_16bit_uint(uint16_value)
         if data_type == ModbusDataType.FLOAT_16:
             # FLOAT_16 (IEEE 754 Half-Precision) manuelle Konvertierung
             packed = struct.pack(">e", float(value))
@@ -207,7 +211,8 @@ class ModbusClient:
     def write_register(self, address: int, value: Union[int, float], data_type: Optional[ModbusDataType] = None,
                        byteorder: Endian = Endian.Big, wordorder: Endian = Endian.Big, **kwargs):
         if data_type is not None:
-            if data_type.bits > 16 or data_type in [ModbusDataType.FLOAT_16,
+            if data_type.bits > 16 or data_type in [ModbusDataType.INT_16,
+                                                    ModbusDataType.FLOAT_16,
                                                     ModbusDataType.FLOAT_32,
                                                     ModbusDataType.FLOAT_64]:
                 registers = self._build_binary_payload(value, data_type, byteorder, wordorder)
