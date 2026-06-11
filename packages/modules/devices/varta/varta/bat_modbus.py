@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from typing import TypedDict, Any, Optional
 import logging
+import struct
 
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
@@ -60,16 +61,19 @@ class VartaBatModbus(AbstractBat):
         if power_limit is None:
             log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
             if self.last_mode is not None:
-                # hier muss die maximale Entladeleistung des Systems gesetzt werden
+                # hier muss die maximale Entladeleistung des Systems einmalig gesetzt werden
                 # Wir nehmen default -4000W an. Nach 120s setzt sich das Register
                 # automatisch zurück
-                self.client.write_register(1074, -4000, data_type=ModbusDataType.INT_16, unit=unit)
+                packed = struct.pack(">h", int(-4000))
+                uint16_value = struct.unpack(">H", packed)[0]
+                self.client.write_register(1074, uint16_value, data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = None
         else:
             # Das Register muss kontinuierlich geschrieben werden, da der Speicher
             # sonst nach 120s die Steuerung aufhebt.
-            log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt und nicht entladen. "
-                      "Leistungsübergabe und aktive Ladung nicht möglich.")
+            log.debug(f"Aktive Batteriesteuerung, übergebene Leistung: {power_limit}W. "
+                      "Leistungsübergabe an Speicher und aktive Ladung nicht möglich. "
+                      "Speicher wird auf Stop gesetzt.")
             self.client.write_register(1074, 0, data_type=ModbusDataType.INT_16, unit=unit)
             self.last_mode = 'stop'
 
