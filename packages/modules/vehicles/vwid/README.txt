@@ -15,8 +15,8 @@ Es kann dann mehrere Stunden dauern, bis erste nicht-leere Datenpakete ankommen.
 
 Das Modul startet je konfiguriertem Fahrzeug einen parallelen Prozess um das Portal zu pollen.
 Der Thread prüft im Minutentakt auf Bereitschaft des Portals und lädt dann die neueste zip-Datei herunter.
-Die 30 letzten in den zip's enthaltenen json-Dateien werden in ramdisk/vweuda gespeichert zu evtl. Analyse
-.
+Die 30 letzten in den zip's enthaltenen json-Dateien werden in ramdisk/vweuda gespeichert zu evtl. Analyse.
+
 Aus der json wird versucht, folgende Daten zu extrahieren: soc, range, soc_timestamp, odometer.
 soc scheint immer vorhanden zu sein. 
 Range habe ich noch nie bekommen. 

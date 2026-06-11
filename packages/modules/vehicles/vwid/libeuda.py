@@ -689,35 +689,38 @@ class euda():
 
     # eudaThread
     async def async_eudaThread(self, username: str, password: str, vin: str):
-        brand = VIN_BRAND_MAP[vin[0:3]]
+        if vin[0:3] not in VIN_BRAND_MAP:
+            _LOGGER.warning(f"VIN {vin[0:3]} not in brand map, use {DEFAULT_BRAND}")
+        brand = VIN_BRAND_MAP.get(vin[0:3], DEFAULT_BRAND)
         _LOGGER.info(f"async Thread started, brand={brand}")
         try:
             async with aiohttp.ClientSession(headers={'Connection': 'keep-alive'}) as session:
                 _k = str(euda.client.keys())
                 _LOGGER.info(f"libeuda.Thread client at entry: euda.client.keys={_k}")
                 if username not in euda.client:
-                    _LOGGER.debug(f"create new client, key={self.username}")
+                    _LOGGER.debug(f"create new client, key={username}")
                     euda.client[username] = {}
                     euda.client[username] = EudaApiClient(session, username, password, brand)
                     _k = str(euda.client.keys())
                     _LOGGER.info(f"libeuda.Thread client: euda.client.keys={_k}")
                     meta = None
-                    while meta is None:
-                        try:
-                            meta = await euda.client[username].async_get_metadata(vin)
-                        except ApiError as err:
-                            if "HTTP 500" in str(err):
-                                _LOGGER.info(f"Portal not ready/get_metadata, wait {POLL_INTERVAL} seconds")
-                            else:
-                                _LOGGER.info(f"APIError/get_metadata: {err}")
-                            meta = None
-                        except Exception as err:
-                            _LOGGER.info(f"Exception/get_metadata: {err}")
-                            meta = None
-                        if meta is None:
-                            time.sleep(POLL_INTERVAL)
 
-                    identifier = meta.get("Identifier")
+                while meta is None:
+                    try:
+                        meta = await euda.client[username].async_get_metadata(vin)
+                    except ApiError as err:
+                        if "HTTP 500" in str(err):
+                            _LOGGER.info(f"Portal not ready/get_metadata, wait {POLL_INTERVAL} seconds")
+                        else:
+                            _LOGGER.info(f"APIError/get_metadata: {err}")
+                        meta = None
+                    except Exception as err:
+                        _LOGGER.info(f"Exception/get_metadata: {err}")
+                        meta = None
+                    if meta is None:
+                        time.sleep(POLL_INTERVAL)
+
+                identifier = meta.get("Identifier")
 
                 # thread main loop
                 while True:
@@ -737,7 +740,7 @@ class euda():
                                 _LOGGER.exception(f"thread Exception {err}")
                                 _data = None
                             if _data is None:
-                                time.sleep(POLL_INTERVAL)
+                                await asyncio.sleep(POLL_INTERVAL)
 
                         vin = _data['vin']
                         status = self.save_json_file(_name, vin, _data)
@@ -757,16 +760,17 @@ class euda():
                             car_timestamp = get_field_value_by_key(_Data, '2496cd73-8a68-318c-a159-200ecfd0e47d')
                             max_timestamp = get_max_value_by_fieldname(_Data, CAR_TIMESTAMP)
 
-                            euda.result[vin] = {}
-                            euda.result[vin]['soc'] = soc
-                            euda.result[vin]['range'] = range
-                            euda.result[vin]['soc_timestamp'] = soc_timestamp
-                            euda.result[vin]['max_timestamp'] = max_timestamp
-                            euda.result[vin]['car_timestamp'] = car_timestamp
-                            euda.result[vin]['odometer'] = odometer
+                            euda.result[vin] = {
+                                'soc': soc,
+                                'range': range,
+                                'soc_timestamp': soc_timestamp,
+                                'max_timestamp': max_timestamp,
+                                'car_timestamp': car_timestamp,
+                                'odometer': odometer,
+                            }
                             _LOGGER.info(f"thread result:\n{json.dumps(euda.result, indent=4)}")
                         _LOGGER.info(f"sleep {CYCLE_INTERVAL} seconds")
-                        time.sleep(CYCLE_INTERVAL)
+                        await asyncio.sleep(CYCLE_INTERVAL)
 
                     except Exception as e:
                         _LOGGER.exception(f"thread loop failed 0, exception={e}")
@@ -811,7 +815,7 @@ class euda():
                 data['odometer'] = str(0)
 
             euda.thread[self.username] = {}
-            euda.thread[self.username]['name'] = EUDA_THREADNAME + self.vehicle
+            euda.thread[self.username]['name'] = f"{EUDA_THREADNAME}{self.vehicle}"
             euda.thread[self.username]['thread'] = None
             for t in threading.enumerate():
                 if t.name == euda.thread[self.username]['name']:
@@ -821,7 +825,8 @@ class euda():
                 _LOGGER.debug(f"{euda.thread[self.username]['name']} not found: starting now")
                 euda.thread[self.username]['thread'] = threading.Thread(target=self.eudaThread,
                                                                         name=euda.thread[self.username]['name'],
-                                                                        args=(self.username, self.password, self.vin))
+                                                                        args=(self.username, self.password, self.vin),
+                                                                        daemon=True)
                 euda.thread[self.username]['thread'].start()
 
             if self.vin in euda.result:
@@ -829,9 +834,14 @@ class euda():
                 _LOGGER.info(f"result from thread:\n{json.dumps(euda.result, indent=4)}")
                 soc = euda.result[self.vin]['soc']
                 range = euda.result[self.vin]['range']
-                if int(soc) > 0 and range is None:
-                    range = int(float(soc) * float(self.battery_capacity) / float(self.average_consump))
-                    _LOGGER.warn(f"no range delivered, calculate range = {range}km")
+                try:
+                    soc_pct = float(soc) if soc is not None else 0.0
+                except (TypeError, ValueError):
+                    soc_pct = 0.0
+                if soc_pct > 0 and range is None:
+                    range = int(soc_pct * float(self.battery_capacity) / float(self.average_consump))
+                    _LOGGER.warning(f"no range delivered, calculate range = {range}km")
+
                 ts = euda.result[self.vin]['soc_timestamp']
                 tsxx = euda.result[self.vin]['max_timestamp']
                 odometer = euda.result[self.vin]['odometer']
