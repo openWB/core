@@ -161,7 +161,7 @@ class ChargeTemplate:
                     current = plan.current if charging_type == ChargingType.AC.value else plan.dc_current
                     phases = plan.phases_to_use
                     id = plan.id
-                    if plan.limit.selected == "soc" and soc and soc >= plan.limit.soc:
+                    if plan.limit.selected == "soc" and soc is not None and soc >= plan.limit.soc:
                         # SoC-Limit erreicht
                         current = 0
                         sub_mode = "stop"
@@ -204,7 +204,7 @@ class ChargeTemplate:
             else:
                 current = instant_charging.dc_current
 
-            if instant_charging.limit.selected == "soc" and soc and soc >= instant_charging.limit.soc:
+            if instant_charging.limit.selected == "soc" and soc is not None and soc >= instant_charging.limit.soc:
                 current = 0
                 sub_mode = "stop"
                 message = self.SOC_REACHED
@@ -236,7 +236,7 @@ class ChargeTemplate:
             phases = pv_charging.phases_to_use
             min_pv_current = (pv_charging.min_current if charging_type == ChargingType.AC.value
                               else pv_charging.dc_min_current)
-            if pv_charging.limit.selected == "soc" and soc and soc >= pv_charging.limit.soc:
+            if pv_charging.limit.selected == "soc" and soc is not None and soc >= pv_charging.limit.soc:
                 current = 0
                 sub_mode = "stop"
                 message = self.SOC_REACHED
@@ -282,7 +282,7 @@ class ChargeTemplate:
             phases = eco_charging.phases_to_use
             current = eco_charging.current if charging_type == ChargingType.AC.value else eco_charging.dc_current
 
-            if eco_charging.limit.selected == "soc" and soc and soc >= eco_charging.limit.soc:
+            if eco_charging.limit.selected == "soc" and soc is not None and soc >= eco_charging.limit.soc:
                 current = 0
                 sub_mode = "stop"
                 message = self.SOC_REACHED
