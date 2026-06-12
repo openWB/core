@@ -27,8 +27,7 @@ def create_device(device_config: VenusCE):
 
     def initializer():
         nonlocal client
-        client = ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port,
-                                  retry_on_empty=True, retry_on_invalid=True, retries=2, timeout=2)
+        client = ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
 
     return ConfigurableDevice(
         device_config=device_config,
