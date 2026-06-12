@@ -45,6 +45,7 @@ def data_() -> None:
     data.data.counter_data["counter0"].data.config.max_total_power = 22000
     data.data.counter_data["counter6"].data.get.currents = [0, 4, 2]
     data.data.counter_data["counter6"].data.get.power = 1380
+    data.data.counter_data["counter6"].data.set.raw_power_left = None
     data.data.counter_data["counter6"].data.config.max_currents = [16]*3
     data.data.counter_data["counter6"].data.config.max_total_power = 11000
     data.data.counter_all_data = CounterAll()

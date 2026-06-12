@@ -102,9 +102,11 @@ class Loadmanagement:
         # (Probleme bei einphasig angeschlossenen Wallboxen)
         currents = available_currents.copy()
         limit = LoadmanagementLimit(None, None)
-        if raw_power_left:
-            if feed_in:
-                raw_power_left = raw_power_left - feed_in
+        if raw_power_left is None:
+            return currents, limit
+        elif raw_power_left > 0:
+            if feed_in is not None:
+                raw_power_left = max(raw_power_left - feed_in, 0)
                 log.debug(f"Verbleibende Leistung unter Berücksichtigung der Einspeisegrenze: {raw_power_left}W")
             if sum([c * cp_voltage for c in available_currents]) > raw_power_left:
                 for i in range(0, 3):
@@ -117,7 +119,10 @@ class Loadmanagement:
                 log.debug(f"Leistungsüberschreitung auf {raw_power_left}W korrigieren: {available_currents}")
                 limit = LoadmanagementLimit(LimitingValue.POWER.value.format(get_component_name_by_id(counter.num)),
                                             LimitingValue.POWER)
-        return currents, limit
+            return currents, limit
+        else:
+            return [0]*3, LoadmanagementLimit(LimitingValue.POWER.value.format(get_component_name_by_id(counter.num)),
+                                              LimitingValue.POWER)
 
     # tested
     def _limit_by_current(self,
@@ -152,7 +157,7 @@ class Loadmanagement:
                           available_currents: List[float],
                           cp: Chargepoint) -> Tuple[List[float], LoadmanagementLimit]:
         dimming_power_left, limit = data.data.io_actions.dimming_get_import_power_left({"type": "cp", "id": cp.num})
-        if dimming_power_left:
+        if dimming_power_left is not None:
             if sum(available_currents)*230 > dimming_power_left:
                 phases = 3-available_currents.count(0)
                 overload_per_phase = (sum(available_currents) - dimming_power_left/230)/phases
