@@ -703,8 +703,8 @@ class euda():
                     euda.client[username] = EudaApiClient(session, username, password, brand)
                     _k = str(euda.client.keys())
                     _LOGGER.info(f"libeuda.Thread client: euda.client.keys={_k}")
-                    meta = None
 
+                meta = None
                 while meta is None:
                     try:
                         meta = await euda.client[username].async_get_metadata(vin)
