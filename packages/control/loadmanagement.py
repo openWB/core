@@ -106,7 +106,7 @@ class Loadmanagement:
             return currents, limit
         elif raw_power_left > 0:
             if feed_in is not None:
-                raw_power_left = raw_power_left - feed_in
+                raw_power_left = max(raw_power_left - feed_in, 0)
                 log.debug(f"Verbleibende Leistung unter Berücksichtigung der Einspeisegrenze: {raw_power_left}W")
             if sum([c * cp_voltage for c in available_currents]) > raw_power_left:
                 for i in range(0, 3):
