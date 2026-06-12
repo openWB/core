@@ -802,7 +802,9 @@ class euda():
                             range = get_field_value_by_key(_Data, '153e8c40-4c6c-3c17-a11b-0ecc35d55b81')
                             if range is None:
                                 range = get_field_value_by_key(_Data, '0ca40e18-0564-3eda-bcc0-7aee9ef44f04')
-                            odometer = get_field_value_by_key(_Data, '30cc36fd-71ca-3c09-9296-e94ebd47bd2b')
+                            odometer = get_field_value_by_key(_Data, '41c0805c-43e5-313e-9dfb-356cb8d20f7c')
+                            if odometer is None:
+                                odometer = get_field_value_by_key(_Data, '30cc36fd-71ca-3c09-9296-e94ebd47bd2b')
 
                             soc_timestampxx = utc_to_timestamp(soc_timestamp)
 
