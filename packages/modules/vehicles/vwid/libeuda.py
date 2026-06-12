@@ -787,7 +787,9 @@ class euda():
                         if status:
                             _Data = _data['Data']
                             soc = get_field_value_by_key(_Data, 'ae0294b4-1286-3e98-a818-1485b8d88430')
+                            soc_timestamp = None
                             if soc is not None:
+                                _LOGGER.info(f"soc {soc} found in state_of_charge")
                                 soc_timestamp = get_field_timestamp_by_key(_Data,
                                                                            'ae0294b4-1286-3e98-a818-1485b8d88430')
                             if soc_timestamp is None:
