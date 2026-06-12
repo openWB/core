@@ -747,7 +747,9 @@ class euda():
 
                         if status:
                             _Data = _data['Data']
-                            soc = get_field_value_by_key(_Data, 'f89ed652-d104-3fa6-b7e2-ab7543309e7b')
+                            soc = get_field_value_by_key(_Data, 'ae0294b4-1286-3e98-a818-1485b8d88430')
+                            if soc is None:
+                                soc = get_field_value_by_key(_Data, 'f89ed652-d104-3fa6-b7e2-ab7543309e7b')
                             if soc is None:
                                 soc = get_field_value_by_key(_Data, '506cb83e-f99f-3af3-bbeb-0429b69a78d9')
                             if soc is None:
@@ -895,7 +897,7 @@ class euda():
             # _LOGGER.info(f"get_status: publish soc_timestamp as 0: topic: {topic}, message: {ep0}")
             # Pub().pub(topic, ep0)
 
-            return int(soc), float(range), int(ts), tsxx, float(odometer)
+            return float(soc), float(range), float(ts), tsxx, float(odometer)
         except Exception as e:
             _LOGGER.exception(f"get_status failed 0, exception={e}")
             # if exception is a SOCERR reraise it, otherwise raise general SOCERR-00
