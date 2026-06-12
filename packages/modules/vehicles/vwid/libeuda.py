@@ -661,10 +661,10 @@ def get_max_value_by_fieldname(D: dict, field: str) -> str:
 
 
 def utc_to_timestamp(d: str) -> float:
-    _epoch = datetime.datetime(1970, 1, 1)
+    _epoch = datetime(1970, 1, 1)
     _utcformat = "%Y-%m-%dT%H:%M:%SZ"
     _d = re.sub(r'\....Z', 'Z', d)
-    _dt = datetime.datetime.strptime(_d, _utcformat)
+    _dt = datetime.strptime(_d, _utcformat)
     _ts = (_dt - _epoch).total_seconds()
     return _ts
 
