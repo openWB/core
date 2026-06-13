@@ -3208,7 +3208,7 @@ class UpdateConfig:
         - bat_tesvolt -> bat with version:2 (tesvolt)
         """
         upgraded = []
-    
+
         def upgrade_component(topic: str, payload) -> Optional[dict]:
             if re.search(r"^openWB/system/device/[0-9]+/component/[0-9]+/config$", topic) is not None:
                 component = decode_payload(payload)
@@ -3252,9 +3252,9 @@ class UpdateConfig:
                     upgraded.append(topic)
                     return {topic: component}
             return None
-    
+
         self._loop_all_received_topics(upgrade_component)
-    
+
         if upgraded:
             pub_system_message(
                 {},
