@@ -3262,5 +3262,5 @@ class UpdateConfig:
                 "Deine bestehenden Einstellungen wurden automatisch übernommen.",
                 MessageType.INFO
             )
-    
+
         self._append_datastore_version(128)
