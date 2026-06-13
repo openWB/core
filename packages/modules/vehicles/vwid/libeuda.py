@@ -82,7 +82,7 @@ def ano_email(original):
 
 
 def ano_vin(vin: str) -> str:
-    return vin[:-11] + "***********"
+    return vin[:-9] + "*********"
 
 
 def get_oidc_client_id(brand: str = DEFAULT_BRAND) -> str:
@@ -726,6 +726,33 @@ class euda():
 
         return status
 
+    def extract_data(self, _Data: dict) -> Union[float, float, float, str, float]:
+        soc = get_field_value_by_key(_Data, 'ae0294b4-1286-3e98-a818-1485b8d88430')
+        soc_timestampxx = None
+        if soc is not None:
+            _LOGGER.info(f"soc {soc} found in state_of_charge")
+            _ts = get_field_timestamp_by_key(_Data, 'ae0294b4-1286-3e98-a818-1485b8d88430')
+            soc_timestampxx = re.sub(r'\....Z', 'Z', _ts)
+        if soc_timestampxx is None:
+            soc_timestampxx = get_max_value_by_fieldname(_Data, CAR_TIMESTAMP)
+
+        if soc is None:
+            soc = get_field_value_by_key(_Data, 'f89ed652-d104-3fa6-b7e2-ab7543309e7b')
+        if soc is None:
+            soc = get_field_value_by_key(_Data, '506cb83e-f99f-3af3-bbeb-0429b69a78d9')
+        if soc is None:
+            soc = get_field_value_by_key(_Data, 'ac1108b1-b8cc-3db9-a663-03d387e42223')
+        range = get_field_value_by_key(_Data, '153e8c40-4c6c-3c17-a11b-0ecc35d55b81')
+        if range is None:
+            range = get_field_value_by_key(_Data, '0ca40e18-0564-3eda-bcc0-7aee9ef44f04')
+        odometer = get_field_value_by_key(_Data, '41c0805c-43e5-313e-9dfb-356cb8d20f7c')
+        if odometer is None:
+            odometer = get_field_value_by_key(_Data, '30cc36fd-71ca-3c09-9296-e94ebd47bd2b')
+        soc_timestamp = utc_to_timestamp(soc_timestampxx)
+        if soc_timestamp > 1e10:
+            soc_timestamp = soc_timestamp / 1000
+        return soc, range, soc_timestamp, soc_timestampxx, odometer
+
     # eudaThread
     async def async_eudaThread(self, username: str, password: str, vin: str):
         if vin[0:3] not in VIN_BRAND_MAP:
@@ -786,29 +813,29 @@ class euda():
 
                         if status:
                             _Data = _data['Data']
-                            soc = get_field_value_by_key(_Data, 'ae0294b4-1286-3e98-a818-1485b8d88430')
-                            soc_timestamp = None
-                            if soc is not None:
-                                _LOGGER.info(f"soc {soc} found in state_of_charge")
-                                soc_timestamp = get_field_timestamp_by_key(_Data,
-                                                                           'ae0294b4-1286-3e98-a818-1485b8d88430')
-                            if soc_timestamp is None:
-                                soc_timestamp = get_max_value_by_fieldname(_Data, CAR_TIMESTAMP)
+                            # soc = get_field_value_by_key(_Data, 'ae0294b4-1286-3e98-a818-1485b8d88430')
+                            # soc_timestamp = None
+                            # if soc is not None:
+                            #     _LOGGER.info(f"soc {soc} found in state_of_charge")
+                            #     soc_timestamp = get_field_timestamp_by_key(_Data,
+                            #                                                'ae0294b4-1286-3e98-a818-1485b8d88430')
+                            # if soc_timestamp is None:
+                            #     soc_timestamp = get_max_value_by_fieldname(_Data, CAR_TIMESTAMP)
+                            # if soc is None:
+                            #     soc = get_field_value_by_key(_Data, 'f89ed652-d104-3fa6-b7e2-ab7543309e7b')
+                            # if soc is None:
+                            #     soc = get_field_value_by_key(_Data, '506cb83e-f99f-3af3-bbeb-0429b69a78d9')
+                            # if soc is None:
+                            #     soc = get_field_value_by_key(_Data, 'ac1108b1-b8cc-3db9-a663-03d387e42223')
+                            # range = get_field_value_by_key(_Data, '153e8c40-4c6c-3c17-a11b-0ecc35d55b81')
+                            # if range is None:
+                            #     range = get_field_value_by_key(_Data, '0ca40e18-0564-3eda-bcc0-7aee9ef44f04')
+                            # odometer = get_field_value_by_key(_Data, '41c0805c-43e5-313e-9dfb-356cb8d20f7c')
+                            # if odometer is None:
+                            #     odometer = get_field_value_by_key(_Data, '30cc36fd-71ca-3c09-9296-e94ebd47bd2b')
+                            # soc_timestampxx = utc_to_timestamp(soc_timestamp)
 
-                            if soc is None:
-                                soc = get_field_value_by_key(_Data, 'f89ed652-d104-3fa6-b7e2-ab7543309e7b')
-                            if soc is None:
-                                soc = get_field_value_by_key(_Data, '506cb83e-f99f-3af3-bbeb-0429b69a78d9')
-                            if soc is None:
-                                soc = get_field_value_by_key(_Data, 'ac1108b1-b8cc-3db9-a663-03d387e42223')
-                            range = get_field_value_by_key(_Data, '153e8c40-4c6c-3c17-a11b-0ecc35d55b81')
-                            if range is None:
-                                range = get_field_value_by_key(_Data, '0ca40e18-0564-3eda-bcc0-7aee9ef44f04')
-                            odometer = get_field_value_by_key(_Data, '41c0805c-43e5-313e-9dfb-356cb8d20f7c')
-                            if odometer is None:
-                                odometer = get_field_value_by_key(_Data, '30cc36fd-71ca-3c09-9296-e94ebd47bd2b')
-
-                            soc_timestampxx = utc_to_timestamp(soc_timestamp)
+                            soc, range, soc_timestamp, soc_timestampxx, odometer = self.extract_data(_Data)
 
                             euda.result[vin] = {
                                 'soc': soc,
@@ -833,6 +860,27 @@ class euda():
         asyncio.run(self.async_eudaThread(username, password, vin))
         _LOGGER.info(f"sync libeuda.eudaThread {threading.current_thread().name} ended")
 
+    def check_tests(self):
+        _l = glob.glob(str(DATA_PATH) + '/test_*' + '.json')
+        for _t in _l:
+            _vin = _t[_t.index('_')+1:].replace('.json', '')
+            _LOGGER.info(f"found test file: {_t}, vin={_vin}")
+            with open(_t) as f:
+                _data = json.load(f)
+                _Data = _data['Data']
+                soc, range, soc_timestamp, soc_timestampxx, odometer = self.extract_data(_Data)
+
+                test_result = {}
+                test_result[_vin] = {
+                    'soc': soc,
+                    'range': range,
+                    'soc_timestamp': soc_timestamp,
+                    'soc_timestampxx': soc_timestampxx,
+                    'odometer': odometer,
+                }
+                _ano_j = json.dumps(test_result, indent=4).replace(_vin, ano_vin(_vin))
+                _LOGGER.info(f"test_result, vin={_vin}:\n{_ano_j}")
+
     async def get_status(self,
                          conf: VWId,
                          vehicle: int,
@@ -842,6 +890,9 @@ class euda():
         # SOCERR-00: general error
         # SOCERR-01: login problem, username, password wrong, account locked, etc.
         # SOCERR-02: vehicle not (yet) found in portal, VIN wrong?
+
+        self.check_tests()
+
         self.username = conf.configuration.user_id
         self.password = conf.configuration.password
         self.vin = conf.configuration.vin
