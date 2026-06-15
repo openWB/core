@@ -61,7 +61,7 @@ class Sdm630_72(Sdm):
         power = sum(powers)
         return powers, power
 
-    def get_voltages(self) -> Tuple[List[float], float]:
+    def get_voltages(self) -> List[float]:
         # client handler
         time.sleep(0.1)
         return self.client.read_input_registers(0x00, [ModbusDataType.FLOAT_32]*3, unit=self.id)

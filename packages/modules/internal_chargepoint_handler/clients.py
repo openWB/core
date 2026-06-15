@@ -16,8 +16,9 @@ log = logging.getLogger(__name__)
 
 BUS_SOURCES = ("/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyACM0", "/dev/serial0")
 
-METERS = Union[mpm3pm.Mpm3pm, sdm.Sdm630_72, b23.B23]
-meter_config = NamedTuple("meter_config", [('type', METERS), ('modbus_id', int)])
+MeterClient = Union[mpm3pm.Mpm3pm, sdm.Sdm630_72, b23.B23]
+MeterType = Union[type[mpm3pm.Mpm3pm], type[sdm.Sdm630_72], type[b23.B23]]
+meter_config = NamedTuple("meter_config", [('type', MeterType), ('modbus_id', int)])
 CP0_METERS = [meter_config(mpm3pm.Mpm3pm, modbus_id=5),
               meter_config(sdm.Sdm630_72, modbus_id=105),
               meter_config(b23.B23, modbus_id=201)]
@@ -64,18 +65,24 @@ class ClientHandler(SeriesHardwareCheckMixin):
     @staticmethod
     def find_meter_client(meters: List[meter_config],
                           client: Union[ModbusSerialClient_, ModbusTcpClient_],
-                          fault_state: FaultState) -> METERS:
+                          fault_state: FaultState) -> Optional[MeterClient]:
         for meter_type, modbus_id in meters:
             try:
                 with client:
-                    meter_client = meter_type(modbus_id, client, fault_state)
-                    if meter_client.get_voltages()[0] > 200:
+                    meter_client: MeterClient = meter_type(modbus_id, client, fault_state)
+                    voltages = meter_client.get_voltages()
+                    if voltages[0] > 200:
                         with ModifyLoglevelContext(log, logging.DEBUG):
                             log.debug("Verbauter Zähler: "+str(meter_type)+" mit Modbus-ID: "+str(modbus_id))
                         return meter_client
+                    else:
+                        with ModifyLoglevelContext(log, logging.DEBUG):
+                            log.debug(f"Zähler {meter_type} mit Modbus-ID:{modbus_id} antwortet, "
+                                      f"aber Spannung ist nicht plausibel: {voltages}.")
             except Exception:
-                log.debug(client)
-                log.debug(f"Zähler {meter_type} mit Modbus-ID:{modbus_id} antwortet nicht.")
+                with ModifyLoglevelContext(log, logging.DEBUG):
+                    log.debug(client)
+                    log.debug(f"Zähler {meter_type} mit Modbus-ID:{modbus_id} antwortet nicht.")
         else:
             return None
 
