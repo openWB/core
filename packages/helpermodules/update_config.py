@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 128
+    DATASTORE_VERSION = 129
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -3264,3 +3264,27 @@ class UpdateConfig:
             )
 
         self._append_datastore_version(128)
+
+    def upgrade_datastore_129(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if "openWB/optional/ep/flexible_tariff/provider" == topic:
+                provider = decode_payload(payload)
+                if provider["type"] == "fixed_hours":
+                    if provider["configuration"].get("update_hours") is None:
+                        provider["configuration"]["update_hours"] = list(range(24))
+                        return {topic: provider}
+                elif provider["type"] == "ostrom":
+                    if provider["configuration"].get("update_hours") is None:
+                        provider["configuration"]["update_hours"] = [2, 8, 14, 20]
+                        return {topic: provider}
+                elif provider["type"] == "tibber":
+                    if (provider["configuration"].get("update_hours") is None or
+                            provider["configuration"].get("includes_grid_fee") is None):
+                        if provider["configuration"].get("update_hours") is None:
+                            provider["configuration"]["update_hours"] = [14]
+                        if provider["configuration"].get("includes_grid_fee") is None:
+                            provider["configuration"]["includes_grid_fee"] = True
+                        return {topic: provider}
+            return None
+        self._loop_all_received_topics(upgrade)
+        # self._append_datastore_version(129)
