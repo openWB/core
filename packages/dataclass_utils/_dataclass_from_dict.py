@@ -54,8 +54,9 @@ def _get_argument_value(cls: Type[T], arg_spec: FullArgSpec, index: int, paramet
             try:
                 value = arg_spec.defaults[-len(arg_spec.args) + index]
             except (IndexError, TypeError):
-                # If none of the parameters have a default value, then `arg_spec.defaults` is None and we get a `TypeError`.
-                # If there are parameters with default value, but not the one requested, we get an `IndexError`.
+                # If none of the parameters have a default value, then `arg_spec.defaults` is None and we get a
+                # `TypeError`. If there are parameters with default value, but not the one requested, we get an
+                # `IndexError`.
                 raise Exception(
                     "Cannot determine value for parameter %s: not given in %s and no default value specified" % (
                         argument_name, parameters))

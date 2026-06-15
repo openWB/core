@@ -3287,4 +3287,4 @@ class UpdateConfig:
                         return {topic: provider}
             return None
         self._loop_all_received_topics(upgrade)
-        # self._append_datastore_version(129)
+        self._append_datastore_version(129)
