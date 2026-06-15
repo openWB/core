@@ -791,34 +791,35 @@ class euda():
             return False
 
     # eudaThread
-    async def async_eudaThread(self, username: str, password: str, vin: str):
+    async def async_eudaThread(self, username: str, password: str, vin: str, vehicle: int):
         if vin[0:3] not in VIN_BRAND_MAP:
             _LOGGER.warning(f"VIN {vin[0:3]} not in brand map, use {DEFAULT_BRAND}")
         brand = VIN_BRAND_MAP.get(vin[0:3], DEFAULT_BRAND)
         _LOGGER.info(f"async Thread started, brand={brand}")
         try:
             async with aiohttp.ClientSession(headers={'Connection': 'keep-alive'}) as session:
-                _k = str(euda.client.keys()).replace(username, ano_email(username))
+                client_id = f"{vehicle}"
+                _k = str(euda.client.keys())
                 _LOGGER.info(f"libeuda.Thread client at entry: euda.client.keys={_k}")
-                if username not in euda.client:
-                    _LOGGER.debug(f"create new client, key={ano_email(username)}")
-                    euda.client[username] = {}
-                    euda.client[username] = EudaApiClient(session, username, password, brand)
-                    _k = str(euda.client.keys()).replace(username, ano_email(username))
+                if client_id not in euda.client:
+                    _LOGGER.debug(f"create new client, key={client_id}")
+                    euda.client[client_id] = {}
+                    euda.client[client_id] = EudaApiClient(session, username, password, brand)
+                    _k = str(euda.client.keys())
                     _LOGGER.info(f"libeuda.Thread client: euda.client.keys={_k}")
 
                 meta = None
                 while meta is None:
                     try:
-                        meta = await euda.client[username].async_get_metadata(vin)
+                        meta = await euda.client[client_id].async_get_metadata(vin)
                     except ApiError as err:
                         if "HTTP 500" in str(err):
                             _LOGGER.info(f"Portal not ready/get_metadata, wait {POLL_INTERVAL} seconds")
                         else:
-                            _LOGGER.info(f"APIError/get_metadata: {err}")
+                            _LOGGER.exception(f"APIError/get_metadata: {err}")
                         meta = None
                     except Exception as err:
-                        _LOGGER.info(f"Exception/get_metadata: {err}")
+                        _LOGGER.exception(f"Exception/get_metadata: {err}")
                         meta = None
                     if meta is None:
                         time.sleep(POLL_INTERVAL)
@@ -831,7 +832,7 @@ class euda():
                         _data = None
                         while _data is None:
                             try:
-                                _name, _data = await _async_update_data(euda.client[username], vin, identifier)
+                                _name, _data = await _async_update_data(euda.client[client_id], vin, identifier)
                             except ApiError as err:
                                 if "HTTP 500" in str(err):
                                     _LOGGER.info(f"Portal not ready/update_data, wait {POLL_INTERVAL} seconds")
@@ -857,9 +858,9 @@ class euda():
         except Exception as e:
             _LOGGER.exception(f"thread body failed 0, exception={e}")
 
-    def eudaThread(self, username: str, password: str, vin: str):
+    def eudaThread(self, username: str, password: str, vin: str, vehicle: int):
         _LOGGER.info(f"sync libeuda.eudaThread {threading.current_thread().name} started")
-        asyncio.run(self.async_eudaThread(username, password, vin))
+        asyncio.run(self.async_eudaThread(username, password, vin, vehicle))
         _LOGGER.info(f"sync libeuda.eudaThread {threading.current_thread().name} ended")
 
     def check_tests(self):
@@ -869,19 +870,10 @@ class euda():
             _LOGGER.info(f"found test file: {_t}, vin={_vin}")
             with open(_t) as f:
                 payload = json.load(f)
-                # _Data = _data['Data']
-                # soc, range, soc_timestamp, soc_timestamp_str, odometer = self.extract_data(_Data)
                 result = parse_vehicle_data(payload)
 
                 test_result = {}
                 test_result[_vin] = result
-                # test_result[_vin] = {
-                #     'soc': soc,
-                #     'range': range,
-                #     'soc_timestamp': soc_timestamp,
-                #     'soc_timestamp_str': soc_timestamp_str,
-                #     'odometer': odometer,
-                # }
                 _ano_j = json.dumps(test_result, indent=4).replace(_vin, ano_vin(_vin))
                 _LOGGER.info(f"test_result, vin={_vin}:\n{_ano_j}")
 
@@ -919,20 +911,24 @@ class euda():
                 data['soc_timestamp'] = str(0)
                 data['odometer'] = str(0)
 
-            euda.thread[self.username] = {}
-            euda.thread[self.username]['name'] = f"{EUDA_THREADNAME}{self.vehicle}"
-            euda.thread[self.username]['thread'] = None
+            thread_id = f"{self.vehicle}"
+            euda.thread[thread_id] = {}
+            euda.thread[thread_id]['name'] = f"{EUDA_THREADNAME}{self.vehicle}"
+            euda.thread[thread_id]['thread'] = None
             for t in threading.enumerate():
-                if t.name == euda.thread[self.username]['name']:
+                if t.name == euda.thread[thread_id]['name']:
                     _LOGGER.debug(f"thread {t.name} exists already")
-                    euda.thread[self.username]['thread'] = t
-            if euda.thread[self.username]['thread'] is None:
-                _LOGGER.debug(f"{euda.thread[self.username]['name']} not found: starting now")
-                euda.thread[self.username]['thread'] = threading.Thread(target=self.eudaThread,
-                                                                        name=euda.thread[self.username]['name'],
-                                                                        args=(self.username, self.password, self.vin),
-                                                                        daemon=True)
-                euda.thread[self.username]['thread'].start()
+                    euda.thread[thread_id]['thread'] = t
+            if euda.thread[thread_id]['thread'] is None:
+                _LOGGER.debug(f"{euda.thread[thread_id]['name']} not found: starting now")
+                euda.thread[thread_id]['thread'] = threading.Thread(target=self.eudaThread,
+                                                                    name=euda.thread[thread_id]['name'],
+                                                                    args=(self.username,
+                                                                          self.password,
+                                                                          self.vin,
+                                                                          self.vehicle),
+                                                                    daemon=True)
+                euda.thread[thread_id]['thread'].start()
 
             if self.vin not in euda.result:
                 self.load_latest_json_result(self.vin)
