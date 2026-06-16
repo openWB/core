@@ -73,6 +73,68 @@
 			}
 		]
 	},
+		{
+		"rolename": "consumer-<id>-access",
+		"textname": "Leserechte für Verbraucher <id>",
+		"textdescription": "Erlaubt das Empfangen von Daten für Verbraucher <id>.",
+		"acls": [
+			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/consumer/<id>/set/charge_template",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/consumer/<id>/set/manual_lock",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/consumer/<id>/config/ev",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/consumer/<id>/get/rfid",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/consumer/<id>/#",
+				"priority": 0,
+				"allow": true
+			}
+		]
+	},
+	{
+		"rolename": "consumer-<id>-write-access",
+		"textname": "Schreibrechte für MQTT-Verbraucher <id>",
+		"textdescription": "Erlaubt das Senden von Daten für Verbraucher <id>.",
+		"acls": [
+			{
+				"acltype": "publishClientSend",
+				"topic": "openWB/set/mqtt/consumer/<id>/get/#",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/set/mqtt/consumer/<id>/get/#",
+				"priority": 0,
+				"allow": true
+			},
+			{
+				"acltype": "publishClientReceive",
+				"topic": "openWB/mqtt/consumer/<id>/#",
+				"priority": 0,
+				"allow": true
+			}
+		]
+	},
 	{
 		"rolename": "vehicle-<id>-access",
 		"textname": "Leserechte für Fahrzeug <id>",
