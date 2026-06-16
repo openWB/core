@@ -141,18 +141,18 @@ def test_delete_discard_children(params: ParamsItem):
     assert params.counter_all.data.get.hierarchy == params.expected_hierarchy
 
 
-cases_get_chargepoints_of_counter = [
-    ParamsItem("get_chargepoints_of_counter", hierarchy_cp(), "counter2", expected_return=["cp3", "cp5", "cp6"]),
-    ParamsItem("get_chargepoints_of_counter", hierarchy_two_level(), "counter0", expected_return=["cp2"])
+cases_get_loads_of_counter = [
+    ParamsItem("get_loads_of_counter", hierarchy_cp(), "counter2", expected_return=["cp3", "cp5", "cp6"]),
+    ParamsItem("get_loads_of_counter", hierarchy_two_level(), "counter0", expected_return=["cp2"])
 ]
 
 
 @pytest.mark.parametrize("params",
-                         cases_get_chargepoints_of_counter,
-                         ids=[c.name for c in cases_get_chargepoints_of_counter])
-def test_get_chargepoints_of_counter(params: ParamsItem):
+                         cases_get_loads_of_counter,
+                         ids=[c.name for c in cases_get_loads_of_counter])
+def test_get_loads_of_counter(params: ParamsItem):
     # execution
-    actual = params.counter_all.get_chargepoints_of_counter(params.id)
+    actual = params.counter_all.get_loads_of_counter(params.id)
 
     # evaluation
     assert actual == params.expected_return
