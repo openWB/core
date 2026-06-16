@@ -8,7 +8,7 @@ from control.bat import Bat
 from control.bat_all import BatAll
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_template import CpTemplate
-from control.counter_all import CounterAll
+from control.counter_all.counter_all import CounterAll
 from control.counter import Counter
 from control.ev.ev import Ev
 from control.io_device import IoActions
@@ -27,6 +27,7 @@ def data_() -> None:
     for i in range(3, 6):
         data.data.cp_data[f"cp{i}"].template = CpTemplate()
         data.data.cp_data[f"cp{i}"].data.config.phase_1 = i-2
+        data.data.cp_data[f"cp{i}"].data.config.ev = i
         data.data.cp_data[f"cp{i}"].data.set.charging_ev_data = Ev(i)
         data.data.cp_data[f"cp{i}"].data.set.charging_ev_data.ev_template.data.max_current_single_phase = 32
         data.data.cp_data[f"cp{i}"].data.get.plug_state = True
@@ -50,6 +51,13 @@ def data_() -> None:
     data.data.counter_data["counter6"].data.config.max_total_power = 11000
     data.data.counter_all_data = CounterAll()
     data.data.counter_all_data.data.get.hierarchy = NESTED_HIERARCHY
+    data.data.counter_all_data.data.get.loadmanagement_prios = [{
+        "type": "group",
+        "label": "Fahrzeuge",
+        "children": [
+                {"type": "vehicle", "id": 3}, {"type": "vehicle", "id": 4}, {"type": "vehicle", "id": 5}
+        ]
+    }]
     data.data.counter_all_data.data.config.consider_less_charging = True
     data.data.io_actions = IoActions()
 
