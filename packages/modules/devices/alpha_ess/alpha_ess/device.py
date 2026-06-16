@@ -81,4 +81,9 @@ def create_device(device_config: AlphaEss):
     )
 
 
-device_descriptor = DeviceDescriptor(configuration_factory=AlphaEss)
+device_descriptor = DeviceDescriptor(
+    configuration_factory=AlphaEss,
+    compatibility_bat_active=True,
+    compatibility_bat_note="Kann Entladung nur komplett sperren. Über Webinterface oder App müssen einmalig Zeiten für das Netzladen definiert werden. (Einstellungen - Funktionseinstellungen - Netzladen/Entladen). Hier einen durchgängigen Zeitraum eintragen (Ladezeit_1: 00:00-23:00, Ladezeit_2: 23:00-00:00). Den Schalter 'Netzladen' deaktivieren!",
+    compatibility_device_note="Für den Alpha Smile (ohne HI) wird ein Alpha Kit benötigt"
+)

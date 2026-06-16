@@ -52,4 +52,5 @@ def create_device(device_config: SungrowSH):
     )
 
 
-device_descriptor = DeviceDescriptor(configuration_factory=SungrowSH)
+device_descriptor = DeviceDescriptor(configuration_factory=SungrowSH,
+                                     compatibility_device_note="Ältere Modelle verfügen über einen nativen LAN-Port, neue Modelle benötigen den Winet-S oder Winet-S2 Dongle.")
