@@ -261,7 +261,6 @@ const chargePointSumCharging = computed(
 
 const gridId = computed(() => mqttStore.gridId);
 const pvColor = computed(() => mqttStore.pvAggregateColor);
-const batteryColor = computed(() => mqttStore.batteryAggregateColor);
 
 ///////////////////// Set animation speed //////////////////////////
 
@@ -394,7 +393,7 @@ const svgComponents = computed((): FlowComponent[] => {
       powerValue: Number(batteryPower.value.value),
       soc: batterySoc.value,
       iconComponent: BatteryIcon,
-      iconColor: batteryColor.value || 'var(--q-diagram-icon)',
+      iconColor: 'var(--q-battery-stroke)',
     });
   }
 

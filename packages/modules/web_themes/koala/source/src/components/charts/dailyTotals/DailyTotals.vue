@@ -322,7 +322,7 @@ const individualBatteryData = computed((): DailyTotalsItem[] => {
           imported: mqttStore.batteryDailyImported(id, 'textValue') as string,
           exported: mqttStore.batteryDailyExported(id, 'textValue') as string,
         },
-        color: mqttStore.batteryColor(id) || undefined,
+        color: 'var(--q-battery-stroke)',
       });
     }
   });
@@ -348,10 +348,8 @@ const componentData = computed((): DailyTotalsItem[] => {
         imported: mqttStore.batteryDailyImportedTotal('textValue') as string,
         exported: mqttStore.batteryDailyExportedTotal('textValue') as string,
       },
+      color: 'var(--q-battery-stroke)',
     };
-    if (mqttStore.batteryIds.length === 1) {
-      item.color = mqttStore.batteryColor(mqttStore.batteryIds[0]) || undefined;
-    }
     components.push(item);
   }
 
