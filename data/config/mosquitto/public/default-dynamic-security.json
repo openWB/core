@@ -1027,7 +1027,13 @@
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/feed_in_yield",
+					"topic": "openWB/set/general/chargemode_config/pv_charging/feed_in_limit",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/general/chargemode_config/feed_in_yield",
 					"priority": 0,
 					"allow": true
 				},
@@ -1081,7 +1087,13 @@
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/feed_in_yield",
+					"topic": "openWB/general/chargemode_config/pv_charging/feed_in_limit",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/chargemode_config/feed_in_yield",
 					"priority": 0,
 					"allow": true
 				},
