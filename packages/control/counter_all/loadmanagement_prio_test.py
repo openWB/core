@@ -61,7 +61,10 @@ def cp3():
         ], id="nested list"),
     ]
 )
-def test_add_item(loadmanagement_prios: List[Dict], id: int, type: str, expected_loadmanagement_prios: List[Dict]):
+def test_add_item(loadmanagement_prios: List[Dict],
+                  id: int,
+                  type: ComponentType,
+                  expected_loadmanagement_prios: List[Dict]):
     # setup
     c = CounterAll()
     c.data.get.loadmanagement_prios = loadmanagement_prios
@@ -74,10 +77,10 @@ def test_add_item(loadmanagement_prios: List[Dict], id: int, type: str, expected
 
 
 @pytest.mark.parametrize(
-    "loadmanagement_prios, id, type, expected_loadmanagement_prios",
+    "loadmanagement_prios, id, expected_loadmanagement_prios",
     [
         pytest.param([{"type": "vehicle", "id": 3}, {"type": "vehicle", "id": 2}],
-                     2, "vehicle", [{"type": "vehicle", "id": 3}], id="flat list"),
+                     2, [{"type": "vehicle", "id": 3}], id="flat list"),
         pytest.param([
             {
                 "type": "group",
@@ -88,7 +91,7 @@ def test_add_item(loadmanagement_prios: List[Dict], id: int, type: str, expected
                 ]
             },
             {"type": "vehicle", "id": 2},
-        ], 2, "vehicle", [
+        ], 2, [
             {
                 "type": "group",
                 "label": "Wichtige Fahrzeuge",
@@ -108,7 +111,7 @@ def test_add_item(loadmanagement_prios: List[Dict], id: int, type: str, expected
                         ]
             },
             {"type": "vehicle", "id": 2},
-        ], 0, "vehicle", [
+        ], 0, [
             {
                 "type": "group",
                 "label": "Wichtige Fahrzeuge",
@@ -127,12 +130,11 @@ def test_add_item(loadmanagement_prios: List[Dict], id: int, type: str, expected
                         ]
             },
             {"type": "vehicle", "id": 2},
-        ], 0, "vehicle", [{"type": "vehicle", "id": 2}], id="nested list, empty group"),
+        ], 0, [{"type": "vehicle", "id": 2}], id="nested list, empty group"),
     ]
 )
 def test_remove_loadmanagement_prio_item(loadmanagement_prios: List[Dict],
                                          id: int,
-                                         type: str,
                                          expected_loadmanagement_prios: List[Dict]):
     # setup
     c = CounterAll()
@@ -160,7 +162,7 @@ def test_sort_cps_by_loadmanagement_prios_nested_same_vehicle(cp1, cp2, cp3):
 
     # assert - eine Gruppe mit allen CPs (sortiert nach required_current)
     assert len(result) == 1
-    assert result[0] == [cp3, cp2, cp1]  # direkte Objektvergleiche!
+    assert result[0] == [cp1, cp2, cp3]  # direkte Objektvergleiche!
 
 
 def test_sort_cps_by_loadmanagement_prios_nested_different_vehicles(cp1, cp2, cp3):
