@@ -1480,6 +1480,12 @@
 				},
 				{
 					"acltype": "publishClientSend",
+					"topic": "openWB/set/counter/get/loadmanagement_prios",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
 					"topic": "openWB/set/counter/+/config/max_power_errorcase",
 					"priority": 0,
 					"allow": true
@@ -1529,6 +1535,12 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/counter/get/hierarchy",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/counter/get/loadmanagement_prios",
 					"priority": 0,
 					"allow": true
 				},

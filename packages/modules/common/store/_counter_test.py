@@ -9,7 +9,7 @@ import pytest
 from control import data
 from control.chargepoint.chargepoint import Chargepoint
 from control.counter import Counter, CounterData, Get
-from control.counter_all import CounterAll
+from control.counter_all.counter_all import CounterAll
 from modules.chargepoints.mqtt.chargepoint_module import ChargepointModule
 from modules.common.component_state import BatState, ChargepointState, CounterState, InverterState
 from modules.common.simcount._simcounter import SimCounter

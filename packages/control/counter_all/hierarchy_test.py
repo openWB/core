@@ -5,7 +5,7 @@ from packages.conftest import hierarchy_hybrid, hierarchy_nested
 from control.counter import Counter
 
 
-from control.counter_all import CounterAll, get_max_id_in_hierarchy
+from control.counter_all.counter_all import CounterAll, get_max_id_in_hierarchy
 from modules.common.component_type import ComponentType
 
 
