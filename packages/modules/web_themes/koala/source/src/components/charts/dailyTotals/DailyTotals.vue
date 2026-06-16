@@ -292,7 +292,7 @@ const individualChargePointData = computed((): DailyTotalsItem[] => {
             id,
           ) as string,
         },
-        color: mqttStore.chargePointColor(id) || undefined,
+        color: mqttStore.chargePointColor(id) || 'var(--q-primary)',
       });
     }
   });
@@ -379,6 +379,11 @@ const componentData = computed((): DailyTotalsItem[] => {
       title: mqttStore.chargePointIds.length > 1 ? 'Ladepunkte' : 'Ladepunkt',
       level: 'primary',
       icon: 'chargepoint',
+      color:
+        mqttStore.chargePointIds.length === 1
+          ? mqttStore.chargePointColor(mqttStore.chargePointIds[0]) ||
+            'var(--q-primary)'
+          : 'var(--q-primary)',
     };
     if (chargePointSumPowerAvailable.value) {
       item = {
@@ -390,10 +395,6 @@ const componentData = computed((): DailyTotalsItem[] => {
           exported: mqttStore.chargePointDailyExported('textValue') as string,
         },
       };
-      if (mqttStore.chargePointIds.length === 1) {
-        item.color =
-          mqttStore.chargePointColor(mqttStore.chargePointIds[0]) || undefined;
-      }
     }
     components.push(item);
   }
