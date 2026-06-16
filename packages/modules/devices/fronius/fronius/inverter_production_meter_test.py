@@ -20,11 +20,11 @@ def mock_ramdisk(monkeypatch):
 
 def test_production_count(monkeypatch, requests_mock: requests_mock.mock):
     mock_inverter_value_store = Mock()
-    monkeypatch.setattr(inverter_production_meter, "get_inverter_value_store",
+    monkeypatch.setattr(inverter_production_meter, "get_component_value_store",
                         Mock(return_value=mock_inverter_value_store))
     requests_mock.get(f"http://{SAMPLE_IP}/solar_api/v1/GetMeterRealtimeData.cgi", json=json_ext_var2)
     mock_inverter_value_store = Mock()
-    monkeypatch.setattr(inverter_production_meter, "get_inverter_value_store",
+    monkeypatch.setattr(inverter_production_meter, "get_component_value_store",
                         Mock(return_value=mock_inverter_value_store))
 
     component_config = FroniusProductionMeterSetup()
