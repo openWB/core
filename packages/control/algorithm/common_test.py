@@ -123,7 +123,7 @@ def test_available_currents_for_cp(counts: List[int],
     cp.data.set.target_current = 10
 
     # evaluation
-    current = common.available_current_for_cp(cp, counts, available_currents, missing_currents)
+    current = common.available_current_for_load(cp, counts, available_currents, missing_currents)
 
     # assertion
     assert current == expected_current
