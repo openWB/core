@@ -2,10 +2,11 @@ import logging
 from typing import Iterable, List, Optional, Tuple
 
 from control import data
-from control.algorithm.filter_chargepoints import get_chargepoints_with_required_current_by_chargemode
+from control.algorithm.filter_chargepoints import get_loads_by_chargemodes
 from control.algorithm.utils import get_medium_charging_current
 from control.chargepoint.chargepoint import Chargepoint
 from control.counter import Counter
+from control.load_protocol import Load
 from helpermodules.phase_handling import voltages_mean
 from helpermodules.timecheck import check_timestamp
 from modules.common.component_type import ComponentType
@@ -19,40 +20,40 @@ LESS_CHARGING_TIMEOUT = 60
 
 
 def reset_current():
-    for cp in data.data.cp_data.values():
+    for load in list(data.data.cp_data.values()) + list(data.data.consumer_data.values()):
         try:
-            cp.data.set.current = None
-            cp.data.set.target_current = 0
+            load.data.set.current = None
+            load.data.set.target_current = 0
         except Exception:
-            log.exception(f"Fehler im Algorithmus-Modul für Ladepunkt{cp.num}")
+            log.exception(f"Fehler im Algorithmus-Modul für "
+                          f"{'Ladepunkt' if isinstance(load, Chargepoint) else 'Verbraucher'}{load.num}")
 
 
-def reset_current_by_chargemode(modes: List[Tuple[Optional[str], str, bool]]) -> None:
-    for cp in get_chargepoints_with_required_current_by_chargemode(modes):
-        cp.data.set.current = None
+def reset_current_by_chargemode(chargemodes: Tuple[Tuple[Optional[str], str]]) -> None:
+    for load in get_loads_by_chargemodes(chargemodes):
+        load.data.set.current = None
 
 
-def mode_and_counter_generator(chargemodes: List) -> Iterable[Tuple[Tuple[Optional[str], str, bool], Counter]]:
-    for mode_tuple in chargemodes:
-        levels = data.data.counter_all_data.get_list_of_elements_per_level()
-        for level in reversed(levels):
-            for element in level:
-                if element["type"] == ComponentType.COUNTER.value:
-                    counter = data.data.counter_data[f"counter{element['id']}"]
-                    yield mode_tuple, counter
+def counter_generator() -> Iterable[Counter]:
+    levels = data.data.counter_all_data.get_list_of_elements_per_level()
+    for level in reversed(levels):
+        for element in level:
+            if element["type"] == ComponentType.COUNTER.value:
+                counter = data.data.counter_data[f"counter{element['id']}"]
+                yield counter
 
 
 # tested
 
 
-def get_min_current(chargepoint: Chargepoint) -> Tuple[List[float], List[int]]:
+def get_min_current(load: Load) -> Tuple[List[float], List[int]]:
     min_currents = [0.0]*3
     counts = [0]*3
-    required_currents = chargepoint.data.control_parameter.required_currents
+    required_currents = load.data.control_parameter.required_currents
     for i in range(3):
         if required_currents[i] != 0:
             counts[i] += 1
-            min_currents[i] = chargepoint.data.control_parameter.min_current
+            min_currents[i] = load.data.control_parameter.min_current
         else:
             min_currents[i] = 0
     return min_currents, counts
@@ -62,29 +63,33 @@ def get_min_current(chargepoint: Chargepoint) -> Tuple[List[float], List[int]]:
 
 def set_current_counterdiff(diff_current: float,
                             current: float,
-                            chargepoint: Chargepoint,
+                            load: Load,
                             surplus: bool = False) -> None:
-    required_currents = chargepoint.data.control_parameter.required_currents
-    considered_current = consider_less_charging_chargepoint_in_loadmanagement(
-        chargepoint, current)
+    required_currents = load.data.control_parameter.required_currents
+    if isinstance(load, Chargepoint):
+        considered_current = consider_less_charging_chargepoint_in_loadmanagement(
+            load, current)
+    else:
+        considered_current = current
     # gar nicht ladende Autos?
     diff = max(considered_current - diff_current, 0)
     diffs = [diff if required_currents[i] != 0 else 0 for i in range(3)]
     if max(diffs) > 0:
-        counters = data.data.counter_all_data.get_counters_to_check(chargepoint.num)
+        counters = data.data.counter_all_data.get_counters_to_check(load.num)
         for counter in counters:
             if surplus:
                 data.data.counter_data[counter].update_surplus_values_left(
                     diffs,
-                    voltages_mean(chargepoint.data.get.voltages))
+                    voltages_mean(load.data.get.voltages))
             else:
                 data.data.counter_data[counter].update_values_left(
                     diffs,
-                    voltages_mean(chargepoint.data.get.voltages))
-        data.data.io_actions.dimming_set_import_power_left({"type": "cp", "id": chargepoint.num}, sum(diffs)*230)
+                    voltages_mean(load.data.get.voltages))
+        data.data.io_actions.dimming_set_import_power_left({"type": "cp" if isinstance(
+            load, Chargepoint) else "consumer", "id": load.num}, sum(diffs)*230)
 
-    chargepoint.data.set.current = current
-    log.info(f"LP{chargepoint.num}: Stromstärke {current}A")
+    load.data.set.current = current
+    log.info(f"{'LP' if isinstance(load, Chargepoint) else 'Verbraucher'} {load.num}: Stromstärke {current}A")
 
 # tested
 
@@ -104,58 +109,62 @@ def get_current_to_set(set_current: float, diff: float, prev_current: float) -> 
 # tested
 
 
-def available_current_for_cp(chargepoint: Chargepoint,
-                             counts: List[int],
-                             available_currents: List[float],
-                             missing_currents: List[float]) -> float:
-    control_parameter = chargepoint.data.control_parameter
+def available_current_for_load(load: Load,
+                               counts: List[int],
+                               available_currents: List[float],
+                               missing_currents: List[float]) -> float:
+    control_parameter = load.data.control_parameter
     available_current = float("inf")
-    missing_current_cp = control_parameter.required_current - chargepoint.data.set.target_current
+    missing_current_cp = control_parameter.required_current - load.data.set.target_current
+
     for i in range(0, 3):
-        if (control_parameter.required_currents[i] != 0 and
-                missing_currents[i] != available_currents[i]):
-            available_current = min(min(missing_current_cp, available_currents[i]/counts[i]), available_current)
+        shared_with = counts[i]
+        if (control_parameter.required_currents[i] != 0 and missing_currents[i] != available_currents[i]):
+            available_current = min(min(missing_current_cp, available_currents[i]/shared_with), available_current)
+
     if available_current == float("inf"):
         available_current = missing_current_cp
     return available_current
 
 
-def update_raw_data(preferenced_chargepoints: List[Chargepoint],
+def update_raw_data(preferenced_loads: List[Load],
                     diff_to_zero: bool = False,
                     surplus: bool = False) -> None:
     """alle CP, die schon einen Soll-Strom haben, wieder herausrechnen, da dieser neu gesetzt wird
         und die neue Differenz bei den Zählern eingetragen wird."""
-    for chargepoint in preferenced_chargepoints:
-        required_currents = chargepoint.data.control_parameter.required_currents
-        max_target_set_current = max(chargepoint.data.set.target_current, chargepoint.data.set.current or 0)
-        max_target_set_current = consider_less_charging_chargepoint_in_loadmanagement(
-            chargepoint, max_target_set_current)
+    for load in preferenced_loads:
+        required_currents = load.data.control_parameter.required_currents
+        max_target_set_current = max(load.data.set.target_current, load.data.set.current or 0)
+        if isinstance(load, Chargepoint):
+            max_target_set_current = consider_less_charging_chargepoint_in_loadmanagement(
+                load, max_target_set_current)
 
         if diff_to_zero is False:
-            if chargepoint.data.control_parameter.min_current < max_target_set_current:
+            if load.data.control_parameter.min_current < max_target_set_current:
                 if surplus:
-                    diffs = [chargepoint.data.set.target_current -
+                    diffs = [load.data.set.target_current -
                              max_target_set_current if required_currents[i] != 0 else 0 for i in range(3)]
                 else:
-                    diffs = [chargepoint.data.control_parameter.min_current -
+                    diffs = [load.data.control_parameter.min_current -
                              max_target_set_current if required_currents[i] != 0 else 0 for i in range(3)]
             else:
                 continue
         else:
-            if chargepoint.data.control_parameter.min_current <= max_target_set_current:
-                diffs = [-chargepoint.data.control_parameter.min_current if required_currents[i]
+            if load.data.control_parameter.min_current <= max_target_set_current:
+                diffs = [-load.data.control_parameter.min_current if required_currents[i]
                          != 0 else 0 for i in range(3)]
             else:
                 continue
-        counters = data.data.counter_all_data.get_counters_to_check(chargepoint.num)
+        counters = data.data.counter_all_data.get_counters_to_check(load.num)
         for counter in counters:
             if surplus:
                 data.data.counter_data[counter].update_surplus_values_left(
                     diffs,
-                    voltages_mean(chargepoint.data.get.voltages))
+                    voltages_mean(load.data.get.voltages))
             else:
-                data.data.counter_data[counter].update_values_left(diffs, voltages_mean(chargepoint.data.get.voltages))
-        data.data.io_actions.dimming_set_import_power_left({"type": "cp", "id": chargepoint.num}, sum(diffs)*230)
+                data.data.counter_data[counter].update_values_left(diffs, voltages_mean(load.data.get.voltages))
+        data.data.io_actions.dimming_set_import_power_left({"type": "cp" if isinstance(
+            load, Chargepoint) else "consumer", "id": load.num}, sum(diffs)*230)
 
 
 def consider_less_charging_chargepoint_in_loadmanagement(cp: Chargepoint, set_current: float) -> bool:
@@ -173,18 +182,18 @@ def consider_less_charging_chargepoint_in_loadmanagement(cp: Chargepoint, set_cu
 # tested
 
 
-def get_missing_currents_left(preferenced_chargepoints: List[Chargepoint]) -> Tuple[List[float], List[int]]:
+def get_missing_currents_left(preferenced_loads: List[Load]) -> Tuple[List[float], List[int]]:
     missing_currents = [0.0]*3
     counts = [0]*3
-    for chargepoint in preferenced_chargepoints:
-        required_currents = chargepoint.data.control_parameter.required_currents
+    for load in preferenced_loads:
+        required_currents = load.data.control_parameter.required_currents
         for i in range(0, 3):
             if required_currents[i] != 0:
                 counts[i] += 1
                 try:
-                    missing_currents[i] += required_currents[i] - chargepoint.data.control_parameter.min_current
+                    missing_currents[i] += required_currents[i] - load.data.control_parameter.min_current
                 except KeyError:
-                    missing_currents[i] += max(required_currents) - chargepoint.data.control_parameter.min_current
+                    missing_currents[i] += max(required_currents) - load.data.control_parameter.min_current
             else:
                 missing_currents[i] += 0
     return missing_currents, counts
@@ -194,8 +203,9 @@ def reset_current_to_target_current():
     """target_current enthält die gesetzte Stromstärke der vorherigen Stufe. Notwendig, um zB bei der
     Mindeststromstärke erkennen zu können, ob diese ein vom LM begrenzter Strom aus Stufe 2 oder der Mindeststrom
     aus Stufe 1 ist."""
-    for cp in data.data.cp_data.values():
+    for load in (list(data.data.cp_data.values()) + list(data.data.consumer_data.values())):
         try:
-            cp.data.set.target_current = cp.data.set.current
+            load.data.set.target_current = load.data.set.current
         except Exception:
-            log.exception(f"Fehler im Algorithmus-Modul für Ladepunkt{cp.num}")
+            log.exception(f"Fehler im Algorithmus-Modul für "
+                          f"{'Ladepunkt' if isinstance(load, Chargepoint) else 'Verbraucher'}{load.num}")

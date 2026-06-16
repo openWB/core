@@ -9,7 +9,7 @@ from helpermodules.utils.error_handling import ImportErrorContext
 with ImportErrorContext():
     from dateutil.relativedelta import relativedelta
 
-from helpermodules.abstract_plans import AutolockPlan, ScheduledChargingPlan, TimeChargingPlan
+from helpermodules.abstract_plans import AutolockPlan, ScheduledChargingPlan, TimeChargingPlan, TimeChargingPlanConsumer
 
 log = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ def is_now_in_locking_time(now: datetime.datetime,
             return False
 
 
-T = TypeVar("T", AutolockPlan, TimeChargingPlan)
+T = TypeVar("T", AutolockPlan, TimeChargingPlan, TimeChargingPlanConsumer)
 
 
 def check_plans_timeframe(plans: List[T]) -> Optional[T]:

@@ -1098,6 +1098,24 @@
 					"allow": true
 				},
 				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/consumer/config/switch_on_delay",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/consumer/config/switch_off_delay",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/consumer/config/switch_off_threshold",
+					"priority": 0,
+					"allow": true
+				},
+				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/access/SurplusChargeConfiguration",
 					"priority": 0,
@@ -1154,6 +1172,24 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/general/chargemode_config/pv_charging/switch_off_delay",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/consumer/config/switch_on_delay",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/consumer/config/switch_off_delay",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/consumer/config/switch_off_threshold",
 					"priority": 0,
 					"allow": true
 				}
@@ -1722,6 +1758,55 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/configurable/chargepoints_internal",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "consumer-configuration-access",
+			"textname": "Zugang zu den Verbrauchereinstellungen",
+			"textdescription": "Erlaubt den Zugang zu den Verbrauchereinstellungen.",
+			"acls": [
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/consumer/+/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/consumer/+/module",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/consumer/+/usage",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/consumer/+/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/consumer/+/module",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/consumer/+/usage",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/configurable/consumers",
 					"priority": 0,
 					"allow": true
 				}
@@ -2826,6 +2911,19 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/chargepoint/get/+",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "consumer-sum-access",
+			"textname": "Leserechte für Verbrauchersummendaten",
+			"textdescription": "Erlaubt das Empfangen von Daten für die Summe aller Verbraucher.",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/consumer/get/+",
 					"priority": 0,
 					"allow": true
 				}
