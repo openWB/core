@@ -415,7 +415,7 @@ const svgComponents = computed((): FlowComponent[] => {
         iconComponent: ChargePointIcon,
         iconColor:
           mqttStore.chargePointColor(connectedChargePoints.value[0]) ||
-          'var(--q-primary)',
+          'var(--q-charge-point-stroke)',
       });
 
       if (chargePoint1VehicleConnected.value) {
@@ -471,7 +471,7 @@ const svgComponents = computed((): FlowComponent[] => {
           iconComponent: ChargePointIcon,
           iconColor:
             mqttStore.chargePointColor(connectedChargePoints.value[1]) ||
-            'var(--q-primary)',
+            'var(--q-charge-point-stroke)',
         });
       }
 
@@ -525,7 +525,7 @@ const svgComponents = computed((): FlowComponent[] => {
           iconComponent: ChargePointIcon,
           iconColor:
             mqttStore.chargePointColor(connectedChargePoints.value[2]) ||
-            'var(--q-primary)',
+            'var(--q-charge-point-stroke)',
         });
       }
 

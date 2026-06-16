@@ -169,7 +169,8 @@ const secondaryCounterDatasets = computed(() =>
 const chargePointDatasets = computed(() =>
   chargePointIds.value.map((cpId) => {
     const baseColor =
-      mqttStore.chargePointColor(cpId) || getGlobalColor('--q-primary');
+      mqttStore.chargePointColor(cpId) ||
+      getGlobalColor('--q-charge-point-stroke');
 
     return {
       label: `${chargePointNames.value(cpId)}`,
