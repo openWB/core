@@ -289,7 +289,7 @@ def test_phase_switch(all_cp_pv_charging_3p, all_cp_charging_3p, monkeypatch):
     assert_counter_set(cases_phase_switch[0])
 
 
-def test_phase_switch_1p_3p(all_cp_pv_charging_1p, monkeypatch):
+def test_phase_switch_1p_3p(all_cp_pv_charging_1p, monkeypatch: pytest.MonkeyPatch):
     # setup
     data.data.counter_data["counter0"].data.get.power = -3000
     data.data.counter_data["counter0"].data.set.raw_power_left = cases_phase_switch[1].raw_power_left
@@ -305,6 +305,9 @@ def test_phase_switch_1p_3p(all_cp_pv_charging_1p, monkeypatch):
     data.data.cp_data["cp5"].data.get.currents = [0, 0, 0]
     for i in range(3, 6):
         data.data.cp_data[f"cp{i}"].data.control_parameter.template_phases = 0
+
+    mock_get_component_name_by_id = Mock(return_value="Garage")
+    monkeypatch.setattr(loadmanagement, "get_component_name_by_id", mock_get_component_name_by_id)
 
     # execution
     Algorithm().calc_current()
