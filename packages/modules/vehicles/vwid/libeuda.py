@@ -23,6 +23,7 @@ import glob
 import os
 import os.path
 from pathlib import Path
+from collections import deque
 from modules.common.store import RAMDISK_PATH
 from modules.common.abstract_vehicle import VehicleUpdateData
 from modules.vehicles.vwid.config import VWId
@@ -629,11 +630,13 @@ def _created_on(entry: dict) -> datetime | None:
         return _filename_timestamp(entry.get("name", ""))
 
 
-def get_field_value_by_key(D: dict, key: str) -> str:
+def get_field_value_by_key(D: dict, key: str, field: str) -> str:
     ret = None
     for f in D:
         if f['key'] == key:
             ret = f['value']
+    if ret:
+        _LOGGER.info(f"get_field_value_by_key: field: {field}, {key} -> {ret}")
     return ret
 
 
@@ -642,6 +645,8 @@ def get_field_timestamp_by_key(D: dict, key: str) -> str:
     for f in D:
         if f['key'] == key:
             ret = f['timestampUtc']
+    if ret:
+        _LOGGER.info(f"get_field_timestamp_by_key {key} -> {ret}")
     return ret
 
 
@@ -650,14 +655,22 @@ CAR_TIMESTAMP = "car_captured_time"
 
 def get_max_value_by_fieldname(D: dict, field: str) -> str:
     ret = "-"
+    key = None
     for f in D:
         if f['dataFieldName'] == field:
             v = f['value']
             if ret == "-":
                 ret = v
+                key = f['key']
             else:
                 if v > ret:
                     ret = v
+                    key = f['key']
+    if ret == "-":
+        _LOGGER.info(f"get_max_value_by_fieldname {field}: no match")
+        ret = None
+    else:
+        _LOGGER.info(f"get_max_value_by_fieldname {field} -> {ret}, key={key}")
     return ret
 
 
@@ -673,7 +686,7 @@ def utc_to_timestamp(d: str) -> float:
 def parse_vehicle_data(payload: dict) -> dict:
     """Extract normalized SoC fields from an EUDA JSON payload."""
     data = payload.get('Data', [])
-    soc = get_field_value_by_key(data, 'ae0294b4-1286-3e98-a818-1485b8d88430')
+    soc = get_field_value_by_key(data, 'ae0294b4-1286-3e98-a818-1485b8d88430', 'soc')
     soc_timestamp_str = None
     if soc is not None:
         _LOGGER.info(f"soc {soc} found in state_of_charge")
@@ -683,20 +696,23 @@ def parse_vehicle_data(payload: dict) -> dict:
         soc_timestamp_str = get_max_value_by_fieldname(data, CAR_TIMESTAMP)
 
     if soc is None:
-        soc = get_field_value_by_key(data, 'f89ed652-d104-3fa6-b7e2-ab7543309e7b')
+        soc = get_field_value_by_key(data, 'f89ed652-d104-3fa6-b7e2-ab7543309e7b', 'soc')
     if soc is None:
-        soc = get_field_value_by_key(data, '506cb83e-f99f-3af3-bbeb-0429b69a78d9')
+        soc = get_field_value_by_key(data, '506cb83e-f99f-3af3-bbeb-0429b69a78d9', 'soc')
     if soc is None:
-        soc = get_field_value_by_key(data, 'ac1108b1-b8cc-3db9-a663-03d387e42223')
-    range = get_field_value_by_key(data, '153e8c40-4c6c-3c17-a11b-0ecc35d55b81')
+        soc = get_field_value_by_key(data, 'ac1108b1-b8cc-3db9-a663-03d387e42223', 'soc')
+    range = get_field_value_by_key(data, '153e8c40-4c6c-3c17-a11b-0ecc35d55b81', 'range')
     if range is None:
-        range = get_field_value_by_key(data, '0ca40e18-0564-3eda-bcc0-7aee9ef44f04')
-    odometer = get_field_value_by_key(data, '41c0805c-43e5-313e-9dfb-356cb8d20f7c')
+        range = get_field_value_by_key(data, '0ca40e18-0564-3eda-bcc0-7aee9ef44f04', 'range')
+    odometer = get_field_value_by_key(data, '41c0805c-43e5-313e-9dfb-356cb8d20f7c', 'odometer')
     if odometer is None:
-        odometer = get_field_value_by_key(data, '30cc36fd-71ca-3c09-9296-e94ebd47bd2b')
-    soc_timestamp = utc_to_timestamp(soc_timestamp_str)
-    if soc_timestamp > 1e10:
-        soc_timestamp = soc_timestamp / 1000
+        odometer = get_field_value_by_key(data, '30cc36fd-71ca-3c09-9296-e94ebd47bd2b', 'odometer')
+    if soc_timestamp_str:
+        soc_timestamp = utc_to_timestamp(soc_timestamp_str)
+        if soc_timestamp > 1e10:
+            soc_timestamp = soc_timestamp / 1000
+    else:
+        _LOGGER.warning("soc_timestamp not found!")
 
     return {
         'soc': soc,
@@ -713,6 +729,8 @@ class euda():
     client = {}
     thread = {}
     result = {}
+    files = {}
+    tests_done = False
 
     def __init__(self):
         # make sure required folders are there
@@ -732,12 +750,18 @@ class euda():
 
     def save_json_file(self, _name: str, vin: str, _data: dict) -> bool:
         status = False
+        if vin not in euda.files:
+            euda.files[vin] = deque(maxlen=KEEP_JSON)
+        if _name not in euda.files[vin]:
+            euda.files[vin].append(_name)
+            status = True
+
         fname = str(JSON_PATH) + '/' + _name
         if not os.path.isfile(fname):
             with open(fname, 'w') as f:
                 _LOGGER.debug(f"save json file {fname.replace(vin, ano_vin(vin))}")
                 json.dump(_data, f, indent=4)
-            status = True
+            # status = True
         else:
             _LOGGER.debug(f"file {fname.replace(vin, ano_vin(vin))} not saved because is exists already")
 
@@ -828,6 +852,14 @@ class euda():
 
                 # thread main loop
                 while True:
+                    topic = f"openWB/vehicle/{vehicle}/soc_module/config"
+                    conf = os.popen(f"mosquitto_sub -C 1 -t {topic}").read()
+                    _LOGGER.debug(f"thread loop: conf={conf}")
+                    _type = json.loads(conf)['type']
+                    _LOGGER.info(f"thread loop: _type={_type}")
+                    if _type != 'vwid':
+                        _LOGGER.info(f"vehicle {vehicle} is not using module vwid: terminate now")
+                        return
                     try:
                         _data = None
                         while _data is None:
@@ -887,7 +919,9 @@ class euda():
         # SOCERR-01: login problem, username, password wrong, account locked, etc.
         # SOCERR-02: vehicle not (yet) found in portal, VIN wrong?
 
-        self.check_tests()
+        if not euda.tests_done:
+            self.check_tests()
+            euda.tests_done = True
 
         self.username = conf.configuration.user_id
         self.password = conf.configuration.password
@@ -1022,7 +1056,7 @@ class euda():
 # sync function
 def fetch_soc(conf: VWId,
               vehicle: int,
-              vehicle_update_data: VehicleUpdateData) -> Union[int, float, int, str, float]:
+              vehicle_update_data: VehicleUpdateData) -> Union[float, float, float, str, float]:
 
     # prepare and call async method
     loop = new_event_loop()
