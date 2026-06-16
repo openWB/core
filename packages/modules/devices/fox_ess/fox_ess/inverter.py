@@ -7,7 +7,7 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
-from modules.common.store import get_inverter_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.fox_ess.fox_ess.config import FoxEssInverterSetup
 from modules.common.component_type import ComponentType
 
@@ -23,7 +23,7 @@ class FoxEssInverter(AbstractInverter):
 
     def initialize(self) -> None:
         self.client: ModbusTcpClient_ = self.kwargs['client']
-        self.store = get_inverter_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 

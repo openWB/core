@@ -14,9 +14,9 @@ from modules.devices.generic.json.device import create_device
 def mock_value_store(monkeypatch):
     mock_value_store = Mock()
     mock_value_store_factory = Mock(return_value=mock_value_store)
-    monkeypatch.setattr(bat, "get_bat_value_store", mock_value_store_factory)
-    monkeypatch.setattr(counter, "get_counter_value_store", mock_value_store_factory)
-    monkeypatch.setattr(inverter, "get_inverter_value_store", mock_value_store_factory)
+    monkeypatch.setattr(bat, "get_component_value_store", mock_value_store_factory)
+    monkeypatch.setattr(counter, "get_component_value_store", mock_value_store_factory)
+    monkeypatch.setattr(inverter, "get_component_value_store", mock_value_store_factory)
     return mock_value_store
 
 
