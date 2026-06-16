@@ -147,6 +147,7 @@ try:
                 71: lambda value: Pub().pub(f"{cp_topic}set_current", value / 100),
                 80: lambda value: Pub().pub(f"{cp_topic}phases_to_use", value),
                 81: lambda value: Pub().pub(f"{cp_topic}trigger_phase_switch", value),
+                97: lambda value: Pub().pub("openWB/set/internal_chargepoint/last_tag", None) if value == 1 else log.warning(f"Ungültiger Wert für last_tag: {value}"),
                 98: lambda value: Pub().pub(f"{cp_topic}cp_interruption_duration", value),
                 99: lambda _: Pub().pub("openWB/set/command/modbus_server/todo",
                                         {"command": "systemUpdate", "data": {}})
