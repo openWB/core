@@ -106,3 +106,23 @@ class TimeChargingPlan(TimeframePlan):
 class AutolockPlan(TimeframePlan):
     id: Optional[int] = None
     name: str = "neuer Plan für Sperren nach Uhrzeit"
+
+
+@dataclass
+class TimeChargingPlanConsumer(TimeframePlan):
+    id: Optional[int] = None
+    min_bat_soc: Optional[int] = None
+    name: str = "neuer Verbraucher-Plan"
+
+
+@dataclass
+class SuspendableScheduledPlanConsumer(TimeframePlan):
+    id: Optional[int] = None
+    name: str = "neuer Verbraucher-Plan"
+    duration: int = 60
+
+
+@dataclass
+class ContinuousScheduledPlanConsumer(TimeframePlan):
+    id: Optional[int] = None
+    name: str = "neuer Verbraucher-Plan"

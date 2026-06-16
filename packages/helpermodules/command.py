@@ -17,8 +17,12 @@ from control.chargelog.process_chargelog import get_log_data
 from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
 
+from control.consumer.consumer_data import GET_DEFAULTS_BY_USAGE, Set, get_plan_class_for_usage
+from control.consumer.usage import ConsumerUsage
+from control.counter_all import counter_all
 from control.ev.charge_template import ChargeTemplate, get_new_charge_template
 from control.ev.ev_template import EvTemplateData
+from control.consumer.consumer_data import ConsumerConfig
 from helpermodules import pub
 from helpermodules.abstract_plans import AutolockPlan, ScheduledChargingPlan, TimeChargingPlan
 from helpermodules.utils.run_command import run_command
@@ -39,7 +43,7 @@ from helpermodules.create_debug import create_debug_log
 from helpermodules.pub import Pub, pub_single
 from helpermodules.subdata import SubData
 from helpermodules.utils.topic_parser import decode_payload, get_index
-from control import bat, bridge, counter, counter_all, data, pv
+from control import bat, bridge, counter, pv
 from control.ev import ev
 from modules.chargepoints.internal_openwb.chargepoint_module import ChargepointModule
 from modules.chargepoints.internal_openwb.config import InternalChargepointMode
@@ -59,7 +63,8 @@ class Command:
         "nested payload":
         [("autolock_plan", "openWB/chargepoint/template/[0-9]+$", -1),
          ("charge_template_scheduled_plan", "openWB/vehicle/template/charge_template/[0-9]+$", -1),
-         ("charge_template_time_charging_plan", "openWB/vehicle/template/charge_template/[0-9]+$", -1)],
+         ("charge_template_time_charging_plan", "openWB/vehicle/template/charge_template/[0-9]+$", -1),
+         ("usage_plan", "openWB/consumer/[0-9]+/usage$", -1)],
         "topic":
         [("mqtt_bridge", "openWB/system/mqtt/bridge", -1),
          ("vehicle", "openWB/vehicle/[0-9]+/name$", 0)],
@@ -86,7 +91,8 @@ class Command:
             "autolock_plan": lambda p: p.get("autolock", {}).get("plans", []),
             "charge_template_scheduled_plan": lambda p: p.get("chargemode", {}).get("scheduled_charging",
                                                                                     {}).get("plans", []),
-            "charge_template_time_charging_plan": lambda p: p.get("time_charging", {}).get("plans", [])
+            "charge_template_time_charging_plan": lambda p: p.get("time_charging", {}).get("plans", []),
+            "usage_plan": lambda p: p.get("plans", [])
         }
         try:
             received_topics = ProcessBrokerBranch("").get_max_id()
@@ -96,7 +102,7 @@ class Command:
                     for topic, payload in received_topics.items():
                         try:
                             if max_id_type == "nested payload":
-                                if re.search(topic_str, topic) is not None:
+                                if re.search(topic_str, topic) is not None and payload is not None:
                                     extractor = plan_extractors.get(id_topic)
                                     for plan in extractor(payload):
                                         try:
@@ -198,24 +204,6 @@ class Command:
                 payload, connection_id,
                 f'Die ID \'{payload["data"]["id"]}\' ist größer als die maximal vergebene ID \'{self.max_id_device}\'.',
                 MessageType.ERROR)
-
-    def addIoAction(self, connection_id: str, payload: dict) -> None:
-        new_id = self.max_id_io_action + 1
-        dev = importlib.import_module(f".io_actions.{'.'.join(payload['data']['type'])}.api",
-                                      "modules")
-        descriptor = dev.device_descriptor.configuration_factory()
-        device_default = dataclass_utils.asdict(descriptor)
-        device_default["id"] = new_id
-        Pub().pub(f'openWB/set/io/action/{new_id}/config', device_default)
-        self.max_id_io_action = new_id
-        Pub().pub("openWB/set/command/max_id/io_action", self.max_id_io_action)
-        # add ACL roles for IO action access, if user management is active
-        if SubData.system_data["system"].data["security"]["user_management_active"]:
-            add_acl_role("io-action-<id>-access", new_id)
-        pub_user_message(
-            payload, connection_id,
-            f'Neue IO-Aktion vom Typ \'{" / ".join(payload["data"]["type"])}\' mit ID \'{new_id}\' hinzugefügt.',
-            MessageType.SUCCESS)
 
     def removeIoAction(self, connection_id: str, payload: dict) -> None:
         if self.max_id_io_action >= payload["data"]["id"]:
@@ -774,9 +762,9 @@ class Command:
         # add ACL roles for vehicle access, if user management is active
         if SubData.system_data["system"].data["security"]["user_management_active"]:
             add_acl_role("vehicle-<id>-access", new_id)
-        data.data.counter_all_data.add_loadmanagement_prio_item("vehicle", new_id)
+        SubData.counter_all_data.add_loadmanagement_prio_item(ComponentType.VEHICLE, new_id)
         Pub().pub("openWB/set/counter/get/loadmanagement_prios",
-                  data.data.counter_all_data.data.get.loadmanagement_prios)
+                  SubData.counter_all_data.data.get.loadmanagement_prios)
         pub_user_message(payload, connection_id, f'Neues EV mit ID \'{new_id}\' hinzugefügt.', MessageType.SUCCESS)
 
     def removeVehicle(self, connection_id: str, payload: dict) -> None:
@@ -792,9 +780,9 @@ class Command:
             if SubData.system_data["system"].data["security"]["user_management_active"]:
                 remove_acl_role("vehicle-<id>-access", payload["data"]["id"])
                 remove_acl_role("vehicle-<id>-write-access", payload["data"]["id"])
-            data.data.counter_all_data.remove_loadmanagement_prio_item(payload["data"]["id"])
+            SubData.counter_all_data.remove_loadmanagement_prio_item(payload["data"]["id"])
             Pub().pub("openWB/set/counter/get/loadmanagement_prios",
-                      data.data.counter_all_data.data.get.loadmanagement_prios)
+                      SubData.counter_all_data.data.get.loadmanagement_prios)
             pub_user_message(
                 payload, connection_id,
                 f'EV mit ID \'{payload["data"]["id"]}\' gelöscht.', MessageType.SUCCESS)
@@ -1152,6 +1140,110 @@ class Command:
                 payload, connection_id,
                 "Der Token ist ungültig oder abgelaufen.",
                 MessageType.ERROR)
+
+    def addConsumer(self, connection_id: str, payload: dict) -> None:
+        """ sendet das Topic, zu dem ein neues Device erstellt werden soll.
+        """
+        new_id = self.max_id_hierarchy + 1
+        dev = importlib.import_module(f'.consumers.{payload["data"]["vendor"]}'
+                                      f'.{payload["data"]["type"]}.consumer',
+                                      "modules")
+        consumer_default = dataclass_utils.asdict(dev.device_descriptor.configuration_factory())
+        consumer_default["id"] = new_id
+        Pub().pub(f'openWB/set/consumer/{new_id}/module', consumer_default)
+        Pub().pub(f"openWB/set/consumer/{new_id}/config", dataclass_utils.asdict(ConsumerConfig()))
+        Pub().pub(f"openWB/set/consumer/{new_id}/extra_meter", None)
+        Pub().pub(f"openWB/set/consumer/{new_id}/set", dataclass_utils.asdict(Set()))
+        Pub().pub(f"openWB/set/consumer/{new_id}/usage", None)
+        self.max_id_hierarchy = new_id
+        Pub().pub("openWB/set/command/max_id/hierarchy", new_id)
+        try:
+            evu_counter = SubData.counter_all_data.get_id_evu_counter()
+            SubData.counter_all_data.hierarchy_add_item_below(
+                new_id, ComponentType.CONSUMER, evu_counter)
+            Pub().pub("openWB/set/counter/get/hierarchy", SubData.counter_all_data.data.get.hierarchy)
+        except (TypeError, IndexError):
+            pub_user_message(payload, connection_id,
+                             "Bitte zuerst einen EVU-Zähler konfigurieren oder in den Steuerungsmodus 'secondary' "
+                             "umschalten.",
+                             MessageType.ERROR)
+        try:
+            SubData.counter_all_data.add_loadmanagement_prio_item(ComponentType.CONSUMER, new_id)
+            Pub().pub("openWB/set/counter/get/loadmanagement_prios",
+                      SubData.counter_all_data.data.get.loadmanagement_prios)
+        except (TypeError, IndexError) as e:
+            pub_user_message(payload, connection_id,
+                             str(e),
+                             MessageType.ERROR)
+        pub_user_message(
+            payload, connection_id,
+            f'Neues Gerät vom Typ \'{payload["data"]["type"]}\' mit ID \'{new_id}\' hinzugefügt.',
+            MessageType.SUCCESS)
+
+    def removeConsumer(self, connection_id: str, payload: dict) -> None:
+        """ löscht ein Ladepunkt.
+        """
+        if self.max_id_hierarchy < payload["data"]["consumer_id"]:
+            pub_user_message(
+                payload, connection_id,
+                f'Die ID \'{payload["data"]["consumer_id"]}\' ist größer als die maximal vergebene '
+                f'ID \'{self.max_id_hierarchy}\'.', MessageType.ERROR)
+        ProcessBrokerBranch(f'consumer/{payload["data"]["consumer_id"]}/').remove_topics()
+        SubData.counter_all_data.hierarchy_remove_item(payload["data"]["consumer_id"])
+        Pub().pub("openWB/set/counter/get/hierarchy", SubData.counter_all_data.data.get.hierarchy)
+        SubData.counter_all_data.remove_loadmanagement_prio_item(payload["data"]["consumer_id"])
+        Pub().pub("openWB/set/counter/get/loadmanagement_prios", SubData.counter_all_data.data.get.loadmanagement_prios)
+        pub_user_message(payload, connection_id,
+                         f'Ladepunkt mit ID \'{payload["data"]["consumer_id"]}\' gelöscht.', MessageType.SUCCESS)
+
+    def selectUsage(self, connection_id: str, payload: dict) -> None:
+        """ weist einem Verbraucher eine Nutzung zu.
+        """
+        usage = ConsumerUsage(payload["data"]["usage"])
+        usage_config = GET_DEFAULTS_BY_USAGE[usage]
+        Pub().pub(f'openWB/set/consumer/{payload["data"]["consumer_id"]}/usage', dataclass_utils.asdict(usage_config))
+        pub_user_message(
+            payload, connection_id,
+            f'Dem Verbraucher mit ID \'{payload["data"]["consumer_id"]}\' wurde die Nutzung '
+            f'\'{payload["data"]["usage"]}\' zugewiesen.',
+            MessageType.SUCCESS)
+
+    def addUsagePlan(self, connection_id: str, payload: dict) -> None:
+        """ sendet das Topic, zu dem ein neuer Zielladen-Plan erstellt werden soll.
+        """
+        usage = SubData.consumer_data[f'consumer{payload["data"]["consumer_id"]}'].data.usage
+        plan = get_plan_class_for_usage(usage.type)()
+        new_id = self.max_id_usage_plan + 1
+        plan.id = new_id
+        usage.plans.append(plan)
+        Pub().pub(f'openWB/set/consumer/{payload["data"]["consumer_id"]}/usage', dataclass_utils.asdict(usage))
+        self.max_id_usage_plan = new_id
+        Pub().pub("openWB/set/command/max_id/usage_plan", new_id)
+        pub_user_message(
+            payload, connection_id,
+            f'Neuer Zielladen-Plan mit ID \'{new_id}\' zu Profil '
+            f'\'{payload["data"]["template"]}\' hinzugefügt.',
+            MessageType.SUCCESS)
+
+    def removeUsagePlan(self, connection_id: str, payload: dict) -> None:
+        """ löscht einen Zielladen-Plan.
+        """
+        if self.max_id_usage_plan < payload["data"]["plan"]:
+            log.error(
+                payload, connection_id,
+                f'Die ID \'{payload["data"]["plan"]}\' ist größer als die maximal vergebene '
+                f'ID \'{self.max_id_usage_plan}\'.', MessageType.ERROR)
+        usage = SubData.consumer_data[f'consumer{payload["data"]["consumer_id"]}'].data.usage
+        for plan in usage.plans:
+            if plan.id == payload["data"]["plan"]:
+                usage.plans.remove(plan)
+                break
+        Pub().pub(f'openWB/set/consumer/{payload["data"]["consumer_id"]}/usage', dataclass_utils.asdict(usage))
+        pub_user_message(
+            payload, connection_id,
+            f'Zielladen-Plan mit ID \'{payload["data"]["plan"]}\' von Profil '
+            f'{payload["data"]["template"]}\' gelöscht.',
+            MessageType.SUCCESS)
 
 
 class ErrorHandlingContext:

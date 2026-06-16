@@ -6,16 +6,20 @@ class ComponentType(Enum):
     BACKUP_CLOUD = "backup_cloud"
     BAT = "bat"
     CHARGEPOINT = "cp"
+    CONSUMER = "consumer"
     COUNTER = "counter"
     FLEXIBLE_TARIFF = "dynamic_tariff"
     GRID_FEE = "grid_tariff"
     INVERTER = "inverter"
     IO = "io"
+    VEHICLE = "vehicle"
 
 
 def special_to_general_type_mapping(component_type: str) -> ComponentType:
     if "bat" in component_type:
         return ComponentType.BAT
+    elif "consumer" in component_type:
+        return ComponentType.CONSUMER
     elif "counter" in component_type:
         return ComponentType.COUNTER
     elif "inverter" in component_type:
@@ -29,6 +33,8 @@ def special_to_general_type_mapping(component_type: str) -> ComponentType:
 def type_to_topic_mapping(component_type: str) -> str:
     if "bat" in component_type:
         return "bat"
+    elif "consumer" in component_type:
+        return "consumer"
     elif "counter" in component_type:
         return "counter"
     elif "inverter" in component_type:

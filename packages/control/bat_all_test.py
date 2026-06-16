@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List, Optional
 from unittest.mock import MagicMock, Mock
 import pytest
@@ -162,7 +162,6 @@ class BatControlParams:
     power_limit_mode: str = BatPowerLimitMode.MODE_NO_DISCHARGE.value
     power_limit_condition: str = BatPowerLimitCondition.VEHICLE_CHARGING.value
     bat_manual_mode: str = ManualMode.MANUAL_DISABLE.value
-    cps: List[Chargepoint] = field(default_factory=default_chargepoint_factory)
     power_limit_controllable: bool = True
     bat_power: float = -10
     bat_soc: float = 50.0
@@ -204,8 +203,6 @@ cases = [
                      power_limit_condition=BatPowerLimitCondition.MANUAL.value,
                      bat_manual_mode=ManualMode.MANUAL_CHARGE.value),
     # Wenn Fahrzeuge Laden
-    BatControlParams("Fahrzeuge laden, Begrenzung immer, keine LP im Sofortladen", None, cps=[],
-                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
     BatControlParams("Fahrzeuge laden, Begrenzung immer, Speicher lädt", None, bat_power=100,
                      power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
     BatControlParams("Fahrzeuge laden, Begrenzung immer,Einspeisung", None, evu_power=-110,
@@ -246,9 +243,6 @@ def test_active_bat_control(params: BatControlParams, data_, monkeypatch):
     data.data.counter_data["counter0"].data.get.power = params.evu_power
     data.data.bat_all_data = b_all
 
-    get_chargepoints_with_required_current_by_chargemode_mock = Mock(return_value=params.cps)
-    monkeypatch.setattr(bat_all, "get_chargepoints_with_required_current_by_chargemode",
-                        get_chargepoints_with_required_current_by_chargemode_mock)
     get_evu_counter_mock = Mock(return_value=data.data.counter_data["counter0"])
     monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", get_evu_counter_mock)
     get_bat_components_by_controllability_mock = Mock(return_value=([MqttBat(MqttBatSetup(id=2), device_id=0)], []))
@@ -328,9 +322,6 @@ def test_control_price_limit(params: BatControlParams, data_, monkeypatch):
     data.data.counter_data["counter0"].data.get.power = params.evu_power
     data.data.bat_all_data = b_all
 
-    get_chargepoints_with_required_current_by_chargemode_mock = Mock(return_value=params.cps)
-    monkeypatch.setattr(bat_all, "get_chargepoints_with_required_current_by_chargemode",
-                        get_chargepoints_with_required_current_by_chargemode_mock)
     get_evu_counter_mock = Mock(return_value=data.data.counter_data["counter0"])
     monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", get_evu_counter_mock)
     get_bat_components_by_controllability_mock = Mock(return_value=([MqttBat(MqttBatSetup(id=2), device_id=0)], []))
