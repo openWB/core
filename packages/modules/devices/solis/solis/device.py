@@ -58,4 +58,7 @@ def create_device(device_config: Solis):
     )
 
 
-device_descriptor = DeviceDescriptor(configuration_factory=Solis)
+device_descriptor = DeviceDescriptor(
+    configuration_factory=Solis,
+    compatibility_device_note="Benötigt einen Solis Datalogger, der auch Modbus TCP-fähig ist.\nWelcher Datalogger für einen speziellen Wechselrichtertyp benötigt wird, kann der Solis Support beantworten."
+)

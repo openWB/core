@@ -57,4 +57,6 @@ def create_device(device_config: Sigenergy):
     )
 
 
-device_descriptor = DeviceDescriptor(configuration_factory=Sigenergy)
+device_descriptor = DeviceDescriptor(configuration_factory=Sigenergy,
+                                     compatibility_bat_active=True,
+                                     compatibility_bat_note="Kann Entladung nur komplett sperren.")
