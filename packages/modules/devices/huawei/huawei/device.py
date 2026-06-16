@@ -85,5 +85,6 @@ def create_device(device_config: Huawei):
 
 device_descriptor = DeviceDescriptor(
     configuration_factory=Huawei,
-    compatibility_device_note="Die Auslesung über den Huawei SDongle hängt von der verwendeten Dongle-Version und Firmware ab.\nIm Falle von Inkompatibilität kann eine Auslesung über unseren Netzwerk Modbus Adapter v2 erfolgen."
+    compatibility_device_note="Die Auslesung über den Huawei SDongle hängt von der verwendeten Dongle-Version und "
+    "Firmware ab.\nIm Falle von Inkompatibilität kann eine Auslesung über unseren Netzwerk Modbus Adapter v2 erfolgen."
 )

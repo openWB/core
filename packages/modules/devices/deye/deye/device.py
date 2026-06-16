@@ -90,5 +90,6 @@ def main(argv: List[str]):
 
 device_descriptor = DeviceDescriptor(
     configuration_factory=Deye,
-    compatibility_device_note="Einige Versionen des LSE3 Dongles sind kompatibel. Die Auslesung über den LSW3 ist nicht möglich!\nBei Inkompatibilität kann unser Netzwerk Modbus Adapter v2 eingesetzt werden."
+    compatibility_device_note="Einige Versionen des LSE3 Dongles sind kompatibel. Die Auslesung über den LSW3 ist "
+    "nicht möglich!\nBei Inkompatibilität kann unser Netzwerk Modbus Adapter v2 eingesetzt werden."
 )
