@@ -370,6 +370,7 @@ const componentData = computed((): DailyTotalsItem[] => {
       power: mqttStore.homePower('textValue') as string,
       powerValue: mqttStore.homePower('value') as number,
       today: { imported: mqttStore.homeDailyYield('textValue') as string },
+      color: 'var(--q-home-stroke)',
     });
   }
 

@@ -181,7 +181,6 @@ const iconMap = {
 .base-icon {
   width: 1.75rem;
   height: 1.75rem;
-  color: var(--q-diagram-icon);
 }
 .col-title {
   flex: 0 0 5.5rem;

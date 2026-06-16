@@ -352,7 +352,7 @@ const svgComponents = computed((): FlowComponent[] => {
       label: ['Haus', absoluteValueObject(homePower.value).textValue],
       powerValue: Number(homePower.value.value),
       iconComponent: HouseIcon,
-      iconColor: 'var(--q-diagram-icon)',
+      iconColor: 'var(--q-home-stroke)',
     });
   }
 
@@ -442,8 +442,8 @@ const svgComponents = computed((): FlowComponent[] => {
           iconComponent: VehicleIcon,
           iconColor: chargePoint1ConnectedVehicle.value?.id
             ? mqttStore.vehicleColor(chargePoint1ConnectedVehicle.value?.id) ||
-              'var(--q-diagram-icon)'
-            : 'var(--q-diagram-icon)',
+              'var(--q-vehicle-stroke)'
+            : 'var(--q-vehicle-stroke)',
           powerValue: Number(chargePoint1Power.value.value),
         });
       }
@@ -499,8 +499,8 @@ const svgComponents = computed((): FlowComponent[] => {
           iconComponent: VehicleIcon,
           iconColor: chargePoint2ConnectedVehicle.value?.id
             ? mqttStore.vehicleColor(chargePoint2ConnectedVehicle.value?.id) ||
-              'var(--q-diagram-icon)'
-            : 'var(--q-diagram-icon)',
+              'var(--q-vehicle-stroke)'
+            : 'var(--q-vehicle-stroke)',
           powerValue: Number(chargePoint2Power.value.value),
         });
       }
@@ -553,8 +553,8 @@ const svgComponents = computed((): FlowComponent[] => {
           iconComponent: VehicleIcon,
           iconColor: chargePoint3ConnectedVehicle.value?.id
             ? mqttStore.vehicleColor(chargePoint3ConnectedVehicle.value?.id) ||
-              'var(--q-diagram-icon)'
-            : 'var(--q-diagram-icon)',
+              'var(--q-vehicle-stroke)'
+            : 'var(--q-vehicle-stroke)',
           powerValue: Number(chargePoint3Power.value.value),
         });
       }
@@ -576,7 +576,7 @@ const svgComponents = computed((): FlowComponent[] => {
         ],
         powerValue: Number(chargePointSumPower.value.value),
         iconComponent: ChargePointIcon,
-        iconColor: 'var(--q-diagram-icon)',
+        iconColor: 'var(--q-charge-point-stroke)',
       });
     }
   }
@@ -1040,7 +1040,7 @@ text .fill-danger {
 }
 
 .vehicle {
-  --soc-color: var(--q-vehicle-stroke);
+  --soc-color: var(--q-vehicle-fill);
 }
 
 use {
