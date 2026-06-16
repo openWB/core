@@ -9,6 +9,9 @@ from control.chargelog import chargelog
 from control.chargepoint import chargepoint
 from control import data
 from control.chargepoint.chargepoint_state import ChargepointState
+from control.consumer.consumer import Consumer
+from control.consumer.usage import ConsumerUsage
+from helpermodules.phase_handling import voltages_mean
 from helpermodules.pub import Pub
 from helpermodules.utils._thread_handler import joined_thread_handler
 from modules.common.abstract_io import AbstractIoDevice
@@ -41,7 +44,7 @@ class Process:
                         if control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED and cp.data.set.current != 0:
                             control_parameter.state = ChargepointState.WAIT_FOR_USING_PHASES
                         cp.set_timestamp_charge_start()
-                        self._update_state(cp)
+                        self._update_state_cp(cp)
                     else:
                         control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
                         cp.data.set.current = 0
@@ -70,6 +73,23 @@ class Process:
                             args=(bat_component,
                                   data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set.power_limit),
                             name=f"set power limit {bat_component.component_config.id}"))
+            for consumer in data.data.consumer_data.values():
+                try:
+                    control_parameter = consumer.data.control_parameter
+                    if (control_parameter.state != ChargepointState.NO_CHARGING_ALLOWED or
+                            consumer.data.set.current != 0):
+                        control_parameter.state = ChargepointState.CHARGING_ALLOWED
+                    else:
+                        control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
+                    self._update_state_consumer(consumer)
+                    if consumer.data.get.state_str is None:
+                        if consumer.data.get.charge_state:
+                            consumer.data.get.state_str = "Verbraucher läuft."
+                        else:
+                            consumer.data.get.state_str = "Verbraucher wird gestartet... "
+                    modules_threads.append(self._start_consumer(consumer))
+                except Exception:
+                    log.exception("Fehler im Process-Modul für Verbaucher "+str(consumer))
             for action in data.data.io_actions.actions.values():
                 if isinstance(action, DimmingDirectControl):
                     for d in action.config.configuration.devices:
@@ -107,7 +127,7 @@ class Process:
         except Exception:
             log.exception("Fehler im Process-Modul")
 
-    def _update_state(self, chargepoint: chargepoint.Chargepoint) -> None:
+    def _update_state_cp(self, chargepoint: chargepoint.Chargepoint) -> None:
         """aktualisiert den Zustand des Ladepunkts.
         """
         charging_ev = chargepoint.data.set.charging_ev_data
@@ -147,3 +167,20 @@ class Process:
         return Thread(target=chargepoint.chargepoint_module.set_current,
                       args=(chargepoint.data.set.current,),
                       name=f"set current cp{chargepoint.chargepoint_module.config.id}")
+
+    def _update_state_consumer(self, consumer: Consumer) -> None:
+        consumer.data.set.current = round(consumer.data.set.current, 2)
+        consumer.data.set.power = consumer.data.set.current * \
+            voltages_mean(consumer.data.get.voltages) * consumer.data.config.connected_phases
+        log.info(f"Verbraucher{consumer.num}: set current {consumer.data.set.current} A, "
+                 f"state {ChargepointState(consumer.data.control_parameter.state).name}")
+
+    def _start_consumer(self, consumer: Consumer) -> Thread:
+        if consumer.data.usage.type in (ConsumerUsage.CONTINUOUS,
+                                        ConsumerUsage.SUSPENDABLE_ONOFF):
+            return Thread(
+                target=consumer.module.switch_on if consumer.data.set.current > 0 else consumer.module.switch_off,
+                name=f"set current consumer{consumer.num}")
+        return Thread(target=consumer.module.set_power_limit,
+                      args=(consumer.data.set.power,),
+                      name=f"set current consumer{consumer.num}")

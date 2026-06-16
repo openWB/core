@@ -1,117 +1,100 @@
 # tested
 import logging
-from typing import List, Optional, Tuple, Union
+import re
+from typing import List, Optional, Tuple
 
 from control import data
+from control.chargemode import Chargemode
 from control.chargepoint.chargepoint import Chargepoint
+from control.load_protocol import Load
 
 log = logging.getLogger(__name__)
 
 
-def get_chargepoints_by_mode_and_counter(mode_tuple: Tuple[Optional[str], str, bool],
-                                         counter: str) -> List[Chargepoint]:
-    cps_to_counter = data.data.counter_all_data.get_chargepoints_of_counter(counter)
-    cps_to_counter_ids = [int(cp[2:]) for cp in cps_to_counter]
-    cps_by_mode = get_chargepoints_with_required_current_by_chargemode(mode_tuple)
-    return list(filter(lambda cp: cp.num in cps_to_counter_ids, cps_by_mode))
+def get_grouped_loads_by_mode_and_counter(chargemodes: Tuple[Tuple[Optional[str], str]],
+                                          counter: str) -> List[List[Load]]:
+    loads_to_counter = data.data.counter_all_data.get_loads_of_counter(counter)
+    # nur die Zahl aus dem String "cp1" und "consumer2" extrahieren
+    loads_to_counter_ids = [int(re.search(r'\d+', load).group()) for load in loads_to_counter]
 
-# tested
+    def _is_valid_for_chargemode(entity: Load,
+                                 chargemode: Tuple[Optional[str], str],
+                                 valid: List[Load]) -> bool:
+        """Helper function to validate entity against chargemode conditions."""
+        return (entity.data.control_parameter.required_current != 0 and
+                (entity.data.control_parameter.chargemode == chargemode[0] or chargemode[0] is None) and
+                entity.data.control_parameter.submode == chargemode[1] and
+                entity not in valid and
+                entity.num in loads_to_counter_ids)
 
-
-def get_chargepoints_by_chargemode(
-        modes: Union[Tuple[Optional[str], str, bool],
-                     Tuple[Tuple[Optional[str], str, bool]]]) -> List[Chargepoint]:
-    modes = modes if isinstance(modes[0], Tuple) else (modes,)
-    valid_chargepoints: List[Chargepoint] = []
-
-    for mode_tuple in modes:
-        mode = mode_tuple[0]
-        submode = mode_tuple[1]
-        prio = mode_tuple[2]
-
-        for cp in data.data.cp_data.values():
-            if ((cp.data.control_parameter.prio == prio) and
-                (cp.data.control_parameter.chargemode == mode or mode is None) and
-                (cp.data.control_parameter.submode == submode) and
-                    cp not in valid_chargepoints):
-                valid_chargepoints.append(cp)
-    return valid_chargepoints
+    return _group_loads_by_chargemode(chargemodes, _is_valid_for_chargemode)[1]
 
 
-def get_chargepoints_with_required_current_by_chargemode(
-        modes: Union[Tuple[Optional[str], str, bool],
-                     Tuple[Tuple[Optional[str], str, bool]]]) -> List[Chargepoint]:
-    cps_by_mode = get_chargepoints_by_chargemode(modes)
-    return list(filter(lambda cp: cp.data.control_parameter.required_current != 0, cps_by_mode))
+def _group_loads_by_chargemode(chargemodes: Tuple[Tuple[Optional[str], str]],
+                               filter_func) -> Tuple[List[Load], List[List[Load]]]:
+    grouped_loads: List[List[Load]] = []
+    flat_loads: List[Load] = []
+    for chargemode in chargemodes:
+        for item in data.data.counter_all_data.data.get.loadmanagement_prios:
+            if item["type"] == "group":
+                sub_valid_chargemode: List[Load] = []
+                for group_item in item["children"]:
+                    if group_item["type"] == "vehicle":
+                        for cp in data.data.cp_data.values():
+                            if group_item["id"] == cp.data.config.ev:
+                                if filter_func(cp, chargemode, flat_loads):
+                                    sub_valid_chargemode.append(cp)
+                                    flat_loads.append(cp)
+                    elif group_item["type"] == "consumer":
+                        consumer = data.data.consumer_data[f"{group_item['type']}{group_item['id']}"]
+                        if filter_func(consumer, chargemode, flat_loads):
+                            sub_valid_chargemode.append(consumer)
+                            flat_loads.append(consumer)
+                grouped_loads.append(sub_valid_chargemode)
+            if item["type"] == "vehicle":
+                for cp in data.data.cp_data.values():
+                    if item["id"] == cp.data.config.ev:
+                        if filter_func(cp, chargemode, flat_loads):
+                            grouped_loads.append([cp])
+                            flat_loads.append(cp)
+            elif item["type"] == "consumer":
+                consumer = data.data.consumer_data[f"{item['type']}{item['id']}"]
+                if filter_func(consumer, chargemode, flat_loads):
+                    grouped_loads.append([consumer])
+                    flat_loads.append(consumer)
+    return flat_loads, grouped_loads
 
 
-def get_preferenced_chargepoint_charging(
-        chargepoints: List[Chargepoint]) -> Tuple[List[Chargepoint], List[Chargepoint]]:
-    preferenced_chargepoints = get_preferenced_chargepoint(chargepoints)
-    preferenced_chargepoints_with_set_current = []
-    preferenced_chargepoints_without_set_current = []
-    for cp in preferenced_chargepoints:
-        if cp.data.set.target_current == 0:
-            log.info(
-                f"LP {cp.num}: Keine Zuteilung des Mindeststroms, daher keine weitere Berücksichtigung")
-            preferenced_chargepoints_without_set_current.append(cp)
-        elif cp.data.get.charge_state is False:
-            log.info(
-                f"LP {cp.num}: Lädt nicht, daher keine weitere Berücksichtigung")
-            preferenced_chargepoints_without_set_current.append(cp)
-        else:
-            preferenced_chargepoints_with_set_current.append(cp)
-    return preferenced_chargepoints_with_set_current, preferenced_chargepoints_without_set_current
+def get_loads_by_chargemodes(chargemodes: Tuple[Tuple[Optional[Chargemode], Chargemode]]) -> List[Load]:
+    def _is_valid_for_chargemode(entity, chargemode, valid):
+        """Helper function to validate entity against chargemode conditions."""
+        return (entity.data.control_parameter.required_current != 0 and
+                (entity.data.control_parameter.chargemode == chargemode[0] or chargemode[0] is None) and
+                entity.data.control_parameter.submode == chargemode[1] and
+                entity not in valid)
+
+    return _group_loads_by_chargemode(chargemodes, _is_valid_for_chargemode)[0]
 
 
-# tested
+def get_preferenced_load_charging(
+        grouped_loads: List[List[Load]]) -> Tuple[List[List[Load]], List[Load]]:
+    preferenced_loads_without_set_current: List[Load] = []
+    for group in grouped_loads:
+        valid_group: List[Load] = []
+        for load in group:
+            if load.data.set.target_current == 0:
+                log.info(f"{'LP' if isinstance(load, Chargepoint) else 'Verbraucher'} {load.num}: "
+                         f"Keine Zuteilung des Mindeststroms, daher keine weitere Berücksichtigung")
+                preferenced_loads_without_set_current.append(load)
+            elif load.data.get.charge_state is False:
+                log.info(f"{'LP' if isinstance(load, Chargepoint) else 'Verbraucher'} {load.num}: "
+                         f"Lädt nicht, daher keine weitere Berücksichtigung")
+                preferenced_loads_without_set_current.append(load)
+            else:
+                valid_group.append(load)
+        group[:] = valid_group
+    return grouped_loads, preferenced_loads_without_set_current
 
 
-def get_preferenced_chargepoint(valid_chargepoints: List[Chargepoint]) -> List:
-    """ermittelt die Ladepunkte in der Reihenfolge, in der sie geladen/gestoppt werden sollen. Die Bedingungen
-    sind:
-    geringste Mindeststromstärke, niedrigster SoC, frühester Ansteck-Zeitpunkt(Einschalten)/Lademenge(Abschalten),
-    niedrigste Ladepunktnummer.
-    """
-    preferenced_chargepoints = []
-    chargepoints = dict.fromkeys(valid_chargepoints)
-    try:
-        # Bedingungen in der Reihenfolge, in der sie geprüft werden.
-        condition_types = ("min_current", "soc", "imported_since_plugged", "plug_in", "num")
-        # Bedingung, die geprüft wird (entspricht Index von condition_types)
-        condition = 0
-        if chargepoints:
-            while len(chargepoints) > 0:
-                # entsprechend der Bedingung die Values im Dictionary füllen
-                if condition_types[condition] == "min_current":
-                    chargepoints.update(
-                        (cp, cp.data.control_parameter.required_current)
-                        for cp in chargepoints.keys())
-                elif condition_types[condition] == "soc":
-                    chargepoints.update(
-                        (cp, cp.data.set.charging_ev_data.data.get.soc or 0) for cp in chargepoints.keys())
-                elif condition_types[condition] == "plug_in":
-                    chargepoints.update((cp, cp.data.set.plug_time)
-                                        for cp in chargepoints.keys())
-                elif condition_types[condition] == "imported_since_plugged":
-                    chargepoints.update((cp, cp.data.set.log.imported_since_plugged) for cp in chargepoints.keys())
-                else:
-                    chargepoints.update((cp, cp.num) for cp in chargepoints.keys())
-
-                # kleinsten Value im Dictionary ermitteln
-                extreme_value = min(chargepoints.values())
-                # dazugehörige Keys ermitteln
-                extreme_cp = [
-                    key for key in chargepoints if chargepoints[key] == extreme_value]
-                if len(extreme_cp) > 1:
-                    # Wenn es mehrere LP gibt, die den gleichen Minimalwert haben, nächste Bedingung prüfen.
-                    condition += 1
-                else:
-                    preferenced_chargepoints.append(extreme_cp[0])
-                    chargepoints.pop(extreme_cp[0])
-        if preferenced_chargepoints:
-            log.debug(f"Geordnete Ladepunkte {[cp.num for cp in preferenced_chargepoints]}")
-        return preferenced_chargepoints
-    except Exception:
-        log.exception("Fehler im Algorithmus-Modul")
-        return preferenced_chargepoints
+def filtered_loads_to_str(loads: List[Load]) -> str:
+    return ", ".join([f"{'LP' if isinstance(load, Chargepoint) else 'Verbraucher'}{load.num}" for load in loads])

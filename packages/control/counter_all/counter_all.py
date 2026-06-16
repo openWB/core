@@ -22,7 +22,7 @@ class CounterAll(HierarchyMixin, LoadmanagementPrioMixin):
 
     def __init__(self):
         self.data = CounterAllData()
-        self.sim_counter = SimCounter("", "", prefix="bezug")
+        self.sim_counter = SimCounter("", "", ComponentType.COUNTER)
         self.sim_counter.topic = "openWB/set/counter/set/"
 
     def get_evu_counter(self) -> Counter:
