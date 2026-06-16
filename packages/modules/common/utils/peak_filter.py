@@ -32,6 +32,9 @@ class PeakFilter:
         elif self.component_type == ComponentType.BAT:
             bat = data.data.bat_data[f"bat{self.component_id}"]
             max_power = bat.data.config.max_power
+        elif self.component_type == ComponentType.CONSUMER:
+            consumer = data.data.consumer_data[f"consumer{self.component_id}"]
+            max_power = consumer.data.config.max_power
         else:
             raise ValueError(f"Unsupported component type {self.component_type!r} in PeakFilter")
         # prüfe Leistung und importierte/exportierte Energie auf Plausibilität
