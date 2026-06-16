@@ -23,8 +23,6 @@ import logging
 from typing import List, Optional, Tuple
 
 from control import data
-from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_CHARGING
-from control.algorithm.filter_chargepoints import get_chargepoints_with_required_current_by_chargemode
 from control.pv import Pv
 from helpermodules.constants import NO_ERROR
 from modules.common.abstract_device import AbstractDevice
@@ -482,11 +480,8 @@ class BatAll:
             data.data.bat_data[f"bat{bat.component_config.id}"].data.get.power_limit_controllable = False
 
     def get_charge_mode_vehicle_charge(self):
-        chargepoint_by_chargemodes = get_chargepoints_with_required_current_by_chargemode(
-            CONSIDERED_CHARGE_MODES_CHARGING)
         # Fahrzeuge laden
-        vehicle_charging = (len(chargepoint_by_chargemodes) > 0 and
-                            data.data.cp_all_data.data.get.power > 100)
+        vehicle_charging = data.data.cp_all_data.data.get.power > 100
         # Speicher entlädt oder Speicher lädt bei gewollter PV-Ladung
         bat_power_valid = (self.data.get.power <= 0 or
                            (self.data.get.power > 0 and
@@ -509,9 +504,7 @@ class BatAll:
             control_range_low = data.data.general_data.data.chargemode_config.pv_charging.control_range[0]
             control_range_high = data.data.general_data.data.chargemode_config.pv_charging.control_range[1]
             control_range_center = control_range_high - (control_range_high - control_range_low) / 2
-            if len(chargepoint_by_chargemodes) == 0:
-                log.debug("Speicher-Leistung nicht begrenzen, da keine Ladepunkte in einem aktiven Lademodus sind.")
-            elif data.data.cp_all_data.data.get.power <= 100:
+            if data.data.cp_all_data.data.get.power <= 100:
                 log.debug("Speicher-Leistung nicht begrenzen, da kein Ladepunkt lädt.")
             elif self.data.get.power > 0:
                 log.debug("Speicher-Leistung nicht begrenzen, da kein Speicher entladen wird.")

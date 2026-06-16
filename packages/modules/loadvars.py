@@ -60,6 +60,13 @@ class Loadvars:
                                        args=(), name=f"set values cp{cp.chargepoint_module.config.id}"))
             except Exception:
                 log.exception(f"Fehler im loadvars-Modul bei Element {cp.num}")
+        for consumer in data.data.consumer_data.values():
+            try:
+                modules_threads.append(Thread(target=consumer.module.update,
+                                              args=(),
+                                              name=f"set values consumer{consumer.data.module.id}"))
+            except Exception:
+                log.exception(f"Fehler im loadvars-Modul bei Element {consumer.num}")
         return joined_thread_handler(modules_threads, data.data.general_data.data.control_interval/3)
 
     def _update_values_of_level_buttom_top(self, elements, not_finished_threads: List[str]) -> None:
@@ -76,6 +83,14 @@ class Loadvars:
                             target=update_values,
                             args=(chargepoint.chargepoint_module,),
                             name=f"update values cp{chargepoint.chargepoint_module.config.id}"))
+                elif element["type"] == ComponentType.CONSUMER.value:
+                    consumer = data.data.consumer_data[f'{type_to_topic_mapping(element["type"])}{element["id"]}']
+                    thread_name = f"set values consumer{consumer.data.module.id}"
+                    if thread_name not in not_finished_threads:
+                        modules_threads.append(Thread(
+                            target=update_values,
+                            args=(consumer.module,),
+                            name=f"update values consumer{consumer.data.module.id}"))
                 else:
                     component = get_finished_component_obj_by_id(element["id"], not_finished_threads)
                     if component is None:
