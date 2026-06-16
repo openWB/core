@@ -223,8 +223,6 @@ const secondaryCountersConfigured = computed(
   () => secondaryCounterData.value.length > 0,
 );
 
-const gridID = computed(() => mqttStore.gridId);
-
 const gridData = computed((): DailyTotalsItem => {
   let data: DailyTotalsItem = {
     id: 'grid',
@@ -243,10 +241,7 @@ const gridData = computed((): DailyTotalsItem => {
         imported: mqttStore.counterDailyImported('textValue') as string,
         exported: mqttStore.counterDailyExported('textValue') as string,
       },
-      color:
-        gridID.value !== undefined
-          ? mqttStore.gridComponentColor(gridID.value) || undefined
-          : undefined,
+      color: 'var(--q-grid-stroke)',
     };
   }
   return data;
@@ -268,7 +263,7 @@ const secondaryCounterData = computed((): DailyTotalsItem[] => {
           imported: mqttStore.counterDailyImported('textValue', id) as string,
           exported: mqttStore.counterDailyExported('textValue', id) as string,
         },
-        color: mqttStore.gridComponentColor(id) || undefined,
+        color: 'var(--q-grid-stroke)',
       });
     }
   });
@@ -362,7 +357,7 @@ const componentData = computed((): DailyTotalsItem[] => {
       power: mqttStore.getPvPower('textValue') as string,
       powerValue: mqttStore.getPvPower('value') as number,
       today: { exported: mqttStore.pvDailyExported('textValue') as string },
-      color: mqttStore.pvAggregateColor || 'var(--q-diagram-icon)',
+      color: 'var(--q-pv-stroke)',
     });
   }
 

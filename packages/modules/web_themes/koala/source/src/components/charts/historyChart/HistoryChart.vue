@@ -101,8 +101,6 @@ const selectedData = computed((): GraphDataPoint[] => {
 });
 
 const chargePointIds = computed(() => mqttStore.chargePointIds);
-const gridId = computed(() => mqttStore.gridId);
-const pvColor = computed(() => mqttStore.pvAggregateColor);
 
 const chargePointNames = computed(() => mqttStore.chargePointName);
 
@@ -263,10 +261,7 @@ const chartLabels = computed(() => {
 const lineChartData = computed(() => {
   let datasets = [];
   if (gridMeterName.value !== undefined) {
-    const baseColor = gridId.value
-      ? mqttStore.gridComponentColor(gridId.value) ||
-        getGlobalColor('--q-grid-stroke')
-      : getGlobalColor('--q-grid-stroke');
+    const baseColor = getGlobalColor('--q-grid-stroke');
     datasets.push({
       label: gridMeterName.value,
       category: 'component',
@@ -312,7 +307,7 @@ const lineChartData = computed(() => {
   }
   datasets.push(...secondaryCounterDatasets.value);
   if (mqttStore.pvConfigured) {
-    const baseColor = pvColor.value || getGlobalColor('--q-pv-stroke');
+    const baseColor = getGlobalColor('--q-pv-stroke');
     datasets.push({
       label: 'PV ges.',
       category: 'component',

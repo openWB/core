@@ -259,8 +259,6 @@ const chargePointSumCharging = computed(
   () => Number(chargePointSumPower.value.value) > 0,
 );
 
-const gridId = computed(() => mqttStore.gridId);
-const pvColor = computed(() => mqttStore.pvAggregateColor);
 
 ///////////////////// Set animation speed //////////////////////////
 
@@ -337,11 +335,7 @@ const svgComponents = computed((): FlowComponent[] => {
       label: ['EVU', absoluteValueObject(gridPower.value).textValue],
       powerValue: Number(gridPower.value.value),
       iconComponent: GridIcon,
-      iconColor:
-        gridId.value !== undefined
-          ? mqttStore.gridComponentColor(gridId.value) ||
-            'var(--q-diagram-icon)'
-          : 'var(--q-diagram-icon)',
+      iconColor: 'var(--q-grid-stroke)',
     });
   }
 
@@ -375,7 +369,7 @@ const svgComponents = computed((): FlowComponent[] => {
       label: ['PV', absoluteValueObject(pvPower.value).textValue],
       powerValue: Number(pvPower.value.value),
       iconComponent: PvIcon,
-      iconColor: pvColor.value || 'var(--q-diagram-icon)',
+      iconColor: 'var(--q-pv-stroke)',
     });
   }
 
