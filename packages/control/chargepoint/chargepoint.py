@@ -20,6 +20,7 @@ from control.ev.ev import Ev
 from control import phase_switch
 from control.chargepoint.chargepoint_state import CHARGING_STATES, ChargepointState
 from control.limiting_value import loadmanagement_limit_factory
+from control.load_protocol import Load
 from control.text import BidiState
 from helpermodules.constants import DEFAULT_COLORS
 from helpermodules.phase_handling import convert_single_evu_phase_to_cp_phase
@@ -52,7 +53,7 @@ def get_chargepoint_get_default() -> Dict:
 log = logging.getLogger(__name__)
 
 
-class Chargepoint(ChargepointRfidMixin):
+class Chargepoint(ChargepointRfidMixin, Load):
     """ geht alle Ladepunkte durch, prüft, ob geladen werden darf und ruft die Funktion des angesteckten Autos auf.
     """
     MAX_FAILED_PHASE_SWITCHES = 2
@@ -232,7 +233,6 @@ class Chargepoint(ChargepointRfidMixin):
                 self.data.control_parameter.chargemode = Chargemode.TIME_CHARGING
             else:
                 self.data.control_parameter.chargemode = self.data.set.charge_template.data.chargemode.selected
-            self.data.control_parameter.prio = self.data.set.charge_template.data.prio
             if self.template.data.charging_type == ChargingType.AC.value:
                 self.data.control_parameter.min_current = self.data.set.charging_ev_data.ev_template.data.min_current
             else:
@@ -695,7 +695,6 @@ class Chargepoint(ChargepointRfidMixin):
                             f"{self.data.set.charge_template.data.chargemode.selected}, Submodus: "
                             f"{self.data.control_parameter.submode}, Phasen: "
                             f"{self.data.control_parameter.phases}"
-                            f", Priorität: {self.data.control_parameter.prio}"
                             f", mittlerer Ist-Strom: {get_medium_charging_current(self.data.get.currents)}")
                 except Exception:
                     log.exception("Fehler im Prepare-Modul für Ladepunkt "+str(self.num))
@@ -815,7 +814,6 @@ class Chargepoint(ChargepointRfidMixin):
                 charge_template=self.data.set.charge_template.data.id,
                 ev_template=vehicle.ev_template.data.id,
                 chargemode=self.data.set.charge_template.data.chargemode.selected,
-                priority=self.data.set.charge_template.data.prio,
                 current_plan=current_plan,
                 average_consumption=vehicle.ev_template.data.average_consump,
                 time_charging_in_use=True if (self.data.control_parameter.submode ==
@@ -851,3 +849,6 @@ class Chargepoint(ChargepointRfidMixin):
             return True
         else:
             return False
+
+    def is_charging_stop_allowed(self) -> bool:
+        return self.data.set.charging_ev_data.ev_template.data.prevent_charge_stop is False
