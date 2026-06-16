@@ -1,7 +1,6 @@
 import logging
 from typing import Dict, Generator, List, Tuple
 
-from control.algorithm.filter_chargepoints import get_preferenced_chargepoint
 from control.chargepoint.chargepoint import Chargepoint
 from control.counter_all.counter_all_data import LoadmanagementPrioProtocol
 from modules.common.component_type import ComponentType
@@ -57,8 +56,7 @@ class LoadmanagementPrioMixin:
                     if cp.data.config.ev == entry["id"]:
                         grouped_cps.append(cp)
                 if len(grouped_cps) > 0:
-                    sorted_grouped_cps = get_preferenced_chargepoint(grouped_cps)
-                    sorted_cps.append(sorted_grouped_cps)
+                    sorted_cps.append(grouped_cps)
             elif entry["type"] == "group":
                 sorted_grouped_cps = []
                 for group_entry in entry["children"]:
@@ -66,25 +64,7 @@ class LoadmanagementPrioMixin:
                     for cp in filtered_cps:
                         if cp.data.config.ev == group_entry["id"]:
                             grouped_cps.append(cp)
-                    sorted_grouped_cps.extend(get_preferenced_chargepoint(grouped_cps))
+                    sorted_grouped_cps.extend(grouped_cps)
                 if len(sorted_grouped_cps) > 0:
                     sorted_cps.append(sorted_grouped_cps)
         return sorted_cps
-
-    # def sort_cps_by_loadmanagement_prios_flat(self: LoadmanagementPrioProtocol,
-    #                                           filtered_cps: List[Chargepoint]) -> List[Chargepoint]:
-    #     sorted_cps = []
-    #     for entry in self.data.get.loadmanagement_prios:
-    #         if entry["type"] == "vehicle":
-    #             for cp in filtered_cps:
-    #                 if cp.data.config.ev == entry["id"]:
-    #                     sorted_cps.append(cp)
-    #         elif entry["type"] == "group":
-    #             for group_entry in entry["children"]:
-    #                 for cp in filtered_cps:
-    #                     if cp.data.config.ev == group_entry["id"]:
-    #                         sorted_cps.append(cp)
-    #     if len(sorted_cps) != len(filtered_cps):
-    #         raise ValueError(
-    #             "Fahrzeuge der Prioritätensteuerung konnten nicht korrekt den Ladepunkten zugeordnet werden.")
-    #     return sorted_cps
