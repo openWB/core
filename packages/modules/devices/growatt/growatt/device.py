@@ -71,5 +71,6 @@ def create_device(device_config: Growatt):
 
 device_descriptor = DeviceDescriptor(
     configuration_factory=Growatt,
-    compatibility_device_note="Einige Versionen des LSE3 Dongles sind kompatibel. Die Auslesung über den LSW3 ist nicht möglich!\nBei Inkompatibilität kann unser Netzwerk Modbus Adapter v2 eingesetzt werden."
+    compatibility_device_note="Einige Versionen des LSE3 Dongles sind kompatibel. Die Auslesung über den LSW3 ist "
+    "nicht möglich!\nBei Inkompatibilität kann unser Netzwerk Modbus Adapter v2 eingesetzt werden."
 )
