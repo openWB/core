@@ -13,7 +13,7 @@ from modules.devices.vzlogger.vzlogger.device import create_device
 def test_vzlogger_counter_update(monkeypatch, requests_mock: requests_mock.mock):
     # setup
     mock_counter_value_store = Mock()
-    monkeypatch.setattr(counter, "get_counter_value_store", Mock(return_value=mock_counter_value_store))
+    monkeypatch.setattr(counter, "get_component_value_store", Mock(return_value=mock_counter_value_store))
     requests_mock.get(f"http://{SAMPLE_IP}", json=SAMPLE)
     device = create_device(VZLogger(configuration=VZLoggerConfiguration(ip_address=f"http://{SAMPLE_IP}")))
     device.add_component(VZLoggerCounterSetup(
