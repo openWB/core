@@ -857,7 +857,12 @@ class SetData:
         if "openWB/set/mqtt/chargepoint/" in msg.topic:
             self.process_chargepoint_get_topics(msg)
         elif "openWB/set/mqtt/consumer/" in msg.topic:
-            self.process_consumer_topic(msg)
+            if re.search("openWB/set/mqtt/consumer/[0-9]+/set/switch", msg.topic) is not None:
+                self._validate_value(msg, bool)
+            elif re.search("openWB/set/mqtt/consumer/[0-9]+/set/power", msg.topic) is not None:
+                self._validate_value(msg, float)
+            else:
+                self.process_consumer_topic(msg)
         elif "openWB/set/mqtt/counter/" in msg.topic:
             self.process_counter_topic(msg)
         elif "openWB/set/mqtt/bat/" in msg.topic:

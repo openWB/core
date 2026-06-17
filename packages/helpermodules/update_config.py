@@ -344,6 +344,8 @@ class UpdateConfig:
         "^openWB/mqtt/consumer/[0-9]+/get/power$",
         "^openWB/mqtt/consumer/[0-9]+/get/powers$",
         "^openWB/mqtt/consumer/[0-9]+/get/voltages$",
+        "^openWB/mqtt/consumer/[0-9]+/set/power$",
+        "^openWB/mqtt/consumer/[0-9]+/set/switch$",
         "^openWB/mqtt/counter/[0-9]+/get/currents$",
         "^openWB/mqtt/counter/[0-9]+/get/imported$",
         "^openWB/mqtt/counter/[0-9]+/get/exported$",
