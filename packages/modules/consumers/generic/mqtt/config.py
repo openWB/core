@@ -15,7 +15,7 @@ class MqttConfiguration:
 @auto_str
 class Mqtt(ConsumerSetup[MqttConfiguration]):
     def __init__(self,
-                 name: str = "Mqtt",
+                 name: str = "MQTT",
                  type: str = "mqtt",
                  id: int = 0,
                  configuration: MqttConfiguration = None,

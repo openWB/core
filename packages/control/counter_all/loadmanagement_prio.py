@@ -50,7 +50,7 @@ class LoadmanagementPrioMixin:
                                                 filtered_cps: List[Chargepoint]) -> List[List[Chargepoint]]:
         sorted_cps = []
         for entry in self.data.get.loadmanagement_prios:
-            if entry["type"] == "vehicle":
+            if entry["type"] == "vehicle" or entry["type"] == "consumer":
                 grouped_cps = []
                 for cp in filtered_cps:
                     if cp.data.config.ev == entry["id"]:
