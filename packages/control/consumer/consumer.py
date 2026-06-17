@@ -100,6 +100,13 @@ class Consumer(Load):
             raise ValueError(f"Ungültiger Lademodus {self.data.usage.chargemode} für Verbraucher {self.num}")
         return min_current, required_current, message, mode, submode
 
+    def _parse_required_current_by_usage(self, required_current: float) -> float:
+        if self.data.usage.type in [ConsumerUsage.CONTINUOUS, ConsumerUsage.SUSPENDABLE_ONOFF]:
+            return get_medium_charging_current(
+                self.data.get.currents) if self.data.get.charge_state else self.data.usage.min_current
+        else:
+            return required_current
+
     def scheduled_charging(self) -> Tuple[int, str, Optional[str], int]:
         required_current = 0
         message = None
@@ -128,14 +135,12 @@ class Consumer(Load):
                         else:
                             log.debug(
                                 "Zeitladen: minimaler Speicher-SoC überschritten, Laden mit Zeitladen möglich.")
-                            required_current = get_medium_charging_current(
-                                self.data.get.currents) if self.data.get.charge_state else self.data.usage.min_current
+                            required_current = self._parse_required_current_by_usage(self.data.usage.min_current)
                             submode = Chargemode.TIME_CHARGING
                     else:
                         message = self.TIME_CHARGING_CONFLICT_ACTIVE_BAT_CONTROL
                 else:
-                    required_current = get_medium_charging_current(
-                        self.data.get.currents) if self.data.get.charge_state else self.data.usage.min_current
+                    required_current = self._parse_required_current_by_usage(self.data.usage.min_current)
                     submode = Chargemode.TIME_CHARGING
             else:
                 message = self.TIME_CHARGING_NO_PLAN_ACTIVE
@@ -144,8 +149,7 @@ class Consumer(Load):
         return required_current, message, None, submode
 
     def instant_charging(self) -> Tuple[int, str, Optional[str], int]:
-        required_current = get_medium_charging_current(
-            self.data.get.currents) if self.data.get.charge_state else self.data.usage.min_current
+        required_current = self._parse_required_current_by_usage(self.data.usage.min_current)
         message = None
         mode = Chargemode.INSTANT_CHARGING
         submode = Chargemode.INSTANT_CHARGING
@@ -158,26 +162,22 @@ class Consumer(Load):
         mode = Chargemode.ECO_CHARGING
         if data.data.optional_data.data.electricity_pricing.configured:
             if data.data.optional_data.ep_is_charging_allowed_price_threshold(self.data.usage.eco_charging.price_limit):
-                required_current = get_medium_charging_current(
-                    self.data.get.currents) if self.data.get.charge_state else self.data.usage.min_current
+                required_current = self._parse_required_current_by_usage(self.data.usage.min_current)
                 message = self.CHARGING_PRICE_LOW
                 submode = Chargemode.INSTANT_CHARGING
             else:
-                required_current = get_medium_charging_current(
-                    self.data.get.currents) if self.data.get.charge_state else self.data.usage.min_current
+                required_current = self._parse_required_current_by_usage(self.data.usage.min_current)
                 message = self.CHARGING_PRICE_EXCEEDED
                 if self.data.control_parameter.state in CHARGING_STATES:
                     message += "Lädt mit Überschuss. "
                 submode = Chargemode.PV_CHARGING
         else:
-            required_current = get_medium_charging_current(
-                self.data.get.currents) if self.data.get.charge_state else self.data.usage.min_current
+            required_current = self._parse_required_current_by_usage(self.data.usage.min_current)
             submode = Chargemode.PV_CHARGING
         return required_current, message, mode, submode
 
     def pv_charging(self) -> Tuple[int, str, Optional[str], int]:
-        required_current = get_medium_charging_current(
-            self.data.get.currents) if self.data.get.charge_state else self.data.usage.min_current
+        required_current = self._parse_required_current_by_usage(self.data.usage.min_current)
         message = None
         mode = Chargemode.PV_CHARGING
         submode = Chargemode.PV_CHARGING
@@ -185,8 +185,8 @@ class Consumer(Load):
 
     def wait_for_start_handler(
             self, func: Callable[[], Tuple[int, str, Optional[str], int]]) -> Tuple[int, str, Optional[str], int]:
-        if self.data.usage.wait_for_start.active:
-            timestamp_next_test = self.data.usage.wait_for_start.last_test_timestamp + 60*60
+        if self.data.usage.wait_for_start_active:
+            timestamp_next_test = self.data.set.wait_for_start_last_test_timestamp + 60*60
             wait_for_start_state = self._wait_for_start_singal(timestamp_next_test)
             if wait_for_start_state == WaitForStartStates.START_SIGNAL_RECEIVED:
                 required_current, message, mode, submode = func()
@@ -207,22 +207,22 @@ class Consumer(Load):
         return required_current, message, mode, submode
 
     def _wait_for_start_singal(self, timestamp_next_test: float) -> WaitForStartStates:
-        if self.data.usage.wait_for_start.signal_received:
+        if self.data.set.wait_for_start_signal_received:
             return WaitForStartStates.START_SIGNAL_RECEIVED
         else:
-            if self.data.usage.wait_for_start.test_running:
+            if self.data.set.wait_for_start_test_running:
                 if self.data.get.charge_state:
-                    self.data.usage.wait_for_start.signal_received = True
-                    self.data.usage.wait_for_start.test_running = False
+                    self.data.set.wait_for_start_signal_received = True
+                    self.data.set.wait_for_start_test_running = False
                     return WaitForStartStates.START_SIGNAL_RECEIVED
-                elif timecheck.create_timestamp() < self.data.usage.wait_for_start.last_test_timestamp + 60:
+                elif timecheck.create_timestamp() < self.data.set.wait_for_start_last_test_timestamp + 60:
                     return WaitForStartStates.START_TEST_RUN
                 else:
-                    self.data.usage.wait_for_start.test_running = False
+                    self.data.set.wait_for_start_test_running = False
                     log.debug("Testlauf für kontinuierlichen Verbraucher beendet, kein Startsignal empfangen.")
                     return WaitForStartStates.WAIT_FOR_NEXT_TEST_RUN
             elif timecheck.create_timestamp() > timestamp_next_test:
-                self.data.usage.wait_for_start.last_test_timestamp = timecheck.create_timestamp()
+                self.data.set.wait_for_start_last_test_timestamp = timecheck.create_timestamp()
                 return WaitForStartStates.TEST_RUNNIG
             else:
                 return WaitForStartStates.WAIT_FOR_NEXT_TEST_RUN
