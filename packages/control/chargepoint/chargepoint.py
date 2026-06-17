@@ -384,11 +384,11 @@ class Chargepoint(ChargepointRfidMixin):
             if self.data.control_parameter.state == ChargepointState.WAIT_FOR_USING_PHASES:
                 if check_timestamp(self.data.control_parameter.timestamp_charge_start,
                                    charging_ev.ev_template.data.keep_charge_active_duration) is False:
-                    if self.hw_supports_phase_switch() and self.failed_phase_switches_reached():
+                    if self.hw_supports_phase_switch() and self.failed_phase_switches_reached() is False:
                         if phase_switch.phase_switch_thread_alive(self.num) is False:
                             self.data.control_parameter.state = ChargepointState.PHASE_SWITCH_AWAITED
+                            _set_failed_phase_switches()
                             if self._is_phase_switch_required() is False:
-                                _set_failed_phase_switches()
                                 self.data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
                     else:
                         _set_failed_phase_switches()
@@ -829,7 +829,7 @@ class Chargepoint(ChargepointRfidMixin):
                 self.data.get.charge_state and
                 (self.data.control_parameter.state == ChargepointState.CHARGING_ALLOWED or
                  self.data.control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY)):
-            return self.failed_phase_switches_reached()
+            return self.failed_phase_switches_reached() is False
         else:
             return False
 
@@ -846,6 +846,6 @@ class Chargepoint(ChargepointRfidMixin):
              self.data.control_parameter.failed_phase_switches == 1)):
             self.set_state_and_log(
                 "Keine Phasenumschaltung, da die maximale Anzahl an Fehlversuchen erreicht wurde. ")
-            return False
-        else:
             return True
+        else:
+            return False
