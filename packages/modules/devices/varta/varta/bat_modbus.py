@@ -68,12 +68,23 @@ class VartaBatModbus(AbstractBat):
                 uint16_value = struct.unpack(">H", struct.pack(">h", max_discharge_w))[0]
                 self.client.write_register(1074, uint16_value, data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = None
+        elif power_limit < 0:
+            # Das Register muss kontinuierlich geschrieben werden, da der Speicher
+            # sonst nach 120s die Steuerung aufhebt.
+            log.debug(f"Aktive Batteriesteuerung. Batterie darf mit {power_limit} W entladen werden "
+                      "für den Hausverbrauch")
+            uint16_value = struct.unpack(">H", struct.pack(">h", power_limit))[0]
+            self.client.write_register(1074, uint16_value, data_type=ModbusDataType.INT_16, unit=unit)
+            self.last_mode = 'discharge'
         else:
             # Das Register muss kontinuierlich geschrieben werden, da der Speicher
             # sonst nach 120s die Steuerung aufhebt.
-            log.debug(f"Aktive Batteriesteuerung, übergebene Leistung: {power_limit}W. "
-                      "Leistungsübergabe an Speicher und aktive Ladung nicht möglich. "
-                      "Speicher wird auf Stop gesetzt.")
+            if power_limit == 0:
+                log.debug(f"Aktive Batteriesteuerung, Speicher wird auf Stop gesetzt.")
+            else:
+                log.debug(f"Aktive Batteriesteuerung, übergebene Leistung: {power_limit}W. "
+                          "Aktive Ladung nicht möglich. Speicher wird auf Stop gesetzt.")
+            
             self.client.write_register(1074, 0, data_type=ModbusDataType.INT_16, unit=unit)
             self.last_mode = 'stop'
 
