@@ -668,6 +668,22 @@ const svgRectWidth = computed(
       svgSize.value.numColumns) /
     svgSize.value.numColumns,
 );
+
+const labelClipPath = computed(() => {
+  const cr = svgSize.value.circleRadius;
+  const iconCenter = cr - svgRectWidth.value / 2; // icon circle center x
+  const curveStart = svgRectWidth.value / 2 - cr; // where the right curve begins
+  const top = -cr;
+  const bottom = cr;
+  return (
+    `M ${iconCenter} ${top} ` +
+    `L ${curveStart} ${top} ` +
+    `A ${cr} ${cr} 0 0 1 ${curveStart} ${bottom} ` +
+    `L ${iconCenter} ${bottom} ` +
+    `A ${cr} ${cr} 0 0 0 ${iconCenter} ${top} ` +
+    'Z'
+  );
+});
 </script>
 
 <template>
@@ -748,14 +764,7 @@ const svgRectWidth = computed(
               />
             </clipPath>
             <clipPath :id="`clip-label-${component.id}`">
-              <rect
-                :x="-svgRectWidth / 2"
-                :y="-svgSize.circleRadius"
-                :width="svgRectWidth"
-                :height="svgSize.circleRadius * 2"
-                :rx="svgSize.circleRadius"
-                :ry="svgSize.circleRadius"
-              />
+              <path :d="labelClipPath" />
             </clipPath>
             <linearGradient
               :id="`gradient-soc-${component.id}`"
