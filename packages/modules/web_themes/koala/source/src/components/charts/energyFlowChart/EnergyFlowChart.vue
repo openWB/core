@@ -1028,7 +1028,7 @@ feDropShadow {
 text {
   font-size: v-bind(svgFontSize);
   line-height: 1.25;
-  font-family: Arial;
+  font-family: 'Roboto', sans-serif;
   fill: var(--q-text);
   fill-opacity: 1;
 }
