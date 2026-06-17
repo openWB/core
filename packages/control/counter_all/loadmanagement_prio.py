@@ -19,7 +19,7 @@ class LoadmanagementPrioMixin:
 
     def _remove_loadmanagement_prio_item(self: LoadmanagementPrioProtocol, id: int, entry: List[Dict]) -> bool:
         for item in entry:
-            if item["type"] == "vehicle":
+            if item["type"] == "vehicle" or item["type"] == "consumer":
                 if item["id"] == id:
                     entry.remove(item)
                     return True
@@ -48,7 +48,7 @@ class LoadmanagementPrioMixin:
                                                 filtered_cps: List[Chargepoint]) -> List[List[Chargepoint]]:
         sorted_cps = []
         for entry in self.data.get.loadmanagement_prios:
-            if entry["type"] == "vehicle":
+            if entry["type"] == "vehicle" or entry["type"] == "consumer":
                 grouped_cps = []
                 for cp in filtered_cps:
                     if cp.data.config.ev == entry["id"]:
