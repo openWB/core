@@ -17,7 +17,7 @@ from control.chargelog.process_chargelog import get_log_data
 from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
 
-from control.consumer.consumer_data import GET_DEFAULTS_BY_USAGE, Set, get_plan_class_for_usage
+from control.consumer.consumer_data import GET_DEFAULTS_BY_USAGE, get_plan_class_for_usage
 from control.consumer.usage import ConsumerUsage
 from control.counter_all import counter_all
 from control.ev.charge_template import ChargeTemplate, get_new_charge_template
@@ -1153,7 +1153,6 @@ class Command:
         Pub().pub(f'openWB/set/consumer/{new_id}/module', consumer_default)
         Pub().pub(f"openWB/set/consumer/{new_id}/config", dataclass_utils.asdict(ConsumerConfig()))
         Pub().pub(f"openWB/set/consumer/{new_id}/extra_meter", None)
-        Pub().pub(f"openWB/set/consumer/{new_id}/set", dataclass_utils.asdict(Set()))
         Pub().pub(f"openWB/set/consumer/{new_id}/usage", None)
         self.max_id_hierarchy = new_id
         Pub().pub("openWB/set/command/max_id/hierarchy", new_id)
@@ -1194,7 +1193,7 @@ class Command:
         SubData.counter_all_data.remove_loadmanagement_prio_item(payload["data"]["consumer_id"])
         Pub().pub("openWB/set/counter/get/loadmanagement_prios", SubData.counter_all_data.data.get.loadmanagement_prios)
         pub_user_message(payload, connection_id,
-                         f'Ladepunkt mit ID \'{payload["data"]["consumer_id"]}\' gelöscht.', MessageType.SUCCESS)
+                         f'Verbraucher mit ID \'{payload["data"]["consumer_id"]}\' gelöscht.', MessageType.SUCCESS)
 
     def selectUsage(self, connection_id: str, payload: dict) -> None:
         """ weist einem Verbraucher eine Nutzung zu.
