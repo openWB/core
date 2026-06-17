@@ -164,19 +164,19 @@ const chargePoint3Discharging = computed(
 const translateChargeMode = (mode: string) => {
   switch (mode) {
     case 'instant_charging':
-      return { label: 'Sofort', class: 'danger' };
+      return { label: 'Sofort' };
     case 'pv_charging':
-      return { label: 'PV', class: 'success' };
+      return { label: 'PV' };
     case 'scheduled_charging':
-      return { label: 'Zielladen', class: 'primary' };
+      return { label: 'Zielladen' };
     case 'time_charging':
-      return { label: 'Zeitladen', class: 'warning' };
+      return { label: 'Zeitladen' };
     case 'eco_charging':
-      return { label: 'Eco', class: 'secondary' };
+      return { label: 'Eco' };
     case 'stop':
-      return { label: 'Stop', class: 'dark' };
+      return { label: 'Stop' };
     default:
-      return { label: 'Stop', class: 'dark' };
+      return { label: 'Stop' };
   }
 };
 
@@ -323,11 +323,11 @@ const svgComponents = computed((): FlowComponent[] => {
       id: 'grid',
       class: {
         base: 'grid',
-        valueLabel: gridFeedIn.value
-          ? 'fill-success'
+        valueLabelColor: gridFeedIn.value
+          ? 'var(--q-positive)'
           : gridConsumption.value
-            ? 'fill-danger'
-            : '',
+            ? 'var(--q-grid-stroke)'
+            : 'var(--q-text)',
         animated: gridConsumption.value,
         animatedReverse: gridFeedIn.value,
       },
@@ -344,7 +344,6 @@ const svgComponents = computed((): FlowComponent[] => {
       id: 'home',
       class: {
         base: 'home',
-        valueLabel: '',
         animated: homeProduction.value,
         animatedReverse: homeConsumption.value,
       },
@@ -361,7 +360,6 @@ const svgComponents = computed((): FlowComponent[] => {
       id: 'pv',
       class: {
         base: 'pv',
-        valueLabel: 'fill-success',
         animated: pvProduction.value,
         animatedReverse: pvConsumption.value,
       },
@@ -378,7 +376,6 @@ const svgComponents = computed((): FlowComponent[] => {
       id: 'battery',
       class: {
         base: 'battery',
-        valueLabel: '',
         animated: batteryDischarging.value,
         animatedReverse: batteryCharging.value,
       },
@@ -399,7 +396,6 @@ const svgComponents = computed((): FlowComponent[] => {
         class: {
           base: 'charge-point',
           animationId: 'charge-point-1',
-          valueLabel: '',
           animated: chargePoint1Discharging.value,
           animatedReverse: chargePoint1Charging.value,
         },
@@ -425,8 +421,6 @@ const svgComponents = computed((): FlowComponent[] => {
           class: {
             base: 'vehicle',
             animationId: 'vehicle-1',
-            valueLabel:
-              'fill-' + chargePoint1ConnectedVehicleChargeMode.value.class,
             animated: chargePoint1Discharging.value,
             animatedReverse: chargePoint1Charging.value,
           },
@@ -455,7 +449,6 @@ const svgComponents = computed((): FlowComponent[] => {
           class: {
             base: 'charge-point',
             animationId: 'charge-point-2',
-            valueLabel: '',
             animated: chargePoint2Discharging.value,
             animatedReverse: chargePoint2Charging.value,
           },
@@ -482,8 +475,6 @@ const svgComponents = computed((): FlowComponent[] => {
           class: {
             base: 'vehicle',
             animationId: 'vehicle-2',
-            valueLabel:
-              'fill-' + chargePoint2ConnectedVehicleChargeMode.value.class,
             animated: chargePoint2Discharging.value,
             animatedReverse: chargePoint2Charging.value,
           },
@@ -512,7 +503,6 @@ const svgComponents = computed((): FlowComponent[] => {
           class: {
             base: 'charge-point',
             animationId: 'charge-point-3',
-            valueLabel: '',
             animated: chargePoint3Discharging.value,
             animatedReverse: chargePoint3Charging.value,
           },
@@ -536,8 +526,6 @@ const svgComponents = computed((): FlowComponent[] => {
           class: {
             base: 'vehicle',
             animationId: 'vehicle-3',
-            valueLabel:
-              'fill-' + chargePoint3ConnectedVehicleChargeMode.value.class,
             animated: chargePoint3Discharging.value,
             animatedReverse: chargePoint3Charging.value,
           },
@@ -565,7 +553,6 @@ const svgComponents = computed((): FlowComponent[] => {
         class: {
           base: 'charge-point',
           animationId: 'charge-point-sum',
-          valueLabel: '',
           animated: chargePointSumDischarging.value,
           animatedReverse: chargePointSumCharging.value,
         },
@@ -818,7 +805,9 @@ const svgRectWidth = computed(
             </tspan>
             <tspan
               :id="`value-${component.id}`"
-              :class="component.class.valueLabel"
+              :style="{
+                fill: component.class.valueLabelColor ?? component.iconColor,
+              }"
               text-anchor="end"
               :x="2 * svgSize.circleRadius + svgSize.strokeWidth"
               :y="svgSize.textSize"
@@ -1025,14 +1014,6 @@ text {
   font-family: Arial;
   fill: var(--q-text);
   fill-opacity: 1;
-}
-
-text .fill-success {
-  fill: var(--q-positive);
-}
-
-text .fill-danger {
-  fill: var(--q-grid-stroke);
 }
 
 .battery {
