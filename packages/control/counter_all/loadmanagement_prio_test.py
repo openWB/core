@@ -80,7 +80,9 @@ def test_add_item(loadmanagement_prios: List[Dict],
     "loadmanagement_prios, id, expected_loadmanagement_prios",
     [
         pytest.param([{"type": "vehicle", "id": 3}, {"type": "vehicle", "id": 2}],
-                     2, [{"type": "vehicle", "id": 3}], id="flat list"),
+                     2, [{"type": "vehicle", "id": 3}], id="flat list, remove vehicle"),
+        pytest.param([{"type": "vehicle", "id": 3}, {"type": "consumer", "id": 2}],
+                     2, [{"type": "vehicle", "id": 3}], id="flat list, remove consumer"),
         pytest.param([
             {
                 "type": "group",
