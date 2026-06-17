@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useMqttStore } from 'src/stores/mqtt-store';
+import { useQuasar } from 'quasar';
 import { ref, computed, watch } from 'vue';
 import type { SvgSize, FlowComponent } from './energy-flow-chart-models';
 import type { ValueObject } from 'src/stores/mqtt-store-model';
@@ -11,6 +12,7 @@ import VehicleIcon from 'src/assets/icons/owbVehicle.svg?component';
 import ChargePointIcon from 'src/assets/icons/owbChargePoint_2.svg?component';
 
 const mqttStore = useMqttStore();
+const $q = useQuasar();
 
 const svgSize = ref<SvgSize>({
   xMin: 0,
@@ -23,6 +25,21 @@ const svgSize = ref<SvgSize>({
   numRows: 4,
   numColumns: 3,
 });
+
+const BASE_CHART_WIDTH = 150;
+const chartWidth = computed(() => {
+  if ($q.screen.gt.md) return 170;
+  if ($q.screen.gt.sm) return 160;
+  return BASE_CHART_WIDTH;
+});
+
+watch(
+  chartWidth,
+  (newValue) => {
+    svgSize.value.xMax = newValue;
+  },
+  { immediate: true },
+);
 
 const svgViewBox = computed(
   () =>
@@ -645,7 +662,7 @@ const beginAnimation = (elementId: string) => {
 
 const svgRectWidth = computed(
   () =>
-    (svgSize.value.xMax -
+    (BASE_CHART_WIDTH -
       svgSize.value.xMin -
       svgSize.value.strokeWidth -
       svgSize.value.numColumns) /
