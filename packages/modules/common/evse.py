@@ -61,9 +61,10 @@ class Evse:
                              str(state)+", Soll-Stromstärke: "+str(self.evse_current))
         plugged = state.plugged
         charging = self.evse_current > 0 if state.charge_enabled else False
-        if self.evse_current > 32:
-            self.evse_current = self.evse_current / 100
-        return plugged, charging, self.evse_current
+        # self.evse_current bleibt als Rohwert im Register-Format erhalten,
+        # damit der Vergleich in set_current() korrekt funktioniert.
+        set_current_amps = self.evse_current / 100 if self._precise_current else float(self.evse_current)
+        return plugged, charging, set_current_amps
 
     def get_firmware_version(self) -> int:
         return self.version
