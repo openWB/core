@@ -46,6 +46,7 @@ class Evse:
                 if self.is_precise_current_active() is False:
                     self.activate_precise_current()
                 self._precise_current = self.is_precise_current_active()
+        self.evse_current = 0
 
     def get_plug_charge_state(self) -> Tuple[bool, bool, float]:
         time.sleep(0.1)
