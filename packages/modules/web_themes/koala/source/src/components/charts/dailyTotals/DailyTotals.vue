@@ -263,7 +263,7 @@ const secondaryCounterData = computed((): DailyTotalsItem[] => {
           imported: mqttStore.counterDailyImported('textValue', id) as string,
           exported: mqttStore.counterDailyExported('textValue', id) as string,
         },
-        color: 'var(--q-secondary-counter-stroke)',
+        color: mqttStore.gridComponentColor(id) || 'var(--q-secondary-counter-stroke)',
       });
     }
   });
