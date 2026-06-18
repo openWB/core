@@ -80,11 +80,11 @@ class VartaBatModbus(AbstractBat):
             # Das Register muss kontinuierlich geschrieben werden, da der Speicher
             # sonst nach 120s die Steuerung aufhebt.
             if power_limit == 0:
-                log.debug(f"Aktive Batteriesteuerung, Speicher wird auf Stop gesetzt.")
+                log.debug("Aktive Batteriesteuerung, Speicher wird auf Stop gesetzt.")
             else:
                 log.debug(f"Aktive Batteriesteuerung, übergebene Leistung: {power_limit}W. "
                           "Aktive Ladung nicht möglich. Speicher wird auf Stop gesetzt.")
-            
+
             self.client.write_register(1074, 0, data_type=ModbusDataType.INT_16, unit=unit)
             self.last_mode = 'stop'
 
