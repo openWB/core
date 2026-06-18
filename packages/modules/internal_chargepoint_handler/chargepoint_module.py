@@ -143,9 +143,17 @@ class ChargepointModule(AbstractChargepoint):
 
     def perform_phase_switch(self, phases_to_use: int) -> None:
         gpio_cp, gpio_relay = self._client.get_pins_phase_switch(phases_to_use)
-        with SingleComponentUpdateContext(self.fault_state, update_always=False):
-            self._client.evse_client.set_current(0)
-        time.sleep(5)
+        evse = self._client.evse_client
+        with SingleComponentUpdateContext(self.fault_state, update_always=False, reraise=True):
+            evse.set_current(0)
+            for _ in range(20):  # poll up to 10s (20 × 0.5s) for EVSE to confirm 0 A
+                _, _, evse_current = evse.get_plug_charge_state()
+                if evse_current == 0:
+                    break
+                time.sleep(0.5)
+                evse.set_current(0)
+            else:
+                raise Exception("Ladung konnte nicht gestoppt werden - Phasenumschaltung abgebrochen.")
         GPIO.output(gpio_cp, GPIO.HIGH)  # CP off
         GPIO.output(gpio_relay, GPIO.HIGH)  # 3 on/off
         time.sleep(5)
