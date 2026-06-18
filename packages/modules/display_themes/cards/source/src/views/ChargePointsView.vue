@@ -56,6 +56,8 @@ export default {
       modalVehicleId: 0,
       modalActiveTab: "tab-general",
       modalManualSocInputVisible: false,
+      modalScheduledPlanVisible: false,
+      modalScheduledPlanKey: null,
     };
   },
   computed: {
@@ -65,7 +67,17 @@ export default {
           chargePointId,
         ) === true;
       };
-    }
+    },
+    selectedScheduledPlan() {
+      if (this.modalScheduledPlanKey === null) {
+        return null;
+      }
+      const plans =
+        this.mqttStore.getChargePointConnectedVehicleScheduledChargingPlans(
+          this.modalChargePointId,
+        );
+      return plans ? plans[this.modalScheduledPlanKey] : null;
+    },
   },
   watch: {
     changesLocked(newValue, oldValue) {
@@ -75,6 +87,7 @@ export default {
         this.modalVehicleSelectVisible = false;
         this.modalChargePointSettingsVisible = false;
         this.modalManualSocInputVisible = false;
+        this.modalScheduledPlanVisible = false;
       }
     },
   },
@@ -371,6 +384,10 @@ export default {
         template,
       );
     },
+    openScheduledPlanDialog(planKey) {
+      this.modalScheduledPlanKey = planKey;
+      this.modalScheduledPlanVisible = true;
+    },
     scheduledChargingPlanHours(time) {
       return parseInt(time.split(":")[0], 10);
     },
@@ -391,6 +408,24 @@ export default {
         `chargemode.scheduled_charging.plans.${plan_id}.time`,
       );
       this.$root.sendTopicToBroker(templateTopic, template);
+    },
+    setChargePointConnectedVehicleScheduledChargingPlanSoc(id, plan_id, soc) {
+      this.updateChargePointChargeTemplate(
+        id,
+        parseInt(soc),
+        `chargemode.scheduled_charging.plans.${plan_id}.limit.soc_scheduled`,
+      );
+    },
+    setChargePointConnectedVehicleScheduledChargingPlanAmount(
+      id,
+      plan_id,
+      amount,
+    ) {
+      this.updateChargePointChargeTemplate(
+        id,
+        amount,
+        `chargemode.scheduled_charging.plans.${plan_id}.limit.amount`,
+      );
     },
   },
 };
@@ -426,6 +461,7 @@ export default {
   <i-modal
     v-model="modalChargePointSettingsVisible"
     size="lg"
+    :hide-on-click-outside="false"
   >
     <template #header>
       Einstellungen für Fahrzeug "{{
@@ -1316,20 +1352,14 @@ export default {
             )"
             :key="planKey"
           >
-            <i-form-group>
+            <i-form-group class="_margin-bottom:2">
               <i-container>
                 <i-row>
                   <i-button
                     size="lg"
                     block
                     :color="plan.active ? 'success' : 'danger'"
-                    @click="
-                      setChargePointConnectedVehicleScheduledChargingPlanActive(
-                        modalChargePointId,
-                        planKey,
-                        !plan.active,
-                      )
-                    "
+                    @click="openScheduledPlanDialog(planKey)"
                   >
                     <div class="plan-name">
                       {{ plan.name }}
@@ -1386,45 +1416,6 @@ export default {
                   </i-button>
                 </i-row>
               </i-container>
-            </i-form-group>
-            <i-form-group class="_margin-bottom:2">
-              <i-form-label>Ziel-Termin</i-form-label>
-              <i-row>
-                <i-column class="_margin-bottom:1">
-                  <extended-number-input
-                    unit="Uhr"
-                    :min="0"
-                    :max="23"
-                    :step="1"
-                    :model-value="scheduledChargingPlanHours(plan.time)"
-                    @update:model-value="
-                      setChargePointConnectedVehicleScheduledChargingPlanTime(
-                        modalChargePointId,
-                        planKey,
-                        $event,
-                        scheduledChargingPlanMinutes(plan.time),
-                      )
-                    "
-                  />
-                </i-column>
-                <i-column class="_margin-bottom:1">
-                  <extended-number-input
-                    unit="Min."
-                    :min="0"
-                    :max="55"
-                    :step="5"
-                    :model-value="scheduledChargingPlanMinutes(plan.time)"
-                    @update:model-value="
-                      setChargePointConnectedVehicleScheduledChargingPlanTime(
-                        modalChargePointId,
-                        planKey,
-                        scheduledChargingPlanHours(plan.time),
-                        $event,
-                      )
-                    "
-                  />
-                </i-column>
-              </i-row>
             </i-form-group>
           </div>
         </i-form>
@@ -1566,6 +1557,123 @@ export default {
     </i-tabs>
   </i-modal>
   <!-- end charge point settings modal-->
+  <!-- scheduled charging plan dialog -->
+  <i-modal
+    v-model="modalScheduledPlanVisible"
+    size="md"
+  >
+    <template #header>
+      {{ selectedScheduledPlan ? selectedScheduledPlan.name : "" }}
+    </template>
+    <i-form v-if="selectedScheduledPlan">
+      <i-form-group class="_margin-bottom:2">
+        <i-form-label>Plan aktiv</i-form-label>
+        <i-button-group block>
+          <i-button
+            :color="!selectedScheduledPlan.active ? 'danger' : ''"
+            @click="
+              setChargePointConnectedVehicleScheduledChargingPlanActive(
+                modalChargePointId,
+                modalScheduledPlanKey,
+                false,
+              )
+            "
+          >
+            Nein
+          </i-button>
+          <i-button
+            :color="selectedScheduledPlan.active ? 'success' : ''"
+            @click="
+              setChargePointConnectedVehicleScheduledChargingPlanActive(
+                modalChargePointId,
+                modalScheduledPlanKey,
+                true,
+              )
+            "
+          >
+            Ja
+          </i-button>
+        </i-button-group>
+      </i-form-group>
+      <i-form-group class="_margin-bottom:2">
+        <i-form-label>Ziel-Termin</i-form-label>
+        <i-row>
+          <i-column class="_margin-bottom:1">
+            <extended-number-input
+              unit="Uhr"
+              :min="0"
+              :max="23"
+              :step="1"
+              :model-value="
+                scheduledChargingPlanHours(selectedScheduledPlan.time)
+              "
+              @update:model-value="
+                setChargePointConnectedVehicleScheduledChargingPlanTime(
+                  modalChargePointId,
+                  modalScheduledPlanKey,
+                  $event,
+                  scheduledChargingPlanMinutes(selectedScheduledPlan.time),
+                )
+              "
+            />
+          </i-column>
+          <i-column class="_margin-bottom:1">
+            <extended-number-input
+              unit="Min."
+              :min="0"
+              :max="55"
+              :step="5"
+              :model-value="
+                scheduledChargingPlanMinutes(selectedScheduledPlan.time)
+              "
+              @update:model-value="
+                setChargePointConnectedVehicleScheduledChargingPlanTime(
+                  modalChargePointId,
+                  modalScheduledPlanKey,
+                  scheduledChargingPlanHours(selectedScheduledPlan.time),
+                  $event,
+                )
+              "
+            />
+          </i-column>
+        </i-row>
+      </i-form-group>
+      <i-form-group v-if="selectedScheduledPlan.limit.selected == 'soc'">
+        <i-form-label>Ziel-SoC</i-form-label>
+        <extended-number-input
+          unit="%"
+          :min="5"
+          :max="100"
+          :step="5"
+          :model-value="selectedScheduledPlan.limit.soc_scheduled"
+          @update:model-value="
+            setChargePointConnectedVehicleScheduledChargingPlanSoc(
+              modalChargePointId,
+              modalScheduledPlanKey,
+              $event,
+            )
+          "
+        />
+      </i-form-group>
+      <i-form-group v-else>
+        <i-form-label>Ziel-Energie</i-form-label>
+        <extended-number-input
+          unit="kWh"
+          :min="1"
+          :max="100"
+          :step="5"
+          :model-value="selectedScheduledPlan.limit.amount / 1000"
+          @update:model-value="
+            setChargePointConnectedVehicleScheduledChargingPlanAmount(
+              modalChargePointId,
+              modalScheduledPlanKey,
+              $event * 1000,
+            )
+          "
+        />
+      </i-form-group>
+    </i-form>
+  </i-modal>
   <!-- manual soc input -->
   <manual-soc-input
     v-model="modalManualSocInputVisible"
