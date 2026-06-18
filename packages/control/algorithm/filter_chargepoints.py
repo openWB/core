@@ -6,6 +6,8 @@ from typing import List, Optional, Tuple
 from control import data
 from control.chargemode import Chargemode
 from control.chargepoint.chargepoint import Chargepoint
+from control.consumer.consumer import Consumer
+from control.consumer.usage import ConsumerUsage
 from control.load_protocol import Load
 
 log = logging.getLogger(__name__)
@@ -89,6 +91,11 @@ def get_preferenced_load_charging(
             elif load.data.get.charge_state is False:
                 log.info(f"{'LP' if isinstance(load, Chargepoint) else 'Verbraucher'} {load.num}: "
                          f"Lädt nicht, daher keine weitere Berücksichtigung")
+                preferenced_loads_without_set_current.append(load)
+            elif (isinstance(load, Consumer) and
+                  load.data.usage.type in [ConsumerUsage.CONTINUOUS, ConsumerUsage.SUSPENDABLE_ONOFF]):
+                log.info(f"Verbraucher {load.num}: Verbrauchsart {load.data.usage.type} führt zu keiner weiteren "
+                         "Berücksichtigung")
                 preferenced_loads_without_set_current.append(load)
             else:
                 valid_group.append(load)
