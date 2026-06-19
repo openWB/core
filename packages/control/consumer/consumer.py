@@ -8,7 +8,7 @@ from control.chargepoint.chargepoint_state import CHARGING_STATES
 from control.consumer.consumer_data import ConsumerData, ConsumerUsage, MeterOnlyConfig
 from control.load_protocol import Load
 from helpermodules import timecheck
-from helpermodules.phase_handling import convert_single_evu_phase_to_cp_phase
+from helpermodules.phase_handling import convert_single_evu_phase_to_cp_phase, voltages_mean
 from modules.common.configurable_consumer import ConfigurableConsumer
 
 log = logging.getLogger(__name__)
@@ -107,6 +107,9 @@ class Consumer(Load):
         else:
             return required_current
 
+    def _convert_power_to_current(self, power: float) -> float:
+        return power / self.data.config.connected_phases / voltages_mean(self.data.get.voltages)
+
     def scheduled_charging(self) -> Tuple[int, str, Optional[str], int]:
         required_current = 0
         message = None
@@ -135,12 +138,14 @@ class Consumer(Load):
                         else:
                             log.debug(
                                 "Zeitladen: minimaler Speicher-SoC überschritten, Laden mit Zeitladen möglich.")
-                            required_current = self._parse_required_current_by_usage(self.data.usage.min_current)
+                            required_current = self._parse_required_current_by_usage(
+                                self._convert_power_to_current(self.data.config.max_power))
                             submode = Chargemode.TIME_CHARGING
                     else:
                         message = self.TIME_CHARGING_CONFLICT_ACTIVE_BAT_CONTROL
                 else:
-                    required_current = self._parse_required_current_by_usage(self.data.usage.min_current)
+                    required_current = self._parse_required_current_by_usage(
+                        self._convert_power_to_current(self.data.config.max_power))
                     submode = Chargemode.TIME_CHARGING
             else:
                 message = self.TIME_CHARGING_NO_PLAN_ACTIVE
@@ -149,7 +154,8 @@ class Consumer(Load):
         return required_current, message, None, submode
 
     def instant_charging(self) -> Tuple[int, str, Optional[str], int]:
-        required_current = self._parse_required_current_by_usage(self.data.usage.min_current)
+        required_current = self._parse_required_current_by_usage(
+            self._convert_power_to_current(self.data.config.max_power))
         message = None
         mode = Chargemode.INSTANT_CHARGING
         submode = Chargemode.INSTANT_CHARGING
@@ -162,7 +168,8 @@ class Consumer(Load):
         mode = Chargemode.ECO_CHARGING
         if data.data.optional_data.data.electricity_pricing.configured:
             if data.data.optional_data.ep_is_charging_allowed_price_threshold(self.data.usage.eco_charging.price_limit):
-                required_current = self._parse_required_current_by_usage(self.data.usage.min_current)
+                required_current = self._parse_required_current_by_usage(
+                    self._convert_power_to_current(self.data.config.max_power))
                 message = self.CHARGING_PRICE_LOW
                 submode = Chargemode.INSTANT_CHARGING
             else:
