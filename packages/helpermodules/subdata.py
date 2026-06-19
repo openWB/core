@@ -1187,6 +1187,8 @@ class SubData:
                 self.set_json_payload_class(var["consumer"+index].data.config, msg)
             elif re.search("openWB/consumer/[0-9]+/get", msg.topic) is not None:
                 self.set_json_payload_class(var["consumer"+index].data.get, msg)
+            elif re.search("openWB/consumer/[0-9]+/set", msg.topic) is not None:
+                self.set_json_payload_class(var["consumer"+index].data.set, msg)
             elif re.search("openWB/consumer/[0-9]+/extra_meter", msg.topic) is not None:
                 self.set_json_payload_class(var[f"consumer{index}"].data, msg)
             elif re.search("openWB/consumer/[0-9]+/usage$", msg.topic) is not None:

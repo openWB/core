@@ -39,8 +39,6 @@ class MeterOnlyConfig:
 @dataclass
 class SuspendableTunableDeviceConfig:
     chargemode: Chargemode = Chargemode.INSTANT_CHARGING
-    min_current: float = 0.5
-    min_intervall: int = 60
     eco_charging: EcoCharging = field(default_factory=lambda: EcoCharging())
     scheduled_charging: ScheduledSuspendableCharging = field(default_factory=lambda: ScheduledSuspendableCharging())
     time_charging: TimeCharging = field(default_factory=lambda: TimeCharging())
@@ -51,8 +49,6 @@ class SuspendableTunableDeviceConfig:
 @dataclass
 class SuspendableOnOffDeviceConfig:
     chargemode: Chargemode = Chargemode.INSTANT_CHARGING
-    min_current: float = 0.5
-    min_intervall: int = 60
     eco_charging: EcoCharging = field(default_factory=lambda: EcoCharging())
     scheduled_charging: ScheduledSuspendableCharging = field(default_factory=lambda: ScheduledSuspendableCharging())
     time_charging: TimeCharging = field(default_factory=lambda: TimeCharging())
@@ -63,8 +59,6 @@ class SuspendableOnOffDeviceConfig:
 @dataclass
 class ContinuousDeviceConfig:
     chargemode: Chargemode = Chargemode.INSTANT_CHARGING
-    min_current: float = 0.5
-    min_intervall: int = 2*60*60
     eco_charging: EcoCharging = field(default_factory=lambda: EcoCharging())
     scheduled_charging: ScheduledContinuousCharging = field(default_factory=lambda: ScheduledContinuousCharging())
     time_charging: TimeCharging = field(default_factory=lambda: TimeCharging())
@@ -101,6 +95,8 @@ class ConsumerConfig:
     connected_phases: int = 1
     phase_1: int = 1
     max_power: float = 5000
+    min_current: float = 0.5
+    min_intervall: int = 60
 
 
 @dataclass
@@ -124,10 +120,10 @@ class Get:
 
 @dataclass
 class Set:
-    current: float = 0
+    current: float = field(default=0, metadata={"topic": "set/current"})
     loadmanagement_available: bool = False
-    phases_to_use: int = 0
-    plug_time: Optional[float] = 0
+    phases_to_use: int = field(default=1, metadata={"topic": "set/phases_to_use"})
+    plug_time: Optional[float] = field(default=None, metadata={"topic": "set/plug_time"})
     required_power: float = 0
     current_prev: float = 0
     target_current: float = 0
