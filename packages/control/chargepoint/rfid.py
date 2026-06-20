@@ -24,9 +24,20 @@ class ChargepointRfidMixin:
              ((cp2_data.data.get.plug_state and self.data.get.plug_state and
                (cp2_data.data.set.plug_time - self.data.set.plug_time) < 0) or
               # kein EV am anderen Duo-Ladepunkt
-              cp2_data.data.get.plug_state is False)) or
-                # keine Duo
-                cp2_data is None):
+              cp2_data.data.get.plug_state is False))):
+            self.data.set.rfid = rfid
+            self.chargepoint_module.clear_rfid()
+            # Tag kann nur an einem Duo-Ladepunkt zugewiesen werden
+            if cp2_data.template.data.disable_after_unplug:
+                cp2_data.data.set.manual_lock = True
+            if data.data.ev_data[f"ev{cp2_data.data.config.ev}"].charge_template.data.load_default:
+                cp2_data.data.config.ev = 0
+            cp2_data.data.get.rfid = None
+            Pub().pub(f"openWB/set/chargepoint/{cp2_num}/get/rfid", None)
+            cp2_data.data.get.rfid_timestamp = None
+            Pub().pub(f"openWB/set/chargepoint/{cp2_num}/get/rfid_timestamp", None)
+            cp2_data.chargepoint_module.clear_rfid()
+        elif cp2_data is None:
             self.data.set.rfid = rfid
             self.chargepoint_module.clear_rfid()
 
@@ -63,7 +74,7 @@ class ChargepointRfidMixin:
                                 self.data.get.rfid_timestamp = None
                                 if self.template.data.disable_after_unplug:
                                     self.data.set.manual_lock = True
-                                if self.data.set.charging_ev_data.charge_template.data.load_default:
+                                if data.data.ev_data[f"ev{self.data.config.ev}"].charge_template.data.load_default:
                                     self.data.config.ev = 0
                                 Pub().pub(f"openWB/set/chargepoint/{self.num}/get/rfid_timestamp", None)
                                 msg = ("Es ist in den letzten 5 Minuten kein EV angesteckt worden, dem "
@@ -87,6 +98,7 @@ class ChargepointRfidMixin:
             if self.data.config.type == "external_openwb" or self.data.config.type == "internal_openwb":
                 for cp2 in data.data.cp_data.values():
                     if (cp2.num != self.num and
+                        (cp2.data.config.type == "external_openwb" or cp2.data.config.type == "internal_openwb") and
                             self.data.config.configuration["ip_address"] == cp2.data.config.configuration[
                                 "ip_address"]):
                         return cp2.num
