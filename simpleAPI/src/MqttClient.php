@@ -119,6 +119,29 @@ class MqttClient
     }
 
     /**
+     * Alle Werte für ein MQTT-Wildcard-Topic lesen.
+     */
+    public function getValuesByWildcard($topicPattern)
+    {
+        $results = [];
+
+        $cmd = $this->buildMosquittoCommand('sub', $topicPattern, '');
+        $cmd .= ' 2>/dev/null';
+
+        $output = shell_exec($cmd);
+        $lines = explode("\n", trim($output ?? ''));
+
+        foreach ($lines as $line) {
+            if (strpos($line, ' ') !== false) {
+                list($topic, $value) = explode(' ', $line, 2);
+                $results[$topic] = $value;
+            }
+        }
+
+        return $results;
+    }
+
+    /**
      * Wert in MQTT Topic schreiben
      */
     public function setValue($topic, $value)

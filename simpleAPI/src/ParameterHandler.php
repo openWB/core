@@ -73,6 +73,10 @@ class ParameterHandler
                 return $this->getChargepointDailyImported($id);
             case 'get_chargepoint_daily_exported':
                 return $this->getChargepointDailyExported($id);
+            case 'get_chargepoint_monthly_exported':
+                return $this->getChargepointMonthlyExported($id);
+            case 'get_chargepoint_yearly_exported':
+                return $this->getChargepointYearlyExported($id);
             case 'get_chargepoint_frequency':
                 return $this->getChargepointFrequency($id);
             case 'get_chargepoint_rfid':
@@ -187,6 +191,8 @@ class ParameterHandler
                 return $this->getPvPower($id);
             case 'get_pv_currents':
                 return $this->getPvCurrents($id);
+            case 'get_pv_imported':
+                return $this->getPvImported($id);
             case 'get_pv_exported':
                 return $this->getPvExported($id);
             case 'get_pv_daily_exported':
@@ -564,6 +570,11 @@ class ParameterHandler
      */
     private function getChargepointPower($id)
     {
+        if ($this->isTotalId($id)) {
+            $sum = $this->getTotalMetricValue('chargepoint', 'power');
+            return ['chargepoint_total' => ['power' => $sum]];
+        }
+
         try {
             $topic = "openWB/chargepoint/{$id}/get/power";
             $value = $this->mqttClient->getValue($topic);
@@ -1208,6 +1219,11 @@ class ParameterHandler
      */
     private function getChargepointImported($id)
     {
+        if ($this->isTotalId($id)) {
+            $sum = $this->getTotalMetricValue('chargepoint', 'imported');
+            return ['chargepoint_total' => ['imported' => $sum]];
+        }
+
         try {
             $topic = "openWB/chargepoint/{$id}/get/imported";
             $value = $this->mqttClient->getValue($topic);
@@ -1222,12 +1238,55 @@ class ParameterHandler
      */
     private function getChargepointExported($id)
     {
+        if ($this->isTotalId($id)) {
+            $sum = $this->getTotalMetricValue('chargepoint', 'exported');
+            return ['chargepoint_total' => ['exported' => $sum]];
+        }
+
         try {
             $topic = "openWB/chargepoint/{$id}/get/exported";
             $value = $this->mqttClient->getValue($topic);
             return ["chargepoint_{$id}" => ['exported' => floatval($value ?? 0)]];
         } catch (Exception $e) {
             return ["chargepoint_{$id}" => ['exported' => 0]];
+        }
+    }
+
+    /**
+     * Chargepoint Monthly Exported
+     */
+    private function getChargepointMonthlyExported($id)
+    {
+        if ($this->isTotalId($id)) {
+            $sum = $this->getTotalMetricValue('chargepoint', 'monthly_exported');
+            return ['chargepoint_total' => ['monthly_exported' => $sum]];
+        }
+
+        try {
+            $topic = "openWB/chargepoint/{$id}/get/monthly_exported";
+            $value = $this->mqttClient->getValue($topic);
+            return ["chargepoint_{$id}" => ['monthly_exported' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["chargepoint_{$id}" => ['monthly_exported' => 0]];
+        }
+    }
+
+    /**
+     * Chargepoint Yearly Exported
+     */
+    private function getChargepointYearlyExported($id)
+    {
+        if ($this->isTotalId($id)) {
+            $sum = $this->getTotalMetricValue('chargepoint', 'yearly_exported');
+            return ['chargepoint_total' => ['yearly_exported' => $sum]];
+        }
+
+        try {
+            $topic = "openWB/chargepoint/{$id}/get/yearly_exported";
+            $value = $this->mqttClient->getValue($topic);
+            return ["chargepoint_{$id}" => ['yearly_exported' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["chargepoint_{$id}" => ['yearly_exported' => 0]];
         }
     }
 
@@ -2027,6 +2086,11 @@ class ParameterHandler
      */
     private function getPvPower($id)
     {
+        if ($this->isTotalId($id)) {
+            $sum = $this->getTotalMetricValue('pv', 'power');
+            return ['pv_total' => ['power' => $sum]];
+        }
+
         try {
             $topic = "openWB/pv/{$id}/get/power";
             $value = $this->mqttClient->getValue($topic);
@@ -2065,10 +2129,34 @@ class ParameterHandler
     }
 
     /**
+     * PV Imported
+     */
+    private function getPvImported($id)
+    {
+        if ($this->isTotalId($id)) {
+            $sum = $this->getTotalMetricValue('pv', 'imported');
+            return ['pv_total' => ['imported' => $sum]];
+        }
+
+        try {
+            $topic = "openWB/pv/{$id}/get/imported";
+            $value = $this->mqttClient->getValue($topic);
+            return ["pv_{$id}" => ['imported' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["pv_{$id}" => ['imported' => 0]];
+        }
+    }
+
+    /**
      * PV Exported
      */
     private function getPvExported($id)
     {
+        if ($this->isTotalId($id)) {
+            $sum = $this->getTotalMetricValue('pv', 'exported');
+            return ['pv_total' => ['exported' => $sum]];
+        }
+
         try {
             $topic = "openWB/pv/{$id}/get/exported";
             $value = $this->mqttClient->getValue($topic);
@@ -2097,6 +2185,11 @@ class ParameterHandler
      */
     private function getPvMonthlyExported($id)
     {
+        if ($this->isTotalId($id)) {
+            $sum = $this->getTotalMetricValue('pv', 'monthly_exported');
+            return ['pv_total' => ['monthly_exported' => $sum]];
+        }
+
         try {
             $topic = "openWB/pv/{$id}/get/monthly_exported";
             $value = $this->mqttClient->getValue($topic);
@@ -2111,6 +2204,11 @@ class ParameterHandler
      */
     private function getPvYearlyExported($id)
     {
+        if ($this->isTotalId($id)) {
+            $sum = $this->getTotalMetricValue('pv', 'yearly_exported');
+            return ['pv_total' => ['yearly_exported' => $sum]];
+        }
+
         try {
             $topic = "openWB/pv/{$id}/get/yearly_exported";
             $value = $this->mqttClient->getValue($topic);
@@ -2156,6 +2254,36 @@ class ParameterHandler
         try {
             $value = $this->mqttClient->getValue($topic);
             return floatval($value ?? 0);
+        } catch (Exception $e) {
+            return 0;
+        }
+    }
+
+    /**
+     * Prüft, ob eine total-Abfrage angefordert wurde.
+     */
+    private function isTotalId($id)
+    {
+        return is_string($id) && strtolower(trim($id)) === 'total';
+    }
+
+    /**
+     * Summiert einen Metrik-Wert über alle vorhandenen IDs per MQTT-Wildcard.
+     */
+    private function getTotalMetricValue($componentType, $metric)
+    {
+        try {
+            $pattern = "openWB/{$componentType}/+/get/{$metric}";
+            $values = $this->mqttClient->getValuesByWildcard($pattern);
+
+            $sum = 0.0;
+            foreach ($values as $value) {
+                if (is_numeric($value)) {
+                    $sum += floatval($value);
+                }
+            }
+
+            return $sum;
         } catch (Exception $e) {
             return 0;
         }

@@ -225,6 +225,8 @@ class SimpleAPI
             'get_chargepoint_exported',
             'get_chargepoint_daily_imported',
             'get_chargepoint_daily_exported',
+            'get_chargepoint_monthly_exported',
+            'get_chargepoint_yearly_exported',
             'get_chargepoint_frequency',
             'get_chargepoint_rfid',
             'get_chargepoint_rfid_timestamp',
@@ -291,6 +293,7 @@ class SimpleAPI
             // PV - Einzelwerte
             'get_pv_power',
             'get_pv_currents',
+            'get_pv_imported',
             'get_pv_exported',
             'get_pv_daily_exported',
             'get_pv_monthly_exported',
