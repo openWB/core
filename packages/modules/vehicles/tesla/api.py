@@ -1,9 +1,13 @@
 #!/usr/bin/python3
 
+import ssl
 import logging
 import time
 import json
 from typing import Tuple
+
+from requests.adapters import HTTPAdapter
+from urllib3 import PoolManager
 
 from modules.common import req
 from modules.vehicles.tesla.config import TeslaSocToken
@@ -25,6 +29,37 @@ UA = ""
 X_TESLA_USER_AGENT = ""
 
 
+class TLS13HttpAdapter(HTTPAdapter):
+    """HTTP adapter that only negotiates TLS 1.3."""
+
+    def __init__(self, *args, **kwargs):
+        self._ssl_context = ssl.create_default_context()
+        self._ssl_context.minimum_version = ssl.TLSVersion.TLSv1_3
+        self._ssl_context.maximum_version = ssl.TLSVersion.TLSv1_3
+        super().__init__(*args, **kwargs)
+
+    def init_poolmanager(self, connections, maxsize, block=False, **pool_kwargs):
+        pool_kwargs["ssl_context"] = self._ssl_context
+        self.poolmanager = PoolManager(
+            num_pools=connections,
+            maxsize=maxsize,
+            block=block,
+            **pool_kwargs,
+        )
+
+    def proxy_manager_for(self, proxy, **proxy_kwargs):
+        proxy_kwargs["ssl_context"] = self._ssl_context
+        return super().proxy_manager_for(proxy, **proxy_kwargs)
+
+
+def __get_tesla_http_session():
+    session = req.get_http_session()
+    tls13_adapter = TLS13HttpAdapter()
+    session.mount("https://owner-api.teslamotors.com/", tls13_adapter)
+    session.mount("https://auth.tesla.com/", tls13_adapter)
+    return session
+
+
 def post_wake_up_command(vehicle: int, token: TeslaSocToken) -> str:
     vehicle_id = __get_vehicle_id(vehicle, token)
     command = f"vehicles/{vehicle_id}/wake_up"
@@ -34,7 +69,7 @@ def post_wake_up_command(vehicle: int, token: TeslaSocToken) -> str:
         "x-tesla-user-agent": X_TESLA_USER_AGENT,
         "authorization": "bearer " + token.access_token
     }
-    session = req.get_http_session()
+    session = __get_tesla_http_session()
     response = session.post(f"https://owner-api.teslamotors.com/api/1/{command}", headers=headers, timeout=50).json()
     return response["response"]["state"]
 
@@ -70,7 +105,7 @@ def __refresh_token(token: TeslaSocToken) -> TeslaSocToken:
         "refresh_token": token.refresh_token,
         "scope": "openid email offline_access",
     }
-    resp = req.get_http_session().post("https://auth.tesla.com/oauth2/v3/token",
+    resp = __get_tesla_http_session().post("https://auth.tesla.com/oauth2/v3/token",
                                        headers=headers,
                                        json=payload,
                                        timeout=50)
@@ -101,7 +136,7 @@ def __request_data(data_part: str, token: TeslaSocToken) -> str:
         "x-tesla-user-agent": X_TESLA_USER_AGENT,
         "authorization": "bearer " + token.access_token
     }
-    response = req.get_http_session().get(f"https://owner-api.teslamotors.com/api/1/{data_part}",
+    response = __get_tesla_http_session().get(f"https://owner-api.teslamotors.com/api/1/{data_part}",
                                           headers=headers,
                                           timeout=50)
     return response.text
