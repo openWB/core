@@ -5,7 +5,7 @@ from control import data
 from control.algorithm.utils import get_medium_charging_current
 from control.chargemode import Chargemode
 from control.chargepoint.chargepoint_state import CHARGING_STATES
-from control.consumer.consumer_data import ConsumerData, ConsumerUsage, MeterOnlyConfig
+from control.consumer.consumer_data import ConsumerData, ConsumerUsage, MeterOnlyConfig, ResetModes
 from control.load_protocol import Load
 from helpermodules import timecheck
 from helpermodules.phase_handling import convert_single_evu_phase_to_cp_phase, voltages_mean
@@ -59,9 +59,9 @@ class Consumer(Load):
             self.data.set.phases_to_use = self.data.config.connected_phases
             self.data.get.charge_state = True if self.data.get.power > 0 else False
             min_current, required_current, message, mode, submode = self.get_parameter()
+            self.set_mode_changed(submode, mode)
             self.set_control_parameter(min_current, required_current, self.data.config.connected_phases, submode, mode)
             self.set_state_and_log(message)
-            self.set_mode_changed(submode, mode)
             log.debug(
                 f"Verbraucher {self.num}: Sollstrom {required_current}, min. Ist-Strom {max(self.data.get.currents)},"
                 f" Modus {mode}, Submodus {submode}, {message}")
@@ -243,6 +243,26 @@ class Consumer(Load):
                 else:
                     return WaitForStartStates.WAIT_FOR_NEXT_TEST_RUN
 
+    def reset_wait_for_start(self):
+        self.data.set.wait_for_start_signal_received = False
+        self.data.set.wait_for_start_test_running = False
+        self.data.set.wait_for_start_last_test_timestamp = 0
+
+    def reset_chargemode_at_midnight(self):
+        if self.data.usage.reset_chargemode.mode == ResetModes.MIDNIGHT:
+            if self.data.usage.chargemode != self.data.usage.reset_chargemode.chargemode:
+                log.info(f"Zurücksetzen des Lademodus auf {self.data.usage.reset_chargemode.chargemode} "
+                         f"für Verbraucher {self.num} um Mitternacht.")
+                self.data.usage.chargemode = self.data.usage.reset_chargemode.chargemode
+
+    def reset_chargemode_at_time(self):
+        if self.data.usage.reset_chargemode.mode == ResetModes.TIME and self.data.usage.reset_chargemode.time is not None:
+            if timecheck.create_timestamp() > self.data.usage.reset_chargemode.time:
+                if self.data.usage.chargemode != self.data.usage.reset_chargemode.chargemode:
+                    log.info(f"Zurücksetzen des Lademodus auf {self.data.usage.reset_chargemode.chargemode} "
+                             f"für Verbraucher {self.num} um definierte Zeit.")
+                    self.data.usage.chargemode = self.data.usage.reset_chargemode.chargemode
+
     def set_control_parameter(self, min_current, required_current, phases, submode, mode):
         self.data.control_parameter.min_current = min_current
         self.data.control_parameter.required_current = required_current
@@ -267,4 +287,11 @@ class Consumer(Load):
 
     def set_mode_changed(self, submode: Chargemode, mode: Chargemode) -> None:
         self.submode_changed = (submode != self.data.control_parameter.submode)
-        self.chargemode_changed = (mode != self.data.control_parameter.chargemode)
+        if ((submode == "time_charging" and self.data.control_parameter.chargemode != "time_charging") or
+                (submode != "time_charging" and
+                 self.data.control_parameter.chargemode != mode)):
+            self.chargemode_changed = True
+            log.debug("Änderung des Lademodus")
+            self.data.control_parameter.timestamp_chargemode_changed = timecheck.create_timestamp()
+        else:
+            self.chargemode_changed = False

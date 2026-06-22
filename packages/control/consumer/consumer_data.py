@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Callable, Dict, List, Optional, Union
 from control.chargemode import Chargemode
 from control.chargepoint.control_parameter import ControlParameter, control_parameter_factory
@@ -29,6 +30,19 @@ class ScheduledSuspendableCharging:
 class TimeCharging:
     active: bool = False
     plans: List[TimeChargingPlanConsumer] = field(default_factory=empty_list_factory)
+
+
+class ResetModes(Enum):
+    NEVER = "never"
+    MIDNIGHT = "midnight"
+    TIME = "time"
+
+
+@dataclass
+class ResetChargemode:
+    mode: ResetModes = ResetModes.NEVER
+    time: Optional[int] = None
+    chargemode: Chargemode = Chargemode.INSTANT_CHARGING
 
 
 @dataclass
@@ -64,6 +78,7 @@ class ContinuousDeviceConfig:
     time_charging: TimeCharging = field(default_factory=lambda: TimeCharging())
     type: ConsumerUsage = ConsumerUsage.CONTINUOUS
     wait_for_start_active: bool = True
+    reset_chargemode: ResetChargemode = field(default_factory=lambda: ResetChargemode())
 
 
 GET_DEFAULTS_BY_USAGE: Dict[ConsumerUsage, Union[MeterOnlyConfig,
