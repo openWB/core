@@ -1251,9 +1251,6 @@ class SetData:
                   re.search("consumer/[0-9]+/set/current$", msg.topic) is not None or
                   re.search("consumer/[0-9]+/set/plug_time$", msg.topic) is not None or
                   re.search("consumer/[0-9]+/set/timestamp_last_current_set$", msg.topic) is not None or
-                  re.search("consumer/[0-9]+/set/wait_for_start_signal_received$", msg.topic) is not None or
-                  re.search("consumer/[0-9]+/set/wait_for_start_test_running$", msg.topic) is not None or
-                  re.search("consumer/[0-9]+/set/wait_for_start_last_test_timestamp$", msg.topic) is not None or
                   re.search("consumer/[0-9]+/get/set_power$", msg.topic) is not None):
                 self._validate_value(msg, float)
             elif (re.search("consumer/[0-9]+/get/currents$", msg.topic) is not None or
@@ -1268,7 +1265,8 @@ class SetData:
             elif re.search("consumer/[0-9]+/get/fault_state$", msg.topic) is not None:
                 self._validate_value(msg, int, [(0, 2)])
             elif (re.search("consumer/[0-9]+/get/fault_str$", msg.topic) is not None or
-                  re.search("consumer/[0-9]+/get/state_str$", msg.topic) is not None):
+                  re.search("consumer/[0-9]+/get/state_str$", msg.topic) is not None or
+                  re.search("consumer/[0-9]+/set/wait_for_start_state$", msg.topic) is not None):
                 self._validate_value(msg, str)
             elif re.search("consumer/[0-9]+/get/state$", msg.topic) is not None:
                 self._validate_value(msg, bool)

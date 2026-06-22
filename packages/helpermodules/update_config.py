@@ -201,6 +201,11 @@ class UpdateConfig:
         "^openWB/consumer/[0-9]+/get/state$",
         "^openWB/consumer/[0-9]+/get/state_str$",
         "^openWB/consumer/[0-9]+/get/voltages$",
+        "^openWB/consumer/[0-9]+/set/current$",
+        "^openWB/consumer/[0-9]+/set/phases_to_use$",
+        "^openWB/consumer/[0-9]+/set/plug_time$",
+        "^openWB/consumer/[0-9]+/set/timestamp_last_current_set$",
+        "^openWB/consumer/[0-9]+/set/wait_for_start_state$",
 
         "^openWB/counter/config/consider_less_charging$",
         "^openWB/counter/config/home_consumption_source_id$",

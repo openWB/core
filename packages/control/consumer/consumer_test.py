@@ -1,12 +1,12 @@
+from typing import Optional, Tuple
 from unittest.mock import Mock
 
 import pytest
 
 from control import data
 from control.chargemode import Chargemode
-from control.consumer.consumer import Consumer, WaitForStartStates
-from control.consumer.consumer_data import ContinuousDeviceConfig
-from helpermodules import timecheck
+from control.consumer.consumer import Consumer
+from control.consumer.consumer_data import ContinuousDeviceConfig, WaitForStartStates
 
 
 @pytest.fixture(autouse=True)
@@ -19,105 +19,103 @@ def consumer() -> Consumer:
     load = Consumer(1)
     load.data.usage = ContinuousDeviceConfig()
     load.data.config.min_current = 6
+    load.data.config.max_power = 2300
+    load.data.config.connected_phases = 1
+    load.data.get.voltages = [230]
     return load
 
 
-def test_wait_for_start_handler_runs_func_when_disabled(consumer: Consumer):
-    consumer.data.usage.wait_for_start_active = False
-    charging_func = Mock(return_value=(11, "ok", Chargemode.ECO_CHARGING, Chargemode.PV_CHARGING))
-
-    required_current, message, mode, submode = consumer.wait_for_start_handler(charging_func)
-
-    assert required_current == 11
-    assert message == "ok"
-    assert mode == Chargemode.ECO_CHARGING
-    assert submode == Chargemode.PV_CHARGING
-    charging_func.assert_called_once_with()
-
-
-def test_wait_for_start_handler_start_signal_received(monkeypatch: pytest.MonkeyPatch, consumer: Consumer):
-    consumer.data.usage.wait_for_start_active = True
-    consumer.data.set.wait_for_start_test_running = True
-    consumer.data.set.wait_for_start_signal_received = False
-    monkeypatch.setattr(consumer, "_wait_for_start_signal", Mock(return_value=WaitForStartStates.START_SIGNAL_RECEIVED))
-    charging_func = Mock(return_value=(9, "running", Chargemode.PV_CHARGING, Chargemode.PV_CHARGING))
-
-    required_current, message, mode, submode = consumer.wait_for_start_handler(charging_func)
-
-    assert required_current == 9
-    assert message == "running"
-    assert mode == Chargemode.PV_CHARGING
-    assert submode == Chargemode.PV_CHARGING
-    assert consumer.data.set.wait_for_start_signal_received is True
-    assert consumer.data.set.wait_for_start_test_running is False
-    charging_func.assert_called_once_with()
-
-
-def test_wait_for_start_handler_starts_test_run(monkeypatch: pytest.MonkeyPatch, consumer: Consumer):
-    consumer.data.usage.wait_for_start_active = True
-    monkeypatch.setattr(consumer, "_wait_for_start_signal", Mock(return_value=WaitForStartStates.START_TEST_RUN))
-    monkeypatch.setattr(timecheck, "create_timestamp", Mock(return_value=1000))
-
-    required_current, message, mode, submode = consumer.wait_for_start_handler(Mock())
-
-    assert required_current == 6
-    assert message == consumer.WAIT_FOR_START_SIGNAL_TEST_RUN
-    assert mode == Chargemode.INSTANT_CHARGING
-    assert submode == Chargemode.INSTANT_CHARGING
-    assert consumer.data.set.wait_for_start_test_running is True
-    assert consumer.data.set.wait_for_start_last_test_timestamp == 1000
-
-
-def test_wait_for_start_signal_wait_for_next_test_run(monkeypatch: pytest.MonkeyPatch, consumer: Consumer):
-    consumer.data.usage.wait_for_start_active = True
-    consumer.data.set.wait_for_start_last_test_timestamp = 780
-    monkeypatch.setattr(
-        consumer,
-        "_wait_for_start_signal",
-        Mock(return_value=WaitForStartStates.WAIT_FOR_NEXT_TEST_RUN),
-    )
-    monkeypatch.setattr(timecheck, "create_timestamp", Mock(return_value=800))
-
-    required_current, message, mode, submode = consumer.wait_for_start_handler(Mock())
-
-    assert required_current == 0
-    assert message == consumer.WAIT_FOR_START_SIGNAL.format("59 Min. 40 Sek.")
-    assert mode == Chargemode.STOP
-    assert submode == Chargemode.STOP
-    assert consumer.data.set.wait_for_start_test_running is False
-
-
 @pytest.mark.parametrize(
-    "signal_received,test_running,charge_state,now,last_test_timestamp,expected_state",
+    ("wait_for_start_active",
+     "state", "charge_state",
+     "func_result",
+     "expected_result",
+     "expected_state",
+     "func_calls"),
     [
-        pytest.param(True, False, True, 0, 0, WaitForStartStates.START_SIGNAL_RECEIVED,
-                     id="already-received"),
-        pytest.param(False, True, True, 0, 0, WaitForStartStates.START_SIGNAL_RECEIVED,
-                     id="charge-state-during-test-run"),
-        pytest.param(False, True, False, 0, 0, WaitForStartStates.WAIT_FOR_NEXT_TEST_RUN,
-                     id="test-run-finished-no-signal"),
-        pytest.param(False, False, False, 5000, 500, WaitForStartStates.START_TEST_RUN,
-                     id="pause-elapsed"),
-        pytest.param(False, False, False, 1000, 500, WaitForStartStates.WAIT_FOR_NEXT_TEST_RUN,
-                     id="pause-not-elapsed"),
+        pytest.param(
+            False,
+            WaitForStartStates.WAIT_FOR_DEVICE_START,
+            False,
+            (11, "ok", Chargemode.ECO_CHARGING, Chargemode.PV_CHARGING),
+            (11, "ok", Chargemode.ECO_CHARGING, Chargemode.PV_CHARGING),
+            WaitForStartStates.WAIT_FOR_DEVICE_START,
+            1,
+            id="wait-for-start-disabled-passthrough",
+        ),
+        pytest.param(
+            True,
+            WaitForStartStates.WAIT_FOR_DEVICE_START,
+            True,
+            (9, "running", Chargemode.PV_CHARGING, Chargemode.PV_CHARGING),
+            (0, Consumer.WAIT_FOR_STOPPED_DEVICE, Chargemode.STOP, Chargemode.STOP),
+            WaitForStartStates.WAIT_FOR_STOPPED_DEVICE,
+            0,
+            id="wait-for-device-start-charge-detected",
+        ),
+        pytest.param(
+            True,
+            WaitForStartStates.WAIT_FOR_DEVICE_START,
+            False,
+            (9, "running", Chargemode.PV_CHARGING, Chargemode.PV_CHARGING),
+            (6, Consumer.WAIT_FOR_DEVICE_START, Chargemode.INSTANT_CHARGING, Chargemode.INSTANT_CHARGING),
+            WaitForStartStates.WAIT_FOR_DEVICE_START,
+            0,
+            id="wait-for-device-start-no-charge",
+        ),
+        pytest.param(
+            True,
+            WaitForStartStates.WAIT_FOR_STOPPED_DEVICE,
+            False,
+            (8, "pv ok", Chargemode.PV_CHARGING, Chargemode.PV_CHARGING),
+            (8, f"{Consumer.DEVICE_WAITING_FOR_START} pv ok", Chargemode.PV_CHARGING, Chargemode.PV_CHARGING),
+            WaitForStartStates.DEVICE_WAITING_FOR_START,
+            1,
+            id="wait-for-stopped-device-started-waiting",
+        ),
+        pytest.param(
+            True,
+            WaitForStartStates.DEVICE_WAITING_FOR_START,
+            True,
+            (7, "started", Chargemode.ECO_CHARGING, Chargemode.INSTANT_CHARGING),
+            (7, "started", Chargemode.ECO_CHARGING, Chargemode.INSTANT_CHARGING),
+            WaitForStartStates.START_SIGNAL_RECEIVED,
+            1,
+            id="device-waiting-start-signal-received",
+        ),
+        pytest.param(
+            True,
+            WaitForStartStates.START_SIGNAL_RECEIVED,
+            True,
+            (10, "continue", Chargemode.PV_CHARGING, Chargemode.PV_CHARGING),
+            (10, "continue", Chargemode.PV_CHARGING, Chargemode.PV_CHARGING),
+            WaitForStartStates.START_SIGNAL_RECEIVED,
+            1,
+            id="start-signal-received-passthrough",
+        ),
     ],
 )
-def test_wait_for_start_signal_state_machine(
-    monkeypatch: pytest.MonkeyPatch,
-    consumer: Consumer,
-    signal_received: bool,
-    test_running: bool,
-    charge_state: bool,
-    now: int,
-    last_test_timestamp: int,
-    expected_state: WaitForStartStates,
+def test_wait_for_start_handler(
+        consumer: Consumer,
+        wait_for_start_active: bool,
+        state: WaitForStartStates,
+        charge_state: bool,
+        func_result: Tuple[int, str, Chargemode, Optional[Chargemode]],
+        expected_result: Tuple[int, str, Chargemode, Optional[Chargemode]],
+        expected_state: WaitForStartStates,
+        func_calls: int,
 ):
-    consumer.data.set.wait_for_start_signal_received = signal_received
-    consumer.data.set.wait_for_start_test_running = test_running
+    # setup
+    assert isinstance(consumer.data.usage, ContinuousDeviceConfig)
+    consumer.data.usage.wait_for_start_active = wait_for_start_active
+    consumer.data.set.wait_for_start_state = state
     consumer.data.get.charge_state = charge_state
-    consumer.data.set.wait_for_start_last_test_timestamp = last_test_timestamp
-    monkeypatch.setattr(timecheck, "create_timestamp", Mock(return_value=now))
+    charging_func = Mock(return_value=func_result)
 
-    state = consumer._wait_for_start_signal()
+    # execution
+    result = consumer.wait_for_start_handler(charging_func)
 
-    assert state == expected_state
+    # evaluation
+    assert result == expected_result
+    assert consumer.data.set.wait_for_start_state == expected_state
+    assert charging_func.call_count == func_calls

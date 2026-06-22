@@ -32,6 +32,13 @@ class TimeCharging:
     plans: List[TimeChargingPlanConsumer] = field(default_factory=empty_list_factory)
 
 
+class WaitForStartStates(Enum):
+    WAIT_FOR_DEVICE_START = "wait_for_device_start"
+    WAIT_FOR_STOPPED_DEVICE = "wait_for_stopped_device"
+    DEVICE_WAITING_FOR_START = "device_waiting_for_start"
+    START_SIGNAL_RECEIVED = "start_signal_received"
+
+
 class ResetModes(Enum):
     NEVER = "never"
     MIDNIGHT = "midnight"
@@ -145,11 +152,8 @@ class Set:
     charge_state_prev: bool = False
     power: Optional[float] = None
     timestamp_last_current_set: float = field(default=0, metadata={"topic": "set/timestamp_last_current_set"})
-    wait_for_start_signal_received: bool = field(
-        default=False, metadata={"topic": "set/wait_for_start_signal_received"})
-    wait_for_start_test_running: bool = field(default=False, metadata={"topic": "set/wait_for_start_test_running"})
-    wait_for_start_last_test_timestamp: float = field(
-        default=0, metadata={"topic": "set/wait_for_start_last_test_timestamp"})
+    wait_for_start_state: WaitForStartStates = field(
+        default=WaitForStartStates.WAIT_FOR_DEVICE_START, metadata={"topic": "set/wait_for_start_state"})
 
 
 @dataclass
