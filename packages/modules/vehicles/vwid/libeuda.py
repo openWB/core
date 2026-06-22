@@ -152,6 +152,7 @@ KEEP_JSON = 5
 DATA_PATH = Path(__file__).resolve().parents[4] / "data" / "modules" / "vwid"
 JSON_PATH = Path(str(RAMDISK_PATH) + '/vweuda')
 storeFileName = '/data_'
+MODULE_TYPE = 'vwid'
 
 # VIN-Brand map
 VIN_BRAND_MAP = {
@@ -814,6 +815,13 @@ class euda():
             _LOGGER.exception(f"failed to load latest EUDA JSON {latest}: {err}")
             return False
 
+    async def get_module_type(self, vehicle: int) -> str:
+        topic = f"openWB/vehicle/{vehicle}/soc_module/config"
+        conf = os.popen(f"mosquitto_sub -C 1 -t {topic}").read()
+        _LOGGER.debug(f"thread loop: conf={conf}")
+        _type = json.loads(conf)['type']
+        return _type
+
     # eudaThread
     async def async_eudaThread(self, username: str, password: str, vin: str, vehicle: int):
         if vin[0:3] not in VIN_BRAND_MAP:
@@ -851,15 +859,14 @@ class euda():
                 identifier = meta.get("Identifier")
 
                 # thread main loop
-                while True:
-                    topic = f"openWB/vehicle/{vehicle}/soc_module/config"
-                    conf = os.popen(f"mosquitto_sub -C 1 -t {topic}").read()
-                    _LOGGER.debug(f"thread loop: conf={conf}")
-                    _type = json.loads(conf)['type']
-                    _LOGGER.info(f"thread loop: _type={_type}")
-                    if _type != 'vwid':
+                _active = True
+                while _active:
+                    _type = await self.get_module_type(vehicle)
+                    _LOGGER.info(f"thread loop: ev{vehicle} module type={_type}")
+                    if _type != MODULE_TYPE:
                         _LOGGER.info(f"vehicle {vehicle} is not using module vwid: terminate now")
-                        return
+                        _active = False
+                        continue
                     try:
                         _data = None
                         while _data is None:
@@ -969,11 +976,11 @@ class euda():
 
             wait_until = time.time() + INITIAL_RESULT_WAIT
             while self.vin not in euda.result and time.time() < wait_until:
-                _LOGGER.info(f"wait for first EUDA result for VIN {self.vin}")
+                _LOGGER.info(f"wait for first EUDA result for VIN {ano_vin(self.vin)}")
                 time.sleep(1)
 
             if self.vin in euda.result:
-                _LOGGER.debug(f"vehicle match: {self.vin}")
+                _LOGGER.debug(f"vehicle match: {ano_vin(self.vin)}")
                 _ano_j = {}
                 for vin in euda.result:
                     _ano_j[ano_vin(vin)] = euda.result[vin]
