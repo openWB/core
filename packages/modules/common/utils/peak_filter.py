@@ -54,7 +54,7 @@ class PeakFilter:
     ) -> tuple[Optional[float], Optional[float]]:
         if max_power > 0:
             # filtere den Zählerstand wenn er größer ist als die maximal mögliche Energiemenge
-            # in 50 Jahren 
+            # in 50 Jahren
             # max. Leistung × 24 h/Tag × 365 Tage/Jahr × 50 Jahre
             max_energy = max_power * 24 * 365 * 50
             if imported is not None and imported > max_energy:
