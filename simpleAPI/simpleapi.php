@@ -186,7 +186,8 @@ class SimpleAPI
             'instant_charging_amount',
             'instant_charging_soc',
             'vehicle',
-            'manual_soc'
+            'manual_soc',
+            'set_io_output'
         ];
 
         foreach ($writeableKeys as $key) {
@@ -300,6 +301,9 @@ class SimpleAPI
             'get_pv_yearly_exported',
             'get_pv_fault_str',
             'get_pv_fault_state',
+            // IO - Ausgaenge
+            'get_io_output_all',
+            'get_io_output',
             // System - Werte
             'get_lastlivevaluesjson'
         ];
@@ -318,28 +322,47 @@ class SimpleAPI
      */
     private function handleWriteRequest($writeParams, $allParams)
     {
-        foreach ($writeParams as $param => $value) {
-            $chargepointId = $allParams['chargepoint_nr'] ?? null;
+        $firstTargetId = null;
 
-            // Auto-ID Feature: Niedrigste ID finden wenn keine angegeben
-            if ($chargepointId === null && $this->isChargepointParameter($param)) {
+        foreach ($writeParams as $param => $value) {
+            $targetId = null;
+            $idType = null;
+
+            if ($this->isChargepointParameter($param)) {
+                $targetId = $allParams['chargepoint_nr'] ?? null;
+                $idType = 'chargepoint';
+            } elseif ($this->isIoParameter($param)) {
+                $targetId = $allParams['io_nr'] ?? null;
+                $idType = 'io';
+            }
+
+            if ($idType !== null && ($targetId === null || $targetId === '' || $targetId === 'auto')) {
                 try {
-                    $chargepointId = $this->mqttClient->getLowestId('chargepoint');
-                    if ($chargepointId === null) {
+                    $targetId = $this->mqttClient->getLowestId($idType);
+                    if ($targetId === null) {
                         return [
                             'success' => false,
-                            'message' => 'No chargepoints available for auto-ID'
+                            'message' => "No {$idType} devices available for auto-ID"
                         ];
                     }
                 } catch (Exception $e) {
                     return [
                         'success' => false,
-                        'message' => 'Auto-ID failed: ' . $e->getMessage()
+                        'message' => "Auto-ID failed for {$idType}: " . $e->getMessage()
                     ];
                 }
             }
 
-            $result = $this->parameterHandler->writeParameter($param, $value, $chargepointId);
+            $options = [
+                'io_output' => $allParams['io_output'] ?? null,
+                'io_output_type' => $allParams['io_output_type'] ?? null
+            ];
+
+            $result = $this->parameterHandler->writeParameter($param, $value, $targetId, $options);
+
+            if ($firstTargetId === null) {
+                $firstTargetId = $targetId;
+            }
 
             if (!$result['success']) {
                 return $result;
@@ -352,9 +375,10 @@ class SimpleAPI
 
         return [
             'success' => true,
-            'message' => $this->getSuccessMessage($firstParam, $firstValue, $chargepointId ?? null),
+            'message' => $this->getSuccessMessage($firstParam, $firstValue, $firstTargetId ?? null),
             'data' => [
-                'chargepoint_nr' => $chargepointId,
+                'chargepoint_nr' => $this->isChargepointParameter($firstParam) ? $firstTargetId : null,
+                'io_nr' => $this->isIoParameter($firstParam) ? $firstTargetId : null,
                 $firstParam => $firstValue
             ]
         ];
@@ -384,7 +408,12 @@ class SimpleAPI
                     }
                 }
 
-                $data = $this->parameterHandler->readParameter($param, $id);
+                $options = [
+                    'io_output' => $allParams['io_output'] ?? null,
+                    'io_output_type' => $allParams['io_output_type'] ?? null
+                ];
+
+                $data = $this->parameterHandler->readParameter($param, $id, $options);
                 if ($data !== null) {
                     $result = array_merge($result, $data);
                 }
@@ -420,6 +449,8 @@ class SimpleAPI
     {
         if (strpos($param, 'chargepoint') !== false || strpos($param, 'get_chargepoint') !== false) {
             return 'chargepoint';
+        } elseif (strpos($param, 'io') !== false) {
+            return 'io';
         } elseif (strpos($param, 'battery') !== false) {
             return 'bat';  // MQTT Topic verwendet 'bat' nicht 'battery'
         } elseif (strpos($param, 'pv') !== false) {
@@ -452,7 +483,8 @@ class SimpleAPI
             'get_counter_powers',
             'get_counter_power_factors',
             'get_battery_currents',
-            'get_pv_currents'
+            'get_pv_currents',
+            'get_io_output_all'
         ];
 
         return in_array($param, $complexParameters);
@@ -482,6 +514,14 @@ class SimpleAPI
     }
 
     /**
+     * Pruefen ob Parameter zu IO gehoert
+     */
+    private function isIoParameter($param)
+    {
+        return in_array($param, ['set_io_output']) || strpos($param, 'get_io_') === 0;
+    }
+
+    /**
      * Erfolgs-Nachricht generieren
      */
     private function getSuccessMessage($param, $value, $chargepointId)
@@ -501,6 +541,8 @@ class SimpleAPI
                 return "Vehicle {$value} assigned to chargepoint {$chargepointId}.";
             case 'manual_soc':
                 return "Manual SoC set to {$value}% for chargepoint {$chargepointId}.";
+            case 'set_io_output':
+                return "IO output set to {$value} for io {$chargepointId}.";
             default:
                 return "Parameter {$param} set to {$value}.";
         }
