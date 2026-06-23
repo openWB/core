@@ -69,6 +69,7 @@ class SuspendableTunableDeviceConfig:
     scheduled_charging: ScheduledSuspendableCharging = field(default_factory=lambda: ScheduledSuspendableCharging())
     time_charging: TimeCharging = field(default_factory=lambda: TimeCharging())
     type: ConsumerUsage = ConsumerUsage.SUSPENDABLE_TUNABLE
+    reset_chargemode: ResetChargemode = field(default_factory=lambda: ResetChargemode())
     wait_for_start_active: bool = True
 
 
@@ -79,6 +80,7 @@ class SuspendableOnOffDeviceConfig:
     scheduled_charging: ScheduledSuspendableCharging = field(default_factory=lambda: ScheduledSuspendableCharging())
     time_charging: TimeCharging = field(default_factory=lambda: TimeCharging())
     type: ConsumerUsage = ConsumerUsage.SUSPENDABLE_ONOFF
+    reset_chargemode: ResetChargemode = field(default_factory=lambda: ResetChargemode())
     wait_for_start_active: bool = True
 
 

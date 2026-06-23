@@ -353,7 +353,7 @@ class Consumer(Load):
 
     def wait_for_start_handler(
             self, func: Callable[[], Tuple[int, str, Optional[str], int]]
-    ) -> Tuple[int, Chargemode, Optional[Chargemode], int]:
+    ) -> Tuple[float, str, Optional[Chargemode], Chargemode]:
         if self.data.usage.wait_for_start_active:
             if self.data.set.wait_for_start_state == WaitForStartStates.WAIT_FOR_DEVICE_START:
                 if self.data.get.charge_state:
@@ -438,8 +438,9 @@ class Consumer(Load):
 
     def set_mode_changed(self, submode: Chargemode, mode: Chargemode) -> None:
         self.submode_changed = (submode != self.data.control_parameter.submode)
-        if ((submode == "time_charging" and self.data.control_parameter.chargemode != "time_charging") or
-                (submode != "time_charging" and
+        if ((submode == Chargemode.TIME_CHARGING and
+             self.data.control_parameter.chargemode != Chargemode.TIME_CHARGING) or
+                (submode != Chargemode.TIME_CHARGING and
                  self.data.control_parameter.chargemode != mode)):
             self.chargemode_changed = True
             log.debug("Änderung des Lademodus")

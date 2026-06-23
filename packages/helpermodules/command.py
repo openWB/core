@@ -1243,6 +1243,7 @@ class Command:
                 payload, connection_id,
                 f'Die ID \'{payload["data"]["plan"]}\' ist größer als die maximal vergebene '
                 f'ID \'{self.max_id_consumer_scheduled_plan}\'.', MessageType.ERROR)
+            return
         for plan in usage.scheduled_charging.plans:
             if plan.id == payload["data"]["plan"]:
                 usage.scheduled_charging.plans.remove(plan)
@@ -1286,6 +1287,7 @@ class Command:
         if self.max_id_consumer_time_plan < payload["data"]["plan"]:
             log.error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.",
                       MessageType.ERROR)
+            return
         for plan in usage.time_charging.plans:
             if plan.id == payload["data"]["plan"]:
                 usage.time_charging.plans.remove(plan)
