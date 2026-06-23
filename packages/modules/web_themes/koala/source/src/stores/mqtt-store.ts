@@ -1243,13 +1243,12 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const chargePointColor = computed(() => {
     return (chargePointId: number): string | null => {
-      const DEFAULT_COLOR = '#007bff';
       const color = getValue.value(
         `openWB/chargepoint/${chargePointId}/config`,
         'color',
         null,
       ) as string | null;
-      return resolveComponentColor(color, DEFAULT_COLOR);
+      return resolveComponentColor(color, SETTINGS_UI_COLORS.chargePoint);
     };
   });
 
@@ -2914,9 +2913,11 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const batteryColor = computed(() => {
     return (batteryId: number): string | null => {
-      const DEFAULT_COLOR = '#ffc107';
       const config = getComponentConfiguration.value(batteryId);
-      return resolveComponentColor(config?.color, DEFAULT_COLOR);
+      return resolveComponentColor(
+        config?.color,
+        SETTINGS_UI_COLORS.battery,
+      );
     };
   });
 
@@ -2983,13 +2984,12 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const vehicleColor = computed(() => {
     return (vehicleId: number): string | null => {
-      const DEFAULT_COLOR = '#17a2b8';
       const color = getValue.value(
         `openWB/vehicle/${vehicleId}/color`,
         undefined,
         null,
       ) as string | null;
-      return resolveComponentColor(color, DEFAULT_COLOR);
+      return resolveComponentColor(color, SETTINGS_UI_COLORS.vehicle);
     };
   });
 
@@ -3774,9 +3774,8 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const secondaryCounterColor = computed(() => {
     return (componentId: number) => {
-      const DEFAULT_COLOR = '#dc3545';
       const color = getComponentConfiguration.value(componentId)?.color;
-      return resolveComponentColor(color, DEFAULT_COLOR);
+      return resolveComponentColor(color, SETTINGS_UI_COLORS.counter);
     };
   });
 
@@ -3801,9 +3800,8 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const gridComponentColor = computed(() => {
     return (componentId: number) => {
-      const DEFAULT_COLOR = '#dc3545';
       const color = getComponentConfiguration.value(componentId)?.color;
-      return resolveComponentColor(color, DEFAULT_COLOR);
+      return resolveComponentColor(color, SETTINGS_UI_COLORS.counter);
     };
   });
 
@@ -4067,9 +4065,8 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const pvColor = computed(() => {
     return (pvId: number): string | null => {
-      const DEFAULT_COLOR = '#28a745';
       const config = getComponentConfiguration.value(pvId);
-      return resolveComponentColor(config?.color, DEFAULT_COLOR);
+      return resolveComponentColor(config?.color, SETTINGS_UI_COLORS.pv);
     };
   });
 
@@ -4115,6 +4112,21 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /* helpers */
+
+  /**
+   * Standard settings UI default component colors
+   * These are only used as sentinels in resolveComponentColor to detect an
+   * uncustomized component color; they intentionally differ from the koala
+   * palette, in quasar.variables.scss (var(--q-*)).
+   */
+  const SETTINGS_UI_COLORS = {
+    chargePoint: '#007bff',
+    battery: '#ffc107',
+    vehicle: '#17a2b8',
+    counter: '#dc3545',
+    pv: '#28a745',
+  } as const;
+
   const resolveComponentColor = (
     color: string | null | undefined,
     defaultColor: string,
