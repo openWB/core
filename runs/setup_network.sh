@@ -50,8 +50,37 @@ function get_mac() {
 }
 
 function setup_pnp_network() {
-	# ToDo: make ip configurable
-	myVirtualIp="192.168.193.250"
+	defaultPnpIpAddress="192.168.193.250"
+	defaultPnpIpPrefix=24
+	defaultPnpIp="{\"address\": \"$defaultPnpIpAddress\", \"prefix\": $defaultPnpIpPrefix}"
+	if myPnpIp=$(mosquitto_sub -t "openWB/system/pnp_ip" -p 1886 -C 1 -W 1 --quiet); then
+		echo "got plug'n'play ip setting: '$myPnpIp'"
+	else
+		echo "failed getting plug'n'play ip setting! assuming '$defaultPnpIp'"
+		myPnpIp="$defaultPnpIp"
+	fi
+	if myPnpIpAddress=$(echo "$myPnpIp" | jq -r -e '.address'); then
+		echo "got plug'n'play ip address: '$myPnpIpAddress'"
+		# check if the address is valid
+		if ! [[ $myPnpIpAddress =~ ^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$ ]]; then
+			echo "invalid plug'n'play ip address! assuming '$defaultPnpIpAddress'"
+			myPnpIpAddress="$defaultPnpIpAddress"
+		fi
+	else
+		echo "failed getting plug'n'play ip address! assuming '$defaultPnpIpAddress'"
+		myPnpIpAddress="$defaultPnpIpAddress"
+	fi
+	if myPnpIpPrefix=$(echo "$myPnpIp" | jq -r -e '.prefix'); then
+		echo "got plug'n'play ip prefix: '$myPnpIpPrefix'"
+		# check if the prefix is valid, prevent using too small prefixes which would cause large network ranges and potential conflicts
+		if ! [[ $myPnpIpPrefix =~ ^[0-9]+$ ]] || ((myPnpIpPrefix < 8 || myPnpIpPrefix > 32)); then
+			echo "invalid plug'n'play ip prefix! assuming '$defaultPnpIpPrefix'"
+			myPnpIpPrefix="$defaultPnpIpPrefix"
+		fi
+	else
+		echo "failed getting plug'n'play ip prefix! assuming '$defaultPnpIpPrefix'"
+		myPnpIpPrefix="$defaultPnpIpPrefix"
+	fi
 	if isSecondary=$(mosquitto_sub -t "openWB/general/extern" -p 1886 -C 1 -W 1 --quiet); then
 		echo "got 'is secondary' setting: '$isSecondary'"
 	else
@@ -60,10 +89,10 @@ function setup_pnp_network() {
 	fi
 	if [[ $isSecondary == "true" ]]; then
 		echo "running as secondary, disabling plug'n'play network on dev $myPrimaryNetDevice"
-		sudo ip addr del "$myVirtualIp/24" dev "$myPrimaryNetDevice"
+		sudo ip addr del "$myPnpIpAddress/$myPnpIpPrefix" dev "$myPrimaryNetDevice"
 	else
 		echo "running as primary, enabling plug'n'play network on dev $myPrimaryNetDevice"
-		sudo ip addr add "$myVirtualIp/24" dev "$myPrimaryNetDevice"
+		sudo ip addr add "$myPnpIpAddress/$myPnpIpPrefix" dev "$myPrimaryNetDevice"
 	fi
 }
 
