@@ -33,9 +33,16 @@ class TLS13HttpAdapter(HTTPAdapter):
     """HTTP adapter that only negotiates TLS 1.3."""
 
     def __init__(self, *args, **kwargs):
-        self._ssl_context = ssl.create_default_context()
-        self._ssl_context.minimum_version = ssl.TLSVersion.TLSv1_3
-        self._ssl_context.maximum_version = ssl.TLSVersion.TLSv1_3
+        ctx = ssl.create_default_context()
+        try:
+            ctx.minimum_version = ssl.TLSVersion.TLSv1_3
+            ctx.maximum_version = ssl.TLSVersion.TLSv1_3
+        except Exception as exc:
+            raise RuntimeError(
+                "TLS 1.3 is required for the Tesla API but is not supported by this Python/OpenSSL build. "
+                "Please upgrade Python/OpenSSL on this system."
+            ) from exc
+        self._ssl_context = ctx
         super().__init__(*args, **kwargs)
 
     def init_poolmanager(self, connections, maxsize, block=False, **pool_kwargs):
@@ -52,6 +59,23 @@ class TLS13HttpAdapter(HTTPAdapter):
         return super().proxy_manager_for(proxy, **proxy_kwargs)
 
 
+def __auth_headers(token: TeslaSocToken) -> dict:
+    if token.access_token is None:
+        raise Exception("Konfiguration des Tesla SoC unvollständig! Keine Access Token vorhanden.")
+    return {
+        "user-agent": UA,
+        "x-tesla-user-agent": X_TESLA_USER_AGENT,
+        "authorization": "bearer " + token.access_token
+    }
+
+
+def __no_auth_headers() -> dict:
+    return {
+        "user-agent": UA,
+        "x-tesla-user-agent": X_TESLA_USER_AGENT,
+    }
+
+
 def __get_tesla_http_session():
     session = req.get_http_session()
     tls13_adapter = TLS13HttpAdapter()
@@ -64,14 +88,12 @@ def post_wake_up_command(vehicle: int, token: TeslaSocToken) -> str:
     vehicle_id = __get_vehicle_id(vehicle, token)
     command = f"vehicles/{vehicle_id}/wake_up"
     log.debug(f"Sending command: '{command}'")
-    headers = {
-        "user-agent": UA,
-        "x-tesla-user-agent": X_TESLA_USER_AGENT,
-        "authorization": "bearer " + token.access_token
-    }
-    session = __get_tesla_http_session()
-    response = session.post(f"https://owner-api.teslamotors.com/api/1/{command}", headers=headers, timeout=50).json()
-    return response["response"]["state"]
+    headers = __auth_headers(token)
+    with __get_tesla_http_session() as session:
+        response = session.post(
+            f"https://owner-api.teslamotors.com/api/1/{command}", headers=headers, timeout=50
+        ).json()
+        return response["response"]["state"]
 
 
 def request_soc_range(vehicle: int, token: TeslaSocToken) -> Tuple[float, float, float]:
@@ -87,28 +109,37 @@ def request_soc_range(vehicle: int, token: TeslaSocToken) -> Tuple[float, float,
 
 
 def validate_token(token: TeslaSocToken) -> TeslaSocToken:
-    if token.access_token is None and token.refresh_token is None:
-        raise Exception("Konfiguration des Tesla SoC unvollständig! Keine Token vorhanden.")
+    if token is None:
+        raise Exception("Konfiguration des Tesla SoC fehlt vollständig.")
+    if token.refresh_token is None:
+        raise Exception("Konfiguration des Tesla SoC unvollständig! Keine Refresh Token vorhanden.")
+    if token.access_token is None:
+        log.debug("No access token present. Refreshing token")
+        return __refresh_token(token)
     expiration = token.created_at + token.expires_in
-    log.debug("No need to authenticate. Valid token already present.")
     if time.time() > expiration:
-        log.debug("Access token expired. Refreshing token.")
+        log.debug("Access Token expired. Refreshing token")
         token = __refresh_token(token)
+    else:
+        log.debug("No need to authenticate. Valid token already present.")
     return token
 
 
 def __refresh_token(token: TeslaSocToken) -> TeslaSocToken:
-    headers = {"user-agent": UA, "x-tesla-user-agent": X_TESLA_USER_AGENT}
+    headers = __no_auth_headers()
     payload = {
         "grant_type": "refresh_token",
         "client_id": "ownerapi",
         "refresh_token": token.refresh_token,
         "scope": "openid email offline_access",
     }
-    resp = __get_tesla_http_session().post("https://auth.tesla.com/oauth2/v3/token",
-                                           headers=headers,
-                                           json=payload,
-                                           timeout=50)
+    with __get_tesla_http_session() as session:
+        resp = session.post(
+            "https://auth.tesla.com/oauth2/v3/token",
+            headers=headers,
+            json=payload,
+            timeout=50,
+        )
     log.debug("received refresh token")
     resp_json = resp.json()
     token.refresh_token = resp_json["refresh_token"]
@@ -131,12 +162,11 @@ def __get_vehicle_id(index: int, token: TeslaSocToken) -> str:
 
 def __request_data(data_part: str, token: TeslaSocToken) -> str:
     log.debug(f"Requesting data: '{data_part}'")
-    headers = {
-        "user-agent": UA,
-        "x-tesla-user-agent": X_TESLA_USER_AGENT,
-        "authorization": "bearer " + token.access_token
-    }
-    response = __get_tesla_http_session().get(f"https://owner-api.teslamotors.com/api/1/{data_part}",
-                                              headers=headers,
-                                              timeout=50)
-    return response.text
+    headers = __auth_headers(token)
+    with __get_tesla_http_session() as session:
+        response = session.get(
+            f"https://owner-api.teslamotors.com/api/1/{data_part}",
+            headers=headers,
+            timeout=50,
+        )
+        return response.text
