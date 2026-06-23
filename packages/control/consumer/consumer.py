@@ -112,9 +112,9 @@ class Consumer(Load):
         return self.data.config.min_current, "Zielladen noch nicht implementiert", Chargemode.STOP, Chargemode.STOP
         plan_data, remaining_time, duration = self._find_recent_plan(self.data.usage.scheduled_charging.plans)
         if plan_data:
-            control_parameter.current_plan = plan_data.id
+            self.data.config.control_parameter.current_plan = plan_data.id
         else:
-            control_parameter.current_plan = None
+            self.data.config.control_parameter.current_plan = None
         return self.scheduled_charging_calc_current(
             plan_data,
             remaining_time,
@@ -163,7 +163,8 @@ class Consumer(Load):
     #     log.debug(f"Verbleibende Zeit bis zum Ladestart [s]:{remaining_time}, Dauer [h]: {duration/3600}")
     #     return remaining_time, duration
 
-    # SCHEDULED_REACHED_MAX_ON_TIME = ("Zielladen abgeschlossen, da die geplante Ladedauer bereits überschritten wurde. ")
+    # SCHEDULED_REACHED_MAX_ON_TIME = ("Zielladen abgeschlossen, da die geplante Ladedauer bereits überschritten "
+    # "wurde.")
     # SCHEDULED_CHARGING_REACHED_MAX_AND_LIMIT_SOC = (
     #     "Zielladen abgeschlossen, da das Limit für Fahrzeug Laden mit Überschuss (SoC-Limit)"
     #     " sowie der Fahrzeug-SoC (Ziel-SoC) bereits erreicht wurde. ")
@@ -191,7 +192,8 @@ class Consumer(Load):
     #     "Kein Zielladen mit Überschuss, da das SoC-Limit für Überschuss-Laden erreicht wurde.")
 
     # def scheduled_charging_calc_current(self,
-    #                                     plan: Optional[Union[ContinuousScheduledPlanConsumer, SuspendableScheduledPlanConsumer]],
+    #                                     plan: Optional[Union[ContinuousScheduledPlanConsumer,
+    # SuspendableScheduledPlanConsumer]],
     #                                     remaining_time: float,
     #                                     duration: float) -> Tuple[str, str]:
     #     submode = "stop"
