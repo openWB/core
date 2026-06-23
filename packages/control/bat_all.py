@@ -153,31 +153,21 @@ class BatAll:
                 fault_state = 0
                 for battery in data.data.bat_data.values():
                     try:
-                        if battery.data.get.fault_state < 2:
-                            try:
-                                power += battery.data.get.power
-                            except Exception:
-                                log.exception(f"Fehler im Bat-Modul {battery.num}")
-                            imported += battery.data.get.imported
-                            exported += battery.data.get.exported
-                            soc_sum += battery.data.get.soc
-                            soc_count += 1
-                        else:
-                            if fault_state < battery.data.get.fault_state:
-                                fault_state = battery.data.get.fault_state
+                        power += battery.data.get.power
                     except Exception:
                         log.exception(f"Fehler im Bat-Modul {battery.num}")
-                if fault_state == 0:
-                    self.data.get.imported = imported
-                    self.data.get.exported = exported
-                    self.data.get.fault_state = 0
-                    self.data.get.fault_str = NO_ERROR
-                else:
-                    self.data.get.fault_state = fault_state
-                    self.data.get.fault_str = ("Bitte die Statusmeldungen der Speicher prüfen. Es konnte kein "
-                                               "aktueller Zählerstand ermittelt werden, da nicht alle Module Werte "
-                                               "liefern.")
+                    imported += battery.data.get.imported
+                    exported += battery.data.get.exported
+                    soc_sum += battery.data.get.soc
+                    soc_count += 1
+                    fault_state = max(fault_state, battery.data.get.fault_state)
+                self.data.get.fault_state = fault_state
+                self.data.get.fault_str = NO_ERROR if fault_state == 0 else (
+                    "Bitte die Statusmeldungen der Speicher prüfen. "
+                    "Es haben nicht alle Module aktuelle Zählerstände geliefert.")
                 self.data.get.power = power
+                self.data.get.imported = imported
+                self.data.get.exported = exported
                 try:
                     self.data.get.soc = int(soc_sum / soc_count)
                 except ZeroDivisionError:
