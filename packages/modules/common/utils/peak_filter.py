@@ -53,27 +53,18 @@ class PeakFilter:
             exported: Optional[float] = None,
     ) -> tuple[Optional[float], Optional[float]]:
         if max_power > 0:
-            # filtere den Zählerstand wenn er größer ist als die maximal mögliche Energiemenge
-            # in 50 Jahren
+            # maximal mögliche Energiemenge in 50 Jahren:
             # max. Leistung × 24 h/Tag × 365 Tage/Jahr × 50 Jahre
             max_energy = max_power * 24 * 365 * 50
-            if imported is not None and imported > max_energy:
-                log.debug(f"PeakFilter: Unplausibler importierter Zählerstand: {imported / 1000}kWh. "
-                          f"Maximal mögliche Energiemenge in 50 Jahren: {max_energy / 1000}kWh.")
-                imported = None
-            if exported is not None and exported > max_energy:
-                log.debug(f"PeakFilter: Unplausibler exportierter Zählerstand: {exported / 1000}kWh. "
-                          f"Maximal mögliche Energiemenge in 50 Jahren: {max_energy / 1000}kWh.")
-                exported = None
             # Die erlaubte Abweichung ist doppelt so groß wie die mögliche
             # Energiemenge pro Intervall bei maximaler Leistung
             control_interval = data.data.general_data.data.control_interval
             allowed_deviation = 2 * (control_interval / 3600) * max_power
 
-            imp = self.check_total_energy(imported, self.imported, allowed_deviation)
+            imp = self.check_total_energy(imported, self.imported, allowed_deviation, max_energy)
             self.imported = imported
 
-            exp = self.check_total_energy(exported, self.exported, allowed_deviation)
+            exp = self.check_total_energy(exported, self.exported, allowed_deviation, max_energy)
             self.exported = exported
             return imp, exp
         return imported, exported
@@ -82,10 +73,14 @@ class PeakFilter:
         self,
         total_energy: Optional[float],
         previous_total_energy: Optional[float],
-        allowed_deviation: float
+        allowed_deviation: float,
+        max_energy: float
     ) -> Optional[float]:
         if total_energy is not None:
-            if previous_total_energy is None:
+            if total_energy > max_energy:
+                log.debug(f"PeakFilter: Unplausibler Zählerwert: {total_energy / 1000}kWh. "
+                          f"Maximal mögliche Energiemenge in 50 Jahren: {max_energy / 1000}kWh.")
+            elif previous_total_energy is None:
                 if allowed_deviation > 0:
                     self.fault_state.warning("PeakFilter: Vorheriger Wert None (Startup), "
                                              f"aktueller Zählerwert: {total_energy / 1000 }kWh. "

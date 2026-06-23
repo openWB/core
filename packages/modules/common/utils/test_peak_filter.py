@@ -73,9 +73,12 @@ cases = [
     Params("Imp/ Exp Speicher - Werte invalide", ComponentType.BAT, 1000, 500, 400, 1300, 800, None, None),
     Params("Imp/ Exp Speicher - Import invalide", ComponentType.BAT, 1000, 500, 400, 1300, 505, None, 505),
     Params("Imp/ Exp Speicher - Export invalide", ComponentType.BAT, 1000, 500, 400, 1005, 800, 1005, None),
+    Params("Imp/ Exp Speicher - Import > 50Y", ComponentType.BAT, 500000000, 500, 400, 500000000, 505, None, 505),
     Params("Imp/ Exp Speicher - Export > 50Y", ComponentType.BAT, 1000, 500000000, 400, 1005, 500000000, 1005, None),
-    Params("Imp/ Exp Speicher - Export ~ 40Y", ComponentType.BAT,
+    Params("Imp/ Exp Speicher - Export ~ 45Y", ComponentType.BAT,
            1000, 400000000, 400, 1005, 400000000, 1005, 400000000),
+    Params("Imp/ Exp Speicher - Import > 50Y", ComponentType.BAT,
+           400000000, 500, 400, 400000000, 505, 400000000, 505)
 ]
 
 
