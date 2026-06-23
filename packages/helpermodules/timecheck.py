@@ -9,7 +9,8 @@ from helpermodules.utils.error_handling import ImportErrorContext
 with ImportErrorContext():
     from dateutil.relativedelta import relativedelta
 
-from helpermodules.abstract_plans import AutolockPlan, ContinuousScheduledPlanConsumer, ScheduledChargingPlan, SuspendableScheduledPlanConsumer, TimeChargingPlan, TimeChargingPlanConsumer
+from helpermodules.abstract_plans import (AutolockPlan, ContinuousScheduledPlanConsumer, ScheduledChargingPlan,
+                                          SuspendableScheduledPlanConsumer, TimeChargingPlan, TimeChargingPlanConsumer)
 
 log = logging.getLogger(__name__)
 

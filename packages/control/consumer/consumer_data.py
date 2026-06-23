@@ -110,7 +110,7 @@ GET_CLASS_BY_USAGE: Dict[ConsumerUsage, Callable] = {
     ConsumerUsage.CONTINUOUS: ContinuousDeviceConfig,
 }
 
-get_plan_class_for_usage: Dict[ConsumerUsage, Callable] = {
+GET_PLAN_CLASS_FOR_USAGE: Dict[ConsumerUsage, Callable] = {
     ConsumerUsage.SUSPENDABLE_TUNABLE: SuspendableScheduledPlanConsumer,
     ConsumerUsage.SUSPENDABLE_ONOFF: SuspendableScheduledPlanConsumer,
     ConsumerUsage.CONTINUOUS: ContinuousScheduledPlanConsumer,
