@@ -298,7 +298,9 @@ const secondaryCounterData = computed((): DailyTotalsItem[] => {
           imported: mqttStore.counterDailyImported('textValue', id) as string,
           exported: mqttStore.counterDailyExported('textValue', id) as string,
         },
-        color: mqttStore.gridComponentColor(id) || 'var(--q-secondary-counter-stroke)',
+        color:
+          mqttStore.gridComponentColor(id) ||
+          'var(--q-secondary-counter-stroke)',
       });
     }
   });
@@ -373,7 +375,10 @@ const individualPvData = computed((): DailyTotalsItem[] => {
         power: mqttStore.pvPowerIndividual(id, 'textValue') as string,
         powerValue: mqttStore.pvPowerIndividual(id, 'value') as number,
         today: {
-          exported: mqttStore.pvDailyExportedIndividual(id, 'textValue') as string,
+          exported: mqttStore.pvDailyExportedIndividual(
+            id,
+            'textValue',
+          ) as string,
         },
         color: mqttStore.pvColor(id) || 'var(--q-pv-stroke)',
       });
