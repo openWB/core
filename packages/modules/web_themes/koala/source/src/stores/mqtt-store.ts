@@ -2908,19 +2908,6 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
-   * Get the battery color if exactly one battery is configured
-   * @param batteryId battery id
-   * @returns string | null
-   */
-  const batteryAggregateColor = computed(() => {
-    const ids = batteryIds.value;
-    if (ids.length === 1) {
-      return batteryColor.value(ids[0]);
-    }
-    return null;
-  });
-
-  /**
    * Get the battery color identified by the battery id
    * @param batteryId battery id
    * @returns string | null
@@ -4204,7 +4191,6 @@ export const useMqttStore = defineStore('mqtt', () => {
     batteryTotalPower,
     batteryChargePriorityRange,
     batteryMode,
-    batteryAggregateColor,
     batteryColor,
     // Grid data
     gridId,
