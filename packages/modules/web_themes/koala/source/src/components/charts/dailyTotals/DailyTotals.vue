@@ -17,7 +17,9 @@
           v-model="expanded.grid"
           class="grid card"
           :header-class="
-            secondaryCountersConfigured ? 'cursor-pointer' : 'no-pointer'
+            secondaryComponentsConfigured('counter')
+              ? 'cursor-pointer'
+              : 'no-pointer'
           "
         >
           <template #header>
@@ -25,7 +27,9 @@
               :item="gridData"
               :rowHeight="rowHeight"
               :rowExpanded="expanded.grid"
-              :secondaryComponentsConfigured="secondaryCountersConfigured"
+              :secondaryComponentsConfigured="
+                secondaryComponentsConfigured('counter')
+              "
               :componentNameVisible="componentNameVisible"
               :currentPowerVisible="currentPowerVisible"
               :socValueVisible="socValueVisible"
@@ -55,13 +59,9 @@
           v-model="expanded[item.id]"
           :class="[item.id, 'card']"
           :header-class="
-            item.id === 'chargepoint' && individualChargePointData.length > 1
+            secondaryComponentsConfigured(item.id)
               ? 'cursor-pointer'
-              : item.id === 'battery' && individualBatteryData.length > 1
-                ? 'cursor-pointer'
-                : item.id === 'pv' && individualPvData.length > 1
-                  ? 'cursor-pointer'
-                  : 'no-pointer'
+              : 'no-pointer'
           "
         >
           <template #header>
@@ -70,13 +70,7 @@
               :rowHeight="rowHeight"
               :rowExpanded="expanded[item.id]"
               :secondaryComponentsConfigured="
-                item.id === 'chargepoint'
-                  ? individualChargePointData.length > 1
-                  : item.id === 'battery'
-                    ? individualBatteryData.length > 1
-                    : item.id === 'pv'
-                      ? individualPvData.length > 1
-                      : false
+                secondaryComponentsConfigured(item.id)
               "
               :componentNameVisible="componentNameVisible"
               :currentPowerVisible="currentPowerVisible"
@@ -221,7 +215,9 @@ const $q = useQuasar();
 const mqttStore = useMqttStore();
 const gridPower = computed(() => mqttStore.counterPower('value'));
 const showGrid = computed(
-  () => gridPower.value !== undefined || secondaryCountersConfigured.value,
+  () =>
+    gridPower.value !== undefined ||
+    secondaryComponentsConfigured.value('counter'),
 );
 const expanded = ref<Record<string, boolean>>({
   grid: false,
@@ -245,9 +241,22 @@ const chargePointSumPowerAvailable = computed(
 const chargePointConfigured = computed(
   () => mqttStore.chargePointIds.length > 0,
 );
-const secondaryCountersConfigured = computed(
-  () => secondaryCounterData.value.length > 0,
-);
+const secondaryComponentsConfigured = computed(() => {
+  return (componentType: string): boolean => {
+    switch (componentType) {
+      case 'counter':
+        return secondaryCounterData.value.length > 0;
+      case 'chargepoint':
+        return individualChargePointData.value.length > 1;
+      case 'battery':
+        return individualBatteryData.value.length > 1;
+      case 'pv':
+        return individualPvData.value.length > 1;
+      default:
+        return false;
+    }
+  };
+});
 
 const gridData = computed((): DailyTotalsItem => {
   let data: DailyTotalsItem = {
