@@ -97,7 +97,7 @@ const showHomePower = computed(() => {
 const homeConsumption = computed(() => Number(homePower.value.value) > 0);
 const homeProduction = computed(() => Number(homePower.value.value) < 0);
 
-const pvPower = computed(() => mqttStore.getPvPower('object') as ValueObject);
+const pvPower = computed(() => mqttStore.pvPowerTotal('object') as ValueObject);
 const pvProduction = computed(() => {
   const value = Number(pvPower.value.value);
   return value < 0;

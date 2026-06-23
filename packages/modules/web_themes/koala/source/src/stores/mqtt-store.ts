@@ -3956,7 +3956,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
    * @returns string | number | ValueObject | undefined
    */
-  const getPvPower = computed(() => {
+  const pvPowerTotal = computed(() => {
     return (returnType: string = 'textValue') => {
       const power =
         (getValue.value('openWB/pv/get/power', undefined, 0) as number) || 0;
@@ -3992,6 +3992,84 @@ export const useMqttStore = defineStore('mqtt', () => {
         return valueObject;
       }
       console.error('returnType not found!', returnType, energy);
+    };
+  });
+
+  /**
+   * Get the ids of individual pv systems
+   * @returns number[]
+   */
+  const pvIds = computed(() => {
+    return getObjectIds.value('inverter').filter((id) => {
+      return componentName.value(id) !== undefined;
+    });
+  });
+
+  /**
+   * Get the power of an individual pv system
+   * @param pvId pv system ID
+   * @param returnType type of return value, 'textValue', 'absoluteTextValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject | undefined
+   */
+  const pvPowerIndividual = computed(() => {
+    return (pvId: number, returnType: string = 'textValue') => {
+      const power =
+        (getValue.value(
+          `openWB/pv/${pvId}/get/power`,
+          undefined,
+          0,
+        ) as number) || 0;
+      const valueObject = getValueObject.value(power);
+      if (Object.hasOwn(valueObject, returnType)) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject;
+      }
+      if (returnType === 'absoluteTextValue') {
+        const absValue = Math.abs(power);
+        const valueObject = getValueObject.value(absValue, 'W', '', true);
+        return valueObject.textValue;
+      }
+      console.error('returnType not found!', returnType, power);
+    };
+  });
+
+  /**
+   * Get the daily exported energy of an individual pv system
+   * @param pvId pv system ID
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject | undefined
+   */
+  const pvDailyExportedIndividual = computed(() => {
+    return (pvId: number, returnType: string = 'textValue') => {
+      const energy =
+        (getValue.value(
+          `openWB/pv/${pvId}/get/daily_exported`,
+          undefined,
+          0,
+        ) as number) || 0;
+      const valueObject = getValueObject.value(energy, 'Wh', '', true);
+      if (Object.hasOwn(valueObject, returnType)) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject;
+      }
+      console.error('returnType not found!', returnType, energy);
+    };
+  });
+
+  /**
+   * Get the color of an individual pv system
+   * @param pvId pv system ID
+   * @returns string | null
+   */
+  const pvColor = computed(() => {
+    return (pvId: number): string | null => {
+      const DEFAULT_COLOR = '#28a745';
+      const config = getComponentConfiguration.value(pvId);
+      return resolveComponentColor(config?.color, DEFAULT_COLOR);
     };
   });
 
@@ -4206,8 +4284,12 @@ export const useMqttStore = defineStore('mqtt', () => {
     homeDailyYield,
     // PV data
     pvConfigured,
-    getPvPower,
+    pvPowerTotal,
     pvDailyExported,
+    pvIds,
+    pvPowerIndividual,
+    pvDailyExportedIndividual,
+    pvColor,
     // Chart data
     chartData,
     // electricity tariff provider

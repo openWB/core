@@ -59,7 +59,9 @@
               ? 'cursor-pointer'
               : item.id === 'battery' && individualBatteryData.length > 1
                 ? 'cursor-pointer'
-                : 'no-pointer'
+                : item.id === 'pv' && individualPvData.length > 1
+                  ? 'cursor-pointer'
+                  : 'no-pointer'
           "
         >
           <template #header>
@@ -72,7 +74,9 @@
                   ? individualChargePointData.length > 1
                   : item.id === 'battery'
                     ? individualBatteryData.length > 1
-                    : false
+                    : item.id === 'pv'
+                      ? individualPvData.length > 1
+                      : false
               "
               :componentNameVisible="componentNameVisible"
               :currentPowerVisible="currentPowerVisible"
@@ -167,6 +171,28 @@
                 <template #right-value>
                   <div>{{ batteryData.today?.imported }}</div>
                   <div>{{ batteryData.today?.exported }}</div>
+                </template>
+              </DailyTotalsRow>
+            </div>
+          </div>
+          <div v-if="item.id === 'pv'">
+            <div
+              v-for="pvData in individualPvData"
+              :key="pvData.id"
+              class="sub-row"
+            >
+              <DailyTotalsRow
+                :item="pvData"
+                :rowHeight="rowHeight"
+                :componentNameVisible="componentNameVisible"
+                :currentPowerVisible="currentPowerVisible"
+                :socValueVisible="socValueVisible"
+              >
+                <template #right-label>
+                  <div>Ertrag:</div>
+                </template>
+                <template #right-value>
+                  <div>{{ pvData.today?.exported }}</div>
                 </template>
               </DailyTotalsRow>
             </div>
@@ -324,6 +350,29 @@ const individualBatteryData = computed((): DailyTotalsItem[] => {
   return batteries;
 });
 
+const individualPvData = computed((): DailyTotalsItem[] => {
+  const pvSystems: DailyTotalsItem[] = [];
+
+  mqttStore.pvIds.forEach((id) => {
+    const name = mqttStore.componentName(id);
+    if (name !== undefined) {
+      pvSystems.push({
+        id: `pv-${id}`,
+        title: name,
+        level: 'secondary',
+        icon: 'pv',
+        power: mqttStore.pvPowerIndividual(id, 'textValue') as string,
+        powerValue: mqttStore.pvPowerIndividual(id, 'value') as number,
+        today: {
+          exported: mqttStore.pvDailyExportedIndividual(id, 'textValue') as string,
+        },
+        color: mqttStore.pvColor(id) || 'var(--q-pv-stroke)',
+      });
+    }
+  });
+  return pvSystems;
+});
+
 const componentData = computed((): DailyTotalsItem[] => {
   const components: DailyTotalsItem[] = [];
 
@@ -354,8 +403,8 @@ const componentData = computed((): DailyTotalsItem[] => {
       title: 'PV',
       level: 'primary',
       icon: 'pv',
-      power: mqttStore.getPvPower('textValue') as string,
-      powerValue: mqttStore.getPvPower('value') as number,
+      power: mqttStore.pvPowerTotal('textValue') as string,
+      powerValue: mqttStore.pvPowerTotal('value') as number,
       today: { exported: mqttStore.pvDailyExported('textValue') as string },
       color: 'var(--q-pv-stroke)',
     });

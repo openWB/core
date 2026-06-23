@@ -124,7 +124,7 @@ const arrowDirection = (id: string) => {
       value = mqttStore.batteryTotalPower('value') as number;
       break;
     case 'pv':
-      value = mqttStore.getPvPower('value') as number;
+      value = mqttStore.pvPowerTotal('value') as number;
       break;
     case 'house':
       value = mqttStore.homePower('value') as number;
