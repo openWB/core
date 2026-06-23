@@ -106,9 +106,9 @@ def __refresh_token(token: TeslaSocToken) -> TeslaSocToken:
         "scope": "openid email offline_access",
     }
     resp = __get_tesla_http_session().post("https://auth.tesla.com/oauth2/v3/token",
-                                       headers=headers,
-                                       json=payload,
-                                       timeout=50)
+                                           headers=headers,
+                                           json=payload,
+                                           timeout=50)
     log.debug("received refresh token")
     resp_json = resp.json()
     token.refresh_token = resp_json["refresh_token"]
@@ -137,6 +137,6 @@ def __request_data(data_part: str, token: TeslaSocToken) -> str:
         "authorization": "bearer " + token.access_token
     }
     response = __get_tesla_http_session().get(f"https://owner-api.teslamotors.com/api/1/{data_part}",
-                                          headers=headers,
-                                          timeout=50)
+                                              headers=headers,
+                                              timeout=50)
     return response.text
