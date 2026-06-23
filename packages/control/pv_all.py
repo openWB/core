@@ -4,19 +4,18 @@ Davon ab geht z.B. noch der Hausverbrauch. Für das Laden mit PV kann deshalb nu
 der sonst in das Netz eingespeist werden würde.
 """
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 import logging
 
 from control import data
 from helpermodules.constants import NO_ERROR
-from helpermodules.pub import Pub
 
 log = logging.getLogger(__name__)
 
 
 @dataclass
 class Config:
-    configured: bool = False
+    configured: bool = field(default=False, metadata={"topic": "config/configured"})
 
 
 def config_factory() -> Config:
@@ -25,13 +24,13 @@ def config_factory() -> Config:
 
 @dataclass
 class Get:
-    daily_exported: float = 0
-    fault_str: str = NO_ERROR
-    fault_state: int = 0
-    monthly_exported: float = 0
-    yearly_exported: float = 0
-    exported: float = 0
-    power: float = 0
+    daily_exported: float = field(default=0, metadata={"topic": "get/daily_exported"})
+    fault_str: str = field(default=NO_ERROR, metadata={"topic": "get/fault_str"})
+    fault_state: int = field(default=0, metadata={"topic": "get/fault_state"})
+    monthly_exported: float = field(default=0, metadata={"topic": "get/monthly_exported"})
+    yearly_exported: float = field(default=0, metadata={"topic": "get/yearly_exported"})
+    exported: float = field(default=0, metadata={"topic": "get/exported"})
+    power: float = field(default=0, metadata={"topic": "get/power"})
 
 
 def get_factory() -> Get:
@@ -69,22 +68,14 @@ class PvAll:
                     if module.data.get.fault_state == 0 and limit.message is not None:
                         # Fehlermeldung nicht überschreiben
                         module.data.get.fault_str = limit.message
-                        Pub().pub(f"openWB/set/pv/{module.num}/get/fault_str", limit.message)
                 self.data.get.fault_state = fault_state
                 self.data.get.fault_str = NO_ERROR if fault_state == 0 else (
                     "Bitte die Statusmeldungen der Wechselrichter prüfen. "
                     "Es haben nicht alle Module aktuelle Zählerstände geliefert.")
                 self.data.get.power = power
-                Pub().pub("openWB/set/pv/get/power", self.data.get.power)
                 self.data.get.exported = exported
-                Pub().pub("openWB/set/pv/get/exported", self.data.get.exported)
-                Pub().pub("openWB/set/pv/get/fault_state", self.data.get.fault_state)
-                Pub().pub("openWB/set/pv/get/fault_str", self.data.get.fault_str)
                 self.data.config.configured = True
-                Pub().pub("openWB/set/pv/config/configured", self.data.config.configured)
             else:
                 self.data.config.configured = False
-                Pub().pub("openWB/set/pv/config/configured", self.data.config.configured)
-                {Pub().pub("openWB/pv/get/"+k, 0) for (k, _) in asdict(self.data.get).items()}
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")

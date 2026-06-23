@@ -113,7 +113,9 @@ class Get:
     current_branch: Optional[str] = None
     current_commit: Optional[str] = None
     currents: List[float] = field(default_factory=currents_list_factory)
-    daily_imported: float = 0
+    daily_imported: float = field(default=0, metadata={"topic": "get/daily_imported"})
+    daily_exported: float = field(default=0, metadata={"topic": "get/daily_exported"})
+    error_code: Optional[int] = None
     daily_exported: float = 0
     error_timestamp: Optional[int] = None
     evse_current: Optional[float] = None

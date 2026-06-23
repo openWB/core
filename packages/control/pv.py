@@ -28,14 +28,15 @@ def config_factory() -> Config:
 
 @dataclass
 class Get:
-    currents: List[float] = field(default_factory=currents_list_factory)
-    daily_exported: float = 0
-    monthly_exported: float = 0
-    yearly_exported: float = 0
-    exported: float = 0
-    fault_state: int = 0
-    fault_str: str = ""
-    power: float = 0
+    currents: List[float] = field(default_factory=currents_list_factory, metadata={
+                                  "topic": "get/currents"})
+    daily_exported: float = field(default=0, metadata={"topic": "get/daily_exported"})
+    monthly_exported: float = field(default=0, metadata={"topic": "get/monthly_exported"})
+    yearly_exported: float = field(default=0, metadata={"topic": "get/yearly_exported"})
+    exported: float = field(default=0, metadata={"topic": "get/exported"})
+    fault_state: int = field(default=0, metadata={"topic": "get/fault_state"})
+    fault_str: str = field(default="", metadata={"topic": "get/fault_str"})
+    power: float = field(default=0, metadata={"topic": "get/power"})
 
 
 def get_factory() -> Get:
