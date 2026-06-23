@@ -77,5 +77,13 @@ class PvAll:
                 self.data.config.configured = True
             else:
                 self.data.config.configured = False
+                # prevent stale PV values when no inverter modules are configured
+                self.data.get.power = 0
+                self.data.get.exported = 0
+                self.data.get.fault_state = 0
+                self.data.get.fault_str = NO_ERROR
+                self.data.get.daily_exported = 0
+                self.data.get.monthly_exported = 0
+                self.data.get.yearly_exported = 0
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")

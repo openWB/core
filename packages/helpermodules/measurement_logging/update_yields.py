@@ -37,7 +37,7 @@ def update_module_yields(module: str, totals: Dict) -> None:
             else:
                 log.info(f"Modul {m} wurde zwischenzeitlich gelöscht und wird daher nicht mehr aufgeführt.")
         except Exception:
-            log.exception(f"Fehler beim Veröffentlichen der Tageserträge für Modul {m} vom Typ {module}.")
+            log.exception(f"Fehler beim Aktualisieren der Tageserträge für Modul {m} vom Typ {module}.")
 
 
 def update_pv_monthly_yearly_yields():

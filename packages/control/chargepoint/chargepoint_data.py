@@ -116,7 +116,6 @@ class Get:
     daily_imported: float = field(default=0, metadata={"topic": "get/daily_imported"})
     daily_exported: float = field(default=0, metadata={"topic": "get/daily_exported"})
     error_code: Optional[int] = None
-    daily_exported: float = 0
     error_timestamp: Optional[int] = None
     evse_current: Optional[float] = None
     # kann auch zur Laufzeit geändert werden
