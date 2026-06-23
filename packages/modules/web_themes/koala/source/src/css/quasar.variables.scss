@@ -234,6 +234,7 @@ $dark-background: #242526;
 $dark-background-1: #242526;
 $dark-background-2: #242526;
 $dark-tab-icon: #d7d9e0;
+$dark-charge-point-stroke: #3874db;
 $dark-charge-plan-link-button: #75787a;
 $dark-table-hover: #ffffff12;
 
@@ -267,7 +268,7 @@ $dark-table-hover: #ffffff12;
   --q-pv-fill: #{$pv-fill};
   --q-battery-stroke: #{$battery-stroke};
   --q-battery-fill: #{$battery-fill};
-  --q-charge-point-stroke: #{$charge-point-stroke};
+  --q-charge-point-stroke: #{$dark-charge-point-stroke};
   --q-charge-point-fill: #{$charge-point-fill};
   --q-vehicle-stroke: #{$vehicle-stroke};
   --q-vehicle-fill: #{$vehicle-fill};

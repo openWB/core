@@ -121,7 +121,7 @@ const chartRange = computed(
 );
 
 const getGlobalColor = (name: string, fallback: string = '#888888') => {
-  const fromRoot = getComputedStyle(document.documentElement)
+  const fromRoot = getComputedStyle(document.body)
     .getPropertyValue(name)
     .trim();
   return fromRoot || fallback;
