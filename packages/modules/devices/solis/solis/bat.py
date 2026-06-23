@@ -41,7 +41,11 @@ class SolisBat(AbstractBat):
 
         power = self.client.read_input_registers(33149, ModbusDataType.INT_32, unit=unit)
         soc = self.client.read_input_registers(33139, ModbusDataType.UINT_16, unit=unit)
-        bat_current = self.client.read_input_registers(33134, ModbusDataType.INT_16, unit=unit) * -0.1
+        bat_current = self.client.read_input_registers(33134, ModbusDataType.INT_16, unit=unit) * 0.1
+        current_direction = self.client.read_input_registers(33135, ModbusDataType.UINT_16, unit=unit) 
+        if current_direction == 1:
+            bat_current = -bat_current
+            power = -power
 
         currents = [bat_current / 3] * 3
 
