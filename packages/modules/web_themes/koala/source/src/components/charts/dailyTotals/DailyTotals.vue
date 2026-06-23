@@ -343,11 +343,7 @@ const componentData = computed((): DailyTotalsItem[] => {
         imported: mqttStore.batteryDailyImportedTotal('textValue') as string,
         exported: mqttStore.batteryDailyExportedTotal('textValue') as string,
       },
-      color:
-        mqttStore.batteryIds.length === 1
-          ? mqttStore.batteryColor(mqttStore.batteryIds[0]) ||
-            'var(--q-battery-stroke)'
-          : 'var(--q-battery-stroke)',
+      color: 'var(--q-battery-stroke)',
     };
     components.push(item);
   }
