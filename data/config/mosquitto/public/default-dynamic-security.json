@@ -70,7 +70,7 @@
 	"anonymousGroup": "anonymous",
 	"roles": [
 		{
-			"rolename": "openwb-version:5",
+			"rolename": "openwb-version:6",
 			"textname": "openWB Versionsnummer",
 			"textdescription": "Diese Rolle ist ein Platzhalter für die openWB Versionsnummer und wird automatisch aktualisiert. Sie hat keine direkten Berechtigungen.",
 			"acls": []
@@ -2482,6 +2482,12 @@
 				},
 				{
 					"acltype": "publishClientSend",
+					"topic": "openWB/set/system/pnp_ip",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
 					"topic": "openWB/set/system/secondary_auto_update",
 					"priority": 0,
 					"allow": true
@@ -2549,6 +2555,12 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/mac_address",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/pnp_ip",
 					"priority": 0,
 					"allow": true
 				},
