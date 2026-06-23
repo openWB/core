@@ -102,8 +102,10 @@ class Consumer(Load):
         else:
             return required_current
 
-    def _convert_power_to_current(self, power: float) -> float:
-        return power / self.data.config.connected_phases / voltages_mean(self.data.get.voltages)
+def _convert_power_to_current(self, power: float) -> float:
+        phases = self.data.config.connected_phases or 1
+        voltage = voltages_mean(self.data.get.voltages) or 230.0
+        return power / phases / voltage
 
     BUFFER_AFTER_END_TIME = -1200  # nach mehr als 20 Min Überschreitung wird der Termin als verpasst angesehen
     BUFFER_START_EARLIER = 600  # 10 Min vor dem geplanten Start kann begonnen werden
