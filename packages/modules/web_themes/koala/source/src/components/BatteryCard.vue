@@ -163,12 +163,17 @@ const dailyExportedEnergy = computed(() => {
     '---'
   );
 });
+
+const batteryColor = computed(
+  () => mqttStore.batteryColor(props.batteryId) || 'var(--q-battery-stroke)',
+);
 </script>
 
 <style scoped lang="scss">
 .battery-card {
   width: 22em;
   border: none;
+  border-left: 4px solid v-bind(batteryColor);
   border-radius: 15px;
 }
 

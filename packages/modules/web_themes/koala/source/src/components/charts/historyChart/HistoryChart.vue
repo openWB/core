@@ -101,6 +101,7 @@ const selectedData = computed((): GraphDataPoint[] => {
 });
 
 const chargePointIds = computed(() => mqttStore.chargePointIds);
+const batteryColor = computed(() => mqttStore.batteryAggregateColor);
 
 const chargePointNames = computed(() => mqttStore.chargePointName);
 
@@ -330,7 +331,8 @@ const lineChartData = computed(() => {
     });
   }
   if (mqttStore.batteryConfigured) {
-    const baseColor = getGlobalColor('--q-battery-stroke');
+    const baseColor =
+      batteryColor.value || getGlobalColor('--q-battery-stroke');
     datasets.push(
       {
         label: 'Speicher ges.',
