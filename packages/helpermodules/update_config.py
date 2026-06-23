@@ -173,6 +173,8 @@ class UpdateConfig:
         "^openWB/command/max_id/charge_template$",
         "^openWB/command/max_id/charge_template_scheduled_plan$",
         "^openWB/command/max_id/charge_template_time_charging_plan$",
+        "^openWB/command/max_id/consumer_scheduled_plan$",
+        "^openWB/command/max_id/consumer_time_plan$",
         "^openWB/command/max_id/chargepoint_template$",
         "^openWB/command/max_id/device$",
         "^openWB/command/max_id/ev_template$",
