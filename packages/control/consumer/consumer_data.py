@@ -53,6 +53,11 @@ class ResetChargemode:
 
 
 @dataclass
+class Log:
+    on_time: float = 0
+
+
+@dataclass
 class MeterOnlyConfig:
     type: ConsumerUsage = ConsumerUsage.METER_ONLY
 
@@ -150,6 +155,7 @@ class Set:
     current_prev: float = 0
     target_current: float = 0
     charge_state_prev: bool = False
+    log: Log = field(default_factory=lambda: Log())
     power: Optional[float] = None
     timestamp_last_current_set: float = field(default=0, metadata={"topic": "set/timestamp_last_current_set"})
     wait_for_start_state: WaitForStartStates = field(
