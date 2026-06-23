@@ -60,34 +60,24 @@ class PvAll:
                 fault_state = 0
                 for module in data.data.pv_data.values():
                     try:
-                        if module.data.get.fault_state < 2:
-                            try:
-                                power += module.data.get.power
-                            except Exception:
-                                log.exception(f"Fehler im allgemeinen PV-Modul für pv{module.num}")
-                            exported += module.data.get.exported
-                        else:
-                            if fault_state < module.data.get.fault_state:
-                                fault_state = module.data.get.fault_state
-                        limit = data.data.io_actions.stepwise_control(module.num)[1]
-                        if module.data.get.fault_state == 0 and limit.message is not None:
-                            # Fehlermeldung nicht überschreiben
-                            module.data.get.fault_str = limit.message
-                            Pub().pub(f"openWB/set/pv/{module.num}/get/fault_str", limit.message)
+                        power += module.data.get.power
                     except Exception:
                         log.exception(f"Fehler im allgemeinen PV-Modul für pv{module.num}")
-                if fault_state == 0:
-                    self.data.get.exported = exported
-                    Pub().pub("openWB/set/pv/get/exported", self.data.get.exported)
-                    self.data.get.fault_state = 0
-                    self.data.get.fault_str = NO_ERROR
-                else:
-                    self.data.get.fault_state = fault_state
-                    self.data.get.fault_str = ("Bitte die Statusmeldungen der Wechselrichter prüfen. Es konnte kein "
-                                               "aktueller Zählerstand ermittelt werden, da nicht alle Module Werte "
-                                               "liefern.")
+                    exported += module.data.get.exported
+                    fault_state = max(fault_state, module.data.get.fault_state)
+                    limit = data.data.io_actions.stepwise_control(module.num)[1]
+                    if module.data.get.fault_state == 0 and limit.message is not None:
+                        # Fehlermeldung nicht überschreiben
+                        module.data.get.fault_str = limit.message
+                        Pub().pub(f"openWB/set/pv/{module.num}/get/fault_str", limit.message)
+                self.data.get.fault_state = fault_state
+                self.data.get.fault_str = NO_ERROR if fault_state == 0 else (
+                    "Bitte die Statusmeldungen der Wechselrichter prüfen. "
+                    "Es haben nicht alle Module aktuelle Zählerstände geliefert.")
                 self.data.get.power = power
                 Pub().pub("openWB/set/pv/get/power", self.data.get.power)
+                self.data.get.exported = exported
+                Pub().pub("openWB/set/pv/get/exported", self.data.get.exported)
                 Pub().pub("openWB/set/pv/get/fault_state", self.data.get.fault_state)
                 Pub().pub("openWB/set/pv/get/fault_str", self.data.get.fault_str)
                 self.data.config.configured = True
