@@ -1,5 +1,6 @@
 """ Modul, um die Daten vom Broker zu erhalten.
 """
+from enum import Enum
 import importlib
 import logging
 from pathlib import Path
@@ -253,6 +254,8 @@ class SubData:
                     if isinstance(payload, Dict):
                         for key, value in payload.items():
                             setattr(class_obj, key, value)
+                    elif isinstance(getattr(class_obj, key, None), Enum):
+                        setattr(class_obj, key, type(getattr(class_obj, key))(payload))
                     else:
                         setattr(class_obj, key, decode_payload(msg.payload))
                 else:
@@ -1203,6 +1206,8 @@ class SubData:
                 self.set_json_payload_class(var["consumer"+index].data.config, msg)
             elif re.search("openWB/consumer/[0-9]+/get", msg.topic) is not None:
                 self.set_json_payload_class(var["consumer"+index].data.get, msg)
+            elif re.search("openWB/consumer/[0-9]+/set", msg.topic) is not None:
+                self.set_json_payload_class(var["consumer"+index].data.set, msg)
             elif re.search("openWB/consumer/[0-9]+/extra_meter", msg.topic) is not None:
                 self.set_json_payload_class(var[f"consumer{index}"].data, msg)
             elif re.search("openWB/consumer/[0-9]+/usage$", msg.topic) is not None:
