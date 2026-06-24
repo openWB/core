@@ -17,14 +17,14 @@ from control.chargelog.process_chargelog import get_log_data
 from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
 
-from control.consumer.consumer_data import GET_DEFAULTS_BY_USAGE, get_plan_class_for_usage
+from control.consumer.consumer_data import GET_DEFAULTS_BY_USAGE, GET_PLAN_CLASS_FOR_USAGE
 from control.consumer.usage import ConsumerUsage
 from control.counter_all import counter_all
 from control.ev.charge_template import ChargeTemplate, get_new_charge_template
 from control.ev.ev_template import EvTemplateData
 from control.consumer.consumer_data import ConsumerConfig
 from helpermodules import pub
-from helpermodules.abstract_plans import AutolockPlan, ScheduledChargingPlan, TimeChargingPlan
+from helpermodules.abstract_plans import AutolockPlan, ScheduledChargingPlan, TimeChargingPlan, TimeChargingPlanConsumer
 from helpermodules.utils.run_command import run_command
 # ToDo: move to module commands if implemented
 from modules.backup_clouds.onedrive.api import generateMSALAuthCode, retrieveMSALTokens
@@ -64,7 +64,8 @@ class Command:
         [("autolock_plan", "openWB/chargepoint/template/[0-9]+$", -1),
          ("charge_template_scheduled_plan", "openWB/vehicle/template/charge_template/[0-9]+$", -1),
          ("charge_template_time_charging_plan", "openWB/vehicle/template/charge_template/[0-9]+$", -1),
-         ("usage_plan", "openWB/consumer/[0-9]+/usage$", -1)],
+         ("consumer_scheduled_plan", "openWB/consumer/[0-9]+/usage$", -1),
+         ("consumer_time_plan", "openWB/consumer/[0-9]+/usage$", -1)],
         "topic":
         [("mqtt_bridge", "openWB/system/mqtt/bridge", -1),
          ("vehicle", "openWB/vehicle/[0-9]+/name$", 0)],
@@ -92,7 +93,8 @@ class Command:
             "charge_template_scheduled_plan": lambda p: p.get("chargemode", {}).get("scheduled_charging",
                                                                                     {}).get("plans", []),
             "charge_template_time_charging_plan": lambda p: p.get("time_charging", {}).get("plans", []),
-            "usage_plan": lambda p: p.get("plans", [])
+            "consumer_scheduled_plan": lambda p: p.get("scheduled_charging", {}).get("plans", []),
+            "consumer_time_plan": lambda p: p.get("time_charging", {}).get("plans", []),
         }
         try:
             received_topics = ProcessBrokerBranch("").get_max_id()
@@ -1207,41 +1209,94 @@ class Command:
             f'\'{payload["data"]["usage"]}\' zugewiesen.',
             MessageType.SUCCESS)
 
-    def addUsagePlan(self, connection_id: str, payload: dict) -> None:
+    def addConsumerSchedulePlan(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neuer Zielladen-Plan erstellt werden soll.
         """
         usage = SubData.consumer_data[f'consumer{payload["data"]["consumer_id"]}'].data.usage
-        plan = get_plan_class_for_usage(usage.type)()
-        new_id = self.max_id_usage_plan + 1
-        plan.id = new_id
-        usage.plans.append(plan)
+        # check if "payload" contains "data.copy"
+        if "data" in payload and "copy" in payload["data"] and usage.scheduled_charging.plans is not None:
+            for plan in usage.scheduled_charging.plans:
+                if plan.id == payload["data"]["copy"]:
+                    new_consumer_schedule_plan = copy.deepcopy(plan)
+                    break
+            new_consumer_schedule_plan.name = f'Kopie von {new_consumer_schedule_plan.name}'
+        else:
+            new_consumer_schedule_plan = GET_PLAN_CLASS_FOR_USAGE[usage.type]()
+        new_id = self.max_id_consumer_scheduled_plan + 1
+        new_consumer_schedule_plan.id = new_id
+        usage.scheduled_charging.plans.append(new_consumer_schedule_plan)
+        self.max_id_consumer_scheduled_plan = new_id
+        Pub().pub("openWB/set/command/max_id/consumer_scheduled_plan", new_id)
         Pub().pub(f'openWB/set/consumer/{payload["data"]["consumer_id"]}/usage', dataclass_utils.asdict(usage))
-        self.max_id_usage_plan = new_id
-        Pub().pub("openWB/set/command/max_id/usage_plan", new_id)
         pub_user_message(
             payload, connection_id,
-            f'Neuer Zielladen-Plan mit ID \'{new_id}\' zu Profil '
-            f'\'{payload["data"]["template"]}\' hinzugefügt.',
+            f'Neuer Zielladen-Plan mit ID \'{new_id}\' zu Verbraucher '
+            f'\'{payload["data"]["consumer_id"]}\' hinzugefügt.',
             MessageType.SUCCESS)
 
-    def removeUsagePlan(self, connection_id: str, payload: dict) -> None:
+    def removeConsumerSchedulePlan(self, connection_id: str, payload: dict) -> None:
         """ löscht einen Zielladen-Plan.
         """
-        if self.max_id_usage_plan < payload["data"]["plan"]:
+        usage = SubData.consumer_data[f'consumer{payload["data"]["consumer_id"]}'].data.usage
+        if self.max_id_consumer_scheduled_plan < payload["data"]["plan"]:
             log.error(
                 payload, connection_id,
                 f'Die ID \'{payload["data"]["plan"]}\' ist größer als die maximal vergebene '
-                f'ID \'{self.max_id_usage_plan}\'.', MessageType.ERROR)
-        usage = SubData.consumer_data[f'consumer{payload["data"]["consumer_id"]}'].data.usage
-        for plan in usage.plans:
+                f'ID \'{self.max_id_consumer_scheduled_plan}\'.', MessageType.ERROR)
+            return
+        for plan in usage.scheduled_charging.plans:
             if plan.id == payload["data"]["plan"]:
-                usage.plans.remove(plan)
+                usage.scheduled_charging.plans.remove(plan)
                 break
         Pub().pub(f'openWB/set/consumer/{payload["data"]["consumer_id"]}/usage', dataclass_utils.asdict(usage))
         pub_user_message(
             payload, connection_id,
-            f'Zielladen-Plan mit ID \'{payload["data"]["plan"]}\' von Profil '
-            f'{payload["data"]["template"]}\' gelöscht.',
+            (f'Zielladen-Plan mit ID \'{payload["data"]["plan"]}\' von Verbraucher '
+             f'\'{payload["data"]["consumer_id"]}\' gelöscht.'),
+            MessageType.SUCCESS)
+
+    def addConsumerTimePlan(self, connection_id: str, payload: dict) -> None:
+        """ sendet das Topic, zu dem ein neuer Zeitladen-Plan erstellt werden soll.
+        """
+        usage = SubData.consumer_data[f'consumer{payload["data"]["consumer_id"]}'].data.usage
+        # check if "payload" contains "data.copy"
+        if "data" in payload and "copy" in payload["data"]:
+            for plan in usage.time_charging.plans:
+                if plan.id == payload["data"]["copy"]:
+                    new_time_charging_plan = copy.deepcopy(plan)
+                    break
+            new_time_charging_plan.name = f'Kopie von {new_time_charging_plan.name}'
+        else:
+            new_time_charging_plan = TimeChargingPlanConsumer()
+        new_id = self.max_id_consumer_time_plan + 1
+        new_time_charging_plan.id = new_id
+        usage.time_charging.plans.append(new_time_charging_plan)
+        Pub().pub(f'openWB/set/consumer/{payload["data"]["consumer_id"]}/usage', dataclass_utils.asdict(usage))
+        self.max_id_consumer_time_plan = new_id
+        Pub().pub(
+            "openWB/set/command/max_id/consumer_time_plan", new_id)
+        pub_user_message(
+            payload, connection_id,
+            f'Neuer Zeitladen-Plan mit ID \'{new_id}\' zu Verbraucher '
+            f'\'{payload["data"]["consumer_id"]}\' hinzugefügt.', MessageType.SUCCESS)
+
+    def removeConsumerTimePlan(self, connection_id: str, payload: dict) -> None:
+        """ löscht einen Zeitladen-Plan.
+        """
+        usage = SubData.consumer_data[f'consumer{payload["data"]["consumer_id"]}'].data.usage
+        if self.max_id_consumer_time_plan < payload["data"]["plan"]:
+            log.error(payload, connection_id, "Die ID ist größer als die maximal vergebene ID.",
+                      MessageType.ERROR)
+            return
+        for plan in usage.time_charging.plans:
+            if plan.id == payload["data"]["plan"]:
+                usage.time_charging.plans.remove(plan)
+                break
+        Pub().pub(f'openWB/set/consumer/{payload["data"]["consumer_id"]}/usage', dataclass_utils.asdict(usage))
+        pub_user_message(
+            payload, connection_id,
+            (f'Zeitladen-Plan mit ID \'{payload["data"]["plan"]}\' zu Verbraucher '
+             f'\'{payload["data"]["consumer_id"]}\' gelöscht.'),
             MessageType.SUCCESS)
 
 
