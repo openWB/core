@@ -384,10 +384,6 @@ class Chargepoint(ChargepointRfidMixin):
     def initiate_phase_switch(self):
         """prüft, ob eine Phasenumschaltung erforderlich ist und führt diese durch.
         """
-        def _set_failed_phase_switches() -> None:
-            # Umschaltung fehlgeschlagen
-            if self.data.set.phases_to_use != self.data.get.phases_in_use:
-                self.data.control_parameter.failed_phase_switches += 1
         try:
             if self.data.get.evse_signaling == EvseSignaling.HLC:
                 return
