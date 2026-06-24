@@ -91,4 +91,9 @@ def create_device(device_config: Tesla):
     )
 
 
-device_descriptor = DeviceDescriptor(configuration_factory=Tesla)
+device_descriptor = DeviceDescriptor(
+    configuration_factory=Tesla,
+    compatibility_device_note="Tesla hat die lokale API Anfang 2025 mittels Firmwareupdate abgeschaltet.\nFür "
+    "Neuanlagen muss aktuell auf unsere Zählerkits zurückgegriffen werden.",
+    special_icon="ℹ️"
+)

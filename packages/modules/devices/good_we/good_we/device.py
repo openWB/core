@@ -68,4 +68,8 @@ def create_device(device_config: GoodWe):
     )
 
 
-device_descriptor = DeviceDescriptor(configuration_factory=GoodWe)
+device_descriptor = DeviceDescriptor(
+    configuration_factory=GoodWe,
+    compatibility_device_note="Der Lan-Dongle ist nicht ausreichend. Benötigt wird das Wifi-LAN-Kit, welches "
+    "in 2 Versionen vorliegt.\nBei Unklarheiten kann der GoodWe Support das zum Wechselrichter kompatible Kit nennen."
+)
