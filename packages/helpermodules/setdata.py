@@ -1250,6 +1250,7 @@ class SetData:
             elif (re.search("consumer/[0-9]+/get/power$", msg.topic) is not None or
                   re.search("consumer/[0-9]+/set/power$", msg.topic) is not None or
                   re.search("consumer/[0-9]+/set/current$", msg.topic) is not None or
+                  re.search("consumer/[0-9]+/set/on_time$", msg.topic) is not None or
                   re.search("consumer/[0-9]+/set/plug_time$", msg.topic) is not None or
                   re.search("consumer/[0-9]+/set/timestamp_last_current_set$", msg.topic) is not None or
                   re.search("consumer/[0-9]+/get/set_power$", msg.topic) is not None):

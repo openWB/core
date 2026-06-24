@@ -158,6 +158,7 @@ class Set:
     target_current: float = 0
     charge_state_prev: bool = False
     log: Log = field(default_factory=lambda: Log())
+    on_time: float = field(default=0, metadata={"topic": "set/on_time"})
     power: Optional[float] = None
     timestamp_last_current_set: float = field(default=0, metadata={"topic": "set/timestamp_last_current_set"})
     wait_for_start_state: WaitForStartStates = field(

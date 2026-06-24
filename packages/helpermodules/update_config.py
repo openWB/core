@@ -204,6 +204,7 @@ class UpdateConfig:
         "^openWB/consumer/[0-9]+/get/state_str$",
         "^openWB/consumer/[0-9]+/get/voltages$",
         "^openWB/consumer/[0-9]+/set/current$",
+        "^openWB/consumer/[0-9]+/set/on_time$",
         "^openWB/consumer/[0-9]+/set/phases_to_use$",
         "^openWB/consumer/[0-9]+/set/plug_time$",
         "^openWB/consumer/[0-9]+/set/timestamp_last_current_set$",
