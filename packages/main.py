@@ -234,6 +234,10 @@ class HandlerAlgorithm:
             thread_errors_path = Path(Path(__file__).resolve().parents[1]/"ramdisk"/"thread_errors.log")
             with thread_errors_path.open("w") as f:
                 f.write("")
+            with ChangedValuesContext(loadvars_.event_module_update_completed):
+                for consumer in data.data.consumer_data.values():
+                    consumer.reset_wait_for_start()
+                    consumer.reset_chargemode_at_midnight()
         except Exception:
             log.exception("Fehler im Main-Modul")
 
