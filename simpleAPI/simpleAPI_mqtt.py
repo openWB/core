@@ -13,6 +13,7 @@ from logging.handlers import RotatingFileHandler
 import time
 import sys
 import ssl
+import math
 from typing import Dict, Any, Optional
 from pathlib import Path
 import paho.mqtt.client as mqtt
@@ -45,6 +46,20 @@ class SimpleMQTTDaemon:
 
         # Cache for storing current charge_template configurations
         self.charge_template_cache: Dict[str, Dict[str, Any]] = {}
+
+        # Track per-ID component values for efficient total topic aggregation
+        self.total_metrics = {
+            'pv': {'exported', 'monthly_exported', 'yearly_exported', 'imported', 'power'},
+            'chargepoint': {'exported', 'monthly_exported', 'yearly_exported', 'imported', 'power'}
+        }
+        self.total_value_cache: Dict[str, Dict[str, Dict[int, float]]] = {
+            component: {metric: {} for metric in metrics}
+            for component, metrics in self.total_metrics.items()
+        }
+        self.total_sums: Dict[str, Dict[str, float]] = {
+            component: {metric: 0.0 for metric in metrics}
+            for component, metrics in self.total_metrics.items()
+        }
 
         # MQTT client setup
         self.client = mqtt.Client()
@@ -161,19 +176,26 @@ class SimpleMQTTDaemon:
             if '/set/charge_template' in topic:
                 self._cache_charge_template(topic, payload)
 
+            # Parse payload once so we can reuse it for both total aggregation and normal transformation
+            parsed_payload = self._parse_payload(payload)
+
+            # Update aggregated total topics from component ID metrics
+            self._update_total_topics(topic, parsed_payload)
+
             # Transform and publish the message
-            self._transform_and_publish(topic, payload)
+            self._transform_and_publish(topic, payload, parsed_payload)
 
         except Exception as e:
             log.error(f"Error processing message {msg.topic}: {e}")
 
-    def _transform_and_publish(self, original_topic: str, payload: str):
+    def _transform_and_publish(self, original_topic: str, payload: str, parsed_payload: Any = None):
         """Transform original topic to simpleAPI format and publish if value changed."""
         try:
             log.debug(f"DEBUG: Processing original topic: {original_topic}")
 
             # Parse the payload
-            parsed_payload = self._parse_payload(payload)
+            if parsed_payload is None:
+                parsed_payload = self._parse_payload(payload)
 
             # Generate transformed topics
             transformed_topics = self._generate_simple_topics(original_topic, parsed_payload)
@@ -189,6 +211,51 @@ class SimpleMQTTDaemon:
 
         except Exception as e:
             log.error(f"Error transforming topic {original_topic}: {e}")
+
+    def _update_total_topics(self, original_topic: str, parsed_value: Any):
+        """Maintain and publish aggregated total topics from all numeric component IDs."""
+        # Match only per-ID get topics needed for totals
+        # Examples:
+        #   openWB/pv/7/get/exported
+        #   openWB/chargepoint/13/get/power
+        pattern = r'^openWB/(pv|chargepoint)/(\d+)/get/(exported|monthly_exported|yearly_exported|imported|power)$'
+        match = re.match(pattern, original_topic)
+        if not match:
+            return
+
+        component_type = match.group(1)
+        component_id = int(match.group(2))
+        metric = match.group(3)
+
+        # Only numeric, finite values are aggregated
+        if isinstance(parsed_value, bool) or not isinstance(parsed_value, (int, float)):
+            return
+
+        numeric_value = float(parsed_value)
+        if not math.isfinite(numeric_value):
+            return
+
+        metric_cache = self.total_value_cache[component_type][metric]
+        previous_value = metric_cache.get(component_id, 0.0)
+        metric_cache[component_id] = numeric_value
+
+        # O(1) sum update for performance with many IDs and frequent updates
+        self.total_sums[component_type][metric] += numeric_value - previous_value
+        total_value = self.total_sums[component_type][metric]
+
+        total_topic = self._build_total_topic(component_type, metric)
+        if total_topic is not None:
+            self._publish_if_changed(total_topic, total_value)
+
+    def _build_total_topic(self, component_type: str, metric: str) -> Optional[str]:
+        """Build destination topic for aggregated totals with component-consistent path style."""
+        if component_type == 'pv':
+            # PV topics keep /get/ in simpleAPI
+            return f"openWB/simpleAPI/pv/total/get/{metric}"
+        if component_type == 'chargepoint':
+            # chargepoint topics are published without /get/ in simpleAPI
+            return f"openWB/simpleAPI/chargepoint/total/{metric}"
+        return None
 
     def _parse_payload(self, payload: str) -> Any:
         """Parse payload as JSON, tuple, or raw value."""
