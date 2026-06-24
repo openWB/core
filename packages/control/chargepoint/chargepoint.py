@@ -447,8 +447,7 @@ class Chargepoint(ChargepointRfidMixin):
         charging_ev = self.data.set.charging_ev_data
         if self.data.get.evse_signaling == EvseSignaling.HLC:
             phases = self.data.get.phases_in_use
-        elif ((self.data.config.auto_phase_switch_hw is False and self.data.get.charge_state) or
-                self.data.control_parameter.failed_phase_switches > self.MAX_FAILED_PHASE_SWITCHES):
+        elif self.data.config.auto_phase_switch_hw is False and self.data.get.charge_state:
             # Wenn keine Umschaltung verbaut ist, die Phasenzahl nehmen, mit der geladen wird. Damit werden zB auch
             # einphasige EV an dreiphasigen openWBs korrekt berücksichtigt.
             phases = self.data.get.phases_in_use or self.data.set.phases_to_use
@@ -825,15 +824,16 @@ class Chargepoint(ChargepointRfidMixin):
                  self.data.set.log.imported_since_plugged == 0))
 
     def failed_phase_switches_reached(self) -> bool:
-        if ((data.data.general_data.data.chargemode_config.pv_charging.retry_failed_phase_switches and
-             self.data.control_parameter.failed_phase_switches > self.MAX_FAILED_PHASE_SWITCHES) or
+        if (data.data.general_data.data.chargemode_config.pv_charging.retry_failed_phase_switches and
+                self.data.control_parameter.failed_phase_switches > self.MAX_FAILED_PHASE_SWITCHES):
             # bei deaktiverter Wiederholung der Umschaltung nur den gewünschten Umschaltvorgang durchführen,
             # keinen Korrekturversuch
-            # vor Ladestart trotzdem umschalten
-                (data.data.general_data.data.chargemode_config.pv_charging.retry_failed_phase_switches is False and
-                 self.data.set.log.imported_since_plugged != 0)):
             self.set_state_and_log(
                 "Keine Phasenumschaltung, da die maximale Anzahl an Fehlversuchen erreicht wurde. ")
+            return True
+        elif (data.data.general_data.data.chargemode_config.pv_charging.retry_failed_phase_switches is False and
+              self.data.set.log.imported_since_plugged != 0):
+            # vor Ladestart trotzdem umschalten
             return True
         else:
             return False
