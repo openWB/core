@@ -102,7 +102,7 @@ class Consumer(Load):
         else:
             return required_current
 
-def _convert_power_to_current(self, power: float) -> float:
+    def _convert_power_to_current(self, power: float) -> float:
         phases = self.data.config.connected_phases or 1
         voltage = voltages_mean(self.data.get.voltages) or 230.0
         return power / phases / voltage
