@@ -160,32 +160,34 @@ def config_and_state():
                             elif "inverter" in comp_value.component_config.type:
                                 component_data = data.data.pv_data[f"pv{comp_value.component_config.id}"]
                             if "bat" in comp_value.component_config.type:
-                                parsed_data += (f"--| Bat_Power: {component_data.data.get.power/1000}kW\n"
-                                                f"--| Bat_SoC: {component_data.data.get.soc}%\n"
+                                parsed_data += (f"--| Bat_Power: {component_data.data.get.power/1000} kW\n"
+                                                f"--| Bat_SoC: {component_data.data.get.soc} %\n"
                                                 f"--| Bat_Error_Status: {component_data.data.get.fault_str}\n\n")
                             elif "inverter" in comp_value.component_config.type:
-                                parsed_data += (f"--| Inverter_Power: {component_data.data.get.power/1000}kW\n"
-                                                f"--| Max_AC_Out: {component_data.data.config.max_ac_out/1000}kW\n"
+                                parsed_data += (f"--| Inverter_Power: {component_data.data.get.power/1000} kW\n"
+                                                f"--| Max_AC_Out: {component_data.data.config.max_ac_out/1000} kW\n"
                                                 f"--| Inverter_Error_Status: {component_data.data.get.fault_str}\n\n")
                             else:
                                 counter_all_data = data.data.counter_all_data
                                 if counter_all_data.get_evu_counter_str() == f"counter{component_data.num}":
                                     parsed_data += ("--| Counter_Type: EVU-Zähler\n"
                                                     "--| Counter_Max_Power: "
-                                                    f"{component_data.data.config.max_total_power}\n"
+                                                    f"{component_data.data.config.max_total_power} W\n"
                                                     "--| Counter_Max_Currents: "
-                                                    f"{component_data.data.config.max_currents}\n")
+                                                    f"{component_data.data.config.max_currents} A\n"
+                                                    "--| Counter_Max_Power_Errorcase: "
+                                                    f"{component_data.data.config.max_power_errorcase} W\n")
                                 elif counter_all_data.data.config.home_consumption_source_id == component_data.num:
                                     parsed_data += ("--| Counter_Type: Hausverbrauchszähler\n"
                                                     "--| Counter_Max_Power: "
-                                                    f"{component_data.data.config.max_total_power}\n"
+                                                    f"{component_data.data.config.max_total_power} W\n"
                                                     "--| Counter_Max_Currents: "
-                                                    f"{component_data.data.config.max_currents}\n")
+                                                    f"{component_data.data.config.max_currents} A\n")
                                 else:
                                     parsed_data += ("--| Counter_Type: Sonstiger Zähler\n--| Counter_Max_Currents: "
                                                     f"{component_data.data.config.max_currents}\n")
-                                parsed_data += (f"--| Counter_Power: {component_data.data.get.power/1000}kW\n"
-                                                f"--| Counter_Currents: {component_data.data.get.currents}A\n"
+                                parsed_data += (f"--| Counter_Power: {component_data.data.get.power/1000} kW\n"
+                                                f"--| Counter_Currents: {component_data.data.get.currents} A\n"
                                                 f"--| Counter_Error_Status: {component_data.data.get.fault_str}\n\n")
             with ErrorHandlingContext():
                 parsed_data += "\n## Total Powers ##\n"
@@ -217,7 +219,7 @@ def config_and_state():
                 parsed_data += f"Home_Consumption:\n {home_consumption}\n"
             with ErrorHandlingContext():
                 parsed_data += "\n## Charge Points ##\n"
-                parsed_data += f"CP_All_Power: {data.data.cp_all_data.data.get.power / 1000}kW\n\n"
+                parsed_data += f"CP_All_Power: {data.data.cp_all_data.data.get.power / 1000} kW\n\n"
                 for cp in data.data.cp_data.values():
                     parsed_data += get_parsed_cp_data(cp)
     return parsed_data
@@ -257,7 +259,7 @@ def get_hierarchy(hierarchy, level=0):
                                         parsed_data += f"counter_type: {counter_type}, "
                                     elif "inverter" in comp_value.component_config.type:
                                         component_data = data.data.pv_data[f"pv{comp_value.component_config.id}"]
-                                        parsed_data += f"max_ac_out: {component_data.data.config.max_ac_out/1000}kW, "
+                                        parsed_data += f"max_ac_out: {component_data.data.config.max_ac_out/1000} kW, "
                                     parsed_data += f"ID: {element['id']})\n"
             except Exception:
                 parsed_data += f"{element['type']} (ID: {element['id']})\n"

@@ -988,7 +988,8 @@ class SubData:
                 index = get_index(msg.topic)
                 if decode_payload(msg.payload) == "":
                     if "io"+index in var:
-                        if var[f"io{index}"].config.configuration.host == "localhost":
+                        if (var[f"io{index}"].config.type == "add_on" and
+                                var[f"io{index}"].config.configuration.host == "localhost"):
                             var.pop("iolocal")
                         var.pop("io"+index)
                     else:
@@ -1045,6 +1046,22 @@ class SubData:
                     #     "neu starten</a>, damit die Änderungen wirksam werden.",
                     #     MessageType.SUCCESS
                     # )
+                self.set_json_payload(var["system"].data, msg)
+            elif "openWB/system/pnp_ip" == msg.topic:
+                new_pnp_ip = decode_payload(msg.payload)
+                if (
+                    self.event_subdata_initialized.is_set() and
+                    var["system"].data["pnp_ip"] != new_pnp_ip
+                ):
+                    log.warning("Änderung der Einstellung 'pnp_ip' erkannt. "
+                                "Konfiguration wird beim nächsten Neustart angepasst.")
+                    pub_system_message(
+                        msg.payload,
+                        f"Die PnP-IP wird zu <strong>{new_pnp_ip['address']}/{new_pnp_ip['prefix']}</strong> geändert."
+                        "<br />Bitte die openWB <a href=\"/openWB/web/settings/#/System/SystemConfiguration\">"
+                        "neu starten</a>, damit die Änderungen wirksam werden.",
+                        MessageType.WARNING
+                    )
                 self.set_json_payload(var["system"].data, msg)
             elif "openWB/system/security/user_management_active" == msg.topic:
                 user_management_active = decode_payload(msg.payload)

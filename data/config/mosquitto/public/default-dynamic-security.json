@@ -70,7 +70,7 @@
 	"anonymousGroup": "anonymous",
 	"roles": [
 		{
-			"rolename": "openwb-version:4",
+			"rolename": "openwb-version:7",
 			"textname": "openWB Versionsnummer",
 			"textdescription": "Diese Rolle ist ein Platzhalter für die openWB Versionsnummer und wird automatisch aktualisiert. Sie hat keine direkten Berechtigungen.",
 			"acls": []
@@ -1166,12 +1166,6 @@
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/bat/config/bat_control_permitted",
-					"priority": 0,
-					"allow": true
-				},
-				{
-					"acltype": "publishClientSend",
 					"topic": "openWB/set/bat/config/charge_limit",
 					"priority": 0,
 					"allow": true
@@ -1293,12 +1287,6 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/bat/config/bat_control_min_soc",
-					"priority": 0,
-					"allow": true
-				},
-				{
-					"acltype": "publishClientReceive",
-					"topic": "openWB/bat/config/bat_control_permitted",
 					"priority": 0,
 					"allow": true
 				},
@@ -1444,6 +1432,12 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/access/HardwareInstallation",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/counter/get/hierarchy",
 					"priority": 0,
 					"allow": true
 				},
@@ -2512,6 +2506,12 @@
 				},
 				{
 					"acltype": "publishClientSend",
+					"topic": "openWB/set/system/pnp_ip",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
 					"topic": "openWB/set/system/secondary_auto_update",
 					"priority": 0,
 					"allow": true
@@ -2579,6 +2579,12 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/mac_address",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/pnp_ip",
 					"priority": 0,
 					"allow": true
 				},
@@ -2778,6 +2784,19 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/chargepoint/get/+",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "tenant-energy-configuration-access",
+			"textname": "Leserechte für Mieterstromdaten",
+			"textdescription": "Erlaubt das Empfangen von Mieterstrom Daten.",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/access/TenantEnergyConfiguration",
 					"priority": 0,
 					"allow": true
 				}

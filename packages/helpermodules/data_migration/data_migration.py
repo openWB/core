@@ -256,11 +256,11 @@ class MigrateData:
                             },
                             "data":
                             {
-                                "range_charged": float(row[2]),
-                                "imported_since_mode_switch": float(row[3]) * 1000,
+                                "range_charged": string_to_float(row[2]),
+                                "imported_since_mode_switch": string_to_float(row[3]) * 1000,
                                 "imported_since_plugged": 0,
-                                "power": float(row[4]),
-                                "costs": float(row[9])
+                                "power": string_to_float(row[4]),
+                                "costs": string_to_float(row[9])
                             }
                         }
                         entries.append(new_entry)

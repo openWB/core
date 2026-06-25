@@ -1,4 +1,5 @@
 from enum import Enum
+from dataclasses import MISSING, fields, is_dataclass
 import inspect
 from inspect import FullArgSpec, isclass
 from typing import TypeVar, Type, Union, get_args, get_origin
@@ -26,22 +27,39 @@ def dataclass_from_dict(cls: Type[T], args: Union[dict, T]) -> T:
     elif isinstance(args, type(cls)):
         return args
     arg_spec = inspect.getfullargspec(cls.__init__)
-    return cls(*[_get_argument_value(arg_spec, index, args) for index in range(1, len(arg_spec.args))])
+    return cls(*[_get_argument_value(cls, arg_spec, index, args) for index in range(1, len(arg_spec.args))])
 
 
-def _get_argument_value(arg_spec: FullArgSpec, index: int, parameters: dict):
+def _get_argument_value(cls: Type[T], arg_spec: FullArgSpec, index: int, parameters: dict):
     argument_name = arg_spec.args[index]
     try:
         value = parameters[argument_name]
     except KeyError:
-        try:
-            value = arg_spec.defaults[-len(arg_spec.args) + index]
-        except (IndexError, TypeError):
-            # If none of the parameters have a default value, then `arg_spec.defaults` is None and we get a `TypeError`.
-            # If there are parameters with default value, but not the one requested, we get an `IndexError`.
-            raise Exception(
-                "Cannot determine value for parameter %s: not given in %s and no default value specified" % (
-                    argument_name, parameters))
+        if is_dataclass(cls):
+            dataclass_field = next((field for field in fields(cls) if field.name == argument_name), None)
+            if dataclass_field is not None:
+                if dataclass_field.default_factory is not MISSING:
+                    value = dataclass_field.default_factory()
+                elif dataclass_field.default is not MISSING:
+                    value = dataclass_field.default
+                else:
+                    raise Exception(
+                        "Cannot determine value for parameter %s: not given in %s and no default value specified" % (
+                            argument_name, parameters))
+            else:
+                raise Exception(
+                    "Cannot determine value for parameter %s: not given in %s and no dataclass field found" % (
+                        argument_name, parameters))
+        else:
+            try:
+                value = arg_spec.defaults[-len(arg_spec.args) + index]
+            except (IndexError, TypeError):
+                # If none of the parameters have a default value, then `arg_spec.defaults` is None and we get a
+                # `TypeError`. If there are parameters with default value, but not the one requested, we get an
+                # `IndexError`.
+                raise Exception(
+                    "Cannot determine value for parameter %s: not given in %s and no default value specified" % (
+                        argument_name, parameters))
     return _dataclass_from_dict_recurse(value, arg_spec.annotations.get(argument_name))
 
 

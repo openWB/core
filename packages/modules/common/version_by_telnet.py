@@ -1,7 +1,11 @@
+import socket
 import telnetlib
 
 
 def get_version_by_telnet(expected_bytearray: str, ip_address: str, port: int = 8898):
+    if ip_address is None:
+        # None liefert einen ValueError genauso wie wenn telnet nicht aktiv ist.
+        raise socket.timeout("Die IP-Adresse ist nicht erreichbar. Bitte überprüfe die Einstellungen.")
     # telnetlib ist ab Python 3.11 deprecated
     with telnetlib.Telnet(ip_address, port, 2) as client:
         answer = client.read_until(bytearray(expected_bytearray, 'utf-8'), 2)

@@ -1,3 +1,4 @@
+from dataclasses import dataclass, field
 from typing import Dict, Generic, Optional, Type, TypeVar
 
 import pytest
@@ -40,6 +41,12 @@ class GenericDict:
     def __init__(self, a: str, o: Dict[int, float] = None):
         self.a = a
         self.o = o
+
+
+@dataclass
+class DataclassWithDefaultFactoryList:
+    values: list[int] = field(default_factory=lambda: [14])
+    name: str = "default-name"
 
 
 def test_from_dict_simple():
@@ -126,6 +133,17 @@ def test_from_dict_without_optional():
     # evaluation
     assert actual.a == "aValue"
     assert actual.o is None
+
+
+def test_from_dict_dataclass_uses_default_factory_if_key_missing():
+    # execution
+    actual = dataclass_from_dict(DataclassWithDefaultFactoryList, {"name": "configured"})
+    default_instance = DataclassWithDefaultFactoryList()
+
+    # evaluation
+    assert actual.name == "configured"
+    assert actual.values == default_instance.values  # vergleicht die Werte
+    assert actual.values is not default_instance.values  # vergleicht die Instanzen
 
 
 MY_DATACLASS_AS_DICT = {

@@ -50,3 +50,18 @@ class KostalPikoInverterSetup(ComponentSetup[KostalPikoInverterConfiguration]):
                  configuration: KostalPikoInverterConfiguration = None,
                  **kwargs) -> None:
         super().__init__(name, type, id, configuration or KostalPikoInverterConfiguration(), **kwargs)
+
+
+class KostalPikoBatConfiguration:
+    def __init__(self):
+        pass
+
+
+class KostalPikoBatSetup(ComponentSetup[KostalPikoBatConfiguration]):
+    def __init__(self,
+                 name: str = "Kostal Piko Speicher",
+                 type: str = "bat",
+                 id: int = 0,
+                 configuration: KostalPikoBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or KostalPikoBatConfiguration(), **kwargs)

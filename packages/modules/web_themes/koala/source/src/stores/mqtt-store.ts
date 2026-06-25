@@ -3950,6 +3950,31 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
+   * Get the pv color identified by the inverter id
+   * @param inverterId inverter id
+   * @returns string | null
+   */
+  const pvColor = computed(() => {
+    return (inverterId: number): string | null => {
+      const DEFAULT_COLOR = '#28a745';
+      const config = getComponentConfiguration.value(inverterId);
+      return resolveComponentColor(config?.color, DEFAULT_COLOR);
+    };
+  });
+
+  /**
+   * Get the pv color for the pv if exactly one inverter is configured
+   * @returns string | null
+   */
+  const pvAggregateColor = computed((): string | null => {
+    const ids = getObjectIds.value('inverter');
+    if (ids.length === 1) {
+      return pvColor.value(ids[0]);
+    }
+    return null;
+  });
+
+  /**
    * Get pv power
    * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
    * @returns string | number | ValueObject | undefined

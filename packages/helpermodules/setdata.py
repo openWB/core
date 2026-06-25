@@ -670,8 +670,7 @@ class SetData:
             enthält Topic und Payload
         """
         try:
-            if ("openWB/set/bat/config/bat_control_permitted" in msg.topic or
-                "openWB/set/bat/config/bat_control_activated" in msg.topic or
+            if ("openWB/set/bat/config/bat_control_activated" in msg.topic or
                 "openWB/set/bat/config/price_limit_activated" in msg.topic or
                 "openWB/set/bat/config/price_charge_activated" in msg.topic or
                 "openWB/set/bat/config/configured" in msg.topic or
@@ -1073,7 +1072,8 @@ class SetData:
                   "openWB/set/system/hostname" in msg.topic or
                   "openWB/set/system/release_train" in msg.topic):
                 self._validate_value(msg, str)
-            elif "openWB/set/system/mqtt/bridge/" in msg.topic:
+            elif ("openWB/set/system/mqtt/bridge/" in msg.topic or
+                  msg.topic == "openWB/set/system/pnp_ip"):
                 self._validate_value(msg, "json")
             elif "openWB/set/system/mqtt/valid_partner_ids" == msg.topic:
                 self._validate_value(msg, str, collection=list)

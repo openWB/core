@@ -5,6 +5,7 @@
     :class="{
       'battery-sum': props.batteryId === -1,
       'full-height': props.fullHeight,
+      'has-custom-color': batteryColor,
     }"
   >
     <q-card-section class="row no-wrap items-center justify-between">

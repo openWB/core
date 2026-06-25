@@ -258,6 +258,8 @@ const secondaryComponentsConfigured = computed(() => {
   };
 });
 
+const gridID = computed(() => mqttStore.gridId);
+
 const gridData = computed((): DailyTotalsItem => {
   let data: DailyTotalsItem = {
     id: 'grid',
@@ -459,6 +461,10 @@ const componentData = computed((): DailyTotalsItem[] => {
           exported: mqttStore.chargePointDailyExported('textValue') as string,
         },
       };
+      if (mqttStore.chargePointIds.length === 1) {
+        item.color =
+          mqttStore.chargePointColor(mqttStore.chargePointIds[0]) || undefined;
+      }
     }
     components.push(item);
   }
