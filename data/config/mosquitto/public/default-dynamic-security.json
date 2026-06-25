@@ -70,7 +70,7 @@
 	"anonymousGroup": "anonymous",
 	"roles": [
 		{
-			"rolename": "openwb-version:6",
+			"rolename": "openwb-version:7",
 			"textname": "openWB Versionsnummer",
 			"textdescription": "Diese Rolle ist ein Platzhalter für die openWB Versionsnummer und wird automatisch aktualisiert. Sie hat keine direkten Berechtigungen.",
 			"acls": []
@@ -1432,6 +1432,12 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/access/HardwareInstallation",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/counter/get/hierarchy",
 					"priority": 0,
 					"allow": true
 				},
