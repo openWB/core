@@ -4,7 +4,6 @@
     class="vehicle-card"
     :class="{
       'full-height': props.fullHeight,
-      'has-custom-color': vehicleColor,
     }"
   >
     <q-card-section class="row no-wrap">
@@ -109,7 +108,7 @@ const refreshSoc = () => {
 };
 
 const vehicleColor = computed(() => {
-  return mqttStore.vehicleColor(props.vehicleId);
+  return mqttStore.vehicleColor(props.vehicleId) || 'var(--q-vehicle-stroke)';
 });
 </script>
 
@@ -117,11 +116,8 @@ const vehicleColor = computed(() => {
 .vehicle-card {
   width: 22em;
   border: none;
-  border-radius: 15px;
-}
-
-.vehicle-card.has-custom-color {
   border-left: 4px solid v-bind(vehicleColor);
+  border-radius: 15px;
 }
 
 .q-card__section {
