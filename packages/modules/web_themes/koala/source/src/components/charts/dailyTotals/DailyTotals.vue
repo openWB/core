@@ -17,7 +17,9 @@
           v-model="expanded.grid"
           class="grid card"
           :header-class="
-            secondaryCountersConfigured ? 'cursor-pointer' : 'no-pointer'
+            secondaryComponentsConfigured('counter')
+              ? 'cursor-pointer'
+              : 'no-pointer'
           "
         >
           <template #header>
@@ -25,7 +27,9 @@
               :item="gridData"
               :rowHeight="rowHeight"
               :rowExpanded="expanded.grid"
-              :secondaryComponentsConfigured="secondaryCountersConfigured"
+              :secondaryComponentsConfigured="
+                secondaryComponentsConfigured('counter')
+              "
               :componentNameVisible="componentNameVisible"
               :currentPowerVisible="currentPowerVisible"
               :socValueVisible="socValueVisible"
@@ -55,11 +59,9 @@
           v-model="expanded[item.id]"
           :class="[item.id, 'card']"
           :header-class="
-            item.id === 'chargepoint' && individualChargePointData.length > 1
+            secondaryComponentsConfigured(item.id)
               ? 'cursor-pointer'
-              : item.id === 'battery' && individualBatteryData.length > 1
-                ? 'cursor-pointer'
-                : 'no-pointer'
+              : 'no-pointer'
           "
         >
           <template #header>
@@ -68,11 +70,7 @@
               :rowHeight="rowHeight"
               :rowExpanded="expanded[item.id]"
               :secondaryComponentsConfigured="
-                item.id === 'chargepoint'
-                  ? individualChargePointData.length > 1
-                  : item.id === 'battery'
-                    ? individualBatteryData.length > 1
-                    : false
+                secondaryComponentsConfigured(item.id)
               "
               :componentNameVisible="componentNameVisible"
               :currentPowerVisible="currentPowerVisible"
@@ -171,6 +169,28 @@
               </DailyTotalsRow>
             </div>
           </div>
+          <div v-if="item.id === 'pv'">
+            <div
+              v-for="pvData in individualPvData"
+              :key="pvData.id"
+              class="sub-row"
+            >
+              <DailyTotalsRow
+                :item="pvData"
+                :rowHeight="rowHeight"
+                :componentNameVisible="componentNameVisible"
+                :currentPowerVisible="currentPowerVisible"
+                :socValueVisible="socValueVisible"
+              >
+                <template #right-label>
+                  <div>Ertrag:</div>
+                </template>
+                <template #right-value>
+                  <div>{{ pvData.today?.exported }}</div>
+                </template>
+              </DailyTotalsRow>
+            </div>
+          </div>
         </q-expansion-item>
       </div>
     </div>
@@ -195,7 +215,9 @@ const $q = useQuasar();
 const mqttStore = useMqttStore();
 const gridPower = computed(() => mqttStore.counterPower('value'));
 const showGrid = computed(
-  () => gridPower.value !== undefined || secondaryCountersConfigured.value,
+  () =>
+    gridPower.value !== undefined ||
+    secondaryComponentsConfigured.value('counter'),
 );
 const expanded = ref<Record<string, boolean>>({
   grid: false,
@@ -219,9 +241,22 @@ const chargePointSumPowerAvailable = computed(
 const chargePointConfigured = computed(
   () => mqttStore.chargePointIds.length > 0,
 );
-const secondaryCountersConfigured = computed(
-  () => secondaryCounterData.value.length > 0,
-);
+const secondaryComponentsConfigured = computed(() => {
+  return (componentType: string): boolean => {
+    switch (componentType) {
+      case 'counter':
+        return secondaryCounterData.value.length > 0;
+      case 'chargepoint':
+        return individualChargePointData.value.length > 1;
+      case 'battery':
+        return individualBatteryData.value.length > 1;
+      case 'pv':
+        return individualPvData.value.length > 1;
+      default:
+        return false;
+    }
+  };
+});
 
 const gridID = computed(() => mqttStore.gridId);
 
@@ -243,10 +278,7 @@ const gridData = computed((): DailyTotalsItem => {
         imported: mqttStore.counterDailyImported('textValue') as string,
         exported: mqttStore.counterDailyExported('textValue') as string,
       },
-      color:
-        gridID.value !== undefined
-          ? mqttStore.gridComponentColor(gridID.value) || undefined
-          : undefined,
+      color: 'var(--q-grid-stroke)',
     };
   }
   return data;
@@ -268,7 +300,9 @@ const secondaryCounterData = computed((): DailyTotalsItem[] => {
           imported: mqttStore.counterDailyImported('textValue', id) as string,
           exported: mqttStore.counterDailyExported('textValue', id) as string,
         },
-        color: mqttStore.gridComponentColor(id) || undefined,
+        color:
+          mqttStore.gridComponentColor(id) ||
+          'var(--q-secondary-counter-stroke)',
       });
     }
   });
@@ -297,7 +331,7 @@ const individualChargePointData = computed((): DailyTotalsItem[] => {
             id,
           ) as string,
         },
-        color: mqttStore.chargePointColor(id) || undefined,
+        color: mqttStore.chargePointColor(id) || 'var(--q-charge-point-stroke)',
       });
     }
   });
@@ -322,11 +356,37 @@ const individualBatteryData = computed((): DailyTotalsItem[] => {
           imported: mqttStore.batteryDailyImported(id, 'textValue') as string,
           exported: mqttStore.batteryDailyExported(id, 'textValue') as string,
         },
-        color: mqttStore.batteryColor(id) || undefined,
+        color: mqttStore.batteryColor(id) || 'var(--q-battery-stroke)',
       });
     }
   });
   return batteries;
+});
+
+const individualPvData = computed((): DailyTotalsItem[] => {
+  const pvSystems: DailyTotalsItem[] = [];
+
+  mqttStore.pvIds.forEach((id) => {
+    const name = mqttStore.componentName(id);
+    if (name !== undefined) {
+      pvSystems.push({
+        id: `pv-${id}`,
+        title: name,
+        level: 'secondary',
+        icon: 'pv',
+        power: mqttStore.pvPowerIndividual(id, 'textValue') as string,
+        powerValue: mqttStore.pvPowerIndividual(id, 'value') as number,
+        today: {
+          exported: mqttStore.pvDailyExportedIndividual(
+            id,
+            'textValue',
+          ) as string,
+        },
+        color: mqttStore.pvColor(id) || 'var(--q-pv-stroke)',
+      });
+    }
+  });
+  return pvSystems;
 });
 
 const componentData = computed((): DailyTotalsItem[] => {
@@ -348,10 +408,8 @@ const componentData = computed((): DailyTotalsItem[] => {
         imported: mqttStore.batteryDailyImportedTotal('textValue') as string,
         exported: mqttStore.batteryDailyExportedTotal('textValue') as string,
       },
+      color: 'var(--q-battery-stroke)',
     };
-    if (mqttStore.batteryIds.length === 1) {
-      item.color = mqttStore.batteryColor(mqttStore.batteryIds[0]) || undefined;
-    }
     components.push(item);
   }
 
@@ -361,10 +419,10 @@ const componentData = computed((): DailyTotalsItem[] => {
       title: 'PV',
       level: 'primary',
       icon: 'pv',
-      power: mqttStore.getPvPower('textValue') as string,
-      powerValue: mqttStore.getPvPower('value') as number,
+      power: mqttStore.pvPowerTotal('textValue') as string,
+      powerValue: mqttStore.pvPowerTotal('value') as number,
       today: { exported: mqttStore.pvDailyExported('textValue') as string },
-      color: mqttStore.pvAggregateColor || 'var(--q-diagram-icon)',
+      color: 'var(--q-pv-stroke)',
     });
   }
 
@@ -377,6 +435,7 @@ const componentData = computed((): DailyTotalsItem[] => {
       power: mqttStore.homePower('textValue') as string,
       powerValue: mqttStore.homePower('value') as number,
       today: { imported: mqttStore.homeDailyYield('textValue') as string },
+      color: 'var(--q-home-stroke)',
     });
   }
 
@@ -386,6 +445,11 @@ const componentData = computed((): DailyTotalsItem[] => {
       title: mqttStore.chargePointIds.length > 1 ? 'Ladepunkte' : 'Ladepunkt',
       level: 'primary',
       icon: 'chargepoint',
+      color:
+        mqttStore.chargePointIds.length === 1
+          ? mqttStore.chargePointColor(mqttStore.chargePointIds[0]) ||
+            'var(--q-charge-point-stroke)'
+          : 'var(--q-charge-point-stroke)',
     };
     if (chargePointSumPowerAvailable.value) {
       item = {

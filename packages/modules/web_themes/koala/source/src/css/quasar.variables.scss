@@ -22,7 +22,7 @@
 // $warning: #F2C037;
 /////////////////////////////////////////////////////////////////////
 // Default Light Theme Base Colors
-$primary: #5c93d1;
+$primary: #153357;
 $secondary: #d2d2d7;
 $accent: #546e7a;
 $positive: #66bd7a;
@@ -36,20 +36,21 @@ $brown-text: #524f57;
 $white: #ffffff;
 $grey: #9e9e9e; // Quasar's default grey
 $toggle-off: #e0e0e0;
-$grid-stroke: #a33c42;
+$grid-stroke: #DC1629;
 $grid-fill: #efb6bc33;
 $secondary-counter-stroke: #ffa9a8;
 $secondary-counter-fill: #ffa9a833;
-$home-stroke: #949aa1;
+$home-stroke: #717171;
 $home-fill: #949aa133;
 $pv-stroke: #66bd7a;
 $pv-fill: #90ee9033;
 $battery: #ba7128;
-$battery-stroke: #ba7128;
+$battery-stroke: #FF9740;
 $battery-fill: #ba712833;
-$charge-point-stroke: #5c93d1;
+$charge-point-stroke: #153357;
 $charge-point-fill: #5c93d14d;
-$vehicle-stroke: #4f99af;
+$vehicle-stroke: #38bbb4;
+$vehicle-fill: #4f99af;
 $charge-plan-link-button: #6b757d;
 $diagram-icon: #717171;
 $table-hover: #f9f8f8;
@@ -86,6 +87,7 @@ $table-hover: #f9f8f8;
   --q-charge-point-stroke: #{$charge-point-stroke};
   --q-charge-point-fill: #{$charge-point-fill};
   --q-vehicle-stroke: #{$vehicle-stroke};
+  --q-vehicle-fill: #{$vehicle-fill};
   --q-charge-plan-link-button: #{$charge-plan-link-button};
   --q-diagram-icon: #{$diagram-icon};
   --q-table-hover: #{$table-hover};
@@ -232,6 +234,7 @@ $dark-background: #242526;
 $dark-background-1: #242526;
 $dark-background-2: #242526;
 $dark-tab-icon: #d7d9e0;
+$dark-charge-point-stroke: #3874db;
 $dark-charge-plan-link-button: #75787a;
 $dark-table-hover: #ffffff12;
 
@@ -265,9 +268,10 @@ $dark-table-hover: #ffffff12;
   --q-pv-fill: #{$pv-fill};
   --q-battery-stroke: #{$battery-stroke};
   --q-battery-fill: #{$battery-fill};
-  --q-charge-point-stroke: #{$charge-point-stroke};
+  --q-charge-point-stroke: #{$dark-charge-point-stroke};
   --q-charge-point-fill: #{$charge-point-fill};
   --q-vehicle-stroke: #{$vehicle-stroke};
+  --q-vehicle-fill: #{$vehicle-fill};
   --q-charge-plan-link-button: #{$dark-charge-plan-link-button};
   --q-diagram-icon: #{$white};
   --q-table-hover: #{$dark-table-hover};
@@ -351,7 +355,7 @@ $dark-table-hover: #ffffff12;
 .tinted-box {
   background-color: color-mix(
     in srgb,
-    var(--tint-accent, var(--q-primary)) var(--tint-amount, 12%),
+    var(--tint-accent, var(--q-primary)) var(--tint-amount, 5%),
     transparent
   );
   border: 1px solid color-mix(in srgb, var(--q-text) 35%, transparent);

@@ -4,7 +4,6 @@
     class="charge-point-card"
     :class="{
       'full-height': props.fullHeight,
-      'has-custom-color': chargePointColor,
     }"
   >
     <q-card-section class="row no-wrap">
@@ -318,19 +317,18 @@ const refreshSoc = () => {
   });
 };
 
-const chargePointColor = computed(() =>
-  mqttStore.chargePointColor(props.chargePointId),
+const chargePointColor = computed(
+  () =>
+    mqttStore.chargePointColor(props.chargePointId) ||
+    'var(--q-charge-point-stroke)',
 );
 </script>
 <style lang="scss" scoped>
 .charge-point-card {
   width: 22em;
   border: none;
-  border-radius: 15px;
-}
-
-.charge-point-card.has-custom-color {
   border-left: 4px solid v-bind(chargePointColor);
+  border-radius: 15px;
 }
 
 .q-card__section {

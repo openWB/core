@@ -1,0 +1,1 @@
+import{k as e}from"./index-BaRg0ziR.js";import{t}from"./mqtt-store-BfPXlcLg.js";var n=e(()=>{t().initialize()});export{n as default};

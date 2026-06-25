@@ -1243,13 +1243,12 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const chargePointColor = computed(() => {
     return (chargePointId: number): string | null => {
-      const DEFAULT_COLOR = '#007bff';
       const color = getValue.value(
         `openWB/chargepoint/${chargePointId}/config`,
         'color',
         null,
       ) as string | null;
-      return resolveComponentColor(color, DEFAULT_COLOR);
+      return resolveComponentColor(color, SETTINGS_UI_COLORS.chargePoint);
     };
   });
 
@@ -2908,28 +2907,17 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
-   * Get the battery color if exactly one battery is configured
-   * @param batteryId battery id
-   * @returns string | null
-   */
-  const batteryAggregateColor = computed(() => {
-    const ids = batteryIds.value;
-    if (ids.length === 1) {
-      return batteryColor.value(ids[0]);
-    }
-    return null;
-  });
-
-  /**
    * Get the battery color identified by the battery id
    * @param batteryId battery id
    * @returns string | null
    */
   const batteryColor = computed(() => {
     return (batteryId: number): string | null => {
-      const DEFAULT_COLOR = '#ffc107';
       const config = getComponentConfiguration.value(batteryId);
-      return resolveComponentColor(config?.color, DEFAULT_COLOR);
+      return resolveComponentColor(
+        config?.color,
+        SETTINGS_UI_COLORS.battery,
+      );
     };
   });
 
@@ -2996,13 +2984,12 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const vehicleColor = computed(() => {
     return (vehicleId: number): string | null => {
-      const DEFAULT_COLOR = '#17a2b8';
       const color = getValue.value(
         `openWB/vehicle/${vehicleId}/color`,
         undefined,
         null,
       ) as string | null;
-      return resolveComponentColor(color, DEFAULT_COLOR);
+      return resolveComponentColor(color, SETTINGS_UI_COLORS.vehicle);
     };
   });
 
@@ -3787,9 +3774,8 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const secondaryCounterColor = computed(() => {
     return (componentId: number) => {
-      const DEFAULT_COLOR = '#dc3545';
       const color = getComponentConfiguration.value(componentId)?.color;
-      return resolveComponentColor(color, DEFAULT_COLOR);
+      return resolveComponentColor(color, SETTINGS_UI_COLORS.counter);
     };
   });
 
@@ -3814,9 +3800,8 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const gridComponentColor = computed(() => {
     return (componentId: number) => {
-      const DEFAULT_COLOR = '#dc3545';
       const color = getComponentConfiguration.value(componentId)?.color;
-      return resolveComponentColor(color, DEFAULT_COLOR);
+      return resolveComponentColor(color, SETTINGS_UI_COLORS.counter);
     };
   });
 
@@ -3994,7 +3979,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
    * @returns string | number | ValueObject | undefined
    */
-  const getPvPower = computed(() => {
+  const pvPowerTotal = computed(() => {
     return (returnType: string = 'textValue') => {
       const power =
         (getValue.value('openWB/pv/get/power', undefined, 0) as number) || 0;
@@ -4030,6 +4015,83 @@ export const useMqttStore = defineStore('mqtt', () => {
         return valueObject;
       }
       console.error('returnType not found!', returnType, energy);
+    };
+  });
+
+  /**
+   * Get the ids of individual pv systems
+   * @returns number[]
+   */
+  const pvIds = computed(() => {
+    return getObjectIds.value('inverter').filter((id) => {
+      return componentName.value(id) !== undefined;
+    });
+  });
+
+  /**
+   * Get the power of an individual pv system
+   * @param pvId pv system ID
+   * @param returnType type of return value, 'textValue', 'absoluteTextValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject | undefined
+   */
+  const pvPowerIndividual = computed(() => {
+    return (pvId: number, returnType: string = 'textValue') => {
+      const power =
+        (getValue.value(
+          `openWB/pv/${pvId}/get/power`,
+          undefined,
+          0,
+        ) as number) || 0;
+      const valueObject = getValueObject.value(power);
+      if (Object.hasOwn(valueObject, returnType)) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject;
+      }
+      if (returnType === 'absoluteTextValue') {
+        const absValue = Math.abs(power);
+        const valueObject = getValueObject.value(absValue, 'W', '', true);
+        return valueObject.textValue;
+      }
+      console.error('returnType not found!', returnType, power);
+    };
+  });
+
+  /**
+   * Get the daily exported energy of an individual pv system
+   * @param pvId pv system ID
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject | undefined
+   */
+  const pvDailyExportedIndividual = computed(() => {
+    return (pvId: number, returnType: string = 'textValue') => {
+      const energy =
+        (getValue.value(
+          `openWB/pv/${pvId}/get/daily_exported`,
+          undefined,
+          0,
+        ) as number) || 0;
+      const valueObject = getValueObject.value(energy, 'Wh', '', true);
+      if (Object.hasOwn(valueObject, returnType)) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject;
+      }
+      console.error('returnType not found!', returnType, energy);
+    };
+  });
+
+  /**
+   * Get the color of an individual pv system
+   * @param pvId pv system ID
+   * @returns string | null
+   */
+  const pvColor = computed(() => {
+    return (pvId: number): string | null => {
+      const config = getComponentConfiguration.value(pvId);
+      return resolveComponentColor(config?.color, SETTINGS_UI_COLORS.pv);
     };
   });
 
@@ -4075,6 +4137,21 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /* helpers */
+
+  /**
+   * Standard settings UI default component colors
+   * These are only used as sentinels in resolveComponentColor to detect an
+   * uncustomized component color; they intentionally differ from the koala
+   * palette, in quasar.variables.scss (var(--q-*)).
+   */
+  const SETTINGS_UI_COLORS = {
+    chargePoint: '#007bff',
+    battery: '#ffc107',
+    vehicle: '#17a2b8',
+    counter: '#dc3545',
+    pv: '#28a745',
+  } as const;
+
   const resolveComponentColor = (
     color: string | null | undefined,
     defaultColor: string,
@@ -4229,7 +4306,6 @@ export const useMqttStore = defineStore('mqtt', () => {
     batteryTotalPower,
     batteryChargePriorityRange,
     batteryMode,
-    batteryAggregateColor,
     batteryColor,
     // Grid data
     gridId,
@@ -4245,10 +4321,12 @@ export const useMqttStore = defineStore('mqtt', () => {
     homeDailyYield,
     // PV data
     pvConfigured,
-    pvAggregateColor,
-    pvColor,
-    getPvPower,
+    pvPowerTotal,
     pvDailyExported,
+    pvIds,
+    pvPowerIndividual,
+    pvDailyExportedIndividual,
+    pvColor,
     // Chart data
     chartData,
     // electricity tariff provider
