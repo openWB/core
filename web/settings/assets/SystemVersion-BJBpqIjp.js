@@ -1,1 +1,0 @@
-import{_ as e}from"./vendor-DtLjROu5.js";const o={computed:{systemVersion(){const s=this.$store.state.mqtt["openWB/system/version"]?.match(/\d+\.\d+\.\d+/);return s?s[0]:"2.1.8"}},mounted(){this.$root.doSubscribe(["openWB/system/version"])}},i=e(o,[["__file","/opt/openwb-dev/openwb-ui-settings_BS_folk/src/components/mixins/SystemVersion.vue"]]);export{i as S};
