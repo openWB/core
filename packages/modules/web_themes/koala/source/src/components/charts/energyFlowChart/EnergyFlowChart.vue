@@ -276,7 +276,6 @@ const chargePointSumCharging = computed(
   () => Number(chargePointSumPower.value.value) > 0,
 );
 
-
 ///////////////////// Set animation speed //////////////////////////
 
 const maxSystemPower = computed(() => {
