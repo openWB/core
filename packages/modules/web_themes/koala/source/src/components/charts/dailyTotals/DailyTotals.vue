@@ -258,8 +258,6 @@ const secondaryComponentsConfigured = computed(() => {
   };
 });
 
-const gridID = computed(() => mqttStore.gridId);
-
 const gridData = computed((): DailyTotalsItem => {
   let data: DailyTotalsItem = {
     id: 'grid',
