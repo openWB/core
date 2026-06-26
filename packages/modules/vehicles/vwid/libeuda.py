@@ -793,9 +793,25 @@ class euda():
         """Parse an EUDA payload and publish it in the in-memory result cache."""
         vin = payload['vin']
         result = parse_vehicle_data(payload)
-        euda.result[vin] = result
+        _valid = True
+        _LOGGER.info(f"latest result=\n{json.dumps(result, indent=4)}")
+        if vin in euda.result:
+            _LOGGER.info(f"cache result=\n{json.dumps(euda.result[vin], indent=4)}")
+            if result['soc_timestamp'] < euda.result[vin]['soc_timestamp']:
+                _LOGGER.info("thread result skipped, soc_timestamp too old")
+                _valid = False
+            if result['soc'] is None:
+                _LOGGER.info("thread result skipped, no soc found")
+                _valid = False
+        if _valid:
+            if vin in euda.result and result['odometer'] < euda.result[vin]['odometer']:
+                _LOGGER.info("odometer less than earlier - keep earlier value")
+                result['odometer'] = euda.result[vin]['odometer']
+            euda.result[vin] = result
+            _LOGGER.info("thread result is valid")
+
         _ano_j = {ano_vin(vin): euda.result[vin]}
-        _LOGGER.info(f"thread result:\n{json.dumps(_ano_j, indent=4)}")
+        _LOGGER.info(f"\n{json.dumps(_ano_j, indent=4)}")
 
         return result
 
@@ -829,7 +845,8 @@ class euda():
         brand = VIN_BRAND_MAP.get(vin[0:3], DEFAULT_BRAND)
         _LOGGER.info(f"async Thread started, brand={brand}")
         try:
-            async with aiohttp.ClientSession(headers={'Connection': 'keep-alive'}) as session:
+            async with aiohttp.ClientSession(headers={'Connection': 'keep-alive'},
+                                             connector_owner=False) as session:
                 client_id = f"{vehicle}"
                 _k = str(euda.client.keys())
                 _LOGGER.info(f"libeuda.Thread client at entry: euda.client.keys={_k}")
