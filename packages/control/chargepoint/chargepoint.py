@@ -282,8 +282,9 @@ class Chargepoint(ChargepointRfidMixin):
             # Unterstützt der Ladepunkt die CP-Unterbrechung und benötigt das Auto eine CP-Unterbrechung?
             if charging_ev.ev_template.data.control_pilot_interruption:
                 if self.data.config.control_pilot_interruption_hw:
-                    # Wird die Ladung gestartet?
-                    if self.data.set.current_prev == 0 and self.data.set.current != 0:
+                    # Wird die Ladung gestartet? (nicht nach Phasenumschaltung, da diese bereits CP umschaltet)
+                    if (self.data.set.current_prev == 0 and self.data.set.current != 0 and
+                            self.data.control_parameter.state != ChargepointState.WAIT_FOR_USING_PHASES):
                         # Die CP-Unterbrechung erfolgt in Threads, da diese länger als ein Zyklus dauert.
                         if thread_handler(Thread(
                                 target=self.chargepoint_module.interrupt_cp,
