@@ -35,6 +35,7 @@ $background-2: #eeeef3;
 $brown-text: #524f57;
 $white: #ffffff;
 $grey: #9e9e9e; // Quasar's default grey
+$grey-4: #EEEEEE; // Quasar's default grey-4
 $toggle-off: #e0e0e0;
 $grid-stroke: #dc1629;
 $grid-fill: #efb6bc33;
@@ -72,6 +73,7 @@ $table-hover: #f9f8f8;
   --q-text: #{$brown-text};
   --q-white: #{$white};
   --q-grey: #{$grey};
+  --q-grey-4: #{$grey-4};
   --q-carousel-control: #{$primary};
   --q-toggle-off: #{$toggle-off};
   --q-grid-fill: #{$grid-fill};
@@ -256,6 +258,7 @@ $dark-table-hover: #ffffff12;
   --q-text: #{$white};
   --q-white: #{$white};
   --q-grey: #{$grey};
+  --q-grey-4: #{$grey-4};
   --q-carousel-control: #{$dark-primary};
   --q-toggle-off: #{$toggle-off};
   --q-grid-fill: #{$grid-fill};
