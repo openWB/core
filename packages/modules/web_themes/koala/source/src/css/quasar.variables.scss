@@ -225,7 +225,6 @@ $table-hover: #f9f8f8;
   }
 }
 // Dark Theme Base Colors
-$dark-page: #242526; // This overrides Quasar's default dark page color - outer background
 $dark-primary: #2aa8ff;
 $dark-secondary: #3b3b3d; //cards - tabs background tables
 $dark-shadow: #7a7c80; // shadow color for dark theme
@@ -235,8 +234,13 @@ $dark-negative: #c54d57;
 $dark-info: #4b89aa;
 $dark-warning: #d98e44;
 $dark-background: #242526;
-$dark-background-1: #242526;
-$dark-background-2: #242526;
+$dark-background-1: #2c2c2e; // outer back color (visible on the sides)
+$dark-background-2: #242526; // inner main page color
+// Quasar paints body.body--dark with var(--q-dark-page), a higher-specificity
+// rule we can't override from .body--dark. It derives --q-dark-page from this
+// SCSS $dark-page at compile time (in Quasar's own :root), so pointing it at the
+// outer color renders the side/back background — no extra CSS var in our list.
+$dark-page: $dark-background-1;
 $dark-text: #e8eaee;
 $dark-tab-icon: #d7d9e0;
 $dark-charge-point-stroke: #2aa8ff;
@@ -285,7 +289,7 @@ $dark-table-hover: #ffffff12;
   --q-tab-icon: #{$grey-7};
 
   // Main background
-  background-color: $dark-page;
+  background-color: var(--q-background-1);
   // Text color
   color: var(--q-white);
   // Header colors
