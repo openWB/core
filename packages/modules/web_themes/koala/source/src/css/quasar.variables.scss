@@ -394,6 +394,18 @@ $dark-table-hover: #ffffff12;
 .q-carousel__control > .q-btn {
   background: var(--q-card-background) !important;
   color: var(--q-carousel-control) !important;
+  // Soft shadow matching the cards (same token as .card's drop-shadow).
+  filter: drop-shadow(0 0 0.15rem var(--q-shadow));
+
+  // Tinted hover so the controls stay distinguishable from the slide
+  // background (arrows, fullscreen and legend buttons).
+  &:hover {
+    background: color-mix(
+      in srgb,
+      var(--q-carousel-control) 12%,
+      var(--q-card-background)
+    ) !important;
+  }
 }
 
 // Every control button (arrows, dots, fullscreen): strip Quasar's default
