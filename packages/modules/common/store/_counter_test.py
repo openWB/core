@@ -12,6 +12,7 @@ from control.counter import Counter, CounterData, Get
 from control.counter_all import CounterAll
 from modules.chargepoints.mqtt.chargepoint_module import ChargepointModule
 from modules.common.component_state import BatState, ChargepointState, CounterState, InverterState
+from modules.common.component_type import ComponentType
 from modules.common.simcount._simcounter import SimCounter
 from modules.common.store import _counter
 from modules.common.store._api import LoggingValueStore
@@ -129,7 +130,7 @@ def test_calc_virtual(params: Params, monkeypatch):
     params.mock_data()
     purge = PurgeCounterState(delegate=Mock(delegate=Mock(num=0)),
                               add_child_values=True,
-                              simcounter=SimCounter(0, 0, prefix="bezug"))
+                              simcounter=SimCounter(0, 0, ComponentType.COUNTER))
     mock_comp_obj = Mock(side_effect=params.mock_comp)
     monkeypatch.setattr(_counter, "get_component_obj_by_id", mock_comp_obj)
 
@@ -239,7 +240,7 @@ def test_calc_uncounted_consumption(monkeypatch):
     virtual_counter_purge = PurgeCounterState(
         delegate=Mock(delegate=Mock(num=3)),
         add_child_values=True,
-        simcounter=SimCounter(0, 0, prefix="virtual")
+        simcounter=SimCounter(0, 0, "counter")
     )
 
     # execution
