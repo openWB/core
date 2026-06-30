@@ -587,12 +587,11 @@ watch(
   border-radius: 0.5rem;
   background: var(--q-card-background);
   filter: drop-shadow(0 0 0.15rem var(--q-shadow));
-  border: 0.125rem solid var(--q-primary);
   margin-bottom: 0.25rem;
 }
 
 .sub-row {
-  border-top: 0.12rem solid var(--q-primary);
+  border-top: 0.12rem solid var(--q-grey-4);
 }
 .rotate-180 {
   transform: rotate(180deg);

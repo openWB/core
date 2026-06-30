@@ -22,7 +22,7 @@
 // $warning: #F2C037;
 /////////////////////////////////////////////////////////////////////
 // Default Light Theme Base Colors
-$primary: #153357;
+$primary: #00336e;
 $secondary: #d2d2d7;
 $accent: #546e7a;
 $positive: #66bd7a;
@@ -31,23 +31,25 @@ $info: #7dc5d4;
 $warning: #d98e44;
 $background: #ffffff;
 $background-1: #e3e3ec;
-$background-2: #eeeef3;
-$brown-text: #524f57;
+$background-2: #eceef3;
+$light-text: #2c3440;
 $white: #ffffff;
 $grey: #9e9e9e; // Quasar's default grey
+$grey-4: #e0e0e0; // Quasar's default grey-4
+$grey-7: #757575; // Quasar's default grey-7
 $toggle-off: #e0e0e0;
-$grid-stroke: #dc1629;
+$grid-stroke: #ff3b40;
 $grid-fill: #efb6bc33;
 $secondary-counter-stroke: #ffa9a8;
 $secondary-counter-fill: #ffa9a833;
-$home-stroke: #717171;
+$home-stroke: #5a6472;
 $home-fill: #949aa133;
-$pv-stroke: #66bd7a;
+$pv-stroke: #15c45a;
 $pv-fill: #90ee9033;
 $battery: #ba7128;
-$battery-stroke: #ff9740;
+$battery-stroke: #ff9100;
 $battery-fill: #ba712833;
-$charge-point-stroke: #153357;
+$charge-point-stroke: #00336E;
 $charge-point-fill: #5c93d14d;
 $vehicle-stroke: #38bbb4;
 $vehicle-fill: #4f99af;
@@ -69,9 +71,11 @@ $table-hover: #f9f8f8;
   --q-card-background: #{$background};
   --q-list: color-mix(in srgb, var(--q-grey) 5%, transparent);
   --q-shadow: #{$secondary};
-  --q-text: #{$brown-text};
+  --q-text: #{$light-text};
   --q-white: #{$white};
   --q-grey: #{$grey};
+  --q-grey-4: #{$grey-4};
+  --q-grey-7: #{$grey-7};
   --q-carousel-control: #{$primary};
   --q-toggle-off: #{$toggle-off};
   --q-grid-fill: #{$grid-fill};
@@ -91,7 +95,7 @@ $table-hover: #f9f8f8;
   --q-charge-plan-link-button: #{$charge-plan-link-button};
   --q-diagram-icon: #{$diagram-icon};
   --q-table-hover: #{$table-hover};
-  --q-tab-icon: #{$primary};
+  --q-tab-icon: #{$grey-7};
 
   // Main background
   background-color: var(--q-background-1);
@@ -221,9 +225,8 @@ $table-hover: #f9f8f8;
   }
 }
 // Dark Theme Base Colors
-$dark-page: #18191a; // This overrides Quasar's default dark page color - outer background
-$dark-primary: #3874db;
-$dark-secondary: #3a3b3c; //cards - tabs background tables
+$dark-primary: #2aa8ff;
+$dark-secondary: #3b3b3d; //cards - tabs background tables
 $dark-shadow: #7a7c80; // shadow color for dark theme
 $dark-accent: #546e7a;
 $dark-positive: #3e8f5e;
@@ -231,10 +234,16 @@ $dark-negative: #c54d57;
 $dark-info: #4b89aa;
 $dark-warning: #d98e44;
 $dark-background: #242526;
-$dark-background-1: #242526;
-$dark-background-2: #242526;
+$dark-background-1: #2c2c2e; // outer back color (visible on the sides)
+$dark-background-2: #242526; // inner main page color
+// Quasar paints body.body--dark with var(--q-dark-page), a higher-specificity
+// rule we can't override from .body--dark. It derives --q-dark-page from this
+// SCSS $dark-page at compile time (in Quasar's own :root), so pointing it at the
+// outer color renders the side/back background — no extra CSS var in our list.
+$dark-page: $dark-background-1;
+$dark-text: #e8eaee;
 $dark-tab-icon: #d7d9e0;
-$dark-charge-point-stroke: #3874db;
+$dark-charge-point-stroke: #2aa8ff;
 $dark-charge-plan-link-button: #75787a;
 $dark-table-hover: #ffffff12;
 
@@ -253,9 +262,11 @@ $dark-table-hover: #ffffff12;
   --q-card-background: #{$dark-secondary};
   --q-list: #{$dark-secondary}; // drawer, list background
   --q-shadow: #{$dark-shadow};
-  --q-text: #{$white};
+  --q-text: #{$dark-text};
   --q-white: #{$white};
   --q-grey: #{$grey};
+  --q-grey-4: #{$grey-4};
+  --q-grey-7: #{$grey-7};
   --q-carousel-control: #{$dark-primary};
   --q-toggle-off: #{$toggle-off};
   --q-grid-fill: #{$grid-fill};
@@ -275,10 +286,10 @@ $dark-table-hover: #ffffff12;
   --q-charge-plan-link-button: #{$dark-charge-plan-link-button};
   --q-diagram-icon: #{$white};
   --q-table-hover: #{$dark-table-hover};
-  --q-tab-icon: #{$dark-tab-icon};
+  --q-tab-icon: #{$grey-7};
 
   // Main background
-  background-color: $dark-page;
+  background-color: var(--q-background-1);
   // Text color
   color: var(--q-white);
   // Header colors
@@ -341,6 +352,9 @@ $dark-table-hover: #ffffff12;
 .q-tab .q-icon {
   color: var(--q-tab-icon) !important;
 }
+.q-tab--active .q-icon {
+  color: var(--q-primary) !important;
+}
 
 // Theme-aware text helper — all themes (value via --q-text).
 .theme-text {
@@ -391,6 +405,18 @@ $dark-table-hover: #ffffff12;
 .q-carousel__control > .q-btn {
   background: var(--q-card-background) !important;
   color: var(--q-carousel-control) !important;
+  // Soft shadow matching the cards (same token as .card's drop-shadow).
+  filter: drop-shadow(0 0 0.15rem var(--q-shadow));
+
+  // Tinted hover so the controls stay distinguishable from the slide
+  // background (arrows, fullscreen and legend buttons).
+  &:hover {
+    background: color-mix(
+      in srgb,
+      var(--q-carousel-control) 12%,
+      var(--q-card-background)
+    ) !important;
+  }
 }
 
 // Every control button (arrows, dots, fullscreen): strip Quasar's default
