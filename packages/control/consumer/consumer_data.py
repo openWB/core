@@ -13,7 +13,7 @@ from modules.common.consumer_setup import ConsumerSetup
 
 @dataclass
 class EcoCharging:
-    price_limit: float = 0.07
+    price_limit: float = 0.0002
 
 
 @dataclass
@@ -125,7 +125,7 @@ class ConsumerConfig:
     phase_1: int = 1
     max_power: float = 5000
     min_current: float = 0.5
-    min_intervall: int = 60
+    min_interval: int = 60
 
 
 @dataclass

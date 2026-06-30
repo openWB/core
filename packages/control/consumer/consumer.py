@@ -82,7 +82,7 @@ class Consumer(Load):
                                        "Verbraucher nicht abgeschaltet werden darf.")
 
     def get_parameter(self) -> Tuple[int, int, Optional[str], Chargemode, Chargemode]:
-        if timecheck.create_timestamp() < self.data.set.timestamp_last_current_set + self.data.config.min_intervall:
+        if timecheck.create_timestamp() < self.data.set.timestamp_last_current_set + self.data.config.min_interval:
             log.debug("Intervall für neuen Schaltbefehl nicht abgelaufen.")
             return (self.data.control_parameter.min_current,
                     self.data.control_parameter.required_current,
