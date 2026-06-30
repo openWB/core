@@ -32,6 +32,13 @@ export default {
         );
       };
     },
+    vehicleBackground() {
+      return (vehicleId, isConnected) => {
+        const baseColor = this.vehicleColor(vehicleId);
+        const colorAmount = isConnected ? "50%" : "0%";
+        return `color-mix(in srgb, ${baseColor} ${colorAmount}, transparent)`;
+      };
+    },
   },
   methods: {
     setChargePointConnectedVehicle(event) {
@@ -76,12 +83,11 @@ export default {
             class="large-button vehicle"
             :style="{
               'border-color': vehicleColor(vehicle.id),
-              background:
-                vehicleColor(vehicle.id) +
-                (mqttStore.getChargePointConnectedVehicleId(chargePointId) ==
-                  vehicle.id
-                  ? '80'
-                  : '00'),
+              background: vehicleBackground(
+                vehicle.id,
+                mqttStore.getChargePointConnectedVehicleId(chargePointId) ==
+                  vehicle.id,
+              ),
             }"
             :active="
               mqttStore.getChargePointConnectedVehicleId(chargePointId) ==
