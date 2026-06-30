@@ -9,10 +9,17 @@ log = logging.getLogger(__name__)
 
 
 class PeakFilter:
-    def __init__(self, component_type: ComponentType, component_id: int, fault_state: FaultState):
+    def __init__(
+        self,
+        component_type: ComponentType,
+        component_id: int,
+        fault_state: FaultState,
+        minimum_energy_deviation_wh: float = 0,
+    ):
         self.component_type = component_type
         self.component_id = component_id
         self.fault_state = fault_state
+        self.minimum_energy_deviation_wh = max(0, minimum_energy_deviation_wh)
         self.imported = None
         self.exported = None
 
@@ -56,7 +63,8 @@ class PeakFilter:
             # Die erlaubte Abweichung ist doppelt so groß wie die mögliche
             # Energiemenge pro Intervall bei maximaler Leistung
             control_interval = data.data.general_data.data.control_interval
-            allowed_deviation = 2 * (control_interval / 3600) * max_power
+            dynamic_allowed_deviation = 2 * (control_interval / 3600) * max_power
+            allowed_deviation = max(dynamic_allowed_deviation, self.minimum_energy_deviation_wh)
 
             imp = self.check_total_energy(imported, self.imported, allowed_deviation)
             self.imported = imported

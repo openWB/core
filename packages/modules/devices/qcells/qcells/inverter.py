@@ -28,7 +28,12 @@ class QCellsInverter(AbstractInverter):
         self.client: ModbusTcpClient_ = self.kwargs['client']
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
+        self.peak_filter = PeakFilter(
+            ComponentType.INVERTER,
+            self.component_config.id,
+            self.fault_state,
+            minimum_energy_deviation_wh=100,
+        )
 
     def update(self) -> None:
         power_string1 = (self.client.read_input_registers(

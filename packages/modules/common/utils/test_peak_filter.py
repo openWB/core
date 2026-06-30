@@ -89,3 +89,23 @@ def test_check_values_valid(params):
         imp, exp = pf.check_values(params.power, params.imported, params.exported)
         assert imp == params.expected_imported
         assert exp == params.expected_exported
+
+
+def test_minimum_energy_deviation_accepts_resolution_step():
+    fs = DummyFaultState()
+    pf = PeakFilter(ComponentType.INVERTER, 1, fs, minimum_energy_deviation_wh=100)
+    pf.exported = 1000
+
+    _, exp = pf.check_values(1500, None, 1100)
+
+    assert exp == 1100
+
+
+def test_minimum_energy_deviation_still_filters_above_step():
+    fs = DummyFaultState()
+    pf = PeakFilter(ComponentType.INVERTER, 1, fs, minimum_energy_deviation_wh=100)
+    pf.exported = 1000
+
+    _, exp = pf.check_values(1500, None, 1150)
+
+    assert exp is None
