@@ -117,7 +117,7 @@ def check_timeframe(plan: Union[AutolockPlan, TimeChargingPlan]) -> bool:
 def check_end_time(plan: Union[ContinuousScheduledPlanConsumer,
                                ScheduledChargingPlan,
                                SuspendableScheduledPlanConsumer],
-                   buffer: Optional[float]) -> Optional[float]:
+                   buffer: Optional[float]) -> float:
     """ gibt die verbleibende Zeit in Sekunden zurück.
 
     Return
@@ -127,7 +127,6 @@ def check_end_time(plan: Union[ContinuousScheduledPlanConsumer,
     """
     now = datetime.datetime.today()
     end = datetime.datetime.strptime(plan.time, '%H:%M')
-    remaining_time = None
     if plan.frequency.selected == "once":
         endDate = datetime.datetime.strptime(plan.frequency.once, "%Y-%m-%d")
         end = end.replace(endDate.year, endDate.month, endDate.day)
