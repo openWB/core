@@ -236,8 +236,7 @@ class HandlerAlgorithm:
                 f.write("")
             with ChangedValuesContext(loadvars_.event_module_update_completed):
                 for consumer in data.data.consumer_data.values():
-                    consumer.reset_wait_for_start()
-                    consumer.reset_chargemode_at_midnight()
+                    consumer.midnight_handler()
         except Exception:
             log.exception("Fehler im Main-Modul")
 
