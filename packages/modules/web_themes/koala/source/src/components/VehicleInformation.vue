@@ -103,7 +103,7 @@ const tableRowData = computed<(id: number) => VehicleRow>(() => {
     const model = info?.model || 'keine Angabe';
     const soc = mqttStore.vehicleSocValue(id);
     const vehicleSocValue = soc !== undefined ? `${Math.round(soc)}%` : '–';
-    const color = mqttStore.vehicleColor(id) || undefined;
+    const color = mqttStore.vehicleColor(id) || 'var(--q-vehicle-stroke)';
     return {
       id,
       name,

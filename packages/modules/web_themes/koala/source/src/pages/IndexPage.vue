@@ -9,16 +9,16 @@
     <div class="tab-section">
       <q-tabs v-model="tab" dense class="q-tabs__content--align-justify">
         <q-tab name="charge-points" title="Ladepunkte">
-          <q-icon name="ev_station" size="md" color="primary" />
+          <q-icon name="ev_station" size="md" />
         </q-tab>
         <q-tab name="vehicles" title="Fahrzeuge">
-          <q-icon name="directions_car" size="md" color="primary" />
+          <q-icon name="directions_car" size="md" />
         </q-tab>
         <q-tab v-if="accessBatteryAllowed" name="batteries" title="Speicher">
-          <q-icon name="battery_full" size="md" color="primary" />
+          <q-icon name="battery_full" size="md" />
         </q-tab>
         <!-- <q-tab name="smart-home" title="SmartHome">
-          <q-icon name="home" size="md" color="primary" />
+          <q-icon name="home" size="md" />
         </q-tab> -->
       </q-tabs>
       <!-- Tab Panels -->

@@ -29,6 +29,11 @@
           v-close-popup
           @click="connectedVehicle = vehicle"
           :active="connectedVehicle?.id === vehicle.id"
+          class="vehicle-item"
+          :style="{
+            '--vehicle-color':
+              mqttStore.vehicleColor(vehicle.id) || 'var(--q-vehicle-stroke)',
+          }"
         >
           <q-item-section class="text-center text-weight-bold">
             <q-item-label class="ellipsis" :title="vehicle.name">{{
@@ -63,6 +68,11 @@
         dense
         :active="connectedVehicle?.id === vehicle.id"
         @click="connectedVehicle = vehicle"
+        class="vehicle-item vehicle-item--desktop"
+        :style="{
+          '--vehicle-color':
+            mqttStore.vehicleColor(vehicle.id) || 'var(--q-vehicle-stroke)',
+        }"
       >
         <q-item-section>
           <q-item-label class="ellipsis" :title="vehicle.name">{{
@@ -109,5 +119,22 @@ const vehicles = computed(() => mqttStore.vehicleList);
 }
 .vehicle-select-dropdown-menu .q-item--active {
   color: var(--q-primary) !important;
+}
+.vehicle-item {
+  position: relative;
+}
+.vehicle-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.2rem;
+  bottom: 0.2rem;
+  width: 4px;
+  border-radius: 2px;
+  background: var(--vehicle-color, var(--q-vehicle-stroke));
+}
+/* Reduce default Quasar item left padding on desktop */
+.vehicle-item--desktop {
+  padding-left: 0.6rem;
 }
 </style>
