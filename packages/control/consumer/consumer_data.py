@@ -13,7 +13,7 @@ from modules.common.consumer_setup import ConsumerSetup
 
 @dataclass
 class EcoCharging:
-    price_limit: float = 0.07
+    price_limit: float = 0.0002
 
 
 @dataclass
@@ -125,7 +125,7 @@ class ConsumerConfig:
     phase_1: int = 1
     max_power: float = 5000
     min_current: float = 0.5
-    min_intervall: int = 60
+    min_interval: int = 60
 
 
 @dataclass
@@ -158,6 +158,7 @@ class Set:
     target_current: float = 0
     charge_state_prev: bool = False
     log: Log = field(default_factory=lambda: Log())
+    on_time: float = field(default=0, metadata={"topic": "set/on_time"})
     power: Optional[float] = None
     timestamp_last_current_set: float = field(default=0, metadata={"topic": "set/timestamp_last_current_set"})
     wait_for_start_state: WaitForStartStates = field(
