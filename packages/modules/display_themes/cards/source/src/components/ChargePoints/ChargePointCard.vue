@@ -74,7 +74,7 @@ export default {
   },
   computed: {
     chargePointColor() {
-      return this.mqttStore.getChargePointColor(this.chargePointId);
+      return this.mqttStore.getChargePointColor(this.chargePointId) || "var(--color--primary)";
     },
   },
   methods: {
