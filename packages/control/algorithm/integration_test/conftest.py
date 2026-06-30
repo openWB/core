@@ -52,6 +52,7 @@ def data_() -> None:
     data.data.counter_all_data.data.get.hierarchy = NESTED_HIERARCHY
     data.data.counter_all_data.data.config.consider_less_charging = True
     data.data.io_actions = IoActions()
+    data.data.general_data.data.chargemode_config.pv_charging.retry_failed_phase_switches = True
 
 
 @dataclass

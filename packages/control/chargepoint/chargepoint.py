@@ -302,18 +302,18 @@ class Chargepoint(ChargepointRfidMixin):
         return (phase_a == 1 and phase_b in [2, 3]) or (phase_b == 1 and phase_a in [2, 3])
 
     def _is_phase_switch_required(self) -> bool:
-        phase_switch_required = False
         if self.data.get.evse_signaling == EvseSignaling.HLC:
             return False
-        if (self.data.control_parameter.state == ChargepointState.WAIT_FOR_USING_PHASES and
+        elif (self.data.control_parameter.state == ChargepointState.WAIT_FOR_USING_PHASES and
                 (self.data.set.current != 0 and self.data.set.current_prev != 0)):
-            phase_switch_required = False
+            return False
         # Manche EVs brauchen nach der Umschaltung mehrere Zyklen, bis sie mit den drei Phasen laden. Dann darf
         # nicht zwischendurch eine neue Umschaltung getriggert werden.
         elif ((((self.data.control_parameter.state == ChargepointState.PHASE_SWITCH_AWAITED or
                 self.data.control_parameter.state == ChargepointState.SWITCH_OFF_DELAY) and
                 # Nach Ablauf der Laden aktiv halten Zeit, sollte mit der vorgegebenen Phasenzahl geladen werden.
-                self.check_deviating_contactor_states(self.data.set.phases_to_use, self.data.get.phases_in_use)) or
+                self.check_deviating_contactor_states(self.data.set.phases_to_use, self.data.get.phases_in_use) and
+                self.failed_phase_switches_reached() is False) or
                 # Vorgegebene Phasenzahl hat sich geändert und es wird geladen
                (self.check_deviating_contactor_states(self.data.set.phases_to_use,
                                                       self.data.control_parameter.phases) and
@@ -324,33 +324,18 @@ class Chargepoint(ChargepointRfidMixin):
               ((self.data.set.current != 0 and self.data.get.charge_state) or
                (self.data.set.current != 0 and self.data.set.current_prev == 0) or
                self.data.set.current == 0)):
-            phase_switch_required = True
+            return True
         elif (self.data.control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED and
-              (self.check_deviating_contactor_states(self.data.set.phases_to_use, self.data.get.phases_in_use) or
+              ((self.check_deviating_contactor_states(self.data.set.phases_to_use, self.data.get.phases_in_use) and
+                self.failed_phase_switches_reached() is False) or
                 # Vorgegebene Phasenzahl hat sich geändert
                self.check_deviating_contactor_states(self.data.set.phases_to_use,
                                                      self.data.control_parameter.phases)) and
                 # Wenn der Ladevorgang gestartet wird, muss vor dem ersten Laden umgeschaltet werden.
                 self.data.set.current != 0 and self.data.get.charge_state is False):
-            phase_switch_required = True
-        if phase_switch_required:
-            # Umschaltung fehlgeschlagen
-            if self.data.set.phases_to_use != self.data.get.phases_in_use:
-                if data.data.general_data.data.chargemode_config.pv_charging.retry_failed_phase_switches:
-                    if self.data.control_parameter.failed_phase_switches > self.MAX_FAILED_PHASE_SWITCHES:
-                        phase_switch_required = False
-                        self.set_state_and_log(
-                            "Keine Phasenumschaltung, da die maximale Anzahl an Fehlversuchen erreicht wurde.")
-                else:
-                    # Umschaltung vor Ladestart zulassen
-                    if (self.data.set.log.imported_since_plugged != 0 and
-                            self.data.control_parameter.failed_phase_switches > 0):
-                        phase_switch_required = False
-                        self.set_state_and_log(
-                            "Keine Phasenumschaltung, da wiederholtes Anstoßen der Umschaltung in den übergreifenden "
-                            "Ladeeinstellungen deaktiviert wurde. Die aktuelle "
-                            "Phasenzahl wird bis zum nächsten Lademoduswechsel beibehalten.")
-        return phase_switch_required
+            return True
+        else:
+            return False
 
     STOP_CHARGING = ", dafür wird die Ladung unterbrochen."
 
@@ -384,11 +369,11 @@ class Chargepoint(ChargepointRfidMixin):
             if self.data.control_parameter.state == ChargepointState.WAIT_FOR_USING_PHASES:
                 if check_timestamp(self.data.control_parameter.timestamp_charge_start,
                                    charging_ev.ev_template.data.keep_charge_active_duration) is False:
-                    if self.hw_supports_phase_switch() and self.failed_phase_switches_reached():
+                    if self.hw_supports_phase_switch():
                         if phase_switch.phase_switch_thread_alive(self.num) is False:
                             self.data.control_parameter.state = ChargepointState.PHASE_SWITCH_AWAITED
+                            _set_failed_phase_switches()
                             if self._is_phase_switch_required() is False:
-                                _set_failed_phase_switches()
                                 self.data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
                     else:
                         _set_failed_phase_switches()
@@ -399,10 +384,6 @@ class Chargepoint(ChargepointRfidMixin):
     def initiate_phase_switch(self):
         """prüft, ob eine Phasenumschaltung erforderlich ist und führt diese durch.
         """
-        def _set_failed_phase_switches() -> None:
-            # Umschaltung fehlgeschlagen
-            if self.data.set.phases_to_use != self.data.get.phases_in_use:
-                self.data.control_parameter.failed_phase_switches += 1
         try:
             if self.data.get.evse_signaling == EvseSignaling.HLC:
                 return
@@ -462,8 +443,7 @@ class Chargepoint(ChargepointRfidMixin):
         charging_ev = self.data.set.charging_ev_data
         if self.data.get.evse_signaling == EvseSignaling.HLC:
             phases = self.data.get.phases_in_use
-        elif ((self.data.config.auto_phase_switch_hw is False and self.data.get.charge_state) or
-                self.data.control_parameter.failed_phase_switches > self.MAX_FAILED_PHASE_SWITCHES):
+        elif self.data.config.auto_phase_switch_hw is False and self.data.get.charge_state:
             # Wenn keine Umschaltung verbaut ist, die Phasenzahl nehmen, mit der geladen wird. Damit werden zB auch
             # einphasige EV an dreiphasigen openWBs korrekt berücksichtigt.
             phases = self.data.get.phases_in_use or self.data.set.phases_to_use
@@ -829,7 +809,7 @@ class Chargepoint(ChargepointRfidMixin):
                 self.data.get.charge_state and
                 (self.data.control_parameter.state == ChargepointState.CHARGING_ALLOWED or
                  self.data.control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY)):
-            return self.failed_phase_switches_reached()
+            return self.failed_phase_switches_reached() is False
         else:
             return False
 
@@ -840,12 +820,16 @@ class Chargepoint(ChargepointRfidMixin):
                  self.data.set.log.imported_since_plugged == 0))
 
     def failed_phase_switches_reached(self) -> bool:
-        if ((data.data.general_data.data.chargemode_config.pv_charging.retry_failed_phase_switches and
-             self.data.control_parameter.failed_phase_switches > self.MAX_FAILED_PHASE_SWITCHES) or
-            (data.data.general_data.data.chargemode_config.pv_charging.retry_failed_phase_switches is False and
-             self.data.control_parameter.failed_phase_switches == 1)):
+        if (data.data.general_data.data.chargemode_config.pv_charging.retry_failed_phase_switches and
+                self.data.control_parameter.failed_phase_switches > self.MAX_FAILED_PHASE_SWITCHES):
+            # bei deaktiverter Wiederholung der Umschaltung nur den gewünschten Umschaltvorgang durchführen,
+            # keinen Korrekturversuch
             self.set_state_and_log(
                 "Keine Phasenumschaltung, da die maximale Anzahl an Fehlversuchen erreicht wurde. ")
-            return False
-        else:
             return True
+        elif (data.data.general_data.data.chargemode_config.pv_charging.retry_failed_phase_switches is False and
+              self.data.set.log.imported_since_plugged != 0):
+            # vor Ladestart trotzdem umschalten
+            return True
+        else:
+            return False
