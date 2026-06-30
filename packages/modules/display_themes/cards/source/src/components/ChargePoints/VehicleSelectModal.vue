@@ -25,10 +25,20 @@ export default {
         };
       });
     },
+    vehicleColor() {
+      return (vehicleId) => {
+        return (
+          this.mqttStore.getVehicleColor(vehicleId) || "var(--color--teal)"
+        );
+      };
+    },
   },
   methods: {
     setChargePointConnectedVehicle(event) {
-      if (event.id != this.mqttStore.getChargePointConnectedVehicleId(this.chargePointId)) {
+      if (
+        event.id !=
+        this.mqttStore.getChargePointConnectedVehicleId(this.chargePointId)
+      ) {
         this.$root.sendTopicToBroker(
           `openWB/chargepoint/${this.chargePointId}/config/ev`,
           event.id,
@@ -40,7 +50,7 @@ export default {
       // }
     },
   },
-}
+};
 </script>
 
 <template>
@@ -51,8 +61,7 @@ export default {
     @update:model-value="$emit('update:modelValue', $event)"
   >
     <template #header>
-      Fahrzeug an "{{ mqttStore.getChargePointName(chargePointId) }}"
-      auswählen
+      Fahrzeug an "{{ mqttStore.getChargePointName(chargePointId) }}" auswählen
     </template>
     <i-form>
       <i-form-group>
@@ -64,7 +73,16 @@ export default {
             v-for="vehicle in vehicleList"
             :key="vehicle.id"
             size="lg"
-            class="large-button"
+            class="large-button vehicle"
+            :style="{
+              'border-color': vehicleColor(vehicle.id),
+              background:
+                vehicleColor(vehicle.id) +
+                (mqttStore.getChargePointConnectedVehicleId(chargePointId) ==
+                  vehicle.id
+                  ? '80'
+                  : '00'),
+            }"
             :active="
               mqttStore.getChargePointConnectedVehicleId(chargePointId) ==
                 vehicle.id
@@ -89,5 +107,9 @@ export default {
 .modal-vehicle-select:deep(.modal-body) {
   max-height: 72vh;
   overflow-y: scroll;
+}
+
+.vehicle {
+  border-left: 10px solid;
 }
 </style>

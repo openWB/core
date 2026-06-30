@@ -149,6 +149,7 @@ export default {
                   <font-awesome-icon
                     fixed-width
                     :icon="['fas', 'fa-car']"
+                    :style="{ color: mqttStore.getChargePointConnectedVehicleColor(chargePointId) }"
                   />
                   {{ mqttStore.getChargePointConnectedVehicleName(chargePointId) }}
                   <font-awesome-icon
