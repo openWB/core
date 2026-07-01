@@ -11,14 +11,14 @@ from modules.electricity_pricing.flexible_tariffs.smartEnergy.config import Smar
 log = logging.getLogger(__name__)
 
 
-def fetch(config: SmartEnergyTariff) -> None:
+def fetch(config: SmartEnergyTariff) -> Dict[str, float]:
     raw_prices = req.get_http_session().get(
         f"https://apis.smartenergy.at/market/v1/price",
         timeout=15
     ).json()["data"]
     if len(raw_prices) == 0:
         raise Exception("Es konnten keine Preise vom SmartEnergy-Server abgerufen werden.")
-    prices: Dict[int, float] = {}
+    prices: Dict[str, float] = {}
     for data in raw_prices:
         formatted_price = data["value"] / 100000  # ct/kWh -> €/Wh
         timestamp = datetime.datetime.strptime(data["date"], "%Y-%m-%dT%H:%M:%S%z").timestamp()
