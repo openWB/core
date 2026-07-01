@@ -6,14 +6,14 @@ from typing import Dict
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
-from modules.electricity_pricing.flexible_tariffs.smartEnergy.config import SmartEnergyTariff
+from modules.electricity_pricing.flexible_tariffs.smart_energy.config import SmartEnergyTariff
 
 log = logging.getLogger(__name__)
 
 
 def fetch(config: SmartEnergyTariff) -> Dict[str, float]:
     raw_prices = req.get_http_session().get(
-        f"https://apis.smartenergy.at/market/v1/price",
+        "https://apis.smartenergy.at/market/v1/price",
         timeout=15
     ).json()["data"]
     if len(raw_prices) == 0:
