@@ -26,6 +26,12 @@ Unterstützt wird jedes Fahrzeug, das den AC Ladestandard unterstützt.
 
 openWB gibt es unter <https://openwb.de/shop/>.
 
+Ein Image für Raspberry Pi 3 gibt es hier:
+
+https://link.openwb.de/lateststableimage
+
+Bitte nur mit balena Etcher flashen!
+
 ## Installation
 
 Bei fertig erworbenen openWB ist die Software bereits vorinstalliert.
