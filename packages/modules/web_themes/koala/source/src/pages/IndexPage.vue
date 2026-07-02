@@ -17,6 +17,9 @@
         <q-tab v-if="accessBatteryAllowed" name="batteries" title="Speicher">
           <q-icon name="battery_full" size="md" />
         </q-tab>
+        <q-tab v-if="consumersAvailable" name="consumers" title="Verbraucher">
+          <q-icon name="power" size="md" color="primary" />
+        </q-tab>
         <!-- <q-tab name="smart-home" title="SmartHome">
           <q-icon name="home" size="md" />
         </q-tab> -->
@@ -39,6 +42,14 @@
         >
           <BatteryInformation />
         </q-tab-panel>
+        <!-- Consumers -->
+        <q-tab-panel
+          v-if="consumersAvailable"
+          name="consumers"
+          class="column"
+        >
+          <ConsumerInformation />
+        </q-tab-panel>
         <!-- Smart Home -->
         <!-- <q-tab-panel name="smart-home" class="">
           <SmartHomeInformation />
@@ -55,7 +66,7 @@ import ChartCarousel from 'src/components/ChartCarousel.vue';
 import ChargePointInformation from 'src/components/ChargePointInformation.vue';
 import BatteryInformation from 'src/components/BatteryInformation.vue';
 import VehicleInformation from 'src/components/VehicleInformation.vue';
-// import SmartHomeInformation from 'src/components/SmartHomeInformation.vue';
+import ConsumerInformation from 'src/components/ConsumerInformation.vue';
 
 defineOptions({
   name: 'IndexPage',
@@ -66,6 +77,10 @@ const mqttStore = useMqttStore();
 
 const accessBatteryAllowed = computed(() => {
   return mqttStore.batteryConfigured && mqttStore.batteryIds.length > 0;
+});
+
+const consumersAvailable = computed(() => {
+  return mqttStore.consumerIds.length > 0;
 });
 </script>
 
