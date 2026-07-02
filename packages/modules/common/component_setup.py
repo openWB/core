@@ -1,6 +1,8 @@
 from typing import Generic, Optional, TypeVar
 import logging
 
+from helpermodules.constants import DEFAULT_COLORS
+
 T = TypeVar("T")
 
 log = logging.getLogger(__name__)
@@ -15,15 +17,14 @@ class ComponentSetup(Generic[T]):
         self.configuration = configuration
         if color:
             self.color = color
-            log.error(f"Color specified for component '{self.name}' of type '{self.type}': {color}")
         else:
-            log.error(f"No color specified for component '{self.name}' of type '{self.type}'. Using default color.")
             if "counter" in type.lower():
-                self.color = "#dc3545"
+                self.color = DEFAULT_COLORS.COUNTER.value
             elif "bat" in type.lower():
-                self.color = "#ffc107"
+                self.color = DEFAULT_COLORS.BATTERY.value
             elif "inverter" in type.lower():
-                self.color = "#28a745"
+                self.color = DEFAULT_COLORS.INVERTER.value
             else:
                 # Default color for other types
-                self.color = "#000000"
+                log.warning(f"Unknown component type '{type}' for component '{name}'. Using default color.")
+                self.color = DEFAULT_COLORS.UNKNOWN.value

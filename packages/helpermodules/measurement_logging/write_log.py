@@ -12,6 +12,7 @@ from typing import Dict, Optional
 from control import data
 from helpermodules.broker import BrokerClient
 from helpermodules import timecheck
+from helpermodules.constants import DEFAULT_COLORS
 from helpermodules.utils.json_file_handler import write_and_check
 from helpermodules.utils.topic_parser import decode_payload, get_index
 from modules.common.utils.component_parser import get_component_name_by_id, get_component_color_by_id
@@ -400,5 +401,5 @@ def get_colors(elements: Dict) -> Dict:
                         id = entry.strip(string.ascii_letters)
                         colors.update({entry: get_component_color_by_id(int(id))})
                 except (ValueError, KeyError, AttributeError):
-                    colors.update({entry: "#000000"})
+                    colors.update({entry: DEFAULT_COLORS.UNKNOWN.value})
     return colors

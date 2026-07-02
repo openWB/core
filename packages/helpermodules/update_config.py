@@ -21,7 +21,7 @@ from helpermodules import hardware_configuration
 from helpermodules import pub
 from helpermodules.broker import BrokerClient
 from helpermodules.abstract_plans import Limit
-from helpermodules.constants import NO_ERROR
+from helpermodules.constants import DEFAULT_COLORS, NO_ERROR
 from helpermodules.hardware_configuration import (
     get_hardware_configuration_setting,
     update_hardware_configuration,
@@ -589,7 +589,7 @@ class UpdateConfig:
         ("openWB/counter/config/consider_less_charging", counter_all.Config().consider_less_charging),
         ("openWB/counter/config/home_consumption_source_id", counter_all.Config().home_consumption_source_id),
         ("openWB/vehicle/0/name", "Standard-Fahrzeug"),
-        ("openWB/vehicle/0/color", "#17a2b8"),
+        ("openWB/vehicle/0/color", DEFAULT_COLORS.VEHICLE.value),
         ("openWB/vehicle/0/info", {"manufacturer": None, "model": None}),
         ("openWB/vehicle/0/charge_template", ev.Ev(0).charge_template.data.id),
         ("openWB/vehicle/0/soc_module/config", NO_MODULE),
@@ -3308,15 +3308,6 @@ class UpdateConfig:
         self._append_datastore_version(130)
 
     def upgrade_datastore_131(self) -> None:
-        DEFAULT_COLORS = {
-            "CHARGEPOINT": "#007bff",
-            "VEHICLE": "#17a2b8",
-            "INVERTER": "#28a745",
-            "COUNTER": "#dc3545",
-            "BATTERY": "#ffc107",
-            "UNKNOWN": "#000000"
-        }
-
         def _add_colors_to_log(file):
             colors = {}
             try:
@@ -3338,17 +3329,17 @@ class UpdateConfig:
 
                     for key in names.keys():
                         if "bat" in key:
-                            colors[key] = DEFAULT_COLORS["BATTERY"]
+                            colors[key] = DEFAULT_COLORS.BATTERY.value
                         elif "counter" in key:
-                            colors[key] = DEFAULT_COLORS["COUNTER"]
+                            colors[key] = DEFAULT_COLORS.COUNTER.value
                         elif "cp" in key:
-                            colors[key] = DEFAULT_COLORS["CHARGEPOINT"]
+                            colors[key] = DEFAULT_COLORS.CHARGEPOINT.value
                         elif "ev" in key:
-                            colors[key] = DEFAULT_COLORS["VEHICLE"]
+                            colors[key] = DEFAULT_COLORS.VEHICLE.value
                         elif "inverter" in key:
-                            colors[key] = DEFAULT_COLORS["INVERTER"]
+                            colors[key] = DEFAULT_COLORS.INVERTER.value
                         else:
-                            colors[key] = DEFAULT_COLORS["UNKNOWN"]
+                            colors[key] = DEFAULT_COLORS.UNKNOWN.value
 
                     content["colors"] = colors
                     jsonFile.seek(0)
@@ -3373,14 +3364,14 @@ class UpdateConfig:
                 log.debug(f"Checking for vehicle color topic '{vehicle_color_topic}'")
                 if vehicle_color_topic not in self.all_received_topics:
                     log.debug(f"Adding vehicle color topic '{vehicle_color_topic}'"
-                              f" with value: '{DEFAULT_COLORS['VEHICLE']}'")
-                    return {vehicle_color_topic: DEFAULT_COLORS['VEHICLE']}
+                              f" with value: '{DEFAULT_COLORS.VEHICLE.value}'")
+                    return {vehicle_color_topic: DEFAULT_COLORS.VEHICLE.value}
             # add property "color" to charge points
             if re.search("^openWB/chargepoint/[0-9]+/config$", topic) is not None:
                 config = decode_payload(payload)
                 log.debug(f"Received charge point config topic '{topic}' with payload: {payload}")
                 if "color" not in config:
-                    config.update({"color": DEFAULT_COLORS['CHARGEPOINT']})
+                    config.update({"color": DEFAULT_COLORS.CHARGEPOINT.value})
                     log.debug(f"Added color to charge point config: {config}")
                     return {topic: config}
             # add property "color" to components
@@ -3390,14 +3381,14 @@ class UpdateConfig:
                 if "color" not in config:
                     component_type = (config.get("type") or "").lower()
                     if "counter" in component_type:
-                        config.update({"color": DEFAULT_COLORS['COUNTER']})
+                        config.update({"color": DEFAULT_COLORS.COUNTER.value})
                     elif "bat" in component_type:
-                        config.update({"color": DEFAULT_COLORS['BATTERY']})
+                        config.update({"color": DEFAULT_COLORS.BATTERY.value})
                     elif "inverter" in component_type:
-                        config.update({"color": DEFAULT_COLORS['INVERTER']})
+                        config.update({"color": DEFAULT_COLORS.INVERTER.value})
                     else:
                         log.warning(f"Unknown component type '{config.get('type')}' for topic '{topic}'.")
-                        config.update({"color": DEFAULT_COLORS['UNKNOWN']})
+                        config.update({"color": DEFAULT_COLORS.UNKNOWN.value})
                     log.debug(f"Updated component config with color: {config}")
                     return {topic: config}
         self._loop_all_received_topics(upgrade)

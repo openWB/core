@@ -8,7 +8,7 @@ in der Regelung neu priorisiert werden und eine neue Zuteilung des Stroms erhalt
 """
 from modules.common.configurable_vehicle import ConfigurableVehicle
 from modules.common.abstract_vehicle import VehicleUpdateData
-from helpermodules.constants import NO_ERROR
+from helpermodules.constants import DEFAULT_COLORS, NO_ERROR
 from helpermodules import timecheck
 from dataclass_utils.factories import empty_list_factory
 from control.text import BidiState
@@ -34,7 +34,7 @@ def get_vehicle_default() -> dict:
         "charge_template": 0,
         "ev_template": 0,
         "name": "Fahrzeug",
-        "color": "#17a2b8",
+        "color": DEFAULT_COLORS.VEHICLE.value,
         "info": {
             "manufacturer": None,
             "model": None,
@@ -79,7 +79,7 @@ class EvData:
     charge_template: int = field(default=0, metadata={"topic": "charge_template"})
     ev_template: int = field(default=0, metadata={"topic": "ev_template"})
     name: str = field(default="neues Fahrzeug", metadata={"topic": "name"})
-    color: str = field(default="#17a2b8", metadata={"topic": "color"})
+    color: str = field(default=DEFAULT_COLORS.VEHICLE.value, metadata={"topic": "color"})
     tag_id: List[str] = field(default_factory=empty_list_factory, metadata={
         "topic": "tag_id"})
     get: Get = field(default_factory=get_factory)
