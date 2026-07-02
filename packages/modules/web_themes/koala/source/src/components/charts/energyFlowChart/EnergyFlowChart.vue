@@ -340,7 +340,7 @@ const svgComponents = computed((): FlowComponent[] => {
       class: {
         base: 'grid',
         valueLabelColor: gridFeedIn.value
-          ? 'var(--q-positive)'
+          ? 'var(--q-pv-stroke)'
           : gridConsumption.value
             ? 'var(--q-grid-stroke)'
             : 'var(--q-text)',
@@ -939,7 +939,7 @@ path.animated.grid {
   animation-duration: v-bind('animationDurations.grid');
 }
 path.animatedReverse.grid {
-  color: var(--q-positive);
+  color: var(--q-pv-stroke);
   animation-duration: v-bind('animationDurations.grid');
 }
 
@@ -951,7 +951,7 @@ path.animatedReverse.home {
 
 path.animated.pv,
 path.animatedReverse.pv {
-  color: var(--q-positive);
+  color: var(--q-pv-stroke);
   animation-duration: v-bind('animationDurations.pv');
 }
 
