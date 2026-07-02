@@ -21,6 +21,7 @@ from control import phase_switch
 from control.chargepoint.chargepoint_state import CHARGING_STATES, ChargepointState
 from control.limiting_value import loadmanagement_limit_factory
 from control.text import BidiState
+from helpermodules.constants import DEFAULT_COLORS
 from helpermodules.phase_handling import convert_single_evu_phase_to_cp_phase
 from helpermodules.pub import Pub
 from helpermodules import timecheck
@@ -35,6 +36,7 @@ def get_chargepoint_config_default() -> dict:
         "name": "neuer Ladepunkt",
         "type": None,
         "ev": 0,
+        "color": DEFAULT_COLORS.CHARGEPOINT.value,
         "template": 0,
         "connected_phases": 3,
         "phase_1": 1,

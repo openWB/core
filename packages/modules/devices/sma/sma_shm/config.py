@@ -30,8 +30,9 @@ class SmaHomeManagerCounterSetup(ComponentSetup[SmaHomeManagerCounterConfigurati
                  name: str = "SMA Sunny Home Manager 2.0, Energy Meter Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: SmaHomeManagerCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SmaHomeManagerCounterConfiguration())
+                 configuration: SmaHomeManagerCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SmaHomeManagerCounterConfiguration(), **kwargs)
 
 
 class SmaHomeManagerInverterConfiguration:
@@ -44,5 +45,6 @@ class SmaHomeManagerInverterSetup(ComponentSetup[SmaHomeManagerInverterConfigura
                  name: str = "SMA Sunny Home Manager 2.0, Energy Meter Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: SmaHomeManagerInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SmaHomeManagerInverterConfiguration())
+                 configuration: SmaHomeManagerInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SmaHomeManagerInverterConfiguration(), **kwargs)

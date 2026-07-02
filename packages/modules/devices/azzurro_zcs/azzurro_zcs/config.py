@@ -34,8 +34,9 @@ class ZCSBatSetup(ComponentSetup[ZCSBatConfiguration]):
                  name: str = "ZCS Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: ZCSBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or ZCSBatConfiguration())
+                 configuration: ZCSBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or ZCSBatConfiguration(), **kwargs)
 
 
 class ZCSCounterConfiguration:
@@ -48,8 +49,9 @@ class ZCSCounterSetup(ComponentSetup[ZCSCounterConfiguration]):
                  name: str = "ZCS Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: ZCSCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or ZCSCounterConfiguration())
+                 configuration: ZCSCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or ZCSCounterConfiguration(), **kwargs)
 
 
 class ZCSInverterConfiguration:
@@ -62,5 +64,6 @@ class ZCSInverterSetup(ComponentSetup[ZCSInverterConfiguration]):
                  name: str = "ZCS Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: ZCSInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or ZCSInverterConfiguration())
+                 configuration: ZCSInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or ZCSInverterConfiguration(), **kwargs)

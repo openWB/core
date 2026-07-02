@@ -481,6 +481,18 @@ export const useMqttStore = defineStore("mqtt", {
         return undefined;
       };
     },
+    getChargePointColor(state) {
+      return (chargePointId) => {
+        if (
+          state.topics[`openWB/chargepoint/${chargePointId}/config`] !==
+          undefined
+        ) {
+          return state.topics[`openWB/chargepoint/${chargePointId}/config`]
+            .color;
+        }
+        return undefined;
+      };
+    },
     getChargePointPower(state) {
       return (chargePointId, returnType = "textValue") => {
         var power = state.getValueString(
@@ -688,11 +700,28 @@ export const useMqttStore = defineStore("mqtt", {
         return undefined;
       };
     },
+    getChargePointConnectedVehicleColor(state) {
+      return (chargePointId) => {
+        const vehicleId = state.getChargePointConnectedVehicleId(chargePointId);
+        if (vehicleId === undefined) {
+          return undefined;
+        }
+        return state.getVehicleColor(vehicleId);
+      };
+    },
+    getVehicleColor(state) {
+      return (vehicleId) => {
+        return state.topics[
+          `openWB/vehicle/${vehicleId}/color`
+        ];
+      };
+    },
     getChargePointConnectedVehicleSoc(state) {
       return (chargePointId) => {
-        return state.topics[
+        let socState = state.topics[
           `openWB/chargepoint/${chargePointId}/get/connected_vehicle/soc`
         ];
+        return socState ? {...socState, soc: Math.round(socState.soc)} : undefined;
       };
     },
     getChargePointConnectedVehicleTimeChargingActive(state) {
@@ -1099,7 +1128,7 @@ export const useMqttStore = defineStore("mqtt", {
         case "eco_charging":
           return { mode: mode, label: "Eco", class: "secondary" };
         case "stop":
-          return { mode: mode, label: "Stop", class: "dark" };
+          return { mode: mode, label: "Stop", class: "light" };
         default:
           console.warn("unknown charge mode:", mode);
           return { mode: mode, label: mode, class: mode };

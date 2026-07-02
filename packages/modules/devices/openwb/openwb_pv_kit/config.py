@@ -30,5 +30,6 @@ class PvKitInverterSetup(ComponentSetup[PvKitInverterConfiguration]):
                  name: str = "openWB PV-Kit",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: PvKitInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or PvKitInverterConfiguration())
+                 configuration: PvKitInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or PvKitInverterConfiguration(), **kwargs)

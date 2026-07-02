@@ -32,8 +32,9 @@ class KostalPikoCounterSetup(ComponentSetup[KostalPikoCounterConfiguration]):
                  name: str = "Kostal Piko Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: KostalPikoCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or KostalPikoCounterConfiguration())
+                 configuration: KostalPikoCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or KostalPikoCounterConfiguration(), **kwargs)
 
 
 class KostalPikoInverterConfiguration:
@@ -46,8 +47,9 @@ class KostalPikoInverterSetup(ComponentSetup[KostalPikoInverterConfiguration]):
                  name: str = "Kostal Piko Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: KostalPikoInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or KostalPikoInverterConfiguration())
+                 configuration: KostalPikoInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or KostalPikoInverterConfiguration(), **kwargs)
 
 
 class KostalPikoBatConfiguration:
@@ -60,5 +62,6 @@ class KostalPikoBatSetup(ComponentSetup[KostalPikoBatConfiguration]):
                  name: str = "Kostal Piko Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: KostalPikoBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or KostalPikoBatConfiguration())
+                 configuration: KostalPikoBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or KostalPikoBatConfiguration(), **kwargs)

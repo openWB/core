@@ -18,6 +18,16 @@ def get_component_name_by_id(id: int):
         raise ValueError(f"Element {id} konnte keinem Gerät zugeordnet werden.")
 
 
+def get_component_color_by_id(id: int):
+    for item in data.data.system_data.values():
+        if isinstance(item, AbstractDevice):
+            for comp in item.components.values():
+                if comp.component_config.id == id:
+                    return comp.component_config.color
+    else:
+        raise ValueError(f"Element {id} konnte keinem Gerät zugeordnet werden.")
+
+
 def get_io_name_by_id(id: int):
     for item in data.data.system_data.values():
         if isinstance(item, AbstractIoDevice):
@@ -56,6 +66,17 @@ def get_component_obj_by_id(id: int) -> Optional[Any]:
             for comp in item.components.values():
                 if comp.component_config.id == id:
                     return comp
+    else:
+        log.error(f"Element {id} konnte keinem Gerät zugeordnet werden.")
+        return None
+
+
+def get_device_id_by_component_id(id: int) -> Optional[int]:
+    for item in data.data.system_data.values():
+        if isinstance(item, AbstractDevice):
+            for comp in item.components.values():
+                if comp.component_config.id == id:
+                    return item.device_config.id
     else:
         log.error(f"Element {id} konnte keinem Gerät zugeordnet werden.")
         return None

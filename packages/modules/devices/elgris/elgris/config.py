@@ -34,8 +34,9 @@ class ElgrisBatSetup(ComponentSetup[ElgrisBatConfiguration]):
                  name: str = "Elgris Smart Meter Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: ElgrisBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or ElgrisBatConfiguration())
+                 configuration: ElgrisBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or ElgrisBatConfiguration(), **kwargs)
 
 
 class ElgrisCounterConfiguration:
@@ -48,8 +49,9 @@ class ElgrisCounterSetup(ComponentSetup[ElgrisCounterConfiguration]):
                  name: str = "Elgris Smart Meter",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: ElgrisCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or ElgrisCounterConfiguration())
+                 configuration: ElgrisCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or ElgrisCounterConfiguration(), **kwargs)
 
 
 class ElgrisInverterConfiguration:
@@ -62,5 +64,6 @@ class ElgrisInverterSetup(ComponentSetup[ElgrisInverterConfiguration]):
                  name: str = "Elgris Smart Meter Welchselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: ElgrisInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or ElgrisInverterConfiguration())
+                 configuration: ElgrisInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or ElgrisInverterConfiguration(), **kwargs)

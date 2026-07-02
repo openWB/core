@@ -37,8 +37,9 @@ class SolarViewCounterSetup(ComponentSetup[SolarViewCounterConfiguration]):
                  name: str = "SolarView Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: SolarViewCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SolarViewCounterConfiguration())
+                 configuration: SolarViewCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SolarViewCounterConfiguration(), **kwargs)
 
 
 class SolarViewInverterConfiguration:
@@ -51,5 +52,6 @@ class SolarViewInverterSetup(ComponentSetup[SolarViewInverterConfiguration]):
                  name: str = "SolarView Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: SolarViewInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SolarViewInverterConfiguration())
+                 configuration: SolarViewInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SolarViewInverterConfiguration(), **kwargs)

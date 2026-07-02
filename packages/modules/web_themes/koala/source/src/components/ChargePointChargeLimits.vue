@@ -49,14 +49,14 @@
           v-else
           class="row items-center justify-center q-ma-none q-pa-none no-wrap"
         >
-          <q-btn-group class="col">
+          <q-btn-group class="col" outline>
             <q-btn
               v-for="mode in limitModes"
               :key="mode.value"
               :color="limitMode.value === mode.value ? 'primary' : 'grey'"
               :label="mode.label"
               :disable="mode.value === 'soc' && !vehicleSocType"
-              :outline="mode.value === 'soc' && !vehicleSocType"
+              :outline="mode.value !== limitMode.value"
               size="sm"
               class="col"
               @click="limitMode.value = mode.value"

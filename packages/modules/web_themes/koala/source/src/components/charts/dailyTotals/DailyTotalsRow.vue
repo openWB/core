@@ -2,12 +2,16 @@
   <div class="component-container">
     <!-- Icon -->
     <div class="col-icon">
-      <img :src="props.item.icon" class="icon" />
+      <component
+        :is="iconMap[props.item.icon as keyof typeof iconMap]"
+        class="base-icon"
+        :style="{ color: props.item.color || 'var(--q-diagram-icon)' }"
+      />
     </div>
     <!-- Title -->
     <div class="col-title text-weight-bold">
       <div v-if="componentNameVisible" class="title-wrapper">
-        <template v-if="props.item.id.startsWith('counter-')">
+        <template v-if="props.item.level === 'secondary'">
           <div class="ellipsis-wrapper">
             {{ props.item.title }}
             <q-tooltip>{{ props.item.title }}</q-tooltip>
@@ -88,6 +92,13 @@
 import { computed } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import type { DailyTotalsItem } from 'src/components/models/daily-totals-model';
+import BatteryIcon from 'src/assets/icons/owbBattery_2.svg?component';
+import GridIcon from 'src/assets/icons/owbGrid.svg?component';
+import PvIcon from 'src/assets/icons/owbPV.svg?component';
+import HouseIcon from 'src/assets/icons/owbHouse.svg?component';
+import VehicleIcon from 'src/assets/icons/owbVehicle.svg?component';
+import ChargePointIcon from 'src/assets/icons/owbChargePoint_2.svg?component';
+import CounterIcon from 'src/assets/icons/owbCounter.svg?component';
 
 const mqttStore = useMqttStore();
 
@@ -107,16 +118,16 @@ const arrowDirection = (id: string) => {
   let value = 0;
   switch (id) {
     case 'grid':
-      value = mqttStore.getCounterPower('value') as number;
+      value = mqttStore.counterPower('value') as number;
       break;
     case 'battery':
       value = mqttStore.batteryTotalPower('value') as number;
       break;
     case 'pv':
-      value = mqttStore.getPvPower('value') as number;
+      value = mqttStore.pvPowerTotal('value') as number;
       break;
     case 'house':
-      value = mqttStore.getHomePower('value') as number;
+      value = mqttStore.homePower('value') as number;
       break;
     case 'chargepoint':
       value = mqttStore.chargePointSumPower('value') as number;
@@ -124,7 +135,7 @@ const arrowDirection = (id: string) => {
     default:
       if (id.startsWith('counter-')) {
         const counterId = Number(id.replace('counter-', ''));
-        value = mqttStore.getCounterPower('value', counterId) as number;
+        value = mqttStore.counterPower('value', counterId) as number;
       }
   }
   const noCurrent = value === 0;
@@ -134,6 +145,16 @@ const arrowDirection = (id: string) => {
   else rotate180 = value > 0;
 
   return { noCurrent, rotate180 };
+};
+
+const iconMap = {
+  grid: GridIcon,
+  battery: BatteryIcon,
+  chargepoint: ChargePointIcon,
+  vehicle: VehicleIcon,
+  pv: PvIcon,
+  house: HouseIcon,
+  counter: CounterIcon,
 };
 </script>
 
@@ -157,12 +178,9 @@ const arrowDirection = (id: string) => {
   display: flex;
   justify-content: center;
 }
-.icon {
+.base-icon {
   width: 1.75rem;
-  filter: brightness(0.4);
-}
-.body--dark .icon {
-  filter: brightness(1);
+  height: 1.75rem;
 }
 .col-title {
   flex: 0 0 5.5rem;
