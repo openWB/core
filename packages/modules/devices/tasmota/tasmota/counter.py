@@ -60,8 +60,12 @@ class TasmotaCounter(AbstractCounter):
             _, exported = self.sim_counter.sim_count(power)
         elif 'Itron' in response['StatusSNS']:
             power = float(response['StatusSNS']['Itron']['Power'])
-            imported = float(response['StatusSNS']['Itron']['E_in']*1000)
-            exported = float(response['StatusSNS']['Itron']['E_out']*1000)
+            if 'E_in' in response['StatusSNS']['Itron']:
+                imported = float(response['StatusSNS']['Itron']['E_in']*1000)
+                exported = float(response['StatusSNS']['Itron']['E_out']*1000)
+            else:
+                imported = float(response['StatusSNS']['Itron']['ImportActive']*1000)
+                exported = float(response['StatusSNS']['Itron']['ExportActive']*1000)
             imported, exported = self.peak_filter.check_values(power, imported, exported)
         elif 'MT681' in response['StatusSNS']:
             power = float(response['StatusSNS']['MT681']['Watt_summe'])
