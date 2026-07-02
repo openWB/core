@@ -48,7 +48,7 @@ class TasmotaInverter(AbstractInverter):
             self.peak_filter.check_values(power)
             _, exported = self.sim_counter.sim_count(power)
         elif 'Itron' in response['StatusSNS']:
-            power = float(response['StatusSNS']['Itron']['Power'])
+            power = float(response['StatusSNS']['Itron']['Power']) * -1
             if 'E_in' in response['StatusSNS']['Itron']:
                 exported = float(response['StatusSNS']['Itron']['E_out']*1000)
             else:
