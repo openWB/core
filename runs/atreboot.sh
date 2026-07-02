@@ -245,22 +245,22 @@ chmod 666 "$LOGFILE"
 	# Modern versions of Raspberry Pi OS use the KMS/DRM graphics stack
 	# and tvservice will just print 'tvservice is not supported when using the vc4-kms-v3d driver.'
 	if which kmsprint >/dev/null; then
-			echo "detected 'kmsprint', query for connected displays"
-			displayDetectionOutput=$(kmsprint) 
+		echo "detected 'kmsprint', query for connected displays"
+		displayDetectionOutput=$(kmsprint) 
 	elif which tvservice >/dev/null; then
-			echo "detected 'tvservice', query for connected displays"
-			displayDetectionOutput=$(tvservice -l)
+		echo "detected 'tvservice', query for connected displays"
+		displayDetectionOutput=$(tvservice -l)
 	else
-			echo "'kmsprint' and 'tvservice' not found, assuming a display is present"
+		echo "'kmsprint' and 'tvservice' not found, assuming a display is present"
 	fi
 	if [ ! -z "$displayDetectionOutput" ]; then
-			echo "$displayDetectionOutput"
+		echo "$displayDetectionOutput"
 	fi
 	if [[ ! "$displayDetectionOutput" =~ "HDMI" ]] && [[ ! "$displayDetectionOutput" =~ "LCD" ]]; then
-			echo "no display detected"
-			displayDetected="false"
+		echo "no display detected"
+		displayDetected="false"
 	else
-			echo "detected HDMI or LCD display(s)"
+		echo "detected HDMI or LCD display(s)"
 	fi
 	echo "displayDetected: $displayDetected"
 	forceDisplaySetup=0
