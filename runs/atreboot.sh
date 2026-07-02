@@ -239,20 +239,28 @@ chmod 666 "$LOGFILE"
 	"$OPENWBBASEDIR/runs/cleanPythonCache.sh"
 
 	# detect connected displays
-	# set default to "true" as fallback if "tvservice" is missing
+	# set default to "true" as fallback if no cli tools are available
 	displayDetected="true"
-	if which tvservice >/dev/null; then
-		echo "detected 'tvservice', query for connected displays"
-		output=$(tvservice -l)
-		echo "$output"
-		if [[ ! $output =~ "HDMI" ]] && [[ ! $output =~ "LCD" ]]; then
+	displayDetectionOutput=""
+	# Modern versions of Raspberry Pi OS use the KMS/DRM graphics stack
+	# and tvservice will just print 'tvservice is not supported when using the vc4-kms-v3d driver.'
+	if which kmsprint >/dev/null; then
+			echo "detected 'kmsprint', query for connected displays"
+			displayDetectionOutput=$(kmsprint) 
+	elif which tvservice >/dev/null; then
+			echo "detected 'tvservice', query for connected displays"
+			displayDetectionOutput=$(tvservice -l)
+	else
+			echo "'kmsprint' and 'tvservice' not found, assuming a display is present"
+	fi
+	if [ ! -z "$displayDetectionOutput" ]; then
+			echo "$displayDetectionOutput"
+	fi
+	if [[ ! "$displayDetectionOutput" =~ "HDMI" ]] && [[ ! "$displayDetectionOutput" =~ "LCD" ]]; then
 			echo "no display detected"
 			displayDetected="false"
-		else
-			echo "detected HDMI or LCD display(s)"
-		fi
 	else
-		echo "'tvservice' not found, assuming a display is present"
+			echo "detected HDMI or LCD display(s)"
 	fi
 	echo "displayDetected: $displayDetected"
 	forceDisplaySetup=0
