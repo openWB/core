@@ -881,6 +881,12 @@
 				},
 				{
 					"acltype": "publishClientReceive",
+					"topic": "openWB/vehicle/+/color",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
 					"topic": "openWB/vehicle/+/name",
 					"priority": 0,
 					"allow": true

@@ -3,6 +3,7 @@ from enum import Enum
 
 NO_ERROR = "Kein Fehler."
 
+
 class DEFAULT_COLORS(Enum):
     CHARGEPOINT = "#007bff"
     VEHICLE = "#17a2b8"
