@@ -4,7 +4,7 @@ import importlib
 import logging
 from pathlib import Path
 from threading import Event
-from typing import Dict, Optional, Union
+from typing import Any, Dict, Optional, Union
 import re
 import subprocess
 import paho.mqtt.client as mqtt
@@ -31,12 +31,12 @@ from helpermodules.utils.run_command import run_command
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
 from helpermodules.pub import Pub
 from dataclass_utils import asdict, dataclass_from_dict
+from modules.common.abstract_device import AbstractDevice
 from modules.common.abstract_vehicle import CalculatedSocState, GeneralVehicleConfig
 from modules.common.component_type import ComponentType
 from modules.common.configurable_backup_cloud import ConfigurableBackupCloud
 from modules.common.configurable_tariff import ConfigurableFlexibleTariff, ConfigurableGridFee
 from modules.common.simcount.simcounter_state import SimCounterState
-from modules.common.utils.component_parser import get_device_id_by_component_id, get_component_obj_by_id
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
     GlobalHandlerData, InternalChargepoint, RfidData)
 from modules.vehicles.manual.config import ManualSoc
@@ -832,6 +832,27 @@ class SubData:
         msg :
             enthält Topic und Payload
         """
+
+        def get_component_obj_by_id(id: int) -> Optional[Any]:
+            for item in self.system_data.values():
+                if isinstance(item, AbstractDevice):
+                    for component in item.components.values():
+                        if component.component_config.id == id:
+                            return component
+            else:
+                log.error(f"Element {id} konnte keiner Komponente zugeordnet werden.")
+                return None
+
+        def get_device_id_by_component_id(id: int) -> Optional[int]:
+            for item in self.system_data.values():
+                if isinstance(item, AbstractDevice):
+                    for comp in item.components.values():
+                        if comp.component_config.id == id:
+                            return item.device_config.id
+            else:
+                log.error(f"Element {id} konnte keinem Gerät zugeordnet werden.")
+                return None
+
         try:
             if re.search("/counter/[0-9]+/", msg.topic) is not None:
                 index = get_index(msg.topic)
@@ -856,15 +877,23 @@ class SubData:
                         hierarchy: Optional[list[dict]] = decode_payload(msg.payload)
                         if hierarchy is not None:
                             if ComponentType.COUNTER.value == hierarchy[0].get("type"):
-                                grid_counter_id = hierarchy[0].get("id")
-                                if grid_counter_id is not None:
-                                    grid_configuration = get_component_obj_by_id(grid_counter_id)
-                                    grid_configuration.component_config.color = DEFAULT_COLORS.COUNTER.value
+                                try:
+                                    grid_counter_id = self.counter_all_data.get_id_evu_counter()
+                                    if grid_counter_id is None:
+                                        return
                                     grid_device_id = get_device_id_by_component_id(grid_counter_id)
+                                    if grid_device_id is None:
+                                        return
+                                    grid_configuration = get_component_obj_by_id(grid_counter_id)
+                                    if grid_configuration is None:
+                                        return
+                                    grid_configuration.component_config.color = DEFAULT_COLORS.COUNTER.value
                                     Pub().pub(
                                         f"openWB/system/device/{grid_device_id}/component/{grid_counter_id}/config",
                                         asdict(grid_configuration.component_config)
                                     )
+                                except Exception as e:
+                                    log.exception(f"Fehler beim Setzen der Farbe für den EVU-Zähler: {e}")
                 elif re.search("/counter/set/simulation", msg.topic) is not None:
                     self.counter_all_data.sim_counter.data = dataclass_from_dict(
                         SimCounterState,
