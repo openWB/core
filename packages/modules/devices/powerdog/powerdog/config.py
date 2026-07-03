@@ -34,8 +34,9 @@ class PowerdogCounterSetup(ComponentSetup[PowerdogCounterConfiguration]):
                  name: str = "Powerdog Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: PowerdogCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or PowerdogCounterConfiguration())
+                 configuration: PowerdogCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or PowerdogCounterConfiguration(), **kwargs)
 
 
 class PowerdogInverterConfiguration:
@@ -48,5 +49,6 @@ class PowerdogInverterSetup(ComponentSetup[PowerdogInverterConfiguration]):
                  name: str = "Powerdog Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: PowerdogInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or PowerdogInverterConfiguration())
+                 configuration: PowerdogInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or PowerdogInverterConfiguration(), **kwargs)

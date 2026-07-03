@@ -32,8 +32,9 @@ class BatterXBatSetup(ComponentSetup[BatterXBatConfiguration]):
                  name: str = "BatterX Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: BatterXBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or BatterXBatConfiguration())
+                 configuration: BatterXBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or BatterXBatConfiguration(), **kwargs)
 
 
 class BatterXCounterConfiguration:
@@ -46,8 +47,9 @@ class BatterXCounterSetup(ComponentSetup[BatterXCounterConfiguration]):
                  name: str = "BatterX Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: BatterXCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or BatterXCounterConfiguration())
+                 configuration: BatterXCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or BatterXCounterConfiguration(), **kwargs)
 
 
 class BatterXExternalInverterConfiguration:
@@ -60,8 +62,9 @@ class BatterXExternalInverterSetup(ComponentSetup[BatterXExternalInverterConfigu
                  name: str = "BatterX externer Wechselrichter",
                  type: str = "external_inverter",
                  id: int = 0,
-                 configuration: BatterXExternalInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or BatterXExternalInverterConfiguration())
+                 configuration: BatterXExternalInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or BatterXExternalInverterConfiguration(), **kwargs)
 
 
 class BatterXInverterConfiguration:
@@ -74,5 +77,6 @@ class BatterXInverterSetup(ComponentSetup[BatterXInverterConfiguration]):
                  name: str = "BatterX Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: BatterXInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or BatterXInverterConfiguration())
+                 configuration: BatterXInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or BatterXInverterConfiguration(), **kwargs)

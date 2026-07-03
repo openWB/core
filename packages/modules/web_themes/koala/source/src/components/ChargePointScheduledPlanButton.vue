@@ -1,9 +1,10 @@
 <template>
   <q-btn
+    flat
     no-caps
     align="center"
-    class="cursor-pointer"
-    :color="planActive.value ? 'positive' : 'negative'"
+    class="scheduled-plan-button tinted-box cursor-pointer"
+    :class="planActive.value ? 'is-active' : 'is-inactive'"
     @click="$emit('editPlan', plan)"
   >
     <ChargePointScheduledPlanSummary
@@ -33,3 +34,16 @@ const planActive = computed(() =>
   ),
 );
 </script>
+
+<style scoped lang="scss">
+.scheduled-plan-button.is-active {
+  --tint-accent: var(--q-positive);
+}
+.scheduled-plan-button.is-inactive {
+  --tint-accent: var(--q-negative);
+}
+.scheduled-plan-button {
+  --tint-amount: 30%;
+  --tint-text: color-mix(in srgb, var(--q-text) 90%, transparent);
+}
+</style>

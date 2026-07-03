@@ -71,6 +71,7 @@ export default defineConfig((ctx) => {
           },
           { server: false },
         ],
+        ['vite-svg-loader'],
         ctx.prod
           ? [
               'vite-plugin-remove-console',

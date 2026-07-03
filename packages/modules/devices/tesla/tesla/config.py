@@ -34,8 +34,9 @@ class TeslaBatSetup(ComponentSetup[TeslaBatConfiguration]):
                  name: str = "Tesla Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: TeslaBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or TeslaBatConfiguration())
+                 configuration: TeslaBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or TeslaBatConfiguration(), **kwargs)
 
 
 class TeslaCounterConfiguration:
@@ -48,8 +49,9 @@ class TeslaCounterSetup(ComponentSetup[TeslaCounterConfiguration]):
                  name: str = "Tesla Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: TeslaCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or TeslaCounterConfiguration())
+                 configuration: TeslaCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or TeslaCounterConfiguration(), **kwargs)
 
 
 class TeslaInverterConfiguration:
@@ -62,5 +64,6 @@ class TeslaInverterSetup(ComponentSetup[TeslaInverterConfiguration]):
                  name: str = "Tesla Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: TeslaInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or TeslaInverterConfiguration())
+                 configuration: TeslaInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or TeslaInverterConfiguration(), **kwargs)

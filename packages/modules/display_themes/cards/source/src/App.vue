@@ -81,6 +81,7 @@ export default {
         "openWB/system/security/access_allowed",
         "openWB/vehicle/+/get/fault_state",
         "openWB/vehicle/+/name",
+        "openWB/vehicle/+/color",
         "openWB/vehicle/+/info",
         "openWB/vehicle/+/soc_module/config",
       ],
@@ -274,7 +275,7 @@ export default {
      */
     sendCommand(event) {
       this.doPublish(
-        "openWB/set/command/" + this.client.options.clientId + "/todo",
+        "openWB/set/command/" + this.client.options.clientId + "/todo/" + event.command,
         event,
         false,
       );
@@ -295,7 +296,10 @@ export default {
 </script>
 
 <template>
-  <i-layout vertical>
+  <i-layout
+    vertical
+    class="_padding-y:1 _padding-left:1"
+  >
     <i-layout-aside class="_position:fixed">
       <i-container
         fluid

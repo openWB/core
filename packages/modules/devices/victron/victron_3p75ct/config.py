@@ -33,5 +33,6 @@ class VictronCounterSetup(ComponentSetup[VictronCounterConfiguration]):
                  name: str = "Victron Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: VictronCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or VictronCounterConfiguration())
+                 configuration: VictronCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or VictronCounterConfiguration(), **kwargs)

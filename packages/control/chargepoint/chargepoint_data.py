@@ -7,7 +7,7 @@ from control.chargepoint.control_parameter import ControlParameter, control_para
 from control.ev.charge_template import ChargeTemplate
 from control.ev.ev import Ev
 from dataclass_utils.factories import currents_list_factory, empty_dict_factory, voltages_list_factory
-from helpermodules.constants import NO_ERROR
+from helpermodules.constants import DEFAULT_COLORS, NO_ERROR
 from modules.chargepoints.openwb_pro.chargepoint_module import EvseSignaling
 from modules.common.abstract_chargepoint import AbstractChargepoint
 
@@ -179,6 +179,7 @@ class Config:
     configuration: Dict = field(default_factory=empty_dict_factory)
     ev: int = 0
     name: str = "neuer Ladepunkt"
+    color: str = DEFAULT_COLORS.CHARGEPOINT.value
     type: Optional[str] = None
     template: int = 0
     connected_phases: int = 3

@@ -34,8 +34,9 @@ class SofarBatSetup(ComponentSetup[SofarBatConfiguration]):
                  name: str = "Sofar Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: SofarBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SofarBatConfiguration())
+                 configuration: SofarBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SofarBatConfiguration(), **kwargs)
 
 
 class SofarCounterConfiguration:
@@ -48,8 +49,9 @@ class SofarCounterSetup(ComponentSetup[SofarCounterConfiguration]):
                  name: str = "Sofar Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: SofarCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SofarCounterConfiguration())
+                 configuration: SofarCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SofarCounterConfiguration(), **kwargs)
 
 
 class SofarInverterConfiguration:
@@ -62,5 +64,6 @@ class SofarInverterSetup(ComponentSetup[SofarInverterConfiguration]):
                  name: str = "Sofar Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: SofarInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SofarInverterConfiguration())
+                 configuration: SofarInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SofarInverterConfiguration(), **kwargs)
