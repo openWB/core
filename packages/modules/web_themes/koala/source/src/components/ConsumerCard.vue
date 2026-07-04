@@ -129,6 +129,10 @@ const onOff = computed({
 <style scoped lang="scss">
 .card-width {
   width: 100%;
+  width: 22em;
+  border: none;
+  border-left: 4px solid var(--q-consumer);
+  border-radius: 15px;
 }
 
 .q-card__section {

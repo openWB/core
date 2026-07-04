@@ -56,6 +56,7 @@ $vehicle-fill: #4f99af;
 $charge-plan-link-button: #6b757d;
 $diagram-icon: #717171;
 $table-hover: #f9f8f8;
+$consumer: #7D42F5;
 // Light theme (default)
 :root {
   --q-primary: #{$primary};
@@ -96,6 +97,7 @@ $table-hover: #f9f8f8;
   --q-diagram-icon: #{$diagram-icon};
   --q-table-hover: #{$table-hover};
   --q-tab-icon: #{$grey-7};
+  --q-consumer: #{$consumer};
 
   // Main background
   background-color: var(--q-background-1);
@@ -287,6 +289,7 @@ $dark-table-hover: #ffffff12;
   --q-diagram-icon: #{$white};
   --q-table-hover: #{$dark-table-hover};
   --q-tab-icon: #{$grey-7};
+  --q-consumer: #{$consumer};
 
   // Main background
   background-color: var(--q-background-1);
