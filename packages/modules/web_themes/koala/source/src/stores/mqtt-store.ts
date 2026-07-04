@@ -3780,6 +3780,20 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
+   * Get the running time (on_time, in seconds) of a consumer since it last
+   * started. Resets when the device stops drawing current.
+   * @param consumerId consumer id
+   * @returns number | undefined
+   */
+  const consumerOnTime = computed(() => {
+    return (consumerId: number): number | undefined => {
+      return getValue.value(
+        `openWB/consumer/${consumerId}/set/on_time`,
+      ) as number | undefined;
+    };
+  });
+
+  /**
    * Get the status text of a consumer identified by the consumer id
    * @param consumerId consumer id
    * @returns string | undefined
@@ -4507,6 +4521,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     consumerIds,
     consumerName,
     consumerPower,
+    consumerOnTime,
     consumerStateStr,
     consumerFaultState,
     consumerFaultStr,

@@ -37,6 +37,15 @@
       </div>
     </q-card-section>
 
+    <q-card-section
+      class="row q-mt-sm text-subtitle2 justify-between full-width"
+    >
+      <div>Laufzeit:</div>
+      <div class="q-ml-sm">
+        {{ runTime }}
+      </div>
+    </q-card-section>
+
     <q-card-section>
       <ConsumerMessage :consumer-id="props.consumerId" />
     </q-card-section>
@@ -88,6 +97,17 @@ const powerValue = computed(
   () => (mqttStore.consumerPower(props.consumerId, 'value') as number) || 0,
 );
 const isRunning = computed(() => powerValue.value > 0);
+
+const runTime = computed<string>(() => {
+  const seconds = mqttStore.consumerOnTime(props.consumerId);
+  if (seconds === undefined) {
+    return '--- h';
+  }
+  const totalMinutes = Math.floor(seconds / 60);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${hours}:${String(minutes).padStart(2, '0')} h`;
+});
 
 const faultState = computed(() => mqttStore.consumerFaultState(props.consumerId));
 
