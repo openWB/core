@@ -127,6 +127,28 @@ export interface VehicleInfo {
   manufacturer: string;
   model: string;
 }
+
+export interface Consumer {
+  id: number;
+  name: string;
+}
+export interface ConsumerInfo {
+  manufacturer: string | null;
+  model: string | null;
+}
+export interface ConsumerModule {
+  name: string;
+  info: ConsumerInfo;
+  type: string;
+  id: number;
+  vendor: string;
+}
+export type ConsumerUsageType =
+  | 'meter_only'
+  | 'suspendable_tunable'
+  | 'suspendable_onoff'
+  | 'continuous';
+export type ConsumerResetTrigger = 'never' | 'midnight' | 'time';
 export interface ScheduledChargingPlan {
   id: number;
   name: string;
