@@ -16,6 +16,10 @@ import type {
   ChargePointConnectedVehicleInfo,
   Vehicle,
   VehicleInfo,
+  Consumer,
+  ConsumerModule,
+  ConsumerUsageType,
+  ConsumerResetTrigger,
   ScheduledChargingPlan,
   ChargePointConnectedVehicleSoc,
   GraphDataPoint,
@@ -3713,6 +3717,239 @@ export const useMqttStore = defineStore('mqtt', () => {
     });
   };
 
+  ////////////////////////////// consumer data ////////////////////////////////
+
+  /**
+   * Get a list of all consumers.
+   * @returns Consumer[]
+   */
+  const consumerList = computed<Consumer[]>(() => {
+    const modules = getWildcardValues.value('openWB/consumer/+/module');
+    return Object.keys(modules)
+      .map((key) => {
+        const id = parseInt(key.split('/')[2]);
+        const module = modules[key] as ConsumerModule | undefined;
+        return { id, name: module?.name ?? `Verbraucher ${id}` };
+      })
+      .sort((a, b) => a.id - b.id);
+  });
+
+  /**
+   * Get the consumer ids
+   * @returns number[]
+   */
+  const consumerIds = computed(() => {
+    return consumerList.value.map((consumer) => consumer.id);
+  });
+
+  /**
+   * Get the consumer name identified by the consumer id
+   * @param consumerId consumer id
+   * @returns string | undefined
+   */
+  const consumerName = computed(() => {
+    return (consumerId: number): string | undefined => {
+      return consumerList.value.find((consumer) => consumer.id === consumerId)
+        ?.name;
+    };
+  });
+
+  /**
+   * Get the current power of a consumer identified by the consumer id
+   * @param consumerId consumer id
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject
+   */
+  const consumerPower = computed(() => {
+    return (consumerId: number, returnType: string = 'textValue') => {
+      const power =
+        (getValue.value(
+          `openWB/consumer/${consumerId}/get/power`,
+          undefined,
+          0,
+        ) as number) || 0;
+      const valueObject = getValueObject.value(power);
+      if (Object.hasOwn(valueObject, returnType)) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject;
+      }
+      console.error('returnType not found!', returnType, power);
+    };
+  });
+
+  /**
+   * Get the running time (on_time, in seconds) of a consumer since it last
+   * started. Resets when the device stops drawing current.
+   * @param consumerId consumer id
+   * @returns number | undefined
+   */
+  const consumerOnTime = computed(() => {
+    return (consumerId: number): number | undefined => {
+      return getValue.value(
+        `openWB/consumer/${consumerId}/set/on_time`,
+      ) as number | undefined;
+    };
+  });
+
+  /**
+   * Get the status text of a consumer identified by the consumer id
+   * @param consumerId consumer id
+   * @returns string | undefined
+   */
+  const consumerStateStr = computed(() => {
+    return (consumerId: number): string | undefined => {
+      return getValue.value(
+        `openWB/consumer/${consumerId}/get/state_str`,
+      ) as string | undefined;
+    };
+  });
+
+  /**
+   * Get the fault state (0 = ok, 1 = warning, 2 = error) of a consumer
+   * @param consumerId consumer id
+   * @returns number
+   */
+  const consumerFaultState = computed(() => {
+    return (consumerId: number): number => {
+      return (
+        (getValue.value(
+          `openWB/consumer/${consumerId}/get/fault_state`,
+          undefined,
+          0,
+        ) as number) || 0
+      );
+    };
+  });
+
+  /**
+   * Get the fault message of a consumer identified by the consumer id
+   * @param consumerId consumer id
+   * @returns string | undefined
+   */
+  const consumerFaultStr = computed(() => {
+    return (consumerId: number): string | undefined => {
+      return getValue.value(
+        `openWB/consumer/${consumerId}/get/fault_str`,
+      ) as string | undefined;
+    };
+  });
+
+  /**
+   * Get the usage type of a consumer identified by the consumer id.
+   * @param consumerId consumer id
+   * @returns ConsumerUsageType | undefined
+   */
+  const consumerUsageType = computed(() => {
+    return (consumerId: number): ConsumerUsageType | undefined => {
+      return getValue.value(
+        `openWB/consumer/${consumerId}/usage`,
+        'type',
+      ) as ConsumerUsageType | undefined;
+    };
+  });
+
+  /**
+   * Get or set the operating mode (Betriebsmodus) of a consumer.
+   * @param consumerId consumer id
+   * @returns writable computed of string | undefined
+   */
+  const consumerMode = (consumerId: number) => {
+    return computed({
+      get() {
+        return getValue.value(
+          `openWB/consumer/${consumerId}/usage`,
+          'chargemode',
+        ) as string | undefined;
+      },
+      set(newValue: string) {
+        console.debug('set consumer mode', newValue, consumerId);
+        return updateTopic(
+          `openWB/consumer/${consumerId}/usage`,
+          newValue,
+          'chargemode',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the automatic mode-reset trigger of a consumer
+   * @param consumerId consumer id
+   * @returns writable computed of ConsumerResetTrigger
+   */
+  const consumerResetTrigger = (consumerId: number) => {
+    return computed({
+      get() {
+        return (getValue.value(
+          `openWB/consumer/${consumerId}/usage`,
+          'reset_chargemode.mode',
+          'never',
+        ) ?? 'never') as ConsumerResetTrigger;
+      },
+      set(newValue: ConsumerResetTrigger) {
+        return updateTopic(
+          `openWB/consumer/${consumerId}/usage`,
+          newValue,
+          'reset_chargemode.mode',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the target mode the consumer is switched to on reset
+   * @param consumerId consumer id
+   * @returns writable computed of string | undefined
+   */
+  const consumerResetTargetMode = (consumerId: number) => {
+    return computed({
+      get() {
+        return getValue.value(
+          `openWB/consumer/${consumerId}/usage`,
+          'reset_chargemode.chargemode',
+        ) as string | undefined;
+      },
+      set(newValue: string) {
+        return updateTopic(
+          `openWB/consumer/${consumerId}/usage`,
+          newValue,
+          'reset_chargemode.chargemode',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the absolute epoch (seconds) at which the consumer switches
+   * mode when reset_chargemode.mode === 'time'
+   * @param consumerId consumer id
+   * @returns writable computed of number | null
+   */
+  const consumerResetTime = (consumerId: number) => {
+    return computed({
+      get() {
+        return getValue.value(
+          `openWB/consumer/${consumerId}/usage`,
+          'reset_chargemode.time',
+          null,
+        ) as number | null;
+      },
+      set(newValue: number) {
+        return updateTopic(
+          `openWB/consumer/${consumerId}/usage`,
+          newValue,
+          'reset_chargemode.time',
+          true,
+        );
+      },
+    });
+  };
+
   /////////////////////////////// Grid Data /////////////////////////////////////
 
   /**
@@ -4279,6 +4516,20 @@ export const useMqttStore = defineStore('mqtt', () => {
     batteryChargePriorityRange,
     batteryMode,
     batteryColor,
+    // Consumer data
+    consumerList,
+    consumerIds,
+    consumerName,
+    consumerPower,
+    consumerOnTime,
+    consumerStateStr,
+    consumerFaultState,
+    consumerFaultStr,
+    consumerUsageType,
+    consumerMode,
+    consumerResetTrigger,
+    consumerResetTargetMode,
+    consumerResetTime,
     // Grid data
     gridId,
     secondaryCounterIds,
