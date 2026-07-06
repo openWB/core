@@ -20,9 +20,6 @@
         <q-tab v-if="consumersAvailable" name="consumers" title="Verbraucher">
           <q-icon name="power" size="md" color="primary" />
         </q-tab>
-        <!-- <q-tab name="smart-home" title="SmartHome">
-          <q-icon name="home" size="md" />
-        </q-tab> -->
       </q-tabs>
       <!-- Tab Panels -->
       <q-tab-panels v-model="tab" class="col column">
@@ -50,10 +47,6 @@
         >
           <ConsumerInformation />
         </q-tab-panel>
-        <!-- Smart Home -->
-        <!-- <q-tab-panel name="smart-home" class="">
-          <SmartHomeInformation />
-        </q-tab-panel> -->
       </q-tab-panels>
     </div>
   </q-page>
