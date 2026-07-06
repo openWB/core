@@ -61,6 +61,7 @@ $chart-shadow: $secondary;
 // energy flow chart: shadow behind the pills and the icon circles
 $flow-chart-shadow: #000000;
 $flow-chart-shadow-opacity: 0.12;
+$consumer: #7D42F5;
 // Light theme (default)
 :root {
   --q-primary: #{$primary};
@@ -104,6 +105,7 @@ $flow-chart-shadow-opacity: 0.12;
   --q-diagram-icon: #{$diagram-icon};
   --q-table-hover: #{$table-hover};
   --q-tab-icon: #{$grey-7};
+  --q-consumer: #{$consumer};
 
   // Main background
   background-color: var(--q-background-1);
@@ -303,6 +305,7 @@ $dark-table-hover: #ffffff12;
   --q-diagram-icon: #{$white};
   --q-table-hover: #{$dark-table-hover};
   --q-tab-icon: #{$grey-7};
+  --q-consumer: #{$consumer};
 
   // Main background
   background-color: var(--q-background-1);
