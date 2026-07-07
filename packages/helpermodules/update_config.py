@@ -649,6 +649,7 @@ class UpdateConfig:
         ("openWB/optional/monitoring/config", NO_MODULE),
         ("openWB/optional/ocpp/config", dataclass_utils.asdict(OcppConfig())),
         ("openWB/optional/rfid/active", False),
+        ("openWB/pv/config/configured", False),
         ("openWB/system/backup_password", None),
         ("openWB/system/backup_cloud/config", NO_MODULE),
         ("openWB/system/backup_cloud/backup_before_update", True),
