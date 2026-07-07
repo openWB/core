@@ -29,28 +29,24 @@ def create_device(device_config: Varta):
                            ip_address=device_config.configuration.ip_address)
 
     def create_bat_modbus_component(component_config: VartaBatModbusSetup):
-        nonlocal client
         return VartaBatModbus(component_config,
                               device_id=device_config.id,
                               modbus_id=device_config.configuration.modbus_id,
                               client=client)
 
     def create_counter_component(component_config: VartaCounterSetup):
-        nonlocal client
         return VartaCounter(component_config,
                             device_id=device_config.id,
                             modbus_id=device_config.configuration.modbus_id,
                             client=client)
 
     def create_inverter_component(component_config: VartaInverterSetup):
-        nonlocal client
         return VartaInverter(component_config,
                              device_id=device_config.id,
                              modbus_id=device_config.configuration.modbus_id,
                              client=client)
 
     def update_components(components: Iterable[Union[VartaBatApi, VartaBatModbus, VartaCounter, VartaInverter]]):
-        nonlocal client
         with client:
             for component in components:
                 if isinstance(component, (VartaBatModbus, VartaCounter, VartaInverter)):

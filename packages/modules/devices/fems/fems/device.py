@@ -16,15 +16,12 @@ def create_device(device_config: Fems):
     session = None
 
     def create_bat_component(component_config: FemsBatSetup):
-        nonlocal session
         return bat.FemsBat(component_config, ip_address=device_config.configuration.ip_address, session=session)
 
     def create_counter_component(component_config: FemsCounterSetup):
-        nonlocal session
         return counter.FemsCounter(component_config, ip_address=device_config.configuration.ip_address, session=session)
 
     def create_inverter_component(component_config: FemsInverterSetup):
-        nonlocal session
         return inverter.FemsInverter(component_config, ip_address=device_config.configuration.ip_address,
                                      session=session)
 

@@ -17,15 +17,12 @@ def create_device(device_config: SolakonOne):
     client = None
 
     def create_bat_component(component_config: SolakonOneBatSetup):
-        nonlocal client
         return SolakonOneBat(component_config=component_config, client=client)
 
     def create_inverter_component(component_config: SolakonOneInverterSetup):
-        nonlocal client
         return SolakonOneInverter(component_config=component_config, client=client)
 
     def update_components(components: Iterable[Union[SolakonOneBat, SolakonOneInverter]]):
-        nonlocal client
         with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):

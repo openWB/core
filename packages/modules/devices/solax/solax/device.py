@@ -27,7 +27,6 @@ def create_device(device_config: Solax):
         return SolaxInverter(component_config, device_config=device_config, client=client)
 
     def update_components(components: Iterable[Union[SolaxBat, SolaxCounter, SolaxInverter]]):
-        nonlocal client
         with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):

@@ -20,19 +20,15 @@ def create_device(device_config: EvuKitSetup):
     client = None
 
     def create_bat_component(component_config: EvuKitBatSetup):
-        nonlocal client
         return BatKit(component_config, device_id=device_config.id, client=client)
 
     def create_counter_component(component_config: EvuKitCounterSetup):
-        nonlocal client
         return EvuKit(component_config, device_id=device_config.id, client=client)
 
     def create_inverter_component(component_config: EvuKitInverterSetup):
-        nonlocal client
         return PvKit(component_config, device_id=device_config.id, client=client)
 
     def update_components(components: Iterable[Union[BatKit, EvuKit, PvKit]]):
-        nonlocal client
         with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):

@@ -178,7 +178,7 @@ class Set:
 @dataclass
 class Config:
     configuration: Dict = field(default_factory=empty_dict_factory)
-    ev: int = 0
+    _ev: int = 0
     name: str = "neuer Ladepunkt"
     color: str = DEFAULT_COLORS.CHARGEPOINT.value
     type: Optional[str] = None

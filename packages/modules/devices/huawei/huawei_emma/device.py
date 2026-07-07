@@ -21,28 +21,24 @@ def create_device(device_config: Huawei_Emma):
     client = None
 
     def create_bat_component(component_config: Huawei_EmmaBatSetup):
-        nonlocal client
         return Huawei_EmmaBat(component_config,
                               device_id=device_config.id,
                               modbus_id=device_config.configuration.modbus_id,
                               client=client)
 
     def create_counter_component(component_config: Huawei_EmmaCounterSetup):
-        nonlocal client
         return Huawei_EmmaCounter(component_config,
                                   device_id=device_config.id,
                                   modbus_id=device_config.configuration.modbus_id,
                                   client=client)
 
     def create_inverter_component(component_config: Huawei_EmmaInverterSetup):
-        nonlocal client
         return Huawei_EmmaInverter(component_config,
                                    device_id=device_config.id,
                                    modbus_id=device_config.configuration.modbus_id,
                                    client=client)
 
     def update_components(components: Iterable[Union[Huawei_EmmaBat, Huawei_EmmaCounter, Huawei_EmmaInverter]]):
-        nonlocal client
         with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):

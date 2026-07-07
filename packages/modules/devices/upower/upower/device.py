@@ -19,19 +19,16 @@ def create_device(device_config: UPower):
     client = None
 
     def create_bat_component(component_config: UPowerBatSetup):
-        nonlocal client
         return UPowerBat(component_config,
                          UPowerVersion(device_config.configuration.version),
                          device_config.configuration.modbus_id, client, device_config.id)
 
     def create_counter_component(component_config: UPowerCounterSetup):
-        nonlocal client
         return UPowerCounter(component_config,
                              UPowerVersion(device_config.configuration.version),
                              device_config.configuration.modbus_id, client, device_config.id)
 
     def create_inverter_component(component_config: UPowerInverterSetup):
-        nonlocal client
         return UPowerInverter(component_config,
                               UPowerVersion(device_config.configuration.version),
                               device_config.configuration.modbus_id, client)

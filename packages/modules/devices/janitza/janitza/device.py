@@ -16,23 +16,19 @@ def create_device(device_config: Janitza):
     client = None
 
     def create_counter_component(component_config: JanitzaCounterSetup):
-        nonlocal client
         return counter.JanitzaCounter(component_config, device_id=device_config.id, tcp_client=client,
                                       modbus_id=device_config.configuration.modbus_id)
 
     def create_inverter_component(component_config: JanitzaInverterSetup):
-        nonlocal client
         return inverter.JanitzaInverter(component_config, device_id=device_config.id, tcp_client=client,
                                         modbus_id=device_config.configuration.modbus_id)
 
     def create_bat_component(component_config: JanitzaBatSetup):
-        nonlocal client
         return bat.JanitzaBat(component_config, device_id=device_config.id, tcp_client=client,
                               modbus_id=device_config.configuration.modbus_id)
 
     def update_components(components: Iterable[Union[counter.JanitzaCounter, inverter.JanitzaInverter,
                                                      bat.JanitzaBat]]):
-        nonlocal client
         with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):

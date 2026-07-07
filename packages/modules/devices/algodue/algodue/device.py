@@ -16,17 +16,14 @@ def create_device(device_config: Algodue):
     client = None
 
     def create_counter_component(component_config: AlgodueCounterSetup):
-        nonlocal client
         return counter.AlgodueCounter(component_config=component_config, device_id=device_config.id,
                                       tcp_client=client, modbus_id=device_config.configuration.modbus_id)
 
     def create_inverter_component(component_config: AlgodueInverterSetup):
-        nonlocal client
         return inverter.AlgodueInverter(component_config=component_config, device_id=device_config.id,
                                         tcp_client=client, modbus_id=device_config.configuration.modbus_id)
 
     def create_bat_component(component_config: AlgodueBatSetup):
-        nonlocal client
         return bat.AlgodueBat(component_config=component_config, device_id=device_config.id,
                               tcp_client=client, modbus_id=device_config.configuration.modbus_id)
 

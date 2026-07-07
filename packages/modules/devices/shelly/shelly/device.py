@@ -17,7 +17,6 @@ def create_device(device_config: Shelly) -> ConfigurableDevice:
     generation = 1
 
     def create_counter_component(component_config: ShellyCounterSetup) -> ShellyCounter:
-        nonlocal generation
         return ShellyCounter(component_config,
                              device_id=device_config.id,
                              ip_address=device_config.configuration.ip_address,
@@ -26,7 +25,6 @@ def create_device(device_config: Shelly) -> ConfigurableDevice:
                              generation=generation)
 
     def create_inverter_component(component_config: ShellyInverterSetup) -> ShellyInverter:
-        nonlocal generation
         return ShellyInverter(component_config,
                               device_id=device_config.id,
                               ip_address=device_config.configuration.ip_address,
@@ -35,7 +33,6 @@ def create_device(device_config: Shelly) -> ConfigurableDevice:
                               generation=generation)
 
     def create_bat_component(component_config: ShellyBatSetup) -> ShellyBat:
-        nonlocal generation
         return ShellyBat(component_config,
                          device_id=device_config.id,
                          ip_address=device_config.configuration.ip_address,
