@@ -120,5 +120,4 @@ def main(argv: List[str]) -> None:
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=BatterX,
-                                     compatibility_bat_active=True,
                                      compatibility_bat_note="Kann Entladung nur komplett sperren.")

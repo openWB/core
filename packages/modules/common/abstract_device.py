@@ -77,12 +77,10 @@ class AbstractInverter:
 class DeviceDescriptor:
     def __init__(self,
                  configuration_factory: Type,
-                 compatibility_bat_active: bool = False,
                  compatibility_bat_note: Optional[str] = None,
                  compatibility_device_note: Optional[str] = None,
                  special_icon: Optional[str] = None):
         self.configuration_factory = configuration_factory
-        self.compatibility_bat_active = compatibility_bat_active
         self.compatibility_bat_note = compatibility_bat_note
         self.compatibility_device_note = compatibility_device_note
         self.special_icon = special_icon
