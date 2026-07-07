@@ -2,7 +2,7 @@
 import logging
 import requests
 from requests import HTTPError
-from typing import Iterable, Union
+from typing import Iterable, Union, Optional
 
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
@@ -17,12 +17,21 @@ from modules.devices.tesla.tesla.inverter import TeslaInverter
 log = logging.getLogger(__name__)
 
 
-def __update_components(client: PowerwallHttpClient,
-                        components: Iterable[Union[TeslaBat, TeslaCounter, TeslaInverter]]):
+def __update_components(
+    client: PowerwallHttpClient,
+    components: Iterable[Union[TeslaBat, TeslaCounter, TeslaInverter]],
+):
     aggregate = client.get_json("/api/meters/aggregates")
+
     for component in components:
-        with SingleComponentUpdateContext(component.fault_state):
-            component.update(client, aggregate)
+        try:
+            # For Tesla/Powerwall we want fail-fast behaviour:
+            # if one critical component update fails (especially EVU / house transition point),
+            # abort the remaining Tesla component updates in this cycle.
+            with SingleComponentUpdateContext(component.fault_state, reraise=True):
+                component.update(client, aggregate)
+        except Exception:
+            break
 
 
 def _authenticate(session: requests.Session, url: str, email: str, password: str):
@@ -33,15 +42,16 @@ def _authenticate(session: requests.Session, url: str, email: str, password: str
         "https://" + url + "/api/login/Basic",
         json={"username": "customer", "email": email, "password": password, "force_sm_off": False},
         verify=False,
-        timeout=5
+        timeout=5,
     )
-    log.debug("Authentication endpoint send cookies %s", str(response.cookies))
+    response.raise_for_status()
+
     return {"AuthCookie": response.cookies["AuthCookie"], "UserRecord": response.cookies["UserRecord"]}
 
 
 def create_device(device_config: Tesla):
-    http_client = None
-    session = None
+    http_client: Optional[PowerwallHttpClient] = None
+    session: Optional[requests.Session] = None
 
     def create_bat_component(component_config: TeslaBatSetup):
         return TeslaBat(component_config)
@@ -52,27 +62,48 @@ def create_device(device_config: Tesla):
     def create_inverter_component(component_config: TeslaInverterSetup):
         return TeslaInverter(component_config)
 
+							  
+									 
+												  
+						 
+												  
+																							  
+
     def update_components(components: Iterable[Union[TeslaBat, TeslaCounter, TeslaInverter]]):
-        log.debug("Beginning update")
         nonlocal http_client, session
+
         address = device_config.configuration.ip_address
         email = device_config.configuration.email
         password = device_config.configuration.password
 
+							 
+
+																   
+								 
+
+        # First run after process start: no cookies -> authenticate once
         if http_client.cookies is None:
             http_client.cookies = _authenticate(session, address, email, password)
+											 
             __update_components(http_client, components)
             return
+
+        # Normal operation: reuse cookie. If it fails with 401/403 -> re-auth
         try:
             __update_components(http_client, components)
             return
         except HTTPError as e:
-            if e.response.status_code != 401 and e.response.status_code != 403:
-                raise e
-            log.warning("Login to powerwall with existing cookie failed. Will retry with new cookie...")
+            status = getattr(getattr(e, "response", None), "status_code", None)
+            if status not in (401, 403):
+                raise
+            log.warning(
+                "Login to powerwall with existing cookie failed (status=%s). Will retry with new cookie...",
+                status,
+            )
+
         http_client.cookies = _authenticate(session, address, email, password)
+										 
         __update_components(http_client, components)
-        log.debug("Update completed successfully")
 
     def initializer():
         nonlocal http_client, session
@@ -87,7 +118,7 @@ def create_device(device_config: Tesla):
             counter=create_counter_component,
             inverter=create_inverter_component,
         ),
-        component_updater=MultiComponentUpdater(update_components)
+        component_updater=MultiComponentUpdater(update_components),
     )
 
 
