@@ -45,4 +45,7 @@ def create_device(device_config: SungrowSG):
     )
 
 
-device_descriptor = DeviceDescriptor(configuration_factory=SungrowSG)
+device_descriptor = DeviceDescriptor(
+    configuration_factory=SungrowSG,
+    compatibility_device_note="Ältere Modelle verfügen über einen nativen LAN-Port, neue Modelle benötigen den "
+    "Winet-S oder Winet-S2 Dongle.")

@@ -90,4 +90,7 @@ def main(argv: List[str]):
     run_using_positional_cli_args(read_legacy, argv)
 
 
-device_descriptor = DeviceDescriptor(configuration_factory=Solarmax)
+device_descriptor = DeviceDescriptor(
+    configuration_factory=Solarmax,
+    compatibility_device_note="Kann nicht aktiv laden. Steuerbar ab Solarmax Firmware 3.4.4. Zur Nutzung muss die "
+    "Funktion 'Connectivity+' durch den Solarmax Support freigeschaltet werden.")

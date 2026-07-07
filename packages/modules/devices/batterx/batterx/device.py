@@ -119,4 +119,5 @@ def main(argv: List[str]) -> None:
     run_using_positional_cli_args(read_legacy, argv)
 
 
-device_descriptor = DeviceDescriptor(configuration_factory=BatterX)
+device_descriptor = DeviceDescriptor(configuration_factory=BatterX,
+                                     compatibility_bat_note="Kann Entladung nur komplett sperren.")
