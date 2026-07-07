@@ -90,7 +90,7 @@ def test_time_charging_min_bat_soc(min_bat_soc: Optional[int],
                                    charging_allowed_mock: bool,
                                    soc: float,
                                    expected: Tuple[int, str, Optional[str], Optional[str], int],
-                                   monkeypatch):
+                                   monkeypatch: pytest.MonkeyPatch):
     # setup
     ct = ChargeTemplate()
     plan = TimeChargingPlan(id=0)
