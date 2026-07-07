@@ -1218,7 +1218,7 @@ class SetData:
         return Path(__file__).resolve().parents[2]/"ramdisk"
 
     def loadmanager_topic(self, msg: mqtt.MQTTMessage):
-        """ Handler für die LoadMananger-Topics
+        """ Handler für die LoadManager-Topics
 
          Parameters
         ----------

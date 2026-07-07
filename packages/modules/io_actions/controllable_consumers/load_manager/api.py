@@ -35,11 +35,11 @@ class DimmingLoadManager(AbstractIoAction):
 
     def setup(self) -> None:
         if check_fault_state_io_device(self.config.configuration.io_device):
-            self.import_power_left = self.config.configuration.fixed_import_power
+            max_power = self.config.configuration.fixed_import_power
         else:
             max_power = data.data.io_states[f"io_states{self.config.configuration.io_device}"
                                             ].data.get.analog_input[AnalogInputMapping.MAX_POWER.name]
-            self.import_power_left = max_power
+        self.import_power_left = max_power
 
     def dimming_get_import_power_left(self) -> Tuple[Optional[float], LoadmanagementLimit]:
         if check_fault_state_io_device(self.config.configuration.io_device):
