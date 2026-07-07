@@ -87,7 +87,7 @@ class PeakFilter:
                                              "Warte einen Regelintervall.")
             elif (allowed_deviation > 0 and
                     ((total_energy - previous_total_energy) > allowed_deviation or
-                    (total_energy - previous_total_energy) < 0)):
+                     (total_energy - previous_total_energy) < 0)):
                 log.debug(f"PeakFilter: Unplausibler Zählerwert: {total_energy / 1000}kWh. "
                           f"Differenz zum vorherigen Wert: {total_energy - previous_total_energy}Wh. "
                           f"erlaubte Differenz: {round(allowed_deviation, 2)}Wh.")
