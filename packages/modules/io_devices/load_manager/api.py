@@ -20,10 +20,6 @@ def create_io(config: LoadManager):
     thread_exception = None  # Shared state für Thread-Exceptions
 
     def read():
-        nonlocal broker
-        nonlocal received_topics
-        nonlocal thread_exception
-
         broker.start_finite_loop()
         log.debug(f"Empfange MQTT Daten für LoadManager {config.id}: {received_topics}")
         io_state = IoState()
