@@ -107,9 +107,9 @@ class IoActions:
         else:
             return None, LoadmanagementLimit(None, None)
 
-    def dimming_load_manager(self, device: Dict) -> Optional[float]:
+    def dimming_load_manager(self, device: Dict) -> Tuple[Optional[float], LoadmanagementLimit]:
         for action in self.actions.values():
-            if isinstance(action, (DimmingLoadManager)):
+            if isinstance(action, DimmingLoadManager):
                 for d in action.config.configuration.devices:
                     if d == device:
                         return action.dimming_get_import_power_left()
