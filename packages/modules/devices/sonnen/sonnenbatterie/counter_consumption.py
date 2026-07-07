@@ -39,7 +39,7 @@ class SonnenbatterieConsumptionCounter(AbstractCounter):
             raise ValueError("Die ausgewählte API bietet keine Verbrauchsdaten!")
         if self.__device_variant != 3:
             raise ValueError("Unbekannte API: " + str(self.__device_variant))
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="consumption")
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, self.component_config.type)
         self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.api = JsonApi(host=self.__device_address,

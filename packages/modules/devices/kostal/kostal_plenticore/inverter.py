@@ -33,7 +33,7 @@ class KostalPlenticoreInverter(AbstractInverter):
         self.client: ModbusTcpClient_ = self.kwargs['client']
         self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.sim_counter = SimCounter(self.kwargs['device_id'], self.component_config.id, prefix="Wechselrichter")
+        self.sim_counter = SimCounter(self.kwargs['device_id'], self.component_config.id, self.component_config.type)
         self.fault_text = (
             "Es kann keine DC-Leistung aus dem Wechselrichter ausgelesen werden, "
             "möglicherweise kann ein Firmware-Update für den Wechselrichter nötig sein."

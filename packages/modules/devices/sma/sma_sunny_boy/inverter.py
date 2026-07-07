@@ -39,7 +39,7 @@ class SmaSunnyBoyInverter(AbstractInverter):
         self.tcp_client = self.kwargs['client']
         self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.sim_counter = SimCounter(self.kwargs['device_id'], self.component_config.id, prefix="Wechselrichter")
+        self.sim_counter = SimCounter(self.kwargs['device_id'], self.component_config.id, self.component_config.type)
         self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
