@@ -6,21 +6,21 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Set up Python 3.9
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.9.12"
       - name: Install dependencies
         run: |
           pip3 install -r "/home/runner/work/core/core/requirements.txt"
       - name: Flake8 with annotations in packages folder
-        uses: TrueBrain/actions-flake8@v2.1
+        uses: TrueBrain/actions-flake8@v2.4
         with:
           path: packages
           flake8_version: "7.3.0"
       - name: Flake8 with annotations in runs folder
-        uses: TrueBrain/actions-flake8@v2.1
+        uses: TrueBrain/actions-flake8@v2.4
         with:
           path: runs
           flake8_version: "7.3.0"
