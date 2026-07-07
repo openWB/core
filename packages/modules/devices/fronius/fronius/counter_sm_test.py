@@ -1,24 +1,15 @@
 from unittest.mock import Mock
 
-import pytest
 import requests_mock
 
 from dataclass_utils import dataclass_from_dict
-from helpermodules import compatibility
 from modules.common.store._api import LoggingValueStore
 from modules.conftest import SAMPLE_IP
 from modules.devices.fronius.fronius import counter_sm
 from modules.devices.fronius.fronius.config import FroniusConfiguration, FroniusSmCounterSetup
-from test_utils.mock_ramdisk import MockRamdisk
 
 
-@pytest.fixture
-def mock_ramdisk(monkeypatch):
-    monkeypatch.setattr(compatibility, "is_ramdisk_in_use", lambda: True)
-    return MockRamdisk(monkeypatch)
-
-
-def test_update_grid(monkeypatch, requests_mock: requests_mock.Mocker, mock_ramdisk, mock_simcount):
+def test_update_grid(monkeypatch, requests_mock: requests_mock.Mocker, mock_simcount):
     component_config = FroniusSmCounterSetup()
     assert component_config.configuration.variant == 0
     device_config = FroniusConfiguration()
@@ -50,7 +41,7 @@ def test_update_grid(monkeypatch, requests_mock: requests_mock.Mocker, mock_ramd
     assert counter_state.power == sum(counter_state.powers)
 
 
-def test_update_grid_var2(monkeypatch, requests_mock: requests_mock.Mocker, mock_ramdisk, mock_simcount):
+def test_update_grid_var2(monkeypatch, requests_mock: requests_mock.Mocker, mock_simcount):
     component_config = FroniusSmCounterSetup()
     component_config.configuration.variant = 2
     device_config = FroniusConfiguration()
@@ -81,7 +72,7 @@ def test_update_grid_var2(monkeypatch, requests_mock: requests_mock.Mocker, mock
     assert counter_state.voltages == [232.3, 231.5, 233.4]
 
 
-def test_update_external_var2(monkeypatch, requests_mock: requests_mock.Mocker, mock_ramdisk, mock_simcount):
+def test_update_external_var2(monkeypatch, requests_mock: requests_mock.Mocker, mock_simcount):
     component_config = FroniusSmCounterSetup()
     component_config.configuration.variant = 2
     device_config = FroniusConfiguration()
@@ -112,7 +103,7 @@ def test_update_external_var2(monkeypatch, requests_mock: requests_mock.Mocker, 
     assert counter_state.voltages == [229.3, 228.8, 229.4]
 
 
-def test_update_load(monkeypatch, requests_mock: requests_mock.Mocker, mock_ramdisk, mock_simcount):
+def test_update_load(monkeypatch, requests_mock: requests_mock.Mocker, mock_simcount):
     component_config = FroniusSmCounterSetup()
     assert component_config.configuration.variant == 0
     device_config = FroniusConfiguration()

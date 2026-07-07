@@ -24,7 +24,7 @@ import os
 import os.path
 from pathlib import Path
 from collections import deque
-from modules.common.store import RAMDISK_PATH
+from helpermodules.constants import RAMDISK_PATH
 from modules.common.abstract_vehicle import VehicleUpdateData
 from modules.vehicles.vwid.config import VWId
 

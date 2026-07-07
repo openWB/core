@@ -10,9 +10,10 @@ import io
 import os
 import shutil
 
+from helpermodules.constants import RAMDISK_PATH
+
 FORMAT_STR_DETAILED = '%(asctime)s - {%(name)s:%(lineno)s} - {%(levelname)s:%(threadName)s} - %(message)s'
 FORMAT_STR_SHORT = '%(asctime)s - %(message)s'
-RAMDISK_PATH = str(Path(__file__).resolve().parents[2]) + '/ramdisk/'
 PERSISTENT_LOG_PATH = str(Path(__file__).resolve().parents[2]) + '/data/log/'
 NUMBER_OF_LOGFILES = 3
 
@@ -230,7 +231,7 @@ def setup_logging() -> None:
     # to do: add smarthome and soc to in_memory_log_handlers, needs updates in individual thread calls
 
     # Main logger
-    main_file_handler = RotatingFileHandler(RAMDISK_PATH + 'main.log', maxBytes=mb_to_bytes(5), backupCount=4)
+    main_file_handler = RotatingFileHandler(RAMDISK_PATH / 'main.log', maxBytes=mb_to_bytes(5), backupCount=4)
     main_file_handler.setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
     main_file_handler.addFilter(RedactingFilter())
     in_memory_log_handlers["main"] = InMemoryLogHandler(main_file_handler)
@@ -244,7 +245,7 @@ def setup_logging() -> None:
     chargelog_log = logging.getLogger("chargelog")
     chargelog_log.propagate = False
     chargelog_file_handler = RotatingFileHandler(
-        RAMDISK_PATH + 'chargelog.log', maxBytes=mb_to_bytes(2), backupCount=1)
+        RAMDISK_PATH / 'chargelog.log', maxBytes=mb_to_bytes(2), backupCount=1)
     chargelog_file_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
     chargelog_file_handler.addFilter(RedactingFilter())
     chargelog_log.addHandler(chargelog_file_handler)
@@ -261,7 +262,7 @@ def setup_logging() -> None:
     # MQTT logger
     mqtt_log = logging.getLogger("mqtt")
     mqtt_log.propagate = False
-    mqtt_file_handler = RotatingFileHandler(RAMDISK_PATH + 'mqtt.log', maxBytes=mb_to_bytes(3), backupCount=1)
+    mqtt_file_handler = RotatingFileHandler(RAMDISK_PATH / 'mqtt.log', maxBytes=mb_to_bytes(3), backupCount=1)
     mqtt_file_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
     mqtt_file_handler.addFilter(RedactingFilter())
     mqtt_log.addHandler(mqtt_file_handler)
@@ -278,7 +279,7 @@ def setup_logging() -> None:
     garbage_collector_log = logging.getLogger("garbage_collector")
     garbage_collector_log.propagate = False
     garbage_collector_file_handler = RotatingFileHandler(
-        RAMDISK_PATH + 'garbage_collector.log', maxBytes=mb_to_bytes(0.5), backupCount=1)
+        RAMDISK_PATH / 'garbage_collector.log', maxBytes=mb_to_bytes(0.5), backupCount=1)
     garbage_collector_file_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
     garbage_collector_log.addHandler(garbage_collector_file_handler)
 
@@ -286,19 +287,19 @@ def setup_logging() -> None:
     tracemalloc_log = logging.getLogger("tracemalloc")
     tracemalloc_log.propagate = False
     tracemalloc_file_handler = RotatingFileHandler(
-        RAMDISK_PATH + 'tracemalloc.log', maxBytes=mb_to_bytes(0.5), backupCount=1)
+        RAMDISK_PATH / 'tracemalloc.log', maxBytes=mb_to_bytes(0.5), backupCount=1)
     tracemalloc_file_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
     tracemalloc_log.addHandler(tracemalloc_file_handler)
 
     # Smarthome logger
-    smarthome_log_handler = RotatingFileHandler(RAMDISK_PATH + 'smarthome.log', maxBytes=mb_to_bytes(1), backupCount=1)
+    smarthome_log_handler = RotatingFileHandler(RAMDISK_PATH / 'smarthome.log', maxBytes=mb_to_bytes(1), backupCount=1)
     smarthome_log_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
     smarthome_log_handler.addFilter(functools.partial(filter_pos, "smarthome"))
     smarthome_log_handler.addFilter(RedactingFilter())
     logging.getLogger().addHandler(smarthome_log_handler)
 
     # SoC logger
-    soc_log_handler = RotatingFileHandler(RAMDISK_PATH + 'soc.log', maxBytes=mb_to_bytes(2), backupCount=1)
+    soc_log_handler = RotatingFileHandler(RAMDISK_PATH / 'soc.log', maxBytes=mb_to_bytes(2), backupCount=1)
     soc_log_handler.setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
     soc_log_handler.addFilter(functools.partial(filter_pos, "soc"))
     soc_log_handler.addFilter(RedactingFilter())
@@ -308,7 +309,7 @@ def setup_logging() -> None:
     logging.getLogger().addHandler(in_memory_log_handlers["soc"])
 
     # Internal chargepoint logger
-    internal_chargepoint_log_handler = RotatingFileHandler(RAMDISK_PATH + 'internal_chargepoint.log',
+    internal_chargepoint_log_handler = RotatingFileHandler(RAMDISK_PATH / 'internal_chargepoint.log',
                                                            maxBytes=mb_to_bytes(1),
                                                            backupCount=1)
     internal_chargepoint_log_handler.setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
@@ -322,7 +323,7 @@ def setup_logging() -> None:
     # urllib3 logger
     urllib3_log = logging.getLogger("urllib3.connectionpool")
     urllib3_log.propagate = True
-    urllib3_file_handler = RotatingFileHandler(RAMDISK_PATH + 'soc.log', maxBytes=mb_to_bytes(2), backupCount=1)
+    urllib3_file_handler = RotatingFileHandler(RAMDISK_PATH / 'soc.log', maxBytes=mb_to_bytes(2), backupCount=1)
     urllib3_file_handler.setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
     urllib3_file_handler.addFilter(RedactingFilter())
     urllib3_file_handler.addFilter(functools.partial(filter_pos, "soc"))
@@ -332,7 +333,7 @@ def setup_logging() -> None:
     logging.getLogger("uModbus").setLevel(logging.WARNING)
     logging.getLogger("websockets").setLevel(logging.WARNING)
 
-    thread_errors_path = Path(RAMDISK_PATH+"thread_errors.log")
+    thread_errors_path = Path(RAMDISK_PATH / "thread_errors.log")
     with thread_errors_path.open("w") as f:
         f.write("")
 
