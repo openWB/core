@@ -1,17 +1,13 @@
 #!/usr/bin/env python3
-import json
 import logging
 import time
-from typing import List
 
-from dataclass_utils import asdict, dataclass_from_dict
-from helpermodules.cli import run_using_positional_cli_args
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.abstract_vehicle import VehicleUpdateData
 from modules.common.component_state import CarState
 from modules.common.configurable_vehicle import ConfigurableVehicle
 from modules.vehicles.tesla import api
-from modules.vehicles.tesla.config import TeslaSoc, TeslaSocConfiguration, TeslaSocToken
+from modules.vehicles.tesla.config import TeslaSoc
 
 log = logging.getLogger(__name__)
 
@@ -54,29 +50,6 @@ def create_vehicle(vehicle_config: TeslaSoc, vehicle: int):
     return ConfigurableVehicle(vehicle_config=vehicle_config,
                                component_updater=updater,
                                vehicle=vehicle)
-
-
-def read_legacy(id: int,
-                token_file: str,
-                tesla_ev_num: int,
-                charge_state: bool):
-
-    log.debug(f"SoC-Module tesla num: {id}")
-    log.debug(f"SoC-Module tesla token_file: {token_file}")
-    log.debug(f"SoC-Module tesla tesla_ev_num: {tesla_ev_num}")
-    log.debug(f"SoC-Module tesla charge_state: {charge_state}")
-
-    with open(token_file, "r") as f:
-        token = json.load(f)
-    soc = create_vehicle(TeslaSoc(configuration=TeslaSocConfiguration(
-        tesla_ev_num=tesla_ev_num, token=dataclass_from_dict(TeslaSocToken, token))), id)
-    soc.update(VehicleUpdateData(charge_state=charge_state))
-    with open(token_file, "w") as f:
-        f.write(json.dumps(asdict(soc.vehicle_config.configuration.token)))
-
-
-def main(argv: List[str]):
-    run_using_positional_cli_args(read_legacy, argv)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=TeslaSoc)

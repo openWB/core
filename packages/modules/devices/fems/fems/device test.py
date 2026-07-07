@@ -5,7 +5,6 @@ import pytest
 from modules.common.component_state import CounterState
 from modules.common.component_state import InverterState
 from modules.devices.discovergy.discovergy import api, counter, inverter
-from modules.devices.discovergy.discovergy.device import read_legacy
 
 SAMPLE_COUNTER_STATE = CounterState(
     imported=1,
@@ -35,31 +34,6 @@ class TestDiscovergyDevice:
         monkeypatch.setattr(counter, 'get_counter_value_store', Mock(return_value=self.mock_counter_value_store))
         monkeypatch.setattr(inverter, 'get_inverter_value_store', Mock(return_value=self.mock_inverter_value_store))
         monkeypatch.setattr(api, 'get_last_reading', self.mock_get_last_reading)
-
-    def test_read_legacy_reads_counter(self, monkeypatch):
-        # execution
-        read_legacy(SAMPLE_USER, SAMPLE_PASSWORD, SAMPLE_COUNTER_METER_ID, "")
-
-        # evaluation
-        self.assert_get_last_reading_called(SAMPLE_COUNTER_METER_ID)
-        self.assert_counter_state_set()
-
-    def test_read_legacy_reads_inverter(self):
-        # execution
-        read_legacy(SAMPLE_USER, SAMPLE_PASSWORD, "", SAMPLE_INVERTER_METER_ID)
-
-        # evaluation
-        self.assert_get_last_reading_called(SAMPLE_INVERTER_METER_ID)
-        self.assert_inverter_state_set()
-
-    def test_read_legacy_reads_counter_and_inverter(self):
-        # execution
-        read_legacy(SAMPLE_USER, SAMPLE_PASSWORD, SAMPLE_COUNTER_METER_ID, SAMPLE_INVERTER_METER_ID)
-
-        # evaluation
-        self.assert_get_last_reading_called(SAMPLE_COUNTER_METER_ID, SAMPLE_INVERTER_METER_ID)
-        self.assert_inverter_state_set()
-        self.assert_counter_state_set()
 
     def assert_get_last_reading_called(self, *meter_ids):
         assert self.mock_get_last_reading.call_count == len(meter_ids)

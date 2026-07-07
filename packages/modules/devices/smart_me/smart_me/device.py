@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
 import logging
-from typing import List
 
-from helpermodules.cli import run_using_positional_cli_args
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, IndependentComponentUpdater
 from modules.common.req import get_http_session
 from modules.devices.smart_me.smart_me.counter import SmartMeCounter
-from modules.devices.smart_me.smart_me.config import (SmartMe, SmartMeConfiguration,
-                                                      SmartMeCounterConfiguration, SmartMeCounterSetup,
-                                                      SmartMeInverterConfiguration, SmartMeInverterSetup)
+from modules.devices.smart_me.smart_me.config import SmartMe, SmartMeCounterSetup, SmartMeInverterSetup
 from modules.devices.smart_me.smart_me.inverter import SmartMeInverter
+
 log = logging.getLogger(__name__)
 
 
@@ -37,21 +34,6 @@ def create_device(device_config: SmartMe):
         ),
         component_updater=IndependentComponentUpdater(lambda component: component.update(session))
     )
-
-
-def read_legacy(component_type: str, user: str, password: str, id_address: str) -> None:
-    device = create_device(SmartMe(configuration=SmartMeConfiguration(user=user, password=password)))
-    id = id_address[37:]
-    if component_type == "counter":
-        device.add_component(SmartMeCounterSetup(id=None, configuration=SmartMeCounterConfiguration(id=id)))
-    else:
-        device.add_component(SmartMeInverterSetup(id=1, configuration=SmartMeInverterConfiguration(id=id)))
-    log.debug('Smart-me user: ' + user + ", password: " + password + ", id: " + id_address)
-    device.update()
-
-
-def main(argv: List[str]):
-    run_using_positional_cli_args(read_legacy, argv)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=SmartMe)

@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 import logging
 import time
-from typing import Callable, Optional, List
+from typing import Callable
 
-from helpermodules.cli import run_using_positional_cli_args
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, IndependentComponentUpdater
-from modules.devices.rct.rct import bat, counter, inverter, rct_lib
+from modules.devices.rct.rct import rct_lib
 from modules.devices.rct.rct.bat import RctBat
-from modules.devices.rct.rct.config import Rct, RctConfiguration, RctBatSetup, RctCounterSetup, RctInverterSetup
+from modules.devices.rct.rct.config import Rct,  RctBatSetup, RctCounterSetup, RctInverterSetup
 from modules.devices.rct.rct.counter import RctCounter
 from modules.devices.rct.rct.inverter import RctInverter
 
@@ -45,35 +44,6 @@ def create_device(device_config: Rct):
         ),
         component_updater=IndependentComponentUpdater(lambda component: update_component(component.update)),
     )
-
-
-COMPONENT_TYPE_TO_MODULE = {
-    "bat": bat,
-    "counter": counter,
-    "inverter": inverter
-}
-
-
-def read_legacy(component_type: str, ip_address: str, num: Optional[int]) -> None:
-    device_config = Rct(configuration=RctConfiguration(ip_address=ip_address))
-    dev = create_device(device_config)
-    if component_type in COMPONENT_TYPE_TO_MODULE:
-        component_config = COMPONENT_TYPE_TO_MODULE[component_type].component_descriptor.configuration_factory()
-    else:
-        raise Exception(
-            "illegal component type " + component_type + ". Allowed values: " +
-            ','.join(COMPONENT_TYPE_TO_MODULE.keys())
-        )
-    component_config.id = num
-    dev.add_component(component_config)
-
-    log.debug('Rct IP-Adresse: ' + ip_address)
-
-    dev.update()
-
-
-def main(argv: List[str]):
-    run_using_positional_cli_args(read_legacy, argv)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=Rct)
