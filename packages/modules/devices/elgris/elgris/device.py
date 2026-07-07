@@ -17,17 +17,14 @@ def create_device(device_config: Elgris):
     client = None
 
     def create_bat_component(component_config: ElgrisBatSetup):
-        nonlocal client
         return bat.ElgrisBat(component_config=component_config, tcp_client=client,
                              modbus_id=device_config.configuration.modbus_id)
 
     def create_counter_component(component_config: ElgrisCounterSetup):
-        nonlocal client
         return counter.ElgrisCounter(component_config=component_config, tcp_client=client,
                                      modbus_id=device_config.configuration.modbus_id)
 
     def create_inverter_component(component_config: ElgrisInverterSetup):
-        nonlocal client
         return inverter.ElgrisInverter(component_config=component_config, tcp_client=client,
                                        modbus_id=device_config.configuration.modbus_id)
 

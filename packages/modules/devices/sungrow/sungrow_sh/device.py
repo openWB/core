@@ -19,15 +19,12 @@ def create_device(device_config: SungrowSH):
     client = None
 
     def create_bat_component(component_config: SungrowSHBatSetup):
-        nonlocal client
         return SungrowSHBat(component_config, device_config=device_config, client=client)
 
     def create_counter_component(component_config: SungrowSHCounterSetup):
-        nonlocal client
         return SungrowSHCounter(component_config, device_config=device_config, client=client)
 
     def create_inverter_component(component_config: SungrowSHInverterSetup):
-        nonlocal client
         return SungrowSHInverter(component_config, device_config=device_config, client=client)
 
     def update_components(components: Iterable[Union[SungrowSHBat, SungrowSHCounter, SungrowSHInverter]]):

@@ -21,7 +21,6 @@ def create_device(device_config: GoodWe):
     client = None
 
     def create_bat_component(component_config: GoodWeBatSetup):
-        nonlocal client
         return bat.GoodWeBat(component_config=component_config,
                              device_id=device_config.id,
                              modbus_id=device_config.configuration.modbus_id,
@@ -30,7 +29,6 @@ def create_device(device_config: GoodWe):
                              client=client)
 
     def create_counter_component(component_config: GoodWeCounterSetup):
-        nonlocal client
         return counter.GoodWeCounter(component_config=component_config,
                                      modbus_id=device_config.configuration.modbus_id,
                                      version=GoodWeVersion(device_config.configuration.version),
@@ -39,7 +37,6 @@ def create_device(device_config: GoodWe):
                                      device_id=device_config.id)
 
     def create_inverter_component(component_config: GoodWeInverterSetup):
-        nonlocal client
         return inverter.GoodWeInverter(component_config=component_config,
                                        modbus_id=device_config.configuration.modbus_id,
                                        version=GoodWeVersion(device_config.configuration.version),
@@ -47,7 +44,6 @@ def create_device(device_config: GoodWe):
                                        client=client)
 
     def update_components(components: Iterable[good_we_component_classes]):
-        nonlocal client
         with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):

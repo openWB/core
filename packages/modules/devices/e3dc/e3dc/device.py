@@ -28,28 +28,24 @@ def create_device(device_config: E3dc) -> ConfigurableDevice:
     client = None
 
     def create_bat_component(component_config: E3dcBatSetup) -> E3dcBat:
-        nonlocal client
         return E3dcBat(component_config=component_config,
                        device_id=device_config.id,
                        modbus_id=device_config.configuration.modbus_id,
                        client=client)
 
     def create_counter_component(component_config: E3dcCounterSetup) -> E3dcCounter:
-        nonlocal client
         return E3dcCounter(component_config=component_config,
                            device_id=device_config.id,
                            modbus_id=device_config.configuration.modbus_id,
                            client=client)
 
     def create_inverter_component(component_config: E3dcInverterSetup) -> E3dcInverter:
-        nonlocal client
         return E3dcInverter(component_config=component_config,
                             device_id=device_config.id,
                             modbus_id=device_config.configuration.modbus_id,
                             client=client)
 
     def create_external_inverter_component(component_config: E3dcExternalInverterSetup) -> E3dcExternalInverter:
-        nonlocal client
         return E3dcExternalInverter(component_config=component_config,
                                     device_id=device_config.id,
                                     modbus_id=device_config.configuration.modbus_id,
@@ -57,7 +53,6 @@ def create_device(device_config: E3dc) -> ConfigurableDevice:
 
     def update_components(components: Iterable[Union[E3dcBat, E3dcCounter, E3dcInverter,
                                                      E3dcExternalInverter]]) -> None:
-        nonlocal client
         with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):

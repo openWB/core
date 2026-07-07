@@ -54,7 +54,6 @@ def create_device(device_config: Tesla):
 
     def update_components(components: Iterable[Union[TeslaBat, TeslaCounter, TeslaInverter]]):
         log.debug("Beginning update")
-        nonlocal http_client, session
         address = device_config.configuration.ip_address
         email = device_config.configuration.email
         password = device_config.configuration.password

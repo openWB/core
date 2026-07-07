@@ -156,7 +156,6 @@ class InMemoryLogHandler(logging.Handler):
 
 
 def clear_in_memory_log_handler(logger_name: str = None) -> None:
-    global in_memory_log_handlers
     if logger_name is None:
         # Clear all in-memory log handlers
         for handler in in_memory_log_handlers.values():
@@ -168,8 +167,6 @@ def clear_in_memory_log_handler(logger_name: str = None) -> None:
 
 
 def write_logs_to_file(logger_name: str = None) -> None:
-    global in_memory_log_handlers
-
     def rotate_logs(base_path: str, name: str):
         # Rotate the log files
         for i in range(NUMBER_OF_LOGFILES-1, 0, -1):

@@ -21,28 +21,24 @@ def create_device(device_config: Growatt):
     client = None
 
     def create_bat_component(component_config: GrowattBatSetup):
-        nonlocal client
         return GrowattBat(component_config=component_config,
                           modbus_id=device_config.configuration.modbus_id,
                           version=GrowattVersion(device_config.configuration.version),
                           client=client)
 
     def create_counter_component(component_config: GrowattCounterSetup):
-        nonlocal client
         return GrowattCounter(component_config=component_config,
                               modbus_id=device_config.configuration.modbus_id,
                               version=GrowattVersion(device_config.configuration.version),
                               client=client)
 
     def create_inverter_component(component_config: GrowattInverterSetup):
-        nonlocal client
         return GrowattInverter(component_config=component_config,
                                modbus_id=device_config.configuration.modbus_id,
                                version=GrowattVersion(device_config.configuration.version),
                                client=client)
 
     def update_components(components: Iterable[Union[GrowattBat, GrowattCounter, GrowattInverter]]):
-        nonlocal client
         with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):

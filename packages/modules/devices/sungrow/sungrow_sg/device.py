@@ -17,11 +17,9 @@ def create_device(device_config: SungrowSG):
     client = None
 
     def create_counter_component(component_config: SungrowSGCounterSetup):
-        nonlocal client
         return SungrowSGCounter(component_config, device_config=device_config, client=client)
 
     def create_inverter_component(component_config: SungrowSGInverterSetup):
-        nonlocal client
         return SungrowSGInverter(component_config, device_config=device_config, client=client)
 
     def update_components(components: Iterable[Union[SungrowSGCounter, SungrowSGInverter]]):

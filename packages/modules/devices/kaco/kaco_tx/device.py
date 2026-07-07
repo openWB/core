@@ -18,11 +18,9 @@ def create_device(device_config: Kaco):
     client = None
 
     def create_inverter_component(component_config: KacoInverterSetup):
-        nonlocal client
         return KacoInverter(component_config, client=client)
 
     def update_components(components: Iterable[KacoInverter]):
-        nonlocal client
         with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):
