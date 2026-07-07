@@ -77,7 +77,7 @@ cases = [
     Params("Imp/ Exp Speicher - Export > 50Y", ComponentType.BAT, 1000, 500000000, 400, 1005, 500000000, 1005, None),
     Params("Imp/ Exp Speicher - Export ~ 45Y", ComponentType.BAT,
            1000, 400000000, 400, 1005, 400000000, 1005, 400000000),
-    Params("Imp/ Exp Speicher - Import > 50Y", ComponentType.BAT,
+    Params("Imp/ Exp Speicher - Import ~ 45Y", ComponentType.BAT,
            400000000, 500, 400, 400000000, 505, 400000000, 505)
 ]
 
