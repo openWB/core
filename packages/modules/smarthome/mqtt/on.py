@@ -10,7 +10,7 @@ def on_connect(client, userdata, flags, rc) -> None:
 
 
 def on_message(client, userdata, msg) -> None:
-    global numberOfSupportedDevices
+    pass  # No action needed for incoming messages in this script
 
 
 devicenumber = str(sys.argv[1])

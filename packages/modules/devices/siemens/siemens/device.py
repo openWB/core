@@ -21,28 +21,24 @@ def create_device(device_config: Siemens):
     client = None
 
     def create_bat_component(component_config: SiemensBatSetup):
-        nonlocal client
         return SiemensBat(component_config,
                           device_id=device_config.id,
                           client=client,
                           modbus_id=device_config.configuration.modbus_id)
 
     def create_counter_component(component_config: SiemensCounterSetup):
-        nonlocal client
         return SiemensCounter(component_config,
                               device_id=device_config.id,
                               client=client,
                               modbus_id=device_config.configuration.modbus_id)
 
     def create_inverter_component(component_config: SiemensInverterSetup):
-        nonlocal client
         return SiemensInverter(component_config,
                                device_id=device_config.id,
                                client=client,
                                modbus_id=device_config.configuration.modbus_id)
 
     def update_components(components: Iterable[siemens_component_classes]):
-        nonlocal client
         with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):

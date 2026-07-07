@@ -19,19 +19,15 @@ def create_device(device_config: DeyeSolarman):
     client = None
 
     def create_bat_component(component_config: DeyeSolarmanBatSetup):
-        nonlocal client
         return DeyeSolarmanBat(component_config=component_config, device_id=device_config.id, client=client)
 
     def create_counter_component(component_config: DeyeSolarmanCounterSetup):
-        nonlocal client
         return DeyeSolarmanCounter(component_config=component_config, device_id=device_config.id, client=client)
 
     def create_inverter_component(component_config: DeyeSolarmanInverterSetup):
-        nonlocal client
         return DeyeSolarmanInverter(component_config=component_config, device_id=device_config.id, client=client)
 
     def update_components(components: Iterable[Union[DeyeSolarmanBat, DeyeSolarmanCounter, DeyeSolarmanInverter]]):
-        nonlocal client
         for component in components:
             with SingleComponentUpdateContext(component.fault_state):
                 component.update()

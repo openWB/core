@@ -17,23 +17,19 @@ def create_device(device_config: SiemensSentron):
     client = None
 
     def create_counter_component(component_config: SiemensSentronCounterSetup):
-        nonlocal client
         return counter.SiemensSentronCounter(component_config, client=client,
                                              modbus_id=device_config.configuration.modbus_id)
 
     def create_inverter_component(component_config: SiemensSentronInverterSetup):
-        nonlocal client
         return inverter.SiemensSentronInverter(component_config, client=client,
                                                modbus_id=device_config.configuration.modbus_id)
 
     def create_bat_component(component_config: SiemensSentronBatSetup):
-        nonlocal client
         return bat.SiemensSentronBat(component_config, client=client,
                                      modbus_id=device_config.configuration.modbus_id)
 
     def update_components(components: Iterable[Union[counter.SiemensSentronCounter, inverter.SiemensSentronInverter,
                                                      bat.SiemensSentronBat]]):
-        nonlocal client
         with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):

@@ -17,11 +17,9 @@ def create_device(device_config: BatKitSetup):
     client = None
 
     def create_bat_component(component_config: BatKitBatSetup):
-        nonlocal client
         return BatKit(component_config, device_id=device_config.id, client=client)
 
     def update_components(components: Iterable[BatKit]):
-        nonlocal client
         with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):

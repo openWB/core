@@ -8,7 +8,7 @@ from modules.devices.sma.sma_shm.speedwiredecoder import decode_speedwire
 class SpeedwireListener:
     def __init__(self, timeout_seconds: float):
         self.__timeout_seconds = timeout_seconds
-        self.__socket = None  # type: Optional[socket.socket]
+        self.__socket: Optional[socket.socket] = None
 
     def __enter__(self) -> Iterator[dict]:
         ip_bind = "0.0.0.0"
@@ -36,4 +36,5 @@ class SpeedwireListener:
         return generator()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.__socket.close()
+        if self.__socket:
+            self.__socket.close()

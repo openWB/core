@@ -130,7 +130,6 @@ last_url = ""
 def getHTTP(url: str = "", headers: str = "", cookies: str = "",
             timeout: int = 30, allow_redirects: bool = True) -> str:
     global last_cookies
-    global last_url
 
     try:
         response = requests.get(url, headers=headers,
@@ -217,7 +216,6 @@ def deleteHTTP(url: str = "", headers: str = "", cookies: str = "",
 def postHTTP(url: str = "", data: Union[str, dict] = "",
              headers: str = "", cookies: str = "", timeout: int = 30,
              allow_redirects: bool = True) -> str:
-    global last_cookies
     global last_url
 
     try:
@@ -452,8 +450,6 @@ def getDeviceId(brand: str) -> dict:
 
 def getAuthCode(username: str, password: str, brand: str,
                 cookies: dict) -> str:
-    global last_cookies
-
     log.info("Kia/Hyundai: Sending username/password")
 
     try:

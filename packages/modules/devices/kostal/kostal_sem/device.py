@@ -9,7 +9,6 @@ def create_device(device_config: KostalSem):
     client = None
 
     def create_counter_component(component_config: KostalSemCounterSetup):
-        nonlocal client
         return KostalSemCounter(component_config, client=client, modbus_id=device_config.configuration.modbus_id)
 
     def initializer():

@@ -23,23 +23,18 @@ def create_device(device_config: Solaredge):
     client = None
 
     def create_bat_component(component_config: SolaredgeBatSetup):
-        nonlocal client
         return SolaredgeBat(component_config, device_id=device_config.id, client=client)
 
     def create_counter_component(component_config: SolaredgeCounterSetup):
-        nonlocal client, device
         return SolaredgeCounter(component_config, client=client, components=device.components)
 
     def create_inverter_component(component_config: SolaredgeInverterSetup):
-        nonlocal client
         return SolaredgeInverter(component_config, client=client, device_id=device_config.id)
 
     def create_external_inverter_component(component_config: SolaredgeExternalInverterSetup):
-        nonlocal client, device
         return SolaredgeExternalInverter(component_config, client=client, components=device.components)
 
     def update_components(components: Iterable[Union[SolaredgeBat, SolaredgeCounter, SolaredgeInverter]]):
-        nonlocal client
         with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):

@@ -44,8 +44,6 @@ firststart = True
 
 
 def on_connect(client: mqtt.Client, userdata: Any, flags: Dict, rc: int) -> None:
-    global mqttcg
-    global mqttsdevstat
     #  mqttcg = 'openWB/config/get/SmartHome/'
     #  client.subscribe("openWB/config/get/SmartHome/#", 2)
     client.subscribe(mqttcg + '#', 2)
@@ -55,8 +53,6 @@ def on_connect(client: mqtt.Client, userdata: Any, flags: Dict, rc: int) -> None
 
 
 def logmq(topic: str, devicenumb: int, keyword: str, value: str) -> None:
-    global parammqtt
-    global ramdiskwrite
     #  richtig  topic single
     if (devicenumb < 1) or (devicenumb > numberOfSupportedDevices):
         pass
@@ -112,7 +108,6 @@ def on_message(client: mqtt.Client, userdata: Any, msg: mqtt.MQTTMessage) -> Non
 
 
 def getdevicevalues(uberschuss: int, uberschussoffset: int, pvwatt: int, chargestatus: bool) -> None:
-    global mydevices
     totalwatt = 0
     totalwattot = 0
     totalminhaus = 0
@@ -204,7 +199,6 @@ def pub(client: mqtt.Client, key: str, value: str) -> None:
 
 
 def sendmq(mqtt_input: Dict[str, str]) -> None:
-    global mqtt_cache
     client = mqtt.Client("openWB-SmartHome-bulkpublisher-" + str(os.getpid()))
     client.connect("localhost", mqttport)
     for key, value in mqtt_input.items():
@@ -224,15 +218,11 @@ def sendmq(mqtt_input: Dict[str, str]) -> None:
 
 
 def conditions(speichersoc: int) -> None:
-    global mydevices
     for mydevice in mydevices:
         mydevice.conditions(speichersoc)
 
 
 def update_devices() -> None:
-    global parammqtt
-    global mydevices
-    global mqtt_cache
     client = mqtt.Client("openWB-SmartHome-bulkpublisher-" + str(os.getpid()))
     client.connect("localhost", mqttport)
     # statische daten einschaltgruppe
@@ -341,7 +331,6 @@ def update_devices() -> None:
 
 def readmq() -> None:
     global parammqtt
-    global mydevices
     log.info("Config reRead start / Parameter check")
     if ramdiskwrite:
         with open(bp+'/ramdisk/smartparam.sh', 'w') as f:
@@ -369,7 +358,6 @@ def readmq() -> None:
 
 def resetmaxeinschaltdauerfunc() -> None:
     global resetmaxeinschaltdauer
-    global mydevices
     mqtt_reset = {}
     hour = time.strftime("%H")
     if (int(hour) == 0):
@@ -408,9 +396,6 @@ def resetmaxeinschaltdauerfunc() -> None:
 
 def loadregelvars(wattbezug: int, speicherleistung: int, speichersoc: int,
                   pvwatt: int,  chargestatus: bool) -> Tuple[int, int]:
-    global maxspeicher
-    global mydevices
-    global firststart
     uberschuss = wattbezug + speicherleistung
     uberschussoffset = wattbezug + speicherleistung - maxspeicher
     log.info("EVU Bezug(-)/Einspeisung(+): " + str(wattbezug) +

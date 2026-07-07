@@ -9,12 +9,10 @@ numberOfSupportedDevices = 9  # limit number of smart home devices
 
 
 def on_connect(client, userdata, flags, rc) -> None:
-    global devicenumber
     client.subscribe("openWB/LegacySmartHome/Devices/"+str(devicenumber) + "/#", 2)
 
 
 def on_message(client, userdata, msg) -> None:
-    global numberOfSupportedDevices
     global aktpower
     global powerc
     global tempa
