@@ -4,6 +4,9 @@ from control.limiting_value import LoadmanagementLimit
 from helpermodules.constants import NO_ERROR
 from modules.io_actions.controllable_consumers.dimming.api_eebus import DimmingEebus
 from modules.io_actions.controllable_consumers.dimming.api_io import DimmingIo
+
+from modules.io_actions.controllable_consumers.load_manager.api import DimmingLoadManager
+
 from modules.io_actions.controllable_consumers.dimming_direct_control.api import DimmingDirectControl
 from modules.io_actions.controllable_consumers.ripple_control_receiver.api import RippleControlReceiver
 from modules.io_actions.generator_systems.stepwise_control.api_eebus import StepwiseControlEebus
@@ -55,7 +58,8 @@ class IoStates:
 class IoActions:
     def __init__(self):
         self.actions: Dict[int, Union[DimmingIo, DimmingEebus, DimmingDirectControl,
-                                      RippleControlReceiver, StepwiseControlEebus, StepwiseControlIo]] = {}
+                                      RippleControlReceiver, StepwiseControlEebus, StepwiseControlIo,
+                                      DimmingLoadManager]] = {}
 
     def setup(self):
         for action in self.actions.values():
@@ -100,5 +104,14 @@ class IoActions:
             if isinstance(action, (StepwiseControlEebus, StepwiseControlIo)):
                 if device_id in [component["id"] for component in action.config.configuration.devices]:
                     return action.control_stepwise()
+        else:
+            return None, LoadmanagementLimit(None, None)
+
+    def dimming_load_manager(self, device: Dict) -> Optional[float]:
+        for action in self.actions.values():
+            if isinstance(action, (DimmingLoadManager)):
+                for d in action.config.configuration.devices:
+                    if d == device:
+                        return action.dimming_get_import_power_left()
         else:
             return None, LoadmanagementLimit(None, None)

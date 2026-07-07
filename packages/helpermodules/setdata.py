@@ -851,6 +851,8 @@ class SetData:
             self.process_pv_topic(msg)
         elif "openWB/set/mqtt/vehicle/" in msg.topic:
             self.process_vehicle_topic(msg)
+        elif "openWB/set/mqtt/loadmanager/" in msg.topic:
+            self.loadmanager_topic(msg)
 
     def process_optional_topic(self, msg: mqtt.MQTTMessage):
         """ Handler für die Optionalen-Topics
@@ -1214,3 +1216,19 @@ class SetData:
 
     def _get_ramdisk_path(self) -> Path:
         return Path(__file__).resolve().parents[2]/"ramdisk"
+
+    def loadmanager_topic(self, msg: mqtt.MQTTMessage):
+        """ Handler für die LoadMananger-Topics
+
+         Parameters
+        ----------
+        msg:
+            enthält Topic und Payload
+        """
+        try:
+            if "openWB/set/mqtt/loadmanager/set/loadmanager" in msg.topic:
+                self._validate_value(msg, "json")
+            else:
+                self.__unknown_topic(msg)
+        except Exception:
+            log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
