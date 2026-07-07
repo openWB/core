@@ -17,7 +17,6 @@ control_command_log = logging.getLogger("steuve_control_command")
 def create_io(config: LoadManager):
     received_topics = {}
     broker = None
-    thread_exception = None  # Shared state für Thread-Exceptions
 
     def read():
         broker.start_finite_loop()
