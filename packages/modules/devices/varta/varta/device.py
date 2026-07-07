@@ -143,4 +143,6 @@ def main(argv: List[str]):
                                   "bat_modbus": update_two_batteries, "counter": update_counter}, argv)
 
 
-device_descriptor = DeviceDescriptor(configuration_factory=Varta)
+device_descriptor = DeviceDescriptor(configuration_factory=Varta,
+                                     compatibility_bat_note="Es kann nur eine maximale Entladeleistung vorgegeben werden. "
+                                     "Eine aktive Ladung ist nicht möglich.")
