@@ -7,7 +7,7 @@ from modules.common.component_state import CounterState
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.simcount._simcounter import SimCounter
-from modules.common.store._factory import get_component_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.generic.mqtt.config import MqttCounterSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType

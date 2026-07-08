@@ -16,3 +16,5 @@ def get_component_value_store(component_type: str,
         return get_counter_value_store(component_num, add_child_values, simcounter)
     elif ComponentType.INVERTER.value in component_type:
         return get_inverter_value_store(component_num)
+    else:
+        raise ValueError(f"Unknown component type: {component_type}")
