@@ -170,7 +170,7 @@ UNIT_KEYS_KILO = ("energy_imported",
 
 def convert_legacy_units(data: dict) -> dict:
     for entry in data["entries"]:
-        for group in ("bat", "counter", "cp", "pv", "sh", "hc"):
+        for group in ("bat", "consumer", "counter", "cp", "pv", "sh", "hc"):
             if group in entry:
                 for module in entry[group].keys():
                     try:
@@ -201,7 +201,7 @@ def get_totals(entries: List, process_entries: bool = True) -> Dict:
     """
     if process_entries:
         entries = _process_entries(entries, CalculationType.ENERGY)
-    totals = {"cp": {}, "counter": {}, "pv": {}, "bat": {}, "sh": {}, "hc": {}}
+    totals = {"consumer": {}, "cp": {}, "counter": {}, "pv": {}, "bat": {}, "sh": {}, "hc": {}}
     for totals_group in totals.keys():
         for entry in entries:
             if totals_group in entry:
@@ -564,7 +564,7 @@ def _process_entries(entries: List, calculation: CalculationType):
         if len(entries) == 1:
             # Wenn es nur einen Eintrag gibt, kann keine Differenz berechnet werden und die Werte sind 0.
             entry = entries[0]
-            for type in ("bat", "counter", "cp", "pv", "sh", "hc"):
+            for type in ("bat", "consumer", "counter", "cp", "pv", "sh", "hc"):
                 if type in entry:
                     for module in entry[type].keys():
                         if calculation in [CalculationType.POWER, CalculationType.ALL]:
@@ -589,7 +589,7 @@ def _process_entries(entries: List, calculation: CalculationType):
 
 def process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
     time_diff = next_entry["timestamp"] - entry["timestamp"]
-    for type in ("bat", "counter", "cp", "pv", "sh", "hc"):
+    for type in ("bat", "consumer", "counter", "cp", "pv", "sh", "hc"):
         if type in entry:
             for module in entry[type].keys():
                 try:
