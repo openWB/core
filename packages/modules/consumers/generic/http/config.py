@@ -36,7 +36,7 @@ class HttpConfiguration:
 @auto_str
 class Http(ConsumerSetup[HttpConfiguration]):
     def __init__(self,
-                 name: str = "HTTP",
+                 name: str = "HTTP-Verbraucher",
                  type: str = "http",
                  id: int = 0,
                  configuration: HttpConfiguration = None,
