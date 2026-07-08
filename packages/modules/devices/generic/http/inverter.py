@@ -39,9 +39,6 @@ class HttpInverter(AbstractInverter):
 
     def update(self, session: Session) -> None:
         power = self.__get_power(session)
-        if compatibility.is_ramdisk_in_use():
-            # for compatibility: in 1.x power URL values are positive!
-            power *= -1
         exported = self.__get_exported(session)
         _, exported = self.peak_filter.check_values(power, None, exported)
         if exported is None:

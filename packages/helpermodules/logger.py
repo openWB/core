@@ -333,7 +333,7 @@ def setup_logging() -> None:
     logging.getLogger("uModbus").setLevel(logging.WARNING)
     logging.getLogger("websockets").setLevel(logging.WARNING)
 
-    thread_errors_path = Path(RAMDISK_PATH / "thread_errors.log")
+    thread_errors_path = RAMDISK_PATH / "thread_errors.log"
     with thread_errors_path.open("w") as f:
         f.write("")
 
