@@ -3786,16 +3786,9 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const consumerSumPower = computed(() => {
     return (returnType: string = 'textValue') => {
-      const power = consumerIds.value.reduce((sum, id) => {
-        return (
-          sum +
-          ((getValue.value(
-            `openWB/consumer/${id}/get/power`,
-            undefined,
-            0,
-          ) as number) || 0)
-        );
-      }, 0);
+      const power = getValue.value('openWB/consumer/get/power') as
+        | number
+        | undefined;
       const valueObject = getValueObject.value(power);
       if (Object.hasOwn(valueObject, returnType)) {
         return valueObject[returnType as keyof ValueObject];
