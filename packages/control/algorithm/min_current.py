@@ -21,8 +21,8 @@ class MinCurrent:
             if preferenced_chargepoints:
                 log.info(f"Mode-Tuple {mode_tuple[0]} - {mode_tuple[1]} - {mode_tuple[2]}, Zähler {counter.num}")
                 common.update_raw_data(preferenced_chargepoints, diff_to_zero=True)
-                while len(preferenced_chargepoints):
-                    cp = preferenced_chargepoints[0]
+                for cp, group in data.data.counter_all_data.generator_cps_by_loadmanagement_prios(
+                        preferenced_chargepoints):
                     missing_currents, counts = common.get_min_current(cp)
                     if max(missing_currents) > 0:
                         available_currents, limit = Loadmanagement().get_available_currents(
@@ -52,4 +52,3 @@ class MinCurrent:
                             except Exception:
                                 log.exception(f"Fehler in der PV-gesteuerten Ladung bei {cp.num}")
                         cp.data.set.current = 0
-                    preferenced_chargepoints.pop(0)
