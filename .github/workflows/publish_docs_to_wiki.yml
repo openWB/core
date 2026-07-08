@@ -2,18 +2,18 @@ name: Publish docs to Wiki
 # based on https://nimblehq.co/blog/create-github-wiki-pull-request
 # Trigger this action only if there are changes pushed to the docs/** directory under the main branch
 on:
-  push:
+  pull_request:
+  #push:
     paths:
       - docs/** # This includes all sub folders
-    branches:
-      - master # This can be changed to any branch of your preference
+    # branches:
+    #   - master # This can be changed to any branch of your preference
 
 env:
   WIKI_TOKEN: ${{ secrets.WIKI_ACTION_TOKEN }} # Personal Access Token with repo scope
   USER_NAME: "GitHub Actions" # Enter the username of your (bot) account  
   USER_EMAIL: "actions@github.com" # Enter the e-mail of your (bot) account
-  OWNER: ${{ github.event.repository.owner.name }} # This is the repository owner
-  REPOSITORY_NAME: ${{ github.event.repository.name }} # This is the repository name
+  REPOSITORY: ${{ github.repository }} # owner/repository
 
 jobs:
   publish_docs_to_wiki:
@@ -28,10 +28,11 @@ jobs:
       # 3. Pull old Wiki content
       - name: Pull content from wiki
         run: |
+          [[ -n "$WIKI_TOKEN" ]] || { echo "WIKI_ACTION_TOKEN is empty or not set"; exit 1; }
           mkdir tmp_wiki
           cd tmp_wiki
           git init
-          git pull https://$WIKI_TOKEN@github.com/$OWNER/$REPOSITORY_NAME.wiki.git
+          git pull https://x-access-token:$WIKI_TOKEN@github.com/$REPOSITORY.wiki.git
       # 4. Synchronize differences between `docs` & `tmp_wiki`
       # 5. Push new Wiki content
       - name: Push content to wiki
@@ -42,4 +43,4 @@ jobs:
           git config user.email "$USER_EMAIL"
           git add .
           git commit -m "Update Wiki content" || echo "No changes to commit"
-          git push -f --set-upstream https://$WIKI_TOKEN@github.com/$OWNER/$REPOSITORY_NAME.wiki.git master
+          git push -f --set-upstream https://x-access-token:$WIKI_TOKEN@github.com/$REPOSITORY.wiki.git master
