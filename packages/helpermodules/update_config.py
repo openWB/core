@@ -1,4 +1,4 @@
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 import copy
 from dataclasses import asdict
 import datetime
@@ -59,7 +59,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 139
+    DATASTORE_VERSION = 141
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -3592,3 +3592,57 @@ class UpdateConfig:
             self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/counter/get/loadmanagement_prios", loadmanagement_prios)
         self._append_datastore_version(139)
+
+    def upgrade_datastore_140(self) -> None:
+        payload_yield = self.all_received_topics.get("openWB/general/chargemode_config/pv_charging/feed_in_yield")
+        if payload_yield is not None:
+            self.__update_topic("openWB/general/chargemode_config/feed_in_yield", decode_payload(payload_yield))
+        feed_in_limit = False
+        for topic, payload in self.all_received_topics.items():
+            try:
+                if re.search("openWB/vehicle/template/charge_template/[0-9]+$", topic) is not None:
+                    payload = decode_payload(payload)
+                    if payload["chargemode"]["pv_charging"].get("feed_in_limit") is True:
+                        feed_in_limit = True
+                    payload["chargemode"]["pv_charging"].pop("feed_in_limit", None)
+                    self.__update_topic(topic, payload)
+            except KeyError:
+                log.exception(f"Fehler beim Lesen des feed_in_limit im Fahrzeugtemplate {payload}")
+        self.__update_topic("openWB/general/chargemode_config/pv_charging/feed_in_limit", feed_in_limit)
+        self._append_datastore_version(140)
+
+    def upgrade_datastore_141(self) -> None:
+        def add_consumer_dict(file: str) -> None:
+            try:
+                with open(file, "r+") as jsonFile:
+                    content_raw = jsonFile.read()
+                    try:
+                        content = json.loads(content_raw)
+                    except json.JSONDecodeError:
+                        log.warning(f"Skipping invalid log file (JSON decode failed): {file}")
+                        return
+
+                    entries = content.get("entries")
+                    if not isinstance(entries, list):
+                        log.warning(f"Skipping log file without valid 'entries' list: {file}")
+                        return
+
+                    for entry in entries:
+                        if isinstance(entry, dict) and "consumer" not in entry:
+                            entry.update({"consumer": {}})
+
+                    jsonFile.seek(0)
+                    jsonFile.write(json.dumps(content))
+                    jsonFile.truncate()
+                    log.debug(f"Updated log file with consumer dict: {file}")
+            except OSError:
+                log.warning(f"Skipping log file due to I/O error: {file}")
+            except Exception:
+                log.exception(f"Skipping log file due to unexpected error: {file}")
+
+        files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
+        files.extend(glob.glob(str(self.base_path / "data" / "monthly_log") + "/*"))
+        files.sort()
+        with ThreadPoolExecutor() as executor:
+            executor.map(add_consumer_dict, files)
+        self._append_datastore_version(141)
