@@ -7,7 +7,7 @@ from pathlib import Path
 import re
 import string
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 from control import data
 from helpermodules.broker import BrokerClient
@@ -75,6 +75,17 @@ log = logging.getLogger(__name__)
 #                         "imported": Wh,
 #                         "exported": Wh,
 #                         "soc": int in %
+#                     }
+#                     ... (dynamisch, je nach konfigurierter Anzahl)
+#                 }
+#                 "consumer": {
+#                     "all": {
+#                         "imported": Wh,
+#                         "exported": Wh,
+#                     }
+#                     "consumer0": {
+#                         "imported": Wh,
+#                         "exported": Wh,
 #                     }
 #                     ... (dynamisch, je nach konfigurierter Anzahl)
 #                 }
@@ -293,6 +304,22 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
                 log.exception("Fehler im Werte-Logging-Modul für Speicher "+str(bat))
 
     try:
+        consumer_dict: Dict[str, Dict[str, Union[float, int]]] = {"all": {
+            "imported": data.data.consumer_all_data.data.get.imported,
+            "exported": data.data.consumer_all_data.data.get.exported,
+            "fault_state": data.data.consumer_all_data.data.get.fault_state}}
+    except Exception:
+        log.exception("Fehler im Werte-Logging-Modul für Verbraucher-Daten")
+        consumer_dict = {}
+    for consumer in data.data.consumer_data:
+        try:
+            consumer_dict.update({consumer: {"imported": data.data.consumer_data[consumer].data.get.imported,
+                                             "exported": data.data.consumer_data[consumer].data.get.exported,
+                                             "fault_state": data.data.consumer_data[consumer].data.get.fault_state}})
+        except Exception:
+            log.exception("Fehler im Werte-Logging-Modul für Verbraucher "+str(consumer))
+
+    try:
         hc_dict = {"all": {
             "imported": data.data.counter_all_data.data.set.imported_home_consumption,
             "fault_state": 2 if data.data.counter_all_data.data.set.invalid_home_consumption >= 3 else 0}}
@@ -308,6 +335,7 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
         "counter": counter_dict,
         "pv": pv_dict,
         "bat": bat_dict,
+        "consumer": consumer_dict,
         "sh": sh_log_data.sh_dict,
         "hc": hc_dict
     }
