@@ -17,6 +17,7 @@ from control.chargelog.process_chargelog import get_log_data
 from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
 from control.consumer.consumer_data import GET_DEFAULTS_BY_USAGE, GET_PLAN_CLASS_FOR_USAGE
+from control.consumer.consumer_data import Get as ConsumerGet
 from control.consumer.usage import ConsumerUsage
 from control.counter_all import counter_all
 from control.ev.charge_template import ChargeTemplate, get_new_charge_template
@@ -1169,6 +1170,7 @@ class Command:
         consumer_default["id"] = new_id
         Pub().pub(f'openWB/set/consumer/{new_id}/module', consumer_default)
         Pub().pub(f"openWB/set/consumer/{new_id}/config", dataclass_utils.asdict(ConsumerConfig()))
+        Pub().pub(f"openWB/set/consumer/{new_id}/get", dataclass_utils.asdict(ConsumerGet()))
         Pub().pub(f"openWB/set/consumer/{new_id}/extra_meter", None)
         Pub().pub(f"openWB/set/consumer/{new_id}/usage", None)
         self.max_id_hierarchy = new_id

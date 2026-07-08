@@ -36,7 +36,7 @@ class JsonConfiguration:
 @auto_str
 class Json(ConsumerSetup[JsonConfiguration]):
     def __init__(self,
-                 name: str = "JSON",
+                 name: str = "JSON-Verbraucher",
                  type: str = "json",
                  id: int = 0,
                  configuration: JsonConfiguration = None,
