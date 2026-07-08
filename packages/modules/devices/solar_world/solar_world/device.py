@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import Iterable,  Union
+from typing import Iterable, Union
 
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
