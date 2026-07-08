@@ -295,6 +295,7 @@ class Data:
         log.info(f"general_data\n{self._general_data.data}")
         log.info(f"general_data-display\n{self._general_data.data.extern_display_mode}")
         log.info(f"graph_data\n{self._graph_data.data}")
+        log.info(f"consumer_all_data\n{self._consumer_all_data.data}")
         self._print_dictionaries(self._consumer_data)
         self._print_io_actions(self._io_actions)
         self._print_dictionaries(self._io_states)
