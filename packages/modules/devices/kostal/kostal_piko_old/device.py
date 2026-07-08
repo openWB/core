@@ -6,7 +6,6 @@ from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
-from modules.devices.kostal.kostal_piko_old import inverter
 from modules.devices.kostal.kostal_piko_old.config import (KostalPikoOld,
                                                            KostalPikoOldInverterSetup)
 from modules.devices.kostal.kostal_piko_old.inverter import KostalPikoOldInverter
@@ -32,11 +31,6 @@ def create_device(device_config: KostalPikoOld):
         ),
         component_updater=MultiComponentUpdater(update_components)
     )
-
-
-COMPONENT_TYPE_TO_MODULE = {
-    "inverter": inverter
-}
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=KostalPikoOld)
