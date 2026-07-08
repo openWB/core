@@ -1,29 +1,12 @@
 import logging
 
 from control import data
-from helpermodules import compatibility
 from modules.common.component_state import InverterState
 from modules.common.store import ValueStore
 from modules.common.store._api import LoggingValueStore
 from modules.common.store._broker import pub_to_broker
-from modules.common.store.ramdisk import files
 
 log = logging.getLogger(__name__)
-
-
-class InverterValueStoreRamdisk(ValueStore[InverterState]):
-    def __init__(self, component_num: int) -> None:
-        self.__pv = files.pv[component_num - 1]
-
-    def set(self, inverter_state: InverterState):
-        self.__pv.power.write(int(inverter_state.power))
-        if inverter_state.exported is not None:
-            self.__pv.energy.write(inverter_state.exported)
-            self.__pv.energy_k.write(inverter_state.exported / 1000)
-        else:
-            log.debug("Kein gültiger Zählerstand. Wert wird nicht aktualisiert.")
-        if inverter_state.currents:
-            self.__pv.currents.write(inverter_state.currents)
 
 
 class InverterValueStoreBroker(ValueStore[InverterState]):
@@ -88,6 +71,4 @@ class PurgeInverterState:
 
 
 def get_inverter_value_store(component_num: int) -> PurgeInverterState:
-    return PurgeInverterState(LoggingValueStore(
-        (InverterValueStoreRamdisk if compatibility.is_ramdisk_in_use() else InverterValueStoreBroker)(component_num)
-    ))
+    return PurgeInverterState(LoggingValueStore(InverterValueStoreBroker(component_num)))

@@ -3,7 +3,6 @@ from typing import TypedDict, Any
 
 from requests import Session
 
-from helpermodules import compatibility
 from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
@@ -39,9 +38,6 @@ class HttpInverter(AbstractInverter):
 
     def update(self, session: Session) -> None:
         power = self.__get_power(session)
-        if compatibility.is_ramdisk_in_use():
-            # for compatibility: in 1.x power URL values are positive!
-            power *= -1
         exported = self.__get_exported(session)
         _, exported = self.peak_filter.check_values(power, None, exported)
         if exported is None:

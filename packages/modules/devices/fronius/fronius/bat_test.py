@@ -1,24 +1,15 @@
 from unittest.mock import Mock
 
-import pytest
 import requests_mock
 
 from dataclass_utils import dataclass_from_dict
-from helpermodules import compatibility
 from modules.common.store._api import LoggingValueStore
 from modules.conftest import SAMPLE_IP
 from modules.devices.fronius.fronius import bat
 from modules.devices.fronius.fronius.config import FroniusBatSetup, FroniusConfiguration
-from test_utils.mock_ramdisk import MockRamdisk
 
 
-@pytest.fixture
-def mock_ramdisk(monkeypatch):
-    monkeypatch.setattr(compatibility, "is_ramdisk_in_use", lambda: True)
-    return MockRamdisk(monkeypatch)
-
-
-def test_update(monkeypatch, requests_mock: requests_mock.Mocker, mock_ramdisk, mock_simcount):
+def test_update(monkeypatch, requests_mock: requests_mock.Mocker, mock_simcount):
     component_config = FroniusBatSetup()
     device_config = FroniusConfiguration()
     device_config.ip_address = SAMPLE_IP

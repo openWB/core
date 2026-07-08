@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 import logging
-from typing import Iterable, Optional, List, Union
+from typing import Iterable, Union
 
-from helpermodules.cli import run_using_positional_cli_args
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
 from modules.devices.fems.fems import bat, counter, inverter
-from modules.devices.fems.fems.config import Fems, FemsBatSetup, FemsConfiguration, FemsCounterSetup, FemsInverterSetup
+from modules.devices.fems.fems.config import Fems, FemsBatSetup, FemsCounterSetup, FemsInverterSetup
 
 log = logging.getLogger(__name__)
 
@@ -44,41 +43,6 @@ def create_device(device_config: Fems):
         ),
         component_updater=MultiComponentUpdater(update_components)
     )
-
-
-COMPONENT_TYPE_TO_MODULE = {
-    "bat": bat,
-    "counter": counter,
-    "inverter": inverter,
-}
-
-
-def read_legacy(component_type: str,
-                ip_address: str,
-                password: str,
-                bat_num: Optional[int] = None,
-                num: Optional[int] = None) -> None:
-    dev = create_device(Fems(configuration=FemsConfiguration(ip_address=ip_address, password=password)))
-    if component_type in COMPONENT_TYPE_TO_MODULE:
-        component_config = COMPONENT_TYPE_TO_MODULE[component_type].component_descriptor.configuration_factory()
-    else:
-        raise Exception(
-            "illegal component type " + component_type + ". Allowed values: " +
-            ','.join(COMPONENT_TYPE_TO_MODULE.keys())
-        )
-    component_config.id = num
-    if component_type == "bat":
-        component_config.configuration.num = bat_num + 1
-    dev.add_component(component_config)
-
-    log.debug('Fems IP-Adresse: ' + ip_address)
-    log.debug('Fems Password: ' + password)
-
-    dev.update()
-
-
-def main(argv: List[str]) -> None:
-    run_using_positional_cli_args(read_legacy, argv)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=Fems)

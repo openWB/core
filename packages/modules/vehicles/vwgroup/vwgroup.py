@@ -5,7 +5,7 @@ from json import dumps
 import logging
 from time import mktime, time
 from typing import Union
-from modules.common.store import RAMDISK_PATH
+from helpermodules.constants import RAMDISK_PATH
 from modules.vehicles.vwgroup.socutils import socUtils
 
 date_fmt = '%Y-%m-%d %H:%M:%S'

@@ -7,7 +7,7 @@ import requests
 from requests import HTTPError
 
 from modules.common.req import get_http_session
-from modules.common.store import RAMDISK_PATH
+from helpermodules.constants import RAMDISK_PATH
 
 COOKIE_FILE = RAMDISK_PATH / "powerwall_cookie.txt"
 log = logging.getLogger(__name__)

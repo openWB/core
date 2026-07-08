@@ -1,7 +1,10 @@
 from enum import Enum
+from pathlib import Path
 
 
 NO_ERROR = "Kein Fehler."
+
+RAMDISK_PATH = Path(__file__).resolve().parents[2] / "ramdisk"
 
 
 class DEFAULT_COLORS(Enum):

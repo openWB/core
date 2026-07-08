@@ -8,12 +8,6 @@ from modules.devices.lg.lg import bat, counter, inverter
 from modules.devices.lg.lg import device
 from modules.devices.lg.lg.device import create_device
 from modules.devices.lg.lg.config import LG, LgConfiguration
-from test_utils.mock_ramdisk import MockRamdisk
-
-
-@pytest.fixture
-def mock_ramdisk(monkeypatch):
-    return MockRamdisk(monkeypatch)
 
 
 @pytest.fixture

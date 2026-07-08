@@ -12,7 +12,7 @@ from typing import Union
 
 import logging
 from modules.common.component_state import CarState
-from modules.common.store import RAMDISK_PATH
+from helpermodules.constants import RAMDISK_PATH
 
 log = logging.getLogger(__name__)
 
@@ -297,7 +297,7 @@ def loadToken(user_id: str, password: str, vehicle: int) -> dict:
         log.exception("kia.loadToken: token file error: ")
         token = {
             "userHash": ""
-            }
+        }
         pass
 
     try:
@@ -311,7 +311,7 @@ def loadToken(user_id: str, password: str, vehicle: int) -> dict:
                 "refreshToken": "",
                 "gcmClientId": "",
                 "tokenType": ""
-                }
+            }
     except Exception:
         log.exception("kia.loadToken: token error")
         raise
@@ -338,10 +338,10 @@ def getCookies(brand: str) -> dict:
 
     try:
         url = getString("base_url", brand) + \
-              '/api/v1/user/oauth2/authorize?' + \
-              'response_type=code&state=test&client_id=' + \
-              getString("client_id", brand) + '&redirect_uri=' + \
-              getString("base_url", brand) + '/api/v1/user/oauth2/redirect'
+            '/api/v1/user/oauth2/authorize?' + \
+            'response_type=code&state=test&client_id=' + \
+            getString("client_id", brand) + '&redirect_uri=' + \
+            getString("base_url", brand) + '/api/v1/user/oauth2/redirect'
         cookies = getHTTPCookies(url)
 
         url = getString("base_url", brand) + '/api/v1/user/session'
@@ -377,7 +377,7 @@ def getDeviceId(brand: str) -> dict:
             "pushRegId": getString("gcm_sender_id", brand),
             "pushType": "GCM",
             "uuid": str(uuid.uuid4())
-            }
+        }
         headers = {
             'Authorization': '',
             'Ccsp-Device-Id': '',
@@ -394,7 +394,7 @@ def getDeviceId(brand: str) -> dict:
             'Accept-Encoding': 'gzip, deflate',
             'User-Agent': 'okhttp/3.12.12',
             'Stamp': getStamp(brand)
-            }
+        }
         response = postHTTP(url=url, data=data, headers=headers)
 
         response_dict = json.loads(response)
@@ -417,7 +417,7 @@ def getDeviceId(brand: str) -> dict:
             "phoneType": 'SM-G988N',
             "osType": 'android',
             "osVer": '7.1.2'
-            }
+        }
         headers = {
             'Ccsp-Device-Id': token["deviceId"],
             'Ccsp-Service-Id': getString("client_id", brand),
@@ -433,7 +433,7 @@ def getDeviceId(brand: str) -> dict:
             'Accept-Encoding': 'gzip, deflate',
             'User-Agent': 'okhttp/3.12.12',
             'Stamp': getStamp(brand)
-            }
+        }
         response = postHTTP(url=url, data=data, headers=headers)
     except Exception:
         log.exception("kia.getDeviceId: Set version info failed: " +
@@ -485,7 +485,7 @@ def getAuthCode(username: str, password: str, brand: str,
                           'Build/JRO03C) AppleWebKit/535.19 (KHTML, ' +
                           'like Gecko) Chrome/18.0.1025.166 Mobile ' +
                           'Safari/535.19_CCS_APP_AOS'
-            }
+        }
         cookies['AUTH_SESSION_ID'] = last_cookies['AUTH_SESSION_ID']
         response = postHTTP(url=url, data=data, headers=headers,
                             cookies=cookies, allow_redirects=False)
@@ -536,7 +536,7 @@ def getAuthToken(auth_code: str, token: dict, brand: str) -> dict:
             'Accept-Encoding': 'gzip, deflate',
             'User-Agent': 'okhttp/3.12.12',
             'Stamp': getStamp(brand)
-            }
+        }
         response = postHTTP(url=url, headers=headers, data=data)
 
         access_token = json.loads(response)
@@ -558,7 +558,7 @@ def registerDevice(token: dict, brand: str) -> None:
 
     try:
         url = getString("base_url", brand) + '/api/v1/spa/notifications/' + \
-                        token["deviceId"] + '/register'
+            token["deviceId"] + '/register'
         data = {}
         headers = {
             'Authorization': token["tokenType"] + ' ' + token["accessToken"],
@@ -575,7 +575,7 @@ def registerDevice(token: dict, brand: str) -> None:
             'Accept-Encoding': 'gzip, deflate',
             'User-Agent': 'okhttp/3.12.12',
             'Stamp': getStamp(brand)
-            }
+        }
         response = postHTTP(url=url, data=data, headers=headers)
     except Exception:
         log.exception("kia.getAuthToken: Login failed: " + response)
@@ -627,7 +627,7 @@ def refreshToken(token: dict, brand: str) -> dict:
             'Accept-Encoding': 'gzip, deflate',
             'User-Agent': 'okhttp/3.12.12',
             'Stamp': getStamp(brand)
-            }
+        }
 
         response = postHTTP(url=url, headers=headers, data=data)
 
@@ -660,7 +660,7 @@ def getControlToken(pin: str, token: dict, brand: str) -> str:
             'Connection': 'close',
             'Accept-Encoding': 'gzip, deflate',
             'User-Agent': 'okhttp/3.12.12'
-            }
+        }
         response = putHTTP(url=url, data=data, headers=headers)
 
         response_dict = json.loads(response)
@@ -697,7 +697,7 @@ def getVehicleId(vin: str, token: dict, brand: str) -> str:
             'Accept-Encoding': 'gzip, deflate',
             'User-Agent': 'okhttp/3.12.12',
             'Stamp': getStamp(brand)
-            }
+        }
         response = getHTTP(url=url, headers=headers)
 
         vehicle_id = ""
@@ -726,7 +726,7 @@ def doPrewakeup(vehicle_id: str, token: dict, brand: str) -> None:
 
     try:
         url = getString("base_url", brand) + '/api/v1/spa/vehicles/' +\
-              vehicle_id + '/control/engine'
+            vehicle_id + '/control/engine'
         data = {"action": "prewakeup", "deviceId": token["deviceId"]}
         headers = {
             'Authorization': token["tokenType"] + ' ' + token["accessToken"],
@@ -741,7 +741,7 @@ def doPrewakeup(vehicle_id: str, token: dict, brand: str) -> None:
             'Accept-Encoding': 'gzip, deflate',
             'User-Agent': 'okhttp/3.12.12',
             'Stamp': getStamp(brand)
-            }
+        }
         response = postHTTP(url=url, data=data, headers=headers, timeout=125)
     except Exception:
         log.exception("kia.doPrewakeup: error: " + response)
@@ -756,7 +756,7 @@ def getStatusFull(vehicle_id: str, control_token: str,
 
     try:
         url = getString("base_url", brand) + '/api/v2/spa/vehicles/' + \
-              vehicle_id + '/ccs2/carstatus'
+            vehicle_id + '/ccs2/carstatus'
         headers = {
             'Authorization': control_token,
             'Ccsp-Device-Id': token["deviceId"],
@@ -771,7 +771,7 @@ def getStatusFull(vehicle_id: str, control_token: str,
             'Accept-Encoding': 'gzip, deflate',
             'User-Agent': 'okhttp/3.12.12',
             'Stamp': getStamp(brand)
-            }
+        }
         response = getHTTP(url=url, headers=headers, timeout=125)
     except Exception:
         log.exception("kia.getStatusFull: triggering update error: " +
@@ -785,7 +785,7 @@ def getStatusFull(vehicle_id: str, control_token: str,
 
     try:
         url = getString("base_url", brand) + '/api/v1/spa/vehicles/' + \
-              vehicle_id + '/ccs2/carstatus/latest'
+            vehicle_id + '/ccs2/carstatus/latest'
         headers = {
             'Authorization': token["tokenType"] + ' ' + token["accessToken"],
             'Ccsp-Device-Id': token["deviceId"],
@@ -800,7 +800,7 @@ def getStatusFull(vehicle_id: str, control_token: str,
             'Accept-Encoding': 'gzip, deflate',
             'User-Agent': 'okhttp/3.12.12',
             'Stamp': getStamp(brand)
-            }
+        }
         response = getHTTP(url=url, headers=headers)
         response_dict = json.loads(response)
 
