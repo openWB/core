@@ -9,7 +9,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount import SimCounter
-from modules.common.store import get_inverter_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.huawei.huawei.config import HuaweiInverterSetup
 from modules.devices.huawei.huawei.type import HuaweiType
 from modules.common.component_type import ComponentType
@@ -32,8 +32,8 @@ class HuaweiInverter(AbstractInverter):
         self.modbus_id: int = self.kwargs['modbus_id']
         self.type: HuaweiType = self.kwargs['type']
         self.client: ModbusTcpClient_ = self.kwargs['client']
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
-        self.store = get_inverter_value_store(self.component_config.id)
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, self.component_config.type)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
