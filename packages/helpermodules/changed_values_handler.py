@@ -81,6 +81,8 @@ class ChangedValuesHandler:
             self._update_value("openWB/set/bat/", self.prev_data.bat_all_data.data, data.data.bat_all_data.data)
             self._update_value("openWB/set/chargepoint/", self.prev_data.cp_all_data.data.get,
                                data.data.cp_all_data.data.get)
+            self._update_value("openWB/set/consumer/", self.prev_data.consumer_all_data.data,
+                               data.data.consumer_all_data.data)
             self._update_value("openWB/set/counter/", self.prev_data.counter_all_data.data,
                                data.data.counter_all_data.data)
             self._update_value("openWB/set/optional/", self.prev_data.optional_data.data,

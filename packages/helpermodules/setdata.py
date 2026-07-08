@@ -1262,7 +1262,9 @@ class SetData:
                   re.search("consumer/[0-9]+/get/powers$", msg.topic) is not None or
                   re.search("consumer/[0-9]+/get/temperatures$", msg.topic) is not None):
                 self._validate_value(msg, float, collection=list)
-            elif (re.search("consumer/[0-9]+/get/imported$", msg.topic) is not None or
+            elif (re.search("consumer/[0-9]+/get/exported$", msg.topic) is not None or
+                  re.search("consumer/[0-9]+/get/imported$", msg.topic) is not None or
+                  re.search("consumer/[0-9]+/get/daily_exported$", msg.topic) is not None or
                   re.search("consumer/[0-9]+/get/daily_imported$", msg.topic) is not None or
                   re.search("consumer/[0-9]+/get/timestamp_last_current_set$", msg.topic) is not None):
                 self._validate_value(msg, float, [(0, float("inf"))])

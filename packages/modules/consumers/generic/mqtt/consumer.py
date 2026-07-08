@@ -34,6 +34,7 @@ def create_consumer(config: Mqtt):
             return ConsumerState(
                 power=received_topics[f"{topic_prefix}power"],
                 imported=received_topics[f"{topic_prefix}imported"],
+                exported=received_topics[f"{topic_prefix}exported"],
                 powers=parse_received_topics("powers"),
                 voltages=parse_received_topics("voltages"),
                 currents=received_topics[f"{topic_prefix}currents"],

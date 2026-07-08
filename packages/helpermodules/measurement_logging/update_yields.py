@@ -15,7 +15,7 @@ def update_daily_yields(entries):
     """
     try:
         totals = get_totals(entries)
-        [update_module_yields(type, totals) for type in ("bat", "counter", "cp", "pv")]
+        [update_module_yields(type, totals) for type in ("bat", "consumer", "counter", "cp", "pv")]
         data.data.counter_all_data.data.set.daily_yield_home_consumption = totals["hc"]["all"]["energy_imported"]
     except Exception:
         log.exception("Fehler beim Veröffentlichen der Tageserträge.")

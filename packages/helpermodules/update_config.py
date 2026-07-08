@@ -1,4 +1,4 @@
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 import copy
 from dataclasses import asdict
 import datetime
@@ -59,7 +59,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 135
+    DATASTORE_VERSION = 136
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -3510,3 +3510,39 @@ class UpdateConfig:
                 log.exception(f"Fehler beim Lesen des feed_in_limit im Fahrzeugtemplate {payload}")
         self.__update_topic("openWB/general/chargemode_config/pv_charging/feed_in_limit", feed_in_limit)
         self._append_datastore_version(135)
+
+    def upgrade_datastore_136(self) -> None:
+        def add_consumer_dict(file: str) -> None:
+            try:
+                with open(file, "r+") as jsonFile:
+                    content_raw = jsonFile.read()
+                    try:
+                        content = json.loads(content_raw)
+                    except json.JSONDecodeError:
+                        log.warning(f"Skipping invalid log file (JSON decode failed): {file}")
+                        return
+
+                    entries = content.get("entries")
+                    if not isinstance(entries, list):
+                        log.warning(f"Skipping log file without valid 'entries' list: {file}")
+                        return
+
+                    for entry in entries:
+                        if isinstance(entry, dict) and "consumer" not in entry:
+                            entry.update({"consumer": {}})
+
+                    jsonFile.seek(0)
+                    jsonFile.write(json.dumps(content))
+                    jsonFile.truncate()
+                    log.debug(f"Updated log file with consumer dict: {file}")
+            except OSError:
+                log.warning(f"Skipping log file due to I/O error: {file}")
+            except Exception:
+                log.exception(f"Skipping log file due to unexpected error: {file}")
+
+        files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
+        files.extend(glob.glob(str(self.base_path / "data" / "monthly_log") + "/*"))
+        files.sort()
+        with ThreadPoolExecutor() as executor:
+            executor.map(add_consumer_dict, files)
+        self._append_datastore_version(136)
