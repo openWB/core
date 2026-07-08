@@ -2,12 +2,18 @@ name: Publish docs to Wiki
 # based on https://nimblehq.co/blog/create-github-wiki-pull-request
 # Trigger this action only if there are changes pushed to the docs/** directory under the main branch
 on:
-  pull_request:
-  #push:
+  push:
     paths:
       - docs/** # This includes all sub folders
-    # branches:
-    #   - master # This can be changed to any branch of your preference
+    branches:
+      - master # Publish wiki on merge to master
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Run sync and commit checks without pushing to wiki"
+        required: true
+        default: true
+        type: boolean
 
 env:
   WIKI_TOKEN: ${{ secrets.WIKI_ACTION_TOKEN }} # Personal Access Token with repo scope
@@ -36,6 +42,7 @@ jobs:
       # 4. Synchronize differences between `docs` & `tmp_wiki`
       # 5. Push new Wiki content
       - name: Push content to wiki
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run == false }}
         run: |
           rsync -av --delete docs/ tmp_wiki/ --exclude .git
           cd tmp_wiki
@@ -44,3 +51,16 @@ jobs:
           git add .
           git commit -m "Update Wiki content" || echo "No changes to commit"
           git push -f --set-upstream https://x-access-token:$WIKI_TOKEN@github.com/$REPOSITORY.wiki.git master
+
+      - name: Dry-run summary
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == true }}
+        run: |
+          rsync -av --delete docs/ tmp_wiki/ --exclude .git
+          cd tmp_wiki
+          git add .
+          if git diff --cached --quiet; then
+            echo "Dry-run: no wiki changes detected."
+          else
+            echo "Dry-run: wiki changes detected and staged (no push performed)."
+            git status --short
+          fi
