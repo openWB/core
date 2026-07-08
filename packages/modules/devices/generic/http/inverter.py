@@ -3,7 +3,6 @@ from typing import TypedDict, Any
 
 from requests import Session
 
-from helpermodules import compatibility
 from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
