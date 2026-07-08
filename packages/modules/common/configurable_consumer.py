@@ -68,7 +68,9 @@ class ConfigurableConsumer(Generic[T_CONSUMER]):
             if self.module_updater is not None:
                 consumer_state = self.module_updater()
                 imported, exported = self.peak_filter.check_values(
-                    consumer_state.power, consumer_state.imported, consumer_state.exported)
+                    consumer_state.power,
+                    consumer_state.imported,
+                    consumer_state.exported if consumer_state.exported is not None else 0)
                 if imported != consumer_state.imported or exported != consumer_state.exported:
                     consumer_state.imported = imported
                     consumer_state.exported = exported
