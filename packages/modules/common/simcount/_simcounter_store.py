@@ -29,7 +29,7 @@ class SimCounterStoreBroker:
 
 def restore_last_energy(topic: str, value: str, component_type: ComponentType):
     try:
-        module_type = type_to_topic_mapping(component_type)
+        module_type = type_to_topic_mapping(component_type.value)
         module = getattr(data.data, f"{module_type}_data")[f"{module_type}{get_second_index(topic)}"].data.get
         return getattr(module, value)
     except AttributeError:
