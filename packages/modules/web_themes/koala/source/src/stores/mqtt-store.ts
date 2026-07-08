@@ -3780,6 +3780,34 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
+   * Get the summed power of all consumers.
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject
+   */
+  const consumerSumPower = computed(() => {
+    return (returnType: string = 'textValue') => {
+      const power = consumerIds.value.reduce((sum, id) => {
+        return (
+          sum +
+          ((getValue.value(
+            `openWB/consumer/${id}/get/power`,
+            undefined,
+            0,
+          ) as number) || 0)
+        );
+      }, 0);
+      const valueObject = getValueObject.value(power);
+      if (Object.hasOwn(valueObject, returnType)) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject;
+      }
+      console.error('returnType not found!', returnType, power);
+    };
+  });
+
+  /**
    * Get the running time (on_time, in seconds) of a consumer since it last
    * started. Resets when the device stops drawing current.
    * @param consumerId consumer id
@@ -4521,6 +4549,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     consumerIds,
     consumerName,
     consumerPower,
+    consumerSumPower,
     consumerOnTime,
     consumerStateStr,
     consumerFaultState,
