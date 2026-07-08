@@ -1,4 +1,4 @@
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 import copy
 import datetime
 import glob
@@ -58,7 +58,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 141
+    DATASTORE_VERSION = 142
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -3642,3 +3642,39 @@ class UpdateConfig:
                 loadmanagement_prios.append({"type": "group", "children": grouped_vehicles})
         self.__update_topic("openWB/counter/get/loadmanagement_prios", loadmanagement_prios)
         self._append_datastore_version(141)
+
+    def upgrade_datastore_142(self) -> None:
+        def add_consumer_dict(file: str) -> None:
+            try:
+                with open(file, "r+") as jsonFile:
+                    content_raw = jsonFile.read()
+                    try:
+                        content = json.loads(content_raw)
+                    except json.JSONDecodeError:
+                        log.warning(f"Skipping invalid log file (JSON decode failed): {file}")
+                        return
+
+                    entries = content.get("entries")
+                    if not isinstance(entries, list):
+                        log.warning(f"Skipping log file without valid 'entries' list: {file}")
+                        return
+
+                    for entry in entries:
+                        if isinstance(entry, dict) and "consumer" not in entry:
+                            entry.update({"consumer": {}})
+
+                    jsonFile.seek(0)
+                    jsonFile.write(json.dumps(content))
+                    jsonFile.truncate()
+                    log.debug(f"Updated log file with consumer dict: {file}")
+            except OSError:
+                log.warning(f"Skipping log file due to I/O error: {file}")
+            except Exception:
+                log.exception(f"Skipping log file due to unexpected error: {file}")
+
+        files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
+        files.extend(glob.glob(str(self.base_path / "data" / "monthly_log") + "/*"))
+        files.sort()
+        with ThreadPoolExecutor() as executor:
+            executor.map(add_consumer_dict, files)
+        self._append_datastore_version(142)
