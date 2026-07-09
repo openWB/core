@@ -4,12 +4,16 @@ from unittest.mock import Mock
 import pytest
 from control import data
 from control.chargepoint.chargepoint import Chargepoint
+from control.chargepoint.chargepoint_template import CpTemplate
+from control.ev.ev import Ev
 
 
 @pytest.fixture()
 def mock_data() -> None:
     data.data_init(Mock())
     data.data.cp_data["cp1"] = Chargepoint(1, None)
+    data.data.cp_data["cp1"].template = CpTemplate()
+    data.data.cp_data["cp1"].chargepoint_module = Mock()
     data.data.cp_data["cp1"].data.get.rfid = "1234"
 
 
@@ -39,6 +43,9 @@ def test_link_rfid_to_cp(partner_id: Optional[int],
     cp.data.set.plug_time = cp0_plug_time
     data.data.cp_data["cp1"].data.get.plug_state = cp1_plug_state
     data.data.cp_data["cp1"].data.set.plug_time = cp1_plug_time
+    data.data.cp_data["cp1"].data.config.ev = 1
+    data.data.ev_data["ev1"] = Ev(1)
+
     mock_find_duo_partner = Mock(return_value=partner_id)
     monkeypatch.setattr(Chargepoint, "find_duo_partner", mock_find_duo_partner)
 
