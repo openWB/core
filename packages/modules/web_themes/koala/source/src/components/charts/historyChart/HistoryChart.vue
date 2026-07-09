@@ -375,6 +375,29 @@ const lineChartData = computed(() => {
     );
   }
   datasets.push(...chargePointDatasets.value);
+  if (mqttStore.consumerIds.length > 0) {
+    const baseColor = getGlobalColor('--q-consumer');
+    datasets.push({
+      label: 'Verbraucher ges.',
+      category: 'component',
+      unit: 'kW',
+      borderColor: baseColor,
+      backgroundColor: hexColorToRgba(baseColor, 0.1),
+      data: selectedData.value.map(
+        (item) =>
+          ({
+            x: item.timestamp * 1000,
+            y: item['consumer-all'],
+          }) as Point,
+      ),
+      borderWidth: 2,
+      pointRadius: 0,
+      pointHoverRadius: 4,
+      pointHitRadius: 5,
+      fill: true,
+      yAxisID: 'y',
+    });
+  }
   datasets.push(...vehicleDatasets.value);
   return {
     labels: chartLabels.value,

@@ -218,6 +218,7 @@ export interface GraphDataPoint {
   grid: number;
   'house-power': number;
   'charging-all': number;
+  'consumer-all': number;
   'pv-all': number;
   'bat-all-power': number;
   'bat-all-soc': number;
