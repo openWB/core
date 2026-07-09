@@ -20,7 +20,7 @@ def create_io(config: LoadManager):
 
     def read():
         broker.start_finite_loop()
-        log.debug(f"Empfange MQTT Daten für LoadManager {config.id}: {received_topics}")
+        log.debug(f"Empfange MQTT Daten für Lastmanager {config.id}: {received_topics}")
         io_state = IoState()
         io_state.analog_input = getattr(io_state, "analog_input", None) or {}
         io_state.analog_output = getattr(io_state, "analog_output", None) or {}

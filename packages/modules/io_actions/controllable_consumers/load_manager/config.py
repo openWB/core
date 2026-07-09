@@ -12,12 +12,12 @@ class LoadManagerConfig:
     # [{"type": "cp", "id": 0},
     # {"type": "io", "id": 1, "digital_output": "SofortLa"}]
     max_import_power: int = 0
-    fixed_import_power: float = 0  # don't show in UI
+    max_power_on_failure: float = 0
 
 
 class LoadManagerSetup:
     def __init__(self,
-                 name: str = "Dimmen per Loadmanager",
+                 name: str = "Begrenzung per Lastmanager",
                  type: str = "load_manager",
                  id: int = 0,
                  configuration: LoadManagerConfig = None):

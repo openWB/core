@@ -189,11 +189,11 @@ class Loadmanagement:
                            available_currents: List[float],
                            cp: Chargepoint) -> Tuple[List[float], LoadmanagementLimit]:
 
-        loadmanager_power_left, limit = data.data.io_actions.dimming_load_manager({"type": "cp", "id": cp.num})
+        loadmanager_power_left, limit = data.data.io_actions.limit_loadmanager({"type": "cp", "id": cp.num})
         if loadmanager_power_left is not None:
             if sum(available_currents)*230 > loadmanager_power_left:
                 phases = 3-available_currents.count(0)
                 overload_per_phase = (sum(available_currents) - loadmanager_power_left/230)/phases
                 available_currents = [c - overload_per_phase if c > 0 else 0 for c in available_currents]
-                log.debug(f"Reduzierung der Ströme durch den LoadManager: {available_currents}A")
+                log.debug(f"Reduzierung der Ströme durch den Lastmanager: {available_currents}A")
         return available_currents, limit

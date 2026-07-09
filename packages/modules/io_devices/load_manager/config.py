@@ -24,7 +24,7 @@ def init_output():
 
 class LoadManager(IoDeviceSetup[LoadManagerConfiguration]):
     def __init__(self,
-                 name: str = "OpenWB LoadManager",
+                 name: str = "openWB Lastmanager",
                  type: str = "load_manager",
                  id: Union[int, str] = 0,
                  configuration: LoadManagerConfiguration = None,
