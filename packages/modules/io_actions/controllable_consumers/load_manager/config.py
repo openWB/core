@@ -13,6 +13,7 @@ class LoadManagerConfig:
     # {"type": "io", "id": 1, "digital_output": "SofortLa"}]
     max_import_power: int = 0
     max_power_on_failure: float = 0
+    max_current_on_failure: float = 0
 
 
 class LoadManagerSetup:

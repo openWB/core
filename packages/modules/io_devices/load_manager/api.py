@@ -2,6 +2,7 @@
 
 import logging
 
+from helpermodules import timecheck
 from helpermodules.broker import BrokerClient
 from helpermodules.utils.topic_parser import decode_payload
 from modules.common.abstract_device import DeviceDescriptor
@@ -29,9 +30,16 @@ def create_io(config: LoadManager):
 
         if received_topics.get("openWB/mqtt/loadmanager/set/loadmanager"):
             payload = received_topics["openWB/mqtt/loadmanager/set/loadmanager"]
+
+            timestamp = float(payload["timestamp"])
+            if timestamp > 1e10:
+                timestamp /= 1000
+            if timecheck.create_timestamp() - timestamp > 60:
+                raise Exception(f"Lastmanager-Daten sind veraltet (Timestamp: {timestamp}).")
+
             io_state.analog_input.update({AnalogInputMapping.MAX_POWER.name: payload["max_power"]})
             io_state.analog_input.update({AnalogInputMapping.MAX_CURRENT.name: payload["max_current"]})
-            io_state.analog_input.update({AnalogInputMapping.TIMESTAMP.name: payload["timestamp"]})
+            io_state.analog_input.update({AnalogInputMapping.TIMESTAMP.name: timestamp})
         return io_state
 
     def initializer():

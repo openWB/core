@@ -11,23 +11,26 @@ from modules.io_devices.load_manager.config import AnalogInputMapping
 from modules.common.abstract_device import DeviceDescriptor
 
 log = logging.getLogger(__name__)
-control_command_log = logging.getLogger("steuve_control_command")
 
 
 class DimmingLoadManager(AbstractIoAction):
     def __init__(self, config: LoadManagerSetup):
         self.config = config
         self.import_power_left = None
-        control_command_log.info("Begrenzung per Lastmanager.")
         super().__init__()
 
     def setup(self) -> None:
         if check_fault_state_io_device(self.config.configuration.io_device):
             max_power = self.config.configuration.max_power_on_failure
+            max_current = self.config.configuration.max_current_on_failure
         else:
             max_power = data.data.io_states[f"io_states{self.config.configuration.io_device}"
                                             ].data.get.analog_input[AnalogInputMapping.MAX_POWER.name]
+            max_current = data.data.io_states[f"io_states{self.config.configuration.io_device}"
+                                              ].data.get.analog_input[AnalogInputMapping.MAX_CURRENT.name]
         self.import_power_left = max_power
+
+        # Wie verrechne ich power und current?
 
     def loadmanager_get_import_power_left(self) -> Tuple[Optional[float], LoadmanagementLimit]:
         if check_fault_state_io_device(self.config.configuration.io_device):
