@@ -96,6 +96,7 @@ class TestValidateTariffTimes:
                         "active_times": {
                             "dates": [("01-01", "31-12")],
                             "times": [("08:00", "12:00")],
+                            "weekdays": [0, 1, 2, 3, 4, 5, 6],
                         },
                     },
                     {
@@ -104,6 +105,7 @@ class TestValidateTariffTimes:
                         "active_times": {
                             "dates": [("01-01", "31-12")],
                             "times": [("14:00", "18:00")],
+                            "weekdays": [0, 1, 2, 3, 4, 5, 6],
                         },
                     },
                 ],
@@ -119,6 +121,7 @@ class TestValidateTariffTimes:
                         "active_times": {
                             "dates": [("01-01", "31-12")],
                             "times": [("08:00", "12:00")],
+                            "weekdays": [0, 1, 2, 3, 4, 5, 6],
                         },
                     },
                     {
@@ -127,6 +130,7 @@ class TestValidateTariffTimes:
                         "active_times": {
                             "dates": [("01-01", "31-12")],
                             "times": [("12:00", "14:00")],
+                            "weekdays": [0, 1, 2, 3, 4, 5, 6],
                         },
                     },
                 ],
@@ -216,6 +220,7 @@ class TestFetch:
                         "active_times": {
                             "dates": [("01-01", "31-12")],
                             "times": [("00:00", "24:00")],
+                            "weekdays": [0, 1, 2, 3, 4, 5, 6],
                         },
                     }
                 ],
@@ -232,6 +237,7 @@ class TestFetch:
                         "active_times": {
                             "dates": [("01-01", "31-12")],
                             "times": [("00:00", "24:00")],
+                            "weekdays": [0, 1, 2, 3, 4, 5, 6],
                         },
                     }
                 ],
@@ -273,6 +279,7 @@ class TestFetch:
                         "active_times": {
                             "dates": [("01-01", "31-12")],
                             "times": [("00:00", "24:00")],
+                            "weekdays": [0, 1, 2, 3, 4, 5, 6],
                         },
                     }
                 ],
@@ -323,6 +330,7 @@ class TestCreateElectricityTariff:
                         "active_times": {
                             "dates": [("01-01", "31-12")],
                             "times": [("00:00", "24:00")],
+                            "weekdays": [0, 1, 2, 3, 4, 5, 6],
                         },
                     }
                 ],
@@ -339,6 +347,7 @@ class TestCreateElectricityTariff:
                         "active_times": {
                             "dates": [("01-01", "31-12")],
                             "times": [("00:00", "24:00")],
+                            "weekdays": [0, 1, 2, 3, 4, 5, 6],
                         },
                     }
                 ],
@@ -354,6 +363,7 @@ class TestCreateElectricityTariff:
                         "active_times": {
                             "dates": [("01-01", "01-01")],
                             "times": [("00:00", "00:00")],
+                            "weekdays": [0, 1, 2, 3, 4, 5, 6],
                         },
                     }
                 ],
