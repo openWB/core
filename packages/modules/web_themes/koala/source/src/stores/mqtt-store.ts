@@ -3801,6 +3801,35 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
+   * Get the daily imported energy total of all consumers, or of a single
+   * consumer when an id is provided
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @param id optional consumer id; omit for the sum of all consumers
+   * @returns string | number | ValueObject
+   */
+  const consumerDailyImported = computed(() => {
+    return (
+      returnType: string = 'textValue',
+      id: number | undefined = undefined,
+    ) => {
+      const energy =
+        (getValue.value(
+          `openWB/consumer/${id !== undefined ? `${id}/` : ''}get/daily_imported`,
+          undefined,
+          0,
+        ) as number) || 0;
+      const valueObject = getValueObject.value(energy, 'Wh');
+      if (Object.hasOwn(valueObject, returnType)) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject;
+      }
+      console.error('returnType not found!', returnType, energy);
+    };
+  });
+
+  /**
    * Get the running time (on_time, in seconds) of a consumer since it last
    * started. Resets when the device stops drawing current.
    * @param consumerId consumer id
@@ -4543,6 +4572,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     consumerName,
     consumerPower,
     consumerSumPower,
+    consumerDailyImported,
     consumerOnTime,
     consumerStateStr,
     consumerFaultState,
