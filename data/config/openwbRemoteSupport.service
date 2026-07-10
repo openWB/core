@@ -1,12 +1,15 @@
-# openwb-version:3
+# openwb-version:4
 [Unit]
 Description="Remote Support Handler openWB 2.0"
+Wants=openwb-python-bootstrap.service
 After=mosquitto_local.service
+After=openwb-python-bootstrap.service
 
 [Service]
 User=openwb
 WorkingDirectory=/var/www/html/openWB
-ExecStart=/var/www/html/openWB/runs/remoteSupport/remoteSupport.py
+Environment="PATH=/var/www/html/openWB/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/var/www/html/openWB/.venv/bin/python3 /var/www/html/openWB/runs/remoteSupport/remoteSupport.py
 Restart=always
 
 [Install]
