@@ -1,13 +1,16 @@
-# openwb-version:4
+# openwb-version:5
 [Unit]
 Description="Regelung openWB 2.0"
+Wants=openwb-python-bootstrap.service
 After=mosquitto_local.service
+After=openwb-python-bootstrap.service
 
 [Service]
 User=openwb
 WorkingDirectory=/var/www/html/openWB
+Environment="PATH=/var/www/html/openWB/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ExecStartPre=-/var/www/html/openWB/runs/atreboot.sh
-ExecStart=/var/www/html/openWB/packages/main.py
+ExecStart=/var/www/html/openWB/.venv/bin/python3 /var/www/html/openWB/packages/main.py
 Restart=always
 # extend timeout to 15min for long running atreboot
 TimeoutStartSec=900

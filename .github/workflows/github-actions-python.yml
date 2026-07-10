@@ -7,10 +7,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - name: Set up Python 3.9
+      - name: Read Python runtime version
+        id: pyver
+        run: |
+          version=$(head -n 1 data/config/python_runtime_version.txt | tr -d '[:space:]')
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Python ${{ steps.pyver.outputs.version }}
         uses: actions/setup-python@v6
         with:
-          python-version: "3.9.12"
+          python-version: ${{ steps.pyver.outputs.version }}
       - name: Install dependencies
         run: |
           pip3 install -r "/home/runner/work/core/core/requirements.txt"
@@ -18,12 +24,12 @@ jobs:
         uses: TrueBrain/actions-flake8@v2.4
         with:
           path: packages
-          flake8_version: "7.3.0"
+          flake8_version: "7.3"
       - name: Flake8 with annotations in runs folder
         uses: TrueBrain/actions-flake8@v2.4
         with:
           path: runs
-          flake8_version: "7.3.0"
+          flake8_version: "7.3"
       - name: Test with pytest
         run: |
           PYTHONPATH=packages python -m pytest packages --log-cli-level=DEBUG

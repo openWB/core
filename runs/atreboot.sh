@@ -160,8 +160,6 @@ chmod 666 "$LOGFILE"
 		echo "path '/etc/apt/apt.conf.d' is missing! unsupported system!"
 	fi
 	if ((hasInet == 1)); then
-		# remove urllib3 version to avoid conflicts
-		pip uninstall urllib3 -y
 		"${OPENWBBASEDIR}/runs/install_packages.sh"
 	else
 		echo "no internet connection, skipping package installation"
@@ -173,6 +171,16 @@ chmod 666 "$LOGFILE"
 	else
 		echo "updating openwb.cron"
 		sudo cp "${OPENWBBASEDIR}/data/config/openwb.cron" "/etc/cron.d/openwb"
+	fi
+
+	# check for openwb-python-bootstrap service definition
+	if find /etc/systemd/system/ -maxdepth 1 -name openwb-python-bootstrap.service -type l | grep -q "."; then
+		echo "openwb-python-bootstrap.service definition is already a symlink"
+	else
+		sudo systemctl daemon-reload
+		sudo systemctl enable openwb-python-bootstrap
+		echo "openwb-python-bootstrap.service definition updated. rebooting..."
+		sudo reboot now &
 	fi
 
 	# check for openwb2 service definition
@@ -315,18 +323,14 @@ chmod 666 "$LOGFILE"
 	fi
 
 	# check for python dependencies
-	if ((hasInet == 1)); then
-		echo "install required python packages with 'pip3'..."
-		if pip3 install --only-binary :all: -r "${OPENWBBASEDIR}/requirements.txt"; then
-			echo "done"
-		else
-			echo "failed!"
-			message="Bei der Installation der benötigten Python-Bibliotheken ist ein Fehler aufgetreten! Bitte die Logdateien prüfen."
-			payload=$(printf '{"source": "system", "type": "danger", "message": "%s", "timestamp": %d}' "$message" "$(date +"%s")")
-			mosquitto_pub -p 1886 -t "openWB/system/messages/$(date +"%s%3N")" -r -m "$payload"
-		fi
+	echo "initialisiere venv und Python-Abhaengigkeiten..."
+	if bash "${OPENWBBASEDIR}/runs/bootstrap_venv.sh"; then
+		echo "done"
 	else
-		echo "no internet connection, skipping python package installation"
+		echo "failed!"
+		message="Bei der Initialisierung der Python-Umgebung ist ein Fehler aufgetreten! Bitte die Logdateien prüfen."
+		payload=$(printf '{"source": "system", "type": "danger", "message": "%s", "timestamp": %d}' "$message" "$(date +"%s")")
+		mosquitto_pub -p 1886 -t "openWB/system/messages/$(date +"%s%3N")" -r -m "$payload"
 	fi
 
 	# collect some hardware info
