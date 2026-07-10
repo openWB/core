@@ -37,6 +37,7 @@ class SimpleMQTTDaemon:
     def __init__(self, config_file: str):
         """Initialize the daemon with MQTT connection parameters."""
         self._load_config_file(config_file)
+        log.info(f"Python runtime: {sys.version.split()[0]} ({sys.executable})")
 
         # Cache for tracking value changes
         self.value_cache: Dict[str, Any] = {}

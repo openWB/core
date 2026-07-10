@@ -12,6 +12,7 @@ import functools
 # als erstes logging initialisieren, damit auch ImportError geloggt werden
 logger.setup_logging()
 log = logging.getLogger()
+log.info(f"Python runtime: {sys.version.split()[0]} ({sys.executable})")
 
 from pathlib import Path
 from random import randrange
