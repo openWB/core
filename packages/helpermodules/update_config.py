@@ -7,6 +7,7 @@ import json
 import logging
 from pathlib import Path
 import re
+import sys
 import time
 import sys
 import subprocess
@@ -3046,7 +3047,7 @@ class UpdateConfig:
                         MessageType.INFO,
                     )
                     return {topic: NO_MODULE}
-        run_command(['pip', 'uninstall', 'bimmer_connected', '-y'], process_exception=True)
+        run_command([sys.executable, '-m', 'pip', 'uninstall', 'bimmer_connected', '-y'], process_exception=True)
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(112)
 

@@ -1,0 +1,16 @@
+# openwb-version:2
+[Unit]
+Description="openWB Python Runtime Bootstrap"
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=openwb
+WorkingDirectory=/var/www/html/openWB
+Environment="PATH=/var/www/html/openWB/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/bin/bash /var/www/html/openWB/runs/bootstrap_venv.sh
+
+[Install]
+WantedBy=multi-user.target

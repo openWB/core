@@ -218,6 +218,7 @@ def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
 
 log.info("Starting remote support client")
 log.debug(f"openWB remote support client v{VERSION} (API v{API_VERSION})")
+log.info(f"Python runtime: {sys.version.split()[0]} ({sys.executable})")
 log.debug("registering signal handlers")
 signal(SIGTERM, handle_terminate)  # Handle SIGTERM from systemctl for graceful shutdown
 signal(SIGINT, handle_terminate)  # Handle SIGINT from keyboard (Strg+C) for graceful shutdown

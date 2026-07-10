@@ -1,17 +1,224 @@
 name: Build Python Runtime Artifacts
 
 "on":
-  workflow_dispatch
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: "Upload assets to versioned release tag 'python-runtime-<version>'"
+        required: false
+        default: false
+        type: boolean
+  push:
+    branches:
+      - master
+    paths:
+      - runs/bootstrap_venv.sh
+      - runs/build_python_runtime_artifact.sh
+      - runs/install_packages.sh
+      - data/config/python_runtime_version.txt
+      - .github/workflows/build_python_runtime_artifacts.yml
 
 permissions:
   contents: write
 
 jobs:
-  dummy-job:
+  build-x86_64:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      matrix:
+        include:
+          - os_variant: debian11
+          - os_variant: debian12
+          - os_variant: debian13
     steps:
-      - name: Dummy step to avoid empty job error
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Read Python runtime version
+        id: pyver
         run: |
-          echo "dummy workflow"
+          version=$(head -n 1 data/config/python_runtime_version.txt | tr -d '[:space:]')
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install \
+            build-essential make libssl-dev zlib1g-dev libbz2-dev \
+            libreadline-dev libsqlite3-dev libffi-dev liblzma-dev xz-utils \
+            tk-dev libncursesw5-dev git curl
+
+      - name: Build x86_64 runtime artifact
+        env:
+          PYTHON_VERSION: ${{ steps.pyver.outputs.version }}
+        run: |
+          chmod +x runs/build_python_runtime_artifact.sh
+          runs/build_python_runtime_artifact.sh x86_64 "${{ matrix.os_variant }}"
+
+      - name: Upload x86_64 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-runtime-${{ steps.pyver.outputs.version }}-x86_64-${{ matrix.os_variant }}
+          path: dist/python-runtime/python-${{ steps.pyver.outputs.version }}-linux-x86_64-${{ matrix.os_variant }}.tar.xz*
+
+  build-aarch64:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os_variant: debian11
+            distro: debian11
+          - os_variant: debian12
+            distro: debian12
+          - os_variant: debian13
+            distro: debian13
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Read Python runtime version
+        id: pyver
+        run: |
+          version=$(head -n 1 data/config/python_runtime_version.txt | tr -d '[:space:]')
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Build aarch64 runtime artifact
+        uses: uraimo/run-on-arch-action@v3
+        with:
+          arch: aarch64
+          distro: ${{ matrix.distro }}
+          githubToken: ${{ github.token }}
+          install: |
+            apt-get update
+            apt-get -y install \
+              build-essential make libssl-dev zlib1g-dev libbz2-dev \
+              libreadline-dev libsqlite3-dev libffi-dev liblzma-dev xz-utils \
+              tk-dev libncursesw5-dev git curl
+          run: |
+            set -euo pipefail
+            cd /github/workspace
+            chmod +x runs/build_python_runtime_artifact.sh
+            export PYTHON_VERSION="${{ steps.pyver.outputs.version }}"
+            runs/build_python_runtime_artifact.sh aarch64 "${{ matrix.os_variant }}"
+
+      - name: Upload aarch64 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-runtime-${{ steps.pyver.outputs.version }}-aarch64-${{ matrix.os_variant }}
+          path: dist/python-runtime/python-${{ steps.pyver.outputs.version }}-linux-aarch64-${{ matrix.os_variant }}.tar.xz*
+
+  build-armv7l:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os_variant: debian11
+            distro: debian11
+          - os_variant: debian12
+            distro: debian12
+          - os_variant: debian13
+            distro: debian13
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Read Python runtime version
+        id: pyver
+        run: |
+          version=$(head -n 1 data/config/python_runtime_version.txt | tr -d '[:space:]')
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Build armv7l runtime artifact
+        uses: uraimo/run-on-arch-action@v3
+        with:
+          arch: armv7
+          distro: ${{ matrix.distro }}
+          githubToken: ${{ github.token }}
+          install: |
+            apt-get update
+            apt-get -y install \
+              build-essential make libssl-dev zlib1g-dev libbz2-dev \
+              libreadline-dev libsqlite3-dev libffi-dev liblzma-dev xz-utils \
+              tk-dev libncursesw5-dev git curl
+          run: |
+            set -euo pipefail
+            cd /github/workspace
+            chmod +x runs/build_python_runtime_artifact.sh
+            export PYTHON_VERSION="${{ steps.pyver.outputs.version }}"
+            runs/build_python_runtime_artifact.sh armv7l "${{ matrix.os_variant }}"
+
+      - name: Upload armv7l artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-runtime-${{ steps.pyver.outputs.version }}-armv7l-${{ matrix.os_variant }}
+          path: dist/python-runtime/python-${{ steps.pyver.outputs.version }}-linux-armv7l-${{ matrix.os_variant }}.tar.xz*
+
+  publish-release:
+    needs:
+      - build-x86_64
+      - build-aarch64
+      - build-armv7l
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_release }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Read Python runtime version
+        id: pyver
+        run: |
+          version=$(head -n 1 data/config/python_runtime_version.txt | tr -d '[:space:]')
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "release_tag=python-runtime-${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Download runtime artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/python-runtime
+          merge-multiple: true
+
+      - name: Ensure python-runtime release exists
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const tag = '${{ steps.pyver.outputs.release_tag }}';
+            const name = `Python Runtime Artifacts (${tag})`;
+            const body = `Automatisch erzeugte Python-Runtime-Artefakte fuer openWB (${tag}).`;
+
+            try {
+              const release = (await github.rest.repos.getReleaseByTag({ owner, repo, tag })).data;
+              await github.rest.repos.updateRelease({
+                owner,
+                repo,
+                release_id: release.id,
+                name,
+                body,
+                draft: false,
+                prerelease: false
+              });
+            } catch (error) {
+              if (error.status !== 404) throw error;
+              await github.rest.repos.createRelease({
+                owner,
+                repo,
+                tag_name: tag,
+                name,
+                body,
+                draft: false,
+                prerelease: false
+              });
+            }
+
+      - name: Upload release assets
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ steps.pyver.outputs.release_tag }}
+          file: dist/python-runtime/**/*
+          file_glob: true
+          overwrite: true

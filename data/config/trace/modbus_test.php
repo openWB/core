@@ -21,7 +21,7 @@
 			$data_type = escapeshellarg($_POST['data_type']);
 			$function_code = escapeshellarg($_POST['function']);
 
-			$command = escapeshellcmd("PYTHONPATH=\"" . $_SERVER['DOCUMENT_ROOT'] . "/openWB/packages\" python3 " . $_SERVER['DOCUMENT_ROOT'] . "/openWB/packages/tools/modbus_tester.py");
+			$command = escapeshellcmd("PYTHONPATH=\"" . $_SERVER['DOCUMENT_ROOT'] . "/openWB/packages\" " . $_SERVER['DOCUMENT_ROOT'] . "/openWB/.venv/bin/python3 " . $_SERVER['DOCUMENT_ROOT'] . "/openWB/packages/tools/modbus_tester.py");
 			$output = shell_exec(join(" ", [$command, $host, $port, $modbus_id, $start, $length, $data_type, $function_code]));
 			echo htmlspecialchars($output);
 			?></pre>
