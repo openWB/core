@@ -34,8 +34,11 @@ def create_io(config: LoadManager):
             timestamp = float(payload["timestamp"])
             if timestamp > 1e10:
                 timestamp /= 1000
-            if timecheck.create_timestamp() - timestamp > 60:
-                raise Exception(f"Lastmanager-Daten sind veraltet (Timestamp: {timestamp}).")
+            age_s = timecheck.create_timestamp() - timestamp
+            # < = deaktiviert
+            if age_s < 60:
+                log.warning("Lastmanager-Daten veraltet: age=%.1fs, timestamp=%s", age_s, timestamp)
+                raise RuntimeError(f"Lastmanager-Daten sind veraltet: age={age_s:.1f}s, timestamp={timestamp}.")
 
             io_state.analog_input.update({AnalogInputMapping.MAX_POWER.name: payload["max_power"]})
             io_state.analog_input.update({AnalogInputMapping.MAX_CURRENT.name: payload["max_current"]})
