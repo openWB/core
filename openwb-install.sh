@@ -118,10 +118,17 @@ echo -n "restarting apache..."
 systemctl restart apache2
 echo "done"
 
-echo "installing python requirements..."
-sudo -u "$OPENWB_USER" pip install -r "${OPENWBBASEDIR}/requirements.txt"
+echo "installing python requirements in venv..."
+if ! sudo -u "$OPENWB_USER" bash "${OPENWBBASEDIR}/runs/bootstrap_venv.sh"; then
+	echo "venv bootstrap failed"
+	exit 1
+fi
 
-echo "installing openwb2 system service..."
+echo "installing openwb-python-bootstrap system service..."
+ln -s "${OPENWBBASEDIR}/data/config/openwb-python-bootstrap.service" /etc/systemd/system/openwb-python-bootstrap.service
+systemctl daemon-reload
+systemctl enable openwb-python-bootstrap
+
 ln -s "${OPENWBBASEDIR}/data/config/openwb2.service" /etc/systemd/system/openwb2.service
 systemctl daemon-reload
 systemctl enable openwb2
