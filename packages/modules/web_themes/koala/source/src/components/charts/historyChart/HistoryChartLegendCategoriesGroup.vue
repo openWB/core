@@ -27,6 +27,18 @@
       :toggleDataset="toggleDataset"
       :getItemColor="getItemColor"
       :getItemLineType="getItemLineType"
+      menuAnchor="bottom middle"
+      menuSelf="top middle"
+      menuFormat="q-mx-lg"
+    />
+
+    <HistoryChartLegendCategory
+      v-if="categorizedLegendItems.consumer.length"
+      :label="'Verbraucher'"
+      :items="categorizedLegendItems.consumer"
+      :toggleDataset="toggleDataset"
+      :getItemColor="getItemColor"
+      :getItemLineType="getItemLineType"
       menuAnchor="bottom left"
       menuSelf="top left"
     />

@@ -88,6 +88,7 @@ const categorizedLegendItems = computed(() => {
     chargepoint: [],
     vehicle: [],
     battery: [],
+    consumer: [],
     component: [],
   };
   for (const item of legendItems.value) {

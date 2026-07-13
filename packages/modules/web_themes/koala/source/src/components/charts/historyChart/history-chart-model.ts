@@ -11,7 +11,12 @@ export interface ChartComponentRef {
   chart?: Chart;
 }
 
-export type Category = 'chargepoint' | 'vehicle' | 'battery' | 'component';
+export type Category =
+  | 'chargepoint'
+  | 'vehicle'
+  | 'battery'
+  | 'consumer'
+  | 'component';
 
 // Add category to the chart datasets
 export interface CategorizedDataset extends ChartDataset<

@@ -224,6 +224,7 @@ export interface GraphDataPoint {
   'bat-all-power': number;
   'bat-all-soc': number;
   [key: `cp${number}-power`]: number;
+  [key: `consumer${number}-power`]: number;
   [key: `ev${number}-soc`]: number | null;
 }
 

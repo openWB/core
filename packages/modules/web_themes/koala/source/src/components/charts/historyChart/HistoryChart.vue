@@ -195,6 +195,89 @@ const chargePointDatasets = computed(() =>
   }),
 );
 
+const consumerDatasets = computed(() => {
+  const ids = mqttStore.consumerIds;
+  if (ids.length === 0) return [];
+  const defaultColor = getGlobalColor('--q-consumer');
+
+  const individualDataset = (id: number) => {
+    const baseColor = mqttStore.consumerColor(id) || defaultColor;
+    const label = mqttStore.consumerName(id) || `Verbraucher ${id}`;
+    return {
+      label,
+      category: 'consumer',
+      unit: 'kW',
+      borderColor: baseColor,
+      backgroundColor: hexColorToRgba(baseColor, 0.1),
+      data: selectedData.value.map(
+        (item) =>
+          ({
+            x: item.timestamp * 1000,
+            y: item[`consumer${id}-power` as keyof GraphDataPoint] ?? 0,
+          }) as Point,
+      ),
+      borderWidth: 2,
+      pointRadius: 0,
+      pointHoverRadius: 4,
+      pointHitRadius: 5,
+      fill: true,
+      yAxisID: 'y',
+    };
+  };
+
+  if (ids.length === 1) {
+    return [individualDataset(ids[0])];
+  }
+
+  return [
+    {
+      label: 'Verbraucher ges.',
+      category: 'consumer',
+      unit: 'kW',
+      borderColor: defaultColor,
+      backgroundColor: hexColorToRgba(defaultColor, 0.1),
+      data: selectedData.value.map(
+        (item) =>
+          ({
+            x: item.timestamp * 1000,
+            y: item['consumer-all'],
+          }) as Point,
+      ),
+      borderWidth: 2,
+      pointRadius: 0,
+      pointHoverRadius: 4,
+      pointHitRadius: 5,
+      fill: true,
+      yAxisID: 'y',
+    },
+    ...ids.map((id) => ({
+      ...individualDataset(id),
+      hidden: localDataStore.isDatasetHidden(
+        mqttStore.consumerName(id) || `Verbraucher ${id}`,
+      ),
+    })),
+  ];
+});
+
+const seededHiddenConsumers = new Set<string>();
+watch(
+  () =>
+    mqttStore.consumerIds.length > 1
+      ? mqttStore.consumerIds.map(
+          (id) => mqttStore.consumerName(id) || `Verbraucher ${id}`,
+        )
+      : [],
+  (labels) => {
+    labels.forEach((label) => {
+      if (!seededHiddenConsumers.has(label)) {
+        seededHiddenConsumers.add(label);
+        localDataStore.hideDataset(label);
+      }
+    });
+  },
+  { immediate: true },
+);
+
 const vehicleDatasets = computed(() =>
   vehicles.value
     .map((vehicle) => {
@@ -375,37 +458,8 @@ const lineChartData = computed(() => {
     );
   }
   datasets.push(...chargePointDatasets.value);
-  if (mqttStore.consumerIds.length > 0) {
-    const singleConsumer = mqttStore.consumerIds.length === 1;
-    const consumerId = mqttStore.consumerIds[0];
-    const baseColor = singleConsumer
-      ? mqttStore.consumerColor(consumerId) || getGlobalColor('--q-consumer')
-      : getGlobalColor('--q-consumer');
-    const label = singleConsumer
-      ? mqttStore.consumerName(consumerId) || 'Verbraucher'
-      : 'Verbraucher ges.';
-    datasets.push({
-      label,
-      category: 'component',
-      unit: 'kW',
-      borderColor: baseColor,
-      backgroundColor: hexColorToRgba(baseColor, 0.1),
-      data: selectedData.value.map(
-        (item) =>
-          ({
-            x: item.timestamp * 1000,
-            y: item['consumer-all'],
-          }) as Point,
-      ),
-      borderWidth: 2,
-      pointRadius: 0,
-      pointHoverRadius: 4,
-      pointHitRadius: 5,
-      fill: true,
-      yAxisID: 'y',
-    });
-  }
   datasets.push(...vehicleDatasets.value);
+  datasets.push(...consumerDatasets.value);
   return {
     labels: chartLabels.value,
     datasets: datasets,
