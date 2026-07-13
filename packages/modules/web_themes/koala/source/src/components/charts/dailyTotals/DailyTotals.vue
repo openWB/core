@@ -433,7 +433,7 @@ const individualConsumerData = computed((): DailyTotalsItem[] => {
         today: {
           imported: mqttStore.consumerDailyImported('textValue', id) as string,
         },
-        color: 'var(--q-consumer)',
+        color: mqttStore.consumerColor(id) || 'var(--q-consumer)',
       });
     }
   });
@@ -530,7 +530,11 @@ const componentData = computed((): DailyTotalsItem[] => {
       today: {
         imported: mqttStore.consumerDailyImported('textValue') as string,
       },
-      color: 'var(--q-consumer)',
+      color:
+        mqttStore.consumerIds.length === 1
+          ? mqttStore.consumerColor(mqttStore.consumerIds[0]) ||
+            'var(--q-consumer)'
+          : 'var(--q-consumer)',
     });
   }
   return components;
