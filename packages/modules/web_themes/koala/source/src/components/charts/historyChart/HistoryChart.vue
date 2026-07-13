@@ -376,9 +376,16 @@ const lineChartData = computed(() => {
   }
   datasets.push(...chargePointDatasets.value);
   if (mqttStore.consumerIds.length > 0) {
-    const baseColor = getGlobalColor('--q-consumer');
+    const singleConsumer = mqttStore.consumerIds.length === 1;
+    const consumerId = mqttStore.consumerIds[0];
+    const baseColor = singleConsumer
+      ? mqttStore.consumerColor(consumerId) || getGlobalColor('--q-consumer')
+      : getGlobalColor('--q-consumer');
+    const label = singleConsumer
+      ? mqttStore.consumerName(consumerId) || 'Verbraucher'
+      : 'Verbraucher ges.';
     datasets.push({
-      label: 'Verbraucher ges.',
+      label,
       category: 'component',
       unit: 'kW',
       borderColor: baseColor,
