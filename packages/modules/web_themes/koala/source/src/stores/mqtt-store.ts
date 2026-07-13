@@ -3755,6 +3755,22 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
+   * Get the consumer user-defined color identified by the consumer id
+   * @param consumerId consumer id
+   * @returns string | null
+   */
+  const consumerColor = computed(() => {
+    return (consumerId: number): string | null => {
+        const color = getValue.value(
+          `openWB/consumer/${consumerId}/module`,
+          'color',
+          null,
+        ) as string | null;
+      return resolveComponentColor(color, SETTINGS_UI_COLORS.consumer);
+    };
+  });
+
+  /**
    * Get the current power of a consumer identified by the consumer id
    * @param consumerId consumer id
    * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
@@ -4409,6 +4425,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     vehicle: '#17a2b8',
     counter: '#dc3545',
     pv: '#28a745',
+    consumer: '#6f42c1',
   } as const;
 
   const resolveComponentColor = (
@@ -4570,6 +4587,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     consumerList,
     consumerIds,
     consumerName,
+    consumerColor,
     consumerPower,
     consumerSumPower,
     consumerDailyImported,

@@ -142,6 +142,7 @@ export interface ConsumerModule {
   type: string;
   id: number;
   vendor: string;
+  color?: string | null;
 }
 export type ConsumerUsageType =
   | 'meter_only'
