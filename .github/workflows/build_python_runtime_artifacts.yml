@@ -4,7 +4,7 @@ name: Build Python Runtime Artifacts
   workflow_dispatch:
     inputs:
       publish_release:
-        description: "Upload assets to versioned release tag 'python-runtime-<version>'"
+        description: "Upload assets to versioned release tag 'python-runtime-<version>' in separate release repository"
         required: false
         default: false
         type: boolean
@@ -32,18 +32,18 @@ jobs:
             platform: linux/amd64
             debian_version: "11"
             image: debian:bullseye
-          # - arch: x86_64
-          #   platform: linux/amd64
-          #   debian_version: "12"
-          #   image: debian:bookworm
-          # - arch: x86_64
-          #   platform: linux/amd64
-          #   debian_version: "13"
-          #   image: debian:trixie
-          - arch: aarch64
-            platform: linux/arm64
-            debian_version: "11"
-            image: debian:bullseye
+          - arch: x86_64
+            platform: linux/amd64
+            debian_version: "12"
+            image: debian:bookworm
+          - arch: x86_64
+            platform: linux/amd64
+            debian_version: "13"
+            image: debian:trixie
+          # - arch: aarch64
+          #   platform: linux/arm64
+          #   debian_version: "11"
+          #   image: debian:bullseye
           # - arch: aarch64
           #   platform: linux/arm64
           #   debian_version: "12"
@@ -52,10 +52,10 @@ jobs:
           #   platform: linux/arm64
           #   debian_version: "13"
           #   image: debian:trixie
-          - arch: armv7l
-            platform: linux/arm/v7
-            debian_version: "11"
-            image: debian:bullseye
+          # - arch: armv7l
+          #   platform: linux/arm/v7
+          #   debian_version: "11"
+          #   image: debian:bullseye
           # - arch: armv7l
           #   platform: linux/arm/v7
           #   debian_version: "12"
@@ -141,9 +141,23 @@ jobs:
       - build-runtime
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_release }}
     runs-on: ubuntu-latest
+    env:
+      TARGET_RELEASE_OWNER: ${{ github.repository_owner }}
+      TARGET_RELEASE_REPO: python-runtime
+      TARGET_RELEASE_REPO_NAME: ${{ github.repository_owner }}/python-runtime
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+
+      - name: Validate release token
+        env:
+          RELEASE_TOKEN: ${{ secrets.PYTHON_RUNTIME_REPO_TOKEN }}
+        run: |
+          if [[ -z "${RELEASE_TOKEN}" ]]; then
+            echo "ERROR: Secret PYTHON_RUNTIME_REPO_TOKEN ist nicht gesetzt." >&2
+            echo "Lege im Core-Repo ein Token mit mindestens 'Contents: Read and write' fuer ${TARGET_RELEASE_REPO_NAME} an." >&2
+            exit 1
+          fi
 
       - name: Read Python runtime version
         id: pyver
@@ -161,11 +175,12 @@ jobs:
       - name: Ensure python-runtime release exists
         uses: actions/github-script@v9
         with:
+          github-token: ${{ secrets.PYTHON_RUNTIME_REPO_TOKEN }}
           script: |
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
+            const owner = process.env.TARGET_RELEASE_OWNER;
+            const repo = process.env.TARGET_RELEASE_REPO;
             const tag = '${{ steps.pyver.outputs.release_tag }}';
-            const name = `Python Runtime Artifacts (${tag})`;
+            const name = `${{ steps.pyver.outputs.version }} (${tag})`;
             const body = `Automatisch erzeugte Python-Runtime-Artefakte fuer openWB (${tag}).`;
 
             try {
@@ -195,7 +210,8 @@ jobs:
       - name: Upload release assets
         uses: svenstaro/upload-release-action@v2
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          repo_name: ${{ env.TARGET_RELEASE_REPO_NAME }}
+          repo_token: ${{ secrets.PYTHON_RUNTIME_REPO_TOKEN }}
           tag: ${{ steps.pyver.outputs.release_tag }}
           file: dist/python-runtime/**/*
           file_glob: true

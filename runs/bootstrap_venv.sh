@@ -55,7 +55,7 @@ init_python_config() {
 
 	PYTHON_MAJOR_MINOR="${PYTHON_VERSION%.*}"
 	PYTHON_RELEASE_TAG="${OPENWB_PYTHON_RELEASE_TAG:-python-runtime-${PYTHON_VERSION}}"
-	PYTHON_BINARIES_BASE_URL="${OPENWB_PYTHON_BINARIES_BASE_URL:-https://github.com/openWB/core/releases/download/${PYTHON_RELEASE_TAG}}"
+	PYTHON_BINARIES_BASE_URL="${OPENWB_PYTHON_BINARIES_BASE_URL:-https://github.com/openWB/python-runtime/releases/download/${PYTHON_RELEASE_TAG}}"
 	log "Python-Zielversion: ${PYTHON_VERSION}"
 	log "Release-Tag fuer Binaries: ${PYTHON_RELEASE_TAG}"
 	log "Binary-Basis-URL: ${PYTHON_BINARIES_BASE_URL}"
