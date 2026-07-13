@@ -162,6 +162,61 @@ ensure_pyenv() {
 	git clone --depth 1 https://github.com/pyenv/pyenv.git "${PYENV_ROOT}" >/dev/null 2>&1
 }
 
+check_build_dependencies() {
+	local -a required_packages=(
+		build-essential
+		make
+		libssl-dev
+		zlib1g-dev
+		libbz2-dev
+		libreadline-dev
+		libsqlite3-dev
+		libffi-dev
+		liblzma-dev
+		xz-utils
+		tk-dev
+		libncursesw5-dev
+		git
+	)
+	local pkg
+	local -a missing_packages=()
+
+	for pkg in "${required_packages[@]}"; do
+		if ! dpkg -s "${pkg}" >/dev/null 2>&1; then
+			missing_packages+=("${pkg}")
+		fi
+	done
+
+	if (( ${#missing_packages[@]} > 0 )); then
+		log "Fehlende Build-Abhaengigkeiten erkannt: ${missing_packages[*]}"
+		log "Installiere fehlende Pakete automatisch."
+
+		if command -v sudo >/dev/null 2>&1; then
+			if ! sudo DEBIAN_FRONTEND=noninteractive apt-get -q update; then
+				log "ERROR: apt-get update fehlgeschlagen."
+				return 1
+			fi
+
+			if ! sudo DEBIAN_FRONTEND=noninteractive apt-get -q -y install "${missing_packages[@]}"; then
+				log "ERROR: Installation fehlgeschlagener Pakete: ${missing_packages[*]}"
+				return 1
+			fi
+		else
+			if ! DEBIAN_FRONTEND=noninteractive apt-get -q update; then
+				log "ERROR: apt-get update fehlgeschlagen."
+				return 1
+			fi
+
+			if ! DEBIAN_FRONTEND=noninteractive apt-get -q -y install "${missing_packages[@]}"; then
+				log "ERROR: Installation fehlgeschlagener Pakete: ${missing_packages[*]}"
+				return 1
+			fi
+		fi
+
+		log "Build-Abhaengigkeiten erfolgreich nachinstalliert."
+	fi
+}
+
 build_python() {
 	export PYENV_ROOT
 	export PATH="${PYENV_ROOT}/bin:${PATH}"
@@ -169,7 +224,7 @@ build_python() {
 	export MAKE_OPTS
 
 	log "Baue CPython ${PYTHON_VERSION} fuer ${TARGET_ARCH}."
-	"${PYENV_BIN}" install -s "${PYTHON_VERSION}" >/dev/null
+	"${PYENV_BIN}" install -v -s "${PYTHON_VERSION}" >/dev/null
 }
 
 validate_runtime() {
@@ -181,6 +236,7 @@ validate_runtime() {
 	fi
 
 	"${python_bin}" -c "import sys; raise SystemExit(0 if sys.version_info[:3] == tuple(map(int, '${PYTHON_VERSION}'.split('.'))) else 1)"
+	"${python_bin}" -c "import ssl, bz2, ctypes, readline, lzma, sqlite3, curses"
 }
 
 package_runtime() {
@@ -202,6 +258,7 @@ main() {
 	ensure_target_os_variant
 	ensure_target_matches_host
 	ensure_pyenv
+	check_build_dependencies
 	build_python
 	validate_runtime
 	package_runtime
