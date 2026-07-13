@@ -313,10 +313,10 @@ class Command:
         chargepoint_config["name"] = f'{chargepoint_config["name"]} {new_id}'
         try:
             evu_counter = SubData.counter_all_data.get_id_evu_counter()
-            SubData.counter_all_data.hierarchy_add_item_below(
-                new_id, ComponentType.CHARGEPOINT, evu_counter)
-            Pub().pub("openWB/set/counter/get/hierarchy", SubData.counter_all_data.data.get.hierarchy)
+            SubData.counter_all_data.hierarchy_add_item_below(new_id, ComponentType.CHARGEPOINT, evu_counter)
             setup_added_chargepoint()
+            # Publish hierarchy to ensure the new component is recognized in the system before hierarchy check is failed
+            Pub().pub("openWB/set/counter/get/hierarchy", SubData.counter_all_data.data.get.hierarchy)
         except (TypeError, IndexError):
             if chargepoint_config["type"] == 'internal_openwb' and SubData.general_data.data.extern:
                 # es gibt noch keinen EVU-Zähler
@@ -672,7 +672,6 @@ class Command:
         general_type = special_to_general_type_mapping(payload["data"]["type"])
         try:
             SubData.counter_all_data.hierarchy_add_item_below_evu(new_id, general_type)
-            Pub().pub("openWB/set/counter/get/hierarchy", SubData.counter_all_data.data.get.hierarchy)
         except ValueError:
             pub_user_message(payload, connection_id, counter_all.CounterAll.MISSING_EVU_COUNTER, MessageType.ERROR)
             return
@@ -690,6 +689,8 @@ class Command:
             set_default(f"{topic}/get", asdict(pv.Get()))
         Pub().pub(f'openWB/set/system/device/{payload["data"]["deviceId"]}/component/{new_id}/config',
                   component_default)
+        # Publish hierarchy to ensure the new component is recognized in the system before hierarchy check is failed
+        Pub().pub("openWB/set/counter/get/hierarchy", SubData.counter_all_data.data.get.hierarchy)
         self.max_id_hierarchy = self.max_id_hierarchy + 1
         Pub().pub("openWB/set/command/max_id/hierarchy",
                   self.max_id_hierarchy)
