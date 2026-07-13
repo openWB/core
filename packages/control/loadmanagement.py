@@ -194,25 +194,19 @@ class Loadmanagement:
 
         if loadmanager_power_left is not None and loadmanager_current_left is not None:
             if sum(available_currents)*230 > loadmanager_power_left:
-                # --REDU
-                # wie viel phasen sind im Einsatz?
                 phases = 3-available_currents.count(0)
-                # Wie viel ist jede Phase zu hoch
                 overload_per_phase = (sum(available_currents) - loadmanager_power_left/230)/phases
-                # Ziehe das für jede Phase ab, die im Einsatz ist.
                 available_currents = [c - overload_per_phase if c > 0 else 0 for c in available_currents]
                 log.debug(
-                    f"#######_Reduzierung der Ströme auf {sum(available_currents)*230}W durch den Lastmanager. "
+                    f"Reduzierung der Leistung auf {sum(available_currents)*230}W durch den Lastmanager. "
                     f"(Leistungsgrenze: {loadmanager_power_left}W)")
                 return available_currents, limit
-            elif sum(available_currents) > loadmanager_current_left:
-                # --REDU
+            if sum(available_currents) > loadmanager_current_left:
                 phases = 3 - available_currents.count(0)
                 overload_per_phase = (sum(available_currents) - loadmanager_current_left) / phases
                 available_currents = [max(c - overload_per_phase, 0) if c > 0 else 0 for c in available_currents]
                 log.debug(
-                    f"#######_Reduzierung der Ströme auf {available_currents}A durch den Lastmanager. "
+                    f"Reduzierung der Ströme auf {available_currents}A durch den Lastmanager. "
                     f"(Stromgrenze: {loadmanager_current_left}A)")
                 return available_currents, limit
-        # muss nix reduzieren. Passt alles so
         return available_currents, limit

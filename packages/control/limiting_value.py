@@ -8,6 +8,7 @@ class LimitingValue(Enum):
     POWER = ", da die maximale Leistung an Zähler {} erreicht ist."
     UNBALANCED_LOAD = ", da die maximale Schieflast an Zähler {} erreicht ist."
     LOADMANAGER = ", da der Lastmanager die Ladeleistung begrenzt."
+    LOADMANAGER_ERROR = ", da aufgrund eines Fehlers im Lastmanager die Ladeleistung auf die maximale Leistung im Fehlerfall begrenzt wird."
     DIMMING = ", da die Dimmung die Ladeleistung begrenzt."
     DIMMING_VIA_DIRECT_CONTROL = ", da die Dimmung per Direkt-Steuerung die Ladeleistung auf 4,2 kW begrenzt."
     RIPPLE_CONTROL_RECEIVER = (", da der Ladepunkt durch den RSE-Kontakt auf {}% der konfigurierten Anschlussleistung "
