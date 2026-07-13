@@ -193,13 +193,14 @@ class Loadmanagement:
             "type": "cp", "id": cp.num})
 
         if loadmanager_power_left is not None and loadmanager_current_left is not None:
-            if sum(available_currents)*230 > loadmanager_power_left:
+            if sum(available_currents)*voltages_mean(cp.data.get.voltages) > loadmanager_power_left:
                 phases = 3-available_currents.count(0)
-                overload_per_phase = (sum(available_currents) - loadmanager_power_left/230)/phases
+                overload_per_phase = (sum(available_currents) -
+                                      loadmanager_power_left/voltages_mean(cp.data.get.voltages))/phases
                 available_currents = [c - overload_per_phase if c > 0 else 0 for c in available_currents]
                 log.debug(
-                    f"Reduzierung der Leistung auf {sum(available_currents)*230}W durch den Lastmanager. "
-                    f"(Leistungsgrenze: {loadmanager_power_left}W)")
+                    f"Reduzierung der Leistung auf {sum(available_currents)*voltages_mean(cp.data.get.voltages)}W "
+                    f"durch den Lastmanager. (Leistungsgrenze: {loadmanager_power_left}W)")
                 return available_currents, limit
             if sum(available_currents) > loadmanager_current_left:
                 phases = 3 - available_currents.count(0)

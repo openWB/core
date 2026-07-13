@@ -1226,7 +1226,7 @@ class SetData:
             enthält Topic und Payload
         """
         try:
-            if "openWB/set/mqtt/loadmanager/set/loadmanager" in msg.topic:
+            if re.search("^openWB/set/mqtt/loadmanager/[0-9]+/set/loadmanager$", msg.topic) is not None:
                 self._validate_value(msg, "json")
             else:
                 self.__unknown_topic(msg)

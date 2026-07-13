@@ -28,16 +28,13 @@ def create_io(config: LoadManager):
         io_state.digital_input = getattr(io_state, "digital_input", None) or {}
         io_state.digital_output = getattr(io_state, "digital_output", None) or {}
 
-        if received_topics.get("openWB/mqtt/loadmanager/set/loadmanager"):
-            payload = received_topics["openWB/mqtt/loadmanager/set/loadmanager"]
+        if received_topics.get(f"openWB/mqtt/loadmanager/{config.id}/set/loadmanager"):
+            payload = received_topics[f"openWB/mqtt/loadmanager/{config.id}/set/loadmanager"]
 
             timestamp = float(payload["timestamp"])
-            if timestamp > 1e10:
-                timestamp /= 1000
             age_s = timecheck.create_timestamp() - timestamp
             # < = deaktiviert
-            if age_s < 60:
-                log.warning("Lastmanager-Daten veraltet: age=%.1fs, timestamp=%s", age_s, timestamp)
+            if age_s > 60:
                 raise RuntimeError(f"Lastmanager-Daten sind veraltet: age={age_s:.1f}s, timestamp={timestamp}.")
 
             io_state.analog_input.update({AnalogInputMapping.MAX_POWER.name: payload["max_power"]})
@@ -50,7 +47,7 @@ def create_io(config: LoadManager):
         nonlocal received_topics
 
         def on_connect(client, userdata, flags, rc):
-            client.subscribe("openWB/mqtt/loadmanager/#")
+            client.subscribe(f"openWB/mqtt/loadmanager/{config.id}/#")
 
         def on_message(client, userdata, message):
             received_topics.update({message.topic: decode_payload(message.payload)})
