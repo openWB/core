@@ -126,7 +126,7 @@ class LegacySmartHomeLogData:
         except Exception:
             log.exception("Fehler im Werte-Logging-Modul für SmartHome")
 
-    def on_connect(self, client: MqttClient, userdata, flags: dict, rc: int):
+    def on_connect(self, client: MqttClient, userdata, flags, reason_code, properties):
         client.subscribe("openWB/LegacySmartHome/#", 2)
 
     def on_message(self, client: MqttClient, userdata, msg: MQTTMessage):

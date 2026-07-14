@@ -650,7 +650,7 @@ class BrokerCphargepoints:
             cp_ids.append(get_index(topic))
         return cp_ids
 
-    def on_connect(self, client: MqttClient, userdata, flags: dict, rc: int):
+    def on_connect(self, client: MqttClient, userdata, flags, reason_code, properties):
         """ connect to broker and subscribe to set topics
         """
         client.subscribe("openWB/chargepoint/+/config", 2)

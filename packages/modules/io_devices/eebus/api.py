@@ -150,7 +150,7 @@ def create_io(config: Eebus):
         Path(f"{Path(__file__).resolve().parents[4]}/ramdisk/eebus_hems_client.log").touch(exist_ok=True)
         run_eebus()
 
-        def on_connect(client, userdata, flags, rc):
+        def on_connect(client, userdata, flags, reason_code, properties):
             client.subscribe(f"openWB/eebus/{config.id}/#")
 
         def on_message(client, userdata, message):

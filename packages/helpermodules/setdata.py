@@ -45,7 +45,7 @@ class SetData:
     def disconnect(self) -> None:
         self.internal_broker_client.disconnect()
 
-    def on_connect(self, client: mqtt.Client, userdata, flags: dict, rc: int):
+    def on_connect(self, client: mqtt.Client, userdata, flags, reason_code, properties):
         """ connect to broker and subscribe to set topics
         """
         client.subscribe("openWB/set/#", 2)

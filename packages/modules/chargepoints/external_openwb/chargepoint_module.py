@@ -59,7 +59,7 @@ class ChargepointModule(AbstractChargepoint):
                 pub.pub_single(f"openWB/set/isss/parentCPlp{self.config.configuration.duo_num + 1}",
                                str(num), hostname=ip_address)
 
-                def on_connect(client, userdata, flags, rc):
+                def on_connect(client, userdata, flags, reason_code, properties):
                     client.subscribe(f"openWB/internal_chargepoint/{self.config.configuration.duo_num}/get/#")
 
                 def on_message(client, userdata, message):

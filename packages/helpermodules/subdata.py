@@ -121,7 +121,7 @@ class SubData:
     def disconnect(self) -> None:
         self.internal_broker_client.disconnect()
 
-    def on_connect(self, client: mqtt.Client, userdata, flags: dict, rc: int):
+    def on_connect(self, client: mqtt.Client, userdata, flags, reason_code, properties):
         """ subscribe topics
         """
         client.subscribe([

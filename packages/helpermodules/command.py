@@ -139,7 +139,7 @@ class Command:
         except Exception:
             log.exception("Fehler im Command-Modul")
 
-    def on_connect(self, client: mqtt.Client, userdata, flags: dict, rc: int):
+    def on_connect(self, client: mqtt.Client, userdata, flags, reason_code, properties):
         """ connect to broker and subscribe to set topics
         """
         try:
@@ -1234,7 +1234,7 @@ class ProcessBrokerBranch:
             log.exception("Fehler im Command-Modul")
             return []
 
-    def on_connect(self, client, userdata, flags, rc):
+    def on_connect(self, client, userdata, flags, reason_code, properties):
         """ connect to broker and subscribe to set topics
         """
         client.subscribe(f'openWB/{self.topic_str}#', 2)

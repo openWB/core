@@ -736,7 +736,7 @@ class UpdateConfig:
         finally:
             self.__update_topic("openWB/system/update_config_completed", True)
 
-    def on_connect(self, client: MqttClient, userdata, flags: dict, rc: int):
+    def on_connect(self, client: MqttClient, userdata, flags, reason_code, properties):
         """ connect to broker and subscribe to set topics
         """
         client.subscribe("openWB/#", 2)

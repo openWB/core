@@ -485,7 +485,7 @@ class BrokerContent:
         BrokerClient("processBrokerBranch", self.__on_connect_broker, self.__get_content).start_finite_loop()
         return self.content
 
-    def __on_connect_broker(self, client, userdata, flags, rc):
+    def __on_connect_broker(self, client, userdata, flags, reason_code, properties):
         client.subscribe("openWB/#", 2)
 
     def __get_content(self, client, userdata, msg):
@@ -496,7 +496,7 @@ class BrokerContent:
                      self.__get_content).start_finite_loop()
         return self.content
 
-    def __on_connect_broker_essentials(self, client, userdata, flags, rc):
+    def __on_connect_broker_essentials(self, client, userdata, flags, reason_code, properties):
         client.subscribe("openWB/system/ip_address", 2)
         client.subscribe("openWB/system/current_commit", 2)
         client.subscribe("openWB/system/boot_done", 2)
@@ -511,7 +511,7 @@ class BrokerContent:
         client.subscribe("openWB/bat/#", 2)
         client.subscribe("openWB/optional/ep/flexible_tariff/provider", 2)
 
-    def __on_connect_bridges(self, client, userdata, flags, rc):
+    def __on_connect_bridges(self, client, userdata, flags, reason_code, properties):
         client.subscribe("openWB/system/mqtt/#", 2)
 
     def get_cloud(self):

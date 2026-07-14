@@ -42,7 +42,7 @@ class IoStateManager:
                      1886 if host == "localhost" else 1883).start_finite_loop()
         return self.io_state
 
-    def on_connect(self, client, userdata, flags, rc):
+    def on_connect(self, client, userdata, flags, reason_code, properties):
         """ connect to broker and subscribe to set topics
         """
         client.subscribe('openWB/internal_io/states/#', 2)

@@ -61,7 +61,7 @@ class ChargepointModule(AbstractChargepoint):
             self.perform_phase_switch(1)
             self.old_phases_in_use = 1
         else:
-            def on_connect(client, userdata, flags, rc):
+            def on_connect(client, userdata, flags, reason_code, properties):
                 client.subscribe(f"openWB/internal_chargepoint/{self.local_charge_point_num}/get/phases_in_use")
 
             def on_message(client, userdata, message):

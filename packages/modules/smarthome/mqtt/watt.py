@@ -8,7 +8,7 @@ from smarthome.smartret import writeret
 numberOfSupportedDevices = 9  # limit number of smart home devices
 
 
-def on_connect(client, userdata, flags, rc) -> None:
+def on_connect(client, userdata, flags, reason_code, properties) -> None:
     client.subscribe("openWB/LegacySmartHome/Devices/"+str(devicenumber) + "/#", 2)
 
 
@@ -48,7 +48,10 @@ tempc = '300.00'
 devicenumber = int(sys.argv[1])
 ipadr = str(sys.argv[2])
 uberschuss = int(sys.argv[3])
-client = mqtt.Client("openWB-mqttsmarthomecust" + str(devicenumber))
+client = mqtt.Client(
+    callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
+    client_id="openWB-mqttsmarthomecust" + str(devicenumber),
+)
 client.on_connect = on_connect
 client.on_message = on_message
 startTime = time.time()

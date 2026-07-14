@@ -101,7 +101,7 @@ def stop_tunnel(tunnel: Optional[Popen], tunnel_name: str) -> None:
         log.error(f"tunnel {tunnel_name} is not running.")
 
 
-def on_connect(client: mqtt.Client, userdata, flags: dict, rc: int):
+def on_connect(client: mqtt.Client, userdata, flags, reason_code, properties):
     """connect to broker and subscribe to set topics"""
     log.info("Connected")
     client.subscribe([
@@ -222,7 +222,10 @@ log.debug("registering signal handlers")
 signal(SIGTERM, handle_terminate)  # Handle SIGTERM from systemctl for graceful shutdown
 signal(SIGINT, handle_terminate)  # Handle SIGINT from keyboard (Strg+C) for graceful shutdown
 lt_executable = get_lt_executable()
-client = mqtt.Client(f"openWB-remote-{get_serial()}-{datetime.today().timestamp()}")
+client = mqtt.Client(
+    callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
+    client_id=f"openWB-remote-{get_serial()}-{datetime.today().timestamp()}",
+)
 client.on_connect = on_connect
 client.on_message = on_message
 client.will_set(STATE_TOPIC, json.dumps("offline"), qos=2, retain=True)

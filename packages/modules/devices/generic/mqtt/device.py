@@ -25,7 +25,7 @@ def create_device(device_config: Mqtt):
         return inverter.MqttInverter(component_config, device_id=device_config.id)
 
     def update_components(components: Iterable[Union[bat.MqttBat, counter.MqttCounter, inverter.MqttInverter]]):
-        def on_connect(client, userdata, flags, rc):
+        def on_connect(client, userdata, flags, reason_code, properties):
             for component in components:
                 client.subscribe(f"openWB/mqtt/{type_to_topic_mapping(component.component_config.type)}/"
                                  f"{component.component_config.id}/#")

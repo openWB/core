@@ -22,7 +22,7 @@ class ChargepointModule(AbstractChargepoint):
         self.store = get_chargepoint_value_store(self.config.id)
         self.fault_state = FaultState(ComponentInfo(self.config.id, "Ladepunkt", "chargepoint"))
 
-        def on_connect(client, userdata, flags, rc):
+        def on_connect(client, userdata, flags, reason_code, properties):
             client.subscribe(f"openWB/mqtt/chargepoint/{self.config.id}/#")
 
         def on_message(client, userdata, message):
@@ -49,7 +49,7 @@ class ChargepointModule(AbstractChargepoint):
         def parse_received_topics(value: str):
             return received_topics.get(f"{topic_prefix}{value}", get_default(ChargepointState, value))
         with SingleComponentUpdateContext(self.fault_state):
-            def on_connect(client, userdata, flags, rc):
+            def on_connect(client, userdata, flags, reason_code, properties):
                 client.subscribe(f"openWB/mqtt/chargepoint/{self.config.id}/get/#")
 
             def on_message(client, userdata, message):

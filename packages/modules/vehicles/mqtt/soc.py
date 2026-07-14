@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 
 def create_vehicle(vehicle_config: MqttSocSetup, vehicle: int):
     def updater(vehicle_update_data: VehicleUpdateData) -> CarState:
-        def on_connect(client, userdata, flags, rc):
+        def on_connect(client, userdata, flags, reason_code, properties):
             client.subscribe(f"openWB/mqtt/vehicle/{vehicle}/get/#")
 
         def on_message(client, userdata, message):
