@@ -8,6 +8,7 @@ from modules.common.configurable_device import ConfigurableDevice, ComponentFact
 from modules.common.modbus import ModbusSerialClient_
 from modules.devices.openwb.openwb_flex_local.config import FlexLocalSetup, LocalConsumptionCounterSetup
 from modules.devices.openwb.openwb_flex_local.consumption_counter import LocalConsumptionCounter
+from modules.common.serial_modbus_devices import get_serial_modbus_devices, BUS_SOURCES
 
 log = logging.getLogger(__name__)
 
@@ -25,7 +26,16 @@ def create_device(device_config: FlexLocalSetup):
 
     def initializer():
         nonlocal client
-        client = ModbusSerialClient_(device_config.configuration.port)
+
+        device, count = get_serial_modbus_devices()
+        if count == 1 and device[0] in BUS_SOURCES:
+            port = device[0]
+            log.debug(f"Verbrauchszähler mit lokaler Auslesung nutzt Port {port}")
+        else:
+            port = "UNKNOWN"
+            log.debug(f"Verbrauchszähler mit lokaler Auslesung konnte Port nicht ermitteln, gefundene Ports: {device}")
+
+        client = ModbusSerialClient_(port)
 
     return ConfigurableDevice(
         device_config=device_config,
