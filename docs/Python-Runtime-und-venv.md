@@ -1,10 +1,10 @@
 # Python-Runtime und venv (entkoppelt vom System)
 
-Diese Seite beschreibt den aktuellen Ansatz, wie openWB eine feste Python-Version 3.9 in einer virtuellen Umgebung nutzt, ohne vom auf dem Betriebssystem installierten Python abhängig zu sein.
+Diese Seite beschreibt den aktuellen Ansatz, wie openWB eine feste Python-Version in einer virtuellen Umgebung nutzt, ohne vom auf dem Betriebssystem installierten Python abhängig zu sein.
 
 ## Ziel
 
-* Python 3.9 im Projekt nutzen, auch wenn das Betriebssystem eine andere Standardversion hat.
+* Fest definierte Python-Version im Projekt nutzen, auch wenn das Betriebssystem eine andere Standardversion hat.
 * Abhängigkeiten vollständig in der venv installieren.
 * Auf schwacher Hardware lange Build-Zeiten reduzieren, indem vorkompilierte Binaries bevorzugt werden.
 * Lokalen Build als Fallback beibehalten.
@@ -13,7 +13,7 @@ Diese Seite beschreibt den aktuellen Ansatz, wie openWB eine feste Python-Versio
 
 1. Das Bootstrap-Skript [runs/bootstrap_venv.sh](runs/bootstrap_venv.sh) initialisiert die Python-Runtime.
 2. Es prüft zuerst, ob ein kompatibles, bereits vorhandenes venv genutzt werden kann.
-3. Falls kein passender Interpreter vorhanden ist, wird ein vorkompiliertes Python-3.9-Binary heruntergeladen.
+3. Falls kein passender Interpreter vorhanden ist, wird ein vorkompiliertes Python-Binary heruntergeladen.
 4. Wenn kein passendes Binary verfügbar ist, erfolgt ein lokaler Build über pyenv.
 5. Danach wird die venv mit dieser Runtime erstellt und [requirements.txt](requirements.txt) installiert.
 
@@ -22,7 +22,7 @@ Diese Seite beschreibt den aktuellen Ansatz, wie openWB eine feste Python-Versio
 * venv: [runs/bootstrap_venv.sh](runs/bootstrap_venv.sh)
 * Paketinstallation auf OS-Ebene: [runs/install_packages.sh](runs/install_packages.sh)
 * Python-Abhängigkeiten: [requirements.txt](requirements.txt)
-* Boot-Integration: [runs/atreboot.sh](runs/atreboot.sh)
+* Boot-Integration: [data/config/openwb-python-bootstrap.service](data/config/openwb-python-bootstrap.service)
 * Geforderte Python-Version: [data/config/python_runtime_version.txt](data/config/python_runtime_version.txt)
 
 ## Konfiguration der Binary-Quelle
@@ -35,34 +35,46 @@ Ohne Override nutzt das Bootstrap-Skript einen versionsspezifischen Release-Tag:
 
 * `python-runtime-<python_version>`
 
-Beispiel für Version `3.9.21`:
+Beispiel für Version `3.9.25`:
 
-* `python-runtime-3.9.21`
+* `python-runtime-3.9.25`
 
 Beispiel:
 
-OPENWB_PYTHON_BINARIES_BASE_URL=[https://example.org/openwb-python](https://example.org/openwb-python)
+`OPENWB_PYTHON_BINARIES_BASE_URL=https://example.org/openwb-python`
+
+Ohne Override lädt das Bootstrap-Skript aktuell aus dem separaten Runtime-Repository:
+
+* `https://github.com/openWB/python-runtime/releases/download/<tag>`
 
 ## Erwartetes Artefakt-Schema
 
-Das Bootstrap-Skript versucht mehrere Dateinamenmuster je Architektur. Empfohlen ist die Bereitstellung mindestens eines dieser Namen:
+Das Bootstrap-Skript prueft aktuell genau diese Muster (in dieser Reihenfolge):
 
-* python-3.9.21-linux-x86_64-debian11.tar.xz
-* python-3.9.21-linux-x86_64-debian12.tar.xz
-* python-3.9.21-linux-x86_64-debian13.tar.xz
-* python-3.9.21-linux-aarch64-debian11.tar.xz
-* python-3.9.21-linux-aarch64-debian12.tar.xz
-* python-3.9.21-linux-aarch64-debian13.tar.xz
-* python-3.9.21-linux-armv7l-debian11.tar.xz
-* python-3.9.21-linux-armv7l-debian12.tar.xz
-* python-3.9.21-linux-armv7l-debian13.tar.xz
+1. `python-<python_version>-linux-<arch>-<os_variant>.tar.xz`
+2. nur auf Raspberry Pi OS als Fallback zusaetzlich:
+  `python-<python_version>-linux-<arch>-debian<major>.tar.xz`
 
-Alternativ werden auch diese Präfixe unterstützt:
+Dabei werden `arch` und `os_variant` lokal erkannt:
 
-* cpython-3.9.21-linux-[arch]-[os_variant].tar.xz
-* openwb-python-3.9.21-linux-[arch]-[os_variant].tar.xz
+* `arch`: `x86_64`, `aarch64`, `armv7l`
+* `os_variant`: `debian11|debian12|debian13` oder `rpios11|rpios12|rpios13`
 
-Zusätzlich werden tar.gz-Dateien akzeptiert.
+Beispiele fuer die effektiv gesuchten Dateinamen:
+
+* python-3.9.25-linux-x86_64-debian11.tar.xz
+* python-3.9.25-linux-x86_64-debian12.tar.xz
+* python-3.9.25-linux-x86_64-debian13.tar.xz
+* python-3.9.25-linux-aarch64-debian11.tar.xz
+* python-3.9.25-linux-aarch64-debian12.tar.xz
+* python-3.9.25-linux-aarch64-debian13.tar.xz
+* python-3.9.25-linux-armv7l-debian11.tar.xz
+* python-3.9.25-linux-armv7l-debian12.tar.xz
+* python-3.9.25-linux-armv7l-debian13.tar.xz
+
+Raspberry-Pi-OS-Fallback-Beispiel:
+
+* Laufzeit auf `rpios12` sucht zuerst `python-3.9.25-linux-<arch>-rpios12.tar.xz` und danach `python-3.9.25-linux-<arch>-debian12.tar.xz`.
 
 ## Erwarteter Inhalt im Archiv
 
@@ -70,7 +82,7 @@ Das Archiv muss eine lauffähige Python-Installation enthalten, in der sich eine
 
 Beispielstruktur:
 
-python-3.9.21/
+python-3.9.25/
   bin/python3.9
   lib/
   include/
@@ -78,12 +90,12 @@ python-3.9.21/
 
 Das Bootstrap-Skript erkennt die Prefix-Struktur automatisch und installiert diese unter:
 
-* .pyenv/versions/3.9.21
+* .pyenv/versions/3.9.25
 
 ## Entkopplungsregeln
 
 * Die venv wird mit lokalen Kopien erzeugt (kein Symlink-Modell).
-* include-system-site-packages darf nicht aktiv sein.
+* include-system-site-packages ist nicht aktiv.
 * Ist ein vorhandenes venv nicht kompatibel (falsche Version oder nicht vollständig entkoppelt), wird es automatisch neu aufgebaut.
 
 ## Fallback-Verhalten
@@ -91,7 +103,7 @@ Das Bootstrap-Skript erkennt die Prefix-Struktur automatisch und installiert die
 Wenn kein vorkompiliertes Binary gefunden oder genutzt werden kann:
 
 1. pyenv wird lokal im Projekt installiert.
-2. CPython 3.9.21 wird lokal kompiliert.
+2. CPython wird lokal kompiliert.
 3. Danach wird die venv wie üblich aufgebaut.
 
 Hinweis: Auf schwacher Hardware kann dieser Schritt deutlich länger dauern.
@@ -104,7 +116,7 @@ Die Initialisierung läuft automatisch im normalen Boot-/Updatepfad. Dadurch wer
 
 Empfohlen ist ein Build-Job pro Zielarchitektur, der:
 
-1. CPython 3.9.21 für die Zielplattform baut.
+1. CPython für die Zielplattform baut.
 2. Den Runtime-Ordner als tar.xz paketiert.
 3. Das Artefakt unter dem oben beschriebenen Namensschema veröffentlicht.
 4. Die Artefakte an der konfigurierten Base-URL bereitstellt.
@@ -126,11 +138,9 @@ Die Zielplattformen sind wie folgt abgedeckt:
 * Compute Module 4: `aarch64`
 * Allgemein x86_64: `x86_64`
 
-Zusätzlich wird pro Zielarchitektur für diese OS-Linien gebaut:
+Pro Zielarchitektur wird für diese OS-Linien gebaut (wird bei Bedarf erweitert):
 
 * `debian11` (Raspberry Pi OS 11 / Debian 11)
-* `debian12` (Raspberry Pi OS 12 / Debian 12)
-* `debian13` (Raspberry Pi OS 13 / Debian 13)
 
 ## Workflow-Nutzung
 
@@ -138,29 +148,35 @@ Der Workflow kann manuell per `workflow_dispatch` gestartet werden.
 
 Optional kann dabei `publish_release=true` gesetzt werden. Dann werden die erzeugten Artefakte in das versionsspezifische Release-Tag hochgeladen.
 
-Der Tag ist versionsspezifisch und wird aus [data/config/python_runtime_version.txt](data/config/python_runtime_version.txt) gelesen, z. B. `python-runtime-3.9.21`.
+Die Veröffentlichung erfolgt dabei nicht im Core-Repository, sondern im separaten Repository `python-runtime` unter demselben Owner.
+
+Beispiel bei Owner `openWB`:
+
+* Zielrepo: `openWB/python-runtime`
+* Release-Tag: `python-runtime-<python_version>`
+
+Der Tag ist versionsspezifisch und wird aus [data/config/python_runtime_version.txt](data/config/python_runtime_version.txt) gelesen, z. B. `python-runtime-3.9.25`.
+
+Fuer den Publish-Schritt wird im Core-Repository ein Secret benoetigt:
+
+* `PYTHON_RUNTIME_REPO_TOKEN`
+
+Das Token muss mindestens Schreibrechte auf `Contents` im Zielrepository `python-runtime` besitzen.
 
 Ohne diese Option werden die Artefakte nur als normale Workflow-Artefakte bereitgestellt.
 
+Wichtig:
+
+* Workflow-Artefakte sind nur an den jeweiligen Run gebunden (Retention, kein dauerhafter Download-Endpunkt).
+* Dauerhafte Downloads fuer das Bootstrap erfolgen ueber Release-Assets im separaten Runtime-Repository.
+
 ## Output
 
-Der Workflow erzeugt pro Lauf neun primäre Artefakte (jeweils mit passender `.sha256`):
+Bei voll aktivierter Matrix erzeugt der Workflow pro Lauf aktuell drei primäre Artefakte (jeweils mit passender `.sha256`, hier als Beispiel mit Python 3.9.25):
 
-* `python-3.9.21-linux-armv7l-debian11.tar.xz`
-* `python-3.9.21-linux-armv7l-debian12.tar.xz`
-* `python-3.9.21-linux-armv7l-debian13.tar.xz`
-* `python-3.9.21-linux-aarch64-debian11.tar.xz`
-* `python-3.9.21-linux-aarch64-debian12.tar.xz`
-* `python-3.9.21-linux-aarch64-debian13.tar.xz`
-* `python-3.9.21-linux-x86_64-debian11.tar.xz`
-* `python-3.9.21-linux-x86_64-debian12.tar.xz`
-* `python-3.9.21-linux-x86_64-debian13.tar.xz`
-
-## Troubleshooting
-
-* Binary-Download schlägt fehl: URL und Dateinamen prüfen.
-* Fallback-Build schlägt fehl: Build-Abhängigkeiten in [runs/install_packages.sh](runs/install_packages.sh) prüfen.
-* venv wird neu aufgebaut: prüfen, ob vorhandenes venv nicht den Entkopplungsregeln entspricht.
+* `python-3.9.25-linux-armv7l-debian11.tar.xz`
+* `python-3.9.25-linux-aarch64-debian11.tar.xz`
+* `python-3.9.25-linux-x86_64-debian11.tar.xz`
 
 ## Versionswechsel
 
@@ -169,5 +185,5 @@ Die gewünschte Python-Version wird zentral über [data/config/python_runtime_ve
 Beim Ändern dieser Datei:
 
 1. erzeugt der Workflow Artefakte mit der neuen Versionsnummer im Dateinamen,
-2. publiziert sie in ein separates Release-Tag `python-runtime-<neue_version>`,
+2. publiziert sie optional in ein separates Release-Tag `python-runtime-<neue_version>` im Repository `python-runtime`,
 3. lädt das Bootstrap-Skript automatisch aus diesem neuen versionsspezifischen Tag.

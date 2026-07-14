@@ -83,7 +83,8 @@ chmod 666 "$LOGFILE"
 		echo "adding init to $boot_config_target..."
 		sudo tee -a "$boot_config_target" <"$boot_config_source" >/dev/null
 		echo "done"
-		sudo reboot now
+		echo "rebooting system"
+		sudo reboot now &
 	fi
 
 	ramdisk_config_source="${OPENWBBASEDIR}/data/config/ramdisk_config.txt"
@@ -173,14 +174,16 @@ chmod 666 "$LOGFILE"
 		sudo cp "${OPENWBBASEDIR}/data/config/openwb.cron" "/etc/cron.d/openwb"
 	fi
 
+	SERVICE_UPDATED=0
 	# check for openwb-python-bootstrap service definition
 	if find /etc/systemd/system/ -maxdepth 1 -name openwb-python-bootstrap.service -type l | grep -q "."; then
 		echo "openwb-python-bootstrap.service definition is already a symlink"
 	else
+		sudo ln -s "${OPENWBBASEDIR}/data/config/openwb-python-bootstrap.service" /etc/systemd/system/openwb-python-bootstrap.service
 		sudo systemctl daemon-reload
 		sudo systemctl enable openwb-python-bootstrap
-		echo "openwb-python-bootstrap.service definition updated. rebooting..."
-		sudo reboot now &
+		SERVICE_UPDATED=1
+		echo "openwb-python-bootstrap.service definition updated."
 	fi
 
 	# check for openwb2 service definition
@@ -193,7 +196,11 @@ chmod 666 "$LOGFILE"
 		fi
 		sudo ln -s "${OPENWBBASEDIR}/data/config/openwb2.service" /etc/systemd/system/openwb2.service
 		sudo systemctl daemon-reload
-		echo "openwb2.service definition updated. rebooting..."
+		SERVICE_UPDATED=1
+		echo "openwb2.service definition updated."
+	fi
+	# check for required reboot after service update
+	if ((SERVICE_UPDATED == 1)); then
 		sudo reboot now &
 	fi
 

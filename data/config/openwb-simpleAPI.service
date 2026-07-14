@@ -1,9 +1,9 @@
 # openwb-version:2
 [Unit]
 Description="openWB mqtt simpleAPI"
-Wants=openwb-python-bootstrap.service
+# Wants=openwb-python-bootstrap.service
 After=mosquitto.service
-After=openwb-python-bootstrap.service
+# After=openwb-python-bootstrap.service
 
 [Service]
 User=openwb
