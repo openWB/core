@@ -32,14 +32,14 @@ jobs:
             platform: linux/amd64
             debian_version: "11"
             image: debian:bullseye
-          - arch: x86_64
-            platform: linux/amd64
-            debian_version: "12"
-            image: debian:bookworm
-          - arch: x86_64
-            platform: linux/amd64
-            debian_version: "13"
-            image: debian:trixie
+          # - arch: x86_64
+          #   platform: linux/amd64
+          #   debian_version: "12"
+          #   image: debian:bookworm
+          # - arch: x86_64
+          #   platform: linux/amd64
+          #   debian_version: "13"
+          #   image: debian:trixie
           # - arch: aarch64
           #   platform: linux/arm64
           #   debian_version: "11"
@@ -126,7 +126,6 @@ jobs:
                 exit 1
               fi
 
-              chmod +x runs/build_python_runtime_artifact.sh
               runs/build_python_runtime_artifact.sh "${TARGET_ARCH}" "${TARGET_OS_VARIANT}"
             '
 
@@ -139,7 +138,7 @@ jobs:
   publish-release:
     needs:
       - build-runtime
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_release }}
+    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_release) }}
     runs-on: ubuntu-latest
     env:
       TARGET_RELEASE_OWNER: ${{ github.repository_owner }}
