@@ -50,20 +50,22 @@ class Sdm630_72(Sdm):
         (SdmRegister.EXPORTED, ModbusDataType.FLOAT_32),
     )
 
-    def __init__(self, modbus_id: int, client: modbus.ModbusTcpClient_, fault_state: FaultState) -> None:
+    def __init__(self, modbus_id: int, client: modbus.ModbusTcpClient_, fault_state: FaultState,
+                 silent_interval: float = 0.1) -> None:
         super().__init__(modbus_id, client)
         self.fault_state = fault_state
+        self.silent_interval = silent_interval
 
     def get_power(self) -> Tuple[List[float], float]:
         # smarthome legacy
-        time.sleep(0.1)
+        time.sleep(self.silent_interval)
         powers = self.client.read_input_registers(0x0C, [ModbusDataType.FLOAT_32]*3, unit=self.id)
         power = sum(powers)
         return powers, power
 
     def get_voltages(self) -> List[float]:
         # client handler
-        time.sleep(0.1)
+        time.sleep(self.silent_interval)
         return self.client.read_input_registers(0x00, [ModbusDataType.FLOAT_32]*3, unit=self.id)
 
     def get_counter_state(self) -> CounterState:
@@ -71,13 +73,13 @@ class Sdm630_72(Sdm):
         # manche können auch nur 10
         if self.fast_mode:
             try:
-                time.sleep(0.1)
+                time.sleep(self.silent_interval)
                 bulk_1 = self.client.read_input_registers_bulk(
                     SdmRegister.VOLTAGE_L1, 18, mapping=self.REG_MAPPING_BULK_1, unit=self.id)
-                time.sleep(0.1)
+                time.sleep(self.silent_interval)
                 power_factors = self.client.read_input_registers(
                     SdmRegister.POWER_FACTOR_L1, [ModbusDataType.FLOAT_32]*3, unit=self.id)
-                time.sleep(0.1)
+                time.sleep(self.silent_interval)
                 bulk_2 = self.client.read_input_registers_bulk(
                     SdmRegister.FREQUENCY, 6, mapping=self.REG_MAPPING_BULK_2, unit=self.id)
                 resp = {**bulk_1, **bulk_2}
@@ -90,23 +92,23 @@ class Sdm630_72(Sdm):
             # im gleichen Durchlauf noch im slow mode versuchen, sonst schlägt der Hardware-Check fehl
             log.debug("Auslesung des Zählers im Kompatibilitäts-Modus")
             resp = {}
-            time.sleep(0.1)
+            time.sleep(self.silent_interval)
             resp[SdmRegister.VOLTAGE_L1] = self.client.read_input_registers(
                 SdmRegister.VOLTAGE_L1, [ModbusDataType.FLOAT_32]*3, unit=self.id)
-            time.sleep(0.1)
+            time.sleep(self.silent_interval)
             resp[SdmRegister.CURRENT_L1] = self.client.read_input_registers(
                 SdmRegister.CURRENT_L1, [ModbusDataType.FLOAT_32]*3, unit=self.id)
-            time.sleep(0.1)
+            time.sleep(self.silent_interval)
             resp[SdmRegister.POWER_L1] = self.client.read_input_registers(
                 SdmRegister.POWER_L1, [ModbusDataType.FLOAT_32]*3, unit=self.id)
-            time.sleep(0.1)
+            time.sleep(self.silent_interval)
             power_factors = self.client.read_input_registers(
                 SdmRegister.POWER_FACTOR_L1, [ModbusDataType.FLOAT_32]*3, unit=self.id)
-            time.sleep(0.1)
+            time.sleep(self.silent_interval)
             # frequency noch mit auslesen klappt nicht
             resp[SdmRegister.IMPORTED], resp[SdmRegister.EXPORTED] = self.client.read_input_registers(
                 SdmRegister.IMPORTED, [ModbusDataType.FLOAT_32]*2, unit=self.id)
-            time.sleep(0.1)
+            time.sleep(self.silent_interval)
             resp[SdmRegister.FREQUENCY] = self.client.read_input_registers(
                 SdmRegister.FREQUENCY, ModbusDataType.FLOAT_32, unit=self.id)
 

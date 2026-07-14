@@ -10,3 +10,4 @@ class Elgris(Sdm630_72):
         self.serial_number = ""
         self.fault_state = fault_state
         self.fast_mode = True
+        self.silent_interval = 0.1
