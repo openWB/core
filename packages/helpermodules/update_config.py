@@ -3409,7 +3409,8 @@ class UpdateConfig:
 
     def upgrade_datastore_133(self) -> None:
         def upgrade(topic: str, payload) -> None:
-            if "openWB/optional/ep/grid_fee/provider" == topic:
+            if ("openWB/optional/ep/flexible_tariff/provider" == topic or
+                    "openWB/optional/ep/grid_fee/provider" == topic):
                 provider = decode_payload(payload)
                 if provider["type"] == "fixed_hours":
                     if provider["configuration"]:
