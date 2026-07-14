@@ -3416,7 +3416,7 @@ class UpdateConfig:
                     if provider["configuration"]:
                         if provider["configuration"]["tariffs"]:
                             for tariff in provider["configuration"]["tariffs"] or []:
-                                if tariff["weekdays"] is None:
+                                if tariff.get("weekdays") is None:
                                     tariff["weekdays"] = list(range(7))
                             return {topic: provider}
         self._loop_all_received_topics(upgrade)
