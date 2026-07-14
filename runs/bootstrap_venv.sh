@@ -55,7 +55,7 @@ init_python_config() {
 
 	PYTHON_MAJOR_MINOR="${PYTHON_VERSION%.*}"
 	PYTHON_RELEASE_TAG="${OPENWB_PYTHON_RELEASE_TAG:-python-runtime-${PYTHON_VERSION}}"
-	PYTHON_BINARIES_BASE_URL="${OPENWB_PYTHON_BINARIES_BASE_URL:-https://github.com/openWB/python-runtime/releases/download/${PYTHON_RELEASE_TAG}}"
+	PYTHON_BINARIES_BASE_URL="${OPENWB_PYTHON_BINARIES_BASE_URL:-https://github.com/benderl/python-runtime/releases/download/${PYTHON_RELEASE_TAG}}"
 	log "Python-Zielversion: ${PYTHON_VERSION}"
 	log "Release-Tag fuer Binaries: ${PYTHON_RELEASE_TAG}"
 	log "Binary-Basis-URL: ${PYTHON_BINARIES_BASE_URL}"
@@ -125,9 +125,6 @@ extract_archive() {
 		*.tar.xz)
 			tar -xJf "${archive}" -C "${destination}" >/dev/null 2>&1
 			;;
-		*.tar.gz)
-			tar -xzf "${archive}" -C "${destination}" >/dev/null 2>&1
-			;;
 		*)
 			return 1
 			;;
@@ -168,7 +165,7 @@ install_prebuilt_python() {
 	fi
 	log "Suche vorkompilierte Runtime fuer arch=${arch}, os_variant=${os_variant:-unknown}"
 	temp_dir=$(mktemp -d)
-	archive="${temp_dir}/python.tar"
+	archive="${temp_dir}/python.tar.xz"
 	extract_dir="${temp_dir}/extract"
 	target_dir="${PYENV_ROOT}/versions/${PYTHON_VERSION}"
 	mkdir -p "${extract_dir}"
@@ -218,6 +215,8 @@ install_prebuilt_python() {
 			return 0
 		fi
 		log "WARN: Installierte Runtime aus ${candidate} ist nicht verwendbar."
+		# Ungueltige Runtime wieder entfernen, damit der lokale Fallback sauber bauen kann.
+		rm -rf "${target_dir}"
 	done
 
 	log "Kein passendes vorkompiliertes Python gefunden."
@@ -326,6 +325,8 @@ ensure_managed_python() {
 	fi
 	py_path=$(managed_python_path)
 	log "Kein vorkompiliertes Python gefunden, falle auf lokalen Build zurueck."
+	# Falls ein ungueltiges Runtime-Verzeichnis existiert, pyenv-Install nicht ueberspringen.
+	rm -rf "${PYENV_ROOT}/versions/${PYTHON_VERSION}"
 	check_build_dependencies || return 1
 
 	log "Installiere CPython ${PYTHON_VERSION} via pyenv (kann einige Minuten dauern)."
@@ -360,17 +361,78 @@ is_system_site_packages_enabled() {
 	grep -Eqi '^include-system-site-packages\s*=\s*true\s*$' "${PYVENV_CFG}"
 }
 
-is_venv_copied() {
-	[[ ! -L "${VENV_DIR}/bin/python3" ]]
+prepare_venv_libpython() {
+	local managed_lib_dir="${PYENV_ROOT}/versions/${PYTHON_VERSION}/lib"
+	local source_lib="${managed_lib_dir}/libpython${PYTHON_MAJOR_MINOR}.so.1.0"
+	local target_lib_dir="${VENV_DIR}/lib"
+
+	if [[ ! -f "${source_lib}" ]]; then
+		log "ERROR: Managed libpython fehlt (${source_lib})."
+		return 1
+	fi
+
+	mkdir -p "${target_lib_dir}" || return 1
+	cp -af "${source_lib}" "${target_lib_dir}/" || return 1
+	ln -sfn "libpython${PYTHON_MAJOR_MINOR}.so.1.0" "${target_lib_dir}/libpython${PYTHON_MAJOR_MINOR}.so"
+}
+
+resolve_venv_libpython() {
+	local venv_python="${VENV_DIR}/bin/python3"
+
+	if ! command -v ldd >/dev/null 2>&1 || [[ ! -x "${venv_python}" ]]; then
+		return 1
+	fi
+
+	ldd "${venv_python}" | awk '/libpython3\.[0-9]+\.so\.1\.0/{print $3; exit}'
+}
+
+is_venv_bound_to_managed_python() {
+	local resolved_libpython=""
+	local resolved_real=""
+	local managed_lib_real=""
+	local venv_lib_real=""
+
+	resolved_libpython=$(resolve_venv_libpython || true)
+	if [[ -z "${resolved_libpython}" ]]; then
+		return 1
+	fi
+	resolved_real=$(readlink -f "${resolved_libpython}" 2>/dev/null || true)
+	managed_lib_real=$(readlink -f "${PYENV_ROOT}/versions/${PYTHON_VERSION}/lib/libpython${PYTHON_MAJOR_MINOR}.so.1.0" 2>/dev/null || true)
+	venv_lib_real=$(readlink -f "${VENV_DIR}/lib/libpython${PYTHON_MAJOR_MINOR}.so.1.0" 2>/dev/null || true)
+
+	if [[ -z "${resolved_real}" ]]; then
+		return 1
+	fi
+
+	case "${resolved_real}" in
+		"${managed_lib_real}"|"${venv_lib_real}")
+			return 0
+			;;
+		*)
+			return 1
+			;;
+	esac
 }
 
 create_venv() {
 	local py_cmd="$1"
-	log "Erzeuge venv mit ${py_cmd} (isoliert, mit lokalen Kopien)."
-	"${py_cmd}" -m venv --copies "${VENV_DIR}" || {
+	log "Erzeuge venv mit ${py_cmd} (isoliert, Symlink auf Managed-Runtime)."
+	"${py_cmd}" -m venv "${VENV_DIR}" || {
 		log "ERROR: venv konnte nicht erzeugt werden."
 		return 1
 	}
+	if ! prepare_venv_libpython; then
+		log "ERROR: venv-libpython konnte nicht vorbereitet werden."
+		return 1
+	fi
+	if ! is_required_python "${VENV_DIR}/bin/python3"; then
+		log "ERROR: venv-Python hat nicht die erwartete Version ${PYTHON_VERSION}."
+		return 1
+	fi
+	if ! is_venv_bound_to_managed_python; then
+		log "ERROR: venv ist nicht an die Managed-Runtime gebunden."
+		return 1
+	fi
 	if is_system_site_packages_enabled; then
 		log "ERROR: venv wurde mit System-Site-Packages erstellt."
 		return 1
@@ -421,13 +483,13 @@ main() {
 
 	if [[ -d "${VENV_DIR}" ]]; then
 		log "Bestehendes venv gefunden, pruefe Kompatibilitaet."
-		if ! is_required_python "${VENV_DIR}/bin/python3" || is_system_site_packages_enabled || ! is_venv_copied; then
-			log "Bestehendes venv ist inkompatibel oder nicht vollstaendig entkoppelt."
+		if ! is_required_python "${VENV_DIR}/bin/python3" || is_system_site_packages_enabled || ! is_venv_bound_to_managed_python; then
+			log "Bestehendes venv ist inkompatibel oder nicht korrekt an Managed-Python gebunden."
 			py_cmd=$(ensure_managed_python) || {
 				log "ERROR: Python ${PYTHON_VERSION} konnte nicht bereitgestellt werden."
 				exit 1
 			}
-			log "Vorhandenes venv ist nicht kompatibel oder nicht vollstaendig entkoppelt, baue neu auf."
+			log "Vorhandenes venv ist nicht kompatibel oder nicht korrekt gebunden, baue neu auf."
 			rm -rf "${VENV_DIR}"
 			create_venv "${py_cmd}" || exit 1
 		else

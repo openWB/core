@@ -1,9 +1,9 @@
 # openwb-version:4
 [Unit]
 Description="Remote Support Handler openWB 2.0"
-Wants=openwb-python-bootstrap.service
+# Wants=openwb-python-bootstrap.service
 After=mosquitto_local.service
-After=openwb-python-bootstrap.service
+# After=openwb-python-bootstrap.service
 
 [Service]
 User=openwb
