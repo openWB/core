@@ -39,9 +39,10 @@ import { useLocalDataStore } from 'src/stores/localData-store';
 import { GraphDataPoint } from 'src/stores/mqtt-store-model';
 import HistoryChartLegend from 'src/components/charts/historyChart/HistoryChartLegend.vue';
 import 'chartjs-adapter-luxon';
-import type {
-  HistoryChartTooltipItem,
-  ChartComponentRef,
+import {
+  CONSUMER_TOTAL_LABEL,
+  type HistoryChartTooltipItem,
+  type ChartComponentRef,
 } from './history-chart-model';
 
 Chart.register(
@@ -231,7 +232,7 @@ const consumerDatasets = computed(() => {
 
   return [
     {
-      label: 'Verbraucher ges.',
+      label: CONSUMER_TOTAL_LABEL,
       category: 'consumer',
       unit: 'kW',
       borderColor: defaultColor,

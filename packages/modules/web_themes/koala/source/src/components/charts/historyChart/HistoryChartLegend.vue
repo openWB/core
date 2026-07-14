@@ -30,10 +30,11 @@
 import { ref, watch, computed, nextTick } from 'vue';
 import { useLocalDataStore } from 'src/stores/localData-store';
 import { Chart, ChartDataset, LegendItem } from 'chart.js';
-import type {
-  Category,
-  CategorizedDataset,
-  LegendItemWithCategory,
+import {
+  CONSUMER_TOTAL_LABEL,
+  type Category,
+  type CategorizedDataset,
+  type LegendItemWithCategory,
 } from './history-chart-model';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import { useQuasar } from 'quasar';
@@ -99,11 +100,24 @@ const categorizedLegendItems = computed(() => {
       categories.component.push(item);
     }
   }
-  // Sort each category's items alphabetically
+
   Object.keys(categories).forEach((key) => {
-    categories[key as Category].sort((a, b) =>
-      (a.text || '').localeCompare(b.text || '', undefined, { numeric: true }),
+    const category = key as Category;
+    categories[category].sort((a, b) =>
+      (a.text || '').localeCompare(b.text || '', undefined, {
+        numeric: true,
+      }),
     );
+
+    if (category === 'consumer') {
+      const totalIndex = categories[category].findIndex(
+        (item) => item.text === CONSUMER_TOTAL_LABEL,
+      );
+      if (totalIndex > 0) {
+        const [total] = categories[category].splice(totalIndex, 1);
+        categories[category].unshift(total);
+      }
+    }
   });
   return categories;
 });

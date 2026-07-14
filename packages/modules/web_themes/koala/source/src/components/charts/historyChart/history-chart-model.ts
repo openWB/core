@@ -18,6 +18,8 @@ export type Category =
   | 'consumer'
   | 'component';
 
+export const CONSUMER_TOTAL_LABEL = 'Verbraucher ges.';
+
 // Add category to the chart datasets
 export interface CategorizedDataset extends ChartDataset<
   'line',
