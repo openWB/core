@@ -180,6 +180,10 @@ class BatAll:
                 self.data.get.fault_state = 0
                 self.data.get.fault_str = NO_ERROR
                 self.data.get.daily_exported = 0
+                self.data.get.imported = 0
+                self.data.get.daily_imported = 0
+                self.data.get.soc = 0
+                self.data.get.power_limit_controllable = False
         except Exception:
             log.exception("Fehler im Bat-Modul")
 

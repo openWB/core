@@ -419,17 +419,17 @@ def analyse_percentage(entry) -> Tuple[Dict, str]:
         message = ""
         grid_counter = get_grid_counter(entry)
         # Wenn neben dem "all" Eintrag kein weiterer Eintrag existiert, dann gibt es keine Komponenten.
-        if ((safe_get_nested(entry, "bat", "all", "fault_state") == 2 and len(entry.get("bat", {})) > 2) or
-                (safe_get_nested(entry, "cp", "all", "fault_state") == 2 and len(entry.get("cp", {})) > 2) or
-                (safe_get_nested(entry, "pv", "all", "fault_state") == 2 and len(entry.get("pv", {})) > 2) or
+        if ((safe_get_nested(entry, "bat", "all", "fault_state") == 2 and len(entry.get("bat", {})) > 1) or
+                (safe_get_nested(entry, "cp", "all", "fault_state") == 2 and len(entry.get("cp", {})) > 1) or
+                (safe_get_nested(entry, "pv", "all", "fault_state") == 2 and len(entry.get("pv", {})) > 1) or
                 grid_counter.get("fault_state", None) == 2):
 
             entry["energy_source"] = {"grid": 1, "pv": 0, "bat": 0, "cp": 0}
-            if safe_get_nested(entry, "bat", "all", "fault_state") == 2 and len(entry.get("bat", {})) > 2:
+            if safe_get_nested(entry, "bat", "all", "fault_state") == 2 and len(entry.get("bat", {})) > 1:
                 message += EOOR_STATE_MSG.format("mind. einer der Speicher")
-            if safe_get_nested(entry, "cp", "all", "fault_state") == 2 and len(entry.get("cp", {})) > 2:
+            if safe_get_nested(entry, "cp", "all", "fault_state") == 2 and len(entry.get("cp", {})) > 1:
                 message += EOOR_STATE_MSG.format("mind. einer der Ladepunkte")
-            if safe_get_nested(entry, "pv", "all", "fault_state") == 2 and len(entry.get("pv", {})) > 2:
+            if safe_get_nested(entry, "pv", "all", "fault_state") == 2 and len(entry.get("pv", {})) > 1:
                 message += EOOR_STATE_MSG.format("mind. einer der Wechselrichter")
             if grid_counter.get("fault_state", None) == 2:
                 message += EOOR_STATE_MSG.format("der Zähler für das Netz")
