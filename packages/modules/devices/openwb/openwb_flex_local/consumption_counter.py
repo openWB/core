@@ -23,6 +23,10 @@ class LocalConsumptionCounter(AbstractCounter):
 
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
+
+        if self.kwargs['client'] is None:
+            raise Exception("Verbrauchszähler mit lokaler Auslesung konnte Port nicht ermitteln, ")
+
         self.__serial_client: modbus.ModbusSerialClient_ = self.kwargs['client']
         factory = consumption_counter_factory(self.component_config.configuration.type)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
@@ -33,7 +37,6 @@ class LocalConsumptionCounter(AbstractCounter):
             self.__client = factory(self.component_config.configuration.id, self.__serial_client, self.fault_state)
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
         self.store = get_component_value_store(self.component_config.id)
-        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
 
     def update(self) -> None:
         with self.__serial_client:

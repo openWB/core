@@ -31,11 +31,11 @@ def create_device(device_config: FlexLocalSetup):
         if count == 1 and device[0] in BUS_SOURCES:
             port = device[0]
             log.debug(f"Verbrauchszähler mit lokaler Auslesung nutzt Port {port}")
+            client = ModbusSerialClient_(port)
         else:
             port = "UNKNOWN"
             log.debug(f"Verbrauchszähler mit lokaler Auslesung konnte Port nicht ermitteln, gefundene Ports: {device}")
-
-        client = ModbusSerialClient_(port)
+            client = None
 
     return ConfigurableDevice(
         device_config=device_config,
