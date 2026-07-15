@@ -3761,11 +3761,11 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const consumerColor = computed(() => {
     return (consumerId: number): string | null => {
-        const color = getValue.value(
-          `openWB/consumer/${consumerId}/module`,
-          'color',
-          null,
-        ) as string | null;
+      const color = getValue.value(
+        `openWB/consumer/${consumerId}/module`,
+        'color',
+        null,
+      ) as string | null;
       return resolveComponentColor(color, SETTINGS_UI_COLORS.consumer);
     };
   });
