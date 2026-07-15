@@ -25,7 +25,7 @@ class LocalConsumptionCounter(AbstractCounter):
         self.__device_id: int = self.kwargs['device_id']
 
         if self.kwargs['client'] is None:
-            raise Exception("Verbrauchszähler mit lokaler Auslesung konnte Port nicht ermitteln, ")
+            raise Exception("USB-Adapter für die lokale Auslesung unbekannt oder nicht eingesteckt.")
 
         self.__serial_client: modbus.ModbusSerialClient_ = self.kwargs['client']
         factory = consumption_counter_factory(self.component_config.configuration.type)
