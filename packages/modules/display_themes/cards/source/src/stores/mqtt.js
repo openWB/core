@@ -424,6 +424,24 @@ export const useMqttStore = defineStore("mqtt", {
       });
     },
 
+    /* consumer getters */
+
+    getConsumerIds(state) {
+      return state.getWildcardIndexList("openWB/consumer/+/module");
+    },
+    getConsumerSumPower(state) {
+      return (returnType = "textValue") => {
+        var power = state.getValueString("openWB/consumer/get/power", "W");
+        if (Object.hasOwnProperty.call(power, returnType)) {
+          return power[returnType];
+        }
+        if (returnType == "object") {
+          return power;
+        }
+        console.error("returnType not found!", returnType, power);
+      };
+    },
+
     /* charge point getters */
 
     getChargePointSumPower(state) {
