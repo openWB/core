@@ -174,6 +174,12 @@ class BatAll:
                     self.data.get.soc = 0
             else:
                 self.data.config.configured = False
+                # prevent stale values when no inverter modules are configured
+                self.data.get.power = 0
+                self.data.get.exported = 0
+                self.data.get.fault_state = 0
+                self.data.get.fault_str = NO_ERROR
+                self.data.get.daily_exported = 0
         except Exception:
             log.exception("Fehler im Bat-Modul")
 
