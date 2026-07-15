@@ -196,6 +196,9 @@ const chargePointDatasets = computed(() =>
   }),
 );
 
+const consumerLabel = (id: number) =>
+  mqttStore.consumerName(id) || `Verbraucher ${id}`;
+
 const consumerDatasets = computed(() => {
   const ids = mqttStore.consumerIds;
   if (ids.length === 0) return [];
@@ -203,7 +206,7 @@ const consumerDatasets = computed(() => {
 
   const individualDataset = (id: number) => {
     const baseColor = mqttStore.consumerColor(id) || defaultColor;
-    const label = mqttStore.consumerName(id) || `Verbraucher ${id}`;
+    const label = consumerLabel(id);
     return {
       label,
       category: 'consumer',
@@ -253,9 +256,7 @@ const consumerDatasets = computed(() => {
     },
     ...ids.map((id) => ({
       ...individualDataset(id),
-      hidden: localDataStore.isDatasetHidden(
-        mqttStore.consumerName(id) || `Verbraucher ${id}`,
-      ),
+      hidden: localDataStore.isDatasetHidden(consumerLabel(id)),
     })),
   ];
 });
@@ -264,9 +265,7 @@ const seededHiddenConsumers = new Set<string>();
 watch(
   () =>
     mqttStore.consumerIds.length > 1
-      ? mqttStore.consumerIds.map(
-          (id) => mqttStore.consumerName(id) || `Verbraucher ${id}`,
-        )
+      ? mqttStore.consumerIds.map((id) => consumerLabel(id))
       : [],
   (labels) => {
     labels.forEach((label) => {
