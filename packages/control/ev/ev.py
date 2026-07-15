@@ -338,9 +338,9 @@ class Ev:
             waiting_time = pv_config.switch_off_delay
         all_surplus = data.data.counter_all_data.get_evu_counter().get_usable_surplus(feed_in_yield)
         if control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY:
-            # eigene reservierte Leistung abziehen, wenn die Verzögerung für die Umschaltung läuft,
+            # eigene reservierte Leistung addieren, wenn die Verzögerung für die Umschaltung läuft,
             # da diese Leistung bereits für die Umschaltung reserviert ist.
-            surplus = all_surplus + required_reserved_power
+            surplus = all_surplus + max(0, required_reserved_power)
         else:
             surplus = all_surplus
 
