@@ -85,7 +85,8 @@ class Process:
                             )
                 if isinstance(action, StepwiseControlIo):
                     # check if passthrough is enabled
-                    if action.config.configuration.passthrough_enabled:
+                    if (action.config.configuration.passthrough_enabled and
+                            action.config.configuration.io_device_output is not None):
                         # find output pattern by value
                         for pattern in action.config.configuration.output_pattern:
                             if pattern["value"] == action.control_stepwise()[0]:

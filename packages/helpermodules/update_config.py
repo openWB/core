@@ -3426,11 +3426,12 @@ class UpdateConfig:
         def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/io/action/[0-9]+/config", topic) is not None:
                 config = decode_payload(payload)
-                if (config["configuration"]["passthrough_enabled"] is True and
-                        config["configuration"].get("io_device_output") is None):
-                    config["configuration"]["io_device_output"] = config["configuration"].get("io_device")
-                else:
-                    config["configuration"]["io_device_output"] = None
-                return {topic: config}
+                if config.get("type") == "stepwise_control":
+                    if config["configuration"]["passthrough_enabled"] is True:
+                        if config["configuration"].get("io_device_output") is None:
+                            config["configuration"]["io_device_output"] = config["configuration"].get("io_device")
+                    else:
+                        config["configuration"]["io_device_output"] = None
+                    return {topic: config}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(134)
