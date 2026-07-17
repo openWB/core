@@ -63,7 +63,7 @@ class SimpleMQTTDaemon:
         }
 
         # MQTT client setup
-        self.client = mqtt.Client()
+        self.client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
         self.client.on_connect = self._on_connect
         self.client.on_message = self._on_message
         self.client.on_disconnect = self._on_disconnect
@@ -104,9 +104,9 @@ class SimpleMQTTDaemon:
             log.error(f"Failed to load config file {config_file}: {e}")
             sys.exit(1)
 
-    def _on_connect(self, client, userdata, flags, rc):
+    def _on_connect(self, client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: mqtt.ReasonCode, properties: mqtt.Properties) -> None:
         """Callback for successful MQTT connection."""
-        if rc == 0:
+        if reason_code == 0:
             log.info(f"Connected to MQTT broker at {self.host}:{self.port}")
 
             # Publish API revision
@@ -124,12 +124,12 @@ class SimpleMQTTDaemon:
             log.info(
                 "Subscribed to openWB component topics (bat, pv, chargepoint, counter) and simpleAPI set topics")
         else:
-            log.error(f"Failed to connect to MQTT broker. Return code: {rc}")
+            log.error(f"Failed to connect to MQTT broker. Reason code: {reason_code}")
 
-    def _on_disconnect(self, client, userdata, rc):
+    def _on_disconnect(self, client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: mqtt.ReasonCode, properties: mqtt.Properties) -> None:
         """Callback for MQTT disconnection."""
-        if rc != 0:
-            log.warning(f"Unexpected MQTT disconnection (code: {rc}). Attempting to reconnect...")
+        if reason_code != 0:
+            log.warning(f"Unexpected MQTT disconnection (code: {reason_code}). Attempting to reconnect...")
             self._reconnect()
         else:
             log.info("Clean MQTT disconnection")
@@ -156,7 +156,7 @@ class SimpleMQTTDaemon:
             log.critical("Maximum reconnection attempts exceeded. Exiting.")
             sys.exit(1)
 
-    def _on_message(self, client, userdata, msg):
+    def _on_message(self, client: mqtt.Client, userdata, msg: mqtt.MQTTMessage) -> None:
         """Process incoming MQTT messages."""
         try:
             topic = msg.topic
