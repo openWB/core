@@ -1,14 +1,15 @@
 import datetime
 import logging
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple
+
 from control import data
 from control.algorithm.utils import get_medium_charging_current
 from control.chargemode import Chargemode
 from control.chargepoint.chargepoint_state import CHARGING_STATES
-from control.consumer.consumer_data import ConsumerData, ConsumerUsage, MeterOnlyConfig, ResetModes, WaitForStartStates
+from control.consumer.consumer_data import ConsumerData, ConsumerUsage, ResetModes, WaitForStartStates
 from control.load_protocol import Load
 from helpermodules import timecheck
-from helpermodules.abstract_plans import ContinuousScheduledPlanConsumer, SuspendableScheduledPlanConsumer
+from helpermodules.abstract_plans import ScheduledPlanConsumer
 from helpermodules.phase_handling import convert_single_evu_phase_to_cp_phase, voltages_mean
 from modules.common.configurable_consumer import ConfigurableConsumer
 
@@ -38,7 +39,7 @@ class Consumer(Load):
 
     def update(self):
         self.setup_values_at_start()
-        if isinstance(self.data.usage, MeterOnlyConfig):
+        if self.data.usage.type == ConsumerUsage.METER_ONLY:
             return
         else:
             if self.data.get.voltages is None:
@@ -102,10 +103,7 @@ class Consumer(Load):
         elif self.data.usage.chargemode == Chargemode.PV_CHARGING:
             required_current, message, mode, submode = self.wait_for_start_handler(self.pv_charging)
         elif self.data.usage.chargemode == Chargemode.STOP:
-            required_current = 0
-            message = None
-            mode = Chargemode.STOP
-            submode = Chargemode.STOP
+            required_current, message, mode, submode = self.stop()
         else:
             raise ValueError(f"Ungültiger Lademodus {self.data.usage.chargemode} für Verbraucher {self.num}")
         return min_current, required_current, message, mode, submode
@@ -137,7 +135,7 @@ class Consumer(Load):
             duration)
 
     def _find_recent_plan(self,
-                          plans: List[Union[ContinuousScheduledPlanConsumer, SuspendableScheduledPlanConsumer]]):
+                          plans: List[ScheduledPlanConsumer]):
         plans_diff_end_date: List[Dict[int, float]] = []
         for p in plans:
             try:
@@ -171,7 +169,7 @@ class Consumer(Load):
                 return None
 
     def _calc_remaining_time(self,
-                             plan: Union[ContinuousScheduledPlanConsumer, SuspendableScheduledPlanConsumer],
+                             plan: ScheduledPlanConsumer,
                              diff_end_date: float) -> Tuple[float, float]:
         duration = plan.duration - self.data.set.on_time
         remaining_time = diff_end_date - duration
@@ -208,8 +206,7 @@ class Consumer(Load):
         "Kein Zielladen mit Überschuss, da das SoC-Limit für Überschuss-Laden erreicht wurde.")
 
     def scheduled_charging_calc_current(self,
-                                        plan: Optional[Union[ContinuousScheduledPlanConsumer,
-                                                             SuspendableScheduledPlanConsumer]],
+                                        plan: Optional[ScheduledPlanConsumer],
                                         remaining_time: float,
                                         duration: float) -> Tuple[str, str]:
         submode = "stop"
@@ -361,6 +358,13 @@ class Consumer(Load):
         message = None
         mode = Chargemode.PV_CHARGING
         submode = Chargemode.PV_CHARGING
+        return required_current, message, mode, submode
+
+    def stop(self) -> Tuple[int, str, str, int]:
+        required_current = 0
+        message = "Verbraucher im Modus Stop. "
+        mode = Chargemode.STOP
+        submode = Chargemode.STOP
         return required_current, message, mode, submode
 
     WAIT_FOR_DEVICE_START = "Warte auf Gerätestart, Gerät eingeschaltet lassen."

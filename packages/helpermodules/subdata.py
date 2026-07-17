@@ -16,11 +16,11 @@ from control.chargepoint.chargepoint_all import AllChargepoints
 from control.chargepoint.chargepoint_data import Log
 from control.chargepoint.chargepoint_state_update import ChargepointStateUpdate
 from control.chargepoint.chargepoint_template import CpTemplate, CpTemplateData
+from control.consumer.consumer_data import Usage
+from control.consumer.usage import ConsumerUsage
 from control.counter_all import counter_all
 from control.consumer.consumer import Consumer
 from control.consumer.consumer_all import AllConsumers
-from control.consumer.consumer_data import GET_CLASS_BY_USAGE
-from control.consumer.usage import ConsumerUsage
 from control.ev.charge_template import ChargeTemplate, ChargeTemplateData
 from control.ev import ev
 from control.ev.ev_template import EvTemplate, EvTemplateData
@@ -1256,11 +1256,7 @@ class SubData:
             elif re.search("openWB/consumer/[0-9]+/extra_meter", msg.topic) is not None:
                 self.set_json_payload_class(var[f"consumer{index}"].data, msg)
             elif re.search("openWB/consumer/[0-9]+/usage$", msg.topic) is not None:
-                payload = decode_payload(msg.payload)
-                if payload is not None:
-                    var[f"consumer{index}"].data.usage = dataclass_from_dict(
-                        GET_CLASS_BY_USAGE[ConsumerUsage(payload["type"])],
-                        payload)
+                var[f"consumer{index}"].data.usage = dataclass_from_dict(Usage, decode_payload(msg.payload))
             elif re.search("openWB/consumer/[0-9]+/control_parameter/", msg.topic) is not None:
                 if re.search("openWB/consumer/[0-9]+/control_parameter/limit", msg.topic) is not None:
                     payload = decode_payload(msg.payload)

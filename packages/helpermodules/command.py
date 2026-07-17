@@ -17,15 +17,15 @@ from control.chargelog.process_chargelog import get_log_data
 from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
 
-from control.consumer.consumer_data import GET_DEFAULTS_BY_USAGE, GET_PLAN_CLASS_FOR_USAGE
-from control.consumer.consumer_data import Get as ConsumerGet
-from control.consumer.usage import ConsumerUsage
+from control.consumer.consumer_data import Usage
+from control.consumer.consumer_data import Get as ConsumerGet, Set as ConsumerSet
 from control.counter_all import counter_all
 from control.ev.charge_template import ChargeTemplate, get_new_charge_template
 from control.ev.ev_template import EvTemplateData
 from control.consumer.consumer_data import ConsumerConfig
 from helpermodules import pub
-from helpermodules.abstract_plans import AutolockPlan, ScheduledChargingPlan, TimeChargingPlan, TimeChargingPlanConsumer
+from helpermodules.abstract_plans import (AutolockPlan, ScheduledChargingPlan,
+                                          ScheduledPlanConsumer, TimeChargingPlan, TimeChargingPlanConsumer)
 from helpermodules.utils.run_command import run_command
 # ToDo: move to module commands if implemented
 from modules.backup_clouds.onedrive.api import generateMSALAuthCode, retrieveMSALTokens
@@ -1157,8 +1157,9 @@ class Command:
         Pub().pub(f'openWB/set/consumer/{new_id}/module', consumer_default)
         Pub().pub(f"openWB/set/consumer/{new_id}/config", dataclass_utils.asdict(ConsumerConfig()))
         Pub().pub(f"openWB/set/consumer/{new_id}/get", dataclass_utils.asdict(ConsumerGet()))
+        Pub().pub(f"openWB/set/consumer/{new_id}/set", dataclass_utils.asdict(ConsumerSet()))
         Pub().pub(f"openWB/set/consumer/{new_id}/extra_meter", None)
-        Pub().pub(f"openWB/set/consumer/{new_id}/usage", None)
+        Pub().pub(f"openWB/set/consumer/{new_id}/usage", dataclass_utils.asdict(Usage()))
         self.max_id_hierarchy = new_id
         Pub().pub("openWB/set/command/max_id/hierarchy", new_id)
         try:
@@ -1200,18 +1201,6 @@ class Command:
         pub_user_message(payload, connection_id,
                          f'Verbraucher mit ID \'{payload["data"]["consumer_id"]}\' gelöscht.', MessageType.SUCCESS)
 
-    def selectUsage(self, connection_id: str, payload: dict) -> None:
-        """ weist einem Verbraucher eine Nutzung zu.
-        """
-        usage = ConsumerUsage(payload["data"]["usage"])
-        usage_config = GET_DEFAULTS_BY_USAGE[usage]
-        Pub().pub(f'openWB/set/consumer/{payload["data"]["consumer_id"]}/usage', dataclass_utils.asdict(usage_config))
-        pub_user_message(
-            payload, connection_id,
-            f'Dem Verbraucher mit ID \'{payload["data"]["consumer_id"]}\' wurde die Nutzung '
-            f'\'{payload["data"]["usage"]}\' zugewiesen.',
-            MessageType.SUCCESS)
-
     def addConsumerSchedulePlan(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neuer Zielladen-Plan erstellt werden soll.
         """
@@ -1224,7 +1213,7 @@ class Command:
                     break
             new_consumer_schedule_plan.name = f'Kopie von {new_consumer_schedule_plan.name}'
         else:
-            new_consumer_schedule_plan = GET_PLAN_CLASS_FOR_USAGE[usage.type]()
+            new_consumer_schedule_plan = ScheduledPlanConsumer()
         new_id = self.max_id_consumer_scheduled_plan + 1
         new_consumer_schedule_plan.id = new_id
         usage.scheduled_charging.plans.append(new_consumer_schedule_plan)

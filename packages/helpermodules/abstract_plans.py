@@ -116,13 +116,6 @@ class TimeChargingPlanConsumer(TimeframePlan):
 
 
 @dataclass
-class SuspendableScheduledPlanConsumer(TimeframePlan):
-    id: Optional[int] = None
-    name: str = "neuer Ziel-Plan"
-    duration: int = 60
-
-
-@dataclass
-class ContinuousScheduledPlanConsumer(TimeframePlan):
+class ScheduledPlanConsumer(TimeframePlan):
     id: Optional[int] = None
     name: str = "neuer Ziel-Plan"
