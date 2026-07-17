@@ -35,8 +35,8 @@ class LocalConsumptionCounter(AbstractCounter):
                                     self.fault_state, silent_interval=0.06)
         else:
             self.__client = factory(self.component_config.configuration.id, self.__serial_client, self.fault_state)
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
-        self.store = get_component_value_store(self.component_config.id)
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, self.component_config.type)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
 
     def update(self) -> None:
         with self.__serial_client:
