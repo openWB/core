@@ -3,6 +3,7 @@ import json
 import logging
 from pathlib import Path
 import string
+import paho.mqtt.client as mqtt
 from typing import Dict, Optional
 
 from control import data

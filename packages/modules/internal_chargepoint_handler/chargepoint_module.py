@@ -1,8 +1,8 @@
 import logging
-
 import time
-from helpermodules.broker import BrokerClient
+import paho.mqtt.client as mqtt
 
+from helpermodules.broker import BrokerClient
 from helpermodules.utils import run_command
 from helpermodules.utils.error_handling import CP_ERROR, ErrorTimerContext
 from helpermodules.utils.topic_parser import decode_payload
@@ -61,10 +61,10 @@ class ChargepointModule(AbstractChargepoint):
             self.perform_phase_switch(1)
             self.old_phases_in_use = 1
         else:
-            def on_connect(client, userdata, flags, rc):
+            def on_connect(client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: mqtt.ReasonCode, properties: mqtt.Properties):
                 client.subscribe(f"openWB/internal_chargepoint/{self.local_charge_point_num}/get/phases_in_use")
 
-            def on_message(client, userdata, message):
+            def on_message(client: mqtt.Client, userdata, message: mqtt.MQTTMessage):
                 self.old_phases_in_use = decode_payload(message.payload)
 
             self.old_phases_in_use = 1
