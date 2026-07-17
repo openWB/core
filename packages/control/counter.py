@@ -382,6 +382,7 @@ class Counter:
 
     SWITCH_OFF_STOP = "Ladevorgang nach Ablauf der Wartezeit gestoppt."
     SWITCH_OFF_WAITING = "Ladevorgang wird nach Ablauf der Wartezeit in {} gestoppt."
+    SWITCH_OFF_WAITING_MIN_INTERVAL = "Betrieb wird nach Ablauf des minimalen Regelintervalls in {} gestoppt."
     SWITCH_OFF_NO_STOP = ("Der Ladevorgang wird trotz fehlenden Überschusses nicht gestoppt, da in dem Fahrzeug-Profil "
                           "die Einstellung 'Ladung aktiv halten' aktiviert ist.")
     SWITCH_OFF_EXCEEDED = "Abschaltschwelle während der Verzögerung überschritten."
@@ -401,7 +402,11 @@ class Counter:
             switch_off_delay = self._get_switch_off_delay_by_load(load)
 
             if control_parameter.timestamp_switch_on_off is not None:
-                if not timecheck.check_timestamp(
+                if (isinstance(load, Consumer) and
+                        timecheck.create_timestamp() < load.data.set.timestamp_last_current_set + load.data.config.min_interval):
+                    msg = self.SWITCH_OFF_WAITING_MIN_INTERVAL.format(timecheck.convert_timestamp_delta_to_time_string(
+                        load.data.set.timestamp_last_current_set, load.data.config.min_interval))
+                elif not timecheck.check_timestamp(
                         control_parameter.timestamp_switch_on_off,
                         switch_off_delay):
                     control_parameter.timestamp_switch_on_off = None

@@ -5,7 +5,7 @@ from typing import Callable, Dict, List, Optional, Tuple
 from control import data
 from control.algorithm.utils import get_medium_charging_current
 from control.chargemode import Chargemode
-from control.chargepoint.chargepoint_state import CHARGING_STATES
+from control.chargepoint.chargepoint_state import CHARGING_STATES, ChargepointState
 from control.consumer.consumer_data import ConsumerData, ConsumerUsage, ResetModes, WaitForStartStates
 from control.load_protocol import Load
 from helpermodules import timecheck
@@ -84,7 +84,9 @@ class Consumer(Load):
                                        "Verbraucher nicht abgeschaltet werden darf.")
 
     def get_parameter(self) -> Tuple[int, int, Optional[str], Chargemode, Chargemode]:
-        if timecheck.create_timestamp() < self.data.set.timestamp_last_current_set + self.data.config.min_interval:
+        if (timecheck.create_timestamp() < self.data.set.timestamp_last_current_set + self.data.config.min_interval and
+            # wenn kein Betrieb, darf eingeschaltet werden, auch wenn das Intervall noch nicht abgelaufen ist
+                self.data.control_parameter.state != ChargepointState.NO_CHARGING_ALLOWED):
             log.debug("Intervall für neuen Schaltbefehl nicht abgelaufen.")
             return (self.data.control_parameter.min_current,
                     self.data.control_parameter.required_current,

@@ -172,7 +172,13 @@ class Process:
                       name=f"set current cp{chargepoint.chargepoint_module.config.id}")
 
     def _update_state_consumer(self, consumer: Consumer) -> None:
-        consumer.data.set.current = round(consumer.data.set.current, 2)
+        if (timecheck.create_timestamp() < (consumer.data.set.timestamp_last_current_set
+                                            + consumer.data.config.min_interval) and
+                consumer.data.control_parameter.state != ChargepointState.NO_CHARGING_ALLOWED):
+            log.debug("Intervall für neuen Schaltbefehl nicht abgelaufen.")
+            consumer.data.set.current = consumer.data.set.current_prev
+        else:
+            consumer.data.set.current = round(consumer.data.set.current, 2)
         consumer.data.set.power = consumer.data.set.current * \
             voltages_mean(consumer.data.get.voltages) * consumer.data.config.connected_phases
         log.info(f"Verbraucher{consumer.num}: set current {consumer.data.set.current} A, "
