@@ -12,7 +12,7 @@ import time
 import sys
 import subprocess
 from typing import List, Optional
-from paho.mqtt.client import Client as MqttClient, MQTTMessage
+import paho.mqtt.client as mqtt
 
 from control.chargemode import Chargemode
 from control.consumer.consumer_data import ResetChargemode
@@ -846,12 +846,12 @@ class UpdateConfig:
         finally:
             self.__update_topic("openWB/system/update_config_completed", True)
 
-    def on_connect(self, client: MqttClient, userdata, flags: dict, rc: int):
+    def on_connect(self, client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: mqtt.ReasonCode, properties: mqtt.Properties):
         """ connect to broker and subscribe to set topics
         """
         client.subscribe("openWB/#", 2)
 
-    def on_message(self, client: MqttClient, userdata, msg: MQTTMessage):
+    def on_message(self, client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
         self.all_received_topics.update({msg.topic: msg.payload})
 
     def __update_topic(self, topic: str, payload):
