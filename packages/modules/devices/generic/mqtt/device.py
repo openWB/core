@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from typing import Iterable, Union
 import logging
+import paho.mqtt.client as mqtt
 
 from helpermodules.broker import BrokerClient
 from helpermodules.utils.topic_parser import decode_payload
@@ -25,12 +26,12 @@ def create_device(device_config: Mqtt):
         return inverter.MqttInverter(component_config, device_id=device_config.id)
 
     def update_components(components: Iterable[Union[bat.MqttBat, counter.MqttCounter, inverter.MqttInverter]]):
-        def on_connect(client, userdata, flags, rc):
+        def on_connect(client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: mqtt.ReasonCode, properties: mqtt.Properties):
             for component in components:
                 client.subscribe(f"openWB/mqtt/{type_to_topic_mapping(component.component_config.type)}/"
                                  f"{component.component_config.id}/#")
 
-        def on_message(client, userdata, message):
+        def on_message(client: mqtt.Client, userdata, message: mqtt.MQTTMessage):
             received_topics.update({message.topic: decode_payload(message.payload)})
 
         received_topics = {}

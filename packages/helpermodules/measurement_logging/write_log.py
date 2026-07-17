@@ -6,7 +6,7 @@ from math import isnan
 from pathlib import Path
 import re
 import string
-from paho.mqtt.client import Client as MqttClient, MQTTMessage
+import paho.mqtt.client as mqtt
 from typing import Dict, Optional
 
 from control import data
@@ -126,10 +126,10 @@ class LegacySmartHomeLogData:
         except Exception:
             log.exception("Fehler im Werte-Logging-Modul für SmartHome")
 
-    def on_connect(self, client: MqttClient, userdata, flags: dict, rc: int):
+    def on_connect(self, client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: mqtt.ReasonCode, properties: mqtt.Properties):
         client.subscribe("openWB/LegacySmartHome/#", 2)
 
-    def on_message(self, client: MqttClient, userdata, msg: MQTTMessage):
+    def on_message(self, client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
         self.all_received_topics.update({msg.topic: msg.payload})
 
 
