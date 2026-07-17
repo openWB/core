@@ -17,7 +17,6 @@ from control.chargepoint.chargepoint_data import Log
 from control.chargepoint.chargepoint_state_update import ChargepointStateUpdate
 from control.chargepoint.chargepoint_template import CpTemplate, CpTemplateData
 from control.consumer.consumer_data import Usage
-from control.consumer.usage import ConsumerUsage
 from control.counter_all import counter_all
 from control.consumer.consumer import Consumer
 from control.consumer.consumer_all import AllConsumers

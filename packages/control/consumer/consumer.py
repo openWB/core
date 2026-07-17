@@ -36,6 +36,7 @@ class Consumer(Load):
 
     def setup_values_at_start(self):
         self.data.get.state_str = None
+        self.data.set.current_prev = self.data.set.current
 
     def update(self):
         self.setup_values_at_start()

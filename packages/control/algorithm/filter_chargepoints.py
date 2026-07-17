@@ -70,8 +70,7 @@ def _group_loads_by_chargemode(chargemodes: Tuple[Tuple[Optional[str], str]],
 def get_loads_by_chargemodes(chargemodes: Tuple[Tuple[Optional[Chargemode], Chargemode]]) -> List[Load]:
     def _is_valid_for_chargemode(entity, chargemode, valid):
         """Helper function to validate entity against chargemode conditions."""
-        return (entity.data.control_parameter.required_current != 0 and
-                (entity.data.control_parameter.chargemode == chargemode[0] or chargemode[0] is None) and
+        return ((entity.data.control_parameter.chargemode == chargemode[0] or chargemode[0] is None) and
                 entity.data.control_parameter.submode == chargemode[1] and
                 entity not in valid)
 

@@ -11,6 +11,7 @@ from control import data
 from control.chargepoint.chargepoint_state import ChargepointState
 from control.consumer.consumer import Consumer
 from control.consumer.usage import ConsumerUsage
+from helpermodules import timecheck
 from helpermodules.phase_handling import voltages_mean
 from helpermodules.pub import Pub
 from helpermodules.utils._thread_handler import joined_thread_handler
@@ -178,6 +179,8 @@ class Process:
                  f"state {ChargepointState(consumer.data.control_parameter.state).name}")
 
     def _start_consumer(self, consumer: Consumer) -> Thread:
+        if consumer.data.set.current != consumer.data.set.current_prev:
+            consumer.data.set.timestamp_last_current_set = timecheck.create_timestamp()
         if consumer.data.usage.type in (ConsumerUsage.CONTINUOUS,
                                         ConsumerUsage.SUSPENDABLE_ONOFF):
             return Thread(
