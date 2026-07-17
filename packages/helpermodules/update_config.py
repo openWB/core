@@ -3428,10 +3428,10 @@ class UpdateConfig:
                 config = decode_payload(payload)
                 if config.get("type") == "stepwise_control":
                     if config["configuration"]["passthrough_enabled"] is True:
-                        if config["configuration"].get("io_device_output") is None:
-                            config["configuration"]["io_device_output"] = config["configuration"].get("io_device")
+                        if config["configuration"].get("io_output_device") is None:
+                            config["configuration"]["io_output_device"] = config["configuration"].get("io_device")
                     else:
-                        config["configuration"]["io_device_output"] = None
+                        config["configuration"]["io_output_device"] = None
                     return {topic: config}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(134)

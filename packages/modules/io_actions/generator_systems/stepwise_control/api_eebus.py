@@ -42,6 +42,34 @@ class StepwiseControlEebus(AbstractIoAction):
             )
         super().__init__()
 
+    def get_step(self) -> float:
+        step: float = 0
+        try:
+            max_output_inverter: float = 0
+            for inverter in self.config.configuration.devices:
+                if data.data.pv_data[f"pv{inverter['id']}"].data.config.max_ac_out == 0:
+                    msg = "Maximale Ausgangsleistung des Wechselrichters muss im Lastmanagement konfiguriert werden."
+                    control_command_log.error(msg)
+                    raise ValueError(msg)
+                max_output_inverter += data.data.pv_data[f"pv{inverter['id']}"].data.config.max_ac_out
+            percentage = self.lpp_value / max_output_inverter
+        except ZeroDivisionError:
+            msg = ("Bitte unter Konfiguration -> Lastmanagement die maximale Ausgangsleistung"
+                   " des Wechselrichters angeben.")
+            log.exception(msg)
+            control_command_log.info(msg)
+            percentage = 0
+        except ValueError:
+            percentage = 0
+        except Exception:
+            log.exception("Fehler beim Berechnen des Steuerungsschritts.")
+            percentage = 0
+        for s in [0, 0.3, 0.6, 1.0]:
+            if percentage <= s:
+                step = s
+                break
+        return step
+
     def setup(self) -> None:
         with ModifyLoglevelContext(control_command_log, logging.DEBUG):
             if check_fault_state_io_device(self.config.configuration.io_device):
@@ -57,32 +85,18 @@ class StepwiseControlEebus(AbstractIoAction):
                                                       ].data.get.digital_input_prev[DigitalInputMapping.LPP_ACTIVE.name]
                 changed = True if self.lpp_value != lpp_value_prev or self.lpp_active != lpp_active_prev else False
 
-                max_output_inverter = 0
-                for inverter in self.config.configuration.devices:
-                    max_output_inverter += data.data.pv_data[f"pv{inverter['id']}"].data.config.max_ac_out
-
                 if self.lpp_active:
-                    try:
-                        self.step = self.lpp_value / max_output_inverter
-                    except ZeroDivisionError:
-                        msg = ("Bitte unter Konfiguration -> Lastmanagement die maximale Ausgangsleistung"
-                               " des Wechselrichters angeben.")
-                        log.exception(msg)
-                        control_command_log.info(msg)
-                        self.step = 0
-                    for s in [0, 0.25, 0.5, 0.75, 1.0]:
-                        if self.step <= s:
-                            self.step = s
-                            break
+                    self.step = self.get_step()
+
                     if changed:
                         Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
-                        control_command_log.info(f"EEBus-Steuerung: LPP-Wert {self.lpp_value} / "
-                                                 f"max. PV-Leistung {max_output_inverter} = {self.step}")
-                        control_command_log.info(f"EZA-Begrenzung mit Wert {self.step*100}% aktiviert.")
+                        control_command_log.info(
+                            f"EEBus-Steuerung: EZA-Begrenzung mit LPP-Wert {self.lpp_value}W aktiviert.")
                         for device in self.config.configuration.devices:
                             control_command_log.info(
                                 f"Erzeugungsanlage {get_component_name_by_id(device['id'])} "
-                                f"auf {self.step*100}% begrenzt."
+                                f"auf {self.lpp_value}W begrenzt. Gestufte Ansteuerung: "
+                                f"{self.step*100:.0f}% der maximalen Ausgangsleistung."
                             )
                 else:
                     if changed:
@@ -95,28 +109,17 @@ class StepwiseControlEebus(AbstractIoAction):
                 LimitingValue.CONTROLLABLE_CONSUMERS_ERROR.value.format(get_io_name_by_id(
                     self.config.configuration.io_device)),
                 LimitingValue.CONTROLLABLE_CONSUMERS_ERROR))
-        for pattern in self.config.configuration.input_pattern:
-            for digital_input, value in pattern["matrix"].items():
-                if data.data.io_states[f"io_states{self.config.configuration.io_device}"
-                                       ].data.get.digital_input[digital_input] != value:
-                    break
+
+        if self.lpp_active:
+            if self.step != 1:
+                limit = LoadmanagementLimit(
+                    LimitingValue.CONTROL_STEPWISE.value.format(self.step*100),
+                    LimitingValue.CONTROL_STEPWISE)
             else:
-                if pattern["value"] is None:
-                    return 0, LoadmanagementLimit(LimitingValue.MISSING_CONFIGURATION.value,
-                                                  LimitingValue.MISSING_CONFIGURATION)
-                # Alle digitalen Eingänge entsprechen dem Pattern
-                elif pattern["value"] != 1:
-                    limit = LoadmanagementLimit(
-                        LimitingValue.CONTROL_STEPWISE.value.format(pattern["value"]*100),
-                        LimitingValue.CONTROL_STEPWISE)
-                else:
-                    limit = LoadmanagementLimit("Keine Leistungsbegrenzung aktiv.", None)
-                return pattern["value"], limit
+                limit = LoadmanagementLimit("Keine Leistungsbegrenzung aktiv.", None)
         else:
-            # Zustand entspricht keinem Pattern
-            return 0, LoadmanagementLimit(
-                LimitingValue.CONTROL_STEPWISE.value.format(0),
-                LimitingValue.CONTROL_STEPWISE)
+            limit = LoadmanagementLimit("Keine Leistungsbegrenzung aktiv.", None)
+        return self.step, limit
 
 
 def create_action(config: StepwiseControlSetup, parent_device_type: str):
