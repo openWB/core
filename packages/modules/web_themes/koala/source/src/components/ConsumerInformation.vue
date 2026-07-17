@@ -1,5 +1,11 @@
 <template>
-  <div class="consumer-grid-wrapper">
+  <BaseCarousel v-if="smallScreen" :items="consumerIds">
+    <template #item="{ item }">
+      <ConsumerCard :consumer-id="item" full-height />
+    </template>
+  </BaseCarousel>
+
+  <div v-else class="consumer-grid-wrapper">
     <div class="consumer-grid">
       <ConsumerCard
         v-for="item in consumerIds"
@@ -13,13 +19,19 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useQuasar } from 'quasar';
 import { useMqttStore } from 'src/stores/mqtt-store';
 
+import BaseCarousel from 'src/components/BaseCarousel.vue';
 import ConsumerCard from 'src/components/ConsumerCard.vue';
+
+const $q = useQuasar();
 
 const mqttStore = useMqttStore();
 
 const consumerIds = computed(() => mqttStore.consumerIds);
+
+const smallScreen = computed(() => $q.screen.width < 700);
 </script>
 
 <style scoped lang="scss">
