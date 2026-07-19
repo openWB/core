@@ -96,7 +96,7 @@ def post_wake_up_command(vehicle: int, token: TeslaSocToken) -> str:
         return response["response"]["state"]
 
 
-def request_soc_range(vehicle: int, token: TeslaSocToken) -> Tuple[float, float, float]:
+def request_data(vehicle: int, token: TeslaSocToken) -> Tuple[float, int, float, int]:
     vehicle_id = __get_vehicle_id(vehicle, token)
     data_part = f"vehicles/{vehicle_id}/vehicle_data"
     response = __request_data(data_part, token)
@@ -104,8 +104,9 @@ def request_soc_range(vehicle: int, token: TeslaSocToken) -> Tuple[float, float,
     soc = float(response["response"]["charge_state"]["battery_level"])
     # convert miles to km
     range = int(float(response["response"]["charge_state"]["battery_range"]) * 1.60934)
+    odometer = int(float(response["response"]["vehicle_state"]["odometer"]) * 1.60934)
     soc_timestamp = float(response["response"]["charge_state"]["timestamp"]) / 1000
-    return soc, range, soc_timestamp
+    return soc, range, soc_timestamp, odometer
 
 
 def validate_token(token: TeslaSocToken) -> TeslaSocToken:
@@ -144,7 +145,7 @@ def __refresh_token(token: TeslaSocToken) -> TeslaSocToken:
     resp_json = resp.json()
     token.refresh_token = resp_json["refresh_token"]
     token.access_token = resp_json["access_token"]
-    token.created_at = time.time()
+    token.created_at = int(time.time())
     token.expires_in = resp_json["expires_in"]
     log.debug("Token Refresh succeeded")
     return token
