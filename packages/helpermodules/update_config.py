@@ -58,7 +58,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 133
+    DATASTORE_VERSION = 134
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -3421,3 +3421,14 @@ class UpdateConfig:
                             return {topic: provider}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(133)
+
+    def upgrade_datastore_134(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/vehicle/[0-9]+/soc_module/config", topic) is not None:
+                configuration_payload = decode_payload(payload)
+                # replace cupra,skoda,vwid by vweuda
+                if configuration_payload.get("type") in ["cupra", "skoda", "vwid"]:
+                    configuration_payload.update({"type": "vweuda"})
+                return {topic: configuration_payload}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(134)
