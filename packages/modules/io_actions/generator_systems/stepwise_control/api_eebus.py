@@ -87,7 +87,6 @@ class StepwiseControlEebus(AbstractIoAction):
 
                 if self.lpp_active:
                     self.step = self.get_step()
-
                     if changed:
                         Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
                         control_command_log.info(
@@ -99,6 +98,7 @@ class StepwiseControlEebus(AbstractIoAction):
                                 f"{self.step*100:.0f}% der maximalen Ausgangsleistung."
                             )
                 else:
+                    self.step = 1
                     if changed:
                         Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", None)
                         control_command_log.info("EZA-Begrenzung aufgehoben.")
