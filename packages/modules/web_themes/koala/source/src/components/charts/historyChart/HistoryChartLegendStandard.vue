@@ -3,14 +3,14 @@
     <div class="row wrap q-pa-none items-center justify-center">
       <q-item
         v-for="(dataset, index) in items"
-        :key="dataset.text || index"
+        :key="dataset.key || index"
         clickable
         dense
         class="q-py-none"
         :class="{ 'legend-item-hidden': dataset.hidden }"
         @click="
           dataset.datasetIndex !== undefined &&
-          toggleDataset(dataset.text, dataset.datasetIndex)
+          toggleDataset(dataset.key, dataset.datasetIndex)
         "
       >
         <q-item-section avatar class="q-pr-none">
@@ -50,10 +50,11 @@
 
 <script setup lang="ts">
 import { LegendItem } from 'chart.js';
+import type { LegendItemWithCategory } from './history-chart-model';
 
 defineProps<{
-  items: LegendItem[];
-  toggleDataset: (datasetName: string, datasetIndex: number) => void;
+  items: LegendItemWithCategory[];
+  toggleDataset: (datasetKey: string | undefined, datasetIndex: number) => void;
   getItemColor: (dataset: LegendItem) => string;
   getItemLineType: (dataset: LegendItem) => string | undefined;
 }>();
