@@ -1156,8 +1156,10 @@ class Command:
         consumer_default["id"] = new_id
         Pub().pub(f'openWB/set/consumer/{new_id}/module', consumer_default)
         Pub().pub(f"openWB/set/consumer/{new_id}/config", dataclass_utils.asdict(ConsumerConfig()))
-        Pub().pub(f"openWB/set/consumer/{new_id}/get", dataclass_utils.asdict(ConsumerGet()))
-        Pub().pub(f"openWB/set/consumer/{new_id}/set", dataclass_utils.asdict(ConsumerSet()))
+        for (k, v) in dataclass_utils.asdict(ConsumerGet()).items():
+            Pub().pub(f"openWB/set/consumer/{new_id}/get/"+k, v)
+        for (k, v) in dataclass_utils.asdict(ConsumerSet()).items():
+            Pub().pub(f"openWB/set/consumer/{new_id}/set/"+k, v)
         Pub().pub(f"openWB/set/consumer/{new_id}/extra_meter", None)
         Pub().pub(f"openWB/set/consumer/{new_id}/usage", dataclass_utils.asdict(Usage()))
         self.max_id_hierarchy = new_id

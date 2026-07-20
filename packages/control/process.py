@@ -77,12 +77,6 @@ class Process:
                             name=f"set power limit {bat_component.component_config.id}"))
             for consumer in data.data.consumer_data.values():
                 try:
-                    control_parameter = consumer.data.control_parameter
-                    if (control_parameter.state != ChargepointState.NO_CHARGING_ALLOWED or
-                            consumer.data.set.current != 0):
-                        control_parameter.state = ChargepointState.CHARGING_ALLOWED
-                    else:
-                        control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
                     self._update_state_consumer(consumer)
                     if consumer.data.get.state_str is None:
                         if consumer.data.get.charge_state:

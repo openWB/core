@@ -67,7 +67,7 @@ class Consumer(Load):
         if self.data.control_parameter.timestamp_charge_start is None:
             if max(self.data.get.currents) > self.data.config.min_current:
                 self.data.control_parameter.timestamp_charge_start = timecheck.create_timestamp()
-        elif max(self.data.get.currents) < self.data.config.min_current:
+        elif self.data.get.charge_state is False:
             self.reset_timestamp_start()
         else:
             self.data.set.on_time = timecheck.create_timestamp() - self.data.control_parameter.timestamp_charge_start
@@ -88,8 +88,8 @@ class Consumer(Load):
             # wenn kein Betrieb, darf eingeschaltet werden, auch wenn das Intervall noch nicht abgelaufen ist
                 self.data.control_parameter.state != ChargepointState.NO_CHARGING_ALLOWED):
             log.debug("Intervall für neuen Schaltbefehl nicht abgelaufen.")
-            return (self.data.control_parameter.min_current,
-                    self.data.control_parameter.required_current,
+            return (0,
+                    0,
                     None,
                     self.data.control_parameter.chargemode,
                     self.data.control_parameter.submode)
