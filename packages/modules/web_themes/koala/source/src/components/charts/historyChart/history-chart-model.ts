@@ -20,15 +20,23 @@ export type Category =
 
 export const CONSUMER_TOTAL_LABEL = 'Verbraucher ges.';
 
-// Add category to the chart datasets
+export const CONSUMER_TOTAL_KEY = 'consumer-total';
+export const BATTERY_TOTAL_KEY = 'battery-total';
+export const BATTERY_SOC_KEY = 'battery-soc';
+
+export const consumerDatasetKey = (id: number) => `consumer-${id}`;
+
+// Add category and key to the chart datasets
 export interface CategorizedDataset extends ChartDataset<
   'line',
   { x: number; y: number }
 > {
   category: Category;
+  key: string;
 }
 
-// Add category to the legendItem
+// Add category and key to the legendItem
 export interface LegendItemWithCategory extends LegendItem {
   category?: Category;
+  key?: string;
 }

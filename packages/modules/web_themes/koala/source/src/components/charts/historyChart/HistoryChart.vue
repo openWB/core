@@ -31,7 +31,6 @@ import {
   TimeScale,
   Tooltip,
   Filler,
-  ChartDataset,
   ChartType,
 } from 'chart.js';
 import { useMqttStore } from 'src/stores/mqtt-store';
@@ -41,6 +40,11 @@ import HistoryChartLegend from 'src/components/charts/historyChart/HistoryChartL
 import 'chartjs-adapter-luxon';
 import {
   CONSUMER_TOTAL_LABEL,
+  CONSUMER_TOTAL_KEY,
+  BATTERY_TOTAL_KEY,
+  BATTERY_SOC_KEY,
+  consumerDatasetKey,
+  type CategorizedDataset,
   type HistoryChartTooltipItem,
   type ChartComponentRef,
 } from './history-chart-model';
@@ -74,11 +78,9 @@ const legendDisplay = computed(() => props.showLegend);
 const applyHiddenDatasetsToChart = <TType extends ChartType, TData>(
   chart: Chart<TType, TData>,
 ): void => {
-  chart.data.datasets.forEach((dataset: ChartDataset<TType, TData>, index) => {
-    if (
-      typeof dataset.label === 'string' &&
-      localDataStore.isDatasetHidden(dataset.label)
-    ) {
+  chart.data.datasets.forEach((dataset, index) => {
+    const { key } = dataset as unknown as CategorizedDataset;
+    if (key && localDataStore.isDatasetHidden(key)) {
       chart.hide(index);
     }
   });
@@ -145,6 +147,7 @@ const secondaryCounterDatasets = computed(() =>
         getGlobalColor('--q-secondary-counter-stroke');
       return {
         label: mqttStore.componentName(id),
+        key: `counter-${id}`,
         category: 'component',
         unit: 'kW',
         borderColor: baseColor,
@@ -175,6 +178,7 @@ const chargePointDatasets = computed(() =>
 
     return {
       label: `${chargePointNames.value(cpId)}`,
+      key: `cp-${cpId}`,
       category: 'chargepoint',
       unit: 'kW',
       borderColor: baseColor,
@@ -209,6 +213,7 @@ const consumerDatasets = computed(() => {
     const label = consumerLabel(id);
     return {
       label,
+      key: consumerDatasetKey(id),
       category: 'consumer',
       unit: 'kW',
       borderColor: baseColor,
@@ -236,6 +241,7 @@ const consumerDatasets = computed(() => {
   return [
     {
       label: CONSUMER_TOTAL_LABEL,
+      key: CONSUMER_TOTAL_KEY,
       category: 'consumer',
       unit: 'kW',
       borderColor: defaultColor,
@@ -256,7 +262,7 @@ const consumerDatasets = computed(() => {
     },
     ...ids.map((id) => ({
       ...individualDataset(id),
-      hidden: localDataStore.isDatasetHidden(consumerLabel(id)),
+      hidden: localDataStore.isDatasetHidden(consumerDatasetKey(id)),
     })),
   ];
 });
@@ -265,13 +271,13 @@ const seededHiddenConsumers = new Set<string>();
 watch(
   () =>
     mqttStore.consumerIds.length > 1
-      ? mqttStore.consumerIds.map((id) => consumerLabel(id))
+      ? mqttStore.consumerIds.map((id) => consumerDatasetKey(id))
       : [],
-  (labels) => {
-    labels.forEach((label) => {
-      if (!seededHiddenConsumers.has(label)) {
-        seededHiddenConsumers.add(label);
-        localDataStore.hideDataset(label);
+  (keys) => {
+    keys.forEach((key) => {
+      if (!seededHiddenConsumers.has(key)) {
+        seededHiddenConsumers.add(key);
+        localDataStore.hideDataset(key);
       }
     });
   },
@@ -288,6 +294,7 @@ const vehicleDatasets = computed(() =>
           getGlobalColor('--q-vehicle-stroke');
         return {
           label: `${vehicle.name} SoC`,
+          key: `vehicle-${vehicle.id}-soc`,
           category: 'vehicle',
           unit: '%',
           borderColor: baseColor,
@@ -347,6 +354,7 @@ const lineChartData = computed(() => {
     const baseColor = getGlobalColor('--q-grid-stroke');
     datasets.push({
       label: gridMeterName.value,
+      key: 'grid',
       category: 'component',
       unit: 'kW',
       borderColor: baseColor,
@@ -369,6 +377,7 @@ const lineChartData = computed(() => {
   if (mqttStore.homePower('value') !== undefined) {
     datasets.push({
       label: 'Hausverbrauch',
+      key: 'house',
       category: 'component',
       unit: 'kW',
       borderColor: getGlobalColor('--q-home-stroke'),
@@ -393,6 +402,7 @@ const lineChartData = computed(() => {
     const baseColor = getGlobalColor('--q-pv-stroke');
     datasets.push({
       label: 'PV ges.',
+      key: 'pv-total',
       category: 'component',
       unit: 'kW',
       borderColor: baseColor,
@@ -417,6 +427,7 @@ const lineChartData = computed(() => {
     datasets.push(
       {
         label: 'Speicher ges.',
+        key: BATTERY_TOTAL_KEY,
         category: 'component',
         unit: 'kW',
         borderColor: baseColor,
@@ -437,6 +448,7 @@ const lineChartData = computed(() => {
       },
       {
         label: 'Speicher SoC',
+        key: BATTERY_SOC_KEY,
         category: 'component',
         unit: '%',
         borderColor: '#FFB96E',

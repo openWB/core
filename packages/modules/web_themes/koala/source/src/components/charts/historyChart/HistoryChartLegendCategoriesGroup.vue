@@ -53,11 +53,11 @@ import { computed } from 'vue';
 import { useQuasar } from 'quasar';
 import HistoryChartLegendCategory from './HistoryChartLegendCategory.vue';
 import type { LegendItem } from 'chart.js';
-import type { Category } from './history-chart-model';
+import type { Category, LegendItemWithCategory } from './history-chart-model';
 
 const props = defineProps<{
-  categorizedLegendItems: Record<Category, LegendItem[]>;
-  toggleDataset: (datasetName: string, datasetIndex: number) => void;
+  categorizedLegendItems: Record<Category, LegendItemWithCategory[]>;
+  toggleDataset: (datasetKey: string | undefined, datasetIndex: number) => void;
   getItemColor: (dataset: LegendItem) => string;
   getItemLineType: (dataset: LegendItem) => string | undefined;
 }>();
