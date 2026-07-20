@@ -10,6 +10,7 @@ import PvIcon from 'src/assets/icons/owbPV.svg?component';
 import HouseIcon from 'src/assets/icons/owbHouse.svg?component';
 import VehicleIcon from 'src/assets/icons/owbVehicle.svg?component';
 import ChargePointIcon from 'src/assets/icons/owbChargePoint_2.svg?component';
+import ConsumerIcon from 'src/assets/icons/owbConsumer.svg?component';
 
 const mqttStore = useMqttStore();
 const $q = useQuasar();
@@ -100,6 +101,13 @@ const showHomePower = computed(() => {
 });
 const homeConsumption = computed(() => Number(homePower.value.value) > 0);
 const homeProduction = computed(() => Number(homePower.value.value) < 0);
+
+const consumerPower = computed(
+  () => mqttStore.consumerSumPower('object') as ValueObject,
+);
+const showConsumerPower = computed(
+  () => mqttStore.consumerIds.length > 0,
+);
 
 const pvPower = computed(() => mqttStore.pvPowerTotal('object') as ValueObject);
 const pvProduction = computed(() => {
@@ -286,6 +294,7 @@ const maxSystemPower = computed(() => {
   const powerValues = [
     Math.abs(Number(gridPower.value.value)),
     Math.abs(Number(homePower.value.value)),
+    Math.abs(Number(consumerPower.value.value)),
     Math.abs(Number(pvPower.value.value)),
     Math.abs(Number(batteryPower.value.value)),
     Math.abs(Number(chargePoint1Power.value.value)),
@@ -318,6 +327,7 @@ const animationDurations = computed(() => {
   return {
     grid: calcDuration(Number(gridPower.value.value), maxPower),
     home: calcDuration(Number(homePower.value.value), maxPower),
+    consumer: calcDuration(Number(consumerPower.value.value), maxPower),
     pv: calcDuration(Number(pvPower.value.value), maxPower),
     battery: calcDuration(Number(batteryPower.value.value), maxPower),
     chargePoint1: calcDuration(Number(chargePoint1Power.value.value), maxPower),
@@ -372,6 +382,22 @@ const svgComponents = computed((): FlowComponent[] => {
       powerValue: Number(homePower.value.value),
       iconComponent: HouseIcon,
       iconColor: 'var(--q-home-stroke)',
+    });
+  }
+
+  if (showConsumerPower.value) {
+    components.push({
+      id: 'consumer',
+      class: {
+        base: 'consumer',
+        valueLabelColor: 'var(--q-consumer)',
+        animatedReverse: Number(consumerPower.value.value) > 0,
+      },
+      position: { row: 0, column: 1 },
+      label: ['Verbraucher', absoluteValueObject(consumerPower.value).textValue],
+      powerValue: Number(consumerPower.value.value),
+      iconComponent: ConsumerIcon,
+      iconColor: 'var(--q-consumer)',
     });
   }
 
@@ -951,6 +977,11 @@ path.animated.home,
 path.animatedReverse.home {
   color: var(--q-home-stroke);
   animation-duration: v-bind('animationDurations.home');
+}
+
+path.animatedReverse.consumer {
+  color: var(--q-consumer);
+  animation-duration: v-bind('animationDurations.consumer');
 }
 
 path.animated.pv,
