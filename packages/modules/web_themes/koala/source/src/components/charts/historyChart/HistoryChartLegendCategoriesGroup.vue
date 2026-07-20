@@ -1,8 +1,5 @@
 <template>
-  <div
-    class="items-center"
-    :class="wrapToGrid ? 'legend-categories-grid' : 'row justify-center'"
-  >
+  <div class="row justify-center items-center">
     <HistoryChartLegendCategory
       :label="'Komponenten'"
       :items="categorizedLegendItems.component"
@@ -21,7 +18,6 @@
       :getItemLineType="getItemLineType"
       menuAnchor="bottom middle"
       menuSelf="top middle"
-      :menuFormat="wrapToGrid ? undefined : 'q-mx-lg'"
     />
 
     <HistoryChartLegendCategory
@@ -32,7 +28,6 @@
       :getItemLineType="getItemLineType"
       menuAnchor="bottom middle"
       menuSelf="top middle"
-      :menuFormat="wrapToGrid ? undefined : 'q-mx-lg'"
     />
 
     <HistoryChartLegendCategory
@@ -49,36 +44,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useQuasar } from 'quasar';
 import HistoryChartLegendCategory from './HistoryChartLegendCategory.vue';
 import type { LegendItem } from 'chart.js';
 import type { Category, LegendItemWithCategory } from './history-chart-model';
 
-const props = defineProps<{
+defineProps<{
   categorizedLegendItems: Record<Category, LegendItemWithCategory[]>;
   toggleDataset: (datasetKey: string | undefined, datasetIndex: number) => void;
   getItemColor: (dataset: LegendItem) => string;
   getItemLineType: (dataset: LegendItem) => string | undefined;
 }>();
-
-const $q = useQuasar();
-const wrapToGrid = computed(
-  () =>
-    props.categorizedLegendItems.consumer.length > 0 && $q.screen.width < 700,
-);
 </script>
 
 <style scoped>
-.legend-categories-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  justify-items: stretch;
-  gap: 4px 8px;
+:deep(.q-btn):not(:first-child) {
+  margin-left: 4px;
 }
-
-.legend-categories-grid :deep(.q-btn) {
-  margin: 0;
-  width: 100%;
+:deep(.q-btn) .q-btn-dropdown__arrow {
+  margin-left: 0;
 }
 </style>
