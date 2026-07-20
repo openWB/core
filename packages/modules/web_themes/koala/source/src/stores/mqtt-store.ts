@@ -3755,6 +3755,22 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
+   * Get the consumer user-defined color identified by the consumer id
+   * @param consumerId consumer id
+   * @returns string | null
+   */
+  const consumerColor = computed(() => {
+    return (consumerId: number): string | null => {
+      const color = getValue.value(
+        `openWB/consumer/${consumerId}/module`,
+        'color',
+        null,
+      ) as string | null;
+      return resolveComponentColor(color, SETTINGS_UI_COLORS.consumer);
+    };
+  });
+
+  /**
    * Get the current power of a consumer identified by the consumer id
    * @param consumerId consumer id
    * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
@@ -3776,6 +3792,56 @@ export const useMqttStore = defineStore('mqtt', () => {
         return valueObject;
       }
       console.error('returnType not found!', returnType, power);
+    };
+  });
+
+  /**
+   * Get the summed power of all consumers.
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject
+   */
+  const consumerSumPower = computed(() => {
+    return (returnType: string = 'textValue') => {
+      const power = getValue.value('openWB/consumer/get/power') as
+        | number
+        | undefined;
+      const valueObject = getValueObject.value(power);
+      if (Object.hasOwn(valueObject, returnType)) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject;
+      }
+      console.error('returnType not found!', returnType, power);
+    };
+  });
+
+  /**
+   * Get the daily imported energy total of all consumers, or of a single
+   * consumer when an id is provided
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @param id optional consumer id; omit for the sum of all consumers
+   * @returns string | number | ValueObject
+   */
+  const consumerDailyImported = computed(() => {
+    return (
+      returnType: string = 'textValue',
+      id: number | undefined = undefined,
+    ) => {
+      const energy =
+        (getValue.value(
+          `openWB/consumer/${id !== undefined ? `${id}/` : ''}get/daily_imported`,
+          undefined,
+          0,
+        ) as number) || 0;
+      const valueObject = getValueObject.value(energy, 'Wh');
+      if (Object.hasOwn(valueObject, returnType)) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject;
+      }
+      console.error('returnType not found!', returnType, energy);
     };
   });
 
@@ -4359,6 +4425,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     vehicle: '#17a2b8',
     counter: '#dc3545',
     pv: '#28a745',
+    consumer: '#6f42c1',
   } as const;
 
   const resolveComponentColor = (
@@ -4520,7 +4587,10 @@ export const useMqttStore = defineStore('mqtt', () => {
     consumerList,
     consumerIds,
     consumerName,
+    consumerColor,
     consumerPower,
+    consumerSumPower,
+    consumerDailyImported,
     consumerOnTime,
     consumerStateStr,
     consumerFaultState,

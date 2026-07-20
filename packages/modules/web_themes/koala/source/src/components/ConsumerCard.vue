@@ -1,6 +1,6 @@
 <template>
   <q-card
-    class="card-width"
+    class="consumer-card"
     :class="{ 'full-height': props.fullHeight }"
   >
     <q-card-section class="row no-wrap items-center justify-between">
@@ -144,14 +144,19 @@ const onOff = computed({
     consumerMode.value = value ? 'instant_charging' : 'stop';
   },
 });
+
+const consumerColor = computed(() => {
+  return mqttStore.consumerColor(props.consumerId) || 'var(--q-consumer)';
+});
 </script>
 
 <style scoped lang="scss">
-.card-width {
+
+.consumer-card {
   width: 22em;
   max-width: 100%;
   border: none;
-  border-left: 4px solid var(--q-consumer);
+  border-left: 4px solid v-bind(consumerColor);
   border-radius: 15px;
 }
 

@@ -142,6 +142,7 @@ export interface ConsumerModule {
   type: string;
   id: number;
   vendor: string;
+  color?: string | null;
 }
 export type ConsumerUsageType =
   | 'meter_only'
@@ -218,10 +219,12 @@ export interface GraphDataPoint {
   grid: number;
   'house-power': number;
   'charging-all': number;
+  'consumer-all': number;
   'pv-all': number;
   'bat-all-power': number;
   'bat-all-soc': number;
   [key: `cp${number}-power`]: number;
+  [key: `consumer${number}-power`]: number;
   [key: `ev${number}-soc`]: number | null;
 }
 
