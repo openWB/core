@@ -2926,12 +2926,6 @@
 					"topic": "openWB/consumer/get/+",
 					"priority": 0,
 					"allow": true
-				},
-				{
-					"acltype": "publishClientReceive",
-					"topic": "openWB/consumer/+/module",
-					"priority": 0,
-					"allow": true
 				}
 			]
 		},

@@ -426,9 +426,6 @@ export const useMqttStore = defineStore("mqtt", {
 
     /* consumer getters */
 
-    getConsumerIds(state) {
-      return state.getWildcardIndexList("openWB/consumer/+/module");
-    },
     getConsumerSumPower(state) {
       return (returnType = "textValue") => {
         var power = state.getValueString("openWB/consumer/get/power", "W");

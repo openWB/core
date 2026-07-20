@@ -89,7 +89,7 @@ export default {
       return this.mqttStore.getConsumerSumPower("object");
     },
     showConsumerPower() {
-      return this.mqttStore.getConsumerIds.length > 0;
+      return this.consumerPower.value !== undefined;
     },
     batteryPower() {
       return this.mqttStore.getBatteryPower("object");
