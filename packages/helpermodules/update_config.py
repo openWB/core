@@ -3435,7 +3435,7 @@ class UpdateConfig:
                     return {topic: config}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(134)
-        
+
     def upgrade_datastore_135(self) -> None:
         def upgrade(topic: str, payload) -> None:
             if re.search("openWB/vehicle/[0-9]+/soc_module/config", topic) is not None:
