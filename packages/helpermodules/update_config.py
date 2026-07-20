@@ -3429,6 +3429,8 @@ class UpdateConfig:
                 # replace cupra,skoda,vwid by vweuda
                 if configuration_payload.get("type") in ["cupra", "skoda", "vwid"]:
                     configuration_payload.update({"type": "vweuda"})
+                    if configuration_payload['configuration'].get('refreshToken'):
+                        configuration_payload['configuration'].pop('refreshToken')
                 return {topic: configuration_payload}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(134)
