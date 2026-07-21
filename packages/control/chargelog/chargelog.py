@@ -333,8 +333,13 @@ def calc_energy_costs(cp, create_log_entry: bool = False):
             _add_charged_energy_by_source(cp, charged_energy_by_source)
             log.debug(f"charged_energy_by_source {charged_energy_by_source} "
                       f"total charged_energy_by_source {cp.data.set.log.charged_energy_by_source}")
-            costs = _calc_costs(charged_energy_by_source, reference_entries[-1]["prices"])
-            cp.data.set.log.costs += costs
+            prices = data.data.general_data.data.prices
+            if (prices.bat == prices.grid == prices.pv and
+                    data.data.optional_data.data.electricity_pricing.configured is False):
+                cp.data.set.log.costs = cp.data.set.log.imported_since_mode_switch * prices.bat
+            else:
+                costs = _calc_costs(charged_energy_by_source, reference_entries[-1]["prices"])
+                cp.data.set.log.costs += costs
     except Exception:
         log.exception(f"Fehler beim Berechnen der Ladekosten für Ladepunkt {cp.num}")
 
