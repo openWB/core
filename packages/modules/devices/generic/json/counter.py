@@ -65,7 +65,10 @@ class JsonCounter(AbstractCounter):
             if self.jq_voltages is not None else None
         )
 
-        frequency = float(self.jq_frequency.input(response).first())
+        frequency = (
+            float(self.jq_frequency.input(response).first())
+            if self.jq_frequency is not None else None
+        )
 
         if self.jq_imported is None or self.jq_exported is None:
             self.peak_filter.check_values(power)
