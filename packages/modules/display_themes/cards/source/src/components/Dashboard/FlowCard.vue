@@ -10,6 +10,7 @@ import PvIcon from "../../assets/icons/owbPV.svg?component";
 import HouseIcon from "../../assets/icons/owbHouse.svg?component";
 import VehicleIcon from "../../assets/icons/owbVehicle.svg?component";
 import ChargePointIcon from "../../assets/icons/owbChargePoint.svg?component";
+import ConsumerIcon from "../../assets/icons/owbConsumer.svg?component";
 
 export default {
   name: "DashboardFlowCard",
@@ -83,6 +84,12 @@ export default {
     },
     showHomePower() {
       return this.homePower.value !== undefined;
+    },
+    consumerPower() {
+      return this.mqttStore.getConsumerSumPower("object");
+    },
+    showConsumerPower() {
+      return this.consumerPower.value !== undefined;
     },
     batteryPower() {
       return this.mqttStore.getBatteryPower("object");
@@ -255,6 +262,9 @@ export default {
     homeProduction() {
       return this.homePower.value < 0;
     },
+    consumerConsuming() {
+      return this.consumerPower.value > 0;
+    },
     pvProduction() {
       return this.pvPower.value < 0;
     },
@@ -353,6 +363,25 @@ export default {
           label: ["Haus", this.absoluteValue(this.homePower).textValue],
           iconComponent: HouseIcon,
           iconColor: "var(--color--light)",
+        });
+      }
+      // add consumer sum component
+      if (this.showConsumerPower) {
+        components.push({
+          id: "consumer",
+          class: {
+            base: "consumer",
+            valueLabel: "",
+            animated: false,
+            animatedReverse: this.consumerConsuming,
+          },
+          position: {
+            row: 0,
+            column: 1,
+          },
+          label: ["Verbraucher", this.absoluteValue(this.consumerPower).textValue],
+          iconComponent: ConsumerIcon,
+          iconColor: "var(--color--consumer)",
         });
       }
       // add pv sum component
@@ -968,6 +997,11 @@ path.animated.grid {
 
 path.animatedReverse.grid {
   stroke: var(--color--success);
+}
+
+path.animated.consumer,
+path.animatedReverse.consumer {
+  stroke: var(--color--consumer);
 }
 
 path.animated.pv,
