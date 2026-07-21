@@ -26,7 +26,7 @@ from pathlib import Path
 from collections import deque
 from helpermodules.constants import RAMDISK_PATH
 from modules.common.abstract_vehicle import VehicleUpdateData
-from modules.vehicles.vwid.config import VWId
+from modules.vehicles.vweuda.config import VWEUDA
 
 """Constants for the VW EU Data Act integration."""
 
@@ -149,10 +149,10 @@ INITIAL_RESULT_WAIT = 30  # seconds to wait for the first background result
 EUDA_THREADNAME = "soc_bt_ev"
 UTC = None
 KEEP_JSON = 5
-DATA_PATH = Path(__file__).resolve().parents[4] / "data" / "modules" / "vwid"
+DATA_PATH = Path(__file__).resolve().parents[4] / "data" / "modules" / "vweuda"
 JSON_PATH = Path(str(RAMDISK_PATH) + '/vweuda')
 storeFileName = '/data_'
-MODULE_TYPE = 'vwid'
+MODULE_TYPE = 'vweuda'
 
 # VIN-Brand map
 VIN_BRAND_MAP = {
@@ -803,7 +803,7 @@ class euda():
             if result['soc'] is None:
                 _LOGGER.info("thread result skipped, no soc found")
                 _valid = False
-        if _valid:
+        if _valid and result['odometer'] is not None:
             if vin in euda.result and result['odometer'] < euda.result[vin]['odometer']:
                 _LOGGER.info("odometer less than earlier - keep earlier value")
                 result['odometer'] = euda.result[vin]['odometer']
@@ -881,7 +881,7 @@ class euda():
                     _type = await self.get_module_type(vehicle)
                     _LOGGER.info(f"thread loop: ev{vehicle} module type={_type}")
                     if _type != MODULE_TYPE:
-                        _LOGGER.info(f"vehicle {vehicle} is not using module vwid: terminate now")
+                        _LOGGER.info(f"vehicle {vehicle} is not using module vweuda: terminate now")
                         _active = False
                         continue
                     try:
@@ -934,7 +934,7 @@ class euda():
                 _LOGGER.info(f"test_result, vin={_vin}:\n{_ano_j}")
 
     async def get_status(self,
-                         conf: VWId,
+                         conf: VWEUDA,
                          vehicle: int,
                          vehicle_update_data: VehicleUpdateData) -> Union[int, float, str, float, float]:
 
@@ -1078,7 +1078,7 @@ class euda():
 
 
 # sync function
-def fetch_soc(conf: VWId,
+def fetch_soc(conf: VWEUDA,
               vehicle: int,
               vehicle_update_data: VehicleUpdateData) -> Union[float, float, float, str, float]:
 
