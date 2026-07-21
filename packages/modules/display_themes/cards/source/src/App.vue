@@ -60,6 +60,7 @@ export default {
         "openWB/chargepoint/+/set/log",
         "openWB/chargepoint/+/set/rfid",
         "openWB/chargepoint/get/power",
+        "openWB/consumer/get/power",
         "openWB/counter/+/get/power",
         "openWB/counter/get/hierarchy",
         "openWB/counter/set/home_consumption",
