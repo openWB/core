@@ -787,6 +787,7 @@ class Chargepoint(ChargepointRfidMixin):
                 self.data.get.connected_vehicle.soc.fault_state = vehicle.data.get.fault_state
                 self.data.get.connected_vehicle.soc.fault_str = vehicle.data.get.fault_str
                 self.data.get.connected_vehicle.soc.range = vehicle.data.get.range
+                self.data.get.connected_vehicle.soc.odometer = vehicle.data.get.odometer
             self.data.get.connected_vehicle.info = ConnectedInfo(id=vehicle.num,
                                                                  name=vehicle.data.name)
             if (self.data.set.charge_template.data.chargemode.selected == "time_charging" or
