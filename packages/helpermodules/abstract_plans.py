@@ -116,6 +116,9 @@ class TimeChargingPlanConsumer(TimeframePlan):
 
 
 @dataclass
-class ScheduledPlanConsumer(TimeframePlan):
+class ScheduledPlanConsumer(PlanBase):
+    frequency: FrequencyDate = field(default_factory=frequency_date_factory)
     id: Optional[int] = None
     name: str = "neuer Ziel-Plan"
+    time: str = "07:00"
+    duration: int = 3600

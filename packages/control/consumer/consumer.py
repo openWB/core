@@ -221,10 +221,10 @@ class Consumer(Load):
         if self.data.set.on_time >= duration:
             message = self.SCHEDULED_REACHED_MAX_ON_TIME
         elif (0 < remaining_time < self.BUFFER_START_EARLIER):
-            submode = "instant_charging"
+            submode = Chargemode.INSTANT_CHARGING
         # weniger als die berechnete Zeit verfügbar
         elif remaining_time <= 0:
-            submode = "instant_charging"
+            submode = Chargemode.INSTANT_CHARGING
         else:
             # Wenn dynamische Tarife aktiv sind, prüfen, ob jetzt ein günstiger Zeitpunkt zum Laden
             # ist.
@@ -274,10 +274,10 @@ class Consumer(Load):
                 log.debug(f"Günstige Ladezeiten: {hour_list}")
                 if data.data.optional_data.ep_is_charging_allowed_hours_list(hour_list):
                     message = self.SCHEDULED_CHARGING_CHEAP_HOUR.format(get_hours_message())
-                    submode = "instant_charging"
+                    submode = Chargemode.INSTANT_CHARGING
                 else:
                     message = self.SCHEDULED_CHARGING_EXPENSIVE_HOUR.format(get_hours_message())
-                    submode = "pv_charging"
+                    submode = Chargemode.PV_CHARGING
             else:
                 now = datetime.datetime.today()
                 start_time = now + datetime.timedelta(seconds=remaining_time)
@@ -287,8 +287,9 @@ class Consumer(Load):
                 else:
                     message = self.SCHEDULED_CHARGING_USE_PV.format(
                         f"am {start_time.strftime('%d.%m')} um {start_time.strftime('%-H:%M')} Uhr")
-                submode = "pv_charging"
-        return submode, message
+                submode = Chargemode.PV_CHARGING
+                required_current = self._parse_required_current_by_usage(self.data.config.min_current)
+        return required_current, message, Chargemode.SCHEDULED_CHARGING, submode
 
     TIME_CHARGING_MIN_BAT_SOC_REACHED = ("Betrieb mit Zeitladen nach Speicher-SoC nicht möglich, da der SoC des"
                                          " Speichers unter dem minimalen SoC liegt.")
