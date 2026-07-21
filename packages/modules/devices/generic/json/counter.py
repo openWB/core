@@ -32,6 +32,7 @@ class JsonCounter(AbstractCounter):
         self.jq_voltages = [jq.compile(v) for v in config.jq_voltages] if all(config.jq_voltages) else None
         self.jq_imported = jq.compile(config.jq_imported) if config.jq_imported else None
         self.jq_exported = jq.compile(config.jq_exported) if config.jq_exported else None
+        self.jq_frequency = jq.compile(config.jq_frequency) if config.jq_frequency else None
 
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
@@ -64,6 +65,8 @@ class JsonCounter(AbstractCounter):
             if self.jq_voltages is not None else None
         )
 
+        frequency = float(self.jq_frequency.input(response).first())
+
         if self.jq_imported is None or self.jq_exported is None:
             self.peak_filter.check_values(power)
             imported, exported = self.sim_counter.sim_count(power)
@@ -79,7 +82,8 @@ class JsonCounter(AbstractCounter):
             powers=powers,
             currents=currents,
             power_factors=power_factors,
-            voltages=voltages
+            voltages=voltages,
+            frequency=frequency
         )
         self.store.set(counter_state)
 
