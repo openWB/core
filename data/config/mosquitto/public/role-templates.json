@@ -80,25 +80,19 @@
 		"acls": [
 			{
 				"acltype": "publishClientSend",
-				"topic": "openWB/set/consumer/<id>/set/charge_template",
+				"topic": "openWB/set/consumer/<id>/usage",
 				"priority": 0,
 				"allow": true
 			},
 			{
 				"acltype": "publishClientSend",
-				"topic": "openWB/set/consumer/<id>/set/manual_lock",
+				"topic": "openWB/set/command/+/todo/addConsumerSchedulePlan",
 				"priority": 0,
 				"allow": true
 			},
 			{
 				"acltype": "publishClientSend",
-				"topic": "openWB/set/consumer/<id>/config/ev",
-				"priority": 0,
-				"allow": true
-			},
-			{
-				"acltype": "publishClientSend",
-				"topic": "openWB/set/consumer/<id>/get/rfid",
+				"topic": "openWB/set/command/+/todo/addConsumerTimePlan",
 				"priority": 0,
 				"allow": true
 			},
