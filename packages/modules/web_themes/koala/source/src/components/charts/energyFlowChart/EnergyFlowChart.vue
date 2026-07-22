@@ -706,21 +706,7 @@ const labelClipPath = computed(() => {
           height="200%"
           filterUnits="objectBoundingBox"
         >
-          <feGaussianBlur in="SourceAlpha" stdDeviation="1.5" result="castB" />
-          <feOffset in="castB" dx="1.3" dy="1.3" result="castO" />
-          <feFlood class="cast" result="castC" />
-          <feComposite in="castC" in2="castO" operator="in" result="cast" />
-
-          <feGaussianBlur in="SourceAlpha" stdDeviation="1.15" result="hlB" />
-          <feOffset in="hlB" dx="-1" dy="-1" result="hlO" />
-          <feFlood class="highlight" result="hlC" />
-          <feComposite in="hlC" in2="hlO" operator="in" result="highlight" />
-
-          <feMerge>
-            <feMergeNode in="highlight" />
-            <feMergeNode in="cast" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
+          <feDropShadow dx="1.3" dy="1.3" stdDeviation="1.5" />
         </filter>
       </defs>
 
@@ -803,7 +789,6 @@ const labelClipPath = computed(() => {
             </linearGradient>
           </defs>
           <rect
-            class="flow-surface"
             :x="-svgRectWidth / 2"
             :y="-svgSize.circleRadius"
             :width="svgRectWidth"
@@ -863,7 +848,6 @@ const labelClipPath = computed(() => {
             :transform="`translate(${svgSize.circleRadius - svgRectWidth / 2}, 0)`"
           >
             <circle
-              class="flow-surface"
               cx="0"
               cy="0"
               :r="iconCircleRadius"
@@ -1047,22 +1031,10 @@ rect {
   fill: var(--q-card-background);
 }
 
-/* the spec's `inset 0 0 0 1px` hairline; 1px is ~0.15 SVG units */
-.flow-surface {
-  stroke: var(--q-flow-chart-hairline);
-  stroke-width: 0.15;
-}
-
-/* Shadow colors via an SVG filter rather than CSS filter: drop-shadow, for
-   browser compatibility (safari webkit) */
-feFlood.cast {
+/* Drop shadow by way of feDropShadow for browser compatibility (safari webkit) */
+feDropShadow {
   flood-color: var(--q-flow-chart-shadow);
   flood-opacity: var(--q-flow-chart-shadow-opacity);
-}
-
-feFlood.highlight {
-  flood-color: var(--q-flow-chart-highlight);
-  flood-opacity: var(--q-flow-chart-highlight-opacity);
 }
 
 text {
