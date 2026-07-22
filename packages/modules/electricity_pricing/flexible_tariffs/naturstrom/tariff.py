@@ -41,7 +41,7 @@ def _get_raw_prices(config: NaturstromTariff):
 def validate_token(config: NaturstromTariff) -> None:
     """Prüft ob ein gültiger Token vorhanden ist, ansonsten wird ein neuer abgerufen."""
     if (config.configuration.token.access_token is not None):
-       # Access Token vorhanden
+        # Access Token vorhanden
         if (config.configuration.token.expires and config.configuration.token.created_at):
             # Prüfe ob Token noch gültig ist
             expires_timestamp = config.configuration.token.created_at + config.configuration.token.expires - 300
