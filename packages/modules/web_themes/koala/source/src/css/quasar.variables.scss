@@ -56,7 +56,14 @@ $vehicle-fill: #4f99af;
 $charge-plan-link-button: #6b757d;
 $diagram-icon: #717171;
 $table-hover: #f9f8f8;
-$flow-shadow: $secondary;
+// history chart and daily totals cards (--q-shadow stays for everything else)
+$chart-shadow: $secondary;
+// energy flow chart: cast shadow, opposing highlight and inset hairline
+$flow-chart-shadow: #000000;
+$flow-chart-shadow-opacity: 0.12;
+$flow-chart-highlight: $white;
+$flow-chart-highlight-opacity: 0.9;
+$flow-chart-hairline: #{rgba($white, 0.05)};
 // Light theme (default)
 :root {
   --q-primary: #{$primary};
@@ -72,7 +79,12 @@ $flow-shadow: $secondary;
   --q-card-background: #{$background};
   --q-list: color-mix(in srgb, var(--q-grey) 5%, transparent);
   --q-shadow: #{$secondary};
-  --q-flow-shadow: #{$flow-shadow};
+  --q-chart-shadow: #{$chart-shadow};
+  --q-flow-chart-shadow: #{$flow-chart-shadow};
+  --q-flow-chart-shadow-opacity: #{$flow-chart-shadow-opacity};
+  --q-flow-chart-highlight: #{$flow-chart-highlight};
+  --q-flow-chart-highlight-opacity: #{$flow-chart-highlight-opacity};
+  --q-flow-chart-hairline: #{$flow-chart-hairline};
   --q-text: #{$light-text};
   --q-white: #{$white};
   --q-grey: #{$grey};
@@ -230,7 +242,15 @@ $flow-shadow: $secondary;
 $dark-primary: #2aa8ff;
 $dark-secondary: #3b3b3d; //cards - tabs background tables
 $dark-shadow: #7a7c80; // shadow color for dark theme
-$dark-flow-shadow: #000000;
+// history chart and daily totals cards (--q-shadow stays for everything else)
+$dark-chart-shadow: #000000;
+// energy flow chart: values taken directly from the design spec
+// (-4px -4px 9px highlight, 5px 5px 12px cast, inset 0 0 0 1px hairline)
+$dark-flow-chart-shadow: #000000;
+$dark-flow-chart-shadow-opacity: 0.45;
+$dark-flow-chart-highlight: $white;
+$dark-flow-chart-highlight-opacity: 0.06;
+$dark-flow-chart-hairline: #{rgba($white, 0.05)};
 $dark-accent: #546e7a;
 $dark-positive: #3e8f5e;
 $dark-negative: #c54d57;
@@ -265,7 +285,12 @@ $dark-table-hover: #ffffff12;
   --q-card-background: #{$dark-secondary};
   --q-list: #{$dark-secondary}; // drawer, list background
   --q-shadow: #{$dark-shadow};
-  --q-flow-shadow: #{$dark-flow-shadow};
+  --q-chart-shadow: #{$dark-chart-shadow};
+  --q-flow-chart-shadow: #{$dark-flow-chart-shadow};
+  --q-flow-chart-shadow-opacity: #{$dark-flow-chart-shadow-opacity};
+  --q-flow-chart-highlight: #{$dark-flow-chart-highlight};
+  --q-flow-chart-highlight-opacity: #{$dark-flow-chart-highlight-opacity};
+  --q-flow-chart-hairline: #{$dark-flow-chart-hairline};
   --q-text: #{$dark-text};
   --q-white: #{$white};
   --q-grey: #{$grey};

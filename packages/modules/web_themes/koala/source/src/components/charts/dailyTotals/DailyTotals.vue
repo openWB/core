@@ -586,7 +586,7 @@ watch(
 .card {
   border-radius: 0.5rem;
   background: var(--q-card-background);
-  filter: drop-shadow(0 0 0.15rem var(--q-shadow));
+  filter: drop-shadow(0 0 0.15rem var(--q-chart-shadow));
   margin-bottom: 0.25rem;
 }
 
