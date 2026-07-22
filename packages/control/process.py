@@ -8,7 +8,7 @@ from control.bat_all import get_bat_components_by_controllability
 from control.chargelog import chargelog
 from control.chargepoint import chargepoint
 from control import data
-from control.chargepoint.chargepoint_state import ChargepointState
+from control.chargepoint.chargepoint_state import CHARGING_STATES, ChargepointState
 from control.consumer.consumer import Consumer
 from control.consumer.usage import ConsumerUsage
 from helpermodules import timecheck
@@ -77,12 +77,15 @@ class Process:
                             name=f"set power limit {bat_component.component_config.id}"))
             for consumer in data.data.consumer_data.values():
                 try:
+                    if consumer.data.set.current != 0 and consumer.data.control_parameter.state not in CHARGING_STATES:
+                        consumer.data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
                     self._update_state_consumer(consumer)
                     if consumer.data.get.state_str is None:
                         if consumer.data.get.charge_state:
                             consumer.data.get.state_str = "Verbraucher läuft."
                         else:
                             consumer.data.get.state_str = "Verbraucher wird gestartet... "
+
                     modules_threads.append(self._start_consumer(consumer))
                 except Exception:
                     log.exception("Fehler im Process-Modul für Verbaucher "+str(consumer))

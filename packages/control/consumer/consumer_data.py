@@ -116,4 +116,4 @@ class ConsumerData:
     module: ConsumerSetup = None
     config: ConsumerConfig = field(default_factory=lambda: ConsumerConfig())
     extra_meter: Optional[int] = None
-    usage: Usage = field(default_factory=lambda: Usage())
+    usage: Usage = field(default_factory=lambda: Usage(), metadata={"topic": "usage"})
