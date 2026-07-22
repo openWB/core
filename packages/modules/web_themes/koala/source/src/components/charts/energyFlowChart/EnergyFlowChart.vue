@@ -698,8 +698,22 @@ const labelClipPath = computed(() => {
       xmlns:svg="http://www.w3.org/2000/svg"
     >
       <defs>
+        <!-- shadow for the label pills and the centre dot -->
         <filter
           id="flow-box-shadow"
+          x="-50%"
+          y="-50%"
+          width="200%"
+          height="200%"
+          filterUnits="objectBoundingBox"
+        >
+          <feDropShadow dx="0" dy="0" stdDeviation="1" />
+        </filter>
+        <!-- separate filter for the icon circles: same geometry, but its own
+             flood-color so the circles can be shaded differently from the pill
+             they sit in (see --q-flow-icon-shadow) -->
+        <filter
+          id="flow-icon-shadow"
           x="-50%"
           y="-50%"
           width="200%"
@@ -851,7 +865,7 @@ const labelClipPath = computed(() => {
               cx="0"
               cy="0"
               :r="iconCircleRadius"
-              filter="url(#flow-box-shadow)"
+              filter="url(#flow-icon-shadow)"
             />
             <!-- SoC fill: radius must match the clip-soc reference above so the
                  fill level is accurate, and the background circle below so it
@@ -1033,8 +1047,17 @@ rect {
 
 /* Drop shadow by way of feDropShadow for browser compatibility (safari webkit) */
 feDropShadow {
-  flood-color: var(--q-flow-shadow);
   flood-opacity: 1;
+}
+
+/* pills and centre dot keep the shared card shadow ... */
+#flow-box-shadow feDropShadow {
+  flood-color: var(--q-shadow);
+}
+
+/* ... while the icon circles get their own tone (dark theme: black) */
+#flow-icon-shadow feDropShadow {
+  flood-color: var(--q-flow-icon-shadow);
 }
 
 text {
