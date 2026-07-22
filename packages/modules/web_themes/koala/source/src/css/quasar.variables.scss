@@ -56,6 +56,8 @@ $vehicle-fill: #4f99af;
 $charge-plan-link-button: #6b757d;
 $diagram-icon: #717171;
 $table-hover: #f9f8f8;
+// energy flow chart: shadow behind the pills and icon circles
+$flow-shadow: $secondary;
 // Light theme (default)
 :root {
   --q-primary: #{$primary};
@@ -71,6 +73,7 @@ $table-hover: #f9f8f8;
   --q-card-background: #{$background};
   --q-list: color-mix(in srgb, var(--q-grey) 5%, transparent);
   --q-shadow: #{$secondary};
+  --q-flow-shadow: #{$flow-shadow};
   --q-text: #{$light-text};
   --q-white: #{$white};
   --q-grey: #{$grey};
@@ -228,6 +231,8 @@ $table-hover: #f9f8f8;
 $dark-primary: #2aa8ff;
 $dark-secondary: #3b3b3d; //cards - tabs background tables
 $dark-shadow: #7a7c80; // shadow color for dark theme
+// energy flow chart: dark theme uses a black shadow instead of the light glow
+$dark-flow-shadow: #000000;
 $dark-accent: #546e7a;
 $dark-positive: #3e8f5e;
 $dark-negative: #c54d57;
@@ -262,6 +267,7 @@ $dark-table-hover: #ffffff12;
   --q-card-background: #{$dark-secondary};
   --q-list: #{$dark-secondary}; // drawer, list background
   --q-shadow: #{$dark-shadow};
+  --q-flow-shadow: #{$dark-flow-shadow};
   --q-text: #{$dark-text};
   --q-white: #{$white};
   --q-grey: #{$grey};

@@ -46,6 +46,10 @@ const svgViewBox = computed(
     `${svgSize.value.xMin} ${svgSize.value.yMin} ${svgSize.value.xMax} ${svgSize.value.yMax}`,
 );
 
+// The icon circle sits inside the label pill (pill radius = circleRadius);
+// the inset leaves a visible gap between circle and pill edge.
+const iconCircleRadius = computed(() => svgSize.value.circleRadius - 2);
+
 const svgIconWidth = computed(() => svgSize.value.circleRadius);
 
 const svgIconHeight = computed(() => svgSize.value.circleRadius);
@@ -757,9 +761,9 @@ const labelClipPath = computed(() => {
             >
               <rect
                 :x="-svgSize.circleRadius - svgSize.strokeWidth"
-                :y="(svgSize.circleRadius - 1) * (1 - 2 * component.soc)"
+                :y="iconCircleRadius * (1 - 2 * component.soc)"
                 :width="(svgSize.circleRadius + svgSize.strokeWidth) * 2"
-                :height="(svgSize.circleRadius - 1) * 2 * component.soc"
+                :height="iconCircleRadius * 2 * component.soc"
               />
             </clipPath>
             <clipPath :id="`clip-label-${component.id}`">
@@ -846,7 +850,7 @@ const labelClipPath = computed(() => {
             <circle
               cx="0"
               cy="0"
-              :r="svgSize.circleRadius - 1"
+              :r="iconCircleRadius"
               filter="url(#flow-box-shadow)"
             />
             <!-- SoC fill: radius must match the clip-soc reference above so the
@@ -857,7 +861,7 @@ const labelClipPath = computed(() => {
               :class="{ soc: component.soc !== undefined }"
               cx="0"
               cy="0"
-              :r="svgSize.circleRadius - 1"
+              :r="iconCircleRadius"
               :clip-path="`url(#clip-soc-${component.id})`"
               :fill="`url(#gradient-soc-${component.id})`"
             />
@@ -897,7 +901,7 @@ svg {
 .flow-base {
   fill: none;
   stroke: var(--q-secondary);
-  stroke-width: 0.75;
+  stroke-width: 0.4;
   stroke-linecap: round;
   stroke-linejoin: round;
   transition: stroke 0.5s;
@@ -1029,7 +1033,7 @@ rect {
 
 /* Drop shadow by way of feDropShadow for browser compatibility (safari webkit) */
 feDropShadow {
-  flood-color: var(--q-shadow);
+  flood-color: var(--q-flow-shadow);
   flood-opacity: 1;
 }
 
