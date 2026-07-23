@@ -39,7 +39,7 @@ from helpermodules.create_debug import create_debug_log
 from helpermodules.pub import Pub, pub_single
 from helpermodules.subdata import SubData
 from helpermodules.utils.topic_parser import decode_payload, get_index
-from control import bat, bridge, counter, counter_all, pv
+from control import bat, bridge, counter, counter_all, data, pv
 from control.ev import ev
 from modules.chargepoints.internal_openwb.chargepoint_module import ChargepointModule
 from modules.chargepoints.internal_openwb.config import InternalChargepointMode
@@ -775,6 +775,9 @@ class Command:
         # add ACL roles for vehicle access, if user management is active
         if SubData.system_data["system"].data["security"]["user_management_active"]:
             add_acl_role("vehicle-<id>-access", new_id)
+        data.data.counter_all_data.add_loadmanagement_prio_item("vehicle", new_id)
+        Pub().pub("openWB/set/counter/get/loadmanagement_prios",
+                  data.data.counter_all_data.data.get.loadmanagement_prios)
         pub_user_message(payload, connection_id, f'Neues EV mit ID \'{new_id}\' hinzugefügt.', MessageType.SUCCESS)
 
     def removeVehicle(self, connection_id: str, payload: dict) -> None:
@@ -790,6 +793,9 @@ class Command:
             if SubData.system_data["system"].data["security"]["user_management_active"]:
                 remove_acl_role("vehicle-<id>-access", payload["data"]["id"])
                 remove_acl_role("vehicle-<id>-write-access", payload["data"]["id"])
+            data.data.counter_all_data.remove_loadmanagement_prio_item(payload["data"]["id"])
+            Pub().pub("openWB/set/counter/get/loadmanagement_prios",
+                      data.data.counter_all_data.data.get.loadmanagement_prios)
             pub_user_message(
                 payload, connection_id,
                 f'EV mit ID \'{payload["data"]["id"]}\' gelöscht.', MessageType.SUCCESS)

@@ -1,4 +1,8 @@
+from typing import List
 from unittest.mock import Mock, patch, mock_open
+from control.chargemode import Chargemode
+from control.ev.charge_template import ChargeTemplate
+import dataclass_utils
 from helpermodules import update_config
 import json
 from pathlib import Path
@@ -232,4 +236,58 @@ def test_upgrade_datastore_125_is_idempotent_for_already_converted_values(mock_p
     assert uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"] == expected_flexible
     assert uc.all_received_topics["openWB/optional/ep/grid_fee/provider"] == expected_grid_fee
     assert uc.all_received_topics["openWB/system/datastore_version"] == [123, 124, 125]
+    assert mock_pub.pub.call_count == 1  # einmal publishen für Upgrade der Datastore-Version
+
+
+@pytest.mark.parametrize("ev0_prio, ev0_chargemode, ev1_prio, ev1_chargemode, ev2_prio, ev2_chargemode, id_ordered", [
+    pytest.param(False, Chargemode.INSTANT_CHARGING.value, False, Chargemode.INSTANT_CHARGING.value,
+                 False, Chargemode.INSTANT_CHARGING.value, [0, 1, 2], id="alle gleich"),
+    pytest.param(False, Chargemode.INSTANT_CHARGING.value, False, Chargemode.INSTANT_CHARGING.value,
+                 False, Chargemode.SCHEDULED_CHARGING.value, [2, 0, 1], id="Lademodi unterschiedlich"),
+    pytest.param(False, Chargemode.INSTANT_CHARGING.value, False, Chargemode.INSTANT_CHARGING.value,
+                 False, Chargemode.INSTANT_CHARGING.value, [1, 0, 2], id="Prioritäten unterschiedlich")
+]
+)
+def test_upgrade_datastore_136_ev_chargemode_conversion(ev0_prio: bool,
+                                                        ev0_chargemode: str,
+                                                        ev1_prio: bool,
+                                                        ev1_chargemode: str,
+                                                        ev2_prio: bool,
+                                                        ev2_chargemode: str,
+                                                        id_ordered: List[int],
+                                                        mock_pub: Mock):
+    # setup
+    ev0_charge_template = ChargeTemplate()
+    ev0_charge_template.data.id = 0
+    ev0_charge_template.data.chargemode.selected = ev0_chargemode
+    ev0_charge_template.data.prio = ev0_prio
+    ev1_charge_template = ChargeTemplate()
+    ev1_charge_template.data.id = 1
+    ev1_charge_template.data.chargemode.selected = ev1_chargemode
+    ev1_charge_template.data.prio = ev1_prio
+    ev2_charge_template = ChargeTemplate()
+    ev2_charge_template.data.id = 2
+    ev2_charge_template.data.chargemode.selected = ev2_chargemode
+    ev2_charge_template.data.prio = ev2_prio
+
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        "openWB/vehicle/0/charge_template": 0,
+        "openWB/vehicle/1/charge_template": 1,
+        "openWB/vehicle/2/charge_template": 2,
+        "openWB/vehicle/template/charge_template/0": dataclass_utils.asdict(ev0_charge_template.data),
+        "openWB/vehicle/template/charge_template/1": dataclass_utils.asdict(ev1_charge_template.data),
+        "openWB/vehicle/template/charge_template/2": dataclass_utils.asdict(ev2_charge_template.data),
+        "openWB/system/datastore_version": [131, 132],
+    }
+
+    # execution
+    uc.upgrade_datastore_136()
+
+    # evaluation
+    assert uc.all_received_topics["openWB/counter/get/loadmanagement_prios"] == [
+        {"type": "vehicle", "id": id_ordered[0]},
+        {"type": "vehicle", "id": id_ordered[1]},
+        {"type": "vehicle", "id": id_ordered[2]}]
+    assert uc.all_received_topics["openWB/system/datastore_version"] == [131, 132, 136]
     assert mock_pub.pub.call_count == 1  # einmal publishen für Upgrade der Datastore-Version
