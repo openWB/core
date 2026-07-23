@@ -26,6 +26,9 @@ class Loadmanagement:
             available_currents, new_limit = self._limit_by_dimming(available_currents, cp)
             limit = new_limit if new_limit.limiting_value is not None else limit
 
+            available_currents, new_limit = self._limit_loadmanager(available_currents, cp)
+            limit = new_limit if new_limit.limiting_value is not None else limit
+
             available_currents, new_limit = self._limit_by_ripple_control_receiver(available_currents, cp)
             limit = new_limit if new_limit.limiting_value is not None else limit
         except ValueError as e:
@@ -180,4 +183,31 @@ class Loadmanagement:
             available_currents = [max(min(max_current*value - cp.data.set.target_current, c), 0)
                                   if c > 0 else 0 for c in available_currents]
             log.debug(f"Reduzierung durch RSE-Kontakt auf {value*100}%, maximal {max_current*value}A")
+        return available_currents, limit
+
+    def _limit_loadmanager(self,
+                           available_currents: List[float],
+                           cp: Chargepoint) -> Tuple[List[float], LoadmanagementLimit]:
+
+        loadmanager_power_left, loadmanager_current_left, limit = data.data.io_actions.get_limit_loadmanager({
+            "type": "cp", "id": cp.num})
+
+        if loadmanager_power_left is not None and loadmanager_current_left is not None:
+            if sum(available_currents)*voltages_mean(cp.data.get.voltages) > loadmanager_power_left:
+                phases = 3-available_currents.count(0)
+                overload_per_phase = (sum(available_currents) -
+                                      loadmanager_power_left/voltages_mean(cp.data.get.voltages))/phases
+                available_currents = [c - overload_per_phase if c > 0 else 0 for c in available_currents]
+                log.debug(
+                    f"Reduzierung der Leistung auf {sum(available_currents)*voltages_mean(cp.data.get.voltages)}W "
+                    f"durch den Lastmanager. (Leistungsgrenze: {loadmanager_power_left}W)")
+                return available_currents, limit
+            if sum(available_currents) > loadmanager_current_left:
+                phases = 3 - available_currents.count(0)
+                overload_per_phase = (sum(available_currents) - loadmanager_current_left) / phases
+                available_currents = [max(c - overload_per_phase, 0) if c > 0 else 0 for c in available_currents]
+                log.debug(
+                    f"Reduzierung der Ströme auf {available_currents}A durch den Lastmanager. "
+                    f"(Stromgrenze: {loadmanager_current_left}A)")
+                return available_currents, limit
         return available_currents, limit

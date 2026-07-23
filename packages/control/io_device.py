@@ -4,6 +4,9 @@ from control.limiting_value import LoadmanagementLimit
 from helpermodules.constants import NO_ERROR
 from modules.io_actions.controllable_consumers.dimming.api_eebus import DimmingEebus
 from modules.io_actions.controllable_consumers.dimming.api_io import DimmingIo
+
+from modules.io_actions.controllable_consumers.load_manager.api import LoadManager
+
 from modules.io_actions.controllable_consumers.dimming_direct_control.api import DimmingDirectControl
 from modules.io_actions.controllable_consumers.ripple_control_receiver.api import RippleControlReceiver
 from modules.io_actions.generator_systems.stepwise_control.api_eebus import StepwiseControlEebus
@@ -55,7 +58,8 @@ class IoStates:
 class IoActions:
     def __init__(self):
         self.actions: Dict[int, Union[DimmingIo, DimmingEebus, DimmingDirectControl,
-                                      RippleControlReceiver, StepwiseControlEebus, StepwiseControlIo]] = {}
+                                      RippleControlReceiver, StepwiseControlEebus, StepwiseControlIo,
+                                      LoadManager]] = {}
 
     def setup(self):
         for action in self.actions.values():
@@ -102,3 +106,19 @@ class IoActions:
                     return action.control_stepwise()
         else:
             return None, LoadmanagementLimit(None, None)
+
+    def get_limit_loadmanager(self, device: Dict) -> Tuple[Optional[float], Optional[float], LoadmanagementLimit]:
+        for action in self.actions.values():
+            if isinstance(action, LoadManager):
+                for d in action.config.configuration.devices:
+                    if d == device:
+                        return action.loadmanager_get_import_power_left()
+        else:
+            return None, None, LoadmanagementLimit(None, None)
+
+    def set_limit_loadmanager(self, device: Dict, used_power: float) -> Optional[float]:
+        for action in self.actions.values():
+            if isinstance(action, LoadManager):
+                for d in action.config.configuration.devices:
+                    if d == device:
+                        return action.loadmanager_set_import_power_left(used_power, used_power/230)
