@@ -17,9 +17,6 @@ class NaturstromTariffConfiguration:
     account_id: Optional[str] = None
     account_name: Optional[str] = None
 
-    # Rabot publishes once daily at 00:00 for the following day
-    update_hours: list[int] = field(default_factory=lambda: [0])
-
 
 @dataclass
 class NaturstromTariff:

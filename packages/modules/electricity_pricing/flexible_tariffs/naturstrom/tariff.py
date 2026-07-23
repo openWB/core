@@ -3,16 +3,16 @@ import datetime
 import pytz
 import logging
 from typing import Dict
+from requests.exceptions import HTTPError
+from dataclass_utils import asdict
 
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import TariffState
 from modules.electricity_pricing.flexible_tariffs.naturstrom.config import NaturstromTariff, NaturstromToken
 
-from dataclass_utils import asdict
 from helpermodules import timecheck
 from helpermodules.pub import Pub
-from requests.exceptions import HTTPError
 
 log = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 def _get_raw_prices(config: NaturstromTariff):
     headers = {
         'Accept': 'application/json',
-        'Authorization': f"{config.configuration.token.token_type} {config.configuration.token.access_token}"
+        'Authorization': f"{config.configuration.token.token_type or 'Bearer'} {config.configuration.token.access_token}"
     }
     now = datetime.datetime.now(pytz.timezone("Europe/Berlin"))
     start_of_today = now.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -89,21 +89,21 @@ def _refresh_token(config: NaturstromTariff) -> None:
         Pub().pub("openWB/set/optional/ep/flexible_tariff/provider", asdict(config))
         log.debug("Token erfolgreich erneuert.")
     except HTTPError as e:
-        raise Exception(f"Token-Erneuerung fehlgeschlagen: {e}.")
+        raise Exception(f"Token-Erneuerung fehlgeschlagen: {e}.") from e
 
 
-def fetch(config: NaturstromTariff) -> None:
+def fetch(config: NaturstromTariff) -> Dict[str, float]:
     validate_token(config)
     try:
         raw_prices = _get_raw_prices(config)
     except HTTPError as error:
         raise error
 
-    prices: Dict[int, float] = {}
+    prices: Dict[str, float] = {}
     for data in raw_prices["data"]:
-        formatted_price = data["price"] / 100000  # ct/kWh -> €/Wh
-        timestamp = datetime.datetime.strptime(data["start_time"], "%Y-%m-%dT%H:%M:%S.%fZ").timestamp()
-        prices.update({str(int(timestamp)): formatted_price})
+        formatted_price = data["price"] / 1000  # €/kWh -> €/Wh
+        timestamp = int(datetime.datetime.fromisoformat(data["start_time"].replace("Z", "+00:00")).timestamp())
+        prices[str(timestamp)] = formatted_price
     return prices
 
 
