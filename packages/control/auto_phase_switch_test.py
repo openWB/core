@@ -6,7 +6,6 @@ from control.chargepoint.control_parameter import ControlParameter
 from control.counter import Counter, CounterData, Set
 
 from control.limiting_value import LimitingValue, LoadmanagementLimit
-from control.ev.charge_template import ChargeTemplate
 from control.pv_all import PvAll
 from control.bat_all import BatAll
 from control.general import General
