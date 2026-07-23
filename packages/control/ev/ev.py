@@ -302,7 +302,6 @@ class Ev:
     PHASE_SWITCH_DELAY_TEXT = '{} Phasen in {}.'
 
     def auto_phase_switch(self,
-                          charge_template: ChargeTemplate,
                           control_parameter: ControlParameter,
                           cp_num: int,
                           evse_current: float,
@@ -316,8 +315,8 @@ class Ev:
         phases_to_use = control_parameter.phases
         phases_in_use = control_parameter.phases
         pv_config = data.data.general_data.data.chargemode_config.pv_charging
-        if charge_template.data.chargemode.pv_charging.feed_in_limit:
-            feed_in_yield = pv_config.feed_in_yield
+        if pv_config.feed_in_limit:
+            feed_in_yield = data.data.general_data.data.chargemode_config.feed_in_yield
         else:
             feed_in_yield = 0
         delay = pv_config.phase_switch_delay * 60
