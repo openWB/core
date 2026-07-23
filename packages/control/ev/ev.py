@@ -302,7 +302,6 @@ class Ev:
     PHASE_SWITCH_DELAY_TEXT = '{} Phasen in {}.'
 
     def auto_phase_switch(self,
-                          charge_template: ChargeTemplate,
                           control_parameter: ControlParameter,
                           cp_num: int,
                           evse_current: float,

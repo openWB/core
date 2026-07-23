@@ -135,8 +135,7 @@ def test_auto_phase_switch(monkeypatch: pytest.MonkeyPatch, vehicle: Ev, params:
     control_parameter.state = params.state
 
     # execution
-    phases_to_use, current, message = vehicle.auto_phase_switch(ChargeTemplate(),
-                                                                control_parameter,
+    phases_to_use, current, message = vehicle.auto_phase_switch(control_parameter,
                                                                 0,
                                                                 max(params.get_currents),
                                                                 params.get_currents,
