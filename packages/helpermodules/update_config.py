@@ -58,7 +58,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 134
+    DATASTORE_VERSION = 136
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -3435,3 +3435,37 @@ class UpdateConfig:
                     return {topic: config}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(134)
+
+    def upgrade_datastore_135(self) -> None:
+        def upgrade(topic: str, payload) -> None:
+            if re.search("openWB/vehicle/[0-9]+/soc_module/config", topic) is not None:
+                configuration_payload = decode_payload(payload)
+                # replace cupra,skoda,vwid by vweuda
+                if configuration_payload.get("type") in ["cupra", "skoda", "vwid"]:
+                    configuration_payload.update({"type": "vweuda"})
+                    if configuration_payload['configuration'].get('refreshToken'):
+                        configuration_payload['configuration'].pop('refreshToken')
+                return {topic: configuration_payload}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(135)
+ 
+    def upgrade_datastore_136(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("^openWB/system/device/[0-9]+/config$", topic) is not None:
+                payload_device = decode_payload(payload)
+                if payload_device.get("type") == "json":
+                    index = get_index(topic)
+                    modified_topics = {}
+                    for topic_component, payload_component in self.all_received_topics.items():
+                        if re.search(f"^openWB/system/device/{index}/component/[0-9]+/config$",
+                                     topic_component) is not None:
+                            payload_component = decode_payload(payload_component)
+                            if (
+                                payload_component["type"] == "counter" and
+                                "jq_frequency" not in payload_component["configuration"]
+                            ):
+                                payload_component["configuration"].update({"jq_frequency": None})
+                                modified_topics[topic_component] = payload_component
+                    return modified_topics
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(136)
