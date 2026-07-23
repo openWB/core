@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 from modules.common.component_setup import ComponentSetup
+from typing import Optional
 from ..vendor import vendor_descriptor
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 class GenericModbusConfiguration:
-    def __init__(self, ip_address: str = "192.168.1.230", port: int = 502):
+    def __init__(self, ip_address: Optional[str] = None, port: int = 502):
         self.ip_address = ip_address
         self.port = port
 
@@ -25,75 +26,33 @@ class GenericModbus:
 
 
 @dataclass
-class gerneric_modbus:
-    reg_address: int
-    reg_type: str
-    byteorder: str
-    wordorder: str
+class RegisterConfig:
+    reg_address: Optional[int] = None
+    reg_type: Optional[str] = None
+    byteorder: Optional[str] = None
+    wordorder: Optional[str] = None
 
 
+@dataclass
 class GenericModbusCounterConfiguration:
-    def __init__(self, modbus_id: int = 105,
-                 voltage_L1: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None),
-                 voltage_L2: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None),
-                 voltage_L3: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None),
-                 current_L1: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None),
-                 current_L2: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None),
-                 current_L3: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None),
-                 powers_L1: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None),
-                 powers_L2: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None),
-                 powers_L3: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None),
-                 power_factor_L1: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None),
-                 power_factor_L2: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None),
-                 power_factor_L3: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None),
-                 imported: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None),
-                 exported: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None),
-                 power: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None),
-                 frequency: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None),
-                 serial_number: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None)):
-
-        self.modbus_id = modbus_id
-        self.voltage_L1 = voltage_L1
-        self.voltage_L2 = voltage_L2
-        self.voltage_L3 = voltage_L3
-
-        self.current_L1 = current_L1
-        self.current_L2 = current_L2
-        self.current_L3 = current_L3
-
-        self.powers_L1 = powers_L1
-        self.powers_L2 = powers_L2
-        self.powers_L3 = powers_L3
-
-        self.power_factor_L1 = power_factor_L1
-        self.power_factor_L2 = power_factor_L2
-        self.power_factor_L3 = power_factor_L3
-
-        self.imported = imported
-        self.exported = exported
-
-        self.power = power
-
-        self.frequency = frequency
-
-        self.serial_number = serial_number
+    modbus_id: int = 105
+    voltage_L1: RegisterConfig = field(default_factory=RegisterConfig)
+    voltage_L2: RegisterConfig = field(default_factory=RegisterConfig)
+    voltage_L3: RegisterConfig = field(default_factory=RegisterConfig)
+    current_L1: RegisterConfig = field(default_factory=RegisterConfig)
+    current_L2: RegisterConfig = field(default_factory=RegisterConfig)
+    current_L3: RegisterConfig = field(default_factory=RegisterConfig)
+    powers_L1: RegisterConfig = field(default_factory=RegisterConfig)
+    powers_L2: RegisterConfig = field(default_factory=RegisterConfig)
+    powers_L3: RegisterConfig = field(default_factory=RegisterConfig)
+    power_factor_L1: RegisterConfig = field(default_factory=RegisterConfig)
+    power_factor_L2: RegisterConfig = field(default_factory=RegisterConfig)
+    power_factor_L3: RegisterConfig = field(default_factory=RegisterConfig)
+    imported: RegisterConfig = field(default_factory=RegisterConfig)
+    exported: RegisterConfig = field(default_factory=RegisterConfig)
+    power: RegisterConfig = field(default_factory=RegisterConfig)
+    frequency: RegisterConfig = field(default_factory=RegisterConfig)
+    serial_number: RegisterConfig = field(default_factory=RegisterConfig)
 
 
 class GenericModbusCounterSetup(ComponentSetup[GenericModbusCounterConfiguration]):
@@ -105,38 +64,17 @@ class GenericModbusCounterSetup(ComponentSetup[GenericModbusCounterConfiguration
         super().__init__(name, type, id, configuration or GenericModbusCounterConfiguration())
 
 
+@dataclass
 class GenericModbusBatConfiguration:
-    def __init__(self, modbus_id: int = 100,
-                 current_L1: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None),
-                 current_L2: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None),
-                 current_L3: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None),
-                 imported: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None),
-                 exported: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None),
-                 power: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None),
-                 soc: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None),
-                 serial_number: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None)):
-
-        self.modbus_id = modbus_id
-
-        self.current_L1 = current_L1
-        self.current_L2 = current_L2
-        self.current_L3 = current_L3
-
-        self.imported = imported
-        self.exported = exported
-
-        self.power = power
-        self.soc = soc
-
-        self.serial_number = serial_number
+    modbus_id: int = 100
+    current_L1: RegisterConfig = field(default_factory=RegisterConfig)
+    current_L2: RegisterConfig = field(default_factory=RegisterConfig)
+    current_L3: RegisterConfig = field(default_factory=RegisterConfig)
+    imported: RegisterConfig = field(default_factory=RegisterConfig)
+    exported: RegisterConfig = field(default_factory=RegisterConfig)
+    power: RegisterConfig = field(default_factory=RegisterConfig)
+    soc: RegisterConfig = field(default_factory=RegisterConfig)
+    serial_number: RegisterConfig = field(default_factory=RegisterConfig)
 
 
 class GenericModbusBatSetup(ComponentSetup[GenericModbusBatConfiguration]):
@@ -148,38 +86,17 @@ class GenericModbusBatSetup(ComponentSetup[GenericModbusBatConfiguration]):
         super().__init__(name, type, id, configuration or GenericModbusBatConfiguration())
 
 
+@dataclass
 class GenericModbusInverterConfiguration:
-    def __init__(self, modbus_id: int = 100,
-                 current_L1: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None),
-                 current_L2: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None),
-                 current_L3: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None),
-                 imported: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None),
-                 exported: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None),
-                 power: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None),
-                 dc_power: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None),
-                 serial_number: gerneric_modbus = gerneric_modbus(
-                     reg_address=None, reg_type=None, byteorder=None, wordorder=None)):
-
-        self.modbus_id = modbus_id
-
-        self.current_L1 = current_L1
-        self.current_L2 = current_L2
-        self.current_L3 = current_L3
-
-        self.imported = imported
-        self.exported = exported
-
-        self.power = power
-        self.dc_power = dc_power
-
-        self.serial_number = serial_number
+    modbus_id: int = 100
+    current_L1: RegisterConfig = field(default_factory=RegisterConfig)
+    current_L2: RegisterConfig = field(default_factory=RegisterConfig)
+    current_L3: RegisterConfig = field(default_factory=RegisterConfig)
+    imported: RegisterConfig = field(default_factory=RegisterConfig)
+    exported: RegisterConfig = field(default_factory=RegisterConfig)
+    power: RegisterConfig = field(default_factory=RegisterConfig)
+    dc_power: RegisterConfig = field(default_factory=RegisterConfig)
+    serial_number: RegisterConfig = field(default_factory=RegisterConfig)
 
 
 class GenericModbusInverterSetup(ComponentSetup[GenericModbusInverterConfiguration]):
