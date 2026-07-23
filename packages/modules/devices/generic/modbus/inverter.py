@@ -7,7 +7,7 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
-from modules.common.store import get_inverter_value_store
+from modules.common.store._inverter import get_inverter_value_store
 from modules.devices.generic.modbus.config import GenericModbusInverterSetup
 from modules.common.component_type import ComponentType
 from modules.common.simcount import SimCounter
@@ -30,7 +30,7 @@ class GenericModbusInverter(AbstractInverter):
         self.store = get_inverter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
-        self.sim_counter = SimCounter(self.kwargs['device_id'], self.component_config.id, prefix="pv")
+        self.sim_counter = SimCounter(self.kwargs['device_id'], self.component_config.id, self.component_config.type)
 
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id

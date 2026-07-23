@@ -6,7 +6,7 @@ from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
-from modules.common.store import get_bat_value_store
+from modules.common.store._battery import get_bat_value_store
 from modules.devices.generic.modbus.config import GenericModbusBatSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
@@ -31,7 +31,7 @@ class GenericModbusBat(AbstractBat):
         self.store = get_bat_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
-        self.sim_counter = SimCounter(self.__modbus_id, self.component_config.id, prefix="speicher")
+        self.sim_counter = SimCounter(self.__modbus_id, self.component_config.id, self.component_config.type)
 
     def update(self) -> None:
 

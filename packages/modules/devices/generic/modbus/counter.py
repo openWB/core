@@ -10,7 +10,7 @@ from modules.devices.generic.modbus.config import GenericModbusCounterSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
 
-from modules.common.store import get_counter_value_store
+from modules.common.store._counter import get_counter_value_store
 
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 
@@ -31,7 +31,7 @@ class GenericModbusCounter(AbstractCounter):
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
         self.client: ModbusTcpClient_ = self.kwargs['client']
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, self.component_config.type)
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
