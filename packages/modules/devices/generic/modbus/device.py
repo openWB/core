@@ -25,15 +25,12 @@ def create_device(device_config: GenericModbus):
     client = None
 
     def create_counter_component(component_config: GenericModbusCounterSetup):
-        nonlocal client
         return GenericModbusCounter(component_config, device_id=device_config.id, client=client)
 
     def create_bat_component(component_config: GenericModbusBatSetup):
-        nonlocal client
         return GenericModbusBat(component_config, device_id=device_config.id, client=client)
 
     def create_inverter_component(component_config: GenericModbusInverterSetup):
-        nonlocal client
         return GenericModbusInverter(component_config, device_id=device_config.id, client=client)
 
     def update_components(components: Iterable[Union[GenericModbusCounter, GenericModbusBat, GenericModbusInverter]]):
