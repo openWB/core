@@ -2,9 +2,7 @@
 from modules.common.component_setup import ComponentSetup
 from ..vendor import vendor_descriptor
 
-from typing import Optional
 from dataclasses import dataclass
-from modules.common.modbus import ModbusDataType, Endian
 
 
 class GenericModbusConfiguration:

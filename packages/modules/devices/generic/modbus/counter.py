@@ -12,7 +12,7 @@ from modules.common.component_type import ComponentType
 
 from modules.common.store import get_counter_value_store
 
-from modules.common.modbus import ModbusDataType, Endian, ModbusTcpClient_
+from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 
 import logging
 log = logging.getLogger(__name__)

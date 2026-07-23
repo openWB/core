@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 from typing import TypedDict, Any
 
-from modules.common.modbus import Endian
-
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
@@ -70,24 +68,27 @@ class GenericModbusBat(AbstractBat):
             currents = [0.0]*3
             if self.component_config.configuration.current_L1.reg_address is not None:
                 check_data(self.component_config.configuration.current_L1)
-                currents[0] = self.client.read_input_registers(int(self.component_config.configuration.current_L1.reg_address),
-                                                               ModbusDataType[self.component_config.configuration.current_L1.reg_type],
-                                                               byteorder=self.component_config.configuration.current_L1.byteorder,
-                                                               wordorder=self.component_config.configuration.current_L1.wordorder, unit=unit)
+                currents[0] = self.client.read_input_registers(
+                    int(self.component_config.configuration.current_L1.reg_address),
+                    ModbusDataType[self.component_config.configuration.current_L1.reg_type],
+                    byteorder=self.component_config.configuration.current_L1.byteorder,
+                    wordorder=self.component_config.configuration.current_L1.wordorder, unit=unit)
 
             if self.component_config.configuration.current_L2.reg_address is not None:
                 check_data(self.component_config.configuration.current_L2)
-                currents[1] = self.client.read_input_registers(int(self.component_config.configuration.current_L2.reg_address),
-                                                               ModbusDataType[self.component_config.configuration.current_L2.reg_type],
-                                                               byteorder=self.component_config.configuration.current_L2.byteorder,
-                                                               wordorder=self.component_config.configuration.current_L2.wordorder, unit=unit)
+                currents[1] = self.client.read_input_registers(
+                    int(self.component_config.configuration.current_L2.reg_address),
+                    ModbusDataType[self.component_config.configuration.current_L2.reg_type],
+                    byteorder=self.component_config.configuration.current_L2.byteorder,
+                    wordorder=self.component_config.configuration.current_L2.wordorder, unit=unit)
 
             if self.component_config.configuration.current_L3.reg_address is not None:
                 check_data(self.component_config.configuration.current_L3)
-                currents[2] = self.client.read_input_registers(int(self.component_config.configuration.current_L3.reg_address),
-                                                               ModbusDataType[self.component_config.configuration.current_L3.reg_type],
-                                                               byteorder=self.component_config.configuration.current_L3.byteorder,
-                                                               wordorder=self.component_config.configuration.current_L3.wordorder, unit=unit)
+                currents[2] = self.client.read_input_registers(
+                    int(self.component_config.configuration.current_L3.reg_address),
+                    ModbusDataType[self.component_config.configuration.current_L3.reg_type],
+                    byteorder=self.component_config.configuration.current_L3.byteorder,
+                    wordorder=self.component_config.configuration.current_L3.wordorder, unit=unit)
 
         # Import
         #

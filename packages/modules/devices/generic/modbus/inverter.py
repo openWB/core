@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 from typing import TypedDict, Any
 
-from modules.common.modbus import Endian
-
 from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
