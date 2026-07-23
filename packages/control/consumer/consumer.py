@@ -35,6 +35,7 @@ class Consumer(Load):
                 self.data.get.state_str += f" {message}"
 
     def setup_values_at_start(self):
+        self.data.set.state_str_prev = self.data.get.state_str
         self.data.get.state_str = None
         self.data.set.current_prev = self.data.set.current
 
@@ -97,7 +98,7 @@ class Consumer(Load):
             log.debug("Intervall für neuen Schaltbefehl nicht abgelaufen.")
             return (0,
                     0,
-                    None,
+                    self.data.set.state_str_prev,
                     self.data.control_parameter.chargemode,
                     self.data.control_parameter.submode)
 
