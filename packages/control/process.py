@@ -77,8 +77,6 @@ class Process:
                             name=f"set power limit {bat_component.component_config.id}"))
             for consumer in data.data.consumer_data.values():
                 try:
-                    if consumer.data.set.current != 0 and consumer.data.control_parameter.state not in CHARGING_STATES:
-                        consumer.data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
                     self._update_state_consumer(consumer)
                     if consumer.data.get.state_str is None:
                         if consumer.data.get.charge_state:
@@ -176,6 +174,8 @@ class Process:
             consumer.data.set.current = consumer.data.set.current_prev
         else:
             consumer.data.set.current = round(consumer.data.set.current, 2)
+        if consumer.data.set.current != 0 and consumer.data.control_parameter.state not in CHARGING_STATES:
+            consumer.data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
         consumer.data.set.power = consumer.data.set.current * \
             voltages_mean(consumer.data.get.voltages) * consumer.data.config.connected_phases
         log.info(f"Verbraucher{consumer.num}: set current {consumer.data.set.current} A, "

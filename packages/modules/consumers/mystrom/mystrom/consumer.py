@@ -24,7 +24,6 @@ def create_consumer(config: MyStrom):
         initializer()
 
     def update() -> ConsumerState:
-        nonlocal session, sim_counter
         resp = session.get(f"http://{config.configuration.ip_address}/report", timeout=3).json()
         power = resp["power"]
         relais = resp["relay"]
@@ -39,11 +38,9 @@ def create_consumer(config: MyStrom):
         )
 
     def switch_on() -> None:
-        nonlocal session
         session.get(f"http://{config.configuration.ip_address}/relay?state=1", timeout=3)
 
     def switch_off() -> None:
-        nonlocal session
         session.get(f"http://{config.configuration.ip_address}/relay?state=0", timeout=3)
 
     return ConfigurableConsumer(consumer_config=config,
