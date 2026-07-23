@@ -57,6 +57,7 @@ class Consumer(Load):
                 self.data.set.phases_to_use = self.data.config.connected_phases
                 self.data.get.charge_state = True if self.data.get.power > 0 else False
                 self.reset_chargemode_at_time()
+                self.is_switch_interval_elapsed()
                 min_current, required_current, message, mode, submode = self.get_parameter()
                 self.set_mode_changed(submode, mode)
                 self.set_control_parameter(min_current, required_current,
@@ -83,6 +84,17 @@ class Consumer(Load):
     def reset_on_time(self):
         self.data.set.on_time = 0
 
+    def is_switch_interval_elapsed(self):
+        if (timecheck.create_timestamp() < self.data.set.timestamp_last_current_set + self.data.config.min_interval and
+                # wenn kein Betrieb, darf eingeschaltet werden, auch wenn das Intervall noch nicht abgelaufen ist
+                    self.data.control_parameter.state != ChargepointState.NO_CHARGING_ALLOWED and
+                    (self.data.usage.wait_for_start_active is False or
+                        (self.data.usage.wait_for_start_active and
+                        self.data.set.wait_for_start_state == WaitForStartStates.START_SIGNAL_RECEIVED))):
+            self.data.set.switch_interval_elapsed = False
+        else:
+            self.data.set.switch_interval_elapsed = True
+
     PRICE_LIMIT_EXCEEDED = "Preislimit für Verbraucher aktiv, aktueller Preis zu hoch."
     PRICE_LIMIT_EXCEEDED_CONTINOUS_STILL_RUNNING = ("Preislimit für Verbraucher aktiv, aktueller Preis zu hoch. "
                                                     "Verbraucher läuft weiter, da der Verbraucher nicht abgeschaltet "
@@ -92,9 +104,7 @@ class Consumer(Load):
                                        "Verbraucher nicht abgeschaltet werden darf.")
 
     def get_parameter(self) -> Tuple[float, float, Optional[str], Optional[Chargemode], Chargemode]:
-        if (timecheck.create_timestamp() < self.data.set.timestamp_last_current_set + self.data.config.min_interval and
-            # wenn kein Betrieb, darf eingeschaltet werden, auch wenn das Intervall noch nicht abgelaufen ist
-                self.data.control_parameter.state != ChargepointState.NO_CHARGING_ALLOWED):
+        if self.data.set.switch_interval_elapsed is False:
             log.debug("Intervall für neuen Schaltbefehl nicht abgelaufen.")
             return (0,
                     0,

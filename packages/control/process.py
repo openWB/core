@@ -167,9 +167,7 @@ class Process:
                       name=f"set current cp{chargepoint.chargepoint_module.config.id}")
 
     def _update_state_consumer(self, consumer: Consumer) -> None:
-        if (timecheck.create_timestamp() < (consumer.data.set.timestamp_last_current_set
-                                            + consumer.data.config.min_interval) and
-                consumer.data.control_parameter.state != ChargepointState.NO_CHARGING_ALLOWED):
+        if consumer.data.set.switch_interval_elapsed is False:
             log.debug("Intervall für neuen Schaltbefehl nicht abgelaufen.")
             consumer.data.set.current = consumer.data.set.current_prev
         else:

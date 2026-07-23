@@ -104,6 +104,7 @@ class Set:
     log: Log = field(default_factory=lambda: Log())
     on_time: float = field(default=0, metadata={"topic": "set/on_time"})
     power: Optional[float] = None
+    switch_interval_elapsed: bool = False
     timestamp_last_current_set: float = field(default=0, metadata={"topic": "set/timestamp_last_current_set"})
     wait_for_start_state: WaitForStartStates = field(
         default=WaitForStartStates.WAIT_FOR_DEVICE_START, metadata={"topic": "set/wait_for_start_state"})
