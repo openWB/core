@@ -3448,7 +3448,7 @@ class UpdateConfig:
                 return {topic: configuration_payload}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(135)
- 
+
     def upgrade_datastore_136(self) -> None:
         def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("^openWB/system/device/[0-9]+/config$", topic) is not None:
