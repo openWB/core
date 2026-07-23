@@ -20,7 +20,10 @@ log = logging.getLogger(__name__)
 def _get_raw_prices(config: NaturstromTariff):
     headers = {
         'Accept': 'application/json',
-        'Authorization': f"{config.configuration.token.token_type or 'Bearer'} {config.configuration.token.access_token}"
+        "Authorization": (
+            f"{config.configuration.token.token_type or 'Bearer'} "
+            f"{config.configuration.token.access_token}"
+        ),
     }
     now = datetime.datetime.now(pytz.timezone("Europe/Berlin"))
     start_of_today = now.replace(hour=0, minute=0, second=0, microsecond=0)
