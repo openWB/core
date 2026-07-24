@@ -16,11 +16,9 @@ def create_consumer(config: ShellyPM):
         initializer()
 
     def switch_on() -> None:
-        nonlocal client
         client.write_coil(16, True, unit=config.configuration.modbus_id)
 
     def switch_off() -> None:
-        nonlocal client
         client.write_coil(16, False, unit=config.configuration.modbus_id)
 
     return ConfigurableConsumer(consumer_config=config,

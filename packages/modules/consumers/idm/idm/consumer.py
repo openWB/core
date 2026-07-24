@@ -25,7 +25,6 @@ def create_consumer(config: Idm):
         initializer()
 
     def update() -> ConsumerState:
-        nonlocal client, sim_counter
         if config.configuration.version == 1:
             power = client.read_holding_registers(4122, ModbusDataType.FLOAT_32,
                                                   unit=config.configuration.modbus_id)

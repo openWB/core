@@ -24,7 +24,6 @@ def create_consumer(config: Dac):
         initializer()
 
     def set_limit(power_limit: float) -> None:
-        nonlocal client
         if config.configuration.model == Model.N4Dac02 or config.configuration.model == Model.M120T:
             # pwoer_limit -= power
             pass

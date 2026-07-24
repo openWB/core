@@ -96,6 +96,26 @@ class CounterData:
     set: Set = field(default_factory=set_factory)
 
 
+@dataclass(frozen=True)
+class SwitchOffTexts:
+    stop: str
+    waiting: str
+    waiting_min_interval: str
+    no_stop: str
+    exceeded: str
+    not_charging: str
+
+
+@dataclass(frozen=True)
+class SwitchOnTexts:
+    fallen_below: str
+    waiting: str
+    not_exceeded: str
+    expired: str
+    max_phases: str = ""
+    feed_in_limit_note: str = ""
+
+
 class Counter:
     MAX_EVU_ERROR_DURATION = 60
 
@@ -153,6 +173,12 @@ class Counter:
                     load = data.data.cp_data[load_key]
                 else:
                     load = data.data.consumer_data[load_key]
+                    # Wenn der Verbraucher nicht angesteuert werden darf, im LM als nicht veränderbaren Verbrauch
+                    # berücksichtigen.
+                    if load.data.set.switch_interval_elapsed is False:
+                        log.debug(f"Verbraucher {load.num} als unveränderlichen Verbrauch im LM "
+                                  f"mit {load.data.get.power}W berücksichtigt.")
+                        continue
                 try:
                     element_current = convert_cp_currents_to_evu_currents(
                         load.data.config.phase_1,
@@ -191,6 +217,14 @@ class Counter:
                 power_raw = self.data.get.power
                 for cp in data.data.cp_data.values():
                     power_raw -= cp.data.get.power
+                for consumer in data.data.consumer_data.values():
+                    # Wenn der Verbraucher nicht angesteuert werden darf, im LM als nicht veränderbaren Verbrauch
+                    # berücksichtigen.
+                    if consumer.data.set.switch_interval_elapsed:
+                        power_raw -= consumer.data.get.power
+                    else:
+                        log.debug(f"Verbraucher {consumer.num} als unveränderlichen Verbrauch im LM "
+                                  f"mit {consumer.data.get.power}W berücksichtigt.")
                 self.data.set.raw_power_left = self.data.config.max_total_power - power_raw
                 log.info(f'Verbleibende Leistung an Zähler {self.num}: {self.data.set.raw_power_left}W')
             else:
@@ -267,12 +301,27 @@ class Counter:
         return (-self.calc_surplus() + self.data.set.released_surplus -
                 self.data.set.reserved_surplus - feed_in_yield)
 
-    SWITCH_ON_FALLEN_BELOW = "Einschaltschwelle während der Wartezeit unterschritten."
-    SWITCH_ON_WAITING = "Die Ladung wird gestartet, sobald in {} die Wartezeit abgelaufen ist."
-    SWITCH_ON_NOT_EXCEEDED = ("Die Ladung kann nicht gestartet werden, da die Einschaltschwelle nicht erreicht "
-                              "wird.")
-    SWITCH_ON_EXPIRED = "Einschaltschwelle für die Dauer der Wartezeit überschritten."
-    SWITCH_ON_MAX_PHASES = "Der Überschuss ist ausreichend, um direkt mit {} Phasen zu laden."
+    SWITCH_ON_TEXTS_CP = SwitchOnTexts(
+        fallen_below="Einschaltschwelle während der Wartezeit unterschritten.",
+        waiting="Die Ladung wird gestartet, sobald in {} die Wartezeit abgelaufen ist.",
+        not_exceeded=("Die Ladung kann nicht gestartet werden, da die Einschaltschwelle nicht erreicht "
+                      "wird."),
+        expired="Einschaltschwelle für die Dauer der Wartezeit überschritten.",
+        max_phases="Der Überschuss ist ausreichend, um direkt mit {} Phasen zu laden.",
+        feed_in_limit_note=" Die Einspeisegrenze wird berücksichtigt.",
+    )
+    SWITCH_ON_TEXTS_CONSUMER = SwitchOnTexts(
+        fallen_below="Einschaltschwelle während der Wartezeit unterschritten.",
+        waiting="Der Betrieb wird gestartet, sobald in {} die Wartezeit abgelaufen ist.",
+        not_exceeded=("Der Betrieb kann nicht gestartet werden, da die Einschaltschwelle nicht erreicht "
+                      "wird."),
+        expired="Einschaltschwelle für die Dauer der Wartezeit überschritten.",
+    )
+
+    def _get_switch_on_texts(self, load: Load) -> SwitchOnTexts:
+        if isinstance(load, Chargepoint):
+            return self.SWITCH_ON_TEXTS_CP
+        return self.SWITCH_ON_TEXTS_CONSUMER
 
     def calc_switch_on_power(self, load: Load) -> Tuple[float, float]:
         surplus = self.calc_raw_surplus() - self.data.set.reserved_surplus
@@ -300,6 +349,7 @@ class Counter:
     def switch_on_threshold_reached(self, load: Load) -> None:
         try:
             message = None
+            texts = self._get_switch_on_texts(load)
             control_parameter = load.data.control_parameter
             timestamp_switch_on_off = control_parameter.timestamp_switch_on_off
             switch_on_delay, switch_on_threshold, feed_in_limit = self.get_pv_config_py_load(load)
@@ -313,7 +363,7 @@ class Counter:
                     # Einschaltschwelle wurde unterschritten, Timer zurücksetzen
                     timestamp_switch_on_off = None
                     self.data.set.reserved_surplus -= power_to_reserve
-                    message = self.SWITCH_ON_FALLEN_BELOW.format(switch_on_threshold)
+                    message = texts.fallen_below
                     control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
             else:
                 # Timer starten
@@ -321,14 +371,14 @@ class Counter:
                                                not feed_in_limit):
                     timestamp_switch_on_off = timecheck.create_timestamp()
                     self.data.set.reserved_surplus += power_to_reserve
-                    message = self.SWITCH_ON_WAITING.format(timecheck.convert_timestamp_delta_to_time_string(
+                    message = texts.waiting.format(timecheck.convert_timestamp_delta_to_time_string(
                         timestamp_switch_on_off, switch_on_delay))
                     if feed_in_limit:
-                        message += " Die Einspeisegrenze wird berücksichtigt."
+                        message += texts.feed_in_limit_note
                     control_parameter.state = ChargepointState.SWITCH_ON_DELAY
                 else:
                     # Einschaltschwelle nicht erreicht
-                    message = self.SWITCH_ON_NOT_EXCEEDED.format(switch_on_threshold)
+                    message = texts.not_exceeded
 
             if timestamp_switch_on_off != control_parameter.timestamp_switch_on_off:
                 control_parameter.timestamp_switch_on_off = timestamp_switch_on_off
@@ -347,18 +397,19 @@ class Counter:
         """
         try:
             msg = None
+            texts = self._get_switch_on_texts(load)
             switch_on_delay, switch_on_threshold, _ = self.get_pv_config_py_load(load)
             control_parameter = load.data.control_parameter
             # Timer ist noch nicht abgelaufen
             if timecheck.check_timestamp(control_parameter.timestamp_switch_on_off,
                                          switch_on_delay):
-                msg = self.SWITCH_ON_WAITING.format(timecheck.convert_timestamp_delta_to_time_string(
+                msg = texts.waiting.format(timecheck.convert_timestamp_delta_to_time_string(
                     control_parameter.timestamp_switch_on_off, switch_on_delay))
             # Timer abgelaufen
             else:
                 control_parameter.timestamp_switch_on_off = None
                 self.data.set.reserved_surplus -= switch_on_threshold*control_parameter.phases
-                msg = self.SWITCH_ON_EXPIRED.format(switch_on_threshold)
+                msg = texts.expired
                 control_parameter.state = ChargepointState.WAIT_FOR_USING_PHASES
 
                 if isinstance(load, Chargepoint):
@@ -375,18 +426,37 @@ class Counter:
                             load.hw_supports_phase_switch() and
                             self.get_usable_surplus(feed_in_yield) > max_phases_power):
                         control_parameter.phases = ev_template.data.max_phases
-                        msg += self.SWITCH_ON_MAX_PHASES.format(ev_template.data.max_phases)
+                        msg += texts.max_phases.format(ev_template.data.max_phases)
+                elif isinstance(load, Consumer):
+                    control_parameter.state = ChargepointState.CHARGING_ALLOWED
             load.set_state_and_log(msg)
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")
 
-    SWITCH_OFF_STOP = "Ladevorgang nach Ablauf der Wartezeit gestoppt."
-    SWITCH_OFF_WAITING = "Ladevorgang wird nach Ablauf der Wartezeit in {} gestoppt."
-    SWITCH_OFF_NO_STOP = ("Der Ladevorgang wird trotz fehlenden Überschusses nicht gestoppt, da in dem Fahrzeug-Profil "
-                          "die Einstellung 'Ladung aktiv halten' aktiviert ist.")
-    SWITCH_OFF_EXCEEDED = "Abschaltschwelle während der Verzögerung überschritten."
-    SWITCH_OFF_NOT_CHARGING = ("Da das EV nicht lädt und die Abschaltschwelle erreicht wird, "
-                               "wird die Ladefreigabe sofort entzogen.")
+    SWITCH_OFF_TEXTS_CP = SwitchOffTexts(
+        stop="Ladevorgang nach Ablauf der Wartezeit gestoppt.",
+        waiting="Ladevorgang wird nach Ablauf der Wartezeit in {} gestoppt.",
+        waiting_min_interval="Ladevorgang wird nach Ablauf des minimalen Regelintervalls in {} gestoppt.",
+        no_stop=("Der Ladevorgang wird trotz fehlenden Überschusses nicht gestoppt, da in dem Fahrzeug-Profil "
+                 "die Einstellung 'Ladung aktiv halten' aktiviert ist."),
+        exceeded="Abschaltschwelle während der Verzögerung überschritten.",
+        not_charging=("Da das EV nicht lädt und die Abschaltschwelle erreicht wird, "
+                      "wird die Ladefreigabe sofort entzogen."),
+    )
+    SWITCH_OFF_TEXTS_CONSUMER = SwitchOffTexts(
+        stop="Verbraucher nach Ablauf der Wartezeit gestoppt.",
+        waiting="Verbraucher wird nach Ablauf der Wartezeit in {} gestoppt.",
+        waiting_min_interval="Betrieb wird nach Ablauf des minimalen Regelintervalls in {} gestoppt.",
+        no_stop="Der Betrieb wird trotz fehlenden Überschusses nicht gestoppt.",
+        exceeded="Abschaltschwelle während der Verzögerung überschritten.",
+        not_charging=("Da der Verbraucher nicht aktiv ist und die Abschaltschwelle erreicht wird, "
+                      "wird die Freigabe sofort entzogen."),
+    )
+
+    def _get_switch_off_texts(self, load: Load) -> SwitchOffTexts:
+        if isinstance(load, Chargepoint):
+            return self.SWITCH_OFF_TEXTS_CP
+        return self.SWITCH_OFF_TEXTS_CONSUMER
 
     def _get_switch_off_delay_by_load(self, load: Load) -> float:
         if isinstance(load, Chargepoint):
@@ -397,19 +467,25 @@ class Counter:
     def switch_off_check_timer(self, load: Load) -> None:
         try:
             msg = None
+            texts = self._get_switch_off_texts(load)
             control_parameter = load.data.control_parameter
             switch_off_delay = self._get_switch_off_delay_by_load(load)
 
             if control_parameter.timestamp_switch_on_off is not None:
-                if not timecheck.check_timestamp(
+                if (isinstance(load, Consumer) and
+                        timecheck.create_timestamp() < (load.data.set.timestamp_last_current_set
+                                                        + load.data.config.min_interval)):
+                    msg = texts.waiting_min_interval.format(timecheck.convert_timestamp_delta_to_time_string(
+                        load.data.set.timestamp_last_current_set, load.data.config.min_interval))
+                elif not timecheck.check_timestamp(
                         control_parameter.timestamp_switch_on_off,
                         switch_off_delay):
                     control_parameter.timestamp_switch_on_off = None
                     self.data.set.released_surplus -= load.data.set.required_power
-                    msg = self.SWITCH_OFF_STOP
+                    msg = texts.stop
                     control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
                 else:
-                    msg = self.SWITCH_OFF_WAITING.format(timecheck.convert_timestamp_delta_to_time_string(
+                    msg = texts.waiting.format(timecheck.convert_timestamp_delta_to_time_string(
                         control_parameter.timestamp_switch_on_off, switch_off_delay))
             load.set_state_and_log(msg)
         except Exception:
@@ -442,6 +518,7 @@ class Counter:
         """
         charge = True
         msg = None
+        texts = self._get_switch_off_texts(load)
         if isinstance(load, Chargepoint):
             nominal_difference = load.data.set.charging_ev_data.ev_template.data.nominal_difference
         else:
@@ -464,7 +541,7 @@ class Counter:
             if power_in_use + load.data.set.required_power < threshold:
                 timestamp_switch_on_off = None
                 self.data.set.released_surplus -= load.data.set.required_power
-                msg = self.SWITCH_OFF_EXCEEDED
+                msg = texts.exceeded
                 control_parameter.state = ChargepointState.CHARGING_ALLOWED
         else:
             # Wurde die Abschaltschwelle ggf. durch die Verzögerung anderer LP erreicht?
@@ -487,19 +564,19 @@ class Counter:
                     # nicht 0 sein, wenn sich die Ladeleistung zwischendurch verändert hat.
                     if load.data.get.charge_state is False:
                         charge = False
-                        msg = self.SWITCH_OFF_NOT_CHARGING
+                        msg = texts.not_charging
                         control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
                     else:
                         timestamp_switch_on_off = timecheck.create_timestamp()
                         # merken, dass ein LP verzögert wird, damit nicht zu viele LP verzögert werden.
                         self.data.set.released_surplus += load.data.set.required_power
-                        msg = self.SWITCH_OFF_WAITING.format(timecheck.convert_timestamp_delta_to_time_string(
+                        msg = texts.waiting.format(timecheck.convert_timestamp_delta_to_time_string(
                             timestamp_switch_on_off, switch_off_delay))
                         control_parameter.state = ChargepointState.SWITCH_OFF_DELAY
                     # Die Abschaltschwelle wird immer noch überschritten und es sollten weitere LP abgeschaltet
                     # werden.
                 else:
-                    msg = self.SWITCH_OFF_NO_STOP
+                    msg = texts.no_stop
         if timestamp_switch_on_off != control_parameter.timestamp_switch_on_off:
             control_parameter.timestamp_switch_on_off = timestamp_switch_on_off
         load.set_state_and_log(msg)
