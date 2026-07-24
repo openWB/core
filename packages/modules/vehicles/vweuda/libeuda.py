@@ -803,6 +803,10 @@ class euda():
             if result['soc'] is None:
                 _LOGGER.info("thread result skipped, no soc found")
                 _valid = False
+        else:
+            _LOGGER.info(f"no matching VIN found in euda.result:\npayload.vin: ({vin})")
+            _LOGGER.info(f"known VINs in euda.result:\n{euda.result.keys()}")
+
         if _valid and result['odometer'] is not None:
             if vin in euda.result and result['odometer'] < euda.result[vin]['odometer']:
                 _LOGGER.info("odometer less than earlier - keep earlier value")
