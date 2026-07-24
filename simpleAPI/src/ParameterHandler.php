@@ -229,6 +229,8 @@ class ParameterHandler
                     return $this->setChargepointLock($chargepointId, $value);
                 case 'bat_mode':
                     return $this->setBatMode($value);
+                case 'bat_power_reserve':
+                    return $this->setBatPowerReserve($value);
                 case 'instant_charging_limit':
                     return $this->setInstantChargingLimit($chargepointId, $value);
                 case 'instant_charging_amount':
