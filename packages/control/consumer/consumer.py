@@ -235,15 +235,13 @@ class Consumer(Load):
                 return 0, self.SCHEDULED_CHARGING_NO_PLANS_CONFIGURED, Chargemode.STOP
             else:
                 return 0, self.SCHEDULED_CHARGING_NO_DATE_PENDING, Chargemode.STOP
+        if (self.BUFFER_AFTER_END_TIME < remaining_time < 0 and
+                self.data.set.wait_for_start_state == WaitForStartStates.START_SIGNAL_RECEIVED):
+            self.reset_wait_for_start()
         if duration <= 0:
             message = self.SCHEDULED_REACHED_MAX_ON_TIME
             submode = Chargemode.STOP
-        elif (0 < remaining_time < self.BUFFER_START_EARLIER):
-            submode = Chargemode.INSTANT_CHARGING
-            required_current = self._parse_required_current_by_usage(
-                self._convert_power_to_current(self.data.config.max_power))
-        # weniger als die berechnete Zeit verfügbar
-        elif remaining_time <= 0:
+        elif remaining_time < self.BUFFER_START_EARLIER:
             submode = Chargemode.INSTANT_CHARGING
             required_current = self._parse_required_current_by_usage(
                 self._convert_power_to_current(self.data.config.max_power))
@@ -404,7 +402,8 @@ class Consumer(Load):
     ) -> Tuple[float, Optional[str], Chargemode]:
         if self.data.usage.wait_for_start_active:
             if self.data.set.wait_for_start_state == WaitForStartStates.WAIT_FOR_DEVICE_START:
-                if self.data.get.charge_state:
+                # mit Minimalstrom prüfen, damit Standby-Geräte nicht als laufend erkannt werden
+                if max(self.data.get.currents) > self.data.config.min_current:
                     self.data.set.wait_for_start_state = WaitForStartStates.WAIT_FOR_STOPPED_DEVICE
                     required_current = 0
                     message = self.WAIT_FOR_STOPPED_DEVICE
@@ -415,7 +414,8 @@ class Consumer(Load):
                     message = self.WAIT_FOR_DEVICE_START
                     submode = Chargemode.INSTANT_CHARGING
             elif self.data.set.wait_for_start_state == WaitForStartStates.WAIT_FOR_STOPPED_DEVICE:
-                if self.data.get.charge_state is False:
+                # mit Minimalstrom prüfen, damit Standby-Geräte nicht als laufend erkannt werden
+                if max(self.data.get.currents) < self.data.config.min_current:
                     self.data.set.wait_for_start_state = WaitForStartStates.DEVICE_WAITING_FOR_START
                     required_current, message, submode = func()
                     message = self.DEVICE_WAITING_FOR_START + " " + (message if message else "")
@@ -425,7 +425,8 @@ class Consumer(Load):
                     message = self.WAIT_FOR_STOPPED_DEVICE
                     submode = Chargemode.STOP
             elif self.data.set.wait_for_start_state == WaitForStartStates.DEVICE_WAITING_FOR_START:
-                if self.data.get.charge_state:
+                # mit Minimalstrom prüfen, damit Standby-Geräte nicht als laufend erkannt werden
+                if max(self.data.get.currents) > self.data.config.min_current:
                     self.data.set.wait_for_start_state = WaitForStartStates.START_SIGNAL_RECEIVED
                     required_current, message, submode = func()
                 else:
@@ -502,5 +503,6 @@ class Consumer(Load):
             self.chargemode_changed = True
             log.debug("Änderung des Lademodus")
             self.data.control_parameter.timestamp_chargemode_changed = timecheck.create_timestamp()
+            self.reset_wait_for_start()
         else:
             self.chargemode_changed = False
