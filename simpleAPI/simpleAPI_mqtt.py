@@ -567,6 +567,10 @@ class SimpleMQTTDaemon:
                 success = self._handle_bat_mode_operation(payload)
                 if success:
                     self._clear_set_topic(topic)
+            elif operation == 'bat_power_reserve':
+                success = self._handle_bat_power_reserve_operation(payload)
+                if success:
+                    self._clear_set_topic(topic)
             else:
                 log.error(f"Unknown operation: {operation}")
 
@@ -758,6 +762,30 @@ class SimpleMQTTDaemon:
         target_topic = "openWB/set/general/chargemode_config/pv_charging/bat_mode"
         self.client.publish(target_topic, payload, qos=0, retain=True)
         log.info(f"Set bat_mode to {payload}")
+        return True
+
+    def _handle_bat_power_reserve_operation(self, payload: str) -> bool:
+        """Handle battery power reserve operation.
+
+        Sets the power (in Watts) that openWB reserves for the battery
+        during PV surplus charging, before releasing surplus to EV charging.
+        Value 0 = no reservation (equivalent to ev_mode behaviour).
+        Allows external energy managers to do proportional battery/EV sharing
+        without switching bat_mode.
+        """
+        try:
+            watts = int(payload)
+        except ValueError:
+            log.error(f"Invalid bat_power_reserve value: {payload!r}. Must be an integer (Watts).")
+            return False
+
+        if watts < 0:
+            log.error(f"Invalid bat_power_reserve value: {watts}. Must be >= 0.")
+            return False
+
+        target_topic = "openWB/set/general/chargemode_config/pv_charging/bat_power_reserve"
+        self.client.publish(target_topic, watts, qos=0, retain=True)
+        log.info(f"Set bat_power_reserve to {watts}W")
         return True
 
     def _handle_instant_charging_limit_operation(self, payload: str) -> bool:
