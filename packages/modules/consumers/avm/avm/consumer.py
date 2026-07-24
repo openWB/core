@@ -112,14 +112,12 @@ def create_consumer(config: Avm):
         return session_id
 
     def switch_on() -> None:
-        nonlocal ain
         ensure_valid_session_id()
         req.get_http_session().get(
             f"http://{config.configuration.ip_address}/webservices/homeautoswitch.lua?sid="
             f"{config.configuration.session_id}&switchcmd=setswitchon&ain={ain}")
 
     def switch_off() -> None:
-        nonlocal ain
         ensure_valid_session_id()
         req.get_http_session().get(
             f"http://{config.configuration.ip_address}/webservices/homeautoswitch.lua?sid="

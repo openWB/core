@@ -21,7 +21,6 @@ def create_consumer(config: SolvisHeatPump):
         initializer()
 
     def update() -> ConsumerState:
-        nonlocal client, sim_counter
         power = client.read_input_registers(33545, ModbusDataType.INT_16, unit=config.configuration.modbus_id) * 100
         imported, exported = sim_counter.sim_count(power)
         return ConsumerState(
