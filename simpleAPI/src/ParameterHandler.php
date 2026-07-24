@@ -19,7 +19,7 @@ class ParameterHandler
     /**
      * Parameter lesen
      */
-    public function readParameter($param, $id)
+    public function readParameter($param, $id, $options = [])
     {
         switch ($param) {
             case 'get_chargepoint_all':
@@ -73,6 +73,10 @@ class ParameterHandler
                 return $this->getChargepointDailyImported($id);
             case 'get_chargepoint_daily_exported':
                 return $this->getChargepointDailyExported($id);
+            case 'get_chargepoint_monthly_exported':
+                return $this->getChargepointMonthlyExported($id);
+            case 'get_chargepoint_yearly_exported':
+                return $this->getChargepointYearlyExported($id);
             case 'get_chargepoint_frequency':
                 return $this->getChargepointFrequency($id);
             case 'get_chargepoint_rfid':
@@ -187,6 +191,8 @@ class ParameterHandler
                 return $this->getPvPower($id);
             case 'get_pv_currents':
                 return $this->getPvCurrents($id);
+            case 'get_pv_imported':
+                return $this->getPvImported($id);
             case 'get_pv_exported':
                 return $this->getPvExported($id);
             case 'get_pv_daily_exported':
@@ -200,6 +206,11 @@ class ParameterHandler
             case 'get_pv_fault_state':
                 return $this->getPvFaultState($id);
 
+            case 'get_io_output_all':
+                return $this->getIoOutputAll($id);
+            case 'get_io_output':
+                return $this->getIoOutput($id, $options['io_output'] ?? null, $options['io_output_type'] ?? null);
+
             case 'get_lastlivevaluesjson':
                 return $this->getLastLiveValuesJson();
 
@@ -211,34 +222,36 @@ class ParameterHandler
     /**
      * Parameter schreiben
      */
-    public function writeParameter($param, $value, $chargepointId = null)
+    public function writeParameter($param, $value, $targetId = null, $options = [])
     {
         try {
             switch ($param) {
                 case 'set_chargemode':
-                    return $this->setChargemode($chargepointId, $value);
+                    return $this->setChargemode($targetId, $value);
                 case 'chargecurrent':
-                    return $this->setChargecurrent($chargepointId, $value);
+                    return $this->setChargecurrent($targetId, $value);
                 case 'minimal_permanent_current':
-                    return $this->setMinimalPermanentCurrent($chargepointId, $value);
+                    return $this->setMinimalPermanentCurrent($targetId, $value);
                 case 'minimal_pv_soc':
-                    return $this->setMinimalPvSoc($chargepointId, $value);
+                    return $this->setMinimalPvSoc($targetId, $value);
                 case 'max_price_eco':
-                    return $this->setMaxPriceEco($chargepointId, $value);
+                    return $this->setMaxPriceEco($targetId, $value);
                 case 'chargepoint_lock':
-                    return $this->setChargepointLock($chargepointId, $value);
+                    return $this->setChargepointLock($targetId, $value);
                 case 'bat_mode':
                     return $this->setBatMode($value);
                 case 'instant_charging_limit':
-                    return $this->setInstantChargingLimit($chargepointId, $value);
+                    return $this->setInstantChargingLimit($targetId, $value);
                 case 'instant_charging_amount':
-                    return $this->setInstantChargingAmount($chargepointId, $value);
+                    return $this->setInstantChargingAmount($targetId, $value);
                 case 'instant_charging_soc':
-                    return $this->setInstantChargingSoc($chargepointId, $value);
+                    return $this->setInstantChargingSoc($targetId, $value);
                 case 'vehicle':
-                    return $this->setVehicle($chargepointId, $value);
+                    return $this->setVehicle($targetId, $value);
                 case 'manual_soc':
-                    return $this->setManualSoc($chargepointId, $value);
+                    return $this->setManualSoc($targetId, $value);
+                case 'set_io_output':
+                    return $this->setIoOutput($targetId, $value, $options['io_output'] ?? null, $options['io_output_type'] ?? null);
                 default:
                     return ['success' => false, 'message' => 'Unknown write parameter'];
             }
@@ -564,6 +577,11 @@ class ParameterHandler
      */
     private function getChargepointPower($id)
     {
+        if ($this->isTotalId($id)) {
+            $sum = $this->getTotalMetricValue('chargepoint', 'power');
+            return ['chargepoint_total' => ['power' => $sum]];
+        }
+
         try {
             $topic = "openWB/chargepoint/{$id}/get/power";
             $value = $this->mqttClient->getValue($topic);
@@ -1208,6 +1226,11 @@ class ParameterHandler
      */
     private function getChargepointImported($id)
     {
+        if ($this->isTotalId($id)) {
+            $sum = $this->getTotalMetricValue('chargepoint', 'imported');
+            return ['chargepoint_total' => ['imported' => $sum]];
+        }
+
         try {
             $topic = "openWB/chargepoint/{$id}/get/imported";
             $value = $this->mqttClient->getValue($topic);
@@ -1222,12 +1245,55 @@ class ParameterHandler
      */
     private function getChargepointExported($id)
     {
+        if ($this->isTotalId($id)) {
+            $sum = $this->getTotalMetricValue('chargepoint', 'exported');
+            return ['chargepoint_total' => ['exported' => $sum]];
+        }
+
         try {
             $topic = "openWB/chargepoint/{$id}/get/exported";
             $value = $this->mqttClient->getValue($topic);
             return ["chargepoint_{$id}" => ['exported' => floatval($value ?? 0)]];
         } catch (Exception $e) {
             return ["chargepoint_{$id}" => ['exported' => 0]];
+        }
+    }
+
+    /**
+     * Chargepoint Monthly Exported
+     */
+    private function getChargepointMonthlyExported($id)
+    {
+        if ($this->isTotalId($id)) {
+            $sum = $this->getTotalMetricValue('chargepoint', 'monthly_exported');
+            return ['chargepoint_total' => ['monthly_exported' => $sum]];
+        }
+
+        try {
+            $topic = "openWB/chargepoint/{$id}/get/monthly_exported";
+            $value = $this->mqttClient->getValue($topic);
+            return ["chargepoint_{$id}" => ['monthly_exported' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["chargepoint_{$id}" => ['monthly_exported' => 0]];
+        }
+    }
+
+    /**
+     * Chargepoint Yearly Exported
+     */
+    private function getChargepointYearlyExported($id)
+    {
+        if ($this->isTotalId($id)) {
+            $sum = $this->getTotalMetricValue('chargepoint', 'yearly_exported');
+            return ['chargepoint_total' => ['yearly_exported' => $sum]];
+        }
+
+        try {
+            $topic = "openWB/chargepoint/{$id}/get/yearly_exported";
+            $value = $this->mqttClient->getValue($topic);
+            return ["chargepoint_{$id}" => ['yearly_exported' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["chargepoint_{$id}" => ['yearly_exported' => 0]];
         }
     }
 
@@ -2027,6 +2093,11 @@ class ParameterHandler
      */
     private function getPvPower($id)
     {
+        if ($this->isTotalId($id)) {
+            $sum = $this->getTotalMetricValue('pv', 'power');
+            return ['pv_total' => ['power' => $sum]];
+        }
+
         try {
             $topic = "openWB/pv/{$id}/get/power";
             $value = $this->mqttClient->getValue($topic);
@@ -2065,10 +2136,34 @@ class ParameterHandler
     }
 
     /**
+     * PV Imported
+     */
+    private function getPvImported($id)
+    {
+        if ($this->isTotalId($id)) {
+            $sum = $this->getTotalMetricValue('pv', 'imported');
+            return ['pv_total' => ['imported' => $sum]];
+        }
+
+        try {
+            $topic = "openWB/pv/{$id}/get/imported";
+            $value = $this->mqttClient->getValue($topic);
+            return ["pv_{$id}" => ['imported' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["pv_{$id}" => ['imported' => 0]];
+        }
+    }
+
+    /**
      * PV Exported
      */
     private function getPvExported($id)
     {
+        if ($this->isTotalId($id)) {
+            $sum = $this->getTotalMetricValue('pv', 'exported');
+            return ['pv_total' => ['exported' => $sum]];
+        }
+
         try {
             $topic = "openWB/pv/{$id}/get/exported";
             $value = $this->mqttClient->getValue($topic);
@@ -2097,6 +2192,11 @@ class ParameterHandler
      */
     private function getPvMonthlyExported($id)
     {
+        if ($this->isTotalId($id)) {
+            $sum = $this->getTotalMetricValue('pv', 'monthly_exported');
+            return ['pv_total' => ['monthly_exported' => $sum]];
+        }
+
         try {
             $topic = "openWB/pv/{$id}/get/monthly_exported";
             $value = $this->mqttClient->getValue($topic);
@@ -2111,6 +2211,11 @@ class ParameterHandler
      */
     private function getPvYearlyExported($id)
     {
+        if ($this->isTotalId($id)) {
+            $sum = $this->getTotalMetricValue('pv', 'yearly_exported');
+            return ['pv_total' => ['yearly_exported' => $sum]];
+        }
+
         try {
             $topic = "openWB/pv/{$id}/get/yearly_exported";
             $value = $this->mqttClient->getValue($topic);
@@ -2156,6 +2261,223 @@ class ParameterHandler
         try {
             $value = $this->mqttClient->getValue($topic);
             return floatval($value ?? 0);
+        } catch (Exception $e) {
+            return 0;
+        }
+    }
+
+    /**
+     * IO-Ausgaenge komplett lesen (digital + analog).
+     */
+    private function getIoOutputAll($id)
+    {
+        $digital = $this->getIoOutputMap($id, 'digital_output');
+        $analog = $this->getIoOutputMap($id, 'analog_output');
+
+        return [
+            "io_{$id}" => [
+                'digital_output' => $digital,
+                'analog_output' => $analog
+            ]
+        ];
+    }
+
+    /**
+     * Einzelnen IO-Ausgang lesen.
+     */
+    private function getIoOutput($id, $outputName, $outputType = null)
+    {
+        if ($outputName === null || trim((string)$outputName) === '') {
+            return $this->getIoOutputAll($id);
+        }
+
+        $outputName = trim((string)$outputName);
+        $type = $this->normalizeIoOutputType($outputType);
+        $result = null;
+
+        if ($type === 'digital_output' || $type === null) {
+            $digital = $this->getIoOutputMap($id, 'digital_output');
+            if (array_key_exists($outputName, $digital)) {
+                $result = $digital[$outputName];
+                $type = 'digital_output';
+            }
+        }
+
+        if ($result === null && ($type === 'analog_output' || $type === null)) {
+            $analog = $this->getIoOutputMap($id, 'analog_output');
+            if (array_key_exists($outputName, $analog)) {
+                $result = $analog[$outputName];
+                $type = 'analog_output';
+            }
+        }
+
+        return [
+            "io_{$id}" => [
+                'output' => $outputName,
+                'output_type' => $type,
+                'value' => $result
+            ]
+        ];
+    }
+
+    /**
+     * IO-Ausgang manuell setzen.
+     */
+    private function setIoOutput($id, $value, $outputName, $outputType = null)
+    {
+        if ($id === null || $id === '') {
+            return ['success' => false, 'message' => 'Missing io_nr'];
+        }
+
+        if ($outputName === null || trim((string)$outputName) === '') {
+            return ['success' => false, 'message' => 'Missing io_output'];
+        }
+
+        $outputName = trim((string)$outputName);
+        $normalizedType = $this->normalizeIoOutputType($outputType);
+        $parsedValue = $this->parseIoOutputValue($value);
+
+        if ($normalizedType === null) {
+            // Automatisch anhand des aktuellen Status bestimmen.
+            $digital = $this->getIoOutputMap($id, 'digital_output');
+            $analog = $this->getIoOutputMap($id, 'analog_output');
+
+            if (array_key_exists($outputName, $digital)) {
+                $normalizedType = 'digital_output';
+            } elseif (array_key_exists($outputName, $analog)) {
+                $normalizedType = 'analog_output';
+            } elseif (is_bool($parsedValue)) {
+                $normalizedType = 'digital_output';
+            } else {
+                $normalizedType = 'analog_output';
+            }
+        }
+
+        $topic = "openWB/set/system/io/{$id}/set/manual/{$normalizedType}/{$outputName}";
+
+        if ($normalizedType === 'digital_output') {
+            if (is_bool($parsedValue)) {
+                $payload = $parsedValue ? 'true' : 'false';
+            } elseif (is_numeric($parsedValue) && (float)$parsedValue === 0.0) {
+                $payload = 'false';
+            } elseif (is_numeric($parsedValue) && (float)$parsedValue === 1.0) {
+                $payload = 'true';
+            } else {
+                return ['success' => false, 'message' => 'Digital output expects boolean or 0/1'];
+            }
+        } else {
+            if (is_bool($parsedValue)) {
+                $payload = $parsedValue ? '1' : '0';
+            } else {
+                $payload = (string)$parsedValue;
+            }
+        }
+
+        try {
+            $this->mqttClient->setValue($topic, $payload);
+            return [
+                'success' => true,
+                'message' => "Set {$normalizedType}/{$outputName} to {$payload} for io {$id}",
+                'data' => [
+                    'io_nr' => intval($id),
+                    'io_output' => $outputName,
+                    'io_output_type' => $normalizedType,
+                    'value' => $parsedValue
+                ]
+            ];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Failed to set IO output: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * IO-Output-Map von MQTT laden.
+     */
+    private function getIoOutputMap($id, $outputType)
+    {
+        try {
+            $topic = "openWB/io/states/{$id}/get/{$outputType}";
+            $value = $this->mqttClient->getValue($topic);
+            $decoded = json_decode($value ?? '{}', true);
+            return is_array($decoded) ? $decoded : [];
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+
+    /**
+     * Normiert den optionalen io_output_type Parameter.
+     */
+    private function normalizeIoOutputType($outputType)
+    {
+        if ($outputType === null || trim((string)$outputType) === '') {
+            return null;
+        }
+
+        $value = strtolower(trim((string)$outputType));
+        if ($value === 'digital' || $value === 'digital_output') {
+            return 'digital_output';
+        }
+        if ($value === 'analog' || $value === 'analog_output') {
+            return 'analog_output';
+        }
+
+        return null;
+    }
+
+    /**
+     * Wandelt Eingaben fuer IO-Werte in bool/float um.
+     */
+    private function parseIoOutputValue($value)
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_numeric($value)) {
+            return floatval($value);
+        }
+
+        $normalized = strtolower(trim((string)$value));
+        if (in_array($normalized, ['true', 'on', 'yes'], true)) {
+            return true;
+        }
+        if (in_array($normalized, ['false', 'off', 'no'], true)) {
+            return false;
+        }
+
+        if (is_numeric($normalized)) {
+            return floatval($normalized);
+        }
+
+        return $value;
+    }
+
+    /**
+     * Prüft, ob eine total-Abfrage angefordert wurde.
+     */
+    private function isTotalId($id)
+    {
+        return is_string($id) && strtolower(trim($id)) === 'total';
+    }
+
+    /**
+     * Summiert einen Metrik-Wert über alle vorhandenen IDs per MQTT-Wildcard.
+     */
+    private function getTotalMetricValue($componentType, $metric)
+    {
+        try {
+            $pattern = "openWB/{$componentType}/+/get/{$metric}";
+            $values = $this->mqttClient->getValuesByWildcard($pattern);
+
+            $sum = 0.0;
+            foreach ($values as $value) {
+                if (is_numeric($value)) {
+                    $sum += floatval($value);
+                }
+            }
+
+            return $sum;
         } catch (Exception $e) {
             return 0;
         }

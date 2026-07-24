@@ -119,6 +119,29 @@ class MqttClient
     }
 
     /**
+     * Alle Werte für ein MQTT-Wildcard-Topic lesen.
+     */
+    public function getValuesByWildcard($topicPattern)
+    {
+        $results = [];
+
+        $cmd = $this->buildMosquittoCommand('sub', $topicPattern, '');
+        $cmd .= ' 2>/dev/null';
+
+        $output = shell_exec($cmd);
+        $lines = explode("\n", trim($output ?? ''));
+
+        foreach ($lines as $line) {
+            if (strpos($line, ' ') !== false) {
+                list($topic, $value) = explode(' ', $line, 2);
+                $results[$topic] = $value;
+            }
+        }
+
+        return $results;
+    }
+
+    /**
      * Wert in MQTT Topic schreiben
      */
     public function setValue($topic, $value)
@@ -212,7 +235,21 @@ class MqttClient
     public function findAvailableIds($type)
     {
         // MQTT Wildcard verwenden um alle Topics zu finden
-        $pattern = "openWB/{$type}/+/get/imported";
+        $scanConfig = [
+            'chargepoint' => ['pattern' => 'openWB/chargepoint/+/get/imported', 'regex' => '/openWB\/chargepoint\/(\d+)\/get\/imported\s+(.+)/'],
+            'bat' => ['pattern' => 'openWB/bat/+/get/imported', 'regex' => '/openWB\/bat\/(\d+)\/get\/imported\s+(.+)/'],
+            'pv' => ['pattern' => 'openWB/pv/+/get/exported', 'regex' => '/openWB\/pv\/(\d+)\/get\/exported\s+(.+)/'],
+            'counter' => ['pattern' => 'openWB/counter/+/get/imported', 'regex' => '/openWB\/counter\/(\d+)\/get\/imported\s+(.+)/'],
+            'io' => ['pattern' => 'openWB/io/states/+/get/digital_output', 'regex' => '/openWB\/io\/states\/(\d+)\/get\/digital_output\s+(.+)/']
+        ];
+
+        $config = $scanConfig[$type] ?? null;
+        if ($config === null) {
+            throw new \Exception("Unsupported type for ID scan: {$type}");
+        }
+
+        $pattern = $config['pattern'];
+        $matchRegex = $config['regex'];
 
         $cmd = $this->buildMosquittoCommand('sub', $pattern, '');
         $cmd .= ' 2>/dev/null';
@@ -223,12 +260,12 @@ class MqttClient
         if ($output) {
             $lines = explode("\n", trim($output));
             foreach ($lines as $line) {
-                if (preg_match("/openWB\/{$type}\/(\d+)\/get\/imported\s+(.+)/", $line, $matches)) {
+                if (preg_match($matchRegex, $line, $matches)) {
                     $id = intval($matches[1]);
                     $value = trim($matches[2]);
 
-                    // Nur IDs mit gültigen Werten (nicht null oder leer)
-                    if ($value !== '' && $value !== 'null' && is_numeric($value)) {
+                    // Nur IDs mit gültigen Werten (bei IO auch JSON erlaubt)
+                    if ($value !== '' && $value !== 'null' && ($type === 'io' || is_numeric($value))) {
                         $ids[] = $id;
                     }
                 }
