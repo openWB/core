@@ -53,7 +53,7 @@ class AllConsumers:
             self.data.get.exported = exported
             self.data.get.fault_state = fault_state
             self.data.get.fault_str = NO_ERROR if fault_state == 0 else (
-                "Bitte die Statusmeldungen der Wechselrichter prüfen. "
+                "Bitte die Statusmeldungen der Verbraucher prüfen. "
                 "Es haben nicht alle Module aktuelle Zählerstände geliefert.")
         except Exception:
             log.exception("Fehler in der allgemeinen Verbaucher-Klasse")

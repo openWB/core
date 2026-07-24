@@ -24,7 +24,6 @@ def create_consumer(config: Nibe):
         initializer()
 
     def update() -> ConsumerState:
-        nonlocal client, sim_counter
         power = client.read_input_registers(2166, ModbusDataType.UINT_32,
                                             unit=config.configuration.modbus_id)  # / 10 lt Doku?
         imported, exported = sim_counter.sim_count(power)
