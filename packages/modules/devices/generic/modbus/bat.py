@@ -74,10 +74,14 @@ class GenericModbusBat(AbstractBat):
             imported=imported,
             exported=exported,
             power=power,
-            soc=soc if "soc" in locals() else None,
-            currents=currents if "currents" in locals() else None,
-            serial_number=serial_number if "serial_number" in locals() else None,
         )
+
+        if "soc" in locals():
+            bat_state.soc = soc
+        if "currents" in locals():
+            bat_state.currents = currents
+        if "serial_number" in locals():
+            bat_state.serial_number = serial_number
 
         self.store.set(bat_state)
 

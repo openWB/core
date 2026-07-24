@@ -72,10 +72,14 @@ class GenericModbusInverter(AbstractInverter):
             power=power,
             exported=exported,
             imported=imported,
-            dc_power=dc_power if "dc_power" in locals() else None,
-            currents=currents if "currents" in locals() else None,
-            serial_number=serial_number if "serial_number" in locals() else None,
         )
+
+        if "dc_power" in locals():
+            inverter_state.dc_power = dc_power
+        if "currents" in locals():
+            inverter_state.currents = currents
+        if "serial_number" in locals():
+            inverter_state.serial_number = serial_number
 
         self.store.set(inverter_state)
 

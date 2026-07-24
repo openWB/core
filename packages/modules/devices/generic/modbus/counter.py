@@ -96,18 +96,23 @@ class GenericModbusCounter(AbstractCounter):
         counter_state = CounterState(
             imported=imported,
             exported=exported,
-            power=power,
-            voltages=voltages if "voltages" in locals() else None,
-            currents=currents if "currents" in locals() else None,
-            powers=powers if "powers" in locals() else None,
-            power_factors=power_factors if "power_factors" in locals() else None,
-            frequency=frequency if "frequency" in locals() else 50,
-            serial_number=serial_number if "serial_number" in locals() else None,
+            power=power
         )
 
-        self.store.set(counter_state)
+        if "voltages" in locals():
+            counter_state.voltages = voltages
+        if "currents" in locals():
+            counter_state.currents = currents
+        if "powers" in locals():
+            counter_state.powers = powers
+        if "power_factors" in locals():
+            counter_state.power_factors = power_factors
+        if "frequency" in locals():
+            counter_state.frequency = frequency
+        if "serial_number" in locals():
+            counter_state.serial_number = serial_number
 
-        log.debug(f"CounterState updated: {counter_state}")
+        self.store.set(counter_state)
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=GenericModbusCounterSetup)

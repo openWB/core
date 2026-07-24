@@ -1,6 +1,7 @@
 from typing import Any
 
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
+from modules.devices.generic.modbus.config import RegisterConfig
 
 
 def check_data(wert):
@@ -11,7 +12,7 @@ def check_data(wert):
             f"Unvollständige Konfiguration für Universeller-Modbus: Register-Adresse {wert.reg_address}")
 
 
-def read_value(client: ModbusTcpClient_, unit: int, register_config: Any) -> Any:
+def read_value(client: ModbusTcpClient_, unit: int, register_config: RegisterConfig) -> Any:
     if register_config.reg_address is None:
         return None
 
@@ -25,7 +26,7 @@ def read_value(client: ModbusTcpClient_, unit: int, register_config: Any) -> Any
     )
 
 
-def read_phase_values(client: ModbusTcpClient_, unit: int, *register_configs: Any) -> Any:
+def read_phase_values(client: ModbusTcpClient_, unit: int, *register_configs: RegisterConfig) -> Any:
     values = [0.0] * 3
     has_value = False
     for index, register_config in enumerate(register_configs):
