@@ -6,7 +6,8 @@ import pytest
 from control import data
 from control.chargemode import Chargemode
 from control.consumer.consumer import Consumer
-from control.consumer.consumer_data import ContinuousDeviceConfig, WaitForStartStates
+from control.consumer.consumer_data import WaitForStartStates
+from control.consumer.usage import ConsumerUsage
 
 
 @pytest.fixture(autouse=True)
@@ -17,7 +18,7 @@ def mock_data() -> None:
 @pytest.fixture
 def consumer() -> Consumer:
     load = Consumer(1)
-    load.data.usage = ContinuousDeviceConfig()
+    load.data.usage.type = ConsumerUsage.CONTINUOUS
     load.data.config.min_current = 6
     load.data.config.max_power = 2300
     load.data.config.connected_phases = 1
@@ -106,7 +107,6 @@ def test_wait_for_start_handler(
         func_calls: int,
 ):
     # setup
-    assert isinstance(consumer.data.usage, ContinuousDeviceConfig)
     consumer.data.usage.wait_for_start_active = wait_for_start_active
     consumer.data.set.wait_for_start_state = state
     consumer.data.get.charge_state = charge_state

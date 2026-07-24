@@ -1,12 +1,11 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Callable, Dict, List, Optional, Union
+from typing import List, Optional
 from control.chargemode import Chargemode
 from control.chargepoint.control_parameter import ControlParameter, control_parameter_factory
 from control.consumer.usage import ConsumerUsage
 from dataclass_utils.factories import empty_list_factory
-from helpermodules.abstract_plans import (ContinuousScheduledPlanConsumer, SuspendableScheduledPlanConsumer,
-                                          TimeChargingPlanConsumer)
+from helpermodules.abstract_plans import ScheduledPlanConsumer, TimeChargingPlanConsumer
 from helpermodules.constants import NO_ERROR
 from modules.common.consumer_setup import ConsumerSetup
 
@@ -17,13 +16,8 @@ class EcoCharging:
 
 
 @dataclass
-class ScheduledContinuousCharging:
-    plans: List[ContinuousScheduledPlanConsumer] = field(default_factory=empty_list_factory)
-
-
-@dataclass
-class ScheduledSuspendableCharging:
-    plans: List[SuspendableScheduledPlanConsumer] = field(default_factory=empty_list_factory)
+class ScheduledCharging:
+    plans: List[ScheduledPlanConsumer] = field(default_factory=empty_list_factory)
 
 
 @dataclass
@@ -58,65 +52,14 @@ class Log:
 
 
 @dataclass
-class MeterOnlyConfig:
+class Usage:
+    chargemode: Chargemode = Chargemode.INSTANT_CHARGING
+    eco_charging: EcoCharging = field(default_factory=lambda: EcoCharging())
+    scheduled_charging: ScheduledCharging = field(default_factory=lambda: ScheduledCharging())
+    time_charging: TimeCharging = field(default_factory=lambda: TimeCharging())
     type: ConsumerUsage = ConsumerUsage.METER_ONLY
-
-
-@dataclass
-class SuspendableTunableDeviceConfig:
-    chargemode: Chargemode = Chargemode.INSTANT_CHARGING
-    eco_charging: EcoCharging = field(default_factory=lambda: EcoCharging())
-    scheduled_charging: ScheduledSuspendableCharging = field(default_factory=lambda: ScheduledSuspendableCharging())
-    time_charging: TimeCharging = field(default_factory=lambda: TimeCharging())
-    type: ConsumerUsage = ConsumerUsage.SUSPENDABLE_TUNABLE
     reset_chargemode: ResetChargemode = field(default_factory=lambda: ResetChargemode())
     wait_for_start_active: bool = True
-
-
-@dataclass
-class SuspendableOnOffDeviceConfig:
-    chargemode: Chargemode = Chargemode.INSTANT_CHARGING
-    eco_charging: EcoCharging = field(default_factory=lambda: EcoCharging())
-    scheduled_charging: ScheduledSuspendableCharging = field(default_factory=lambda: ScheduledSuspendableCharging())
-    time_charging: TimeCharging = field(default_factory=lambda: TimeCharging())
-    type: ConsumerUsage = ConsumerUsage.SUSPENDABLE_ONOFF
-    reset_chargemode: ResetChargemode = field(default_factory=lambda: ResetChargemode())
-    wait_for_start_active: bool = True
-
-
-@dataclass
-class ContinuousDeviceConfig:
-    chargemode: Chargemode = Chargemode.INSTANT_CHARGING
-    eco_charging: EcoCharging = field(default_factory=lambda: EcoCharging())
-    scheduled_charging: ScheduledContinuousCharging = field(default_factory=lambda: ScheduledContinuousCharging())
-    time_charging: TimeCharging = field(default_factory=lambda: TimeCharging())
-    type: ConsumerUsage = ConsumerUsage.CONTINUOUS
-    wait_for_start_active: bool = True
-    reset_chargemode: ResetChargemode = field(default_factory=lambda: ResetChargemode())
-
-
-GET_DEFAULTS_BY_USAGE: Dict[ConsumerUsage, Union[MeterOnlyConfig,
-                                                 SuspendableTunableDeviceConfig,
-                                                 SuspendableOnOffDeviceConfig,
-                                                 ContinuousDeviceConfig]] = {
-    ConsumerUsage.METER_ONLY: MeterOnlyConfig(),
-    ConsumerUsage.SUSPENDABLE_TUNABLE: SuspendableTunableDeviceConfig(),
-    ConsumerUsage.SUSPENDABLE_ONOFF: SuspendableOnOffDeviceConfig(),
-    ConsumerUsage.CONTINUOUS: ContinuousDeviceConfig(),
-}
-
-GET_CLASS_BY_USAGE: Dict[ConsumerUsage, Callable] = {
-    ConsumerUsage.METER_ONLY: MeterOnlyConfig,
-    ConsumerUsage.SUSPENDABLE_TUNABLE: SuspendableTunableDeviceConfig,
-    ConsumerUsage.SUSPENDABLE_ONOFF: SuspendableOnOffDeviceConfig,
-    ConsumerUsage.CONTINUOUS: ContinuousDeviceConfig,
-}
-
-GET_PLAN_CLASS_FOR_USAGE: Dict[ConsumerUsage, Callable] = {
-    ConsumerUsage.SUSPENDABLE_TUNABLE: SuspendableScheduledPlanConsumer,
-    ConsumerUsage.SUSPENDABLE_ONOFF: SuspendableScheduledPlanConsumer,
-    ConsumerUsage.CONTINUOUS: ContinuousScheduledPlanConsumer,
-}
 
 
 @dataclass
@@ -155,11 +98,13 @@ class Set:
     plug_time: Optional[float] = field(default=None, metadata={"topic": "set/plug_time"})
     required_power: float = 0
     current_prev: float = 0
+    state_str_prev: str = ""
     target_current: float = 0
     charge_state_prev: bool = False
     log: Log = field(default_factory=lambda: Log())
     on_time: float = field(default=0, metadata={"topic": "set/on_time"})
     power: Optional[float] = None
+    switch_interval_elapsed: bool = False
     timestamp_last_current_set: float = field(default=0, metadata={"topic": "set/timestamp_last_current_set"})
     wait_for_start_state: WaitForStartStates = field(
         default=WaitForStartStates.WAIT_FOR_DEVICE_START, metadata={"topic": "set/wait_for_start_state"})
@@ -167,13 +112,10 @@ class Set:
 
 @dataclass
 class ConsumerData:
-    module: ConsumerSetup = None
-    config: ConsumerConfig = field(default_factory=lambda: ConsumerConfig())
-    extra_meter: Optional[int] = None
-    usage: Union[MeterOnlyConfig,
-                 SuspendableTunableDeviceConfig,
-                 SuspendableOnOffDeviceConfig,
-                 ContinuousDeviceConfig] = field(default_factory=lambda: MeterOnlyConfig())
     control_parameter: ControlParameter = field(default_factory=control_parameter_factory)
     get: Get = field(default_factory=lambda: Get())
     set: Set = field(default_factory=lambda: Set())
+    module: ConsumerSetup = None
+    config: ConsumerConfig = field(default_factory=lambda: ConsumerConfig())
+    extra_meter: Optional[int] = None
+    usage: Usage = field(default_factory=lambda: Usage(), metadata={"topic": "usage"})

@@ -37,7 +37,6 @@ def create_consumer(config: Json):
             config.configuration.jq_temperatures) if config.configuration.jq_temperatures else None
 
     def create_post_function(path: Optional[str]) -> Callable[[dict], None]:
-        nonlocal session
         if path is None:
             return lambda _: None
         else:
@@ -59,7 +58,6 @@ def create_consumer(config: Json):
         jq_switch_off = create_post_function(config.configuration.jq_switch_off)
 
     def update() -> None:
-        nonlocal session, sim_counter, jq_power, jq_imported, jq_exported, jq_currents, jq_temperatures
         response = req.get_http_session().get(config.configuration.url, timeout=5).json()
         power = float(jq_power.input(response).first())
         temperatures = float(jq_temperatures.input(response).first()) if jq_temperatures is not None else None

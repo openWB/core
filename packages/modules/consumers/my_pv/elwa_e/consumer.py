@@ -55,7 +55,7 @@ def create_consumer(config: Elwa):
         initializer()
 
     def update() -> ConsumerState:
-        nonlocal client, sim_counter, status
+        nonlocal status
         resp = client.read_holding_registers_bulk(
             Register.POWER, 4, mapping=REG_MAPPING, unit=config.configuration.modbus_id)
         power = resp[Register.POWER]
@@ -71,7 +71,6 @@ def create_consumer(config: Elwa):
         )
 
     def set_limit(power_limit: float) -> None:
-        nonlocal client, fuse, power, status
         if status == 4:
             log.debug("Elwa-E im Boost-Heat Modus, keine Leistungsvorgabe möglich")
             return
