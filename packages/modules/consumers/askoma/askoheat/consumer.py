@@ -24,7 +24,6 @@ def create_consumer(config: Askoheat):
         initializer()
 
     def update() -> ConsumerState:
-        nonlocal client, sim_counter
         power = client.read_input_registers(110, ModbusDataType.INT_16, unit=config.configuration.modbus_id)
         imported, exported = sim_counter.sim_count(power)
         return ConsumerState(
@@ -35,8 +34,7 @@ def create_consumer(config: Askoheat):
         )
 
     def set_limit(power_limit: float) -> None:
-        nonlocal client
-        client.write_registers(201, power_limit, unit=config.configuration.modbus_id)
+        client.write_register(201, power_limit, unit=config.configuration.modbus_id)
 
     return ConfigurableConsumer(consumer_config=config,
                                 initializer=initializer,

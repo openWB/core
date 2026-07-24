@@ -40,6 +40,9 @@ class Json(ConsumerSetup[JsonConfiguration]):
                  type: str = "json",
                  id: int = 0,
                  configuration: JsonConfiguration = None,
-                 usage: List[ConsumerUsage] = [ConsumerUsage.METER_ONLY]) -> None:
+                 usage: List[ConsumerUsage] = [ConsumerUsage.METER_ONLY,
+                                               ConsumerUsage.CONTINUOUS,
+                                               ConsumerUsage.SUSPENDABLE_ONOFF,
+                                               ConsumerUsage.SUSPENDABLE_TUNABLE]) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
         ).type, configuration=configuration or JsonConfiguration(), usage=usage)
