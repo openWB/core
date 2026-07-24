@@ -23,11 +23,9 @@ def create_consumer(config: Stiebel):
         initializer()
 
     def switch_on() -> None:
-        nonlocal client
         client.write_register(4001, 1, ModbusDataType.INT_16, unit=config.configuration.modbus_id)
 
     def switch_off() -> None:
-        nonlocal client
         client.write_register(4001, 0, ModbusDataType.INT_16, unit=config.configuration.modbus_id)
 
     return ConfigurableConsumer(consumer_config=config,
