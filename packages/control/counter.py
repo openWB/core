@@ -175,11 +175,9 @@ class Counter:
                     load = data.data.consumer_data[load_key]
                     # Wenn der Verbraucher nicht angesteuert werden darf, im LM als nicht veränderbaren Verbrauch
                     # berücksichtigen.
-                    if load.data.set.switch_interval_elapsed:
-                        power_raw -= load.data.get.power
-                    else:
+                    if load.data.set.switch_interval_elapsed is False:
                         log.debug(f"Verbraucher {load.num} als unveränderlichen Verbrauch im LM "
-                        f"mit {load.data.get.power}W berücksichtigt.")
+                                  f"mit {load.data.get.power}W berücksichtigt.")
                         continue
                 try:
                     element_current = convert_cp_currents_to_evu_currents(
@@ -226,7 +224,7 @@ class Counter:
                         power_raw -= consumer.data.get.power
                     else:
                         log.debug(f"Verbraucher {consumer.num} als unveränderlichen Verbrauch im LM "
-                        f"mit {consumer.data.get.power}W berücksichtigt.")
+                                  f"mit {consumer.data.get.power}W berücksichtigt.")
                 self.data.set.raw_power_left = self.data.config.max_total_power - power_raw
                 log.info(f'Verbleibende Leistung an Zähler {self.num}: {self.data.set.raw_power_left}W')
             else:

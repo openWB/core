@@ -87,10 +87,10 @@ class Consumer(Load):
     def is_switch_interval_elapsed(self):
         if (timecheck.create_timestamp() < self.data.set.timestamp_last_current_set + self.data.config.min_interval and
                 # wenn kein Betrieb, darf eingeschaltet werden, auch wenn das Intervall noch nicht abgelaufen ist
-                    self.data.control_parameter.state != ChargepointState.NO_CHARGING_ALLOWED and
-                    (self.data.usage.wait_for_start_active is False or
-                        (self.data.usage.wait_for_start_active and
-                        self.data.set.wait_for_start_state == WaitForStartStates.START_SIGNAL_RECEIVED))):
+                self.data.control_parameter.state != ChargepointState.NO_CHARGING_ALLOWED and
+                (self.data.usage.wait_for_start_active is False or
+                (self.data.usage.wait_for_start_active and
+                self.data.set.wait_for_start_state == WaitForStartStates.START_SIGNAL_RECEIVED))):
             self.data.set.switch_interval_elapsed = False
         else:
             self.data.set.switch_interval_elapsed = True
@@ -366,7 +366,7 @@ class Consumer(Load):
         message = None
         if data.data.optional_data.data.electricity_pricing.configured:
             if data.data.optional_data.ep_is_charging_allowed_price_threshold(
-                self.data.usage.eco_charging.price_limit):
+                    self.data.usage.eco_charging.price_limit):
                 required_current = self._parse_required_current_by_usage(
                     self._convert_power_to_current(self.data.config.max_power))
                 message = self.CHARGING_PRICE_LOW
@@ -459,7 +459,8 @@ class Consumer(Load):
     def reset_chargemode_at_time(self):
         if (self.data.usage.reset_chargemode.mode == ResetModes.TIME and
                 self.data.usage.reset_chargemode.time is not None):
-            if self.data.usage.reset_chargemode.time < timecheck.create_timestamp() < self.data.usage.reset_chargemode.time + data.data.general_data.data.control_interval:
+            if (self.data.usage.reset_chargemode.time < timecheck.create_timestamp() <
+                    self.data.usage.reset_chargemode.time + data.data.general_data.data.control_interval):
                 if self.data.usage.chargemode != self.data.usage.reset_chargemode.chargemode:
                     log.info(f"Zurücksetzen des Lademodus auf {self.data.usage.reset_chargemode.chargemode} "
                              f"für Verbraucher {self.num} um definierte Zeit.")
