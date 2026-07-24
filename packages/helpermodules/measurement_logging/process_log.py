@@ -509,6 +509,21 @@ def calc_energy_imported_by_source(entry, names, message_key_filter: Optional[st
                             if message_key_filter is None or message_key_filter == cp_key:
                                 message += ERROR_STATE_MESSAGE.format(f"Ladepunkt {names.get(cp_key, cp_key)}")
 
+            consumer_section = entry.get("consumer")
+            if isinstance(consumer_section, dict):
+                for consumer_key, consumer_data in consumer_section.items():
+                    if isinstance(consumer_data, dict):
+                        if consumer_data.get("fault_state", 0) != 2 and "energy_imported" in consumer_data:
+                            for source in ("grid", "pv", "bat", "cp"):
+                                consumer_data[f"energy_imported_{source}"] = decimal_multiply(
+                                    consumer_data["energy_imported"], energy_source[source])
+                        else:
+                            for source in ("grid", "pv", "bat", "cp"):
+                                consumer_data[f"energy_imported_{source}"] = 0
+                            if message_key_filter is None or message_key_filter == consumer_key:
+                                message += ERROR_STATE_MESSAGE.format(
+                                    f"Verbraucher {names.get(consumer_key, consumer_key)}")
+
             counter_section = entry.get("counter")
             if isinstance(counter_section, dict):
                 for counter_key, counter_data in counter_section.items():
@@ -530,7 +545,7 @@ def calc_energy_imported_by_source(entry, names, message_key_filter: Optional[st
 
 
 def analyse_percentage_totals(entries, totals):
-    for section in ("hc", "cp"):
+    for section in ("consumer", "cp", "hc"):
         if "all" not in totals[section].keys():
             totals[section]["all"] = {}
     for source in ("grid", "pv", "bat", "cp"):
@@ -548,6 +563,14 @@ def analyse_percentage_totals(entries, totals):
                     current_value = totals["cp"][key][f"energy_imported_{source}"]
                     add_value = entry["cp"][key][f"energy_imported_{source}"]
                     totals["cp"][key][f"energy_imported_{source}"] = decimal_add(
+                        current_value, add_value)
+            for key in entry["consumer"].keys():
+                if f"energy_imported_{source}" in entry["consumer"][key].keys():
+                    if totals["consumer"][key].get(f"energy_imported_{source}") is None:
+                        totals["consumer"][key].update({f"energy_imported_{source}": 0})
+                    current_value = totals["consumer"][key][f"energy_imported_{source}"]
+                    add_value = entry["consumer"][key][f"energy_imported_{source}"]
+                    totals["consumer"][key][f"energy_imported_{source}"] = decimal_add(
                         current_value, add_value)
             for key, counter in entry["counter"].items():
                 if counter["grid"] is False:
