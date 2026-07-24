@@ -58,7 +58,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 135
+    DATASTORE_VERSION = 136
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -3448,3 +3448,24 @@ class UpdateConfig:
                 return {topic: configuration_payload}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(135)
+
+    def upgrade_datastore_136(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("^openWB/system/device/[0-9]+/config$", topic) is not None:
+                payload_device = decode_payload(payload)
+                if payload_device.get("type") == "json":
+                    index = get_index(topic)
+                    modified_topics = {}
+                    for topic_component, payload_component in self.all_received_topics.items():
+                        if re.search(f"^openWB/system/device/{index}/component/[0-9]+/config$",
+                                     topic_component) is not None:
+                            payload_component = decode_payload(payload_component)
+                            if (
+                                payload_component["type"] == "counter" and
+                                "jq_frequency" not in payload_component["configuration"]
+                            ):
+                                payload_component["configuration"].update({"jq_frequency": None})
+                                modified_topics[topic_component] = payload_component
+                    return modified_topics
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(136)
