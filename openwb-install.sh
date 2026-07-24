@@ -139,6 +139,7 @@ systemctl start openwbRemoteSupport
 
 echo "installation finished, now starting openwb services..."
 systemctl start openwb2
+systemctl start openwb-simpleAPI
 
 echo "all done"
 echo "if you want to use this installation for development, add a password for user 'openwb'"
