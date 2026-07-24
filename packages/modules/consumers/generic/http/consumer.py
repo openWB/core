@@ -48,7 +48,6 @@ def create_consumer(config: Http):
         post_switch_off = create_post_function(config.configuration.url, config.configuration.switch_off_path)
 
     def update() -> None:
-        nonlocal session, sim_counter, get_power, get_imported, get_exported, get_currents, get_temperatures
         power = get_power(session)
         exported = get_exported(session)
         imported = get_imported(session)
@@ -65,17 +64,14 @@ def create_consumer(config: Http):
         )
 
     def switch_on():
-        nonlocal session, post_switch_on
         # Authorization?
         post_switch_on(session, params={"state": True})
 
     def switch_off():
-        nonlocal session, post_switch_off
         # Authorization?
         post_switch_off(session, params={"state": False})
 
     def set_power_limit(power_limit: int):
-        nonlocal session, post_set_power_limit
         # Authorization?
         post_set_power_limit(session, params={"power_limit": power_limit})
 

@@ -9,8 +9,8 @@ from helpermodules.utils.error_handling import ImportErrorContext
 with ImportErrorContext():
     from dateutil.relativedelta import relativedelta
 
-from helpermodules.abstract_plans import (AutolockPlan, ContinuousScheduledPlanConsumer, ScheduledChargingPlan,
-                                          SuspendableScheduledPlanConsumer, TimeChargingPlan, TimeChargingPlanConsumer)
+from helpermodules.abstract_plans import (AutolockPlan, ScheduledChargingPlan, ScheduledPlanConsumer,
+                                          TimeChargingPlan, TimeChargingPlanConsumer)
 
 log = logging.getLogger(__name__)
 
@@ -114,9 +114,7 @@ def check_timeframe(plan: Union[AutolockPlan, TimeChargingPlan]) -> bool:
         return state
 
 
-def check_end_time(plan: Union[ContinuousScheduledPlanConsumer,
-                               ScheduledChargingPlan,
-                               SuspendableScheduledPlanConsumer],
+def check_end_time(plan: Union[ScheduledPlanConsumer, ScheduledChargingPlan, TimeChargingPlanConsumer],
                    buffer: Optional[float]) -> float:
     """ gibt die verbleibende Zeit in Sekunden zurück.
 
