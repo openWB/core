@@ -23,7 +23,6 @@ def create_consumer(config: Ratiotherm):
         initializer()
 
     def set_limit(power_limit: float) -> None:
-        nonlocal client
         # Absturz bei negativen Zahlen
         client.write_register(100, max(power_limit, 0), ModbusDataType.INT_16, unit=config.configuration.modbus_id)
 
