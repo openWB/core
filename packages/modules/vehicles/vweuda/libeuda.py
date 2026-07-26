@@ -803,19 +803,18 @@ class euda():
             if result['soc'] is None:
                 _LOGGER.info("thread result skipped, no soc found")
                 _valid = False
+            if _valid and result['odometer'] is not None:
+                if vin in euda.result and result['odometer'] < euda.result[vin]['odometer']:
+                    _LOGGER.info("odometer less than earlier - keep earlier value")
+                    result['odometer'] = euda.result[vin]['odometer']
+                euda.result[vin] = result
+                _LOGGER.info("thread result is valid")
         else:
-            _LOGGER.info(f"no matching VIN found in euda.result:\npayload.vin: ({vin})")
-            _LOGGER.info(f"known VINs in euda.result:\n{euda.result.keys()}")
-
-        if _valid and result['odometer'] is not None:
-            if vin in euda.result and result['odometer'] < euda.result[vin]['odometer']:
-                _LOGGER.info("odometer less than earlier - keep earlier value")
-                result['odometer'] = euda.result[vin]['odometer']
             euda.result[vin] = result
-            _LOGGER.info("thread result is valid")
+            _LOGGER.info(f"new VIN {ano_vin(vin)} initialized in euda.result")
 
         _ano_j = {ano_vin(vin): euda.result[vin]}
-        _LOGGER.info(f"\n{json.dumps(_ano_j, indent=4)}")
+        _LOGGER.info(f"new cache result:\n{json.dumps(_ano_j, indent=4)}")
 
         return result
 
