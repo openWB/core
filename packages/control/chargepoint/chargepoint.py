@@ -830,7 +830,8 @@ class Chargepoint(ChargepointRfidMixin):
                 "Keine Phasenumschaltung, da die maximale Anzahl an Fehlversuchen erreicht wurde. ")
             return True
         elif (data.data.general_data.data.chargemode_config.pv_charging.retry_failed_phase_switches is False and
-              self.data.set.log.imported_since_plugged != 0):
+              (self.data.control_parameter.failed_phase_switches > 0 or
+              self.data.set.log.imported_since_plugged != 0)):
             # vor Ladestart trotzdem umschalten
             return True
         else:
