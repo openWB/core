@@ -13,6 +13,7 @@ class EvTemplateData:
     prevent_charge_stop: bool = False
     control_pilot_interruption: bool = False
     control_pilot_interruption_duration: int = 4
+    control_pilot_interruption_retry_interval: int = 0
     average_consump: float = 17000
     min_current: int = 6
     max_current_single_phase: int = 16
