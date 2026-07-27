@@ -188,7 +188,7 @@ def test_set_phases(monkeypatch, cp: Chargepoint, params: SetPhasesParams):
 )
 def test_hw_supports_phase_switch(cp: Chargepoint,
                                   auto_phase_switch_hw: bool,
-                                  evse_signaling: str,
+                                  evse_signaling: EvseSignaling,
                                   prevent_phase_switch: bool,
                                   imported_since_plugged: float,
                                   expected: bool):
@@ -208,9 +208,9 @@ def test_hw_supports_phase_switch(cp: Chargepoint,
 @pytest.mark.parametrize(
     "retry_failed_phase_switches, failed_phase_switches, expected",
     [
-        pytest.param(True, 3, True, id="retry-enabled-limit-reached"),
-        pytest.param(True, 2, False, id="retry-enabled-at-limit"),
-        pytest.param(False, 1, True, id="retry-disabled-failed"),
+        pytest.param(True, Chargepoint.MAX_FAILED_PHASE_SWITCHES+1, True, id="retry-enabled-limit-reached"),
+        pytest.param(True, Chargepoint.MAX_FAILED_PHASE_SWITCHES, False, id="retry-enabled-at-limit"),
+        pytest.param(False, Chargepoint.MAX_FAILED_PHASE_SWITCHES-1, True, id="retry-disabled-failed"),
         pytest.param(False, 0, False, id="retry-disabled-not-failed"),
     ],
 )
