@@ -305,8 +305,10 @@ class Chargepoint(ChargepointRfidMixin):
                                 name=f"cp{self.chargepoint_module.config.id}")):
                             cp.timestamp_last_cp_retry = create_timestamp()
                             reason = "Ladestart" if started_now else "Auto lädt trotz Freigabe nicht"
-                            message = ("Control-Pilot-Unterbrechung (" + reason + ") für " + str(
-                                charging_ev.ev_template.data.control_pilot_interruption_duration) + "s.")
+                            message = (
+                                "Control-Pilot-Unterbrechung (" + reason + ") für " +
+                                str(charging_ev.ev_template.data.control_pilot_interruption_duration) + "s."
+                            )
                             self.set_state_and_log(message)
                 else:
                     message = "CP-Unterbrechung nicht möglich, da der Ladepunkt keine CP-Unterbrechung unterstützt."
