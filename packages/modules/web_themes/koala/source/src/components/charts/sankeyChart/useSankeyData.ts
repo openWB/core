@@ -3,7 +3,17 @@
  */
 import { computed } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
-import { allocate, type AllocationResult } from './energy-allocation';
+import {
+  allocate,
+  groupNodes,
+  type AllocationResult,
+  type DynamicNodeInput,
+} from './energy-allocation';
+
+// Aggregate chargepoints/consumers into a single node once there are more than the threshold.
+const GROUP_THRESHOLD = 3;
+const CP_GROUP_ID = 'cp_group';
+const CONSUMER_GROUP_ID = 'consumer_group';
 
 export function useSankeyData() {
   const mqttStore = useMqttStore();
@@ -11,15 +21,24 @@ export function useSankeyData() {
   const num = (value: unknown): number => Number(value) || 0;
 
   const chargePoints = computed(() =>
-    mqttStore.chargePointIds.map((id) => ({
-      id: `cp${id}`,
-      label: mqttStore.chargePointName(id) || `Ladepunkt ${id}`,
-      power: num(mqttStore.chargePointPower(id, 'value')),
-    })),
+    groupNodes(
+      mqttStore.chargePointIds.map((id) => ({
+        id: `cp${id}`,
+        label: mqttStore.chargePointName(id) || `Ladepunkt ${id}`,
+        power: num(mqttStore.chargePointPower(id, 'value')),
+      })),
+      { threshold: GROUP_THRESHOLD, id: CP_GROUP_ID, label: 'Ladepunkte' },
+    ),
   );
 
-  // Consumers placeholder
-  const consumers = computed(() => []);
+  // Consumer placeholder
+  const consumers = computed(() =>
+    groupNodes([] as DynamicNodeInput[], {
+      threshold: GROUP_THRESHOLD,
+      id: CONSUMER_GROUP_ID,
+      label: 'Verbraucher',
+    }),
+  );
 
   const allocation = computed<AllocationResult>(() =>
     allocate({
@@ -46,16 +65,29 @@ export function useSankeyData() {
         return cssVar('--q-battery-stroke');
       case 'house':
         return cssVar('--q-home-stroke');
+      case CP_GROUP_ID:
+        return cssVar('--q-charge-point-stroke');
+      case CONSUMER_GROUP_ID:
+        return cssVar('--q-vehicle-stroke');
     }
     if (id.startsWith('cp')) {
       const cpId = Number(id.slice(2));
       return mqttStore.chargePointColor(cpId) || cssVar('--q-charge-point-stroke');
     }
-    //placeholder
+    // Placeholder
     return cssVar('--q-vehicle-stroke');
   };
 
-  return { allocation, colorForNode };
+
+  //Node-label color for dark mode / light mode.
+  const labelColor = (): string => {
+    if (typeof document === 'undefined') {
+      return '#000000';
+    }
+    return getComputedStyle(document.body).color || '#000000';
+  };
+
+  return { allocation, colorForNode, labelColor };
 }
 
 /**

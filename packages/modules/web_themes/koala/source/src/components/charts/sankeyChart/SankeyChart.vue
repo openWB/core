@@ -35,7 +35,7 @@ defineOptions({ name: 'SankeyChart' });
 defineProps<{ showLegend?: boolean }>();
 
 const $q = useQuasar();
-const { allocation, colorForNode } = useSankeyData();
+const { allocation, colorForNode, labelColor } = useSankeyData();
 
 const hasFlows = computed(() => allocation.value.edges.length > 0);
 
@@ -62,6 +62,8 @@ const chartData = computed<ChartData<'sankey'>>(() => {
     columns[node.id] = sources.some((source) => source.id === node.id) ? 0 : 1;
   }
 
+  const textColor = labelColor();
+
   return {
     datasets: [
       {
@@ -73,6 +75,10 @@ const chartData = computed<ChartData<'sankey'>>(() => {
         colorTo: (ctx) => colorForNode(ctx.raw.to),
         colorMode: 'gradient',
         borderWidth: 0,
+        color: textColor,
+        nodeLabels: { color: textColor },
+        nodeWidth: 16,
+        nodePadding: 12,
       },
     ],
   };

@@ -114,6 +114,27 @@ function sumPower(nodes: FlowNode[]): number {
   return nodes.reduce((total, node) => total + node.power, 0);
 }
 
+export interface GroupOptions {
+  threshold: number;
+  id: string;
+  label: string;
+}
+
+/**
+ * Collapse a list of dynamic nodes (chargePoints or consumers) into a single
+ * aggregated node once it exceeds the threshold.
+ */
+export function groupNodes(
+  nodes: DynamicNodeInput[],
+  options: GroupOptions,
+): DynamicNodeInput[] {
+  if (nodes.length <= options.threshold) {
+    return nodes;
+  }
+  const power = nodes.reduce((total, node) => total + node.power, 0);
+  return [{ id: options.id, label: options.label, power }];
+}
+
 /**
  * Compute the Sankey edges from the raw component totals using the uniform
  * proportional rule. Returns edges plus the classified nodes and totals.
