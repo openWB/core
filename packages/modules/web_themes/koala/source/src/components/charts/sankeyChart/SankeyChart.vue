@@ -1,8 +1,10 @@
 <template>
-  <div class="sankey-chart-wrapper">
-    <ChartjsSankey v-if="hasFlows" :data="chartData" :options="chartOptions" />
-    <div v-else class="sankey-empty text-grey text-center">
-      Aktuell kein Energiefluss
+  <div class="chart-container">
+    <div class="chart-wrapper">
+      <ChartjsSankey v-if="hasFlows" :data="chartData" :options="chartOptions" />
+      <div v-else class="sankey-empty text-grey text-center">
+        Aktuell kein Energiefluss
+      </div>
     </div>
   </div>
 </template>
@@ -103,15 +105,31 @@ const chartOptions = computed<ChartOptions<'sankey'>>(() => ({
 </script>
 
 <style scoped>
-.sankey-chart-wrapper {
+.chart-container {
   width: 100%;
   height: 100%;
-  min-height: 300px;
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-wrapper {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  position: relative;
+}
+
+.chart-wrapper > canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.sankey-empty {
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-.sankey-empty {
   font-size: 1rem;
 }
 </style>
