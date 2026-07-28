@@ -24,6 +24,7 @@ class KoalaWebThemeConfiguration:
             "flow_diagram",
             "history_chart",
             "daily_totals",
+            "sankey_chart",
         ]
 
 

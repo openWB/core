@@ -51,6 +51,7 @@ import { useQuasar } from 'quasar';
 import EnergyFlowChart from './charts/energyFlowChart/EnergyFlowChart.vue';
 import HistoryChart from './charts/historyChart/HistoryChart.vue';
 import DailyTotals from './charts/dailyTotals/DailyTotals.vue';
+import SankeyChart from './charts/sankeyChart/SankeyChart.vue';
 import { useLocalDataStore } from 'src/stores/localData-store';
 import { useMqttStore } from 'src/stores/mqtt-store';
 
@@ -78,27 +79,27 @@ const componentMap = {
   flow_diagram: EnergyFlowChart,
   history_chart: HistoryChart,
   daily_totals: DailyTotals,
+  sankey_chart: SankeyChart,
 };
 
+// Order used when no stored order exists. Also the source of truth for which
+// slides may be auto-appended to an existing (older) stored order.
+const defaultSlideOrder = Object.keys(componentMap);
+
 const chartCarouselItems = computed(() => {
-  const slideOrder = mqttStore.themeConfiguration?.top_carousel_slide_order;
-  if (!slideOrder || slideOrder.length === 0) {
-    return [
-      {
-        name: 'flow_diagram',
-        component: EnergyFlowChart,
-      },
-      {
-        name: 'history_chart',
-        component: HistoryChart,
-      },
-      {
-        name: 'daily_totals',
-        component: DailyTotals,
-      },
-    ];
+  const storedOrder =
+    mqttStore.themeConfiguration?.top_carousel_slide_order ?? [];
+  const order = storedOrder.length > 0 ? [...storedOrder] : defaultSlideOrder;
+
+  // Append any known slide missing from a stored order, so slides added in an
+  // update appear for existing installs without discarding a custom ordering.
+  for (const name of defaultSlideOrder) {
+    if (!order.includes(name)) {
+      order.push(name);
+    }
   }
-  return slideOrder
+
+  return order
     .map((name) => ({
       name,
       component: componentMap[name as keyof typeof componentMap],
