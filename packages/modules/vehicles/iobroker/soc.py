@@ -33,8 +33,9 @@ def fetch_soc(config: IoBrokerSocSetup) -> CarState:
     soc_state = _get_state(cfg, cfg.state_soc)
     soc = float(soc_state['val'])
     if not (0 <= soc <= 100):
-        raise ValueError(f"Ungültiger SoC-Wert {soc}% von State '{cfg.state_soc}' erhalten "
-                          "(erwartet: 0-100). Bitte State-ID und Skalierung in ioBroker prüfen.")
+        raise ValueError(
+            f"Ungültiger SoC-Wert {soc}% von State '{cfg.state_soc}' erhalten "
+            "(erwartet: 0-100). Bitte State-ID und Skalierung in ioBroker prüfen.")
     soc_timestamp = int(soc_state['ts'] / 1000) if soc_state.get('ts') else None
 
     if cfg.state_range is None or cfg.state_range == "":
