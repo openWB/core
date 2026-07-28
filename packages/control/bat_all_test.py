@@ -44,7 +44,8 @@ def test_limit_bat_power_discharge(bat_power: int,
     data.data.pv_data["pv2"].data.config.max_ac_out = 5000
     data.data.bat_data["bat1"] = Bat(1)
     data.data.bat_data["bat1"].data.get.power = bat_power
-    mock_entry_children = Mock(return_value={"children": [{"id": 1, "type": "bat"}]})
+    mock_entry_children = Mock(return_value={"id": 5, "type": "pv", "children": [
+                               {"id": 1, "type": "bat", "children": []}]})
     monkeypatch.setattr(data.data.counter_all_data, "get_entry_of_element", mock_entry_children)
 
     b = BatAll()
@@ -64,7 +65,7 @@ def test_limit_bat_power_discharge_no_hybrid_system(monkeypatch: pytest.MonkeyPa
     data.data.pv_data["pv2"].data.config.max_ac_out = 5000
     data.data.bat_data["bat1"] = Bat(1)
     data.data.bat_data["bat1"].data.get.power = -4900
-    mock_entry_children = Mock(return_value={})
+    mock_entry_children = Mock(return_value={"id": 5, "type": "pv", "children": []})
     monkeypatch.setattr(data.data.counter_all_data, "get_entry_of_element", mock_entry_children)
 
     b = BatAll()
