@@ -6,7 +6,7 @@ from modules.common.component_state import CounterState
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.simcount._simcounter import SimCounter
-from modules.devices.generic.modbus.config import GenericModbusCounterSetup
+from modules.devices.generic.modbus.config import GenericModbusCounterSetup, GenericModbusConfiguration
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
 
@@ -21,6 +21,7 @@ log = logging.getLogger(__name__)
 class KwargsDict(TypedDict):
     device_id: int
     client: ModbusTcpClient_
+    device_configuration: GenericModbusConfiguration
 
 
 class GenericModbusCounter(AbstractCounter):
@@ -36,27 +37,32 @@ class GenericModbusCounter(AbstractCounter):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
+        self.device_configuration = self.kwargs['device_configuration']
+
     def update(self) -> None:
         unit = self.component_config.configuration.modbus_id
         config = self.component_config.configuration
 
         # Power
-        power = read_value(self.client, unit, config.power)
+        power = read_value(self.client, unit, self.device_configuration, config.power)
         if power is None:
             raise ValueError("Leistungsregister muss angegeben werden.")
 
         # Voltages
-        voltages_value = read_phase_values(self.client, unit, config.voltage_L1, config.voltage_L2, config.voltage_L3)
+        voltages_value = read_phase_values(self.client, unit, self.device_configuration,
+                                           config.voltage_L1, config.voltage_L2, config.voltage_L3)
         if voltages_value is not None:
             voltages = voltages_value
 
         # Currents
-        currents_value = read_phase_values(self.client, unit, config.current_L1, config.current_L2, config.current_L3)
+        currents_value = read_phase_values(self.client, unit, self.device_configuration,
+                                           config.current_L1, config.current_L2, config.current_L3)
         if currents_value is not None:
             currents = currents_value
 
         # Powers
-        powers_value = read_phase_values(self.client, unit, config.powers_L1, config.powers_L2, config.powers_L3)
+        powers_value = read_phase_values(self.client, unit, self.device_configuration,
+                                         config.powers_L1, config.powers_L2, config.powers_L3)
         if powers_value is not None:
             powers = powers_value
 
@@ -64,6 +70,7 @@ class GenericModbusCounter(AbstractCounter):
         power_factors_value = read_phase_values(
             self.client,
             unit,
+            self.device_configuration,
             config.power_factor_L1,
             config.power_factor_L2,
             config.power_factor_L3,
@@ -72,18 +79,18 @@ class GenericModbusCounter(AbstractCounter):
             power_factors = power_factors_value
 
         # Frequency
-        frequency_value = read_value(self.client, unit, config.frequency)
+        frequency_value = read_value(self.client, unit, self.device_configuration, config.frequency)
         if frequency_value is not None:
             frequency = frequency_value
 
         # Imported
-        imported = read_value(self.client, unit, config.imported)
+        imported = read_value(self.client, unit, self.device_configuration, config.imported)
 
         # Exported
-        exported = read_value(self.client, unit, config.exported)
+        exported = read_value(self.client, unit, self.device_configuration, config.exported)
 
         # Serial Number
-        serial_number_value = read_value(self.client, unit, config.serial_number)
+        serial_number_value = read_value(self.client, unit, self.device_configuration, config.serial_number)
         if serial_number_value is not None:
             serial_number = serial_number_value
 

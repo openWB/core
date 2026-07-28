@@ -7,7 +7,7 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusTcpClient_
 from modules.common.store._factory import get_component_value_store
-from modules.devices.generic.modbus.config import GenericModbusBatSetup
+from modules.devices.generic.modbus.config import GenericModbusBatSetup, GenericModbusConfiguration
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
 from modules.common.simcount import SimCounter
@@ -18,6 +18,7 @@ from modules.devices.generic.modbus.helper import read_phase_values, read_value
 class KwargsDict(TypedDict):
     device_id: int
     client: ModbusTcpClient_
+    device_configuration: GenericModbusConfiguration
 
 
 class GenericModbusBat(AbstractBat):
@@ -33,34 +34,37 @@ class GenericModbusBat(AbstractBat):
         self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, self.component_config.type)
 
+        self.device_configuration = self.kwargs['device_configuration']
+
     def update(self) -> None:
 
         unit = self.component_config.configuration.modbus_id
         config = self.component_config.configuration
 
         # power
-        power = read_value(self.client, unit, config.power)
+        power = read_value(self.client, unit, self.device_configuration, config.power)
         if power is None:
             raise ValueError("Leistungsregister muss angegeben werden.")
 
         # SOC
-        soc_value = read_value(self.client, unit, config.soc)
+        soc_value = read_value(self.client, unit, self.device_configuration, config.soc)
         if soc_value is not None:
             soc = soc_value
 
         # currents
-        currents_value = read_phase_values(self.client, unit, config.current_L1, config.current_L2, config.current_L3)
+        currents_value = read_phase_values(self.client, unit, self.device_configuration,
+                                           config.current_L1, config.current_L2, config.current_L3)
         if currents_value is not None:
             currents = currents_value
 
         # Import
-        imported = read_value(self.client, unit, config.imported)
+        imported = read_value(self.client, unit, self.device_configuration, config.imported)
 
         # Export
-        exported = read_value(self.client, unit, config.exported)
+        exported = read_value(self.client, unit, self.device_configuration, config.exported)
 
         # Serial Number
-        serial_number_value = read_value(self.client, unit, config.serial_number)
+        serial_number_value = read_value(self.client, unit, self.device_configuration, config.serial_number)
         if serial_number_value is not None:
             serial_number = serial_number_value
 

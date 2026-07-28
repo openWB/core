@@ -7,9 +7,14 @@ from dataclasses import dataclass, field
 
 
 class GenericModbusConfiguration:
-    def __init__(self, ip_address: Optional[str] = None, port: int = 502):
+    def __init__(self, ip_address: Optional[str] = None,
+                 port: int = 502,
+                 byteorder: Optional[str] = None,
+                 wordorder: Optional[str] = None) -> None:
         self.ip_address = ip_address
         self.port = port
+        self.byteorder = byteorder
+        self.wordorder = wordorder
 
 
 class GenericModbus:
@@ -29,13 +34,11 @@ class GenericModbus:
 class RegisterConfig:
     reg_address: Optional[int] = None
     reg_type: Optional[str] = None
-    byteorder: Optional[str] = None
-    wordorder: Optional[str] = None
 
 
 @dataclass
 class GenericModbusCounterConfiguration:
-    modbus_id: int = 105
+    modbus_id: int = 1
     voltage_L1: RegisterConfig = field(default_factory=RegisterConfig)
     voltage_L2: RegisterConfig = field(default_factory=RegisterConfig)
     voltage_L3: RegisterConfig = field(default_factory=RegisterConfig)
@@ -66,7 +69,7 @@ class GenericModbusCounterSetup(ComponentSetup[GenericModbusCounterConfiguration
 
 @dataclass
 class GenericModbusBatConfiguration:
-    modbus_id: int = 100
+    modbus_id: int = 1
     current_L1: RegisterConfig = field(default_factory=RegisterConfig)
     current_L2: RegisterConfig = field(default_factory=RegisterConfig)
     current_L3: RegisterConfig = field(default_factory=RegisterConfig)
@@ -88,7 +91,7 @@ class GenericModbusBatSetup(ComponentSetup[GenericModbusBatConfiguration]):
 
 @dataclass
 class GenericModbusInverterConfiguration:
-    modbus_id: int = 100
+    modbus_id: int = 1
     current_L1: RegisterConfig = field(default_factory=RegisterConfig)
     current_L2: RegisterConfig = field(default_factory=RegisterConfig)
     current_L3: RegisterConfig = field(default_factory=RegisterConfig)
