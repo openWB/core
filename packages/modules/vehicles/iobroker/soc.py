@@ -66,7 +66,7 @@ def create_vehicle(vehicle_config: IoBrokerSocSetup, vehicle: int):
 def json_update(charge_point: int, url: str, state_soc: str, state_range: str, state_odometer: str):
     log.debug(f'iobroker-soc: charge_point={charge_point} url="{url}" state_soc="{state_soc}" '
               f'state_range="{state_range}" state_odometer="{state_odometer}"')
-    store.get_car_value_store(charge_point).store.set(
+    store.get_car_value_store(charge_point).set(
         fetch_soc(IoBrokerSocSetup(configuration=IoBrokerSocConfiguration(url=url,
                                                                           state_soc=state_soc,
                                                                           state_range=state_range,
