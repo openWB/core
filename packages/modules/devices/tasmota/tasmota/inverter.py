@@ -62,6 +62,10 @@ class TasmotaInverter(AbstractInverter):
             power = float(response['StatusSNS']['eBZ']['Power']) * -1
             exported = float(response['StatusSNS']['eBZ']['E_out']*1000)
             _, exported = self.peak_filter.check_values(power, None, exported)
+        elif 'MT631' in response['StatusSNS']:
+            power = float(response['StatusSNS']['MT631']['Power']) * -1
+            exported = float(response['StatusSNS']['MT631']['E_out']*1000)
+            _, exported = self.peak_filter.check_values(power, None, exported)
         else:
             raise ValueError("Nicht unterstützter Tasmota Zählertyp. Bitte an den Support wenden.")
 
