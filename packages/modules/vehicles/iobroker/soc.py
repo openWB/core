@@ -1,6 +1,6 @@
 import logging
 
-from typing import List, Optional
+from typing import List
 
 from helpermodules.cli import run_using_positional_cli_args
 from modules.common import req
@@ -14,9 +14,12 @@ from modules.vehicles.iobroker.config import IoBrokerSocSetup, IoBrokerSocConfig
 log = logging.getLogger(__name__)
 
 
-def _get_state(base_url: str, state_id: str, timeout: int) -> dict:
-    url = f"{base_url}/get/{state_id}"
-    response = req.get_http_session().get(url, timeout=timeout)
+def _get_state(cfg: IoBrokerSocConfiguration, state_id: str) -> dict:
+    url = f"{cfg.url}/v1/state/{state_id}"
+    params = {}
+    if cfg.user:
+        params = {"user": cfg.user, "pass": cfg.password}
+    response = req.get_http_session().get(url, params=params, timeout=cfg.timeout)
     return response.json()
 
 
@@ -27,19 +30,26 @@ def fetch_soc(config: IoBrokerSocSetup) -> CarState:
     if cfg.state_soc is None or cfg.state_soc == "":
         raise ValueError("Keine State-ID für SoC definiert. Bitte Konfiguration anpassen.")
 
-    soc_state = _get_state(cfg.url, cfg.state_soc, cfg.timeout)
+    soc_state = _get_state(cfg, cfg.state_soc)
     soc = float(soc_state['val'])
+    if not (0 <= soc <= 100):
+        raise ValueError(f"Ungültiger SoC-Wert {soc}% von State '{cfg.state_soc}' erhalten "
+                          "(erwartet: 0-100). Bitte State-ID und Skalierung in ioBroker prüfen.")
     soc_timestamp = int(soc_state['ts'] / 1000) if soc_state.get('ts') else None
 
     if cfg.state_range is None or cfg.state_range == "":
         range = None
     else:
-        range = float(_get_state(cfg.url, cfg.state_range, cfg.timeout)['val'])
+        range = float(_get_state(cfg, cfg.state_range)['val'])
+        if range < 0:
+            raise ValueError(f"Ungültiger Reichweiten-Wert {range} von State '{cfg.state_range}' erhalten.")
 
     if cfg.state_odometer is None or cfg.state_odometer == "":
         odometer = None
     else:
-        odometer = float(_get_state(cfg.url, cfg.state_odometer, cfg.timeout)['val'])
+        odometer = float(_get_state(cfg, cfg.state_odometer)['val'])
+        if odometer < 0:
+            raise ValueError(f"Ungültiger Kilometerstand {odometer} von State '{cfg.state_odometer}' erhalten.")
 
     return CarState(soc=soc, range=range, odometer=odometer, soc_timestamp=soc_timestamp)
 
