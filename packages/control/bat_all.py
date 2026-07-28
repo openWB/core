@@ -217,6 +217,8 @@ class BatAll:
             remaining_inverter_ac_out_power = 0
             for inverter in data.data.pv_data.values():
                 try:
+                    if len(data.data.counter_all_data.get_entry_of_element(inverter.num)["children"]) == 0:
+                        continue
                     bat_power = self.get_bat_power_of_hybrid_system(inverter)
                     inverter_power = max((inverter.data.get.power + bat_power) * -1, 0)
                     remaining_inverter_ac_out_power += inverter.data.config.max_ac_out - inverter_power + bat_power * -1
