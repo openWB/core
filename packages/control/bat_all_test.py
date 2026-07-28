@@ -57,6 +57,26 @@ def test_limit_bat_power_discharge(bat_power: int,
     assert power == expected_power
 
 
+def test_limit_bat_power_discharge_no_hybrid_system(monkeypatch: pytest.MonkeyPatch):
+    # setup
+    data.data.pv_data = {"pv2": Pv(2)}
+    data.data.pv_data["pv2"].data.get.power = -100
+    data.data.pv_data["pv2"].data.config.max_ac_out = 5000
+    data.data.bat_data["bat1"] = Bat(1)
+    data.data.bat_data["bat1"].data.get.power = -4900
+    mock_entry_children = Mock(return_value={})
+    monkeypatch.setattr(data.data.counter_all_data, "get_entry_of_element", mock_entry_children)
+
+    b = BatAll()
+    b.data.get.power = -4900
+
+    # execution
+    power = b._limit_bat_power_discharge(5100)  # pyright: ignore[reportPrivateUsage]
+
+    # evaluation
+    assert power == 5100
+
+
 @dataclass
 class Params:
     name: str
