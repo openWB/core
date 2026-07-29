@@ -151,20 +151,29 @@ class CounterAll:
 
     def _calc_home_consumption(self) -> Tuple[float, List]:
         power = 0
+        home_consumption = 0
         if self.data.config.home_consumption_source_id is None:
             id_source = self.get_id_evu_counter()
         else:
             id_source = self.data.config.home_consumption_source_id
+
         elements_to_sum_up = self.get_elements_for_downstream_calculation(id_source)
         for element in elements_to_sum_up:
             if element["type"] == ComponentType.CHARGEPOINT.value:
                 component = data.data.cp_data[f"cp{element['id']}"]
             elif element["type"] == ComponentType.BAT.value:
                 component = data.data.bat_data[f"bat{element['id']}"]
-            elif element["type"] == ComponentType.COUNTER.value:
-                component = data.data.counter_data[f"counter{element['id']}"]
             elif element["type"] == ComponentType.INVERTER.value:
                 component = data.data.pv_data[f"pv{element['id']}"]
+            elif element["type"] == ComponentType.COUNTER.value:
+                component = data.data.counter_data[f"counter{element['id']}"]
+
+                home, not_home = self._calc_home_consumption_child(element)
+                if component.data.config.is_home_consumption_counter:
+                    # zähl die differenze mit zum Hausverbrauch, ansonsten nicht
+                    home_consumption += float(component.data.get.power) - not_home
+                else:
+                    home_consumption += home
 
             if component.data.get.fault_state < 2:
                 power += component.data.get.power
@@ -172,7 +181,56 @@ class CounterAll:
                 log.warning(
                     f"Komponente {element['type']}{component.num} ist im Fehlerzustand und wird nicht berücksichtigt.")
         evu = data.data.counter_data[f"counter{id_source}"].data.get.power
-        return evu - power - self.data.set.smarthome_power_excluded_from_home_consumption, elements_to_sum_up
+        return (evu - power + home_consumption - self.data.set.smarthome_power_excluded_from_home_consumption,
+                elements_to_sum_up)
+
+    def _calc_home_consumption_child(self, element):
+        home_consumption = 0.0
+        not_home_consumption = 0.0
+        for child in element["children"]:
+            if child["type"] == ComponentType.COUNTER.value:
+                component = data.data.counter_data[f"counter{child['id']}"]
+                # Wenn der unterCounter im Fehlerzustand ist, wird er nicht berücksichtigt.
+                if component.data.get.fault_state >= 1:
+                    log.warning(
+                        f"Komponente {child['type']}{component.num} ist im Fehlerzustand und "
+                        "wird nicht berücksichtigt bei der Berechnung des Hausverbrauchs.")
+                    continue
+
+                # Hat der unterCounter Kinder? Dann werden diese ebenfalls berücksichtigt.
+                if child["children"]:
+                    home, not_home = self._calc_home_consumption_child(child)
+                    if component.data.config.is_home_consumption_counter:
+                        # Beim Hausverbrauchszähler wird nur der Anteil ohne
+                        # bereits bekannte Nicht-Hausverbraucher addiert.
+                        home_consumption += float(component.data.get.power) - not_home
+                        not_home_consumption += not_home
+                    else:
+                        home_consumption += home
+                        not_home_consumption += not_home
+                else:
+                    # Blatt-Unterzähler muss direkt berücksichtigt werden, sonst fehlt sein Beitrag komplett.
+                    if component.data.config.is_home_consumption_counter:
+                        home_consumption += float(component.data.get.power)
+                    else:
+                        not_home_consumption += component.data.get.power
+
+            else:
+                if child["type"] == ComponentType.CHARGEPOINT.value:
+                    component = data.data.cp_data[f"cp{child['id']}"]
+                elif child["type"] == ComponentType.BAT.value:
+                    component = data.data.bat_data[f"bat{child['id']}"]
+                elif child["type"] == ComponentType.INVERTER.value:
+                    component = data.data.pv_data[f"pv{child['id']}"]
+
+                if component.data.get.fault_state < 2:
+                    not_home_consumption += component.data.get.power
+                else:
+                    log.warning(
+                        f"Komponente {child['type']}{component.num} ist im Fehlerzustand und "
+                        "wird nicht berücksichtigt bei der Berechnung des Hausverbrauchs.")
+
+        return home_consumption,  not_home_consumption
 
     def _add_hybrid_bat(self, id: int) -> List:
         elements = []

@@ -58,7 +58,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 137
+    DATASTORE_VERSION = 138
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -213,6 +213,7 @@ class UpdateConfig:
         "^openWB/counter/[0-9]+/config/max_power_errorcase$",
         "^openWB/counter/[0-9]+/config/max_currents$",
         "^openWB/counter/[0-9]+/config/max_total_power$",
+        "^openWB/counter/[0-9]+/config/is_home_consumption_counter$",
 
         "^openWB/general/allow_unencrypted_access$",
         "^openWB/general/extern$",
@@ -3481,3 +3482,15 @@ class UpdateConfig:
                     return {topic: payload}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(137)
+
+
+    def upgrade_datastore_138(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+
+            if re.search("openWB/counter/[0-9]+/config", topic) is not None:
+                index = get_index(topic)
+                if f"openWB/counter/{index}/config/is_home_consumption_counter" not in self.all_received_topics:
+                    is_home_consumption_counter = get_counter_default_config()["is_home_consumption_counter"]
+                    return {f"openWB/counter/{index}/config/is_home_consumption_counter": is_home_consumption_counter}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(138)
