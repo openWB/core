@@ -178,7 +178,7 @@ def config_and_state():
                                                     f"{component_data.data.config.max_currents} A\n"
                                                     "--| Counter_Max_Power_Errorcase: "
                                                     f"{component_data.data.config.max_power_errorcase} W\n")
-                                elif counter_all_data.data.config.home_consumption_source_id == component_data.num:
+                                elif counter_all_data.is_home_consumption_counter(component_data.num):
                                     parsed_data += ("--| Counter_Type: Hausverbrauchszähler\n"
                                                     "--| Counter_Max_Power: "
                                                     f"{component_data.data.config.max_total_power} W\n"
@@ -252,8 +252,7 @@ def get_hierarchy(hierarchy, level=0):
                                         counter_all_data = data.data.counter_all_data
                                         if counter_all_data.get_evu_counter_str() == f"counter{component_data.num}":
                                             counter_type = ("EVU-Zähler")
-                                        elif (counter_all_data.data.config.home_consumption_source_id ==
-                                              component_data.num):
+                                        elif counter_all_data.is_home_consumption_counter(component_data.num):
                                             counter_type = ("Hausverbrauchszähler")
                                         else:
                                             counter_type = "Sonstiger Zähler"

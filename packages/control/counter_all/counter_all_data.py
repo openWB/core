@@ -8,8 +8,6 @@ from modules.common.component_type import ComponentType
 
 @dataclass
 class Config:
-    home_consumption_source_id: Optional[str] = field(
-        default=None, metadata={"topic": "config/home_consumption_source_id"})
     consider_less_charging: bool = field(
         default=False, metadata={"topic": "config/consider_less_charging"})
 
