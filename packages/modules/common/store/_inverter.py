@@ -50,7 +50,6 @@ class PurgeInverterState:
             for c in children:
                 if c.get("type") == "bat":
                     hybrid.append(f'bat{c["id"]}')
-                    break
             if len(hybrid):
                 for bat in hybrid:
                     bat_get = data.data.bat_data[bat].data.get
