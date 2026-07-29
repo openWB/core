@@ -9,6 +9,12 @@
             }
         },
         "cp": {
+            "all": {
+                "energy_imported_grid": 31067,
+                "energy_imported_pv": 11756,
+                "energy_imported_bat": 4831,
+                "energy_imported_cp": 548
+            },
             "cp1": {
                 "energy_imported_grid": 12346,
                 "energy_imported_pv": 4632,
@@ -34,6 +40,26 @@
                 "energy_imported_bat": 923,
                 "energy_imported_cp": 446
             }
+        },
+        "consumer": {
+            "all": {
+                "energy_imported_grid": 3579,
+                "energy_imported_pv": 1234,
+                "energy_imported_bat": 567,
+                "energy_imported_cp": 234
+            },
+            "consumer6": {
+                "energy_imported_grid": 1234,
+                "energy_imported_pv": 567,
+                "energy_imported_bat": 234,
+                "energy_imported_cp": 89
+            },
+            "consumer7": {
+                "energy_imported_grid": 2345,
+                "energy_imported_pv": 678,
+                "energy_imported_bat": 345,
+                "energy_imported_cp": 123
+            }
         }
     },
     {
@@ -46,6 +72,12 @@
             }
         },
         "cp": {
+            "all": {
+                "energy_imported_grid": 21309,
+                "energy_imported_pv": 8546,
+                "energy_imported_bat": 3559,
+                "energy_imported_cp": 1256
+            },
             "cp1": {
                 "energy_imported_grid": 9876,
                 "energy_imported_pv": 3722,
@@ -73,6 +105,26 @@
                 "energy_imported_pv": 3290,
                 "energy_imported_bat": 1634,
                 "energy_imported_cp": 824
+            }
+        },
+        "consumer": {
+            "all": {
+                "energy_imported_grid": 3279,
+                "energy_imported_pv": 1234,
+                "energy_imported_bat": 567,
+                "energy_imported_cp": 234
+            },
+            "consumer6": {
+                "energy_imported_grid": 1234,
+                "energy_imported_pv": 567,
+                "energy_imported_bat": 234,
+                "energy_imported_cp": 89
+            },
+            "consumer7": {
+                "energy_imported_grid": 2545,
+                "energy_imported_pv": 678,
+                "energy_imported_bat": 345,
+                "energy_imported_cp": 123
             }
         }
     }

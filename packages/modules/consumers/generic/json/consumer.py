@@ -77,17 +77,14 @@ def create_consumer(config: Json):
         )
 
     def switch_on():
-        nonlocal session, jq_switch_on
         # Authorization?
         jq_switch_on(session, params={"state": True})
 
     def switch_off():
-        nonlocal session, jq_switch_off
         # Authorization?
         jq_switch_off(session, params={"state": False})
 
     def set_power_limit(power_limit: int):
-        nonlocal session, jq_set_power_limit
         # Authorization?
         jq_set_power_limit(session, params={"power_limit": power_limit})
 

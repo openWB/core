@@ -47,7 +47,6 @@ def create_consumer(config: Idm):
         # muss man unterscheiden, ob Bezug als negative Zahl oder null übertragen werden soll. Die Wärmepumpe kann
         # den Bezug ja nicht kompensieren. Bei 0W oder 500W Bezug soll das Verhalten gleich sein (Wärmepumpe nur
         # nach Bedarf einschalten, Eigensteuerung)
-        nonlocal client
         # if config.configuration.send_import:
         #     power_limit = min(power_limit, MAX_VALUE_UINT32)
         #     power_limit = max(power_limit, 0)

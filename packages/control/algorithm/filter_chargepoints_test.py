@@ -67,7 +67,7 @@ def mock_consumer3() -> Consumer:
                      [{"type": "vehicle", "id": 1},
                       {"type": "consumer", "id": 3},
                       {"type": "vehicle", "id": 2}],
-                     [3, 2], id="required current 0 for cp 1"),
+                     [1, 3, 2], id="required current 0 for cp 1"),
     ])
 def test_get_loadmanagement_prios(
         required_current_1: int,
