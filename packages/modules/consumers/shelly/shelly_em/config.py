@@ -22,10 +22,10 @@ class ShellyConfiguration:
 
 
 @auto_str
-class ShellyPM(ConsumerSetup[ShellyConfiguration]):
+class ShellyEM(ConsumerSetup[ShellyConfiguration]):
     def __init__(self,
-                 name: str = "Shelly PM (Messen & Schalten)",
-                 type: str = "shelly_pm",
+                 name: str = "Shelly EM (Messen)",
+                 type: str = "shelly_em",
                  id: int = 0,
                  configuration: ShellyConfiguration = None,
                  usage: List[ConsumerUsage] = [ConsumerUsage.METER_ONLY]) -> None:

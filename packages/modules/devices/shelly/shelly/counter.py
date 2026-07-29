@@ -39,7 +39,7 @@ class ShellyCounter(AbstractCounter):
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
-    def get_data(self) -> CounterState:
+    def update(self) -> None:
         power = 0
         status = request_status(self.address, self.generation)
         powers, voltages, currents, power_factors, power, frequency = parse_data(self.phase, self.factor, status)
@@ -52,17 +52,14 @@ class ShellyCounter(AbstractCounter):
             powers=powers,
             power=power
         )
-        if 'frequency' in locals():
+        if frequency is not None:
             counter_state.frequency = frequency
-        if "power_factors" in locals():
+        if power_factors is not None:
             counter_state.power_factors = power_factors
-        if "voltages" in locals():
+        if voltages is not None:
             counter_state.voltages = voltages
-        if "currents" in locals():
+        if currents is not None:
             counter_state.currents = currents
-
-    def update(self) -> None:
-        counter_state = self.get_data()
         self.store.set(counter_state)
 
 

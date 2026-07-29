@@ -280,7 +280,8 @@ def test_scheduled_charging_recent_plan(end_time_mock,
 @pytest.mark.parametrize(
     "plan, remaining_time, duration, expected",
     [
-        pytest.param(None, 0, 0, (0, Consumer.SCHEDULED_CHARGING_NO_DATE_PENDING, Chargemode.STOP), id="no date pending"),
+        pytest.param(None, 0, 0, (0, Consumer.SCHEDULED_CHARGING_NO_DATE_PENDING, Chargemode.STOP),
+                     id="no date pending"),
         pytest.param(ScheduledPlanConsumer(), 0, 0, (0, Consumer.SCHEDULED_REACHED_MAX_ON_TIME,
                      Chargemode.STOP), id="reached max on time"),
         pytest.param(ScheduledPlanConsumer(), 299, 3600, (10, None, Chargemode.INSTANT_CHARGING),

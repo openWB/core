@@ -4,11 +4,11 @@ from modules.common.component_state import ConsumerState
 from modules.common.component_type import ComponentType
 from modules.common.configurable_consumer import ConfigurableConsumer
 from modules.common.simcount._simcounter import SimCounterConsumer
-from modules.consumers.shelly.shelly_pm.config import ShellyPM
+from modules.consumers.shelly.shelly_em.config import ShellyEM
 from modules.devices.shelly.shelly.status_handler import get_generation, request_status, parse_data
 
 
-def create_consumer(config: ShellyPM):
+def create_consumer(config: ShellyEM):
     sim_counter = None
     generation = 1
 
@@ -25,14 +25,17 @@ def create_consumer(config: ShellyPM):
         powers, voltages, currents, _, power, _ = parse_data(
             config.configuration.phase, config.configuration.factor, status)
         imported, exported = sim_counter.sim_count(power)
-        return ConsumerState(
+        consumer_state = ConsumerState(
             power=power,
             imported=imported,
             exported=exported,
-            voltages=voltages,
-            currents=currents,
             powers=powers,
         )
+        if voltages is not None:
+            consumer_state.voltages = voltages
+        if currents is not None:
+            consumer_state.currents = currents
+        return consumer_state
 
     return ConfigurableConsumer(consumer_config=config,
                                 initializer=initializer,
@@ -40,4 +43,4 @@ def create_consumer(config: ShellyPM):
                                 update=update,)
 
 
-device_descriptor = DeviceDescriptor(configuration_factory=ShellyPM)
+device_descriptor = DeviceDescriptor(configuration_factory=ShellyEM)

@@ -31,15 +31,22 @@ def request_status(address: str, generation: Optional[int]) -> Dict:
 
 
 def parse_data(phase: int, factor: float, status: Dict) -> Tuple[
-        List[float], List[float], List[float], List[float], float, Optional[float]]:
+        List[float], Optional[List[float]], Optional[List[float]], Optional[List[float]], float, Optional[float]]:
     try:
+        currents: Optional[List[float]] = None
+        voltages: Optional[List[float]] = None
+        power_factors: Optional[List[float]] = None
+        frequency: Optional[float] = None
+
         # GEN 1
         if "meters" in status:
+            currents = [0.0, 0.0, 0.0]
             powers = [0.0, 0.0, 0.0]
             voltages = [0.0, 0.0, 0.0]
             meters = status['meters']  # einphasiger shelly?
             for i in range(0, min(3, len(meters))):
                 powers[(i+phase-1) % 3] = float(meters[i].get('power', 0)) * factor
+                currents[(i+phase-1) % 3] = (float(meters[i].get('power', 0)) * factor) / 230
                 voltages[(i+phase-1) % 3] = 230
             power = sum(powers)
         elif "emeters" in status:
@@ -112,7 +119,7 @@ def parse_data(phase: int, factor: float, status: Dict) -> Tuple[
             voltages[phase-1] = meters['voltage']
             currents[phase-1] = meters['current'] * factor
             power_factors[phase-1] = meters['pf']
-            power = meters['act_power']  # shelly Pro EM Gen 2
+            power = meters['act_power'] * factor  # shelly Pro EM Gen 2
             frequency = meters['freq']
 
         return powers, voltages, currents, power_factors, power, frequency
