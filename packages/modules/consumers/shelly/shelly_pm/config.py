@@ -7,21 +7,30 @@ from ..vendor import vendor_descriptor
 
 
 @auto_str
-class ShellyPMConfiguration:
-    def __init__(self, ip_address: Optional[str] = None, port: Optional[int] = 502, modbus_id: Optional[int] = 1):
+class ShellyConfiguration:
+    def __init__(self,
+                 ip_address: Optional[str] = None,
+                 factor: Optional[int] = -1,
+                 phase: Optional[int] = 1,
+                 channel: int = 0,
+                 username: Optional[str] = None,
+                 password: Optional[str] = None) -> None:
         self.ip_address = ip_address
-        self.port = port
-        self.modbus_id = modbus_id
+        self.factor = factor
+        self.phase = phase
+        self.channel = channel
+        self.username = username
+        self.password = password
 
 
 @auto_str
-class ShellyPM(ConsumerSetup[ShellyPMConfiguration]):
+class ShellyPM(ConsumerSetup[ShellyConfiguration]):
     def __init__(self,
                  name: str = "Shelly PM (Messen & Schalten)",
                  type: str = "shelly_pm",
                  id: int = 0,
-                 configuration: ShellyPMConfiguration = None,
+                 configuration: ShellyConfiguration = None,
                  usage: List[ConsumerUsage] = [ConsumerUsage.METER_ONLY,
                                                ConsumerUsage.SUSPENDABLE_ONOFF]) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
-        ).type, configuration=configuration or ShellyPMConfiguration(), usage=usage)
+        ).type, configuration=configuration or ShellyConfiguration(), usage=usage)

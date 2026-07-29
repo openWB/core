@@ -89,8 +89,8 @@ class Consumer(Load):
                 # wenn kein Betrieb, darf eingeschaltet werden, auch wenn das Intervall noch nicht abgelaufen ist
                 self.data.control_parameter.state != ChargepointState.NO_CHARGING_ALLOWED and
                 (self.data.usage.wait_for_start_active is False or
-                (self.data.usage.wait_for_start_active and
-                self.data.set.wait_for_start_state == WaitForStartStates.START_SIGNAL_RECEIVED))):
+                 (self.data.usage.wait_for_start_active and
+                  self.data.set.wait_for_start_state == WaitForStartStates.START_SIGNAL_RECEIVED))):
             self.data.set.switch_interval_elapsed = False
         else:
             self.data.set.switch_interval_elapsed = True
@@ -180,14 +180,15 @@ class Consumer(Load):
             except Exception:
                 log.exception("Fehler im ev-Modul "+str(self.num))
         if plans_diff_end_date:
-            # ermittle den Key vom kleinsten value in plans_diff_end_date
-            # filtered_plans = [d for d in plans_diff_end_date if list(d.values())[0] is not None]
-            # if filtered_plans:
-            sorted_plans = sorted(plans_diff_end_date, key=lambda x: list(x.values())[0])
-            for p in sorted_plans:
-                if self.BUFFER_AFTER_END_TIME < list(p.values())[0]:
-                    plan_dict = p
-                    break
+            filtered_plans = [d for d in plans_diff_end_date if list(d.values())[0] > self.BUFFER_AFTER_END_TIME]
+            if filtered_plans:
+                sorted_plans = sorted(filtered_plans, key=lambda x: list(x.values())[0])
+                for p in sorted_plans:
+                    if self.BUFFER_AFTER_END_TIME < list(p.values())[0]:
+                        plan_dict = p
+                        break
+                else:
+                    return None, 0, 0
             else:
                 return None, 0, 0
             plan_id = list(plan_dict.keys())[0]
@@ -291,7 +292,7 @@ class Consumer(Load):
 
                 hour_list = data.data.optional_data.ep_get_loading_hours(duration, duration + remaining_time)
 
-                log.debug(f"Günstige Ladezeiten: {hour_list}")
+                log.debug(f"Günstige Einschaltzeiten: {hour_list}")
                 if data.data.optional_data.ep_is_charging_allowed_hours_list(hour_list):
                     message = self.SCHEDULED_CHARGING_CHEAP_HOUR.format(get_hours_message())
                     submode = Chargemode.INSTANT_CHARGING
@@ -395,7 +396,7 @@ class Consumer(Load):
     WAIT_FOR_DEVICE_START = "Warte auf Gerätestart, Gerät eingeschaltet lassen."
     WAIT_FOR_STOPPED_DEVICE = "Gerätestart erkannt, warte auf gestopptes Gerät."
     DEVICE_WAITING_FOR_START = ("Gerätestart erkannt. "
-    "Warte auf Erreichen der Einschaltschwelle, um das Gerät zu starten.")
+                                "Warte auf Erreichen der Einschaltschwelle, um das Gerät zu starten.")
 
     def wait_for_start_handler(
             self, func: Callable[[], Tuple[float, Optional[str], Chargemode]]
