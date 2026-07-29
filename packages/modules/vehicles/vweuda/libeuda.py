@@ -697,6 +697,8 @@ def parse_vehicle_data(payload: dict) -> dict:
         soc_timestamp_str = get_max_value_by_fieldname(data, CAR_TIMESTAMP)
 
     if soc is None:
+        soc = get_field_value_by_key(data, '0a18a053-b4b0-3db1-be44-a6c5dba629b1', 'soc')  # Skoda?
+    if soc is None:
         soc = get_field_value_by_key(data, 'f89ed652-d104-3fa6-b7e2-ab7543309e7b', 'soc')
     if soc is None:
         soc = get_field_value_by_key(data, '506cb83e-f99f-3af3-bbeb-0429b69a78d9', 'soc')
