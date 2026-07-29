@@ -180,9 +180,9 @@ class Consumer(Load):
             except Exception:
                 log.exception("Fehler im ev-Modul "+str(self.num))
         if plans_diff_end_date:
-            filtered_plans = [d for d in plans_diff_end_date if list(d.values())[0] > (self.BUFFER_AFTER_END_TIME) * -1]
+            filtered_plans = [d for d in plans_diff_end_date if list(d.values())[0] > self.BUFFER_AFTER_END_TIME]
             if filtered_plans:
-                sorted_plans = sorted(plans_diff_end_date, key=lambda x: list(x.values())[0])
+                sorted_plans = sorted(filtered_plans, key=lambda x: list(x.values())[0])
                 for p in sorted_plans:
                     if self.BUFFER_AFTER_END_TIME < list(p.values())[0]:
                         plan_dict = p
