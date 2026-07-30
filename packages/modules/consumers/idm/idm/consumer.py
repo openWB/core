@@ -65,7 +65,7 @@ def create_consumer(config: Idm):
         else:
             power = client.read_input_registers(
                 4122, ModbusDataType.FLOAT_32, unit=config.configuration.modbus_id)
-        power *= 1000  # Register liefert kW -> openWB rechnet intern in W
+        power *= 100
         imported, exported = sim_counter.sim_count(power)
 
         if config.configuration.send_values:
@@ -77,12 +77,10 @@ def create_consumer(config: Idm):
             exported=exported
         )
 
-    return ConfigurableConsumer(
-        consumer_config=config,
-        initializer=initializer,
-        error_handler=error_handler,
-        update=update,
-    )
+    return ConfigurableConsumer(consumer_config=config,
+                                initializer=initializer,
+                                error_handler=error_handler,
+                                update=update)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=Idm)
