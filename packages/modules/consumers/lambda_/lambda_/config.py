@@ -12,11 +12,11 @@ class LambdaConfiguration:
                  ip_address: Optional[str] = None,
                  port: Optional[int] = 502,
                  modbus_id: Optional[int] = 1,
-                 sign: int = 1):
+                 send_values: bool = False):
         self.ip_address = ip_address
         self.port = port
         self.modbus_id = modbus_id
-        self.sign = sign
+        self.send_values = send_values
 
 
 @auto_str
