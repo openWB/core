@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional, Tuple
 
 from control.consumer.consumer_data import ConsumerUsage
 from helpermodules.auto_str import auto_str
@@ -24,6 +24,7 @@ class Stiebel(ConsumerSetup[StiebelConfiguration]):
                  type: str = "stiebel",
                  id: int = 0,
                  configuration: StiebelConfiguration = None,
-                 usage: List[ConsumerUsage] = [ConsumerUsage.SUSPENDABLE_ONOFF]) -> None:
+                 usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_ONOFF,),
+                 **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
-        ).type, configuration=configuration or StiebelConfiguration(), usage=usage)
+        ).type, configuration=configuration or StiebelConfiguration(), usage=usage, **kwargs)
