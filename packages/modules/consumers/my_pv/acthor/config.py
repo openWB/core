@@ -29,6 +29,7 @@ class Acthor(ConsumerSetup[ActhorConfiguration]):
                  id: int = 0,
                  configuration: ActhorConfiguration = None,
                  usage: List[ConsumerUsage] = [ConsumerUsage.SUSPENDABLE_TUNABLE,
-                                               ConsumerUsage.METER_ONLY]) -> None:
+                                               ConsumerUsage.METER_ONLY],
+                 **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
-        ).type, configuration=configuration or ActhorConfiguration(), usage=usage)
+        ).type, configuration=configuration or ActhorConfiguration(), usage=usage, **kwargs)

@@ -21,6 +21,7 @@ class ViessmannHeatPump(ConsumerSetup[ViessmannConfiguration]):
                  type: str = "viessmann_heat_pump",
                  id: int = 0,
                  configuration: ViessmannConfiguration = None,
-                 usage: List[ConsumerUsage] = [ConsumerUsage.SUSPENDABLE_ONOFF]) -> None:
+                 usage: List[ConsumerUsage] = [ConsumerUsage.SUSPENDABLE_ONOFF],
+                 **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
-        ).type, configuration=configuration or ViessmannConfiguration(), usage=usage)
+        ).type, configuration=configuration or ViessmannConfiguration(), usage=usage, **kwargs)

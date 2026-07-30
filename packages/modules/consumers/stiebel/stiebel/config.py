@@ -24,6 +24,7 @@ class Stiebel(ConsumerSetup[StiebelConfiguration]):
                  type: str = "stiebel",
                  id: int = 0,
                  configuration: StiebelConfiguration = None,
-                 usage: List[ConsumerUsage] = [ConsumerUsage.SUSPENDABLE_ONOFF]) -> None:
+                 usage: List[ConsumerUsage] = [ConsumerUsage.SUSPENDABLE_ONOFF],
+                 **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
-        ).type, configuration=configuration or StiebelConfiguration(), usage=usage)
+        ).type, configuration=configuration or StiebelConfiguration(), usage=usage, **kwargs)

@@ -22,6 +22,7 @@ class Nibe(ConsumerSetup[NibeConfiguration]):
                  type: str = "nibe_s_series",
                  id: int = 0,
                  configuration: NibeConfiguration = None,
-                 usage: List[ConsumerUsage] = [ConsumerUsage.METER_ONLY]) -> None:
+                 usage: List[ConsumerUsage] = [ConsumerUsage.METER_ONLY],
+                 **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
-        ).type, configuration=configuration or NibeConfiguration(), usage=usage)
+        ).type, configuration=configuration or NibeConfiguration(), usage=usage, **kwargs)

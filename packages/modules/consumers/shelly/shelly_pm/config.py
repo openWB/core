@@ -31,6 +31,7 @@ class ShellyPM(ConsumerSetup[ShellyConfiguration]):
                  id: int = 0,
                  configuration: ShellyConfiguration = None,
                  usage: List[ConsumerUsage] = [ConsumerUsage.METER_ONLY,
-                                               ConsumerUsage.SUSPENDABLE_ONOFF]) -> None:
+                                               ConsumerUsage.SUSPENDABLE_ONOFF],
+                 **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
-        ).type, configuration=configuration or ShellyConfiguration(), usage=usage)
+        ).type, configuration=configuration or ShellyConfiguration(), usage=usage, **kwargs)

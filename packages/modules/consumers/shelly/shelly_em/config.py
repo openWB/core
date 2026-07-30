@@ -28,6 +28,7 @@ class ShellyEM(ConsumerSetup[ShellyConfiguration]):
                  type: str = "shelly_em",
                  id: int = 0,
                  configuration: ShellyConfiguration = None,
-                 usage: List[ConsumerUsage] = [ConsumerUsage.METER_ONLY]) -> None:
+                 usage: List[ConsumerUsage] = [ConsumerUsage.METER_ONLY],
+                 **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
-        ).type, configuration=configuration or ShellyConfiguration(), usage=usage)
+        ).type, configuration=configuration or ShellyConfiguration(), usage=usage, **kwargs)

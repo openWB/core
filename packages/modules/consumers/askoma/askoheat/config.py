@@ -25,6 +25,7 @@ class Askoheat(ConsumerSetup[AskoheatConfiguration]):
                  id: int = 0,
                  configuration: AskoheatConfiguration = None,
                  usage: List[ConsumerUsage] = [ConsumerUsage.SUSPENDABLE_TUNABLE,
-                                               ConsumerUsage.METER_ONLY]) -> None:
+                                               ConsumerUsage.METER_ONLY],
+                 **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
-        ).type, configuration=configuration or AskoheatConfiguration(), usage=usage)
+        ).type, configuration=configuration or AskoheatConfiguration(), usage=usage, **kwargs)

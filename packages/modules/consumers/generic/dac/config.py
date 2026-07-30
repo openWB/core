@@ -27,6 +27,7 @@ class Dac(ConsumerSetup[DacConfiguration]):
                  type: str = "dac",
                  id: int = 0,
                  configuration: DacConfiguration = None,
-                 usage: List[ConsumerUsage] = [ConsumerUsage.SUSPENDABLE_TUNABLE]) -> None:
+                 usage: List[ConsumerUsage] = [ConsumerUsage.SUSPENDABLE_TUNABLE],
+                 **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
-        ).type, configuration=configuration or DacConfiguration(), usage=usage)
+        ).type, configuration=configuration or DacConfiguration(), usage=usage, **kwargs)

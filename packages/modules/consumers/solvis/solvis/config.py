@@ -21,6 +21,7 @@ class SolvisHeatPump(ConsumerSetup[SolvisConfiguration]):
                  type: str = "solvis",
                  id: int = 0,
                  configuration: SolvisConfiguration = None,
-                 usage: List[ConsumerUsage] = [ConsumerUsage.METER_ONLY]) -> None:
+                 usage: List[ConsumerUsage] = [ConsumerUsage.METER_ONLY],
+                 **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
-        ).type, configuration=configuration or SolvisConfiguration(), usage=usage)
+        ).type, configuration=configuration or SolvisConfiguration(), usage=usage, **kwargs)
