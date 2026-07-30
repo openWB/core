@@ -6,12 +6,18 @@ from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_all import AllChargepoints
 from control import bat_all, counter, pv_all, pv
 from control import data
+from control.consumer.consumer import Consumer
+from control.consumer.consumer_all import AllConsumers
+from modules.consumers.generic.mqtt.config import Mqtt
 
 
 @pytest.fixture(autouse=True)
 def data_module() -> None:
     data.data_init(Event())
     data.data.bat_data.update({"all": bat_all.BatAll(), "bat2": Bat(2)})
+    data.data.consumer_all_data = AllConsumers()
+    data.data.consumer_data.update({"consumer6": Consumer(6)})
+    data.data.consumer_data["consumer6"].data.module = Mqtt()
     data.data.counter_data.update({"counter0": counter.Counter(0)})
     data.data.cp_all_data = AllChargepoints()
     data.data.cp_data.update({"cp4": chargepoint.Chargepoint(
