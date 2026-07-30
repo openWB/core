@@ -1,4 +1,4 @@
-from typing import List
+from typing import Tuple
 
 from control.consumer.consumer_data import ConsumerUsage
 from helpermodules.auto_str import auto_str
@@ -40,10 +40,10 @@ class Http(ConsumerSetup[HttpConfiguration]):
                  type: str = "http",
                  id: int = 0,
                  configuration: HttpConfiguration = None,
-                 usage: List[ConsumerUsage] = [ConsumerUsage.METER_ONLY,
-                                               ConsumerUsage.CONTINUOUS,
-                                               ConsumerUsage.SUSPENDABLE_ONOFF,
-                                               ConsumerUsage.SUSPENDABLE_TUNABLE],
+                 usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.METER_ONLY,
+                                                     ConsumerUsage.CONTINUOUS,
+                                                     ConsumerUsage.SUSPENDABLE_ONOFF,
+                                                     ConsumerUsage.SUSPENDABLE_TUNABLE),
                  **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
         ).type, configuration=configuration or HttpConfiguration(), usage=usage, **kwargs)

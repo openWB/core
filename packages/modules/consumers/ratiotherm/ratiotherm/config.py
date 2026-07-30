@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional, Tuple
 
 from control.consumer.consumer_data import ConsumerUsage
 from helpermodules.auto_str import auto_str
@@ -24,7 +24,7 @@ class Ratiotherm(ConsumerSetup[RatiothermConfiguration]):
                  type: str = "ratiotherm",
                  id: int = 0,
                  configuration: RatiothermConfiguration = None,
-                 usage: List[ConsumerUsage] = [ConsumerUsage.SUSPENDABLE_TUNABLE],
+                 usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_TUNABLE,),
                  **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
         ).type, configuration=configuration or RatiothermConfiguration(), usage=usage, **kwargs)

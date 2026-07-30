@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional, Tuple
 
 from control.consumer.consumer_data import ConsumerUsage
 from helpermodules.auto_str import auto_str
@@ -19,8 +19,8 @@ class MyStrom(ConsumerSetup[MyStromConfiguration]):
                  type: str = "mystrom",
                  id: int = 0,
                  configuration: MyStromConfiguration = None,
-                 usage: List[ConsumerUsage] = [ConsumerUsage.SUSPENDABLE_ONOFF,
-                                               ConsumerUsage.METER_ONLY],
+                 usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_ONOFF,
+                                                     ConsumerUsage.METER_ONLY),
                  **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
         ).type, configuration=configuration or MyStromConfiguration(), usage=usage, **kwargs)

@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional, Tuple
 
 from control.consumer.consumer_data import ConsumerUsage
 from helpermodules.auto_str import auto_str
@@ -21,7 +21,7 @@ class ViessmannHeatPump(ConsumerSetup[ViessmannConfiguration]):
                  type: str = "viessmann_heat_pump",
                  id: int = 0,
                  configuration: ViessmannConfiguration = None,
-                 usage: List[ConsumerUsage] = [ConsumerUsage.SUSPENDABLE_ONOFF],
+                 usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_ONOFF,),
                  **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
         ).type, configuration=configuration or ViessmannConfiguration(), usage=usage, **kwargs)

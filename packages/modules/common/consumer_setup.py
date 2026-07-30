@@ -1,4 +1,4 @@
-from typing import Generic, List, Optional, TypeVar
+from typing import Generic, Optional, TypeVar, Tuple
 
 from control.consumer.usage import ConsumerUsage
 from helpermodules.constants import DEFAULT_COLORS
@@ -14,7 +14,7 @@ class ConsumerSetup(Generic[T]):
                  id: int,
                  vendor: str,
                  configuration: T,
-                 usage: List[ConsumerUsage],
+                 usage: Tuple[ConsumerUsage, ...],
                  color: Optional[str] = None) -> None:
         self.name = name
         self.info = {"manufacturer": None, "model": None}
