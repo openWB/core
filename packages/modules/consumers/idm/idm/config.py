@@ -13,12 +13,12 @@ class IdmConfiguration:
                  port: Optional[int] = 502,
                  modbus_id: Optional[int] = 1,
                  version: int = 1,
-                 send_grid_values: bool = False):
+                 send_values: bool = False):
         self.ip_address = ip_address
         self.port = port
         self.modbus_id = modbus_id
         self.version = version
-        self.send_grid_values = send_grid_values
+        self.send_values = send_values
 
 
 @auto_str
