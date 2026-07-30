@@ -3470,7 +3470,7 @@ class UpdateConfig:
                     return modified_topics
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(136)
-        
+
     def upgrade_datastore_137(self) -> None:
         def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/vehicle/template/ev_template/[0-9]+$", topic) is not None:
@@ -3481,5 +3481,3 @@ class UpdateConfig:
                     return {topic: payload}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(137)
-
-
