@@ -380,7 +380,7 @@ def get_names(elements: Dict, sh_names: Dict, valid_names: Optional[Dict] = None
     """
     names = sh_names
     for group in elements.items():
-        if group[0] not in ("bat", "counter", "cp", "pv", "ev", "sh"):
+        if group[0] not in ("bat", "consumer", "counter", "cp", "pv", "ev", "sh"):
             continue
         for entry in group[1]:
             # valid_names wird aus update_config übergeben, da dort noch kein Zugriff auf data möglich ist
@@ -396,6 +396,8 @@ def get_names(elements: Dict, sh_names: Dict, valid_names: Optional[Dict] = None
                 try:
                     if "ev" in entry:
                         names.update({entry: data.data.ev_data[entry].data.name})
+                    elif "consumer" in entry:
+                        names.update({entry: data.data.consumer_data[entry].data.module.name})
                     elif "cp" in entry:
                         names.update({entry: data.data.cp_data[entry].data.config.name})
                     elif "all" != entry:
@@ -416,13 +418,15 @@ def get_colors(elements: Dict) -> Dict:
     """
     colors = {}
     for group in elements.items():
-        if group[0] not in ("ev", "cp", "counter", "pv", "bat"):
+        if group[0] not in ("ev", "cp", "counter", "consumer", "pv", "bat"):
             continue
         for entry in group[1]:
             if "all" != entry:
                 try:
                     if "ev" in entry:
                         colors.update({entry: data.data.ev_data[entry].data.color})
+                    elif "consumer" in entry:
+                        colors.update({entry: data.data.consumer_data[entry].data.module.color})
                     elif "cp" in entry:
                         colors.update({entry: data.data.cp_data[entry].data.config.color})
                     else:

@@ -13,6 +13,7 @@ def test_get_names(daily_log_totals, monkeypatch):
 
     # evaluation
     assert names == {'bat2': "Speicher",
+                     "consumer6": "MQTT-Verbraucher",
                      'counter0': "Zähler",
                      'cp3': "cp3",
                      'cp4': "neuer Ladepunkt",

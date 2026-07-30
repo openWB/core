@@ -1,4 +1,4 @@
-from typing import List
+from typing import Tuple
 
 from control.consumer.consumer_data import ConsumerUsage
 from helpermodules.auto_str import auto_str
@@ -19,9 +19,10 @@ class Mqtt(ConsumerSetup[MqttConfiguration]):
                  type: str = "mqtt",
                  id: int = 0,
                  configuration: MqttConfiguration = None,
-                 usage: List[ConsumerUsage] = [ConsumerUsage.METER_ONLY,
-                                               ConsumerUsage.CONTINUOUS,
-                                               ConsumerUsage.SUSPENDABLE_ONOFF,
-                                               ConsumerUsage.SUSPENDABLE_TUNABLE]) -> None:
+                 usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.METER_ONLY,
+                                                     ConsumerUsage.CONTINUOUS,
+                                                     ConsumerUsage.SUSPENDABLE_ONOFF,
+                                                     ConsumerUsage.SUSPENDABLE_TUNABLE),
+                 **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
-        ).type, configuration=configuration or MqttConfiguration(), usage=usage)
+        ).type, configuration=configuration or MqttConfiguration(), usage=usage, **kwargs)
