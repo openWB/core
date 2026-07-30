@@ -4,7 +4,6 @@
     v-model="currentSlide"
     swipeable
     :animated="true"
-    control-color="primary"
     infinite
     @update:model-value="handleSlideChange"
     padding

@@ -5,7 +5,6 @@
     v-model="currentSlide"
     v-model:fullscreen="fullscreen"
     swipeable
-    control-color="primary"
     padding
     animated
     infinite
