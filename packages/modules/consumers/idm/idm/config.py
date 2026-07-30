@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional, Tuple
 
 from control.consumer.consumer_data import ConsumerUsage
 from helpermodules.auto_str import auto_str
@@ -26,7 +26,8 @@ class Idm(ConsumerSetup[IdmConfiguration]):
                  type: str = "idm",
                  id: int = 0,
                  configuration: IdmConfiguration = None,
-                 usage: List[ConsumerUsage] = [ConsumerUsage.SUSPENDABLE_TUNABLE,
-                                               ConsumerUsage.METER_ONLY]) -> None:
+                 usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_TUNABLE,
+                                                     ConsumerUsage.METER_ONLY),
+                 **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
-        ).type, configuration=configuration or IdmConfiguration(), usage=usage)
+        ).type, configuration=configuration or IdmConfiguration(), usage=usage, **kwargs)
