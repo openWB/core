@@ -39,7 +39,10 @@ def create_consumer(config: Idm):
         # EVU-Zähler) -> Vorzeichen drehen und auf 0 begrenzen, um die reine Erzeugung zu erhalten
         pv_power = max(-data.data.pv_all_data.data.get.power, 0)
         hausverbrauch = data.data.counter_all_data.data.set.home_consumption
-        ueberschuss = max(pv_power - hausverbrauch, 0)
+        # Ladepunkt-Leistung mit einrechnen, da diese sonst fälschlich als freier Überschuss an die
+        # WP gemeldet würde, obwohl sie bereits von einer Fahrzeugladung verbraucht wird
+        ladeleistung = data.data.cp_all_data.data.get.power
+        ueberschuss = max(pv_power - hausverbrauch - ladeleistung, 0)
 
         bat = data.data.bat_all_data
         # Get.power ist bei Speichern bereits positiv = Entladung, negativ = Ladung -> passt
