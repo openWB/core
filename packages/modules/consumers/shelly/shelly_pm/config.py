@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional, Tuple
 
 from control.consumer.consumer_data import ConsumerUsage
 from helpermodules.auto_str import auto_str
@@ -30,7 +30,8 @@ class ShellyPM(ConsumerSetup[ShellyConfiguration]):
                  type: str = "shelly_pm",
                  id: int = 0,
                  configuration: ShellyConfiguration = None,
-                 usage: List[ConsumerUsage] = [ConsumerUsage.METER_ONLY,
-                                               ConsumerUsage.SUSPENDABLE_ONOFF]) -> None:
+                 usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.METER_ONLY,
+                                                     ConsumerUsage.SUSPENDABLE_ONOFF),
+                 **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
-        ).type, configuration=configuration or ShellyConfiguration(), usage=usage)
+        ).type, configuration=configuration or ShellyConfiguration(), usage=usage, **kwargs)
