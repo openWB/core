@@ -60,11 +60,11 @@ def create_consumer(config: Idm):
 
     def update() -> ConsumerState:
         if config.configuration.version == 1:
-            power = client.read_holding_registers(
-                4122, ModbusDataType.FLOAT_32, unit=config.configuration.modbus_id)
+            power = client.read_holding_registers(4122, ModbusDataType.FLOAT_32,
+                                                  unit=config.configuration.modbus_id)
         else:
-            power = client.read_input_registers(
-                4122, ModbusDataType.FLOAT_32, unit=config.configuration.modbus_id)
+            power = client.read_input_registers(4122, ModbusDataType.FLOAT_32,
+                                                unit=config.configuration.modbus_id)
         power *= 100
         imported, exported = sim_counter.sim_count(power)
 
