@@ -24,7 +24,6 @@ from modules.common.component_state import ChargepointState
 from modules.common.store._api import LoggingValueStore
 
 from packages.conftest import (
-    hierarchy_hc_counter,
     hierarchy_standard,
     hierarchy_hybrid,
     hierarchy_nested)
