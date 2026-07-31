@@ -19,13 +19,16 @@ def read_value(client: ModbusTcpClient_, unit: int,
         return None
 
     check_data(register_config, device_config)
-    return client.read_input_registers(
+    value = client.read_input_registers(
         register_config.reg_address,
         ModbusDataType[register_config.reg_type],
         byteorder=device_config.byteorder,
         wordorder=device_config.wordorder,
         unit=unit,
     )
+    if value is not None:
+        value *= register_config.reg_factor
+    return value
 
 
 def read_phase_values(client: ModbusTcpClient_,
