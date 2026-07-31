@@ -45,11 +45,17 @@ def test_calc_home_consumption(counter_all: Callable[[], CounterAll], data_):
 @pytest.mark.parametrize(
     ["counter_all", "expected_home_consumption"],
     [
-        pytest.param("hierarchy_hybrid_with_home_consumption", 500, id="hierarchy_hybrid_with_home_consumption"),
-        pytest.param("hierarchy_nested_with_home_consumption", 500, id="hierarchy_nested_with_home_consumption"),
-        pytest.param("hierarchy_standard_with_home_consumption", 0, id="hierarchy_standard_with_home_consumption"),
-        pytest.param("hierarchy_nested_two_level_with_home_consumption",
-                     500, id="hierarchy_nested_two_level_with_home_consumption"),
+        pytest.param("hierarchy_home_consumption_standard", 0, id="hierarchy_home_consumption_standard"),
+        pytest.param("hierarchy_home_consumption_hybrid", 500, id="hierarchy_home_consumption_hybrid"),
+        pytest.param("hierarchy_nested_home_consumption_level_3", 500, id="hierarchy_nested_home_consumption_level_3"),
+        pytest.param("hierarchy_nested_home_consumption_level_2",
+                     500, id="hierarchy_nested_home_consumption_level_2"),
+        pytest.param("hierarchy_home_consumption_only_root",
+                     1000, id="hierarchy_home_consumption_only_root"),
+        pytest.param("hierarchy_home_consumption_all",
+                     1000, id="hierarchy_home_consumption_all"),
+        pytest.param("hierarchy_nested_home_consumption_multi_level_2", 250,
+                     id="hierarchy_nested_home_consumption_multi_level_2"),
     ],
 )
 def test_calc_home_consumption_with_configured_home_consumption_counter(
@@ -91,7 +97,7 @@ def test_set_home_consumption(home_consumption: int,
     assert c.data.set.home_consumption == expected_home_consumption
 
 
-def hierarchy_standard_with_home_consumption() -> CounterAll:
+def hierarchy_home_consumption_standard() -> CounterAll:
     # counter0
     #        |
     #        - cp4
@@ -102,7 +108,9 @@ def hierarchy_standard_with_home_consumption() -> CounterAll:
     # counter_8 <-- home consumption counter
     #
 
-    # counter8 = 500 <- home consumption
+    # UnbekannterVerbraucher/Hausverbrauch am Countern
+    # counter0 = 750
+    # counter8 = 500
     # Final Home Consumption = 0
     c = CounterAll()
     c.data.get.hierarchy = [{"id": 0, "type": "counter",
@@ -117,7 +125,7 @@ def hierarchy_standard_with_home_consumption() -> CounterAll:
     return c
 
 
-def hierarchy_hybrid_with_home_consumption() -> CounterAll:
+def hierarchy_home_consumption_hybrid() -> CounterAll:
     # counter0
     #        |
     #        - cp3
@@ -127,7 +135,10 @@ def hierarchy_hybrid_with_home_consumption() -> CounterAll:
     #                   - cp5
     #        - inverter1
     #        - bat2
-    # counter8 = 500 <- home consumption
+
+    # UnbekannterVerbraucher/Hausverbrauch am Countern
+    # counter0 = 250
+    # counter8 = 500
     # Final Home Consumption = 500
     c = CounterAll()
     c.data.get.hierarchy = [{"id": 0, "type": "counter",
@@ -142,20 +153,23 @@ def hierarchy_hybrid_with_home_consumption() -> CounterAll:
     return c
 
 
-def hierarchy_nested_with_home_consumption() -> CounterAll:
+def hierarchy_nested_home_consumption_level_3() -> CounterAll:
     # counter0
     #        |
     #        - cp3
     #        - counter6
     #                  |
     #                   - cp4
-    #                   - counter_8  <-- home consumption counter
+    #                   - counter8  <-- home consumption counter
     #                             |
     #                              - cp5
-    #        - inverter1
+    #                   - inverter1
     #        - bat2
 
-    # counter8 = 500 <- home consumption
+    # UnbekannterVerbraucher/Hausverbrauch am Countern
+    # counter0 = 250
+    # counter6 = 0
+    # counter8 = 500
     # Final Home Consumption = 500
     c = CounterAll()
     c.data.get.hierarchy = [{"id": 0, "type": "counter",
@@ -166,28 +180,31 @@ def hierarchy_nested_with_home_consumption() -> CounterAll:
                                       {"id": 4, "type": "cp", "children": []},
                                       {"id": 8, "type": "counter",
                                        "children": [
-                                           {"id": 5, "type": "cp", "children": []}]}]},
-                                 {"id": 1, "type": "inverter", "children": []},
+                                           {"id": 5, "type": "cp", "children": []}]},
+                                      {"id": 1, "type": "inverter", "children": []}
+                                  ]},
                                  {"id": 2, "type": "bat", "children": []}]}]
     return c
 
 
-def hierarchy_nested_two_level_with_home_consumption() -> CounterAll:
+def hierarchy_nested_home_consumption_level_2() -> CounterAll:
     # counter0
     #        |
     #        - cp3
     #        - counter9 <-- home consumption counter
     #                  |
     #                   - cp4
-    #                   - counter_10  <-- home consumption counter
+    #                   - counter10  <-- home consumption counter
     #                             |
     #                              - cp5
     #
-    #        - inverter1
+    #                   - inverter1
     #        - bat2
 
-    # coutner9 = 250 <- home consumption
-    # counter10 = 250 <- home consumption
+    # UnbekannterVerbraucher/Hausverbrauch am Countern
+    # counter0 = 250
+    # coutner9 = 250
+    # counter10 = 250
     # Final Home Consumption = 500
     c = CounterAll()
     c.data.get.hierarchy = [{"id": 0, "type": "counter",
@@ -199,8 +216,117 @@ def hierarchy_nested_two_level_with_home_consumption() -> CounterAll:
                                       {"id": 10, "type": "counter",
                                        "children": [
                                            {"id": 5, "type": "cp", "children": []}]},
+                                      {"id": 1, "type": "inverter", "children": []},
                                   ]},
-                                 {"id": 1, "type": "inverter", "children": []},
+                                 {"id": 2, "type": "bat", "children": []}]}]
+    return c
+
+
+def hierarchy_home_consumption_only_root() -> CounterAll:
+    # counter11  <-- home consumption counter
+    #        |
+    #        - cp3
+    #        - counter6
+    #                  |
+    #                   - cp4
+    #                   - counter13
+    #                             |
+    #                              - cp5
+    #
+    #                   - inverter1
+    #        - bat2
+
+    # UnbekannterVerbraucher/Hausverbrauch am Countern
+    # counter11 = 500
+    # coutner6 = 250
+    # counter13 = 250
+    # Final Home Consumption = 1000
+    c = CounterAll()
+    c.data.get.hierarchy = [{"id": 11, "type": "counter",
+                             "children": [
+                                 {"id": 3, "type": "cp", "children": []},
+                                 {"id": 6, "type": "counter",
+                                  "children": [
+                                      {"id": 4, "type": "cp", "children": []},
+                                      {"id": 13, "type": "counter",
+                                       "children": [
+                                           {"id": 5, "type": "cp", "children": []}]},
+                                      {"id": 1, "type": "inverter", "children": []},
+                                  ]},
+                                 {"id": 2, "type": "bat", "children": []}]}]
+    return c
+
+
+def hierarchy_home_consumption_all() -> CounterAll:
+    # counter11  <-- home consumption counter
+    #        |
+    #        - cp3
+    #        - counter9  <-- home consumption counter
+    #                  |
+    #                   - cp4
+    #                   - counter10  <-- home consumption counter
+    #                             |
+    #                              - cp5
+    #
+    #                   - inverter1
+    #        - bat2
+
+    # UnbekannterVerbraucher/Hausverbrauch am Countern
+    # counter11 = 500
+    # coutner9 = 250
+    # counter10 = 250
+    # Final Home Consumption = 1000
+    c = CounterAll()
+    c.data.get.hierarchy = [{"id": 11, "type": "counter",
+                             "children": [
+                                 {"id": 3, "type": "cp", "children": []},
+                                 {"id": 9, "type": "counter",
+                                  "children": [
+                                      {"id": 4, "type": "cp", "children": []},
+                                      {"id": 10, "type": "counter",
+                                       "children": [
+                                           {"id": 5, "type": "cp", "children": []}]},
+                                      {"id": 1, "type": "inverter", "children": []},
+                                  ]},
+                                 {"id": 2, "type": "bat", "children": []}]}]
+    return c
+
+
+def hierarchy_nested_home_consumption_multi_level_2() -> CounterAll:
+    # counter0
+    #        |
+    #        - cp3
+    #        - counter6
+    #                  |
+    #                   - cp4
+    #                   - counter10  <-- home consumption counter
+    #                             |
+    #                              - cp5
+    #                   - counter14
+    #                             |
+    #                              - inverter1
+    #        - bat2
+
+    # UnbekannterVerbraucher/Hausverbrauch am Countern
+    # counter0 = 250
+    # coutner6 = 0
+    # counter10 = 250
+    # counter14 = 250
+    # Final Home Consumption = 250
+    c = CounterAll()
+    c.data.get.hierarchy = [{"id": 0, "type": "counter",
+                             "children": [
+                                 {"id": 3, "type": "cp", "children": []},
+                                 {"id": 6, "type": "counter",
+                                  "children": [
+                                      {"id": 4, "type": "cp", "children": []},
+                                      {"id": 10, "type": "counter",
+                                       "children": [
+                                           {"id": 5, "type": "cp", "children": []}]},
+                                      {"id": 14, "type": "counter",
+                                       "children": [
+                                           {"id": 1, "type": "inverter", "children": []}]},
+                                  ]},
                                  {"id": 2, "type": "bat", "children": []}]}]
     return c
 
@@ -266,10 +392,10 @@ def data_home_consumption() -> None:
                               fault_state=0), config=Mock(spec=PvConfig, max_ac_out=10000)))})
     data.data.counter_data.update({
         "counter0": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
-            spec=CounterGet, currents=[40]*3, power=6200, daily_imported=45000, daily_exported=3000, fault_state=0),
+            spec=CounterGet, currents=[40]*3, power=6450, daily_imported=45000, daily_exported=3000, fault_state=0),
             config=Mock(spec=CounterConfig, is_home_consumption_counter=False))),
         "counter6": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
-            spec=CounterGet, currents=[25, 10, 25], power=14300, daily_imported=20000, daily_exported=0,
+            spec=CounterGet, currents=[25, 10, 25], power=4300, daily_imported=20000, daily_exported=0,
             imported=14000, exported=18000, fault_state=0),
             config=Mock(spec=CounterConfig, max_currents=[32]*3, is_home_consumption_counter=False),
             set=Mock(spec=CounterSet, raw_currents_left=[31]*3))),
@@ -278,9 +404,19 @@ def data_home_consumption() -> None:
             imported=14000, exported=18000, fault_state=0),
             config=Mock(spec=CounterConfig, max_currents=[32]*3, is_home_consumption_counter=False),
             set=Mock(spec=CounterSet, raw_currents_left=[31]*3))),
+        "counter13": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
+            spec=CounterGet, currents=[25, 10, 25], power=7150, daily_imported=20000, daily_exported=0,
+            imported=14000, exported=18000, fault_state=0),
+            config=Mock(spec=CounterConfig, max_currents=[32]*3, is_home_consumption_counter=False),
+            set=Mock(spec=CounterSet, raw_currents_left=[31]*3))),
+        "counter14": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
+            spec=CounterGet, currents=[25, 10, 25], power=-9750, daily_imported=20000, daily_exported=0,
+            imported=14000, exported=18000, fault_state=0),
+            config=Mock(spec=CounterConfig, max_currents=[32]*3, is_home_consumption_counter=False),
+            set=Mock(spec=CounterSet, raw_currents_left=[31]*3))),
 
         "counter11": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
-            spec=CounterGet, currents=[25, 10, 25], power=6200, daily_imported=20000, daily_exported=0,
+            spec=CounterGet, currents=[25, 10, 25], power=6700, daily_imported=20000, daily_exported=0,
             imported=14000, exported=18000, fault_state=0),
             config=Mock(spec=CounterConfig, max_currents=[32]*3, is_home_consumption_counter=True),
             set=Mock(spec=CounterSet, raw_currents_left=[31]*3))),
@@ -291,7 +427,7 @@ def data_home_consumption() -> None:
             config=Mock(spec=CounterConfig, max_currents=[32]*3, is_home_consumption_counter=True),
             set=Mock(spec=CounterSet, raw_currents_left=[31]*3))),
         "counter9": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
-            spec=CounterGet, currents=[25, 10, 25], power=14300, daily_imported=20000, daily_exported=0,
+            spec=CounterGet, currents=[25, 10, 25], power=4300, daily_imported=20000, daily_exported=0,
             imported=14000, exported=18000, fault_state=0),
             config=Mock(spec=CounterConfig, max_currents=[32]*3, is_home_consumption_counter=True),
             set=Mock(spec=CounterSet, raw_currents_left=[31]*3))),
@@ -299,4 +435,5 @@ def data_home_consumption() -> None:
             spec=CounterGet, currents=[25, 10, 25], power=7150, daily_imported=20000, daily_exported=0,
             imported=14000, exported=18000, fault_state=0),
             config=Mock(spec=CounterConfig, max_currents=[32]*3, is_home_consumption_counter=True),
-            set=Mock(spec=CounterSet, raw_currents_left=[31]*3)))})
+            set=Mock(spec=CounterSet, raw_currents_left=[31]*3))),
+    })
