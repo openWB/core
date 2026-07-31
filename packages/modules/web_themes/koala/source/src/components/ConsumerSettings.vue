@@ -18,11 +18,12 @@
 
       <q-card-section>
         <div class="text-subtitle2">Betriebsmodus umstellen</div>
-        <q-btn-group spread class="q-mt-sm">
+        <q-btn-group spread outline class="q-mt-sm">
           <q-btn
             v-for="trigger in resetTriggers"
             :key="trigger.value"
             size="sm"
+            :outline="resetTrigger !== trigger.value"
             :color="resetTrigger === trigger.value ? 'primary' : 'grey'"
             :label="trigger.label"
             @click="selectTrigger(trigger.value)"
@@ -41,11 +42,12 @@
 
         <template v-if="resetTrigger !== 'never'">
           <div class="text-subtitle2 q-mt-md">Zielmodus</div>
-          <q-btn-group spread class="q-mt-sm">
+          <q-btn-group spread outline class="q-mt-sm">
             <q-btn
               v-for="mode in chargeModes"
               :key="mode.value"
               size="sm"
+              :outline="resetTargetMode !== mode.value"
               :color="resetTargetMode === mode.value ? 'primary' : 'grey'"
               :label="mode.label"
               @click="resetTargetMode = mode.value"
