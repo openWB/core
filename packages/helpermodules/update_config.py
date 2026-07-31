@@ -3496,6 +3496,10 @@ class UpdateConfig:
         if old_topic in self.all_received_topics:
             source_id = decode_payload(self.all_received_topics[old_topic])
             if source_id is not None:
-                source_id = int(source_id)
-                self.__update_topic(f"openWB/counter/{source_id}/config/is_home_consumption_counter", True)
+                try:
+                    source_id = int(source_id)
+                except (TypeError, ValueError):
+                    log.warning(f"Invalid '{old_topic}' value: {source_id!r}; skipping migration")
+                else:
+                    self.__update_topic(f"openWB/counter/{source_id}/config/is_home_consumption_counter", True)
         self._append_datastore_version(139)
