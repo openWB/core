@@ -28,6 +28,10 @@
     </q-card-section>
     <q-separator class="q-mt-sm" />
 
+    <q-card-section>
+      <ConsumerMessage :consumer-id="props.consumerId" />
+    </q-card-section>
+
     <q-card-section
       class="row q-mt-sm text-subtitle2 justify-between full-width"
     >
@@ -44,10 +48,6 @@
       <div class="q-ml-sm">
         {{ runTime }}
       </div>
-    </q-card-section>
-
-    <q-card-section>
-      <ConsumerMessage :consumer-id="props.consumerId" />
     </q-card-section>
 
     <template v-if="!meterOnly">
