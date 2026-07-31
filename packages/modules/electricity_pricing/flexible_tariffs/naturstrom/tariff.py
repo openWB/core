@@ -16,6 +16,8 @@ from helpermodules.pub import Pub
 
 log = logging.getLogger(__name__)
 
+BASE_URL = "https://smart.naturstrom.de"
+
 
 def _get_raw_prices(config: NaturstromTariff):
     headers = {
@@ -35,7 +37,7 @@ def _get_raw_prices(config: NaturstromTariff):
         'stop': end_of_today.isoformat(),
     }
     return req.get_http_session().get(
-        f"https://naturstrom-staging.powerquartier.de/api/public/accounts/{config.configuration.account_id}/rate",
+        f"{BASE_URL}/api/public/accounts/{config.configuration.account_id}/rate",
         headers=headers,
         params=params
     ).json()
@@ -78,7 +80,7 @@ def _refresh_token(config: NaturstromTariff) -> None:
     }
     try:
         token_data = req.get_http_session().post(
-            'https://naturstrom-staging.powerquartier.de/api/public-auth/oauth2/token',
+            f'{BASE_URL}/api/public-auth/oauth2/token',
             data=data,
             headers={'Content-Type': 'application/x-www-form-urlencoded'}
         ).json()
