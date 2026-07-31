@@ -185,7 +185,7 @@ class CounterAll:
             return evu - not_home_consumption - not_home_consumption_evu - home_consumption_evu, elements_to_sum_up
 
     def _calc_home_consumption_child(self, element, is_home) -> Tuple[float, float, bool]:
-        is_home_new = is_home
+        is_home_local = is_home
         home_consumption = 0.0
         not_home_consumption = 0.0
         for child in element["children"]:
@@ -203,7 +203,7 @@ class CounterAll:
                     # Alles was unter dem Counter hängt
                     home, not_home, child_branch_is_home = self._calc_home_consumption_child(child, child_is_home)
 
-                    is_home_new = is_home_new or child_branch_is_home
+                    is_home_local = is_home_local or child_branch_is_home
 
                     # Wurde in den Kindern ein Hausverbrauchszähler gefunden, dann wird der Hausverbrauch aus den Kindern übernommen.
                     if child_branch_is_home:
@@ -234,7 +234,7 @@ class CounterAll:
                         f"Komponente {child['type']}{component.num} ist im Fehlerzustand und "
                         "wird nicht berücksichtigt bei der Berechnung des Hausverbrauchs.")
 
-        return home_consumption, not_home_consumption, is_home_new
+        return home_consumption, not_home_consumption, is_home_local
 
     def _add_hybrid_bat(self, id: int) -> List:
         elements = []
