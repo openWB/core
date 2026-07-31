@@ -20,8 +20,6 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class Config:
-    home_consumption_source_id: Optional[str] = field(
-        default=None, metadata={"topic": "config/home_consumption_source_id"})
     consider_less_charging: bool = field(
         default=False, metadata={"topic": "config/consider_less_charging"})
 
@@ -101,15 +99,12 @@ class CounterAll:
 
     def set_home_consumption(self) -> None:
         try:
-            self._validate_home_consumption_counter()
+            # self._validate_home_consumption_counter()
             home_consumption, elements = self._calc_home_consumption()
             if home_consumption < 0:
                 log.error(
                     f"Ungültiger Hausverbrauch: {home_consumption}W, Berücksichtigte Komponenten neben EVU {elements}")
-                if self.data.config.home_consumption_source_id is None:
-                    hc_counter_source = self.get_evu_counter_str()
-                else:
-                    hc_counter_source = f"counter{self.data.config.home_consumption_source_id}"
+                hc_counter_source = self.get_evu_counter_str()
                 hc_counter_data = data.data.counter_data[hc_counter_source].data
                 if hc_counter_data.get.fault_state == FaultStateLevel.NO_ERROR:
                     hc_counter_data.get.fault_state = FaultStateLevel.WARNING.value
@@ -130,32 +125,15 @@ class CounterAll:
         except Exception:
             log.exception("Fehler in der allgemeinen Zähler-Klasse")
 
-    EVU_IS_HC_COUNTER_ERROR = ("Der EVU-Zähler kann nicht als Quelle für den Hausverbrauch verwendet werden. Meist ist "
-                               "der Zähler am EVU-Punkt installiert, dann muss im Lastmanagement unter Hausverbrauch"
-                               " 'von openWB berechnen' ausgewählt werden. Wenn der Zähler im Hausverbrauchszweig "
-                               "installiert ist, einen virtuellen Zähler anlegen und im Lastmanagement ganz links "
-                               "anordnen.")
-
-    def _validate_home_consumption_counter(self):
-        if self.data.config.home_consumption_source_id is not None:
-            if self.data.config.home_consumption_source_id == self.get_id_evu_counter():
-                hc_counter_data = data.data.counter_data[self.get_evu_counter_str()].data
-                hc_counter_data.get.fault_state = FaultStateLevel.ERROR.value
-                hc_counter_data.get.fault_str = self.EVU_IS_HC_COUNTER_ERROR
-                evu_counter = self.get_id_evu_counter()
-                Pub().pub(f"openWB/set/counter/{evu_counter}/get/fault_state",
-                          hc_counter_data.get.fault_state)
-                Pub().pub(f"openWB/set/counter/{evu_counter}/get/fault_str",
-                          hc_counter_data.get.fault_str)
-                raise Exception(self.EVU_IS_HC_COUNTER_ERROR)
-
     def _calc_home_consumption(self) -> Tuple[float, List]:
         power = 0
         home_consumption = 0
-        if self.data.config.home_consumption_source_id is None:
-            id_source = self.get_id_evu_counter()
-        else:
-            id_source = self.data.config.home_consumption_source_id
+        not_home_consumption = 0
+        not_home_consumption_evu = 0
+        id_source = self.get_id_evu_counter()
+        evu_is_home = data.data.counter_data[f"counter{id_source}"].data.config.is_home_consumption_counter
+        evu = data.data.counter_data[f"counter{id_source}"].data.get.power
+        home_child = False
 
         elements_to_sum_up = self.get_elements_for_downstream_calculation(id_source)
         for element in elements_to_sum_up:
@@ -168,52 +146,78 @@ class CounterAll:
             elif element["type"] == ComponentType.COUNTER.value:
                 component = data.data.counter_data[f"counter{element['id']}"]
 
-                home, not_home = self._calc_home_consumption_child(element)
-                if component.data.config.is_home_consumption_counter:
-                    # zähl die differenze mit zum Hausverbrauch, ansonsten nicht
-                    home_consumption += float(component.data.get.power) - not_home
-                else:
+                is_home_branch = evu_is_home or component.data.config.is_home_consumption_counter
+
+                # Alles was unter dem Counter hängt
+                home, not_home, home_child = self._calc_home_consumption_child(element, is_home_branch)
+
+                # Wurde in den Kindern ein Hausverbrauchszähler gefunden, dann wird der Hausverbrauch aus den Kindern übernommen.
+                if home_child:
                     home_consumption += home
+                    not_home_consumption += not_home
+
+                else:
+                    home_consumption += 0.0
+                    not_home_consumption += home + not_home
+
+                # Der aktuelle Counter selber
+                if is_home_branch:
+                    home_consumption += float(component.data.get.power) - home - not_home
+                else:
+                    not_home_consumption += float(component.data.get.power) - home - not_home
 
             if component.data.get.fault_state < 2:
+                # Power über alles
                 power += component.data.get.power
+
+                # Power von allen Komponenten aus der ersten ebene des  EVU
+                if element["type"] != ComponentType.COUNTER.value:
+                    not_home_consumption_evu += component.data.get.power
             else:
                 log.warning(
                     f"Komponente {element['type']}{component.num} ist im Fehlerzustand und wird nicht berücksichtigt.")
-        evu = data.data.counter_data[f"counter{id_source}"].data.get.power
-        return (evu - power + home_consumption - self.data.set.smarthome_power_excluded_from_home_consumption,
-                elements_to_sum_up)
 
-    def _calc_home_consumption_child(self, element):
+        home_consumption_evu = evu - power
+
+        if evu_is_home:
+            return evu - not_home_consumption - not_home_consumption_evu, elements_to_sum_up
+        else:
+            return evu - not_home_consumption - not_home_consumption_evu - home_consumption_evu, elements_to_sum_up
+
+    def _calc_home_consumption_child(self, element, is_home) -> Tuple[float, float, bool]:
+        is_home_new = is_home
         home_consumption = 0.0
         not_home_consumption = 0.0
         for child in element["children"]:
             if child["type"] == ComponentType.COUNTER.value:
                 component = data.data.counter_data[f"counter{child['id']}"]
-                # Wenn der unterCounter im Fehlerzustand ist, wird er nicht berücksichtigt.
-                if component.data.get.fault_state >= 1:
+                # Wenn der unter Counter im Fehlerzustand ist, wird er nicht berücksichtigt.
+                if component.data.get.fault_state >= 2:
                     log.warning(
                         f"Komponente {child['type']}{component.num} ist im Fehlerzustand und "
                         "wird nicht berücksichtigt bei der Berechnung des Hausverbrauchs.")
                     continue
+                child_is_home = is_home or component.data.config.is_home_consumption_counter
 
-                # Hat der unterCounter Kinder? Dann werden diese ebenfalls berücksichtigt.
                 if child["children"]:
-                    home, not_home = self._calc_home_consumption_child(child)
-                    if component.data.config.is_home_consumption_counter:
-                        # Beim Hausverbrauchszähler wird nur der Anteil ohne
-                        # bereits bekannte Nicht-Hausverbraucher addiert.
-                        home_consumption += float(component.data.get.power) - not_home
-                        not_home_consumption += not_home
-                    else:
+                    # Alles was unter dem Counter hängt
+                    home, not_home, child_branch_is_home = self._calc_home_consumption_child(child, child_is_home)
+
+                    is_home_new = is_home_new or child_branch_is_home
+
+                    # Wurde in den Kindern ein Hausverbrauchszähler gefunden, dann wird der Hausverbrauch aus den Kindern übernommen.
+                    if child_branch_is_home:
                         home_consumption += home
                         not_home_consumption += not_home
-                else:
-                    # Blatt-Unterzähler muss direkt berücksichtigt werden, sonst fehlt sein Beitrag komplett.
-                    if component.data.config.is_home_consumption_counter:
-                        home_consumption += float(component.data.get.power)
                     else:
-                        not_home_consumption += component.data.get.power
+                        home_consumption += 0.0
+                        not_home_consumption += home+not_home
+
+                    # Der aktuelle Counter selber
+                    if child_is_home:
+                        home_consumption += float(component.data.get.power) - home - not_home
+                    else:
+                        not_home_consumption += float(component.data.get.power) - home - not_home
 
             else:
                 if child["type"] == ComponentType.CHARGEPOINT.value:
@@ -230,7 +234,7 @@ class CounterAll:
                         f"Komponente {child['type']}{component.num} ist im Fehlerzustand und "
                         "wird nicht berücksichtigt bei der Berechnung des Hausverbrauchs.")
 
-        return home_consumption,  not_home_consumption
+        return home_consumption, not_home_consumption, is_home_new
 
     def _add_hybrid_bat(self, id: int) -> List:
         elements = []

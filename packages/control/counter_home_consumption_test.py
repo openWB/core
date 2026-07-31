@@ -47,7 +47,7 @@ def test_calc_home_consumption(counter_all: Callable[[], CounterAll], data_):
     [
         pytest.param("hierarchy_hybrid_with_home_consumption", 500, id="hierarchy_hybrid_with_home_consumption"),
         pytest.param("hierarchy_nested_with_home_consumption", 500, id="hierarchy_nested_with_home_consumption"),
-        pytest.param("hierarchy_standard_with_home_consumption", 500, id="hierarchy_standard_with_home_consumption"),
+        pytest.param("hierarchy_standard_with_home_consumption", 0, id="hierarchy_standard_with_home_consumption"),
         pytest.param("hierarchy_nested_two_level_with_home_consumption",
                      500, id="hierarchy_nested_two_level_with_home_consumption"),
     ],
@@ -60,13 +60,6 @@ def test_calc_home_consumption_with_configured_home_consumption_counter(
     c = globals()[counter_all]()
     home_consumption = c._calc_home_consumption()[0]
     assert home_consumption == expected_home_consumption
-
-
-def test_calc_home_consumption_hc_counter(data_hc_counter_):
-    c = hierarchy_hc_counter()
-    c.data.config.home_consumption_source_id = 6
-    home_consumption = c._calc_home_consumption()[0]
-    assert home_consumption == 1100
 
 
 @pytest.mark.parametrize(["home_consumption",
@@ -96,17 +89,6 @@ def test_set_home_consumption(home_consumption: int,
     # evaluation
     assert c.data.set.invalid_home_consumption == expected_invalid_home_consumption
     assert c.data.set.home_consumption == expected_home_consumption
-
-
-def test_validate_home_consumption_counter(monkeypatch):
-    c = CounterAll()
-    c.data.config.home_consumption_source_id = 0
-    monkeypatch.setattr(c, "get_id_evu_counter", lambda: 0)
-    monkeypatch.setattr(c, "get_evu_counter_str", lambda: "counter0")
-
-    with pytest.raises(Exception) as e:
-        c._validate_home_consumption_counter()
-    assert str(e.value) == CounterAll.EVU_IS_HC_COUNTER_ERROR
 
 
 def hierarchy_standard_with_home_consumption() -> CounterAll:
@@ -295,6 +277,12 @@ def data_home_consumption() -> None:
             spec=CounterGet, currents=[25, 10, 25], power=20700, daily_imported=20000, daily_exported=0,
             imported=14000, exported=18000, fault_state=0),
             config=Mock(spec=CounterConfig, max_currents=[32]*3, is_home_consumption_counter=False),
+            set=Mock(spec=CounterSet, raw_currents_left=[31]*3))),
+
+        "counter11": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
+            spec=CounterGet, currents=[25, 10, 25], power=6200, daily_imported=20000, daily_exported=0,
+            imported=14000, exported=18000, fault_state=0),
+            config=Mock(spec=CounterConfig, max_currents=[32]*3, is_home_consumption_counter=True),
             set=Mock(spec=CounterSet, raw_currents_left=[31]*3))),
 
         "counter8": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
