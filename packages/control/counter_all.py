@@ -180,9 +180,11 @@ class CounterAll:
         home_consumption_evu = evu - power
 
         if evu_is_home:
-            return evu - not_home_consumption - not_home_consumption_evu, elements_to_sum_up
+            return (evu - not_home_consumption - not_home_consumption_evu -
+                    self.data.set.smarthome_power_excluded_from_home_consumption), elements_to_sum_up
         else:
-            return evu - not_home_consumption - not_home_consumption_evu - home_consumption_evu, elements_to_sum_up
+            return (evu - not_home_consumption - not_home_consumption_evu - home_consumption_evu -
+                    self.data.set.smarthome_power_excluded_from_home_consumption), elements_to_sum_up
 
     def _calc_home_consumption_child(self, element, is_home) -> Tuple[float, float, bool]:
         is_home_local = is_home
@@ -219,6 +221,13 @@ class CounterAll:
                         home_consumption += float(component.data.get.power) - home - not_home
                     else:
                         not_home_consumption += float(component.data.get.power) - home - not_home
+                else:
+                    # Leaf counter: account its own power and propagate the home-branch flag.
+                    is_home_local = is_home_local or child_is_home
+                    if child_is_home:
+                        home_consumption += float(component.data.get.power)
+                    else:
+                        not_home_consumption += float(component.data.get.power)
 
             else:
                 if child["type"] == ComponentType.CHARGEPOINT.value:

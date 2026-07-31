@@ -43,7 +43,7 @@ class Config:
     max_currents: List[float] = field(default_factory=currents_list_factory, metadata={
                                       "topic": "get/max_currents"})
     max_total_power: float = field(default=0, metadata={"topic": "get/max_total_power"})
-    is_home_consumption_counter: bool = field(default=0, metadata={"topic": "get/is_home_consumption_counter"})
+    is_home_consumption_counter: bool = field(default=False, metadata={"topic": "get/is_home_consumption_counter"})
 
 
 def config_factory() -> Config:
