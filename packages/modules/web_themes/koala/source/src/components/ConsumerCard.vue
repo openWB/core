@@ -50,17 +50,9 @@
       <ConsumerMessage :consumer-id="props.consumerId" />
     </q-card-section>
 
-    <template v-if="isOnOffType">
-      <q-separator inset class="q-my-sm" />
-      <q-card-section
-        class="row items-center justify-between full-width text-subtitle2"
-      >
-        <div>Ein/Aus:</div>
-        <ToggleStandard
-          :value="onOff"
-          size="md"
-          @update:value="onOff = $event"
-        />
+    <template v-if="!meterOnly">
+      <q-card-section>
+        <ConsumerModeButtons :consumer-id="props.consumerId" />
       </q-card-section>
     </template>
 
@@ -76,7 +68,7 @@ import { computed, ref } from 'vue';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import ConsumerSettings from './ConsumerSettings.vue';
 import ConsumerMessage from './ConsumerMessage.vue';
-import ToggleStandard from './ToggleStandard.vue';
+import ConsumerModeButtons from './ConsumerModeButtons.vue';
 
 const props = defineProps<{
   consumerId: number;
@@ -131,19 +123,9 @@ const statusColor = computed(() => {
   return isRunning.value ? 'positive' : 'grey-6';
 });
 
-const isOnOffType = computed(
-  () => mqttStore.consumerUsageType(props.consumerId) === 'suspendable_onoff',
+const meterOnly = computed(
+  () => mqttStore.consumerUsageType(props.consumerId) === 'meter_only',
 );
-
-const consumerMode = mqttStore.consumerMode(props.consumerId);
-
-// Toggle maps to Sofort (on) / Stop (off). Any non-stop mode reads as "on".
-const onOff = computed({
-  get: () => consumerMode.value !== undefined && consumerMode.value !== 'stop',
-  set: (value: boolean) => {
-    consumerMode.value = value ? 'instant_charging' : 'stop';
-  },
-});
 
 const consumerColor = computed(() => {
   return mqttStore.consumerColor(props.consumerId) || 'var(--q-consumer)';
