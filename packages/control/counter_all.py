@@ -4,13 +4,12 @@ import copy
 from dataclasses import dataclass, field
 import logging
 import re
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Tuple, Union
 
 from control import data
 from control.counter import Counter
 from dataclass_utils.factories import empty_list_factory
 from helpermodules.messaging import MessageType, pub_system_message
-from helpermodules.pub import Pub
 from modules.common.component_type import ComponentType, component_type_to_readable_text
 from modules.common.fault_state import FaultStateLevel
 from modules.common.simcount import SimCounter
@@ -151,7 +150,8 @@ class CounterAll:
                 # Alles was unter dem Counter hängt
                 home, not_home, home_child = self._calc_home_consumption_child(element, is_home_branch)
 
-                # Wurde in den Kindern ein Hausverbrauchszähler gefunden, dann wird der Hausverbrauch aus den Kindern übernommen.
+                # Wurde in den Kindern ein Hausverbrauchszähler gefunden,
+                # dann wird der Hausverbrauch aus den Kindern übernommen.
                 if home_child:
                     home_consumption += home
                     not_home_consumption += not_home
@@ -205,7 +205,8 @@ class CounterAll:
 
                     is_home_local = is_home_local or child_branch_is_home
 
-                    # Wurde in den Kindern ein Hausverbrauchszähler gefunden, dann wird der Hausverbrauch aus den Kindern übernommen.
+                    # Wurde in den Kindern ein Hausverbrauchszähler gefunden,
+                    # dann wird der Hausverbrauch aus den Kindern übernommen.
                     if child_branch_is_home:
                         home_consumption += home
                         not_home_consumption += not_home
