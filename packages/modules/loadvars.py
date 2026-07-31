@@ -85,8 +85,8 @@ class Loadvars:
                             else:
                                 # Komponenent hat keinen FaultState -> Faultstate wird gesetzt
                                 comp.fault_state.error(f"nicht alle Komponente des device{item.device_config.id} "
-                                                       f"konnten innerhalb des Timeouts abgearbeitet werden."
-                                                       f"Daten vom {comp.component_config.name}"
+                                                       f"konnten innerhalb des Timeouts abgearbeitet werden. "
+                                                       f"Daten vom {comp.component_config.name} "
                                                        "werden nicht aktualisiert")
                                 comp.fault_state.store_error()
 
