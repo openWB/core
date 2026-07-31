@@ -58,7 +58,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 138
+    DATASTORE_VERSION = 139
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -186,7 +186,6 @@ class UpdateConfig:
         "^openWB/command/todo$",
 
         "^openWB/counter/config/consider_less_charging$",
-        "^openWB/counter/config/home_consumption_source_id$",
         "^openWB/counter/get/hierarchy$",
         "^openWB/counter/set/disengageable_smarthome_power$",
         "^openWB/counter/set/imported_home_consumption$",
@@ -589,7 +588,6 @@ class UpdateConfig:
         ("openWB/chargepoint/template/0", get_chargepoint_template_default()),
         ("openWB/counter/get/hierarchy", []),
         ("openWB/counter/config/consider_less_charging", counter_all.Config().consider_less_charging),
-        ("openWB/counter/config/home_consumption_source_id", counter_all.Config().home_consumption_source_id),
         ("openWB/vehicle/0/name", "Standard-Fahrzeug"),
         ("openWB/vehicle/0/color", DEFAULT_COLORS.VEHICLE.value),
         ("openWB/vehicle/0/info", {"manufacturer": None, "model": None}),
@@ -3483,10 +3481,8 @@ class UpdateConfig:
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(137)
 
-
     def upgrade_datastore_138(self) -> None:
         def upgrade(topic: str, payload) -> Optional[dict]:
-
             if re.search("openWB/counter/[0-9]+/config", topic) is not None:
                 index = get_index(topic)
                 if f"openWB/counter/{index}/config/is_home_consumption_counter" not in self.all_received_topics:
@@ -3494,3 +3490,12 @@ class UpdateConfig:
                     return {f"openWB/counter/{index}/config/is_home_consumption_counter": is_home_consumption_counter}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(138)
+
+    def upgrade_datastore_139(self) -> None:
+        old_topic = "openWB/counter/config/home_consumption_source_id"
+        if old_topic in self.all_received_topics:
+            source_id = decode_payload(self.all_received_topics[old_topic])
+            if source_id is not None:
+                source_id = int(source_id)
+                self.__update_topic(f"openWB/counter/{source_id}/config/is_home_consumption_counter", True)
+        self._append_datastore_version(139)
