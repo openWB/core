@@ -12,9 +12,49 @@ from typing import Union
 
 import logging
 from modules.common.component_state import CarState
-from helpermodules.constants import RAMDISK_PATH
+try:
+    from helpermodules.constants import RAMDISK_PATH
+except ImportError:
+    # Older/variant openWB installs don't export RAMDISK_PATH from
+    # helpermodules.constants. Fall back to the standard location that
+    # openWB uses internally: <openWB-root>/ramdisk. This file lives at
+    # <root>/packages/modules/vehicles/kia/api.py -> parents[4] == <root>.
+    from pathlib import Path
+    RAMDISK_PATH = Path(__file__).resolve().parents[4] / "ramdisk"
 
 log = logging.getLogger(__name__)
+
+
+# ---------- password encryption (IDPConnect login) ----------
+
+
+def rsaEncryptPassword(n_b64url: str, e_b64url: str, password: str) -> str:
+    """RSA/PKCS#1 v1.5 encrypt the plaintext password.
+
+    The IDPConnect '/auth/api/v1/accounts/certs' endpoint returns the public
+    key as a JWK (base64url-encoded modulus 'n' and exponent 'e', no padding).
+    Prefers 'cryptography' (usually already present via requests); falls back
+    to 'pycryptodome' if only that is installed.
+    Returns the ciphertext as a lowercase hex string.
+    """
+    n_bytes = base64.urlsafe_b64decode(n_b64url + "==")
+    e_bytes = base64.urlsafe_b64decode(e_b64url + "==")
+    n = int.from_bytes(n_bytes, "big")
+    e = int.from_bytes(e_bytes, "big")
+    try:
+        from cryptography.hazmat.primitives.asymmetric.rsa import \
+            RSAPublicNumbers
+        from cryptography.hazmat.primitives.asymmetric import padding
+        pub = RSAPublicNumbers(e, n).public_key()
+        encrypted = pub.encrypt(password.encode("utf-8"), padding.PKCS1v15())
+    except ImportError:
+        from Crypto.PublicKey import RSA
+        from Crypto.Cipher import PKCS1_v1_5
+        key = RSA.construct((n, e))
+        cipher = PKCS1_v1_5.new(key)
+        encrypted = cipher.encrypt(password.encode("utf-8"))
+    return encrypted.hex()
+
 
 # ---------- constants ----------
 
@@ -42,6 +82,13 @@ def getString(param_id: str, brand: str) -> str:
             paramStr = "prd.eu-ccapi.kia.com:8080"
         elif param_id == "base_url":
             paramStr = "https://prd.eu-ccapi.kia.com:8080"
+        elif param_id == "login_form_host":
+            paramStr = "https://idpconnect-eu.kia.com"
+        elif param_id == "client_secret":
+            paramStr = "secret"
+        elif param_id == "redirect_uri":
+            paramStr = getString("base_url", brand) + \
+                       "/api/v1/user/oauth2/redirect"
         else:
             raise RuntimeError
 
@@ -68,6 +115,13 @@ def getString(param_id: str, brand: str) -> str:
             paramStr = "prd.eu-ccapi.hyundai.com:8080"
         elif param_id == "base_url":
             paramStr = "https://prd.eu-ccapi.hyundai.com:8080"
+        elif param_id == "login_form_host":
+            paramStr = "https://idpconnect-eu.hyundai.com"
+        elif param_id == "client_secret":
+            paramStr = "KUy49XxPzLpLuoK0xhBC77W6VXhmtQR9iQhmIFjjoY4IpxsV"
+        elif param_id == "redirect_uri":
+            paramStr = getString("base_url", brand) + \
+                       "/api/v1/user/oauth2/token"
         else:
             raise RuntimeError
 
@@ -251,7 +305,8 @@ def postHTTP(url: str = "", data: Union[str, dict] = "",
 
         log.error("kia.postHTTP:Request failed, StatusCode: " +
                   str(response.status_code) + ', Error: ' + error_string)
-        raise RuntimeError
+        raise RuntimeError("kia.postHTTP StatusCode " +
+                           str(response.status_code) + " " + error_string)
 
     return ""
 
@@ -450,60 +505,84 @@ def getDeviceId(brand: str) -> dict:
 
 def getAuthCode(username: str, password: str, brand: str,
                 cookies: dict) -> str:
-    log.info("Kia/Hyundai: Sending username/password")
+    log.info("Kia/Hyundai: Sending username/password (IDPConnect flow)")
 
+    # The old Keycloak form-login (eu-account.<brand>.com/auth/realms/...)
+    # was decommissioned by Hyundai/Kia. This uses the new IDPConnect
+    # OAuth2 flow with an RSA-encrypted password, mirroring the
+    # hyundai_kia_connect_api (KiaUvoApiEU) library used by Home Assistant.
+    # A dedicated requests.Session keeps the cookies across the redirect
+    # chain; the 'cookies' argument is kept only for call-site compatibility.
+    host = getString("login_form_host", brand)
+    client_id = getString("client_id", brand)
+    client_secret = getString("client_secret", brand)
+    redirect_uri = getString("redirect_uri", brand)
+
+    # The '_CCS_APP_AOS' suffix is REQUIRED — without it the authorize
+    # endpoint answers "400 Bad Request".
+    mobile_ua = ('Mozilla/5.0 (Linux; Android 4.1.1; Galaxy Nexus '
+                 'Build/JRO03C) AppleWebKit/535.19 (KHTML, like Gecko) '
+                 'Chrome/18.0.1025.166 Mobile Safari/535.19_CCS_APP_AOS')
+
+    session = requests.Session()
+    session.headers.update({'User-Agent': mobile_ua})
+
+    response = ""
     try:
-        url = getString("base_url", brand) + '/api/v1/user/integrationinfo'
-        headers = {'Content-type': 'application/json'}
-        response = getHTTP(url=url, headers=headers, cookies=cookies)
+        # Step 1: load the authorize page to obtain session cookies
+        auth_url = (host + '/auth/api/v2/user/oauth2/authorize'
+                    '?response_type=code&client_id=' + client_id +
+                    '&redirect_uri=' + urlparse.quote(redirect_uri, safe='') +
+                    '&lang=en&state=ccsp&country=de')
+        session.get(auth_url, timeout=30, allow_redirects=True)
 
-        response_dict = json.loads(response)
-        user_id = response_dict['userId']
-        service_id = response_dict['serviceId']
-        log.debug("Kia/Hyundai: UserId = " + user_id[:8] + "[...]")
-        log.debug("Kia/Hyundai: ServiceId = " + service_id[:8] + "[...]")
+        # Step 2: fetch the RSA public key (JWK) for password encryption
+        certs = session.get(host + '/auth/api/v1/accounts/certs', timeout=30)
+        if certs.status_code != 200:
+            log.error("kia.getAuthCode: RSA certs fetch failed, StatusCode: " +
+                      str(certs.status_code))
+            raise RuntimeError
+        jwk = certs.json().get('retValue', {})
+        kid = jwk.get('kid', '')
+        encrypted_pw = rsaEncryptPassword(jwk['n'], jwk['e'], password)
 
-        url = 'https://eu-account.' + brand + '.com/auth/realms/eu' + brand + \
-              'idm/protocol/openid-connect/auth?client_id=' + \
-              getString("auth_client_id", brand) + \
-              '&scope=openid%20profile%20email%20phone&response_type=code&' + \
-              'hkid_session_reset=true&redirect_uri=' + \
-              getString("base_url", brand) + '/api/v1/user/integration/' + \
-              'redirect/login&ui_locales=en&state=' + \
-              service_id + ':' + user_id
-        headers = {}
-        response = getHTTP(url=url, headers=headers, cookies=cookies)
-
-        left = response.find('action="') + 8
-        right = response.find('"', left)
-        url = response[left:right].replace('&amp;', '&')
-        data = urlparse.urlencode({'username': username, 'password': password,
-                                   'credentialId': ''})
-        headers = {
-            'Content-type': 'application/x-www-form-urlencoded',
-            'User-Agent': 'Mozilla/5.0 (Linux; Android 4.1.1; Galaxy Nexus ' +
-                          'Build/JRO03C) AppleWebKit/535.19 (KHTML, ' +
-                          'like Gecko) Chrome/18.0.1025.166 Mobile ' +
-                          'Safari/535.19_CCS_APP_AOS'
+        # Step 3: POST the sign-in form with the encrypted password
+        data = {
+            'client_id': client_id,
+            'encryptedPassword': 'true',
+            'password': encrypted_pw,
+            'redirect_uri': redirect_uri,
+            'scope': '',
+            'nonce': '',
+            'state': 'ccsp',
+            'username': username,
+            'connector_session_key': '',
+            'kid': kid,
+            '_csrf': '',
         }
-        cookies['AUTH_SESSION_ID'] = last_cookies['AUTH_SESSION_ID']
-        response = postHTTP(url=url, data=data, headers=headers,
-                            cookies=cookies, allow_redirects=False)
+        signin = session.post(host + '/auth/account/signin', data=data,
+                              timeout=30, allow_redirects=False)
+        if signin.status_code != 302:
+            log.error("kia.getAuthCode: Signin failed, StatusCode: " +
+                      str(signin.status_code) + " - check username/password")
+            raise RuntimeError
 
-        url = response
-        response = getHTTP(url=url, cookies=cookies, allow_redirects=True)
+        location = signin.headers.get('Location', '')
+        code_list = parse_qs(urlparse.urlparse(location).query).get('code')
+        if not code_list:
+            if '/web/v1/user/authorization' in location:
+                log.error("kia.getAuthCode: Account consent required - log in "
+                          "once via browser to accept the terms")
+            else:
+                log.error("kia.getAuthCode: No auth code in redirect: " +
+                          location[:250])
+            raise RuntimeError
+        auth_code = code_list[0]
 
-        url = getString("base_url", brand) + '/api/v1/user/silentsignin'
-        headers = {'Content-type': 'text/plain;charset=UTF-8'}
-        data = {'intUserId': ""}
-        response = postHTTP(url=url, data=data, headers=headers,
-                            cookies=cookies, allow_redirects=False)
-        response_dict = json.loads(response)
-        response_url = response_dict['redirectUrl']
-        parsed = urlparse.urlparse(response_url)
-        auth_code = ''.join(parse_qs(parsed.query)['code'])
+    except RuntimeError:
+        raise
     except Exception:
-        log.exception("kia.getAuthCode: Login failed: " + response)
+        log.exception("kia.getAuthCode: Login failed: " + str(response))
         raise
 
     log.debug("Kia/Hyundai: AuthCode = " + auth_code[:8] + "[...]")
@@ -514,28 +593,22 @@ def getAuthCode(username: str, password: str, brand: str,
 def getAuthToken(auth_code: str, token: dict, brand: str) -> dict:
     log.info("Kia/Hyundai: Requesting access token")
 
+    response = ""
     try:
-        url = getString("base_url", brand) + '/api/v1/user/oauth2/token'
-        data = 'client_id=' + getString("client_id", brand) + \
-               '&grant_type=authorization_code&code=' + \
-               auth_code + '&redirect_uri=' + getString("base_url", brand) + \
-               '%2Fapi%2Fv1%2Fuser%2Foauth2%2Fredirect'
+        # New IDPConnect token endpoint; requires client_secret instead
+        # of the old Basic-Auth 'basic_token' header.
+        url = getString("login_form_host", brand) + \
+            '/auth/api/v2/user/oauth2/token'
+        data = urlparse.urlencode({
+            'grant_type': 'authorization_code',
+            'code': auth_code,
+            'redirect_uri': getString("redirect_uri", brand),
+            'client_id': getString("client_id", brand),
+            'client_secret': getString("client_secret", brand),
+        })
         headers = {
-            'Authorization': getString("basic_token", brand),
-            'Ccsp-Device-Id': token["deviceId"],
-            'Ccsp-Service-Id': getString("client_id", brand),
-            'Ccsp-Application-Id': getString("app_id", brand),
-            'Offset': '2',
-            'Clientid': token["gcmClientId"],
-            'Vehicleid': token["gcmVehicleId"],
-            'Ccuccs2protocolsupport': '0',
             'Content-type': 'application/x-www-form-urlencoded',
-            'Content-Length': str(len(data)),
-            'Host': getString("host", brand),
-            'Connection': 'close',
-            'Accept-Encoding': 'gzip, deflate',
             'User-Agent': 'okhttp/3.12.12',
-            'Stamp': getStamp(brand)
         }
         response = postHTTP(url=url, headers=headers, data=data)
 
@@ -588,9 +661,11 @@ def requestToken(user_id: str, password: str, brand: str) -> dict:
     log.info("Kia/Hyundai: Token request starting")
 
     try:
-        cookies = getCookies(brand)
+        # getCookies() is no longer needed: the IDPConnect getAuthCode()
+        # creates its own session. Kept the call out to avoid hitting the
+        # decommissioned Keycloak session endpoints.
         token = getDeviceId(brand)
-        auth_code = getAuthCode(user_id, password, brand, cookies)
+        auth_code = getAuthCode(user_id, password, brand, {})
         token = getAuthToken(auth_code, token, brand)
         token["userHash"] = getUserHash(user_id, password)
         registerDevice(token, brand)
@@ -604,29 +679,20 @@ def requestToken(user_id: str, password: str, brand: str) -> dict:
 def refreshToken(token: dict, brand: str) -> dict:
     log.info("Kia/Hyundai: Token refresh starting")
 
+    response = ""
     try:
-        url = getString("base_url", brand) + '/api/v1/user/oauth2/token'
-        data = 'client_id=' + getString("client_id", brand) + \
-               '&grant_type=refresh_token&refresh_token=' + \
-               token["refreshToken"] + \
-               '&redirect_uri=' + getString("base_url", brand) + \
-               '%2Fapi%2Fv1%2Fuser%2Foauth2%2Fredirect'
+        # New IDPConnect refresh endpoint; requires client_secret.
+        url = getString("login_form_host", brand) + \
+            '/auth/api/v2/user/oauth2/token'
+        data = urlparse.urlencode({
+            'grant_type': 'refresh_token',
+            'refresh_token': token["refreshToken"],
+            'client_id': getString("client_id", brand),
+            'client_secret': getString("client_secret", brand),
+        })
         headers = {
-            'Authorization': getString("basic_token", brand),
-            'Ccsp-Device-Id': token["deviceId"],
-            'Ccsp-Service-Id': getString("client_id", brand),
-            'Ccsp-Application-Id': getString("app_id", brand),
-            'Offset': '2',
-            'Clientid': token["gcmClientId"],
-            'Vehicleid': token["gcmVehicleId"],
-            'Ccuccs2protocolsupport': '0',
             'Content-type': 'application/x-www-form-urlencoded',
-            'Content-Length': str(len(data)),
-            'Host': getString("host", brand),
-            'Connection': 'close',
-            'Accept-Encoding': 'gzip, deflate',
             'User-Agent': 'okhttp/3.12.12',
-            'Stamp': getStamp(brand)
         }
 
         response = postHTTP(url=url, headers=headers, data=data)
@@ -634,10 +700,13 @@ def refreshToken(token: dict, brand: str) -> dict:
         token_new = json.loads(response)
         token["tokenType"] = token_new["token_type"]
         token["accessToken"] = token_new["access_token"]
+        # IDPConnect may rotate the refresh token; keep the newest one.
+        if "refresh_token" in token_new:
+            token["refreshToken"] = token_new["refresh_token"]
 
     except Exception:
         log.exception("kia.refreshToken: refresh token error: " +
-                      response)
+                      str(response))
         raise
 
     log.debug("kia.refreshToken: New access token = " +
@@ -830,7 +899,15 @@ def fetch_soc(user_id: str, password: str, pin: str,
         if token["accessToken"] == "":
             token = requestToken(user_id, password, brand)
         else:
-            token = refreshToken(token, brand)
+            try:
+                token = refreshToken(token, brand)
+            except Exception:
+                # Refresh can fail once the refresh token has expired or been
+                # rotated server-side. Mirror hyundai_kia_connect_api: fall
+                # back to a full login instead of leaving the module stuck.
+                log.warning("kia.fetch_soc: token refresh failed, "
+                            "falling back to full login")
+                token = requestToken(user_id, password, brand)
         saveToken(user_id, password, vehicle, token)
     except Exception:
         log.exception("kia.fetch_soc: ")
