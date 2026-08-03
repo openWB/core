@@ -397,7 +397,7 @@ export const useMqttStore = defineStore("mqtt", {
       return state.getChartData("openWB/bat/get/soc");
     },
     getBatteryMode(state) {
-      return state.topics["openWB/general/chargemode_config/pv_charging/bat_mode"];
+      return state.topics["openWB/general/chargemode_config/bat/mode"];
     },
     getPvConfigured(state) {
       return state.getValueBool("openWB/pv/config/configured");
@@ -772,16 +772,6 @@ export const useMqttStore = defineStore("mqtt", {
           return state.getChargePointConnectedVehicleChargeTemplate(
             chargePointId,
           ).chargemode.instant_charging.phases_to_use;
-        }
-        return undefined;
-      };
-    },
-    getChargePointConnectedVehiclePvChargingFeedInLimit(state) {
-      return (chargePointId) => {
-        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
-          return state.getChargePointConnectedVehicleChargeTemplate(
-            chargePointId,
-          ).chargemode.pv_charging.feed_in_limit;
         }
         return undefined;
       };

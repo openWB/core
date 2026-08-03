@@ -156,15 +156,6 @@ export class ChargePoint {
 			updateChargeTemplate(this.id)
 		}
 	}
-	get pvFeedInLimit() {
-		return this.chargeTemplate?.chargemode.pv_charging.feed_in_limit ?? false
-	}
-	set pvFeedInLimit(setting: boolean) {
-		if (this.chargeTemplate) {
-			this.chargeTemplate.chargemode.pv_charging.feed_in_limit = setting
-			updateChargeTemplate(this.id)
-		}
-	}
 	get pvMinCurrent() {
 		return this.chargeTemplate?.chargemode.pv_charging.min_current ?? 0
 	}
@@ -448,7 +439,6 @@ export interface ChargeTemplate {
 		pv_charging: {
 			dc_min_current: number
 			dc_min_soc_current: number
-			feed_in_limit: boolean
 			limit: {
 				selected: string
 				amount: number
