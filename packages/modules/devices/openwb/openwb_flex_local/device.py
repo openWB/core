@@ -48,4 +48,5 @@ def create_device(device_config: FlexLocalSetup):
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=FlexLocalSetup,
-                                     compatibility_device_note="Es können maximal 8 Zähler gleichzeitig ausgelesen werden.")
+                                     compatibility_device_note="Es können maximal 8 Zähler "
+                                     "gleichzeitig ausgelesen werden.")
