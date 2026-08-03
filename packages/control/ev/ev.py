@@ -302,7 +302,6 @@ class Ev:
     PHASE_SWITCH_DELAY_TEXT = '{} Phasen in {}.'
 
     def auto_phase_switch(self,
-                          charge_template: ChargeTemplate,
                           control_parameter: ControlParameter,
                           cp_num: int,
                           evse_current: float,
@@ -315,12 +314,8 @@ class Ev:
         current = control_parameter.required_current
         phases_to_use = control_parameter.phases
         phases_in_use = control_parameter.phases
-        pv_config = data.data.general_data.data.chargemode_config.pv_charging
-        if charge_template.data.chargemode.pv_charging.feed_in_limit:
-            feed_in_yield = pv_config.feed_in_yield
-        else:
-            feed_in_yield = 0
-        delay = pv_config.phase_switch_delay * 60
+        surplus_config = data.data.general_data.data.chargemode_config.surplus
+        delay = surplus_config.vehicle.phase_switch_delay * 60
         if phases_in_use == 1:
             direction_str = f"Umschaltung von 1 auf {max_phases}"
             required_reserved_power = (control_parameter.min_current * max_phases * 230 -
@@ -328,15 +323,15 @@ class Ev:
 
             new_phase = max_phases
             new_current = control_parameter.min_current
-            waiting_time = pv_config.switch_on_delay
+            waiting_time = surplus_config.vehicle.switch_on_delay
         else:
             direction_str = f"Umschaltung von {max_phases} auf 1"
             # Es kann einphasig mit entsprechend niedriger Leistung gestartet werden.
             required_reserved_power = 0
             new_phase = 1
             new_current = self.ev_template.data.max_current_single_phase
-            waiting_time = pv_config.switch_off_delay
-        all_surplus = data.data.counter_all_data.get_evu_counter().get_usable_surplus(feed_in_yield)
+            waiting_time = surplus_config.vehicle.switch_off_delay
+        all_surplus = data.data.counter_all_data.get_evu_counter().get_usable_surplus()
         if control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY:
             # eigene reservierte Leistung addieren, wenn die Verzögerung für die Umschaltung läuft,
             # da diese Leistung bereits für die Umschaltung reserviert ist.

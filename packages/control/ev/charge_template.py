@@ -64,7 +64,6 @@ class InstantCharging:
 class PvCharging:
     dc_min_current: float = 145
     dc_min_soc_current: float = 145
-    feed_in_limit: bool = False
     limit: Limit = field(default_factory=limit_factory)
     min_current: int = 0
     min_soc_current: int = 10

@@ -35,8 +35,8 @@ def get_common_data():
         ip_address = None
     try:
         updateAvailable = subdata.SubData.system_data["system"].data["current_branch_commit"] and \
-                          subdata.SubData.system_data["system"].data["current_branch_commit"] != \
-                          subdata.SubData.system_data["system"].data["current_commit"]
+            subdata.SubData.system_data["system"].data["current_branch_commit"] != \
+            subdata.SubData.system_data["system"].data["current_commit"]
     except Exception:
         updateAvailable = False
 
@@ -113,20 +113,20 @@ def config_and_state():
             chargemode_config = data.data.general_data.data.chargemode_config
             parsed_data += (
                 "\n## General Charge Config/ PV ##\n"
-                f"Phase_Switch_Delay: {chargemode_config.pv_charging.phase_switch_delay} min\n"
-                f"Retry_Failed_Phase_Switches: {chargemode_config.pv_charging.retry_failed_phase_switches}\n"
-                f"Control_Range: {chargemode_config.pv_charging.control_range}W\n"
-                f"Switch_On_Threshold: {chargemode_config.pv_charging.switch_on_threshold}W\n"
-                f"Switch_On_Delay: {chargemode_config.pv_charging.switch_on_delay}s\n"
-                f"Switch_Off_Threshold: {chargemode_config.pv_charging.switch_off_threshold}W\n"
-                f"Switch_Off_Delay: {chargemode_config.pv_charging.switch_off_delay}s\n"
-                f"Feed_In_Yield: {chargemode_config.pv_charging.feed_in_yield}W\n"
-                f"Bat_Mode: {chargemode_config.pv_charging.bat_mode}\n"
-                f"Min_Bat_SoC: {chargemode_config.pv_charging.min_bat_soc}%\n"
-                f"Bat_Power_Reserve_Active: {chargemode_config.pv_charging.bat_power_reserve_active}\n"
-                f"Bat_Power_Reserve: {chargemode_config.pv_charging.bat_power_reserve}W\n"
-                f"Bat_Power_Discharge_Active: {chargemode_config.pv_charging.bat_power_discharge_active}\n"
-                f"Bat_Power_Discharge: {chargemode_config.pv_charging.bat_power_discharge}W\n")
+                f"Phase_Switch_Delay: {chargemode_config.surplus.vehicle.phase_switch_delay} min\n"
+                f"Retry_Failed_Phase_Switches: {chargemode_config.surplus.vehicle.retry_failed_phase_switches}\n"
+                f"Control_Range: {chargemode_config.surplus.control_range}W\n"
+                f"Switch_On_Threshold: {chargemode_config.surplus.vehicle.switch_on_threshold}W\n"
+                f"Switch_On_Delay: {chargemode_config.surplus.vehicle.switch_on_delay}s\n"
+                f"Switch_Off_Threshold: {chargemode_config.surplus.vehicle.switch_off_threshold}W\n"
+                f"Switch_Off_Delay: {chargemode_config.surplus.vehicle.switch_off_delay}s\n"
+                f"Feed_In_Yield: {chargemode_config.surplus.feed_in_yield}W\n"
+                f"Bat_Mode: {chargemode_config.bat.mode}\n"
+                f"Min_Bat_SoC: {chargemode_config.bat.min_soc}%\n"
+                f"Bat_Power_Reserve_Active: {chargemode_config.bat.power_reserve_active}\n"
+                f"Bat_Power_Reserve: {chargemode_config.bat.power_reserve}W\n"
+                f"Bat_Power_Discharge_Active: {chargemode_config.bat.power_discharge_active}\n"
+                f"Bat_Power_Discharge: {chargemode_config.bat.power_discharge}W\n")
     if secondary is False:
         with ErrorHandlingContext():
             parsed_data += f"\n## Hierarchy ##\n{get_hierarchy(data.data.counter_all_data.data.get.hierarchy)}\n"
@@ -461,9 +461,9 @@ def create_debug_log(input_data) -> Optional[dict]:
             json_rsp = req.get_http_session().put("https://debughandler.wb-solution.de",
                                                   data=data,
                                                   params={
-                                                    'debugemail': debug_email,
-                                                    'ticketnumber': ticketnumber,
-                                                    'subject': subject
+                                                      'debugemail': debug_email,
+                                                      'ticketnumber': ticketnumber,
+                                                      'subject': subject
                                                   },
                                                   timeout=10).json()
 
