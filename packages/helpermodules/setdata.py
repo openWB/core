@@ -762,28 +762,29 @@ class SetData:
             elif "openWB/set/general/chargemode_config/unbalanced_load_limit" in msg.topic:
                 self._validate_value(msg, int, [(10, 32)])
             elif ("openWB/set/general/chargemode_config/unbalanced_load" in msg.topic or
-                  "openWB/set/general/chargemode_config/pv_charging/retry_failed_phase_switches" in msg.topic or
-                  "openWB/set/general/chargemode_config/pv_charging/bat_power_discharge_active" in msg.topic or
-                    "openWB/set/general/chargemode_config/pv_charging/bat_power_reserve_active" in msg.topic):
+                  "openWB/set/general/chargemode_config/surplus/feed_in_limit" in msg.topic or
+                  "openWB/set/general/chargemode_config/surplus/vehicle/retry_failed_phase_switches" in msg.topic or
+                  "openWB/set/general/chargemode_config/bat/power_discharge_active" in msg.topic or
+                    "openWB/set/general/chargemode_config/bat/power_reserve_active" in msg.topic):
                 self._validate_value(msg, bool)
-            elif ("openWB/set/general/chargemode_config/pv_charging/feed_in_yield" in msg.topic or
-                    "openWB/set/general/chargemode_config/pv_charging/switch_on_threshold" in msg.topic or
-                    "openWB/set/general/chargemode_config/pv_charging/switch_on_delay" in msg.topic or
-                    "openWB/set/general/chargemode_config/pv_charging/switch_off_delay" in msg.topic):
+            elif ("openWB/set/general/chargemode_config/surplus/feed_in_yield" in msg.topic or
+                    "openWB/set/general/chargemode_config/surplus/vehicle/switch_on_threshold" in msg.topic or
+                    "openWB/set/general/chargemode_config/surplus/vehicle/switch_on_delay" in msg.topic or
+                    "openWB/set/general/chargemode_config/surplus/vehicle/switch_off_delay" in msg.topic):
                 self._validate_value(msg, int, [(0, float("inf"))])
-            elif "openWB/set/general/chargemode_config/pv_charging/switch_off_threshold" in msg.topic:
+            elif "openWB/set/general/chargemode_config/surplus/vehicle/switch_off_threshold" in msg.topic:
                 self._validate_value(msg, float)
-            elif "openWB/set/general/chargemode_config/pv_charging/phase_switch_delay" in msg.topic:
+            elif "openWB/set/general/chargemode_config/surplus/vehicle/phase_switch_delay" in msg.topic:
                 self._validate_value(msg, int, [(5, 180)])
-            elif "openWB/set/general/chargemode_config/pv_charging/control_range" in msg.topic:
+            elif "openWB/set/general/chargemode_config/surplus/control_range" in msg.topic:
                 self._validate_value(msg, int, collection=list)
-            elif ("openWB/set/general/chargemode_config/pv_charging/min_bat_soc" in msg.topic or
-                    "openWB/set/general/chargemode_config/pv_charging/max_bat_soc" in msg.topic):
+            elif ("openWB/set/general/chargemode_config/bat/min_soc" in msg.topic or
+                    "openWB/set/general/chargemode_config/bat/max_soc" in msg.topic):
                 self._validate_value(msg, int, [(0, 100)])
-            elif ("openWB/set/general/chargemode_config/pv_charging/bat_power_discharge" in msg.topic or
-                    "openWB/set/general/chargemode_config/pv_charging/bat_power_reserve" in msg.topic):
+            elif ("openWB/set/general/chargemode_config/bat/power_discharge" in msg.topic or
+                    "openWB/set/general/chargemode_config/bat/power_reserve" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
-            elif "openWB/set/general/chargemode_config/pv_charging/bat_mode" in msg.topic:
+            elif "openWB/set/general/chargemode_config/bat/mode" in msg.topic:
                 self._validate_value(msg, str)
             elif "openWB/set/general/chargemode_config/" in msg.topic and "/phases_to_use" in msg.topic:
                 self._validate_value(msg, int, [(1, 1), (3, 3)])

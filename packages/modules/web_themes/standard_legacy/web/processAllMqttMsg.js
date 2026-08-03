@@ -218,15 +218,6 @@ function refreshChargeTemplate(chargePointIndex) {
 		// chargemode.pv_charging.limit.amount
 		element = chargePoint.find('.charge-point-pv-charge-limit-amount');
 		setInputValue(element.attr('id'), chargeTemplate[chargePointIndex].chargemode.pv_charging.limit.amount);
-		// chargemode.pv_charging.feed_in_limit
-		var element = chargePoint.find('.charge-point-pv-charge-feed-in-limit'); // now get parents respective child element
-		if (chargeTemplate[chargePointIndex].chargemode.pv_charging.feed_in_limit == true) {
-			// element.prop('checked', true);
-			element.bootstrapToggle('on', true); // do not fire a changed-event to prevent a loop!
-		} else {
-			// element.prop('checked', false);
-			element.bootstrapToggle('off', true); // do not fire a changed-event to prevent a loop!
-		}
 
 		// ***** eco_charging *****
 		// chargemode.eco_charging.X
@@ -793,7 +784,7 @@ function processPvMessages(mqttTopic, mqttPayload) {
 }
 
 function processPvConfigMessages(mqttTopic, mqttPayload) {
-	if (mqttTopic == 'openWB/general/chargemode_config/pv_charging/bat_mode') {
+	if (mqttTopic == 'openWB/general/chargemode_config/bat/mode') {
 		data = JSON.parse(mqttPayload);
 		var element = $('.bat-consideration-mode input[type=radio][data-option="' + data + '"]');
 		element.prop('checked', true); // check selected battery mode radio button
