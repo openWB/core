@@ -311,9 +311,9 @@ class Chargepoint(ChargepointRfidMixin):
                                 str(charging_ev.ev_template.data.control_pilot_interruption_duration) + "s."
                             )
                             self.set_state_and_log(message)
-                        else:
-                            message = "CP-Unterbrechung nicht möglich, da der Ladepunkt keine CP-Unterbrechung unterstützt."
-                            self.set_state_and_log(message)
+                else:
+                    message = "CP-Unterbrechung nicht möglich, da der Ladepunkt keine CP-Unterbrechung unterstützt."
+                    self.set_state_and_log(message)
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
 
