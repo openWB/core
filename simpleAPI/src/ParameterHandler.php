@@ -1590,7 +1590,7 @@ class ParameterHandler
         }
 
         try {
-            $topic = "openWB/set/general/chargemode_config/pv_charging/bat_mode";
+            $topic = "openWB/set/general/chargemode_config/bat/mode";
 
             if ($this->mqttClient->setValue($topic, $value)) {
                 return ['success' => true, 'message' => "Bat mode set to {$value}"];
