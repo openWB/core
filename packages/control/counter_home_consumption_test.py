@@ -13,7 +13,6 @@ from control.chargepoint.chargepoint_data import Config, Get, Set
 from control.counter import Counter, CounterData
 from control.counter import Config as CounterConfig
 from control.counter import Get as CounterGet
-from control.counter import Set as CounterSet
 from control.counter_all import CounterAll
 from control.pv import Pv, PvData
 from control.pv import Config as PvConfig
@@ -55,6 +54,8 @@ def test_calc_home_consumption(counter_all: Callable[[], CounterAll], data_):
                      1000, id="hierarchy_home_consumption_all"),
         pytest.param("hierarchy_nested_home_consumption_multi_level_2", 250,
                      id="hierarchy_nested_home_consumption_multi_level_2"),
+        pytest.param("hierarchy_nested_home_consumption_2_hc_childs", 500,
+                     id="hierarchy_nested_home_consumption_2_hc_childs")
     ],
 )
 def test_calc_home_consumption_with_configured_home_consumption_counter(
@@ -330,6 +331,45 @@ def hierarchy_nested_home_consumption_multi_level_2() -> CounterAll:
     return c
 
 
+def hierarchy_nested_home_consumption_2_hc_childs() -> CounterAll:
+    # counter0
+    #        |
+    #        - cp3
+    #        - counter6
+    #                  |
+    #                   - cp4
+    #                   - counter10  <-- home consumption counter
+    #                             |
+    #                              - cp5
+    #                   - counter15 <-- home consumption counter
+    #                             |
+    #                              - inverter1
+    #        - bat2
+
+    # UnbekannterVerbraucher/Hausverbrauch am Countern
+    # counter0 = 250
+    # coutner6 = 0
+    # counter10 = 250
+    # counter15 = 250
+    # Final Home Consumption = 500
+    c = CounterAll()
+    c.data.get.hierarchy = [{"id": 0, "type": "counter",
+                             "children": [
+                                 {"id": 3, "type": "cp", "children": []},
+                                 {"id": 6, "type": "counter",
+                                  "children": [
+                                      {"id": 4, "type": "cp", "children": []},
+                                      {"id": 10, "type": "counter",
+                                       "children": [
+                                           {"id": 5, "type": "cp", "children": []}]},
+                                      {"id": 15, "type": "counter",
+                                       "children": [
+                                           {"id": 1, "type": "inverter", "children": []}]},
+                                  ]},
+                                 {"id": 2, "type": "bat", "children": []}]}]
+    return c
+
+
 @pytest.fixture()
 def data_home_consumption() -> None:
     data.data_init(Mock())
@@ -383,56 +423,41 @@ def data_home_consumption() -> None:
                                                                                             exported=None,
                                                                                             phases_in_use=0)))))}
     data.data.bat_data.update({"bat2": Mock(spec=Bat, num=2, data=Mock(spec=BatData, get=Mock(
-        spec=BatGet, power=-5000, daily_imported=6200, daily_exported=3000, imported=12000, exported=10000,
-        currents=None, fault_state=0),
+        spec=BatGet, power=-5000, fault_state=0),
         set=Mock(spec=BatSet, power_limit=None)))})
     data.data.pv_data.update({"pv1": Mock(spec=Pv, data=Mock(
-        spec=PvData, get=Mock(spec=PvGet, power=-10000, daily_exported=6000, exported=27000, currents=None,
-                              fault_state=0), config=Mock(spec=PvConfig, max_ac_out=10000)))})
+        spec=PvData, get=Mock(spec=PvGet, power=-10000, fault_state=0), config=Mock(spec=PvConfig, max_ac_out=10000)))})
     data.data.counter_data.update({
         "counter0": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
-            spec=CounterGet, currents=[40]*3, power=6450, daily_imported=45000, daily_exported=3000, fault_state=0),
+            spec=CounterGet, power=6450, fault_state=0),
             config=Mock(spec=CounterConfig, is_home_consumption_counter=False))),
         "counter6": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
-            spec=CounterGet, currents=[25, 10, 25], power=4300, daily_imported=20000, daily_exported=0,
-            imported=14000, exported=18000, fault_state=0),
-            config=Mock(spec=CounterConfig, max_currents=[32]*3, is_home_consumption_counter=False),
-            set=Mock(spec=CounterSet, raw_currents_left=[31]*3))),
+            spec=CounterGet, power=4300,  fault_state=0),
+            config=Mock(spec=CounterConfig, is_home_consumption_counter=False))),
         "counter7": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
-            spec=CounterGet, currents=[25, 10, 25], power=20700, daily_imported=20000, daily_exported=0,
-            imported=14000, exported=18000, fault_state=0),
-            config=Mock(spec=CounterConfig, max_currents=[32]*3, is_home_consumption_counter=False),
-            set=Mock(spec=CounterSet, raw_currents_left=[31]*3))),
+            spec=CounterGet, power=20700, fault_state=0),
+            config=Mock(spec=CounterConfig, is_home_consumption_counter=False))),
         "counter13": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
-            spec=CounterGet, currents=[25, 10, 25], power=7150, daily_imported=20000, daily_exported=0,
-            imported=14000, exported=18000, fault_state=0),
-            config=Mock(spec=CounterConfig, max_currents=[32]*3, is_home_consumption_counter=False),
-            set=Mock(spec=CounterSet, raw_currents_left=[31]*3))),
+            spec=CounterGet, power=7150, fault_state=0),
+            config=Mock(spec=CounterConfig, is_home_consumption_counter=False))),
         "counter14": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
-            spec=CounterGet, currents=[25, 10, 25], power=-9750, daily_imported=20000, daily_exported=0,
-            imported=14000, exported=18000, fault_state=0),
-            config=Mock(spec=CounterConfig, max_currents=[32]*3, is_home_consumption_counter=False),
-            set=Mock(spec=CounterSet, raw_currents_left=[31]*3))),
+            spec=CounterGet, power=-9750, fault_state=0),
+            config=Mock(spec=CounterConfig, is_home_consumption_counter=False))),
 
         "counter11": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
-            spec=CounterGet, currents=[25, 10, 25], power=6700, daily_imported=20000, daily_exported=0,
-            imported=14000, exported=18000, fault_state=0),
-            config=Mock(spec=CounterConfig, max_currents=[32]*3, is_home_consumption_counter=True),
-            set=Mock(spec=CounterSet, raw_currents_left=[31]*3))),
+            spec=CounterGet, power=6700, fault_state=0),
+            config=Mock(spec=CounterConfig, is_home_consumption_counter=True))),
 
         "counter8": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
-            spec=CounterGet, currents=[25, 10, 25], power=7400, daily_imported=20000, daily_exported=0,
-            imported=14000, exported=18000, fault_state=0),
-            config=Mock(spec=CounterConfig, max_currents=[32]*3, is_home_consumption_counter=True),
-            set=Mock(spec=CounterSet, raw_currents_left=[31]*3))),
+            spec=CounterGet, power=7400, fault_state=0),
+            config=Mock(spec=CounterConfig, is_home_consumption_counter=True))),
         "counter9": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
-            spec=CounterGet, currents=[25, 10, 25], power=4300, daily_imported=20000, daily_exported=0,
-            imported=14000, exported=18000, fault_state=0),
-            config=Mock(spec=CounterConfig, max_currents=[32]*3, is_home_consumption_counter=True),
-            set=Mock(spec=CounterSet, raw_currents_left=[31]*3))),
+            spec=CounterGet,  power=4300, fault_state=0),
+            config=Mock(spec=CounterConfig, is_home_consumption_counter=True))),
         "counter10": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
-            spec=CounterGet, currents=[25, 10, 25], power=7150, daily_imported=20000, daily_exported=0,
-            imported=14000, exported=18000, fault_state=0),
-            config=Mock(spec=CounterConfig, max_currents=[32]*3, is_home_consumption_counter=True),
-            set=Mock(spec=CounterSet, raw_currents_left=[31]*3))),
+            spec=CounterGet, power=7150, fault_state=0),
+            config=Mock(spec=CounterConfig, is_home_consumption_counter=True))),
+        "counter15": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
+            spec=CounterGet, power=-9750, fault_state=0),
+            config=Mock(spec=CounterConfig, is_home_consumption_counter=True))),
     })

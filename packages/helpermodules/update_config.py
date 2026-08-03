@@ -58,7 +58,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 141
+    DATASTORE_VERSION = 140
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -3468,6 +3468,7 @@ class UpdateConfig:
         self._append_datastore_version(136)
 
     def upgrade_datastore_137(self) -> None:
+        # Update all counters with new Parameter and default wert
         def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/vehicle/template/ev_template/[0-9]+$", topic) is not None:
                 payload = decode_payload(payload)
@@ -3535,9 +3536,7 @@ class UpdateConfig:
                     is_home_consumption_counter = get_counter_default_config()["is_home_consumption_counter"]
                     return {f"openWB/counter/{index}/config/is_home_consumption_counter": is_home_consumption_counter}
         self._loop_all_received_topics(upgrade)
-        self._append_datastore_version(140)
-
-    def upgrade_datastore_141(self) -> None:
+        # Remove old Topic
         old_topic = "openWB/counter/config/home_consumption_source_id"
         if old_topic in self.all_received_topics:
             source_id = decode_payload(self.all_received_topics[old_topic])
@@ -3548,4 +3547,4 @@ class UpdateConfig:
                     log.warning(f"Invalid '{old_topic}' value: {source_id!r}; skipping migration")
                 else:
                     self.__update_topic(f"openWB/counter/{source_id}/config/is_home_consumption_counter", True)
-        self._append_datastore_version(141)
+        self._append_datastore_version(140)
