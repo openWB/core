@@ -169,7 +169,5 @@ const pvMinSocCurrent = computed(() =>
   ),
 );
 
-const feedInLimit = computed(() =>
-  mqttStore.chargePointConnectedVehiclePvChargeFeedInLimit(props.chargePointId),
-);
+
 </script>
