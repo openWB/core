@@ -1045,49 +1045,55 @@
 			"acls": [
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/control_range",
+					"topic": "openWB/set/general/chargemode_config/surplus/control_range",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/feed_in_yield",
+					"topic": "openWB/set/general/chargemode_config/surplus/feed_in_limit",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/phase_switch_delay",
+					"topic": "openWB/set/general/chargemode_config/surplus/feed_in_yield",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/switch_on_threshold",
+					"topic": "openWB/set/general/chargemode_config/surplus/vehicle/phase_switch_delay",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/retry_failed_phase_switches",
+					"topic": "openWB/set/general/chargemode_config/surplus/vehicle/switch_on_threshold",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/switch_on_delay",
+					"topic": "openWB/set/general/chargemode_config/surplus/vehicle/retry_failed_phase_switches",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/switch_off_threshold",
+					"topic": "openWB/set/general/chargemode_config/surplus/vehicle/switch_on_delay",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/switch_off_delay",
+					"topic": "openWB/set/general/chargemode_config/surplus/vehicle/switch_off_threshold",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/chargemode_config/surplus/vehicle/switch_off_delay",
 					"priority": 0,
 					"allow": true
 				},
@@ -1099,49 +1105,55 @@
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/control_range",
+					"topic": "openWB/general/chargemode_config/surplus/control_range",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/feed_in_yield",
+					"topic": "openWB/general/chargemode_config/surplus/feed_in_limit",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/phase_switch_delay",
+					"topic": "openWB/general/chargemode_config/surplus/feed_in_yield",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/switch_on_threshold",
+					"topic": "openWB/general/chargemode_config/surplus/vehicle/phase_switch_delay",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/retry_failed_phase_switches",
+					"topic": "openWB/general/chargemode_config/surplus/vehicle/switch_on_threshold",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/switch_on_delay",
+					"topic": "openWB/general/chargemode_config/surplus/vehicle/retry_failed_phase_switches",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/switch_off_threshold",
+					"topic": "openWB/general/chargemode_config/surplus/vehicle/switch_on_delay",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/switch_off_delay",
+					"topic": "openWB/general/chargemode_config/surplus/vehicle/switch_off_threshold",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/chargemode_config/surplus/vehicle/switch_off_delay",
 					"priority": 0,
 					"allow": true
 				}
@@ -1226,43 +1238,43 @@
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/bat_mode",
+					"topic": "openWB/set/general/chargemode_config/bat/mode",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/bat_power_discharge",
+					"topic": "openWB/set/general/chargemode_config/bat/power_discharge",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/bat_power_discharge_active",
+					"topic": "openWB/set/general/chargemode_config/bat/power_discharge_active",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/bat_power_reserve",
+					"topic": "openWB/set/general/chargemode_config/bat/power_reserve",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/bat_power_reserve_active",
+					"topic": "openWB/set/general/chargemode_config/bat/power_reserve_active",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/max_bat_soc",
+					"topic": "openWB/set/general/chargemode_config/bat/max_soc",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/min_bat_soc",
+					"topic": "openWB/set/general/chargemode_config/bat/min_soc",
 					"priority": 0,
 					"allow": true
 				},
@@ -1358,43 +1370,43 @@
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/bat_mode",
+					"topic": "openWB/general/chargemode_config/bat/mode",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/bat_power_discharge",
+					"topic": "openWB/general/chargemode_config/bat/power_discharge",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/bat_power_discharge_active",
+					"topic": "openWB/general/chargemode_config/bat/power_discharge_active",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/bat_power_reserve",
+					"topic": "openWB/general/chargemode_config/bat/power_reserve",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/bat_power_reserve_active",
+					"topic": "openWB/general/chargemode_config/bat/power_reserve_active",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/max_bat_soc",
+					"topic": "openWB/general/chargemode_config/bat/max_soc",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/min_bat_soc",
+					"topic": "openWB/general/chargemode_config/bat/min_soc",
 					"priority": 0,
 					"allow": true
 				},
@@ -2794,7 +2806,7 @@
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/bat_mode",
+					"topic": "openWB/general/chargemode_config/bat/mode",
 					"priority": 0,
 					"allow": true
 				}
