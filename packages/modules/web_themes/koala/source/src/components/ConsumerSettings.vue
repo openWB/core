@@ -7,52 +7,62 @@
         <q-btn icon="close" flat round dense v-close-popup />
       </q-card-section>
 
-      <q-separator />
+      <template v-if="showModeControls">
+        <q-separator />
 
-      <q-card-section>
-        <div class="text-subtitle2">Betriebsmodus</div>
-        <ConsumerModeButtons :consumer-id="props.consumerId" />
-      </q-card-section>
+        <q-card-section>
+          <div class="text-subtitle2">Betriebsmodus</div>
+          <ConsumerModeButtons :consumer-id="props.consumerId" />
+        </q-card-section>
 
-      <q-separator inset />
+        <q-separator inset />
 
-      <q-card-section>
-        <div class="text-subtitle2">Betriebsmodus umstellen</div>
-        <q-btn-group spread class="q-mt-sm">
-          <q-btn
-            v-for="trigger in resetTriggers"
-            :key="trigger.value"
-            size="sm"
-            :color="resetTrigger === trigger.value ? 'primary' : 'grey'"
-            :label="trigger.label"
-            @click="selectTrigger(trigger.value)"
-          />
-        </q-btn-group>
-
-        <div v-if="resetTrigger === 'time'" class="row q-col-gutter-sm q-mt-sm">
-          <q-input v-model="resetDate" type="date" label="Datum" class="col" />
-          <q-input
-            v-model="resetTimeOfDay"
-            type="time"
-            label="Uhrzeit"
-            class="col"
-          />
-        </div>
-
-        <template v-if="resetTrigger !== 'never'">
-          <div class="text-subtitle2 q-mt-md">Zielmodus</div>
+        <q-card-section>
+          <div class="text-subtitle2">Betriebsmodus umstellen</div>
           <q-btn-group spread class="q-mt-sm">
             <q-btn
-              v-for="mode in chargeModes"
-              :key="mode.value"
+              v-for="trigger in resetTriggers"
+              :key="trigger.value"
               size="sm"
-              :color="resetTargetMode === mode.value ? 'primary' : 'grey'"
-              :label="mode.label"
-              @click="resetTargetMode = mode.value"
+              :color="resetTrigger === trigger.value ? 'primary' : 'grey'"
+              :label="trigger.label"
+              @click="selectTrigger(trigger.value)"
             />
           </q-btn-group>
-        </template>
-      </q-card-section>
+
+          <div
+            v-if="resetTrigger === 'time'"
+            class="row q-col-gutter-sm q-mt-sm"
+          >
+            <q-input
+              v-model="resetDate"
+              type="date"
+              label="Datum"
+              class="col"
+            />
+            <q-input
+              v-model="resetTimeOfDay"
+              type="time"
+              label="Uhrzeit"
+              class="col"
+            />
+          </div>
+
+          <template v-if="resetTrigger !== 'never'">
+            <div class="text-subtitle2 q-mt-md">Zielmodus</div>
+            <q-btn-group spread class="q-mt-sm">
+              <q-btn
+                v-for="mode in chargeModes"
+                :key="mode.value"
+                size="sm"
+                :color="resetTargetMode === mode.value ? 'primary' : 'grey'"
+                :label="mode.label"
+                @click="resetTargetMode = mode.value"
+              />
+            </q-btn-group>
+          </template>
+        </q-card-section>
+      </template>
 
       <q-separator />
       <q-card-actions align="right">
@@ -118,7 +128,9 @@ const writeResetTime = (dateStr: string, timeStr: string) => {
 
 const resetDate = computed({
   get: () => {
-    const date = resetTime.value ? new Date(resetTime.value * 1000) : new Date();
+    const date = resetTime.value
+      ? new Date(resetTime.value * 1000)
+      : new Date();
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
   },
   set: (dateStr: string) => writeResetTime(dateStr, resetTimeOfDay.value),
@@ -126,7 +138,9 @@ const resetDate = computed({
 
 const resetTimeOfDay = computed({
   get: () => {
-    const date = resetTime.value ? new Date(resetTime.value * 1000) : new Date();
+    const date = resetTime.value
+      ? new Date(resetTime.value * 1000)
+      : new Date();
     return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
   },
   set: (timeStr: string) => writeResetTime(resetDate.value, timeStr),
@@ -138,6 +152,15 @@ const selectTrigger = (value: ConsumerResetTrigger) => {
     resetTime.value = Math.floor(Date.now() / 1000);
   }
 };
+
+const consumerUsageType = computed(() =>
+  mqttStore.consumerUsageType(props.consumerId),
+);
+
+/** Meter-only consumers cannot be controlled, so hide the mode controls. */
+const showModeControls = computed(
+  () => consumerUsageType.value !== 'meter_only',
+);
 </script>
 
 <style scoped lang="scss">
