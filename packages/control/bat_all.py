@@ -325,10 +325,10 @@ class BatAll:
         die zum Laden der EV verwendet werden darf.
         """
         try:
-            config = data.data.general_data.data.chargemode_config.pv_charging
+            config = data.data.general_data.data.chargemode_config.bat
 
             self.data.set.regulate_up = False
-            if config.bat_mode == BatConsiderationMode.BAT_MODE.value:
+            if config.mode == BatConsiderationMode.BAT_MODE.value:
                 if self.data.get.power < 0:
                     # Wenn der Speicher entladen wird, darf diese Leistung nicht zum Laden der Fahrzeuge genutzt werden.
                     # Wenn der Speicher schneller regelt als die LP, würde sonst der Speicher reduziert werden.
@@ -337,7 +337,7 @@ class BatAll:
                     charging_power_left = 0
                 self.data.set.regulate_up = True if self.data.get.soc < 100 else False
             #  ev wird nach Speicher geladen
-            elif config.bat_mode == BatConsiderationMode.EV_MODE.value:
+            elif config.mode == BatConsiderationMode.EV_MODE.value:
                 # Speicher sollte weder ge- noch entladen werden.
                 # wenn aktive Speichersteuerung in Höhe PV-Leistung lädt
                 # hat Speicher Priorität vor EV-Ladung
@@ -349,7 +349,7 @@ class BatAll:
             else:
                 absolute_bat_discharge_power = self._absolute_bat_discharge_power()
                 # Speicher soll geladen werden um min SoC zu erreichen
-                if self.data.get.soc < config.min_bat_soc:
+                if self.data.get.soc < config.min_soc:
                     self.data.set.hysteresis_discharge = False
                     if self.data.get.power < 0:
                         # Wenn der Speicher entladen wird, darf diese Leistung nicht zum Laden der Fahrzeuge
@@ -359,10 +359,10 @@ class BatAll:
                         self.data.set.regulate_up = True
                     else:
                         # Speicher-Vorrang bis zum Min-Soc
-                        if config.bat_power_reserve_active:
+                        if config.power_reserve_active:
                             # Die Differenz zwischen aktueller Batterie-Leistung und Reserveleistung bestimmt,
                             # was fuer EV-Ladung verbleibt (positiv) oder zusaetzlich benoetigt wird (negativ).
-                            charging_power_left = self.data.get.power - config.bat_power_reserve
+                            charging_power_left = self.data.get.power - config.power_reserve
                             if charging_power_left < 0:
                                 self.data.set.regulate_up = True
                         else:
@@ -370,12 +370,12 @@ class BatAll:
                             charging_power_left = 0
                             self.data.set.regulate_up = True
                 # Speicher zwischen min und max SoC
-                elif int(self.data.get.soc) >= config.min_bat_soc and int(self.data.get.soc) < config.max_bat_soc:
+                elif int(self.data.get.soc) >= config.min_soc and int(self.data.get.soc) < config.max_soc:
                     # Speicher soll aktiv weder ge- noch entladen werden.
                     # Mindest-SoC wird gehalten oder der Speicher mit weiterem vorhanden Überschuss geladen.
                     if self.data.set.hysteresis_discharge is False:
                         charging_power_left = self.data.get.power
-                    # Speicher darf wegen Hysterese bis min_bat_soc entladen werden.
+                    # Speicher darf wegen Hysterese bis min_soc entladen werden.
                     else:
                         if self.data.set.power_limit is None:
                             # set allowed power
@@ -393,10 +393,10 @@ class BatAll:
                                                        (self.data.config.power_limit_condition ==
                                                         BatPowerLimitCondition.PRICE_LIMIT.value and
                                                         self.data.set.power_limit is None))
-                            if config.bat_power_discharge_active and power_discharge_allowed:
+                            if config.power_discharge_active and power_discharge_allowed:
                                 # max Entladeleistung auf max Ausgangsleistung des WR begrenzen
                                 required_absolut_discharge_power = min(
-                                    config.bat_power_discharge, absolute_bat_discharge_power)
+                                    config.power_discharge, absolute_bat_discharge_power)
                                 # Differenz zwischen erlaubter Entladeleistung und aktueller Speicherleistung bestimmen.
                                 # Wenn der Speicher lädt, darf die freigegebene Entladeleistung nicht die max
                                 # Ausgangsleistung des WR überschreiten.
@@ -430,10 +430,10 @@ class BatAll:
                                                    (self.data.config.power_limit_condition ==
                                                     BatPowerLimitCondition.PRICE_LIMIT.value and
                                                     self.data.set.power_limit is None))
-                        if config.bat_power_discharge_active and power_discharge_allowed:
+                        if config.power_discharge_active and power_discharge_allowed:
                             # max Entladeleistung auf max Ausgangsleistung des WR begrenzen
                             required_absolut_discharge_power = min(
-                                config.bat_power_discharge, absolute_bat_discharge_power)
+                                config.power_discharge, absolute_bat_discharge_power)
                             # Differenz zwischen erlaubter Entladeleistung und aktueller Speicherleistung bestimmen.
                             # Wenn der Speicher lädt, darf die freigegebene Entladeleistung nicht die max
                             # Ausgangsleistung des WR überschreiten.
@@ -514,8 +514,8 @@ class BatAll:
             charge_mode = BatChargeMode.BAT_SELF_REGULATION
 
             # Debug Informationen
-            control_range_low = data.data.general_data.data.chargemode_config.pv_charging.control_range[0]
-            control_range_high = data.data.general_data.data.chargemode_config.pv_charging.control_range[1]
+            control_range_low = data.data.general_data.data.chargemode_config.surplus.control_range[0]
+            control_range_high = data.data.general_data.data.chargemode_config.surplus.control_range[1]
             control_range_center = control_range_high - (control_range_high - control_range_low) / 2
             if len(chargepoint_by_chargemodes) == 0:
                 log.debug("Speicher-Leistung nicht begrenzen, da keine Ladepunkte in einem aktiven Lademodus sind.")
