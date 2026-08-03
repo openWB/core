@@ -73,7 +73,7 @@ var topicsToSubscribe = [
 
 
 	// charge mode config
-	["openWB/general/chargemode_config/pv_charging/bat_mode", 0],
+	["openWB/general/chargemode_config/bat/mode", 0],
 
 	// electricity tariff
 	["openWB/optional/ep/configured", 1], // ep provider information

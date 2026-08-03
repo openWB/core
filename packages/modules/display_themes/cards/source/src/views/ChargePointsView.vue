@@ -217,14 +217,6 @@ export default {
         this.updateChargePointChargeTemplate(id, event, "chargemode.instant_charging.limit.amount");
       }
     },
-    setChargePointConnectedVehiclePvChargingFeedInLimit(id, event) {
-      if (
-        event !=
-        this.mqttStore.getChargePointConnectedVehiclePvChargingFeedInLimit(id)
-      ) {
-        this.updateChargePointChargeTemplate(id, event, "chargemode.pv_charging.feed_in_limit");
-      }
-    },
     setChargePointConnectedVehiclePvChargingMinCurrent(id, event) {
       let previous_value =
         this.mqttStore.getChargePointConnectedVehiclePvChargingMinCurrent(id);
@@ -1023,45 +1015,6 @@ export default {
                 "
               >
                 Maximum
-              </i-button>
-            </i-button-group>
-          </i-form-group>
-          <i-form-group>
-            <i-form-label>Einspeisegrenze beachten</i-form-label>
-            <i-button-group block>
-              <i-button
-                :color="
-                  mqttStore.getChargePointConnectedVehiclePvChargingFeedInLimit(
-                    modalChargePointId,
-                  ) !== true
-                    ? 'danger'
-                    : ''
-                "
-                @click="
-                  setChargePointConnectedVehiclePvChargingFeedInLimit(
-                    modalChargePointId,
-                    false,
-                  )
-                "
-              >
-                Nein
-              </i-button>
-              <i-button
-                :color="
-                  mqttStore.getChargePointConnectedVehiclePvChargingFeedInLimit(
-                    modalChargePointId,
-                  ) === true
-                    ? 'success'
-                    : ''
-                "
-                @click="
-                  setChargePointConnectedVehiclePvChargingFeedInLimit(
-                    modalChargePointId,
-                    true,
-                  )
-                "
-              >
-                Ja
               </i-button>
             </i-button-group>
           </i-form-group>
