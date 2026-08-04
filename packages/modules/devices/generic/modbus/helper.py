@@ -28,9 +28,8 @@ def read_value(client: ModbusTcpClient_, unit: int,
         unit=unit,
     )
 
-    factor = register_config.reg_factor if register_config.reg_factor is not None else 1
-    if value is not None and factor != 1:
-        value = value * factor
+    if register_config.reg_factor is not None and register_config.reg_factor != 1:
+        value = value * register_config.reg_factor
     return value
 
 
