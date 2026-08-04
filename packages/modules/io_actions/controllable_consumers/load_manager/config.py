@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
-from dataclass_utils.factories import empty_io_pattern_boolean_factory, empty_list_factory
+from dataclass_utils.factories import empty_io_pattern_boolean_factory
 from modules.io_actions.groups import ActionGroup
 
 
