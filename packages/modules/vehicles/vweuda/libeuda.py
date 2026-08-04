@@ -687,29 +687,37 @@ def utc_to_timestamp(d: str) -> float:
 def parse_vehicle_data(payload: dict) -> dict:
     """Extract normalized SoC fields from an EUDA JSON payload."""
     data = payload.get('Data', [])
+
+    # special case state_of_charge with timestamp (Caddy)
     soc = get_field_value_by_key(data, 'ae0294b4-1286-3e98-a818-1485b8d88430', 'soc')
     soc_timestamp_str = None
     if soc is not None:
         _LOGGER.info(f"soc {soc} found in state_of_charge")
         _ts = get_field_timestamp_by_key(data, 'ae0294b4-1286-3e98-a818-1485b8d88430')
         soc_timestamp_str = re.sub(r'\....Z', 'Z', _ts)
+
+    # try to get soc_timestamp as max of all car_captured_time fields
     if soc_timestamp_str is None:
         soc_timestamp_str = get_max_value_by_fieldname(data, CAR_TIMESTAMP)
 
+    # if soc is None, try sveral other fields
+    if soc is None:
+        soc = get_field_value_by_key(data, 'ac1108b1-b8cc-3db9-a663-03d387e42223', 'soc')
     if soc is None:
         soc = get_field_value_by_key(data, '0a18a053-b4b0-3db1-be44-a6c5dba629b1', 'soc')  # Skoda?
     if soc is None:
         soc = get_field_value_by_key(data, 'f89ed652-d104-3fa6-b7e2-ab7543309e7b', 'soc')
     if soc is None:
         soc = get_field_value_by_key(data, '506cb83e-f99f-3af3-bbeb-0429b69a78d9', 'soc')
-    if soc is None:
-        soc = get_field_value_by_key(data, 'ac1108b1-b8cc-3db9-a663-03d387e42223', 'soc')
+
     range = get_field_value_by_key(data, '153e8c40-4c6c-3c17-a11b-0ecc35d55b81', 'range')
     if range is None:
         range = get_field_value_by_key(data, '0ca40e18-0564-3eda-bcc0-7aee9ef44f04', 'range')
+
     odometer = get_field_value_by_key(data, '41c0805c-43e5-313e-9dfb-356cb8d20f7c', 'odometer')
     if odometer is None:
         odometer = get_field_value_by_key(data, '30cc36fd-71ca-3c09-9296-e94ebd47bd2b', 'odometer')
+
     if soc_timestamp_str:
         soc_timestamp = utc_to_timestamp(soc_timestamp_str)
         if soc_timestamp > 1e10:
