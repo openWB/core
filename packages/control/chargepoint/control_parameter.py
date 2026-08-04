@@ -26,6 +26,8 @@ class ControlParameter:
     template_phases: int = field(default=None, metadata={"topic": "control_parameter/template_phases"})
     timestamp_charge_start: Optional[float] = field(
         default=None, metadata={"topic": "control_parameter/timestamp_charge_start"})
+    timestamp_last_cp_retry: Optional[float] = field(
+        default=None, metadata={"topic": "control_parameter/timestamp_last_cp_retry"})
     timestamp_chargemode_changed: Optional[float] = field(
         default=None, metadata={"topic": "control_parameter/timestamp_chargemode_changed"})
     timestamp_last_phase_switch: float = field(

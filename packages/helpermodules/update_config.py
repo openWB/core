@@ -58,7 +58,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 136
+    DATASTORE_VERSION = 137
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -125,6 +125,7 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/control_parameter/timestamp_chargemode_changed$",
         "^openWB/chargepoint/[0-9]+/control_parameter/timestamp_last_phase_switch$",
         "^openWB/chargepoint/[0-9]+/control_parameter/timestamp_switch_on_off$",
+        "^openWB/chargepoint/[0-9]+/control_parameter/timestamp_last_cp_retry$",
         "^openWB/chargepoint/[0-9]+/get/charge_state$",
         "^openWB/chargepoint/[0-9]+/get/currents$",
         "^openWB/chargepoint/[0-9]+/get/current_branch$",
@@ -3469,3 +3470,14 @@ class UpdateConfig:
                     return modified_topics
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(136)
+
+    def upgrade_datastore_137(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/vehicle/template/ev_template/[0-9]+$", topic) is not None:
+                payload = decode_payload(payload)
+                if "control_pilot_interruption_retry_interval" not in payload:
+                    payload["control_pilot_interruption_retry_interval"] = \
+                        EvTemplateData().control_pilot_interruption_retry_interval
+                    return {topic: payload}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(137)
