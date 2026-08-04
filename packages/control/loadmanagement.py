@@ -189,8 +189,7 @@ class Loadmanagement:
                            available_currents: List[float],
                            cp: Chargepoint) -> Tuple[List[float], LoadmanagementLimit]:
 
-        loadmanager_power_left, loadmanager_current_left, limit = data.data.io_actions.get_limit_loadmanager({
-            "type": "cp", "id": cp.num})
+        loadmanager_power_left, loadmanager_current_left, limit = data.data.io_actions.get_limit_loadmanager()
 
         if loadmanager_power_left is not None and loadmanager_current_left is not None:
             if sum(available_currents)*voltages_mean(cp.data.get.voltages) > loadmanager_power_left:

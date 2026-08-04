@@ -8,9 +8,7 @@ from modules.io_actions.groups import ActionGroup
 class LoadManagerConfig:
     io_device: Optional[int] = None
     input_pattern: List[Dict] = field(default_factory=empty_io_pattern_boolean_factory)
-    devices: List[Dict] = field(default_factory=empty_list_factory)
-    # [{"type": "cp", "id": 0},
-    # {"type": "io", "id": 1, "digital_output": "SofortLa"}]
+
     max_import_power: int = 0
     max_power_on_failure: float = 0
     max_current_on_failure: float = 0

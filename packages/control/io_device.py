@@ -107,18 +107,14 @@ class IoActions:
         else:
             return None, LoadmanagementLimit(None, None)
 
-    def get_limit_loadmanager(self, device: Dict) -> Tuple[Optional[float], Optional[float], LoadmanagementLimit]:
+    def get_limit_loadmanager(self) -> Tuple[Optional[float], Optional[float], LoadmanagementLimit]:
         for action in self.actions.values():
             if isinstance(action, LoadManager):
-                for d in action.config.configuration.devices:
-                    if d == device:
-                        return action.loadmanager_get_import_power_left()
+                return action.loadmanager_get_import_power_left()
         else:
             return None, None, LoadmanagementLimit(None, None)
 
-    def set_limit_loadmanager(self, device: Dict, used_power: float) -> Optional[float]:
+    def set_limit_loadmanager(self, used_power: float) -> Optional[float]:
         for action in self.actions.values():
             if isinstance(action, LoadManager):
-                for d in action.config.configuration.devices:
-                    if d == device:
-                        return action.loadmanager_set_import_power_left(used_power, used_power/230)
+                return action.loadmanager_set_import_power_left(used_power, used_power/230)
