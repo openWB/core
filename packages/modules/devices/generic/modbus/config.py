@@ -34,6 +34,7 @@ class GenericModbus:
 class RegisterConfig:
     reg_address: Optional[int] = None
     reg_type: Optional[str] = None
+    reg_factor: int = 1
 
 
 @dataclass
