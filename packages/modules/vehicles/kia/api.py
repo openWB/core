@@ -515,7 +515,6 @@ def getAuthCode(username: str, password: str, brand: str,
     # chain; the 'cookies' argument is kept only for call-site compatibility.
     host = getString("login_form_host", brand)
     client_id = getString("client_id", brand)
-    client_secret = getString("client_secret", brand)
     redirect_uri = getString("redirect_uri", brand)
 
     # The '_CCS_APP_AOS' suffix is REQUIRED — without it the authorize
