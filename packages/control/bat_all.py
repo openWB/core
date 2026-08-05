@@ -339,6 +339,7 @@ class BatAll:
                 else:
                     charging_power_left = self.data.get.power
             else:
+                absolute_bat_discharge_power = self._absolute_bat_discharge_power()
                 # Speicher soll geladen werden um min SoC zu erreichen
                 if self.data.get.soc < config.min_bat_soc:
                     self.data.set.hysteresis_discharge = False
@@ -387,14 +388,14 @@ class BatAll:
                             if config.bat_power_discharge_active and power_discharge_allowed:
                                 # max Entladeleistung auf max Ausgangsleistung des WR begrenzen
                                 required_absolut_discharge_power = min(
-                                    config.bat_power_discharge, self._absolute_bat_discharge_power())
+                                    config.bat_power_discharge, absolute_bat_discharge_power)
                                 # Differenz zwischen erlaubter Entladeleistung und aktueller Speicherleistung bestimmen.
                                 # Wenn der Speicher lädt, darf die freigegebene Entladeleistung nicht die max
                                 # Ausgangsleistung des WR überschreiten.
                                 # Wenn der Speicher mit mehr als der erlaubten Entladeleistung entladen wird, muss das
                                 # vom Überschuss subtrahiert werden.
-                                charging_power_left = min(required_absolut_discharge_power +
-                                                          base_power, self._absolute_bat_discharge_power())
+                                charging_power_left = min(required_absolut_discharge_power + base_power,
+                                                          absolute_bat_discharge_power)
                                 log.debug(f"Erlaubte Entlade-Leistung nutzen {charging_power_left}W")
                             else:
                                 # Speicher sollte weder ge- noch entladen werden.
@@ -424,14 +425,14 @@ class BatAll:
                         if config.bat_power_discharge_active and power_discharge_allowed:
                             # max Entladeleistung auf max Ausgangsleistung des WR begrenzen
                             required_absolut_discharge_power = min(
-                                config.bat_power_discharge, self._absolute_bat_discharge_power())
+                                config.bat_power_discharge, absolute_bat_discharge_power)
                             # Differenz zwischen erlaubter Entladeleistung und aktueller Speicherleistung bestimmen.
                             # Wenn der Speicher lädt, darf die freigegebene Entladeleistung nicht die max
                             # Ausgangsleistung des WR überschreiten.
                             # Wenn der Speicher mit mehr als der erlaubten Entladeleistung entladen wird, muss das
                             # vom Überschuss subtrahiert werden.
-                            charging_power_left = min(required_absolut_discharge_power +
-                                                      base_power, self._absolute_bat_discharge_power())
+                            charging_power_left = min(required_absolut_discharge_power + base_power,
+                                                      absolute_bat_discharge_power)
                             log.debug(f"Erlaubte Entlade-Leistung nutzen {charging_power_left}W")
                         else:
                             # Speicher sollte weder ge- noch entladen werden.
