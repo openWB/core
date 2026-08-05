@@ -1946,7 +1946,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     },
     set(newRange: RangeValue) {
       updateTopic(
-        'openWB/general/chargemode_config/bat/min_soc
+        'openWB/general/chargemode_config/bat/min_soc',
         newRange.min,
         undefined,
         true,
