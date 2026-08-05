@@ -260,7 +260,14 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
     for counter in data.data.counter_data.values():
         try:
             home_consumption_source_id = data.data.counter_all_data.data.config.home_consumption_source_id
-            if (home_consumption_source_id is None or counter.num != home_consumption_source_id):
+            if home_consumption_source_id is not None and counter.num == home_consumption_source_id:
+                continue
+            skip_counter = False
+            for consumer in data.data.consumer_data:
+                if counter.num == data.data.consumer_data[consumer].data.extra_meter:
+                    skip_counter = True
+                    break
+            if skip_counter is False:
                 counter_dict.update(
                     {f"counter{counter.num}": {
                         "imported": counter.data.get.imported,
