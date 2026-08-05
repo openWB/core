@@ -187,9 +187,6 @@ class BatAll:
             log.exception("Fehler im Bat-Modul")
 
     def _absolute_bat_discharge_power(self) -> float:
-        """begrenzt die für den Algorithmus benötigte Entladeleistung des Speichers, wenn die maximale Ausgangsleistung
-        des WR erreicht ist."""
-        # Nur wenn der Speicher entladen werden soll, fließt Leistung durch den WR.
         discharge_power = 0
         hybrid_bat_ids = data.data.counter_all_data.get_hybrid_bat_ids()
         non_hybrid_bat_ids = data.data.counter_all_data.get_non_hybrid_bat_ids()
