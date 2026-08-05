@@ -133,7 +133,7 @@ def test_start_pv_delay(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatch)
     # evaluation
     for i in range(3, 6):
         assert data.data.cp_data[f"cp{i}"].data.set.current == 0
-    assert data.data.consumer_data[f"consumer7"].data.set.current == 0
+    assert data.data.consumer_data["consumer7"].data.set.current == 0
     assert data.data.cp_data[
         "cp3"].data.control_parameter.timestamp_switch_on_off is None
     assert data.data.cp_data[
