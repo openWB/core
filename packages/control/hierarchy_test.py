@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional, Union
 from unittest.mock import Mock
 import pytest
-from packages.conftest import hierarchy_hybrid, hierarchy_nested
+from packages.conftest import hierarchy_hybrid, hierarchy_nested, hierarchy_standard
 from control.counter import Counter
 
 
@@ -399,3 +399,54 @@ def test_add_missing_entries(hierarchy, expected_hierarchy, data_, monkeypatch):
 
     # evaluation
     assert counter_all.data.get.hierarchy == expected_hierarchy
+
+
+@pytest.mark.parametrize("hierarchy, expected_ids",
+                         [
+                             pytest.param(hierarchy_hybrid(), [2], id="hybrid"),
+                             pytest.param(hierarchy_standard(), [], id="standard"),
+                         ]
+                         )
+def test_get_hybrid_bat_ids(hierarchy: CounterAll, expected_ids: List[int]):
+    # setup
+    counter_all = hierarchy
+
+    # execution
+    hybrid_bat_ids = counter_all.get_hybrid_bat_ids()
+
+    # evaluation
+    assert hybrid_bat_ids == expected_ids
+
+
+@pytest.mark.parametrize("hierarchy, expected_ids",
+                         [
+                             pytest.param(hierarchy_hybrid(), [], id="hybrid"),
+                             pytest.param(hierarchy_standard(), [2], id="standard"),
+                         ]
+                         )
+def test_get_non_hybrid_bat_ids(hierarchy: CounterAll, expected_ids: List[int]):
+    # setup
+    counter_all = hierarchy
+
+    # execution
+    non_hybrid_bat_ids = counter_all.get_non_hybrid_bat_ids()
+
+    # evaluation
+    assert non_hybrid_bat_ids == expected_ids
+
+
+@pytest.mark.parametrize("hierarchy, expected_ids",
+                         [
+                             pytest.param(hierarchy_hybrid(), [1], id="hybrid"),
+                             pytest.param(hierarchy_standard(), [], id="standard"),
+                         ]
+                         )
+def test_get_hybrid_inverter_ids(hierarchy: CounterAll, expected_ids: List[int]):
+    # setup
+    counter_all = hierarchy
+
+    # execution
+    hybrid_inverter_ids = counter_all.get_hybrid_inverter_ids()
+
+    # evaluation
+    assert hybrid_inverter_ids == expected_ids
