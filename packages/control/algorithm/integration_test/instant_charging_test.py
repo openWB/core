@@ -23,6 +23,12 @@ def all_cp_instant_charging_1p():
         control_parameter.required_current = 16
         control_parameter.chargemode = Chargemode.INSTANT_CHARGING
         control_parameter.submode = Chargemode.INSTANT_CHARGING
+    control_parameter = data.data.consumer_data["consumer7"].data.control_parameter
+    control_parameter.min_current = 0.5
+    control_parameter.required_current = 0.5
+    control_parameter.required_currents = [0.5, 0, 0]
+    control_parameter.chargemode = Chargemode.INSTANT_CHARGING
+    control_parameter.submode = Chargemode.INSTANT_CHARGING
 
 
 @pytest.fixture()
@@ -80,8 +86,9 @@ def test_start_instant_charging(all_cp_instant_charging_1p, all_cp_not_charging,
     assert data.data.cp_data["cp3"].data.set.current == 10
     assert data.data.cp_data["cp4"].data.set.current == 6
     assert data.data.cp_data["cp5"].data.set.current == 6
-    assert data.data.counter_data["counter0"].data.set.raw_power_left == 16250
-    assert data.data.counter_data["counter0"].data.set.raw_currents_left == [22, 24, 25]
+    assert data.data.consumer_data["consumer7"].data.set.current == 0.5
+    assert data.data.counter_data["counter0"].data.set.raw_power_left == 16135
+    assert data.data.counter_data["counter0"].data.set.raw_currents_left == [21.5, 24, 25]
     assert data.data.counter_data["counter6"].data.set.raw_currents_left == [16, 6, 8]
 
 
