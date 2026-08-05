@@ -324,6 +324,7 @@ def _collect_yearly_log_data(year: str):
                     log.debug(f"Keine Logdatei für Monat {next_month} gefunden, "
                               f"füge letzten Datensatz von {month} ein: {entries[-1]['date']}")
             names.update(content["names"])
+            colors.update(content["colors"])
         except FILE_ERRORS:
             log.debug(f"Kein Log für Monat {month} gefunden.")
 
@@ -338,6 +339,7 @@ def _collect_yearly_log_data(year: str):
 
     entries = []
     names = {}
+    colors = {}
     dates = []
 
     # we have to find a valid data range
@@ -378,7 +380,7 @@ def _collect_yearly_log_data(year: str):
             log.exception(f"Fehler beim Zusammenstellen der Jahresdaten für Monat {next_date}")
 
     # return our data
-    return {"entries": entries, "names": names}
+    return {"entries": entries, "names": names, "colors": colors}
 
 
 def _analyse_energy_source(data, calc_cp: Optional[str] = None) -> Dict:
