@@ -12,7 +12,7 @@ from helpermodules import timecheck
 log = logging.getLogger(__name__)
 
 
-def control_range_factory() -> List:
+def control_range_factory() -> List[int]:
     return [0, 230]
 
 
@@ -30,7 +30,7 @@ class ChargemodeConfigBat:
         "topic": "chargemode_config/bat/min_soc"})
     max_soc: int = field(default=70, metadata={
         "topic": "chargemode_config/bat/max_soc"})
-    mode: BatConsiderationMode = field(default=BatConsiderationMode.EV_MODE.value, metadata={
+    mode: str = field(default=BatConsiderationMode.EV_MODE.value, metadata={
         "topic": "chargemode_config/bat/mode"})
 
 

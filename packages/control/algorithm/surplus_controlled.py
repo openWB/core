@@ -98,14 +98,6 @@ class SurplusControlled:
             chargepoint.set_state_and_log(f"Es kann nicht mit der vorgegebenen Stromstärke geladen werden"
                                           f"{limit.message}")
 
-    # tested
-    def filter_by_feed_in_limit(self, chargepoints: List[Chargepoint]) -> Tuple[List[Chargepoint], List[Chargepoint]]:
-        cp_with_feed_in = list(filter(lambda cp: cp.data.set.charge_template.data.chargemode.
-                                      pv_charging.feed_in_limit is True, chargepoints))
-        cp_without_feed_in = list(filter(lambda cp: cp.data.set.charge_template.data.chargemode.
-                                         pv_charging.feed_in_limit is False, chargepoints))
-        return cp_with_feed_in, cp_without_feed_in
-
     def _fix_deviating_evse_current(self, chargepoint: Chargepoint) -> float:
         """Wenn Autos nicht die volle Ladeleistung nutzen, wird unnötig eingespeist. Dann kann um den noch nicht
         genutzten Soll-Strom hochgeregelt werden. Wenn Fahrzeuge entgegen der Norm mehr Ladeleistung beziehen, als
