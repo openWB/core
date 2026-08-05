@@ -69,7 +69,7 @@ def mock_consumer3() -> Consumer:
                       {"type": "vehicle", "id": 2}],
                      [1, 3, 2], id="required current 0 for cp 1"),
     ])
-def test_get_loadmanagement_prios(
+def test_get_loads_by_chargemodes(
         required_current_1: int,
         ev_1: int,
         chargemode_filter: Tuple[Tuple[Optional[Chargemode], Chargemode]],
