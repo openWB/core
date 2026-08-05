@@ -380,7 +380,7 @@ class Counter:
                     control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
                 else:
                     msg = self.SWITCH_OFF_WAITING.format(timecheck.convert_timestamp_delta_to_time_string(
-                        control_parameter.timestamp_switch_on_off, surplus_config.switch_off_delay))
+                        control_parameter.timestamp_switch_on_off, surplus_config.vehicle.switch_off_delay))
             chargepoint.set_state_and_log(msg)
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")
