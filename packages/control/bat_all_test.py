@@ -63,24 +63,28 @@ def test_get_charging_power_left_diff_hybrid(bat_power: int,
 
 
 @pytest.mark.parametrize(
-    "inverter_power, hierarchy, expected_power",
+    "hybrid_bat_ids, non_hybrid_bat_ids, hybrid_inverter_ids, expected_power",
     [
-        pytest.param(-100, {"id": 5, "type": "pv", "children": []}, float("inf"), id="no hybrid"),
-        pytest.param(-100, {"id": 5, "type": "pv",
-                     "children": [{"id": 1, "type": "bat", "children": []}]}, 4900, id="hybrid, no discharge"),
+        pytest.param([], [1], [], float("inf"), id="no hybrid"),
+        pytest.param([1], [], [2], 4900, id="hybrid,"),
+        pytest.param([1], [3], [2], 10900, id="hybrid an non hybrid bat"),
     ])
-def test__absolute_bat_discharge_power(inverter_power: int,
-                                       hierarchy: dict,
+def test__absolute_bat_discharge_power(hybrid_bat_ids: List[int],
+                                       non_hybrid_bat_ids: List[int],
+                                       hybrid_inverter_ids: List[int],
                                        expected_power: float,
                                        monkeypatch: pytest.MonkeyPatch):
     # setup
     data.data.pv_data = {"pv2": Pv(2)}
-    data.data.pv_data["pv2"].data.get.power = inverter_power
+    data.data.pv_data["pv2"].data.get.power = -100
     data.data.pv_data["pv2"].data.config.max_ac_out = 5000
     data.data.bat_data["bat1"] = Bat(1)
     data.data.bat_data["bat1"].data.get.power = -4900
-    mock_entry_children = Mock(return_value=hierarchy)
-    monkeypatch.setattr(data.data.counter_all_data, "get_entry_of_element", mock_entry_children)
+    data.data.bat_data["bat3"] = Bat(3)
+    data.data.bat_data["bat3"].data.get.max_discharge_power = 6000
+    monkeypatch.setattr(data.data.counter_all_data, "get_hybrid_bat_ids", Mock(return_value=hybrid_bat_ids))
+    monkeypatch.setattr(data.data.counter_all_data, "get_non_hybrid_bat_ids", Mock(return_value=non_hybrid_bat_ids))
+    monkeypatch.setattr(data.data.counter_all_data, "get_hybrid_inverter_ids", Mock(return_value=hybrid_inverter_ids))
 
     b = BatAll()
     b.data.get.power = -4900

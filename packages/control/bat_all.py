@@ -191,21 +191,32 @@ class BatAll:
         des WR erreicht ist."""
         # Nur wenn der Speicher entladen werden soll, fließt Leistung durch den WR.
         discharge_power = 0
-        hybrid = False
-        for inverter in data.data.pv_data.values():
-            try:
-                children = data.data.counter_all_data.get_entry_of_element(inverter.num)["children"]
-                if any(child.get("type") == "bat" for child in children):
-                    hybrid = True
+        hybrid_bat_ids = data.data.counter_all_data.get_hybrid_bat_ids()
+        non_hybrid_bat_ids = data.data.counter_all_data.get_non_hybrid_bat_ids()
+        if len(hybrid_bat_ids) == 0:
+            # keine Hybrid-WR mit Speicher
+            discharge_power = float("inf")
+        else:
+            # nur Speicher an Hybrid-WR
+            discharge_power = 0
+            hybrid_inverter_ids = data.data.counter_all_data.get_hybrid_inverter_ids()
+            for inverter_id in hybrid_inverter_ids:
+                try:
+                    inverter = data.data.pv_data[f"pv{inverter_id}"]
                     inverter_power = max(inverter.data.get.power * -1, 0)
                     discharge_power += max(inverter.data.config.max_ac_out - inverter_power, 0)
-            except Exception:
-                log.exception(f"Fehler im Bat-Modul {inverter.num}")
-        if hybrid:
+                except Exception:
+                    log.exception(f"Fehler im Bat-Modul {inverter_id}")
             log.debug(f"Verbleibende Speicher-Leistung durch maximale Ausgangsleistung des Wechselrichters auf "
                       f"{discharge_power}W begrenzt.")
-        else:
-            discharge_power = float("inf")
+        if len(non_hybrid_bat_ids) > 0:
+            # Speicher an Hybrid-WR und AC-Speicher im System
+            for bat_id in non_hybrid_bat_ids:
+                try:
+                    bat = data.data.bat_data[f"bat{bat_id}"]
+                    discharge_power += bat.data.get.max_discharge_power
+                except Exception:
+                    log.exception(f"Fehler im Bat-Modul {bat_id}")
         return discharge_power
 
     def _set_bat_power_active_control(self, power):

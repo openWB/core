@@ -418,6 +418,40 @@ class CounterAll:
             elements_per_level = self._get_list_of_elements_per_level(elements_per_level, child, index+1)
         return elements_per_level
 
+    def get_hybrid_inverter_ids(self) -> List[int]:
+        inverter_ids = []
+
+        def collect_hybrid_inverter_ids(elements: List[Dict]):
+            for element in elements:
+                if element["type"] == ComponentType.INVERTER.value:
+                    if any(child.get("type") == ComponentType.BAT.value for child in element.get("children", [])):
+                        inverter_ids.append(element["id"])
+                collect_hybrid_inverter_ids(element.get("children", []))
+
+        collect_hybrid_inverter_ids(self.data.get.hierarchy)
+        return inverter_ids
+
+    def _get_bat_ids_by_hybrid_type(self, hybrid: bool) -> List[int]:
+        bat_ids = []
+
+        def collect_bat_ids(elements: List[Dict], parent_type: Optional[str] = None):
+            for element in elements:
+                element_type = element.get("type")
+                if element_type == ComponentType.BAT.value:
+                    is_hybrid_bat = parent_type == ComponentType.INVERTER.value
+                    if is_hybrid_bat == hybrid:
+                        bat_ids.append(element["id"])
+                collect_bat_ids(element.get("children", []), element_type)
+
+        collect_bat_ids(self.data.get.hierarchy)
+        return bat_ids
+
+    def get_hybrid_bat_ids(self) -> List[int]:
+        return self._get_bat_ids_by_hybrid_type(hybrid=True)
+
+    def get_non_hybrid_bat_ids(self) -> List[int]:
+        return self._get_bat_ids_by_hybrid_type(hybrid=False)
+
     def validate_hierarchy(self):
         try:
             self._delete_obsolete_entries()
