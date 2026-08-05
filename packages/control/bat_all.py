@@ -194,7 +194,8 @@ class BatAll:
         hybrid = False
         for inverter in data.data.pv_data.values():
             try:
-                if len(data.data.counter_all_data.get_entry_of_element(inverter.num)["children"]) != 0:
+                children = data.data.counter_all_data.get_entry_of_element(inverter.num)["children"]
+                if any(child.get("type") == "bat" for child in children):
                     hybrid = True
                     inverter_power = max(inverter.data.get.power * -1, 0)
                     discharge_power += max(inverter.data.config.max_ac_out - inverter_power, 0)

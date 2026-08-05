@@ -173,8 +173,8 @@ def test_get_charging_power_left(params: Params, caplog, data_, monkeypatch):
     b.data.get.power = params.power
     data.data.bat_data["bat0"] = b
     data.data.general_data.data.chargemode_config.pv_charging = params.config
-    mock_limit_bat_power_discharge = MagicMock(return_value=10000)
-    monkeypatch.setattr(BatAll, "_absolute_bat_discharge_power", mock_limit_bat_power_discharge)
+    mock_absolute_bat_discharge_power = MagicMock(return_value=10000)
+    monkeypatch.setattr(BatAll, "_absolute_bat_discharge_power", mock_absolute_bat_discharge_power)
 
     # execution
     b_all.get_charging_power_left_diff()
