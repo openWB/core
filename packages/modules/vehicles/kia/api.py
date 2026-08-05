@@ -877,12 +877,20 @@ def getStatusFull(vehicle_id: str, control_token: str,
         range = float(response_dict['resMsg']['state']['Vehicle']['Drivetrain']
                                    ['FuelSystem']['DTE']['Total'])
 
+        odometer = None
+        try:
+            odometer = float(response_dict['resMsg']['state']['Vehicle']
+                                          ['Drivetrain']['Odometer'])
+        except (KeyError, TypeError, ValueError):
+            log.warning("kia.getStatusFull: odometer not available in "
+                        "vehicle status response")
+
     except Exception:
         log.exception("kia.getStatusFull: receiving update error: " +
                       response)
         raise
 
-    return CarState(soc, range)
+    return CarState(soc=soc, range=range, odometer=odometer)
 
 # ---------- main function ----------
 
