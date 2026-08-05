@@ -47,9 +47,9 @@ def test_get_charging_power_left_diff_hybrid(bat_power: int,
     data.data.general_data.data.chargemode_config.pv_charging.bat_mode = BatConsiderationMode.MIN_SOC_BAT.value
     data.data.general_data.data.chargemode_config.pv_charging.bat_power_discharge = 5000
     data.data.general_data.data.chargemode_config.pv_charging.bat_power_discharge_active = True
-    mock_entry_children = Mock(return_value={"id": 5, "type": "pv", "children": [
-                               {"id": 1, "type": "bat", "children": []}]})
-    monkeypatch.setattr(data.data.counter_all_data, "get_entry_of_element", mock_entry_children)
+    monkeypatch.setattr(data.data.counter_all_data, "get_hybrid_bat_ids", Mock(return_value=[1]))
+    monkeypatch.setattr(data.data.counter_all_data, "get_non_hybrid_bat_ids", Mock(return_value=[]))
+    monkeypatch.setattr(data.data.counter_all_data, "get_hybrid_inverter_ids", Mock(return_value=[2]))
 
     b_all = BatAll()
     b_all.data.get.power = bat_power
@@ -210,12 +210,9 @@ def test_get_charging_power_left_uses_limited_bat_discharge_in_hysteresis(
     data.data.pv_data["pv2"].data.config.max_ac_out = 10000
     data.data.bat_data["bat1"] = Bat(1)
     data.data.bat_data["bat1"].data.get.power = -2500
-    mock_entry_children = Mock(return_value={
-        "id": 2,
-        "type": "pv",
-        "children": [{"id": 1, "type": "bat", "children": []}],
-    })
-    monkeypatch.setattr(data.data.counter_all_data, "get_entry_of_element", mock_entry_children)
+    monkeypatch.setattr(data.data.counter_all_data, "get_hybrid_bat_ids", Mock(return_value=[1]))
+    monkeypatch.setattr(data.data.counter_all_data, "get_non_hybrid_bat_ids", Mock(return_value=[]))
+    monkeypatch.setattr(data.data.counter_all_data, "get_hybrid_inverter_ids", Mock(return_value=[2]))
 
     # execution
     b_all.get_charging_power_left_diff()
