@@ -12,56 +12,65 @@ from helpermodules import timecheck
 log = logging.getLogger(__name__)
 
 
-def control_range_factory() -> List:
+def control_range_factory() -> List[int]:
     return [0, 230]
 
 
 @dataclass
-class PvCharging:
-    bat_power_reserve: int = field(default=2000, metadata={
-        "topic": "chargemode_config/pv_charging/bat_power_reserve"})
-    bat_power_reserve_active: bool = field(default=False, metadata={
-        "topic": "chargemode_config/pv_charging/bat_power_reserve_active"})
-    control_range: List = field(default_factory=control_range_factory, metadata={
-        "topic": "chargemode_config/pv_charging/control_range"})
-    feed_in_yield: int = field(default=15000, metadata={
-        "topic": "chargemode_config/pv_charging/feed_in_yield"})
+class ChargemodeConfigBat:
+    power_reserve: int = field(default=2000, metadata={
+        "topic": "chargemode_config/bat/power_reserve"})
+    power_reserve_active: bool = field(default=False, metadata={
+        "topic": "chargemode_config/bat/power_reserve_active"})
+    power_discharge: int = field(default=1500, metadata={
+        "topic": "chargemode_config/bat/power_discharge"})
+    power_discharge_active: bool = field(default=False, metadata={
+        "topic": "chargemode_config/bat/power_discharge_active"})
+    min_soc: int = field(default=50, metadata={
+        "topic": "chargemode_config/bat/min_soc"})
+    max_soc: int = field(default=70, metadata={
+        "topic": "chargemode_config/bat/max_soc"})
+    mode: str = field(default=BatConsiderationMode.EV_MODE.value, metadata={
+        "topic": "chargemode_config/bat/mode"})
+
+
+@dataclass
+class ChargemodeConfigSurplusVehicle:
     phase_switch_delay: int = field(default=7, metadata={
-        "topic": "chargemode_config/pv_charging/phase_switch_delay"})
-    bat_power_discharge: int = field(default=1500, metadata={
-        "topic": "chargemode_config/pv_charging/bat_power_discharge"})
-    bat_power_discharge_active: bool = field(default=False, metadata={
-        "topic": "chargemode_config/pv_charging/bat_power_discharge_active"})
-    min_bat_soc: int = field(default=50, metadata={
-        "topic": "chargemode_config/pv_charging/min_bat_soc"})
-    max_bat_soc: int = field(default=70, metadata={
-        "topic": "chargemode_config/pv_charging/max_bat_soc"})
-    bat_mode: BatConsiderationMode = field(default=BatConsiderationMode.EV_MODE.value, metadata={
-        "topic": "chargemode_config/pv_charging/bat_mode"})
+        "topic": "chargemode_config/surplus/vehicle/phase_switch_delay"})
     retry_failed_phase_switches: bool = field(
         default=False,
-        metadata={"topic": "chargemode_config/pv_charging/retry_failed_phase_switches"})
+        metadata={"topic": "chargemode_config/surplus/vehicle/retry_failed_phase_switches"})
     switch_off_delay: int = field(default=60, metadata={
-                                  "topic": "chargemode_config/pv_charging/switch_off_delay"})
+                                  "topic": "chargemode_config/surplus/vehicle/switch_off_delay"})
     switch_off_threshold: int = field(default=0, metadata={
-        "topic": "chargemode_config/pv_charging/switch_off_threshold"})
+        "topic": "chargemode_config/surplus/vehicle/switch_off_threshold"})
     switch_on_delay: int = field(default=30, metadata={
-        "topic": "chargemode_config/pv_charging/switch_on_delay"})
+        "topic": "chargemode_config/surplus/vehicle/switch_on_delay"})
     switch_on_threshold: int = field(default=1500, metadata={
-        "topic": "chargemode_config/pv_charging/switch_on_threshold"})
+        "topic": "chargemode_config/surplus/vehicle/switch_on_threshold"})
 
 
-def pv_charging_factory() -> PvCharging:
-    return PvCharging()
+@dataclass
+class ChargemodeConfigSurplus:
+    control_range: List = field(default_factory=control_range_factory, metadata={
+        "topic": "chargemode_config/surplus/control_range"})
+    feed_in_limit: bool = field(default=False, metadata={
+        "topic": "chargemode_config/surplus/feed_in_limit"})
+    feed_in_yield: int = field(default=15000, metadata={
+        "topic": "chargemode_config/surplus/feed_in_yield"})
+    vehicle: ChargemodeConfigSurplusVehicle = field(
+        default_factory=lambda: ChargemodeConfigSurplusVehicle())
 
 
 @dataclass
 class ChargemodeConfig:
-    pv_charging: PvCharging = field(default_factory=pv_charging_factory)
     unbalanced_load_limit: int = field(
         default=18, metadata={"topic": "chargemode_config/unbalanced_load_limit"})
     unbalanced_load: bool = field(default=False, metadata={
                                   "topic": "chargemode_config/unbalanced_load"})
+    surplus: ChargemodeConfigSurplus = field(default_factory=lambda: ChargemodeConfigSurplus())
+    bat: ChargemodeConfigBat = field(default_factory=lambda: ChargemodeConfigBat())
 
 
 def chargemode_config_factory() -> ChargemodeConfig:
@@ -146,3 +155,10 @@ class General:
                         self.data.grid_protection_random_stop = 0
         except Exception:
             log.exception("Fehler im General-Modul")
+
+    def get_feed_in_yield(self) -> int:
+        """ Liefert den aktuellen Feed-In-Ertrag in Watt zurück. """
+        if self.data.chargemode_config.surplus.feed_in_limit:
+            return self.data.chargemode_config.surplus.feed_in_yield
+        else:
+            return 0
