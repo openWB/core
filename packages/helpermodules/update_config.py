@@ -59,7 +59,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 136
+    DATASTORE_VERSION = 138
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -126,6 +126,7 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/control_parameter/timestamp_chargemode_changed$",
         "^openWB/chargepoint/[0-9]+/control_parameter/timestamp_last_phase_switch$",
         "^openWB/chargepoint/[0-9]+/control_parameter/timestamp_switch_on_off$",
+        "^openWB/chargepoint/[0-9]+/control_parameter/timestamp_last_cp_retry$",
         "^openWB/chargepoint/[0-9]+/get/charge_state$",
         "^openWB/chargepoint/[0-9]+/get/currents$",
         "^openWB/chargepoint/[0-9]+/get/current_branch$",
@@ -3453,6 +3454,38 @@ class UpdateConfig:
         self._append_datastore_version(135)
 
     def upgrade_datastore_136(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("^openWB/system/device/[0-9]+/config$", topic) is not None:
+                payload_device = decode_payload(payload)
+                if payload_device.get("type") == "json":
+                    index = get_index(topic)
+                    modified_topics = {}
+                    for topic_component, payload_component in self.all_received_topics.items():
+                        if re.search(f"^openWB/system/device/{index}/component/[0-9]+/config$",
+                                     topic_component) is not None:
+                            payload_component = decode_payload(payload_component)
+                            if (
+                                payload_component["type"] == "counter" and
+                                "jq_frequency" not in payload_component["configuration"]
+                            ):
+                                payload_component["configuration"].update({"jq_frequency": None})
+                                modified_topics[topic_component] = payload_component
+                    return modified_topics
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(136)
+
+    def upgrade_datastore_137(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/vehicle/template/ev_template/[0-9]+$", topic) is not None:
+                payload = decode_payload(payload)
+                if "control_pilot_interruption_retry_interval" not in payload:
+                    payload["control_pilot_interruption_retry_interval"] = \
+                        EvTemplateData().control_pilot_interruption_retry_interval
+                    return {topic: payload}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(137)
+
+    def upgrade_datastore_138(self) -> None:
         CHARGEMODES = ((Chargemode.SCHEDULED_CHARGING.value, True),
                        (Chargemode.SCHEDULED_CHARGING.value, False),
                        (Chargemode.INSTANT_CHARGING.value, True),
@@ -3475,4 +3508,4 @@ class UpdateConfig:
         for chargemode, prio in CHARGEMODES:
             self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/counter/get/loadmanagement_prios", loadmanagement_prios)
-        self._append_datastore_version(136)
+        self._append_datastore_version(138)

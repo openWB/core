@@ -1,5 +1,4 @@
 import logging
-from pathlib import Path
 from typing import List, NamedTuple, Optional, Tuple, Union
 from helpermodules.logger import ModifyLoglevelContext
 from modules.chargepoints.internal_openwb.config import InternalChargepointMode
@@ -11,10 +10,9 @@ from modules.common import mpm3pm, sdm
 from modules.common import evse
 from modules.common import b23
 
+from modules.common.serial_modbus_devices import get_serial_modbus_devices, BUS_SOURCES
+
 log = logging.getLogger(__name__)
-
-
-BUS_SOURCES = ("/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyACM0", "/dev/serial0")
 
 MeterClient = Union[mpm3pm.Mpm3pm, sdm.Sdm630_72, b23.B23]
 MeterType = Union[type[mpm3pm.Mpm3pm], type[sdm.Sdm630_72], type[b23.B23]]
@@ -115,11 +113,8 @@ def get_modbus_client(mode: InternalChargepointMode,
                       created_client_handler: Optional[ClientHandler] = None,
                       fault_state: Optional[FaultState] = None) -> Tuple[Union[ModbusSerialClient_, ModbusTcpClient_],
                                                                          List[int]]:
-    tty_devices = list(Path("/dev/serial/by-path").glob("*"))
-    log.debug("tty_devices"+str(tty_devices))
-    resolved_devices = [str(file.resolve()) for file in tty_devices]
-    log.debug("resolved_devices"+str(resolved_devices))
-    counter = len(resolved_devices)
+    resolved_devices, counter = get_serial_modbus_devices()
+
     if counter == 0:
         # Wenn kein USB-Gerät gefunden wird, wird der Modbus-Anschluss der AddOn-Platine genutzt (/dev/serial0)
         serial_client = ModbusSerialClient_("/dev/serial0")

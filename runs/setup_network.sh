@@ -62,7 +62,7 @@ function setup_pnp_network() {
 	if myPnpIpAddress=$(echo "$myPnpIp" | jq -r -e '.address'); then
 		echo "got plug'n'play ip address: '$myPnpIpAddress'"
 		# check if the address is valid
-		if ! [[ $myPnpIpAddress =~ ^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$ ]]; then
+		if ! [[ $myPnpIpAddress =~ ^(([1-9]?[0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))\.){3}([1-9]?[0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))$ ]]; then
 			echo "invalid plug'n'play ip address! assuming '$defaultPnpIpAddress'"
 			myPnpIpAddress="$defaultPnpIpAddress"
 		fi

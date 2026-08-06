@@ -233,6 +233,8 @@ $flow-chart-shadow-opacity: 0.12;
   }
 }
 // Dark Theme Base Colors
+// Set Quasar’s dark theme shadow color to black
+$dark-shadow-color: #000000;
 $dark-primary: #2aa8ff;
 $dark-secondary: #3b3b3d; //cards - tabs background tables
 $dark-shadow: #7a7c80; // shadow color for dark theme

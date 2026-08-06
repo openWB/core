@@ -68,6 +68,11 @@ class TasmotaBat(AbstractBat):
             imported = float(response['StatusSNS']['eBZ']['E_in']*1000)
             exported = float(response['StatusSNS']['eBZ']['E_out']*1000)
             imported, exported = self.peak_filter.check_values(power, imported, exported)
+        elif 'MT631' in response['StatusSNS']:
+            power = float(response['StatusSNS']['MT631']['Power'])
+            imported = float(response['StatusSNS']['MT631']['E_in']*1000)
+            exported = float(response['StatusSNS']['MT631']['E_out']*1000)
+            imported, exported = self.peak_filter.check_values(power, imported, exported)
         else:
             raise ValueError("Nicht unterstützter Tasmota Zählertyp. Bitte an den Support wenden.")
 

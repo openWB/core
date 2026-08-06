@@ -1476,6 +1476,12 @@
 					"topic": "openWB/system/configurable/devices_components",
 					"priority": 0,
 					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/chargepoint/+/config",
+					"priority": 0,
+					"allow": true
 				}
 			]
 		},

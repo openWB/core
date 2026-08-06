@@ -86,6 +86,11 @@ class TasmotaCounter(AbstractCounter):
                 powers = [float(response['StatusSNS']['eBZ']['36_7_0']),
                           float(response['StatusSNS']['eBZ']['56_7_0']),
                           float(response['StatusSNS']['eBZ']['76_7_0'])]
+        elif 'MT631' in response['StatusSNS']:
+            power = float(response['StatusSNS']['MT631']['Power'])
+            imported = float(response['StatusSNS']['MT631']['E_in']*1000)
+            exported = float(response['StatusSNS']['MT631']['E_out']*1000)
+            imported, exported = self.peak_filter.check_values(power, imported, exported)
         else:
             raise ValueError("Nicht unterstützter Tasmota Zählertyp. Bitte an den Support wenden.")
 
