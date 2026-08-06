@@ -485,7 +485,7 @@ class SetData:
                     else:
                         self._validate_value(msg, float, [(float("-inf"), 0), (6, 32), (0, 0)])
                 elif "/set/required_power" in msg.topic:
-                    self._validate_value(msg, float, [(0, float("inf"))])
+                    self._validate_value(msg, float, [(-11000.0, float("inf"))])
                 elif "/set/phases_to_use" in msg.topic:
                     self._validate_value(msg, int, [(0, 3)])
                 elif ("/set/manual_lock" in msg.topic or

@@ -197,11 +197,13 @@ class ChargeTemplate:
 
     SOC_REACHED = "Keine Ladung, da das Ladeziel bereits erreicht wurde."
     AMOUNT_REACHED = "Keine Ladung, da die Energiemenge bereits geladen wurde."
+    INSTANT_CHARGING_BIDI = "Fahrzeug entlädt."
 
     def instant_charging(self,
                          soc: Optional[float],
                          used_amount: float,
-                         charging_type: str) -> Tuple[int, str, Optional[str], int]:
+                         charging_type: str,
+                         bidi_state: BidiState) -> Tuple[int, str, Optional[str], int]:
         """ prüft, ob die Lademengenbegrenzung erreicht wurde und setzt entsprechend den Ladestrom.
         """
         message = None
@@ -223,6 +225,15 @@ class ChargeTemplate:
                     current = 0
                     sub_mode = "stop"
                     message = self.AMOUNT_REACHED
+            elif current < 0:
+                if bidi_state == BidiState.BIDI_CAPABLE:
+                    sub_mode = "bidi_charging"
+                    message = self.INSTANT_CHARGING_BIDI
+                else:
+                    message = bidi_state.value
+                    current = 0
+                    sub_mode = "stop"
+
             return current, sub_mode, message, phases
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.data.id))
