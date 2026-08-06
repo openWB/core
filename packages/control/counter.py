@@ -373,21 +373,15 @@ class Counter:
                     message = texts.waiting.format(timecheck.convert_timestamp_delta_to_time_string(
                         timestamp_switch_on_off, switch_on_delay))
 
-
-<< << << < HEAD
                     if surplus_config.feed_in_limit:
-                        message += " Die Einspeisegrenze wird berücksichtigt."
-== == == =
-                    if feed_in_limit:
                         message += texts.feed_in_limit_note
->>>>>> > 442b0b282(energy percentage, set usage per json, several fixes(  # 3705))
-                    control_parameter.state=ChargepointState.SWITCH_ON_DELAY
+                    control_parameter.state = ChargepointState.SWITCH_ON_DELAY
                 else:
                     # Einschaltschwelle nicht erreicht
-                    message=texts.not_exceeded
+                    message = texts.not_exceeded
 
             if timestamp_switch_on_off != control_parameter.timestamp_switch_on_off:
-                control_parameter.timestamp_switch_on_off=timestamp_switch_on_off
+                control_parameter.timestamp_switch_on_off = timestamp_switch_on_off
             load.set_state_and_log(message)
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")
@@ -402,44 +396,44 @@ class Counter:
         Schaltpunkte ergeben sich ggf noch aus der Einspeisegrenze.
         """
         try:
-            msg=None
-            texts=self._get_switch_on_texts(load)
-            switch_on_delay, switch_on_threshold, _=self.get_pv_config_py_load(load)
-            control_parameter=load.data.control_parameter
+            msg = None
+            texts = self._get_switch_on_texts(load)
+            switch_on_delay, switch_on_threshold, _ = self.get_pv_config_py_load(load)
+            control_parameter = load.data.control_parameter
             # Timer ist noch nicht abgelaufen
             if timecheck.check_timestamp(control_parameter.timestamp_switch_on_off,
                                          switch_on_delay):
-                msg=texts.waiting.format(timecheck.convert_timestamp_delta_to_time_string(
+                msg = texts.waiting.format(timecheck.convert_timestamp_delta_to_time_string(
                     control_parameter.timestamp_switch_on_off, switch_on_delay))
             # Timer abgelaufen
             else:
-                control_parameter.timestamp_switch_on_off=None
+                control_parameter.timestamp_switch_on_off = None
                 self.data.set.reserved_surplus -= switch_on_threshold*control_parameter.phases
-                msg=texts.expired
-                control_parameter.state=ChargepointState.WAIT_FOR_USING_PHASES
+                msg = texts.expired
+                control_parameter.state = ChargepointState.WAIT_FOR_USING_PHASES
 
                 if isinstance(load, Chargepoint):
-                    charging_ev_data=load.data.set.charging_ev_data
+                    charging_ev_data = load.data.set.charging_ev_data
                     # bei ausreichend Überschuss direkt mit max. Phasen laden
                     if data.data.general_data.data.chargemode_config.surplus.feed_in_limit:
-                        feed_in_yield=data.data.general_data.data.chargemode_config.surplus.feed_in_yield
+                        feed_in_yield = data.data.general_data.data.chargemode_config.surplus.feed_in_yield
                     else:
-                        feed_in_yield=0
-                    ev_template=charging_ev_data.ev_template
-                    max_phases_power=ev_template.data.min_current * ev_template.data.max_phases * 230
+                        feed_in_yield = 0
+                    ev_template = charging_ev_data.ev_template
+                    max_phases_power = ev_template.data.min_current * ev_template.data.max_phases * 230
                     if (control_parameter.submode == Chargemode.PV_CHARGING and
                         load.data.set.charge_template.data.chargemode.pv_charging.phases_to_use == 0 and
                             load.hw_supports_phase_switch() and
                             self.get_usable_surplus(feed_in_yield) > max_phases_power):
-                        control_parameter.phases=ev_template.data.max_phases
+                        control_parameter.phases = ev_template.data.max_phases
                         msg += texts.max_phases.format(ev_template.data.max_phases)
                 elif isinstance(load, Consumer):
-                    control_parameter.state=ChargepointState.CHARGING_ALLOWED
+                    control_parameter.state = ChargepointState.CHARGING_ALLOWED
             load.set_state_and_log(msg)
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")
 
-    SWITCH_OFF_TEXTS_CP=SwitchOffTexts(
+    SWITCH_OFF_TEXTS_CP = SwitchOffTexts(
         stop="Ladevorgang nach Ablauf der Wartezeit gestoppt.",
         waiting="Ladevorgang wird nach Ablauf der Wartezeit in {} gestoppt.",
         waiting_min_interval="Ladevorgang wird nach Ablauf des minimalen Regelintervalls in {} gestoppt.",
@@ -449,7 +443,7 @@ class Counter:
         not_charging=("Da das EV nicht lädt und die Abschaltschwelle erreicht wird, "
                       "wird die Ladefreigabe sofort entzogen."),
     )
-    SWITCH_OFF_TEXTS_CONSUMER=SwitchOffTexts(
+    SWITCH_OFF_TEXTS_CONSUMER = SwitchOffTexts(
         stop="Verbraucher nach Ablauf der Wartezeit gestoppt.",
         waiting="Verbraucher wird nach Ablauf der Wartezeit in {} gestoppt.",
         waiting_min_interval="Betrieb wird nach Ablauf des minimalen Regelintervalls in {} gestoppt.",
@@ -472,48 +466,47 @@ class Counter:
 
     def switch_off_check_timer(self, load: Load) -> None:
         try:
-            msg=None
-            surplus_config=data.data.general_data.data.chargemode_config.surplus
-            texts=self._get_switch_off_texts(load)
-            control_parameter=load.data.control_parameter
-            switch_off_delay=self._get_switch_off_delay_by_load(load)
+            msg = None
+            texts = self._get_switch_off_texts(load)
+            control_parameter = load.data.control_parameter
+            switch_off_delay = self._get_switch_off_delay_by_load(load)
 
             if control_parameter.timestamp_switch_on_off is not None:
                 if (isinstance(load, Consumer) and
                         timecheck.create_timestamp() < (load.data.set.timestamp_last_current_set
                                                         + load.data.config.min_interval)):
-                    msg=texts.waiting_min_interval.format(timecheck.convert_timestamp_delta_to_time_string(
+                    msg = texts.waiting_min_interval.format(timecheck.convert_timestamp_delta_to_time_string(
                         load.data.set.timestamp_last_current_set, load.data.config.min_interval))
                 elif not timecheck.check_timestamp(
                         control_parameter.timestamp_switch_on_off,
                         switch_off_delay):
-                    control_parameter.timestamp_switch_on_off=None
+                    control_parameter.timestamp_switch_on_off = None
                     self.data.set.released_surplus -= load.data.set.required_power
-                    msg=texts.stop
-                    control_parameter.state=ChargepointState.NO_CHARGING_ALLOWED
+                    msg = texts.stop
+                    control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
                 else:
-                    msg=texts.waiting.format(timecheck.convert_timestamp_delta_to_time_string(
+                    msg = texts.waiting.format(timecheck.convert_timestamp_delta_to_time_string(
                         control_parameter.timestamp_switch_on_off, switch_off_delay))
             load.set_state_and_log(msg)
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")
 
     def calc_switch_off_threshold(self, load: Load) -> float:
-        surplus_config=data.data.general_data.data.chargemode_config.surplus
-        control_parameter=load.data.control_parameter
+        surplus_config = data.data.general_data.data.chargemode_config.surplus
+        control_parameter = load.data.control_parameter
         if surplus_config.feed_in_limit:
             # Der EVU-Überschuss muss ggf um die Einspeisegrenze bereinigt werden.
             # Wnn die Leistung nicht Einspeisegrenze + Einschaltschwelle erreicht, darf die Ladung nicht pulsieren.
             # Abschaltschwelle um Einschaltschwelle reduzieren.
-            threshold=(-surplus_config.feed_in_yield
+            threshold = (-surplus_config.feed_in_yield
                          + surplus_config.vehicle.switch_on_threshold*control_parameter.phases)
         else:
-            threshold=data.data.general_data.data.consumer_config.switch_off_threshold
+            threshold = data.data.general_data.data.consumer_config.switch_off_threshold
         return threshold
 
     def calc_switch_off(self, load: Load) -> Tuple[float, float]:
-        switch_off_power=self.calc_surplus() - self.data.set.released_surplus
-        threshold=self.calc_switch_off_threshold(load)
+        switch_off_power = self.calc_surplus() - self.data.set.released_surplus
+        threshold = self.calc_switch_off_threshold(load)
         log.debug(f'LP{load.num} Switch-Off-Threshold prüfen: {switch_off_power}W, Schwelle: {threshold}W, '
                   f'freigegebener Überschuss {self.data.set.released_surplus}W')
         return switch_off_power, threshold
@@ -523,37 +516,37 @@ class Counter:
         Ist die Abschaltverzögerung bereits aktiv, wird geprüft, ob die Abschaltschwelle wieder
         unterschritten wurde, sodass die Verzögerung wieder gestoppt wird.
         """
-        charge=True
-        msg=None
-        texts=self._get_switch_off_texts(load)
+        charge = True
+        msg = None
+        texts = self._get_switch_off_texts(load)
         if isinstance(load, Chargepoint):
-            nominal_difference=load.data.set.charging_ev_data.ev_template.data.nominal_difference
+            nominal_difference = load.data.set.charging_ev_data.ev_template.data.nominal_difference
         else:
-            nominal_difference=0
-        switch_off_delay=self._get_switch_off_delay_by_load(load)
-        control_parameter=load.data.control_parameter
-        timestamp_switch_on_off=control_parameter.timestamp_switch_on_off
+            nominal_difference = 0
+        switch_off_delay = self._get_switch_off_delay_by_load(load)
+        control_parameter = load.data.control_parameter
+        timestamp_switch_on_off = control_parameter.timestamp_switch_on_off
 
-        power_in_use, threshold=self.calc_switch_off(load)
+        power_in_use, threshold = self.calc_switch_off(load)
         if control_parameter.state == ChargepointState.SWITCH_OFF_DELAY:
             # Wenn automatische Phasenumschaltung aktiv, die Umschaltung abwarten, bevor die Abschaltschwelle
             # greift.
             if control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY:
-                timestamp_switch_on_off=None
+                timestamp_switch_on_off = None
                 self.data.set.released_surplus -= load.data.set.required_power
                 log.info("Abschaltverzögerung gestoppt, da die Verzögerung für die Phasenumschaltung aktiv ist. " +
                          "Diese wird abgewartet, bevor die Abschaltverzögerung gestartet wird.")
             # Wurde die Abschaltschwelle erreicht?
             # Eigene Leistung aus der freigegebenen Leistung herausrechnen.
             if power_in_use + load.data.set.required_power < threshold:
-                timestamp_switch_on_off=None
+                timestamp_switch_on_off = None
                 self.data.set.released_surplus -= load.data.set.required_power
-                msg=texts.exceeded
-                control_parameter.state=ChargepointState.CHARGING_ALLOWED
+                msg = texts.exceeded
+                control_parameter.state = ChargepointState.CHARGING_ALLOWED
         else:
             # Wurde die Abschaltschwelle ggf. durch die Verzögerung anderer LP erreicht?
-            min_current=(load.data.control_parameter.min_current + nominal_difference)
-            switch_off_condition=(power_in_use > threshold or
+            min_current = (load.data.control_parameter.min_current + nominal_difference)
+            switch_off_condition = (power_in_use > threshold or
                                     # Wenn der Speicher hochregeln soll, muss auch abgeschaltet werden.
                                     (self.calc_raw_surplus() <= 0 and
                                      data.data.bat_all_data.data.set.regulate_up and
@@ -570,41 +563,41 @@ class Counter:
                     # released_evu_surplus subtrahieren, würde released_evu_surplus nach Ablauf der Verzögerung
                     # nicht 0 sein, wenn sich die Ladeleistung zwischendurch verändert hat.
                     if load.data.get.charge_state is False:
-                        charge=False
-                        msg=texts.not_charging
-                        control_parameter.state=ChargepointState.NO_CHARGING_ALLOWED
+                        charge = False
+                        msg = texts.not_charging
+                        control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
                     else:
-                        timestamp_switch_on_off=timecheck.create_timestamp()
+                        timestamp_switch_on_off = timecheck.create_timestamp()
                         # merken, dass ein LP verzögert wird, damit nicht zu viele LP verzögert werden.
                         self.data.set.released_surplus += load.data.set.required_power
-                        msg=texts.waiting.format(timecheck.convert_timestamp_delta_to_time_string(
+                        msg = texts.waiting.format(timecheck.convert_timestamp_delta_to_time_string(
                             timestamp_switch_on_off, switch_off_delay))
-                        control_parameter.state=ChargepointState.SWITCH_OFF_DELAY
+                        control_parameter.state = ChargepointState.SWITCH_OFF_DELAY
                     # Die Abschaltschwelle wird immer noch überschritten und es sollten weitere LP abgeschaltet
                     # werden.
                 else:
-                    msg=texts.no_stop
+                    msg = texts.no_stop
         if timestamp_switch_on_off != control_parameter.timestamp_switch_on_off:
-            control_parameter.timestamp_switch_on_off=timestamp_switch_on_off
+            control_parameter.timestamp_switch_on_off = timestamp_switch_on_off
         load.set_state_and_log(msg)
         return charge
 
     def reset_switch_on_off(self, chargepoint: Chargepoint):
         try:
             if chargepoint.data.control_parameter.timestamp_switch_on_off is not None:
-                chargepoint.data.control_parameter.timestamp_switch_on_off=None
-                evu_counter=data.data.counter_all_data.get_evu_counter()
+                chargepoint.data.control_parameter.timestamp_switch_on_off = None
+                evu_counter = data.data.counter_all_data.get_evu_counter()
                 # Wenn bereits geladen wird, lief die Abschaltverzögerung -> Leistung, die nach Abschalten frei
                 # geworden wäre, nicht mehr zum zur Verfügung stehenden Überschuss zählen.
                 # Wenn nicht geladen wird, reservierte Leistung freigeben.
-                surplus_config=data.data.general_data.data.chargemode_config.surplus
+                surplus_config = data.data.general_data.data.chargemode_config.surplus
                 if not chargepoint.data.get.charge_state:
                     evu_counter.data.set.reserved_surplus -= (surplus_config.vehicle.switch_on_threshold
                                                               * chargepoint.data.set.phases_to_use)
                 else:
                     evu_counter.data.set.released_surplus -= (surplus_config.vehicle.switch_on_threshold
                                                               * chargepoint.data.control_parameter.phases)
-                chargepoint.data.control_parameter.state=ChargepointState.NO_CHARGING_ALLOWED
+                chargepoint.data.control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")
 
@@ -612,8 +605,8 @@ class Counter:
         """ setzt die Daten zurück, die über mehrere Regelzyklen genutzt werden.
         """
         try:
-            self.data.set.reserved_surplus=0
-            self.data.set.released_surplus=0
+            self.data.set.reserved_surplus = 0
+            self.data.set.released_surplus = 0
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")
 
@@ -621,7 +614,7 @@ class Counter:
 def limit_raw_power_left_to_surplus(surplus: float) -> None:
     for counter in data.data.counter_data.values():
         # Zwischenzähler werden nur nach Strömen begrenzt, daher kann hier die Leistung vom EVU-Zähler gesetzt werden
-        counter.data.set.surplus_power_left=surplus
+        counter.data.set.surplus_power_left = surplus
         log.debug(f'Zähler {counter.num}: Begrenzung der verbleibenden Leistung auf '
                   f'{counter.data.set.surplus_power_left}W')
 
@@ -631,10 +624,10 @@ def set_raw_surplus_power_left() -> None:
     ins Netz eingespeist.
     beim Bidi-Laden den Regelmodus rausrechnen, da sonst zum Regelmodus und nicht zum Nullpunkt geregelt wird.
     """
-    grid_counter=data.data.counter_all_data.get_evu_counter()
-    bidi_power=0
-    chargepoint_by_chargemodes=get_loads_by_chargemodes(CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE)
+    grid_counter = data.data.counter_all_data.get_evu_counter()
+    bidi_power = 0
+    chargepoint_by_chargemodes = get_loads_by_chargemodes(CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE)
     for cp in chargepoint_by_chargemodes:
         bidi_power += cp.data.get.power
-    grid_counter.data.set.surplus_power_left=grid_counter.data.get.power * -1 + bidi_power
+    grid_counter.data.set.surplus_power_left = grid_counter.data.get.power * -1 + bidi_power
     log.debug(f"Nullpunktanpassung {grid_counter.data.set.surplus_power_left}W")
