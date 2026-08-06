@@ -109,7 +109,7 @@ def chargemode_factory() -> Chargemode:
 class ChargeTemplateData:
     id: int = 0
     name: str = "Lade-Profil"
-    prio: bool = False
+    prio: bool = False  # OBSOLET seit 2.3.0
     load_default: bool = False
     time_charging: TimeCharging = field(default_factory=time_charging_factory)
     chargemode: Chargemode = field(default_factory=chargemode_factory)
