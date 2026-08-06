@@ -44,9 +44,9 @@ def test_get_charging_power_left_diff_hybrid(bat_power: int,
     data.data.bat_data["bat1"] = Bat(1)
     data.data.bat_data["bat1"].data.get.power = bat_power
     data.data.bat_data["bat1"].data.get.soc = 71
-    data.data.general_data.data.chargemode_config.pv_charging.bat_mode = BatConsiderationMode.MIN_SOC_BAT.value
-    data.data.general_data.data.chargemode_config.pv_charging.bat_power_discharge = 5000
-    data.data.general_data.data.chargemode_config.pv_charging.bat_power_discharge_active = True
+    data.data.general_data.data.chargemode_config.bat.mode = BatConsiderationMode.MIN_SOC_BAT.value
+    data.data.general_data.data.chargemode_config.bat.power_discharge = 5000
+    data.data.general_data.data.chargemode_config.bat.power_discharge_active = True
     monkeypatch.setattr(data.data.counter_all_data, "get_hybrid_bat_ids", Mock(return_value=[1]))
     monkeypatch.setattr(data.data.counter_all_data, "get_non_hybrid_bat_ids", Mock(return_value=[]))
     monkeypatch.setattr(data.data.counter_all_data, "get_hybrid_inverter_ids", Mock(return_value=[2]))
@@ -198,12 +198,12 @@ def test_get_charging_power_left_uses_limited_bat_discharge_in_hysteresis(
     b_all.data.get.soc = 60
     b_all.data.set.hysteresis_discharge = True
     b_all.data.set.power_limit = None
-    data.data.general_data.data.chargemode_config.pv_charging = PvCharging(
-        bat_mode="min_soc_bat_mode",
-        min_bat_soc=40,
-        max_bat_soc=80,
-        bat_power_discharge=8000,
-        bat_power_discharge_active=True,
+    data.data.general_data.data.chargemode_config.bat = ChargemodeConfigBat(
+        mode="min_soc_bat_mode",
+        min_soc=40,
+        max_soc=80,
+        power_discharge=8000,
+        power_discharge_active=True,
     )
 
     # Hybrid-Setup fuer reale Berechnung in _limit_bat_power_discharge
