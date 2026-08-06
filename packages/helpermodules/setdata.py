@@ -780,7 +780,7 @@ class SetData:
             elif ("openWB/set/general/chargemode_config/surplus/feed_in_yield" in msg.topic or
                     "openWB/set/general/chargemode_config/surplus/vehicle/switch_on_threshold" in msg.topic or
                     "openWB/set/general/chargemode_config/surplus/vehicle/switch_on_delay" in msg.topic or
-                    "openWB/set/general/chargemode_config/surplus/vehicle/switch_off_delay" in msg.topic
+                    "openWB/set/general/chargemode_config/surplus/vehicle/switch_off_delay" in msg.topic or
                     "openWB/set/general/consumer/config/switch_on_delay" in msg.topic or
                     "openWB/set/general/consumer/config/switch_off_delay" in msg.topic):
                 self._validate_value(msg, int, [(0, float("inf"))])
