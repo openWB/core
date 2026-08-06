@@ -244,11 +244,11 @@ def test_upgrade_datastore_125_is_idempotent_for_already_converted_values(mock_p
                  False, Chargemode.INSTANT_CHARGING.value, [0, 1, 2], id="alle gleich"),
     pytest.param(False, Chargemode.INSTANT_CHARGING.value, False, Chargemode.INSTANT_CHARGING.value,
                  False, Chargemode.SCHEDULED_CHARGING.value, [2, 0, 1], id="Lademodi unterschiedlich"),
-    pytest.param(False, Chargemode.INSTANT_CHARGING.value, False, Chargemode.INSTANT_CHARGING.value,
+    pytest.param(False, Chargemode.INSTANT_CHARGING.value, True, Chargemode.INSTANT_CHARGING.value,
                  False, Chargemode.INSTANT_CHARGING.value, [1, 0, 2], id="Prioritäten unterschiedlich")
 ]
 )
-def test_upgrade_datastore_136_ev_chargemode_conversion(ev0_prio: bool,
+def test_upgrade_datastore_138_ev_chargemode_conversion(ev0_prio: bool,
                                                         ev0_chargemode: str,
                                                         ev1_prio: bool,
                                                         ev1_chargemode: str,
@@ -282,12 +282,12 @@ def test_upgrade_datastore_136_ev_chargemode_conversion(ev0_prio: bool,
     }
 
     # execution
-    uc.upgrade_datastore_136()
+    uc.upgrade_datastore_138()
 
     # evaluation
     assert uc.all_received_topics["openWB/counter/get/loadmanagement_prios"] == [
         {"type": "vehicle", "id": id_ordered[0]},
         {"type": "vehicle", "id": id_ordered[1]},
         {"type": "vehicle", "id": id_ordered[2]}]
-    assert uc.all_received_topics["openWB/system/datastore_version"] == [131, 132, 136]
-    assert mock_pub.pub.call_count == 1  # einmal publishen für Upgrade der Datastore-Version
+    assert uc.all_received_topics["openWB/system/datastore_version"] == [131, 132, 138]
+    assert mock_pub.pub.call_count == 2  # einmal publishen für Upgrade der Datastore-Version
