@@ -25,12 +25,15 @@ BMW_API_URL = "https://api-cardata.bmwgroup.com"
 # nach wie vor), neue Fallback-Attribute werden hinten angehängt und greifen
 # nur, wenn die vorherigen für das Fahrzeug nicht existieren. Bestehende
 # Einträge nicht entfernen – sonst brechen Fahrzeuge, die sie noch liefern.
-# S. https://github.com/openWB/core/discussions/3420
+# Alle Einträge gegen den offiziellen BMW CarData Telematikdatenkatalog
+# verifiziert. S. https://github.com/openWB/core/discussions/3420
 FIELD_SOC_CANDIDATES = [
     "vehicle.drivetrain.electricEngine.charging.level",
     "vehicle.drivetrain.batteryManagement.header",
-    # bei neueren Fahrzeugen (z.B. iX1, manche MINI) das einzige verfügbare Attribut:
     "vehicle.powertrain.electric.battery.stateOfCharge.displayed",
+    # "Neue Klasse" (NK/NA5, ab 2026, z.B. neuer iX3/i3): weder charging.level
+    # noch batteryManagement.header verfügbar; wird nur bei Fahrtende befüllt.
+    "vehicle.trip.segment.end.drivetrain.batteryManagement.hvSoc",
 ]
 FIELD_RANGE_CANDIDATES = [
     "vehicle.drivetrain.electricEngine.remainingElectricRange",
@@ -39,6 +42,7 @@ FIELD_RANGE_CANDIDATES = [
 FIELD_STATUS = "vehicle.drivetrain.electricEngine.charging.status"
 FIELD_ODOMETER_CANDIDATES = [
     "vehicle.vehicle.travelledDistance",
+    # wird nur bei Fahrtende befüllt ("Mileage after last drive")
     "vehicle.trip.segment.end.travelledDistance",
 ]
 
@@ -48,7 +52,7 @@ CONTAINER_DESCRIPTORS = [
     FIELD_STATUS,
     *FIELD_SOC_CANDIDATES,
     *FIELD_RANGE_CANDIDATES,
-    FIELD_ODOMETER_CANDIDATES[0],
+    *FIELD_ODOMETER_CANDIDATES,
 ]
 # Manche neueren Fahrzeuge kennen das älteste (erste) SoC-Attribut nicht mehr.
 # Legt man einen Container mit einem für das Fahrzeug nicht verfügbaren
