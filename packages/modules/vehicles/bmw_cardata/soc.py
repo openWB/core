@@ -19,11 +19,13 @@ log = logging.getLogger(__name__)
 BMW_AUTH_URL = "https://customer.bmwgroup.com/gcdm/oauth"
 BMW_API_URL = "https://api-cardata.bmwgroup.com"
 
-# Reihenfolge = Priorität. Neue Attribute (falls BMW mal wieder was ändert)
-# vorne einfügen und in CONTAINER_DESCRIPTORS unten mit aufnehmen.
-# Ältere/bekannt fehlende Attribute nicht entfernen, sondern hinten anhängen –
-# so bleibt die Abwärtskompatibilität für Fahrzeuge erhalten, die sie noch
-# liefern. S. https://github.com/openWB/core/discussions/3420
+# Reihenfolge = Priorität beim Auslesen (siehe _extract_first_value): das
+# erste Attribut, das in der API-Antwort einen Wert liefert, gewinnt. Alte,
+# etablierte Attribute stehen vorne (funktionieren bei den meisten Fahrzeugen
+# nach wie vor), neue Fallback-Attribute werden hinten angehängt und greifen
+# nur, wenn die vorherigen für das Fahrzeug nicht existieren. Bestehende
+# Einträge nicht entfernen – sonst brechen Fahrzeuge, die sie noch liefern.
+# S. https://github.com/openWB/core/discussions/3420
 FIELD_SOC_CANDIDATES = [
     "vehicle.drivetrain.electricEngine.charging.level",
     "vehicle.drivetrain.batteryManagement.header",
