@@ -24,10 +24,10 @@ class KwargsDict(TypedDict):
 
 
 class SmaSunnyBoyInverter(AbstractInverter):
-
-    SMA_INT32_NAN = -0x80000000  # SMA uses this value to represent NaN
-    SMA_UINT32_NAN = 0xFFFFFFFF  # SMA uses this value to represent NaN
-    SMA_NAN = -0xC000
+    SMA_INT16_NAN = -0x8000
+    SMA_INT32_NAN = -0x80000000
+    SMA_UINT32_NAN = 0xFFFFFFFF
+    SMA_UINT64_NAN = 0xFFFFFFFFFFFFFFFF
 
     def __init__(self,
                  component_config: SmaSunnyBoyInverterSetup,
@@ -75,11 +75,14 @@ class SmaSunnyBoyInverter(AbstractInverter):
             currents = [(power_total / 3 / 230)] * 3
         else:
             raise ValueError("Unbekannte Version "+str(self.component_config.configuration.version))
-        if power_total == self.SMA_INT32_NAN or power_total == self.SMA_NAN:
+
+        # WR geht nachts in Standby und gibt einen NaN-Wert für die Leistung aus.
+        if power_total in (self.SMA_INT16_NAN, self.SMA_INT32_NAN,
+                           -self.SMA_INT16_NAN * 10, -self.SMA_INT32_NAN):
             power_total = 0
-            # WR geht nachts in Standby und gibt einen NaN-Wert für die Leistung aus.
+            dc_power = 0
             currents = [0, 0, 0]
-        if energy == self.SMA_UINT32_NAN:
+        if energy in (self.SMA_UINT32_NAN, self.SMA_UINT32_NAN * 100, self.SMA_UINT64_NAN):
             raise ValueError(
                 f'Wechselrichter lieferte nicht plausiblen Zählerstand: {energy}. '
                 'Sobald PV Ertrag vorhanden ist sollte sich dieser Wert ändern, '
