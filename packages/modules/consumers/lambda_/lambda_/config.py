@@ -24,6 +24,8 @@ class Lambda(ConsumerSetup[LambdaConfiguration]):
                  type: str = "lambda",
                  id: int = 0,
                  configuration: LambdaConfiguration = None,
+                 # Lambda unterstützt keine direkte Leistungsvorgabe (kein power_limit-Register),
+                 # daher SELF_CONTROLLED statt SUSPENDABLE_TUNABLE
                  usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SELF_CONTROLLED,
                                                      ConsumerUsage.METER_ONLY),
                  **kwargs) -> None:
