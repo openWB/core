@@ -1498,12 +1498,6 @@
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/counter/config/home_consumption_source_id",
-					"priority": 0,
-					"allow": true
-				},
-				{
-					"acltype": "publishClientSend",
 					"topic": "openWB/set/counter/config/consider_less_charging",
 					"priority": 0,
 					"allow": true
@@ -1528,6 +1522,12 @@
 				},
 				{
 					"acltype": "publishClientSend",
+					"topic": "openWB/set/counter/+/config/is_home_consumption_counter",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
 					"topic": "openWB/set/counter/+/config/max_total_power",
 					"priority": 0,
 					"allow": true
@@ -1547,12 +1547,6 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/bat/+/config/max_power",
-					"priority": 0,
-					"allow": true
-				},
-				{
-					"acltype": "publishClientReceive",
-					"topic": "openWB/counter/config/home_consumption_source_id",
 					"priority": 0,
 					"allow": true
 				},
@@ -1583,6 +1577,12 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/counter/+/config/max_currents",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/counter/+/config/is_home_consumption_counter",
 					"priority": 0,
 					"allow": true
 				},

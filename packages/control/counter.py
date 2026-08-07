@@ -27,6 +27,7 @@ def get_counter_default_config():
     return {"max_power_errorcase": 7000,
             "max_currents": [35]*3,
             "max_total_power": 24000,
+            "is_home_consumption_counter": False
             }
 
 
@@ -38,10 +39,11 @@ class ControlRangeState(Enum):
 
 @dataclass
 class Config:
-    max_power_errorcase: float = field(default=7000, metadata={"topic": "get/max_power_errorcase"})
+    max_power_errorcase: float = field(default=7000, metadata={"topic": "config/max_power_errorcase"})
     max_currents: List[float] = field(default_factory=currents_list_factory, metadata={
-                                      "topic": "get/max_currents"})
-    max_total_power: float = field(default=0, metadata={"topic": "get/max_total_power"})
+                                      "topic": "config/max_currents"})
+    max_total_power: float = field(default=0, metadata={"topic": "config/max_total_power"})
+    is_home_consumption_counter: bool = field(default=False, metadata={"topic": "config/is_home_consumption_counter"})
 
 
 def config_factory() -> Config:
