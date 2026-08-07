@@ -131,6 +131,44 @@ class TestBmwCardata:
         assert result.soc == 42
         assert result.range == 210
 
+    def test_soc_extraction_neue_klasse_trip_end_fallback(self, monkeypatch):
+        # "Neue Klasse"-Fahrzeuge (NK/NA5) liefern weder charging.level noch
+        # batteryManagement.header noch stateOfCharge.displayed, nur den
+        # Fahrtende-Wert.
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "telematicData": {
+                "vehicle.trip.segment.end.drivetrain.batteryManagement.hvSoc": {"value": "33", "unit": "percent"},
+                "vehicle.drivetrain.electricEngine.kombiRemainingElectricRange": {"value": "120", "unit": "km"},
+            }
+        }
+        mock_session = Mock()
+        mock_session.get.return_value = mock_response
+        mock_session.headers = {}
+        monkeypatch.setattr("modules.vehicles.bmw_cardata.soc.req.get_http_session", Mock(return_value=mock_session))
+
+        result = fetch_soc(self._make_config())
+        assert result.soc == 33
+        assert result.range == 120
+
+    def test_odometer_trip_end_fallback(self, monkeypatch):
+        # Falls vehicle.vehicle.travelledDistance fehlt, wird der
+        # Fahrtende-Kilometerstand als Fallback genutzt.
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "telematicData": {
+                "vehicle.drivetrain.electricEngine.charging.level": {"value": "50", "unit": "%"},
+                "vehicle.trip.segment.end.travelledDistance": {"value": "45000", "unit": "km"},
+            }
+        }
+        mock_session = Mock()
+        mock_session.get.return_value = mock_response
+        mock_session.headers = {}
+        monkeypatch.setattr("modules.vehicles.bmw_cardata.soc.req.get_http_session", Mock(return_value=mock_session))
+
+        result = fetch_soc(self._make_config())
+        assert result.odometer == 45000
+
     def test_no_soc_raises(self, monkeypatch):
         mock_response = Mock()
         mock_response.json.return_value = {"telematicData": {}}
