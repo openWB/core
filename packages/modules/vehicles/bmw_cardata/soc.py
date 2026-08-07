@@ -19,10 +19,21 @@ log = logging.getLogger(__name__)
 BMW_AUTH_URL = "https://customer.bmwgroup.com/gcdm/oauth"
 BMW_API_URL = "https://api-cardata.bmwgroup.com"
 
-FIELD_SOC = "vehicle.drivetrain.electricEngine.charging.level"
-FIELD_SOC_ALT = "vehicle.drivetrain.batteryManagement.header"
-FIELD_RANGE = "vehicle.drivetrain.electricEngine.remainingElectricRange"
-FIELD_RANGE_ALT = "vehicle.drivetrain.electricEngine.kombiRemainingElectricRange"
+# Reihenfolge = Priorität. Neue Attribute (falls BMW mal wieder was ändert)
+# vorne einfügen und in CONTAINER_DESCRIPTORS unten mit aufnehmen.
+# Ältere/bekannt fehlende Attribute nicht entfernen, sondern hinten anhängen –
+# so bleibt die Abwärtskompatibilität für Fahrzeuge erhalten, die sie noch
+# liefern. S. https://github.com/openWB/core/discussions/3420
+FIELD_SOC_CANDIDATES = [
+    "vehicle.drivetrain.electricEngine.charging.level",
+    "vehicle.drivetrain.batteryManagement.header",
+    # bei neueren Fahrzeugen (z.B. iX1, manche MINI) das einzige verfügbare Attribut:
+    "vehicle.powertrain.electric.battery.stateOfCharge.displayed",
+]
+FIELD_RANGE_CANDIDATES = [
+    "vehicle.drivetrain.electricEngine.remainingElectricRange",
+    "vehicle.drivetrain.electricEngine.kombiRemainingElectricRange",
+]
 FIELD_STATUS = "vehicle.drivetrain.electricEngine.charging.status"
 FIELD_ODOMETER_CANDIDATES = [
     "vehicle.vehicle.travelledDistance",
@@ -32,13 +43,17 @@ FIELD_ODOMETER_CANDIDATES = [
 CONTAINER_NAME = "ChargeStats"
 CONTAINER_PURPOSE = "openWB"
 CONTAINER_DESCRIPTORS = [
-    "vehicle.drivetrain.electricEngine.charging.status",
-    "vehicle.drivetrain.electricEngine.charging.level",
-    "vehicle.drivetrain.batteryManagement.header",
-    "vehicle.drivetrain.electricEngine.remainingElectricRange",
-    "vehicle.drivetrain.electricEngine.kombiRemainingElectricRange",
-    "vehicle.vehicle.travelledDistance",
+    FIELD_STATUS,
+    *FIELD_SOC_CANDIDATES,
+    *FIELD_RANGE_CANDIDATES,
+    FIELD_ODOMETER_CANDIDATES[0],
 ]
+# Manche neueren Fahrzeuge kennen das älteste (erste) SoC-Attribut nicht mehr.
+# Legt man einen Container mit einem für das Fahrzeug nicht verfügbaren
+# Descriptor an, antwortet die BMW-API dabei offenbar teils mit einem
+# Serverfehler statt einer sauberen 400er. Als Fallback wird die
+# Container-Erstellung ohne dieses eine Attribut wiederholt.
+CONTAINER_DESCRIPTORS_FALLBACK = [d for d in CONTAINER_DESCRIPTORS if d != FIELD_SOC_CANDIDATES[0]]
 
 
 def _get_session(token: Optional[str] = None):
@@ -100,17 +115,34 @@ def _post_json(url: str, token: str, payload: dict) -> dict:
     return response.json()
 
 
-def _create_container(token: str) -> str:
+# Manche neueren Fahrzeuge (z.B. iX1, manche MINI) kennen den Descriptor
+# FIELD_SOC_CANDIDATES[0] (charging.level) im CarData-Portal nicht mehr. Legt
+# man einen Container mit einem für das Fahrzeug nicht verfügbaren Descriptor
+# an, antwortet die BMW-API dabei offenbar teils mit einem Serverfehler statt
+# einer sauberen 400er (s. https://github.com/openWB/core/discussions/3420).
+# Als Fallback wird die Container-Erstellung ohne diesen Descriptor wiederholt.
+def _create_container(token: str, descriptors: List[str] = None, _is_retry: bool = False) -> str:
+    descriptors = descriptors if descriptors is not None else CONTAINER_DESCRIPTORS
     log.warning("BMW CarData: Keine aktiven Container gefunden. Erstelle neuen Container...")
-    result = _post_json(
-        f"{BMW_API_URL}/customers/containers",
-        token,
-        {
-            "name": CONTAINER_NAME,
-            "purpose": CONTAINER_PURPOSE,
-            "technicalDescriptors": CONTAINER_DESCRIPTORS,
-        },
-    )
+    try:
+        result = _post_json(
+            f"{BMW_API_URL}/customers/containers",
+            token,
+            {
+                "name": CONTAINER_NAME,
+                "purpose": CONTAINER_PURPOSE,
+                "technicalDescriptors": descriptors,
+            },
+        )
+    except RequestException as e:
+        if not _is_retry:
+            log.warning(
+                "BMW CarData: Container-Erstellung fehlgeschlagen (%s). Versuche erneut ohne "
+                "'%s' (evtl. für dieses Fahrzeug nicht verfügbar).", e, FIELD_SOC_CANDIDATES[0],
+            )
+            return _create_container(token, CONTAINER_DESCRIPTORS_FALLBACK, _is_retry=True)
+        raise Exception(f"BMW CarData: Container konnte nicht erstellt werden: {e}")
+
     container_id = result.get("containerId") or result.get("id")
     if not container_id:
         raise Exception(f"BMW CarData: Container konnte nicht erstellt werden: {result}")
@@ -240,13 +272,8 @@ def fetch_soc(config: BmwCardataSetup, vehicle: int = 0) -> CarState:
 
     td = raw.get("telematicData", raw)
 
-    soc_raw = _extract_value(td, FIELD_SOC)
-    if soc_raw is None:
-        soc_raw = _extract_value(td, FIELD_SOC_ALT)
-
-    range_raw = _extract_value(td, FIELD_RANGE)
-    if range_raw is None:
-        range_raw = _extract_value(td, FIELD_RANGE_ALT)
+    soc_raw = _extract_first_value(td, FIELD_SOC_CANDIDATES)
+    range_raw = _extract_first_value(td, FIELD_RANGE_CANDIDATES)
     status = _extract_value(td, FIELD_STATUS)
     odometer_raw = _extract_first_value(td, FIELD_ODOMETER_CANDIDATES)
 
