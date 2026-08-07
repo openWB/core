@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from enum import IntEnum
 from pymodbus.constants import Endian
 import logging
 
@@ -13,12 +12,6 @@ from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.lambda_.lambda_.config import Lambda
 
 log = logging.getLogger(__name__)
-
-
-class Register(IntEnum):
-    # Modbus-Protokoll 1.0, Kap. 3.2 und 4.3
-    POWER = 103
-    GRID_POWER = 102
 
 
 def create_consumer(config: Lambda):
@@ -35,16 +28,15 @@ def create_consumer(config: Lambda):
 
     def send_values(values: CurrentValues) -> None:
         # Sendet die aktuelle EVU-Leistung an den Lambda E-Manager (Modbus-Protokoll 1.0,
-        # Kap. 3.2 und 4.3). Der E-Manager muss zusätzlich einmalig auf der Wärmepumpe selbst
-        # auf Datenquelle "Modbus Client" umgestellt werden (Kap. 4.3), das kann openWB nicht
-        # per Modbus setzen. Wird vom Core automatisch aufgerufen, solange dieser Verbraucher
-        # als ConsumerUsage.SELF_CONTROLLED konfiguriert ist.
-        client.write_register(Register.GRID_POWER, values.evu_power, wordorder=Endian.Little,
-                               unit=config.configuration.modbus_id)
+        # Kap. 3.2 und 4.3, Reg 102). Der E-Manager muss zusätzlich einmalig auf der
+        # Wärmepumpe selbst auf Datenquelle "Modbus Client" umgestellt werden (Kap. 4.3),
+        # das kann openWB nicht per Modbus setzen. Wird vom Core automatisch aufgerufen,
+        # solange dieser Verbraucher als ConsumerUsage.SELF_CONTROLLED konfiguriert ist.
+        client.write_register(102, values.evu_power, wordorder=Endian.Little, unit=config.configuration.modbus_id)
 
     def update() -> ConsumerState:
-        power = client.read_holding_registers(Register.POWER, ModbusDataType.INT_16,
-                                                unit=config.configuration.modbus_id)
+        power = client.read_holding_registers(103, ModbusDataType.INT_16,
+                                              unit=config.configuration.modbus_id)
         imported, exported = sim_counter.sim_count(power)
 
         return ConsumerState(
