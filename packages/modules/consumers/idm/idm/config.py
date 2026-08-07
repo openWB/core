@@ -12,13 +12,11 @@ class IdmConfiguration:
                  ip_address: Optional[str] = None,
                  port: Optional[int] = 502,
                  modbus_id: Optional[int] = 1,
-                 version: int = 1,
-                 send_values: bool = False):
+                 version: int = 1):
         self.ip_address = ip_address
         self.port = port
         self.modbus_id = modbus_id
         self.version = version
-        self.send_values = send_values
 
 
 @auto_str
@@ -28,7 +26,9 @@ class Idm(ConsumerSetup[IdmConfiguration]):
                  type: str = "idm",
                  id: int = 0,
                  configuration: IdmConfiguration = None,
-                 usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_TUNABLE,
+                 # IDM unterstützt keine direkte Leistungsvorgabe (kein power_limit-Register),
+                 # daher SELF_CONTROLLED statt SUSPENDABLE_TUNABLE
+                 usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SELF_CONTROLLED,
                                                      ConsumerUsage.METER_ONLY),
                  **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
