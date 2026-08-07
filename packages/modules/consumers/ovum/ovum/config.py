@@ -24,10 +24,12 @@ class Ovum(ConsumerSetup[OvumConfiguration]):
                  type: str = "ovum",
                  id: int = 0,
                  configuration: OvumConfiguration = None,
-                 # OVUM unterstützt sowohl eine echte Leistungsvorgabe (SUSPENDABLE_TUNABLE)
-                 # als auch Eigenregelung anhand der Systemwerte (SELF_CONTROLLED)
+                 # OVUM unterstützt eine echte Leistungsvorgabe (SUSPENDABLE_TUNABLE),
+                 # Eigenregelung anhand der Systemwerte (SELF_CONTROLLED) sowie
+                 # SG-Ready-Ein-/Ausschalten (SUSPENDABLE_ONOFF)
                  usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_TUNABLE,
                                                      ConsumerUsage.SELF_CONTROLLED,
+                                                     ConsumerUsage.SUSPENDABLE_ONOFF,
                                                      ConsumerUsage.METER_ONLY),
                  **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
