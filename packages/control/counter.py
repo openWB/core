@@ -333,15 +333,14 @@ class Counter:
 
     def get_pv_config_py_load(self, load: Load) -> Tuple[float, float, bool]:
         if isinstance(load, Chargepoint):
-            switch_on_delay = data.data.general_data.data.chargemode_config.pv_charging.switch_on_delay
-            switch_on_threshold = data.data.general_data.data.chargemode_config.pv_charging.switch_on_threshold
-            feed_in_limit = data.data.general_data.data.chargemode_config.pv_charging.feed_in_limit
+            switch_on_delay = data.data.general_data.data.chargemode_config.surplus.vehicle.switch_on_delay
+            switch_on_threshold = data.data.general_data.data.chargemode_config.surplus.vehicle.switch_on_threshold
         else:
-            switch_on_delay = data.data.general_data.data.consumer_config.switch_on_delay
+            switch_on_delay = data.data.general_data.data.chargemode_config.surplus.consumer.switch_on_delay
             switch_on_threshold = (load.data.control_parameter.required_current *
                                    230 *
                                    load.data.control_parameter.phases)
-            feed_in_limit = False
+        feed_in_limit = data.data.general_data.data.chargemode_config.surplus.feed_in_limit
         return switch_on_delay, switch_on_threshold, feed_in_limit
 
     def switch_on_threshold_reached(self, load: Load) -> None:
@@ -460,9 +459,9 @@ class Counter:
 
     def _get_switch_off_delay_by_load(self, load: Load) -> float:
         if isinstance(load, Chargepoint):
-            return data.data.general_data.data.chargemode_config.pv_charging.switch_off_delay
+            return data.data.general_data.data.chargemode_config.surplus.vehicle.switch_off_delay
         else:
-            return data.data.general_data.data.consumer_config.switch_off_delay
+            return data.data.general_data.data.chargemode_config.surplus.consumer.switch_off_delay
 
     def switch_off_check_timer(self, load: Load) -> None:
         try:
@@ -501,7 +500,7 @@ class Counter:
             threshold = (-surplus_config.feed_in_yield
                          + surplus_config.vehicle.switch_on_threshold*control_parameter.phases)
         else:
-            threshold = data.data.general_data.data.consumer_config.switch_off_threshold
+            threshold = surplus_config.consumer.switch_off_threshold
         return threshold
 
     def calc_switch_off(self, load: Load) -> Tuple[float, float]:
