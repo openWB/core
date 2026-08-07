@@ -11,12 +11,10 @@ class OvumConfiguration:
     def __init__(self,
                  ip_address: Optional[str] = None,
                  port: Optional[int] = 502,
-                 modbus_id: Optional[int] = 1,
-                 send_values: bool = False):
+                 modbus_id: Optional[int] = 1):
         self.ip_address = ip_address
         self.port = port
         self.modbus_id = modbus_id
-        self.send_values = send_values
 
 
 @auto_str
@@ -26,7 +24,10 @@ class Ovum(ConsumerSetup[OvumConfiguration]):
                  type: str = "ovum",
                  id: int = 0,
                  configuration: OvumConfiguration = None,
+                 # OVUM unterstützt sowohl eine echte Leistungsvorgabe (SUSPENDABLE_TUNABLE)
+                 # als auch Eigenregelung anhand der Systemwerte (SELF_CONTROLLED)
                  usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_TUNABLE,
+                                                     ConsumerUsage.SELF_CONTROLLED,
                                                      ConsumerUsage.METER_ONLY),
                  **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
