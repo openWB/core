@@ -6,7 +6,7 @@ from requests.exceptions import HTTPError as RequestsHTTPError
 from modules.common import store
 from modules.common.abstract_vehicle import VehicleUpdateData
 from modules.common.component_context import SingleComponentUpdateContext
-from modules.vehicles.bmw_cardata.soc import create_vehicle, fetch_soc
+from modules.vehicles.bmw_cardata.soc import FIELD_SOC_CANDIDATES, create_vehicle, fetch_soc
 from modules.vehicles.bmw_cardata.config import BmwCardataSetup, BmwCardataConfiguration
 
 
@@ -112,6 +112,25 @@ class TestBmwCardata:
         assert result.soc == 63
         assert result.range == 280
 
+    def test_soc_extraction_new_field_fallback(self, monkeypatch):
+        # Neuere Fahrzeuge (z.B. iX1) bieten die ersten beiden FIELD_SOC_CANDIDATES
+        # im CarData-Portal an, nur noch stateOfCharge.displayed.
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "telematicData": {
+                "vehicle.powertrain.electric.battery.stateOfCharge.displayed": {"value": "42", "unit": "%"},
+                "vehicle.drivetrain.electricEngine.remainingElectricRange": {"value": "210", "unit": "km"},
+            }
+        }
+        mock_session = Mock()
+        mock_session.get.return_value = mock_response
+        mock_session.headers = {}
+        monkeypatch.setattr("modules.vehicles.bmw_cardata.soc.req.get_http_session", Mock(return_value=mock_session))
+
+        result = fetch_soc(self._make_config())
+        assert result.soc == 42
+        assert result.range == 210
+
     def test_no_soc_raises(self, monkeypatch):
         mock_response = Mock()
         mock_response.json.return_value = {"telematicData": {}}
@@ -196,6 +215,52 @@ class TestBmwCardata:
 
         assert result.soc == 60
         assert config.configuration.container_id == "new-container-id"
+
+    def test_container_create_retries_without_unavailable_descriptor(self, monkeypatch):
+        # Erste POST-Anfrage (voller Descriptor-Satz inkl. FIELD_SOC_CANDIDATES[0]) schlägt fehl,
+        # wie es z.B. bei neueren Fahrzeugen ohne charging.level beobachtet wurde.
+        # Zweiter Versuch (ohne FIELD_SOC_CANDIDATES[0]) muss erfolgreich sein.
+        mock_get_response_empty = Mock()
+        mock_get_response_empty.json.return_value = {"containers": []}
+
+        mock_get_response_data = Mock()
+        mock_get_response_data.json.return_value = {
+            "telematicData": {
+                "vehicle.powertrain.electric.battery.stateOfCharge.displayed": {"value": "58", "unit": "%"},
+                "vehicle.drivetrain.electricEngine.remainingElectricRange": {"value": "150", "unit": "km"},
+            }
+        }
+
+        post_call_count = [0]
+
+        def mock_post(url, json=None):
+            if "containers" in url:
+                post_call_count[0] += 1
+                if post_call_count[0] == 1:
+                    mock_resp = Mock()
+                    mock_resp.status_code = 500
+                    raise RequestsHTTPError(response=mock_resp)
+                assert FIELD_SOC_CANDIDATES[0] not in json["technicalDescriptors"]
+                return Mock(json=Mock(return_value={"containerId": "fallback-container-id"}))
+            raise AssertionError(f"Unerwarteter POST an {url}")
+
+        mock_session = Mock()
+        mock_session.get.return_value = mock_get_response_empty
+        mock_session.post.side_effect = mock_post
+        mock_session.headers = {}
+        monkeypatch.setattr("modules.vehicles.bmw_cardata.soc.req.get_http_session", Mock(return_value=mock_session))
+        # Nach erfolgreicher Container-Erstellung wird die Telematik separat via GET geholt
+        monkeypatch.setattr(
+            "modules.vehicles.bmw_cardata.soc._fetch_telematic_data",
+            Mock(return_value=mock_get_response_data.json.return_value),
+        )
+
+        config = self._make_config(container_id="")
+        result = fetch_soc(config)
+
+        assert result.soc == 58
+        assert config.configuration.container_id == "fallback-container-id"
+        assert post_call_count[0] == 2
 
     def test_container_retry_on_invalid(self, monkeypatch):
         call_count = [0]
