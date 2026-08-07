@@ -35,8 +35,8 @@ class SurplusControlled:
         for counter in common.counter_generator():
             preferenced_loads_groups, preferenced_loads_without_set_current = get_preferenced_load_charging(
                 get_grouped_loads_by_mode_and_counter(CONSIDERED_CHARGE_MODES_SURPLUS, f"counter{counter.num}"))
-            if data.data.general_data.data.chargemode_config.pv_charging.feed_in_limit:
-                feed_in_yield = data.data.general_data.data.chargemode_config.feed_in_yield
+            if data.data.general_data.data.chargemode_config.surplus.feed_in_limit:
+                feed_in_yield = data.data.general_data.data.chargemode_config.surplus.feed_in_yield
             else:
                 feed_in_yield = 0
             self._set(preferenced_loads_groups, feed_in_yield, counter)
@@ -110,10 +110,10 @@ class SurplusControlled:
     def filter_by_feed_in_limit(self, loads: List[Load]) -> Tuple[List[Union[Chargepoint, Load]],
                                                                   List[Union[Chargepoint, Load]]]:
         cp_with_feed_in = list(filter(lambda cp: isinstance(cp, Chargepoint)
-                               and data.data.general_data.data.chargemode_config.pv_charging.feed_in_limit is True,
+                               and data.data.general_data.data.chargemode_config.surplus.feed_in_limit is True,
                                loads))
         cp_without_feed_in = list(filter(lambda cp: isinstance(cp, Consumer)
-                                  or data.data.general_data.data.chargemode_config.pv_charging.feed_in_limit is False,
+                                  or data.data.general_data.data.chargemode_config.surplus.feed_in_limit is False,
                                   loads))
         return cp_with_feed_in, cp_without_feed_in
 
