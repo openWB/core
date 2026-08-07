@@ -123,7 +123,7 @@ const statusColor = computed(() => {
 });
 
 const meterOnly = computed(
-  () => mqttStore.consumerUsageType(props.consumerId) === 'meter_only',
+  () => mqttStore.consumerUsageType(props.consumerId) === 'meter_only' ||  mqttStore.consumerUsageType(props.consumerId) === 'self_controlled',
 );
 
 const consumerColor = computed(() => {
