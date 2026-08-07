@@ -38,22 +38,23 @@ defineOptions({
 
 const props = withDefaults(
   defineProps<{
-    title?: string
-    modelValue: number
-    max: number
-    min: number
-    step?: number
-    unit?: string
-    offValueRight?: number
-    offValueLeft?: number
-    discreteValues?: number[]
-    color?: string
-    trackSize?: string
-    thumbSize?: string
-    thumbColor?: string
+    title?: string;
+    modelValue?: number;
+    max: number;
+    min: number;
+    step?: number;
+    unit?: string;
+    offValueRight?: number;
+    offValueLeft?: number;
+    discreteValues?: number[];
+    color?: string;
+    trackSize?: string;
+    thumbSize?: string;
+    thumbColor?: string;
   }>(),
   {
     title: 'title',
+    modelValue: 0,
     step: 1,
     unit: '',
     offValueRight: 105,
@@ -63,8 +64,8 @@ const props = withDefaults(
     trackSize: '0.5em',
     thumbSize: '1.5em',
     thumbColor: 'primary',
-  }
-)
+  },
+);
 
 const emit = defineEmits<{
   'update:model-value': [value: number];

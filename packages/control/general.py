@@ -87,8 +87,6 @@ class GeneralData:
     extern_display_mode: str = field(default="primary", metadata={
                                      "topic": "extern_display_mode"})
     extern: bool = field(default=False, metadata={"topic": "extern"})
-    external_buttons_hw: bool = field(
-        default=False, metadata={"topic": "external_buttons_hw"})
     grid_protection_active: bool = field(
         default=False, metadata={"topic": "grid_protection_active"})
     grid_protection_configured: bool = field(

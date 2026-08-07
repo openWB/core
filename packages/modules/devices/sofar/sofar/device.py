@@ -18,19 +18,15 @@ def create_device(device_config: Sofar):
     client = None
 
     def create_bat_component(component_config: SofarBatSetup):
-        nonlocal client
         return SofarBat(component_config, modbus_id=device_config.configuration.modbus_id, client=client)
 
     def create_counter_component(component_config: SofarCounterSetup):
-        nonlocal client
         return SofarCounter(component_config, modbus_id=device_config.configuration.modbus_id, client=client)
 
     def create_inverter_component(component_config: SofarInverterSetup):
-        nonlocal client
         return SofarInverter(component_config, modbus_id=device_config.configuration.modbus_id, client=client)
 
     def update_components(components: Iterable[Union[SofarBat, SofarCounter, SofarInverter]]):
-        nonlocal client
         with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):
@@ -52,4 +48,8 @@ def create_device(device_config: Sofar):
     )
 
 
-device_descriptor = DeviceDescriptor(configuration_factory=Sofar)
+device_descriptor = DeviceDescriptor(
+    configuration_factory=Sofar,
+    compatibility_device_note="Einige Versionen des LSE3 Dongles sind kompatibel. Die Auslesung über den LSW3 ist "
+    "nicht möglich!\nBei Inkompatibilität kann unser Netzwerk Modbus Adapter v2 eingesetzt werden."
+)

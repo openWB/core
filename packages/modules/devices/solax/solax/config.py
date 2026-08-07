@@ -39,8 +39,9 @@ class SolaxBatSetup(ComponentSetup[SolaxBatConfiguration]):
                  name: str = "Solax Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: SolaxBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SolaxBatConfiguration())
+                 configuration: SolaxBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SolaxBatConfiguration(), **kwargs)
 
 
 class SolaxCounterConfiguration:
@@ -53,8 +54,9 @@ class SolaxCounterSetup(ComponentSetup[SolaxCounterConfiguration]):
                  name: str = "Solax Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: SolaxCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SolaxCounterConfiguration())
+                 configuration: SolaxCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SolaxCounterConfiguration(), **kwargs)
 
 
 class SolaxInverterConfiguration:
@@ -67,5 +69,6 @@ class SolaxInverterSetup(ComponentSetup[SolaxInverterConfiguration]):
                  name: str = "Solax Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: SolaxInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SolaxInverterConfiguration())
+                 configuration: SolaxInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SolaxInverterConfiguration(), **kwargs)

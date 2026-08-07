@@ -1,26 +1,12 @@
 import logging
 
 from control import data
-from helpermodules import compatibility
 from modules.common.component_state import InverterState
 from modules.common.store import ValueStore
 from modules.common.store._api import LoggingValueStore
 from modules.common.store._broker import pub_to_broker
-from modules.common.store.ramdisk import files
 
 log = logging.getLogger(__name__)
-
-
-class InverterValueStoreRamdisk(ValueStore[InverterState]):
-    def __init__(self, component_num: int) -> None:
-        self.__pv = files.pv[component_num - 1]
-
-    def set(self, inverter_state: InverterState):
-        self.__pv.power.write(int(inverter_state.power))
-        self.__pv.energy.write(inverter_state.exported)
-        self.__pv.energy_k.write(inverter_state.exported / 1000)
-        if inverter_state.currents:
-            self.__pv.currents.write(inverter_state.currents)
 
 
 class InverterValueStoreBroker(ValueStore[InverterState]):
@@ -64,13 +50,15 @@ class PurgeInverterState:
             for c in children:
                 if c.get("type") == "bat":
                     hybrid.append(f'bat{c["id"]}')
-                    break
             if len(hybrid):
                 for bat in hybrid:
                     bat_get = data.data.bat_data[bat].data.get
                     power -= bat_get.power
-
-                    exported += bat_get.imported - bat_get.exported - imported
+                    if (bat_get.imported is not None and bat_get.exported is not None and
+                       imported is not None and exported is not None):
+                        exported += bat_get.imported - bat_get.exported - imported
+                    else:
+                        exported = None
 
             if state.dc_power is not None:
                 # Manche Systeme werden auch aus dem Netz geladen, um einen Mindest-SoC zu halten.
@@ -82,6 +70,4 @@ class PurgeInverterState:
 
 
 def get_inverter_value_store(component_num: int) -> PurgeInverterState:
-    return PurgeInverterState(LoggingValueStore(
-        (InverterValueStoreRamdisk if compatibility.is_ramdisk_in_use() else InverterValueStoreBroker)(component_num)
-    ))
+    return PurgeInverterState(LoggingValueStore(InverterValueStoreBroker(component_num)))

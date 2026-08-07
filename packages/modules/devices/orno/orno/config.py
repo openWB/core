@@ -38,5 +38,6 @@ class OrnoCounterSetup(ComponentSetup[OrnoCounterConfiguration]):
                  name: str = "Orno Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: OrnoCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or OrnoCounterConfiguration())
+                 configuration: OrnoCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or OrnoCounterConfiguration(), **kwargs)

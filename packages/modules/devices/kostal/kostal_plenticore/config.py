@@ -34,8 +34,9 @@ class KostalPlenticoreBatSetup(ComponentSetup[KostalPlenticoreBatConfiguration])
                  name: str = "Kostal Plenticore Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: KostalPlenticoreBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or KostalPlenticoreBatConfiguration())
+                 configuration: KostalPlenticoreBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or KostalPlenticoreBatConfiguration(), **kwargs)
 
 
 class KostalPlenticoreCounterConfiguration:
@@ -48,8 +49,9 @@ class KostalPlenticoreCounterSetup(ComponentSetup[KostalPlenticoreCounterConfigu
                  name: str = "Kostal Plenticore Zähler",
                  type: str = "counter",
                  id: Optional[int] = 0,
-                 configuration: KostalPlenticoreCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or KostalPlenticoreCounterConfiguration())
+                 configuration: KostalPlenticoreCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or KostalPlenticoreCounterConfiguration(), **kwargs)
 
 
 class KostalPlenticoreInverterConfiguration:
@@ -62,5 +64,6 @@ class KostalPlenticoreInverterSetup(ComponentSetup[KostalPlenticoreInverterConfi
                  name: str = "Kostal Plenticore Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: KostalPlenticoreInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or KostalPlenticoreInverterConfiguration())
+                 configuration: KostalPlenticoreInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or KostalPlenticoreInverterConfiguration(), **kwargs)

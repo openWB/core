@@ -6,7 +6,7 @@ from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.store import get_inverter_value_store
+from modules.common.store import get_component_value_store
 from modules.common.simcount._simcounter import SimCounter
 from modules.devices.shelly.shelly.config import ShellyInverterSetup
 from modules.devices.shelly.shelly.constants import ALPHABETICAL_INDEX
@@ -35,8 +35,8 @@ class ShellyInverter(AbstractInverter):
         self.factor: int = self.kwargs['factor']
         self.phase: int = self.kwargs['phase']
         self.generation: Optional[int] = self.kwargs['generation']
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
-        self.store = get_inverter_value_store(self.component_config.id)
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, self.component_config.type)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 

@@ -8,7 +8,7 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount import SimCounter
-from modules.common.store import get_inverter_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.kostal.kostal_plenticore.config import KostalPlenticoreInverterSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
@@ -31,9 +31,9 @@ class KostalPlenticoreInverter(AbstractInverter):
         self.modbus_id: int = self.kwargs['modbus_id']
         self.endianess: Endian = self.kwargs['endianess']
         self.client: ModbusTcpClient_ = self.kwargs['client']
-        self.store = get_inverter_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.sim_counter = SimCounter(self.kwargs['device_id'], self.component_config.id, prefix="Wechselrichter")
+        self.sim_counter = SimCounter(self.kwargs['device_id'], self.component_config.id, self.component_config.type)
         self.fault_text = (
             "Es kann keine DC-Leistung aus dem Wechselrichter ausgelesen werden, "
             "möglicherweise kann ein Firmware-Update für den Wechselrichter nötig sein."
@@ -43,6 +43,8 @@ class KostalPlenticoreInverter(AbstractInverter):
     def update(self) -> None:
         power = self.client.read_holding_registers(
             575, ModbusDataType.INT_16, unit=self.modbus_id, wordorder=self.endianess) * -1
+        currents = [self.client.read_holding_registers(
+            reg, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=self.endianess) for reg in [154, 160, 166]]
         exported = self.client.read_holding_registers(
             320, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=self.endianess)
         # Try to read dc_power, if it fails just skip it and set to None
@@ -58,6 +60,7 @@ class KostalPlenticoreInverter(AbstractInverter):
         imported, _ = self.sim_counter.sim_count(power)
         inverter_state = InverterState(
             power=power,
+            currents=currents,
             exported=exported,
             dc_power=dc_power,
             imported=imported

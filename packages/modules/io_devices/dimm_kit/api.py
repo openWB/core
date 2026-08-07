@@ -23,7 +23,6 @@ def create_io(config: IoLan):
 
     def read():
         nonlocal version
-        nonlocal client
         if version is False:
             try:
                 parsed_answer = get_version_by_telnet(VALID_VERSIONS[0], config.configuration.host)
@@ -60,7 +59,6 @@ def create_io(config: IoLan):
         )
 
     def write(analog_output: Optional[Dict[str, int]], digital_output: Optional[Dict[str, bool]]) -> None:
-        nonlocal client
         for i, value in digital_output.items():
             client.write_single_coil(DigitalOutputMapping[i].value, 1 if value is True else 0,
                                      unit=config.configuration.modbus_id)

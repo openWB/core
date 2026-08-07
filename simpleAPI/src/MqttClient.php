@@ -29,6 +29,15 @@ class MqttClient
     }
 
     /**
+     * MQTT-Anmeldedaten aktualisieren
+     */
+    public function setCredentials($username, $password)
+    {
+        $this->username = $username;
+        $this->password = $password;
+    }
+
+    /**
      * Verbindung testen
      */
     public function connect()
@@ -39,6 +48,28 @@ class MqttClient
 
         // Wenn kein Fehler zurückkommt, ist die Verbindung OK
         return !preg_match('/error|failed|unable/i', $result ?? '');
+    }
+
+    /**
+     * Anmeldedaten am MQTT Broker testen
+     */
+    public function testCredentials($username, $password)
+    {
+        // Test-Verbindung mit mosquitto_sub (sehr kurzes Timeout)
+        $cmd = $this->buildMosquittoCommandWithCredentials('sub', '$SYS/broker/uptime', '', 1, 2, $username, $password);
+        $result = shell_exec($cmd . ' 2>&1');
+        
+        // Prüfen auf Authentifizierungsfehler
+        if (preg_match('/not authorised|connection refused|authentication failed|username or password invalid/i', $result ?? '')) {
+            return false;
+        }
+        
+        // Prüfen auf andere schwerwiegende Fehler
+        if (preg_match('/connection error|network unreachable|no such host/i', $result ?? '')) {
+            return false;
+        }
+        
+        return true;
     }
 
     /**
@@ -88,6 +119,29 @@ class MqttClient
     }
 
     /**
+     * Alle Werte für ein MQTT-Wildcard-Topic lesen.
+     */
+    public function getValuesByWildcard($topicPattern)
+    {
+        $results = [];
+
+        $cmd = $this->buildMosquittoCommand('sub', $topicPattern, '');
+        $cmd .= ' 2>/dev/null';
+
+        $output = shell_exec($cmd);
+        $lines = explode("\n", trim($output ?? ''));
+
+        foreach ($lines as $line) {
+            if (strpos($line, ' ') !== false) {
+                list($topic, $value) = explode(' ', $line, 2);
+                $results[$topic] = $value;
+            }
+        }
+
+        return $results;
+    }
+
+    /**
      * Wert in MQTT Topic schreiben
      */
     public function setValue($topic, $value)
@@ -108,6 +162,14 @@ class MqttClient
      */
     private function buildMosquittoCommand($type, $topics, $message = '', $count = null, $timeout = 1, $extraArgs = [])
     {
+        return $this->buildMosquittoCommandWithCredentials($type, $topics, $message, $count, $timeout, $this->username, $this->password, $extraArgs);
+    }
+
+    /**
+     * Mosquitto-Kommando mit spezifischen Anmeldedaten erstellen
+     */
+    private function buildMosquittoCommandWithCredentials($type, $topics, $message = '', $count = null, $timeout = 1, $username = null, $password = null, $extraArgs = [])
+    {
         $binary = $type === 'sub' ? 'mosquitto_sub' : 'mosquitto_pub';
 
         $cmd = sprintf(
@@ -123,11 +185,14 @@ class MqttClient
         }
 
         // Username/Passwort hinzufügen falls konfiguriert
-        if (!empty($this->username)) {
-            $cmd .= sprintf(" -u %s", escapeshellarg($this->username));
+        $useUsername = $username !== null ? $username : $this->username;
+        $usePassword = $password !== null ? $password : $this->password;
+        
+        if (!empty($useUsername)) {
+            $cmd .= sprintf(" -u %s", escapeshellarg($useUsername));
         }
-        if (!empty($this->password)) {
-            $cmd .= sprintf(" -P %s", escapeshellarg($this->password));
+        if (!empty($usePassword)) {
+            $cmd .= sprintf(" -P %s", escapeshellarg($usePassword));
         }
 
         // Topic(s) hinzufügen
@@ -170,7 +235,21 @@ class MqttClient
     public function findAvailableIds($type)
     {
         // MQTT Wildcard verwenden um alle Topics zu finden
-        $pattern = "openWB/{$type}/+/get/imported";
+        $scanConfig = [
+            'chargepoint' => ['pattern' => 'openWB/chargepoint/+/get/imported', 'regex' => '/openWB\/chargepoint\/(\d+)\/get\/imported\s+(.+)/'],
+            'bat' => ['pattern' => 'openWB/bat/+/get/imported', 'regex' => '/openWB\/bat\/(\d+)\/get\/imported\s+(.+)/'],
+            'pv' => ['pattern' => 'openWB/pv/+/get/exported', 'regex' => '/openWB\/pv\/(\d+)\/get\/exported\s+(.+)/'],
+            'counter' => ['pattern' => 'openWB/counter/+/get/imported', 'regex' => '/openWB\/counter\/(\d+)\/get\/imported\s+(.+)/'],
+            'io' => ['pattern' => 'openWB/io/states/+/get/digital_output', 'regex' => '/openWB\/io\/states\/(\d+)\/get\/digital_output\s+(.+)/']
+        ];
+
+        $config = $scanConfig[$type] ?? null;
+        if ($config === null) {
+            throw new \Exception("Unsupported type for ID scan: {$type}");
+        }
+
+        $pattern = $config['pattern'];
+        $matchRegex = $config['regex'];
 
         $cmd = $this->buildMosquittoCommand('sub', $pattern, '');
         $cmd .= ' 2>/dev/null';
@@ -181,12 +260,12 @@ class MqttClient
         if ($output) {
             $lines = explode("\n", trim($output));
             foreach ($lines as $line) {
-                if (preg_match("/openWB\/{$type}\/(\d+)\/get\/imported\s+(.+)/", $line, $matches)) {
+                if (preg_match($matchRegex, $line, $matches)) {
                     $id = intval($matches[1]);
                     $value = trim($matches[2]);
 
-                    // Nur IDs mit gültigen Werten (nicht null oder leer)
-                    if ($value !== '' && $value !== 'null' && is_numeric($value)) {
+                    // Nur IDs mit gültigen Werten (bei IO auch JSON erlaubt)
+                    if ($value !== '' && $value !== 'null' && ($type === 'io' || is_numeric($value))) {
                         $ids[] = $id;
                     }
                 }

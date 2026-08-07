@@ -56,8 +56,6 @@ export default {
   <i-badge
     v-if="faultState > 0"
     size="lg"
-    class="clickable"
-    @click="showFaultModal = true"
   >
     <font-awesome-icon
       fixed-width

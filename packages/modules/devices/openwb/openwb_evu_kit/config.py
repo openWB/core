@@ -30,8 +30,9 @@ class EvuKitBatSetup(ComponentSetup[EvuKitBatConfiguration]):
                  name: str = "Speicher-Zähler an openWB EVU-Kit",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: EvuKitBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or EvuKitBatConfiguration())
+                 configuration: EvuKitBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or EvuKitBatConfiguration(), **kwargs)
 
 
 class EvuKitCounterConfiguration:
@@ -44,8 +45,9 @@ class EvuKitCounterSetup(ComponentSetup[EvuKitCounterConfiguration]):
                  name: str = "openWB EVU-Kit",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: EvuKitCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or EvuKitCounterConfiguration())
+                 configuration: EvuKitCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or EvuKitCounterConfiguration(), **kwargs)
 
 
 class EvuKitInverterConfiguration:
@@ -58,5 +60,6 @@ class EvuKitInverterSetup(ComponentSetup[EvuKitInverterConfiguration]):
                  name: str = "PV-Zähler an openWB EVU-Kit",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: EvuKitInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or EvuKitInverterConfiguration())
+                 configuration: EvuKitInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or EvuKitInverterConfiguration(), **kwargs)

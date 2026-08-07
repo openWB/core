@@ -31,8 +31,9 @@ class MqttBatSetup(ComponentSetup[MqttBatConfiguration]):
                  name: str = "MQTT-Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: MqttBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or MqttBatConfiguration())
+                 configuration: MqttBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or MqttBatConfiguration(), **kwargs)
 
 
 class MqttCounterConfiguration:
@@ -45,8 +46,9 @@ class MqttCounterSetup(ComponentSetup[MqttCounterConfiguration]):
                  name: str = "MQTT-Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: MqttCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or MqttCounterConfiguration())
+                 configuration: MqttCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or MqttCounterConfiguration(), **kwargs)
 
 
 class MqttInverterConfiguration:
@@ -59,5 +61,6 @@ class MqttInverterSetup(ComponentSetup[MqttInverterConfiguration]):
                  name: str = "MQTT-Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: MqttInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or MqttInverterConfiguration())
+                 configuration: MqttInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or MqttInverterConfiguration(), **kwargs)

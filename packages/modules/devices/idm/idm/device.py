@@ -16,7 +16,6 @@ def create_device(device_config: IDM):
     client = None
 
     def create_counter_component(component_config: IDMCounterSetup):
-        nonlocal client
         return IDMCounter(component_config,
                           device_id=device_config.id,
                           client=client,

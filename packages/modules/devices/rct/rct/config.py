@@ -37,8 +37,9 @@ class RctBatSetup(ComponentSetup[RctBatConfiguration]):
                  name: str = "RCT Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: RctBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or RctBatConfiguration())
+                 configuration: RctBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or RctBatConfiguration(), **kwargs)
 
 
 @auto_str
@@ -53,8 +54,9 @@ class RctCounterSetup(ComponentSetup[RctCounterConfiguration]):
                  name: str = "RCT Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: RctCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or RctCounterConfiguration())
+                 configuration: RctCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or RctCounterConfiguration(), **kwargs)
 
 
 @auto_str
@@ -69,5 +71,6 @@ class RctInverterSetup(ComponentSetup[RctInverterConfiguration]):
                  name: str = "RCT Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: RctInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or RctInverterConfiguration())
+                 configuration: RctInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or RctInverterConfiguration(), **kwargs)

@@ -34,5 +34,6 @@ class CarloGavazziCounterSetup(ComponentSetup[CarloGavazziCounterConfiguration])
                  name: str = "Carlo Gavazzi Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: CarloGavazziCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or CarloGavazziCounterConfiguration())
+                 configuration: CarloGavazziCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or CarloGavazziCounterConfiguration(), **kwargs)

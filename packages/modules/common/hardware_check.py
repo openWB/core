@@ -15,19 +15,15 @@ EVSE_MIN_FIRMWARE = 7
 MAX_ATTEMPTS = 3
 RETRY_DELAY_SECONDS = 0.3
 
-OPEN_TICKET = (" Bitte nehme bei anhaltenden Problemen über die Support-Funktion in den Einstellungen Kontakt mit " +
-               "uns auf.")
-RS485_ADAPTER_BROKEN = ("Auslesen von Zähler UND Evse nicht möglich. Vermutlich ist {} defekt oder zwei "
-                        "Busteilnehmer haben die gleiche Modbus-ID. Bitte die Zähler-ID prüfen.")
-USB_ADAPTER_BROKEN = RS485_ADAPTER_BROKEN.format('der USB-Adapter')
-LAN_ADAPTER_BROKEN = (f"{RS485_ADAPTER_BROKEN.format('der LAN-Konverter abgestürzt,')} "
-                      "Bitte den openWB series2 satellit stromlos machen.")
-METER_PROBLEM = "Der Zähler konnte nicht ausgelesen werden. Vermutlich ist der Zähler falsch konfiguriert oder defekt."
-METER_BROKEN_VOLTAGES = "Die Spannungen des Zählers konnten nicht korrekt ausgelesen werden: {}V Der Zähler ist defekt."
+RS485_ADAPTER_BROKEN = "Erneutes Auslesen des {}"
+USB_ADAPTER_BROKEN = RS485_ADAPTER_BROKEN.format('USB-Adapters')
+LAN_ADAPTER_BROKEN = RS485_ADAPTER_BROKEN.format('LAN-Konverters')
+METER_PROBLEM = "Erneutes Auslesen des Zählers"
+METER_BROKEN_VOLTAGES = "Erneutes Auslesen der Spannungen am Zähler: {}V"
 METER_NO_SERIAL_NUMBER = ("Die Seriennummer des Zählers für das Ladelog kann nicht ausgelesen werden. Wenn Du die "
                           "Seriennummer für Abrechnungszwecke benötigst, wende Dich bitte an unseren Support. Die "
                           "Funktionalität wird dadurch nicht beeinträchtigt!")
-EVSE_BROKEN = "Auslesen der EVSE nicht möglich. Vermutlich ist die EVSE defekt oder hat eine unbekannte Modbus-ID. "
+EVSE_BROKEN = "Erneutes Auslesen der EVSE"
 
 
 def check_meter_values(counter_state: CounterState, fault_state: Optional[FaultState] = None) -> None:
@@ -110,18 +106,18 @@ class SeriesHardwareCheckMixin:
         if meter_check_passed is False:
             if evse_check_passed is False:
                 if isinstance(self.client, ModbusTcpClient_):
-                    raise Exception(LAN_ADAPTER_BROKEN + OPEN_TICKET)
+                    raise Exception(LAN_ADAPTER_BROKEN)
                 else:
-                    raise Exception(USB_ADAPTER_BROKEN + OPEN_TICKET)
+                    raise Exception(USB_ADAPTER_BROKEN)
             else:
-                raise Exception(meter_error_msg + OPEN_TICKET)
+                raise Exception(meter_error_msg)
         elif evse_check_passed and meter_check_passed and meter_error_msg is not None:
-            fault_state.warning(meter_error_msg + OPEN_TICKET)
+            fault_state.warning(meter_error_msg)
         if evse_check_passed is False:
             if meter_error_msg is not None:
-                raise Exception(EVSE_BROKEN + " " + meter_error_msg + OPEN_TICKET)
+                raise Exception(EVSE_BROKEN + " " + meter_error_msg)
             else:
-                raise Exception(EVSE_BROKEN + OPEN_TICKET)
+                raise Exception(EVSE_BROKEN)
         return evse_state, counter_state
 
     def check_meter(self: ClientHandlerProtocol) -> Tuple[bool, Optional[str], CounterState]:

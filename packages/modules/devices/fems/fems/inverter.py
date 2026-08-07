@@ -8,7 +8,7 @@ from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.utils.peak_filter import PeakFilter
-from modules.common.store import get_inverter_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.fems.fems.version import FemsVersion, get_version
 from modules.common.component_type import ComponentType
 
@@ -28,7 +28,7 @@ class FemsInverter(AbstractInverter):
     def initialize(self) -> None:
         self.ip_address: str = self.kwargs['ip_address']
         self.session: Session = self.kwargs['session']
-        self.store = get_inverter_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
         self.version = get_version(self.get_data_by_multiple_segement_regex_query)

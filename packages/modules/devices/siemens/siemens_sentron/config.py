@@ -34,8 +34,9 @@ class SiemensSentronCounterSetup(ComponentSetup[SiemensSentronCounterConfigurati
                  name: str = "Siemens Sentron Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: SiemensSentronCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SiemensSentronCounterConfiguration())
+                 configuration: SiemensSentronCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SiemensSentronCounterConfiguration(), **kwargs)
 
 
 class SiemensSentronInverterConfiguration:
@@ -48,8 +49,9 @@ class SiemensSentronInverterSetup(ComponentSetup[SiemensSentronInverterConfigura
                  name: str = "Siemens Sentron PV-Zähler",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: SiemensSentronInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SiemensSentronInverterConfiguration())
+                 configuration: SiemensSentronInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SiemensSentronInverterConfiguration(), **kwargs)
 
 
 class SiemensSentronBatConfiguration:
@@ -62,5 +64,6 @@ class SiemensSentronBatSetup(ComponentSetup[SiemensSentronBatConfiguration]):
                  name: str = "Siemens Sentron Speicher-Zähler",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: SiemensSentronBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SiemensSentronBatConfiguration())
+                 configuration: SiemensSentronBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SiemensSentronBatConfiguration(), **kwargs)

@@ -102,7 +102,7 @@ class TestSmartWb:
         plug_state=True,
         charge_state=True,
         rfid="0a1b2c3d",
-        phases_in_use=None,
+        phases_in_use=3,
         serial_number="94:B9:7E:69:F0:D1",
         max_evse_current=16
     )

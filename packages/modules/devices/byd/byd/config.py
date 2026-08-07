@@ -37,5 +37,6 @@ class BYDBatSetup(ComponentSetup[BYDBatConfiguration]):
                  name: str = "BYD Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: BYDBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or BYDBatConfiguration())
+                 configuration: BYDBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or BYDBatConfiguration(), **kwargs)

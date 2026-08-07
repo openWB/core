@@ -71,15 +71,10 @@ def create_device(device_config: Tesla):
 
     def update_components(components: Iterable[Union[TeslaBat, TeslaCounter, TeslaInverter]]):
         nonlocal http_client, session
-
+        log.debug("Beginning update")
         address = device_config.configuration.ip_address
         email = device_config.configuration.email
-        password = device_config.configuration.password
-
-							 
-
-																   
-								 
+        password = device_config.configuration.password							 
 
         # First run after process start: no cookies -> authenticate once
         if http_client.cookies is None:
@@ -122,4 +117,9 @@ def create_device(device_config: Tesla):
     )
 
 
-device_descriptor = DeviceDescriptor(configuration_factory=Tesla)
+device_descriptor = DeviceDescriptor(
+    configuration_factory=Tesla,
+    compatibility_device_note="Tesla hat die lokale API Anfang 2025 mittels Firmwareupdate abgeschaltet.\nFür "
+    "Neuanlagen muss aktuell auf unsere Zählerkits zurückgegriffen werden.",
+    special_icon="ℹ️"
+)

@@ -1,23 +1,17 @@
+from dataclasses import dataclass, field
 from typing import Optional
 
 
+@dataclass
 class OctopusEnergyTariffConfiguration:
-    def __init__(self,
-                 email: Optional[str] = None,
-                 accountId: Optional[str] = None,
-                 password: Optional[str] = None):
-        self.email = email
-        self.accountId = accountId
-        self.password = password
+    email: Optional[str] = None
+    accountId: Optional[str] = None
+    password: Optional[str] = None
 
 
+@dataclass
 class OctopusEnergyTariff:
-    def __init__(self,
-                 name: str = "Octopus Energy Deutschland",
-                 type: str = "octopusenergy",
-                 official: bool = False,
-                 configuration: OctopusEnergyTariffConfiguration = None) -> None:
-        self.name = name
-        self.type = type
-        self.official = official
-        self.configuration = configuration or OctopusEnergyTariffConfiguration()
+    name: str = "Octopus Energy Deutschland"
+    type: str = "octopusenergy"
+    official: bool = False
+    configuration: OctopusEnergyTariffConfiguration = field(default_factory=OctopusEnergyTariffConfiguration)

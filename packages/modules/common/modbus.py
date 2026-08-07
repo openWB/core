@@ -305,6 +305,10 @@ class ModbusTcpClient_(ModbusClient):
         host = parsed_url.host
         if parsed_url.port is not None:
             port = parsed_url.port
+        kwargs.setdefault('retry_on_empty', True)
+        kwargs.setdefault('retry_on_invalid', True)
+        kwargs.setdefault('retries', 2)
+        kwargs.setdefault('timeout', 2)
         super().__init__(ModbusTcpClient(host, port, framer, **kwargs), address, port, sleep_after_connect)
 
 

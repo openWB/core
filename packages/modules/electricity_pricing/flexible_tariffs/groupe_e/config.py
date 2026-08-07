@@ -1,16 +1,15 @@
+from dataclasses import dataclass, field
+
+
+@dataclass
 class GroupeETariffConfiguration:
-    def __init__(self):
-        self.country = "ch"
-        self.unit = "Rp"
+    country: str = "ch"
+    unit: str = "Rp"
 
 
+@dataclass
 class GroupeETariff:
-    def __init__(self,
-                 name: str = "Groupe E (CH)",
-                 type: str = "groupe_e",
-                 official: bool = False,
-                 configuration: GroupeETariffConfiguration = None) -> None:
-        self.name = name
-        self.type = type
-        self.official = official
-        self.configuration = configuration or GroupeETariffConfiguration()
+    name: str = "Groupe E (CH)"
+    type: str = "groupe_e"
+    official: bool = False
+    configuration: GroupeETariffConfiguration = field(default_factory=GroupeETariffConfiguration)

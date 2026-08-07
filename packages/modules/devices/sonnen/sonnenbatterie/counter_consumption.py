@@ -6,7 +6,7 @@ from modules.common.abstract_device import AbstractCounter
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount import SimCounter
-from modules.common.store import get_counter_value_store
+from modules.common.store import get_component_value_store
 
 from modules.devices.sonnen.sonnenbatterie.api import JsonApi, JsonApiVersion
 from modules.devices.sonnen.sonnenbatterie.config import SonnenbatterieConsumptionCounterSetup
@@ -17,9 +17,11 @@ log = logging.getLogger(__name__)
 
 
 class KwargsDict(TypedDict):
+    device_id: int
     device_address: str
     device_variant: int
-    api_v2_token: Optional[str]
+    device_api_v2_token: Optional[str]
+    counter_id: int
 
 
 class SonnenbatterieConsumptionCounter(AbstractCounter):
@@ -32,12 +34,13 @@ class SonnenbatterieConsumptionCounter(AbstractCounter):
         self.__device_address: str = self.kwargs['device_address']
         self.__device_variant: int = self.kwargs['device_variant']
         self.__api_v2_token: Optional[str] = self.kwargs['device_api_v2_token']
+        self.counter_id: int = self.kwargs['counter_id']
         if self.__device_variant in [0, 1, 2]:
             raise ValueError("Die ausgewählte API bietet keine Verbrauchsdaten!")
         if self.__device_variant != 3:
             raise ValueError("Unbekannte API: " + str(self.__device_variant))
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="consumption")
-        self.store = get_counter_value_store(self.component_config.id)
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, self.component_config.type)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.api = JsonApi(host=self.__device_address,
                            api_version=JsonApiVersion.V2,
@@ -45,7 +48,11 @@ class SonnenbatterieConsumptionCounter(AbstractCounter):
         self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
-        self.store.set(self.api.update_consumption_counter(sim_counter=self.sim_counter, peak_filter=self.peak_filter))
+        self.store.set(
+            self.api.update_consumption_counter(sim_counter=self.sim_counter,
+                                                peak_filter=self.peak_filter,
+                                                counter_id=self.counter_id)
+        )
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=SonnenbatterieConsumptionCounterSetup)

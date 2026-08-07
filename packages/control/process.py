@@ -4,7 +4,7 @@ import logging
 from threading import Thread
 from typing import List
 
-from control.bat_all import get_controllable_bat_components
+from control.bat_all import get_bat_components_by_controllability
 from control.chargelog import chargelog
 from control.chargepoint import chargepoint
 from control import data
@@ -16,6 +16,7 @@ from modules.common.configurable_device import set_power_limit_wrapper
 from modules.common.fault_state_level import FaultStateLevel
 from modules.io_actions.controllable_consumers.dimming.api_io import DimmingIo
 from modules.io_actions.controllable_consumers.dimming_direct_control.api import DimmingDirectControl
+from modules.io_actions.generator_systems.stepwise_control.api_eebus import StepwiseControlEebus
 from modules.io_actions.generator_systems.stepwise_control.api_io import StepwiseControlIo
 
 log = logging.getLogger(__name__)
@@ -63,7 +64,7 @@ class Process:
                 except Exception:
                     log.exception("Fehler im Process-Modul für Ladepunkt "+str(cp))
             if data.data.bat_all_data.data.set.set_limit:
-                for bat_component in get_controllable_bat_components():
+                for bat_component in get_bat_components_by_controllability()[0]:
                     modules_threads.append(
                         Thread(
                             target=set_power_limit_wrapper,
@@ -83,16 +84,17 @@ class Process:
                             data.data.io_states[f"io_states{d['id']}"].data.set.digital_output[d["digital_output"]] = (
                                 not action.dimming_active()  # active output (True) if no dimming
                             )
-                if isinstance(action, StepwiseControlIo):
+                if isinstance(action, (StepwiseControlEebus, StepwiseControlIo)):
                     # check if passthrough is enabled
-                    if action.config.configuration.passthrough_enabled:
+                    if (action.config.configuration.passthrough_enabled and
+                            action.config.configuration.io_output_device is not None):
                         # find output pattern by value
                         for pattern in action.config.configuration.output_pattern:
                             if pattern["value"] == action.control_stepwise()[0]:
                                 # set digital outputs according to matching output_pattern
                                 for output in pattern["matrix"].keys():
                                     data.data.io_states[
-                                        f"io_states{action.config.configuration.io_device}"
+                                        f"io_states{action.config.configuration.io_output_device}"
                                     ].data.set.digital_output[output] = pattern["matrix"][output]
             for io in data.data.system_data.values():
                 if isinstance(io, AbstractIoDevice):

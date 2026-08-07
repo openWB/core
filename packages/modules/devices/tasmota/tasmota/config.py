@@ -33,8 +33,9 @@ class TasmotaCounterSetup(ComponentSetup[TasmotaCounterConfiguration]):
                  name: str = "Tasmota Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: TasmotaCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or TasmotaCounterConfiguration())
+                 configuration: TasmotaCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or TasmotaCounterConfiguration(), **kwargs)
 
 
 class TasmotaInverterConfiguration:
@@ -47,8 +48,9 @@ class TasmotaInverterSetup(ComponentSetup[TasmotaInverterConfiguration]):
                  name: str = "Tasmota Wechselrichterzähler",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: TasmotaInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or TasmotaInverterConfiguration())
+                 configuration: TasmotaInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or TasmotaInverterConfiguration(), **kwargs)
 
 
 class TasmotaBatConfiguration:
@@ -61,5 +63,6 @@ class TasmotaBatSetup(ComponentSetup[TasmotaBatConfiguration]):
                  name: str = "Tasmota Speicherzähler",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: TasmotaBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or TasmotaBatConfiguration())
+                 configuration: TasmotaBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or TasmotaBatConfiguration(), **kwargs)

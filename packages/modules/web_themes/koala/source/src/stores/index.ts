@@ -1,6 +1,5 @@
 import { store } from 'quasar/wrappers';
 import { createPinia } from 'pinia';
-import { Router } from 'vue-router';
 
 /*
  * When adding new properties to stores, you should also
@@ -11,12 +10,7 @@ declare module 'pinia' {
   // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   export interface PiniaCustomProperties {
     // add your custom properties here, if any
-    readonly router: Router | null;
   }
-}
-
-function RouterPiniaPlugin() {
-  return { router: null as Router | null };
 }
 
 /*
@@ -33,7 +27,6 @@ export default store((/* { ssrContext } */) => {
 
   // You can add Pinia plugins here
   // pinia.use(SomePiniaPlugin)
-  pinia.use(RouterPiniaPlugin);
 
   return pinia;
 });

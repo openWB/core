@@ -8,7 +8,7 @@ from modules.common import hardware_check
 from modules.common.component_state import CounterState, EvseState
 from modules.common.evse import Evse
 from modules.common.hardware_check import (
-    EVSE_BROKEN, LAN_ADAPTER_BROKEN, METER_BROKEN_VOLTAGES, METER_PROBLEM, OPEN_TICKET, USB_ADAPTER_BROKEN,
+    EVSE_BROKEN, LAN_ADAPTER_BROKEN, METER_BROKEN_VOLTAGES, METER_PROBLEM, USB_ADAPTER_BROKEN,
     SeriesHardwareCheckMixin, _check_meter_values)
 from modules.common.modbus import NO_CONNECTION, ModbusSerialClient_, ModbusTcpClient_
 from modules.conftest import SAMPLE_IP, SAMPLE_PORT
@@ -21,7 +21,7 @@ from modules.internal_chargepoint_handler.clients import ClientHandler
     [pytest.param(Exception("Modbus"), None, [230]*3, None, False, ModbusSerialClient_, EVSE_BROKEN,
                   id="EVSE defekt"),
      pytest.param(Exception("Modbus"), None, [230, 0, 230], None, False, ModbusSerialClient_,
-                  EVSE_BROKEN + " " + METER_BROKEN_VOLTAGES.format([230, 0, 230]) + OPEN_TICKET,
+                  EVSE_BROKEN + " " + METER_BROKEN_VOLTAGES.format([230, 0, 230]),
                   id="EVSE defekt und Zähler eine Phase defekt"),
      pytest.param(None, Exception("Modbus"), None, None, None,
                   ModbusSerialClient_, METER_PROBLEM, id="Zähler falsch konfiguriert"),

@@ -37,8 +37,9 @@ class SolarWorldCounterSetup(ComponentSetup[SolarWorldCounterConfiguration]):
                  name: str = "SolarWorld Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: SolarWorldCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SolarWorldCounterConfiguration())
+                 configuration: SolarWorldCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SolarWorldCounterConfiguration(), **kwargs)
 
 
 @auto_str
@@ -53,5 +54,6 @@ class SolarWorldInverterSetup(ComponentSetup[SolarWorldInverterConfiguration]):
                  name: str = "SolarWorld Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: SolarWorldInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SolarWorldInverterConfiguration())
+                 configuration: SolarWorldInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SolarWorldInverterConfiguration(), **kwargs)

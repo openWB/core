@@ -39,8 +39,9 @@ class VartaBatApiSetup(ComponentSetup[VartaBatApiConfiguration]):
                  name: str = "Varta Speicher (Abfrage per API)",
                  type: str = "bat_api",
                  id: int = 0,
-                 configuration: VartaBatApiConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or VartaBatApiConfiguration())
+                 configuration: VartaBatApiConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or VartaBatApiConfiguration(), **kwargs)
 
 
 @auto_str
@@ -55,8 +56,9 @@ class VartaBatModbusSetup(ComponentSetup[VartaBatModbusConfiguration]):
                  name: str = "Speicher Varta Pulse, Element, Neo, u.a. (Abfrage per Modbus)",
                  type: str = "bat_modbus",
                  id: int = 0,
-                 configuration: VartaBatModbusConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or VartaBatModbusConfiguration())
+                 configuration: VartaBatModbusConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or VartaBatModbusConfiguration(), **kwargs)
 
 
 @auto_str
@@ -71,8 +73,9 @@ class VartaCounterSetup(ComponentSetup[VartaCounterConfiguration]):
                  name: str = "Varta Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: VartaCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or VartaCounterConfiguration())
+                 configuration: VartaCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or VartaCounterConfiguration(), **kwargs)
 
 
 @auto_str
@@ -87,5 +90,6 @@ class VartaInverterSetup(ComponentSetup[VartaInverterConfiguration]):
                  name: str = "Varta Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: VartaInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or VartaInverterConfiguration())
+                 configuration: VartaInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or VartaInverterConfiguration(), **kwargs)

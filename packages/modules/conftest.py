@@ -31,6 +31,7 @@ module.Endian = Mock()
 sys.modules['pymodbus.constants'] = module
 
 module = type(sys)('pymodbus.payload')
+module.BinaryPayloadBuilder = Mock()
 module.BinaryPayloadDecoder = Mock()
 sys.modules['pymodbus.payload'] = module
 
