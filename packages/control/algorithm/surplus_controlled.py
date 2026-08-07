@@ -53,9 +53,8 @@ class SurplusControlled:
              counter: Counter) -> None:
         log.info(f"Mode-Tuple {mode_tuple[0]} - {mode_tuple[1]} - {mode_tuple[2]}, Zähler {counter.num}")
         common.update_raw_data(chargepoints, surplus=True)
-        while len(chargepoints):
-            cp = chargepoints[0]
-            missing_currents, counts = common.get_missing_currents_left(chargepoints)
+        for cp, group in data.data.counter_all_data.generator_cps_by_loadmanagement_prios(chargepoints):
+            missing_currents, counts = common.get_missing_currents_left(group)
             available_currents, limit = Loadmanagement().get_available_currents_surplus(
                 missing_currents,
                 voltages_mean(cp.data.get.voltages),
@@ -90,7 +89,6 @@ class SurplusControlled:
                 limited_current,
                 cp,
                 surplus=True)
-            chargepoints.pop(0)
 
     def _set_loadmangement_message(self,
                                    current: float,

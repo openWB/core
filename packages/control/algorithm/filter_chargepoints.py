@@ -47,7 +47,7 @@ def get_chargepoints_with_required_current_by_chargemode(
 
 def get_preferenced_chargepoint_charging(
         chargepoints: List[Chargepoint]) -> Tuple[List[Chargepoint], List[Chargepoint]]:
-    preferenced_chargepoints = _get_preferenced_chargepoint(chargepoints)
+    preferenced_chargepoints = get_preferenced_chargepoint(chargepoints)
     preferenced_chargepoints_with_set_current = []
     preferenced_chargepoints_without_set_current = []
     for cp in preferenced_chargepoints:
@@ -67,7 +67,7 @@ def get_preferenced_chargepoint_charging(
 # tested
 
 
-def _get_preferenced_chargepoint(valid_chargepoints: List[Chargepoint]) -> List:
+def get_preferenced_chargepoint(valid_chargepoints: List[Chargepoint]) -> List:
     """ermittelt die Ladepunkte in der Reihenfolge, in der sie geladen/gestoppt werden sollen. Die Bedingungen
     sind:
     geringste Mindeststromstärke, niedrigster SoC, frühester Ansteck-Zeitpunkt(Einschalten)/Lademenge(Abschalten),
