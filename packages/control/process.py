@@ -199,7 +199,7 @@ class Process:
             )
             return Thread(target=consumer.module.send_values,
                           args=(current_values,),
-                          name=f"set current consumer{consumer.num}")
+                          name=f"send values consumer{consumer.num}")
         else:
             return Thread(target=consumer.module.set_power_limit,
                           args=(consumer.data.set.power,),
