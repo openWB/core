@@ -47,11 +47,6 @@ class ResetChargemode:
 
 
 @dataclass
-class Log:
-    on_time: float = 0
-
-
-@dataclass
 class Usage:
     chargemode: Chargemode = Chargemode.INSTANT_CHARGING
     eco_charging: EcoCharging = field(default_factory=lambda: EcoCharging())
@@ -93,18 +88,17 @@ class Get:
 @dataclass
 class Set:
     current: float = field(default=0, metadata={"topic": "set/current"})
-    loadmanagement_available: bool = False
+    loadmanagement_available: bool = field(default=False)
     phases_to_use: int = field(default=1, metadata={"topic": "set/phases_to_use"})
     plug_time: Optional[float] = field(default=None, metadata={"topic": "set/plug_time"})
-    required_power: float = 0
-    current_prev: float = 0
-    state_str_prev: str = ""
-    target_current: float = 0
-    charge_state_prev: bool = False
-    log: Log = field(default_factory=lambda: Log())
+    required_power: float = field(default=0)
+    current_prev: float = field(default=0)
+    state_str_prev: str = field(default="")
+    target_current: float = field(default=0)
+    charge_state_prev: bool = field(default=False)
     on_time: float = field(default=0, metadata={"topic": "set/on_time"})
-    power: Optional[float] = None
-    switch_interval_elapsed: bool = False
+    power: Optional[float] = field(default=None)
+    switch_interval_elapsed: bool = field(default=False)
     timestamp_last_current_set: float = field(default=0, metadata={"topic": "set/timestamp_last_current_set"})
     wait_for_start_state: WaitForStartStates = field(
         default=WaitForStartStates.WAIT_FOR_DEVICE_START, metadata={"topic": "set/wait_for_start_state"})

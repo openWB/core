@@ -861,7 +861,9 @@ class SetData:
         elif "openWB/set/mqtt/consumer/" in msg.topic:
             if re.search("openWB/set/mqtt/consumer/[0-9]+/set/switch", msg.topic) is not None:
                 self._validate_value(msg, bool)
-            elif re.search("openWB/set/mqtt/consumer/[0-9]+/set/power", msg.topic) is not None:
+            elif re.search("openWB/set/mqtt/consumer/[0-9]+/set/"
+                           + "(power|bat_power|bat_soc|cp_power|evu_power|home_consumption|pv_power)",
+                           msg.topic) is not None:
                 self._validate_value(msg, float)
             else:
                 self.process_consumer_topic(msg)
@@ -1270,9 +1272,11 @@ class SetData:
                   re.search("consumer/[0-9]+/get/daily_imported$", msg.topic) is not None or
                   re.search("consumer/[0-9]+/get/timestamp_last_current_set$", msg.topic) is not None):
                 self._validate_value(msg, float, [(0, float("inf"))])
-            elif re.search("consumer/[0-9]+/get/fault_state$", msg.topic) is not None:
+            elif (re.search("consumer/[0-9]+/get/fault_state$", msg.topic) is not None or
+                  re.search("consumer/get/fault_state$", msg.topic) is not None):
                 self._validate_value(msg, int, [(0, 2)])
-            elif (re.search("consumer/[0-9]+/get/fault_str$", msg.topic) is not None or
+            elif (re.search("consumer/get/fault_str$", msg.topic) is not None or
+                  re.search("consumer/[0-9]+/get/fault_str$", msg.topic) is not None or
                   re.search("consumer/[0-9]+/get/state_str$", msg.topic) is not None or
                   re.search("consumer/[0-9]+/set/wait_for_start_state$", msg.topic) is not None):
                 self._validate_value(msg, str)
