@@ -73,7 +73,11 @@ class Consumer(Load):
 
     def process_on_time(self):
         if self.data.get.charge_state:
-            self.data.set.on_time += data.data.general_data.data.control_interval
+            now = timecheck.create_timestamp()
+            if self.data.set.timestamp_wrote_last_on_time is None:
+                self.data.set.timestamp_wrote_last_on_time = now
+            self.data.set.on_time += now - self.data.set.timestamp_wrote_last_on_time
+            self.data.set.timestamp_wrote_last_on_time = now
             if self.data.control_parameter.timestamp_charge_start is None:
                 self.data.control_parameter.timestamp_charge_start = timecheck.create_timestamp()
         elif self.data.get.charge_state is False:
@@ -84,6 +88,7 @@ class Consumer(Load):
 
     def reset_on_time(self):
         self.data.set.on_time = 0
+        self.data.set.timestamp_wrote_last_on_time = None
 
     def is_switch_interval_elapsed(self):
         if (timecheck.create_timestamp() < self.data.set.timestamp_last_current_set + self.data.config.min_interval and
