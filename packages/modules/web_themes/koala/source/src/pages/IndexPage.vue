@@ -40,11 +40,7 @@
           <BatteryInformation />
         </q-tab-panel>
         <!-- Consumers -->
-        <q-tab-panel
-          v-if="consumersAvailable"
-          name="consumers"
-          class="column"
-        >
+        <q-tab-panel v-if="consumersAvailable" name="consumers" class="column">
           <ConsumerInformation />
         </q-tab-panel>
       </q-tab-panels>
