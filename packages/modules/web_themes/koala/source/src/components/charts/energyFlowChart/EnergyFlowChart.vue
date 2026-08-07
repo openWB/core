@@ -105,9 +105,7 @@ const homeProduction = computed(() => Number(homePower.value.value) < 0);
 const consumerPower = computed(
   () => mqttStore.consumerSumPower('object') as ValueObject,
 );
-const showConsumerPower = computed(
-  () => mqttStore.consumerIds.length > 0,
-);
+const showConsumerPower = computed(() => mqttStore.consumerIds.length > 0);
 
 const pvPower = computed(() => mqttStore.pvPowerTotal('object') as ValueObject);
 const pvProduction = computed(() => {
@@ -394,7 +392,10 @@ const svgComponents = computed((): FlowComponent[] => {
         animatedReverse: Number(consumerPower.value.value) > 0,
       },
       position: { row: 0, column: 1 },
-      label: ['Verbraucher', absoluteValueObject(consumerPower.value).textValue],
+      label: [
+        'Verbraucher',
+        absoluteValueObject(consumerPower.value).textValue,
+      ],
       powerValue: Number(consumerPower.value.value),
       iconComponent: ConsumerIcon,
       iconColor: 'var(--q-consumer)',
