@@ -161,7 +161,7 @@ const consumerUsageType = computed(() =>
 
 /** Meter-only consumers cannot be controlled, so hide the mode controls. */
 const showModeControls = computed(
-  () => consumerUsageType.value !== 'meter_only',
+  () => consumerUsageType.value !== 'meter_only' && consumerUsageType.value !== 'self_controlled',
 );
 </script>
 

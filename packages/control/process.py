@@ -15,6 +15,7 @@ from helpermodules import timecheck
 from helpermodules.phase_handling import voltages_mean
 from helpermodules.pub import Pub
 from helpermodules.utils._thread_handler import joined_thread_handler
+from modules.common.abstract_consumer import CurrentValues
 from modules.common.abstract_io import AbstractIoDevice
 from modules.common.configurable_device import set_power_limit_wrapper
 from modules.common.fault_state_level import FaultStateLevel
@@ -187,6 +188,19 @@ class Process:
             return Thread(
                 target=consumer.module.switch_on if consumer.data.set.current > 0 else consumer.module.switch_off,
                 name=f"set current consumer{consumer.num}")
-        return Thread(target=consumer.module.set_power_limit,
-                      args=(consumer.data.set.power,),
-                      name=f"set current consumer{consumer.num}")
+        elif consumer.data.usage.type == ConsumerUsage.SELF_CONTROLLED:
+            current_values = CurrentValues(
+                bat_power=data.data.bat_all_data.data.get.power,
+                bat_soc=data.data.bat_all_data.data.get.soc,
+                cp_power=data.data.cp_all_data.data.get.power,
+                evu_power=data.data.counter_all_data.get_evu_counter().data.get.power,
+                home_consumption=data.data.counter_all_data.data.set.home_consumption,
+                pv_power=data.data.pv_all_data.data.get.power
+            )
+            return Thread(target=consumer.module.send_values,
+                          args=(current_values,),
+                          name=f"set current consumer{consumer.num}")
+        else:
+            return Thread(target=consumer.module.set_power_limit,
+                          args=(consumer.data.set.power,),
+                          name=f"set current consumer{consumer.num}")

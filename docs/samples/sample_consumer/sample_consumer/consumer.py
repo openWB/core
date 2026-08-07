@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from enum import IntEnum
 import logging
+from modules.common.abstract_consumer import CurrentValues
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
 from modules.common.configurable_consumer import ConfigurableConsumer
@@ -52,12 +53,14 @@ def create_consumer(config: SampleConsumer):
             temperatures=[resp[Register.TEMP0]/10, resp[Register.TEMP1]/10, resp[Register.TEMP2]/10]
         )
 
+    # ConsumerUsage.SUSPENDABLE_TUNABLE
     def set_limit(power_limit: float) -> None:
         nonlocal client
         client.write_registers(1000, power_limit, unit=config.configuration.modbus_id)
 
     # ODER
-
+    # ConsumerUsage.SUSPENDABLE_ONOFF
+    # ConsumerUsage.CONTINUOUS
     def switch_on() -> None:
         nonlocal client
         client.write_registers(1000, 1, unit=config.configuration.modbus_id)
@@ -65,10 +68,17 @@ def create_consumer(config: SampleConsumer):
     def switch_off() -> None:
         nonlocal client
         client.write_registers(1000, 0, unit=config.configuration.modbus_id)
+
+    # ODER
+    # ConsumerUsage.SELF_CONTROLLED
+    def send_values(values: CurrentValues) -> None:
+        client.write_registers(1000, values.evu_power, unit=config.configuration.modbus_id)
+
     return ConfigurableConsumer(consumer_config=config,
                                 initializer=initializer,
                                 error_handler=error_handler,
                                 update=update,
+                                send_values=send_values,
                                 set_power_limit=set_limit,
                                 switch_on=switch_on,
                                 switch_off=switch_off)

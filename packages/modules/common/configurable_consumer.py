@@ -3,6 +3,7 @@ from typing import Callable, Optional, TypeVar, Generic, Any
 
 from helpermodules import timecheck
 from helpermodules.pub import Pub
+from modules.common.abstract_consumer import CurrentValues
 from modules.common.abstract_device import AbstractCounter
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import ConsumerState
@@ -24,6 +25,7 @@ class ConfigurableConsumer(Generic[T_CONSUMER]):
                  initializer: Optional[Callable] = lambda: None,
                  error_handler: Optional[Callable] = lambda: None,
                  update: Optional[Callable[[], ConsumerState]] = lambda: None,
+                 send_values: Optional[Callable[[CurrentValues], None]] = lambda: None,
                  set_power_limit: Optional[Callable] = lambda: None,
                  switch_on: Optional[Callable] = lambda: None,
                  switch_off: Optional[Callable] = lambda: None,) -> None:
@@ -31,6 +33,7 @@ class ConfigurableConsumer(Generic[T_CONSUMER]):
         self.module_initializer = initializer
         self.module_error_handler = error_handler
         self.module_updater = update
+        self.module_send_values = send_values
         self.module_set_power_limit = set_power_limit
         self.module_switch_on = switch_on
         self.module_switch_off = switch_off
@@ -87,6 +90,10 @@ class ConfigurableConsumer(Generic[T_CONSUMER]):
     def switch_off(self) -> None:
         with SingleComponentUpdateContext(self.fault_state):
             self.module_switch_off()
+
+    def send_values(self, values: CurrentValues) -> None:
+        with SingleComponentUpdateContext(self.fault_state):
+            self.module_send_values(values)
 
 
 def dependency_injection_devices_components(component: AbstractCounter):
