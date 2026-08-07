@@ -158,6 +158,4 @@ const pvMinSocCurrent = computed(() =>
     props.chargePointId,
   ),
 );
-
-
 </script>
