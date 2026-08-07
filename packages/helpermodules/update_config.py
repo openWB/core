@@ -41,7 +41,7 @@ from control.counter import get_counter_default_config
 from control.ev.charge_template import EcoCharging, get_charge_template_default
 from control.ev import ev
 from control.ev.ev_template import EvTemplateData
-from control.general import Prices, PvCharging
+from control.general import ChargemodeConfigSurplusVehicle, Prices
 from control.optional_data import OcppConfig
 from modules.common.abstract_vehicle import GeneralVehicleConfig
 from modules.common.component_type import ComponentType
@@ -58,7 +58,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 137
+    DATASTORE_VERSION = 138
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -229,21 +229,22 @@ class UpdateConfig:
         "^openWB/general/temporary_charge_templates_active$",
         "^openWB/general/chargemode_config/unbalanced_load_limit$",
         "^openWB/general/chargemode_config/unbalanced_load$",
-        "^openWB/general/chargemode_config/pv_charging/bat_mode$",
-        "^openWB/general/chargemode_config/pv_charging/feed_in_yield$",
-        "^openWB/general/chargemode_config/pv_charging/switch_on_threshold$",
-        "^openWB/general/chargemode_config/pv_charging/switch_on_delay$",
-        "^openWB/general/chargemode_config/pv_charging/switch_off_threshold$",
-        "^openWB/general/chargemode_config/pv_charging/switch_off_delay$",
-        "^openWB/general/chargemode_config/pv_charging/phase_switch_delay$",
-        "^openWB/general/chargemode_config/pv_charging/control_range$",
-        "^openWB/general/chargemode_config/pv_charging/min_bat_soc$",
-        "^openWB/general/chargemode_config/pv_charging/max_bat_soc$",
-        "^openWB/general/chargemode_config/pv_charging/bat_power_discharge$",
-        "^openWB/general/chargemode_config/pv_charging/bat_power_discharge_active$",
-        "^openWB/general/chargemode_config/pv_charging/bat_power_reserve$",
-        "^openWB/general/chargemode_config/pv_charging/bat_power_reserve_active$",
-        "^openWB/general/chargemode_config/pv_charging/retry_failed_phase_switches$",
+        "^openWB/general/chargemode_config/surplus/feed_in_limit$",
+        "^openWB/general/chargemode_config/bat/mode$",
+        "^openWB/general/chargemode_config/surplus/feed_in_yield$",
+        "^openWB/general/chargemode_config/surplus/vehicle/switch_on_threshold$",
+        "^openWB/general/chargemode_config/surplus/vehicle/switch_on_delay$",
+        "^openWB/general/chargemode_config/surplus/vehicle/switch_off_threshold$",
+        "^openWB/general/chargemode_config/surplus/vehicle/switch_off_delay$",
+        "^openWB/general/chargemode_config/surplus/vehicle/phase_switch_delay$",
+        "^openWB/general/chargemode_config/surplus/control_range$",
+        "^openWB/general/chargemode_config/bat/min_soc$",
+        "^openWB/general/chargemode_config/bat/max_soc$",
+        "^openWB/general/chargemode_config/bat/power_discharge$",
+        "^openWB/general/chargemode_config/bat/power_discharge_active$",
+        "^openWB/general/chargemode_config/bat/power_reserve$",
+        "^openWB/general/chargemode_config/bat/power_reserve_active$",
+        "^openWB/general/chargemode_config/surplus/vehicle/retry_failed_phase_switches$",
         # obsolet, Daten hieraus müssen nach prices/ überführt werden
         "^openWB/general/price_kwh$",
         "^openWB/general/prices/bat$",
@@ -603,22 +604,23 @@ class UpdateConfig:
         ("openWB/vehicle/template/charge_template/0", get_charge_template_default()),
         ("openWB/general/allow_unencrypted_access", True),
         ("openWB/general/charge_log_data_config", get_default_charge_log_columns()),
-        ("openWB/general/chargemode_config/pv_charging/bat_mode", BatConsiderationMode.EV_MODE.value),
-        ("openWB/general/chargemode_config/pv_charging/bat_power_discharge", 1000),
-        ("openWB/general/chargemode_config/pv_charging/bat_power_discharge_active", True),
-        ("openWB/general/chargemode_config/pv_charging/min_bat_soc", 50),
-        ("openWB/general/chargemode_config/pv_charging/max_bat_soc", 70),
-        ("openWB/general/chargemode_config/pv_charging/bat_power_reserve", 200),
-        ("openWB/general/chargemode_config/pv_charging/bat_power_reserve_active", True),
-        ("openWB/general/chargemode_config/pv_charging/control_range", [0, 230]),
-        ("openWB/general/chargemode_config/pv_charging/switch_off_threshold", 0),
-        ("openWB/general/chargemode_config/pv_charging/switch_off_delay", 60),
-        ("openWB/general/chargemode_config/pv_charging/switch_on_delay", 30),
-        ("openWB/general/chargemode_config/pv_charging/switch_on_threshold", 1500),
-        ("openWB/general/chargemode_config/pv_charging/feed_in_yield", 0),
-        ("openWB/general/chargemode_config/pv_charging/phase_switch_delay", 7),
-        ("openWB/general/chargemode_config/pv_charging/retry_failed_phase_switches",
-         PvCharging().retry_failed_phase_switches),
+        ("openWB/general/chargemode_config/bat/mode", BatConsiderationMode.EV_MODE.value),
+        ("openWB/general/chargemode_config/bat/power_discharge", 1000),
+        ("openWB/general/chargemode_config/bat/power_discharge_active", True),
+        ("openWB/general/chargemode_config/bat/min_soc", 50),
+        ("openWB/general/chargemode_config/bat/max_soc", 70),
+        ("openWB/general/chargemode_config/bat/power_reserve", 200),
+        ("openWB/general/chargemode_config/bat/power_reserve_active", True),
+        ("openWB/general/chargemode_config/surplus/control_range", [0, 230]),
+        ("openWB/general/chargemode_config/surplus/feed_in_limit", False),
+        ("openWB/general/chargemode_config/surplus/vehicle/switch_off_threshold", 0),
+        ("openWB/general/chargemode_config/surplus/vehicle/switch_off_delay", 60),
+        ("openWB/general/chargemode_config/surplus/vehicle/switch_on_delay", 30),
+        ("openWB/general/chargemode_config/surplus/vehicle/switch_on_threshold", 1500),
+        ("openWB/general/chargemode_config/surplus/feed_in_yield", 0),
+        ("openWB/general/chargemode_config/surplus/vehicle/phase_switch_delay", 7),
+        ("openWB/general/chargemode_config/surplus/vehicle/retry_failed_phase_switches",
+         ChargemodeConfigSurplusVehicle().retry_failed_phase_switches),
         ("openWB/general/chargemode_config/unbalanced_load", False),
         ("openWB/general/chargemode_config/unbalanced_load_limit", 18),
         ("openWB/general/control_interval", 10),
@@ -3481,3 +3483,44 @@ class UpdateConfig:
                     return {topic: payload}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(137)
+
+    def upgrade_datastore_138(self) -> None:
+        feed_in_limit = False
+        for topic, payload in self.all_received_topics.items():
+            if re.search("^openWB/vehicle/[0-9]+/template/charge_template$", topic) is not None:
+                config = decode_payload(payload)
+                if config.get("chargemode", {}).get("pv_charging", {}).get("feed_in_limit") is True:
+                    feed_in_limit = True
+                    config["chargemode"]["pv_charging"].pop("feed_in_limit")
+                    self.__update_topic("openWB/vehicle/template/charge_template", config)
+        self.__update_topic("openWB/general/chargemode_config/surplus/feed_in_limit", feed_in_limit)
+
+        def move_topic(new_topic: str, old_topic: str) -> None:
+            if old_topic in self.all_received_topics:
+                payload = decode_payload(self.all_received_topics[old_topic])
+                self.__update_topic(new_topic, payload)
+                self.all_received_topics.pop(old_topic)
+                log.debug(f"Moved topic '{old_topic}' to '{new_topic}' with value: {payload}")
+
+        chargemode_config_prefix = "openWB/general/chargemode_config"
+        old_prefix = "openWB/general/chargemode_config/pv_charging"
+        move_topic(f"{chargemode_config_prefix}/bat/mode", f"{old_prefix}/bat_mode")
+        move_topic(f"{chargemode_config_prefix}/surplus/feed_in_yield", f"{old_prefix}/feed_in_yield")
+        move_topic(f"{chargemode_config_prefix}/surplus/vehicle/switch_on_threshold",
+                   f"{old_prefix}/switch_on_threshold")
+        move_topic(f"{chargemode_config_prefix}/surplus/vehicle/switch_on_delay", f"{old_prefix}/switch_on_delay")
+        move_topic(f"{chargemode_config_prefix}/surplus/vehicle/switch_off_threshold",
+                   f"{old_prefix}/switch_off_threshold")
+        move_topic(f"{chargemode_config_prefix}/surplus/vehicle/switch_off_delay", f"{old_prefix}/switch_off_delay")
+        move_topic(f"{chargemode_config_prefix}/surplus/vehicle/phase_switch_delay", f"{old_prefix}/phase_switch_delay")
+        move_topic(f"{chargemode_config_prefix}/surplus/control_range", f"{old_prefix}/control_range")
+        move_topic(f"{chargemode_config_prefix}/bat/min_soc", f"{old_prefix}/min_bat_soc")
+        move_topic(f"{chargemode_config_prefix}/bat/max_soc", f"{old_prefix}/max_bat_soc")
+        move_topic(f"{chargemode_config_prefix}/bat/power_discharge", f"{old_prefix}/bat_power_discharge")
+        move_topic(f"{chargemode_config_prefix}/bat/power_discharge_active", f"{old_prefix}/bat_power_discharge_active")
+        move_topic(f"{chargemode_config_prefix}/bat/power_reserve", f"{old_prefix}/bat_power_reserve")
+        move_topic(f"{chargemode_config_prefix}/bat/power_reserve_active", f"{old_prefix}/bat_power_reserve_active")
+        move_topic(f"{chargemode_config_prefix}/surplus/vehicle/retry_failed_phase_switches",
+                   f"{old_prefix}/retry_failed_phase_switches")
+
+        self._append_datastore_version(138)
