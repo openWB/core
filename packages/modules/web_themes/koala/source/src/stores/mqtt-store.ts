@@ -1803,7 +1803,6 @@ export const useMqttStore = defineStore('mqtt', () => {
     });
   };
 
-
   /**
    * Get or set the charge point connected vehicle eco charging current identified by the charge point id
    * @param chargePointId charge point id
@@ -3829,9 +3828,9 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const consumerOnTime = computed(() => {
     return (consumerId: number): number | undefined => {
-      return getValue.value(
-        `openWB/consumer/${consumerId}/set/on_time`,
-      ) as number | undefined;
+      return getValue.value(`openWB/consumer/${consumerId}/set/on_time`) as
+        | number
+        | undefined;
     };
   });
 
@@ -3842,9 +3841,9 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const consumerStateStr = computed(() => {
     return (consumerId: number): string | undefined => {
-      return getValue.value(
-        `openWB/consumer/${consumerId}/get/state_str`,
-      ) as string | undefined;
+      return getValue.value(`openWB/consumer/${consumerId}/get/state_str`) as
+        | string
+        | undefined;
     };
   });
 
@@ -3872,9 +3871,9 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const consumerFaultStr = computed(() => {
     return (consumerId: number): string | undefined => {
-      return getValue.value(
-        `openWB/consumer/${consumerId}/get/fault_str`,
-      ) as string | undefined;
+      return getValue.value(`openWB/consumer/${consumerId}/get/fault_str`) as
+        | string
+        | undefined;
     };
   });
 
@@ -3885,10 +3884,9 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const consumerUsageType = computed(() => {
     return (consumerId: number): ConsumerUsageType | undefined => {
-      return getValue.value(
-        `openWB/consumer/${consumerId}/usage`,
-        'type',
-      ) as ConsumerUsageType | undefined;
+      return getValue.value(`openWB/consumer/${consumerId}/usage`, 'type') as
+        | ConsumerUsageType
+        | undefined;
     };
   });
 
