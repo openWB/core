@@ -1,8 +1,5 @@
 <template>
-  <q-card
-    class="consumer-card"
-    :class="{ 'full-height': props.fullHeight }"
-  >
+  <q-card class="consumer-card" :class="{ 'full-height': props.fullHeight }">
     <q-card-section class="row no-wrap items-center justify-between">
       <div class="row no-wrap items-center ellipsis">
         <q-icon
@@ -101,7 +98,9 @@ const runTime = computed<string>(() => {
   return `${hours}:${String(minutes).padStart(2, '0')} h`;
 });
 
-const faultState = computed(() => mqttStore.consumerFaultState(props.consumerId));
+const faultState = computed(() =>
+  mqttStore.consumerFaultState(props.consumerId),
+);
 
 const statusText = computed(() => {
   if (faultState.value > 0) {
@@ -133,7 +132,6 @@ const consumerColor = computed(() => {
 </script>
 
 <style scoped lang="scss">
-
 .consumer-card {
   width: 22em;
   max-width: 100%;
