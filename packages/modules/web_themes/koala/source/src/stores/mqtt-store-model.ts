@@ -145,6 +145,7 @@ export interface ConsumerModule {
 }
 export type ConsumerUsageType =
   | 'meter_only'
+  | 'self_controlled'
   | 'suspendable_tunable'
   | 'suspendable_onoff'
   | 'continuous';

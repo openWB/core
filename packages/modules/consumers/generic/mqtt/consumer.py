@@ -5,6 +5,7 @@ from helpermodules.broker import BrokerClient
 from helpermodules.pub import Pub
 from helpermodules.utils._get_default import get_default
 from helpermodules.utils.topic_parser import decode_payload
+from modules.common.abstract_consumer import CurrentValues
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
 from modules.common.configurable_consumer import ConfigurableConsumer
@@ -50,8 +51,18 @@ def create_consumer(config: Mqtt):
 
     def switch_off() -> None:
         Pub().pub(f"openWB/set/mqtt/consumer/{config.id}/set/switch", False)
+
+    def send_values(values: CurrentValues) -> None:
+        Pub().pub(f"openWB/set/mqtt/consumer/{config.id}/set/bat_power", values.bat_power)
+        Pub().pub(f"openWB/set/mqtt/consumer/{config.id}/set/bat_soc", values.bat_soc)
+        Pub().pub(f"openWB/set/mqtt/consumer/{config.id}/set/cp_power", values.cp_power)
+        Pub().pub(f"openWB/set/mqtt/consumer/{config.id}/set/evu_power", values.evu_power)
+        Pub().pub(f"openWB/set/mqtt/consumer/{config.id}/set/home_consumption", values.home_consumption)
+        Pub().pub(f"openWB/set/mqtt/consumer/{config.id}/set/pv_power", values.pv_power)
+
     return ConfigurableConsumer(consumer_config=config,
                                 update=update,
+                                send_values=send_values,
                                 set_power_limit=set_power_limit,
                                 switch_on=switch_on,
                                 switch_off=switch_off)

@@ -3,6 +3,7 @@ import logging
 from typing import Callable, Dict, List, Optional, Tuple
 
 from control import data
+from control.consumer.usage import NOT_CONTROLLED
 from control.algorithm.utils import get_medium_charging_current
 from control.chargemode import Chargemode
 from control.chargepoint.chargepoint_state import CHARGING_STATES, ChargepointState
@@ -42,7 +43,7 @@ class Consumer(Load):
     def update(self):
         try:
             self.setup_values_at_start()
-            if self.data.usage.type == ConsumerUsage.METER_ONLY:
+            if self.data.usage.type in NOT_CONTROLLED:
                 return
             else:
                 if self.data.get.voltages is None:
