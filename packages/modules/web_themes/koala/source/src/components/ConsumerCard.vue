@@ -122,9 +122,10 @@ const statusColor = computed(() => {
   return isRunning.value ? 'positive' : 'grey-6';
 });
 
-const meterOnly = computed(
-  () => mqttStore.consumerUsageType(props.consumerId) === 'meter_only',
-);
+const meterOnly = computed(() => {
+  const usageType = mqttStore.consumerUsageType(props.consumerId);
+  return usageType === 'meter_only' || usageType === 'self_controlled';
+});
 
 const consumerColor = computed(() => {
   return mqttStore.consumerColor(props.consumerId) || 'var(--q-consumer)';
