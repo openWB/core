@@ -136,6 +136,7 @@ class JsonApi():
         MANUAL = "1"
         SELF_CONSUMPTION = "2"
         TIME_OF_USE = "10"
+        OPTIMIZATION = "11"
 
     class PowerMeterDirection(Enum):
         PRODUCTION = "production"
