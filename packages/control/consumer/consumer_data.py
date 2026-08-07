@@ -100,6 +100,8 @@ class Set:
     power: Optional[float] = field(default=None)
     switch_interval_elapsed: bool = field(default=False)
     timestamp_last_current_set: float = field(default=0, metadata={"topic": "set/timestamp_last_current_set"})
+    timestamp_wrote_last_on_time: Optional[float] = field(
+        default=None, metadata={"topic": "set/timestamp_wrote_last_on_time"})
     wait_for_start_state: WaitForStartStates = field(
         default=WaitForStartStates.WAIT_FOR_DEVICE_START, metadata={"topic": "set/wait_for_start_state"})
 
