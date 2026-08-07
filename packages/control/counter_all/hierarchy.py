@@ -311,6 +311,7 @@ class HierarchyMixin:
                 check_and_remove("counter", ComponentType.COUNTER, data.data.counter_data)
                 check_and_remove("cp", ComponentType.CHARGEPOINT, data.data.cp_data)
                 check_and_remove("pv", ComponentType.INVERTER, data.data.pv_data)
+                check_and_remove("consumer", ComponentType.CONSUMER, data.data.consumer_data)
 
     def _add_missing_entries(self: HierarchyProtocol):
         def check_and_add(type_name: ComponentType, data_structure):
@@ -347,6 +348,7 @@ class HierarchyMixin:
             check_and_add(ComponentType.BAT, data.data.bat_data)
             check_and_add(ComponentType.CHARGEPOINT, data.data.cp_data)
             check_and_add(ComponentType.INVERTER, data.data.pv_data)
+            check_and_add(ComponentType.CONSUMER, data.data.consumer_data)
         except TypeError:
             pub_system_message({}, ("Es konnte kein Zähler gefunden werden, der als EVU-Zähler an die Spitze des "
                                "Lastmanagements gesetzt werden kann. Bitte zuerst einen EVU-Zähler hinzufügen."),
