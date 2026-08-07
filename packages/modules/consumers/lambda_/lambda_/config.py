@@ -11,12 +11,10 @@ class LambdaConfiguration:
     def __init__(self,
                  ip_address: Optional[str] = None,
                  port: Optional[int] = 502,
-                 modbus_id: Optional[int] = 1,
-                 send_values: bool = False):
+                 modbus_id: Optional[int] = 1):
         self.ip_address = ip_address
         self.port = port
         self.modbus_id = modbus_id
-        self.send_values = send_values
 
 
 @auto_str
@@ -26,7 +24,7 @@ class Lambda(ConsumerSetup[LambdaConfiguration]):
                  type: str = "lambda",
                  id: int = 0,
                  configuration: LambdaConfiguration = None,
-                 usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_TUNABLE,
+                 usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SELF_CONTROLLED,
                                                      ConsumerUsage.METER_ONLY),
                  **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
