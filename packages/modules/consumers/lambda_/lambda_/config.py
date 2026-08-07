@@ -11,12 +11,10 @@ class LambdaConfiguration:
     def __init__(self,
                  ip_address: Optional[str] = None,
                  port: Optional[int] = 502,
-                 modbus_id: Optional[int] = 1,
-                 sign: int = 1):
+                 modbus_id: Optional[int] = 1):
         self.ip_address = ip_address
         self.port = port
         self.modbus_id = modbus_id
-        self.sign = sign
 
 
 @auto_str
@@ -26,7 +24,9 @@ class Lambda(ConsumerSetup[LambdaConfiguration]):
                  type: str = "lambda",
                  id: int = 0,
                  configuration: LambdaConfiguration = None,
-                 usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_TUNABLE,
+                 # Lambda unterstützt keine direkte Leistungsvorgabe (kein power_limit-Register),
+                 # daher SELF_CONTROLLED statt SUSPENDABLE_TUNABLE
+                 usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SELF_CONTROLLED,
                                                      ConsumerUsage.METER_ONLY),
                  **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(

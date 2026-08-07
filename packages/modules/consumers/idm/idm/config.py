@@ -26,7 +26,9 @@ class Idm(ConsumerSetup[IdmConfiguration]):
                  type: str = "idm",
                  id: int = 0,
                  configuration: IdmConfiguration = None,
-                 usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_TUNABLE,
+                 # IDM unterstützt keine direkte Leistungsvorgabe (kein power_limit-Register),
+                 # daher SELF_CONTROLLED statt SUSPENDABLE_TUNABLE
+                 usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SELF_CONTROLLED,
                                                      ConsumerUsage.METER_ONLY),
                  **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
