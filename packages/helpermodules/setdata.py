@@ -1259,6 +1259,7 @@ class SetData:
                   re.search("consumer/[0-9]+/set/on_time$", msg.topic) is not None or
                   re.search("consumer/[0-9]+/set/plug_time$", msg.topic) is not None or
                   re.search("consumer/[0-9]+/set/timestamp_last_current_set$", msg.topic) is not None or
+                  re.search("consumer/[0-9]+/set/timestamp_wrote_last_on_time$", msg.topic) is not None or
                   re.search("consumer/[0-9]+/get/set_power$", msg.topic) is not None):
                 self._validate_value(msg, float)
             elif (re.search("consumer/[0-9]+/get/currents$", msg.topic) is not None or
@@ -1269,8 +1270,7 @@ class SetData:
             elif (re.search("consumer/[0-9]+/get/exported$", msg.topic) is not None or
                   re.search("consumer/[0-9]+/get/imported$", msg.topic) is not None or
                   re.search("consumer/[0-9]+/get/daily_exported$", msg.topic) is not None or
-                  re.search("consumer/[0-9]+/get/daily_imported$", msg.topic) is not None or
-                  re.search("consumer/[0-9]+/get/timestamp_last_current_set$", msg.topic) is not None):
+                  re.search("consumer/[0-9]+/get/daily_imported$", msg.topic) is not None):
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif (re.search("consumer/[0-9]+/get/fault_state$", msg.topic) is not None or
                   re.search("consumer/get/fault_state$", msg.topic) is not None):
