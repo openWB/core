@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from enum import IntEnum
 from pymodbus.constants import Endian
 import logging
 
@@ -13,15 +12,6 @@ from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.idm.idm.config import Idm
 
 log = logging.getLogger(__name__)
-
-
-class Register(IntEnum):
-    # Register-Layout siehe IDM "Gebäudeleittechnik-Smartfox.pdf", Kap. 2.2.5.1
-    PV_SURPLUS = 74         # Aktueller PV-Überschuss [kW]
-    PV_PRODUCTION = 78      # Aktuelle PV-Produktion [kW]
-    HOME_CONSUMPTION = 82   # Hausverbrauch [kW], Default 0
-    BATTERY_POWER = 84      # Batterieentladung [kW], Default 0 (negativ = Ladung)
-    BATTERY_SOC = 86        # Batteriefüllstand [%], Default -1 (= kein Speicher)
 
 
 def create_consumer(config: Idm):
@@ -42,6 +32,7 @@ def create_consumer(config: Idm):
         # direkte Leistungsvorgabe für die WP - die Regelung berechnet ihre Überschuss- und
         # Speicherstrategie selbst anhand dieser Werte. Wird vom Core automatisch aufgerufen,
         # solange dieser Verbraucher als ConsumerUsage.SELF_CONTROLLED konfiguriert ist.
+        # Register-Layout siehe IDM "Gebäudeleittechnik-Smartfox.pdf", Kap. 2.2.5.1
         modbus_id = config.configuration.modbus_id
 
         # values.pv_power kommt roh aus process.py (negativ während Produktion, gleiche
@@ -53,22 +44,24 @@ def create_consumer(config: Idm):
         surplus = max(pv_power - values.home_consumption - values.cp_power, 0)
         battery_soc = int(values.bat_soc) if values.bat_soc is not None else -1
 
-        client.write_register(Register.PV_SURPLUS, surplus / 1000, wordorder=Endian.Little, unit=modbus_id)
-        client.write_register(Register.PV_PRODUCTION, pv_power / 1000, wordorder=Endian.Little,
-                               unit=modbus_id)
-        client.write_register(Register.HOME_CONSUMPTION, values.home_consumption / 1000, wordorder=Endian.Little,
-                               unit=modbus_id)
-        client.write_register(Register.BATTERY_POWER, values.bat_power / 1000, wordorder=Endian.Little,
-                               unit=modbus_id)
-        client.write_register(Register.BATTERY_SOC, battery_soc, unit=modbus_id)
+        # Reg 74: Aktueller PV-Überschuss [kW]
+        client.write_register(74, surplus / 1000, wordorder=Endian.Little, unit=modbus_id)
+        # Reg 78: Aktuelle PV-Produktion [kW]
+        client.write_register(78, pv_power / 1000, wordorder=Endian.Little, unit=modbus_id)
+        # Reg 82: Hausverbrauch [kW], Default 0
+        client.write_register(82, values.home_consumption / 1000, wordorder=Endian.Little, unit=modbus_id)
+        # Reg 84: Batterieentladung [kW], Default 0 (negativ = Ladung)
+        client.write_register(84, values.bat_power / 1000, wordorder=Endian.Little, unit=modbus_id)
+        # Reg 86: Batteriefüllstand [%], Default -1 (= kein Speicher)
+        client.write_register(86, battery_soc, unit=modbus_id)
 
     def update() -> ConsumerState:
         if config.configuration.version == 1:
             power = client.read_holding_registers(4122, ModbusDataType.FLOAT_32,
-                                                    unit=config.configuration.modbus_id)
+                                                  unit=config.configuration.modbus_id)
         else:
             power = client.read_input_registers(4122, ModbusDataType.FLOAT_32,
-                                                  unit=config.configuration.modbus_id)
+                                                unit=config.configuration.modbus_id)
         power *= 100
         imported, exported = sim_counter.sim_count(power)
 
