@@ -21,6 +21,7 @@ class Mqtt(ConsumerSetup[MqttConfiguration]):
                  configuration: MqttConfiguration = None,
                  usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.METER_ONLY,
                                                      ConsumerUsage.CONTINUOUS,
+                                                     ConsumerUsage.SELF_CONTROLLED,
                                                      ConsumerUsage.SUSPENDABLE_ONOFF,
                                                      ConsumerUsage.SUSPENDABLE_TUNABLE),
                  **kwargs) -> None:
