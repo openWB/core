@@ -803,7 +803,9 @@ class SubData:
                     config_dict = decode_payload(msg.payload)
                     if isinstance(config_dict, str):
                         # Backward compatibility for legacy string payloads.
-                        # Avoid reconfiguration loops: only mirror the current module config if the type matches.
+                        # Keep the provider type visible in state/UI even if only a legacy string is retained.
+                        var.data.forecast.provider = config_dict
+                        # Avoid reconfiguration loops: only mirror full config if an existing module matches this type.
                         if (var.forecast_module is not None and
                                 getattr(var.forecast_module.config, "type", None) == config_dict):
                             var.data.forecast.provider = asdict(var.forecast_module.config)
