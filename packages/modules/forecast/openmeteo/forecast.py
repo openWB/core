@@ -89,7 +89,7 @@ def fetch_forecast(config: OpenMeteoForecastConfiguration) -> Dict[str, float]:
             )
             timestamp_key = str(__parse_timestamp(timestamp, timezone))
             values[timestamp_key] = values.get(timestamp_key, 0.0) + estimated_power_w
-            log.info("Open-Meteo forecast fetch finished (merged_values=%s)", len(values))
+    log.info("Open-Meteo forecast fetch finished (merged_values=%s)", len(values))
     return values
 
 
