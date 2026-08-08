@@ -10,7 +10,7 @@ from modules.common.component_state import ForecastState
 from modules.forecast.forecastsolar.config import ForecastSolar, ForecastSolarConfiguration
 
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("forecast")
 
 
 def _require(value, field_name: str):

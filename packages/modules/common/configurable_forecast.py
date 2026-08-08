@@ -12,7 +12,7 @@ from modules.common.component_state import ForecastState
 from modules.common.fault_state_level import FaultStateLevel
 
 T_FORECAST_CONFIG = TypeVar("T_FORECAST_CONFIG")
-log = logging.getLogger(__name__)
+log = logging.getLogger("forecast")
 DEFAULT_FORECAST_UPDATE_HOURS = [5, 8, 11, 14, 17, 20]
 FORECAST_RETRY_MINUTES = 15
 
