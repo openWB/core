@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timedelta
-from typing import Generic, TypeVar, Callable
+from typing import Callable, Generic, Optional, TypeVar
 
 from control import data
 from control.optional_data import OptionalData
@@ -25,7 +25,7 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
         self.store = store.get_forecast_value_store()
         self._component_updater = component_initializer(config)
         self.update_hours = DEFAULT_FORECAST_UPDATE_HOURS
-        self.next_query_time: int | None = None
+        self.next_query_time: Optional[int] = None
 
     def _publish_forecast_fault(self, level: FaultStateLevel, message: str) -> None:
         data.data.optional_data.data.forecast.get.fault_state = level.value

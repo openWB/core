@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Dict
+from typing import Dict, Optional
 
 from control import data
 from helpermodules.pub import Pub
@@ -13,7 +13,7 @@ import logging
 log = logging.getLogger(__name__)
 
 
-def _parse_forecast_timestamp(timestamp: str) -> datetime | None:
+def _parse_forecast_timestamp(timestamp: str) -> Optional[datetime]:
     try:
         if timestamp.isdigit():
             return datetime.fromtimestamp(int(timestamp))
