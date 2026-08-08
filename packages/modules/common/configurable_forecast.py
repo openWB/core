@@ -70,10 +70,15 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
             self.store.update()
             self._set_next_query_time_by_schedule()
             self._publish_forecast_fault(FaultStateLevel.NO_ERROR, NO_ERROR)
+            previous_configured = data.data.optional_data.data.forecast.configured
+            previous_provider = data.data.optional_data.data.forecast.provider
+            next_provider = asdict(self.config)
             data.data.optional_data.data.forecast.configured = True
-            data.data.optional_data.data.forecast.provider = asdict(self.config)
-            Pub().pub("openWB/set/optional/forecast/configured", True)
-            Pub().pub("openWB/set/optional/forecast/provider", asdict(self.config))
+            data.data.optional_data.data.forecast.provider = next_provider
+            if previous_configured is not True:
+                Pub().pub("openWB/set/optional/forecast/configured", True)
+            if previous_provider != next_provider:
+                Pub().pub("openWB/set/optional/forecast/provider", next_provider)
             Pub().pub("openWB/set/optional/forecast/current", state.forecast_values)
             log.info(
                 "Forecast update finished (provider=%s, values=%s, next_query_time=%s)",
