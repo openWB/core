@@ -802,17 +802,30 @@ class SubData:
                 elif re.search("/optional/forecast/provider$", msg.topic) is not None:
                     config_dict = decode_payload(msg.payload)
                     if isinstance(config_dict, str):
-                        # Runtime updates may publish only the provider type string.
-                        var.data.forecast.provider = config_dict
+                        # Backward compatibility for legacy string payloads.
+                        # Avoid reconfiguration loops: only mirror the current module config if the type matches.
+                        if (var.forecast_module is not None and
+                                getattr(var.forecast_module.config, "type", None) == config_dict):
+                            var.data.forecast.provider = asdict(var.forecast_module.config)
                     elif not isinstance(config_dict, dict) or config_dict.get("type") is None:
-                        var.data.forecast.provider = None
-                        var.forecast_module = None
+                        # Only clear once. Re-clearing would publish the same null state again and can cause loops.
+                        if var.forecast_module is not None or var.data.forecast.provider is not None:
+                            var.data.forecast.provider = None
+                            var.forecast_module = None
                     else:
                         var.data.forecast.provider = config_dict
-                        mod = importlib.import_module(
-                            f".forecast.{config_dict['type']}.forecast", "modules")
-                        config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
-                        var.forecast_module = ConfigurableForecastProvider(config, mod.create_forecast)
+                        current_config = None
+                        if var.forecast_module is not None:
+                            try:
+                                current_config = asdict(var.forecast_module.config)
+                            except Exception:
+                                current_config = None
+                        # Reconfigure only on actual changes. Otherwise we'd bounce the same payload indefinitely.
+                        if current_config != config_dict:
+                            mod = importlib.import_module(
+                                f".forecast.{config_dict['type']}.forecast", "modules")
+                            config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
+                            var.forecast_module = ConfigurableForecastProvider(config, mod.create_forecast)
                 elif re.search("/optional/forecast/get/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.forecast.get, msg)
                 elif re.search("/optional/forecast/", msg.topic) is not None:
