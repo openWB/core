@@ -1,4 +1,5 @@
 from datetime import datetime
+import logging
 from typing import Any, Dict, Optional, Tuple
 
 from modules.common import req
@@ -6,6 +7,9 @@ from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ForecastState
 
 from modules.forecast.pvnode.config import PvNode, PvNodeConfiguration
+
+
+log = logging.getLogger("forecast")
 
 
 def _require(value, field_name: str):
@@ -32,8 +36,18 @@ def _normalize_timestamp(value: Any) -> Optional[int]:
     return None
 
 
+def _mask_identifier(value: str) -> str:
+    if not value:
+        return ""
+    if len(value) <= 4:
+        return "*" * len(value)
+    return f"{'*' * (len(value) - 4)}{value[-4:]}"
+
+
 def fetch_forecast(config: PvNodeConfiguration) -> Tuple[Dict[str, float], Dict[str, float]]:
     plant_id = _require(config.plant_id, "plant_id")
+    masked_plant_id = _mask_identifier(str(plant_id))
+    log.info("PVNode forecast fetch started (plant_id=%s)", masked_plant_id)
 
     path = f"/v2/forecast/{plant_id}"
     url = f"https://api.pvnode.com{path}"
@@ -53,6 +67,7 @@ def fetch_forecast(config: PvNodeConfiguration) -> Tuple[Dict[str, float], Dict[
             if date_key is None or energy_kwh is None:
                 continue
             daily_kwh[str(date_key)] = float(energy_kwh)
+    log.info("PVNode daily forecast parsed (days=%s)", len(daily_kwh))
 
     payload = response.get("values")
     if payload is None:
@@ -85,6 +100,8 @@ def fetch_forecast(config: PvNodeConfiguration) -> Tuple[Dict[str, float], Dict[
                 continue
             estimated_power_w = max(0.0, float(value))
             values[str(timestamp)] = estimated_power_w
+
+    log.info("PVNode forecast fetch finished (values=%s, days=%s)", len(values), len(daily_kwh))
 
     return values, daily_kwh
 

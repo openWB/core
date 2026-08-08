@@ -1,4 +1,5 @@
 from datetime import datetime
+import logging
 from typing import Any, Dict
 from zoneinfo import ZoneInfo
 
@@ -9,6 +10,7 @@ from modules.common.component_state import ForecastState
 from modules.forecast.openmeteo.config import OpenMeteoForecast, OpenMeteoForecastConfiguration
 
 OPEN_METEO_FORECAST_HOURS = 48
+log = logging.getLogger("forecast")
 
 
 def _require(value, field_name: str):
@@ -42,6 +44,13 @@ def fetch_forecast(config: OpenMeteoForecastConfiguration) -> Dict[str, float]:
     if len(string_configs) > 6:
         string_configs = string_configs[:6]
 
+    log.info(
+        "Open-Meteo forecast fetch started (strings=%s, timezone=%s, horizon_hours=%s)",
+        len(string_configs),
+        timezone,
+        OPEN_METEO_FORECAST_HOURS,
+    )
+
     values: Dict[str, float] = {}
     for string_config in string_configs:
         string_peak_power_kw = float(_require(string_config.get("peak_power_kw"), "strings[].peak_power_kw"))
@@ -65,6 +74,11 @@ def fetch_forecast(config: OpenMeteoForecastConfiguration) -> Dict[str, float]:
         hourly = response.get("hourly", {})
         times = hourly.get("time", [])
         radiation = hourly.get("global_tilted_irradiance", [])
+        log.info(
+            "Open-Meteo response received (times=%s, irradiance_values=%s)",
+            len(times),
+            len(radiation),
+        )
         for timestamp, value in zip(times[:OPEN_METEO_FORECAST_HOURS], radiation[:OPEN_METEO_FORECAST_HOURS]):
             if value is None:
                 continue
@@ -75,6 +89,7 @@ def fetch_forecast(config: OpenMeteoForecastConfiguration) -> Dict[str, float]:
             )
             timestamp_key = str(__parse_timestamp(timestamp, timezone))
             values[timestamp_key] = values.get(timestamp_key, 0.0) + estimated_power_w
+            log.info("Open-Meteo forecast fetch finished (merged_values=%s)", len(values))
     return values
 
 
