@@ -13,8 +13,6 @@ def _require(value, field_name: str):
         raise ValueError(f"Missing required forecast config field: {field_name}")
     if isinstance(value, str) and value.strip() == "":
         raise ValueError(f"Missing required forecast config field: {field_name}")
-    if isinstance(value, (int, float)) and float(value) == 0.0:
-        raise ValueError(f"Missing required forecast config field: {field_name}")
     return value
 
 
@@ -35,8 +33,10 @@ def _normalize_timestamp(value: Any) -> int | None:
 
 
 def fetch_forecast(config: PvNodeConfiguration) -> Tuple[Dict[str, float], Dict[str, float]]:
-    peak_power_kw = _require(config.peak_power_kw, "peak_power_kw")
-    system_loss = _require(config.system_loss, "system_loss")
+    peak_power_kw = float(_require(config.peak_power_kw, "peak_power_kw"))
+    if peak_power_kw <= 0:
+        raise ValueError("Missing required forecast config field: peak_power_kw")
+    system_loss = float(_require(config.system_loss, "system_loss"))
     plant_id = _require(config.plant_id, "plant_id")
 
     path = f"/v2/forecast/{plant_id}"

@@ -1,6 +1,6 @@
 from datetime import datetime
 import logging
-from typing import Dict, Tuple
+from typing import Any, Dict, Tuple
 from requests import HTTPError
 
 from modules.common import req
@@ -17,8 +17,6 @@ def _require(value, field_name: str):
     if value is None:
         raise ValueError(f"Missing required forecast config field: {field_name}")
     if isinstance(value, str) and value.strip() == "":
-        raise ValueError(f"Missing required forecast config field: {field_name}")
-    if isinstance(value, (int, float)) and float(value) == 0.0:
         raise ValueError(f"Missing required forecast config field: {field_name}")
     return value
 
@@ -74,39 +72,62 @@ def _parse_forecast_solar_response(payload: Dict) -> Tuple[Dict[str, float], Dic
 def fetch_forecast(config: ForecastSolarConfiguration) -> Tuple[Dict[str, float], Dict[str, float]]:
     latitude = _require(config.latitude, "latitude")
     longitude = _require(config.longitude, "longitude")
-    peak_power_kw = _require(config.peak_power_kw, "peak_power_kw")
-    azimuth = _require(config.azimuth, "azimuth")
-    tilt = _require(config.tilt, "tilt")
+    if config.strings:
+        string_configs: list[dict[str, Any]] = config.strings
+    else:
+        string_configs = [{
+            "peak_power_kw": config.peak_power_kw,
+            "azimuth": config.azimuth,
+            "tilt": config.tilt,
+        }]
+    if len(string_configs) > 6:
+        string_configs = string_configs[:6]
 
-    url = (
-        "https://api.forecast.solar/estimate/watthours"
-        f"/{latitude}"
-        f"/{longitude}"
-        f"/{tilt}"
-        f"/{azimuth}"
-        f"/{peak_power_kw}"
-    )
-    try:
-        response_obj = req.get_http_session().get(url, timeout=(2, 6))
-    except HTTPError as e:
-        response = e.response
-        if response is not None and response.status_code == 429:
-            retry_at = response.headers.get("X-Ratelimit-Retry-At")
-            remaining = response.headers.get("X-Ratelimit-Remaining")
-            limit = response.headers.get("X-Ratelimit-Limit")
-            period = response.headers.get("X-Ratelimit-Period")
-            log.warning(
-                "Forecast.Solar rate limit hit for %s: remaining=%s limit=%s period=%s retry_at=%s",
-                url,
-                remaining,
-                limit,
-                period,
-                retry_at,
-            )
-        raise
-    response = response_obj.json()
-    _log_forecast_solar_rate_limit(response, dict(response_obj.headers), url)
-    values, daily_kwh = _parse_forecast_solar_response(response)
+    values: Dict[str, float] = {}
+    daily_kwh: Dict[str, float] = {}
+
+    for string_config in string_configs:
+        peak_power_kw = float(_require(string_config.get("peak_power_kw"), "strings[].peak_power_kw"))
+        if peak_power_kw <= 0:
+            raise ValueError("Missing required forecast config field: strings[].peak_power_kw")
+        azimuth = _require(string_config.get("azimuth"), "strings[].azimuth")
+        tilt = _require(string_config.get("tilt"), "strings[].tilt")
+
+        url = (
+            "https://api.forecast.solar/estimate/watthours"
+            f"/{latitude}"
+            f"/{longitude}"
+            f"/{tilt}"
+            f"/{azimuth}"
+            f"/{peak_power_kw}"
+        )
+        try:
+            response_obj = req.get_http_session().get(url, timeout=(2, 6))
+        except HTTPError as e:
+            response = e.response
+            if response is not None and response.status_code == 429:
+                retry_at = response.headers.get("X-Ratelimit-Retry-At")
+                remaining = response.headers.get("X-Ratelimit-Remaining")
+                limit = response.headers.get("X-Ratelimit-Limit")
+                period = response.headers.get("X-Ratelimit-Period")
+                log.warning(
+                    "Forecast.Solar rate limit hit for %s: remaining=%s limit=%s period=%s retry_at=%s",
+                    url,
+                    remaining,
+                    limit,
+                    period,
+                    retry_at,
+                )
+            raise
+
+        response = response_obj.json()
+        _log_forecast_solar_rate_limit(response, dict(response_obj.headers), url)
+        string_values, string_daily_kwh = _parse_forecast_solar_response(response)
+        for timestamp, value in string_values.items():
+            values[timestamp] = values.get(timestamp, 0.0) + value
+        for day, value in string_daily_kwh.items():
+            daily_kwh[day] = daily_kwh.get(day, 0.0) + value
+
     return values, daily_kwh
 
 
