@@ -33,10 +33,6 @@ def _normalize_timestamp(value: Any) -> int | None:
 
 
 def fetch_forecast(config: PvNodeConfiguration) -> Tuple[Dict[str, float], Dict[str, float]]:
-    peak_power_kw = float(_require(config.peak_power_kw, "peak_power_kw"))
-    if peak_power_kw <= 0:
-        raise ValueError("Missing required forecast config field: peak_power_kw")
-    system_loss = float(_require(config.system_loss, "system_loss"))
     plant_id = _require(config.plant_id, "plant_id")
 
     path = f"/v2/forecast/{plant_id}"
@@ -71,33 +67,23 @@ def fetch_forecast(config: PvNodeConfiguration) -> Tuple[Dict[str, float], Dict[
             timestamp = _normalize_timestamp(
                 entry.get("timestamp") or entry.get("period_end") or entry.get("period_start")
             )
-            value = entry.get("pv_power") or entry.get("power_kw") or entry.get("power") or entry.get("value")
-            if timestamp is None or value is None:
+            power_w = entry.get("pv_power")
+            if power_w is None and entry.get("power_kw") is not None:
+                power_w = float(entry.get("power_kw")) * 1000.0
+            if power_w is None:
+                power_w = entry.get("power")
+            if power_w is None:
+                power_w = entry.get("value")
+            if timestamp is None or power_w is None:
                 continue
-            numeric_value = float(value)
-            if entry.get("pv_power") is not None and numeric_value > 1000.0:
-                estimated_power_w = max(0.0, numeric_value)
-            elif entry.get("pv_power") is not None:
-                estimated_power_w = max(0.0, numeric_value)
-            else:
-                estimated_power_w = max(
-                    0.0,
-                    numeric_value * float(peak_power_kw) / 100.0 * (1.0 - float(system_loss)) * 1000.0
-                )
+            estimated_power_w = max(0.0, float(power_w))
             values[str(timestamp)] = estimated_power_w
     elif isinstance(payload, dict):
         for key, value in payload.items():
             timestamp = _normalize_timestamp(key)
             if timestamp is None or value is None:
                 continue
-            numeric_value = float(value)
-            if isinstance(value, (int, float)) and numeric_value > 1000.0:
-                estimated_power_w = max(0.0, numeric_value)
-            else:
-                estimated_power_w = max(
-                    0.0,
-                    numeric_value * float(peak_power_kw) / 100.0 * (1.0 - float(system_loss)) * 1000.0
-                )
+            estimated_power_w = max(0.0, float(value))
             values[str(timestamp)] = estimated_power_w
 
     return values, daily_kwh

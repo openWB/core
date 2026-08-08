@@ -5,8 +5,6 @@ from dataclasses import dataclass, field
 class PvNodeConfiguration:
     api_key: str = ""
     plant_id: str = ""
-    peak_power_kw: float = 0.0
-    system_loss: float = 0.0
 
 
 @dataclass
