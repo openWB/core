@@ -71,7 +71,7 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
             self._set_next_query_time_by_schedule()
             self._publish_forecast_fault(FaultStateLevel.NO_ERROR, NO_ERROR)
             data.data.optional_data.data.forecast.configured = True
-            data.data.optional_data.data.forecast.provider = self.config.type
+            data.data.optional_data.data.forecast.provider = asdict(self.config)
             Pub().pub("openWB/set/optional/forecast/configured", True)
             Pub().pub("openWB/set/optional/forecast/provider", asdict(self.config))
             Pub().pub("openWB/set/optional/forecast/current", state.forecast_values)

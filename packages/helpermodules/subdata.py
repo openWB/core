@@ -805,8 +805,10 @@ class SubData:
                         # Runtime updates may publish only the provider type string.
                         var.data.forecast.provider = config_dict
                     elif not isinstance(config_dict, dict) or config_dict.get("type") is None:
+                        var.data.forecast.provider = None
                         var.forecast_module = None
                     else:
+                        var.data.forecast.provider = config_dict
                         mod = importlib.import_module(
                             f".forecast.{config_dict['type']}.forecast", "modules")
                         config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)

@@ -77,7 +77,7 @@ class Optional(OcppMixin):
             Pub().pub("openWB/set/optional/forecast/get/next_query_time", None)
         else:
             self.data.forecast.configured = True
-            self.data.forecast.provider = value.config.type
+            self.data.forecast.provider = asdict(value.config)
             Pub().pub("openWB/set/optional/forecast/configured", True)
             Pub().pub("openWB/set/optional/forecast/provider", asdict(value.config))
 

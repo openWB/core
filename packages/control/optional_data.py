@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Dict, Optional, Protocol
+from typing import Any, Dict, Optional, Protocol
 
 from dataclass_utils.factories import empty_dict_factory
 from helpermodules.constants import NO_ERROR
@@ -113,7 +113,7 @@ class ElectricityPricing:
 @dataclass
 class Forecast:
     configured: bool = field(default=False, metadata={"topic": "forecast/configured"})
-    provider: Optional[str] = field(default=None, metadata={"topic": "forecast/provider"})
+    provider: Optional[Dict[str, Any]] = field(default=None, metadata={"topic": "forecast/provider"})
     get: ForecastGet = field(default_factory=forecast_get_factory)
 
 
