@@ -1,4 +1,5 @@
 import logging
+from dataclasses import asdict
 from datetime import datetime, timedelta
 from typing import Callable, Generic, Optional, TypeVar
 
@@ -72,7 +73,7 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
             data.data.optional_data.data.forecast.configured = True
             data.data.optional_data.data.forecast.provider = self.config.type
             Pub().pub("openWB/set/optional/forecast/configured", True)
-            Pub().pub("openWB/set/optional/forecast/provider", self.config.type)
+            Pub().pub("openWB/set/optional/forecast/provider", asdict(self.config))
             Pub().pub("openWB/set/optional/forecast/current", state.forecast_values)
             log.info(
                 "Forecast update finished (provider=%s, values=%s, next_query_time=%s)",

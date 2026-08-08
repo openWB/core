@@ -1,5 +1,6 @@
 """Optionale Module
 """
+from dataclasses import asdict
 import logging
 from math import ceil
 from threading import Thread
@@ -78,7 +79,7 @@ class Optional(OcppMixin):
             self.data.forecast.configured = True
             self.data.forecast.provider = value.config.type
             Pub().pub("openWB/set/optional/forecast/configured", True)
-            Pub().pub("openWB/set/optional/forecast/provider", value.config.type)
+            Pub().pub("openWB/set/optional/forecast/provider", asdict(value.config))
 
     @grid_fee_module.setter
     def grid_fee_module(self, value: TypingOptional[ConfigurableGridFee]):
