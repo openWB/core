@@ -36,6 +36,14 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
     def _is_update_due(self) -> bool:
         return self.next_query_time is None or self.next_query_time <= timecheck.create_timestamp()
 
+    def _is_force_update_requested(self) -> bool:
+        return bool(data.data.optional_data.data.forecast.get.force_update)
+
+    def _clear_force_update_request(self) -> None:
+        if data.data.optional_data.data.forecast.get.force_update:
+            data.data.optional_data.data.forecast.get.force_update = False
+            Pub().pub("openWB/set/optional/forecast/get/force_update", False)
+
     def _set_next_query_time_by_schedule(self) -> None:
         now = datetime.now()
         current_hour = now.hour
@@ -50,9 +58,12 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
         Pub().pub("openWB/set/optional/forecast/get/next_query_time", self.next_query_time)
 
     def update(self) -> None:
-        if not self._is_update_due():
+        force_update = self._is_force_update_requested()
+        if not force_update and not self._is_update_due():
             return
         try:
+            trigger_mode = "manual" if force_update else "scheduled"
+            log.info("Forecast update started (provider=%s, trigger=%s)", self.config.type, trigger_mode)
             state = self._component_updater()
             self.store.set(state)
             self.store.update()
@@ -63,6 +74,12 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
             Pub().pub("openWB/set/optional/forecast/configured", True)
             Pub().pub("openWB/set/optional/forecast/provider", self.config.type)
             Pub().pub("openWB/set/optional/forecast/current", state.forecast_values)
+            log.info(
+                "Forecast update finished (provider=%s, values=%s, next_query_time=%s)",
+                self.config.type,
+                len(state.forecast_values or {}),
+                self.next_query_time,
+            )
         except Exception as e:
             if "429" in str(e):
                 # Rate limited providers should wait until the next planned schedule slot.
@@ -78,6 +95,8 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
                     "Forecast update failed. Retry scheduled in 15 minutes.",
                 )
             log.exception(f"Fehler beim Aktualisieren der Forecast-Daten {e}")
+        finally:
+            self._clear_force_update_request()
 
 
 class ConfigurableForecastProvider(ConfigurableForecast[T_FORECAST_CONFIG]):

@@ -1,15 +1,12 @@
 from dataclasses import dataclass, field
-from typing import Optional
 
 
 @dataclass
 class PvNodeConfiguration:
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-    peak_power_kw: Optional[float] = None
-    system_loss: Optional[float] = None
-    api_key: Optional[str] = None
-    plant_id: Optional[str] = None
+    api_key: str = ""
+    plant_id: str = ""
+    peak_power_kw: float = 0.0
+    system_loss: float = 0.0
 
 
 @dataclass

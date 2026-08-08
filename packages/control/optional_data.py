@@ -10,8 +10,13 @@ from modules.display_themes.cards.config import CardsDisplayTheme
 class ForecastGet:
     fault_state: int = field(default=0)
     fault_str: str = field(default=NO_ERROR)
+    force_update: bool = field(default=False)
     values: Dict = field(default_factory=empty_dict_factory)
+    today_values: Dict = field(default_factory=empty_dict_factory)
+    tomorrow_values: Dict = field(default_factory=empty_dict_factory)
     daily_kwh: Dict = field(default_factory=empty_dict_factory)
+    today_kwh: float = field(default=0.0)
+    tomorrow_kwh: float = field(default=0.0)
     next_query_time: int = field(default=0)
 
 
@@ -19,8 +24,13 @@ def create_forecast_get_with_topics(topic_prefix: str) -> ForecastGet:
     forecast_get = ForecastGet()
     forecast_get.__dataclass_fields__['fault_state'].metadata = {"topic": f"{topic_prefix}/get/fault_state"}
     forecast_get.__dataclass_fields__['fault_str'].metadata = {"topic": f"{topic_prefix}/get/fault_str"}
+    forecast_get.__dataclass_fields__['force_update'].metadata = {"topic": f"{topic_prefix}/get/force_update"}
     forecast_get.__dataclass_fields__['values'].metadata = {"topic": f"{topic_prefix}/get/values"}
+    forecast_get.__dataclass_fields__['today_values'].metadata = {"topic": f"{topic_prefix}/get/today_values"}
+    forecast_get.__dataclass_fields__['tomorrow_values'].metadata = {"topic": f"{topic_prefix}/get/tomorrow_values"}
     forecast_get.__dataclass_fields__['daily_kwh'].metadata = {"topic": f"{topic_prefix}/get/daily_kwh"}
+    forecast_get.__dataclass_fields__['today_kwh'].metadata = {"topic": f"{topic_prefix}/get/today_kwh"}
+    forecast_get.__dataclass_fields__['tomorrow_kwh'].metadata = {"topic": f"{topic_prefix}/get/tomorrow_kwh"}
     forecast_get.__dataclass_fields__['next_query_time'].metadata = {"topic": f"{topic_prefix}/get/next_query_time"}
     return forecast_get
 

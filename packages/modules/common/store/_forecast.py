@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict
 
 from control import data
@@ -55,6 +55,17 @@ def _calculate_daily_kwh(values: Dict[str, float]) -> Dict[str, float]:
     return {date_key: energy_wh / 1000.0 for date_key, energy_wh in daily_wh.items()}
 
 
+def _filter_values_for_date(values: Dict[str, float], target_date) -> Dict[str, float]:
+    day_values: Dict[str, float] = {}
+    for timestamp, value in values.items():
+        parsed_timestamp = _parse_forecast_timestamp(timestamp)
+        if parsed_timestamp is None:
+            continue
+        if parsed_timestamp.date() == target_date:
+            day_values[timestamp] = float(value)
+    return day_values
+
+
 class ForecastValueStore(ValueStore[ForecastState]):
     def __init__(self):
         pass
@@ -64,13 +75,34 @@ class ForecastValueStore(ValueStore[ForecastState]):
 
     def update(self):
         values = self.state.forecast_values or {}
-        daily_kwh = _calculate_daily_kwh(values)
+        provider_daily_kwh = self.state.daily_kwh or {}
+        daily_kwh = provider_daily_kwh if provider_daily_kwh else _calculate_daily_kwh(values)
+        today_date = datetime.now().date()
+        tomorrow_date = datetime.now().date() + timedelta(days=1)
+        today_values = _filter_values_for_date(values, today_date)
+        tomorrow_values = _filter_values_for_date(values, tomorrow_date)
+        today_kwh = float(daily_kwh.get(today_date.isoformat(), 0.0))
+        tomorrow_kwh = float(daily_kwh.get(tomorrow_date.isoformat(), 0.0))
         data.data.optional_data.data.forecast.get.values = values
+        data.data.optional_data.data.forecast.get.today_values = today_values
+        data.data.optional_data.data.forecast.get.tomorrow_values = tomorrow_values
         data.data.optional_data.data.forecast.get.daily_kwh = daily_kwh
+        data.data.optional_data.data.forecast.get.today_kwh = today_kwh
+        data.data.optional_data.data.forecast.get.tomorrow_kwh = tomorrow_kwh
         pub_to_broker("openWB/set/optional/forecast/get/values", values)
+        pub_to_broker("openWB/set/optional/forecast/get/today_values", today_values)
+        pub_to_broker("openWB/set/optional/forecast/get/tomorrow_values", tomorrow_values)
         pub_to_broker("openWB/set/optional/forecast/get/daily_kwh", daily_kwh)
+        pub_to_broker("openWB/set/optional/forecast/get/today_kwh", today_kwh)
+        pub_to_broker("openWB/set/optional/forecast/get/tomorrow_kwh", tomorrow_kwh)
         Pub().pub("openWB/optional/forecast/current", values)
-        log.debug(f"published forecast values to MQTT having {len(values)} entries and {len(daily_kwh)} day totals")
+        log.debug(
+            "published forecast values to MQTT having %s entries, %s day totals, %s today entries, and %s tomorrow entries",
+            len(values),
+            len(daily_kwh),
+            len(today_values),
+            len(tomorrow_values),
+        )
 
 
 def get_forecast_value_store() -> ValueStore[ForecastState]:

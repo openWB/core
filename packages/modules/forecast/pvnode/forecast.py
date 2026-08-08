@@ -1,11 +1,21 @@
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ForecastState
 
 from modules.forecast.pvnode.config import PvNode, PvNodeConfiguration
+
+
+def _require(value, field_name: str):
+    if value is None:
+        raise ValueError(f"Missing required forecast config field: {field_name}")
+    if isinstance(value, str) and value.strip() == "":
+        raise ValueError(f"Missing required forecast config field: {field_name}")
+    if isinstance(value, (int, float)) and float(value) == 0.0:
+        raise ValueError(f"Missing required forecast config field: {field_name}")
+    return value
 
 
 def _normalize_timestamp(value: Any) -> int | None:
@@ -24,18 +34,29 @@ def _normalize_timestamp(value: Any) -> int | None:
     return None
 
 
-def fetch_forecast(config: PvNodeConfiguration) -> Dict[str, float]:
-    latitude = config.latitude if config.latitude is not None else 52.52
-    longitude = config.longitude if config.longitude is not None else 13.405
-    peak_power_kw = config.peak_power_kw if config.peak_power_kw is not None else 5.0
-    system_loss = config.system_loss if config.system_loss is not None else 0.1
-    plant_id = config.plant_id if config.plant_id is not None else ""
+def fetch_forecast(config: PvNodeConfiguration) -> Tuple[Dict[str, float], Dict[str, float]]:
+    peak_power_kw = _require(config.peak_power_kw, "peak_power_kw")
+    system_loss = _require(config.system_loss, "system_loss")
+    plant_id = _require(config.plant_id, "plant_id")
 
-    path = f"/v2/forecast/{plant_id}" if plant_id else "/v2/forecast"
+    path = f"/v2/forecast/{plant_id}"
     url = f"https://api.pvnode.com{path}"
-    headers = {"Authorization": f"Bearer {config.api_key}"} if config.api_key else {}
+    api_key = _require(config.api_key, "api_key")
+    headers = {"Authorization": f"Bearer {api_key}"}
     response = req.get_http_session().get(url, headers=headers, timeout=(2, 6)).json()
     values: Dict[str, float] = {}
+    daily_kwh: Dict[str, float] = {}
+
+    daily_payload = response.get("daily")
+    if isinstance(daily_payload, list):
+        for entry in daily_payload:
+            if not isinstance(entry, dict):
+                continue
+            date_key = entry.get("date")
+            energy_kwh = entry.get("pv_energy_kwh")
+            if date_key is None or energy_kwh is None:
+                continue
+            daily_kwh[str(date_key)] = float(energy_kwh)
 
     payload = response.get("values")
     if payload is None:
@@ -79,12 +100,13 @@ def fetch_forecast(config: PvNodeConfiguration) -> Dict[str, float]:
                 )
             values[str(timestamp)] = estimated_power_w
 
-    return values
+    return values, daily_kwh
 
 
 def create_forecast(config: PvNode):
     def updater():
-        return ForecastState(forecast_values=fetch_forecast(config.configuration))
+        values, daily_kwh = fetch_forecast(config.configuration)
+        return ForecastState(forecast_values=values, daily_kwh=daily_kwh)
     return updater
 
 

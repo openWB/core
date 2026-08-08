@@ -1,18 +1,13 @@
 from dataclasses import dataclass, field
-from typing import Any, Optional
 
 
 @dataclass
 class ForecastSolarConfiguration:
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-    peak_power_kw: Optional[float] = None
-    azimuth: Optional[float] = None
-    tilt: Optional[float] = None
-    loss: Optional[float] = None
-    horizon: Optional[str] = None
-    output: Optional[str] = None
-    strings: Optional[list[dict[str, Any]]] = None
+    latitude: float = 0.0
+    longitude: float = 0.0
+    peak_power_kw: float = 0.0
+    azimuth: float = 0.0
+    tilt: float = 0.0
 
 
 @dataclass

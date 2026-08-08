@@ -1,17 +1,14 @@
 from dataclasses import dataclass, field
-from typing import Any, Optional
 
 
 @dataclass
 class OpenMeteoForecastConfiguration:
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-    timezone: Optional[str] = None
-    forecast_hours: Optional[int] = None
-    peak_power_kw: Optional[float] = None
-    system_loss: Optional[float] = None
-    irradiance_to_power_factor: Optional[float] = None
-    strings: Optional[list[dict[str, Any]]] = None
+    latitude: float = 0.0
+    longitude: float = 0.0
+    timezone: str = ""
+    peak_power_kw: float = 0.0
+    system_loss: float = 0.0
+    irradiance_to_power_factor: float = 0.0
 
 
 @dataclass

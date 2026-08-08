@@ -1,6 +1,6 @@
 from datetime import datetime
 import logging
-from typing import Any, Dict
+from typing import Dict, Tuple
 from requests import HTTPError
 
 from modules.common import req
@@ -11,6 +11,16 @@ from modules.forecast.forecastsolar.config import ForecastSolar, ForecastSolarCo
 
 
 log = logging.getLogger(__name__)
+
+
+def _require(value, field_name: str):
+    if value is None:
+        raise ValueError(f"Missing required forecast config field: {field_name}")
+    if isinstance(value, str) and value.strip() == "":
+        raise ValueError(f"Missing required forecast config field: {field_name}")
+    if isinstance(value, (int, float)) and float(value) == 0.0:
+        raise ValueError(f"Missing required forecast config field: {field_name}")
+    return value
 
 
 def _log_forecast_solar_rate_limit(payload: dict, headers: dict, url: str) -> None:
@@ -32,73 +42,78 @@ def _log_forecast_solar_rate_limit(payload: dict, headers: dict, url: str) -> No
     )
 
 
-def fetch_forecast(config: ForecastSolarConfiguration) -> Dict[str, float]:
-    latitude = config.latitude if config.latitude is not None else 52.52
-    longitude = config.longitude if config.longitude is not None else 13.405
-    peak_power_kw = config.peak_power_kw if config.peak_power_kw is not None else 5.0
-    azimuth = config.azimuth if config.azimuth is not None else 180.0
-    tilt = config.tilt if config.tilt is not None else 35.0
-    loss = config.loss if config.loss is not None else 14.0
-    horizon = config.horizon if config.horizon is not None else "0"
+def _parse_forecast_solar_response(payload: Dict) -> Tuple[Dict[str, float], Dict[str, float]]:
+    result = payload.get("result") if isinstance(payload, dict) else None
+    source = result if isinstance(result, dict) else payload
 
-    string_configs: list[dict[str, Any]] = config.strings if config.strings else [{
-        "peak_power_kw": peak_power_kw,
-        "azimuth": azimuth,
-        "tilt": tilt,
-        "loss": loss,
-        "horizon": horizon,
-    }]
-    if len(string_configs) > 6:
-        string_configs = string_configs[:6]
+    watts = source.get("watts") if isinstance(source, dict) else None
+    if watts is None and isinstance(source, dict):
+        watts = source.get("values")
+    if watts is None and isinstance(source, dict):
+        watts = source.get("data")
+
     values: Dict[str, float] = {}
-    for string_config in string_configs:
-        string_peak_power_kw = string_config.get("peak_power_kw") if string_config.get("peak_power_kw") is not None else peak_power_kw
-        string_azimuth = string_config.get("azimuth") if string_config.get("azimuth") is not None else azimuth
-        string_tilt = string_config.get("tilt") if string_config.get("tilt") is not None else tilt
-        string_loss = string_config.get("loss") if string_config.get("loss") is not None else loss
-        string_horizon = string_config.get("horizon") if string_config.get("horizon") is not None else horizon
-
-        url = (
-            "https://api.forecast.solar/estimate/watts"
-            f"?lat={latitude}"
-            f"&lon={longitude}"
-            f"&dec={string_peak_power_kw}"
-            f"&az={string_azimuth}"
-            f"&tilt={string_tilt}"
-            f"&loss={string_loss}"
-            f"&horizon={string_horizon}"
-        )
-        try:
-            response_obj = req.get_http_session().get(url, timeout=(2, 6))
-        except HTTPError as e:
-            response = e.response
-            if response is not None and response.status_code == 429:
-                retry_at = response.headers.get("X-Ratelimit-Retry-At")
-                remaining = response.headers.get("X-Ratelimit-Remaining")
-                limit = response.headers.get("X-Ratelimit-Limit")
-                period = response.headers.get("X-Ratelimit-Period")
-                log.warning(
-                    "Forecast.Solar rate limit hit for %s: remaining=%s limit=%s period=%s retry_at=%s",
-                    url,
-                    remaining,
-                    limit,
-                    period,
-                    retry_at,
-                )
-            raise
-        response = response_obj.json()
-        _log_forecast_solar_rate_limit(response, dict(response_obj.headers), url)
-        for timestamp, value in response.items():
+    if isinstance(watts, dict):
+        for timestamp, value in watts.items():
             if value is None:
                 continue
             timestamp_key = str(int(datetime.fromisoformat(timestamp).timestamp()))
-            values[timestamp_key] = values.get(timestamp_key, 0.0) + float(value)
-    return values
+            values[timestamp_key] = float(value)
+
+    daily_source = source.get("watt_hours_day") if isinstance(source, dict) else None
+    daily_kwh: Dict[str, float] = {}
+    if isinstance(daily_source, dict):
+        for date_key, value in daily_source.items():
+            if value is None:
+                continue
+            daily_kwh[str(date_key)] = float(value) / 1000.0
+
+    return values, daily_kwh
+
+
+def fetch_forecast(config: ForecastSolarConfiguration) -> Tuple[Dict[str, float], Dict[str, float]]:
+    latitude = _require(config.latitude, "latitude")
+    longitude = _require(config.longitude, "longitude")
+    peak_power_kw = _require(config.peak_power_kw, "peak_power_kw")
+    azimuth = _require(config.azimuth, "azimuth")
+    tilt = _require(config.tilt, "tilt")
+
+    url = (
+        "https://api.forecast.solar/estimate/watthours"
+        f"/{latitude}"
+        f"/{longitude}"
+        f"/{tilt}"
+        f"/{azimuth}"
+        f"/{peak_power_kw}"
+    )
+    try:
+        response_obj = req.get_http_session().get(url, timeout=(2, 6))
+    except HTTPError as e:
+        response = e.response
+        if response is not None and response.status_code == 429:
+            retry_at = response.headers.get("X-Ratelimit-Retry-At")
+            remaining = response.headers.get("X-Ratelimit-Remaining")
+            limit = response.headers.get("X-Ratelimit-Limit")
+            period = response.headers.get("X-Ratelimit-Period")
+            log.warning(
+                "Forecast.Solar rate limit hit for %s: remaining=%s limit=%s period=%s retry_at=%s",
+                url,
+                remaining,
+                limit,
+                period,
+                retry_at,
+            )
+        raise
+    response = response_obj.json()
+    _log_forecast_solar_rate_limit(response, dict(response_obj.headers), url)
+    values, daily_kwh = _parse_forecast_solar_response(response)
+    return values, daily_kwh
 
 
 def create_forecast(config: ForecastSolar):
     def updater():
-        return ForecastState(forecast_values=fetch_forecast(config.configuration))
+        values, daily_kwh = fetch_forecast(config.configuration)
+        return ForecastState(forecast_values=values, daily_kwh=daily_kwh)
     return updater
 
 
