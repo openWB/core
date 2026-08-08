@@ -72,14 +72,10 @@ def _parse_forecast_solar_response(payload: Dict) -> Tuple[Dict[str, float], Dic
 def fetch_forecast(config: ForecastSolarConfiguration) -> Tuple[Dict[str, float], Dict[str, float]]:
     latitude = _require(config.latitude, "latitude")
     longitude = _require(config.longitude, "longitude")
-    if config.strings:
-        string_configs: list[dict[str, Any]] = config.strings
-    else:
-        string_configs = [{
-            "peak_power_kw": config.peak_power_kw,
-            "azimuth": config.azimuth,
-            "tilt": config.tilt,
-        }]
+    string_configs_raw = _require(config.strings, "strings")
+    if not isinstance(string_configs_raw, list) or len(string_configs_raw) == 0:
+        raise ValueError("Missing required forecast config field: strings")
+    string_configs: list[dict[str, Any]] = string_configs_raw
     if len(string_configs) > 6:
         string_configs = string_configs[:6]
 

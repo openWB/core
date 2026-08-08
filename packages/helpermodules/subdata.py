@@ -809,6 +809,10 @@ class SubData:
                         if (var.forecast_module is not None and
                                 getattr(var.forecast_module.config, "type", None) == config_dict):
                             var.data.forecast.provider = asdict(var.forecast_module.config)
+                    elif config_dict is None:
+                        # Ignore legacy/null payloads to avoid clearing a valid provider right after configuration.
+                        # Explicit resets are still supported via an object payload with type=null.
+                        log.debug("Ignoring null forecast provider payload")
                     elif not isinstance(config_dict, dict) or config_dict.get("type") is None:
                         # Only clear once. Re-clearing would publish the same null state again and can cause loops.
                         if var.forecast_module is not None or var.data.forecast.provider is not None:
