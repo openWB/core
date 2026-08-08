@@ -51,6 +51,8 @@
 					"rolename":	"basic-theme-data"
 				}, {
 					"rolename":	"basic-user-data"
+				}, {
+					"rolename":	"settings-access"
 				}],
 			"clients":	[]
 		}, {
@@ -70,7 +72,7 @@
 	"anonymousGroup": "anonymous",
 	"roles": [
 		{
-			"rolename": "openwb-version:10",
+			"rolename": "openwb-version:11",
 			"textname": "openWB Versionsnummer",
 			"textdescription": "Diese Rolle ist ein Platzhalter für die openWB Versionsnummer und wird automatisch aktualisiert. Sie hat keine direkten Berechtigungen.",
 			"acls": []
