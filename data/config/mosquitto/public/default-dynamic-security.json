@@ -472,6 +472,18 @@
 			"textdescription": "Erlaubt den Zugang zu den Einstellungen. Für weitere Optionen werden noch zusätzliche Rollen benötigt!",
 			"acls": [
 				{
+					"acltype": "subscribePattern",
+					"topic": "openWB/system/security/access/+",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "unsubscribePattern",
+					"topic": "openWB/system/security/access/+",
+					"priority": 0,
+					"allow": true
+				},
+				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/access/+",
 					"priority": 0,
