@@ -70,7 +70,7 @@
 	"anonymousGroup": "anonymous",
 	"roles": [
 		{
-			"rolename": "openwb-version:9",
+			"rolename": "openwb-version:10",
 			"textname": "openWB Versionsnummer",
 			"textdescription": "Diese Rolle ist ein Platzhalter für die openWB Versionsnummer und wird automatisch aktualisiert. Sie hat keine direkten Berechtigungen.",
 			"acls": []
@@ -471,6 +471,12 @@
 			"textname": "Zugang zu den Einstellungen",
 			"textdescription": "Erlaubt den Zugang zu den Einstellungen. Für weitere Optionen werden noch zusätzliche Rollen benötigt!",
 			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/access/+",
+					"priority": 0,
+					"allow": true
+				},
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/access/Settings",
