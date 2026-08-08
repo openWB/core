@@ -270,6 +270,7 @@ def setup_logging() -> None:
     # Forecast logger
     forecast_log = logging.getLogger("forecast")
     forecast_log.propagate = False
+    forecast_log.setLevel(logging.INFO)
     forecast_file_handler = RotatingFileHandler(RAMDISK_PATH / 'forecast.log', maxBytes=mb_to_bytes(1), backupCount=1)
     forecast_file_handler.setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
     forecast_file_handler.addFilter(RedactingFilter())
