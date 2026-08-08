@@ -14,6 +14,7 @@ from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 from helpermodules.utils import thread_handler
+from modules.common.configurable_forecast import ConfigurableForecast
 from modules.common.configurable_tariff import ConfigurableFlexibleTariff, ConfigurableGridFee
 from modules.common.configurable_monitoring import ConfigurableMonitoring
 
@@ -28,6 +29,7 @@ class Optional(OcppMixin):
             self.data = OptionalData()
             self._flexible_tariff_module: TypingOptional[ConfigurableFlexibleTariff] = None
             self._grid_fee_module: TypingOptional[ConfigurableGridFee] = None
+            self._forecast_module: TypingOptional[ConfigurableForecast] = None
             self.monitoring_module: TypingOptional[ConfigurableMonitoring] = None
             self.data.dc_charging = hardware_configuration.get_hardware_configuration_setting("dc_charging")
             Pub().pub("openWB/optional/dc_charging", self.data.dc_charging)
@@ -51,6 +53,27 @@ class Optional(OcppMixin):
     @property
     def grid_fee_module(self) -> TypingOptional[ConfigurableGridFee]:
         return self._grid_fee_module
+
+    @property
+    def forecast_module(self) -> TypingOptional[ConfigurableForecast]:
+        return self._forecast_module
+
+    @forecast_module.setter
+    def forecast_module(self, value: TypingOptional[ConfigurableForecast]):
+        self._forecast_module = value
+        if value is None:
+            self.data.forecast.configured = False
+            self.data.forecast.provider = None
+            Pub().pub("openWB/set/optional/forecast/configured", False)
+            Pub().pub("openWB/set/optional/forecast/provider", None)
+            Pub().pub("openWB/set/optional/forecast/get/values", {})
+            Pub().pub("openWB/set/optional/forecast/get/daily_kwh", {})
+            Pub().pub("openWB/set/optional/forecast/get/next_query_time", None)
+        else:
+            self.data.forecast.configured = True
+            self.data.forecast.provider = value.config.type
+            Pub().pub("openWB/set/optional/forecast/configured", True)
+            Pub().pub("openWB/set/optional/forecast/provider", value.config.type)
 
     @grid_fee_module.setter
     def grid_fee_module(self, value: TypingOptional[ConfigurableGridFee]):
