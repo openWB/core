@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
@@ -16,7 +16,7 @@ def _require(value, field_name: str):
     return value
 
 
-def _normalize_timestamp(value: Any) -> int | None:
+def _normalize_timestamp(value: Any) -> Optional[int]:
     if value is None:
         return None
     if isinstance(value, (int, float)):
