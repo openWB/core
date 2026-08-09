@@ -44,21 +44,32 @@ def _parse_forecast_solar_response(payload: Dict) -> Tuple[Dict[str, float], Dic
     result = payload.get("result") if isinstance(payload, dict) else None
     source = result if isinstance(result, dict) else payload
 
-    watts = source.get("watts") if isinstance(source, dict) else None
-    if watts is None and isinstance(source, dict):
-        watts = source.get("values")
-    if watts is None and isinstance(source, dict):
-        watts = source.get("data")
+    # Free-tier endpoints return result as a flat {timestamp: value} dict directly.
+    first_key = next(iter(source), None) if isinstance(source, dict) else None
+    is_flat_response = (
+        first_key is not None
+        and isinstance(first_key, str)
+        and len(first_key) >= 10
+        and first_key[4] == "-"
+    )
+
+    if is_flat_response:
+        watts_raw = source
+        daily_source = None
+    else:
+        watts_raw = source.get("watts") if isinstance(source, dict) else None
+        if watts_raw is None and isinstance(source, dict):
+            watts_raw = source.get("values") or source.get("data")
+        daily_source = source.get("watt_hours_day") if isinstance(source, dict) else None
 
     values: Dict[str, float] = {}
-    if isinstance(watts, dict):
-        for timestamp, value in watts.items():
+    if isinstance(watts_raw, dict):
+        for timestamp, value in watts_raw.items():
             if value is None:
                 continue
             timestamp_key = str(int(datetime.fromisoformat(timestamp).timestamp()))
             values[timestamp_key] = float(value)
 
-    daily_source = source.get("watt_hours_day") if isinstance(source, dict) else None
     daily_kwh: Dict[str, float] = {}
     if isinstance(daily_source, dict):
         for date_key, value in daily_source.items():
@@ -90,7 +101,7 @@ def fetch_forecast(config: ForecastSolarConfiguration) -> Tuple[Dict[str, float]
         tilt = _require(string_config.get("tilt"), "strings[].tilt")
 
         url = (
-            "https://api.forecast.solar/estimate/watthours"
+            "https://api.forecast.solar/estimate/watts"
             f"/{latitude}"
             f"/{longitude}"
             f"/{tilt}"
