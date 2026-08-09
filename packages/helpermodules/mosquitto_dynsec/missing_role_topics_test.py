@@ -107,7 +107,8 @@ INTERNAL_TOPICS = ['openWB/bat/set/charging_power_left',
                    'openWB/system/device/module_update_completed',
                    'openWB/system/hostname',
                    'openWB/system/lastlivevaluesJson',
-                   'openWB/system/release_train']
+                   'openWB/system/release_train',
+                   'openWB/set/system/configurable/forecasts']
 
 NOT_PERSISTENT_TOPICS = ['openWB/system/messages/[^/]+',
                          'openWB/system/messages/.*',
