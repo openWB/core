@@ -69,14 +69,14 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
         """
         is_config_complete = self._is_config_complete()
         if not is_config_complete:
-            log.debug(f"_is_update_due: config incomplete, skipping update")
+            log.info(f"_is_update_due: config incomplete, skipping update")
             return False
         
         now = timecheck.create_timestamp()
         next_time = self.get.next_query_time
         is_due = next_time is None or next_time == 0 or next_time <= now
         
-        log.debug(f"_is_update_due: config_complete={is_config_complete}, next_time={next_time}, now={now}, is_due={is_due}")
+        log.info(f"_is_update_due: next_time={next_time}, now={now}, is_due={is_due}")
         
         return is_due
 
