@@ -136,8 +136,9 @@ class Loadvars:
 
     def forecast_get_values(self):
         try:
-            if hasattr(data.data.optional_data, "forecast_module") and data.data.optional_data.forecast_module is not None:
-                data.data.optional_data.forecast_module.update()
+            forecast_module = getattr(data.data.optional_data, "forecast_module", None)
+            if forecast_module is not None:
+                forecast_module.update()
         except Exception as e:
             log.exception("Fehler im Forecast-Optional-Modul: %s", e)
 
