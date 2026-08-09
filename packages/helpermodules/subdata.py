@@ -814,8 +814,10 @@ class SubData:
                         # Explicit resets are still supported via an object payload with type=null.
                         log.debug("Ignoring null forecast provider payload")
                     elif not isinstance(config_dict, dict) or config_dict.get("type") is None:
-                        # Only clear once. Re-clearing would publish the same null state again and can cause loops.
-                        if var.forecast_module is not None or var.data.forecast.provider is not None:
+                        # During startup ignore stale null-type payloads; only act on explicit runtime resets.
+                        if not self.event_subdata_initialized.is_set():
+                            log.debug("Ignoring null-type forecast provider payload during startup")
+                        elif var.forecast_module is not None or var.data.forecast.provider is not None:
                             var.data.forecast.provider = None
                             var.forecast_module = None
                     else:
