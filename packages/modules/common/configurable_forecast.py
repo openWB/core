@@ -22,21 +22,14 @@ FORECAST_RETRY_MINUTES = 15
 class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
     def __init__(self,
                  config: T_FORECAST_CONFIG,
-                 component_initializer: Callable[[T_FORECAST_CONFIG], ForecastState]) -> None:
+                 component_initializer: Callable[[T_FORECAST_CONFIG], ForecastState],
+                 get) -> None:
         self.config = config
         self.store = store.get_forecast_value_store()
         self._component_updater = component_initializer(config)
         self.update_hours = DEFAULT_FORECAST_UPDATE_HOURS
-    
-    @property
-    def get(self):
-        """Get the current forecast.get state, always from the data layer.
-        
-        This is a property instead of a stored reference because the forecast.get
-        object can be reset/recreated (e.g., when the provider is removed), and we need
-        to always reference the current instance, not a stale cached reference.
-        """
-        return data.data.optional_data.data.forecast.get
+        # Store reference to forecast.get for persistent state across re-initialization (same pattern as EP modules)
+        self.get = get
 
     def _is_config_complete(self) -> bool:
         """Check if forecast provider configuration has all required fields.
@@ -75,18 +68,10 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
         Returns False immediately if configuration is incomplete (prevents API calls before config is saved).
         Otherwise checks if the scheduled update time has been reached.
         """
-        is_config_complete = self._is_config_complete()
-        if not is_config_complete:
-            log.info(f"_is_update_due: config incomplete, skipping update")
+        if not self._is_config_complete():
             return False
         
-        now = timecheck.create_timestamp()
-        next_time = self.get.next_query_time
-        is_due = next_time is None or next_time == 0 or next_time <= now
-        
-        log.info(f"_is_update_due: next_time={next_time}, now={now}, is_due={is_due}")
-        
-        return is_due
+        return self.get.next_query_time is None or self.get.next_query_time == 0 or self.get.next_query_time <= timecheck.create_timestamp()
 
     def _is_force_update_requested(self) -> bool:
         return bool(data.data.optional_data.data.forecast.get.force_update)
@@ -164,5 +149,6 @@ class ConfigurableForecastProvider(ConfigurableForecast[T_FORECAST_CONFIG]):
     def __init__(self,
                  config: T_FORECAST_CONFIG,
                  component_initializer: Callable[[T_FORECAST_CONFIG], ForecastState]) -> None:
-        super().__init__(config, component_initializer)
-        self._optional_data = OptionalData()
+        # Use the singleton OptionalData instance to ensure we get the same forecast.get object
+        # across all instances and persist state correctly.
+        super().__init__(config, component_initializer, data.data.optional_data.data.forecast.get)
