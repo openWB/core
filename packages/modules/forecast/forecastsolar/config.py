@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import List, Optional
 
 
 @dataclass
@@ -9,7 +9,7 @@ class ForecastSolarConfiguration:
     peak_power_kw: float = 9.5
     azimuth: float = 0.0
     tilt: float = 30.0
-    strings: Optional[list[dict[str, Any]]] = None
+    strings: Optional[List] = None
 
 
 @dataclass
