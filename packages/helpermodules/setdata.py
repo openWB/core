@@ -900,6 +900,8 @@ class SetData:
                 self._validate_value(msg, float)
             elif "openWB/set/optional/forecast/get/next_query_time" in msg.topic:
                 self._validate_value(msg, int)
+            elif "openWB/set/optional/forecast/get/last_update_time" in msg.topic:
+                self._validate_value(msg, int)
             elif "openWB/set/optional/forecast/get/fault_state" in msg.topic:
                 self._validate_value(msg, int, [(0, 2)])
             elif "openWB/set/optional/forecast/get/fault_str" in msg.topic:

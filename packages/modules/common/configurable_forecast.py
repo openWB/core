@@ -72,6 +72,9 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
             self._publish_forecast_fault(FaultStateLevel.NO_ERROR, NO_ERROR)
             data.data.optional_data.data.forecast.configured = True
             data.data.optional_data.data.forecast.provider = asdict(self.config)
+            now_ts = int(datetime.now().timestamp())
+            data.data.optional_data.data.forecast.get.last_update_time = now_ts
+            Pub().pub("openWB/set/optional/forecast/get/last_update_time", now_ts)
             log.info(
                 "Forecast update finished (provider=%s, values=%s, next_query_time=%s)",
                 self.config.type,

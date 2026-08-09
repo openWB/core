@@ -18,6 +18,7 @@ class ForecastGet:
     today_kwh: float = field(default=0.0)
     tomorrow_kwh: float = field(default=0.0)
     next_query_time: int = field(default=0)
+    last_update_time: int = field(default=0)
 
 
 def create_forecast_get_with_topics(topic_prefix: str) -> ForecastGet:
@@ -32,6 +33,7 @@ def create_forecast_get_with_topics(topic_prefix: str) -> ForecastGet:
     forecast_get.__dataclass_fields__['today_kwh'].metadata = {"topic": f"{topic_prefix}/get/today_kwh"}
     forecast_get.__dataclass_fields__['tomorrow_kwh'].metadata = {"topic": f"{topic_prefix}/get/tomorrow_kwh"}
     forecast_get.__dataclass_fields__['next_query_time'].metadata = {"topic": f"{topic_prefix}/get/next_query_time"}
+    forecast_get.__dataclass_fields__['last_update_time'].metadata = {"topic": f"{topic_prefix}/get/last_update_time"}
     return forecast_get
 
 
