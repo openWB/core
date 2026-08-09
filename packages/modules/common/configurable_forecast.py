@@ -28,6 +28,13 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
         self.update_hours = DEFAULT_FORECAST_UPDATE_HOURS
         # Store reference to forecast.get for persistent state across re-initialization (same pattern as EP modules)
         self.get = data.data.optional_data.data.forecast.get
+        
+        # If next_query_time is 0 or missing, defer first update by 2 minutes to allow config to be saved
+        if self.get.next_query_time is None or self.get.next_query_time == 0:
+            deferred_time = int((datetime.now() + timedelta(minutes=2)).timestamp())
+            self.get.next_query_time = deferred_time
+            Pub().pub("openWB/set/optional/forecast/get/next_query_time", deferred_time)
+            log.debug(f"Forecast provider {config.type} initialized with deferred update in 2 minutes")
 
     def _publish_forecast_fault(self, level: FaultStateLevel, message: str) -> None:
         data.data.optional_data.data.forecast.get.fault_state = level.value
@@ -83,12 +90,21 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
                 self.get.next_query_time,
             )
         except Exception as e:
-            if "429" in str(e):
+            error_str = str(e)
+            if "429" in error_str:
                 # Rate limited providers should wait until the next planned schedule slot.
                 self._set_next_query_time_by_schedule()
                 self._publish_forecast_fault(
                     FaultStateLevel.WARNING,
                     "Forecast API rate limit reached (HTTP 429). Waiting for next scheduled update.",
+                )
+            elif "Missing required" in error_str or "required forecast config field" in error_str.lower():
+                # Configuration is incomplete; don't retry automatically.
+                # Next attempt will be on next scheduled time or manual trigger.
+                self._set_next_query_time_by_schedule()
+                self._publish_forecast_fault(
+                    FaultStateLevel.WARNING,
+                    f"Forecast configuration incomplete: {error_str}. Please configure all required fields.",
                 )
             else:
                 self._set_retry_query_time()
