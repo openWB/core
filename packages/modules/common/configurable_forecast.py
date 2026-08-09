@@ -29,12 +29,42 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
         # Store reference to forecast.get for persistent state across re-initialization (same pattern as EP modules)
         self.get = data.data.optional_data.data.forecast.get
         
-        # If next_query_time is 0 or missing, defer first update by 2 minutes to allow config to be saved
+        # If next_query_time is 0 or missing, check if config is complete before deferring
         if self.get.next_query_time is None or self.get.next_query_time == 0:
-            deferred_time = int((datetime.now() + timedelta(minutes=2)).timestamp())
-            self.get.next_query_time = deferred_time
-            Pub().pub("openWB/set/optional/forecast/get/next_query_time", deferred_time)
-            log.debug(f"Forecast provider {config.type} initialized with deferred update in 2 minutes")
+            if self._is_config_complete():
+                # Config is complete, allow immediate first update
+                pass
+            else:
+                # Config incomplete, defer first update by 2 minutes to allow configuration to be saved
+                deferred_time = int((datetime.now() + timedelta(minutes=2)).timestamp())
+                self.get.next_query_time = deferred_time
+                Pub().pub("openWB/set/optional/forecast/get/next_query_time", deferred_time)
+                log.debug(f"Forecast provider {config.type} initialized with deferred update in 2 minutes (incomplete config)")
+
+    def _is_config_complete(self) -> bool:
+        """Check if forecast provider configuration has all required fields."""
+        try:
+            provider_type = self.config.type
+            config = self.config.configuration
+            
+            if provider_type == "pvnode":
+                # PVNode requires plant_id
+                return hasattr(config, "plant_id") and config.plant_id and len(str(config.plant_id).strip()) > 0
+            
+            elif provider_type in ("openmeteo", "forecastsolar"):
+                # Open-Meteo and Forecast.Solar require at least one string (Dachfläche) configured
+                # Also need latitude/longitude, but they have defaults so we mainly check strings
+                strings = getattr(config, "strings", None)
+                if not strings:
+                    return False
+                return isinstance(strings, list) and len(strings) > 0
+            
+            # Unknown provider type; assume config is complete to avoid blocking
+            return True
+        except Exception as e:
+            log.warning(f"Error checking forecast config completeness: {e}")
+            # On error, assume incomplete to be safe
+            return False
 
     def _publish_forecast_fault(self, level: FaultStateLevel, message: str) -> None:
         data.data.optional_data.data.forecast.get.fault_state = level.value
