@@ -4,8 +4,6 @@ from datetime import datetime, timedelta
 from importlib import import_module
 from typing import Callable, Generic, Optional, TypeVar
 
-from control import data
-from control.optional_data import OptionalData
 from helpermodules import timecheck
 from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
@@ -30,8 +28,13 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
 
     @property
     def get(self):
-        """Always return the current singleton forecast.get to avoid stale references after MQTT updates."""
-        return data.data.optional_data.data.forecast.get
+        """Always return the current singleton forecast.get from the global SubData instance.
+        
+        SubData.optional_data is the global singleton that MQTT messages update.
+        This ensures we always have the current state, not a stale reference.
+        """
+        from helpermodules import subdata
+        return subdata.SubData.optional_data.data.forecast.get
 
     def _is_config_complete(self) -> bool:
         """Check if forecast provider configuration has all required fields.
@@ -59,8 +62,8 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
             return False
 
     def _publish_forecast_fault(self, level: FaultStateLevel, message: str) -> None:
-        data.data.optional_data.data.forecast.get.fault_state = level.value
-        data.data.optional_data.data.forecast.get.fault_str = message
+        self.get.fault_state = level.value
+        self.get.fault_str = message
         Pub().pub("openWB/set/optional/forecast/get/fault_state", level.value)
         Pub().pub("openWB/set/optional/forecast/get/fault_str", message)
 
@@ -76,11 +79,11 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
         return self.get.next_query_time is None or self.get.next_query_time == 0 or self.get.next_query_time <= timecheck.create_timestamp()
 
     def _is_force_update_requested(self) -> bool:
-        return bool(data.data.optional_data.data.forecast.get.force_update)
+        return bool(self.get.force_update)
 
     def _clear_force_update_request(self) -> None:
-        if data.data.optional_data.data.forecast.get.force_update:
-            data.data.optional_data.data.forecast.get.force_update = False
+        if self.get.force_update:
+            self.get.force_update = False
             Pub().pub("openWB/set/optional/forecast/get/force_update", False)
 
     def _set_next_query_time_by_schedule(self) -> None:
@@ -96,6 +99,11 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
         self.get.next_query_time = int((datetime.now() + timedelta(minutes=minutes)).timestamp())
         Pub().pub("openWB/set/optional/forecast/get/next_query_time", self.get.next_query_time)
 
+    def _get_forecast_data(self):
+        """Get reference to the global forecast data from SubData."""
+        from helpermodules import subdata
+        return subdata.SubData.optional_data.data.forecast
+
     def update(self) -> None:
         force_update = self._is_force_update_requested()
         if not force_update and not self._is_update_due():
@@ -108,10 +116,11 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
             self.store.update()
             self._set_next_query_time_by_schedule()
             self._publish_forecast_fault(FaultStateLevel.NO_ERROR, NO_ERROR)
-            data.data.optional_data.data.forecast.configured = True
-            data.data.optional_data.data.forecast.provider = asdict(self.config)
+            forecast_data = self._get_forecast_data()
+            forecast_data.configured = True
+            forecast_data.provider = asdict(self.config)
             now_ts = int(datetime.now().timestamp())
-            data.data.optional_data.data.forecast.get.last_update_time = now_ts
+            self.get.last_update_time = now_ts
             Pub().pub("openWB/set/optional/forecast/get/last_update_time", now_ts)
             log.info(
                 "Forecast update finished (provider=%s, values=%s, next_query_time=%s)",
