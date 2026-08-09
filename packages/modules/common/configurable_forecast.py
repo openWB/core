@@ -67,10 +67,18 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
         Returns False immediately if configuration is incomplete (prevents API calls before config is saved).
         Otherwise checks if the scheduled update time has been reached.
         """
-        if not self._is_config_complete():
+        is_config_complete = self._is_config_complete()
+        if not is_config_complete:
+            log.debug(f"_is_update_due: config incomplete, skipping update")
             return False
         
-        return self.get.next_query_time is None or self.get.next_query_time == 0 or self.get.next_query_time <= timecheck.create_timestamp()
+        now = timecheck.create_timestamp()
+        next_time = self.get.next_query_time
+        is_due = next_time is None or next_time == 0 or next_time <= now
+        
+        log.debug(f"_is_update_due: config_complete={is_config_complete}, next_time={next_time}, now={now}, is_due={is_due}")
+        
+        return is_due
 
     def _is_force_update_requested(self) -> bool:
         return bool(data.data.optional_data.data.forecast.get.force_update)
