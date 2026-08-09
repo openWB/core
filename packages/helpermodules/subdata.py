@@ -801,27 +801,12 @@ class SubData:
                     self.set_json_payload_class(var.data.electricity_pricing, msg)
                 elif re.search("/optional/forecast/provider$", msg.topic) is not None:
                     config_dict = decode_payload(msg.payload)
-                    if isinstance(config_dict, str):
-                        if not config_dict:
-                            # Empty string written by setdata when clearing the set/ topic - ignore.
-                            pass
-                        else:
-                            # Backward compatibility for legacy string payloads.
-                            var.data.forecast.provider = config_dict
-                            if (var.forecast_module is not None and
-                                    getattr(var.forecast_module.config, "type", None) == config_dict):
-                                var.data.forecast.provider = asdict(var.forecast_module.config)
-                    elif config_dict is None:
-                        # Ignore legacy/null payloads to avoid clearing a valid provider right after configuration.
-                        # Explicit resets are still supported via an object payload with type=null.
-                        log.debug("Ignoring null forecast provider payload")
-                    elif not isinstance(config_dict, dict) or config_dict.get("type") is None:
-                        # During startup ignore stale null-type payloads; only act on explicit runtime resets.
-                        if not self.event_subdata_initialized.is_set():
-                            log.debug("Ignoring null-type forecast provider payload during startup")
-                        elif var.forecast_module is not None or var.data.forecast.provider is not None:
-                            var.data.forecast.provider = None
-                            var.forecast_module = None
+                    if not isinstance(config_dict, dict) or config_dict.get("type") is None:
+                        # Ignore during startup to avoid stale retained null payloads clearing a valid provider.
+                        if self.event_subdata_initialized.is_set():
+                            if var.forecast_module is not None or var.data.forecast.provider is not None:
+                                var.data.forecast.provider = None
+                                var.forecast_module = None
                     else:
                         var.data.forecast.provider = config_dict
                         current_config = None
@@ -830,7 +815,6 @@ class SubData:
                                 current_config = asdict(var.forecast_module.config)
                             except Exception:
                                 current_config = None
-                        # Reconfigure only on actual changes. Otherwise we'd bounce the same payload indefinitely.
                         if current_config != config_dict:
                             mod = importlib.import_module(
                                 f".forecast.{config_dict['type']}.forecast", "modules")
