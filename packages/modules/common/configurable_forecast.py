@@ -26,10 +26,8 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
         self.store = store.get_forecast_value_store()
         self._component_updater = component_initializer(config)
         self.update_hours = DEFAULT_FORECAST_UPDATE_HOURS
-        # Initialize from current MQTT state to prevent re-triggering updates on provider re-initialization.
-        # If next_query_time is 0 or not set, allow immediate first update.
-        next_query_from_state = data.data.optional_data.data.forecast.get.next_query_time
-        self.next_query_time: Optional[int] = next_query_from_state if next_query_from_state and next_query_from_state > 0 else None
+        # Store reference to forecast.get for persistent state across re-initialization (same pattern as EP modules)
+        self.get = data.data.optional_data.data.forecast.get
 
     def _publish_forecast_fault(self, level: FaultStateLevel, message: str) -> None:
         data.data.optional_data.data.forecast.get.fault_state = level.value
@@ -38,7 +36,7 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
         Pub().pub("openWB/set/optional/forecast/get/fault_str", message)
 
     def _is_update_due(self) -> bool:
-        return self.next_query_time is None or self.next_query_time <= timecheck.create_timestamp()
+        return self.get.next_query_time is None or self.get.next_query_time == 0 or self.get.next_query_time <= timecheck.create_timestamp()
 
     def _is_force_update_requested(self) -> bool:
         return bool(data.data.optional_data.data.forecast.get.force_update)
@@ -54,12 +52,12 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
         next_hour = min([hour for hour in self.update_hours if hour > current_hour], default=self.update_hours[0])
         day_offset = 0 if next_hour > current_hour else 1
         next_query_time = now.replace(hour=next_hour, minute=0, second=0, microsecond=0) + timedelta(days=day_offset)
-        self.next_query_time = int(next_query_time.timestamp())
-        Pub().pub("openWB/set/optional/forecast/get/next_query_time", self.next_query_time)
+        self.get.next_query_time = int(next_query_time.timestamp())
+        Pub().pub("openWB/set/optional/forecast/get/next_query_time", self.get.next_query_time)
 
     def _set_retry_query_time(self, minutes: int = FORECAST_RETRY_MINUTES) -> None:
-        self.next_query_time = int((datetime.now() + timedelta(minutes=minutes)).timestamp())
-        Pub().pub("openWB/set/optional/forecast/get/next_query_time", self.next_query_time)
+        self.get.next_query_time = int((datetime.now() + timedelta(minutes=minutes)).timestamp())
+        Pub().pub("openWB/set/optional/forecast/get/next_query_time", self.get.next_query_time)
 
     def update(self) -> None:
         force_update = self._is_force_update_requested()
@@ -82,7 +80,7 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
                 "Forecast update finished (provider=%s, values=%s, next_query_time=%s)",
                 self.config.type,
                 len(state.forecast_values or {}),
-                self.next_query_time,
+                self.get.next_query_time,
             )
         except Exception as e:
             if "429" in str(e):
