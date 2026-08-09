@@ -99,6 +99,7 @@ def fetch_forecast(config: ForecastSolarConfiguration) -> Tuple[Dict[str, float]
         )
         try:
             response_obj = req.get_http_session().get(url, timeout=(2, 6))
+            response_obj.raise_for_status()
         except HTTPError as e:
             response = e.response
             if response is not None and response.status_code == 429:
