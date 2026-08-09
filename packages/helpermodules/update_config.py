@@ -515,6 +515,7 @@ class UpdateConfig:
         "^openWB/system/configurable/chargepoints_internal$",
         "^openWB/system/configurable/devices_components$",
         "^openWB/system/configurable/flexible_tariffs$",
+        "^openWB/system/configurable/forecasts$",
         "^openWB/system/configurable/grid_fees$",
         "^openWB/system/configurable/display_themes$",
         "^openWB/system/configurable/io_actions$",
@@ -581,7 +582,6 @@ class UpdateConfig:
         "^openWB/system/update_in_progress$",
         "^openWB/system/usage_terms_acknowledged$",
         "^openWB/system/version$",
-        "^openWB/set/system/configurable/forecasts$",
     ]
     default_topic = (
         ("openWB/bat/config/bat_control_activated", False),
