@@ -27,8 +27,16 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
         self.store = store.get_forecast_value_store()
         self._component_updater = component_initializer(config)
         self.update_hours = DEFAULT_FORECAST_UPDATE_HOURS
-        # Store reference to forecast.get for persistent state across re-initialization (same pattern as EP modules)
-        self.get = data.data.optional_data.data.forecast.get
+    
+    @property
+    def get(self):
+        """Get the current forecast.get state, always from the data layer.
+        
+        This is a property instead of a stored reference because the forecast.get
+        object can be reset/recreated (e.g., when the provider is removed), and we need
+        to always reference the current instance, not a stale cached reference.
+        """
+        return data.data.optional_data.data.forecast.get
 
     def _is_config_complete(self) -> bool:
         """Check if forecast provider configuration has all required fields.
