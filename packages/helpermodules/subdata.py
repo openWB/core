@@ -809,16 +809,12 @@ class SubData:
                                 var.forecast_module = None
                     else:
                         var.data.forecast.provider = config_dict
-                        current_config = None
-                        if var.forecast_module is not None:
-                            try:
-                                current_config = asdict(var.forecast_module.config)
-                            except Exception:
-                                current_config = None
-                        if current_config != config_dict:
-                            mod = importlib.import_module(
-                                f".forecast.{config_dict['type']}.forecast", "modules")
-                            config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
+                        mod = importlib.import_module(
+                            f".forecast.{config_dict['type']}.forecast", "modules")
+                        config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
+                        # Compare parsed config (unknown fields stripped) to avoid re-init on every retained update.
+                        current_config = asdict(var.forecast_module.config) if var.forecast_module is not None else None
+                        if current_config != asdict(config):
                             var.forecast_module = ConfigurableForecastProvider(config, mod.create_forecast)
                 elif re.search("/optional/forecast/get/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.forecast.get, msg)

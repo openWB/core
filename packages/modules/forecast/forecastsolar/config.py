@@ -6,6 +6,7 @@ from typing import List, Optional
 class ForecastSolarConfiguration:
     latitude: float = 0.0
     longitude: float = 0.0
+    api_key: Optional[str] = None
     strings: Optional[List] = None
 
 

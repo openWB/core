@@ -101,7 +101,11 @@ def fetch_forecast(config: ForecastSolarConfiguration) -> Tuple[Dict[str, float]
         tilt = _require(string_config.get("tilt"), "strings[].tilt")
 
         url = (
-            "https://api.forecast.solar/estimate/watts"
+            f"https://api.forecast.solar/{config.api_key}/estimate/watts"
+            if config.api_key and config.api_key.strip()
+            else "https://api.forecast.solar/estimate/watts"
+        )
+        url += (
             f"/{latitude}"
             f"/{longitude}"
             f"/{tilt}"
