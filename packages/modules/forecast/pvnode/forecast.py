@@ -12,6 +12,15 @@ from modules.forecast.pvnode.config import PvNode, PvNodeConfiguration
 log = logging.getLogger("forecast")
 
 
+def is_configuration_complete(config: PvNodeConfiguration) -> bool:
+    """Check if PVNode configuration has all required fields."""
+    return (
+        hasattr(config, "plant_id")
+        and config.plant_id
+        and len(str(config.plant_id).strip()) > 0
+    )
+
+
 def _require(value, field_name: str):
     if value is None:
         raise ValueError(f"Missing required forecast config field: {field_name}")

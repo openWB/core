@@ -1,6 +1,7 @@
 import logging
 from dataclasses import asdict
 from datetime import datetime, timedelta
+from importlib import import_module
 from typing import Callable, Generic, Optional, TypeVar
 
 from control import data
@@ -42,24 +43,24 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
                 log.debug(f"Forecast provider {config.type} initialized with deferred update in 2 minutes (incomplete config)")
 
     def _is_config_complete(self) -> bool:
-        """Check if forecast provider configuration has all required fields."""
+        """Check if forecast provider configuration has all required fields.
+        
+        Calls the provider module's is_configuration_complete() function if available.
+        Falls back to True (assuming complete) if the function is not found.
+        """
         try:
             provider_type = self.config.type
             config = self.config.configuration
             
-            if provider_type == "pvnode":
-                # PVNode requires plant_id
-                return hasattr(config, "plant_id") and config.plant_id and len(str(config.plant_id).strip()) > 0
+            # Dynamically import the provider module and call its validation function
+            module_name = f"modules.forecast.{provider_type}.forecast"
+            provider_module = import_module(module_name)
             
-            elif provider_type in ("openmeteo", "forecastsolar"):
-                # Open-Meteo and Forecast.Solar require at least one string (Dachfläche) configured
-                # Also need latitude/longitude, but they have defaults so we mainly check strings
-                strings = getattr(config, "strings", None)
-                if not strings:
-                    return False
-                return isinstance(strings, list) and len(strings) > 0
+            # Call the validation function if it exists
+            if hasattr(provider_module, "is_configuration_complete"):
+                return provider_module.is_configuration_complete(config)
             
-            # Unknown provider type; assume config is complete to avoid blocking
+            # If validation function doesn't exist, assume config is complete
             return True
         except Exception as e:
             log.warning(f"Error checking forecast config completeness: {e}")

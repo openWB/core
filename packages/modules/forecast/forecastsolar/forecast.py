@@ -13,6 +13,12 @@ from modules.forecast.forecastsolar.config import ForecastSolar, ForecastSolarCo
 log = logging.getLogger("forecast")
 
 
+def is_configuration_complete(config: ForecastSolarConfiguration) -> bool:
+    """Check if Forecast.Solar configuration has all required fields."""
+    strings = getattr(config, "strings", None)
+    return isinstance(strings, list) and len(strings) > 0
+
+
 def _require(value, field_name: str):
     if value is None:
         raise ValueError(f"Missing required forecast config field: {field_name}")

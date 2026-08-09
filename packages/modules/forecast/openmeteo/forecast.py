@@ -13,6 +13,12 @@ OPEN_METEO_FORECAST_HOURS = 48
 log = logging.getLogger("forecast")
 
 
+def is_configuration_complete(config: OpenMeteoForecastConfiguration) -> bool:
+    """Check if Open-Meteo configuration has all required fields."""
+    strings = getattr(config, "strings", None)
+    return isinstance(strings, list) and len(strings) > 0
+
+
 def _require(value, field_name: str):
     if value is None:
         raise ValueError(f"Missing required forecast config field: {field_name}")
