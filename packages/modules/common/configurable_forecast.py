@@ -25,6 +25,11 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
         self.store = store.get_forecast_value_store()
         self._component_updater = component_initializer(config)
         self.update_hours = DEFAULT_FORECAST_UPDATE_HOURS
+        
+        # If next_query_time is not set, calculate the next scheduled update time
+        # This prevents immediate updates when a provider is first created
+        if self.get.next_query_time is None or self.get.next_query_time == 0:
+            self._set_next_query_time_by_schedule()
 
     @property
     def get(self):
