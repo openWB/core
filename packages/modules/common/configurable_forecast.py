@@ -26,7 +26,10 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
         self.store = store.get_forecast_value_store()
         self._component_updater = component_initializer(config)
         self.update_hours = DEFAULT_FORECAST_UPDATE_HOURS
-        self.next_query_time: Optional[int] = None
+        # Initialize from current MQTT state to prevent re-triggering updates on provider re-initialization.
+        # If next_query_time is 0 or not set, allow immediate first update.
+        next_query_from_state = data.data.optional_data.data.forecast.get.next_query_time
+        self.next_query_time: Optional[int] = next_query_from_state if next_query_from_state and next_query_from_state > 0 else None
 
     def _publish_forecast_fault(self, level: FaultStateLevel, message: str) -> None:
         data.data.optional_data.data.forecast.get.fault_state = level.value
