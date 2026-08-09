@@ -96,7 +96,9 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
 
     def update(self) -> None:
         force_update = self._is_force_update_requested()
-        if not force_update and not self._is_update_due():
+        is_due = self._is_update_due()
+        log.info(f"DEBUG: update() called - force_update={force_update}, is_update_due={is_due}, next_query_time={self.get.next_query_time}, now={timecheck.create_timestamp()}")
+        if not force_update and not is_due:
             return
         try:
             trigger_mode = "manual" if force_update else "scheduled"
