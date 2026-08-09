@@ -29,18 +29,6 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
         self.update_hours = DEFAULT_FORECAST_UPDATE_HOURS
         # Store reference to forecast.get for persistent state across re-initialization (same pattern as EP modules)
         self.get = data.data.optional_data.data.forecast.get
-        
-        # If next_query_time is 0 or missing, check if config is complete before deferring
-        if self.get.next_query_time is None or self.get.next_query_time == 0:
-            if self._is_config_complete():
-                # Config is complete, allow immediate first update
-                pass
-            else:
-                # Config incomplete, defer first update by 2 minutes to allow configuration to be saved
-                deferred_time = int((datetime.now() + timedelta(minutes=2)).timestamp())
-                self.get.next_query_time = deferred_time
-                Pub().pub("openWB/set/optional/forecast/get/next_query_time", deferred_time)
-                log.debug(f"Forecast provider {config.type} initialized with deferred update in 2 minutes (incomplete config)")
 
     def _is_config_complete(self) -> bool:
         """Check if forecast provider configuration has all required fields.
@@ -74,6 +62,14 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
         Pub().pub("openWB/set/optional/forecast/get/fault_str", message)
 
     def _is_update_due(self) -> bool:
+        """Check if a forecast update is due.
+        
+        Returns False immediately if configuration is incomplete (prevents API calls before config is saved).
+        Otherwise checks if the scheduled update time has been reached.
+        """
+        if not self._is_config_complete():
+            return False
+        
         return self.get.next_query_time is None or self.get.next_query_time == 0 or self.get.next_query_time <= timecheck.create_timestamp()
 
     def _is_force_update_requested(self) -> bool:
