@@ -26,43 +26,43 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
         self._component_updater = component_initializer(config)
         self.update_hours = DEFAULT_FORECAST_UPDATE_HOURS
         
-        # If next_query_time is not set, calculate the next scheduled update time
-        # This prevents immediate updates when a provider is first created
+        # Falls next_query_time nicht gesetzt ist, berechne die nächste geplante Aktualisierungszeit
+        # Dies verhindert sofortige Aktualisierungen, wenn ein Anbieter erstmals erstellt wird
         if self.get.next_query_time is None or self.get.next_query_time == 0:
             self._set_next_query_time_by_schedule()
 
     @property
     def get(self):
-        """Always return the current singleton forecast.get from the global SubData instance.
+        """Gibt immer die aktuelle Singleton-Prognose.get aus der globalen SubData-Instanz zurück.
         
-        SubData.optional_data is the global singleton that MQTT messages update.
-        This ensures we always have the current state, not a stale reference.
+        SubData.optional_data ist die globale Singleton, die MQTT-Nachrichten aktualisieren.
+        Dies stellt sicher, dass wir immer den aktuellen Status haben, keine veraltete Referenz.
         """
         from helpermodules import subdata
         return subdata.SubData.optional_data.data.forecast.get
 
     def _is_config_complete(self) -> bool:
-        """Check if forecast provider configuration has all required fields.
+        """Prüfe, ob die Prognose-Anbieter-Konfiguration alle erforderlichen Felder hat.
         
-        Calls the provider module's is_configuration_complete() function if available.
-        Falls back to True (assuming complete) if the function is not found.
+        Ruft die is_configuration_complete()-Funktion des Anbietermoduls auf, falls vorhanden.
+        Fällt auf True zurück (nimmt Vollständigkeit an), wenn die Funktion nicht gefunden wird.
         """
         try:
             provider_type = self.config.type
             config = self.config.configuration
             
-            # Dynamically import the provider module and call its validation function
+            # Importiere das Anbietermodul dynamisch und rufe seine Validierungsfunktion auf
             module_name = f"modules.forecast.{provider_type}.forecast"
             provider_module = import_module(module_name)
             
-            # Call the validation function if it exists
+            # Rufe die Validierungsfunktion auf, falls vorhanden
             if hasattr(provider_module, "is_configuration_complete"):
                 return provider_module.is_configuration_complete(config)
             
-            # If validation function doesn't exist, assume config is complete
+            # Wenn Validierungsfunktion nicht vorhanden, nimm an, dass Konfiguration vollständig ist
             return True
         except Exception as e:
-            log.warning(f"Error checking forecast config completeness: {e}")
+            log.warning(f"Fehler beim Prüfen der Prognose-Konfigurationsvollständigkeit: {e}")
             # On error, assume incomplete to be safe
             return False
 
@@ -73,10 +73,10 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
         Pub().pub("openWB/set/optional/forecast/get/fault_str", message)
 
     def _is_update_due(self) -> bool:
-        """Check if a forecast update is due.
+        """Prüfe, ob eine Prognose-Aktualisierung fällig ist.
         
-        Returns False immediately if configuration is incomplete (prevents API calls before config is saved).
-        Otherwise checks if the scheduled update time has been reached.
+        Gibt False sofort zurück, wenn die Konfiguration unvollständig ist (verhindert API-Aufrufe vor dem Speichern).
+        Prüft sonst, ob die geplante Aktualisierungszeit erreicht wurde.
         """
         if not self._is_config_complete():
             return False
@@ -105,7 +105,7 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
         Pub().pub("openWB/set/optional/forecast/get/next_query_time", self.get.next_query_time)
 
     def _get_forecast_data(self):
-        """Get reference to the global forecast data from SubData."""
+        """Rufe Referenz zu den globalen Prognosedaten aus SubData ab."""
         from helpermodules import subdata
         return subdata.SubData.optional_data.data.forecast
 
@@ -114,8 +114,8 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
         if not force_update and not self._is_update_due():
             return
         try:
-            trigger_mode = "manual" if force_update else "scheduled"
-            log.info("Forecast update started (provider=%s, trigger=%s)", self.config.type, trigger_mode)
+            trigger_mode = "manuell" if force_update else "geplant"
+            log.info("Prognose-Aktualisierung gestartet (Anbieter=%s, Auslöser=%s)", self.config.type, trigger_mode)
             state = self._component_updater()
             self.store.set(state)
             self.store.update()
@@ -128,7 +128,7 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
             self.get.last_update_time = now_ts
             Pub().pub("openWB/set/optional/forecast/get/last_update_time", now_ts)
             log.info(
-                "Forecast update finished (provider=%s, values=%s, next_query_time=%s)",
+                "Prognose-Aktualisierung beendet (Anbieter=%s, Werte=%s, nächste_Aktualisierungszeit=%s)",
                 self.config.type,
                 len(state.forecast_values or {}),
                 self.get.next_query_time,
@@ -136,27 +136,27 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
         except Exception as e:
             error_str = str(e)
             if "429" in error_str:
-                # Rate limited providers should wait until the next planned schedule slot.
+                # Rate-limitierte Anbieter sollten bis zum nächsten geplanten Update-Zeitfenster warten.
                 self._set_next_query_time_by_schedule()
                 self._publish_forecast_fault(
                     FaultStateLevel.WARNING,
-                    "Forecast API rate limit reached (HTTP 429). Waiting for next scheduled update.",
+                    "Forecast-API-Ratenlimit erreicht (HTTP 429). Warte auf nächste geplante Aktualisierung.",
                 )
             elif "Missing required" in error_str or "required forecast config field" in error_str.lower():
-                # Configuration is incomplete; don't retry automatically.
-                # Next attempt will be on next scheduled time or manual trigger.
+                # Konfiguration ist unvollständig; keine automatische Wiederholung.
+                # Nächster Versuch beim nächsten geplanten Zeitpunkt oder manuellem Auslöser.
                 self._set_next_query_time_by_schedule()
                 self._publish_forecast_fault(
                     FaultStateLevel.WARNING,
-                    f"Forecast configuration incomplete: {error_str}. Please configure all required fields.",
+                    f"Prognose-Konfiguration unvollständig: {error_str}. Bitte alle erforderlichen Felder konfigurieren.",
                 )
             else:
                 self._set_retry_query_time()
                 self._publish_forecast_fault(
                     FaultStateLevel.WARNING,
-                    "Forecast update failed. Retry scheduled in 15 minutes.",
+                    "Prognose-Aktualisierung fehlgeschlagen. Wiederholung in 15 Minuten geplant.",
                 )
-            log.exception(f"Fehler beim Aktualisieren der Forecast-Daten {e}")
+            log.exception(f"Fehler beim Aktualisieren der Prognosedaten: {e}")
         finally:
             self._clear_force_update_request()
 
