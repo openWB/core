@@ -62,15 +62,12 @@ class Optional(OcppMixin):
     @forecast_module.setter
     def forecast_module(self, value: TypingOptional[ConfigurableForecast]):
         previous_configured = self.data.forecast.configured
-        previous_provider = self.data.forecast.provider
         self._forecast_module = value
         if value is None:
             self.data.forecast.configured = False
             self.data.forecast.provider = None
             if previous_configured is not False:
                 Pub().pub("openWB/set/optional/forecast/configured", False)
-            if previous_provider is not None:
-                Pub().pub("openWB/set/optional/forecast/provider", None)
             Pub().pub("openWB/set/optional/forecast/get/force_update", False)
             Pub().pub("openWB/set/optional/forecast/get/values", {})
             Pub().pub("openWB/set/optional/forecast/get/today_values", {})
@@ -80,13 +77,10 @@ class Optional(OcppMixin):
             Pub().pub("openWB/set/optional/forecast/get/tomorrow_kwh", 0.0)
             Pub().pub("openWB/set/optional/forecast/get/next_query_time", None)
         else:
-            next_provider = asdict(value.config)
             self.data.forecast.configured = True
-            self.data.forecast.provider = next_provider
+            self.data.forecast.provider = asdict(value.config)
             if previous_configured is not True:
                 Pub().pub("openWB/set/optional/forecast/configured", True)
-            if previous_provider != next_provider:
-                Pub().pub("openWB/set/optional/forecast/provider", next_provider)
 
     @grid_fee_module.setter
     def grid_fee_module(self, value: TypingOptional[ConfigurableGridFee]):

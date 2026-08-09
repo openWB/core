@@ -802,13 +802,15 @@ class SubData:
                 elif re.search("/optional/forecast/provider$", msg.topic) is not None:
                     config_dict = decode_payload(msg.payload)
                     if isinstance(config_dict, str):
-                        # Backward compatibility for legacy string payloads.
-                        # Keep the provider type visible in state/UI even if only a legacy string is retained.
-                        var.data.forecast.provider = config_dict
-                        # Avoid reconfiguration loops: only mirror full config if an existing module matches this type.
-                        if (var.forecast_module is not None and
-                                getattr(var.forecast_module.config, "type", None) == config_dict):
-                            var.data.forecast.provider = asdict(var.forecast_module.config)
+                        if not config_dict:
+                            # Empty string written by setdata when clearing the set/ topic - ignore.
+                            pass
+                        else:
+                            # Backward compatibility for legacy string payloads.
+                            var.data.forecast.provider = config_dict
+                            if (var.forecast_module is not None and
+                                    getattr(var.forecast_module.config, "type", None) == config_dict):
+                                var.data.forecast.provider = asdict(var.forecast_module.config)
                     elif config_dict is None:
                         # Ignore legacy/null payloads to avoid clearing a valid provider right after configuration.
                         # Explicit resets are still supported via an object payload with type=null.
