@@ -1,6 +1,6 @@
 from datetime import datetime
 import logging
-from typing import Dict
+from typing import Dict, Tuple
 from zoneinfo import ZoneInfo
 
 from modules.common import req
@@ -14,7 +14,7 @@ log = logging.getLogger("forecast")
 
 
 def is_configuration_complete(config: OpenMeteoForecastConfiguration) -> bool:
-    """Check if Open-Meteo configuration has all required fields."""
+    """Prüfe, ob die Open-Meteo-Konfiguration alle erforderlichen Felder hat."""
     strings = getattr(config, "strings", None)
     return isinstance(strings, list) and len(strings) > 0
 
@@ -27,7 +27,7 @@ def _require(value, field_name: str):
     return value
 
 
-def fetch_forecast(config: OpenMeteoForecastConfiguration) -> Dict[str, float]:
+def fetch_forecast(config: OpenMeteoForecastConfiguration) -> Tuple[Dict[str, float], Dict[str, float]]:
     latitude = _require(config.latitude, "latitude")
     longitude = _require(config.longitude, "longitude")
     timezone = _require(config.timezone, "timezone")
@@ -39,10 +39,9 @@ def fetch_forecast(config: OpenMeteoForecastConfiguration) -> Dict[str, float]:
     string_configs = string_configs_raw[:6]
 
     log.info(
-        "Open-Meteo forecast fetch started (strings=%s, timezone=%s, horizon_hours=%s)",
+        "Open-Meteo-Abruf gestartet (Strings=%s, Zeitzone=%s)",
         len(string_configs),
         timezone,
-        OPEN_METEO_FORECAST_HOURS,
     )
 
     values: Dict[str, float] = {}
@@ -68,23 +67,59 @@ def fetch_forecast(config: OpenMeteoForecastConfiguration) -> Dict[str, float]:
         hourly = response.get("hourly", {})
         times = hourly.get("time", [])
         radiation = hourly.get("global_tilted_irradiance", [])
-        log.info(
-            "Open-Meteo response received (times=%s, irradiance_values=%s)",
-            len(times),
-            len(radiation),
-        )
         for timestamp, value in zip(times[:OPEN_METEO_FORECAST_HOURS], radiation[:OPEN_METEO_FORECAST_HOURS]):
             if value is None:
                 continue
-            # STC: peak power is rated at 1000 W/m²; scale linearly with irradiance and apply losses
+            # STC: Nennleistung ist bei 1000 W/m² definiert; skaliere linear mit Einstrahlung und wende Verluste an
             estimated_power_w = max(
                 0.0,
                 string_peak_power_kw * 1000.0 * (float(value) / 1000.0) * (1.0 - system_loss)
             )
             timestamp_key = str(__parse_timestamp(timestamp, timezone))
             values[timestamp_key] = values.get(timestamp_key, 0.0) + estimated_power_w
-    log.info("Open-Meteo forecast fetch finished (merged_values=%s)", len(values))
-    return values
+
+    daily_kwh = _calculate_daily_kwh(values)
+    log.info("Open-Meteo-Abruf beendet (Werte=%s, Tage=%s)", len(values), len(daily_kwh))
+    return values, daily_kwh
+
+
+def _calculate_daily_kwh(values: Dict[str, float]) -> Dict[str, float]:
+    """Berechne tägliche Energiewerte aus stündlichen Leistungswerten."""
+    from datetime import timedelta
+    points: list[tuple[datetime, float]] = []
+    for timestamp, value in values.items():
+        try:
+            if timestamp.isdigit():
+                parsed_ts = datetime.fromtimestamp(int(timestamp))
+            else:
+                parsed_ts = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+            points.append((parsed_ts, float(value)))
+        except (TypeError, ValueError):
+            continue
+
+    if not points:
+        return {}
+
+    points.sort(key=lambda item: item[0])
+    deltas = [
+        int((points[index + 1][0] - points[index][0]).total_seconds())
+        for index in range(len(points) - 1)
+        if 0 < int((points[index + 1][0] - points[index][0]).total_seconds()) <= 21600
+    ]
+    fallback_step_seconds = min(deltas) if deltas else 3600
+
+    daily_wh: Dict[str, float] = {}
+    for index, (timestamp, power_w) in enumerate(points):
+        if index + 1 < len(points):
+            step_seconds = int((points[index + 1][0] - timestamp).total_seconds())
+            if step_seconds <= 0 or step_seconds > 21600:
+                step_seconds = fallback_step_seconds
+        else:
+            step_seconds = fallback_step_seconds
+        date_key = timestamp.date().isoformat()
+        daily_wh[date_key] = daily_wh.get(date_key, 0.0) + max(0.0, power_w) * (step_seconds / 3600.0)
+
+    return {date_key: energy_wh / 1000.0 for date_key, energy_wh in daily_wh.items()}
 
 
 def __parse_timestamp(value: str, timezone_name: str) -> int:
@@ -96,7 +131,8 @@ def __parse_timestamp(value: str, timezone_name: str) -> int:
 
 def create_forecast(config: OpenMeteoForecast):
     def updater():
-        return ForecastState(forecast_values=fetch_forecast(config.configuration))
+        values, daily_kwh = fetch_forecast(config.configuration)
+        return ForecastState(forecast_values=values, daily_kwh=daily_kwh)
     return updater
 
 

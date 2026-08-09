@@ -14,7 +14,7 @@ log = logging.getLogger("forecast")
 
 
 def is_configuration_complete(config: ForecastSolarConfiguration) -> bool:
-    """Check if Forecast.Solar configuration has all required fields."""
+    """Prüfe, ob die Forecast.Solar-Konfiguration alle erforderlichen Felder hat."""
     strings = getattr(config, "strings", None)
     return isinstance(strings, list) and len(strings) > 0
 
@@ -27,30 +27,13 @@ def _require(value, field_name: str):
     return value
 
 
-def _log_forecast_solar_rate_limit(payload: dict, headers: dict, url: str) -> None:
-    message = payload.get("message") if isinstance(payload, dict) else None
-    ratelimit = message.get("ratelimit") if isinstance(message, dict) else None
-    if not isinstance(ratelimit, dict):
-        return
-    retry_at = ratelimit.get("retry-at") or headers.get("X-Ratelimit-Retry-At")
-    remaining = ratelimit.get("remaining") or headers.get("X-Ratelimit-Remaining")
-    limit = ratelimit.get("limit") or headers.get("X-Ratelimit-Limit")
-    period = ratelimit.get("period") or headers.get("X-Ratelimit-Period")
-    log.info(
-        "Forecast.Solar ratelimit info for %s: remaining=%s limit=%s period=%s retry_at=%s",
-        url,
-        remaining,
-        limit,
-        period,
-        retry_at,
-    )
 
 
 def _parse_forecast_solar_response(payload: Dict) -> Tuple[Dict[str, float], Dict[str, float]]:
     result = payload.get("result") if isinstance(payload, dict) else None
     source = result if isinstance(result, dict) else payload
 
-    # Free-tier endpoints return result as a flat {timestamp: value} dict directly.
+    # Kostenlose API-Endpunkte geben das Ergebnis direkt als flaches {Zeitstempel: Wert} Dict zurück.
     first_key = next(iter(source), None) if isinstance(source, dict) else None
     is_flat_response = (
         first_key is not None
@@ -96,6 +79,8 @@ def fetch_forecast(config: ForecastSolarConfiguration) -> Tuple[Dict[str, float]
     if len(string_configs) > 6:
         string_configs = string_configs[:6]
 
+    log.info("Forecast.Solar-Abruf gestartet (Strings=%s)", len(string_configs))
+
     values: Dict[str, float] = {}
     daily_kwh: Dict[str, float] = {}
 
@@ -139,13 +124,13 @@ def fetch_forecast(config: ForecastSolarConfiguration) -> Tuple[Dict[str, float]
             raise
 
         response = response_obj.json()
-        _log_forecast_solar_rate_limit(response, dict(response_obj.headers), url)
         string_values, string_daily_kwh = _parse_forecast_solar_response(response)
         for timestamp, value in string_values.items():
             values[timestamp] = values.get(timestamp, 0.0) + value
         for day, value in string_daily_kwh.items():
             daily_kwh[day] = daily_kwh.get(day, 0.0) + value
 
+    log.info("Forecast.Solar-Abruf beendet (Werte=%s, Tage=%s)", len(values), len(daily_kwh))
     return values, daily_kwh
 
 
