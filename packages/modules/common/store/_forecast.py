@@ -95,7 +95,6 @@ class ForecastValueStore(ValueStore[ForecastState]):
         pub_to_broker("openWB/set/optional/forecast/get/daily_kwh", daily_kwh)
         pub_to_broker("openWB/set/optional/forecast/get/today_kwh", today_kwh)
         pub_to_broker("openWB/set/optional/forecast/get/tomorrow_kwh", tomorrow_kwh)
-        Pub().pub("openWB/optional/forecast/current", values)
         log.debug(
             "published forecast values to MQTT having %s entries, %s day totals, %s today entries, and %s tomorrow entries",
             len(values),

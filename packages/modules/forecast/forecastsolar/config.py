@@ -6,9 +6,6 @@ from typing import List, Optional
 class ForecastSolarConfiguration:
     latitude: float = 0.0
     longitude: float = 0.0
-    peak_power_kw: float = 9.5
-    azimuth: float = 0.0
-    tilt: float = 30.0
     strings: Optional[List] = None
 
 

@@ -1,6 +1,6 @@
 from datetime import datetime
 import logging
-from typing import Any, Dict
+from typing import Dict
 from zoneinfo import ZoneInfo
 
 from modules.common import req
@@ -25,24 +25,12 @@ def fetch_forecast(config: OpenMeteoForecastConfiguration) -> Dict[str, float]:
     latitude = _require(config.latitude, "latitude")
     longitude = _require(config.longitude, "longitude")
     timezone = _require(config.timezone, "timezone")
-    peak_power_kw = float(_require(config.peak_power_kw, "peak_power_kw"))
-    if peak_power_kw <= 0:
-        raise ValueError("Missing required forecast config field: peak_power_kw")
-    system_loss = float(_require(config.system_loss, "system_loss"))
-    irradiance_to_power_factor = float(_require(config.irradiance_to_power_factor, "irradiance_to_power_factor"))
-    if irradiance_to_power_factor <= 0:
-        raise ValueError("Missing required forecast config field: irradiance_to_power_factor")
+    system_loss = float(config.system_loss if config.system_loss is not None else 0.14)
 
-    if config.strings:
-        string_configs: list[dict[str, Any]] = config.strings
-    else:
-        string_configs = [{
-            "peak_power_kw": peak_power_kw,
-            "tilt": config.tilt,
-            "azimuth": config.azimuth,
-        }]
-    if len(string_configs) > 6:
-        string_configs = string_configs[:6]
+    string_configs_raw = _require(config.strings, "strings")
+    if not isinstance(string_configs_raw, list) or len(string_configs_raw) == 0:
+        raise ValueError("Missing required forecast config field: strings")
+    string_configs = string_configs_raw[:6]
 
     log.info(
         "Open-Meteo forecast fetch started (strings=%s, timezone=%s, horizon_hours=%s)",
@@ -82,10 +70,10 @@ def fetch_forecast(config: OpenMeteoForecastConfiguration) -> Dict[str, float]:
         for timestamp, value in zip(times[:OPEN_METEO_FORECAST_HOURS], radiation[:OPEN_METEO_FORECAST_HOURS]):
             if value is None:
                 continue
+            # STC: peak power is rated at 1000 W/m²; scale linearly with irradiance and apply losses
             estimated_power_w = max(
                 0.0,
-                string_peak_power_kw * 1000.0 * (float(value) / 1000.0) * irradiance_to_power_factor
-                * (1.0 - system_loss)
+                string_peak_power_kw * 1000.0 * (float(value) / 1000.0) * (1.0 - system_loss)
             )
             timestamp_key = str(__parse_timestamp(timestamp, timezone))
             values[timestamp_key] = values.get(timestamp_key, 0.0) + estimated_power_w
