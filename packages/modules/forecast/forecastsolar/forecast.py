@@ -27,8 +27,6 @@ def _require(value, field_name: str):
     return value
 
 
-
-
 def _parse_forecast_solar_response(payload: Dict) -> Tuple[Dict[str, float], Dict[str, float]]:
     result = payload.get("result") if isinstance(payload, dict) else None
     source = result if isinstance(result, dict) else payload

@@ -2,7 +2,7 @@ import logging
 from dataclasses import asdict
 from datetime import datetime, timedelta
 from importlib import import_module
-from typing import Callable, Generic, Optional, TypeVar
+from typing import Callable, Generic, TypeVar
 
 from helpermodules import timecheck
 from helpermodules.constants import NO_ERROR
@@ -25,7 +25,7 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
         self.store = store.get_forecast_value_store()
         self._component_updater = component_initializer(config)
         self.update_hours = DEFAULT_FORECAST_UPDATE_HOURS
-        
+
         # Falls next_query_time nicht gesetzt ist, berechne die nächste geplante Aktualisierungszeit
         # Dies verhindert sofortige Aktualisierungen, wenn ein Anbieter erstmals erstellt wird
         if self.get.next_query_time is None or self.get.next_query_time == 0:
@@ -34,7 +34,7 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
     @property
     def get(self):
         """Gibt immer die aktuelle Singleton-Prognose.get aus der globalen SubData-Instanz zurück.
-        
+
         SubData.optional_data ist die globale Singleton, die MQTT-Nachrichten aktualisieren.
         Dies stellt sicher, dass wir immer den aktuellen Status haben, keine veraltete Referenz.
         """
@@ -43,22 +43,22 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
 
     def _is_config_complete(self) -> bool:
         """Prüfe, ob die Prognose-Anbieter-Konfiguration alle erforderlichen Felder hat.
-        
+
         Ruft die is_configuration_complete()-Funktion des Anbietermoduls auf, falls vorhanden.
         Fällt auf True zurück (nimmt Vollständigkeit an), wenn die Funktion nicht gefunden wird.
         """
         try:
             provider_type = self.config.type
             config = self.config.configuration
-            
+
             # Importiere das Anbietermodul dynamisch und rufe seine Validierungsfunktion auf
             module_name = f"modules.forecast.{provider_type}.forecast"
             provider_module = import_module(module_name)
-            
+
             # Rufe die Validierungsfunktion auf, falls vorhanden
             if hasattr(provider_module, "is_configuration_complete"):
                 return provider_module.is_configuration_complete(config)
-            
+
             # Wenn Validierungsfunktion nicht vorhanden, nimm an, dass Konfiguration vollständig ist
             return True
         except Exception as e:
@@ -74,14 +74,17 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
 
     def _is_update_due(self) -> bool:
         """Prüfe, ob eine Prognose-Aktualisierung fällig ist.
-        
+
         Gibt False sofort zurück, wenn die Konfiguration unvollständig ist (verhindert API-Aufrufe vor dem Speichern).
         Prüft sonst, ob die geplante Aktualisierungszeit erreicht wurde.
         """
         if not self._is_config_complete():
             return False
-        
-        return self.get.next_query_time is None or self.get.next_query_time == 0 or self.get.next_query_time <= timecheck.create_timestamp()
+
+        return (
+            self.get.next_query_time is None or self.get.next_query_time == 0 or
+            self.get.next_query_time <= timecheck.create_timestamp()
+        )
 
     def _is_force_update_requested(self) -> bool:
         return bool(self.get.force_update)
@@ -148,7 +151,8 @@ class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
                 self._set_next_query_time_by_schedule()
                 self._publish_forecast_fault(
                     FaultStateLevel.WARNING,
-                    f"Prognose-Konfiguration unvollständig: {error_str}. Bitte alle erforderlichen Felder konfigurieren.",
+                    "Prognose-Konfiguration unvollständig: "
+                    f"{error_str}. Bitte alle erforderlichen Felder konfigurieren.",
                 )
             else:
                 self._set_retry_query_time()

@@ -1,5 +1,5 @@
-from datetime import datetime
 import logging
+from datetime import datetime
 from typing import Dict, Tuple
 from zoneinfo import ZoneInfo
 
@@ -85,7 +85,6 @@ def fetch_forecast(config: OpenMeteoForecastConfiguration) -> Tuple[Dict[str, fl
 
 def _calculate_daily_kwh(values: Dict[str, float]) -> Dict[str, float]:
     """Berechne tägliche Energiewerte aus stündlichen Leistungswerten."""
-    from datetime import timedelta
     points: list[tuple[datetime, float]] = []
     for timestamp, value in values.items():
         try:
