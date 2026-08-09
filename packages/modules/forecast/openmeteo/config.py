@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import List, Optional
 
 
 @dataclass
@@ -12,7 +12,7 @@ class OpenMeteoForecastConfiguration:
     tilt: float = 30.0
     system_loss: float = 0.14
     irradiance_to_power_factor: float = 0.2
-    strings: Optional[list[dict[str, Any]]] = None
+    strings: Optional[List] = None
 
 
 @dataclass
