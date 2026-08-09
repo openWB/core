@@ -76,6 +76,7 @@ class Optional(OcppMixin):
             Pub().pub("openWB/set/optional/forecast/get/today_kwh", 0.0)
             Pub().pub("openWB/set/optional/forecast/get/tomorrow_kwh", 0.0)
             Pub().pub("openWB/set/optional/forecast/get/next_query_time", None)
+            Pub().pub("openWB/set/optional/forecast/get/last_update_time", 0)
         else:
             self.data.forecast.configured = True
             self.data.forecast.provider = asdict(value.config)
