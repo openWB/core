@@ -581,6 +581,7 @@ class UpdateConfig:
         "^openWB/system/update_in_progress$",
         "^openWB/system/usage_terms_acknowledged$",
         "^openWB/system/version$",
+        "^openWB/set/system/configurable/forecasts$",
     ]
     default_topic = (
         ("openWB/bat/config/bat_control_activated", False),
