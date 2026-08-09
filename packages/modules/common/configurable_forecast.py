@@ -22,14 +22,16 @@ FORECAST_RETRY_MINUTES = 15
 class ConfigurableForecast(Generic[T_FORECAST_CONFIG]):
     def __init__(self,
                  config: T_FORECAST_CONFIG,
-                 component_initializer: Callable[[T_FORECAST_CONFIG], ForecastState],
-                 get) -> None:
+                 component_initializer: Callable[[T_FORECAST_CONFIG], ForecastState]) -> None:
         self.config = config
         self.store = store.get_forecast_value_store()
         self._component_updater = component_initializer(config)
         self.update_hours = DEFAULT_FORECAST_UPDATE_HOURS
-        # Store reference to forecast.get for persistent state across re-initialization (same pattern as EP modules)
-        self.get = get
+
+    @property
+    def get(self):
+        """Always return the current singleton forecast.get to avoid stale references after MQTT updates."""
+        return data.data.optional_data.data.forecast.get
 
     def _is_config_complete(self) -> bool:
         """Check if forecast provider configuration has all required fields.
@@ -151,6 +153,4 @@ class ConfigurableForecastProvider(ConfigurableForecast[T_FORECAST_CONFIG]):
     def __init__(self,
                  config: T_FORECAST_CONFIG,
                  component_initializer: Callable[[T_FORECAST_CONFIG], ForecastState]) -> None:
-        # Use the singleton OptionalData instance to ensure we get the same forecast.get object
-        # across all instances and persist state correctly.
-        super().__init__(config, component_initializer, data.data.optional_data.data.forecast.get)
+        super().__init__(config, component_initializer)
