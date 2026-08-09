@@ -815,13 +815,7 @@ class SubData:
                         # Compare parsed config (unknown fields stripped) to avoid re-init on every retained update.
                         current_config = asdict(var.forecast_module.config) if var.forecast_module is not None else None
                         if current_config != asdict(config):
-                            # Preserve next_query_time from the previous instance to maintain scheduling continuity
-                            # (important when modules are reloaded during updates)
-                            old_next_query_time = var.forecast_module.get.next_query_time if var.forecast_module is not None else 0
                             var.forecast_module = ConfigurableForecastProvider(config, mod.create_forecast)
-                            if old_next_query_time > 0:
-                                var.forecast_module.get.next_query_time = old_next_query_time
-                                Pub().pub("openWB/set/optional/forecast/get/next_query_time", old_next_query_time)
                 elif re.search("/optional/forecast/get/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.forecast.get, msg)
                 elif re.search("/optional/forecast/", msg.topic) is not None:
