@@ -1154,16 +1154,6 @@ class Command:
                                       "modules")
         consumer_default = dataclass_utils.asdict(dev.device_descriptor.configuration_factory())
         consumer_default["id"] = new_id
-        Pub().pub(f'openWB/set/consumer/{new_id}/module', consumer_default)
-        Pub().pub(f"openWB/set/consumer/{new_id}/config", dataclass_utils.asdict(ConsumerConfig()))
-        for (k, v) in dataclass_utils.asdict(ConsumerGet()).items():
-            Pub().pub(f"openWB/set/consumer/{new_id}/get/"+k, v)
-        for (k, v) in dataclass_utils.asdict(ConsumerSet()).items():
-            Pub().pub(f"openWB/set/consumer/{new_id}/set/"+k, v)
-        Pub().pub(f"openWB/set/consumer/{new_id}/extra_meter", None)
-        Pub().pub(f"openWB/set/consumer/{new_id}/usage", dataclass_utils.asdict(Usage()))
-        self.max_id_hierarchy = new_id
-        Pub().pub("openWB/set/command/max_id/hierarchy", new_id)
         try:
             evu_counter = SubData.counter_all_data.get_id_evu_counter()
             SubData.counter_all_data.hierarchy_add_item_below(
@@ -1174,6 +1164,7 @@ class Command:
                              "Bitte zuerst einen EVU-Zähler konfigurieren oder in den Steuerungsmodus 'secondary' "
                              "umschalten.",
                              MessageType.ERROR)
+            return
         try:
             SubData.counter_all_data.add_loadmanagement_prio_item(ComponentType.CONSUMER, new_id)
             Pub().pub("openWB/set/counter/get/loadmanagement_prios",
@@ -1182,6 +1173,16 @@ class Command:
             pub_user_message(payload, connection_id,
                              str(e),
                              MessageType.ERROR)
+        Pub().pub(f'openWB/set/consumer/{new_id}/module', consumer_default)
+        Pub().pub(f"openWB/set/consumer/{new_id}/config", dataclass_utils.asdict(ConsumerConfig()))
+        for (k, v) in dataclass_utils.asdict(ConsumerGet()).items():
+            Pub().pub(f"openWB/set/consumer/{new_id}/get/"+k, v)
+        for (k, v) in dataclass_utils.asdict(ConsumerSet()).items():
+            Pub().pub(f"openWB/set/consumer/{new_id}/set/"+k, v)
+        Pub().pub(f"openWB/set/consumer/{new_id}/extra_meter", None)
+        Pub().pub(f"openWB/set/consumer/{new_id}/usage", dataclass_utils.asdict(Usage()))
+        self.max_id_hierarchy = new_id
+        Pub().pub("openWB/set/command/max_id/hierarchy", new_id)
         pub_user_message(
             payload, connection_id,
             f'Neues Gerät vom Typ \'{payload["data"]["type"]}\' mit ID \'{new_id}\' hinzugefügt.',
