@@ -108,7 +108,7 @@ cases_limit = [
                 raw_currents_left_counter6=[16, 12, 14],
                 expected_state_str=(f"Es kann nicht mit der vorgegebenen Stromstärke geladen werden"
                                     f"{LimitingValue.CURRENT.value.format('Garage')}"),
-                expected_current_cp3=14,
+                expected_current_cp3=13.5,
                 expected_current_cp4=12,
                 expected_current_cp5=14,
                 expected_raw_power_left=12110,
@@ -120,12 +120,12 @@ cases_limit = [
                 raw_currents_left_counter6=[16]*3,
                 expected_state_str=(f"Es kann nicht mit der vorgegebenen Stromstärke geladen werden"
                                     f"{LimitingValue.POWER.value.format('Garage')}"),
-                expected_current_cp3=10.461538461538462,
-                expected_current_cp4=6.769230769230769,
-                expected_current_cp5=6.769230769230769,
+                expected_current_cp3=10.346153846153847,
+                expected_current_cp4=6.576923076923077,
+                expected_current_cp5=6.576923076923077,
                 expected_raw_power_left=0,
-                expected_raw_currents_left_counter0=[21.53846153846154, 25.23076923076923, 25.23076923076923],
-                expected_raw_currents_left_counter6=[16, 9.23076923076923, 9.23076923076923]),
+                expected_raw_currents_left_counter0=[21.153846153846153, 25.423076923076923, 25.423076923076923],
+                expected_raw_currents_left_counter6=[16, 9.423076923076923, 9.423076923076923]),
 
     # limit by unbalanced load
 ]
@@ -144,6 +144,7 @@ def test_instant_charging_limit(params: ParamsLimit, all_cp_instant_charging_1p,
 
     # evaluation
     assert_expected_current(params)
+    assert data.data.consumer_data["consumer7"].data.set.current == 0.5
     for i in range(3, 6):
         assert data.data.cp_data[
             f"cp{i}"].data.get.state_str.replace("\n", "") == params.expected_state_str.replace("\n", "")
