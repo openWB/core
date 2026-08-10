@@ -61,6 +61,8 @@ class Consumer(Load):
                 self.is_switch_interval_elapsed()
                 min_current, required_current, message, mode, submode = self.get_parameter()
                 self.set_mode_changed(submode, mode)
+                if self.chargemode_changed or self.submode_changed:
+                    data.data.counter_all_data.get_evu_counter().reset_switch_on_off(self)
                 self.set_control_parameter(min_current, required_current,
                                            self.data.config.connected_phases, submode, mode)
                 self.set_state_and_log(message)
