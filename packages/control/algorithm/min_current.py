@@ -21,7 +21,8 @@ class MinCurrent:
             preferenced_loads_groups = get_grouped_loads_by_mode_and_counter(CONSIDERED_CHARGE_MODES_MIN_CURRENT,
                                                                              f"counter{counter.num}")
             for preferenced_loads in preferenced_loads_groups:
-                log.info(f"Zähler {counter.num}, Verbraucher {filtered_loads_to_str(preferenced_loads)}")
+                if len(preferenced_loads) > 0:
+                    log.info(f"Zähler {counter.num}, Verbraucher {filtered_loads_to_str(preferenced_loads)}")
                 common.update_raw_data(preferenced_loads, diff_to_zero=True)
                 while len(preferenced_loads):
                     load = preferenced_loads[0]
