@@ -320,7 +320,7 @@ class Counter:
             return self.SWITCH_ON_TEXTS_CP
         return self.SWITCH_ON_TEXTS_CONSUMER
 
-    def calc_switch_on_power(self, switch_on_threshold: float) -> Tuple[float, float, float]:
+    def calc_switch_on_power(self, switch_on_threshold: float) -> Tuple[float, float]:
         surplus = self.calc_raw_surplus() - self.data.set.reserved_surplus
         surplus_config = data.data.general_data.data.chargemode_config.surplus
 
@@ -331,7 +331,7 @@ class Counter:
 
         return surplus, threshold
 
-    def get_pv_config_py_load(self, load: Load) -> Tuple[float, float]:
+    def get_pv_config_py_load(self, load: Load) -> Tuple[float, float, float]:
         surplus_config = data.data.general_data.data.chargemode_config.surplus
         if isinstance(load, Chargepoint):
             control_parameter = load.data.control_parameter

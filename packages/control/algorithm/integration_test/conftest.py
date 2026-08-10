@@ -86,6 +86,7 @@ class ParamsExpectedSetCurrent:
 def assert_expected_current(params: ParamsExpectedSetCurrent):
     for i in range(3, 6):
         assert data.data.cp_data[f"cp{i}"].data.set.current == getattr(params, f"expected_current_cp{i}")
+    assert data.data.consumer_data["consumer7"].data.set.current == params.expected_current_consumer7
 
 
 @pytest.fixture()
