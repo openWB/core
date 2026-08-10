@@ -52,7 +52,8 @@ class SurplusControlled:
              feed_in_yield: int,
              counter: Counter) -> None:
         for loads in preferenced_loads_groups:
-            log.info(f"Zähler {counter.num}, Verbraucher {filtered_loads_to_str(loads)}")
+            if len(loads) > 0:
+                log.info(f"Zähler {counter.num}, Verbraucher {filtered_loads_to_str(loads)}")
             common.update_raw_data(loads, surplus=True)
             while len(loads):
                 load = loads[0]
