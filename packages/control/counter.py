@@ -320,28 +320,31 @@ class Counter:
             return self.SWITCH_ON_TEXTS_CP
         return self.SWITCH_ON_TEXTS_CONSUMER
 
-    def calc_switch_on_power(self, load: Load) -> Tuple[float, float]:
+    def calc_switch_on_power(self, switch_on_threshold: float) -> Tuple[float, float, float]:
         surplus = self.calc_raw_surplus() - self.data.set.reserved_surplus
-        control_parameter = load.data.control_parameter
         surplus_config = data.data.general_data.data.chargemode_config.surplus
 
         if surplus_config.feed_in_limit:
             threshold = surplus_config.feed_in_yield
         else:
-            threshold = surplus_config.vehicle.switch_on_threshold*control_parameter.phases
+            threshold = switch_on_threshold
+
         return surplus, threshold
 
-    def get_pv_config_py_load(self, load: Load) -> Tuple[float, float, bool]:
+    def get_pv_config_py_load(self, load: Load) -> Tuple[float, float]:
+        surplus_config = data.data.general_data.data.chargemode_config.surplus
         if isinstance(load, Chargepoint):
-            switch_on_delay = data.data.general_data.data.chargemode_config.surplus.vehicle.switch_on_delay
-            switch_on_threshold = data.data.general_data.data.chargemode_config.surplus.vehicle.switch_on_threshold
+            control_parameter = load.data.control_parameter
+            switch_on_delay = surplus_config.vehicle.switch_on_delay
+            switch_on_threshold = surplus_config.vehicle.switch_on_threshold * control_parameter.phases
+            power_to_reserve = surplus_config.vehicle.switch_on_threshold*control_parameter.phases
         else:
-            switch_on_delay = data.data.general_data.data.chargemode_config.surplus.consumer.switch_on_delay
+            switch_on_delay = surplus_config.consumer.switch_on_delay
             switch_on_threshold = (load.data.control_parameter.required_current *
                                    230 *
                                    load.data.control_parameter.phases)
-        feed_in_limit = data.data.general_data.data.chargemode_config.surplus.feed_in_limit
-        return switch_on_delay, switch_on_threshold, feed_in_limit
+            power_to_reserve = switch_on_threshold
+        return switch_on_delay, switch_on_threshold, power_to_reserve
 
     def switch_on_threshold_reached(self, load: Load) -> None:
         try:
@@ -350,10 +353,9 @@ class Counter:
             control_parameter = load.data.control_parameter
             surplus_config = data.data.general_data.data.chargemode_config.surplus
             timestamp_switch_on_off = control_parameter.timestamp_switch_on_off
-            switch_on_delay, switch_on_threshold, feed_in_limit = self.get_pv_config_py_load(load)
+            switch_on_delay, switch_on_threshold, power_to_reserve = self.get_pv_config_py_load(load)
 
-            surplus, threshold = self.calc_switch_on_power(load)
-            power_to_reserve = surplus_config.vehicle.switch_on_threshold*control_parameter.phases
+            surplus, threshold = self.calc_switch_on_power(switch_on_threshold)
             if control_parameter.state == ChargepointState.SWITCH_ON_DELAY:
                 # Wurde die Einschaltschwelle erreicht? Reservierte Leistung aus all_surplus herausrechnen,
                 # da diese Leistung ja schon reserviert wurde, als die Einschaltschwelle erreicht wurde.
@@ -397,7 +399,7 @@ class Counter:
         try:
             msg = None
             texts = self._get_switch_on_texts(load)
-            switch_on_delay, switch_on_threshold, _ = self.get_pv_config_py_load(load)
+            switch_on_delay, _, power_to_reserve = self.get_pv_config_py_load(load)
             control_parameter = load.data.control_parameter
             # Timer ist noch nicht abgelaufen
             if timecheck.check_timestamp(control_parameter.timestamp_switch_on_off,
@@ -407,7 +409,7 @@ class Counter:
             # Timer abgelaufen
             else:
                 control_parameter.timestamp_switch_on_off = None
-                self.data.set.reserved_surplus -= switch_on_threshold*control_parameter.phases
+                self.data.set.reserved_surplus -= power_to_reserve
                 msg = texts.expired
                 control_parameter.state = ChargepointState.WAIT_FOR_USING_PHASES
 
@@ -581,22 +583,29 @@ class Counter:
         load.set_state_and_log(msg)
         return charge
 
-    def reset_switch_on_off(self, chargepoint: Chargepoint):
+    def reset_switch_on_off(self, load: Load):
         try:
-            if chargepoint.data.control_parameter.timestamp_switch_on_off is not None:
-                chargepoint.data.control_parameter.timestamp_switch_on_off = None
+            if load.data.control_parameter.timestamp_switch_on_off is not None:
+                load.data.control_parameter.timestamp_switch_on_off = None
                 evu_counter = data.data.counter_all_data.get_evu_counter()
                 # Wenn bereits geladen wird, lief die Abschaltverzögerung -> Leistung, die nach Abschalten frei
                 # geworden wäre, nicht mehr zum zur Verfügung stehenden Überschuss zählen.
                 # Wenn nicht geladen wird, reservierte Leistung freigeben.
                 surplus_config = data.data.general_data.data.chargemode_config.surplus
-                if not chargepoint.data.get.charge_state:
-                    evu_counter.data.set.reserved_surplus -= (surplus_config.vehicle.switch_on_threshold
-                                                              * chargepoint.data.set.phases_to_use)
+                if isinstance(load, Chargepoint):
+                    if not load.data.get.charge_state:
+                        threshold = surplus_config.vehicle.switch_on_threshold * load.data.set.phases_to_use
+                    else:
+                        threshold = surplus_config.vehicle.switch_on_threshold * load.data.control_parameter.phases
                 else:
-                    evu_counter.data.set.released_surplus -= (surplus_config.vehicle.switch_on_threshold
-                                                              * chargepoint.data.control_parameter.phases)
-                chargepoint.data.control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
+                    threshold = (load.data.control_parameter.required_current *
+                                 230 *
+                                 load.data.control_parameter.phases)
+                if not load.data.get.charge_state:
+                    evu_counter.data.set.reserved_surplus -= threshold
+                else:
+                    evu_counter.data.set.released_surplus -= threshold
+                load.data.control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")
 

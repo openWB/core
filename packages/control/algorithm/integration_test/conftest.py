@@ -80,6 +80,7 @@ class ParamsExpectedSetCurrent:
     expected_current_cp3: float = 0
     expected_current_cp4: float = 0
     expected_current_cp5: float = 0
+    expected_current_consumer7: float = 0
 
 
 def assert_expected_current(params: ParamsExpectedSetCurrent):
