@@ -32,6 +32,7 @@ def all_cp_pv_charging_3p():
     control_parameter.phases = 1
     control_parameter.chargemode = Chargemode.PV_CHARGING
     control_parameter.submode = Chargemode.PV_CHARGING
+    control_parameter.state = ChargepointState.CHARGING_ALLOWED
 
 
 @pytest.fixture()
@@ -42,6 +43,10 @@ def all_cp_charging_3p():
     data.data.cp_data["cp3"].data.get.power = 6900
     data.data.cp_data["cp4"].data.get.power = 5520
     data.data.cp_data["cp5"].data.get.power = 5520
+    data.data.consumer_data["consumer7"].data.get.charge_state = True
+    data.data.consumer_data["consumer7"].data.get.currents = [0.5, 0, 0]
+    data.data.consumer_data["consumer7"].data.get.power = 115
+    data.data.consumer_data["consumer7"].data.set.current = 0.5
 
     for i in range(3, 6):
         charging_ev_data = data.data.cp_data[f"cp{i}"].data.set.charging_ev_data
@@ -153,7 +158,7 @@ def test_pv_delay_expired(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatc
     data.data.counter_data["counter0"].data.set.raw_power_left = 31200
     data.data.counter_data["counter0"].data.set.raw_currents_left = [32, 30, 31]
     data.data.counter_data["counter6"].data.set.raw_currents_left = [16, 12, 14]
-    data.data.counter_data["counter0"].data.set.reserved_surplus = 9000
+    data.data.counter_data["counter0"].data.set.reserved_surplus = 9115
     data.data.cp_data[
         "cp3"].data.control_parameter.timestamp_switch_on_off = 1652683185.0
     data.data.cp_data[
@@ -165,6 +170,10 @@ def test_pv_delay_expired(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatc
         "cp4"].data.control_parameter.state = ChargepointState.SWITCH_ON_DELAY
     data.data.cp_data[
         "cp5"].data.control_parameter.timestamp_switch_on_off = None
+    data.data.consumer_data[
+        "consumer7"].data.control_parameter.timestamp_switch_on_off = 1652683185.0
+    data.data.consumer_data[
+        "consumer7"].data.control_parameter.state = ChargepointState.SWITCH_ON_DELAY
 
     # execution
     Algorithm().calc_current()
@@ -179,7 +188,7 @@ def test_pv_delay_expired(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatc
         "cp4"].data.control_parameter.timestamp_switch_on_off is None
     assert data.data.cp_data[
         "cp5"].data.control_parameter.timestamp_switch_on_off is None
-    assert data.data.counter_data["counter0"].data.set.raw_power_left == 24300
+    assert data.data.counter_data["counter0"].data.set.raw_power_left == 24185
     assert data.data.counter_data["counter0"].data.set.surplus_power_left == -690
     assert data.data.counter_data["counter0"].data.set.reserved_surplus == 0
 
@@ -190,10 +199,11 @@ cases_limit = [
                   raw_power_left=50000,
                   raw_currents_left_counter0=[40]*3,
                   raw_currents_left_counter6=[16]*3,
-                  expected_current_cp3=16,
+                  expected_current_cp3=14.375,
                   expected_current_cp4=8,
                   expected_current_cp5=8,
-                  expected_raw_power_left=34820,
+                  expected_current_consumer7=5.5,
+                  expected_raw_power_left=34705,
                   expected_surplus_power_left=1090,
                   expected_reserved_surplus=0,
                   expected_released_surplus=0),
@@ -202,10 +212,11 @@ cases_limit = [
                   raw_power_left=39650,
                   raw_currents_left_counter0=[40]*3,
                   raw_currents_left_counter6=[16]*3,
-                  expected_current_cp3=11.248792270531402,
-                  expected_current_cp4=7.248792270531401,
-                  expected_current_cp5=7.2487922705314,
-                  expected_raw_power_left=24470,
+                  expected_current_cp3=10.878199918732223,
+                  expected_current_cp4=6.8827997554740445,
+                  expected_current_cp5=7.201405373552686,
+                  expected_current_consumer7=2.3519152915057484,
+                  expected_raw_power_left=24355,
                   expected_surplus_power_left=1090,
                   expected_reserved_surplus=0,
                   expected_released_surplus=0),
@@ -217,7 +228,8 @@ cases_limit = [
                   expected_current_cp3=10,
                   expected_current_cp4=6,
                   expected_current_cp5=6,
-                  expected_raw_power_left=5635,
+                  expected_current_consumer7=0.5,
+                  expected_raw_power_left=5520.0,
                   expected_surplus_power_left=-8200,
                   expected_reserved_surplus=0,
                   expected_released_surplus=11040),
@@ -256,7 +268,8 @@ cases_phase_switch = [
                       expected_current_cp3=10,
                       expected_current_cp4=6,
                       expected_current_cp5=6,
-                      expected_raw_power_left=17400,
+                      expected_current_consumer7=0.5,
+                      expected_raw_power_left=17285,
                       expected_surplus_power_left=-690,
                       expected_reserved_surplus=0,
                       expected_released_surplus=0),
@@ -270,6 +283,7 @@ cases_phase_switch = [
                       expected_current_cp3=32,
                       expected_current_cp4=6,
                       expected_current_cp5=6,
+                      expected_current_consumer7=0.5,
                       expected_raw_power_left=37520.0,
                       expected_surplus_power_left=3000,
                       expected_reserved_surplus=0,
