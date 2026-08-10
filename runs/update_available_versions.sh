@@ -1,9 +1,9 @@
 #!/bin/bash
-OPENWBBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-LOGFILE="${OPENWBBASEDIR}/ramdisk/versions.log"
-GITREMOTE="origin"
-YOURCHARGEPREFIX="yc/"
-DRY_RUN=0
+OPENWB_BASE_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+LOG_FILE="${OPENWB_BASE_DIR}/ramdisk/versions.log"
+GIT_REMOTE="origin"
+YOUR_CHARGE_PREFIX="yc/"
+DRY_RUN=0 # set to 1 for testing without writing to files or publishing to MQTT
 
 if [ "$(id -u -n)" != "openwb" ]; then
 	echo "this script has to be run as user openwb"
@@ -47,36 +47,36 @@ runUpdate() {
 	echo "#### updating available version info ####"
 
 	# update our local version
-	currentCommit=$(git -C "$OPENWBBASEDIR" log --pretty='format:%ci [%h]' -n1)
+	currentCommit=$(git -C "$OPENWB_BASE_DIR" log --pretty='format:%ci [%h]' -n1)
 	echo "current commit: $currentCommit"
 	mqttPublish "openWB/system/current_commit" "\"$currentCommit\""
-	writeFile "$OPENWBBASEDIR/web/lastcommit" "$currentCommit"
+	writeFile "$OPENWB_BASE_DIR/web/lastcommit" "$currentCommit"
 
 	# fetch data from git
-	echo "fetching latest data from '$GITREMOTE'..."
-	git -C "$OPENWBBASEDIR" fetch --verbose --prune --tags --prune-tags --force "$GITREMOTE" && echo "done"
+	echo "fetching latest data from '$GIT_REMOTE'..."
+	git -C "$OPENWB_BASE_DIR" fetch --verbose --prune --tags --prune-tags --force "$GIT_REMOTE" && echo "done"
 
-	# update branches from $GITREMOTE
+	# update branches from $GIT_REMOTE
 	echo "branches:"
 	IFS=$'\n'
-	read -r -d '' -a branches < <(git -C "$OPENWBBASEDIR" branch -r --list "$GITREMOTE/*")
+	read -r -d '' -a branches < <(git -C "$OPENWB_BASE_DIR" branch -r --list "$GIT_REMOTE/*")
 	declare -A availableBranches
 	declare -A tagsJson
 	for index in "${!branches[@]}"; do
 		if [[ ${branches[$index]} == *"HEAD"* ]]; then
 			unset 'branches[$index]'
 		else
-			branches[index]="${branches[$index]//*$GITREMOTE\//}" # remove leading whitespace and $GITREMOTE/
-			if [[ ${branches[$index]} == *"$YOURCHARGEPREFIX"* ]]; then
+			branches[index]="${branches[$index]//*$GIT_REMOTE\//}" # remove leading whitespace and $GIT_REMOTE/
+			if [[ ${branches[$index]} == *"$YOUR_CHARGE_PREFIX"* ]]; then
 				echo "skipping branch '${branches[$index]}'"
 				unset 'branches[$index]'
 			else
-				echo -n "checking commit for '$GITREMOTE/${branches[$index]}'..."
-				availableBranches[${branches[$index]}]=$(git -C "$OPENWBBASEDIR" log --pretty='format:%ci [%h]' -n1 "$GITREMOTE/${branches[$index]}")
+				echo -n "checking commit for '$GIT_REMOTE/${branches[$index]}'..."
+				availableBranches[${branches[$index]}]=$(git -C "$OPENWB_BASE_DIR" log --pretty='format:%ci [%h]' -n1 "$GIT_REMOTE/${branches[$index]}")
 				echo "${availableBranches[${branches[$index]}]}"
 				if [[ ${branches[$index]} == "master" ]]; then
 					echo "tags in branch:"
-					read -r -d '' -a tags < <(git -C "$OPENWBBASEDIR" tag -n --format "%(refname:short): %(subject)" --merged "$GITREMOTE/${branches[$index]}" && printf '\0')
+					read -r -d '' -a tags < <(git -C "$OPENWB_BASE_DIR" tag -n --format "%(refname:short): %(subject)" --merged "$GIT_REMOTE/${branches[$index]}" && printf '\0')
 					echo "${tags[*]}"
 					tagsJson[${branches[$index]}]=$(buildTagJson true "${tags[@]}")
 				else
@@ -88,7 +88,7 @@ runUpdate() {
 	done
 
 	# Build virtual Release/Beta entries from repository tags
-	read -r -d '' -a allTags < <(git -C "$OPENWBBASEDIR" tag -n --format "%(refname:short): %(subject)" && printf '\0')
+	read -r -d '' -a allTags < <(git -C "$OPENWB_BASE_DIR" tag -n --format "%(refname:short): %(subject)" && printf '\0')
 	declare -a releaseTags
 	declare -a betaTags
 	for tagLine in "${allTags[@]}"; do
@@ -105,16 +105,16 @@ runUpdate() {
 	tagsJson["Release"]=$(buildTagJson false "${releaseTags[@]}")
 	tagsJson["Beta"]=$(buildTagJson false "${betaTags[@]}")
 
-	latestReleaseTag=$(git -C "$OPENWBBASEDIR" tag --sort=-version:refname | grep -E -m1 '^[0-9]+\.[0-9]+\.[0-9]+(-Patch\.[0-9]+)?$')
+	latestReleaseTag=$(git -C "$OPENWB_BASE_DIR" tag --sort=-version:refname | grep -E -m1 '^[0-9]+\.[0-9]+\.[0-9]+(-Patch\.[0-9]+)?$')
 	if [[ -n $latestReleaseTag ]]; then
-		availableBranches["Release"]=$(git -C "$OPENWBBASEDIR" log --pretty='format:%ci [%h]' -n1 "$latestReleaseTag")
+		availableBranches["Release"]=$(git -C "$OPENWB_BASE_DIR" log --pretty='format:%ci [%h]' -n1 "$latestReleaseTag")
 	else
 		availableBranches["Release"]=${availableBranches["master"]}
 	fi
 
-	latestBetaTag=$(git -C "$OPENWBBASEDIR" tag --sort=-version:refname | grep -E -m1 '^[0-9]+\.[0-9]+\.[0-9]+(-Patch\.[0-9]+|-Beta\.[0-9]+|-[Rr][Cc]\.[0-9]+)?$')
+	latestBetaTag=$(git -C "$OPENWB_BASE_DIR" tag --sort=-version:refname | grep -E -m1 '^[0-9]+\.[0-9]+\.[0-9]+(-Patch\.[0-9]+|-Beta\.[0-9]+|-[Rr][Cc]\.[0-9]+)?$')
 	if [[ -n $latestBetaTag ]]; then
-		availableBranches["Beta"]=$(git -C "$OPENWBBASEDIR" log --pretty='format:%ci [%h]' -n1 "$latestBetaTag")
+		availableBranches["Beta"]=$(git -C "$OPENWB_BASE_DIR" log --pretty='format:%ci [%h]' -n1 "$latestBetaTag")
 	else
 		availableBranches["Beta"]=${availableBranches["master"]}
 	fi
@@ -132,21 +132,21 @@ runUpdate() {
 	mqttPublish "openWB/system/available_branches" "$branchJson"
 
 	# update current branch
-	currentBranch=$(git -C "$OPENWBBASEDIR" branch --no-color --show-current)
+	currentBranch=$(git -C "$OPENWB_BASE_DIR" branch --no-color --show-current)
 	echo "currently selected branch: $currentBranch"
 	mqttPublish "openWB/system/current_branch" "\"$currentBranch\""
 
 	# update $currentBranch commit and list missing commits
-	remoteCurrentBranch="$GITREMOTE/$currentBranch"
+	remoteCurrentBranch="$GIT_REMOTE/$currentBranch"
 	echo "changes:"
-	if [[ -n $currentBranch ]] && git -C "$OPENWBBASEDIR" show-ref --verify --quiet "refs/remotes/$remoteCurrentBranch"; then
-		currentBranchCommit=$(git -C "$OPENWBBASEDIR" log --pretty='format:%ci [%h]' -n1 "$remoteCurrentBranch")
+	if [[ -n $currentBranch ]] && git -C "$OPENWB_BASE_DIR" show-ref --verify --quiet "refs/remotes/$remoteCurrentBranch"; then
+		currentBranchCommit=$(git -C "$OPENWB_BASE_DIR" log --pretty='format:%ci [%h]' -n1 "$remoteCurrentBranch")
 		echo "last commit in '$currentBranch' branch: $currentBranchCommit"
 		mqttPublish "openWB/system/current_branch_commit" "\"$currentBranchCommit\""
 		IFS=$'\n'
-		read -r -d '' -a commitDiff < <(git -C "$OPENWBBASEDIR" log --pretty='format:%ci [%h] - %s' "$currentBranch..$remoteCurrentBranch" && printf '\0')
+		read -r -d '' -a commitDiff < <(git -C "$OPENWB_BASE_DIR" log --pretty='format:%ci [%h] - %s' "$currentBranch..$remoteCurrentBranch" && printf '\0')
 	else
-		currentBranchCommit=$(git -C "$OPENWBBASEDIR" log --pretty='format:%ci [%h]' -n1)
+		currentBranchCommit=$(git -C "$OPENWB_BASE_DIR" log --pretty='format:%ci [%h]' -n1)
 		echo "no remote branch '$remoteCurrentBranch' found, using local HEAD commit"
 		echo "last commit in '$currentBranch' branch: $currentBranchCommit"
 		mqttPublish "openWB/system/current_branch_commit" "\"$currentBranchCommit\""
@@ -157,4 +157,4 @@ runUpdate() {
 	mqttPublish "openWB/system/current_missing_commits" "$commitDiffMessage"
 }
 
-runUpdate >"$LOGFILE" 2>&1
+runUpdate >"$LOG_FILE" 2>&1
