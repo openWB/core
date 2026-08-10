@@ -24,7 +24,8 @@ class AdditionalCurrent:
                                                       f"counter{counter.num}"))
             for preferenced_loads in preferenced_loads_groups:
                 common.update_raw_data(preferenced_loads)
-                log.info(f"Zähler {counter.num}, Verbraucher {filtered_loads_to_str(preferenced_loads)}")
+                if len(preferenced_loads) > 0:
+                    log.info(f"Zähler {counter.num}, Verbraucher {filtered_loads_to_str(preferenced_loads)}")
                 while len(preferenced_loads):
                     load = preferenced_loads[0]
                     missing_currents, counts = common.get_missing_currents_left(preferenced_loads)
