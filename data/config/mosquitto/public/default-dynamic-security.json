@@ -1099,19 +1099,19 @@
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/consumer/config/switch_on_delay",
+					"topic": "openWB/set/general/chargemode_config/surplus/consumer/switch_on_delay",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/consumer/config/switch_off_delay",
+					"topic": "openWB/set/general/chargemode_config/surplus/consumer/switch_off_delay",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/consumer/config/switch_off_threshold",
+					"topic": "openWB/set/general/chargemode_config/surplus/consumer/switch_off_threshold",
 					"priority": 0,
 					"allow": true
 				},
@@ -1177,19 +1177,19 @@
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/consumer/config/switch_on_delay",
+					"topic": "openWB/general/chargemode_config/surplus/consumer/switch_on_delay",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/consumer/config/switch_off_delay",
+					"topic": "openWB/general/chargemode_config/surplus/consumer/switch_off_delay",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/consumer/config/switch_off_threshold",
+					"topic": "openWB/general/chargemode_config/surplus/consumer/switch_off_threshold",
 					"priority": 0,
 					"allow": true
 				}
