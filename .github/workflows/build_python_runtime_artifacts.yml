@@ -23,6 +23,8 @@ permissions:
 
 jobs:
   build-runtime:
+    if: ${{ github.repository == 'openWB/core' }}
+    name: Build Python Runtime Artifacts
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -136,9 +138,10 @@ jobs:
           path: dist/python-runtime/python-${{ steps.pyver.outputs.version }}-linux-${{ matrix.arch }}-debian${{ matrix.debian_version }}.tar.xz*
 
   publish-release:
+    name: Publish Python Runtime Artifacts to Release Repository
     needs:
       - build-runtime
-    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_release) }}
+    if: ${{ github.repository == 'openWB/core' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_release)) }}
     runs-on: ubuntu-latest
     env:
       TARGET_RELEASE_OWNER: ${{ github.repository_owner }}
