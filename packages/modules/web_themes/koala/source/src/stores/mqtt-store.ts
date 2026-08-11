@@ -745,8 +745,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const themeConfiguration = computed(() => {
     return getValue.value('openWB/general/web_theme', 'configuration') as
-      | ThemeConfiguration
-      | undefined;
+      ThemeConfiguration | undefined;
   });
 
   /**
@@ -911,8 +910,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       returnType: string = 'Date',
     ): string | number | Date | undefined => {
       const timestamp = getValue.value('openWB/system/time') as
-        | number
-        | undefined;
+        number | undefined;
       if (timestamp == undefined) {
         return undefined;
       }
@@ -1025,8 +1023,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   const chargePointSumPower = computed(() => {
     return (returnType: string = 'textValue') => {
       const power = getValue.value('openWB/chargepoint/get/power') as
-        | number
-        | undefined;
+        number | undefined;
       const valueObject = getValueObject.value(power);
       if (Object.hasOwn(valueObject, returnType)) {
         return valueObject[returnType as keyof ValueObject];
@@ -2606,8 +2603,7 @@ export const useMqttStore = defineStore('mqtt', () => {
         const vehicleId = vehicleInfo?.id;
         const topic = `openWB/vehicle/${vehicleId}/soc_module/calculated_soc_state`;
         const socState = getValue.value(topic) as
-          | CalculatedSocState
-          | undefined;
+          CalculatedSocState | undefined;
         return socState?.manual_soc ?? socState?.soc_start ?? 0;
       },
       set(newValue: number) {
@@ -2998,8 +2994,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   const vehicleSocValue = computed(() => {
     return (vehicleId: number) => {
       return getValue.value(`openWB/vehicle/${vehicleId}/get/soc`) as
-        | number
-        | undefined;
+        number | undefined;
     };
   });
 
@@ -3017,8 +3012,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       get() {
         const topic = `openWB/vehicle/${vehicleId}/soc_module/calculated_soc_state`;
         const socState = getValue.value(topic) as
-          | CalculatedSocState
-          | undefined;
+          CalculatedSocState | undefined;
         return socState?.manual_soc ?? socState?.soc_start ?? 0;
       },
       set(newValue: number) {
@@ -3739,8 +3733,7 @@ export const useMqttStore = defineStore('mqtt', () => {
    */
   const getAllCounterIds = computed(() => {
     const hierarchy = getValue.value('openWB/counter/get/hierarchy') as
-      | Hierarchy[]
-      | undefined;
+      Hierarchy[] | undefined;
     const getCounterIds = (
       nodes: Hierarchy[] | undefined,
       allCounters: number[] = [],
@@ -3814,8 +3807,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       let power = undefined;
       if (id !== undefined) {
         power = getValue.value(`openWB/counter/${id}/get/power`) as
-          | number
-          | undefined;
+          number | undefined;
       }
       const valueObject = getValueObject.value(power);
       if (returnType in valueObject) {
@@ -3896,8 +3888,7 @@ export const useMqttStore = defineStore('mqtt', () => {
   const homePower = computed(() => {
     return (returnType: string = 'textValue') => {
       const power = getValue.value('openWB/counter/set/home_consumption') as
-        | number
-        | undefined;
+        number | undefined;
       const valueObject = getValueObject.value(power);
       if (returnType in valueObject) {
         return valueObject[returnType as keyof ValueObject];
