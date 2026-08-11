@@ -23,7 +23,7 @@ class LambdaConfiguration:
 class Lambda(ConsumerSetup[LambdaConfiguration]):
     def __init__(self,
                  name: str = "Lambda Wärmepumpe",
-                 type: str = "lambda",
+                 type: str = "lambda_",
                  id: int = 0,
                  configuration: LambdaConfiguration = None,
                  usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_TUNABLE,
