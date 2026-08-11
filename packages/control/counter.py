@@ -149,7 +149,10 @@ class Counter:
 
     def _set_current_left(self, loadmanagement_available: bool) -> None:
         if loadmanagement_available:
+            if self.num == 26:
+                log.debug("-.--.-.-.-")
             currents_raw = self.data.get.currents
+            currents_exported_raw = self.data.get.currents
             cp_keys = data.data.counter_all_data.get_chargepoints_of_counter(f"counter{self.num}")
             for cp_key in cp_keys:
                 chargepoint = data.data.cp_data[cp_key]
@@ -159,14 +162,35 @@ class Counter:
                         chargepoint.data.get.currents)
                 except KeyError:
                     element_current = [get_medium_charging_current(chargepoint.data.get.currents)]*3
+
+                # Ich schau, was liegt aktuell am Zähler an -> currents_raw
+                # Dann ziehe ich davon alle cps ab -> currents_raw = list(map(operator.sub, currents_raw, element_current))
+                # => dann habe ich in currents_raw nur noch die Ströme die nicht zum laden verwendet werden
+                if min(element_current) < 0:
+                    # currents_exported_raw = alles ohne entladen -> sprich nur die Hausverbraucher ohne Einspeisung
+                    currents_exported_raw = list(map(operator.sub, currents_exported_raw, element_current))
+                    continue
+                # currents_raw = alles ohne laden -> sprich nur die Hausverbraucher und Einspeisung
                 currents_raw = list(map(operator.sub, currents_raw, element_current))
-            # verbleibende Ströme für Laden (+) und Entladen (-) getrennt vorhalten
+
+            # Diese ziehe ich dann von den max_wert des Counters ab
+            # -> Bekomme die verbleibenden Ströme die zum Laden verwendet werden können
+
+            # Das Entladen steckt ja schon in currents_raw drin -> direkter Zählerwert
+            # Dadurch das nur die wirklich ladenen Cps rausrechnen werden -> bleibt Hausverbrauch und Entladen übrig
+            # Dann max-Wert vom Counter minus Hausverbrauch und Entladen -> Verbleibende Ströme die zum Laden verwendet werden können
+            # Wenn mehr entladen als Hausverbrauch -> dann ist der Wert negativ
+            # Und das limit am Counter erhöht sich -> mehr Strom zum Laden verfügbar
+
             raw_currents_left = list(map(operator.sub, self.data.config.max_currents, currents_raw))
-            raw_exported_currents_left = list(map(operator.add, self.data.config.max_currents, currents_raw))
+
+            # Addiere alle Verbraucher dazu, weil wir das ja mehr entladen können dann
+            raw_exported_currents_left = list(map(operator.add, self.data.config.max_currents, currents_exported_raw))
 
             if min(raw_currents_left) < 0:
                 log.debug(
-                    f"Verbleibende Ströme Laden: {raw_currents_left}, Überbelastung wird durch Hausverbrauch verursacht")
+                    f"Verbleibende Ströme Laden: {raw_currents_left}, "
+                    f"Überbelastung wird durch Hausverbrauch verursacht")
                 raw_currents_left = [max(raw_currents_left[i], 0) for i in range(0, 3)]
 
             if min(raw_exported_currents_left) < 0:
@@ -205,6 +229,8 @@ class Counter:
             if loadmanagement_available:
                 power_raw = self.data.get.power
                 for cp in data.data.cp_data.values():
+                    if cp.data.get.power < 0:
+                        continue
                     power_raw -= cp.data.get.power
                 self.data.set.raw_power_left = self.data.config.max_total_power - power_raw
                 self.data.set.raw_exported_power_left = self.data.config.max_total_power + power_raw
@@ -224,29 +250,13 @@ class Counter:
     def update_values_left(self, diffs, cp_voltage: float) -> None:
         # Mittelwert der Spannungen verwenden, um Phasenverdrehung zu kompensieren
         # (Probleme bei einphasig angeschlossenen Wallboxen)
-
         self._update_raw_values(diffs, cp_voltage)
-        # self.data.set.raw_currents_left = list(map(operator.sub, self.data.set.raw_currents_left, diffs))
-        # self.data.set.raw_exported_currents_left = list(
-        #    map(operator.add, self.data.set.raw_exported_currents_left, diffs))
-
-        # if self.data.set.raw_power_left is not None:
-        #    self.data.set.raw_power_left -= sum([c * cp_voltage for c in diffs])
-        # if self.data.set.raw_exported_power_left is not None:
-        #    self.data.set.raw_exported_power_left += sum([c * cp_voltage for c in diffs])
-
-        # log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
-        #          f'{self.data.set.raw_exported_currents_left}A verbleibende exportierte Ströme',
-        #          f'{self.data.set.raw_power_left}W verbleibende Leistung',
-        #          f'{self.data.set.raw_exported_power_left}W verbleibende exportierte Leistung')
 
     def update_surplus_values_left(self, diffs, cp_voltage: float) -> None:
         self._update_raw_values(diffs, cp_voltage)
 
         if self.data.set.surplus_power_left is not None:
-            log.debug(f"VORANPASSUNG_____{self.data.set.surplus_power_left}")
             self.data.set.surplus_power_left -= sum([c * cp_voltage for c in diffs])
-            log.debug(f"VORANPASSUNG_____{self.data.set.surplus_power_left}")
 
         log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
                   f'{self.data.set.surplus_power_left}W verbleibender Überschuss')
