@@ -20,7 +20,7 @@ class AskoheatConfiguration:
 @auto_str
 class Askoheat(ConsumerSetup[AskoheatConfiguration]):
     def __init__(self,
-                 name: str = "Askoheat",
+                 name: str = "Askoheat+",
                  type: str = "askoheat",
                  id: int = 0,
                  configuration: AskoheatConfiguration = None,
