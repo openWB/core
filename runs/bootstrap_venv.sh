@@ -1,19 +1,21 @@
 #!/bin/bash
 
-OPENWBBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-PYTHON_VERSION_FILE="${OPENWBBASEDIR}/data/config/python_runtime_version.txt"
-VENV_DIR="${OPENWBBASEDIR}/.venv"
-REQ_FILE="${OPENWBBASEDIR}/requirements.txt"
+OPENWB_BASE_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+PYTHON_VERSION_FILE="${OPENWB_BASE_DIR}/data/config/python_runtime_version.txt"
+VENV_DIR="${OPENWB_BASE_DIR}/.venv"
+REQ_FILE="${OPENWB_BASE_DIR}/requirements.txt"
 MARKER_FILE="${VENV_DIR}/.requirements_installed"
 PYVENV_CFG="${VENV_DIR}/pyvenv.cfg"
-PYENV_ROOT="${OPENWBBASEDIR}/.pyenv"
+PYENV_ROOT="${OPENWB_BASE_DIR}/.pyenv"
 PYENV_BIN="${PYENV_ROOT}/bin/pyenv"
 PYTHON_VERSION=""
 PYTHON_MAJOR_MINOR=""
 PYTHON_RELEASE_TAG=""
 PYTHON_BINARIES_BASE_URL=""
+PYTHON_REPO_OWNER="openWB"
+PYTHON_REPO_NAME="python-runtime"
 OPENWB_USER="openwb"
-LOG_FILE="${OPENWBBASEDIR}/data/log/python-bootstrap.log"
+LOG_FILE="${OPENWB_BASE_DIR}/data/log/python-bootstrap.log"
 
 log() {
 	echo "[bootstrap_venv] $*" >&2
@@ -44,8 +46,8 @@ init_python_config() {
 	fi
 
 	if [[ -z "${PYTHON_VERSION}" ]]; then
-		log "Keine Python-Version konfiguriert, verwende Standardwert 3.9.21"
-		PYTHON_VERSION="3.9.21"
+		log "Keine Python-Version konfiguriert, verwende Standardwert 3.9.25"
+		PYTHON_VERSION="3.9.25"
 	fi
 
 	if [[ ! "${PYTHON_VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -55,7 +57,7 @@ init_python_config() {
 
 	PYTHON_MAJOR_MINOR="${PYTHON_VERSION%.*}"
 	PYTHON_RELEASE_TAG="${OPENWB_PYTHON_RELEASE_TAG:-python-runtime-${PYTHON_VERSION}}"
-	PYTHON_BINARIES_BASE_URL="${OPENWB_PYTHON_BINARIES_BASE_URL:-https://github.com/benderl/python-runtime/releases/download/${PYTHON_RELEASE_TAG}}"
+	PYTHON_BINARIES_BASE_URL="${OPENWB_PYTHON_BINARIES_BASE_URL:-https://github.com/${PYTHON_REPO_OWNER}/${PYTHON_REPO_NAME}/releases/download/${PYTHON_RELEASE_TAG}}"
 	log "Python-Zielversion: ${PYTHON_VERSION}"
 	log "Release-Tag fuer Binaries: ${PYTHON_RELEASE_TAG}"
 	log "Binary-Basis-URL: ${PYTHON_BINARIES_BASE_URL}"
@@ -163,7 +165,7 @@ install_prebuilt_python() {
 				;;
 		esac
 	fi
-	log "Suche vorkompilierte Runtime fuer arch=${arch}, os_variant=${os_variant:-unknown}"
+	log "Suche kompilierte Python Runtime fuer arch=${arch}, os_variant=${os_variant:-unknown}"
 	temp_dir=$(mktemp -d)
 	archive="${temp_dir}/python.tar.xz"
 	extract_dir="${temp_dir}/extract"
@@ -183,7 +185,7 @@ install_prebuilt_python() {
 
 	for candidate in "${candidates[@]}"; do
 		url="${PYTHON_BINARIES_BASE_URL}/${candidate}"
-		log "Versuche vorkompiliertes Python herunterzuladen: ${url}"
+		log "Versuche kompilierte Python Runtime herunterzuladen: ${url}"
 		if ! curl -fL --connect-timeout 10 --retry 2 --retry-delay 2 -o "${archive}" "${url}" >/dev/null 2>&1; then
 			log "Kein Treffer: ${candidate}"
 			continue
@@ -209,7 +211,7 @@ install_prebuilt_python() {
 
 		py_path=$(managed_python_path)
 		if [[ -x "${py_path}" ]] && is_required_python "${py_path}"; then
-			log "Vorkompiliertes Python erfolgreich installiert: ${py_path}"
+			log "Kompilierte Python Runtime erfolgreich installiert: ${py_path}"
 			rm -rf "${temp_dir}"
 			echo "${py_path}"
 			return 0
@@ -219,7 +221,7 @@ install_prebuilt_python() {
 		rm -rf "${target_dir}"
 	done
 
-	log "Kein passendes vorkompiliertes Python gefunden."
+	log "Keine passende kompilierte Python Runtime gefunden."
 	rm -rf "${temp_dir}"
 	return 1
 }
@@ -319,12 +321,12 @@ ensure_managed_python() {
 	log "Managed-Python fehlt oder passt nicht zur Zielversion."
 
 	if py_path=$(install_prebuilt_python); then
-		log "Managed-Python aus vorkompiliertem Artefakt bereitgestellt."
+		log "Managed-Python aus kompiliertem Artefakt bereitgestellt."
 		echo "${py_path}"
 		return 0
 	fi
 	py_path=$(managed_python_path)
-	log "Kein vorkompiliertes Python gefunden, falle auf lokalen Build zurueck."
+	log "Keine kompilierte Python Runtime gefunden, falle auf lokalen Build zurueck."
 	# Falls ein ungueltiges Runtime-Verzeichnis existiert, pyenv-Install nicht ueberspringen.
 	rm -rf "${PYENV_ROOT}/versions/${PYTHON_VERSION}"
 	check_build_dependencies || return 1
