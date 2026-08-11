@@ -1,11 +1,11 @@
 from typing import Optional, Tuple
- 
+
 from control.consumer.consumer_data import ConsumerUsage
 from helpermodules.auto_str import auto_str
 from modules.common.consumer_setup import ConsumerSetup
 from ..vendor import vendor_descriptor
- 
- 
+
+
 @auto_str
 class OvumConfiguration:
     def __init__(self,
@@ -15,8 +15,8 @@ class OvumConfiguration:
         self.ip_address = ip_address
         self.port = port
         self.modbus_id = modbus_id
- 
- 
+
+
 @auto_str
 class Ovum(ConsumerSetup[OvumConfiguration]):
     def __init__(self,
@@ -34,4 +34,3 @@ class Ovum(ConsumerSetup[OvumConfiguration]):
                  **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
         ).type, configuration=configuration or OvumConfiguration(), usage=usage, **kwargs)
- 

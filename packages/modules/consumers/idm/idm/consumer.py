@@ -1,8 +1,7 @@
-
 #!/usr/bin/env python3
 from pymodbus.constants import Endian
 import logging
- 
+
 from modules.common.abstract_consumer import CurrentValues
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
@@ -11,22 +10,22 @@ from modules.common.configurable_consumer import ConfigurableConsumer
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.idm.idm.config import Idm
- 
+
 log = logging.getLogger(__name__)
- 
- 
+
+
 def create_consumer(config: Idm):
     client = None
     sim_counter = None
- 
+
     def initializer():
         nonlocal client, sim_counter
         client = ModbusTcpClient_(config.configuration.ip_address, config.configuration.port)
         sim_counter = SimCounterConsumer(config.id, ComponentType.CONSUMER)
- 
+
     def error_handler() -> None:
         initializer()
- 
+
     def send_values(values: CurrentValues) -> None:
         # Sendet die aktuellen Systemwerte an die IDM Navigator 2.0-Regelung über die
         # Gebäudeleittechnik/Smartfox-Schnittstelle (Modbus TCP). IDM unterstützt keine
@@ -35,7 +34,7 @@ def create_consumer(config: Idm):
         # solange dieser Verbraucher als ConsumerUsage.SELF_CONTROLLED konfiguriert ist.
         # Register-Layout siehe IDM "Gebäudeleittechnik-Smartfox.pdf", Kap. 2.2.5.1
         modbus_id = config.configuration.modbus_id
- 
+
         # values.pv_power kommt roh aus process.py (negativ während Produktion, gleiche
         # Konvention wie beim EVU-Zähler) -> Vorzeichen drehen und auf 0 begrenzen, um die
         # reine Erzeugung zu erhalten
@@ -44,7 +43,7 @@ def create_consumer(config: Idm):
         # WP gemeldet würde, obwohl sie bereits von einer Fahrzeugladung verbraucht wird
         surplus = max(pv_power - values.home_consumption - values.cp_power, 0)
         battery_soc = int(values.bat_soc) if values.bat_soc is not None else -1
- 
+
         # Reg 74: Aktueller PV-Überschuss [kW]
         client.write_register(74, surplus / 1000, wordorder=Endian.Little, unit=modbus_id)
         # Reg 78: Aktuelle PV-Produktion [kW]
@@ -55,7 +54,7 @@ def create_consumer(config: Idm):
         client.write_register(84, values.bat_power / 1000, wordorder=Endian.Little, unit=modbus_id)
         # Reg 86: Batteriefüllstand [%], Default -1 (= kein Speicher)
         client.write_register(86, battery_soc, unit=modbus_id)
- 
+
     def update() -> ConsumerState:
         if config.configuration.version == 1:
             power = client.read_holding_registers(
@@ -65,7 +64,7 @@ def create_consumer(config: Idm):
                 4122, ModbusDataType.FLOAT_32, unit=config.configuration.modbus_id)
         power *= 100
         imported, exported = sim_counter.sim_count(power)
- 
+
         return ConsumerState(
             power=power,
             imported=imported,
