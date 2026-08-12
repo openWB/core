@@ -24,6 +24,7 @@ class KwargsDict(TypedDict):
 
 
 class SmaSunnyBoyInverter(AbstractInverter):
+    # SMA-Sentinel-Werte für "kein gültiger Wert" -- abhängig vom Modbus-Registertyp.
     SMA_INT16_NAN = -0x8000
     SMA_INT32_NAN = -0x80000000
     SMA_UINT32_NAN = 0xFFFFFFFF
@@ -34,6 +35,19 @@ class SmaSunnyBoyInverter(AbstractInverter):
                  **kwargs: Any) -> None:
         self.component_config = component_config
         self.kwargs: KwargsDict = kwargs
+
+    @staticmethod
+    def check_nan(value: int, nan_value: int, default_value: int = 0) -> "tuple[int, bool]":
+        """Prüft einen Rohwert direkt beim Auslesen gegen den zum jeweiligen
+        Registertyp passenden NaN-Sentinel. Multiplikator/Vorzeichen werden
+        erst NACH diesem Check auf den Rückgabewert angewendet -- so bleibt
+        der Vergleich immer exakt beim Rohwert und es kann kein Vorzeichen-
+        Fehler beim getrennten Nachbilden des Sentinels mehr passieren.
+        Gibt (Wert bzw. default_value, ob NaN erkannt wurde) zurück.
+        """
+        if value == nan_value:
+            return default_value, True
+        return value, False
 
     def initialize(self) -> None:
         self.tcp_client = self.kwargs['client']
@@ -46,48 +60,83 @@ class SmaSunnyBoyInverter(AbstractInverter):
         unit = self.component_config.configuration.modbus_id
 
         if self.component_config.configuration.version == SmaInverterVersion.default:
-            power_total = self.tcp_client.read_holding_registers(30775, ModbusDataType.INT_32, unit=unit) * -1
-            energy = self.tcp_client.read_holding_registers(30529, ModbusDataType.UINT_32, unit=unit)
-            dc_power = (self.tcp_client.read_holding_registers(30773, ModbusDataType.INT_32, unit=unit) +
-                        self.tcp_client.read_holding_registers(30961, ModbusDataType.INT_32, unit=unit)) * -1
+            power_total, power_is_nan = self.check_nan(
+                self.tcp_client.read_holding_registers(30775, ModbusDataType.INT_32, unit=unit),
+                self.SMA_INT32_NAN)
+            power_total *= -1
 
-            currents = self.tcp_client.read_holding_registers(30977, [ModbusDataType.INT_32]*3, unit=unit)
+            energy, energy_is_nan = self.check_nan(
+                self.tcp_client.read_holding_registers(30529, ModbusDataType.UINT_32, unit=unit),
+                self.SMA_UINT32_NAN)
+
+            dc1, _ = self.check_nan(
+                self.tcp_client.read_holding_registers(30773, ModbusDataType.INT_32, unit=unit), self.SMA_INT32_NAN)
+            dc2, _ = self.check_nan(
+                self.tcp_client.read_holding_registers(30961, ModbusDataType.INT_32, unit=unit), self.SMA_INT32_NAN)
+            dc_power = (dc1 + dc2) * -1
+
+            currents = self.tcp_client.read_holding_registers(30977, [ModbusDataType.INT_32] * 3, unit=unit)
             if all(c == self.SMA_INT32_NAN for c in currents):
                 currents = None
             else:
-                currents = [current / -1000 if current != self.SMA_INT32_NAN else 0 for current in currents]
+                currents = [self.check_nan(c, self.SMA_INT32_NAN)[0] / -1000 for c in currents]
+
         elif self.component_config.configuration.version == SmaInverterVersion.core2:
-            power_total = self.tcp_client.read_holding_registers(40084, ModbusDataType.INT_16, unit=unit) * -10
-            energy = self.tcp_client.read_holding_registers(40094, ModbusDataType.UINT_32, unit=unit) * 100
-            dc_power = self.tcp_client.read_holding_registers(40101, ModbusDataType.UINT_32, unit=unit) * -100
-            currents = self.tcp_client.read_holding_registers(30977, [ModbusDataType.INT_32]*3, unit=unit)
+            power_total, power_is_nan = self.check_nan(
+                self.tcp_client.read_holding_registers(40084, ModbusDataType.INT_16, unit=unit),
+                self.SMA_INT16_NAN)
+            power_total *= -10
+
+            energy, energy_is_nan = self.check_nan(
+                self.tcp_client.read_holding_registers(40094, ModbusDataType.UINT_32, unit=unit),
+                self.SMA_UINT32_NAN)
+            energy *= 100
+
+            dc_power, _ = self.check_nan(
+                self.tcp_client.read_holding_registers(40101, ModbusDataType.UINT_32, unit=unit),
+                self.SMA_UINT32_NAN)
+            dc_power *= -100
+
+            currents = self.tcp_client.read_holding_registers(30977, [ModbusDataType.INT_32] * 3, unit=unit)
             if all(c == self.SMA_INT32_NAN for c in currents):
                 currents = None
             else:
-                currents = [current / -1000 if current != self.SMA_INT32_NAN else 0 for current in currents]
+                currents = [self.check_nan(c, self.SMA_INT32_NAN)[0] / -1000 for c in currents]
+
         elif self.component_config.configuration.version == SmaInverterVersion.datamanager:
-            power_total = self.tcp_client.read_holding_registers(30775, ModbusDataType.INT_32, unit=unit) * -1
-            energy = self.tcp_client.read_holding_registers(30513, ModbusDataType.UINT_64, unit=unit)
-            # Aus kompatibilitätsgründen wird dc_power auf den Wert der AC-Wirkleistung gesetzt.
+            power_total, power_is_nan = self.check_nan(
+                self.tcp_client.read_holding_registers(30775, ModbusDataType.INT_32, unit=unit),
+                self.SMA_INT32_NAN)
+            power_total *= -1
+
+            energy, energy_is_nan = self.check_nan(
+                self.tcp_client.read_holding_registers(30513, ModbusDataType.UINT_64, unit=unit),
+                self.SMA_UINT64_NAN)
+
+            # Aus Kompatibilitätsgründen wird dc_power auf den Wert der AC-Wirkleistung gesetzt.
             dc_power = power_total
+
             # Der Data-Manager/Cluster-Controller bietet keine Modbus-Register mit Phasenströmen an.
-            # Daher die Phasenströme berechnen (es wird davon ausgegangen, dass eine symmetrische Erzeugung erfolgt)
+            # Daher die Phasenströme berechnen (es wird davon ausgegangen, dass eine symmetrische
+            # Erzeugung erfolgt).
             currents = [(power_total / 3 / 230)] * 3
+
         else:
-            raise ValueError("Unbekannte Version "+str(self.component_config.configuration.version))
+            raise ValueError("Unbekannte Version " + str(self.component_config.configuration.version))
 
         # WR geht nachts in Standby und gibt einen NaN-Wert für die Leistung aus.
-        if power_total in (self.SMA_INT16_NAN, self.SMA_INT32_NAN,
-                           -self.SMA_INT16_NAN * 10, -self.SMA_INT32_NAN):
-            power_total = 0
+        # power_total ist durch check_nan() bereits 0 -- dc_power/currents ziehen hier nach.
+        if power_is_nan:
             dc_power = 0
             currents = [0, 0, 0]
-        if energy in (self.SMA_UINT32_NAN, self.SMA_UINT32_NAN * 100, self.SMA_UINT64_NAN):
+
+        if energy_is_nan:
             raise ValueError(
                 f'Wechselrichter lieferte nicht plausiblen Zählerstand: {energy}. '
                 'Sobald PV Ertrag vorhanden ist sollte sich dieser Wert ändern, '
                 'andernfalls kann ein Defekt vorliegen.'
             )
+
         _, exported = self.peak_filter.check_values(power_total, None, energy)
         imported, _ = self.sim_counter.sim_count(power_total)
 
