@@ -53,17 +53,13 @@ class Bidi:
                         current = common.get_current_to_set(
                             cp.data.set.current, available_for_cp, cp.data.set.target_current)
 
-                        # Ausgabe LIMIT-MSG
-                        self._set_loadmangement_message(current, limit, cp)
-
                         cp.data.set.current = current
                         log.info(f"LP{cp.num}: Stromstärke {current}A")
 
-                    required_currents = cp.data.control_parameter.required_currents
-                    cp_phase_currents = [current if required_currents[i] != 0 else 0 for i in range(3)]
+                        # Ausgabe LIMIT-MSG
+                        self._set_loadmangement_message(current, limit, cp)
 
-                    grid_counter.update_surplus_values_left(
-                        cp_phase_currents, voltages_mean(cp.data.get.voltages))
+                    common.set_current_counterdiff(cp.data.set.target_current, current, cp, surplus=True)
 
                     preferenced_cps.pop(0)
 
@@ -75,11 +71,15 @@ class Bidi:
         log.debug(
             f"current {current} target {chargepoint.data.set.target_current} set current {chargepoint.data.set.current}"
             f" required currents {chargepoint.data.control_parameter.required_currents}")
-        if (limit.message and current != max(chargepoint.data.set.target_current, chargepoint.data.set.current or 0) and
+        required_currents = chargepoint.data.control_parameter.required_currents
+        required_current = min(required_currents) if current < 0 else max(required_currents)
+        if (limit.message and
                 # Strom erreicht nicht die vorgegebene Stromstärke
-                round(current, 2) != round(max(
-                    chargepoint.data.control_parameter.required_currents), 2)):
-            if current < 0:
+                round(current, 2) != round(required_current, 2)):
+            if current == 0:
+                chargepoint.set_state_and_log(f"Es kann nicht mit der vorgegebenen Stromstärke geladen/entladen werden"
+                                              f"{limit.message}")
+            elif current < 0:
                 chargepoint.set_state_and_log(f"Es kann nicht mit der vorgegebenen Stromstärke entladen werden"
                                               f"{limit.message}")
             else:

@@ -67,10 +67,9 @@ def set_current_counterdiff(diff_current: float,
     required_currents = chargepoint.data.control_parameter.required_currents
     considered_current = consider_less_charging_chargepoint_in_loadmanagement(
         chargepoint, current)
-    # gar nicht ladende Autos?
-    diff = max(considered_current - diff_current, 0)
+    diff = considered_current - diff_current
     diffs = [diff if required_currents[i] != 0 else 0 for i in range(3)]
-    if max(diffs) > 0:
+    if any(diff_value != 0 for diff_value in diffs):
         counters = data.data.counter_all_data.get_counters_to_check(chargepoint.num)
         for counter in counters:
             if surplus:
