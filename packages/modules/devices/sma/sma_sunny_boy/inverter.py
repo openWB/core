@@ -65,9 +65,11 @@ class SmaSunnyBoyInverter(AbstractInverter):
                 self.SMA_INT32_NAN)
             power_total *= -1
 
+            # default_value=nan_value: bei NaN bleibt der reale Sentinel-Wert erhalten,
+            # damit er in der ValueError-Meldung unten sichtbar ist (statt ihn mit 0 zu überschreiben).
             energy, energy_is_nan = self.check_nan(
                 self.tcp_client.read_holding_registers(30529, ModbusDataType.UINT_32, unit=unit),
-                self.SMA_UINT32_NAN)
+                self.SMA_UINT32_NAN, self.SMA_UINT32_NAN)
 
             dc1, _ = self.check_nan(
                 self.tcp_client.read_holding_registers(30773, ModbusDataType.INT_32, unit=unit), self.SMA_INT32_NAN)
@@ -89,7 +91,7 @@ class SmaSunnyBoyInverter(AbstractInverter):
 
             energy, energy_is_nan = self.check_nan(
                 self.tcp_client.read_holding_registers(40094, ModbusDataType.UINT_32, unit=unit),
-                self.SMA_UINT32_NAN)
+                self.SMA_UINT32_NAN, self.SMA_UINT32_NAN)
             energy *= 100
 
             dc_power, _ = self.check_nan(
@@ -111,7 +113,7 @@ class SmaSunnyBoyInverter(AbstractInverter):
 
             energy, energy_is_nan = self.check_nan(
                 self.tcp_client.read_holding_registers(30513, ModbusDataType.UINT_64, unit=unit),
-                self.SMA_UINT64_NAN)
+                self.SMA_UINT64_NAN, self.SMA_UINT64_NAN)
 
             # Aus Kompatibilitätsgründen wird dc_power auf den Wert der AC-Wirkleistung gesetzt.
             dc_power = power_total
