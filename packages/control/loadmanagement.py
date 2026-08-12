@@ -76,78 +76,20 @@ class Loadmanagement:
                                     missing_currents: List[float],
                                     cp_voltage: float,
                                     counter: Counter,
-                                    cp: Chargepoint,
                                     feed_in: int = 0) -> Tuple[List[float], LoadmanagementLimit]:
         raw_currents_left = counter.data.set.raw_currents_left
-        raw_exported_currents_left = counter.data.set.raw_exported_currents_left
+        available_currents, limit = self._limit_by_current(counter, missing_currents, raw_currents_left)
 
-        available_currents, limit = self._limit_by_current_bidi(
-            counter, missing_currents, raw_currents_left, raw_exported_currents_left)
-
-        available_currents, new_limit = self._limit_by_power_bidi(
-            counter,
-            available_currents,
-            cp_voltage,
-            counter.data.set.raw_power_left,
-            counter.data.set.raw_exported_power_left,
-            feed_in)
+        available_currents, new_limit = self._limit_by_power(
+            counter, available_currents, cp_voltage, counter.data.set.raw_power_left, feed_in)
         limit = new_limit if new_limit.limiting_value is not None else limit
 
-        return available_currents, limit
+        if f"counter{counter.num}" == data.data.counter_all_data.get_evu_counter_str():
+            available_currents, new_limit = self._limit_by_unbalanced_load(
+                counter, available_currents, raw_currents_left,
+                len([value for value in missing_currents if value != 0]))
+            limit = new_limit if new_limit.limiting_value is not None else limit
 
-    def _limit_by_power_bidi(self,
-                             counter: Counter,
-                             available_currents: List[float],
-                             cp_voltage: float,
-                             raw_power_left: Optional[float],
-                             raw_exported_power_left: Optional[float],
-                             feed_in: Optional[float]) -> Tuple[List[float], LoadmanagementLimit]:
-        # Mittelwert der Spannungen verwenden, um Phasenverdrehung zu kompensieren
-        # (Probleme bei einphasig angeschlossenen Wallboxen)
-        currents = available_currents.copy()
-        limit = LoadmanagementLimit(None, None)
-        total_power = sum([c * cp_voltage for c in available_currents])
-        power_left = raw_power_left if total_power >= 0 else raw_exported_power_left
-
-        if power_left is None:
-            return currents, limit
-        elif power_left > 0:
-            if feed_in is not None:
-                power_left = max(power_left - feed_in, 0)
-                log.debug(f"Verbleibende Leistung unter Berücksichtigung der Einspeisegrenze: {power_left}W")
-            if abs(total_power) > power_left:
-                for i in range(0, 3):
-                    try:
-                        # Am meisten belastete Phase trägt am meisten zur Leistungsreduktion bei.
-                        currents[i] = available_currents[i] / sum(available_currents) * power_left / cp_voltage
-                    except ZeroDivisionError:
-                        # bei einphasig angeschlossenen Wallboxen ist die Spannung der anderen Phasen 0V
-                        currents[i] = 0.0
-                log.debug(f"Leistungsüberschreitung auf {power_left}W korrigieren: {available_currents}")
-                limit = LoadmanagementLimit(LimitingValue.POWER.value.format(get_component_name_by_id(counter.num)),
-                                            LimitingValue.POWER)
-            return currents, limit
-        else:
-            return [0]*3, LoadmanagementLimit(LimitingValue.POWER.value.format(get_component_name_by_id(counter.num)),
-                                              LimitingValue.POWER)
-
-    # tested
-    def _limit_by_current_bidi(self,
-                               counter: Counter,
-                               missing_currents: List[float],
-                               raw_currents_left: List[float],
-                               raw_exported_currents_left: List[float]) -> Tuple[List[float], LoadmanagementLimit]:
-        available_currents = [0.0]*3
-        limit = LoadmanagementLimit(None, None)
-        for i in range(0, 3):
-            if missing_currents[i] >= 0:
-                available_currents[i] = min(missing_currents[i], raw_currents_left[i])
-            else:
-                available_currents[i] = max(missing_currents[i], -raw_exported_currents_left[i])
-        if available_currents != missing_currents:
-            log.debug(f"Stromüberschreitung {missing_currents}W korrigieren: {available_currents}")
-            limit = LoadmanagementLimit(LimitingValue.CURRENT.value.format(get_component_name_by_id(counter.num)),
-                                        LimitingValue.CURRENT)
         return available_currents, limit
 
     def _limit_by_unbalanced_load(self,
@@ -180,21 +122,25 @@ class Loadmanagement:
         # (Probleme bei einphasig angeschlossenen Wallboxen)
         currents = available_currents.copy()
         limit = LoadmanagementLimit(None, None)
-        if raw_power_left is None:
+        raw_exported_power_left = counter.data.set.raw_exported_power_left
+        total_power = sum([c * cp_voltage for c in available_currents])
+        power_left = raw_power_left if total_power >= 0 else raw_exported_power_left
+
+        if power_left is None:
             return currents, limit
-        elif raw_power_left > 0:
+        elif power_left > 0:
             if feed_in is not None:
-                raw_power_left = max(raw_power_left - feed_in, 0)
-                log.debug(f"Verbleibende Leistung unter Berücksichtigung der Einspeisegrenze: {raw_power_left}W")
-            if sum([c * cp_voltage for c in available_currents]) > raw_power_left:
+                power_left = max(power_left - feed_in, 0)
+                log.debug(f"Verbleibende Leistung unter Berücksichtigung der Einspeisegrenze: {power_left}W")
+            if abs(total_power) > power_left:
                 for i in range(0, 3):
                     try:
                         # Am meisten belastete Phase trägt am meisten zur Leistungsreduktion bei.
-                        currents[i] = available_currents[i] / sum(available_currents) * raw_power_left / cp_voltage
+                        currents[i] = available_currents[i] / sum(available_currents) * power_left / cp_voltage
                     except ZeroDivisionError:
                         # bei einphasig angeschlossenen Wallboxen ist die Spannung der anderen Phasen 0V
                         currents[i] = 0.0
-                log.debug(f"Leistungsüberschreitung auf {raw_power_left}W korrigieren: {available_currents}")
+                log.debug(f"Leistungsüberschreitung auf {power_left}W korrigieren: {available_currents}")
                 limit = LoadmanagementLimit(LimitingValue.POWER.value.format(get_component_name_by_id(counter.num)),
                                             LimitingValue.POWER)
             return currents, limit
@@ -208,9 +154,13 @@ class Loadmanagement:
                           missing_currents: List[float],
                           raw_currents_left: List[float]) -> Tuple[List[float], LoadmanagementLimit]:
         available_currents = [0.0]*3
+        raw_exported_currents_left = counter.data.set.raw_exported_currents_left
         limit = LoadmanagementLimit(None, None)
         for i in range(0, 3):
-            available_currents[i] = min(missing_currents[i], raw_currents_left[i])
+            if missing_currents[i] >= 0:
+                available_currents[i] = min(missing_currents[i], raw_currents_left[i])
+            else:
+                available_currents[i] = max(missing_currents[i], -raw_exported_currents_left[i])
         if available_currents != missing_currents:
             log.debug(f"Stromüberschreitung {missing_currents}W korrigieren: {available_currents}")
             limit = LoadmanagementLimit(LimitingValue.CURRENT.value.format(get_component_name_by_id(counter.num)),

@@ -44,10 +44,12 @@ class ChargepointValueStoreBroker(ValueStore[ChargepointState]):
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/max_evse_current", self.state.max_evse_current)
         # ONLY_TEST Wieder rückgängig machen
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) +
-                      "/get/max_charge_power", 500000 if self.state.max_charge_power is None else self.state.max_charge_power)
+                      "/get/max_charge_power",
+                      500000 if self.state.max_charge_power is None else self.state.max_charge_power)
         # ONLY_TEST Wieder rückgängig machen
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) +
-                      "/get/max_discharge_power", -500000 if self.state.max_discharge_power is None else self.state.max_discharge_power)
+                      "/get/max_discharge_power",
+                      -500000 if self.state.max_discharge_power is None else self.state.max_discharge_power)
 
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/version", self.state.version)
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/current_branch", self.state.current_branch)

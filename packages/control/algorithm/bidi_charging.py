@@ -9,6 +9,7 @@ from control.limiting_value import LoadmanagementLimit
 from control.loadmanagement import Loadmanagement
 
 from control.chargepoint.chargepoint import Chargepoint
+import control.algorithm.common as common
 from typing import List
 
 
@@ -45,11 +46,11 @@ class Bidi:
                         if limit.limiting_value is not None:
                             cp.data.control_parameter.limit = limit
 
-                        available_for_cp = self.available_current_for_bidi_cp(
-                            cp, counts, available_currents, missing_currents)
+                        available_for_cp = common.available_current_for_cp(
+                            cp, counts, available_currents, missing_currents, bidi_mode=True)
 
-                        # Der neue Strom darf nicht höher als der in dieser Stufe bisher gesetzter sein
-                        current = self.get_current_to_set(
+                        # Der neue Strom darf nicht höher als der bisher gesetzte Strom sein
+                        current = common.get_current_to_set(
                             cp.data.set.current, available_for_cp, cp.data.set.target_current)
 
                         # Ausgabe LIMIT-MSG
@@ -58,16 +59,11 @@ class Bidi:
                         cp.data.set.current = current
                         log.info(f"LP{cp.num}: Stromstärke {current}A")
 
-                        log.debug(f"cp {cp.num} available currents {available_currents} missing currents "
-                                  f"{missing_currents} limit {limit.message} -----counter_{counter}"
-                                  f"CURRENT {current}A")
-
-                    log.debug(f"_After_check________LP{cp.num}: available currents {current}A")
-
-                    x = [current, current, current]
+                    required_currents = cp.data.control_parameter.required_currents
+                    cp_phase_currents = [current if required_currents[i] != 0 else 0 for i in range(3)]
 
                     grid_counter.update_surplus_values_left(
-                        x, voltages_mean(cp.data.get.voltages))
+                        cp_phase_currents, voltages_mean(cp.data.get.voltages))
 
                     preferenced_cps.pop(0)
 
@@ -84,10 +80,10 @@ class Bidi:
                 round(current, 2) != round(max(
                     chargepoint.data.control_parameter.required_currents), 2)):
             if current < 0:
-                chargepoint.set_state_and_log(f"MY_Es kann nicht mit der vorgegebenen Stromstärke entladen werden"
+                chargepoint.set_state_and_log(f"Es kann nicht mit der vorgegebenen Stromstärke entladen werden"
                                               f"{limit.message}")
             else:
-                chargepoint.set_state_and_log(f"MY_Es kann nicht mit der vorgegebenen Stromstärke geladen werden"
+                chargepoint.set_state_and_log(f"Es kann nicht mit der vorgegebenen Stromstärke geladen werden"
                                               f"{limit.message}")
 
     def get_counts(self, chargepoint: Chargepoint) -> List[int]:
@@ -103,7 +99,7 @@ class Bidi:
         cp = preferenced_cps[0]
         missing_currents = [0, 0, 0]
         if cp.data.control_parameter.chargemode == Chargemode.INSTANT_CHARGING:
-            log.debug(f"ÜBERSCHUSS_ALL für LP{cp.num}: {grid_counter.data.set.surplus_power_left }W")
+            # Entladen im Instant-Charging-Modus
             if cp.data.set.charging_ev_data.data.get.soc > 0:
                 # Auto-bat ist nicht leer
 
@@ -120,7 +116,6 @@ class Bidi:
         else:
             # Default Nullpunktanpassung
             zero_point_adjustment = grid_counter.data.set.surplus_power_left / len(preferenced_cps)
-            log.debug(f"ÜBERSCHUSS_ALL für LP{cp.num}: {grid_counter.data.set.surplus_power_left }W")
             log.debug(f"Nullpunktanpassung für LP{cp.num}: verbleibende Leistung {zero_point_adjustment}W")
             missing_currents = [zero_point_adjustment / cp.data.get.phases_in_use /
                                 230 for i in range(0, cp.data.get.phases_in_use)]
@@ -140,44 +135,3 @@ class Bidi:
                                                                        cp.data.get.phases_in_use)
 
         return missing_currents
-
-    def get_current_to_set(self, set_current: float, diff: float, prev_current: float) -> float:
-        """Der neue Strom darf nicht höher als der in dieser Stufe bisher gesetzter sein,
-        um das LM der untergeordneten Zähler nicht zu untergraben. Der Vergleich muss positiv
-        sein, wenn zum ersten Mal auf dieser Stufe ein Strom gesetzt wird."""
-        new_current = prev_current + diff
-        if set_current is not None:
-            if diff < 0:
-                if new_current < set_current:
-                    log.debug("Neuer Soll-Strom darf beim Entladen nicht niedriger als bisher gesetzter sein: "
-                              f"bisher {set_current}A, neuer {new_current}")
-                    return set_current
-            else:
-                if new_current > set_current:
-                    log.debug("BIDI_Neuer Soll-Strom darf nicht höher als bisher gesetzter sein: "
-                              f"bisher {set_current}A, neuer {new_current}")
-                    return set_current
-        return new_current
-
-    def available_current_for_bidi_cp(self, chargepoint: Chargepoint,
-                                      counts: List[int],
-                                      available_currents: List[float],
-                                      missing_currents: List[float]) -> float:
-
-        # control_parameter.required_current
-        # -> ist immer positve aktuell und gibt die maximal benötigte Stromstärke an
-        control_parameter = chargepoint.data.control_parameter
-        missing_current_cp = control_parameter.required_current - chargepoint.data.set.target_current
-        is_discharge = missing_current_cp < 0
-        available_current = float("-inf") if is_discharge else float("inf")
-        for i in range(0, 3):
-            phase_available_current = available_currents[i] / counts[i]
-            if is_discharge:
-                available_current = max(
-                    max(missing_current_cp, phase_available_current), available_current)
-            else:
-                available_current = min(
-                    min(missing_current_cp, phase_available_current), available_current)
-        if available_current in [float("inf"), float("-inf")]:
-            available_current = missing_current_cp
-        return available_current

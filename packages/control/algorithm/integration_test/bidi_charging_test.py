@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import Mock
 
 from control import data
+from control import loadmanagement
 from control.algorithm.algorithm import Algorithm
 from control.chargemode import Chargemode
 
@@ -9,6 +10,11 @@ from control.chargemode import Chargemode
 @pytest.fixture()
 def bidi_cps():
     def _setup(*cps):
+        for counter in ("counter0", "counter6"):
+            data.data.counter_data[counter].data.set.raw_currents_left = [32]*3
+            data.data.counter_data[counter].data.set.raw_exported_currents_left = [32]*3
+            data.data.counter_data[counter].data.set.raw_power_left = 22000
+            data.data.counter_data[counter].data.set.raw_exported_power_left = 22000
         for cp in cps:
             data.data.cp_data[cp].data.get.max_discharge_power = -11000
             data.data.cp_data[cp].data.get.max_charge_power = 11000
@@ -30,7 +36,9 @@ def test_cp3_bidi(grid_power: float, expected_current: float, bidi_cps, all_cp_n
     # setup
     bidi_cps("cp3")
     data.data.counter_data["counter0"].data.get.power = grid_power
-    return_mock = Mock(reurn_value=True)
+    return_mock = Mock(return_value=True)
+    mock_get_component_name_by_id = Mock(return_value="Garage")
+    monkeypatch.setattr(loadmanagement, "get_component_name_by_id", mock_get_component_name_by_id)
     monkeypatch.setattr(
         data.data.cp_data["cp3"].data.set.charging_ev_data.charge_template, "bidi_charging_allowed", return_mock)
 
@@ -48,6 +56,8 @@ def test_cp3_cp4_bidi_discharge(bidi_cps, all_cp_not_charging, monkeypatch):
     # setup
     bidi_cps("cp3", "cp4")
     data.data.counter_data["counter0"].data.get.power = 4000
+    mock_get_component_name_by_id = Mock(return_value="Garage")
+    monkeypatch.setattr(loadmanagement, "get_component_name_by_id", mock_get_component_name_by_id)
 
     # execution
     Algorithm().calc_current()
