@@ -151,15 +151,25 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Validate release token
+      - name: Validate GitHub App secrets
         env:
-          RELEASE_TOKEN: ${{ secrets.PYTHON_RUNTIME_REPO_TOKEN }}
+          APP_ID: ${{ secrets.PYTHON_RUNTIME_APP_ID }}
+          APP_PRIVATE_KEY: ${{ secrets.PYTHON_RUNTIME_APP_PRIVATE_KEY }}
         run: |
-          if [[ -z "${RELEASE_TOKEN}" ]]; then
-            echo "ERROR: Secret PYTHON_RUNTIME_REPO_TOKEN ist nicht gesetzt." >&2
-            echo "Lege im Core-Repo ein Token mit mindestens 'Contents: Read and write' fuer ${TARGET_RELEASE_REPO_NAME} an." >&2
+          if [[ -z "${APP_ID}" || -z "${APP_PRIVATE_KEY}" ]]; then
+            echo "ERROR: Secrets PYTHON_RUNTIME_APP_ID und/oder PYTHON_RUNTIME_APP_PRIVATE_KEY sind nicht gesetzt." >&2
+            echo "Lege im Core-Repo die GitHub-App-Credentials fuer ${TARGET_RELEASE_REPO_NAME} an." >&2
             exit 1
           fi
+
+      - name: Create GitHub App token for release repo
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.PYTHON_RUNTIME_APP_ID }}
+          private-key: ${{ secrets.PYTHON_RUNTIME_APP_PRIVATE_KEY }}
+          owner: ${{ env.TARGET_RELEASE_OWNER }}
+          repositories: ${{ env.TARGET_RELEASE_REPO }}
 
       - name: Read Python runtime version
         id: pyver
@@ -177,7 +187,7 @@ jobs:
       - name: Ensure python-runtime release exists
         uses: actions/github-script@v9
         with:
-          github-token: ${{ secrets.PYTHON_RUNTIME_REPO_TOKEN }}
+          github-token: ${{ steps.app-token.outputs.token }}
           script: |
             const owner = process.env.TARGET_RELEASE_OWNER;
             const repo = process.env.TARGET_RELEASE_REPO;
@@ -213,7 +223,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_name: ${{ env.TARGET_RELEASE_REPO_NAME }}
-          repo_token: ${{ secrets.PYTHON_RUNTIME_REPO_TOKEN }}
+          repo_token: ${{ steps.app-token.outputs.token }}
           tag: ${{ steps.pyver.outputs.release_tag }}
           file: dist/python-runtime/**/*
           file_glob: true
