@@ -21,9 +21,23 @@ name: Build Python Runtime Artifacts
 permissions:
   contents: write
 
+env:
+  VALID_GITHUB_OWNER: benderl
+
 jobs:
+  resolve-guard-config:
+    name: Resolve Guard Configuration
+    runs-on: ubuntu-latest
+    outputs:
+      valid_github_owner: ${{ steps.owner.outputs.valid_github_owner }}
+    steps:
+      - id: owner
+        run: echo "valid_github_owner=${VALID_GITHUB_OWNER}" >> "$GITHUB_OUTPUT"
+
   build-runtime:
-    if: ${{ github.repository == 'openWB/core' }}
+    needs:
+      - resolve-guard-config
+    if: ${{ github.repository_owner == needs.resolve-guard-config.outputs.valid_github_owner }}
     name: Build Python Runtime Artifacts
     runs-on: ubuntu-latest
     strategy:
@@ -140,8 +154,9 @@ jobs:
   publish-release:
     name: Publish Python Runtime Artifacts to Release Repository
     needs:
+      - resolve-guard-config
       - build-runtime
-    if: ${{ github.repository == 'openWB/core' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_release)) }}
+    if: ${{ github.repository_owner == needs.resolve-guard-config.outputs.valid_github_owner && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_release)) }}
     runs-on: ubuntu-latest
     env:
       TARGET_RELEASE_OWNER: ${{ github.repository_owner }}
