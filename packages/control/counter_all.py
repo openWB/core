@@ -123,99 +123,90 @@ class CounterAll:
         except Exception:
             log.exception("Fehler in der allgemeinen Zähler-Klasse")
 
-    def _calc_home_consumption(self) -> Tuple[float, List]:
-        hc_all_power = 0
-        no_hc_all_power = 0
-        no_hc_evu = 0
-        evu_id = self.get_id_evu_counter()
-        elements_to_sum_up = self.get_elements_for_downstream_calculation(evu_id)
+    def _get_component(self, element: Dict):
+        if element["type"] == ComponentType.COUNTER.value:
+            return data.data.counter_data[f"counter{element['id']}"]
+        elif element["type"] == ComponentType.CHARGEPOINT.value:
+            return data.data.cp_data[f"cp{element['id']}"]
+        elif element["type"] == ComponentType.BAT.value:
+            return data.data.bat_data[f"bat{element['id']}"]
+        elif element["type"] == ComponentType.INVERTER.value:
+            return data.data.pv_data[f"pv{element['id']}"]
+        else:
+            raise ValueError(f"Unbekannter Komponententyp: {element['type']}")
 
-        evu_is_HC = data.data.counter_data[f"counter{evu_id}"].data.config.is_home_consumption_counter
+    def _get_is_home_consumption(self, counter: Counter, parent_home_consumption: bool) -> bool:
+        # Wenn auto ausgeählt ist, wird die einstellung vom Parent übernommen
+        # Wenn nicht, wird die Einstellung vom Zähler selbst genommen
+        if counter.data.config.is_home_consumption_counter_auto:
+            return parent_home_consumption
+        else:
+            return counter.data.config.is_home_consumption_counter
 
-        for element in elements_to_sum_up:
-            if element["type"] == ComponentType.COUNTER.value:
-                component = data.data.counter_data[f"counter{element['id']}"]
+    def _get_local_power_from_counter(self, element) -> float:
+        # Wird nur von Countern aufgerufen
+        # Gib den lokalen Verbrauch des Zählers zurück
+        # Bewertet noch nicht, ob Hausverbrauch oder nicht
+        local_power = data.data.counter_data[f"counter{element['id']}"].data.get.power
 
-                _hc_all_power, hc_counter = self._get_home_consumption_counter(element, evu_is_HC=evu_is_HC)
-                hc_all_power += _hc_all_power
+        for child in element["children"]:
+            comp = self._get_component(child)
 
-                for counter in hc_counter:
-                    no_hc_all_power += self._get_no_home_consumption(counter)
-                continue
-
-            elif element["type"] == ComponentType.BAT.value:
-                component = data.data.bat_data[f"bat{element['id']}"]
-            elif element["type"] == ComponentType.CHARGEPOINT.value:
-                component = data.data.cp_data[f"cp{element['id']}"]
-            elif element["type"] == ComponentType.INVERTER.value:
-                component = data.data.pv_data[f"pv{element['id']}"]
-
-            if component.data.get.fault_state < 2:
-                no_hc_evu += component.data.get.power
+            if comp.data.get.fault_state < 2:
+                local_power -= comp.data.get.power
             else:
                 log.warning(
-                    f"Komponente {element['type']}{component.num} ist im Fehlerzustand und wird nicht berücksichtigt.")
+                    f"Komponente {element['type']}{comp.num} ist im Fehlerzustand und wird nicht berücksichtigt.")
 
-        evu_power = data.data.counter_data[f"counter{evu_id}"].data.get.power
+        return local_power
 
-        if data.data.counter_data[f"counter{evu_id}"].data.config.is_home_consumption_counter:
-            return (evu_power - no_hc_all_power - no_hc_evu -
-                    self.data.set.smarthome_power_excluded_from_home_consumption), elements_to_sum_up
-        else:
-            return (hc_all_power - no_hc_all_power -
-                    self.data.set.smarthome_power_excluded_from_home_consumption), elements_to_sum_up
+    def _calc_home_consumption_from_counter(self, element, parent_home_consumption):
+        # Wird nur von Countern aufgerufen
+        # Bewertet, ob Hausverbrauch oder nicht
+        # Gibt den Hausverbrauch des Zählers zurück
 
-    def _get_no_home_consumption(self, element) -> float:
-        # Summiert die Leistung aller Komponenten, die nicht als Hausverbrauch gezählt werden,
-        # unterhalb des angegebenen Elements.
-        not_home_consumption = 0
-        if element["type"] != ComponentType.COUNTER.value:
-            # Wenn kein Counter, dann get power davon -> not_home_consumption
-            if element["type"] == ComponentType.CHARGEPOINT.value:
-                component = data.data.cp_data[f"cp{element['id']}"]
-            elif element["type"] == ComponentType.BAT.value:
-                component = data.data.bat_data[f"bat{element['id']}"]
-            elif element["type"] == ComponentType.INVERTER.value:
-                component = data.data.pv_data[f"pv{element['id']}"]
+        home_consumption = 0.0
+        local_power = self._get_local_power_from_counter(element)
 
-            if component.data.get.fault_state < 2:
-                not_home_consumption += component.data.get.power
+        counter = self._get_component(element)
+        child_home_consumption = self._get_is_home_consumption(counter, parent_home_consumption)
 
-            return not_home_consumption
+        if child_home_consumption:
+            home_consumption += local_power
 
-        # Wenn Counter, dann get not_home_consumption von allen Children
         for child in element["children"]:
-            not_home_consumption += self._get_no_home_consumption(child)
+            comp = self._get_component(child)
 
-        return not_home_consumption
-
-    def _get_home_consumption_counter(self, elements, evu_is_HC=False) -> Tuple[float, List]:
-        # Sucht rekursiv HC-Zähler im Teilbaum, summiert deren Leistung
-        # und gibt eine Liste der gefundenen HC-Zähler zurück.
-        #   -> wenn mehrer HC-Zähler auf der selben Ebene sind
-
-        total_power = 0
-        hc_counters = []
-
-        if elements["type"] == ComponentType.COUNTER.value:
-            component = data.data.counter_data[f"counter{elements['id']}"]
-            if component.data.config.is_home_consumption_counter or evu_is_HC:
-                hc_counters.append(elements)
-                total_power += component.data.get.power
-                # Kinder nicht weiter durchsuchen,
-                # da deren Leistung bereits enthalten ist.
-                return total_power, hc_counters
+            if comp.data.get.fault_state < 2:
+                if isinstance(comp, Counter):
+                    home_consumption += self._calc_home_consumption_from_counter(child, child_home_consumption)
             else:
-                # Zähler kein HC -> check Kinder
-                # Alle durchgehen, falls ein Zähler mehrer Zähler als Kinder hat
-                for element in elements["children"]:
-                    if element["type"] == ComponentType.COUNTER.value:
-                        power, counters = self._get_home_consumption_counter(element, evu_is_HC=evu_is_HC)
-                        total_power += power
-                        hc_counters.extend(counters)
-                    else:
-                        continue
-        return total_power, hc_counters
+                log.warning(
+                    f"Komponente {element['type']}{comp.num} ist im Fehlerzustand und wird nicht berücksichtigt.")
+
+        return home_consumption
+
+    def _calc_home_consumption(self) -> Tuple[float, List]:
+        evu_id = self.get_id_evu_counter()
+
+        # get_elements_for_downstream_calculation berücksichtigt Hybrid-Batterien
+        # wo die Bat im Wechselrichter ist (als child) und nicht direkt unter einem Zähler hängt
+        #
+        # get_elements_for_downstream_calculation liefert nur die Elemente unterhalb des EVU.
+        # Für die Rekursion bauen wir daher ein virtuelles Root-Element für den EVU-Zähler,
+        # ohne die echte Hierarchie zu verändern!
+
+        elements = self.get_elements_for_downstream_calculation(evu_id)
+        evu_element = {"id": evu_id, "type": ComponentType.COUNTER.value, "children": elements}
+
+        home_consumption = 0.0
+
+        # Rekursion startet immer beim EVU-Zähler.
+        home_consumption = self._calc_home_consumption_from_counter(evu_element, False)
+
+        home_consumption -= self.data.set.smarthome_power_excluded_from_home_consumption
+
+        return home_consumption, evu_element
 
     def _add_hybrid_bat(self, id: int) -> List:
         elements = []
@@ -557,6 +548,32 @@ class CounterAll:
             pub_system_message({}, ("Es konnte kein Zähler gefunden werden, der als EVU-Zähler an die Spitze des "
                                "Lastmanagements gesetzt werden kann. Bitte zuerst einen EVU-Zähler hinzufügen."),
                                MessageType.ERROR)
+
+    def _is_home_consumption_counter_by_id(self, counter_id: int) -> bool:
+        counter_entry = self.get_entry_of_element(counter_id)
+        if not counter_entry:
+            raise IndexError(f"Element {counter_id} konnte nicht in der Hierarchie gefunden werden.")
+        if counter_entry["type"] != ComponentType.COUNTER.value:
+            raise ValueError(f"Element {counter_id} ist kein Zähler.")
+
+        counter_obj = data.data.counter_data[f"counter{counter_id}"]
+
+        # Explizite Einstellung hat Vorrang, nur Auto wird vom Parent geerbt.
+        if not counter_obj.data.config.is_home_consumption_counter_auto:
+            return counter_obj.data.config.is_home_consumption_counter
+
+        parent = self.get_entry_of_parent(counter_id)
+        if not parent or parent["type"] != ComponentType.COUNTER.value:
+            # Auto am Wurzel-Zähler entspricht dem bisherigen Startwert False.
+            return False
+
+        return self._is_home_consumption_counter_by_id(parent["id"])
+
+    def is_home_consumption_counter(self, counter_id: int) -> bool:
+        """Ermittelt den effektiven Home-Consumption-Status eines Zählers.
+        Berücksichtigt den Auto-Parameter entlang aller übergeordneten Zähler.
+        """
+        return self._is_home_consumption_counter_by_id(counter_id)
 
 
 def get_max_id_in_hierarchy(current_entry: List, max_id: int) -> int:

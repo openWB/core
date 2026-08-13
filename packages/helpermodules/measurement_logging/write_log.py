@@ -246,14 +246,29 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
             log.exception("Fehler im Werte-Logging-Modul für EV "+str(ev))
 
     counter_dict = {}
+    counter_all_data = data.data.counter_all_data
+    # Zählt alle effektiven Hausverbrauchs-Zähler, auch bei Auto-Vererbung über den Parent.
+    is_home_consumption_by_counter = {}
+    for current_counter in data.data.counter_data.values():
+        try:
+            is_home_consumption_by_counter[current_counter.num] = counter_all_data.is_home_consumption_counter(
+                current_counter.num)
+        except Exception:
+            log.exception("Fehler beim Ermitteln der Hausverbrauchszähler.")
+            is_home_consumption_by_counter[current_counter.num] = False
+
+    home_consumption_counter_count = sum(1 for is_hc in is_home_consumption_by_counter.values() if is_hc)
+
     for counter in data.data.counter_data.values():
         try:
-            if not counter.data.config.is_home_consumption_counter:
+            is_home_consumption_counter = is_home_consumption_by_counter.get(counter.num, False)
+            # Nur bei genau einem HV-Zähler ausblenden, bei mehreren einzeln anzeigen.
+            if not is_home_consumption_counter or home_consumption_counter_count > 1:
                 counter_dict.update(
                     {f"counter{counter.num}": {
                         "imported": counter.data.get.imported,
                         "exported": counter.data.get.exported,
-                        "grid": True if data.data.counter_all_data.get_id_evu_counter() == counter.num else False,
+                        "grid": True if counter_all_data.get_id_evu_counter() == counter.num else False,
                         "fault_state": counter.data.get.fault_state}})
         except Exception:
             log.exception("Fehler im Werte-Logging-Modul für Zähler "+str(counter))

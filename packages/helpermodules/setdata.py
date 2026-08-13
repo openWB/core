@@ -946,7 +946,8 @@ class SetData:
             elif ("/config/max_total_power" in msg.topic or
                   "/config/max_power_errorcase" in msg.topic):
                 self._validate_value(msg, int, [(0,  float("inf"))])
-            elif ("/config/is_home_consumption_counter" in msg.topic):
+            elif ("/config/is_home_consumption_counter" in msg.topic
+                  or "/config/is_home_consumption_counter_auto" in msg.topic):
                 self._validate_value(msg, bool)
             elif subdata.SubData.counter_data.get(f"counter{get_index(msg.topic)}"):
                 if ("/get/powers" in msg.topic or

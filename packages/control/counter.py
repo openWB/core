@@ -27,7 +27,8 @@ def get_counter_default_config():
     return {"max_power_errorcase": 7000,
             "max_currents": [35]*3,
             "max_total_power": 24000,
-            "is_home_consumption_counter": False
+            "is_home_consumption_counter": False,
+            "is_home_consumption_counter_auto": True
             }
 
 
@@ -44,6 +45,8 @@ class Config:
                                       "topic": "config/max_currents"})
     max_total_power: float = field(default=0, metadata={"topic": "config/max_total_power"})
     is_home_consumption_counter: bool = field(default=False, metadata={"topic": "config/is_home_consumption_counter"})
+    is_home_consumption_counter_auto: bool = field(
+        default=True, metadata={"topic": "config/is_home_consumption_counter_auto"})
 
 
 def config_factory() -> Config:

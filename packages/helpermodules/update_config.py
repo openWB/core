@@ -213,6 +213,7 @@ class UpdateConfig:
         "^openWB/counter/[0-9]+/config/max_currents$",
         "^openWB/counter/[0-9]+/config/max_total_power$",
         "^openWB/counter/[0-9]+/config/is_home_consumption_counter$",
+        "^openWB/counter/[0-9]+/config/is_home_consumption_counter_auto$",
 
         "^openWB/general/allow_unencrypted_access$",
         "^openWB/general/extern$",
@@ -3532,9 +3533,16 @@ class UpdateConfig:
 
             if re.search("openWB/counter/[0-9]+/config", topic) is not None:
                 index = get_index(topic)
+                new_topics = {}
                 if f"openWB/counter/{index}/config/is_home_consumption_counter" not in self.all_received_topics:
-                    is_home_consumption_counter = get_counter_default_config()["is_home_consumption_counter"]
-                    return {f"openWB/counter/{index}/config/is_home_consumption_counter": is_home_consumption_counter}
+                    new_topics[f"openWB/counter/{index}/config/is_home_consumption_counter"] = (
+                        get_counter_default_config()["is_home_consumption_counter"]
+                    )
+                if f"openWB/counter/{index}/config/is_home_consumption_counter_auto" not in self.all_received_topics:
+                    new_topics[f"openWB/counter/{index}/config/is_home_consumption_counter_auto"] = (
+                        get_counter_default_config()["is_home_consumption_counter_auto"]
+                    )
+                return new_topics if new_topics else None
         self._loop_all_received_topics(upgrade)
         # Remove old Topic
         old_topic = "openWB/counter/config/home_consumption_source_id"
@@ -3547,4 +3555,5 @@ class UpdateConfig:
                     log.warning(f"Invalid '{old_topic}' value: {source_id!r}; skipping migration")
                 else:
                     self.__update_topic(f"openWB/counter/{source_id}/config/is_home_consumption_counter", True)
+                    self.__update_topic(f"openWB/counter/{source_id}/config/is_home_consumption_counter_auto", False)
         self._append_datastore_version(140)
