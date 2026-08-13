@@ -813,10 +813,23 @@ class euda():
             if result['soc'] is None:
                 _LOGGER.info("thread result skipped, no soc found")
                 _valid = False
-            if _valid and result['odometer'] is not None:
-                if vin in euda.result and result['odometer'] < euda.result[vin]['odometer']:
-                    _LOGGER.info("odometer less than earlier - keep earlier value")
-                    result['odometer'] = euda.result[vin]['odometer']
+            if _valid:
+                cached_odometer = euda.result[vin].get('odometer')
+                if result['odometer'] is None:
+                    # newer payload carries no odometer reading - keep the
+                    # last known value instead of dropping the whole update
+                    result['odometer'] = cached_odometer
+                elif cached_odometer is not None:
+                    try:
+                        if float(result['odometer']) < float(cached_odometer):
+                            _LOGGER.info("odometer less than earlier - keep earlier value")
+                            result['odometer'] = cached_odometer
+                    except (TypeError, ValueError):
+                        _LOGGER.warning(
+                            f"could not compare odometer values "
+                            f"(new={result['odometer']!r}, cached={cached_odometer!r}); "
+                            "keeping new value"
+                        )
                 euda.result[vin] = result
                 _LOGGER.info("thread result is valid")
         else:
