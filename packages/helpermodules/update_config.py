@@ -3529,6 +3529,25 @@ class UpdateConfig:
         self._append_datastore_version(139)
 
     def upgrade_datastore_140(self) -> None:
+        def get_direct_child_counter_ids(hierarchy, parent_counter_id: int) -> List[int]:
+            def find_counter_entry(elements) -> Optional[dict]:
+                for element in elements:
+                    if element.get("type") == "counter" and element.get("id") == parent_counter_id:
+                        return element
+                    found = find_counter_entry(element.get("children", []))
+                    if found is not None:
+                        return found
+                return None
+
+            parent_entry = find_counter_entry(hierarchy)
+            if parent_entry is None:
+                return []
+            return [
+                child["id"]
+                for child in parent_entry.get("children", [])
+                if child.get("type") == "counter"
+            ]
+
         def upgrade(topic: str, payload) -> Optional[dict]:
 
             if re.search("openWB/counter/[0-9]+/config", topic) is not None:
@@ -3554,6 +3573,23 @@ class UpdateConfig:
                 except (TypeError, ValueError):
                     log.warning(f"Invalid '{old_topic}' value: {source_id!r}; skipping migration")
                 else:
+                    # Bisherigen Source-Counter explizit als Hausverbrauchs-Zähler setzen.
                     self.__update_topic(f"openWB/counter/{source_id}/config/is_home_consumption_counter", True)
                     self.__update_topic(f"openWB/counter/{source_id}/config/is_home_consumption_counter_auto", False)
+
+                    # Direkte Kind-Zähler explizit deaktivieren, damit Auto-Vererbung hier endet.
+                    hierarchy_topic = "openWB/counter/get/hierarchy"
+                    hierarchy = decode_payload(self.all_received_topics.get(hierarchy_topic, []))
+                    if isinstance(hierarchy, list):
+                        for child_counter_id in get_direct_child_counter_ids(hierarchy, source_id):
+                            self.__update_topic(
+                                f"openWB/counter/{child_counter_id}/config/is_home_consumption_counter", False)
+                            self.__update_topic(
+                                f"openWB/counter/{child_counter_id}/config/is_home_consumption_counter_auto", False)
+                    else:
+                        log.warning(
+                            "Migration der Hausverbrauchs-Zaehler (upgrade_datastore_138) fehlgeschlagen: "
+                            f"ungueltige Hierarchie in '{hierarchy_topic}'. "
+                            "Direkte Kind-Zaehler des bisherigen Hausverbrauchs-Zaehlers wurden nicht angepasst."
+                        )
         self._append_datastore_version(140)
