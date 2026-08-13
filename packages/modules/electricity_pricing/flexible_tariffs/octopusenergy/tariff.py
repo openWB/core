@@ -191,8 +191,9 @@ def build_tariff_state(data: dict) -> Dict[str, float]:
 
     malos = property_data.get('electricityMalos')
     if not malos:
-        raise OctopusEnergyApiError("Kein electricityMalos-Eintrag in der Antwort enthalten "
-                                     "(Zählpunkt evtl. noch nicht aktiv/verknüpft).")
+        error_message = "Kein electricityMalos-Eintrag in der Antwort enthalten " \
+            "(Zählpunkt evtl. noch nicht aktiv/verknüpft)."
+        raise OctopusEnergyApiError(error_message)
 
     for hour in range(28):
         hour_time_utc = current_utc + timedelta(hours=hour)
