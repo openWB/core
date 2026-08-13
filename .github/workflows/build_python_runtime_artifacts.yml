@@ -1,0 +1,17 @@
+name: Build Python Runtime Artifacts
+
+"on":
+  workflow_dispatch
+
+permissions:
+  contents: write
+
+jobs:
+  dummy-job:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - name: Dummy step to avoid empty job error
+        run: |
+          echo "dummy workflow" >> "$GITHUB_OUTPUT"
