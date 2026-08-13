@@ -25,6 +25,15 @@ class KwargsDict(TypedDict):
 
 class SmaSunnyBoyInverter(AbstractInverter):
     # SMA-Sentinel-Werte für "kein gültiger Wert" -- abhängig vom Modbus-Registertyp.
+    # SMA_INT16_NAN und SMA_INT32_NAN sind bewusst NEGATIV definiert: Der Modbus-Client
+    # (modules.common.modbus) dekodiert Register vom Typ INT_16/INT_32 direkt beim Lesen
+    # anhand ihres Datentyps als signed Integer (pymodbus decode_16bit_int/decode_32bit_int).
+    # Der SMA-Sentinel 0x8000 bzw. 0x8000 0000 (per SMA-Doku für vorzeichenbehaftete
+    # Formate definiert) hat das höchstwertige Bit gesetzt und wird deshalb schon beim
+    # Auslesen automatisch zu -32768 bzw. -2147483648 -- nicht zum positiven Bitmuster-Wert.
+    # SMA_UINT32_NAN/SMA_UINT64_NAN bleiben dagegen positiv, weil UINT_32/UINT_64 unsigned
+    # dekodiert werden und dort kein Vorzeichenbit existiert.
+    # Ausführliche Herleitung/Diskussion siehe PR #3675.
     SMA_INT16_NAN = -0x8000
     SMA_INT32_NAN = -0x80000000
     SMA_UINT32_NAN = 0xFFFFFFFF
