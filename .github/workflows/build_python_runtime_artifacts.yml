@@ -22,7 +22,7 @@ permissions:
   contents: write
 
 env:
-  VALID_GITHUB_OWNER: benderl
+  VALID_GITHUB_OWNER: openWB
 
 jobs:
   resolve-guard-config:
