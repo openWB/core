@@ -68,10 +68,10 @@ jobs:
           #   platform: linux/arm64
           #   debian_version: "13"
           #   image: debian:trixie
-          # - arch: armv7l
-          #   platform: linux/arm/v7
-          #   debian_version: "11"
-          #   image: debian:bullseye
+          - arch: armv7l
+            platform: linux/arm/v7
+            debian_version: "11"
+            image: debian:bullseye
           # - arch: armv7l
           #   platform: linux/arm/v7
           #   debian_version: "12"
