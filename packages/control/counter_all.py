@@ -195,7 +195,7 @@ class CounterAll:
         #
         # get_elements_for_downstream_calculation liefert nur die Elemente unterhalb des EVU.
         # Für die Rekursion bauen wir daher ein virtuelles Root-Element für den EVU-Zähler,
-        # ohne die echte Hierarchie zu verändern!
+        # ohne die echte Hierarchie zu verändern.
 
         elements = self.get_elements_for_downstream_calculation(evu_id)
         evu_element = {"id": evu_id, "type": ComponentType.COUNTER.value, "children": elements}
