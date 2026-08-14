@@ -43,43 +43,28 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - arch: x86_64
+        arch:
+          - name: x86_64
             platform: linux/amd64
-            debian_version: "11"
-            image: debian:bullseye
-          # - arch: x86_64
-          #   platform: linux/amd64
-          #   debian_version: "12"
-          #   image: debian:bookworm
-          # - arch: x86_64
-          #   platform: linux/amd64
-          #   debian_version: "13"
-          #   image: debian:trixie
-          # - arch: aarch64
-          #   platform: linux/arm64
-          #   debian_version: "11"
-          #   image: debian:bullseye
-          # - arch: aarch64
-          #   platform: linux/arm64
-          #   debian_version: "12"
-          #   image: debian:bookworm
-          # - arch: aarch64
-          #   platform: linux/arm64
-          #   debian_version: "13"
-          #   image: debian:trixie
-          - arch: armv7l
+          - name: armv7l
             platform: linux/arm/v7
-            debian_version: "11"
+          # - name: aarch64
+          #   platform: linux/arm64
+        debian:
+          - version: "11"
             image: debian:bullseye
-          # - arch: armv7l
-          #   platform: linux/arm/v7
-          #   debian_version: "12"
+          # - version: "12"
           #   image: debian:bookworm
-          # - arch: armv7l
-          #   platform: linux/arm/v7
-          #   debian_version: "13"
+          # - version: "13"
           #   image: debian:trixie
+        # Example: Exclude specific combinations explicitly.
+        # exclude:
+        #   - arch:
+        #       name: armv7l
+        #       platform: linux/arm/v7
+        #     debian:
+        #       version: "13"
+        #       image: debian:trixie
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -100,14 +85,14 @@ jobs:
           set -euo pipefail
 
           docker run --rm \
-            --platform "${{ matrix.platform }}" \
+            --platform "${{ matrix.arch.platform }}" \
             -v "${{ github.workspace }}:/workspace" \
             -w /workspace \
             -e PYTHON_VERSION="${{ steps.pyver.outputs.version }}" \
-            -e TARGET_ARCH="${{ matrix.arch }}" \
-            -e TARGET_OS_VARIANT="debian${{ matrix.debian_version }}" \
-            -e EXPECTED_DEBIAN_MAJOR="${{ matrix.debian_version }}" \
-            "${{ matrix.image }}" \
+            -e TARGET_ARCH="${{ matrix.arch.name }}" \
+            -e TARGET_OS_VARIANT="debian${{ matrix.debian.version }}" \
+            -e EXPECTED_DEBIAN_MAJOR="${{ matrix.debian.version }}" \
+            "${{ matrix.debian.image }}" \
             bash -lc '
               set -euo pipefail
 
@@ -126,19 +111,19 @@ jobs:
               esac
 
               if [[ "${normalized_arch}" != "${TARGET_ARCH}" ]]; then
-                echo "Architektur-Mismatch: erwartet ${TARGET_ARCH}, erhalten ${normalized_arch}" >&2
+                echo "Architecture mismatch: expected ${TARGET_ARCH}, got ${normalized_arch}" >&2
                 exit 1
               fi
 
               source /etc/os-release
               if [[ "${ID}" != "debian" ]]; then
-                echo "OS-Mismatch: erwartet Debian, erhalten ${ID}" >&2
+                echo "OS mismatch: expected Debian, got ${ID}" >&2
                 exit 1
               fi
 
               actual_debian_major="${VERSION_ID%%.*}"
               if [[ "${actual_debian_major}" != "${EXPECTED_DEBIAN_MAJOR}" ]]; then
-                echo "Debian-Mismatch: erwartet ${EXPECTED_DEBIAN_MAJOR}, erhalten ${actual_debian_major}" >&2
+                echo "Debian mismatch: expected ${EXPECTED_DEBIAN_MAJOR}, got ${actual_debian_major}" >&2
                 exit 1
               fi
 
@@ -148,8 +133,8 @@ jobs:
       - name: Upload runtime artifact
         uses: actions/upload-artifact@v7
         with:
-          name: python-runtime-${{ steps.pyver.outputs.version }}-${{ matrix.arch }}-debian${{ matrix.debian_version }}
-          path: dist/python-runtime/python-${{ steps.pyver.outputs.version }}-linux-${{ matrix.arch }}-debian${{ matrix.debian_version }}.tar.xz*
+          name: python-runtime-${{ steps.pyver.outputs.version }}-${{ matrix.arch.name }}-debian${{ matrix.debian.version }}
+          path: dist/python-runtime/python-${{ steps.pyver.outputs.version }}-linux-${{ matrix.arch.name }}-debian${{ matrix.debian.version }}.tar.xz*
 
   publish-release:
     name: Publish Python Runtime Artifacts to Release Repository
@@ -172,8 +157,8 @@ jobs:
           APP_PRIVATE_KEY: ${{ secrets.PYTHON_RUNTIME_APP_PRIVATE_KEY }}
         run: |
           if [[ -z "${APP_ID}" || -z "${APP_PRIVATE_KEY}" ]]; then
-            echo "ERROR: Secrets PYTHON_RUNTIME_APP_ID und/oder PYTHON_RUNTIME_APP_PRIVATE_KEY sind nicht gesetzt." >&2
-            echo "Lege im Core-Repo die GitHub-App-Credentials fuer ${TARGET_RELEASE_REPO_NAME} an." >&2
+            echo "ERROR: Secrets PYTHON_RUNTIME_APP_ID and/or PYTHON_RUNTIME_APP_PRIVATE_KEY are not set." >&2
+            echo "Configure GitHub App credentials for ${TARGET_RELEASE_REPO_NAME} in the core repository." >&2
             exit 1
           fi
 
@@ -208,7 +193,7 @@ jobs:
             const repo = process.env.TARGET_RELEASE_REPO;
             const tag = '${{ steps.pyver.outputs.release_tag }}';
             const name = `${{ steps.pyver.outputs.version }} (${tag})`;
-            const body = `Automatisch erzeugte Python-Runtime-Artefakte fuer openWB (${tag}).`;
+            const body = `Automatically generated Python runtime artifacts for openWB (${tag}).`;
 
             try {
               const release = (await github.rest.repos.getReleaseByTag({ owner, repo, tag })).data;
