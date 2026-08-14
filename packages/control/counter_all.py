@@ -4,7 +4,7 @@ import copy
 from dataclasses import dataclass, field
 import logging
 import re
-from typing import Callable, Dict, List, Tuple, Union
+from typing import Any, Callable, Dict, List, Tuple, Union
 
 from control import data
 from control.counter import Counter
@@ -123,7 +123,7 @@ class CounterAll:
         except Exception:
             log.exception("Fehler in der allgemeinen Zähler-Klasse")
 
-    def _get_component(self, element: Dict):
+    def _get_component(self, element: Dict) -> Any:
         if element["type"] == ComponentType.COUNTER.value:
             return data.data.counter_data[f"counter{element['id']}"]
         elif element["type"] == ComponentType.CHARGEPOINT.value:
@@ -143,7 +143,7 @@ class CounterAll:
         else:
             return counter.data.config.is_home_consumption_counter
 
-    def _get_local_power_from_counter(self, element) -> float:
+    def _get_local_power_from_counter(self, element: Dict) -> float:
         # Wird nur von Countern aufgerufen
         # Gib den lokalen Verbrauch des Zählers zurück
         # Bewertet noch nicht, ob Hausverbrauch oder nicht
@@ -160,7 +160,8 @@ class CounterAll:
 
         return local_power
 
-    def _calc_home_consumption_from_counter(self, element, parent_home_consumption):
+    def _calc_home_consumption_from_counter(
+            self, element: Dict, parent_home_consumption: bool) -> float:
         # Wird nur von Countern aufgerufen
         # Bewertet, ob Hausverbrauch oder nicht
         # Gibt den Hausverbrauch des Zählers zurück
