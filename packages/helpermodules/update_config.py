@@ -3544,7 +3544,7 @@ class UpdateConfig:
             if old_topic in self.all_received_topics:
                 payload = decode_payload(self.all_received_topics[old_topic])
                 self.__update_topic(new_topic, payload)
-                self.all_received_topics.pop(old_topic)
+                self.__update_topic(old_topic, "")
                 log.debug(f"Moved topic '{old_topic}' to '{new_topic}' with value: {payload}")
 
         chargemode_config_prefix = "openWB/general/chargemode_config"
