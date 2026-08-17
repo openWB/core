@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 import logging
+from typing import Optional
 import paho.mqtt.client as mqtt
+from paho.mqtt.reasoncodes import ReasonCode as MqttReasonCode
+from paho.mqtt.properties import Properties as MqttProperties
 
 from helpermodules.broker import BrokerClient
 from helpermodules.utils.topic_parser import decode_payload
@@ -15,7 +18,7 @@ log = logging.getLogger(__name__)
 
 def create_vehicle(vehicle_config: MqttSocSetup, vehicle: int):
     def updater(vehicle_update_data: VehicleUpdateData) -> CarState:
-        def on_connect(client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: mqtt.ReasonCode, properties: mqtt.Properties):
+        def on_connect(client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: MqttReasonCode, properties: Optional[MqttProperties]):
             client.subscribe(f"openWB/mqtt/vehicle/{vehicle}/get/#")
 
         def on_message(client: mqtt.Client, userdata, message: mqtt.MQTTMessage):

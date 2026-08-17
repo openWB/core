@@ -4,6 +4,8 @@ import logging
 from pathlib import Path
 import string
 import paho.mqtt.client as mqtt
+from paho.mqtt.reasoncodes import ReasonCode as MqttReasonCode
+from paho.mqtt.properties import Properties as MqttProperties
 from typing import Dict, Optional
 
 from control import data

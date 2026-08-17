@@ -1,6 +1,9 @@
 import logging
 import time
+from typing import Optional
 import paho.mqtt.client as mqtt
+from paho.mqtt.reasoncodes import ReasonCode as MqttReasonCode
+from paho.mqtt.properties import Properties as MqttProperties
 
 from helpermodules.broker import BrokerClient
 from helpermodules.utils import run_command
@@ -61,7 +64,7 @@ class ChargepointModule(AbstractChargepoint):
             self.perform_phase_switch(1)
             self.old_phases_in_use = 1
         else:
-            def on_connect(client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: mqtt.ReasonCode, properties: mqtt.Properties):
+            def on_connect(client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: MqttReasonCode, properties: Optional[MqttProperties]):
                 client.subscribe(f"openWB/internal_chargepoint/{self.local_charge_point_num}/get/phases_in_use")
 
             def on_message(client: mqtt.Client, userdata, message: mqtt.MQTTMessage):

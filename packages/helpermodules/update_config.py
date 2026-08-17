@@ -13,6 +13,8 @@ import sys
 import subprocess
 from typing import List, Optional
 import paho.mqtt.client as mqtt
+from paho.mqtt.reasoncodes import ReasonCode as MqttReasonCode
+from paho.mqtt.properties import Properties as MqttProperties
 
 from control.chargemode import Chargemode
 from control.consumer.consumer_data import ResetChargemode
@@ -846,7 +848,7 @@ class UpdateConfig:
         finally:
             self.__update_topic("openWB/system/update_config_completed", True)
 
-    def on_connect(self, client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: mqtt.ReasonCode, properties: mqtt.Properties):
+    def on_connect(self, client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: MqttReasonCode, properties: Optional[MqttProperties]):
         """ connect to broker and subscribe to set topics
         """
         client.subscribe("openWB/#", 2)
