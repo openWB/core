@@ -7,7 +7,7 @@ from ..vendor import vendor_descriptor
 
 
 @auto_str
-class LambdaConfiguration:
+class OvumConfiguration:
     def __init__(self,
                  ip_address: Optional[str] = None,
                  port: Optional[int] = 502,
@@ -18,15 +18,19 @@ class LambdaConfiguration:
 
 
 @auto_str
-class Lambda(ConsumerSetup[LambdaConfiguration]):
+class Ovum(ConsumerSetup[OvumConfiguration]):
     def __init__(self,
-                 name: str = "Lambda Wärmepumpe",
-                 type: str = "lambda_",
+                 name: str = "OVUM Wärmepumpe (CubeSpeicher/MPlus)",
+                 type: str = "ovum",
                  id: int = 0,
-                 configuration: LambdaConfiguration = None,
+                 configuration: OvumConfiguration = None,
+                 # OVUM unterstützt eine echte Leistungsvorgabe (SUSPENDABLE_TUNABLE),
+                 # Eigenregelung anhand der Systemwerte (SELF_CONTROLLED) sowie
+                 # SG-Ready-Ein-/Ausschalten (SUSPENDABLE_ONOFF)
                  usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_TUNABLE,
                                                      ConsumerUsage.SELF_CONTROLLED,
+                                                     ConsumerUsage.SUSPENDABLE_ONOFF,
                                                      ConsumerUsage.METER_ONLY),
                  **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
-        ).type, configuration=configuration or LambdaConfiguration(), usage=usage, **kwargs)
+        ).type, configuration=configuration or OvumConfiguration(), usage=usage, **kwargs)
