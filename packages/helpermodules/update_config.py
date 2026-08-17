@@ -3487,14 +3487,19 @@ class UpdateConfig:
             if re.search("^openWB/system/device/[0-9]+/config$", topic) is not None:
                 payload_device = decode_payload(payload)
                 if payload_device.get("type") == "anker_solix":
-                    # anker_solix wurde in eigene Gerätetypen je Solarbank-Modell aufgeteilt
-                    # (solarbank_max_ac, solarbank_4_e5000) sowie einen eigenständigen
-                    # Zähler-Gerätetyp (smartmeter_gen2), da dessen Register kein Teil der
-                    # Solarbank-Registerkarte sind. Bestehende Konfigurationen liefen bisher
-                    # ausschließlich mit der Max AC, daher Migration auf solarbank_max_ac -
-                    # eine ggf. vorhandene Zähler-Komponente bleibt dabei unverändert Teil
-                    # des Geräts, wie es vor der Aufteilung der Fall war.
+                    index = get_index(topic)
+                    modbus_id = None
+                    for topic_component, payload_component in self.all_received_topics.items():
+                        if re.search(f"^openWB/system/device/{index}/component/[0-9]+/config$",
+                                     topic_component) is not None:
+                            payload_component = decode_payload(payload_component)
+                            component_modbus_id = payload_component.get("configuration", {}).get("modbus_id")
+                            if component_modbus_id is not None:
+                                modbus_id = component_modbus_id
+                                break
                     payload_device["type"] = "solarbank_max_ac"
+                    if modbus_id is not None:
+                        payload_device["configuration"]["modbus_id"] = modbus_id
                     return {topic: payload_device}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(138)
