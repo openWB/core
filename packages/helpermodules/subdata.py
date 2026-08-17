@@ -8,6 +8,8 @@ from typing import Any, Dict, Optional, Union
 import re
 import subprocess
 import paho.mqtt.client as mqtt
+from paho.mqtt.reasoncodes import ReasonCode as MqttReasonCode
+from paho.mqtt.properties import Properties as MqttProperties
 
 from control import bat_all, bat, counter, counter_all, general, io_device, optional, pv, pv_all
 from control.chargepoint import chargepoint
@@ -121,7 +123,7 @@ class SubData:
     def disconnect(self) -> None:
         self.internal_broker_client.disconnect()
 
-    def on_connect(self, client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: mqtt.ReasonCode, properties: mqtt.Properties):
+    def on_connect(self, client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: MqttReasonCode, properties: Optional[MqttProperties]):
         """ subscribe topics
         """
         client.subscribe([

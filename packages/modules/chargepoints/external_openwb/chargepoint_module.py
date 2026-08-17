@@ -1,6 +1,9 @@
 import logging
 import time
+from typing import Optional
 import paho.mqtt.client as mqtt
+from paho.mqtt.reasoncodes import ReasonCode as MqttReasonCode
+from paho.mqtt.properties import Properties as MqttProperties
 
 from control import data
 from helpermodules import pub, timecheck
@@ -60,7 +63,7 @@ class ChargepointModule(AbstractChargepoint):
                 pub.pub_single(f"openWB/set/isss/parentCPlp{self.config.configuration.duo_num + 1}",
                                str(num), hostname=ip_address)
 
-                def on_connect(client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: mqtt.ReasonCode, properties: mqtt.Properties):
+                def on_connect(client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: MqttReasonCode, properties: Optional[MqttProperties]):
                     client.subscribe(f"openWB/internal_chargepoint/{self.config.configuration.duo_num}/get/#")
 
                 def on_message(client: mqtt.Client, userdata, message: mqtt.MQTTMessage):

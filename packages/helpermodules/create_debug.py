@@ -1,7 +1,9 @@
 import os
 import time
 import logging
-from paho.mqtt import client as mqtt
+import paho.mqtt.client as mqtt
+from paho.mqtt.reasoncodes import ReasonCode as MqttReasonCode
+from paho.mqtt.properties import Properties as MqttProperties
 from pathlib import Path
 from typing import Any, Optional
 import requests
@@ -491,7 +493,7 @@ class BrokerContent:
         BrokerClient("processBrokerBranch", self.__on_connect_broker, self.__get_content).start_finite_loop()
         return self.content
 
-    def __on_connect_broker(self, client: mqtt.MqttClient, userdata, flags: mqtt.ConnectFlags, reason_code: mqtt.ReasonCode, properties: mqtt.Properties):
+    def __on_connect_broker(self, client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: MqttReasonCode, properties: Optional[MqttProperties]):
         client.subscribe("openWB/#", 2)
 
     def __get_content(self, client, userdata, msg):
@@ -502,7 +504,7 @@ class BrokerContent:
                      self.__get_content).start_finite_loop()
         return self.content
 
-    def __on_connect_broker_essentials(self, client: mqtt.MqttClient, userdata, flags: mqtt.ConnectFlags, reason_code: mqtt.ReasonCode, properties: mqtt.Properties):
+    def __on_connect_broker_essentials(self, client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: MqttReasonCode, properties: Optional[MqttProperties]):
         client.subscribe("openWB/system/ip_address", 2)
         client.subscribe("openWB/system/current_commit", 2)
         client.subscribe("openWB/system/boot_done", 2)
@@ -517,7 +519,7 @@ class BrokerContent:
         client.subscribe("openWB/bat/#", 2)
         client.subscribe("openWB/optional/ep/flexible_tariff/provider", 2)
 
-    def __on_connect_bridges(self, client: mqtt.MqttClient, userdata, flags: mqtt.ConnectFlags, reason_code: mqtt.ReasonCode, properties: mqtt.Properties):
+    def __on_connect_bridges(self, client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: MqttReasonCode, properties: Optional[MqttProperties]):
         client.subscribe("openWB/system/mqtt/#", 2)
 
     def get_cloud(self):

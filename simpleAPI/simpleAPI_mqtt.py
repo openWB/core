@@ -17,6 +17,9 @@ import math
 from typing import Dict, Any, Optional
 from pathlib import Path
 import paho.mqtt.client as mqtt
+from paho.mqtt.enums import CallbackAPIVersion
+from paho.mqtt.reasoncodes import ReasonCode as MqttReasonCode
+from paho.mqtt.properties import Properties as MqttProperties
 import re
 
 FORMAT_STR_SHORT = '%(asctime)s - %(message)s'
@@ -63,7 +66,7 @@ class SimpleMQTTDaemon:
         }
 
         # MQTT client setup
-        self.client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
+        self.client = mqtt.Client(callback_api_version=CallbackAPIVersion.VERSION2)
         self.client.on_connect = self._on_connect
         self.client.on_message = self._on_message
         self.client.on_disconnect = self._on_disconnect
@@ -104,7 +107,7 @@ class SimpleMQTTDaemon:
             log.error(f"Failed to load config file {config_file}: {e}")
             sys.exit(1)
 
-    def _on_connect(self, client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: mqtt.ReasonCode, properties: mqtt.Properties) -> None:
+    def _on_connect(self, client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: MqttReasonCode, properties: Optional[MqttProperties]) -> None:
         """Callback for successful MQTT connection."""
         if reason_code == 0:
             log.info(f"Connected to MQTT broker at {self.host}:{self.port}")
@@ -126,7 +129,7 @@ class SimpleMQTTDaemon:
         else:
             log.error(f"Failed to connect to MQTT broker. Reason code: {reason_code}")
 
-    def _on_disconnect(self, client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: mqtt.ReasonCode, properties: mqtt.Properties) -> None:
+    def _on_disconnect(self, client: mqtt.Client, userdata, flags: mqtt.DisconnectFlags, reason_code: MqttReasonCode, properties: Optional[MqttProperties]) -> None:
         """Callback for MQTT disconnection."""
         if reason_code != 0:
             log.warning(f"Unexpected MQTT disconnection (code: {reason_code}). Attempting to reconnect...")

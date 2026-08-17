@@ -13,6 +13,8 @@ import traceback
 from pathlib import Path
 
 import paho.mqtt.client as mqtt
+from paho.mqtt.reasoncodes import ReasonCode as MqttReasonCode
+from paho.mqtt.properties import Properties as MqttProperties
 from control.chargelog.process_chargelog import get_log_data
 from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
@@ -139,7 +141,7 @@ class Command:
         except Exception:
             log.exception("Fehler im Command-Modul")
 
-    def on_connect(self, client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: mqtt.ReasonCode, properties: mqtt.Properties):
+    def on_connect(self, client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: MqttReasonCode, properties: Optional[MqttProperties]):
         """ connect to broker and subscribe to set topics
         """
         try:
@@ -1234,7 +1236,7 @@ class ProcessBrokerBranch:
             log.exception("Fehler im Command-Modul")
             return []
 
-    def on_connect(self, client: mqtt.MqttClient, userdata, flags: mqtt.ConnectFlags, reason_code: mqtt.ReasonCode, properties: mqtt.Properties):
+    def on_connect(self, client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: MqttReasonCode, properties: Optional[MqttProperties]):
         """ connect to broker and subscribe to set topics
         """
         client.subscribe(f'openWB/{self.topic_str}#', 2)

@@ -2,13 +2,17 @@
 import sys
 import time
 import paho.mqtt.client as mqtt
+from paho.mqtt.enums import CallbackAPIVersion
+from paho.mqtt.reasoncodes import ReasonCode as MqttReasonCode
+from paho.mqtt.properties import Properties as MqttProperties
+from typing import Optional
 import re
 import os
 from smarthome.smartret import writeret
 numberOfSupportedDevices = 9  # limit number of smart home devices
 
 
-def on_connect(client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: mqtt.ReasonCode, properties: mqtt.Properties) -> None:
+def on_connect(client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: MqttReasonCode, properties: Optional[MqttProperties]) -> None:
     client.subscribe("openWB/LegacySmartHome/Devices/"+str(devicenumber) + "/#", 2)
 
 
@@ -49,7 +53,7 @@ devicenumber = int(sys.argv[1])
 ipadr = str(sys.argv[2])
 uberschuss = int(sys.argv[3])
 client = mqtt.Client(
-    callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
+    callback_api_version=CallbackAPIVersion.VERSION2,
     client_id="openWB-mqttsmarthomecust" + str(devicenumber),
 )
 client.on_connect = on_connect
