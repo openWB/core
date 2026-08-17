@@ -6,10 +6,10 @@ from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.common.modbus import ModbusTcpClient_
-from modules.devices.anker.anker_solix.bat import AnkerBat
-from modules.devices.anker.anker_solix.config import Anker, AnkerBatSetup, AnkerCounterSetup, AnkerInverterSetup
-from modules.devices.anker.anker_solix.counter import AnkerCounter
-from modules.devices.anker.anker_solix.inverter import AnkerInverter
+from modules.devices.anker.solarbank_max_ac.bat import AnkerBat
+from modules.devices.anker.solarbank_max_ac.config import Anker, AnkerBatSetup, AnkerCounterSetup, AnkerInverterSetup
+from modules.devices.anker.solarbank_max_ac.counter import AnkerCounter
+from modules.devices.anker.solarbank_max_ac.inverter import AnkerInverter
 
 log = logging.getLogger(__name__)
 
