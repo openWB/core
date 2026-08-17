@@ -58,7 +58,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 137
+    DATASTORE_VERSION = 138
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -3481,3 +3481,20 @@ class UpdateConfig:
                     return {topic: payload}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(137)
+        
+    def upgrade_datastore_138(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("^openWB/system/device/[0-9]+/config$", topic) is not None:
+                payload_device = decode_payload(payload)
+                if payload_device.get("type") == "anker_solix":
+                    # anker_solix wurde in eigene Gerätetypen je Solarbank-Modell aufgeteilt
+                    # (solarbank_max_ac, solarbank_4_e5000) sowie einen eigenständigen
+                    # Zähler-Gerätetyp (smartmeter_gen2), da dessen Register kein Teil der
+                    # Solarbank-Registerkarte sind. Bestehende Konfigurationen liefen bisher
+                    # ausschließlich mit der Max AC, daher Migration auf solarbank_max_ac -
+                    # eine ggf. vorhandene Zähler-Komponente bleibt dabei unverändert Teil
+                    # des Geräts, wie es vor der Aufteilung der Fall war.
+                    payload_device["type"] = "solarbank_max_ac"
+                    return {topic: payload_device}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(138)
