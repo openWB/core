@@ -77,7 +77,7 @@ cases = [
            expected_state=ChargepointState.PHASE_SWITCH_DELAY),
     Params("1to3, not enough power, timer not expired", max_current_single_phase=16,
            timestamp_phase_switch_buffer_start=1652683202.0, phases_to_use=1, required_current=6,
-           evu_surplus=460, get_currents=[15.6, 0, 0], get_power=3450,
+           evu_surplus=0, get_currents=[15.6, 0, 0], get_power=3450,
            state=ChargepointState.PHASE_SWITCH_DELAY, expected_phases_to_use=1, expected_current=6,
            expected_message=f"Verzögerung für die Umschaltung von 1 auf 3 Phasen abgebrochen{Ev.NOT_ENOUGH_POWER}",
            expected_state=ChargepointState.CHARGING_ALLOWED),
@@ -116,7 +116,7 @@ cases = [
 
 
 @pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
-def test_auto_phase_switch(monkeypatch, vehicle: Ev, params: Params):
+def test_auto_phase_switch(monkeypatch: pytest.MonkeyPatch, vehicle: Ev, params: Params):
     # setup
     mock_evu = Mock(spec=Counter, data=Mock(spec=CounterData,
                                             set=Mock(spec=Set, reserved_surplus=0,
@@ -153,7 +153,7 @@ def test_auto_phase_switch(monkeypatch, vehicle: Ev, params: Params):
 
 
 @pytest.mark.parametrize(
-    "evse_current, get_currents, all_surplus, limit, expected",
+    "evse_current, get_currents, surplus, limit, expected",
     [
         pytest.param(8, [7.7]*3, 100, LoadmanagementLimit(None, None), (False, Ev.ENOUGH_POWER),
                      id="kein 1p3p, genug Leistung für mehrphasige Ladung"),
@@ -177,24 +177,21 @@ def test_auto_phase_switch(monkeypatch, vehicle: Ev, params: Params):
     ])
 def test_check_phase_switch_conditions(evse_current: int,
                                        get_currents: List[float],
-                                       all_surplus: int,
+                                       surplus: int,
                                        limit: LoadmanagementLimit,
-                                       expected: Tuple[bool, Optional[str]],
-                                       monkeypatch):
+                                       expected: Tuple[bool, Optional[str]]):
     # setup
     ev = Ev(0)
-    mock_get_evu_counter = Mock(return_value=Mock(get_usable_surplus=Mock(return_value=all_surplus)))
-    monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", mock_get_evu_counter)
 
     # execution
-    phase_switch, condition_msg = ev._check_phase_switch_conditions(
-        ChargeTemplate(),
+    phase_switch, condition_msg = ev._check_phase_switch_conditions(  # type: ignore
         ControlParameter(phases=3-get_currents.count(0)),
         evse_current,
         get_currents,
         sum(get_currents)*230,
         16,
-        limit)
+        limit,
+        surplus)
 
     # evaluation
     assert (phase_switch, condition_msg) == expected

@@ -8,6 +8,7 @@ from control import data
 from control.chargelog import chargelog
 from control.chargelog.chargelog import calc_energy_costs
 from control.chargepoint.chargepoint import Chargepoint
+from control.general import Prices
 
 
 @pytest.fixture()
@@ -95,6 +96,22 @@ def test_calc_charge_cost_reference_end(mock_data, monkeypatch):
 
     assert cp.data.set.log.charged_energy_by_source == {'bat': 699.57, 'cp': 0.0, 'grid': 1300.14, 'pv': 400.29}
     assert round(cp.data.set.log.costs, 5) == 0.025
+
+
+def test_calc_charge_cost_reference_end_unique_price(mock_data, monkeypatch):
+    cp = Chargepoint(4, None)
+    cp.data.set.log.imported_since_plugged = cp.data.set.log.imported_since_mode_switch = 3950
+    cp.data.set.log.timestamp_mode_switch = 1652682600  # 8:30
+    cp.data.get.imported = 4100
+    cp.data.set.log.charged_energy_by_source = {'grid': 1243, 'pv': 386, 'bat': 671, 'cp': 0.0}
+    daily_log = mock_daily_log(monkeypatch)
+    data.data.general_data.data.prices = Prices(bat=0.0002, cp=0, grid=0.0002, pv=0.0002)
+
+    with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
+        calc_energy_costs(cp, True)
+
+    assert cp.data.set.log.charged_energy_by_source == {'bat': 699.57, 'cp': 0.0, 'grid': 1300.14, 'pv': 400.29}
+    assert round(cp.data.set.log.costs, 5) == 0.79
 
 
 def test_calc_charge_cost_reference_middle_day_change(mock_data, monkeypatch):

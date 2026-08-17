@@ -18,6 +18,8 @@ class Prepare:
         """ bereitet die Daten für den Algorithmus vor und startet diesen.
         """
         try:
+            # vor PV, greift auf IO-Aktion stepwise_control zu
+            data.data.io_actions.setup()
             data.data.pv_all_data.calc_power_for_all_components()
             data.data.bat_all_data.calc_power_for_all_components()
             for cp in data.data.cp_data.values():
@@ -34,7 +36,6 @@ class Prepare:
             data.data.cp_all_data.get_cp_sum()
             data.data.cp_all_data.no_charge()
             data.data.counter_all_data.set_home_consumption()
-            data.data.io_actions.setup()
         except Exception:
             log.exception("Fehler im Prepare-Modul")
         data.data.print_all()

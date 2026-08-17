@@ -284,15 +284,32 @@ class Chargepoint(ChargepointRfidMixin):
             # Unterstützt der Ladepunkt die CP-Unterbrechung und benötigt das Auto eine CP-Unterbrechung?
             if charging_ev.ev_template.data.control_pilot_interruption:
                 if self.data.config.control_pilot_interruption_hw:
+                    control_parameter = self.data.control_parameter
+                    retry_interval = charging_ev.ev_template.data.control_pilot_interruption_retry_interval
                     # Wird die Ladung gestartet?
-                    if self.data.set.current_prev == 0 and self.data.set.current != 0:
+                    started_now = self.data.set.current_prev == 0 and self.data.set.current != 0
+                    # Ladung angefordert, Auto lädt aber trotz gültigem Signal seit geraumer Zeit nicht.
+                    stuck = (
+                        retry_interval > 0 and
+                        self.data.set.current != 0 and
+                        self.data.get.charge_state is False and
+                        control_parameter.timestamp_charge_start is not None and
+                        check_timestamp(
+                            control_parameter.timestamp_last_cp_retry or control_parameter.timestamp_charge_start,
+                            retry_interval) is False
+                    )
+                    if started_now or stuck:
                         # Die CP-Unterbrechung erfolgt in Threads, da diese länger als ein Zyklus dauert.
                         if thread_handler(Thread(
                                 target=self.chargepoint_module.interrupt_cp,
                                 args=(charging_ev.ev_template.data.control_pilot_interruption_duration,),
                                 name=f"cp{self.chargepoint_module.config.id}")):
-                            message = "Control-Pilot-Unterbrechung für " + str(
-                                charging_ev.ev_template.data.control_pilot_interruption_duration) + "s."
+                            control_parameter.timestamp_last_cp_retry = create_timestamp()
+                            reason = "Ladestart" if started_now else "Auto lädt trotz Freigabe nicht"
+                            message = (
+                                "Control-Pilot-Unterbrechung (" + reason + ") für " +
+                                str(charging_ev.ev_template.data.control_pilot_interruption_duration) + "s."
+                            )
                             self.set_state_and_log(message)
                 else:
                     message = "CP-Unterbrechung nicht möglich, da der Ladepunkt keine CP-Unterbrechung unterstützt."
@@ -830,8 +847,7 @@ class Chargepoint(ChargepointRfidMixin):
                 "Keine Phasenumschaltung, da die maximale Anzahl an Fehlversuchen erreicht wurde. ")
             return True
         elif (data.data.general_data.data.chargemode_config.pv_charging.retry_failed_phase_switches is False and
-              self.data.set.log.imported_since_plugged != 0):
-            # vor Ladestart trotzdem umschalten
+              self.data.control_parameter.failed_phase_switches > 0):
             return True
         else:
             return False

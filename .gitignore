@@ -5,6 +5,8 @@
 *.log.lock
 .DS_Store
 .ftp*
+.venv
+.pyenv
 .vite
 .vimrc
 .vscode/*

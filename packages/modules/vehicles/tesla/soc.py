@@ -22,9 +22,9 @@ def fetch(vehicle_config: TeslaSoc, vehicle_update_data: VehicleUpdateData) -> C
                 f"Fehler beim Aufwecken des Fahrzeugs: {e}\n"
                 "Der abgerufene SoC-Wert ist möglicherweise veraltet."
             )
-    soc, range, soc_timestamp = api.request_soc_range(
+    soc, range, soc_timestamp, odometer = api.request_data(
         vehicle=vehicle_config.configuration.tesla_ev_num, token=vehicle_config.configuration.token)
-    return CarState(soc=soc, range=range, soc_timestamp=soc_timestamp)
+    return CarState(soc=soc, range=range, soc_timestamp=soc_timestamp, odometer=odometer)
 
 
 def _wake_up_car(vehicle_config: TeslaSoc):

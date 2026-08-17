@@ -869,7 +869,7 @@ class SubData:
                     elif re.search("/counter/[0-9]+/config/", msg.topic) is not None:
                         self.set_json_payload_class(var["counter"+index].data.config, msg)
             elif re.search("/counter/", msg.topic) is not None:
-                if re.search("/config$", msg.topic) is not None:
+                if re.search("/config/", msg.topic) is not None:
                     self.set_json_payload_class(self.counter_all_data.data.config, msg)
                 elif re.search("/counter/get", msg.topic) is not None:
                     self.set_json_payload_class(self.counter_all_data.data.get, msg)
