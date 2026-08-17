@@ -27,14 +27,14 @@ Diese Seite beschreibt den aktuellen Ansatz, wie openWB eine feste Python-Versio
 
 ## Installation der Python-Pakete
 
-Die Installation der Python-Abhaengigkeiten in der venv erfolgt bevorzugt mit `uv` (deutlich schneller als reines `pip`).
+Die Installation der Python-Abhängigkeiten in der venv erfolgt bevorzugt mit `uv` (deutlich schneller als reines `pip`).
 
 Ablauf:
 
 1. `uv` wird in der venv installiert/aktualisiert.
 2. Installation mit `uv` nur aus Wheels.
-3. Falls noetig erneuter `uv`-Versuch inkl. Source-Distributionen.
-4. Wenn `uv` nicht verfuegbar ist oder fehlschlaegt, automatischer Fallback auf `pip`.
+3. Falls nötig erneuter `uv`-Versuch inkl. Source-Distributionen.
+4. Wenn `uv` nicht verfügbar ist oder fehlschlägt, automatischer Fallback auf `pip`.
 
 ## Konfiguration der Binary-Quelle
 
@@ -60,10 +60,10 @@ Ohne Override lädt das Bootstrap-Skript aktuell aus dem separaten Runtime-Repos
 
 ## Erwartetes Artefakt-Schema
 
-Das Bootstrap-Skript prueft aktuell genau diese Muster (in dieser Reihenfolge):
+Das Bootstrap-Skript prüft aktuell genau diese Muster (in dieser Reihenfolge):
 
 1. `python-<python_version>-linux-<arch>-<os_variant>.tar.xz`
-2. nur auf Raspberry Pi OS als Fallback zusaetzlich:
+2. nur auf Raspberry Pi OS als Fallback zusätzlich:
   `python-<python_version>-linux-<arch>-debian<major>.tar.xz`
 
 Dabei werden `arch` und `os_variant` lokal erkannt:
@@ -71,7 +71,7 @@ Dabei werden `arch` und `os_variant` lokal erkannt:
 * `arch`: `x86_64`, `aarch64`, `armv7l`
 * `os_variant`: `debian11|debian12|debian13` oder `rpios11|rpios12|rpios13`
 
-Beispiele fuer die effektiv gesuchten Dateinamen:
+Beispiele für die effektiv gesuchten Dateinamen:
 
 * python-3.9.25-linux-x86_64-debian11.tar.xz
 * python-3.9.25-linux-x86_64-debian12.tar.xz
@@ -168,7 +168,7 @@ Beispiel bei Owner `openWB`:
 
 Der Tag ist versionsspezifisch und wird aus [data/config/python_runtime_version.txt](data/config/python_runtime_version.txt) gelesen, z. B. `python-runtime-3.9.25`.
 
-Fuer den Publish-Schritt wird im Core-Repository ein Secret benoetigt:
+Für den Publish-Schritt wird im Core-Repository ein Secret benötigt:
 
 * `PYTHON_RUNTIME_REPO_TOKEN`
 
@@ -179,7 +179,7 @@ Ohne diese Option werden die Artefakte nur als normale Workflow-Artefakte bereit
 Wichtig:
 
 * Workflow-Artefakte sind nur an den jeweiligen Run gebunden (Retention, kein dauerhafter Download-Endpunkt).
-* Dauerhafte Downloads fuer das Bootstrap erfolgen ueber Release-Assets im separaten Runtime-Repository.
+* Dauerhafte Downloads für das Bootstrap erfolgen über Release-Assets im separaten Runtime-Repository.
 
 ## Output
 
@@ -193,18 +193,23 @@ Bei voll aktivierter Matrix erzeugt der Workflow pro Lauf aktuell drei primäre 
 
 Die Python-Versionen werden zentral über [data/config/python_runtime_version.txt](data/config/python_runtime_version.txt) gesteuert.
 
-Die Datei kann mehrere gueltige Versionen enthalten (eine pro Zeile), zum Beispiel:
+Die Datei kann mehrere gültige Versionen enthalten (eine pro Zeile), zum Beispiel:
 
 3.9.25
 3.9.26
 
 Semantik:
 
-* Erste Zeile: aktuell produktiv genutzte Zielversion (Bootstrap auf den Geraeten).
-* Weitere Zeilen: zusaetzlich gueltige Versionen, fuer die CI bereits Runtime-Artefakte baut und veroeffentlicht.
+* Erste Zeile: aktuell produktiv genutzte Zielversion (Bootstrap auf den Geräten).
+* Weitere Zeilen: zusätzlich gültige Versionen, für die CI bereits Runtime-Artefakte baut und veröffentlicht.
+
+Automatisches Aufräumen auf dem Gerät:
+
+* Das automatische Aufräumen alter Python-Versionen unter `.pyenv/versions` ist aktuell noch offen.
+* Die Bereinigung wird in einem späteren Schritt über eine separate Logik umgesetzt.
 
 Beim Ändern dieser Datei:
 
-1. erzeugt der Workflow Artefakte fuer alle gueltigen Versionen in der Datei,
+1. erzeugt der Workflow Artefakte für alle gültigen Versionen in der Datei,
 2. publiziert sie optional in separate Release-Tags `python-runtime-<version>` im Repository `python-runtime`,
-3. laedt das Bootstrap-Skript weiterhin die Runtime passend zur ersten Zeile (aktive Zielversion).
+3. lädt das Bootstrap-Skript weiterhin die Runtime passend zur ersten Zeile (aktive Zielversion).
