@@ -35,32 +35,32 @@ init_python_config() {
 	local version_from_file=""
 
 	if [[ -n "${OPENWB_PYTHON_VERSION:-}" ]]; then
-		log "Nutze OPENWB_PYTHON_VERSION aus Umgebung: ${OPENWB_PYTHON_VERSION}"
+		log "Using OPENWB_PYTHON_VERSION from environment: ${OPENWB_PYTHON_VERSION}"
 		PYTHON_VERSION="${OPENWB_PYTHON_VERSION}"
 	elif [[ -f "${PYTHON_VERSION_FILE}" ]]; then
 		version_from_file=$(head -n 1 "${PYTHON_VERSION_FILE}" | tr -d '[:space:]')
 		if [[ -n "${version_from_file}" ]]; then
-			log "Nutze Python-Version aus ${PYTHON_VERSION_FILE}: ${version_from_file}"
+			log "Using Python version from ${PYTHON_VERSION_FILE}: ${version_from_file}"
 			PYTHON_VERSION="${version_from_file}"
 		fi
 	fi
 
 	if [[ -z "${PYTHON_VERSION}" ]]; then
-		log "Keine Python-Version konfiguriert, verwende Standardwert 3.9.25"
+		log "No Python version configured, using default 3.9.25"
 		PYTHON_VERSION="3.9.25"
 	fi
 
 	if [[ ! "${PYTHON_VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-		log "ERROR: ungueltige Python-Version '${PYTHON_VERSION}'"
+		log "ERROR: invalid Python version '${PYTHON_VERSION}'"
 		return 1
 	fi
 
 	PYTHON_MAJOR_MINOR="${PYTHON_VERSION%.*}"
 	PYTHON_RELEASE_TAG="${OPENWB_PYTHON_RELEASE_TAG:-python-runtime-${PYTHON_VERSION}}"
 	PYTHON_BINARIES_BASE_URL="${OPENWB_PYTHON_BINARIES_BASE_URL:-https://github.com/${PYTHON_REPO_OWNER}/${PYTHON_REPO_NAME}/releases/download/${PYTHON_RELEASE_TAG}}"
-	log "Python-Zielversion: ${PYTHON_VERSION}"
-	log "Release-Tag fuer Binaries: ${PYTHON_RELEASE_TAG}"
-	log "Binary-Basis-URL: ${PYTHON_BINARIES_BASE_URL}"
+	log "Python target version: ${PYTHON_VERSION}"
+	log "Release tag for binaries: ${PYTHON_RELEASE_TAG}"
+	log "Binary base URL: ${PYTHON_BINARIES_BASE_URL}"
 }
 
 is_required_python() {
@@ -150,7 +150,7 @@ install_prebuilt_python() {
 	local python_bin_name="python${PYTHON_MAJOR_MINOR}"
 
 	if [[ -z "${PYTHON_BINARIES_BASE_URL}" ]]; then
-		log "WARN: Keine Binary-Basis-URL gesetzt, ueberspringe Prebuilt-Download."
+		log "WARN: No binary base URL set, skipping prebuilt download."
 		return 1
 	fi
 
@@ -165,7 +165,7 @@ install_prebuilt_python() {
 				;;
 		esac
 	fi
-	log "Suche kompilierte Python Runtime fuer arch=${arch}, os_variant=${os_variant:-unknown}"
+	log "Searching compiled Python runtime for arch=${arch}, os_variant=${os_variant:-unknown}"
 	temp_dir=$(mktemp -d)
 	archive="${temp_dir}/python.tar.xz"
 	extract_dir="${temp_dir}/extract"
@@ -176,31 +176,31 @@ install_prebuilt_python() {
 		candidates+=("python-${PYTHON_VERSION}-linux-${arch}-${os_variant}.tar.xz")
 	fi
 
-	# In CI werden Artefakte immer als
-	# python-<version>-linux-<arch>-<os_variant>.tar.xz erzeugt.
-	# Auf Raspberry Pi OS nutzen wir als Fallback debian<major>, da kein rpios-Label gebaut wird.
+	# In CI, artifacts are always produced as
+	# python-<version>-linux-<arch>-<os_variant>.tar.xz.
+	# On Raspberry Pi OS, use debian<major> as a fallback because no rpios label is built.
 	if [[ -n "${debian_major}" && "${os_variant}" != "debian${debian_major}" ]]; then
 		candidates+=("python-${PYTHON_VERSION}-linux-${arch}-debian${debian_major}.tar.xz")
 	fi
 
 	for candidate in "${candidates[@]}"; do
 		url="${PYTHON_BINARIES_BASE_URL}/${candidate}"
-		log "Versuche kompilierte Python Runtime herunterzuladen: ${url}"
+		log "Trying to download compiled Python runtime: ${url}"
 		if ! curl -fL --connect-timeout 10 --retry 2 --retry-delay 2 -o "${archive}" "${url}" >/dev/null 2>&1; then
-			log "Kein Treffer: ${candidate}"
+			log "No match found: ${candidate}"
 			continue
 		fi
-		log "Download erfolgreich: ${candidate}"
+		log "Download successful: ${candidate}"
 
 		find "${extract_dir}" -mindepth 1 -delete >/dev/null 2>&1
 		if ! extract_archive "${archive}" "${extract_dir}"; then
-			log "WARN: Archiv konnte nicht entpackt werden: ${candidate}"
+			log "WARN: Could not extract archive: ${candidate}"
 			continue
 		fi
 
 		found_bin=$(find "${extract_dir}" -type f -path "*/bin/${python_bin_name}" | head -n 1)
 		if [[ -z "${found_bin}" ]]; then
-			log "WARN: Kein ${python_bin_name} im Archiv gefunden: ${candidate}"
+			log "WARN: No ${python_bin_name} found in archive: ${candidate}"
 			continue
 		fi
 
@@ -211,39 +211,39 @@ install_prebuilt_python() {
 
 		py_path=$(managed_python_path)
 		if [[ -x "${py_path}" ]] && is_required_python "${py_path}"; then
-			log "Kompilierte Python Runtime erfolgreich installiert: ${py_path}"
+			log "Compiled Python runtime installed successfully: ${py_path}"
 			rm -rf "${temp_dir}"
 			echo "${py_path}"
 			return 0
 		fi
-		log "WARN: Installierte Runtime aus ${candidate} ist nicht verwendbar."
-		# Ungueltige Runtime wieder entfernen, damit der lokale Fallback sauber bauen kann.
+		log "WARN: Installed runtime from ${candidate} is not usable."
+		# Remove invalid runtime so the local fallback can build cleanly.
 		rm -rf "${target_dir}"
 	done
 
-	log "Keine passende kompilierte Python Runtime gefunden."
+	log "No matching compiled Python runtime found."
 	rm -rf "${temp_dir}"
 	return 1
 }
 
 ensure_pyenv() {
 	if [[ -x "${PYENV_BIN}" ]]; then
-		log "pyenv bereits vorhanden: ${PYENV_BIN}"
+		log "pyenv already present: ${PYENV_BIN}"
 		return 0
 	fi
 
 	if ! command -v git >/dev/null 2>&1; then
-		log "ERROR: git ist nicht verfuegbar, pyenv kann nicht installiert werden."
+		log "ERROR: git is not available, pyenv cannot be installed."
 		return 1
 	fi
 
-	log "Installiere pyenv lokal nach ${PYENV_ROOT}."
+	log "Installing local pyenv to ${PYENV_ROOT}."
 	rm -rf "${PYENV_ROOT}"
 	git clone --depth 1 https://github.com/pyenv/pyenv.git "${PYENV_ROOT}" >/dev/null 2>&1 || {
-		log "ERROR: pyenv konnte nicht installiert werden."
+		log "ERROR: pyenv could not be installed."
 		return 1
 	}
-	log "pyenv erfolgreich installiert."
+	log "pyenv installed successfully."
 
 	[[ -x "${PYENV_BIN}" ]]
 }
@@ -273,20 +273,20 @@ check_build_dependencies() {
 	done
 
 	if (( ${#missing_packages[@]} > 0 )); then
-		log "Fehlende Build-Abhaengigkeiten fuer pyenv erkannt: ${missing_packages[*]}"
-		log "Installiere fehlende Pakete automatisch via sudo apt-get."
+		log "Missing build dependencies for pyenv detected: ${missing_packages[*]}"
+		log "Installing missing packages automatically via sudo apt-get."
 
 		if ! sudo DEBIAN_FRONTEND=noninteractive apt-get -q update; then
-			log "ERROR: apt-get update fehlgeschlagen."
+			log "ERROR: apt-get update failed."
 			return 1
 		fi
 
 		if ! sudo DEBIAN_FRONTEND=noninteractive apt-get -q -y install "${missing_packages[@]}"; then
-			log "ERROR: Installation fehlgeschlagener Pakete: ${missing_packages[*]}"
+			log "ERROR: Failed to install packages: ${missing_packages[*]}"
 			return 1
 		fi
 
-		log "Build-Abhaengigkeiten erfolgreich nachinstalliert."
+		log "Build dependencies installed successfully."
 	fi
 
 	return 0
@@ -295,18 +295,18 @@ check_build_dependencies() {
 ensure_managed_python() {
 	local py_path
 	py_path=$(managed_python_path)
-	log "Prüfe Managed-Python unter ${py_path}"
+	log "Checking managed Python at ${py_path}"
 
 	ensure_pyenv || return 1
 
 	if [[ -d "${PYENV_ROOT}" && ! -w "${PYENV_ROOT}" ]]; then
-		log "ERROR: ${PYENV_ROOT} ist nicht schreibbar fuer Benutzer $(id -un)."
+		log "ERROR: ${PYENV_ROOT} is not writable for user $(id -un)."
 		ls -ld "${PYENV_ROOT}" >&2 || true
 		return 1
 	fi
 
 	if ! mkdir -p "${PYENV_ROOT}/versions"; then
-		log "ERROR: ${PYENV_ROOT}/versions konnte nicht angelegt werden."
+		log "ERROR: Could not create ${PYENV_ROOT}/versions."
 		return 1
 	fi
 
@@ -314,36 +314,36 @@ ensure_managed_python() {
 	export PATH="${PYENV_ROOT}/bin:${PATH}"
 
 	if [[ -x "${py_path}" ]] && is_required_python "${py_path}"; then
-		log "Vorhandenes Managed-Python ist gueltig."
+		log "Existing managed Python is valid."
 		echo "${py_path}"
 		return 0
 	fi
-	log "Managed-Python fehlt oder passt nicht zur Zielversion."
+	log "Managed Python is missing or does not match the target version."
 
 	if py_path=$(install_prebuilt_python); then
-		log "Managed-Python aus kompiliertem Artefakt bereitgestellt."
+		log "Managed Python provided from compiled artifact."
 		echo "${py_path}"
 		return 0
 	fi
 	py_path=$(managed_python_path)
-	log "Keine kompilierte Python Runtime gefunden, falle auf lokalen Build zurueck."
-	# Falls ein ungueltiges Runtime-Verzeichnis existiert, pyenv-Install nicht ueberspringen.
+	log "No compiled Python runtime found, falling back to local build."
+	# If an invalid runtime directory exists, do not let pyenv skip installation.
 	rm -rf "${PYENV_ROOT}/versions/${PYTHON_VERSION}"
 	check_build_dependencies || return 1
 
-	log "Installiere CPython ${PYTHON_VERSION} via pyenv (kann einige Minuten dauern)."
+	log "Installing CPython ${PYTHON_VERSION} via pyenv (this may take several minutes)."
 	"${PYENV_BIN}" install -s "${PYTHON_VERSION}" || {
-		log "ERROR: Python ${PYTHON_VERSION} konnte nicht via pyenv installiert werden."
+		log "ERROR: Python ${PYTHON_VERSION} could not be installed via pyenv."
 		return 1
 	}
 
 	if [[ -x "${py_path}" ]] && is_required_python "${py_path}"; then
-		log "Managed-Python erfolgreich lokal gebaut."
+		log "Managed Python built locally successfully."
 		echo "${py_path}"
 		return 0
 	fi
 
-	log "ERROR: installierter Interpreter ist nicht verwendbar (${py_path})."
+	log "ERROR: Installed interpreter is not usable (${py_path})."
 	return 1
 }
 
@@ -369,7 +369,7 @@ prepare_venv_libpython() {
 	local target_lib_dir="${VENV_DIR}/lib"
 
 	if [[ ! -f "${source_lib}" ]]; then
-		log "ERROR: Managed libpython fehlt (${source_lib})."
+		log "ERROR: Managed libpython is missing (${source_lib})."
 		return 1
 	fi
 
@@ -418,25 +418,25 @@ is_venv_bound_to_managed_python() {
 
 create_venv() {
 	local py_cmd="$1"
-	log "Erzeuge venv mit ${py_cmd} (isoliert, Symlink auf Managed-Runtime)."
+	log "Creating venv with ${py_cmd} (isolated, symlinked to managed runtime)."
 	"${py_cmd}" -m venv "${VENV_DIR}" || {
-		log "ERROR: venv konnte nicht erzeugt werden."
+		log "ERROR: Could not create venv."
 		return 1
 	}
 	if ! prepare_venv_libpython; then
-		log "ERROR: venv-libpython konnte nicht vorbereitet werden."
+		log "ERROR: Could not prepare venv libpython."
 		return 1
 	fi
 	if ! is_required_python "${VENV_DIR}/bin/python3"; then
-		log "ERROR: venv-Python hat nicht die erwartete Version ${PYTHON_VERSION}."
+		log "ERROR: venv Python does not match expected version ${PYTHON_VERSION}."
 		return 1
 	fi
 	if ! is_venv_bound_to_managed_python; then
-		log "ERROR: venv ist nicht an die Managed-Runtime gebunden."
+		log "ERROR: venv is not bound to the managed runtime."
 		return 1
 	fi
 	if is_system_site_packages_enabled; then
-		log "ERROR: venv wurde mit System-Site-Packages erstellt."
+		log "ERROR: venv was created with system site-packages enabled."
 		return 1
 	fi
 	return 0
@@ -446,56 +446,56 @@ install_requirements() {
 	local py_cmd="${VENV_DIR}/bin/python3"
 	local pip_cmd=("${VENV_DIR}/bin/python3" -m pip)
 	local uv_bin="${VENV_DIR}/bin/uv"
-	log "Installiere Python-Abhaengigkeiten aus ${REQ_FILE}."
+	log "Installing Python dependencies from ${REQ_FILE}."
 
 	if ! "${pip_cmd[@]}" install --upgrade pip setuptools wheel; then
-		log "WARN: pip/setuptools/wheel konnten nicht aktualisiert werden."
+		log "WARN: Could not upgrade pip/setuptools/wheel."
 	fi
 
 	if "${pip_cmd[@]}" install --upgrade uv; then
 		if [[ -x "${uv_bin}" ]]; then
-			log "Nutze uv fuer schnelle Installation der Requirements."
+			log "Using uv for faster requirements installation."
 
 			if "${uv_bin}" pip install --python "${py_cmd}" --only-binary :all: -r "${REQ_FILE}"; then
-				log "Requirements erfolgreich mit uv installiert."
+				log "Requirements installed successfully with uv."
 				touch "${MARKER_FILE}"
 				return 0
 			fi
-			log "WARN: uv-Installation nur mit Wheels fehlgeschlagen, versuche mit Source-Distributionen."
+			log "WARN: uv wheel-only installation failed, retrying with source distributions."
 
 			if "${uv_bin}" pip install --python "${py_cmd}" -r "${REQ_FILE}"; then
-				log "Requirements erfolgreich mit uv installiert (inkl. Source-Distributionen)."
+				log "Requirements installed successfully with uv (including source distributions)."
 				touch "${MARKER_FILE}"
 				return 0
 			fi
 
-			log "WARN: uv-Installation fehlgeschlagen, falle auf pip zurueck."
+			log "WARN: uv installation failed, falling back to pip."
 		else
-			log "WARN: uv wurde installiert, aber nicht als Binary gefunden (${uv_bin})."
+			log "WARN: uv was installed, but binary was not found (${uv_bin})."
 		fi
 	else
-		log "WARN: uv konnte nicht installiert werden, nutze pip als Fallback."
+		log "WARN: Could not install uv, using pip fallback."
 	fi
 
 	if "${pip_cmd[@]}" install --only-binary :all: -r "${REQ_FILE}"; then
-		log "Requirements erfolgreich installiert."
+		log "Requirements installed successfully."
 		touch "${MARKER_FILE}"
 		return 0
 	fi
-	log "WARN: Installation nur mit Wheels fehlgeschlagen, versuche Installation mit Source-Distributionen."
+	log "WARN: Wheel-only installation failed, retrying with source distributions."
 
 	if "${pip_cmd[@]}" install -r "${REQ_FILE}"; then
-		log "Requirements erfolgreich installiert (inkl. Source-Distributionen)."
+		log "Requirements installed successfully (including source distributions)."
 		touch "${MARKER_FILE}"
 		return 0
 	fi
 
 	if [[ -f "${MARKER_FILE}" ]]; then
-		log "WARN: requirements konnten nicht aktualisiert werden, nutze vorhandene Installation."
+		log "WARN: Could not update requirements, using existing installation."
 		return 0
 	fi
 
-	log "ERROR: requirements konnten nicht installiert werden und keine bestehende Installation gefunden."
+	log "ERROR: Could not install requirements and no existing installation was found."
 	return 1
 }
 
@@ -503,31 +503,31 @@ main() {
 	local py_cmd
 
 	init_logging || {
-		echo "[bootstrap_venv] ERROR: Logdatei kann nicht initialisiert werden (${LOG_FILE})."
+		echo "[bootstrap_venv] ERROR: Could not initialize log file (${LOG_FILE})."
 		exit 1
 	}
 
 	init_python_config || exit 1
-	log "Starte Bootstrap fuer venv unter ${VENV_DIR}."
+	log "Starting bootstrap for venv at ${VENV_DIR}."
 
 	if [[ -d "${VENV_DIR}" ]]; then
-		log "Bestehendes venv gefunden, pruefe Kompatibilitaet."
+		log "Existing venv found, checking compatibility."
 		if ! is_required_python "${VENV_DIR}/bin/python3" || is_system_site_packages_enabled || ! is_venv_bound_to_managed_python; then
-			log "Bestehendes venv ist inkompatibel oder nicht korrekt an Managed-Python gebunden."
+			log "Existing venv is incompatible or not properly bound to managed Python."
 			py_cmd=$(ensure_managed_python) || {
-				log "ERROR: Python ${PYTHON_VERSION} konnte nicht bereitgestellt werden."
+				log "ERROR: Could not provision Python ${PYTHON_VERSION}."
 				exit 1
 			}
-			log "Vorhandenes venv ist nicht kompatibel oder nicht korrekt gebunden, baue neu auf."
+			log "Existing venv is incompatible or not properly bound, rebuilding it."
 			rm -rf "${VENV_DIR}"
 			create_venv "${py_cmd}" || exit 1
 		else
-			log "venv bereits vorhanden (${VENV_DIR})."
+			log "venv already exists (${VENV_DIR})."
 		fi
 	else
-		log "Kein venv vorhanden, initialisiere neu."
+		log "No venv found, initializing a new one."
 		py_cmd=$(ensure_managed_python) || {
-			log "ERROR: Python ${PYTHON_VERSION} konnte nicht bereitgestellt werden."
+			log "ERROR: Could not provision Python ${PYTHON_VERSION}."
 			exit 1
 		}
 		create_venv "${py_cmd}" || exit 1
@@ -536,13 +536,13 @@ main() {
 	ensure_permissions
 
 	if [[ ! -f "${REQ_FILE}" ]]; then
-		log "ERROR: requirements-Datei nicht gefunden (${REQ_FILE})."
+		log "ERROR: requirements file not found (${REQ_FILE})."
 		exit 1
 	fi
 
 	install_requirements || exit 1
 	ensure_permissions
-	log "venv bereit (${VENV_DIR})."
+	log "venv ready (${VENV_DIR})."
 }
 
 main "$@"
