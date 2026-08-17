@@ -8,6 +8,8 @@ from threading import Event
 from typing import List, Optional, Tuple
 import re
 import paho.mqtt.client as mqtt
+from paho.mqtt.reasoncodes import ReasonCode as MqttReasonCode
+from paho.mqtt.properties import Properties as MqttProperties
 
 import logging
 from control import data
@@ -45,7 +47,7 @@ class SetData:
     def disconnect(self) -> None:
         self.internal_broker_client.disconnect()
 
-    def on_connect(self, client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: mqtt.ReasonCode, properties: mqtt.Properties):
+    def on_connect(self, client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: MqttReasonCode, properties: Optional[MqttProperties]):
         """ connect to broker and subscribe to set topics
         """
         client.subscribe("openWB/set/#", 2)
