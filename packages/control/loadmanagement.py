@@ -133,10 +133,13 @@ class Loadmanagement:
                 power_left = max(power_left - feed_in, 0)
                 log.debug(f"Verbleibende Leistung unter Berücksichtigung der Einspeisegrenze: {power_left}W")
             if abs(total_power) > power_left:
+                current_sum = sum(available_currents)
                 for i in range(0, 3):
                     try:
                         # Am meisten belastete Phase trägt am meisten zur Leistungsreduktion bei.
-                        currents[i] = available_currents[i] / sum(available_currents) * power_left / cp_voltage
+                        # abs(current_sum) verhindert Vorzeichenwechsel beim Entladen.
+                        currents[i] = available_currents[i] / abs(current_sum) * power_left / cp_voltage
+
                     except ZeroDivisionError:
                         # bei einphasig angeschlossenen Wallboxen ist die Spannung der anderen Phasen 0V
                         currents[i] = 0.0

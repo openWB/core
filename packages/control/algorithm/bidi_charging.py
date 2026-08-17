@@ -100,6 +100,8 @@ class Bidi:
         missing_currents = [0, 0, 0]
         if cp.data.control_parameter.chargemode == Chargemode.INSTANT_CHARGING:
             # Entladen im Instant-Charging-Modus
+            if cp.data.set.charging_ev_data.data.get.soc is None:
+                raise ValueError(f"LP{cp.num}: Auto-Bat SoC unbekannt, daher keine Entladung möglich.")
             if cp.data.set.charging_ev_data.data.get.soc > 0:
                 # Auto-bat ist nicht leer
 
