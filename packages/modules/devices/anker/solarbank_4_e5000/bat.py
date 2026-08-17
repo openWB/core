@@ -9,15 +9,18 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, Endian, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_component_value_store
-from modules.devices.anker.solarbank_4_e5000.config import AnkerBatSetup
+from modules.devices.anker.solarbank_4_e5000.config import Anker, AnkerBatSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
+# Rohwert der Leistungsregister / POWER_GAIN = Watt (Gerät liefert mW statt W)
+POWER_GAIN = 1000
+
 
 class KwargsDict(TypedDict):
-    device_id: int
+    device_config: Anker
     client: ModbusTcpClient_
 
 
@@ -27,19 +30,19 @@ class AnkerBat(AbstractBat):
         self.kwargs: KwargsDict = kwargs
 
     def initialize(self) -> None:
-        self.__device_id: int = self.kwargs['device_id']
+        self.device_config: Anker = self.kwargs['device_config']
         self.client: ModbusTcpClient_ = self.kwargs['client']
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, self.component_config.type)
+        self.sim_counter = SimCounter(self.device_config.id, self.component_config.id, self.component_config.type)
         self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
         self.last_mode = 'Undefined'
 
     def update(self) -> None:
-        unit = self.component_config.configuration.modbus_id
+        unit = self.device_config.configuration.modbus_id
 
         power = self.client.read_input_registers(10008, ModbusDataType.INT_32,
-                                                 wordorder=Endian.Little, unit=unit) * -1000
+                                                 wordorder=Endian.Little, unit=unit) * -1 / POWER_GAIN
         soc = self.client.read_input_registers(10014, ModbusDataType.UINT_16, unit=unit)
 
         self.peak_filter.check_values(power)
@@ -53,7 +56,7 @@ class AnkerBat(AbstractBat):
         self.store.set(bat_state)
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
-        unit = self.component_config.configuration.modbus_id
+        unit = self.device_config.configuration.modbus_id
 
         if power_limit is None:
             log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
@@ -67,11 +70,11 @@ class AnkerBat(AbstractBat):
 
             # Berechne power value: 0 = stop, != 0 = multipliziere mit -1
             # Laut Doku ist der min Wert 100W, ggf. noch Anpassung für power_limit=0 notwendig
-            # ACHTUNG: 1000 hier nur nach Symmetrie-Annahme angewendet (Leseregister sind
+            # ACHTUNG: POWER_GAIN hier nur nach Symmetrie-Annahme angewendet (Leseregister sind
             # nachweislich in mW). Vor Praxiseinsatz unbedingt mit einem kleinen, unkritischen
             # Grenzwert verifizieren, dass das Schreibregister ebenfalls mW statt W erwartet -
             # sonst wird ggf. eine 1000x falsche Leistung angefordert.
-            power_value = 0 if power_limit == 0 else int(power_limit) * -1000
+            power_value = 0 if power_limit == 0 else int(power_limit) * -1 * POWER_GAIN
             self.client.write_register(10071, power_value, data_type=ModbusDataType.INT_32, unit=unit)
             log.debug("Aktive Batteriesteuerung angefordert, angeforderte Leistung: {power_value} W")
 
