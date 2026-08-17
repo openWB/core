@@ -9,7 +9,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, Endian, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_component_value_store
-from modules.devices.anker.solarbank_max_ac.config import AnkerBatSetup
+from modules.devices.anker.solarbank_max_ac.config import Anker, AnkerBatSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
 
@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 
 class KwargsDict(TypedDict):
-    device_id: int
+    device_config: Anker
     client: ModbusTcpClient_
 
 
@@ -27,16 +27,16 @@ class AnkerBat(AbstractBat):
         self.kwargs: KwargsDict = kwargs
 
     def initialize(self) -> None:
-        self.__device_id: int = self.kwargs['device_id']
+        self.device_config: Anker = self.kwargs['device_config']
         self.client: ModbusTcpClient_ = self.kwargs['client']
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, self.component_config.type)
+        self.sim_counter = SimCounter(self.device_config.id, self.component_config.id, self.component_config.type)
         self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
         self.last_mode = 'Undefined'
 
     def update(self) -> None:
-        unit = self.component_config.configuration.modbus_id
+        unit = self.device_config.configuration.modbus_id
 
         power = self.client.read_input_registers(10008, ModbusDataType.INT_32,
                                                  wordorder=Endian.Little, unit=unit) * -1
@@ -53,7 +53,7 @@ class AnkerBat(AbstractBat):
         self.store.set(bat_state)
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
-        unit = self.component_config.configuration.modbus_id
+        unit = self.device_config.configuration.modbus_id
 
         if power_limit is None:
             log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
