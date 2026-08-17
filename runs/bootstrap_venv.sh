@@ -443,11 +443,38 @@ create_venv() {
 }
 
 install_requirements() {
+	local py_cmd="${VENV_DIR}/bin/python3"
 	local pip_cmd=("${VENV_DIR}/bin/python3" -m pip)
+	local uv_bin="${VENV_DIR}/bin/uv"
 	log "Installiere Python-Abhaengigkeiten aus ${REQ_FILE}."
 
 	if ! "${pip_cmd[@]}" install --upgrade pip setuptools wheel; then
 		log "WARN: pip/setuptools/wheel konnten nicht aktualisiert werden."
+	fi
+
+	if "${pip_cmd[@]}" install --upgrade uv; then
+		if [[ -x "${uv_bin}" ]]; then
+			log "Nutze uv fuer schnelle Installation der Requirements."
+
+			if "${uv_bin}" pip install --python "${py_cmd}" --only-binary :all: -r "${REQ_FILE}"; then
+				log "Requirements erfolgreich mit uv installiert."
+				touch "${MARKER_FILE}"
+				return 0
+			fi
+			log "WARN: uv-Installation nur mit Wheels fehlgeschlagen, versuche mit Source-Distributionen."
+
+			if "${uv_bin}" pip install --python "${py_cmd}" -r "${REQ_FILE}"; then
+				log "Requirements erfolgreich mit uv installiert (inkl. Source-Distributionen)."
+				touch "${MARKER_FILE}"
+				return 0
+			fi
+
+			log "WARN: uv-Installation fehlgeschlagen, falle auf pip zurueck."
+		else
+			log "WARN: uv wurde installiert, aber nicht als Binary gefunden (${uv_bin})."
+		fi
+	else
+		log "WARN: uv konnte nicht installiert werden, nutze pip als Fallback."
 	fi
 
 	if "${pip_cmd[@]}" install --only-binary :all: -r "${REQ_FILE}"; then

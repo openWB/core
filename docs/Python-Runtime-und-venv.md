@@ -25,6 +25,17 @@ Diese Seite beschreibt den aktuellen Ansatz, wie openWB eine feste Python-Versio
 * Boot-Integration: [data/config/openwb-python-bootstrap.service](data/config/openwb-python-bootstrap.service)
 * Geforderte Python-Version: [data/config/python_runtime_version.txt](data/config/python_runtime_version.txt)
 
+## Installation der Python-Pakete
+
+Die Installation der Python-Abhaengigkeiten in der venv erfolgt bevorzugt mit `uv` (deutlich schneller als reines `pip`).
+
+Ablauf:
+
+1. `uv` wird in der venv installiert/aktualisiert.
+2. Installation mit `uv` nur aus Wheels.
+3. Falls noetig erneuter `uv`-Versuch inkl. Source-Distributionen.
+4. Wenn `uv` nicht verfuegbar ist oder fehlschlaegt, automatischer Fallback auf `pip`.
+
 ## Konfiguration der Binary-Quelle
 
 Standardmäßig wird eine Release-URL verwendet. Diese kann über eine Umgebungsvariable überschrieben werden:
