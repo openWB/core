@@ -12,8 +12,8 @@ class AnkerConfiguration:
 
 class Anker:
     def __init__(self,
-                 name: str = "Anker",
-                 type: str = "anker_solix",
+                 name: str = "Anker SOLIX Solarbank Max AC",
+                 type: str = "solarbank_max_ac",
                  id: int = 0,
                  configuration: AnkerConfiguration = None) -> None:
         self.name = name
@@ -38,13 +38,8 @@ class AnkerBatSetup(ComponentSetup[AnkerBatConfiguration]):
 
 
 class AnkerCounterConfiguration:
-    def __init__(self,
-                 modbus_id: int = 1,
-                 ip_address: Optional[str] = None,
-                 port: int = 502):
+    def __init__(self, modbus_id: int = 1):
         self.modbus_id = modbus_id
-        self.ip_address = ip_address
-        self.port = port
 
 
 class AnkerCounterSetup(ComponentSetup[AnkerCounterConfiguration]):
