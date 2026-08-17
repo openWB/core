@@ -16,7 +16,7 @@ def create_device(device_config: AnkerMeter):
     client = None
 
     def create_counter_component(component_config: AnkerMeterCounterSetup):
-        return AnkerMeterCounter(component_config, device_id=device_config.id, client=client)
+        return AnkerMeterCounter(component_config, device_config=device_config, client=client)
 
     def update_components(components: Iterable[AnkerMeterCounter]):
         with client:
