@@ -2,6 +2,8 @@
 from pathlib import Path
 import logging
 import paho.mqtt.client as mqtt
+from paho.mqtt.reasoncodes import ReasonCode as MqttReasonCode
+from paho.mqtt.properties import Properties as MqttProperties
 import platform
 import subprocess
 from threading import Thread
@@ -151,7 +153,7 @@ def create_io(config: Eebus):
         Path(f"{Path(__file__).resolve().parents[4]}/ramdisk/eebus_hems_client.log").touch(exist_ok=True)
         run_eebus()
 
-        def on_connect(client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: mqtt.ReasonCode, properties: mqtt.Properties):
+        def on_connect(client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: MqttReasonCode, properties: Optional[MqttProperties]):
             client.subscribe(f"openWB/eebus/{config.id}/#")
 
         def on_message(client: mqtt.Client, userdata, message: mqtt.MQTTMessage):

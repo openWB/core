@@ -1,11 +1,14 @@
 #!/usr/bin/python3
-from typing import Dict, Tuple, Any
-import paho.mqtt.client as mqtt
 import re
 import time
 import os
 import math
 import logging
+from typing import Dict, Tuple, Any, Optional
+import paho.mqtt.client as mqtt
+from paho.mqtt.enums import CallbackAPIVersion
+from paho.mqtt.reasoncodes import ReasonCode as MqttReasonCode
+from paho.mqtt.properties import Properties as MqttProperties
 
 from modules.smarthome.ratiotherm.smartratiotherm import Sratiotherm
 from modules.smarthome.viessmann.smartviessmann import Sviessmann
@@ -45,7 +48,7 @@ maxspeicher = 0
 firststart = True
 
 
-def on_connect(client: mqtt.Client, userdata: Any, flags: mqtt.ConnectFlags, reason_code: mqtt.ReasonCode, properties: mqtt.Properties) -> None:
+def on_connect(client: mqtt.Client, userdata: Any, flags: mqtt.ConnectFlags, reason_code: MqttReasonCode, properties: Optional[MqttProperties]) -> None:
     #  mqttcg = 'openWB/config/get/SmartHome/'
     #  client.subscribe("openWB/config/get/SmartHome/#", 2)
     client.subscribe(mqttcg + '#', 2)
@@ -202,7 +205,7 @@ def pub(client: mqtt.Client, key: str, value: str) -> None:
 
 def sendmq(mqtt_input: Dict[str, str]) -> None:
     client = mqtt.Client(
-        callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
+        callback_api_version=CallbackAPIVersion.VERSION2,
         client_id="openWB-SmartHome-bulkpublisher-" + str(os.getpid()),
     )
     client.connect("localhost", mqttport)
@@ -229,7 +232,7 @@ def conditions(speichersoc: int) -> None:
 
 def update_devices() -> None:
     client = mqtt.Client(
-        callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
+        callback_api_version=CallbackAPIVersion.VERSION2,
         client_id="openWB-SmartHome-bulkpublisher-" + str(os.getpid()),
     )
     client.connect("localhost", mqttport)
@@ -345,7 +348,7 @@ def readmq() -> None:
             print('%s' % ('#!/bin/bash'), file=f)
     parammqtt = []
     client = mqtt.Client(
-        callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
+        callback_api_version=CallbackAPIVersion.VERSION2,
         client_id="openWB-mqttsmarthome",
     )
     client.on_connect = on_connect
