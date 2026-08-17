@@ -34,15 +34,39 @@ jobs:
       - id: owner
         run: echo "valid_github_owner=${VALID_GITHUB_OWNER}" >> "$GITHUB_OUTPUT"
 
+  read-python-versions:
+    name: Read Python Runtime Versions
+    runs-on: ubuntu-latest
+    outputs:
+      versions_json: ${{ steps.versions.outputs.versions_json }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - id: versions
+        run: |
+          set -euo pipefail
+
+          mapfile -t versions < <(grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' data/config/python_runtime_version.txt)
+          if [[ ${#versions[@]} -eq 0 ]]; then
+            echo "ERROR: Keine gueltigen Python-Versionen in data/config/python_runtime_version.txt gefunden." >&2
+            exit 1
+          fi
+
+          versions_json=$(printf '%s\n' "${versions[@]}" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "versions_json=${versions_json}" >> "$GITHUB_OUTPUT"
+
   build-runtime:
     needs:
       - resolve-guard-config
+      - read-python-versions
     if: ${{ github.repository_owner == needs.resolve-guard-config.outputs.valid_github_owner }}
     name: Build Python Runtime Artifacts
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
+        python_version: ${{ fromJson(needs.read-python-versions.outputs.versions_json) }}
         arch:
           - name: x86_64
             platform: linux/amd64
@@ -69,12 +93,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Read Python runtime version
-        id: pyver
-        run: |
-          version=$(head -n 1 data/config/python_runtime_version.txt | tr -d '[:space:]')
-          echo "version=${version}" >> "$GITHUB_OUTPUT"
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4
         with:
@@ -88,7 +106,7 @@ jobs:
             --platform "${{ matrix.arch.platform }}" \
             -v "${{ github.workspace }}:/workspace" \
             -w /workspace \
-            -e PYTHON_VERSION="${{ steps.pyver.outputs.version }}" \
+            -e PYTHON_VERSION="${{ matrix.python_version }}" \
             -e TARGET_ARCH="${{ matrix.arch.name }}" \
             -e TARGET_OS_VARIANT="debian${{ matrix.debian.version }}" \
             -e EXPECTED_DEBIAN_MAJOR="${{ matrix.debian.version }}" \
@@ -133,16 +151,21 @@ jobs:
       - name: Upload runtime artifact
         uses: actions/upload-artifact@v7
         with:
-          name: python-runtime-${{ steps.pyver.outputs.version }}-${{ matrix.arch.name }}-debian${{ matrix.debian.version }}
-          path: dist/python-runtime/python-${{ steps.pyver.outputs.version }}-linux-${{ matrix.arch.name }}-debian${{ matrix.debian.version }}.tar.xz*
+          name: python-runtime-${{ matrix.python_version }}-${{ matrix.arch.name }}-debian${{ matrix.debian.version }}
+          path: dist/python-runtime/python-${{ matrix.python_version }}-linux-${{ matrix.arch.name }}-debian${{ matrix.debian.version }}.tar.xz*
 
   publish-release:
     name: Publish Python Runtime Artifacts to Release Repository
     needs:
       - resolve-guard-config
+      - read-python-versions
       - build-runtime
     if: ${{ github.repository_owner == needs.resolve-guard-config.outputs.valid_github_owner && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_release)) }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python_version: ${{ fromJson(needs.read-python-versions.outputs.versions_json) }}
     env:
       TARGET_RELEASE_OWNER: ${{ github.repository_owner }}
       TARGET_RELEASE_REPO: python-runtime
@@ -171,16 +194,10 @@ jobs:
           owner: ${{ env.TARGET_RELEASE_OWNER }}
           repositories: ${{ env.TARGET_RELEASE_REPO }}
 
-      - name: Read Python runtime version
-        id: pyver
-        run: |
-          version=$(head -n 1 data/config/python_runtime_version.txt | tr -d '[:space:]')
-          echo "version=${version}" >> "$GITHUB_OUTPUT"
-          echo "release_tag=python-runtime-${version}" >> "$GITHUB_OUTPUT"
-
       - name: Download runtime artifacts
         uses: actions/download-artifact@v8
         with:
+          pattern: python-runtime-${{ matrix.python_version }}-*
           path: dist/python-runtime
           merge-multiple: true
 
@@ -191,8 +208,9 @@ jobs:
           script: |
             const owner = process.env.TARGET_RELEASE_OWNER;
             const repo = process.env.TARGET_RELEASE_REPO;
-            const tag = '${{ steps.pyver.outputs.release_tag }}';
-            const name = `${{ steps.pyver.outputs.version }} (${tag})`;
+            const version = '${{ matrix.python_version }}';
+            const tag = `python-runtime-${version}`;
+            const name = `${version} (${tag})`;
             const body = `Automatically generated Python runtime artifacts for openWB (${tag}).`;
 
             try {
@@ -224,7 +242,7 @@ jobs:
         with:
           repo_name: ${{ env.TARGET_RELEASE_REPO_NAME }}
           repo_token: ${{ steps.app-token.outputs.token }}
-          tag: ${{ steps.pyver.outputs.release_tag }}
+          tag: python-runtime-${{ matrix.python_version }}
           file: dist/python-runtime/**/*
           file_glob: true
           overwrite: true
