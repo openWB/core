@@ -25,18 +25,19 @@ class MinCurrent:
                     cp = preferenced_chargepoints[0]
                     missing_currents, counts = common.get_min_current(cp)
                     if max(missing_currents) > 0:
-                        # NEU: Bei reinem PV-Laden zusätzlich gegen dieselbe Schwelle prüfen, die auch
-                        # für das Abschalten genutzt wird (inkl. Speicher/min_bat_soc über calc_surplus()).
-                        # So läuft der Mindeststrom nicht an, wenn er laut derselben Logik sofort
-                        # wieder abgeschaltet werden müsste.
-                        if mode_tuple in CONSIDERED_CHARGE_MODES_PV_ONLY:
+                        # Nur beim (Neu-)Start prüfen, ob laut Speicher-/Überschussberechnung überhaupt
+                        # Leistung vorhanden ist. Ein bereits laufender Ladevorgang wird weiterhin von
+                        # switch_off_check_threshold() mit der korrekten Verzögerung behandelt - hier NICHT
+                        # eingreifen, sonst wird die switch_off_delay-Hysterese umgangen (siehe Tests
+                        # test_surplus[switch off delay for two of three charging] und test_phase_switch).
+                        if (mode_tuple in CONSIDERED_CHARGE_MODES_PV_ONLY and
+                                cp.data.get.charge_state is False):
                             power_in_use, threshold = counter.calc_switch_off(cp)
                             if power_in_use > threshold:
                                 common.set_current_counterdiff(-(cp.data.set.current or 0), 0, cp)
                                 cp.set_state_and_log(
-                                    "Mindeststrom kann nicht freigegeben werden, da laut Speicher- "
-                                    "und PV-Überschussberechnung keine ausreichende Leistung zur "
-                                    "Verfügung steht.")
+                                    "Mindeststrom kann nicht freigegeben werden, da laut Speicher- und "
+                                    "PV-Überschussberechnung keine ausreichende Leistung zur Verfügung steht.")
                                 preferenced_chargepoints.pop(0)
                                 continue
                         available_currents, limit = Loadmanagement().get_available_currents(
