@@ -27,6 +27,7 @@ class Idm(ConsumerSetup[IdmConfiguration]):
                  id: int = 0,
                  configuration: IdmConfiguration = None,
                  usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_TUNABLE,
+                                                     ConsumerUsage.SELF_CONTROLLED,
                                                      ConsumerUsage.METER_ONLY),
                  **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
