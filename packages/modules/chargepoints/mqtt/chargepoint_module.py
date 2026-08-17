@@ -1,5 +1,8 @@
 import logging
+from typing import Optional
 import paho.mqtt.client as mqtt
+from paho.mqtt.reasoncodes import ReasonCode as MqttReasonCode
+from paho.mqtt.properties import Properties as MqttProperties
 
 from helpermodules.broker import BrokerClient
 from helpermodules.pub import Pub
@@ -23,7 +26,7 @@ class ChargepointModule(AbstractChargepoint):
         self.store = get_chargepoint_value_store(self.config.id)
         self.fault_state = FaultState(ComponentInfo(self.config.id, "Ladepunkt", "chargepoint"))
 
-        def on_connect(client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: mqtt.ReasonCode, properties: mqtt.Properties):
+        def on_connect(client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: MqttReasonCode, properties: Optional[MqttProperties]):
             client.subscribe(f"openWB/mqtt/chargepoint/{self.config.id}/#")
 
         def on_message(client: mqtt.Client, userdata, message: mqtt.MQTTMessage):
@@ -50,7 +53,7 @@ class ChargepointModule(AbstractChargepoint):
         def parse_received_topics(value: str):
             return received_topics.get(f"{topic_prefix}{value}", get_default(ChargepointState, value))
         with SingleComponentUpdateContext(self.fault_state):
-            def on_connect(client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: mqtt.ReasonCode, properties: mqtt.Properties):
+            def on_connect(client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: MqttReasonCode, properties: Optional[MqttProperties]):
                 client.subscribe(f"openWB/mqtt/chargepoint/{self.config.id}/get/#")
 
             def on_message(client: mqtt.Client, userdata, message: mqtt.MQTTMessage):

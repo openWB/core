@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import logging
 import paho.mqtt.client as mqtt
+from paho.mqtt.reasoncodes import ReasonCode as MqttReasonCode
+from paho.mqtt.properties import Properties as MqttProperties
 from typing import Dict, Optional, Tuple
 
 from helpermodules.pub import Pub, pub_single
@@ -43,7 +45,7 @@ class IoStateManager:
                      1886 if host == "localhost" else 1883).start_finite_loop()
         return self.io_state
 
-    def on_connect(self, client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: mqtt.ReasonCode, properties: mqtt.Properties):
+    def on_connect(self, client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: MqttReasonCode, properties: Optional[MqttProperties]):
         """ connect to broker and subscribe to set topics
         """
         client.subscribe('openWB/internal_io/states/#', 2)

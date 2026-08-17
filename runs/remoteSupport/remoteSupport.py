@@ -10,6 +10,9 @@ from signal import signal, Signals, SIGTERM, SIGINT
 from time import sleep
 from typing import Optional
 import paho.mqtt.client as mqtt
+from paho.mqtt.enums import CallbackAPIVersion
+from paho.mqtt.reasoncodes import ReasonCode as MqttReasonCode
+from paho.mqtt.properties import Properties as MqttProperties
 import platform
 
 
@@ -56,7 +59,7 @@ def get_serial():
 
 
 def publish_as_json(client: mqtt.Client, topic: str, str_payload: str, qos: int = 0, retain: bool = False,
-                    properties: Optional[mqtt.Properties] = None) -> mqtt.MQTTMessageInfo:
+                    properties: Optional[MqttProperties] = None) -> mqtt.MQTTMessageInfo:
     return client.publish(topic, json.dumps(str_payload), qos, retain, properties)
 
 
@@ -101,7 +104,8 @@ def stop_tunnel(tunnel: Optional[Popen], tunnel_name: str) -> None:
         log.error(f"tunnel {tunnel_name} is not running.")
 
 
-def on_connect(client: mqtt.Client, userdata, flags: mqtt.ConnectFlags, reason_code: mqtt.ReasonCode, properties: mqtt.Properties) -> None:
+def on_connect(client: mqtt.Client, userdata, flags: mqtt.ConnectFlags,
+               reason_code: MqttReasonCode, properties: Optional[MqttProperties]) -> None:
     """connect to broker and subscribe to set topics"""
     log.info("Connected")
     client.subscribe([
@@ -224,7 +228,7 @@ signal(SIGTERM, handle_terminate)  # Handle SIGTERM from systemctl for graceful 
 signal(SIGINT, handle_terminate)  # Handle SIGINT from keyboard (Strg+C) for graceful shutdown
 lt_executable = get_lt_executable()
 client = mqtt.Client(
-    callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
+    callback_api_version=CallbackAPIVersion.VERSION2,
     client_id=f"openWB-remote-{get_serial()}-{datetime.today().timestamp()}",
 )
 client.on_connect = on_connect

@@ -1,6 +1,7 @@
 import datetime
 import logging
 import paho.mqtt.client as mqtt
+from paho.mqtt.enums import CallbackAPIVersion
 import time
 from typing import Callable
 
@@ -26,7 +27,7 @@ class BrokerClient:
         try:
             self.name = f"openWB-{name}-{get_name_suffix()}"
             self.client = mqtt.Client(
-                callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
+                callback_api_version=CallbackAPIVersion.VERSION2,
                 client_id=self.name,
             )
             self.client.on_connect = on_connect
@@ -52,7 +53,7 @@ class InternalBrokerPublisher:
     def __init__(self) -> None:
         try:
             self.client = mqtt.Client(
-                callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
+                callback_api_version=CallbackAPIVersion.VERSION2,
                 client_id=f"openWB-python-bulk-publisher-{get_name_suffix()}",
             )
             self.client.connect("localhost", 1886)
