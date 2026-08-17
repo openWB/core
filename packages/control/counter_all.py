@@ -179,7 +179,7 @@ class CounterAll:
             comp = self._get_component(child)
 
             if comp.data.get.fault_state < 2:
-                if isinstance(comp, Counter):
+                if child["type"] == ComponentType.COUNTER.value:
                     home_consumption += self._calc_home_consumption_from_counter(child, child_home_consumption)
             else:
                 log.warning(
@@ -187,7 +187,7 @@ class CounterAll:
 
         return home_consumption
 
-    def _calc_home_consumption(self) -> Tuple[float, List]:
+    def _calc_home_consumption(self) -> Tuple[float, Dict]:
         evu_id = self.get_id_evu_counter()
 
         # get_elements_for_downstream_calculation berücksichtigt Hybrid-Batterien

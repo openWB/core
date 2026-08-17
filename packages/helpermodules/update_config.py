@@ -3567,6 +3567,23 @@ class UpdateConfig:
         old_topic = "openWB/counter/config/home_consumption_source_id"
         if old_topic in self.all_received_topics:
             source_id = decode_payload(self.all_received_topics[old_topic])
+            hierarchy_topic = "openWB/counter/get/hierarchy"
+            hierarchy = decode_payload(self.all_received_topics.get(hierarchy_topic, []))
+
+            if source_id is None:
+                # Altes Default-Verhalten beibehalten: Bei None den EVU-Zähler (hierarchy[0]) verwenden.
+                if (
+                    isinstance(hierarchy, list)
+                    and len(hierarchy) > 0
+                    and hierarchy[0].get("type") == "counter"
+                ):
+                    source_id = hierarchy[0].get("id")
+                else:
+                    log.warning(
+                        "Migration der Hausverbrauchs-Zaehler (upgrade_datastore_138) fehlgeschlagen: "
+                        f"'{old_topic}' ist None und '{hierarchy_topic}' enthaelt keinen gueltigen EVU-Zaehler."
+                    )
+
             if source_id is not None:
                 try:
                     source_id = int(source_id)
@@ -3578,8 +3595,6 @@ class UpdateConfig:
                     self.__update_topic(f"openWB/counter/{source_id}/config/is_home_consumption_counter_auto", False)
 
                     # Direkte Kind-Zähler explizit deaktivieren, damit Auto-Vererbung hier endet.
-                    hierarchy_topic = "openWB/counter/get/hierarchy"
-                    hierarchy = decode_payload(self.all_received_topics.get(hierarchy_topic, []))
                     if isinstance(hierarchy, list):
                         for child_counter_id in get_direct_child_counter_ids(hierarchy, source_id):
                             self.__update_topic(
