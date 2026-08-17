@@ -17,9 +17,13 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ steps.pyver.outputs.version }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10.0.1
+
       - name: Install dependencies
         run: |
-          pip3 install -r "/home/runner/work/core/core/requirements.txt"
+          uv pip install --system -r requirements.txt
       - name: Flake8 with annotations in packages folder
         uses: TrueBrain/actions-flake8@v2.4
         with:
