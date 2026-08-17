@@ -18,13 +18,13 @@ def create_device(device_config: Anker):
     client = None
 
     def create_bat_component(component_config: AnkerBatSetup):
-        return AnkerBat(component_config, device_id=device_config.id, client=client)
+        return AnkerBat(component_config, device_config=device_config, client=client)
 
     def create_counter_component(component_config: AnkerCounterSetup):
-        return AnkerCounter(component_config, device_id=device_config.id, client=client)
+        return AnkerCounter(component_config, device_config=device_config, client=client)
 
     def create_inverter_component(component_config: AnkerInverterSetup):
-        return AnkerInverter(component_config, device_id=device_config.id, client=client)
+        return AnkerInverter(component_config, device_config=device_config, client=client)
 
     def update_components(components: Iterable[Union[AnkerBat, AnkerCounter, AnkerInverter]]):
         with client:
