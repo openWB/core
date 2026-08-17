@@ -15,7 +15,7 @@ class VampairConfiguration:
 
 
 @auto_str
-class VampairHeatPump(ConsumerSetup[VampairConfiguration]):
+class Vampair(ConsumerSetup[VampairConfiguration]):
     def __init__(self,
                  name: str = "Vampair Wärmepumpe",
                  type: str = "vampair",
