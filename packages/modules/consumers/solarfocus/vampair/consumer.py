@@ -6,7 +6,7 @@ from modules.common.component_type import ComponentType
 from modules.common.configurable_consumer import ConfigurableConsumer
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount._simcounter import SimCounterConsumer
-from modules.consumers.vampair.vampair.config import VampairHeatPump
+from modules.consumers.solarfocus.vampair.config import VampairHeatPump
 
 
 def create_consumer(config: VampairHeatPump):
