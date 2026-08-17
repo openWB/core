@@ -8,13 +8,13 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, Endian, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_component_value_store
-from modules.devices.anker.solarbank_max_ac.config import AnkerInverterSetup
+from modules.devices.anker.solarbank_max_ac.config import Anker, AnkerInverterSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
-    device_id: int
+    device_config: Anker
     client: ModbusTcpClient_
 
 
@@ -24,15 +24,15 @@ class AnkerInverter(AbstractInverter):
         self.kwargs: KwargsDict = kwargs
 
     def initialize(self) -> None:
-        self.__device_id: int = self.kwargs['device_id']
+        self.device_config: Anker = self.kwargs['device_config']
         self.client: ModbusTcpClient_ = self.kwargs['client']
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, self.component_config.type)
+        self.sim_counter = SimCounter(self.device_config.id, self.component_config.id, self.component_config.type)
         self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
-        unit = self.component_config.configuration.modbus_id
+        unit = self.device_config.configuration.modbus_id
 
         # Register 10002 ist die PV_power also die DC Leistung
         # Register 10010 ist "Load_power" unklar ob dies wirklich die AC Leistung des Inverters ist
