@@ -180,10 +180,20 @@ Bei voll aktivierter Matrix erzeugt der Workflow pro Lauf aktuell drei primäre 
 
 ## Versionswechsel
 
-Die gewünschte Python-Version wird zentral über [data/config/python_runtime_version.txt](data/config/python_runtime_version.txt) gesteuert.
+Die Python-Versionen werden zentral über [data/config/python_runtime_version.txt](data/config/python_runtime_version.txt) gesteuert.
+
+Die Datei kann mehrere gueltige Versionen enthalten (eine pro Zeile), zum Beispiel:
+
+3.9.25
+3.9.26
+
+Semantik:
+
+* Erste Zeile: aktuell produktiv genutzte Zielversion (Bootstrap auf den Geraeten).
+* Weitere Zeilen: zusaetzlich gueltige Versionen, fuer die CI bereits Runtime-Artefakte baut und veroeffentlicht.
 
 Beim Ändern dieser Datei:
 
-1. erzeugt der Workflow Artefakte mit der neuen Versionsnummer im Dateinamen,
-2. publiziert sie optional in ein separates Release-Tag `python-runtime-<neue_version>` im Repository `python-runtime`,
-3. lädt das Bootstrap-Skript automatisch aus diesem neuen versionsspezifischen Tag.
+1. erzeugt der Workflow Artefakte fuer alle gueltigen Versionen in der Datei,
+2. publiziert sie optional in separate Release-Tags `python-runtime-<version>` im Repository `python-runtime`,
+3. laedt das Bootstrap-Skript weiterhin die Runtime passend zur ersten Zeile (aktive Zielversion).
