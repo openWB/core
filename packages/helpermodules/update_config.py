@@ -3588,14 +3588,14 @@ class UpdateConfig:
                     # Bisherigen Source-Counter explizit als Hausverbrauchs-Zähler setzen.
                     self.__update_topic(
                         f"openWB/counter/{source_id}/config/is_home_consumption_counter",
-                        CounterMode.HomeConsumption.value)
+                        CounterMode.HOME_CONSUMPTION.value)
 
                     # Direkte Kind-Zähler explizit deaktivieren, damit Auto-Vererbung hier endet.
                     if isinstance(hierarchy, list):
                         for child_counter_id in get_direct_child_counter_ids(hierarchy, source_id):
                             self.__update_topic(
                                 f"openWB/counter/{child_counter_id}/config/is_home_consumption_counter",
-                                CounterMode.NotHomeConsumption.value)
+                                CounterMode.NOT_HOME_CONSUMPTION.value)
 
                     else:
                         log.warning(

@@ -27,7 +27,7 @@ def get_counter_default_config():
     return {"max_power_errorcase": 7000,
             "max_currents": [35]*3,
             "max_total_power": 24000,
-            "is_home_consumption_counter": CounterMode.AutoHomeConsumption.value,
+            "is_home_consumption_counter": CounterMode.AUTO_HOME_CONSUMPTION.value,
             }
 
 
@@ -38,9 +38,9 @@ class ControlRangeState(Enum):
 
 
 class CounterMode(Enum):
-    NotHomeConsumption = 0
-    HomeConsumption = 1
-    AutoHomeConsumption = 2
+    NOT_HOME_CONSUMPTION = 0
+    HOME_CONSUMPTION = 1
+    AUTO_HOME_CONSUMPTION = 2
 
 
 @dataclass
@@ -50,7 +50,7 @@ class Config:
                                       "topic": "config/max_currents"})
     max_total_power: float = field(default=0, metadata={"topic": "config/max_total_power"})
 
-    is_home_consumption_counter: int = field(default=CounterMode.AutoHomeConsumption.value, metadata={
+    is_home_consumption_counter: int = field(default=CounterMode.AUTO_HOME_CONSUMPTION.value, metadata={
         "topic": "config/is_home_consumption_counter"})
 
 

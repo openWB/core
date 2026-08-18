@@ -430,41 +430,41 @@ def data_home_consumption() -> None:
     data.data.counter_data.update({
         "counter0": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
             spec=CounterGet, power=6450, fault_state=0),
-            config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.NotHomeConsumption.value))),
+            config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.NOT_HOME_CONSUMPTION.value))),
         "counter6": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
             spec=CounterGet, power=4300,  fault_state=0),
-            config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.NotHomeConsumption.value))),
+            config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.NOT_HOME_CONSUMPTION.value))),
         "counter7": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
             spec=CounterGet, power=20700, fault_state=0),
-            config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.NotHomeConsumption.value))),
+            config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.NOT_HOME_CONSUMPTION.value))),
         "counter13": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
             spec=CounterGet, power=7150, fault_state=0),
-            config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.NotHomeConsumption.value))),
+            config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.NOT_HOME_CONSUMPTION.value))),
         "counter14": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
             spec=CounterGet, power=-9750, fault_state=0),
-            config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.NotHomeConsumption.value))),
+            config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.NOT_HOME_CONSUMPTION.value))),
 
         "counter11": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
             spec=CounterGet, power=6700, fault_state=0),
-            config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.HomeConsumption.value))),
+            config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.HOME_CONSUMPTION.value))),
 
         "counter8": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
             spec=CounterGet, power=7400, fault_state=0),
-            config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.HomeConsumption.value))),
+            config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.HOME_CONSUMPTION.value))),
         "counter9": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
             spec=CounterGet,  power=4300, fault_state=0),
-            config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.HomeConsumption.value))),
+            config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.HOME_CONSUMPTION.value))),
         "counter10": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
             spec=CounterGet, power=7150, fault_state=0),
-            config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.HomeConsumption.value))),
+            config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.HOME_CONSUMPTION.value))),
         "counter15": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
             spec=CounterGet, power=-9750, fault_state=0),
-            config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.HomeConsumption.value))),
+            config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.HOME_CONSUMPTION.value))),
 
         "counter16": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
             spec=CounterGet, power=4300,  fault_state=0),
-            config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.AutoHomeConsumption.value))),
+            config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.AUTO_HOME_CONSUMPTION.value))),
         "counter17": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
             spec=CounterGet, power=7150, fault_state=0),
-            config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.AutoHomeConsumption.value))),
+            config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.AUTO_HOME_CONSUMPTION.value))),
     })

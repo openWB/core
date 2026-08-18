@@ -138,7 +138,7 @@ class CounterAll:
     def _get_is_home_consumption(self, counter: Counter, parent_home_consumption: int) -> int:
         # Wenn auto ausgeählt ist, wird die einstellung vom Parent übernommen
         # Wenn nicht, wird die Einstellung vom Zähler selbst genommen
-        if counter.data.config.is_home_consumption_counter == CounterMode.AutoHomeConsumption.value:
+        if counter.data.config.is_home_consumption_counter == CounterMode.AUTO_HOME_CONSUMPTION.value:
             return parent_home_consumption
 
         return counter.data.config.is_home_consumption_counter
@@ -172,7 +172,7 @@ class CounterAll:
         counter = self._get_component(element)
         child_home_consumption = self._get_is_home_consumption(counter, parent_home_consumption)
 
-        if child_home_consumption == CounterMode.HomeConsumption.value:
+        if child_home_consumption == CounterMode.HOME_CONSUMPTION.value:
             home_consumption += local_power
 
         for child in element["children"]:
@@ -203,7 +203,7 @@ class CounterAll:
         home_consumption = 0.0
 
         # Rekursion startet immer beim EVU-Zähler.
-        home_consumption = self._calc_home_consumption_from_counter(evu_element, CounterMode.NotHomeConsumption.value)
+        home_consumption = self._calc_home_consumption_from_counter(evu_element, CounterMode.NOT_HOME_CONSUMPTION.value)
 
         home_consumption -= self.data.set.smarthome_power_excluded_from_home_consumption
 
@@ -560,13 +560,13 @@ class CounterAll:
         counter_obj = data.data.counter_data[f"counter{counter_id}"]
 
         # Explizite Einstellung hat Vorrang, nur Auto wird vom Parent geerbt.
-        if not counter_obj.data.config.is_home_consumption_counter == CounterMode.AutoHomeConsumption.value:
+        if not counter_obj.data.config.is_home_consumption_counter == CounterMode.AUTO_HOME_CONSUMPTION.value:
             return counter_obj.data.config.is_home_consumption_counter
 
         parent = self.get_entry_of_parent(counter_id)
         if not parent or parent["type"] != ComponentType.COUNTER.value:
-            # Auto am Wurzel-Zähler entspricht dem bisherigen Startwert CounterMode.NotHomeConsumption.
-            return CounterMode.NotHomeConsumption.value
+            # Auto am Wurzel-Zähler entspricht dem bisherigen Startwert CounterMode.NOT_HOME_CONSUMPTION.
+            return CounterMode.NOT_HOME_CONSUMPTION.value
 
         return self._is_home_consumption_counter_by_id(parent["id"])
 
@@ -574,7 +574,7 @@ class CounterAll:
         """Ermittelt den effektiven Home-Consumption-Status eines Zählers.
         Berücksichtigt den Auto-Parameter entlang aller übergeordneten Zähler.
         """
-        return self._is_home_consumption_counter_by_id(counter_id) == CounterMode.HomeConsumption.value
+        return self._is_home_consumption_counter_by_id(counter_id) == CounterMode.HOME_CONSUMPTION.value
 
 
 def get_max_id_in_hierarchy(current_entry: List, max_id: int) -> int:
