@@ -4,10 +4,11 @@ import logging
 from modules.common.abstract_consumer import CurrentValues
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
+from modules.common.component_type import ComponentType
 from modules.common.configurable_consumer import ConfigurableConsumer
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount._simcounter import SimCounterConsumer
-from modules.consumers.askoma.askoheat.config import SampleConsumer
+from modules.consumers.sample.sample.config import SampleConsumer
 
 log = logging.getLogger(__name__)
 

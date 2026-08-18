@@ -21,9 +21,7 @@ class JsonConfiguration:
                  jq_switch_off: str = None,
                  jq_set_power_limit: str = None):
         self.url = url
-        self.jq_current_l1 = jq_current_l1
-        self.jq_current_l2 = jq_current_l2
-        self.jq_current_l3 = jq_current_l3
+        self.jq_currents = (jq_current_l1, jq_current_l2, jq_current_l3)
         self.jq_power = jq_power
         self.jq_temperatures = jq_temperatures
         self.jq_imported = jq_imported
