@@ -305,6 +305,11 @@ prepare_wheelhouse_source() {
 }
 
 ensure_pyenv() {
+	local attempt
+	local max_attempts=5
+	local retry_delay=3
+	local clone_log
+
 	if [[ -x "${PYENV_BIN}" ]]; then
 		log "pyenv already present: ${PYENV_BIN}"
 		return 0
@@ -317,13 +322,33 @@ ensure_pyenv() {
 
 	log "Installing local pyenv to ${PYENV_ROOT}."
 	rm -rf "${PYENV_ROOT}"
-	git clone --depth 1 https://github.com/pyenv/pyenv.git "${PYENV_ROOT}" >/dev/null 2>&1 || {
-		log "ERROR: pyenv could not be installed."
-		return 1
-	}
-	log "pyenv installed successfully."
+	clone_log=$(mktemp)
+	for attempt in $(seq 1 "${max_attempts}"); do
+		if git clone --depth 1 https://github.com/pyenv/pyenv.git "${PYENV_ROOT}" >"${clone_log}" 2>&1; then
+			rm -f "${clone_log}"
+			log "pyenv installed successfully."
+			[[ -x "${PYENV_BIN}" ]]
+			return 0
+		fi
 
-	[[ -x "${PYENV_BIN}" ]]
+		log "WARN: pyenv clone attempt ${attempt}/${max_attempts} failed."
+		if [[ -s "${clone_log}" ]]; then
+			log "pyenv clone error output:"
+			tail -n 20 "${clone_log}" | while IFS= read -r line; do
+				log "  ${line}"
+			done
+		fi
+
+		rm -rf "${PYENV_ROOT}"
+		if (( attempt < max_attempts )); then
+			log "Retrying pyenv clone in ${retry_delay}s."
+			sleep "${retry_delay}"
+		fi
+	done
+
+	rm -f "${clone_log}"
+	log "ERROR: pyenv could not be installed after ${max_attempts} attempts."
+	return 1
 }
 
 check_build_dependencies() {
@@ -524,6 +549,7 @@ install_requirements() {
 	local py_cmd="${VENV_DIR}/bin/python3"
 	local pip_cmd=("${VENV_DIR}/bin/python3" -m pip)
 	local uv_bin="${VENV_DIR}/bin/uv"
+	local uv_cmd=("${VENV_DIR}/bin/python3" -m uv)
 	local wheelhouse_dir=""
 	local wheelhouse_temp_dir=""
 	log "Installing Python dependencies from ${REQ_FILE}."
@@ -532,12 +558,16 @@ install_requirements() {
 		log "WARN: Could not upgrade pip/setuptools/wheel."
 	fi
 
+	if ! "${pip_cmd[@]}" install --upgrade uv; then
+		log "WARN: Could not install uv, using pip fallback where needed."
+	fi
+
 	if wheelhouse_dir=$(prepare_wheelhouse_source); then
 		wheelhouse_temp_dir=$(dirname "${wheelhouse_dir}")
 		log "Using wheelhouse as preferred source: ${wheelhouse_dir}"
 
 		if [[ -x "${uv_bin}" ]]; then
-			if "${uv_bin}" pip install --python "${py_cmd}" --no-index --find-links "${wheelhouse_dir}" -r "${REQ_FILE}"; then
+			if "${uv_cmd[@]}" pip install --python "${py_cmd}" --no-index --find-links "${wheelhouse_dir}" -r "${REQ_FILE}"; then
 				log "Requirements installed successfully from wheelhouse with uv."
 				touch "${MARKER_FILE}"
 				rm -rf "${wheelhouse_temp_dir}"
@@ -557,29 +587,25 @@ install_requirements() {
 		rm -rf "${wheelhouse_temp_dir}"
 	fi
 
-	if "${pip_cmd[@]}" install --upgrade uv; then
-		if [[ -x "${uv_bin}" ]]; then
-			log "Using uv for faster requirements installation."
+	if [[ -x "${uv_bin}" ]]; then
+		log "Using uv for faster requirements installation."
 
-			if "${uv_bin}" pip install --python "${py_cmd}" --only-binary :all: -r "${REQ_FILE}"; then
-				log "Requirements installed successfully with uv."
-				touch "${MARKER_FILE}"
-				return 0
-			fi
-			log "WARN: uv wheel-only installation failed, retrying with source distributions."
-
-			if "${uv_bin}" pip install --python "${py_cmd}" -r "${REQ_FILE}"; then
-				log "Requirements installed successfully with uv (including source distributions)."
-				touch "${MARKER_FILE}"
-				return 0
-			fi
-
-			log "WARN: uv installation failed, falling back to pip."
-		else
-			log "WARN: uv was installed, but binary was not found (${uv_bin})."
+		if "${uv_cmd[@]}" pip install --python "${py_cmd}" --only-binary :all: -r "${REQ_FILE}"; then
+			log "Requirements installed successfully with uv."
+			touch "${MARKER_FILE}"
+			return 0
 		fi
+		log "WARN: uv wheel-only installation failed, retrying with source distributions."
+
+		if "${uv_cmd[@]}" pip install --python "${py_cmd}" -r "${REQ_FILE}"; then
+			log "Requirements installed successfully with uv (including source distributions)."
+			touch "${MARKER_FILE}"
+			return 0
+		fi
+
+		log "WARN: uv installation failed, falling back to pip."
 	else
-		log "WARN: Could not install uv, using pip fallback."
+		log "WARN: uv binary was not found (${uv_bin}), using pip fallback."
 	fi
 
 	if "${pip_cmd[@]}" install --only-binary :all: -r "${REQ_FILE}"; then
