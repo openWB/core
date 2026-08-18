@@ -2614,6 +2614,12 @@
 				},
 				{
 					"acltype": "publishClientReceive",
+					"topic": "openWB/system/python_runtime_version",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
 					"topic": "openWB/chargepoint/+/get/version",
 					"priority": 0,
 					"allow": true
