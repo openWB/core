@@ -12,6 +12,8 @@ PYTHON_VERSION=""
 PYTHON_MAJOR_MINOR=""
 PYTHON_RELEASE_TAG=""
 PYTHON_BINARIES_BASE_URL=""
+PYTHON_WHEELHOUSE_RELEASE_TAG=""
+PYTHON_WHEELHOUSE_BASE_URL=""
 PYTHON_REPO_OWNER="openWB"
 PYTHON_REPO_NAME="python-runtime"
 OPENWB_USER="openwb"
@@ -58,9 +60,13 @@ init_python_config() {
 	PYTHON_MAJOR_MINOR="${PYTHON_VERSION%.*}"
 	PYTHON_RELEASE_TAG="${OPENWB_PYTHON_RELEASE_TAG:-python-runtime-${PYTHON_VERSION}}"
 	PYTHON_BINARIES_BASE_URL="${OPENWB_PYTHON_BINARIES_BASE_URL:-https://github.com/${PYTHON_REPO_OWNER}/${PYTHON_REPO_NAME}/releases/download/${PYTHON_RELEASE_TAG}}"
+	PYTHON_WHEELHOUSE_RELEASE_TAG="${OPENWB_PYTHON_WHEELHOUSE_RELEASE_TAG:-python-wheels-${PYTHON_VERSION}}"
+	PYTHON_WHEELHOUSE_BASE_URL="${OPENWB_PYTHON_WHEELHOUSE_BASE_URL:-https://github.com/${PYTHON_REPO_OWNER}/${PYTHON_REPO_NAME}/releases/download/${PYTHON_WHEELHOUSE_RELEASE_TAG}}"
 	log "Python target version: ${PYTHON_VERSION}"
 	log "Release tag for binaries: ${PYTHON_RELEASE_TAG}"
 	log "Binary base URL: ${PYTHON_BINARIES_BASE_URL}"
+	log "Release tag for wheelhouse: ${PYTHON_WHEELHOUSE_RELEASE_TAG}"
+	log "Wheelhouse base URL: ${PYTHON_WHEELHOUSE_BASE_URL}"
 }
 
 is_required_python() {
@@ -119,6 +125,26 @@ detect_os_variant() {
 	esac
 }
 
+resolve_platform_target() {
+	local arch
+	local os_variant=""
+	local debian_major=""
+
+	arch=$(detect_arch)
+	if os_variant=$(detect_os_variant); then
+		case "${os_variant}" in
+			debian*)
+				debian_major="${os_variant#debian}"
+				;;
+			rpios*)
+				debian_major="${os_variant#rpios}"
+				;;
+		esac
+	fi
+
+	echo "${arch};${os_variant};${debian_major}"
+}
+
 extract_archive() {
 	local archive="$1"
 	local destination="$2"
@@ -154,17 +180,7 @@ install_prebuilt_python() {
 		return 1
 	fi
 
-	arch=$(detect_arch)
-	if os_variant=$(detect_os_variant); then
-		case "${os_variant}" in
-			debian*)
-				debian_major="${os_variant#debian}"
-				;;
-			rpios*)
-				debian_major="${os_variant#rpios}"
-				;;
-		esac
-	fi
+	IFS=';' read -r arch os_variant debian_major <<< "$(resolve_platform_target)"
 	log "Searching compiled Python runtime for arch=${arch}, os_variant=${os_variant:-unknown}"
 	temp_dir=$(mktemp -d)
 	archive="${temp_dir}/python.tar.xz"
@@ -223,6 +239,68 @@ install_prebuilt_python() {
 
 	log "No matching compiled Python runtime found."
 	rm -rf "${temp_dir}"
+	return 1
+}
+
+prepare_wheelhouse_source() {
+	local arch
+	local os_variant=""
+	local debian_major=""
+	local temp_dir
+	local archive
+	local wheelhouse_dir
+	local candidate
+	local url
+	local wheel_count
+	local candidates=()
+
+	if [[ -z "${PYTHON_WHEELHOUSE_BASE_URL}" ]]; then
+		log "WARN: No wheelhouse base URL set, skipping wheelhouse download."
+		return 1
+	fi
+
+	IFS=';' read -r arch os_variant debian_major <<< "$(resolve_platform_target)"
+
+	temp_dir=$(mktemp -d)
+	archive="${temp_dir}/wheelhouse.tar.xz"
+	wheelhouse_dir="${temp_dir}/wheelhouse"
+	mkdir -p "${wheelhouse_dir}"
+
+	if [[ -n "${os_variant}" ]]; then
+		candidates+=("python-wheelhouse-${PYTHON_VERSION}-linux-${arch}-${os_variant}.tar.xz")
+	fi
+
+	# On Raspberry Pi OS, fall back to debian<major> because CI artifacts are built on Debian.
+	if [[ -n "${debian_major}" && "${os_variant}" != "debian${debian_major}" ]]; then
+		candidates+=("python-wheelhouse-${PYTHON_VERSION}-linux-${arch}-debian${debian_major}.tar.xz")
+	fi
+
+	for candidate in "${candidates[@]}"; do
+		url="${PYTHON_WHEELHOUSE_BASE_URL}/${candidate}"
+		log "Trying to download wheelhouse artifact: ${url}"
+		if ! curl -fL --connect-timeout 10 --retry 2 --retry-delay 2 -o "${archive}" "${url}" >/dev/null 2>&1; then
+			log "No wheelhouse match found: ${candidate}"
+			continue
+		fi
+
+		find "${wheelhouse_dir}" -mindepth 1 -delete >/dev/null 2>&1
+		if ! extract_archive "${archive}" "${wheelhouse_dir}"; then
+			log "WARN: Could not extract wheelhouse archive: ${candidate}"
+			continue
+		fi
+
+		wheel_count=$(find "${wheelhouse_dir}" -type f -name '*.whl' | wc -l)
+		if (( wheel_count > 0 )); then
+			log "Wheelhouse artifact ready with ${wheel_count} wheels: ${candidate}"
+			echo "${wheelhouse_dir}"
+			return 0
+		fi
+
+		log "WARN: Wheelhouse archive contains no wheels: ${candidate}"
+	done
+
+	rm -rf "${temp_dir}"
+	log "No matching wheelhouse artifact available."
 	return 1
 }
 
@@ -446,10 +524,37 @@ install_requirements() {
 	local py_cmd="${VENV_DIR}/bin/python3"
 	local pip_cmd=("${VENV_DIR}/bin/python3" -m pip)
 	local uv_bin="${VENV_DIR}/bin/uv"
+	local wheelhouse_dir=""
+	local wheelhouse_temp_dir=""
 	log "Installing Python dependencies from ${REQ_FILE}."
 
 	if ! "${pip_cmd[@]}" install --upgrade pip setuptools wheel; then
 		log "WARN: Could not upgrade pip/setuptools/wheel."
+	fi
+
+	if wheelhouse_dir=$(prepare_wheelhouse_source); then
+		wheelhouse_temp_dir=$(dirname "${wheelhouse_dir}")
+		log "Using wheelhouse as preferred source: ${wheelhouse_dir}"
+
+		if [[ -x "${uv_bin}" ]]; then
+			if "${uv_bin}" pip install --python "${py_cmd}" --no-index --find-links "${wheelhouse_dir}" -r "${REQ_FILE}"; then
+				log "Requirements installed successfully from wheelhouse with uv."
+				touch "${MARKER_FILE}"
+				rm -rf "${wheelhouse_temp_dir}"
+				return 0
+			fi
+			log "WARN: uv wheelhouse installation failed, trying pip with wheelhouse."
+		fi
+
+		if "${pip_cmd[@]}" install --no-index --find-links "${wheelhouse_dir}" -r "${REQ_FILE}"; then
+			log "Requirements installed successfully from wheelhouse with pip."
+			touch "${MARKER_FILE}"
+			rm -rf "${wheelhouse_temp_dir}"
+			return 0
+		fi
+
+		log "WARN: Wheelhouse installation failed, falling back to remote installation."
+		rm -rf "${wheelhouse_temp_dir}"
 	fi
 
 	if "${pip_cmd[@]}" install --upgrade uv; then
