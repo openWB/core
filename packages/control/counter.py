@@ -50,8 +50,8 @@ class Config:
                                       "topic": "config/max_currents"})
     max_total_power: float = field(default=0, metadata={"topic": "config/max_total_power"})
 
-    is_home_consumption_counter: CounterMode = field(default=CounterMode.AutoHomeConsumption.value, metadata={
-                                                     "topic": "config/is_home_consumption_counter"})
+    is_home_consumption_counter: int = field(default=CounterMode.AutoHomeConsumption.value, metadata={
+        "topic": "config/is_home_consumption_counter"})
 
 
 def config_factory() -> Config:
