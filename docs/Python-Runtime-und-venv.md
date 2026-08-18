@@ -36,6 +36,54 @@ Ablauf:
 3. Falls nötig erneuter `uv`-Versuch inkl. Source-Distributionen.
 4. Wenn `uv` nicht verfügbar ist oder fehlschlägt, automatischer Fallback auf `pip`.
 
+## Vorgebaute Python-Pakete (Wheelhouse)
+
+Zusätzlich zur vorkompilierten Runtime gibt es einen separaten Workflow für vorgebaute Python-Pakete (Wheelhouse). Ziel ist, die Paketinstallation auf Zielsystemen weiter zu beschleunigen.
+
+Workflow:
+
+* [.github/workflows/build_python_runtime_artifacts.yml](.github/workflows/build_python_runtime_artifacts.yml)
+
+Build-Skript:
+
+* [runs/build_python_wheelhouse.sh](runs/build_python_wheelhouse.sh)
+
+Der Workflow:
+
+1. liest alle gültigen Versionen aus [data/config/python_runtime_version.txt](data/config/python_runtime_version.txt),
+2. baut je nach Build-Plan Runtime und/oder Wheelhouse pro Version und Matrix-Kombination,
+3. kann beide Builds im selben Container-Lauf ausführen (weniger Setup-Overhead),
+4. veröffentlicht optional in das separate Repository `python-runtime` unter tags `python-runtime-<python_version>` und `python-wheels-<python_version>`.
+
+Der Workflow läuft nur in diesen Fällen:
+
+1. Bei Runtime-relevanten Änderungen (u. a. [runs/build_python_runtime_artifact.sh](runs/build_python_runtime_artifact.sh), [runs/bootstrap_venv.sh](runs/bootstrap_venv.sh), [data/config/python_runtime_version.txt](data/config/python_runtime_version.txt), Workflow-Datei).
+2. Bei Änderungen an [requirements.txt](requirements.txt).
+3. Bei Änderungen an [runs/build_python_wheelhouse.sh](runs/build_python_wheelhouse.sh) oder der Workflow-Datei.
+
+Entdoppelung bei Mehrfach-Triggern:
+
+* Entfällt durch den zusammengeführten Workflow (nur ein gemeinsamer Run pro Trigger).
+
+Manuelle Ausführung (`workflow_dispatch`):
+
+* `build_runtime`: steuert, ob Runtime-Artefakte gebaut werden.
+* `build_wheelhouse`: steuert, ob Wheelhouse-Artefakte gebaut werden.
+* `publish_release`: steuert, ob die gebauten Artefakte als Release-Assets veröffentlicht werden.
+
+Aktuelles Artefakt-Schema für Wheels:
+
+* `python-wheelhouse-<python_version>-linux-<arch>-<os_variant>.tar.xz`
+* `python-wheelhouse-<python_version>-linux-<arch>-<os_variant>.tar.xz.sha256`
+
+Beispiel:
+
+* `python-wheelhouse-3.9.25-linux-armv7l-debian11.tar.xz`
+
+Hinweis:
+
+* Die optionale Release-Veröffentlichung nutzt denselben GitHub-App-Mechanismus wie die Runtime-Veröffentlichung.
+
 ## Konfiguration der Binary-Quelle
 
 Standardmäßig wird eine Release-URL verwendet. Diese kann über eine Umgebungsvariable überschrieben werden:
@@ -170,9 +218,10 @@ Der Tag ist versionsspezifisch und wird aus [data/config/python_runtime_version.
 
 Für den Publish-Schritt wird im Core-Repository ein Secret benötigt:
 
-* `PYTHON_RUNTIME_REPO_TOKEN`
+* `PYTHON_RUNTIME_APP_ID`
+* `PYTHON_RUNTIME_APP_PRIVATE_KEY`
 
-Das Token muss mindestens Schreibrechte auf `Contents` im Zielrepository `python-runtime` besitzen.
+Der Publish-Schritt erzeugt damit zur Laufzeit ein kurzlebiges Installation-Token für das Zielrepository `python-runtime`.
 
 Ohne diese Option werden die Artefakte nur als normale Workflow-Artefakte bereitgestellt.
 
@@ -188,6 +237,11 @@ Bei voll aktivierter Matrix erzeugt der Workflow pro Lauf aktuell drei primäre 
 * `python-3.9.25-linux-armv7l-debian11.tar.xz`
 * `python-3.9.25-linux-aarch64-debian11.tar.xz`
 * `python-3.9.25-linux-x86_64-debian11.tar.xz`
+
+Beim Wheelhouse-Workflow entstehen analog pro Matrix-Eintrag:
+
+* `python-wheelhouse-<python_version>-linux-<arch>-<os_variant>.tar.xz`
+* passende Checksumme `.sha256`
 
 ## Versionswechsel
 
