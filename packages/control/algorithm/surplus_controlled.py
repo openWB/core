@@ -173,11 +173,6 @@ class SurplusControlled:
                     if isinstance(load, Chargepoint):
                         charging_ev_data = load.data.set.charging_ev_data
 
-                        if control_parameter.phases == 1:
-                            max_current = charging_ev_data.ev_template.data.max_current_single_phase
-                        else:
-                            max_current = charging_ev_data.ev_template.data.max_current_multi_phases
-
                         if load.template.data.charging_type == ChargingType.AC.value:
                             if control_parameter.phases == 1:
                                 max_current = charging_ev_data.ev_template.data.max_current_single_phase
@@ -198,7 +193,7 @@ class SurplusControlled:
 
 # tested
 def limit_adjust_current(load: Load, new_current: float) -> float:
-    if isinstance(load, Consumer) or load.template.data.charging_type == ChargingType.AC.value:
+    if isinstance(load, Consumer) or (isinstance(load, Chargepoint) and load.template.data.charging_type == ChargingType.AC.value):
         MAX_CURRENT = 5
     else:
         MAX_CURRENT = 30

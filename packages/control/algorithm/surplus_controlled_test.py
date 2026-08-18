@@ -66,6 +66,7 @@ def test_limit_adjust_current(new_current: float, expected_current: float, monke
                              pytest.param(1, [10, 0, 0], [16, 0, 0]),
                              pytest.param(1, [0, 15, 0], [0, 16, 0]),
                              pytest.param(3, [10]*3, [16]*3),
+                             pytest.param(3, [0]*3, [0]*3),
                          ])
 def test_set_required_current_to_max(phases: int,
                                      required_currents: List[float],
