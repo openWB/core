@@ -329,16 +329,8 @@ chmod 666 "$LOGFILE"
 		sudo cp -a "${OPENWBBASEDIR}/data/config/configuration.json" "/home/openwb/configuration.json"
 	fi
 
-	# check for python dependencies
-	echo "initialisiere venv und Python-Abhaengigkeiten..."
-	if bash "${OPENWBBASEDIR}/runs/bootstrap_venv.sh"; then
-		echo "done"
-	else
-		echo "failed!"
-		message="Bei der Initialisierung der Python-Umgebung ist ein Fehler aufgetreten! Bitte die Logdateien prüfen."
-		payload=$(printf '{"source": "system", "type": "danger", "message": "%s", "timestamp": %d}' "$message" "$(date +"%s")")
-		mosquitto_pub -p 1886 -t "openWB/system/messages/$(date +"%s%3N")" -r -m "$payload"
-	fi
+	# Python bootstrap is handled by the dedicated systemd service openwb-python-bootstrap.
+	echo "Python runtime/bootstrap is managed by openwb-python-bootstrap.service"
 
 	# collect some hardware info
 	"${OPENWBBASEDIR}/runs/uuid.sh"
