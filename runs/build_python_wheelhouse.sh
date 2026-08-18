@@ -144,13 +144,10 @@ build_wheelhouse() {
 	fi
 
 	log "Using runtime python: ${python_bin}"
-	"${python_bin}" -m pip install --upgrade pip wheel uv
+	"${python_bin}" -m pip install --upgrade pip wheel
 
-	log "Building wheels with uv."
-	if ! "${python_bin}" -m uv pip wheel --python "${python_bin}" --wheel-dir "${wheelhouse_dir}" -r "${REQUIREMENTS_FILE}"; then
-		log "WARN: uv wheel build failed, falling back to pip wheel."
-		"${python_bin}" -m pip wheel --wheel-dir "${wheelhouse_dir}" -r "${REQUIREMENTS_FILE}"
-	fi
+	log "Building wheels with pip."
+	"${python_bin}" -m pip wheel --wheel-dir "${wheelhouse_dir}" -r "${REQUIREMENTS_FILE}"
 
 	cp "${REQUIREMENTS_FILE}" "${wheelhouse_dir}/requirements.txt"
 
