@@ -1,12 +1,22 @@
-name: Build Python Runtime Artifacts
+name: Build Python Runtime and Wheelhouse Artifacts
 
 "on":
   workflow_dispatch:
     inputs:
       publish_release:
-        description: "Upload assets to versioned release tag 'python-runtime-<version>' in separate release repository"
+        description: "Upload artifacts to versioned release tags in the separate release repository"
         required: false
         default: false
+        type: boolean
+      build_runtime:
+        description: "Build Python runtime artifacts"
+        required: false
+        default: true
+        type: boolean
+      build_wheelhouse:
+        description: "Build Python wheelhouse artifacts"
+        required: false
+        default: true
         type: boolean
   push:
     branches:
@@ -16,9 +26,12 @@ name: Build Python Runtime Artifacts
       - runs/build_python_runtime_artifact.sh
       - runs/install_packages.sh
       - data/config/python_runtime_version.txt
+      - requirements.txt
+      - runs/build_python_wheelhouse.sh
       - .github/workflows/build_python_runtime_artifacts.yml
 
 permissions:
+  actions: read
   contents: write
 
 env:
@@ -34,14 +47,112 @@ jobs:
       - id: owner
         run: echo "valid_github_owner=${VALID_GITHUB_OWNER}" >> "$GITHUB_OUTPUT"
 
+  resolve-build-plan:
+    name: Resolve Build Plan
+    runs-on: ubuntu-latest
+    outputs:
+      build_runtime: ${{ steps.plan.outputs.build_runtime }}
+      build_wheelhouse: ${{ steps.plan.outputs.build_wheelhouse }}
+      publish_release: ${{ steps.plan.outputs.publish_release }}
+      target_ref: ${{ steps.plan.outputs.target_ref }}
+    steps:
+      - id: plan-dispatch
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          set -euo pipefail
+          echo "build_runtime=${{ inputs.build_runtime && 'true' || 'false' }}" >> "$GITHUB_OUTPUT"
+          echo "build_wheelhouse=${{ inputs.build_wheelhouse && 'true' || 'false' }}" >> "$GITHUB_OUTPUT"
+          echo "publish_release=${{ inputs.publish_release && 'true' || 'false' }}" >> "$GITHUB_OUTPUT"
+          echo "target_ref=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - id: plan-push
+        if: ${{ github.event_name == 'push' }}
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const base = context.payload.before;
+            const head = context.payload.after;
+
+            const runtimePaths = [
+              'runs/bootstrap_venv.sh',
+              'runs/build_python_runtime_artifact.sh',
+              'runs/install_packages.sh',
+              'data/config/python_runtime_version.txt',
+              '.github/workflows/build_python_runtime_artifacts.yml'
+            ];
+
+            const wheelhousePaths = [
+              'requirements.txt',
+              'runs/build_python_wheelhouse.sh',
+              '.github/workflows/build_python_runtime_artifacts.yml'
+            ];
+
+            const isInitialPush = !base || /^0+$/.test(base);
+            let changedFiles = [];
+
+            if (isInitialPush) {
+              changedFiles = runtimePaths.concat(wheelhousePaths);
+            } else {
+              const comparison = await github.rest.repos.compareCommits({ owner, repo, base, head });
+              changedFiles = (comparison.data.files || []).map((file) => file.filename);
+            }
+
+            const includesPath = (pathList) => changedFiles.some((file) => pathList.includes(file));
+            const runtimeChanged = includesPath(runtimePaths);
+            const wheelhouseChanged = includesPath(wheelhousePaths);
+
+            const buildRuntime = runtimeChanged;
+            const buildWheelhouse = runtimeChanged || wheelhouseChanged;
+            const publishRelease = buildRuntime || buildWheelhouse;
+
+            core.setOutput('build_runtime', buildRuntime ? 'true' : 'false');
+            core.setOutput('build_wheelhouse', buildWheelhouse ? 'true' : 'false');
+            core.setOutput('publish_release', publishRelease ? 'true' : 'false');
+            core.setOutput('target_ref', head || context.sha);
+
+      - id: plan
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            build_runtime="${{ steps.plan-dispatch.outputs.build_runtime }}"
+            build_wheelhouse="${{ steps.plan-dispatch.outputs.build_wheelhouse }}"
+            publish_release="${{ steps.plan-dispatch.outputs.publish_release }}"
+            target_ref="${{ steps.plan-dispatch.outputs.target_ref }}"
+          else
+            build_runtime="${{ steps.plan-push.outputs.build_runtime }}"
+            build_wheelhouse="${{ steps.plan-push.outputs.build_wheelhouse }}"
+            publish_release="${{ steps.plan-push.outputs.publish_release }}"
+            target_ref="${{ steps.plan-push.outputs.target_ref }}"
+          fi
+
+          echo "build_runtime=${build_runtime}" >> "$GITHUB_OUTPUT"
+          echo "build_wheelhouse=${build_wheelhouse}" >> "$GITHUB_OUTPUT"
+          echo "publish_release=${publish_release}" >> "$GITHUB_OUTPUT"
+          echo "target_ref=${target_ref}" >> "$GITHUB_OUTPUT"
+
+      - name: Show resolved build plan
+        run: |
+          echo "build_runtime=${{ steps.plan.outputs.build_runtime }}"
+          echo "build_wheelhouse=${{ steps.plan.outputs.build_wheelhouse }}"
+          echo "publish_release=${{ steps.plan.outputs.publish_release }}"
+          echo "target_ref=${{ steps.plan.outputs.target_ref }}"
+
   read-python-versions:
     name: Read Python Runtime Versions
+    needs:
+      - resolve-build-plan
     runs-on: ubuntu-latest
+    if: ${{ needs.resolve-build-plan.outputs.build_runtime == 'true' || needs.resolve-build-plan.outputs.build_wheelhouse == 'true' }}
     outputs:
       versions_json: ${{ steps.versions.outputs.versions_json }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.resolve-build-plan.outputs.target_ref }}
 
       - id: versions
         run: |
@@ -49,19 +160,20 @@ jobs:
 
           mapfile -t versions < <(grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' data/config/python_runtime_version.txt)
           if [[ ${#versions[@]} -eq 0 ]]; then
-            echo "ERROR: Keine gueltigen Python-Versionen in data/config/python_runtime_version.txt gefunden." >&2
+            echo "ERROR: No valid Python versions found in data/config/python_runtime_version.txt." >&2
             exit 1
           fi
 
           versions_json=$(printf '%s\n' "${versions[@]}" | jq -R -s -c 'split("\n") | map(select(length > 0))')
           echo "versions_json=${versions_json}" >> "$GITHUB_OUTPUT"
 
-  build-runtime:
+  build-artifacts:
+    name: Build Runtime and Wheelhouse Artifacts
     needs:
       - resolve-guard-config
+      - resolve-build-plan
       - read-python-versions
-    if: ${{ github.repository_owner == needs.resolve-guard-config.outputs.valid_github_owner }}
-    name: Build Python Runtime Artifacts
+    if: ${{ github.repository_owner == needs.resolve-guard-config.outputs.valid_github_owner && (needs.resolve-build-plan.outputs.build_runtime == 'true' || needs.resolve-build-plan.outputs.build_wheelhouse == 'true') }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -92,13 +204,18 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.resolve-build-plan.outputs.target_ref }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4
         with:
           platforms: arm64,arm
 
-      - name: Build runtime artifact in Debian container
+      - name: Build selected artifacts in one container run
+        env:
+          BUILD_RUNTIME: ${{ needs.resolve-build-plan.outputs.build_runtime }}
+          BUILD_WHEELHOUSE: ${{ needs.resolve-build-plan.outputs.build_wheelhouse }}
         run: |
           set -euo pipefail
 
@@ -110,15 +227,19 @@ jobs:
             -e TARGET_ARCH="${{ matrix.arch.name }}" \
             -e TARGET_OS_VARIANT="debian${{ matrix.debian.version }}" \
             -e EXPECTED_DEBIAN_MAJOR="${{ matrix.debian.version }}" \
+            -e BUILD_RUNTIME="${BUILD_RUNTIME}" \
+            -e BUILD_WHEELHOUSE="${BUILD_WHEELHOUSE}" \
             "${{ matrix.debian.image }}" \
             bash -lc '
               set -euo pipefail
 
               apt-get update
               apt-get -y install \
-                build-essential make libssl-dev zlib1g-dev libbz2-dev \
-                libreadline-dev libsqlite3-dev libffi-dev liblzma-dev xz-utils \
-                tk-dev libncursesw5-dev git curl
+                ca-certificates curl xz-utils git \
+                build-essential make pkg-config \
+                libssl-dev zlib1g-dev libbz2-dev libreadline-dev \
+                libsqlite3-dev libffi-dev liblzma-dev tk-dev libncursesw5-dev \
+                rustc cargo
 
               actual_arch="$(uname -m)"
               case "${actual_arch}" in
@@ -145,22 +266,40 @@ jobs:
                 exit 1
               fi
 
-              runs/build_python_runtime_artifact.sh "${TARGET_ARCH}" "${TARGET_OS_VARIANT}"
+              if [[ "${BUILD_RUNTIME}" == "true" ]]; then
+                bash runs/build_python_runtime_artifact.sh "${TARGET_ARCH}" "${TARGET_OS_VARIANT}"
+              fi
+
+              if [[ "${BUILD_WHEELHOUSE}" == "true" ]]; then
+                if [[ "${BUILD_RUNTIME}" == "true" ]]; then
+                  export PYTHON_RUNTIME_ARTIFACT_PATH="/workspace/dist/python-runtime/python-${PYTHON_VERSION}-linux-${TARGET_ARCH}-${TARGET_OS_VARIANT}.tar.xz"
+                fi
+                bash runs/build_python_wheelhouse.sh "${TARGET_ARCH}" "${TARGET_OS_VARIANT}"
+              fi
             '
 
-      - name: Upload runtime artifact
+      - name: Upload runtime artifacts
+        if: ${{ needs.resolve-build-plan.outputs.build_runtime == 'true' }}
         uses: actions/upload-artifact@v7
         with:
           name: python-runtime-${{ matrix.python_version }}-${{ matrix.arch.name }}-debian${{ matrix.debian.version }}
           path: dist/python-runtime/python-${{ matrix.python_version }}-linux-${{ matrix.arch.name }}-debian${{ matrix.debian.version }}.tar.xz*
 
-  publish-release:
+      - name: Upload wheelhouse artifacts
+        if: ${{ needs.resolve-build-plan.outputs.build_wheelhouse == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: python-wheelhouse-${{ matrix.python_version }}-${{ matrix.arch.name }}-debian${{ matrix.debian.version }}
+          path: dist/python-wheelhouse/python-wheelhouse-${{ matrix.python_version }}-linux-${{ matrix.arch.name }}-debian${{ matrix.debian.version }}.tar.xz*
+
+  publish-runtime-release:
     name: Publish Python Runtime Artifacts to Release Repository
     needs:
       - resolve-guard-config
+      - resolve-build-plan
       - read-python-versions
-      - build-runtime
-    if: ${{ github.repository_owner == needs.resolve-guard-config.outputs.valid_github_owner && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_release)) }}
+      - build-artifacts
+    if: ${{ github.repository_owner == needs.resolve-guard-config.outputs.valid_github_owner && needs.resolve-build-plan.outputs.publish_release == 'true' && needs.resolve-build-plan.outputs.build_runtime == 'true' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -171,9 +310,6 @@ jobs:
       TARGET_RELEASE_REPO: python-runtime
       TARGET_RELEASE_REPO_NAME: ${{ github.repository_owner }}/python-runtime
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
-
       - name: Validate GitHub App secrets
         env:
           APP_ID: ${{ secrets.PYTHON_RUNTIME_APP_ID }}
@@ -237,12 +373,103 @@ jobs:
               });
             }
 
-      - name: Upload release assets
+      - name: Upload runtime release assets
         uses: svenstaro/upload-release-action@v2
         with:
           repo_name: ${{ env.TARGET_RELEASE_REPO_NAME }}
           repo_token: ${{ steps.app-token.outputs.token }}
           tag: python-runtime-${{ matrix.python_version }}
           file: dist/python-runtime/**/*
+          file_glob: true
+          overwrite: true
+
+  publish-wheelhouse-release:
+    name: Publish Python Wheelhouse Artifacts to Release Repository
+    needs:
+      - resolve-guard-config
+      - resolve-build-plan
+      - read-python-versions
+      - build-artifacts
+    if: ${{ github.repository_owner == needs.resolve-guard-config.outputs.valid_github_owner && needs.resolve-build-plan.outputs.publish_release == 'true' && needs.resolve-build-plan.outputs.build_wheelhouse == 'true' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python_version: ${{ fromJson(needs.read-python-versions.outputs.versions_json) }}
+    env:
+      TARGET_RELEASE_OWNER: ${{ github.repository_owner }}
+      TARGET_RELEASE_REPO: python-runtime
+      TARGET_RELEASE_REPO_NAME: ${{ github.repository_owner }}/python-runtime
+    steps:
+      - name: Validate GitHub App secrets
+        env:
+          APP_ID: ${{ secrets.PYTHON_RUNTIME_APP_ID }}
+          APP_PRIVATE_KEY: ${{ secrets.PYTHON_RUNTIME_APP_PRIVATE_KEY }}
+        run: |
+          if [[ -z "${APP_ID}" || -z "${APP_PRIVATE_KEY}" ]]; then
+            echo "ERROR: Secrets PYTHON_RUNTIME_APP_ID and/or PYTHON_RUNTIME_APP_PRIVATE_KEY are not set." >&2
+            echo "Configure GitHub App credentials for ${TARGET_RELEASE_REPO_NAME} in the core repository." >&2
+            exit 1
+          fi
+
+      - name: Create GitHub App token for release repo
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ secrets.PYTHON_RUNTIME_APP_ID }}
+          private-key: ${{ secrets.PYTHON_RUNTIME_APP_PRIVATE_KEY }}
+          owner: ${{ env.TARGET_RELEASE_OWNER }}
+          repositories: ${{ env.TARGET_RELEASE_REPO }}
+
+      - name: Download wheelhouse artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: python-wheelhouse-${{ matrix.python_version }}-*
+          path: dist/python-wheelhouse
+          merge-multiple: true
+
+      - name: Ensure wheelhouse release exists
+        uses: actions/github-script@v9
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            const owner = process.env.TARGET_RELEASE_OWNER;
+            const repo = process.env.TARGET_RELEASE_REPO;
+            const version = '${{ matrix.python_version }}';
+            const tag = `python-wheels-${version}`;
+            const name = `${version} (${tag})`;
+            const body = `Automatically generated wheelhouse artifacts for openWB (${tag}).`;
+
+            try {
+              const release = (await github.rest.repos.getReleaseByTag({ owner, repo, tag })).data;
+              await github.rest.repos.updateRelease({
+                owner,
+                repo,
+                release_id: release.id,
+                name,
+                body,
+                draft: false,
+                prerelease: false
+              });
+            } catch (error) {
+              if (error.status !== 404) throw error;
+              await github.rest.repos.createRelease({
+                owner,
+                repo,
+                tag_name: tag,
+                name,
+                body,
+                draft: false,
+                prerelease: false
+              });
+            }
+
+      - name: Upload wheelhouse release assets
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_name: ${{ env.TARGET_RELEASE_REPO_NAME }}
+          repo_token: ${{ steps.app-token.outputs.token }}
+          tag: python-wheels-${{ matrix.python_version }}
+          file: dist/python-wheelhouse/**/*
           file_glob: true
           overwrite: true
