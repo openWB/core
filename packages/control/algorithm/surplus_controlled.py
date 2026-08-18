@@ -35,11 +35,7 @@ class SurplusControlled:
         for counter in common.counter_generator():
             preferenced_loads_groups, preferenced_loads_without_set_current = get_preferenced_load_charging(
                 get_grouped_loads_by_mode_and_counter(CONSIDERED_CHARGE_MODES_SURPLUS, f"counter{counter.num}"))
-            if data.data.general_data.data.chargemode_config.surplus.feed_in_limit:
-                feed_in_yield = data.data.general_data.data.chargemode_config.surplus.feed_in_yield
-            else:
-                feed_in_yield = 0
-            self._set(preferenced_loads_groups, feed_in_yield, counter)
+            self._set(preferenced_loads_groups, counter)
             if preferenced_loads_without_set_current:
                 for cp in preferenced_loads_without_set_current:
                     cp.data.set.current = cp.data.set.target_current
@@ -49,7 +45,6 @@ class SurplusControlled:
 
     def _set(self,
              preferenced_loads_groups: List[List[Load]],
-             feed_in_yield: int,
              counter: Counter) -> None:
         for loads in preferenced_loads_groups:
             if len(loads) > 0:
@@ -173,29 +168,30 @@ class SurplusControlled:
                                              CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE):
             try:
                 control_parameter = load.data.control_parameter
-                required_currents = control_parameter.required_currents
-                if isinstance(load, Chargepoint):
-                    charging_ev_data = load.data.set.charging_ev_data
+                if control_parameter.required_current != 0:
+                    required_currents = control_parameter.required_currents
+                    if isinstance(load, Chargepoint):
+                        charging_ev_data = load.data.set.charging_ev_data
 
-                    if control_parameter.phases == 1:
-                        max_current = charging_ev_data.ev_template.data.max_current_single_phase
-                    else:
-                        max_current = charging_ev_data.ev_template.data.max_current_multi_phases
-
-                    if load.template.data.charging_type == ChargingType.AC.value:
                         if control_parameter.phases == 1:
                             max_current = charging_ev_data.ev_template.data.max_current_single_phase
                         else:
                             max_current = charging_ev_data.ev_template.data.max_current_multi_phases
-                    else:
-                        max_current = charging_ev_data.ev_template.data.dc_max_current
-                elif isinstance(load, Consumer):
-                    max_current = load.data.config.max_power / \
-                        (sum(load.data.get.voltages) / len(load.data.get.voltages)) / load.data.config.connected_phases
 
-                control_parameter.required_currents = [
-                    max_current if required_currents[i] != 0 else 0 for i in range(3)]
-                control_parameter.required_current = max_current
+                        if load.template.data.charging_type == ChargingType.AC.value:
+                            if control_parameter.phases == 1:
+                                max_current = charging_ev_data.ev_template.data.max_current_single_phase
+                            else:
+                                max_current = charging_ev_data.ev_template.data.max_current_multi_phases
+                        else:
+                            max_current = charging_ev_data.ev_template.data.dc_max_current
+                    elif isinstance(load, Consumer):
+                        max_current = load.data.config.max_power / \
+                            voltages_mean(load.data.get.voltages) / load.data.config.connected_phases
+
+                    control_parameter.required_currents = [
+                        max_current if required_currents[i] != 0 else 0 for i in range(3)]
+                    control_parameter.required_current = max_current
             except Exception:
                 log.exception(f"Fehler in der PV-gesteuerten Ladung bei {load.num}")
 
