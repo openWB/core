@@ -55,7 +55,7 @@ def create_consumer(config: Elwa):
         initializer()
 
     def update() -> ConsumerState:
-        nonlocal status
+        nonlocal power, status
         resp = client.read_holding_registers_bulk(
             Register.POWER, 4, mapping=REG_MAPPING, unit=config.configuration.modbus_id)
         power = resp[Register.POWER]
@@ -77,7 +77,7 @@ def create_consumer(config: Elwa):
         if power_limit < power:
             power_limit = power + (power - power_limit) * fuse
         power_limit = min(power_limit, 4000)
-        power_limit = min(power_limit, 0)
+        power_limit = max(power_limit, 0)
 
         client.write_registers(1000, power_limit, unit=config.configuration.modbus_id)
     return ConfigurableConsumer(consumer_config=config,
