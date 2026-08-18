@@ -44,7 +44,8 @@ jobs:
     outputs:
       valid_github_owner: ${{ steps.owner.outputs.valid_github_owner }}
     steps:
-      - id: owner
+      - name: Resolve valid GitHub Owner
+        id: owner
         run: echo "valid_github_owner=${VALID_GITHUB_OWNER}" >> "$GITHUB_OUTPUT"
 
   resolve-build-plan:
@@ -56,7 +57,8 @@ jobs:
       publish_release: ${{ steps.plan.outputs.publish_release }}
       target_ref: ${{ steps.plan.outputs.target_ref }}
     steps:
-      - id: plan-dispatch
+      - name: Resolve Build Plan for Workflow Dispatch
+        id: plan-dispatch
         if: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
           set -euo pipefail
@@ -65,7 +67,8 @@ jobs:
           echo "publish_release=${{ inputs.publish_release && 'true' || 'false' }}" >> "$GITHUB_OUTPUT"
           echo "target_ref=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
 
-      - id: plan-push
+      - name: Resolve Build Plan for Push Events
+        id: plan-push
         if: ${{ github.event_name == 'push' }}
         uses: actions/github-script@v9
         with:
@@ -112,7 +115,8 @@ jobs:
             core.setOutput('publish_release', publishRelease ? 'true' : 'false');
             core.setOutput('target_ref', head || context.sha);
 
-      - id: plan
+      - name: Resolve final Build Plan
+        id: plan
         run: |
           set -euo pipefail
 
@@ -154,7 +158,8 @@ jobs:
         with:
           ref: ${{ needs.resolve-build-plan.outputs.target_ref }}
 
-      - id: versions
+      - name: Read Python Runtime Versions
+        id: versions
         run: |
           set -euo pipefail
 
