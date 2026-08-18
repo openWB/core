@@ -37,35 +37,6 @@ def all_chargepoint_data_factory() -> AllChargepointData:
 class AllChargepoints:
     data: AllChargepointData = field(default_factory=all_chargepoint_data_factory)
 
-    def no_charge(self):
-        """ Wenn keine EV angesteckt sind oder keine Verzögerungen aktiv sind, werden die Algorithmus-Werte
-        zurückgesetzt.
-        (dient der Robustheit)
-        """
-        try:
-            for cp in data.data.cp_data:
-                try:
-                    chargepoint = data.data.cp_data[cp]
-                    # Kein EV angesteckt
-                    control_parameter = chargepoint.data.control_parameter
-                    if (not chargepoint.data.get.plug_state or
-                            # Kein EV, das Laden soll
-                            # Kein EV, das auf das Ablaufen der Einschalt- oder Phasenumschaltverzögerung wartet
-                            (control_parameter.state != ChargepointState.PERFORMING_PHASE_SWITCH and
-                                control_parameter.state != ChargepointState.PHASE_SWITCH_DELAY and
-                                control_parameter.state != ChargepointState.SWITCH_OFF_DELAY and
-                                control_parameter.state != ChargepointState.SWITCH_ON_DELAY and
-                                control_parameter.state != ChargepointState.NO_CHARGING_ALLOWED)):
-                        continue
-                    else:
-                        break
-                except Exception:
-                    log.exception("Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt "+cp)
-            else:
-                data.data.counter_all_data.get_evu_counter().reset_pv_data()
-        except Exception:
-            log.exception("Fehler in der allgemeinen Ladepunkt-Klasse")
-
     def get_cp_sum(self):
         """ ermittelt die aktuelle Leistung und Zählerstand von allen Ladepunkten.
         """
