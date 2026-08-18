@@ -629,8 +629,10 @@ class SubData:
                 if re.search("/general/prices/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.prices, msg)
                 elif re.search("/general/chargemode_config/", msg.topic) is not None:
-                    if re.search("/general/chargemode_config/pv_charging/", msg.topic) is not None:
-                        self.set_json_payload_class(var.data.chargemode_config.pv_charging, msg)
+                    if re.search("/general/chargemode_config/surplus/vehicle", msg.topic) is not None:
+                        self.set_json_payload_class(var.data.chargemode_config.surplus.vehicle, msg)
+                    elif re.search("/general/chargemode_config/surplus/", msg.topic) is not None:
+                        self.set_json_payload_class(var.data.chargemode_config.surplus, msg)
                     else:
                         self.set_json_payload_class(var.data.chargemode_config, msg)
                 elif "openWB/general/extern" == msg.topic:
