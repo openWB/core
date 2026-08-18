@@ -37,7 +37,7 @@ from helpermodules.utils.topic_parser import decode_payload, get_index, get_seco
 from control import counter_all
 from control.bat_all import BatConsiderationMode
 from control.chargepoint.charging_type import ChargingType
-from control.counter import get_counter_default_config
+from control.counter import get_counter_default_config, CounterMode
 from control.ev.charge_template import EcoCharging, get_charge_template_default
 from control.ev import ev
 from control.ev.ev_template import EvTemplateData
@@ -213,7 +213,6 @@ class UpdateConfig:
         "^openWB/counter/[0-9]+/config/max_currents$",
         "^openWB/counter/[0-9]+/config/max_total_power$",
         "^openWB/counter/[0-9]+/config/is_home_consumption_counter$",
-        "^openWB/counter/[0-9]+/config/is_home_consumption_counter_auto$",
 
         "^openWB/general/allow_unencrypted_access$",
         "^openWB/general/extern$",
@@ -3557,10 +3556,6 @@ class UpdateConfig:
                     new_topics[f"openWB/counter/{index}/config/is_home_consumption_counter"] = (
                         get_counter_default_config()["is_home_consumption_counter"]
                     )
-                if f"openWB/counter/{index}/config/is_home_consumption_counter_auto" not in self.all_received_topics:
-                    new_topics[f"openWB/counter/{index}/config/is_home_consumption_counter_auto"] = (
-                        get_counter_default_config()["is_home_consumption_counter_auto"]
-                    )
                 return new_topics if new_topics else None
         self._loop_all_received_topics(upgrade)
         # Remove old Topic
@@ -3591,16 +3586,17 @@ class UpdateConfig:
                     log.warning(f"Invalid '{old_topic}' value: {source_id!r}; skipping migration")
                 else:
                     # Bisherigen Source-Counter explizit als Hausverbrauchs-Zähler setzen.
-                    self.__update_topic(f"openWB/counter/{source_id}/config/is_home_consumption_counter", True)
-                    self.__update_topic(f"openWB/counter/{source_id}/config/is_home_consumption_counter_auto", False)
+                    self.__update_topic(
+                        f"openWB/counter/{source_id}/config/is_home_consumption_counter",
+                        CounterMode.HomeConsumption.value)
 
                     # Direkte Kind-Zähler explizit deaktivieren, damit Auto-Vererbung hier endet.
                     if isinstance(hierarchy, list):
                         for child_counter_id in get_direct_child_counter_ids(hierarchy, source_id):
                             self.__update_topic(
-                                f"openWB/counter/{child_counter_id}/config/is_home_consumption_counter", False)
-                            self.__update_topic(
-                                f"openWB/counter/{child_counter_id}/config/is_home_consumption_counter_auto", False)
+                                f"openWB/counter/{child_counter_id}/config/is_home_consumption_counter",
+                                CounterMode.NotHomeConsumption.value)
+
                     else:
                         log.warning(
                             "Migration der Hausverbrauchs-Zaehler (upgrade_datastore_138) fehlgeschlagen: "

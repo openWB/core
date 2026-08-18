@@ -1528,12 +1528,6 @@
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/counter/+/config/is_home_consumption_counter_auto",
-					"priority": 0,
-					"allow": true
-				},
-				{
-					"acltype": "publishClientSend",
 					"topic": "openWB/set/counter/+/config/max_total_power",
 					"priority": 0,
 					"allow": true
@@ -1589,12 +1583,6 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/counter/+/config/is_home_consumption_counter",
-					"priority": 0,
-					"allow": true
-				},
-				{
-					"acltype": "publishClientReceive",
-					"topic": "openWB/counter/+/config/is_home_consumption_counter_auto",
 					"priority": 0,
 					"allow": true
 				},
