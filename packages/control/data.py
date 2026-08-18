@@ -74,7 +74,7 @@ class Data:
         self._bat_data: Dict[str, Bat] = {}
         self._bat_all_data = BatAll()
         self._consumer_data: Dict[str, Consumer] = {}
-        self._consumer_all_data: AllConsumers = {}
+        self._consumer_all_data: AllConsumers = AllConsumers()
         self._counter_data: Dict[str, Counter] = {}
         self._counter_all_data = CounterAll()
         self._cp_data: Dict[str, Chargepoint] = {}
