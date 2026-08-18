@@ -78,15 +78,15 @@ def create_consumer(config: Json):
 
     def switch_on():
         # Authorization?
-        jq_switch_on(params={"state": True})
+        jq_switch_on({"state": True})
 
     def switch_off():
         # Authorization?
-        jq_switch_off(params={"state": False})
+        jq_switch_off({"state": False})
 
     def set_power_limit(power_limit: int):
         # Authorization?
-        jq_set_power_limit(params={"power_limit": power_limit})
+        jq_set_power_limit({"power_limit": power_limit})
 
     return ConfigurableConsumer(consumer_config=config,
                                 initializer=initializer,
