@@ -193,7 +193,8 @@ class SurplusControlled:
 
 # tested
 def limit_adjust_current(load: Load, new_current: float) -> float:
-    if isinstance(load, Consumer) or (isinstance(load, Chargepoint) and load.template.data.charging_type == ChargingType.AC.value):
+    if (isinstance(load, Consumer) or
+            (isinstance(load, Chargepoint) and load.template.data.charging_type == ChargingType.AC.value)):
         MAX_CURRENT = 5
     else:
         MAX_CURRENT = 30
