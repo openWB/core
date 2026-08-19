@@ -12,9 +12,6 @@ from modules.devices.anker.solarbank_4_e5000.config import Anker, AnkerInverterS
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
 
-# Rohwert der Leistungsregister / POWER_GAIN = Watt (Gerät liefert mW statt W)
-POWER_GAIN = 1000
-
 
 class KwargsDict(TypedDict):
     device_config: Anker
@@ -40,9 +37,9 @@ class AnkerInverter(AbstractInverter):
         # Register 10002 ist die PV_power also die DC Leistung
         # Register 10010 ist "Load_power" unklar ob dies wirklich die AC Leistung des Inverters ist
         power = self.client.read_input_registers(10010, ModbusDataType.INT_32,
-                                                 wordorder=Endian.Little, unit=unit) * -1 / POWER_GAIN
+                                                 wordorder=Endian.Big, unit=unit) * -1
         dc_power = self.client.read_input_registers(10002, ModbusDataType.INT_32,
-                                                    wordorder=Endian.Little, unit=unit) * -1 / POWER_GAIN
+                                                    wordorder=Endian.Big, unit=unit) * -1
 
         self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
