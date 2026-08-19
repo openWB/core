@@ -39,7 +39,7 @@ class AnkerBat(AbstractBat):
         unit = self.device_config.configuration.modbus_id
 
         power = self.client.read_input_registers(10008, ModbusDataType.INT_32,
-                                                 wordorder=Endian.Little, unit=unit) * -1
+                                                 wordorder=Endian.Big, unit=unit) * -1
         soc = self.client.read_input_registers(10014, ModbusDataType.UINT_16, unit=unit)
 
         self.peak_filter.check_values(power)
