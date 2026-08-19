@@ -6,6 +6,7 @@ mit denen das EV aktuell in der Regelung berücksichtigt wird. Bei der Ermittlun
 stärke wird auch geprüft, ob sich an diesen Parametern etwas geändert hat. Falls ja, muss das EV
 in der Regelung neu priorisiert werden und eine neue Zuteilung des Stroms erhalten.
 """
+from control.chargemode import Chargemode
 from modules.common.configurable_vehicle import ConfigurableVehicle
 from modules.common.abstract_vehicle import VehicleUpdateData
 from helpermodules.constants import DEFAULT_COLORS, NO_ERROR
@@ -125,7 +126,7 @@ class Ev:
                              charging_type: str,
                              imported_since_plugged: float,
                              bidi: BidiState,
-                             charge_state: bool) -> Tuple[bool, Optional[str], str, float, int]:
+                             charge_state: bool) -> Tuple[bool, Optional[str], Chargemode, float, int]:
         """ ermittelt, ob und mit welchem Strom das EV geladen werden soll (unabhängig vom Lastmanagement)
 
         Parameter
@@ -150,7 +151,7 @@ class Ev:
         tmp_message = None
         state = True
         try:
-            if charge_template.data.chargemode.selected == "stop":
+            if charge_template.data.chargemode.selected == Chargemode.STOP.value:
                 required_current, submode, message = charge_template.stop()
                 phases = control_parameter.phases or max_phases_hw
             else:
@@ -160,7 +161,7 @@ class Ev:
                     soc_request_interval_offset = self.soc_module.general_config.request_interval_charging
                 else:
                     soc_request_interval_offset = 0
-                if charge_template.data.chargemode.selected == "scheduled_charging":
+                if charge_template.data.chargemode.selected == Chargemode.SCHEDULED_CHARGING.value:
                     required_current, submode, tmp_message, phases = charge_template.scheduled_charging(
                         self.data.get.soc,
                         self.ev_template,
@@ -175,7 +176,7 @@ class Ev:
                     message = f"{tmp_message or ''}".strip()
 
                 # Wenn Zielladen auf Überschuss wartet, prüfen, ob Zeitladen aktiv ist.
-                if (submode != "instant_charging" and
+                if (submode != Chargemode.INSTANT_CHARGING and
                         charge_template.data.time_charging.active):
                     tmp_current, tmp_submode, tmp_message, plan_id, tmp_phases = charge_template.time_charging(
                         self.data.get.soc,
@@ -190,21 +191,21 @@ class Ev:
                         submode = tmp_submode
                         phases = tmp_phases
                 if (required_current == 0) or (required_current is None):
-                    if charge_template.data.chargemode.selected == "instant_charging":
+                    if charge_template.data.chargemode.selected == Chargemode.INSTANT_CHARGING.value:
                         required_current, submode, tmp_message, phases = charge_template.instant_charging(
                             self.data.get.soc,
                             imported_since_plugged,
                             charging_type)
-                    elif charge_template.data.chargemode.selected == "pv_charging":
+                    elif charge_template.data.chargemode.selected == Chargemode.PV_CHARGING.value:
                         required_current, submode, tmp_message, phases = charge_template.pv_charging(
                             self.data.get.soc, control_parameter.min_current, charging_type, imported_since_plugged)
-                    elif charge_template.data.chargemode.selected == "eco_charging":
+                    elif charge_template.data.chargemode.selected == Chargemode.ECO_CHARGING.value:
                         required_current, submode, tmp_message, phases = charge_template.eco_charging(
                             self.data.get.soc, control_parameter, charging_type, imported_since_plugged, max_phases_hw)
                     else:
                         tmp_message = None
                     message = f"{message or ''} {tmp_message or ''}".strip()
-            if submode == "stop" or (charge_template.data.chargemode.selected == "stop"):
+            if submode == Chargemode.STOP or (charge_template.data.chargemode.selected == Chargemode.STOP.value):
                 state = False
                 if phases is None:
                     log.debug("Keine Phasenvorgabe durch Lademodus. Behalte Phasenzahl bei.")
@@ -212,7 +213,7 @@ class Ev:
             return state, message, submode, required_current, phases
         except Exception as e:
             log.exception("Fehler im ev-Modul "+str(self.num))
-            return (False, f"Kein Ladevorgang, da ein Fehler aufgetreten ist: {' '.join(e.args)}", "stop", 0,
+            return (False, f"Kein Ladevorgang, da ein Fehler aufgetreten ist: {' '.join(e.args)}", Chargemode.STOP, 0,
                     control_parameter.phases)
 
     def check_min_max_current(self,

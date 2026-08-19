@@ -1,3 +1,4 @@
+from control.chargemode import Chargemode
 from helpermodules.utils.json_file_handler import write_and_check
 from helpermodules import timecheck
 import copy
@@ -99,8 +100,8 @@ def collect_data(chargepoint):
                 if get_value_or_default(lambda: log_data.timestamp_start_charging is None):
                     log_data.timestamp_start_charging = now
                     submode = get_value_or_default(lambda: chargepoint.data.control_parameter.submode, "")
-                    if submode == "time_charging":
-                        log_data.chargemode_log_entry = "time_charging"
+                    if submode == Chargemode.TIME_CHARGING:
+                        log_data.chargemode_log_entry = Chargemode.TIME_CHARGING.value
                     else:
                         log_data.chargemode_log_entry = get_value_or_default(
                             lambda: chargepoint.data.control_parameter.chargemode.value)
