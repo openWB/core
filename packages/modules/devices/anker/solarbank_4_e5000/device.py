@@ -6,10 +6,9 @@ from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.common.modbus import ModbusTcpClient_
-from modules.devices.anker.anker_solix.bat import AnkerBat
-from modules.devices.anker.anker_solix.config import Anker, AnkerBatSetup, AnkerCounterSetup, AnkerInverterSetup
-from modules.devices.anker.anker_solix.counter import AnkerCounter
-from modules.devices.anker.anker_solix.inverter import AnkerInverter
+from modules.devices.anker.solarbank_4_e5000.bat import AnkerBat
+from modules.devices.anker.solarbank_4_e5000.config import Anker, AnkerBatSetup, AnkerInverterSetup
+from modules.devices.anker.solarbank_4_e5000.inverter import AnkerInverter
 
 log = logging.getLogger(__name__)
 
@@ -18,15 +17,12 @@ def create_device(device_config: Anker):
     client = None
 
     def create_bat_component(component_config: AnkerBatSetup):
-        return AnkerBat(component_config, device_id=device_config.id, client=client)
-
-    def create_counter_component(component_config: AnkerCounterSetup):
-        return AnkerCounter(component_config, device_id=device_config.id, client=client)
+        return AnkerBat(component_config, device_config=device_config, client=client)
 
     def create_inverter_component(component_config: AnkerInverterSetup):
-        return AnkerInverter(component_config, device_id=device_config.id, client=client)
+        return AnkerInverter(component_config, device_config=device_config, client=client)
 
-    def update_components(components: Iterable[Union[AnkerBat, AnkerCounter, AnkerInverter]]):
+    def update_components(components: Iterable[Union[AnkerBat, AnkerInverter]]):
         with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):
@@ -41,7 +37,6 @@ def create_device(device_config: Anker):
         initializer=initializer,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
-            counter=create_counter_component,
             inverter=create_inverter_component,
         ),
         component_updater=MultiComponentUpdater(update_components)

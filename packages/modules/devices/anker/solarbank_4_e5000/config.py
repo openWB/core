@@ -5,15 +5,19 @@ from ..vendor import vendor_descriptor
 
 
 class AnkerConfiguration:
-    def __init__(self, ip_address: Optional[str] = None, port: int = 502):
+    def __init__(self,
+                 ip_address: Optional[str] = None,
+                 port: int = 502,
+                 modbus_id: int = 1):
         self.ip_address = ip_address
         self.port = port
+        self.modbus_id = modbus_id
 
 
 class Anker:
     def __init__(self,
-                 name: str = "Anker",
-                 type: str = "anker_solix",
+                 name: str = "Anker SOLIX Solarbank 4 E5000 Pro",
+                 type: str = "solarbank_4_e5000",
                  id: int = 0,
                  configuration: AnkerConfiguration = None) -> None:
         self.name = name
@@ -24,8 +28,8 @@ class Anker:
 
 
 class AnkerBatConfiguration:
-    def __init__(self, modbus_id: int = 1):
-        self.modbus_id = modbus_id
+    def __init__(self):
+        pass
 
 
 class AnkerBatSetup(ComponentSetup[AnkerBatConfiguration]):
@@ -37,28 +41,9 @@ class AnkerBatSetup(ComponentSetup[AnkerBatConfiguration]):
         super().__init__(name, type, id, configuration or AnkerBatConfiguration())
 
 
-class AnkerCounterConfiguration:
-    def __init__(self,
-                 modbus_id: int = 1,
-                 ip_address: Optional[str] = None,
-                 port: int = 502):
-        self.modbus_id = modbus_id
-        self.ip_address = ip_address
-        self.port = port
-
-
-class AnkerCounterSetup(ComponentSetup[AnkerCounterConfiguration]):
-    def __init__(self,
-                 name: str = "Anker Zähler",
-                 type: str = "counter",
-                 id: int = 0,
-                 configuration: AnkerCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or AnkerCounterConfiguration())
-
-
 class AnkerInverterConfiguration:
-    def __init__(self, modbus_id: int = 1):
-        self.modbus_id = modbus_id
+    def __init__(self):
+        pass
 
 
 class AnkerInverterSetup(ComponentSetup[AnkerInverterConfiguration]):
