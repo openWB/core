@@ -218,7 +218,7 @@ class Chargepoint(ChargepointRfidMixin):
     def setup_values_at_start(self):
         self._set_values_at_start()
 
-    def set_control_parameter(self, submode: str):
+    def set_control_parameter(self, submode: Chargemode):
         """ setzt die Regel-Parameter, die der Algorithmus verwendet.
 
         Parameter
@@ -227,8 +227,8 @@ class Chargepoint(ChargepointRfidMixin):
             neuer Lademodus, in dem geladen werden soll
         """
         try:
-            self.data.control_parameter.submode = Chargemode(submode)
-            if submode == "time_charging":
+            self.data.control_parameter.submode = submode
+            if submode == Chargemode.TIME_CHARGING:
                 self.data.control_parameter.chargemode = Chargemode.TIME_CHARGING
             else:
                 self.data.control_parameter.chargemode = Chargemode(
@@ -601,9 +601,10 @@ class Chargepoint(ChargepointRfidMixin):
         elif self.data.set.current == 0:
             self.data.control_parameter.timestamp_charge_start = None
 
-    def set_chargemode_changed(self, submode: str) -> None:
-        if ((submode == "time_charging" and self.data.control_parameter.chargemode != "time_charging") or
-                (submode != "time_charging" and
+    def set_chargemode_changed(self, submode: Chargemode) -> None:
+        if ((submode == Chargemode.TIME_CHARGING and
+             self.data.control_parameter.chargemode != Chargemode.TIME_CHARGING) or
+                (submode != Chargemode.TIME_CHARGING and
                  self.data.control_parameter.chargemode != self.data.set.charge_template.data.chargemode.selected)):
             self.chargemode_changed = True
             log.debug("Änderung des Lademodus")
@@ -611,7 +612,7 @@ class Chargepoint(ChargepointRfidMixin):
         else:
             self.chargemode_changed = False
 
-    def set_submode_changed(self, submode: str) -> None:
+    def set_submode_changed(self, submode: Chargemode) -> None:
         self.submode_changed = (submode != self.data.control_parameter.submode)
 
     def update_ev(self, ev_list: Dict[str, Ev]) -> None:
@@ -699,7 +700,7 @@ class Chargepoint(ChargepointRfidMixin):
                             f", mittlerer Ist-Strom: {get_medium_charging_current(self.data.get.currents)}")
                 except Exception:
                     log.exception("Fehler im Prepare-Modul für Ladepunkt "+str(self.num))
-                    self.data.control_parameter.submode = "stop"
+                    self.data.control_parameter.submode = Chargemode.STOP
             else:
                 self._process_charge_stop()
                 if vehicle != -1:
@@ -806,8 +807,8 @@ class Chargepoint(ChargepointRfidMixin):
                 self.data.get.connected_vehicle.soc.range = vehicle.data.get.range
             self.data.get.connected_vehicle.info = ConnectedInfo(id=vehicle.num,
                                                                  name=vehicle.data.name)
-            if (self.data.set.charge_template.data.chargemode.selected == "time_charging" or
-                    self.data.set.charge_template.data.chargemode.selected == "scheduled_charging"):
+            if (self.data.set.charge_template.data.chargemode.selected == Chargemode.TIME_CHARGING.value or
+                    self.data.set.charge_template.data.chargemode.selected == Chargemode.SCHEDULED_CHARGING.value):
                 current_plan = self.data.control_parameter.current_plan
             else:
                 current_plan = None
@@ -819,7 +820,7 @@ class Chargepoint(ChargepointRfidMixin):
                 current_plan=current_plan,
                 average_consumption=vehicle.ev_template.data.average_consump,
                 time_charging_in_use=True if (self.data.control_parameter.submode ==
-                                              "time_charging") else False)
+                                              Chargemode.TIME_CHARGING) else False)
         except Exception:
             log.exception("Fehler im Prepare-Modul")
 
