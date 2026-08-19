@@ -264,6 +264,55 @@ def _collect_daily_log_data(date: str):
 
 def get_monthly_log(date: str):
     data = _collect_monthly_log_data(date)
+    entries_with_daily_totals = []
+
+    for entry in data["entries"]:
+        day = entry["date"]
+        if day == timecheck.create_timestamp_YYYYMMDD():
+            # Überspringe den aktuellen Tag
+            daily_totals = None
+        else:
+            daily_totals = load_daily_source_totals(day)
+
+        if daily_totals is not None:
+            _apply_daily_source_totals(entry, daily_totals)
+            entries_with_daily_totals.append(entry)
+        else:
+            # Keine Datei vorhanden -> erzeuge neue Datei
+            if day == timecheck.create_timestamp_YYYYMMDD():
+                # beim aktuellen Tag generiere die Tages-Summen, aber speichere diese nicht ab
+                content = save_daily_source_totals(day, saveing=False)
+                new_gendaily_totals = content.get("totals", None)
+                log.debug(f"Totals-Werte vom aktuellen Tag {new_gendaily_totals}")
+            else:
+                # bei älteren Tagen generiere die Tages-Summen und speichere diese ab
+                # Fallback für ältere Tage, falls die Tages-Summen nicht vorhanden sind
+                content = save_daily_source_totals(day, saveing=True)
+                new_gendaily_totals = content.get("totals", None)
+
+            if new_gendaily_totals is not None:
+                _apply_daily_source_totals(entry, new_gendaily_totals)
+                entries_with_daily_totals.append(entry)
+            else:
+                log.debug(f"Keine Tages-Summen fuer {day} gefunden und konnten auch nicht neu erzeugt werden.")
+                # Abbruch und Fallback auf alte Berechnung
+                entries_with_daily_totals = []
+                break
+
+    if len(entries_with_daily_totals) > 0:
+
+        data["entries"] = entries_with_daily_totals
+
+        if len(data["entries"]) > 0:
+            # Wurde im alten System in _process_entries gemacht...
+            # Entfernt den Eintrag des Folgemonats
+            data["entries"].pop()
+            pass
+        data["totals"] = get_totals(data["entries"], False)
+        data["totals"] = analyse_percentage_totals(data["entries"], data["totals"])
+        return data
+
+    # Fallback: alter Rechenweg, falls keine Tages-Summen verfuegbar sind.
     data["entries"] = _process_entries(data["entries"], CalculationType.ENERGY)
     data["totals"] = get_totals(data["entries"], False)
     data = _analyse_energy_source(data)
@@ -282,10 +331,13 @@ def _collect_monthly_log_data(date: str):
                 with open(f"{_get_data_folder_path()}/daily_log/{today}.json",
                           "r") as todayJsonFile:
                     today_log_data = json.load(todayJsonFile)
-                    if len(today_log_data["entries"]) > 0:
-                        log_data["entries"].append(today_log_data["entries"][-1])
+                if len(today_log_data.get("entries", [])) > 0:
+                    today_entry = today_log_data["entries"][-1]
+                    today_entry["date"] = today
+                    log_data["entries"].append(today_entry)
             except FILE_ERRORS:
                 pass
+
         else:
             # add first entry of next month
             try:
@@ -665,3 +717,68 @@ def _calculate_average_power(time_diff: float, current_imported: float = 0, next
 
 def _get_data_folder_path() -> str:
     return str(Path(__file__).resolve().parents[3] / "data")
+
+
+def calculate_daily_source_totals(date: str):
+    data = _collect_daily_log_data(date)
+    data["entries"] = _process_entries(data["entries"], calculation=CalculationType.ENERGY)
+    data["totals"] = get_totals(data["entries"], process_entries=False)
+    data = _analyse_energy_source(data)
+
+    return data["totals"]
+
+
+# Das wird im midnight-handler aufgrufen
+#   -> erzeugt für jede Tag eine Totals datei
+def save_daily_source_totals(date: str, saveing: bool = True):
+    try:
+        totals = calculate_daily_source_totals(date)
+        # Erzeugt Ordner daily_totals, falls nicht vorhanden
+        totals_dir = Path(_get_data_folder_path()) / "daily_totals"
+        filepath = totals_dir / f"{date}_totals.json"
+
+        content = {"date": date, "totals": totals}
+
+        if saveing:
+            totals_dir.mkdir(parents=True, exist_ok=True)
+            with open(str(filepath), "w") as jsonFile:
+                json.dump(content, jsonFile, ensure_ascii=False, indent=2)
+
+            log.debug(f"Tages-Summen für {date} gespeichert in {filepath}")
+        return content
+
+    except FILE_ERRORS:
+        log.exception(f"Fehler beim Speichern der Tages-Summen für {date}")
+
+
+def load_daily_source_totals(date: str):
+    try:
+        filepath = f"{_get_data_folder_path()}/daily_totals/{date}_totals.json"
+        if not Path(filepath).is_file():
+            log.debug(f"Keine Tages-Summen-Datei gefunden: {filepath}")
+            return None
+
+        with open(str(filepath), "r") as jsonFile:
+            content = json.load(jsonFile)
+
+        log.debug(f"Tages-Summen für {date} geladen aus {filepath}")
+        return content["totals"]
+
+    except FILE_ERRORS:
+        log.exception(f"Fehler beim Laden der Tages-Summen für {date}")
+
+
+def _apply_daily_source_totals(entry: Dict, daily_totals: Dict):
+    for section, section_totals in daily_totals.items():
+        section_data = entry.get(section)
+        if not isinstance(section_data, dict) or not isinstance(section_totals, dict):
+            continue
+
+        for module, module_totals in section_totals.items():
+            module_data = section_data.get(module)
+            if not isinstance(module_data, dict) or not isinstance(module_totals, dict):
+                continue
+
+            # Alle vorhandenen Summenfelder des Moduls mit den Tages-Summen ueberschreiben.
+            module_data.update(module_totals)
+    return entry
