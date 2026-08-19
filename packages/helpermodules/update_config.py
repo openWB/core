@@ -3532,12 +3532,12 @@ class UpdateConfig:
     def upgrade_datastore_140(self) -> None:
         feed_in_limit = False
         for topic, payload in self.all_received_topics.items():
-            if re.search("^openWB/vehicle/[0-9]+/template/charge_template$", topic) is not None:
+            if re.search("^openWB/vehicle/template/charge_template/[0-9]+$", topic) is not None:
                 config = decode_payload(payload)
-                if config.get("chargemode", {}).get("pv_charging", {}).get("feed_in_limit") is True:
-                    feed_in_limit = True
-                    config["chargemode"]["pv_charging"].pop("feed_in_limit")
-                    self.__update_topic("openWB/vehicle/template/charge_template", config)
+                pv_config = config.get("chargemode", {}).get("pv_charging", {})
+                if "feed_in_limit" in pv_config:
+                    feed_in_limit = feed_in_limit or pv_config.pop("feed_in_limit") is True
+                    self.__update_topic(topic, config)
         self.__update_topic("openWB/general/chargemode_config/surplus/feed_in_limit", feed_in_limit)
 
         def move_topic(new_topic: str, old_topic: str) -> None:
