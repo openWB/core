@@ -636,6 +636,8 @@ class SubData:
                         self.set_json_payload_class(var.data.chargemode_config.surplus.vehicle, msg)
                     elif re.search("/general/chargemode_config/surplus/", msg.topic) is not None:
                         self.set_json_payload_class(var.data.chargemode_config.surplus, msg)
+                    elif re.search("/general/chargemode_config/bat/", msg.topic) is not None:
+                        self.set_json_payload_class(var.data.chargemode_config.bat, msg)
                     else:
                         self.set_json_payload_class(var.data.chargemode_config, msg)
                 elif "openWB/general/extern" == msg.topic:
