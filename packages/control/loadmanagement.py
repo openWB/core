@@ -62,8 +62,10 @@ class Loadmanagement:
         available_currents, new_limit = self._limit_by_current(counter, available_currents, raw_currents_left)
         limit = new_limit if new_limit.limiting_value is not None else limit
 
+        surplus_config = data.data.general_data.data.chargemode_config.surplus
+        feed_in_yield = surplus_config.feed_in_yield if surplus_config.feed_in_limit else None
         available_currents, new_limit = self._limit_by_power(
-            counter, available_currents, cp_voltage, counter.data.set.surplus_power_left)
+            counter, available_currents, cp_voltage, counter.data.set.surplus_power_left, feed_in_yield)
         limit = new_limit if new_limit.limiting_value is not None else limit
 
         if f"counter{counter.num}" == data.data.counter_all_data.get_evu_counter_str():
@@ -97,7 +99,8 @@ class Loadmanagement:
                         counter: Counter,
                         available_currents: List[float],
                         cp_voltage: float,
-                        raw_power_left: Optional[float]) -> Tuple[List[float], LoadmanagementLimit]:
+                        raw_power_left: Optional[float],
+                        feed_in: Optional[float] = None) -> Tuple[List[float], LoadmanagementLimit]:
         # Mittelwert der Spannungen verwenden, um Phasenverdrehung zu kompensieren
         # (Probleme bei einphasig angeschlossenen Wallboxen)
         currents = available_currents.copy()
@@ -105,9 +108,8 @@ class Loadmanagement:
         if raw_power_left is None:
             return currents, limit
         elif raw_power_left > 0:
-            surplus_config = data.data.general_data.data.chargemode_config.surplus
-            if surplus_config.feed_in_limit:
-                raw_power_left = max(raw_power_left - surplus_config.feed_in_yield, 0)
+            if feed_in is not None:
+                raw_power_left = max(raw_power_left - feed_in, 0)
                 log.debug(f"Verbleibende Leistung unter Berücksichtigung der Einspeisegrenze: {raw_power_left}W")
             if sum([c * cp_voltage for c in available_currents]) > raw_power_left:
                 for i in range(0, 3):
