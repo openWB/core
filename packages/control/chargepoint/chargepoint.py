@@ -602,11 +602,11 @@ class Chargepoint(ChargepointRfidMixin):
             self.data.control_parameter.timestamp_charge_start = None
 
     def set_chargemode_changed(self, submode: Chargemode) -> None:
+        selected_chargemode = Chargemode(self.data.set.charge_template.data.chargemode.selected)
         if ((submode == Chargemode.TIME_CHARGING and
              self.data.control_parameter.chargemode != Chargemode.TIME_CHARGING) or
                 (submode != Chargemode.TIME_CHARGING and
-                 self.data.control_parameter.chargemode != Chargemode(
-                     self.data.set.charge_template.data.chargemode.selected))):
+                 self.data.control_parameter.chargemode != selected_chargemode)):
             self.chargemode_changed = True
             log.debug("Änderung des Lademodus")
             self.data.control_parameter.timestamp_chargemode_changed = create_timestamp()
