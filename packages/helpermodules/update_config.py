@@ -3604,6 +3604,7 @@ class UpdateConfig:
                        (Chargemode.INSTANT_CHARGING.value, True),
                        (Chargemode.INSTANT_CHARGING.value, False),
                        (Chargemode.ECO_CHARGING.value, True),
+                       (Chargemode.ECO_CHARGING.value, False),
                        (Chargemode.PV_CHARGING.value, True),
                        (Chargemode.PV_CHARGING.value, False),
                        (Chargemode.STOP.value, True),
