@@ -15,9 +15,6 @@ from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
-# Rohwert der Leistungsregister / POWER_GAIN = Watt (Gerät liefert mW statt W)
-POWER_GAIN = 1000
-
 
 class KwargsDict(TypedDict):
     device_config: Anker
@@ -42,7 +39,7 @@ class AnkerBat(AbstractBat):
         unit = self.device_config.configuration.modbus_id
 
         power = self.client.read_input_registers(10008, ModbusDataType.INT_32,
-                                                 wordorder=Endian.Little, unit=unit) * -1 / POWER_GAIN
+                                                 wordorder=Endian.Big, unit=unit) * -1
         soc = self.client.read_input_registers(10014, ModbusDataType.UINT_16, unit=unit)
 
         self.peak_filter.check_values(power)
@@ -70,11 +67,7 @@ class AnkerBat(AbstractBat):
 
             # Berechne power value: 0 = stop, != 0 = multipliziere mit -1
             # Laut Doku ist der min Wert 100W, ggf. noch Anpassung für power_limit=0 notwendig
-            # ACHTUNG: POWER_GAIN hier nur nach Symmetrie-Annahme angewendet (Leseregister sind
-            # nachweislich in mW). Vor Praxiseinsatz unbedingt mit einem kleinen, unkritischen
-            # Grenzwert verifizieren, dass das Schreibregister ebenfalls mW statt W erwartet -
-            # sonst wird ggf. eine 1000x falsche Leistung angefordert.
-            power_value = 0 if power_limit == 0 else int(power_limit) * -1 * POWER_GAIN
+            power_value = 0 if power_limit == 0 else int(power_limit) * -1
             self.client.write_register(10071, power_value, data_type=ModbusDataType.INT_32, unit=unit)
             log.debug("Aktive Batteriesteuerung angefordert, angeforderte Leistung: {power_value} W")
 
