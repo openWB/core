@@ -37,9 +37,9 @@ class AnkerInverter(AbstractInverter):
         # Register 10002 ist die PV_power also die DC Leistung
         # Register 10010 ist "Load_power" unklar ob dies wirklich die AC Leistung des Inverters ist
         power = self.client.read_input_registers(10010, ModbusDataType.INT_32,
-                                                 wordorder=Endian.Little, unit=unit) * -1
+                                                 wordorder=Endian.Big, unit=unit) * -1
         dc_power = self.client.read_input_registers(10002, ModbusDataType.INT_32,
-                                                    wordorder=Endian.Little, unit=unit) * -1
+                                                    wordorder=Endian.Big, unit=unit) * -1
 
         self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
