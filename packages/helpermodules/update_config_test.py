@@ -248,7 +248,7 @@ def test_upgrade_datastore_125_is_idempotent_for_already_converted_values(mock_p
                  False, Chargemode.INSTANT_CHARGING.value, [1, 0, 2], id="Prioritäten unterschiedlich")
 ]
 )
-def test_upgrade_datastore_139_ev_chargemode_conversion(ev0_prio: bool,
+def test_upgrade_datastore_140_ev_chargemode_conversion(ev0_prio: bool,
                                                         ev0_chargemode: str,
                                                         ev1_prio: bool,
                                                         ev1_chargemode: str,
@@ -282,12 +282,12 @@ def test_upgrade_datastore_139_ev_chargemode_conversion(ev0_prio: bool,
     }
 
     # execution
-    uc.upgrade_datastore_139()
+    uc.upgrade_datastore_140()
 
     # evaluation
     assert uc.all_received_topics["openWB/counter/get/loadmanagement_prios"] == [
         {"type": "vehicle", "id": id_ordered[0]},
         {"type": "vehicle", "id": id_ordered[1]},
         {"type": "vehicle", "id": id_ordered[2]}]
-    assert uc.all_received_topics["openWB/system/datastore_version"] == [131, 132, 139]
+    assert uc.all_received_topics["openWB/system/datastore_version"] == [131, 132, 140]
     assert mock_pub.pub.call_count == 2  # einmal publishen für Upgrade der Datastore-Version
