@@ -39,7 +39,8 @@ from helpermodules.create_debug import create_debug_log
 from helpermodules.pub import Pub, pub_single
 from helpermodules.subdata import SubData
 from helpermodules.utils.topic_parser import decode_payload, get_index
-from control import bat, bridge, counter, counter_all, data, pv
+from control import bat, bridge, counter, data, pv
+from control.counter_all import counter_all
 from control.ev import ev
 from modules.chargepoints.internal_openwb.chargepoint_module import ChargepointModule
 from modules.chargepoints.internal_openwb.config import InternalChargepointMode
