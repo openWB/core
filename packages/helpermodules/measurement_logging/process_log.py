@@ -649,13 +649,26 @@ def process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
                     new_data = {}
                     if "imported" in entry[type][module].keys() or "exported" in entry[type][module].keys():
                         def get_current_and_next(value_key: str) -> Tuple[float, float]:
-                            def get_single_value(source: dict, default: int = 0) -> float:
+                            def get_single_value(source: dict) -> Optional[float]:
                                 try:
-                                    return source[type][module][value_key]
+                                    value = source[type][module][value_key]
+                                    if isinstance(value, (int, float)):
+                                        return float(value)
                                 except KeyError:
-                                    return default
+                                    pass
+                                return None
+
                             current_value = get_single_value(entry)
-                            return current_value, get_single_value(next_entry,  current_value)
+                            next_value = get_single_value(next_entry)
+
+                            # Keep meter deltas neutral if one side is invalid/missing.
+                            if current_value is None and next_value is None:
+                                return 0.0, 0.0
+                            if current_value is None:
+                                return next_value, next_value
+                            if next_value is None:
+                                return current_value, current_value
+                            return current_value, next_value
                         value_imported, next_value_imported = get_current_and_next("imported")
                         value_exported, next_value_exported = get_current_and_next("exported")
                         if calculation in [CalculationType.POWER, CalculationType.ALL]:
