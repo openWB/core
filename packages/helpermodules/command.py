@@ -12,7 +12,7 @@ import traceback
 from pathlib import Path
 
 import paho.mqtt.client as mqtt
-from control import bat, bridge, counter, pv
+from control import bat, bridge, counter, data, pv
 from control.chargelog.process_chargelog import get_log_data
 from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
