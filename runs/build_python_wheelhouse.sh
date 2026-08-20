@@ -164,6 +164,7 @@ build_wheelhouse() {
 	local artifact_name="python-wheelhouse-${PYTHON_VERSION}-linux-${TARGET_ARCH}-${TARGET_OS_VARIANT}.tar.xz"
 	local -a pip_wheel_args=()
 	local compatibility_mode="false"
+	local requests_requirement=""
 
 	runtime_stage=$(mktemp -d)
 	runtime_archive="${runtime_stage}/python-runtime.tar.xz"
@@ -207,6 +208,14 @@ build_wheelhouse() {
 	if [[ "${TARGET_ARCH}" == "armv7l" && ("${TARGET_OS_VARIANT}" == "debian11" || "${TARGET_OS_VARIANT}" == "rpios11") ]]; then
 		log "Compatibility mode enabled: forcing grpcio source build for ${TARGET_ARCH}/${TARGET_OS_VARIANT}."
 		compatibility_mode="true"
+		if grep -Eq '^[[:space:]]*jq([<>=!~].*)?$' "${REQUIREMENTS_FILE}"; then
+			requests_requirement=$(grep -E '^[[:space:]]*requests([<>=!~].*)?$' "${REQUIREMENTS_FILE}" | head -n 1 | tr -d '[:space:]')
+			if [[ -z "${requests_requirement}" ]]; then
+				requests_requirement="requests"
+			fi
+			log "Compatibility mode: pre-installing ${requests_requirement} for jq metadata build."
+			"${python_bin}" -m pip install "${requests_requirement}"
+		fi
 		# grpcio may fail in an isolated build env when legacy setup.py expects pkg_resources.
 		pip_wheel_args=("--no-binary" "grpcio" "--no-build-isolation" "${pip_wheel_args[@]}")
 	fi
