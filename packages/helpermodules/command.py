@@ -776,7 +776,7 @@ class Command:
         # add ACL roles for vehicle access, if user management is active
         if SubData.system_data["system"].data["security"]["user_management_active"]:
             add_acl_role("vehicle-<id>-access", new_id)
-        data.data.counter_all_data.add_loadmanagement_prio_item("vehicle", new_id)
+        data.data.counter_all_data.add_loadmanagement_prio_item(ComponentType.VEHICLE, new_id)
         Pub().pub("openWB/set/counter/get/loadmanagement_prios",
                   data.data.counter_all_data.data.get.loadmanagement_prios)
         pub_user_message(payload, connection_id, f'Neues EV mit ID \'{new_id}\' hinzugefügt.', MessageType.SUCCESS)
@@ -794,7 +794,7 @@ class Command:
             if SubData.system_data["system"].data["security"]["user_management_active"]:
                 remove_acl_role("vehicle-<id>-access", payload["data"]["id"])
                 remove_acl_role("vehicle-<id>-write-access", payload["data"]["id"])
-            data.data.counter_all_data.remove_loadmanagement_prio_item(payload["data"]["id"])
+            data.data.counter_all_data.remove_loadmanagement_prio_item(payload["data"]["id"], ComponentType.VEHICLE)
             Pub().pub("openWB/set/counter/get/loadmanagement_prios",
                       data.data.counter_all_data.data.get.loadmanagement_prios)
             pub_user_message(
