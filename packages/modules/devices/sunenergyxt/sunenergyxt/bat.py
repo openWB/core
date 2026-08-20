@@ -48,7 +48,7 @@ class SunEnergyXTBat(AbstractBat):
         reported = data.get("state", {}).get("reported", data)
 
         soc = int(float(reported.get("SC", 0)))
-        power = float(reported.get("PB", 0))
+        power = float(reported.get("BP", 0)))
 
         # IS = max. Inverterleistung: hängt von Modell (500/Pro) und Modulanzahl (BN) ab.
         # Wird als dynamisches GS-Limit verwendet.
