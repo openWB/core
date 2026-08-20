@@ -163,6 +163,7 @@ build_wheelhouse() {
 	local artifact_path=""
 	local artifact_name="python-wheelhouse-${PYTHON_VERSION}-linux-${TARGET_ARCH}-${TARGET_OS_VARIANT}.tar.xz"
 	local -a pip_wheel_args=()
+	local compatibility_mode="false"
 
 	runtime_stage=$(mktemp -d)
 	runtime_archive="${runtime_stage}/python-runtime.tar.xz"
@@ -201,17 +202,19 @@ build_wheelhouse() {
 	fi
 
 	log "Using runtime python: ${python_bin}"
-	"${python_bin}" -m pip install --upgrade pip wheel
+	"${python_bin}" -m pip install --upgrade pip setuptools wheel
 
 	if [[ "${TARGET_ARCH}" == "armv7l" && ("${TARGET_OS_VARIANT}" == "debian11" || "${TARGET_OS_VARIANT}" == "rpios11") ]]; then
 		log "Compatibility mode enabled: forcing grpcio source build for ${TARGET_ARCH}/${TARGET_OS_VARIANT}."
-		pip_wheel_args=("--no-binary" "grpcio" "${pip_wheel_args[@]}")
+		compatibility_mode="true"
+		# grpcio may fail in an isolated build env when legacy setup.py expects pkg_resources.
+		pip_wheel_args=("--no-binary" "grpcio" "--no-build-isolation" "${pip_wheel_args[@]}")
 	fi
 
 	log "Building wheels with pip."
 	"${python_bin}" -m pip wheel "${pip_wheel_args[@]}"
 
-	if [[ "${TARGET_ARCH}" == "armv7l" && ("${TARGET_OS_VARIANT}" == "debian11" || "${TARGET_OS_VARIANT}" == "rpios11") ]]; then
+	if [[ "${compatibility_mode}" == "true" ]]; then
 		if ! validate_wheelhouse_glibcxx_compatibility "${python_bin}" "${wheelhouse_dir}" "3.4.28"; then
 			rm -rf "${runtime_stage}"
 			return 1
