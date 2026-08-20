@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import logging
 from typing import TypedDict, Any
 
 from modules.common.abstract_device import AbstractInverter
@@ -9,11 +8,9 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, Endian, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_component_value_store
-from modules.devices.anker.solarbank_4_e5000.config import Anker, AnkerInverterSetup
+from modules.devices.anker.solarbank.config import Anker, AnkerInverterSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
-
-log = logging.getLogger(__name__)
 
 
 class KwargsDict(TypedDict):
@@ -37,19 +34,9 @@ class AnkerInverter(AbstractInverter):
     def update(self) -> None:
         unit = self.device_config.configuration.modbus_id
 
-        # power kommt aus dc_power (10002, PV), nicht aus Load_power (10010, = Hausverbrauch).
-        # Unsicher: 10208 (ac_grid_output_power) koennte die eigentlich richtige AC-Leistung
-        # sein, noch nicht getestet.
-        dc_power = self.client.read_input_registers(10002, ModbusDataType.INT_32,
-                                                    wordorder=Endian.Big, unit=unit) * -1
-        power = dc_power
+        power = self.client.read_input_registers(10002, ModbusDataType.INT_32,
+                                                 wordorder=Endian.Big, unit=unit) * -1
 
-        # DEBUG only: Register 10208 (ac_grid_output_power laut HA-Integration) zum
-        # Vergleich mitloggen, ob das die bessere Quelle fuer power waere. Wird noch
-        # nirgends verwendet/gespeichert.
-        ac_grid_output_power = self.client.read_input_registers(10208, ModbusDataType.INT_32,
-                                                                wordorder=Endian.Big, unit=unit)
-        log.debug("DEBUG ac_grid_output_power (10208) roh: %s", ac_grid_output_power)
 
         self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
