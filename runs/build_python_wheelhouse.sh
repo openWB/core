@@ -97,6 +97,61 @@ ensure_requirements_file() {
 	fi
 }
 
+validate_wheelhouse_glibcxx_compatibility() {
+	local python_bin="$1"
+	local wheelhouse_dir="$2"
+	local max_glibcxx_version="${3:-3.4.28}"
+
+	log "Validating wheelhouse GLIBCXX compatibility (max ${max_glibcxx_version})"
+	if ! "${python_bin}" - "${wheelhouse_dir}" "${max_glibcxx_version}" <<'PY'
+import os
+import re
+import sys
+import zipfile
+
+wheelhouse_dir = sys.argv[1]
+max_version_raw = sys.argv[2]
+max_version = tuple(int(part) for part in max_version_raw.split('.'))
+
+def parse_version(token: bytes):
+	match = re.match(rb"GLIBCXX_(\d+)\.(\d+)(?:\.(\d+))?", token)
+	if not match:
+		return None
+	major = int(match.group(1))
+	minor = int(match.group(2))
+	patch = int(match.group(3) or 0)
+	return (major, minor, patch)
+
+offenders = []
+
+for entry in sorted(os.listdir(wheelhouse_dir)):
+	if not entry.endswith('.whl'):
+		continue
+	wheel_path = os.path.join(wheelhouse_dir, entry)
+	with zipfile.ZipFile(wheel_path, 'r') as archive:
+		so_members = [name for name in archive.namelist() if name.endswith('.so')]
+		for name in so_members:
+			data = archive.read(name)
+			symbols = set(re.findall(rb"GLIBCXX_[0-9]+\.[0-9]+(?:\.[0-9]+)?", data))
+			for symbol in symbols:
+				version = parse_version(symbol)
+				if version and version > max_version:
+					offenders.append((entry, name, symbol.decode()))
+
+if offenders:
+	print("Found incompatible GLIBCXX symbols in wheelhouse:", file=sys.stderr)
+	for wheel, member, symbol in offenders:
+		print(f"  {wheel}: {member} requires {symbol}", file=sys.stderr)
+	sys.exit(2)
+
+sys.exit(0)
+PY
+	then
+		log "ERROR: Wheelhouse contains native wheels incompatible with target libstdc++."
+		return 1
+	fi
+}
+
 build_wheelhouse() {
 	local runtime_asset="python-${PYTHON_VERSION}-linux-${TARGET_ARCH}-${TARGET_OS_VARIANT}.tar.xz"
 	local runtime_url="${PYTHON_RUNTIME_BASE_URL}/${runtime_asset}"
@@ -107,12 +162,14 @@ build_wheelhouse() {
 	local wheelhouse_dir=""
 	local artifact_path=""
 	local artifact_name="python-wheelhouse-${PYTHON_VERSION}-linux-${TARGET_ARCH}-${TARGET_OS_VARIANT}.tar.xz"
+	local -a pip_wheel_args=()
 
 	runtime_stage=$(mktemp -d)
 	runtime_archive="${runtime_stage}/python-runtime.tar.xz"
 	runtime_extract_dir="${runtime_stage}/runtime"
 	wheelhouse_dir="${runtime_stage}/wheelhouse"
 	artifact_path="${OUTPUT_DIR}/${artifact_name}"
+	pip_wheel_args=("--wheel-dir" "${wheelhouse_dir}" "-r" "${REQUIREMENTS_FILE}")
 
 	mkdir -p "${runtime_extract_dir}" "${wheelhouse_dir}" "${OUTPUT_DIR}"
 
@@ -146,8 +203,20 @@ build_wheelhouse() {
 	log "Using runtime python: ${python_bin}"
 	"${python_bin}" -m pip install --upgrade pip wheel
 
+	if [[ "${TARGET_ARCH}" == "armv7l" && ("${TARGET_OS_VARIANT}" == "debian11" || "${TARGET_OS_VARIANT}" == "rpios11") ]]; then
+		log "Compatibility mode enabled: forcing grpcio source build for ${TARGET_ARCH}/${TARGET_OS_VARIANT}."
+		pip_wheel_args=("--no-binary" "grpcio" "${pip_wheel_args[@]}")
+	fi
+
 	log "Building wheels with pip."
-	"${python_bin}" -m pip wheel --wheel-dir "${wheelhouse_dir}" -r "${REQUIREMENTS_FILE}"
+	"${python_bin}" -m pip wheel "${pip_wheel_args[@]}"
+
+	if [[ "${TARGET_ARCH}" == "armv7l" && ("${TARGET_OS_VARIANT}" == "debian11" || "${TARGET_OS_VARIANT}" == "rpios11") ]]; then
+		if ! validate_wheelhouse_glibcxx_compatibility "${python_bin}" "${wheelhouse_dir}" "3.4.28"; then
+			rm -rf "${runtime_stage}"
+			return 1
+		fi
+	fi
 
 	cp "${REQUIREMENTS_FILE}" "${wheelhouse_dir}/requirements.txt"
 
