@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import TypedDict, Any, Optional
+from typing import TypedDict, Any
 
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
@@ -13,6 +13,7 @@ from modules.devices.solis.solis.config import SolisBatSetup
 from modules.devices.solis.solis.version import SolisVersion
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
+from control.bat import Set as PowerState
 
 log = logging.getLogger(__name__)
 
@@ -60,24 +61,24 @@ class SolisBat(AbstractBat):
         )
         self.store.set(bat_state)
 
-    def set_power_limit(self, power_limit: Optional[int]) -> None:
+    def set_power_limit(self, power_state: PowerState) -> None:
         unit = self.component_config.configuration.modbus_id
 
-        if power_limit is None:
+        if power_state.bat_setpoint is None:
             self.client.write_register(43135, 0, data_type=ModbusDataType.UINT_16, unit=unit)
             log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
-        elif power_limit == 0:
+        elif power_state.bat_setpoint == 0:
             self.client.write_register(43135, 1, data_type=ModbusDataType.UINT_16, unit=unit)
             self.client.write_register(43136, 0, data_type=ModbusDataType.UINT_16, unit=unit)
             log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt und nicht geladen/entladen")
-        elif power_limit < 0:
+        elif power_state.bat_setpoint < 0:
             self.client.write_register(43135, 2, data_type=ModbusDataType.UINT_16, unit=unit)
-            power_value = int(abs(power_limit) / 10)
+            power_value = int(abs(power_state.bat_setpoint) / 10)
             self.client.write_register(43129, power_value, data_type=ModbusDataType.UINT_16, unit=unit)
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_value} W entladen für den Hausverbrauch")
-        elif power_limit > 0:
+        elif power_state.bat_setpoint > 0:
             self.client.write_register(43135, 1, data_type=ModbusDataType.UINT_16, unit=unit)
-            power_value = int(power_limit / 10)
+            power_value = int(power_state.bat_setpoint / 10)
             self.client.write_register(43136, power_value, data_type=ModbusDataType.UINT_16, unit=unit)
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_value} W geladen")
 

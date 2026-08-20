@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from typing import Optional, TypedDict, Any, Union
+from typing import TypedDict, Any, Union
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
@@ -10,6 +10,7 @@ from modules.common.store import get_component_value_store
 from modules.devices.marstek.venus_c_e.config import VenusCEBatSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
+from control.bat import Set as PowerState
 
 
 class KwargsDict(TypedDict):
@@ -53,20 +54,20 @@ class VenusCEBat(AbstractBat):
         )
         self.store.set(bat_state)
 
-    def set_power_limit(self, power_limit: Optional[int]) -> None:
+    def set_power_limit(self, power_state: PowerState) -> None:
         # Wenn der Speicher die Steuerung der Ladeleistung unterstützt, muss bei Übergabe einer Zahl auf aktive
         # Speichersteurung umgeschaltet werden, sodass der Speicher mit der übergebenen Leistung lädt/entlädt. Wird
         # None übergeben, muss der Speicher die Null-Punkt-Ausregelung selbst übernehmen.
-        if (power_limit is None):
+        if (power_state.bat_setpoint is None):
             self._write_reg(42000, 0x55bb)
         else:
             self._write_reg(42000, 0x55aa)
-            if power_limit < 0:
+            if power_state.bat_setpoint < 0:
                 self._write_reg(42010, 2)
-                self._write_reg(42021, int(min(-power_limit, 2500)))
-            elif power_limit > 0:
+                self._write_reg(42021, int(min(-power_state.bat_setpoint, 2500)))
+            elif power_state.bat_setpoint > 0:
                 self._write_reg(42010, 1)
-                self._write_reg(42020, int(min(power_limit, 2500)))
+                self._write_reg(42020, int(min(power_state.bat_setpoint, 2500)))
             else:
                 self._write_reg(42010, 0)
 

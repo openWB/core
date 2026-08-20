@@ -297,7 +297,11 @@ class BatAll:
                     log.debug(("Aktive Speichersteuerung: Ladung - "
                                f"Speicher (ID: {bat_component.component_config.id}) "
                                f"laden mit {power_limit} ({factor} x {bat_component_data.get.max_charge_power}) W"))
-            data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set.power_limit = power_limit
+
+            bat_component_data.set.evu_power = int(data.data.counter_all_data.get_evu_counter().data.get.power)
+            bat_component_data.set.bat_power = int(bat_component_data.get.power)
+            bat_component_data.set.bat_setpoint = power_limit
+            bat_component_data.set.total_bat_setpoint = power
 
     def setup_bat(self):
         """ prüft, ob mind ein Speicher vorhanden ist und berechnet die Summen-Topics.

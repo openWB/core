@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import Any, Optional, TypedDict
+from typing import Any, TypedDict
 
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
@@ -12,6 +12,7 @@ from modules.common.store import get_component_value_store
 from modules.devices.anker.solarbank_4_e5000.config import Anker, AnkerBatSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
+from control.bat import Set as PowerState
 
 log = logging.getLogger(__name__)
 
@@ -55,10 +56,10 @@ class AnkerBat(AbstractBat):
         )
         self.store.set(bat_state)
 
-    def set_power_limit(self, power_limit: Optional[int]) -> None:
+    def set_power_limit(self, power_state: PowerState) -> None:
         unit = self.device_config.configuration.modbus_id
 
-        if power_limit is None:
+        if power_state.bat_setpoint is None:
             log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
             if self.last_mode is not None:
                 self.client.write_register(10064, 0, data_type=ModbusDataType.UINT_16, unit=unit)
@@ -74,7 +75,7 @@ class AnkerBat(AbstractBat):
             # nachweislich in mW). Vor Praxiseinsatz unbedingt mit einem kleinen, unkritischen
             # Grenzwert verifizieren, dass das Schreibregister ebenfalls mW statt W erwartet -
             # sonst wird ggf. eine 1000x falsche Leistung angefordert.
-            power_value = 0 if power_limit == 0 else int(power_limit) * -1 * POWER_GAIN
+            power_value = 0 if power_state.bat_setpoint == 0 else int(power_state.bat_setpoint) * -1 * POWER_GAIN
             self.client.write_register(10071, power_value, data_type=ModbusDataType.INT_32, unit=unit)
             log.debug("Aktive Batteriesteuerung angefordert, angeforderte Leistung: {power_value} W")
 

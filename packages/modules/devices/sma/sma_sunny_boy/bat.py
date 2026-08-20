@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import Any, TypedDict, Optional
+from typing import Any, TypedDict
 
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
@@ -13,6 +13,7 @@ from modules.common.simcount import SimCounter
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
 from modules.devices.sma.sma_sunny_boy.version import SmaBatVersion
+from control.bat import Set as PowerState
 
 log = logging.getLogger(__name__)
 
@@ -82,10 +83,10 @@ class SunnyBoyBat(AbstractBat):
         )
         self.store.set(bat_state)
 
-    def set_power_limit(self, power_limit: Optional[int]) -> None:
+    def set_power_limit(self, power_state: PowerState) -> None:
         unit = self.component_config.configuration.modbus_id
 
-        if power_limit is None:
+        if power_state.bat_setpoint is None:
             if self.last_mode is not None:
                 # Kein Powerlimit gefordert, externe Steuerung war aktiv, externe Steuerung deaktivieren
                 self.__tcp_client.write_register(40151, 803, data_type=ModbusDataType.UINT_32, unit=unit)
@@ -95,7 +96,7 @@ class SunnyBoyBat(AbstractBat):
         else:
             # Powerlimit gefordert, externe Steuerung aktivieren, Limit setzen
             self.__tcp_client.write_register(40151, 802, data_type=ModbusDataType.UINT_32, unit=unit)
-            power_value = int(power_limit) * -1
+            power_value = int(power_state.bat_setpoint) * -1
             self.__tcp_client.write_register(40149, power_value, data_type=ModbusDataType.INT_32, unit=unit)
             log.debug(f"Aktive Batteriesteuerung vorhanden. Setze externe Steuerung. Leistung: {power_value}")
             self.last_mode = 'limited'

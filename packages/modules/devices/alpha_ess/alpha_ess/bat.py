@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import TypedDict, Any, Optional
+from typing import TypedDict, Any
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
@@ -11,6 +11,7 @@ from modules.common.store import get_component_value_store
 from modules.devices.alpha_ess.alpha_ess.config import AlphaEssBatSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
+from control.bat import Set as PowerState
 
 log = logging.getLogger(__name__)
 
@@ -62,16 +63,16 @@ class AlphaEssBat(AbstractBat):
         )
         self.store.set(bat_state)
 
-    def set_power_limit(self, power_limit: Optional[int]) -> None:
+    def set_power_limit(self, power_state: PowerState) -> None:
         unit = self.__modbus_id
 
-        if power_limit is None:
+        if power_state.bat_setpoint is None:
             # Kein Powerlimit gefordert, externe Steuerung deaktivieren
             log.debug("Keine Batteriesteuerung gefordert, deaktiviere externe Steuerung.")
             if self.last_mode is not None:
                 self.__tcp_client.write_register(2127, 0, data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = None
-        elif power_limit <= 0:
+        elif power_state.bat_setpoint <= 0:
             # AlphaESS kann die Entladung nur über den SoC verhindern (komplette Entladesperre)
             # Netzladung mit geringen Ziel SoC verhindert auch Entladung (Default 10%)
             # Zeiten für Netzladung müssen im Wechselrichter aktiviert werden

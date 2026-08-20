@@ -730,10 +730,16 @@ class SetData:
                 elif ("/get/fault_str" in msg.topic or
                       "/get/serial_number" in msg.topic):
                     self._validate_value(msg, str)
-                elif "/set/power_limit_controllable" in msg.topic:
+                elif "/get/power_limit_controllable" in msg.topic:
                     self._validate_value(msg, bool)
-                elif "/set/power_limit" in msg.topic:
-                    self._validate_value(msg, float)
+                elif "/set/evu_power" in msg.topic:
+                    self._validate_value(msg, int)
+                elif "/set/bat_power" in msg.topic:
+                    self._validate_value(msg, int)
+                elif "/set/bat_setpoint" in msg.topic:
+                    self._validate_value(msg, int)
+                elif "/set/total_bat_setpoint" in msg.topic:
+                    self._validate_value(msg, int)
                 else:
                     self.__unknown_topic(msg)
             else:
