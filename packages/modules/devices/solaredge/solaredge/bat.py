@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from enum import IntEnum
 import logging
-from typing import Any, TypedDict, Dict, Union, Optional, Tuple
+from typing import Any, TypedDict, Dict, Union, Tuple
 from pymodbus.constants import Endian
 
 from modules.common import modbus
@@ -15,6 +15,7 @@ from modules.common.store import get_component_value_store
 from modules.devices.solaredge.solaredge.config import SolaredgeBatSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
+from control.bat import Set as PowerState
 
 log = logging.getLogger(__name__)
 
@@ -106,7 +107,7 @@ class SolaredgeBat(AbstractBat):
     def get_imported_exported(self, power: float) -> Tuple[float, float]:
         return self.sim_counter.sim_count(power)
 
-    def set_power_limit(self, power_limit: Optional[int]) -> None:
+    def set_power_limit(self, power_state: PowerState) -> None:
         unit = self.component_config.configuration.modbus_id
         battery_index = self.component_config.configuration.battery_index
 
@@ -122,7 +123,7 @@ class SolaredgeBat(AbstractBat):
             Registers.STORAGE_CONTROL_MODE, 14, wordorder=Endian.Little, mapping=bulk, unit=unit)
         log.debug(f"Bat raw values {self.__tcp_client.address}: {values}")
 
-        if power_limit is None:  # No Bat Control should be used.
+        if power_state.bat_setpoint is None:  # No Bat Control should be used.
             if values[Registers.STORAGE_CONTROL_MODE] == CONTROL_MODE_MSC:
                 log.debug(f"Speicher{battery_index}:Keine Steuerung gefordert, bereits deaktiviert.")
             else:
@@ -137,18 +138,20 @@ class SolaredgeBat(AbstractBat):
                 self._write_registers(values_to_write, unit)
                 log.debug(f"Speicher{battery_index}:Keine Steuerung gefordert, Steuerung deaktiviert.")
 
-        elif power_limit <= 0:  # Limit Discharge Mode should be used.
+        elif power_state.bat_setpoint <= 0:  # Limit Discharge Mode should be used.
             if (values[Registers.STORAGE_CONTROL_MODE] == CONTROL_MODE_REMOTE and
                     values[Registers.REMOTE_CONTROL_COMMAND_MODE] == REMOTE_CONTROL_COMMAND_MODE_MSC):
                 # Remote Control and Discharge Mode already active.
                 discharge_limit = int(values[Registers.REMOTE_CONTROL_DISCHARGE_LIMIT])
-                if discharge_limit not in range(int(abs(power_limit)) - 10, int(abs(power_limit)) + 10):
+                if discharge_limit not in range(int(abs(power_state.bat_setpoint)) - 10,
+                                                int(abs(power_state.bat_setpoint)) + 10):
                     # Send Limit only if difference is more than 10W, needed with more than 1 battery.
                     values_to_write = {
-                        Registers.REMOTE_CONTROL_DISCHARGE_LIMIT: int(min(abs(power_limit), MAX_CHARGEDISCHARGE_LIMIT))
+                        Registers.REMOTE_CONTROL_DISCHARGE_LIMIT: int(min(abs(power_state.bat_setpoint),
+                                                                          MAX_CHARGEDISCHARGE_LIMIT))
                     }
                     self._write_registers(values_to_write, unit)
-                    log.debug(f"Entlade-Limit Speicher{battery_index}: {int(abs(power_limit))}W.")
+                    log.debug(f"Entlade-Limit Speicher{battery_index}: {int(abs(power_state.bat_setpoint))}W.")
                 else:
                     log.debug(f"Entlade-Limit Speicher{battery_index}: Abweichung unter  +/- 10W.")
             else:  # Enable Remote Control and Discharge Mode.
@@ -156,23 +159,26 @@ class SolaredgeBat(AbstractBat):
                     Registers.STORAGE_CONTROL_MODE: CONTROL_MODE_REMOTE,
                     Registers.REMOTE_CONTROL_COMMAND_MODE_DEFAULT_REG: REMOTE_CONTROL_COMMAND_MODE_MSC,
                     Registers.REMOTE_CONTROL_COMMAND_MODE: REMOTE_CONTROL_COMMAND_MODE_MSC,
-                    Registers.REMOTE_CONTROL_DISCHARGE_LIMIT: int(min(abs(power_limit), MAX_CHARGEDISCHARGE_LIMIT))
+                    Registers.REMOTE_CONTROL_DISCHARGE_LIMIT: int(min(abs(power_state.bat_setpoint),
+                                                                      MAX_CHARGEDISCHARGE_LIMIT))
                 }
                 self._write_registers(values_to_write, unit)
-                log.debug(f"Entlade-Limit aktiviert, Speicher{battery_index}: {int(abs(power_limit))}W.")
+                log.debug(f"Entlade-Limit aktiviert, Speicher{battery_index}: {int(abs(power_state.bat_setpoint))}W.")
 
-        elif power_limit > 0:  # Charge Mode should be used
+        elif power_state.bat_setpoint > 0:  # Charge Mode should be used
             if (values[Registers.STORAGE_CONTROL_MODE] == CONTROL_MODE_REMOTE and
                     values[Registers.REMOTE_CONTROL_COMMAND_MODE] == REMOTE_CONTROL_COMMAND_MODE_CHARGE):
                 # Remote Control and Charge Mode already active.
                 charge_limit = int(values[Registers.REMOTE_CONTROL_CHARGE_LIMIT])
-                if charge_limit not in range(int(abs(power_limit)) - 10, int(abs(power_limit)) + 10):
+                if charge_limit not in range(int(abs(power_state.bat_setpoint)) - 10,
+                                             int(abs(power_state.bat_setpoint)) + 10):
                     # Send Limit only if difference is more than 10W.
                     values_to_write = {
-                        Registers.REMOTE_CONTROL_CHARGE_LIMIT: int(min(abs(power_limit), MAX_CHARGEDISCHARGE_LIMIT))
+                        Registers.REMOTE_CONTROL_CHARGE_LIMIT: int(min(abs(power_state.bat_setpoint),
+                                                                       MAX_CHARGEDISCHARGE_LIMIT))
                     }
                     self._write_registers(values_to_write, unit)
-                    log.debug(f"Ladung Speicher{battery_index}: {int(abs(power_limit))}W.")
+                    log.debug(f"Ladung Speicher{battery_index}: {int(abs(power_state.bat_setpoint))}W.")
                 else:
                     log.debug(f"Ladung Speicher{battery_index}: Abweichung unter  +/- 10W.")
             else:  # Enable Remote Control and Charge Mode.
@@ -180,10 +186,11 @@ class SolaredgeBat(AbstractBat):
                     Registers.STORAGE_CONTROL_MODE: CONTROL_MODE_REMOTE,
                     Registers.REMOTE_CONTROL_COMMAND_MODE_DEFAULT_REG: REMOTE_CONTROL_COMMAND_MODE_CHARGE,
                     Registers.REMOTE_CONTROL_COMMAND_MODE: REMOTE_CONTROL_COMMAND_MODE_CHARGE,
-                    Registers.REMOTE_CONTROL_CHARGE_LIMIT: int(min(abs(power_limit), MAX_CHARGEDISCHARGE_LIMIT))
+                    Registers.REMOTE_CONTROL_CHARGE_LIMIT: int(min(abs(power_state.bat_setpoint),
+                                                                   MAX_CHARGEDISCHARGE_LIMIT))
                 }
                 self._write_registers(values_to_write, unit)
-                log.debug(f"Aktivierung Ladung Speicher{battery_index}: {int(abs(power_limit))}W.")
+                log.debug(f"Aktivierung Ladung Speicher{battery_index}: {int(abs(power_state.bat_setpoint))}W.")
 
     def _write_registers(self, values_to_write: Dict[Registers, Union[int, float]], unit: int) -> None:
         for address, value in values_to_write.items():

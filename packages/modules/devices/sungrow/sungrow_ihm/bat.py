@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import Any, Optional, TypedDict
+from typing import Any, TypedDict
 
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
@@ -12,6 +12,7 @@ from modules.common.store import get_component_value_store
 from modules.devices.sungrow.sungrow_ihm.config import SungrowIHMBatSetup, SungrowIHM
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
+from control.bat import Set as PowerState
 
 log = logging.getLogger(__name__)
 
@@ -52,40 +53,42 @@ class SungrowIHMBat(AbstractBat):
         )
         self.store.set(bat_state)
 
-    def set_power_limit(self, power_limit: Optional[int]) -> None:
+    def set_power_limit(self, power_state: PowerState) -> None:
         unit = self.device_config.configuration.modbus_id
         log.debug(f'last_mode: {self.last_mode}')
 
-        if power_limit is None:
+        if power_state.bat_setpoint is None:
             log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
             if self.last_mode is not None:
                 self.__tcp_client.write_register(8023, 1, data_type=ModbusDataType.UINT_16, unit=unit)
                 self.__tcp_client.write_register(8024, 0xCC, data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = None
-        elif power_limit == 0:
+        elif power_state.bat_setpoint == 0:
             log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt und nicht entladen")
             if self.last_mode != 'stop':
                 self.__tcp_client.write_register(8023, 5, data_type=ModbusDataType.UINT_16, unit=unit)
                 self.__tcp_client.write_register(8024, 0xCC, data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = 'stop'
-        elif power_limit < 0:
-            log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W entladen für den Hausverbrauch")
+        elif power_state.bat_setpoint < 0:
+            log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_state.bat_setpoint} W "
+                      "entladen für den Hausverbrauch")
             if self.last_mode != 'discharge':
                 self.__tcp_client.write_register(8023, 5, data_type=ModbusDataType.UINT_16, unit=unit)
                 self.__tcp_client.write_register(8024, 0xBB, data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = 'discharge'
-            power_value = int(power_limit / 100)
-            log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W entladen für den Hausverbrauch")
+            power_value = int(power_state.bat_setpoint / 100)
+            log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_state.bat_setpoint} W "
+                      "entladen für den Hausverbrauch")
             self.__tcp_client.write_register(8025, power_value, data_type=ModbusDataType.UINT_32,
                                              wordorder=Endian.Little, unit=unit)
-        elif power_limit > 0:
-            log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W geladen")
+        elif power_state.bat_setpoint > 0:
+            log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_state.bat_setpoint} W geladen")
             if self.last_mode != 'charge':
                 self.__tcp_client.write_register(8023, 5, data_type=ModbusDataType.UINT_16, unit=unit)
                 self.__tcp_client.write_register(8025, 0xAA, data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = 'charge'
-            power_value = int(power_limit / 100)
-            log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W geladen")
+            power_value = int(power_state.bat_setpoint / 100)
+            log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_state.bat_setpoint} W geladen")
             self.__tcp_client.write_register(8025, power_value, data_type=ModbusDataType.UINT_32,
                                              wordorder=Endian.Little, unit=unit)
 

@@ -41,7 +41,10 @@ def get_factory() -> Get:
 
 @dataclass
 class Set:
-    power_limit: Optional[int] = field(default=None, metadata={"topic": "set/power_limit"})
+    evu_power: Optional[int] = field(default=None, metadata={"topic": "set/evu_power"})
+    bat_power: Optional[int] = field(default=None, metadata={"topic": "set/bat_power"})
+    bat_setpoint: Optional[int] = field(default=None, metadata={"topic": "set/bat_setpoint"})
+    total_bat_setpoint: Optional[int] = field(default=None, metadata={"topic": "set/total_bat_setpoint"})
 
 
 def set_factory() -> Set:

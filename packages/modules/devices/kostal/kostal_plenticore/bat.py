@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import TypedDict, Any, Optional
+from typing import TypedDict, Any
 from pymodbus.constants import Endian
 
 from modules.common.abstract_device import AbstractBat
@@ -13,6 +13,7 @@ from modules.common.store import get_component_value_store
 from modules.devices.kostal.kostal_plenticore.config import KostalPlenticoreBatSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
+from control.bat import Set as PowerState
 
 log = logging.getLogger(__name__)
 
@@ -67,24 +68,24 @@ class KostalPlenticoreBat(AbstractBat):
     # Kostal setzt das Register autmatisch nach Timeout zurück auf Eigensteuerung.
     # Timeout kann im Kostal UI geändert werden. Standardwert 30s
 
-    def set_power_limit(self, power_limit: Optional[int]) -> None:
+    def set_power_limit(self, power_state: PowerState) -> None:
         unit = self.modbus_id
 
-        if power_limit is None:
+        if power_state.bat_setpoint is None:
             # Keine Registeränderung damit nach Timeout eigenständig zurückgesetzt wird
             log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
-        elif power_limit == 0:
+        elif power_state.bat_setpoint == 0:
             # wiederholt auf Stop setzen damit sich Register nicht zurücksetzt
             log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt und nicht entladen")
             self.client.write_register(1034, 0.0, data_type=ModbusDataType.FLOAT_32,
                                        wordorder=self.endianess, unit=unit)
-        elif power_limit < 0:
-            power_value = float(abs(power_limit))
+        elif power_state.bat_setpoint < 0:
+            power_value = float(abs(power_state.bat_setpoint)) * -1
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_value} W entladen für den Hausverbrauch")
             self.client.write_register(1034, power_value, data_type=ModbusDataType.FLOAT_32,
                                        wordorder=self.endianess, unit=unit)
-        elif power_limit > 0:
-            power_value = float(abs(power_limit)) * -1
+        elif power_state.bat_setpoint > 0:
+            power_value = float(abs(power_state.bat_setpoint)) * -1
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_value} W geladen")
             self.client.write_register(1034, power_value, data_type=ModbusDataType.FLOAT_32,
                                        wordorder=self.endianess, unit=unit)

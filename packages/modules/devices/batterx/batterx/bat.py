@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import Dict, TypedDict, Any, Optional
+from typing import Dict, TypedDict, Any
 
 from modules.devices.batterx.batterx.config import BatterXBatSetup
 from modules.common.abstract_device import AbstractBat
@@ -12,6 +12,7 @@ from modules.common.store import get_component_value_store
 from modules.common import req
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
+from control.bat import Set as PowerState
 
 log = logging.getLogger(__name__)
 
@@ -49,10 +50,10 @@ class BatterXBat(AbstractBat):
         )
         self.store.set(bat_state)
 
-    def set_power_limit(self, power_limit: Optional[int]) -> None:
+    def set_power_limit(self, power_state: PowerState) -> None:
         log.debug(f'last_mode: {self.last_mode}')
 
-        if power_limit is None:
+        if power_state.bat_setpoint is None:
             # Kein Powerlimit gefordert, externe Steuerung deaktivieren
             log.debug("Keine Batteriesteuerung gefordert, deaktiviere externe Steuerung.")
             if self.last_mode is not None:
@@ -67,7 +68,7 @@ class BatterXBat(AbstractBat):
                     timeout=5
                 )
                 self.last_mode = None
-        elif power_limit <= 0:
+        elif power_state.bat_setpoint <= 0:
             # BatterX kann Entladung nur komplett sperren
             log.debug("Aktive Batteriesteuerung angestoßen. Setze Entladesperre.")
             if self.last_mode != 'stop':
