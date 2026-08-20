@@ -34,8 +34,9 @@ def cp3():
     "loadmanagement_prios, id, type, expected_loadmanagement_prios",
     [
         pytest.param([], 2, ComponentType.VEHICLE, [{"type": "vehicle", "id": 2}], id="emtpy list"),
-        pytest.param([{"type": "vehicle", "id": 3}], 2, ComponentType.VEHICLE, [{"type": "vehicle", "id": 3},
-                                                                    {"type": "vehicle", "id": 2}], id="flat list"),
+        pytest.param([{"type": "vehicle", "id": 3}], 2, ComponentType.VEHICLE,
+                     [{"type": "vehicle", "id": 3},
+                      {"type": "vehicle", "id": 2}], id="flat list"),
         pytest.param([
             {
                 "type": "group",
@@ -138,7 +139,7 @@ def test_remove_loadmanagement_prio_item(loadmanagement_prios: List[Dict],
     c.data.get.loadmanagement_prios = loadmanagement_prios
 
     # execution
-    c.remove_loadmanagement_prio_item(id, ComponentType.VEHICLE)
+    c.remove_loadmanagement_prio_item(ComponentType.VEHICLE, id)
 
     # assert
     assert c.data.get.loadmanagement_prios == expected_loadmanagement_prios

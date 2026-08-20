@@ -794,7 +794,7 @@ class Command:
             if SubData.system_data["system"].data["security"]["user_management_active"]:
                 remove_acl_role("vehicle-<id>-access", payload["data"]["id"])
                 remove_acl_role("vehicle-<id>-write-access", payload["data"]["id"])
-            data.data.counter_all_data.remove_loadmanagement_prio_item(payload["data"]["id"], ComponentType.VEHICLE)
+            data.data.counter_all_data.remove_loadmanagement_prio_item(ComponentType.VEHICLE, payload["data"]["id"])
             Pub().pub("openWB/set/counter/get/loadmanagement_prios",
                       data.data.counter_all_data.data.get.loadmanagement_prios)
             pub_user_message(
