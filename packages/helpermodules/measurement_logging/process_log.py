@@ -1,5 +1,6 @@
 from enum import Enum
 from copy import deepcopy
+import datetime
 import json
 import logging
 from pathlib import Path
@@ -289,7 +290,7 @@ def get_monthly_log(date: str):
         content = load_daily_source_totals_content(day)
         if content is None:
             # aktuelle Tageswerte nur berechnen, historische Tage zusaetzlich speichern
-            content = save_daily_source_totals(day, saveing=(day != today))
+            content = save_daily_source_totals(day, saving=(day != today))
 
         if isinstance(content, dict):
             daily_totals = content.get("totals")
@@ -318,7 +319,7 @@ def get_monthly_log(date: str):
         # falls er noch nicht existiert.
         filepath = Path(_get_data_folder_path()) / "monthly_totals" / f"{date}_totals.json"
         if not filepath.is_file() and date != this_month and date >= oldest_log_day[:6]:
-            save_monthly_source_totals(date, data, saveing=True)
+            save_monthly_source_totals(date, data, saving=True)
 
         return data
 
@@ -353,7 +354,7 @@ def get_yearly_log(year: str):
             # aktuelle Monatswerte nur berechnen, historische Monate zusaetzlich speichern
             # Fallback, wenn bei der Jahresauswertung ein Monat fehlt,
             # dann wird dieser Monat berechnet und gespeichert
-            content = save_monthly_source_totals(month, None, saveing=(month != this_month))
+            content = save_monthly_source_totals(month, None, saving=(month != this_month))
 
         if isinstance(content, dict):
             monthly_totals = content.get("totals")
@@ -682,10 +683,11 @@ def _get_data_folder_path() -> str:
     return str(Path(__file__).resolve().parents[3] / "data")
 
 
-def save_daily_source_totals(date: str, saveing: bool = True):
+def save_daily_source_totals(date: str, saving: bool = True):
     try:
         data = _collect_daily_log_data(date)
-        processed_entries = _process_entries(data.get("entries", []), calculation=CalculationType.ENERGY)
+        source_entries = data.get("entries", [])
+        processed_entries = _process_entries(deepcopy(source_entries), calculation=CalculationType.ENERGY)
         totals = get_totals(processed_entries, process_entries=False)
         analysed_data = _analyse_energy_source({
             "entries": processed_entries,
@@ -694,11 +696,10 @@ def save_daily_source_totals(date: str, saveing: bool = True):
         })
         totals = analysed_data["totals"]
 
-        source_entries = data.get("entries", [])
         daily_entry = {}
-        if len(source_entries) > 0:
-            # Nur den letzten Eintrag des Tages nehmen
-            daily_entry = deepcopy(source_entries[-1])
+        source_daily_entry = _get_last_entry_for_period(source_entries, date, "%Y%m%d")
+        if source_daily_entry is not None:
+            daily_entry = deepcopy(source_daily_entry)
             daily_entry["date"] = date
             _apply_source_totals(daily_entry, totals)
 
@@ -714,7 +715,7 @@ def save_daily_source_totals(date: str, saveing: bool = True):
             "colors": data.get("colors", {})
         }
 
-        if saveing:
+        if saving:
             totals_dir.mkdir(parents=True, exist_ok=True)
             with open(str(filepath), "w") as jsonFile:
                 json.dump(content, jsonFile, ensure_ascii=False, indent=2)
@@ -743,7 +744,7 @@ def load_daily_source_totals_content(date: str):
         log.exception(f"Fehler beim Laden der Tages-Summen für {date}")
 
 
-def save_monthly_source_totals(date: str, data: Dict, saveing: bool = True):
+def save_monthly_source_totals(date: str, data: Optional[Dict], saving: bool = True):
     try:
         # Hauptsächlich für Midnight-Handler
         # Wenn keine Daten übergeben werden, dann die Monatswerte berechnen
@@ -753,9 +754,10 @@ def save_monthly_source_totals(date: str, data: Dict, saveing: bool = True):
         totals = data["totals"]
         source_entries = data.get("entries", [])
         monthly_entry = {}
-        if len(source_entries) > 0:
+        source_monthly_entry = _get_last_entry_for_period(source_entries, date, "%Y%m")
+        if source_monthly_entry is not None:
             # Nur den letzten Eintrag des Monats nehmen
-            monthly_entry = deepcopy(source_entries[-1])
+            monthly_entry = deepcopy(source_monthly_entry)
             monthly_entry["date"] = date
 
         # Erzeugt Ordner monthly_totals, falls nicht vorhanden
@@ -769,7 +771,7 @@ def save_monthly_source_totals(date: str, data: Dict, saveing: bool = True):
             "colors": data.get("colors", {})
         }
 
-        if saveing:
+        if saving:
             totals_dir.mkdir(parents=True, exist_ok=True)
             with open(str(filepath), "w") as jsonFile:
                 json.dump(content, jsonFile, ensure_ascii=False, indent=2)
@@ -798,6 +800,21 @@ def load_monthly_source_totals_content(date: str):
         log.exception(f"Fehler beim Laden der Monats-Summen für {date}")
 
 
+def _get_last_entry_for_period(entries: List, period: str, period_format: str) -> Optional[Dict]:
+    # Suche den letzten Eintrag in der Liste, der dem angegebenen Zeitraum entspricht.
+    for entry in reversed(entries):
+        if isinstance(entry, dict) and isinstance(entry.get("timestamp"), (int, float)):
+            entry_period = datetime.datetime.fromtimestamp(entry["timestamp"]).strftime(period_format)
+            if entry_period == period:
+                return entry
+
+    # Fallback: Falls kein passender Zeitstempel gefunden wird, letzten gueltigen Eintrag verwenden.
+    for entry in reversed(entries):
+        if isinstance(entry, dict):
+            return entry
+    return None
+
+
 def _apply_source_totals(entry: Dict, daily_totals: Dict):
     for section, section_totals in daily_totals.items():
         section_data = entry.get(section)
@@ -820,15 +837,12 @@ def _oldest_log_day() -> Optional[str]:
         if not daily_log_dir.is_dir():
             return None
 
-        daily_log_files = list(daily_log_dir.glob("*.json"))
+        daily_log_files = [p for p in daily_log_dir.glob("*.json") if p.stem.isdigit()]
         if not daily_log_files:
             return None
 
-        # st_ctime = creation time of the file
-        # st_mtime = last modification time of the file
-        oldest_file = min(daily_log_files, key=lambda f: f.stat().st_ctime)
-        oldest_date = oldest_file.stem  # Get the filename without extension
-        return oldest_date
+        oldest_file = min(daily_log_files, key=lambda f: f.stem)
+        return oldest_file.stem
     except Exception:
         log.exception("Fehler beim Ermitteln des ältesten Tageslogs")
         return None
