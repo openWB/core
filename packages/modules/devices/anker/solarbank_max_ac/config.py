@@ -41,20 +41,6 @@ class AnkerBatSetup(ComponentSetup[AnkerBatConfiguration]):
         super().__init__(name, type, id, configuration or AnkerBatConfiguration())
 
 
-class AnkerCounterConfiguration:
-    def __init__(self):
-        pass
-
-
-class AnkerCounterSetup(ComponentSetup[AnkerCounterConfiguration]):
-    def __init__(self,
-                 name: str = "Anker Zähler",
-                 type: str = "counter",
-                 id: int = 0,
-                 configuration: AnkerCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or AnkerCounterConfiguration())
-
-
 class AnkerInverterConfiguration:
     def __init__(self):
         pass
