@@ -16,8 +16,8 @@ class AnkerConfiguration:
 
 class Anker:
     def __init__(self,
-                 name: str = "Anker SOLIX Solarbank 4 E5000 Pro",
-                 type: str = "solarbank_4_e5000",
+                 name: str = "Anker SOLIX Solarbank",
+                 type: str = "solarbank",
                  id: int = 0,
                  configuration: AnkerConfiguration = None) -> None:
         self.name = name

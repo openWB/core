@@ -6,9 +6,9 @@ from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.common.modbus import ModbusTcpClient_
-from modules.devices.anker.solarbank_4_e5000.bat import AnkerBat
-from modules.devices.anker.solarbank_4_e5000.config import Anker, AnkerBatSetup, AnkerInverterSetup
-from modules.devices.anker.solarbank_4_e5000.inverter import AnkerInverter
+from modules.devices.anker.solarbank.bat import AnkerBat
+from modules.devices.anker.solarbank.config import Anker, AnkerBatSetup, AnkerInverterSetup
+from modules.devices.anker.solarbank.inverter import AnkerInverter
 
 log = logging.getLogger(__name__)
 

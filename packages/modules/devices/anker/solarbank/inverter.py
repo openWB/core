@@ -8,12 +8,9 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, Endian, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_component_value_store
-from modules.devices.anker.solarbank_4_e5000.config import Anker, AnkerInverterSetup
+from modules.devices.anker.solarbank.config import Anker, AnkerInverterSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
-
-# Rohwert der Leistungsregister / POWER_GAIN = Watt (Gerät liefert mW statt W)
-POWER_GAIN = 1000
 
 
 class KwargsDict(TypedDict):
@@ -37,18 +34,13 @@ class AnkerInverter(AbstractInverter):
     def update(self) -> None:
         unit = self.device_config.configuration.modbus_id
 
-        # Register 10002 ist die PV_power also die DC Leistung
-        # Register 10010 ist "Load_power" unklar ob dies wirklich die AC Leistung des Inverters ist
-        power = self.client.read_input_registers(10010, ModbusDataType.INT_32,
-                                                 wordorder=Endian.Little, unit=unit) * -1 / POWER_GAIN
-        dc_power = self.client.read_input_registers(10002, ModbusDataType.INT_32,
-                                                    wordorder=Endian.Little, unit=unit) * -1 / POWER_GAIN
+        power = self.client.read_input_registers(10002, ModbusDataType.INT_32,
+                                                 wordorder=Endian.Big, unit=unit) * -1
 
         self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
         inverter_state = InverterState(
             power=power,
-            dc_power=dc_power,
             imported=imported,
             exported=exported
         )

@@ -9,7 +9,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, Endian, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_component_value_store
-from modules.devices.anker.solarbank_max_ac.config import Anker, AnkerBatSetup
+from modules.devices.anker.solarbank.config import Anker, AnkerBatSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
 
@@ -39,7 +39,7 @@ class AnkerBat(AbstractBat):
         unit = self.device_config.configuration.modbus_id
 
         power = self.client.read_input_registers(10008, ModbusDataType.INT_32,
-                                                 wordorder=Endian.Little, unit=unit) * -1
+                                                 wordorder=Endian.Big, unit=unit) * -1
         soc = self.client.read_input_registers(10014, ModbusDataType.UINT_16, unit=unit)
 
         self.peak_filter.check_values(power)
@@ -64,9 +64,6 @@ class AnkerBat(AbstractBat):
             if self.last_mode != 'limited':
                 self.client.write_register(10064, 3, data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = 'limited'
-
-            # Berechne power value: 0 = stop, != 0 = multipliziere mit -1
-            # Laut Doku ist der min Wert 100W, ggf. noch Anpassung für power_limit=0 notwendig
 
             power_value = 0 if power_limit == 0 else int(power_limit) * -1
             self.client.write_register(10071, power_value, data_type=ModbusDataType.INT_32, unit=unit)
