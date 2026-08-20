@@ -9,7 +9,7 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, Endian, ModbusTcpClient_
 from modules.common.simcount import SimCounter
 from modules.common.store import get_component_value_store
-from modules.devices.anker.solarbank_4_e5000.config import Anker, AnkerBatSetup
+from modules.devices.anker.solarbank.config import Anker, AnkerBatSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
 
