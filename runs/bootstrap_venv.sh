@@ -189,13 +189,16 @@ install_prebuilt_python() {
 	mkdir -p "${extract_dir}"
 
 	if [[ -n "${os_variant}" ]]; then
+		# In CI, artifacts are produced with debian<major> for Raspberry Pi OS.
+		if [[ "${os_variant}" == rpios* && -n "${debian_major}" ]]; then
+			os_variant="debian${debian_major}"
+		fi
 		candidates+=("python-${PYTHON_VERSION}-linux-${arch}-${os_variant}.tar.xz")
 	fi
 
-	# In CI, artifacts are always produced as
-	# python-<version>-linux-<arch>-<os_variant>.tar.xz.
-	# On Raspberry Pi OS, use debian<major> as a fallback because no rpios label is built.
-	if [[ -n "${debian_major}" && "${os_variant}" != "debian${debian_major}" ]]; then
+	# In CI, artifacts are produced with debian<major> for Raspberry Pi OS.
+	# Add debian fallback only when the primary candidate is not already debian<major>.
+	if [[ -n "${debian_major}" && "${os_variant}" != "debian${debian_major}" && "${os_variant}" != rpios* ]]; then
 		candidates+=("python-${PYTHON_VERSION}-linux-${arch}-debian${debian_major}.tar.xz")
 	fi
 
@@ -267,11 +270,15 @@ prepare_wheelhouse_source() {
 	mkdir -p "${wheelhouse_dir}"
 
 	if [[ -n "${os_variant}" ]]; then
+		# In CI, artifacts are produced with debian<major> for Raspberry Pi OS.
+		if [[ "${os_variant}" == rpios* && -n "${debian_major}" ]]; then
+			os_variant="debian${debian_major}"
+		fi
 		candidates+=("python-wheelhouse-${PYTHON_VERSION}-linux-${arch}-${os_variant}.tar.xz")
 	fi
 
-	# On Raspberry Pi OS, fall back to debian<major> because CI artifacts are built on Debian.
-	if [[ -n "${debian_major}" && "${os_variant}" != "debian${debian_major}" ]]; then
+	# CI builds Raspberry Pi OS targets as debian<major>; add fallback only for non-rpios variants.
+	if [[ -n "${debian_major}" && "${os_variant}" != "debian${debian_major}" && "${os_variant}" != rpios* ]]; then
 		candidates+=("python-wheelhouse-${PYTHON_VERSION}-linux-${arch}-debian${debian_major}.tar.xz")
 	fi
 
