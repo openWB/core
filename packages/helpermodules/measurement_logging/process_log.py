@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
 from helpermodules import timecheck
-from helpermodules.measurement_logging.write_log import (LegacySmartHomeLogData, LogType, create_entry,
+from helpermodules.measurement_logging.write_log import (LegacySmartHomeLogData, create_entry,
                                                          get_previous_entry)
 from helpermodules.messaging import MessageType, pub_system_message
 from helpermodules.utils.precision_math import decimal_add, decimal_divide, decimal_multiply, decimal_subtract
@@ -246,8 +246,8 @@ def _collect_daily_log_data(date: str):
             log_data = json.load(json_file)
             if date == timecheck.create_timestamp_YYYYMMDD():
                 # beim aktuellen Tag den aktuellen Datensatz ergänzen
-                log_data["entries"].append(create_entry(
-                    LogType.DAILY, LegacySmartHomeLogData(), get_previous_entry(parent_file, log_data)))
+                log_data["entries"].append(create_entry(LegacySmartHomeLogData(),
+                                                        get_previous_entry(parent_file, log_data)))
             else:
                 # bei älteren als letzten Datensatz den des nächsten Tags
                 try:

@@ -27,7 +27,7 @@ from helpermodules import command, setdata, subdata, timecheck, update_config
 from helpermodules.changed_values_handler import ChangedValuesContext
 from helpermodules.mosquitto_dynsec.mosquitto_dynsec import check_roles_at_start
 from helpermodules.measurement_logging.update_yields import update_daily_yields, update_pv_monthly_yearly_yields
-from helpermodules.measurement_logging.write_log import LogType, save_log
+from helpermodules.measurement_logging.write_log import save_log
 from helpermodules.modbusserver import start_modbus_server
 from helpermodules.pub import Pub
 from modules import configuration, loadvars, update_soc
@@ -181,7 +181,7 @@ class HandlerAlgorithm:
         """
         try:
             with ChangedValuesContext(loadvars_.event_module_update_completed):
-                totals = save_log(LogType.DAILY)
+                totals = save_log()
                 update_daily_yields(totals)
                 update_pv_monthly_yearly_yields()
                 for cp in data.data.cp_data.values():
@@ -231,13 +231,12 @@ class HandlerAlgorithm:
     @__with_handler_lock(error_threshold=60)
     def handler_midnight(self):
         try:
-            save_log(LogType.MONTHLY)
             today = timecheck.create_timestamp_YYYYMMDD()
             previous_day = timecheck.get_relative_date_string(today, day_offset=-1)
             save_daily_source_totals(previous_day)
 
             prev_month = timecheck.get_relative_date_string(today, month_offset=-1)[:6]
-             # Neuer Monat hat angefangen, daher Monats Totals speichern
+            # Neuer Monat hat angefangen, daher Monats Totals speichern
             if today[6:8] == "01":
                 save_monthly_source_totals(prev_month ,None, saveing=True)       
                 

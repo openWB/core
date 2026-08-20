@@ -97,11 +97,6 @@ log = logging.getLogger(__name__)
 #     }
 
 
-class LogType(Enum):
-    DAILY = "daily"
-    MONTHLY = "monthly"
-
-
 class LegacySmartHomeLogData:
     def __init__(self) -> None:
         self.all_received_topics: Dict = {}
@@ -133,20 +128,11 @@ class LegacySmartHomeLogData:
         self.all_received_topics.update({msg.topic: msg.payload})
 
 
-def save_log(log_type: LogType):
-    """ Parameter
-    ---------
-    folder: str
-        gibt an, ob ein Tages-oder Monats-Log-Eintrag erstellt werden soll.
-    """
+def save_log():
     try:
-        parent_file = Path(__file__).resolve().parents[3] / "data" / \
-            ("daily_log" if log_type == LogType.DAILY else "monthly_log")
+        parent_file = Path(__file__).resolve().parents[3] / "data" / "daily_log"
         parent_file.mkdir(mode=0o755, parents=True, exist_ok=True)
-        if log_type == LogType.DAILY:
-            file_name = timecheck.create_timestamp_YYYYMMDD()
-        else:
-            file_name = timecheck.create_timestamp_YYYYMM()
+        file_name = timecheck.create_timestamp_YYYYMMDD()
         filepath = str(parent_file / f"{file_name}.json")
 
         try:
@@ -162,7 +148,7 @@ def save_log(log_type: LogType):
         previous_entry = get_previous_entry(parent_file, content)
 
         sh_log_data = LegacySmartHomeLogData()
-        new_entry = create_entry(log_type, sh_log_data, previous_entry)
+        new_entry = create_entry(sh_log_data, previous_entry)
 
         # json-Objekt in Datei einfügen
 
@@ -194,11 +180,8 @@ def get_previous_entry(parent_file: Path, content: Dict) -> Optional[Dict]:
     return previous_entry
 
 
-def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previous_entry: Optional[Dict]) -> Dict:
-    if log_type == LogType.DAILY:
-        date = timecheck.create_timestamp_HH_MM()
-    else:
-        date = timecheck.create_timestamp_YYYYMMDD()
+def create_entry(sh_log_data: LegacySmartHomeLogData, previous_entry: Optional[Dict]) -> Dict:
+    date = timecheck.create_timestamp_HH_MM()
     current_timestamp = int(timecheck.create_timestamp())
 
     try:
