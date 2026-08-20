@@ -151,7 +151,7 @@ class Ev:
         tmp_message = None
         state = True
         try:
-            if charge_template.data.chargemode.selected == Chargemode.STOP.value:
+            if charge_template.data.chargemode.selected == Chargemode.STOP:
                 required_current, submode, message = charge_template.stop()
                 phases = control_parameter.phases or max_phases_hw
             else:
@@ -161,7 +161,7 @@ class Ev:
                     soc_request_interval_offset = self.soc_module.general_config.request_interval_charging
                 else:
                     soc_request_interval_offset = 0
-                if charge_template.data.chargemode.selected == Chargemode.SCHEDULED_CHARGING.value:
+                if charge_template.data.chargemode.selected == Chargemode.SCHEDULED_CHARGING:
                     required_current, submode, tmp_message, phases = charge_template.scheduled_charging(
                         self.data.get.soc,
                         self.ev_template,
@@ -191,21 +191,21 @@ class Ev:
                         submode = tmp_submode
                         phases = tmp_phases
                 if (required_current == 0) or (required_current is None):
-                    if charge_template.data.chargemode.selected == Chargemode.INSTANT_CHARGING.value:
+                    if charge_template.data.chargemode.selected == Chargemode.INSTANT_CHARGING:
                         required_current, submode, tmp_message, phases = charge_template.instant_charging(
                             self.data.get.soc,
                             imported_since_plugged,
                             charging_type)
-                    elif charge_template.data.chargemode.selected == Chargemode.PV_CHARGING.value:
+                    elif charge_template.data.chargemode.selected == Chargemode.PV_CHARGING:
                         required_current, submode, tmp_message, phases = charge_template.pv_charging(
                             self.data.get.soc, control_parameter.min_current, charging_type, imported_since_plugged)
-                    elif charge_template.data.chargemode.selected == Chargemode.ECO_CHARGING.value:
+                    elif charge_template.data.chargemode.selected == Chargemode.ECO_CHARGING:
                         required_current, submode, tmp_message, phases = charge_template.eco_charging(
                             self.data.get.soc, control_parameter, charging_type, imported_since_plugged, max_phases_hw)
                     else:
                         tmp_message = None
                     message = f"{message or ''} {tmp_message or ''}".strip()
-            if submode == Chargemode.STOP or (charge_template.data.chargemode.selected == Chargemode.STOP.value):
+            if submode == Chargemode.STOP or (charge_template.data.chargemode.selected == Chargemode.STOP):
                 state = False
                 if phases is None:
                     log.debug("Keine Phasenvorgabe durch Lademodus. Behalte Phasenzahl bei.")
