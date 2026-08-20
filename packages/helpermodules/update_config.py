@@ -58,7 +58,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 138
+    DATASTORE_VERSION = 139
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -3500,3 +3500,29 @@ class UpdateConfig:
                     return {topic: payload_device}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(138)
+
+    def upgrade_datastore_139(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("^openWB/system/device/[0-9]+/config$", topic) is not None:
+                payload_device = decode_payload(payload)
+                if payload_device.get("type") in ("solarbank_4_e5000", "solarbank_max_ac"):
+                    old_type = payload_device["type"]
+                    payload_device["type"] = "solarbank"
+                    if old_type == "solarbank_max_ac":
+                        index = get_index(topic)
+                        for topic_component, payload_component in self.all_received_topics.items():
+                            if re.search(f"^openWB/system/device/{index}/component/[0-9]+/config$",
+                                         topic_component) is not None:
+                                payload_component = decode_payload(payload_component)
+                                if payload_component.get("type") == ComponentType.COUNTER.value:
+                                    pub_system_message(
+                                        payload_device,
+                                        "Die Solarbank Max AC unterstuetzt den Zaehler nicht mehr als eigene "
+                                        "Komponente. Bitte lege den Anker SOLIX Smart Meter Gen 2 als "
+                                        "eigenstaendiges Geraet mit eigener IP-Adresse an und entferne die "
+                                        "bisherige Zaehler-Komponente unter Einstellungen -> Konfiguration -> "
+                                        "Geraete manuell.", MessageType.WARNING)
+                                    break
+                    return {topic: payload_device}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(139)
