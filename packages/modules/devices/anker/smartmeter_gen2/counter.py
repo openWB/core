@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import logging
 from typing import Any, TypedDict
 
 from modules.common.abstract_device import AbstractCounter
@@ -10,6 +11,8 @@ from modules.common.simcount import SimCounter
 from modules.common.store import get_component_value_store
 from modules.common.utils.peak_filter import PeakFilter
 from modules.devices.anker.smartmeter_gen2.config import AnkerMeter, AnkerMeterCounterSetup
+
+log = logging.getLogger(__name__)
 
 
 class KwargsDict(TypedDict):
@@ -42,9 +45,13 @@ class AnkerMeterCounter(AbstractCounter):
         currents = self.client.read_input_registers(10635, [ModbusDataType.INT_16] * 3,
                                                     wordorder=Endian.Big, unit=unit)
 
+        # DEBUG only: Rohwerte vor Skalierung/Vorzeichen-Anpassung mitloggen, um zu
+        # sehen ob das Strom-Register selbst schon ein Vorzeichen traegt oder nicht.
+        log.debug("DEBUG currents roh (vor /100, vor Vorzeichen-Uebernahme von powers): %s", currents)
+        log.debug("DEBUG powers roh (zum Vergleich): %s", powers)
+
         voltages = [value / 10 for value in voltages]
-        # Vorzeichen (-100 vs 100) noch nicht live verifiziert
-        currents = [value / -100 for value in currents]
+        currents = [abs(c) / 100 * (1 if p >= 0 else -1) for c, p in zip(currents, powers)]
 
         self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
