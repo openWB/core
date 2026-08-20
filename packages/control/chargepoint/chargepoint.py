@@ -231,8 +231,7 @@ class Chargepoint(ChargepointRfidMixin):
             if submode == Chargemode.TIME_CHARGING:
                 self.data.control_parameter.chargemode = Chargemode.TIME_CHARGING
             else:
-                self.data.control_parameter.chargemode = Chargemode(
-                    self.data.set.charge_template.data.chargemode.selected)
+                self.data.control_parameter.chargemode = self.data.set.charge_template.data.chargemode.selected
             self.data.control_parameter.prio = self.data.set.charge_template.data.prio
             if self.template.data.charging_type == ChargingType.AC.value:
                 self.data.control_parameter.min_current = self.data.set.charging_ev_data.ev_template.data.min_current
@@ -603,11 +602,10 @@ class Chargepoint(ChargepointRfidMixin):
             self.data.control_parameter.timestamp_charge_start = None
 
     def set_chargemode_changed(self, submode: Chargemode) -> None:
-        selected_chargemode = Chargemode(self.data.set.charge_template.data.chargemode.selected)
         if ((submode == Chargemode.TIME_CHARGING and
              self.data.control_parameter.chargemode != Chargemode.TIME_CHARGING) or
                 (submode != Chargemode.TIME_CHARGING and
-                 self.data.control_parameter.chargemode != selected_chargemode)):
+                 self.data.control_parameter.chargemode != self.data.set.charge_template.data.chargemode.selected)):
             self.chargemode_changed = True
             log.debug("Änderung des Lademodus")
             self.data.control_parameter.timestamp_chargemode_changed = create_timestamp()
@@ -809,8 +807,8 @@ class Chargepoint(ChargepointRfidMixin):
                 self.data.get.connected_vehicle.soc.range = vehicle.data.get.range
             self.data.get.connected_vehicle.info = ConnectedInfo(id=vehicle.num,
                                                                  name=vehicle.data.name)
-            if (self.data.set.charge_template.data.chargemode.selected == Chargemode.TIME_CHARGING.value or
-                    self.data.set.charge_template.data.chargemode.selected == Chargemode.SCHEDULED_CHARGING.value):
+            if (self.data.set.charge_template.data.chargemode.selected == Chargemode.TIME_CHARGING or
+                    self.data.set.charge_template.data.chargemode.selected == Chargemode.SCHEDULED_CHARGING):
                 current_plan = self.data.control_parameter.current_plan
             else:
                 current_plan = None
