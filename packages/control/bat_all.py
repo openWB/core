@@ -301,7 +301,7 @@ class BatAll:
             bat_component_data.set.evu_power = int(data.data.counter_all_data.get_evu_counter().data.get.power)
             bat_component_data.set.bat_power = int(bat_component_data.get.power)
             bat_component_data.set.bat_setpoint = power_limit
-            bat_component_data.set.total_bat_setpoint = int(power)
+            bat_component_data.set.total_bat_setpoint = power
 
     def setup_bat(self):
         """ prüft, ob mind ein Speicher vorhanden ist und berechnet die Summen-Topics.
