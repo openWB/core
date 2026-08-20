@@ -1,4 +1,5 @@
 from enum import Enum
+from copy import deepcopy
 import json
 import logging
 from pathlib import Path
@@ -263,174 +264,123 @@ def _collect_daily_log_data(date: str):
 
 
 def get_monthly_log(date: str):
-    data = _collect_monthly_log_data(date)
-    entries_with_daily_totals = []
+    # Nur Logs ab dem ältesten Tageslog auswerten
+    # Sonst werden unötige totals Werte gespeichert
+    oldest_log_day = _oldest_log_day()
+    if (oldest_log_day is None
+            or date < oldest_log_day[:6]):    # Jahr und Monat
+        return {"entries": [], "names": {}, "colors": {}, "totals": {}}
 
-    for entry in data["entries"]:
-        day = entry["date"]
-        if day == timecheck.create_timestamp_YYYYMMDD():
-            # Überspringe den aktuellen Tag
-            daily_totals = None
-        else:
-            daily_totals = load_daily_source_totals(day)
+    monthly_entries = []
+    monthly_names = {}
+    monthly_colors = {}
 
-        if daily_totals is not None:
-            _apply_daily_source_totals(entry, daily_totals)
-            entries_with_daily_totals.append(entry)
-        else:
-            # Keine Datei vorhanden -> erzeuge neue Datei
-            if day == timecheck.create_timestamp_YYYYMMDD():
-                # beim aktuellen Tag generiere die Tages-Summen, aber speichere diese nicht ab
-                content = save_daily_source_totals(day, saveing=False)
-                new_gendaily_totals = content.get("totals", None)
-                log.debug(f"Totals-Werte vom aktuellen Tag {new_gendaily_totals}")
-            else:
-                # bei älteren Tagen generiere die Tages-Summen und speichere diese ab
-                # Fallback für ältere Tage, falls die Tages-Summen nicht vorhanden sind
-                content = save_daily_source_totals(day, saveing=True)
-                new_gendaily_totals = content.get("totals", None)
+    this_month = timecheck.create_timestamp_YYYYMM()
+    today = timecheck.create_timestamp_YYYYMMDD()
+    day = f"{date}01"
 
-            if new_gendaily_totals is not None:
-                _apply_daily_source_totals(entry, new_gendaily_totals)
-                entries_with_daily_totals.append(entry)
-            else:
-                log.debug(f"Keine Tages-Summen fuer {day} gefunden und konnten auch nicht neu erzeugt werden.")
-                # Abbruch und Fallback auf alte Berechnung
-                entries_with_daily_totals = []
-                break
+    while day.startswith(date):
+        if date == this_month and day > today:
+            break
+        if day < oldest_log_day:
+            day = timecheck.get_relative_date_string(day, day_offset=1)
+            continue
 
-    if len(entries_with_daily_totals) > 0:
+        content = load_daily_source_totals_content(day)
+        if content is None:
+            # aktuelle Tageswerte nur berechnen, historische Tage zusaetzlich speichern
+            content = save_daily_source_totals(day, saveing=(day != today))
 
-        data["entries"] = entries_with_daily_totals
+        if isinstance(content, dict):
+            daily_totals = content.get("totals")
+            daily_entry = content.get("entry")
 
-        if len(data["entries"]) > 0:
-            # Wurde im alten System in _process_entries gemacht...
-            # Entfernt den Eintrag des Folgemonats
-            data["entries"].pop()
-            pass
+            if isinstance(daily_totals, dict) and isinstance(daily_entry, dict) and len(daily_entry) > 0:
+                daily_entry = deepcopy(daily_entry)
+                daily_entry["date"] = day
+                _apply_source_totals(daily_entry, daily_totals)
+
+                monthly_entries.append(daily_entry)
+                if isinstance(content.get("names"), dict):
+                    monthly_names.update(content["names"])
+                if isinstance(content.get("colors"), dict):
+                    monthly_colors.update(content["colors"])
+
+        day = timecheck.get_relative_date_string(day, day_offset=1)
+
+    if len(monthly_entries) > 0:
+        data = {"entries": monthly_entries, "names": monthly_names, "colors": monthly_colors}
         data["totals"] = get_totals(data["entries"], False)
         data["totals"] = analyse_percentage_totals(data["entries"], data["totals"])
+
+        # Fallback für ältere Monate
+        # da wir den Monat jetzt schon berechnet haben, können wir ihn auch direkt speichern
+        # falls er noch nicht existiert.
+        filepath = Path(_get_data_folder_path()) / "monthly_totals" / f"{date}_totals.json"
+        if not filepath.is_file() and date != this_month and date >= oldest_log_day[:6]:
+            save_monthly_source_totals(date, data, saveing=True)
+
         return data
 
-    # Fallback: alter Rechenweg, falls keine Tages-Summen verfuegbar sind.
-    data["entries"] = _process_entries(data["entries"], CalculationType.ENERGY)
-    data["totals"] = get_totals(data["entries"], False)
-    data = _analyse_energy_source(data)
-    return data
-
-
-def _collect_monthly_log_data(date: str):
-    try:
-        with open(f"{_get_data_folder_path()}/monthly_log/{date}.json", "r") as jsonFile:
-            log_data = json.load(jsonFile)
-        this_month = timecheck.create_timestamp_YYYYMM()
-        if date == this_month:
-            # add last entry of current day, if current month is requested
-            try:
-                today = timecheck.create_timestamp_YYYYMMDD()
-                with open(f"{_get_data_folder_path()}/daily_log/{today}.json",
-                          "r") as todayJsonFile:
-                    today_log_data = json.load(todayJsonFile)
-                if len(today_log_data.get("entries", [])) > 0:
-                    today_entry = today_log_data["entries"][-1]
-                    today_entry["date"] = today
-                    log_data["entries"].append(today_entry)
-            except FILE_ERRORS:
-                pass
-
-        else:
-            # add first entry of next month
-            try:
-                next_date = timecheck.get_relative_date_string(date, month_offset=1)
-                with open(f"{_get_data_folder_path()}/monthly_log/{next_date}.json",
-                          "r") as nextJsonFile:
-                    next_log_data = json.load(nextJsonFile)
-                    log_data["entries"].append(next_log_data["entries"][0])
-            except FILE_ERRORS:
-                pass
-    except FILE_ERRORS:
-        log_data = {"entries": [], "names": {}}
-    return log_data
+    # Fallback, wenn keine Daten vorhanden sind
+    return {"entries": [], "names": {}, "colors": {}, "totals": {}}
 
 
 def get_yearly_log(year: str):
-    data = _collect_yearly_log_data(year)
-    data["entries"] = _process_entries(data["entries"], CalculationType.ENERGY)
-    data["totals"] = get_totals(data["entries"], False)
-    data = _analyse_energy_source(data)
-    return data
+    # Nur Logs ab dem ältesten Tageslog auswerten
+    # Sonst werden unötige totals Werte gespeichert
+    oldest_log_day = _oldest_log_day()
+    if oldest_log_day is None or year < oldest_log_day[:4]:
+        return {"entries": [], "names": {}, "colors": {}, "totals": {}}
 
+    monthly_entries = []
+    monthly_names = {}
+    monthly_colors = {}
 
-def _collect_yearly_log_data(year: str):
-    def add_monthly_log(month: str, check_next_month: bool = False) -> None:
-        monthly_log_path = Path(__file__).resolve().parents[3]/"data"/"monthly_log"
-        try:
-            with open(monthly_log_path / f"{month}.json", "r") as jsonFile:
-                content = json.load(jsonFile)
-                entries.append(content["entries"][0])
-            # add last entry of current file if next file is missing
-            if check_next_month:
-                next_month = timecheck.get_relative_date_string(month, month_offset=1)
-                if not (monthly_log_path / (next_month+".json")).is_file():
-                    entries.append(content["entries"][-1])
-                    log.debug(f"Keine Logdatei für Monat {next_month} gefunden, "
-                              f"füge letzten Datensatz von {month} ein: {entries[-1]['date']}")
-            names.update(content["names"])
-        except FILE_ERRORS:
-            log.debug(f"Kein Log für Monat {month} gefunden.")
-
-    def add_daily_log(day: str) -> None:
-        try:
-            with open(f"{_get_data_folder_path()}/daily_log/{day}.json", "r") as dayJsonFile:
-                day_log_data = json.load(dayJsonFile)
-                if len(day_log_data["entries"]) > 0:
-                    entries.append(day_log_data["entries"][-1])
-        except FILE_ERRORS:
-            pass
-
-    entries = []
-    names = {}
-    dates = []
-
-    # we have to find a valid data range
-    this_year = timecheck.create_timestamp_YYYY()
     this_month = timecheck.create_timestamp_YYYYMM()
-    if year < this_year:
-        # if the requested year is in the past, just add all possible months
-        for month in range(1, 13):
-            dates.append(f"{year}{month:02}")
-    else:
-        # add all months until current month
-        for month in range(1, int(this_month[-2:])+1):
-            dates.append(f"{year}{month:02}")
-    # add data for month range
-    for date in dates:
-        try:
-            log.debug(f"add regular month: {date}")
-            add_monthly_log(date, date != this_month)
-        except Exception:
-            log.exception(f"Fehler beim Zusammenstellen der Jahresdaten für Monat {date}")
+    month = f"{year}01"
 
-    # now we have to find a valid "next" entry for proper calculation
-    if year == this_year:  # current year
-        # add todays last entry
-        this_day = timecheck.create_timestamp_YYYYMMDD()
-        try:
-            log.debug(f"add today: {this_day}")
-            add_daily_log(this_day)
-        except Exception:
-            log.exception(f"Fehler beim Zusammenstellen der Jahresdaten für den aktuellen Tag {this_day}")
-    else:
-        # no special handling here, just add first entry of next month
-        next_date = f"{int(year)+1}01"
-        try:
-            log.debug(f"add next month: {next_date}")
-            add_monthly_log(next_date)
-        except Exception:
-            log.exception(f"Fehler beim Zusammenstellen der Jahresdaten für Monat {next_date}")
+    while month.startswith(year):
+        if month > this_month:
+            break
 
-    # return our data
-    return {"entries": entries, "names": names}
+        if month < oldest_log_day[:6]:
+            month = timecheck.get_relative_date_string(month, month_offset=1)
+            continue
+
+        content = load_monthly_source_totals_content(month)
+        if content is None:
+            # aktuelle Monatswerte nur berechnen, historische Monate zusaetzlich speichern
+            # Fallback, wenn bei der Jahresauswertung ein Monat fehlt,
+            # dann wird dieser Monat berechnet und gespeichert
+            content = save_monthly_source_totals(month, None, saveing=(month != this_month))
+
+        if isinstance(content, dict):
+            monthly_totals = content.get("totals")
+            monthly_entry = content.get("entry")
+
+            if isinstance(monthly_totals, dict) and isinstance(monthly_entry, dict) and len(monthly_entry) > 0:
+                monthly_entry = deepcopy(monthly_entry)
+                monthly_entry["date"] = month
+                _apply_source_totals(monthly_entry, monthly_totals)
+
+                monthly_entries.append(monthly_entry)
+                if isinstance(content.get("names"), dict):
+                    monthly_names.update(content["names"])
+                if isinstance(content.get("colors"), dict):
+                    monthly_colors.update(content["colors"])
+
+        month = timecheck.get_relative_date_string(month, month_offset=1)
+
+    if len(monthly_entries) > 0:
+        data = {"entries": monthly_entries, "names": monthly_names, "colors": monthly_colors}
+        data["totals"] = get_totals(data["entries"], False)
+        data["totals"] = analyse_percentage_totals(data["entries"], data["totals"])
+
+        return data
+
+    # Fallback, wenn keine Daten vorhanden sind
+    return {"entries": [], "names": {}, "colors": {}, "totals": {}}
 
 
 def _analyse_energy_source(data, calc_cp: Optional[str] = None) -> Dict:
@@ -732,25 +682,37 @@ def _get_data_folder_path() -> str:
     return str(Path(__file__).resolve().parents[3] / "data")
 
 
-def calculate_daily_source_totals(date: str):
-    data = _collect_daily_log_data(date)
-    data["entries"] = _process_entries(data["entries"], calculation=CalculationType.ENERGY)
-    data["totals"] = get_totals(data["entries"], process_entries=False)
-    data = _analyse_energy_source(data)
-
-    return data["totals"]
-
-
-# Das wird im midnight-handler aufgrufen
-#   -> erzeugt für jede Tag eine Totals datei
 def save_daily_source_totals(date: str, saveing: bool = True):
     try:
-        totals = calculate_daily_source_totals(date)
+        data = _collect_daily_log_data(date)
+        processed_entries = _process_entries(data.get("entries", []), calculation=CalculationType.ENERGY)
+        totals = get_totals(processed_entries, process_entries=False)
+        analysed_data = _analyse_energy_source({
+            "entries": processed_entries,
+            "totals": totals,
+            "names": data.get("names", {})
+        })
+        totals = analysed_data["totals"]
+
+        source_entries = data.get("entries", [])
+        daily_entry = {}
+        if len(source_entries) > 0:
+            # Nur den letzten Eintrag des Tages nehmen
+            daily_entry = deepcopy(source_entries[-1])
+            daily_entry["date"] = date
+            _apply_source_totals(daily_entry, totals)
+
         # Erzeugt Ordner daily_totals, falls nicht vorhanden
         totals_dir = Path(_get_data_folder_path()) / "daily_totals"
         filepath = totals_dir / f"{date}_totals.json"
 
-        content = {"date": date, "totals": totals}
+        content = {
+            "date": date,
+            "totals": totals,
+            "entry": daily_entry,
+            "names": data.get("names", {}),
+            "colors": data.get("colors", {})
+        }
 
         if saveing:
             totals_dir.mkdir(parents=True, exist_ok=True)
@@ -764,7 +726,7 @@ def save_daily_source_totals(date: str, saveing: bool = True):
         log.exception(f"Fehler beim Speichern der Tages-Summen für {date}")
 
 
-def load_daily_source_totals(date: str):
+def load_daily_source_totals_content(date: str):
     try:
         filepath = f"{_get_data_folder_path()}/daily_totals/{date}_totals.json"
         if not Path(filepath).is_file():
@@ -775,13 +737,68 @@ def load_daily_source_totals(date: str):
             content = json.load(jsonFile)
 
         log.debug(f"Tages-Summen für {date} geladen aus {filepath}")
-        return content["totals"]
+        return content
 
     except FILE_ERRORS:
         log.exception(f"Fehler beim Laden der Tages-Summen für {date}")
 
 
-def _apply_daily_source_totals(entry: Dict, daily_totals: Dict):
+def save_monthly_source_totals(date: str, data: Dict, saveing: bool = True):
+    try:
+        # Hauptsächlich für Midnight-Handler
+        # Wenn keine Daten übergeben werden, dann die Monatswerte berechnen
+        if data is None:
+            data = get_monthly_log(date)
+
+        totals = data["totals"]
+        source_entries = data.get("entries", [])
+        monthly_entry = {}
+        if len(source_entries) > 0:
+            # Nur den letzten Eintrag des Monats nehmen
+            monthly_entry = deepcopy(source_entries[-1])
+            monthly_entry["date"] = date
+
+        # Erzeugt Ordner monthly_totals, falls nicht vorhanden
+        totals_dir = Path(_get_data_folder_path()) / "monthly_totals"
+        filepath = totals_dir / f"{date}_totals.json"
+        content = {
+            "date": date,
+            "totals": totals,
+            "entry": monthly_entry,
+            "names": data.get("names", {}),
+            "colors": data.get("colors", {})
+        }
+
+        if saveing:
+            totals_dir.mkdir(parents=True, exist_ok=True)
+            with open(str(filepath), "w") as jsonFile:
+                json.dump(content, jsonFile, ensure_ascii=False, indent=2)
+
+            log.debug(f"Monats-Summen für {date} gespeichert in {filepath}")
+        return content
+
+    except FILE_ERRORS:
+        log.exception(f"Fehler beim Speichern der Monats-Summen für {date}")
+
+
+def load_monthly_source_totals_content(date: str):
+    try:
+        filepath = f"{_get_data_folder_path()}/monthly_totals/{date}_totals.json"
+        if not Path(filepath).is_file():
+            log.debug(f"Keine Monats-Summen-Datei gefunden: {filepath}")
+            return None
+
+        with open(str(filepath), "r") as jsonFile:
+            content = json.load(jsonFile)
+
+        log.debug(f"Monats-Summen für {date} geladen aus {filepath}")
+        return content
+
+    except FILE_ERRORS:
+        log.exception(f"Fehler beim Laden der Monats-Summen für {date}")
+
+
+def _apply_source_totals(entry: Dict, daily_totals: Dict):
     for section, section_totals in daily_totals.items():
         section_data = entry.get(section)
         if not isinstance(section_data, dict) or not isinstance(section_totals, dict):
@@ -795,3 +812,23 @@ def _apply_daily_source_totals(entry: Dict, daily_totals: Dict):
             # Alle vorhandenen Summenfelder des Moduls mit den Tages-Summen ueberschreiben.
             module_data.update(module_totals)
     return entry
+
+
+def _oldest_log_day() -> Optional[str]:
+    try:
+        daily_log_dir = Path(_get_data_folder_path()) / "daily_log"
+        if not daily_log_dir.is_dir():
+            return None
+
+        daily_log_files = list(daily_log_dir.glob("*.json"))
+        if not daily_log_files:
+            return None
+
+        # st_ctime = creation time of the file
+        # st_mtime = last modification time of the file
+        oldest_file = min(daily_log_files, key=lambda f: f.stat().st_ctime)
+        oldest_date = oldest_file.stem  # Get the filename without extension
+        return oldest_date
+    except Exception:
+        log.exception("Fehler beim Ermitteln des ältesten Tageslogs")
+        return None

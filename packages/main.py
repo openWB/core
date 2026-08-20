@@ -37,7 +37,7 @@ from modules.internal_chargepoint_handler.rfid import RfidReader
 from modules.utils import wait_for_module_update_completed
 from smarthome.smarthome import readmq, smarthome_handler
 
-from helpermodules.measurement_logging.process_log import save_daily_source_totals
+from helpermodules.measurement_logging.process_log import save_daily_source_totals, save_monthly_source_totals
 
 class HandlerAlgorithm:
     def __init__(self):
@@ -232,8 +232,15 @@ class HandlerAlgorithm:
     def handler_midnight(self):
         try:
             save_log(LogType.MONTHLY)
-            previous_day = timecheck.get_relative_date_string(timecheck.create_timestamp_YYYYMMDD(), day_offset=-1)
+            today = timecheck.create_timestamp_YYYYMMDD()
+            previous_day = timecheck.get_relative_date_string(today, day_offset=-1)
             save_daily_source_totals(previous_day)
+
+            prev_month = timecheck.get_relative_date_string(today, month_offset=-1)[:6]
+             # Neuer Monat hat angefangen, daher Monats Totals speichern
+            if today[6:8] == "01":
+                save_monthly_source_totals(prev_month ,None, saveing=True)       
+                
             thread_errors_path = Path(Path(__file__).resolve().parents[1]/"ramdisk"/"thread_errors.log")
             with thread_errors_path.open("w") as f:
                 f.write("")
