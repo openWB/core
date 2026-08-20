@@ -92,7 +92,7 @@ def instant_charging_factory() -> InstantCharging:
 
 @dataclass
 class Chargemode:
-    selected: str = ChargemodeEnum.INSTANT_CHARGING.value
+    selected: ChargemodeEnum = ChargemodeEnum.INSTANT_CHARGING
     eco_charging: EcoCharging = field(default_factory=eco_charging_factory)
     pv_charging: PvCharging = field(default_factory=pv_charging_factory)
     scheduled_charging: ScheduledCharging = field(default_factory=scheduled_charging_factory)
