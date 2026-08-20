@@ -65,9 +65,6 @@ class AnkerBat(AbstractBat):
                 self.client.write_register(10064, 3, data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = 'limited'
 
-            # Berechne power value: 0 = stop, != 0 = multipliziere mit -1
-            # Laut Doku ist der min Wert 100W, ggf. noch Anpassung für power_limit=0 notwendig
-
             power_value = 0 if power_limit == 0 else int(power_limit) * -1
             self.client.write_register(10071, power_value, data_type=ModbusDataType.INT_32, unit=unit)
             log.debug("Aktive Batteriesteuerung angefordert, angeforderte Leistung: {power_value} W")
