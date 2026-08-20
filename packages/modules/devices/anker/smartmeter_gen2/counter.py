@@ -34,15 +34,16 @@ class AnkerMeterCounter(AbstractCounter):
         unit = self.device_config.configuration.modbus_id
 
         power = self.client.read_input_registers(10644, ModbusDataType.INT_32,
-                                                 wordorder=Endian.Big, unit=unit) * -1
+                                                 wordorder=Endian.Big, unit=unit)
         powers = self.client.read_input_registers(10638, [ModbusDataType.INT_32] * 3,
                                                   wordorder=Endian.Big, unit=unit)
         voltages = self.client.read_input_registers(10632, [ModbusDataType.UINT_16] * 3,
                                                     wordorder=Endian.Big, unit=unit)
-        currents = self.client.read_input_registers(10666, [ModbusDataType.INT_16] * 3,
+        currents = self.client.read_input_registers(10635, [ModbusDataType.INT_16] * 3,
                                                     wordorder=Endian.Big, unit=unit)
 
         voltages = [value / 10 for value in voltages]
+        # Vorzeichen (-100 vs 100) noch nicht live verifiziert
         currents = [value / -100 for value in currents]
 
         self.peak_filter.check_values(power)
