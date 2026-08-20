@@ -428,7 +428,7 @@ def create_debug_log(input_data) -> Optional[dict]:
             write_to_file(df, lambda: f'# section: system #\n{get_common_data()}'
                                       f'Kernel: {run_shell_command("uname -s -r -v -m -o")}'
                                       'Model: '
-                                      f'{run_shell_command("cat /proc/device-tree/model 2>/dev/null||echo unknown")}'
+                                      f'{run_shell_command("cat /proc/device-tree/model 2>/dev/null||echo unknown")}\n'
                                       f'CID:\n{run_shell_command("mmc cid read /sys/block/mmcblk0/device")}\n'
                                       f'Uptime:{run_command(["uptime"])}{run_command(["free"])}\n')
             write_to_file(df, lambda: f'# section: hardware #\n{get_hardware_data()}')
