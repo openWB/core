@@ -306,8 +306,7 @@ class ChargeTemplate:
                 current = 0
                 sub_mode = ChargemodeEnum.STOP
                 message = self.SOC_REACHED
-            elif (eco_charging.limit.selected == "amount" and
-                    used_amount >= self.data.chargemode.instant_charging.limit.amount):
+            elif eco_charging.limit.selected == "amount" and used_amount >= eco_charging.limit.amount:
                 current = 0
                 sub_mode = ChargemodeEnum.STOP
                 message = self.AMOUNT_REACHED
