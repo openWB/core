@@ -37,12 +37,10 @@ class AnkerInverter(AbstractInverter):
         power = self.client.read_input_registers(10002, ModbusDataType.INT_32,
                                                  wordorder=Endian.Big, unit=unit) * -1
 
-
         self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
         inverter_state = InverterState(
             power=power,
-            dc_power=dc_power,
             imported=imported,
             exported=exported
         )
