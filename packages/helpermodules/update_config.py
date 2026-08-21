@@ -3589,10 +3589,15 @@ class UpdateConfig:
                 charge_template = decode_payload(
                     self.all_received_topics[f"openWB/vehicle/template/charge_template/{charge_template_id}"])
                 if charge_template["chargemode"]["selected"] == chargemode and charge_template["prio"] == prio:
-                    loadmanagement_prios.append({"type": "vehicle", "id": int(get_index(topic))})
+                    grouped_vehicles.append({"type": "vehicle", "id": int(get_index(topic))})
 
         loadmanagement_prios = []
         for chargemode, prio in CHARGEMODES:
+            grouped_vehicles = []
             self._loop_all_received_topics(upgrade)
+            if len(grouped_vehicles) == 1:
+                loadmanagement_prios.append(grouped_vehicles[0])
+            elif len(grouped_vehicles) > 1:
+                loadmanagement_prios.append({"type": "group", "children": grouped_vehicles})
         self.__update_topic("openWB/counter/get/loadmanagement_prios", loadmanagement_prios)
         self._append_datastore_version(141)
