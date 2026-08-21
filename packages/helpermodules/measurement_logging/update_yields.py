@@ -6,7 +6,9 @@ from control import data
 from helpermodules import timecheck
 from helpermodules.measurement_logging.process_log import (get_totals,
                                                            load_daily_source_totals_content,
-                                                           load_monthly_source_totals_content)
+                                                           load_monthly_source_totals_content,
+                                                           save_daily_source_totals,
+                                                           get_monthly_log)
 
 log = logging.getLogger(__name__)
 
@@ -90,7 +92,10 @@ def _get_pv_monthly_yields(daily_totals: Dict) -> Dict:
         else:
             # Lade alle vergangenen Tage des Monats aus dem daily_totals-Logfile, um die Tageserträge zu ermitteln
             content = load_daily_source_totals_content(day)
-            if content is not None:
+            if content is None:
+                # Fallback/Migration: fehlende Tages-Totals aus den Tageslogs berechnen und speichern.
+                content = save_daily_source_totals(day, saving=True)
+            if isinstance(content, dict):
                 totals = content.get("totals", {})
 
         # Totals aufsummieren
@@ -111,21 +116,19 @@ def _get_pv_yearly_yields(current_monthly_totals: Dict) -> Dict:
 
     pv_totals = {}
 
-    monthly_log_path = _get_parent_path()/"data"/"monthly_totals"
+    month = f"{this_year}01"
+    while month < this_month:
+        totals = {}
+        content = load_monthly_source_totals_content(month)
+        if content is None:
+            # Fallback/Migration: fehlende Monats-Totals berechnen und speichern.
+            content = get_monthly_log(month)
+        if isinstance(content, dict):
+            totals = content.get("totals", {})
 
-    # Wenn es noch keinen Montas Totals gibt
-    if monthly_log_path.is_dir():
-        for logfile in sorted(monthly_log_path.glob(f"{this_year}*_totals.json")):
-            month = logfile.stem[:6]
-            totals = {}
-            if month == this_month:
-                continue  # Der aktuelle Monat wird später behandelt
-            content = load_monthly_source_totals_content(month)
-            if content is not None:
-                totals = content.get("totals", {})
-
-            # Totals aufsummieren
-            _add_pv_totals(pv_totals, totals.get("pv", {}))
+        # Totals aufsummieren
+        _add_pv_totals(pv_totals, totals.get("pv", {}))
+        month = timecheck.get_relative_date_string(month, month_offset=1)
 
     # aktueller Monat ergänzen
     _add_pv_totals(pv_totals, current_monthly_totals)

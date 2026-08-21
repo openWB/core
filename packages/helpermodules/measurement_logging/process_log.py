@@ -281,7 +281,8 @@ def get_monthly_log(date: str):
     day = f"{date}01"
 
     while day.startswith(date):
-        if date == this_month and day > today:
+        # Zukunftstage/-monate nicht verarbeiten, um keine leeren daily_totals zu erzeugen.
+        if day > today:
             break
         if day < oldest_log_day:
             day = timecheck.get_relative_date_string(day, day_offset=1)
@@ -313,6 +314,7 @@ def get_monthly_log(date: str):
         data = {"entries": monthly_entries, "names": monthly_names, "colors": monthly_colors}
         data["totals"] = get_totals(data["entries"], False)
         data["totals"] = analyse_percentage_totals(data["entries"], data["totals"])
+        data = _analyse_energy_source(data)
 
         # Fallback für ältere Monate
         # da wir den Monat jetzt schon berechnet haben, können wir ihn auch direkt speichern
@@ -329,7 +331,7 @@ def get_monthly_log(date: str):
 
 def get_yearly_log(year: str):
     # Nur Logs ab dem ältesten Tageslog auswerten
-    # Sonst werden unötige totals Werte gespeichert
+    # Sonst werden unnötige totals Werte gespeichert
     oldest_log_day = _oldest_log_day()
     if oldest_log_day is None or year < oldest_log_day[:4]:
         return {"entries": [], "names": {}, "colors": {}, "totals": {}}
@@ -377,6 +379,7 @@ def get_yearly_log(year: str):
         data = {"entries": monthly_entries, "names": monthly_names, "colors": monthly_colors}
         data["totals"] = get_totals(data["entries"], False)
         data["totals"] = analyse_percentage_totals(data["entries"], data["totals"])
+        data = _analyse_energy_source(data)
 
         return data
 
@@ -818,13 +821,21 @@ def _get_last_entry_for_period(entries: List, period: str, period_format: str) -
 def _apply_source_totals(entry: Dict, daily_totals: Dict):
     for section, section_totals in daily_totals.items():
         section_data = entry.get(section)
-        if not isinstance(section_data, dict) or not isinstance(section_totals, dict):
+        if not isinstance(section_totals, dict):
             continue
+
+        if not isinstance(section_data, dict):
+            section_data = {}
+            entry[section] = section_data
 
         for module, module_totals in section_totals.items():
             module_data = section_data.get(module)
-            if not isinstance(module_data, dict) or not isinstance(module_totals, dict):
+            if not isinstance(module_totals, dict):
                 continue
+
+            if not isinstance(module_data, dict):
+                module_data = {}
+                section_data[module] = module_data
 
             # Alle vorhandenen Summenfelder des Moduls mit den Tages-Summen ueberschreiben.
             module_data.update(module_totals)
