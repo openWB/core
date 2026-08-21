@@ -1,11 +1,12 @@
-import json
 import logging
 from pathlib import Path
 from typing import Dict
 
 from control import data
 from helpermodules import timecheck
-from helpermodules.measurement_logging.process_log import get_totals, load_daily_source_totals_content, load_monthly_source_totals_content
+from helpermodules.measurement_logging.process_log import (get_totals,
+                                                           load_daily_source_totals_content,
+                                                           load_monthly_source_totals_content)
 
 log = logging.getLogger(__name__)
 
@@ -42,7 +43,7 @@ def update_module_yields(module: str, totals: Dict) -> None:
 
 
 def update_pv_monthly_yearly_yields(daily_totals: Dict) -> None:
-    """ 
+    """
     veröffentlicht die monatlichen und jährlichen Erträge für PV
     """
 
