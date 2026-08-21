@@ -11,7 +11,6 @@ from control.loadmanagement import Loadmanagement
 from control.chargepoint.chargepoint import Chargepoint
 import control.algorithm.common as common
 from typing import List
-from control.algorithm.filter_chargepoints import get_chargepoints_by_mode_and_counter
 
 log = logging.getLogger(__name__)
 
