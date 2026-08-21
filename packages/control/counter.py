@@ -148,6 +148,12 @@ class Counter:
     # tested
 
     def _set_current_left(self, loadmanagement_available: bool) -> None:
+        """ Ermittelt getrennt die verbleibenden Ströme für Laden und Entladen.
+            Ladende CPs werden bei der Bezugsreserve berücksichtigt.
+            Entladende CPs bei der Einspeisereserve.
+            -> Einspeisung erhöht die verbleibenden Ströme für Laden
+            -> Bezug erhöht die verbleibenden Ströme für Entladen
+        """
         if loadmanagement_available:
             currents_raw = self.data.get.currents
             currents_exported_raw = self.data.get.currents
@@ -164,9 +170,9 @@ class Counter:
                 if min(element_current) < 0:
                     # nur Hausverbraucher ohne Einspeisung
                     currents_exported_raw = list(map(operator.sub, currents_exported_raw, element_current))
-                    continue
-                # nur Hausverbraucher und Einspeisung
-                currents_raw = list(map(operator.sub, currents_raw, element_current))
+                else:
+                    # nur Hausverbraucher und Einspeisung
+                    currents_raw = list(map(operator.sub, currents_raw, element_current))
 
             raw_currents_left = list(map(operator.sub, self.data.config.max_currents, currents_raw))
             raw_exported_currents_left = list(map(operator.add, self.data.config.max_currents, currents_exported_raw))

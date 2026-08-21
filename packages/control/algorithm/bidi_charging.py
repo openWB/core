@@ -11,7 +11,7 @@ from control.loadmanagement import Loadmanagement
 from control.chargepoint.chargepoint import Chargepoint
 import control.algorithm.common as common
 from typing import List
-
+from control.algorithm.filter_chargepoints import get_chargepoints_by_mode_and_counter
 
 log = logging.getLogger(__name__)
 
@@ -21,8 +21,19 @@ class Bidi:
         pass
 
     def set_bidi(self):
+        """Setzt den verfügbaren Strom für bidirektionales Laden und Entladen.
+        Dafür gibt es jeweils eine Grenze für das Laden und Entladen
+        (raw_currents_left und raw_exported_currents_left).
+        Entladen erhöht die verfügbare Grenze für das Laden, während Laden
+        die verfügbare Grenze für das Entladen erhöht.
+        Das Lastmanagement stellt sicher, dass die Summe der Ströme die am
+        Zähler verfügbare Leistung nicht überschreitet.
+        """
         grid_counter = data.data.counter_all_data.get_evu_counter()
         log.debug(f"Nullpunktanpassung {grid_counter.data.set.surplus_power_left}W")
+        # CPs nach Modus filtern, dann verfügbare Ströme gegen alle relevanten Counter-Limits begrenzen.
+        # -> Um bei mehreren Bidi-CPs das Entladen bei der Nullpunktanpassung gleichmäßig zu verteilen
+
         for mode_tuple in CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE:
             preferenced_cps = get_chargepoints_with_required_current_by_chargemode(mode_tuple)
             if preferenced_cps:
@@ -100,20 +111,18 @@ class Bidi:
         missing_currents = [0, 0, 0]
         if cp.data.control_parameter.chargemode == Chargemode.INSTANT_CHARGING:
             # Entladen im Instant-Charging-Modus
-            if cp.data.set.charging_ev_data.data.get.soc is None:
-                raise ValueError(f"LP{cp.num}: Auto-Bat SoC unbekannt, daher keine Entladung möglich.")
-            if cp.data.set.charging_ev_data.data.get.soc > 0:
-                # Auto-bat ist nicht leer
 
-                dc_current = cp.data.set.charging_ev_data.charge_template.data.chargemode.instant_charging.dc_current
-                if dc_current < 0:
-                    # Phasen in use berücksichtigen
-                    missing_currents = [dc_current for i in range(0, cp.data.get.phases_in_use)]
-                    missing_currents += [0] * (3 - len(missing_currents))
+            # cp.control_parameter.required_currents enthält duch self.surplus_controlled.set_required_current_to_max()
+            # in calc_current nur noch die maximalen Ströme
+            dc_current = cp.data.set.charging_ev_data.charge_template.data.chargemode.instant_charging.dc_current
+            if dc_current < 0:
+                # Phasen in use berücksichtigen
+                missing_currents = [dc_current for i in range(0, cp.data.get.phases_in_use)]
+                missing_currents += [0] * (3 - len(missing_currents))
 
-                    for index in range(0, 3):
-                        missing_currents[index] = cp.check_min_max_current(
-                            missing_currents[index], cp.data.get.phases_in_use)
+                for index in range(0, 3):
+                    missing_currents[index] = cp.check_min_max_current(
+                        missing_currents[index], cp.data.get.phases_in_use)
 
         else:
             # Default Nullpunktanpassung
