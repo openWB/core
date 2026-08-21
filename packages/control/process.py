@@ -80,10 +80,15 @@ class Process:
                 try:
                     self._update_state_consumer(consumer)
                     if consumer.data.get.state_str is None:
-                        if consumer.data.get.charge_state:
-                            consumer.data.get.state_str = "Verbraucher läuft."
+                        if consumer.data.usage.type == ConsumerUsage.METER_ONLY:
+                            consumer.data.get.state_str = "Messwerte des Verbrauchers werden erfasst."
+                        elif consumer.data.usage.type == ConsumerUsage.SELF_CONTROLLED:
+                            consumer.data.get.state_str = "Messwerte werden an den Verbraucher übermittelt."
                         else:
-                            consumer.data.get.state_str = "Verbraucher wird gestartet... "
+                            if consumer.data.get.charge_state:
+                                consumer.data.get.state_str = "Verbraucher läuft."
+                            else:
+                                consumer.data.get.state_str = "Verbraucher wird gestartet... "
 
                     modules_threads.append(self._start_consumer(consumer))
                 except Exception:
@@ -168,17 +173,21 @@ class Process:
                       name=f"set current cp{chargepoint.chargepoint_module.config.id}")
 
     def _update_state_consumer(self, consumer: Consumer) -> None:
+        control_parameter = consumer.data.control_parameter
+
         if consumer.data.set.switch_interval_elapsed is False:
             log.debug("Intervall für neuen Schaltbefehl nicht abgelaufen.")
             consumer.data.set.current = consumer.data.set.current_prev
         else:
             consumer.data.set.current = round(consumer.data.set.current, 2)
-        if consumer.data.set.current != 0 and consumer.data.control_parameter.state not in CHARGING_STATES:
-            consumer.data.control_parameter.state = ChargepointState.CHARGING_ALLOWED
+        if consumer.data.set.current != 0 and control_parameter.state not in CHARGING_STATES:
+            control_parameter.state = ChargepointState.CHARGING_ALLOWED
+        if control_parameter.state != ChargepointState.NO_CHARGING_ALLOWED or consumer.data.set.current != 0:
+            consumer.set_timestamp_charge_start()
         consumer.data.set.power = consumer.data.set.current * \
             voltages_mean(consumer.data.get.voltages) * consumer.data.config.connected_phases
         log.info(f"Verbraucher{consumer.num}: set current {consumer.data.set.current} A, "
-                 f"state {ChargepointState(consumer.data.control_parameter.state).name}")
+                 f"state {ChargepointState(control_parameter.state).name}")
 
     def _start_consumer(self, consumer: Consumer) -> Thread:
         if consumer.data.set.current != consumer.data.set.current_prev:
