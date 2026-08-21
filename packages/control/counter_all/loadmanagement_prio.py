@@ -4,27 +4,30 @@ from typing import Dict, Generator, List, Tuple
 from control.algorithm.filter_chargepoints import get_preferenced_chargepoint
 from control.chargepoint.chargepoint import Chargepoint
 from control.counter_all.counter_all_data import LoadmanagementPrioProtocol
+from modules.common.component_type import ComponentType
 
 
 log = logging.getLogger(__name__)
 
 
 class LoadmanagementPrioMixin:
-    def add_loadmanagement_prio_item(self: LoadmanagementPrioProtocol, type: str, id: int) -> None:
-        self.data.get.loadmanagement_prios.append({"type": type, "id": id})
+    def add_loadmanagement_prio_item(self: LoadmanagementPrioProtocol, type: ComponentType, id: int) -> None:
+        self.data.get.loadmanagement_prios.append({"type": type.value, "id": id})
 
-    def remove_loadmanagement_prio_item(self: LoadmanagementPrioProtocol, id: int) -> None:
-        if self._remove_loadmanagement_prio_item(id, self.data.get.loadmanagement_prios) is False:
+    def remove_loadmanagement_prio_item(self: LoadmanagementPrioProtocol, type: ComponentType, id: int) -> None:
+        if self._remove_loadmanagement_prio_item(type, id, self.data.get.loadmanagement_prios) is False:
             raise IndexError(f"Element {id} konnte nicht in der Prioritätensteuerung gefunden werden.")
 
-    def _remove_loadmanagement_prio_item(self: LoadmanagementPrioProtocol, id: int, entry: List[Dict]) -> bool:
+    def _remove_loadmanagement_prio_item(self: LoadmanagementPrioProtocol,
+                                         type: ComponentType,
+                                         id: int,
+                                         entry: List[Dict]) -> bool:
         for item in entry:
-            if item["type"] == "vehicle":
-                if item["id"] == id:
-                    entry.remove(item)
-                    return True
+            if item["type"] == type.value and item["id"] == id:
+                entry.remove(item)
+                return True
             elif item["type"] == "group":
-                removed_item = self._remove_loadmanagement_prio_item(id, item["children"])
+                removed_item = self._remove_loadmanagement_prio_item(type, id, item["children"])
                 if removed_item and len(item["children"]) == 0:
                     entry.remove(item)
                 if removed_item:
