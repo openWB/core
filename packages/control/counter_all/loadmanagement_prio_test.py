@@ -6,6 +6,7 @@ import pytest
 
 from control.chargepoint.chargepoint import Chargepoint
 from control.counter_all.counter_all import CounterAll
+from modules.common.component_type import ComponentType
 
 
 @pytest.fixture
@@ -32,9 +33,10 @@ def cp3():
 @pytest.mark.parametrize(
     "loadmanagement_prios, id, type, expected_loadmanagement_prios",
     [
-        pytest.param([], 2, "vehicle", [{"type": "vehicle", "id": 2}], id="emtpy list"),
-        pytest.param([{"type": "vehicle", "id": 3}], 2, "vehicle", [{"type": "vehicle", "id": 3},
-                                                                    {"type": "vehicle", "id": 2}], id="flat list"),
+        pytest.param([], 2, ComponentType.VEHICLE, [{"type": "vehicle", "id": 2}], id="emtpy list"),
+        pytest.param([{"type": "vehicle", "id": 3}], 2, ComponentType.VEHICLE,
+                     [{"type": "vehicle", "id": 3},
+                      {"type": "vehicle", "id": 2}], id="flat list"),
         pytest.param([
             {
                 "type": "group",
@@ -45,7 +47,7 @@ def cp3():
                 ]
             },
             {"type": "vehicle", "id": 2},
-        ], 4, "vehicle", [
+        ], 4, ComponentType.VEHICLE, [
             {
                 "type": "group",
                 "label": "Wichtige Fahrzeuge",
@@ -137,7 +139,7 @@ def test_remove_loadmanagement_prio_item(loadmanagement_prios: List[Dict],
     c.data.get.loadmanagement_prios = loadmanagement_prios
 
     # execution
-    c.remove_loadmanagement_prio_item(id)
+    c.remove_loadmanagement_prio_item(ComponentType.VEHICLE, id)
 
     # assert
     assert c.data.get.loadmanagement_prios == expected_loadmanagement_prios

@@ -239,13 +239,23 @@ def test_upgrade_datastore_125_is_idempotent_for_already_converted_values(mock_p
     assert mock_pub.pub.call_count == 1  # einmal publishen für Upgrade der Datastore-Version
 
 
-@pytest.mark.parametrize("ev0_prio, ev0_chargemode, ev1_prio, ev1_chargemode, ev2_prio, ev2_chargemode, id_ordered", [
+@pytest.mark.parametrize("ev0_prio, ev0_chargemode, ev1_prio, ev1_chargemode, ev2_prio, ev2_chargemode, expected", [
     pytest.param(False, Chargemode.INSTANT_CHARGING.value, False, Chargemode.INSTANT_CHARGING.value,
-                 False, Chargemode.INSTANT_CHARGING.value, [0, 1, 2], id="alle gleich"),
+                 False, Chargemode.INSTANT_CHARGING.value,
+                 [{"type": "group", "children": [{"type": "vehicle", "id": 0},
+                                                 {"type": "vehicle", "id": 1},
+                                                 {"type": "vehicle", "id": 2}]}],
+                 id="alle gleich"),
     pytest.param(False, Chargemode.INSTANT_CHARGING.value, False, Chargemode.INSTANT_CHARGING.value,
-                 False, Chargemode.SCHEDULED_CHARGING.value, [2, 0, 1], id="Lademodi unterschiedlich"),
+                 False, Chargemode.SCHEDULED_CHARGING.value,
+                 [{"type": "vehicle", "id": 2},
+                  {"type": "group", "children": [{"type": "vehicle", "id": 0}, {"type": "vehicle", "id": 1}]}],
+                 id="Lademodi unterschiedlich"),
     pytest.param(False, Chargemode.INSTANT_CHARGING.value, True, Chargemode.INSTANT_CHARGING.value,
-                 False, Chargemode.INSTANT_CHARGING.value, [1, 0, 2], id="Prioritäten unterschiedlich")
+                 False, Chargemode.INSTANT_CHARGING.value,
+                 [{"type": "vehicle", "id": 1},
+                  {"type": "group", "children": [{"type": "vehicle", "id": 0}, {"type": "vehicle", "id": 2}]}],
+                 id="Prioritäten unterschiedlich")
 ]
 )
 def test_upgrade_datastore_141_ev_chargemode_conversion(ev0_prio: bool,
@@ -254,7 +264,7 @@ def test_upgrade_datastore_141_ev_chargemode_conversion(ev0_prio: bool,
                                                         ev1_chargemode: str,
                                                         ev2_prio: bool,
                                                         ev2_chargemode: str,
-                                                        id_ordered: List[int],
+                                                        expected: List[dict],
                                                         mock_pub: Mock):
     # setup
     ev0_charge_template = ChargeTemplate()
@@ -285,9 +295,6 @@ def test_upgrade_datastore_141_ev_chargemode_conversion(ev0_prio: bool,
     uc.upgrade_datastore_141()
 
     # evaluation
-    assert uc.all_received_topics["openWB/counter/get/loadmanagement_prios"] == [
-        {"type": "vehicle", "id": id_ordered[0]},
-        {"type": "vehicle", "id": id_ordered[1]},
-        {"type": "vehicle", "id": id_ordered[2]}]
+    assert uc.all_received_topics["openWB/counter/get/loadmanagement_prios"] == expected
     assert uc.all_received_topics["openWB/system/datastore_version"] == [131, 132, 141]
     assert mock_pub.pub.call_count == 2  # einmal publishen für Upgrade der Datastore-Version
