@@ -17,8 +17,7 @@ class Loadmanagement:
     def get_available_currents(self,
                                missing_currents: List[float],
                                counter: Counter,
-                               cp: Chargepoint,
-                               feed_in: int = 0) -> Tuple[List[float], LoadmanagementLimit]:
+                               cp: Chargepoint) -> Tuple[List[float], LoadmanagementLimit]:
         raw_currents_left = counter.data.set.raw_currents_left
         try:
             available_currents, limit = self._limit_by_dimming_via_direct_control(missing_currents, cp)
@@ -39,7 +38,7 @@ class Loadmanagement:
         limit = new_limit if new_limit.limiting_value is not None else limit
 
         available_currents, new_limit = self._limit_by_power(
-            counter, available_currents, voltages_mean(cp.data.get.voltages), counter.data.set.raw_power_left, feed_in)
+            counter, available_currents, voltages_mean(cp.data.get.voltages), counter.data.set.raw_power_left)
         limit = new_limit if new_limit.limiting_value is not None else limit
 
         if f"counter{counter.num}" == data.data.counter_all_data.get_evu_counter_str():
@@ -53,8 +52,7 @@ class Loadmanagement:
                                        missing_currents: List[float],
                                        cp_voltage: float,
                                        counter: Counter,
-                                       cp: Chargepoint,
-                                       feed_in: int = 0) -> Tuple[List[float], LoadmanagementLimit]:
+                                       cp: Chargepoint) -> Tuple[List[float], LoadmanagementLimit]:
         raw_currents_left = counter.data.set.raw_currents_left
         available_currents, limit = self._limit_by_dimming_via_direct_control(missing_currents, cp)
 
@@ -64,8 +62,10 @@ class Loadmanagement:
         available_currents, new_limit = self._limit_by_current(counter, available_currents, raw_currents_left)
         limit = new_limit if new_limit.limiting_value is not None else limit
 
+        surplus_config = data.data.general_data.data.chargemode_config.surplus
+        feed_in_yield = surplus_config.feed_in_yield if surplus_config.feed_in_limit else None
         available_currents, new_limit = self._limit_by_power(
-            counter, available_currents, cp_voltage, counter.data.set.surplus_power_left, feed_in)
+            counter, available_currents, cp_voltage, counter.data.set.surplus_power_left, feed_in_yield)
         limit = new_limit if new_limit.limiting_value is not None else limit
 
         if f"counter{counter.num}" == data.data.counter_all_data.get_evu_counter_str():
@@ -100,7 +100,7 @@ class Loadmanagement:
                         available_currents: List[float],
                         cp_voltage: float,
                         raw_power_left: Optional[float],
-                        feed_in: Optional[float]) -> Tuple[List[float], LoadmanagementLimit]:
+                        feed_in: Optional[float] = None) -> Tuple[List[float], LoadmanagementLimit]:
         # Mittelwert der Spannungen verwenden, um Phasenverdrehung zu kompensieren
         # (Probleme bei einphasig angeschlossenen Wallboxen)
         currents = available_currents.copy()

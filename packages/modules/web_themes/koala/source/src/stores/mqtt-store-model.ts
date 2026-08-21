@@ -84,7 +84,6 @@ export interface ChargeTemplateConfiguration {
     pv_charging: {
       dc_min_current: number;
       dc_min_soc_current: number;
-      feed_in_limit: boolean;
       limit: {
         selected: string;
         amount: number;
