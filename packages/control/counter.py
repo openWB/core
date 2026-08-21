@@ -80,6 +80,11 @@ class Set:
     released_surplus: float = field(default=0, metadata={"topic": "set/released_surplus"})
     raw_power_left: Optional[float] = 0
     raw_currents_left: List[float] = field(default_factory=currents_list_factory)
+
+    # Bidi Entladung
+    raw_exported_power_left: Optional[float] = 0
+    raw_exported_currents_left: List[float] = field(default_factory=currents_list_factory)
+
     surplus_power_left: float = 0
 
 
@@ -145,6 +150,7 @@ class Counter:
     def _set_current_left(self, loadmanagement_available: bool) -> None:
         if loadmanagement_available:
             currents_raw = self.data.get.currents
+            currents_exported_raw = self.data.get.currents
             cp_keys = data.data.counter_all_data.get_chargepoints_of_counter(f"counter{self.num}")
             for cp_key in cp_keys:
                 chargepoint = data.data.cp_data[cp_key]
@@ -154,18 +160,40 @@ class Counter:
                         chargepoint.data.get.currents)
                 except KeyError:
                     element_current = [get_medium_charging_current(chargepoint.data.get.currents)]*3
+
+                if min(element_current) < 0:
+                    # nur Hausverbraucher ohne Einspeisung
+                    currents_exported_raw = list(map(operator.sub, currents_exported_raw, element_current))
+                    continue
+                # nur Hausverbraucher und Einspeisung
                 currents_raw = list(map(operator.sub, currents_raw, element_current))
-            currents_raw = list(map(operator.sub, self.data.config.max_currents, currents_raw))
-            if min(currents_raw) < 0:
-                log.debug(f"Verbleibende Ströme: {currents_raw}, Überbelastung wird durch Hausverbrauch verursacht")
-                currents_raw = [max(currents_raw[i], 0) for i in range(0, 3)]
-            self.data.set.raw_currents_left = currents_raw
+
+            raw_currents_left = list(map(operator.sub, self.data.config.max_currents, currents_raw))
+            raw_exported_currents_left = list(map(operator.add, self.data.config.max_currents, currents_exported_raw))
+
+            if min(raw_currents_left) < 0:
+                log.debug(
+                    f"Verbleibende Ströme Laden: "
+                    f"{raw_currents_left}, Überbelastung wird durch Hausverbrauch verursacht")
+                raw_currents_left = [max(raw_currents_left[i], 0) for i in range(0, 3)]
+
+            if min(raw_exported_currents_left) < 0:
+                log.debug(("Verbleibende Ströme Entladen: "
+                           f"{raw_exported_currents_left}, Überbelastung wird durch Einspeisung verursacht"))
+                raw_exported_currents_left = [max(raw_exported_currents_left[i], 0) for i in range(0, 3)]
+
+            self.data.set.raw_currents_left = raw_currents_left
+            self.data.set.raw_exported_currents_left = raw_exported_currents_left
             log.info(f'Verbleibende Ströme an Zähler {self.num}: {self.data.set.raw_currents_left}A')
+            log.info((f'Verbleibende exportierte Ströme an Zähler {self.num}: '
+                      f'{self.data.set.raw_exported_currents_left}A'))
         else:
             self.data.set.raw_currents_left = [self.data.config.max_power_errorcase/230/3]*3
+            self.data.set.raw_exported_currents_left = [self.data.config.max_power_errorcase/230/3]*3
             log.info(f'Verbleibende Ströme an Zähler {self.num} (Fehlerfall): {self.data.set.raw_currents_left}A')
 
     # tested
+
     def get_unbalanced_load_exceeding(self, raw_currents_left: List[float]) -> List[float]:
         """gibt eine Liste zurück, die für jede Phase angibt, um wie viel Ampere die Schieflast überschritten wurde.
         So können gezielt Fahrzeuge reduziert werden, die auf dieser/n Phase(n) laden. Die Phase mit dem höchsten
@@ -184,31 +212,54 @@ class Counter:
         if f'counter{self.num}' == data.data.counter_all_data.get_evu_counter_str():
             if loadmanagement_available:
                 power_raw = self.data.get.power
+                power_exported_raw = self.data.get.power
                 for cp in data.data.cp_data.values():
+                    if cp.data.get.power < 0:
+                        power_exported_raw -= cp.data.get.power
+                        continue
                     power_raw -= cp.data.get.power
                 self.data.set.raw_power_left = self.data.config.max_total_power - power_raw
+                self.data.set.raw_exported_power_left = self.data.config.max_total_power + power_exported_raw
                 log.info(f'Verbleibende Leistung an Zähler {self.num}: {self.data.set.raw_power_left}W')
+                log.info((f'Verbleibende exportierte Leistung an Zähler {self.num}: '
+                          f'{self.data.set.raw_exported_power_left}W'))
             else:
                 self.data.set.raw_power_left = self.data.config.max_power_errorcase
+                self.data.set.raw_exported_power_left = self.data.config.max_power_errorcase
                 log.info(f'Verbleibende Leistung an Zähler {self.num} (Fehlerfall): {self.data.set.raw_power_left}W')
+                log.info((f'Verbleibende exportierte Leistung an Zähler {self.num} (Fehlerfall): '
+                          f'{self.data.set.raw_exported_power_left}W'))
         else:
             self.data.set.raw_power_left = None
+            self.data.set.raw_exported_power_left = None
 
     def update_values_left(self, diffs, cp_voltage: float) -> None:
+        self._update_raw_values(diffs, cp_voltage, surplus=False)
+
+    def update_surplus_values_left(self, diffs, cp_voltage: float) -> None:
+        self._update_raw_values(diffs, cp_voltage, surplus=True)
+
+    def _update_raw_values(self, diffs, cp_voltage: float, surplus: bool = False) -> None:
         # Mittelwert der Spannungen verwenden, um Phasenverdrehung zu kompensieren
         # (Probleme bei einphasig angeschlossenen Wallboxen)
         self.data.set.raw_currents_left = list(map(operator.sub, self.data.set.raw_currents_left, diffs))
-        if self.data.set.raw_power_left is not None:
-            self.data.set.raw_power_left -= sum([c * cp_voltage for c in diffs])
-        log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
-                  f'{self.data.set.raw_power_left}W verbleibende Leistung')
+        self.data.set.raw_exported_currents_left = list(
+            map(operator.add, self.data.set.raw_exported_currents_left, diffs))
 
-    def update_surplus_values_left(self, diffs, cp_voltage: float) -> None:
-        self.data.set.raw_currents_left = list(map(operator.sub, self.data.set.raw_currents_left, diffs))
-        if self.data.set.surplus_power_left is not None:
-            self.data.set.surplus_power_left -= sum([c * cp_voltage for c in diffs])
-        log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
-                  f'{self.data.set.surplus_power_left}W verbleibender Überschuss')
+        if surplus:
+            if self.data.set.surplus_power_left is not None:
+                self.data.set.surplus_power_left -= sum([c * cp_voltage for c in diffs])
+            log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
+                      f'{self.data.set.surplus_power_left}W verbleibender Überschuss')
+        else:
+            if self.data.set.raw_power_left is not None:
+                self.data.set.raw_power_left -= sum([c * cp_voltage for c in diffs])
+            if self.data.set.raw_exported_power_left is not None:
+                self.data.set.raw_exported_power_left += sum([c * cp_voltage for c in diffs])
+            log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
+                      f'{self.data.set.raw_exported_currents_left}A verbleibende exportierte Ströme, '
+                      f'{self.data.set.raw_power_left}W verbleibende Leistung, '
+                      f'{self.data.set.raw_exported_power_left}W verbleibende exportierte Leistung')
 
     def calc_surplus(self):
         # reservierte Leistung wird nicht berücksichtigt, weil diese noch verwendet werden kann, bis die EV

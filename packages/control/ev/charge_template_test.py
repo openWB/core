@@ -132,7 +132,7 @@ def test_instant_charging(selected: str, current_soc: float, used_amount: float,
     ct.data.chargemode.instant_charging.limit.amount = 1000
 
     # execution
-    ret = ct.instant_charging(current_soc, used_amount, ChargingType.AC.value)
+    ret = ct.instant_charging(current_soc, used_amount, ChargingType.AC.value, BidiState.CP_NOT_BIDI_CAPABLE)
 
     # evaluation
     assert ret == expected
