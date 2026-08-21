@@ -5,9 +5,9 @@ from typing import List, Optional, Tuple
 
 from control import data
 from control.chargemode import Chargemode
-from control.chargepoint.chargepoint import Chargepoint
 from control.consumer.consumer import Consumer
 from control.consumer.usage import ConsumerUsage
+from control.load import get_load_str
 from control.load_protocol import Load
 
 log = logging.getLogger(__name__)
@@ -84,12 +84,11 @@ def get_preferenced_load_charging(
         valid_group: List[Load] = []
         for load in group:
             if load.data.set.target_current == 0:
-                log.info(f"{'LP' if isinstance(load, Chargepoint) else 'Verbraucher'} {load.num}: "
+                log.info(f"{get_load_str(load)}: "
                          f"Keine Zuteilung des Mindeststroms, daher keine weitere Berücksichtigung")
                 preferenced_loads_without_set_current.append(load)
             elif load.data.get.charge_state is False:
-                log.info(f"{'LP' if isinstance(load, Chargepoint) else 'Verbraucher'} {load.num}: "
-                         f"Lädt nicht, daher keine weitere Berücksichtigung")
+                log.info(f"{get_load_str(load)}: Lädt nicht, daher keine weitere Berücksichtigung")
                 preferenced_loads_without_set_current.append(load)
             elif (isinstance(load, Consumer) and
                   load.data.usage.type in [ConsumerUsage.CONTINUOUS, ConsumerUsage.SUSPENDABLE_ONOFF]):
@@ -103,4 +102,4 @@ def get_preferenced_load_charging(
 
 
 def filtered_loads_to_str(loads: List[Load]) -> str:
-    return ", ".join([f"{'LP' if isinstance(load, Chargepoint) else 'Verbraucher'}{load.num}" for load in loads])
+    return ", ".join([get_load_str(load) for load in loads])
