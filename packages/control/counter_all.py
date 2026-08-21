@@ -135,7 +135,7 @@ class CounterAll:
         else:
             raise ValueError(f"Unbekannter Komponententyp: {element['type']}")
 
-    def _get_is_home_consumption(self, counter: Counter, parent_home_consumption: int) -> int:
+    def _get_is_home_consumption(self, counter: Counter, parent_home_consumption: str) -> str:
         # Wenn auto ausgeählt ist, wird die einstellung vom Parent übernommen
         # Wenn nicht, wird die Einstellung vom Zähler selbst genommen
         if counter.data.config.is_home_consumption_counter == CounterMode.AUTO_HOME_CONSUMPTION.value:
@@ -161,7 +161,7 @@ class CounterAll:
         return local_power
 
     def _calc_home_consumption_from_counter(
-            self, element: Dict, parent_home_consumption: int) -> float:
+            self, element: Dict, parent_home_consumption: str) -> float:
         # Wird nur von Countern aufgerufen
         # Bewertet, ob Hausverbrauch oder nicht
         # Gibt den Hausverbrauch des Zählers zurück
@@ -550,7 +550,7 @@ class CounterAll:
                                "Lastmanagements gesetzt werden kann. Bitte zuerst einen EVU-Zähler hinzufügen."),
                                MessageType.ERROR)
 
-    def _is_home_consumption_counter_by_id(self, counter_id: int) -> int:
+    def _is_home_consumption_counter_by_id(self, counter_id: int) -> str:
         counter_entry = self.get_entry_of_element(counter_id)
         if not counter_entry:
             raise IndexError(f"Element {counter_id} konnte nicht in der Hierarchie gefunden werden.")

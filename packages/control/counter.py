@@ -38,9 +38,9 @@ class ControlRangeState(Enum):
 
 
 class CounterMode(Enum):
-    NOT_HOME_CONSUMPTION = 0
-    HOME_CONSUMPTION = 1
-    AUTO_HOME_CONSUMPTION = 2
+    NOT_HOME_CONSUMPTION = "no_home_consumption"
+    HOME_CONSUMPTION = "home_consumption"
+    AUTO_HOME_CONSUMPTION = "auto_home_consumption"
 
 
 @dataclass
@@ -50,7 +50,7 @@ class Config:
                                       "topic": "config/max_currents"})
     max_total_power: float = field(default=0, metadata={"topic": "config/max_total_power"})
 
-    is_home_consumption_counter: int = field(default=CounterMode.AUTO_HOME_CONSUMPTION.value, metadata={
+    is_home_consumption_counter: str = field(default=CounterMode.AUTO_HOME_CONSUMPTION.value, metadata={
         "topic": "config/is_home_consumption_counter"})
 
 
