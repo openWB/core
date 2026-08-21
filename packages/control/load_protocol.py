@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import List, Optional, Protocol
 
 from control.chargepoint.control_parameter import ControlParameter
+from helpermodules.timecheck import create_timestamp
 
 
 @dataclass
@@ -46,6 +47,15 @@ class Load(Protocol):
     chargemode_changed: bool
     submode_changed: bool
     data: LoadData
+
+    def set_timestamp_charge_start(self) -> None:
+        # Beim Ladestart Timer laufen lassen, manche Fahrzeuge brauchen sehr lange.
+        # Nach dem Algorithmus setzen, sonst steht set current noch nicht fest.
+        if self.data.control_parameter.timestamp_charge_start is None:
+            if self.data.set.current_prev == 0 and self.data.set.current != 0:
+                self.data.control_parameter.timestamp_charge_start = create_timestamp()
+        elif self.data.set.current == 0:
+            self.data.control_parameter.timestamp_charge_start = None
 
     def is_charging_stop_allowed(self) -> bool:
         ...

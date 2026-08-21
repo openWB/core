@@ -3,7 +3,7 @@
 
 import logging
 
-from control import data
+from control import data, load
 from modules.common.component_type import ComponentType
 
 
@@ -38,7 +38,7 @@ class Prepare:
             data.data.bat_all_data.setup_bat()
             data.data.consumer_all_data.get_consumer_sum()
             data.data.cp_all_data.get_cp_sum()
-            data.data.cp_all_data.no_charge()
+            load.no_charge()
             data.data.counter_all_data.set_home_consumption()
         except Exception:
             log.exception("Fehler im Prepare-Modul")
