@@ -89,16 +89,20 @@
                 <template v-else-if="item.id === 'pv'">
                   <div>Ertrag:</div>
                 </template>
-                <template v-else-if="item.id === 'house'">
+                <template v-else-if="['house', 'consumer'].includes(item.id)">
                   <div>Verbrauch:</div>
                 </template>
               </template>
               <template #right-value>
                 <div
                   v-if="
-                    ['battery', 'grid', 'house', 'chargepoint'].includes(
-                      item.id,
-                    ) && item.today !== undefined
+                    [
+                      'battery',
+                      'grid',
+                      'house',
+                      'chargepoint',
+                      'consumer',
+                    ].includes(item.id) && item.today !== undefined
                   "
                 >
                   {{ item.today.imported }}
@@ -191,6 +195,28 @@
               </DailyTotalsRow>
             </div>
           </div>
+          <div v-if="item.id === 'consumer'">
+            <div
+              v-for="consumerData in individualConsumerData"
+              :key="consumerData.id"
+              class="sub-row"
+            >
+              <DailyTotalsRow
+                :item="consumerData"
+                :rowHeight="rowHeight"
+                :componentNameVisible="componentNameVisible"
+                :currentPowerVisible="currentPowerVisible"
+                :socValueVisible="socValueVisible"
+              >
+                <template #right-label>
+                  <div>Verbrauch:</div>
+                </template>
+                <template #right-value>
+                  <div>{{ consumerData.today?.imported }}</div>
+                </template>
+              </DailyTotalsRow>
+            </div>
+          </div>
         </q-expansion-item>
       </div>
     </div>
@@ -224,6 +250,7 @@ const expanded = ref<Record<string, boolean>>({
   chargepoint: false,
   battery: false,
   pv: false,
+  consumer: false,
 });
 
 const componentNameVisible = computed(() => $q.screen.width >= 300);
@@ -235,6 +262,7 @@ const showHomePower = computed(() => {
 });
 const batteryConfigured = computed(() => mqttStore.batteryConfigured);
 const pvConfigured = computed(() => mqttStore.pvConfigured);
+const consumerConfigured = computed(() => mqttStore.consumerIds.length > 0);
 const chargePointSumPowerAvailable = computed(
   () => mqttStore.chargePointSumPower('value') !== undefined,
 );
@@ -252,6 +280,8 @@ const secondaryComponentsConfigured = computed(() => {
         return individualBatteryData.value.length > 1;
       case 'pv':
         return individualPvData.value.length > 1;
+      case 'consumer':
+        return individualConsumerData.value.length > 1;
       default:
         return false;
     }
@@ -387,6 +417,29 @@ const individualPvData = computed((): DailyTotalsItem[] => {
   return pvSystems;
 });
 
+const individualConsumerData = computed((): DailyTotalsItem[] => {
+  const consumers: DailyTotalsItem[] = [];
+
+  mqttStore.consumerIds.forEach((id) => {
+    const name = mqttStore.consumerName(id);
+    if (name !== undefined) {
+      consumers.push({
+        id: `consumer-${id}`,
+        title: name,
+        level: 'secondary',
+        icon: 'consumer',
+        power: mqttStore.consumerPower(id, 'textValue') as string,
+        powerValue: mqttStore.consumerPower(id, 'value') as number,
+        today: {
+          imported: mqttStore.consumerDailyImported('textValue', id) as string,
+        },
+        color: mqttStore.consumerColor(id) || 'var(--q-consumer)',
+      });
+    }
+  });
+  return consumers;
+});
+
 const componentData = computed((): DailyTotalsItem[] => {
   const components: DailyTotalsItem[] = [];
 
@@ -465,6 +518,24 @@ const componentData = computed((): DailyTotalsItem[] => {
       }
     }
     components.push(item);
+  }
+  if (consumerConfigured.value) {
+    components.push({
+      id: 'consumer',
+      title: 'Verbraucher',
+      level: 'primary',
+      icon: 'consumer',
+      power: mqttStore.consumerSumPower('textValue') as string,
+      powerValue: mqttStore.consumerSumPower('value') as number,
+      today: {
+        imported: mqttStore.consumerDailyImported('textValue') as string,
+      },
+      color:
+        mqttStore.consumerIds.length === 1
+          ? mqttStore.consumerColor(mqttStore.consumerIds[0]) ||
+            'var(--q-consumer)'
+          : 'var(--q-consumer)',
+    });
   }
   return components;
 });

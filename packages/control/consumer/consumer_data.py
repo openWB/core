@@ -1,0 +1,117 @@
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import List, Optional
+from control.chargemode import Chargemode
+from control.chargepoint.control_parameter import ControlParameter, control_parameter_factory
+from control.consumer.usage import ConsumerUsage
+from dataclass_utils.factories import empty_list_factory
+from helpermodules.abstract_plans import ScheduledPlanConsumer, TimeChargingPlanConsumer
+from helpermodules.constants import NO_ERROR
+from modules.common.consumer_setup import ConsumerSetup
+
+
+@dataclass
+class EcoCharging:
+    price_limit: float = 0.0002
+
+
+@dataclass
+class ScheduledCharging:
+    plans: List[ScheduledPlanConsumer] = field(default_factory=empty_list_factory)
+
+
+@dataclass
+class TimeCharging:
+    active: bool = False
+    plans: List[TimeChargingPlanConsumer] = field(default_factory=empty_list_factory)
+
+
+class WaitForStartStates(Enum):
+    WAIT_FOR_DEVICE_START = "wait_for_device_start"
+    WAIT_FOR_STOPPED_DEVICE = "wait_for_stopped_device"
+    DEVICE_WAITING_FOR_START = "device_waiting_for_start"
+    START_SIGNAL_RECEIVED = "start_signal_received"
+
+
+class ResetModes(Enum):
+    NEVER = "never"
+    MIDNIGHT = "midnight"
+    TIME = "time"
+
+
+@dataclass
+class ResetChargemode:
+    mode: ResetModes = ResetModes.NEVER
+    time: Optional[int] = None
+    chargemode: Chargemode = Chargemode.INSTANT_CHARGING
+
+
+@dataclass
+class Usage:
+    chargemode: Chargemode = Chargemode.INSTANT_CHARGING
+    eco_charging: EcoCharging = field(default_factory=lambda: EcoCharging())
+    scheduled_charging: ScheduledCharging = field(default_factory=lambda: ScheduledCharging())
+    time_charging: TimeCharging = field(default_factory=lambda: TimeCharging())
+    type: ConsumerUsage = ConsumerUsage.METER_ONLY
+    reset_chargemode: ResetChargemode = field(default_factory=lambda: ResetChargemode())
+    wait_for_start_active: bool = True
+
+
+@dataclass
+class ConsumerConfig:
+    connected_phases: int = 1
+    phase_1: int = 1
+    max_power: float = 5000
+    min_current: float = 0.5
+    min_interval: int = 60
+
+
+@dataclass
+class Get:
+    charge_state: bool = False
+    currents: Optional[List[Optional[float]]] = None
+    daily_imported: float = field(default=0, metadata={"topic": "get/daily_imported"})
+    error_timestamp: int = 0
+    exported: float = 0
+    fault_str: str = NO_ERROR
+    fault_state: int = 0
+    imported: float = 0
+    phases_in_use: int = 0
+    power: float = 0
+    powers: Optional[List[Optional[float]]] = None
+    set_power: Optional[float] = None
+    state: Optional[bool] = False
+    state_str: Optional[str] = field(default=None, metadata={"topic": "get/state_str"})
+    voltages: Optional[List[Optional[float]]] = None
+
+
+@dataclass
+class Set:
+    current: float = field(default=0, metadata={"topic": "set/current"})
+    loadmanagement_available: bool = field(default=False)
+    phases_to_use: int = field(default=1, metadata={"topic": "set/phases_to_use"})
+    plug_time: Optional[float] = field(default=None, metadata={"topic": "set/plug_time"})
+    required_power: float = field(default=0)
+    current_prev: float = field(default=0)
+    state_str_prev: str = field(default="")
+    target_current: float = field(default=0)
+    charge_state_prev: bool = field(default=False)
+    on_time: float = field(default=0, metadata={"topic": "set/on_time"})
+    power: Optional[float] = field(default=None)
+    switch_interval_elapsed: bool = field(default=False)
+    timestamp_last_current_set: float = field(default=0, metadata={"topic": "set/timestamp_last_current_set"})
+    timestamp_wrote_last_on_time: Optional[float] = field(
+        default=None, metadata={"topic": "set/timestamp_wrote_last_on_time"})
+    wait_for_start_state: WaitForStartStates = field(
+        default=WaitForStartStates.WAIT_FOR_DEVICE_START, metadata={"topic": "set/wait_for_start_state"})
+
+
+@dataclass
+class ConsumerData:
+    control_parameter: ControlParameter = field(default_factory=control_parameter_factory)
+    get: Get = field(default_factory=lambda: Get())
+    set: Set = field(default_factory=lambda: Set())
+    module: ConsumerSetup = None
+    config: ConsumerConfig = field(default_factory=lambda: ConsumerConfig())
+    extra_meter: Optional[int] = None
+    usage: Usage = field(default_factory=lambda: Usage(), metadata={"topic": "usage"})

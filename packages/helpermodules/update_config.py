@@ -1,4 +1,4 @@
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 import copy
 from dataclasses import asdict
 import datetime
@@ -59,7 +59,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 141
+    DATASTORE_VERSION = 142
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -175,6 +175,8 @@ class UpdateConfig:
         "^openWB/command/max_id/charge_template$",
         "^openWB/command/max_id/charge_template_scheduled_plan$",
         "^openWB/command/max_id/charge_template_time_charging_plan$",
+        "^openWB/command/max_id/consumer_scheduled_plan$",
+        "^openWB/command/max_id/consumer_time_plan$",
         "^openWB/command/max_id/chargepoint_template$",
         "^openWB/command/max_id/device$",
         "^openWB/command/max_id/ev_template$",
@@ -185,6 +187,31 @@ class UpdateConfig:
         "^openWB/command/max_id/vehicle$",
         "^openWB/command/[A-Za-z0-9_]+/error$",
         "^openWB/command/todo$",
+
+        "^openWB/consumer/get/power$",
+        "^openWB/consumer/get/exported$",
+        "^openWB/consumer/get/imported$",
+        "^openWB/consumer/get/daily_exported$",
+        "^openWB/consumer/get/daily_imported$",
+        "^openWB/consumer/[0-9]+/module$",
+        "^openWB/consumer/[0-9]+/config$",
+        "^openWB/consumer/[0-9]+/extra_meter$",
+        "^openWB/consumer/[0-9]+/usage$",
+        "^openWB/consumer/[0-9]+/get/currents$",
+        "^openWB/consumer/[0-9]+/get/fault_state$",
+        "^openWB/consumer/[0-9]+/get/fault_str$",
+        "^openWB/consumer/[0-9]+/get/powers$",
+        "^openWB/consumer/[0-9]+/get/power$",
+        "^openWB/consumer/[0-9]+/get/state$",
+        "^openWB/consumer/[0-9]+/get/state_str$",
+        "^openWB/consumer/[0-9]+/get/voltages$",
+        "^openWB/consumer/[0-9]+/set/current$",
+        "^openWB/consumer/[0-9]+/set/on_time$",
+        "^openWB/consumer/[0-9]+/set/phases_to_use$",
+        "^openWB/consumer/[0-9]+/set/plug_time$",
+        "^openWB/consumer/[0-9]+/set/timestamp_last_current_set$",
+        "^openWB/consumer/[0-9]+/set/timestamp_wrote_last_on_time$",
+        "^openWB/consumer/[0-9]+/set/wait_for_start_state$",
 
         "^openWB/counter/config/consider_less_charging$",
         "^openWB/counter/config/home_consumption_source_id$",
@@ -247,6 +274,9 @@ class UpdateConfig:
         "^openWB/general/chargemode_config/bat/power_reserve$",
         "^openWB/general/chargemode_config/bat/power_reserve_active$",
         "^openWB/general/chargemode_config/surplus/vehicle/retry_failed_phase_switches$",
+        "^openWB/general/chargemode_config/surplus/consumer/switch_on_delay$",
+        "^openWB/general/chargemode_config/surplus/consumer/switch_off_delay$",
+        "^openWB/general/chargemode_config/surplus/consumer/switch_off_threshold$",
         # obsolet, Daten hieraus müssen nach prices/ überführt werden
         "^openWB/general/price_kwh$",
         "^openWB/general/prices/bat$",
@@ -319,6 +349,14 @@ class UpdateConfig:
         "^openWB/mqtt/chargepoint/[0-9]+/get/voltages$",
         "^openWB/mqtt/chargepoint/[0-9]+/get/power_factors$",
         "^openWB/mqtt/chargepoint/[0-9]+/get/rfid$",
+        "^openWB/mqtt/consumer/[0-9]+/get/currents$",
+        "^openWB/mqtt/consumer/[0-9]+/get/imported$",
+        "^openWB/mqtt/consumer/[0-9]+/get/exported$",
+        "^openWB/mqtt/consumer/[0-9]+/get/power$",
+        "^openWB/mqtt/consumer/[0-9]+/get/powers$",
+        "^openWB/mqtt/consumer/[0-9]+/get/voltages$",
+        "^openWB/mqtt/consumer/[0-9]+/set/power$",
+        "^openWB/mqtt/consumer/[0-9]+/set/switch$",
         "^openWB/mqtt/counter/[0-9]+/get/currents$",
         "^openWB/mqtt/counter/[0-9]+/get/imported$",
         "^openWB/mqtt/counter/[0-9]+/get/exported$",
@@ -504,6 +542,7 @@ class UpdateConfig:
         "^openWB/system/backup_password$",
         "^openWB/system/configurable/chargepoints$",
         "^openWB/system/configurable/chargepoints_internal$",
+        "^openWB/system/configurable/consumers$",
         "^openWB/system/configurable/devices_components$",
         "^openWB/system/configurable/flexible_tariffs$",
         "^openWB/system/configurable/grid_fees$",
@@ -624,6 +663,9 @@ class UpdateConfig:
         ("openWB/general/chargemode_config/surplus/vehicle/phase_switch_delay", 7),
         ("openWB/general/chargemode_config/surplus/vehicle/retry_failed_phase_switches",
          ChargemodeConfigSurplusVehicle().retry_failed_phase_switches),
+        ("openWB/general/chargemode_config/surplus/consumer/switch_on_delay", 60),
+        ("openWB/general/chargemode_config/surplus/consumer/switch_off_delay", 60),
+        ("openWB/general/chargemode_config/surplus/consumer/switch_off_threshold", 0),
         ("openWB/general/chargemode_config/unbalanced_load", False),
         ("openWB/general/chargemode_config/unbalanced_load_limit", 18),
         ("openWB/general/control_interval", 10),
@@ -3598,3 +3640,39 @@ class UpdateConfig:
             self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/counter/get/loadmanagement_prios", loadmanagement_prios)
         self._append_datastore_version(141)
+
+    def upgrade_datastore_142(self) -> None:
+        def add_consumer_dict(file: str) -> None:
+            try:
+                with open(file, "r+") as jsonFile:
+                    content_raw = jsonFile.read()
+                    try:
+                        content = json.loads(content_raw)
+                    except json.JSONDecodeError:
+                        log.warning(f"Skipping invalid log file (JSON decode failed): {file}")
+                        return
+
+                    entries = content.get("entries")
+                    if not isinstance(entries, list):
+                        log.warning(f"Skipping log file without valid 'entries' list: {file}")
+                        return
+
+                    for entry in entries:
+                        if isinstance(entry, dict) and "consumer" not in entry:
+                            entry.update({"consumer": {}})
+
+                    jsonFile.seek(0)
+                    jsonFile.write(json.dumps(content))
+                    jsonFile.truncate()
+                    log.debug(f"Updated log file with consumer dict: {file}")
+            except OSError:
+                log.warning(f"Skipping log file due to I/O error: {file}")
+            except Exception:
+                log.exception(f"Skipping log file due to unexpected error: {file}")
+
+        files = glob.glob(str(self.base_path / "data" / "daily_log") + "/*")
+        files.extend(glob.glob(str(self.base_path / "data" / "monthly_log") + "/*"))
+        files.sort()
+        with ThreadPoolExecutor() as executor:
+            executor.map(add_consumer_dict, files)
+        self._append_datastore_version(142)
