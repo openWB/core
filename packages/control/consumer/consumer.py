@@ -80,13 +80,6 @@ class Consumer(Load):
                 self.data.set.timestamp_wrote_last_on_time = now
             self.data.set.on_time += now - self.data.set.timestamp_wrote_last_on_time
             self.data.set.timestamp_wrote_last_on_time = now
-            if self.data.control_parameter.timestamp_charge_start is None:
-                self.data.control_parameter.timestamp_charge_start = timecheck.create_timestamp()
-        elif self.data.get.charge_state is False:
-            self.data.control_parameter.timestamp_charge_start = None
-
-    def reset_timestamp_start(self):
-        self.data.control_parameter.timestamp_charge_start = None
 
     def reset_on_time(self):
         self.data.set.on_time = 0
