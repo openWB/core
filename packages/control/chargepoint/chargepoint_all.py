@@ -2,7 +2,6 @@ from dataclasses import dataclass, field
 import logging
 
 from control import data
-from control.chargepoint.chargepoint_state import ChargepointState
 from helpermodules.constants import NO_ERROR
 
 
