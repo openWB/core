@@ -8,7 +8,7 @@ from control.bat import Get as BatGet
 from control.bat import Set as BatSet
 from control.chargepoint.chargepoint import Chargepoint, ChargepointData
 from control.chargepoint.chargepoint_data import Config, Get, Set
-from control.counter import Counter, CounterData
+from control.counter import Counter, CounterData, CounterMode
 from control.counter import Config as CounterConfig
 from control.counter import Get as CounterGet
 from control.counter import Set as CounterSet
@@ -189,11 +189,13 @@ def data_() -> None:
                               fault_state=0), config=Mock(spec=PvConfig, max_ac_out=10000)))})
     data.data.counter_data.update({
         "counter0": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
-            spec=CounterGet, currents=[40]*3, power=6200, daily_imported=45000, daily_exported=3000, fault_state=0))),
+            spec=CounterGet, currents=[40]*3, power=6200, daily_imported=45000, daily_exported=3000, fault_state=0),
+            config=Mock(spec=CounterConfig, is_home_consumption_counter=CounterMode.HOME_CONSUMPTION.value))),
         "counter6": Mock(spec=Counter, data=Mock(spec=CounterData, get=Mock(
             spec=CounterGet, currents=[25, 10, 25], power=13800, daily_imported=20000, daily_exported=0,
             imported=14000, exported=18000, fault_state=0),
-            config=Mock(spec=CounterConfig, max_currents=[32]*3),
+            config=Mock(spec=CounterConfig, max_currents=[32]*3,
+                        is_home_consumption_counter=CounterMode.NOT_HOME_CONSUMPTION.value),
             set=Mock(spec=CounterSet, raw_currents_left=[31]*3)))})
 
 

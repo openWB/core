@@ -37,7 +37,7 @@ from helpermodules.utils.topic_parser import decode_payload, get_index, get_seco
 from control import counter_all
 from control.bat_all import BatConsiderationMode
 from control.chargepoint.charging_type import ChargingType
-from control.counter import get_counter_default_config
+from control.counter import get_counter_default_config, CounterMode
 from control.ev.charge_template import EcoCharging, get_charge_template_default
 from control.ev import ev
 from control.ev.ev_template import EvTemplateData
@@ -58,7 +58,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 139
+    DATASTORE_VERSION = 140
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -186,7 +186,6 @@ class UpdateConfig:
         "^openWB/command/todo$",
 
         "^openWB/counter/config/consider_less_charging$",
-        "^openWB/counter/config/home_consumption_source_id$",
         "^openWB/counter/get/hierarchy$",
         "^openWB/counter/set/disengageable_smarthome_power$",
         "^openWB/counter/set/imported_home_consumption$",
@@ -213,6 +212,7 @@ class UpdateConfig:
         "^openWB/counter/[0-9]+/config/max_power_errorcase$",
         "^openWB/counter/[0-9]+/config/max_currents$",
         "^openWB/counter/[0-9]+/config/max_total_power$",
+        "^openWB/counter/[0-9]+/config/is_home_consumption_counter$",
 
         "^openWB/general/allow_unencrypted_access$",
         "^openWB/general/extern$",
@@ -588,7 +588,6 @@ class UpdateConfig:
         ("openWB/chargepoint/template/0", get_chargepoint_template_default()),
         ("openWB/counter/get/hierarchy", []),
         ("openWB/counter/config/consider_less_charging", counter_all.Config().consider_less_charging),
-        ("openWB/counter/config/home_consumption_source_id", counter_all.Config().home_consumption_source_id),
         ("openWB/vehicle/0/name", "Standard-Fahrzeug"),
         ("openWB/vehicle/0/color", DEFAULT_COLORS.VEHICLE.value),
         ("openWB/vehicle/0/info", {"manufacturer": None, "model": None}),
@@ -3469,6 +3468,7 @@ class UpdateConfig:
         self._append_datastore_version(136)
 
     def upgrade_datastore_137(self) -> None:
+        # Update all counters with new Parameter and default wert
         def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/vehicle/template/ev_template/[0-9]+$", topic) is not None:
                 payload = decode_payload(payload)
@@ -3526,3 +3526,81 @@ class UpdateConfig:
                     return {topic: payload_device}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(139)
+
+    def upgrade_datastore_140(self) -> None:
+        def get_direct_child_counter_ids(hierarchy, parent_counter_id: int) -> List[int]:
+            def find_counter_entry(elements) -> Optional[dict]:
+                for element in elements:
+                    if element.get("type") == "counter" and element.get("id") == parent_counter_id:
+                        return element
+                    found = find_counter_entry(element.get("children", []))
+                    if found is not None:
+                        return found
+                return None
+
+            parent_entry = find_counter_entry(hierarchy)
+            if parent_entry is None:
+                return []
+            return [
+                child["id"]
+                for child in parent_entry.get("children", [])
+                if child.get("type") == "counter"
+            ]
+
+        def upgrade(topic: str, payload) -> Optional[dict]:
+
+            if re.search("openWB/counter/[0-9]+/config", topic) is not None:
+                index = get_index(topic)
+                new_topics = {}
+                if f"openWB/counter/{index}/config/is_home_consumption_counter" not in self.all_received_topics:
+                    new_topics[f"openWB/counter/{index}/config/is_home_consumption_counter"] = (
+                        get_counter_default_config()["is_home_consumption_counter"]
+                    )
+                return new_topics if new_topics else None
+        self._loop_all_received_topics(upgrade)
+        # Remove old Topic
+        old_topic = "openWB/counter/config/home_consumption_source_id"
+        if old_topic in self.all_received_topics:
+            source_id = decode_payload(self.all_received_topics[old_topic])
+            hierarchy_topic = "openWB/counter/get/hierarchy"
+            hierarchy = decode_payload(self.all_received_topics.get(hierarchy_topic, []))
+
+            if source_id is None:
+                # Altes Default-Verhalten beibehalten: Bei None den EVU-Zähler (hierarchy[0]) verwenden.
+                if (
+                    isinstance(hierarchy, list)
+                    and len(hierarchy) > 0
+                    and hierarchy[0].get("type") == "counter"
+                ):
+                    source_id = hierarchy[0].get("id")
+                else:
+                    log.warning(
+                        "Migration der Hausverbrauchs-Zaehler (upgrade_datastore_138) fehlgeschlagen: "
+                        f"'{old_topic}' ist None und '{hierarchy_topic}' enthaelt keinen gueltigen EVU-Zaehler."
+                    )
+
+            if source_id is not None:
+                try:
+                    source_id = int(source_id)
+                except (TypeError, ValueError):
+                    log.warning(f"Invalid '{old_topic}' value: {source_id!r}; skipping migration")
+                else:
+                    # Bisherigen Source-Counter explizit als Hausverbrauchs-Zähler setzen.
+                    self.__update_topic(
+                        f"openWB/counter/{source_id}/config/is_home_consumption_counter",
+                        CounterMode.HOME_CONSUMPTION.value)
+
+                    # Direkte Kind-Zähler explizit deaktivieren, damit Auto-Vererbung hier endet.
+                    if isinstance(hierarchy, list):
+                        for child_counter_id in get_direct_child_counter_ids(hierarchy, source_id):
+                            self.__update_topic(
+                                f"openWB/counter/{child_counter_id}/config/is_home_consumption_counter",
+                                CounterMode.NOT_HOME_CONSUMPTION.value)
+
+                    else:
+                        log.warning(
+                            "Migration der Hausverbrauchs-Zaehler (upgrade_datastore_138) fehlgeschlagen: "
+                            f"ungueltige Hierarchie in '{hierarchy_topic}'. "
+                            "Direkte Kind-Zaehler des bisherigen Hausverbrauchs-Zaehlers wurden nicht angepasst."
+                        )
+        self._append_datastore_version(140)
