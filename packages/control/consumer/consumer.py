@@ -449,7 +449,6 @@ class Consumer(Load):
     def midnight_handler(self):
         self.reset_chargemode_at_midnight()
         self.reset_wait_for_start()
-        self.reset_timestamp_start()
         self.reset_on_time()
 
     def reset_chargemode_at_midnight(self):

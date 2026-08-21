@@ -48,7 +48,7 @@ class Load(Protocol):
     submode_changed: bool
     data: LoadData
 
-    def set_timestamp_charge_start(self):
+    def set_timestamp_charge_start(self) -> None:
         # Beim Ladestart Timer laufen lassen, manche Fahrzeuge brauchen sehr lange.
         # Nach dem Algorithmus setzen, sonst steht set current noch nicht fest.
         if self.data.control_parameter.timestamp_charge_start is None:
