@@ -884,6 +884,32 @@ class SetData:
                 self._validate_value(msg, "json")
             elif "openWB/set/optional/ep/configured" in msg.topic:
                 self._validate_value(msg, bool)
+            elif "openWB/set/optional/forecast/configured" in msg.topic:
+                self._validate_value(msg, bool)
+            elif "openWB/set/optional/forecast/provider" in msg.topic:
+                self._validate_value(msg, "json")
+            elif "openWB/set/optional/forecast/get/values" in msg.topic:
+                self._validate_value(msg, "json")
+            elif "openWB/set/optional/forecast/get/today_values" in msg.topic:
+                self._validate_value(msg, "json")
+            elif "openWB/set/optional/forecast/get/tomorrow_values" in msg.topic:
+                self._validate_value(msg, "json")
+            elif "openWB/set/optional/forecast/get/daily_kwh" in msg.topic:
+                self._validate_value(msg, "json")
+            elif "openWB/set/optional/forecast/get/today_kwh" in msg.topic:
+                self._validate_value(msg, float)
+            elif "openWB/set/optional/forecast/get/tomorrow_kwh" in msg.topic:
+                self._validate_value(msg, float)
+            elif "openWB/set/optional/forecast/get/next_query_time" in msg.topic:
+                self._validate_value(msg, int)
+            elif "openWB/set/optional/forecast/get/last_update_time" in msg.topic:
+                self._validate_value(msg, int)
+            elif "openWB/set/optional/forecast/get/fault_state" in msg.topic:
+                self._validate_value(msg, int, [(0, 2)])
+            elif "openWB/set/optional/forecast/get/fault_str" in msg.topic:
+                self._validate_value(msg, str)
+            elif "openWB/set/optional/forecast/get/force_update" in msg.topic:
+                self._validate_value(msg, bool)
             elif "module_update_completed" in msg.topic:
                 self._validate_value(msg, bool)
             elif "openWB/set/optional/ocpp/config" in msg.topic:

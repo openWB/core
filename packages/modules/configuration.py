@@ -16,6 +16,7 @@ def pub_configurable():
     _pub_configurable_backup_clouds()
     _pub_configurable_web_themes()
     _pub_configurable_display_themes()
+    _pub_configurable_forecasts()
     _pub_configurable_tariffs()
     _pub_configurable_soc_modules()
     _pub_configurable_devices_components()
@@ -108,6 +109,38 @@ def _pub_configurable_display_themes() -> None:
         Pub().pub("openWB/set/system/configurable/display_themes", themes_modules)
     except Exception:
         log.exception("Fehler im configuration-Modul")
+
+
+def _pub_configurable_forecasts() -> None:
+    try:
+        forecasts: List[Dict] = []
+        path_list = Path(_get_packages_path()/'modules'/'forecast').glob('**/forecast.py')
+        for path in path_list:
+            try:
+                if path.name.endswith('_test.py'):
+                    continue
+                dev_defaults = importlib.import_module(
+                    f'.forecast.{path.parts[-2]}.forecast', 'modules').device_descriptor.configuration_factory()
+                forecasts.append({
+                    'value': dev_defaults.type,
+                    'text': dev_defaults.name,
+                    'defaults': dataclass_utils.asdict(dev_defaults)
+                })
+            except Exception as e:
+                log.exception(f'Fehler im configuration-Modul, {path}: {e}')
+        forecasts = sorted(forecasts, key=lambda d: d['text'].upper())
+        forecasts.insert(0,
+                         {
+                             'value': None,
+                             'text': '- kein Anbieter -',
+                             'defaults': {
+                                 'type': None,
+                                 'configuration': {}
+                             }
+                         })
+        Pub().pub('openWB/set/system/configurable/forecasts', forecasts)
+    except Exception:
+        log.exception('Fehler im configuration-Modul')
 
 
 def _pub_configurable_tariffs() -> None:
