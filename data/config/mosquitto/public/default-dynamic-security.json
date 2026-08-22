@@ -603,6 +603,12 @@
 				},
 				{
 					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/legacy_smarthome_active",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
 					"topic": "openWB/set/general/modbus_control",
 					"priority": 0,
 					"allow": true
@@ -670,6 +676,12 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/general/http_api",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/legacy_smarthome_active",
 					"priority": 0,
 					"allow": true
 				},
