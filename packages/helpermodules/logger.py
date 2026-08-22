@@ -26,6 +26,9 @@ REDACTION_PATTERNS = [
     (r'"{field}":\s*"(.*?)"', r'"{field}": "***REDACTED***"'),  # "field": "value", JSON formatted data
     (r'\'{field}\':\s*\'(.*?)\'', r"'{field}': '***REDACTED***'")  # 'field': 'value', JSON formatted data
 ]
+# Credentials in a URL (scheme://user:password@host/) carry no field name for REDACTION_PATTERNS
+# to key on. The user name is kept, it is useful when diagnosing authentication problems.
+URL_CREDENTIALS_PATTERN = (r'(\w+://[^/\s:@]*):[^/\s]+@', r'\1:***REDACTED***@')
 
 
 def redact_sensitive_info(message: str, additional_fields: list = None) -> str:
@@ -37,6 +40,9 @@ def redact_sensitive_info(message: str, additional_fields: list = None) -> str:
     redacted are defined in the KNOWN_SENSITIVE_FIELDS list. The function uses
     predefined patterns to identify and replace the sensitive information.
 
+    Passwords given as URL credentials (scheme://user:password@host/) are redacted as well,
+    those carry no field name to key on.
+
     Args:
         message (str): The log message to be redacted.
 
@@ -44,6 +50,7 @@ def redact_sensitive_info(message: str, additional_fields: list = None) -> str:
         str: The redacted log message.
     """
     fields_to_redact = KNOWN_SENSITIVE_FIELDS + (additional_fields or [])
+    message = re.sub(URL_CREDENTIALS_PATTERN[0], URL_CREDENTIALS_PATTERN[1], message)
     for field in fields_to_redact:
         for pattern, replacement in REDACTION_PATTERNS:
             pattern = pattern.replace('{field}', field)
@@ -344,9 +351,9 @@ def setup_logging() -> None:
         with open(thread_errors_path, "a") as f:
             f.write("Uncaught exception in thread:\n")
             f.write(f"Type: {args.exc_type}\n")
-            f.write(f"Value: {args.exc_value}\n")
+            f.write(redact_sensitive_info(f"Value: {args.exc_value}\n"))
             import traceback
-            traceback.print_tb(args.exc_traceback, file=f)
+            f.write(redact_sensitive_info("".join(traceback.format_tb(args.exc_traceback))))
     threading.excepthook = threading_excepthook
 
     def handle_unhandled_exception(exc_type, exc_value, exc_traceback):
@@ -356,7 +363,7 @@ def setup_logging() -> None:
         with open(thread_errors_path, "a") as f:
             f.write("Uncaught exception:\n")
             f.write(f"Type: {exc_type}\n")
-            f.write(f"Value: {exc_value}\n")
+            f.write(redact_sensitive_info(f"Value: {exc_value}\n"))
             f.write(f"Traceback:{exc_traceback}\n")
     sys.excepthook = handle_unhandled_exception
 
