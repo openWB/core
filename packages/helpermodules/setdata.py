@@ -756,6 +756,7 @@ class SetData:
             elif ("openWB/set/general/http_api" in msg.topic or
                   "openWB/set/general/modbus_control" in msg.topic or
                   "openWB/set/general/extern" in msg.topic or
+                  "openWB/set/general/legacy_smarthome_active" in msg.topic or
                   "openWB/set/general/allow_unencrypted_access" in msg.topic):
                 self._validate_value(msg, bool)
             elif "openWB/set/general/control_interval" in msg.topic:
