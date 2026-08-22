@@ -27,7 +27,7 @@ from helpermodules import command, setdata, subdata, timecheck, update_config
 from helpermodules.changed_values_handler import ChangedValuesContext
 from helpermodules.mosquitto_dynsec.mosquitto_dynsec import check_roles_at_start
 from helpermodules.measurement_logging.update_yields import update_daily_yields, update_pv_monthly_yearly_yields
-from helpermodules.measurement_logging.write_log import LogType, save_log
+from helpermodules.measurement_logging.write_log import save_log
 from helpermodules.modbusserver import start_modbus_server
 from helpermodules.pub import Pub
 from modules import configuration, loadvars, update_soc
@@ -37,6 +37,7 @@ from modules.internal_chargepoint_handler.rfid import RfidReader
 from modules.utils import wait_for_module_update_completed
 from smarthome.smarthome import readmq, smarthome_handler
 
+from helpermodules.measurement_logging.process_log import save_daily_source_totals, save_monthly_source_totals
 
 class HandlerAlgorithm:
     def __init__(self):
@@ -180,9 +181,11 @@ class HandlerAlgorithm:
         """
         try:
             with ChangedValuesContext(loadvars_.event_module_update_completed):
-                totals = save_log(LogType.DAILY)
-                update_daily_yields(totals)
-                update_pv_monthly_yearly_yields()
+                entries = save_log()
+                daily_totals = update_daily_yields(entries)
+                if daily_totals is not None:
+                    update_pv_monthly_yearly_yields(daily_totals)
+
                 for cp in data.data.cp_data.values():
                     calc_energy_costs(cp)
                 data.data.general_data.grid_protection()
@@ -230,7 +233,15 @@ class HandlerAlgorithm:
     @__with_handler_lock(error_threshold=60)
     def handler_midnight(self):
         try:
-            save_log(LogType.MONTHLY)
+            today = timecheck.create_timestamp_YYYYMMDD()
+            previous_day = timecheck.get_relative_date_string(today, day_offset=-1)
+            save_daily_source_totals(previous_day)
+
+            prev_month = timecheck.get_relative_date_string(today, month_offset=-1)[:6]
+            # Neuer Monat hat angefangen, daher Monats Totals speichern
+            if today[6:8] == "01":
+                save_monthly_source_totals(prev_month ,None, saving=True)       
+                
             thread_errors_path = Path(Path(__file__).resolve().parents[1]/"ramdisk"/"thread_errors.log")
             with thread_errors_path.open("w") as f:
                 f.write("")
