@@ -4,6 +4,7 @@ import os
 from typing import Dict
 from unittest.mock import Mock, mock_open
 import pytest
+import datetime
 
 from helpermodules.measurement_logging.process_log import (
     analyse_percentage,
@@ -11,6 +12,9 @@ from helpermodules.measurement_logging.process_log import (
     process_entry,
     get_totals,
     _collect_daily_log_data,
+    _get_last_entry_for_period,
+    _apply_source_totals,
+    get_monthly_log,
     calc_energy_imported_by_source,
     analyse_percentage_totals,
     CalculationType)
@@ -392,3 +396,154 @@ def test_collect_daily_log_data_json_decode_error(monkeypatch):
     # evaluation
     expected_result = {"entries": [], "names": {}}
     assert result == expected_result
+
+
+def test_get_monthly_log_aggregates_days_and_saves_missing_month_totals(monkeypatch):
+    # setup
+    month = "202404"
+    today = "20240402"
+
+    def relative_date_string(date_value, day_offset=0, month_offset=0):
+        base = json.loads(json.dumps(date_value))
+        if month_offset:
+            dt = datetime.datetime.strptime(base, "%Y%m")
+            year = dt.year + ((dt.month - 1 + month_offset) // 12)
+            month_value = ((dt.month - 1 + month_offset) % 12) + 1
+            return f"{year:04d}{month_value:02d}"
+        dt = datetime.datetime.strptime(base, "%Y%m%d")
+        return (dt + datetime.timedelta(days=day_offset)).strftime("%Y%m%d")
+
+    # daily_totals Mockdaten
+    day1_content = {
+        "totals": {"cp": {"all": {"energy_imported": 10}}},
+        "entry": {"timestamp": 1, "cp": {"all": {}}},
+        "names": {"cp1": "Ladepunkt 1"},
+        "colors": {"cp1": "#123456"}
+    }
+    day2_content = {
+        "totals": {"cp": {"all": {"energy_imported": 20}}},
+        "entry": {"timestamp": 2, "cp": {"all": {}}},
+        "names": {"cp2": "Ladepunkt 2"},
+        "colors": {"cp2": "#654321"}
+    }
+
+    save_daily_mock = Mock(return_value=day2_content)
+    save_monthly_mock = Mock()
+    get_totals_mock = Mock(return_value={"mocked": "totals"})
+
+    monkeypatch.setattr("helpermodules.measurement_logging.process_log._oldest_log_day", Mock(return_value="20240401"))
+    monkeypatch.setattr("helpermodules.measurement_logging.process_log._get_data_folder_path",
+                        Mock(return_value="/tmp"))
+    monkeypatch.setattr("helpermodules.measurement_logging.process_log.timecheck.create_timestamp_YYYYMM",
+                        Mock(return_value="202406"))
+    monkeypatch.setattr("helpermodules.measurement_logging.process_log.timecheck.create_timestamp_YYYYMMDD",
+                        Mock(return_value=today))
+    monkeypatch.setattr("helpermodules.measurement_logging.process_log.timecheck.get_relative_date_string",
+                        relative_date_string)
+
+    # Nur für den ersten Tag gibt es bereits eine daily_totals-Datei
+    monkeypatch.setattr(
+        "helpermodules.measurement_logging.process_log.load_daily_source_totals_content",
+        lambda day: day1_content if day == "20240401" else None)
+    monkeypatch.setattr("helpermodules.measurement_logging.process_log.save_daily_source_totals", save_daily_mock)
+    monkeypatch.setattr("helpermodules.measurement_logging.process_log.get_totals", get_totals_mock)
+    monkeypatch.setattr(
+        "helpermodules.measurement_logging.process_log.analyse_percentage_totals",
+        lambda entries, totals: {"mocked": "analysed_totals", "count": len(entries), "totals": totals})
+    monkeypatch.setattr("helpermodules.measurement_logging.process_log._analyse_energy_source", lambda data: data)
+    monkeypatch.setattr("helpermodules.measurement_logging.process_log.save_monthly_source_totals", save_monthly_mock)
+
+    # execution
+    result = get_monthly_log(month)
+
+    # evaluation
+    assert len(result["entries"]) == 2
+    assert result["entries"][0]["date"] == "20240401"
+    assert result["entries"][0]["cp"]["all"]["energy_imported"] == 10
+    assert result["entries"][1]["date"] == "20240402"
+    assert result["entries"][1]["cp"]["all"]["energy_imported"] == 20
+    assert result["names"] == {"cp1": "Ladepunkt 1", "cp2": "Ladepunkt 2"}
+    assert result["colors"] == {"cp1": "#123456", "cp2": "#654321"}
+    assert result["totals"] == {"mocked": "analysed_totals", "count": 2, "totals": {"mocked": "totals"}}
+
+    # Für den 2. Tag gibt es noch keine daily_totals-Datei
+    # -> soll auch nicht gespeichert werden, da der 2. Tag der aktuelle Tag ist
+    save_daily_mock.assert_called_once_with("20240402", saving=False)
+
+    # monthly_totals sollen gespeichert werden
+    save_monthly_mock.assert_called_once_with(month, result, saving=True)
+
+
+def test_apply_source_totals_updates_existing_and_creates_missing_sections():
+    # setup
+    entry = {
+        "cp": {
+            "all": {"energy_imported": 5, "keep": "x"},
+            "cp9": {"keep_cp": True}
+        },
+        "meta": {"unchanged": True}
+    }
+    daily_totals = {
+        "cp": {
+            "all": {"energy_imported": 12, "energy_exported": 3},
+            "cp1": {"energy_imported": 7},
+            "cp_invalid": 99
+        },
+        "hc": {
+            "all": {"energy_imported": 2}
+        },
+        "invalid_section": "ignore_me"
+    }
+
+    # execution
+    result = _apply_source_totals(entry, daily_totals)
+
+    # evaluation
+    # in-place behavior
+    assert result is entry
+
+    # existing module gets overwritten/extended, unrelated fields stay
+    assert result["cp"]["all"]["energy_imported"] == 12
+    assert result["cp"]["all"]["energy_exported"] == 3
+    assert result["cp"]["all"]["keep"] == "x"
+
+    # missing module and section are created
+    assert result["cp"]["cp1"]["energy_imported"] == 7
+    assert result["hc"]["all"]["energy_imported"] == 2
+
+    # invalid totals are ignored
+    assert "cp_invalid" not in result["cp"]
+    assert "invalid_section" not in result
+
+    # unrelated data stays unchanged
+    assert result["cp"]["cp9"]["keep_cp"] is True
+    assert result["meta"]["unchanged"] is True
+
+
+@pytest.mark.parametrize(
+    "entries, period, period_format, expected",
+    [
+        (
+            [
+                {"timestamp": 1711929600, "value": "april_1"},
+                {"timestamp": 1712016000, "value": "april_2"},
+                {"timestamp": 1714608000, "value": "may_2"},
+            ],
+            "202404",
+            "%Y%m",
+            {"timestamp": 1712016000, "value": "april_2"},
+        ),
+        (
+            [],
+            "202404",
+            "%Y%m",
+            None,
+        ),
+    ],
+)
+def test_get_last_entry_for_period(entries, period, period_format, expected):
+    # execution
+    result = _get_last_entry_for_period(entries, period, period_format)
+
+    # evaluation
+    assert result == expected
