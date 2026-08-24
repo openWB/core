@@ -44,11 +44,14 @@ def create_io(config: IoLan):
         # the values are reported as integers in range of 0-1024
         with client:
             time.sleep(0.1)
-            analog_read = client.read_input_registers(0x00, [ModbusDataType.UINT_16]*8, unit=config.configuration.modbus_id)
-            analog_input = {getattr(AnalogInputMapping, f'AI{pin+1}').name: analog_read[pin] * 5 for pin in range(8)}
+            analog_read = client.read_input_registers(
+                0x00, [ModbusDataType.UINT_16]*8, unit=config.configuration.modbus_id)
+            analog_input = {getattr(AnalogInputMapping,
+                                    f'AI{pin+1}').name: analog_read[pin] * 5 for pin in range(8)}
             time.sleep(0.1)
             digital_input_read = client.read_coils(0x00, 8, unit=config.configuration.modbus_id)
-            digital_input = {getattr(DigitalInputMapping, f'DI{pin+1}').name: digital_input_read[pin] for pin in range(8)}
+            digital_input = {
+                getattr(DigitalInputMapping, f'DI{pin+1}').name: digital_input_read[pin] for pin in range(8)}
             time.sleep(0.1)
             digital_output_read = client.read_coils(0x10, 8, unit=config.configuration.modbus_id)
             digital_output = {
@@ -61,9 +64,10 @@ def create_io(config: IoLan):
 
     def write(analog_output: Optional[Dict[str, int]], digital_output: Optional[Dict[str, bool]]) -> None:
         with client:
-            for i, value in digital_output.items():
-                client.write_single_coil(DigitalOutputMapping[i].value, 1 if value is True else 0,
-                                     unit=config.configuration.modbus_id)
+            if digital_output is not None:
+                for i, value in digital_output.items():
+                    client.write_single_coil(DigitalOutputMapping[i].value, 1 if value is True else 0,
+                                             unit=config.configuration.modbus_id)
 
     def initializer():
         nonlocal client
@@ -71,7 +75,9 @@ def create_io(config: IoLan):
         with client:
             for output, value in config.output["digital"].items():
                 time.sleep(0.1)
-                client.write_single_coil(DigitalOutputMapping[output].value, value, unit=config.configuration.modbus_id)
+                client.write_single_coil(DigitalOutputMapping[output].value,
+                                         value,
+                                         unit=config.configuration.modbus_id)
     return ConfigurableIo(config=config, component_reader=read, component_writer=write, initializer=initializer)
 
 
