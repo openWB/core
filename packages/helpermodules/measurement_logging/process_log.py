@@ -5,6 +5,7 @@ import json
 import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
+from concurrent.futures import ProcessPoolExecutor
 
 from helpermodules import timecheck
 from helpermodules.measurement_logging.write_log import (LegacySmartHomeLogData, create_entry,
@@ -265,6 +266,10 @@ def _collect_daily_log_data(date: str):
 
 
 def get_monthly_log(date: str):
+
+    if not (len(date) == 6 and date.isdigit()):
+        log.debug(f"Ungültiges Datum für Monats-Summen: {date}")
+        return {"entries": [], "names": {}, "colors": {}, "totals": {}}
     # Nur Logs ab dem ältesten Tageslog auswerten
     # Sonst werden unötige totals Werte gespeichert
     oldest_log_day = _oldest_log_day()
@@ -688,6 +693,9 @@ def _get_data_folder_path() -> str:
 
 def save_daily_source_totals(date: str, saving: bool = True):
     try:
+        if not (len(date) == 8 and date.isdigit()):
+            log.debug(f"Ungültiges Datum für Tages-Summen: {date}")
+            return None
         data = _collect_daily_log_data(date)
         source_entries = data.get("entries", [])
         processed_entries = _process_entries(deepcopy(source_entries), calculation=CalculationType.ENERGY)
@@ -732,6 +740,10 @@ def save_daily_source_totals(date: str, saving: bool = True):
 
 def load_daily_source_totals_content(date: str):
     try:
+        if not (len(date) == 8 and date.isdigit()):
+            log.debug(f"Ungültiges Datum für Tages-Summen: {date}")
+            return None
+
         filepath = f"{_get_data_folder_path()}/daily_totals/{date}_totals.json"
         if not Path(filepath).is_file():
             log.debug(f"Keine Tages-Summen-Datei gefunden: {filepath}")
@@ -857,3 +869,19 @@ def _oldest_log_day() -> Optional[str]:
     except Exception:
         log.exception("Fehler beim Ermitteln des ältesten Tageslogs")
         return None
+
+
+def generate_daily_totals_for_current_year():
+    months_list = []
+
+    current_year = timecheck.create_timestamp_YYYY()
+    current_month = timecheck.create_timestamp_YYYYMM()[4:6]
+
+    for month in range(1, int(current_month)):
+        month_str = f"{current_year}{month:02d}"
+        months_list.append(month_str)
+
+    with ProcessPoolExecutor() as executor:
+        executor.map(get_monthly_log, months_list)
+
+    log.debug("Tages-Summen für das aktuelle Jahr wurden berechnet und gespeichert.")
