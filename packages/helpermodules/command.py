@@ -1,5 +1,4 @@
 import copy
-from dataclasses import asdict
 import importlib
 import json
 import logging
@@ -13,12 +12,14 @@ import traceback
 from pathlib import Path
 
 import paho.mqtt.client as mqtt
+from control import bat, bridge, counter, counter_all, pv
 from control.chargelog.process_chargelog import get_log_data
 from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
-
+from control.ev import ev
 from control.ev.charge_template import ChargeTemplate, get_new_charge_template
 from control.ev.ev_template import EvTemplateData
+from dataclass_utils import asdict
 from helpermodules import pub
 from helpermodules.abstract_plans import AutolockPlan, ScheduledChargingPlan, TimeChargingPlan
 from helpermodules.utils.run_command import run_command
@@ -39,12 +40,9 @@ from helpermodules.create_debug import create_debug_log
 from helpermodules.pub import Pub, pub_single
 from helpermodules.subdata import SubData
 from helpermodules.utils.topic_parser import decode_payload, get_index
-from control import bat, bridge, counter, counter_all, pv
-from control.ev import ev
 from modules.chargepoints.internal_openwb.chargepoint_module import ChargepointModule
 from modules.chargepoints.internal_openwb.config import InternalChargepointMode
 from modules.common.component_type import ComponentType, special_to_general_type_mapping, type_to_topic_mapping
-import dataclass_utils
 from modules.common.configurable_vehicle import GeneralVehicleConfig
 
 
@@ -176,7 +174,7 @@ class Command:
         dev = importlib.import_module(f'.devices.{payload["data"]["vendor"]}'
                                       f'.{payload["data"]["type"]}.device',
                                       "modules")
-        device_default = dataclass_utils.asdict(dev.device_descriptor.configuration_factory())
+        device_default = asdict(dev.device_descriptor.configuration_factory())
         device_default["id"] = new_id
         Pub().pub(f'openWB/set/system/device/{new_id}/config', device_default)
         self.max_id_device = self.max_id_device + 1
@@ -204,7 +202,7 @@ class Command:
         dev = importlib.import_module(f".io_actions.{'.'.join(payload['data']['type'])}.api",
                                       "modules")
         descriptor = dev.device_descriptor.configuration_factory()
-        device_default = dataclass_utils.asdict(descriptor)
+        device_default = asdict(descriptor)
         device_default["id"] = new_id
         Pub().pub(f'openWB/set/io/action/{new_id}/config', device_default)
         self.max_id_io_action = new_id
@@ -238,7 +236,7 @@ class Command:
         new_id = self.max_id_io_device + 1
         dev = importlib.import_module(".io_devices."+payload["data"]["type"]+".api", "modules")
         descriptor = dev.device_descriptor.configuration_factory()
-        device_default = dataclass_utils.asdict(descriptor)
+        device_default = asdict(descriptor)
         device_default["id"] = new_id
         Pub().pub(f'openWB/set/system/io/{new_id}/config', device_default)
         self.max_id_io_device = new_id
@@ -279,7 +277,7 @@ class Command:
             Pub().pub(f'openWB/chargepoint/{new_id}/config', chargepoint_config)
             {Pub().pub(f"openWB/chargepoint/{new_id}/get/"+k, v) for (k, v) in asdict(chargepoint.Get()).items()}
             charge_template = SubData.ev_charge_template_data[f"ct{SubData.ev_data['ev0'].data.charge_template}"]
-            charge_template = dataclass_utils.asdict(charge_template.data)
+            charge_template = asdict(charge_template.data)
             Pub().pub(f'openWB/chargepoint/{new_id}/set/charge_template', charge_template)
             Pub().pub(f'openWB/chargepoint/{new_id}/set/manual_lock', False)
             self.max_id_hierarchy = self.max_id_hierarchy + 1
@@ -300,7 +298,7 @@ class Command:
         chargepoint_config = chargepoint.get_chargepoint_config_default()
         # chargepoint_default["id"] = new_id
         module = importlib.import_module(".chargepoints." + payload["data"]["type"] + ".chargepoint_module", "modules")
-        chargepoint_config.update(dataclass_utils.asdict(
+        chargepoint_config.update(asdict(
             module.chargepoint_descriptor.configuration_factory()).items())
         check_num_msg = self._check_max_num_of_internal_chargepoints(chargepoint_config)
         if check_num_msg is not None:
@@ -318,6 +316,7 @@ class Command:
             # Publish hierarchy to ensure the new component is recognized in the system before hierarchy check is failed
             Pub().pub("openWB/set/counter/get/hierarchy", SubData.counter_all_data.data.get.hierarchy)
         except (TypeError, IndexError):
+            log.exception("fehler beim Ladepunkt hinzufügen.")
             if chargepoint_config["type"] == 'internal_openwb' and SubData.general_data.data.extern:
                 # es gibt noch keinen EVU-Zähler
                 hierarchy = ([{
@@ -491,7 +490,7 @@ class Command:
                 break
         Pub().pub(
             f'openWB/set/chargepoint/template/{payload["data"]["template"]}',
-            dataclass_utils.asdict(SubData.cp_template_data[f'cpt{payload["data"]["template"]}'].data))
+            asdict(SubData.cp_template_data[f'cpt{payload["data"]["template"]}'].data))
         pub_user_message(
             payload, connection_id,
             f'Plan für Sperren nach Uhrzeit mit ID \'{payload["data"]["plan"]}\' vom Profil '
@@ -563,11 +562,11 @@ class Command:
         if payload["data"]["changed_in_theme"]:
             Pub().pub(
                 f'openWB/set/chargepoint/{payload["data"]["chargepoint"]}/set/charge_template',
-                dataclass_utils.asdict(charge_template.data))
+                asdict(charge_template.data))
         else:
             Pub().pub(
                 f'openWB/set/vehicle/template/charge_template/{payload["data"]["template"]}',
-                dataclass_utils.asdict(charge_template.data))
+                asdict(charge_template.data))
 
     def addChargeTemplateSchedulePlan(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neuer Zielladen-Plan erstellt werden soll.
@@ -667,7 +666,7 @@ class Command:
         component = importlib.import_module(f'.devices.{payload["data"]["deviceVendor"]}'
                                             f'.{payload["data"]["deviceType"]}.{payload["data"]["type"]}',
                                             "modules")
-        component_default = dataclass_utils.asdict(component.component_descriptor.configuration_factory())
+        component_default = asdict(component.component_descriptor.configuration_factory())
         component_default["id"] = new_id
         general_type = special_to_general_type_mapping(payload["data"]["type"])
         try:
@@ -729,7 +728,7 @@ class Command:
             new_ev_template = asdict(SubData.ev_template_data[f"et{payload['data']['copy']}"].data).copy()
             new_ev_template["name"] = f'Kopie von {new_ev_template["name"]}'
         else:
-            new_ev_template = dataclass_utils.asdict(EvTemplateData())
+            new_ev_template = asdict(EvTemplateData())
             new_ev_template["name"] = f'{new_ev_template["name"]} {new_id}'
         new_ev_template["id"] = new_id
         self.max_id_ev_template = new_id
@@ -763,8 +762,7 @@ class Command:
         for default in vehicle_default:
             Pub().pub(f"openWB/set/vehicle/{new_id}/{default}", vehicle_default[default])
         Pub().pub(f"openWB/set/vehicle/{new_id}/soc_module/config", {"type": None, "configuration": {}})
-        Pub().pub(f"openWB/set/vehicle/{new_id}/soc_module/general_config",
-                  dataclass_utils.asdict(GeneralVehicleConfig()))
+        Pub().pub(f"openWB/set/vehicle/{new_id}/soc_module/general_config", asdict(GeneralVehicleConfig()))
         self.max_id_vehicle = self.max_id_vehicle + 1
         Pub().pub("openWB/set/command/max_id/vehicle", self.max_id_vehicle)
         # Default-Mäßig werden die Profile 0 zugewiesen, wenn diese noch nicht existieren -> anlegen
