@@ -12,14 +12,14 @@ import traceback
 from pathlib import Path
 
 import paho.mqtt.client as mqtt
-from control import bat, bridge, counter, data, pv
+from control import bat, bridge, counter, pv
 from control.chargelog.process_chargelog import get_log_data
 from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
-from control.consumer.usage import ConsumerUsage
 from control.consumer.consumer_data import Usage
 from control.consumer.consumer_data import Get as ConsumerGet, Set as ConsumerSet
 from control.counter_all import counter_all
+from control.ev import ev
 from control.ev.charge_template import ChargeTemplate, get_new_charge_template
 from control.ev.ev_template import EvTemplateData
 from control.consumer.consumer_data import ConsumerConfig
@@ -1167,7 +1167,7 @@ class Command:
         dev = importlib.import_module(f'.consumers.{payload["data"]["vendor"]}'
                                       f'.{payload["data"]["type"]}.consumer',
                                       "modules")
-        consumer_default = dataclass_utils.asdict(dev.device_descriptor.configuration_factory())
+        consumer_default = asdict(dev.device_descriptor.configuration_factory())
         consumer_default["id"] = new_id
         try:
             evu_counter = SubData.counter_all_data.get_id_evu_counter()
@@ -1189,13 +1189,13 @@ class Command:
                              str(e),
                              MessageType.ERROR)
         Pub().pub(f'openWB/set/consumer/{new_id}/module', consumer_default)
-        Pub().pub(f"openWB/set/consumer/{new_id}/config", dataclass_utils.asdict(ConsumerConfig()))
-        for (k, v) in dataclass_utils.asdict(ConsumerGet()).items():
+        Pub().pub(f"openWB/set/consumer/{new_id}/config", asdict(ConsumerConfig()))
+        for (k, v) in asdict(ConsumerGet()).items():
             Pub().pub(f"openWB/set/consumer/{new_id}/get/"+k, v)
-        for (k, v) in dataclass_utils.asdict(ConsumerSet()).items():
+        for (k, v) in asdict(ConsumerSet()).items():
             Pub().pub(f"openWB/set/consumer/{new_id}/set/"+k, v)
         Pub().pub(f"openWB/set/consumer/{new_id}/extra_meter", None)
-        Pub().pub(f"openWB/set/consumer/{new_id}/usage", dataclass_utils.asdict(Usage()))
+        Pub().pub(f"openWB/set/consumer/{new_id}/usage", asdict(Usage()))
         self.max_id_hierarchy = new_id
         Pub().pub("openWB/set/command/max_id/hierarchy", new_id)
         pub_user_message(
@@ -1237,7 +1237,7 @@ class Command:
         usage.scheduled_charging.plans.append(new_consumer_schedule_plan)
         self.max_id_consumer_scheduled_plan = new_id
         Pub().pub("openWB/set/command/max_id/consumer_scheduled_plan", new_id)
-        Pub().pub(f'openWB/set/consumer/{payload["data"]["consumer_id"]}/usage', dataclass_utils.asdict(usage))
+        Pub().pub(f'openWB/set/consumer/{payload["data"]["consumer_id"]}/usage', asdict(usage))
         pub_user_message(
             payload, connection_id,
             f'Neuer Zielladen-Plan mit ID \'{new_id}\' zu Verbraucher '
@@ -1258,7 +1258,7 @@ class Command:
             if plan.id == payload["data"]["plan"]:
                 usage.scheduled_charging.plans.remove(plan)
                 break
-        Pub().pub(f'openWB/set/consumer/{payload["data"]["consumer_id"]}/usage', dataclass_utils.asdict(usage))
+        Pub().pub(f'openWB/set/consumer/{payload["data"]["consumer_id"]}/usage', asdict(usage))
         pub_user_message(
             payload, connection_id,
             (f'Zielladen-Plan mit ID \'{payload["data"]["plan"]}\' von Verbraucher '
@@ -1281,7 +1281,7 @@ class Command:
         new_id = self.max_id_consumer_time_plan + 1
         new_time_charging_plan.id = new_id
         usage.time_charging.plans.append(new_time_charging_plan)
-        Pub().pub(f'openWB/set/consumer/{payload["data"]["consumer_id"]}/usage', dataclass_utils.asdict(usage))
+        Pub().pub(f'openWB/set/consumer/{payload["data"]["consumer_id"]}/usage', asdict(usage))
         self.max_id_consumer_time_plan = new_id
         Pub().pub(
             "openWB/set/command/max_id/consumer_time_plan", new_id)
@@ -1302,7 +1302,7 @@ class Command:
             if plan.id == payload["data"]["plan"]:
                 usage.time_charging.plans.remove(plan)
                 break
-        Pub().pub(f'openWB/set/consumer/{payload["data"]["consumer_id"]}/usage', dataclass_utils.asdict(usage))
+        Pub().pub(f'openWB/set/consumer/{payload["data"]["consumer_id"]}/usage', asdict(usage))
         pub_user_message(
             payload, connection_id,
             (f'Zeitladen-Plan mit ID \'{payload["data"]["plan"]}\' zu Verbraucher '
