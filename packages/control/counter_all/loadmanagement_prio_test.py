@@ -77,12 +77,12 @@ def test_add_item(loadmanagement_prios: List[Dict],
 
 
 @pytest.mark.parametrize(
-    "loadmanagement_prios, id, expected_loadmanagement_prios",
+    "loadmanagement_prios, type, id, expected_loadmanagement_prios",
     [
         pytest.param([{"type": "vehicle", "id": 3}, {"type": "vehicle", "id": 2}],
-                     2, [{"type": "vehicle", "id": 3}], id="flat list, remove vehicle"),
+                     ComponentType.VEHICLE, 2, [{"type": "vehicle", "id": 3}], id="flat list, remove vehicle"),
         pytest.param([{"type": "vehicle", "id": 3}, {"type": "consumer", "id": 2}],
-                     2, [{"type": "vehicle", "id": 3}], id="flat list, remove consumer"),
+                     ComponentType.CONSUMER, 2, [{"type": "vehicle", "id": 3}], id="flat list, remove consumer"),
         pytest.param([
             {
                 "type": "group",
@@ -93,7 +93,7 @@ def test_add_item(loadmanagement_prios: List[Dict],
                 ]
             },
             {"type": "vehicle", "id": 2},
-        ], 2, [
+        ], ComponentType.VEHICLE, 2, [
             {
                 "type": "group",
                 "label": "Wichtige Fahrzeuge",
@@ -113,7 +113,7 @@ def test_add_item(loadmanagement_prios: List[Dict],
                         ]
             },
             {"type": "vehicle", "id": 2},
-        ], 0, [
+        ], ComponentType.VEHICLE, 0, [
             {
                 "type": "group",
                 "label": "Wichtige Fahrzeuge",
@@ -132,10 +132,11 @@ def test_add_item(loadmanagement_prios: List[Dict],
                         ]
             },
             {"type": "vehicle", "id": 2},
-        ], 0, [{"type": "vehicle", "id": 2}], id="nested list, empty group"),
+        ], ComponentType.VEHICLE, 0, [{"type": "vehicle", "id": 2}], id="nested list, empty group"),
     ]
 )
 def test_remove_loadmanagement_prio_item(loadmanagement_prios: List[Dict],
+                                         type: ComponentType,
                                          id: int,
                                          expected_loadmanagement_prios: List[Dict]):
     # setup
@@ -143,7 +144,7 @@ def test_remove_loadmanagement_prio_item(loadmanagement_prios: List[Dict],
     c.data.get.loadmanagement_prios = loadmanagement_prios
 
     # execution
-    c.remove_loadmanagement_prio_item(ComponentType.VEHICLE, id)
+    c.remove_loadmanagement_prio_item(type, id)
 
     # assert
     assert c.data.get.loadmanagement_prios == expected_loadmanagement_prios
