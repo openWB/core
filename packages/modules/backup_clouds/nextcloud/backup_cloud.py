@@ -3,7 +3,7 @@ import logging
 import re
 from typing import Callable, List, Tuple
 
-from dataclass_utils._dataclass_asdict import asdict
+from dataclass_utils import asdict
 from helpermodules.pub import Pub
 from modules.backup_clouds.nextcloud.config import NextcloudBackupCloud, NextcloudBackupCloudConfiguration
 from modules.common import req
