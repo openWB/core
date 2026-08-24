@@ -325,7 +325,6 @@ class Command:
             # Publish hierarchy to ensure the new component is recognized in the system before hierarchy check is failed
             Pub().pub("openWB/set/counter/get/hierarchy", SubData.counter_all_data.data.get.hierarchy)
         except (TypeError, IndexError):
-            log.exception("fehler beim Ladepunkt hinzufügen.")
             if chargepoint_config["type"] == 'internal_openwb' and SubData.general_data.data.extern:
                 # es gibt noch keinen EVU-Zähler
                 hierarchy = ([{
