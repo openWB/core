@@ -20,6 +20,7 @@ ROLE_TEMPLATES_PATH = _get_data_path()/"config/mosquitto/public/role-templates.j
 INTERNAL_TOPICS = ['openWB/bat/set/charging_power_left',
                    'openWB/bat/set/regulate_up',
                    'openWB/bat/+/set/power_limit',
+                   'openWB/bat/+/set/total_limit',
                    'openWB/command/max_id/autolock_plan',
                    'openWB/command/max_id/charge_template',
                    'openWB/command/max_id/charge_template_scheduled_plan',
