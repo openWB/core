@@ -364,7 +364,8 @@ def setup_logging() -> None:
             f.write("Uncaught exception:\n")
             f.write(f"Type: {exc_type}\n")
             f.write(redact_sensitive_info(f"Value: {exc_value}\n"))
-            f.write(f"Traceback:{exc_traceback}\n")
+            import traceback
+            f.write(redact_sensitive_info("".join(traceback.format_tb(exc_traceback))))
     sys.excepthook = handle_unhandled_exception
 
 
