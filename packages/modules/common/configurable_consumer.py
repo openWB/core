@@ -1,5 +1,6 @@
+from dataclasses import dataclass
 import logging
-from typing import Callable, Optional, TypeVar, Generic, Any
+from typing import Callable, Optional, TypeVar, Generic
 
 from helpermodules import timecheck
 from helpermodules.pub import Pub
@@ -14,6 +15,11 @@ from modules.common.store._factory import get_component_value_store
 from modules.common.utils.peak_filter import PeakFilter
 
 T_CONSUMER = TypeVar("T_CONSUMER")
+
+
+@dataclass
+class SetLimitData:
+    max_power: float = 0.0
 
 
 log = logging.getLogger(__name__)
@@ -79,9 +85,9 @@ class ConfigurableConsumer(Generic[T_CONSUMER]):
                     consumer_state.exported = exported
                 self.store.set(consumer_state)
 
-    def set_power_limit(self, power_limit: Any) -> None:
+    def set_power_limit(self, power_limit: float, data: SetLimitData) -> None:
         with SingleComponentUpdateContext(self.fault_state):
-            self.module_set_power_limit(power_limit)
+            self.module_set_power_limit(power_limit, data)
 
     def switch_on(self) -> None:
         with SingleComponentUpdateContext(self.fault_state):
