@@ -9,7 +9,7 @@ import struct
 from enum import Enum
 import time
 from types import TracebackType
-from typing import Any, Callable, Dict, Iterable, Optional, Type, Union, overload, List
+from typing import Any, Callable, Dict, Iterable, Literal, Optional, Type, Union, overload, List
 
 import pymodbus
 from pymodbus.client.sync import ModbusTcpClient, ModbusUdpClient, ModbusSerialClient
@@ -168,7 +168,15 @@ class ModbusClient:
                                      wordorder,
                                      **kwargs)
 
-    def read_coils(self, address: int, count: int, **kwargs: Any) -> bool:
+    @overload
+    def read_coils(self, address: int, count: Literal[1] = 1, **kwargs: Any) -> bool:
+        pass
+
+    @overload
+    def read_coils(self, address: int, count: int, **kwargs: Any) -> List[bool]:
+        pass
+
+    def read_coils(self, address: int, count: int = 1, **kwargs: Any) -> Union[bool, List[bool]]:
         try:
             response = self._delegate.read_coils(address, count, **kwargs)
             if response.isError():
@@ -213,15 +221,20 @@ class ModbusClient:
             # Fallback für bestehenden Code ohne data_type
             self._delegate.write_registers(address, value, **kwargs)
 
-    def write_single_coil(self, address: int, value: Any, **kwargs: Any):
+    def write_single_coil(self, address: int, value: bool, **kwargs: Any):
         self._delegate.write_coil(address, value, **kwargs)
+
+    def write_coils(self, address: int, value: List[bool], **kwargs: Any):
+        self._delegate.write_coils(address, value, **kwargs)
 
     def __read_bulk(self,
                     read_register_method: Callable[[int, int], Any],
                     start_address: int,
                     count: int,
                     mapping: list[tuple[int, Union[ModbusDataType, Iterable[ModbusDataType]]]],
-                    byteorder: str = Endian.Big, wordorder: str = Endian.Big, **kwargs: Any) -> Dict[int, Union[Number, list[Number]]]:
+                    byteorder: str = Endian.Big,
+                    wordorder: str = Endian.Big,
+                    **kwargs: Any) -> Dict[int, Union[Number, list[Number]]]:
         """
         Liest einen Registerbereich und gibt ein dict mit reg als Key und dekodiertem Wert als Value zurück.
         mapping: Liste von Tupeln (reg, ModbusDataType)
