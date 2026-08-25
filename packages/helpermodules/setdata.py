@@ -734,7 +734,7 @@ class SetData:
                     self._validate_value(msg, bool)
                 elif "/set/power_limit" in msg.topic:
                     self._validate_value(msg, float)
-                elif "/set/total_limit" in msg.topic:
+                elif "/set/evu_power" in msg.topic:
                     self._validate_value(msg, float)
                 else:
                     self.__unknown_topic(msg)

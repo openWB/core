@@ -62,7 +62,6 @@ class VictronBat(AbstractBat):
         if dynamic_ess_mode == 1:
             log.debug("Dynamic ESS Mode ist aktiv, daher erfolgt keine Regelung des Speichers durch openWB")
             return
-        evu_power = data.data.counter_all_data.get_evu_counter().data.get.power
         bat_power = self.__tcp_client.read_holding_registers(842, ModbusDataType.INT_16, unit=modbus_id)
         if setpoint.power_limit is None:
             log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
@@ -82,31 +81,29 @@ class VictronBat(AbstractBat):
                 self.last_mode = 'stop'
             self.__tcp_client.write_register(2716, 0, data_type=ModbusDataType.INT_32, unit=modbus_id)
         elif setpoint.power_limit < 0:
-            grid_setpoint = int(evu_power + setpoint.total_limit - bat_power)
+            grid_setpoint = int(setpoint.evu_power + setpoint.power_limit - bat_power)
             log.debug(f"Aktive Batteriesteuerung Victron:"
                       f"Speicher soll mit {setpoint.power_limit} W entladen werden. \n"
-                      f"Aktuelle Speicherleistung: {bat_power} W, EVU-Leistung: {evu_power} W "
+                      f"Aktuelle Speicherleistung: {bat_power} W, EVU-Leistung: {setpoint.evu_power} W "
                       f"EVU-Leistung um {setpoint.power_limit - bat_power} W anpassen auf {grid_setpoint} W")
             if self.last_mode != 'discharge':
-                self.__tcp_client.write_register(2902, 2, data_type=ModbusDataType.UINT_16, unit=modbus_id)
+                self.__tcp_client.write_register(2902, 1, data_type=ModbusDataType.UINT_16, unit=modbus_id)
                 self.__tcp_client.write_register(2702, 100, data_type=ModbusDataType.UINT_16, unit=modbus_id)
                 self.last_mode = 'discharge'
-
             # Setzen der angestrebten EVU-Leistung, Speicher versucht seine Leistung
             # anzupassen um den Zielwert zu erreichen
             self.__tcp_client.write_register(2716, grid_setpoint, data_type=ModbusDataType.INT_32, unit=modbus_id)
         elif setpoint.power_limit > 0:
-            grid_setpoint = int(evu_power + setpoint.total_limit - bat_power)
+            grid_setpoint = int(setpoint.evu_power + setpoint.power_limit - bat_power)
             log.debug(f"Aktive Batteriesteuerung Victron:"
-                      f"Speicher soll mit {bat_power} W geladen werden. \n"
-                      f"Aktuelle Speicherleistung: {bat_power} W, EVU-Leistung: {evu_power} W "
+                      f"Speicher soll mit {setpoint.power_limit} W geladen werden. \n"
+                      f"Aktuelle Speicherleistung: {bat_power} W, EVU-Leistung: {setpoint.evu_power} W "
                       f"EVU-Leistung um {setpoint.power_limit - bat_power} W anpassen auf {grid_setpoint} W")
             if self.last_mode != 'charge':
-                self.__tcp_client.write_register(2902, 2, data_type=ModbusDataType.UINT_16, unit=modbus_id)
+                self.__tcp_client.write_register(2902, 1, data_type=ModbusDataType.UINT_16, unit=modbus_id)
                 self.__tcp_client.write_register(2702, 100, data_type=ModbusDataType.UINT_16, unit=modbus_id)
                 self.last_mode = 'charge'
-            self.__tcp_client.write_register(
-                2716, grid_setpoint, data_type=ModbusDataType.INT_32, unit=modbus_id)
+            self.__tcp_client.write_register(2716, grid_setpoint, data_type=ModbusDataType.INT_32, unit=modbus_id)
 
     def power_limit_controllable(self) -> bool:
         return True
