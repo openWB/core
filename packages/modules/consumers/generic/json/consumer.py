@@ -7,7 +7,7 @@ from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
 from modules.common.component_type import ComponentType
-from modules.common.configurable_consumer import ConfigurableConsumer
+from modules.common.configurable_consumer import ConfigurableConsumer, SetLimitData
 from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.generic.json.config import Json
 
@@ -84,7 +84,7 @@ def create_consumer(config: Json):
         # Authorization?
         jq_switch_off({"state": False})
 
-    def set_power_limit(power_limit: int):
+    def set_power_limit(power_limit: float, data: SetLimitData) -> None:
         # Authorization?
         jq_set_power_limit({"power_limit": power_limit})
 
