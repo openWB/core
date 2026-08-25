@@ -3,7 +3,7 @@ import logging
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_type import ComponentType
 from modules.common.configurable_consumer import ConfigurableConsumer
-from modules.common.modbus import ModbusTcpClient_
+from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.generic.dac.config import Dac
 from modules.consumers.generic.dac.model import Model
@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 
 
 def create_consumer(config: Dac):
-    client = None
+    client: ModbusTcpClient_ = None
     sim_counter = None
 
     def initializer():
@@ -24,25 +24,20 @@ def create_consumer(config: Dac):
         initializer()
 
     def set_limit(power_limit: float) -> None:
-        if config.configuration.model == Model.N4Dac02 or config.configuration.model == Model.M120T:
-            # pwoer_limit -= power
-            pass
-
-        # power_limit = max(power_limit, 0)
-        # if config.configuration.model == Model.N4Dac02:
-        #     client.write_register(1, power_limit * 1000 / max_power, ModbusDataType.INT_16,
-        #                           unit=config.configuration.modbus_id)
-        # elif config.configuration.model == Model.DA02:
-        #     client.write_register(0x01f4, power_limit * 4000 / max_power,
-        #                           ModbusDataType.INT_16, unit=config.configuration.modbus_id)
-        # elif config.configuration.model == Model.M120T:
-        #     #  ausgabe nicht kleiner 0,9V sonst Leistungsregelung der WP aus
-        #     power_limit = max(power_limit * 4095 / max_power, 370)
-        #     client.write_register(0x01f4, power_limit, ModbusDataType.INT_16, unit=config.configuration.modbus_id)
-        # elif config.configuration.model == Model.AA02B:
-        #     power_limit = max((power_limit * (4095-820) / max_power)+820, 820)
-        #     #  ausgabe nicht kleiner 4ma sonst Leistungsregelung der WP aus
-        #     client.write_register(0x01f4, power_limit, ModbusDataType.INT_16, unit=config.configuration.modbus_id)
+        power_limit = max(power_limit, 0)
+        modbus_id = config.configuration.modbus_id
+        if config.configuration.model == Model.N4Dac02:
+            client.write_register(1, power_limit * 1000 / max_power, ModbusDataType.INT_16, unit=modbus_id)
+        elif config.configuration.model == Model.DA02:
+            client.write_register(0x01f4, power_limit * 4000 / max_power, ModbusDataType.INT_16, unit=modbus_id)
+        elif config.configuration.model == Model.M120T:
+            #  ausgabe nicht kleiner 0,9V sonst Leistungsregelung der WP aus
+            power_limit = max(power_limit * 4095 / max_power, 370)
+            client.write_register(0x01f4, power_limit, ModbusDataType.INT_16, unit=modbus_id)
+        elif config.configuration.model == Model.AA02B:
+            power_limit = max((power_limit * (4095-820) / max_power)+820, 820)
+            #  ausgabe nicht kleiner 4ma sonst Leistungsregelung der WP aus
+            client.write_register(0x01f4, power_limit, ModbusDataType.INT_16, unit=modbus_id)
 
     return ConfigurableConsumer(consumer_config=config,
                                 initializer=initializer,
