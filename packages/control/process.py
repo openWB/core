@@ -17,6 +17,7 @@ from helpermodules.pub import Pub
 from helpermodules.utils._thread_handler import joined_thread_handler
 from modules.common.abstract_consumer import CurrentValues
 from modules.common.abstract_io import AbstractIoDevice
+from modules.common.configurable_consumer import SetLimitData
 from modules.common.configurable_device import set_power_limit_wrapper
 from modules.common.fault_state_level import FaultStateLevel
 from modules.io_actions.controllable_consumers.dimming.api_io import DimmingIo
@@ -210,6 +211,7 @@ class Process:
                           args=(current_values,),
                           name=f"send values consumer{consumer.num}")
         else:
+            set_limit_data = SetLimitData(max_power=consumer.data.config.max_power)
             return Thread(target=consumer.module.set_power_limit,
-                          args=(consumer.data.set.power,),
+                          args=(consumer.data.set.power, set_limit_data),
                           name=f"set current consumer{consumer.num}")
