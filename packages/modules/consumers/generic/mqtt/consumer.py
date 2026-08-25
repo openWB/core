@@ -8,7 +8,7 @@ from helpermodules.utils.topic_parser import decode_payload
 from modules.common.abstract_consumer import CurrentValues
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
-from modules.common.configurable_consumer import ConfigurableConsumer
+from modules.common.configurable_consumer import ConfigurableConsumer, SetLimitData
 from modules.consumers.generic.mqtt.config import Mqtt
 
 log = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ def create_consumer(config: Mqtt):
         except KeyError:
             raise KeyError("Es wurden nicht alle notwendigen Daten empfangen.")
 
-    def set_power_limit(power_limit: float) -> None:
+    def set_power_limit(power_limit: float, data: SetLimitData) -> None:
         Pub().pub(f"openWB/set/mqtt/consumer/{config.id}/set/power", power_limit)
 
     def switch_on() -> None:
