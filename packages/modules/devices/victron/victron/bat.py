@@ -65,7 +65,7 @@ class VictronBat(AbstractBat):
         if setpoint.power_limit is None:
             log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
             if self.last_mode is not None:
-                # ESS Mode 2 und Leistung EVU auf 0kW setzen für Selbstregelung
+                # ESS Mode 1 und grid setpoint auf 0 setzen. Erlaubte Discharge Power 100%
                 self.__tcp_client.write_register(2902, 1, data_type=ModbusDataType.UINT_16, unit=modbus_id)
                 self.__tcp_client.write_register(2702, 100, data_type=ModbusDataType.UINT_16, unit=modbus_id)
                 self.__tcp_client.write_register(2716, 0, data_type=ModbusDataType.INT_32, unit=modbus_id)
