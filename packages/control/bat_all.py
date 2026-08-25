@@ -298,7 +298,7 @@ class BatAll:
                                f"Speicher (ID: {bat_component.component_config.id}) "
                                f"laden mit {power_limit} ({factor} x {bat_component_data.get.max_charge_power}) W"))
             bat_component_data.set.power_limit = power_limit
-            bat_component_data.set.total_limit = power
+            bat_component_data.set.evu_power = data.data.counter_all_data.get_evu_counter().data.get.power
 
     def setup_bat(self):
         """ prüft, ob mind ein Speicher vorhanden ist und berechnet die Summen-Topics.
