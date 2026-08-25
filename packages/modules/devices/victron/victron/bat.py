@@ -13,7 +13,6 @@ from modules.common.store import get_component_value_store
 from modules.devices.victron.victron.config import VictronBatSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
-from control import data
 from control.bat import Set as SetPoint
 
 log = logging.getLogger(__name__)
