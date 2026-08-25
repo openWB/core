@@ -42,6 +42,7 @@ def get_factory() -> Get:
 @dataclass
 class Set:
     power_limit: Optional[int] = field(default=None, metadata={"topic": "set/power_limit"})
+    total_limit: Optional[int] = field(default=None, metadata={"topic": "set/total_limit"})
 
 
 def set_factory() -> Set:

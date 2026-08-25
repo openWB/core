@@ -97,7 +97,8 @@ class UpdateConfig:
         "^openWB/bat/[0-9]+/get/fault_state$",
         "^openWB/bat/[0-9]+/get/fault_str$",
         "^openWB/bat/[0-9]+/get/power_limit_controllable$",
-        "^openWB/bat/[0-9]+/set/power_limit$",
+        "^openWB/bat/[0-9]+/set/power_limtit$",
+        "^openWB/bat/[0-9]+/set/total_limit$",
 
         "^openWB/chargepoint/get/power$",
         "^openWB/chargepoint/get/exported$",
