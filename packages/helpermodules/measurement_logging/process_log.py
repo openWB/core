@@ -1,11 +1,12 @@
 from enum import Enum
 from copy import deepcopy
-import datetime
 import json
 import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
+from datetime import datetime
 from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures.process import BrokenProcessPool
 
 from helpermodules import timecheck
 from helpermodules.measurement_logging.write_log import (LegacySmartHomeLogData, create_entry,
@@ -341,44 +342,25 @@ def get_yearly_log(year: str):
     if oldest_log_day is None or year < oldest_log_day[:4]:
         return {"entries": [], "names": {}, "colors": {}, "totals": {}}
 
+    results = generate_daily_totals_for_year(year)
     monthly_entries = []
     monthly_names = {}
     monthly_colors = {}
 
-    this_month = timecheck.create_timestamp_YYYYMM()
-    month = f"{year}01"
-
-    while month.startswith(year):
-        if month > this_month:
-            break
-
-        if month < oldest_log_day[:6]:
-            month = timecheck.get_relative_date_string(month, month_offset=1)
+    for monthly_data in results:
+        if not isinstance(monthly_data, dict):
             continue
 
-        content = load_monthly_source_totals_content(month)
-        if content is None:
-            # aktuelle Monatswerte nur berechnen, historische Monate zusaetzlich speichern
-            # Fallback, wenn bei der Jahresauswertung ein Monat fehlt,
-            # dann wird dieser Monat berechnet und gespeichert
-            content = save_monthly_source_totals(month, None, saving=(month != this_month))
+        result_entries = monthly_data.get("entries")
+        result_names = monthly_data.get("names")
+        result_colors = monthly_data.get("colors")
 
-        if isinstance(content, dict):
-            monthly_totals = content.get("totals")
-            monthly_entry = content.get("entry")
-
-            if isinstance(monthly_totals, dict) and isinstance(monthly_entry, dict) and len(monthly_entry) > 0:
-                monthly_entry = deepcopy(monthly_entry)
-                monthly_entry["date"] = month
-                _apply_source_totals(monthly_entry, monthly_totals)
-
-                monthly_entries.append(monthly_entry)
-                if isinstance(content.get("names"), dict):
-                    monthly_names.update(content["names"])
-                if isinstance(content.get("colors"), dict):
-                    monthly_colors.update(content["colors"])
-
-        month = timecheck.get_relative_date_string(month, month_offset=1)
+        if isinstance(result_entries, list) and len(result_entries) > 0:
+            monthly_entries.extend(result_entries)
+        if isinstance(result_names, dict):
+            monthly_names.update(result_names)
+        if isinstance(result_colors, dict):
+            monthly_colors.update(result_colors)
 
     if len(monthly_entries) > 0:
         data = {"entries": monthly_entries, "names": monthly_names, "colors": monthly_colors}
@@ -819,7 +801,7 @@ def _get_last_entry_for_period(entries: List, period: str, period_format: str) -
     # Suche den letzten Eintrag in der Liste, der dem angegebenen Zeitraum entspricht.
     for entry in reversed(entries):
         if isinstance(entry, dict) and isinstance(entry.get("timestamp"), (int, float)):
-            entry_period = datetime.datetime.fromtimestamp(entry["timestamp"]).strftime(period_format)
+            entry_period = datetime.fromtimestamp(entry["timestamp"]).strftime(period_format)
             if entry_period == period:
                 return entry
 
@@ -871,17 +853,58 @@ def _oldest_log_day() -> Optional[str]:
         return None
 
 
-def generate_daily_totals_for_current_year():
+def generate_daily_totals_for_year(year: str):
+    if not (len(year) == 4 and year.isdigit()):
+        log.debug(f"Ungültiges Jahr für Jahres-Summen: {year}")
+        return []
     months_list = []
-
     current_year = timecheck.create_timestamp_YYYY()
-    current_month = timecheck.create_timestamp_YYYYMM()[4:6]
+    if current_year == year:
+        # aktuelles Jahr
+        current_month = timecheck.create_timestamp_YYYYMM()[4:6]
+        for month in range(1, int(current_month)):
+            month_str = f"{current_year}{month:02d}"
+            months_list.append(month_str)
+    else:
+        # historisches Jahr
+        for month in range(1, 13):
+            month_str = f"{year}{month:02d}"
+            months_list.append(month_str)
+    try:
+        with ProcessPoolExecutor() as executor:
+            results = list(executor.map(get_monthly_parallel, months_list))
 
-    for month in range(1, int(current_month)):
-        month_str = f"{current_year}{month:02d}"
-        months_list.append(month_str)
+    except BrokenProcessPool:
+        # Fängt Out of Memory: Killed process ab
+        print(f"Beim vorgenerieren der daily totals fürs Jahr {year} "
+              f"ist ein Worker-Prozess unerwartet gestorben!")
 
-    with ProcessPoolExecutor() as executor:
-        executor.map(get_monthly_log, months_list)
+    log.debug(f"Tages-Summen für das Jahr {year} wurden berechnet und gespeichert.")
+    return results
 
-    log.debug("Tages-Summen für das aktuelle Jahr wurden berechnet und gespeichert.")
+
+def get_monthly_parallel(month: str):
+    this_month = timecheck.create_timestamp_YYYYMM()[4:6]
+    monthly_entries = []
+    monthly_names = {}
+    monthly_colors = {}
+
+    content = load_monthly_source_totals_content(month)
+    if content is None:
+        content = save_monthly_source_totals(month, None, saving=(month != this_month))
+
+    if isinstance(content, dict):
+        monthly_totals = content.get("totals")
+        monthly_entry = content.get("entry")
+
+        if isinstance(monthly_totals, dict) and isinstance(monthly_entry, dict) and len(monthly_entry) > 0:
+            monthly_entry = deepcopy(monthly_entry)
+            monthly_entry["date"] = month
+            _apply_source_totals(monthly_entry, monthly_totals)
+
+            monthly_entries.append(monthly_entry)
+            if isinstance(content.get("names"), dict):
+                monthly_names.update(content["names"])
+            if isinstance(content.get("colors"), dict):
+                monthly_colors.update(content["colors"])
+    return {"entries": monthly_entries, "names": monthly_names, "colors": monthly_colors}

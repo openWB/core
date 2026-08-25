@@ -9,7 +9,7 @@ from helpermodules.measurement_logging.process_log import (get_totals,
                                                            load_monthly_source_totals_content,
                                                            save_daily_source_totals,
                                                            get_monthly_log,
-                                                           generate_daily_totals_for_current_year)
+                                                           generate_daily_totals_for_year)
 
 log = logging.getLogger(__name__)
 
@@ -52,8 +52,9 @@ def update_pv_monthly_yearly_yields(daily_totals: Dict) -> None:
 
     folder = _get_parent_path()/"data"/"daily_totals"
     if not folder.exists():
-        # Nur wenn es noch keine Tages-Totals gibt, werden diese berechnet und gespeichert.
-        generate_daily_totals_for_current_year()
+        # Nur wenn es noch keine Tages-Totals-Folder gibt,
+        # werden die totals fürs aktuelle Jahr berechnet und gespeichert.
+        generate_daily_totals_for_year(timecheck.create_timestamp_YYYY())
 
     monthly_totals = _get_pv_monthly_yields(daily_totals)
     yearly_totals = _get_pv_yearly_yields(monthly_totals)
