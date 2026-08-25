@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import Any, Optional, TypedDict
+from typing import Any, TypedDict
 
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
@@ -12,6 +12,7 @@ from modules.common.store import get_component_value_store
 from modules.devices.anker.solarbank.config import Anker, AnkerBatSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
+from control.bat import Set as SetPoint
 
 log = logging.getLogger(__name__)
 
@@ -52,10 +53,10 @@ class AnkerBat(AbstractBat):
         )
         self.store.set(bat_state)
 
-    def set_power_limit(self, power_limit: Optional[int]) -> None:
+    def set_power_limit(self, setpoint: SetPoint) -> None:
         unit = self.device_config.configuration.modbus_id
 
-        if power_limit is None:
+        if setpoint.power_limit is None:
             log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
             if self.last_mode is not None:
                 self.client.write_register(10064, 0, data_type=ModbusDataType.UINT_16, unit=unit)
@@ -65,9 +66,9 @@ class AnkerBat(AbstractBat):
                 self.client.write_register(10064, 3, data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = 'limited'
 
-            power_value = 0 if power_limit == 0 else int(power_limit) * -1
+            power_value = 0 if setpoint.power_limit == 0 else int(setpoint.power_limit) * -1
             self.client.write_register(10071, power_value, data_type=ModbusDataType.INT_32, unit=unit)
-            log.debug("Aktive Batteriesteuerung angefordert, angeforderte Leistung: {power_value} W")
+            log.debug(f"Aktive Batteriesteuerung angefordert, angeforderte Leistung: {power_value} W")
 
     def power_limit_controllable(self) -> bool:
         return True
