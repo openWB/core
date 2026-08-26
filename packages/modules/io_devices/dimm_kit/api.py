@@ -19,7 +19,7 @@ VALID_VERSIONS = ["openWB DimmModul"]
 
 def create_io(config: IoLan):
     version = False
-    client: ModbusTcpClient_ = None
+    client: ModbusTcpClient_
 
     def read():
         nonlocal version
