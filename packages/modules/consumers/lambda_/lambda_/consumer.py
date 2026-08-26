@@ -6,7 +6,7 @@ from modules.common.abstract_consumer import CurrentValues
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
 from modules.common.component_type import ComponentType
-from modules.common.configurable_consumer import ConfigurableConsumer
+from modules.common.configurable_consumer import ConfigurableConsumer, SetLimitData
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.lambda_.lambda_.config import Lambda
@@ -45,7 +45,7 @@ def create_consumer(config: Lambda):
             exported=exported
         )
 
-    def set_limit(power_limit: float) -> None:
+    def set_power_limit(power_limit: float, data: SetLimitData) -> None:
         # Schreibt den von openWB berechneten Überschuss in Register 102 (E-Manager Bezug/Einspeisung).
         # Keine echte Leistungsvorgabe - die Wärmepumpe regelt weiterhin selbst anhand dieses Wertes.
         client.write_register(102,
@@ -58,7 +58,7 @@ def create_consumer(config: Lambda):
                                 error_handler=error_handler,
                                 update=update,
                                 send_values=send_values,
-                                set_power_limit=set_limit,)
+                                set_power_limit=set_power_limit,)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=Lambda)
