@@ -27,7 +27,7 @@ class HierarchyMixin:
                 log.exception("Fehler in der allgemeinen Zähler-Klasse")
 
     def get_loads_of_counter(self: HierarchyProtocol, counter: str) -> List[str]:
-        """ gibt eine Liste der Ladepunkte, die in den folgenden Zweigen des Zählers sind, zurück.
+        """ gibt eine Liste der Ladepunkte und Verbraucher, die in den folgenden Zweigen des Zählers sind, zurück.
         """
         self.connected_loads = []
         if counter == self.get_evu_counter_str():
@@ -45,7 +45,7 @@ class HierarchyMixin:
         return self.connected_loads
 
     def _get_all_loads_connected_to_counter(self: HierarchyProtocol, child: Dict) -> None:
-        """ Rekursive Funktion, die alle Ladepunkte ermittelt, die an den angegebenen Zähler angeschlossen sind.
+        """ Rekursive Funktion, die alle Ladepunkte und Verbraucher ermittelt, die an den angegebenen Zähler angeschlossen sind.
         """
         # Alle Objekte der Ebene durchgehen
         for child in child["children"]:
@@ -61,7 +61,7 @@ class HierarchyMixin:
                 log.exception("Fehler in der allgemeinen Zähler-Klasse")
 
     def get_counters_to_check(self: HierarchyProtocol, num: int) -> List[str]:
-        """ ermittelt alle Zähler im Zweig des Ladepunkts.
+        """ ermittelt alle Zähler im Zweig des Ladepunkts/Verbrauchers.
         """
         self.connected_counters = []
         self._get_all_counter_in_branch(self.data.get.hierarchy[0], num)
@@ -91,7 +91,7 @@ class HierarchyMixin:
             return {}
 
     def _get_all_counter_in_branch(self: HierarchyProtocol, child: Dict, id_to_find: int) -> bool:
-        """ Rekursive Funktion, die alle Zweige durchgeht, bis der entsprechende Ladepunkt gefunden wird und dann alle
+        """ Rekursive Funktion, die alle Zweige durchgeht, bis der entsprechende Ladepunkt/Verbraucher gefunden wird und dann alle
         Zähler in diesem Pfad der Liste anhängt.
         """
         parent_id = child["id"]
@@ -135,8 +135,8 @@ class HierarchyMixin:
     def hierarchy_add_item_aside(self: HierarchyProtocol,
                                  new_id: int, new_type: ComponentType,
                                  id_to_find: int) -> None:
-        """ ruft die rekursive Funktion zum Hinzufügen eines Zählers oder Ladepunkts in die Zählerhierarchie auf
-        derselben Ebene wie das angegebene Element.
+        """ ruft die rekursive Funktion zum Hinzufügen eines Zählers, Ladepunkts oder Verbrauchers in die
+        Zählerhierarchie auf derselben Ebene wie das angegebene Element.
         """
         if self._is_id_in_top_level(id_to_find):
             self.data.get.hierarchy.append({"id": new_id, "type": new_type.value, "children": []})
