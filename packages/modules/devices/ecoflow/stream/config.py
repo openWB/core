@@ -16,7 +16,7 @@ class EcoflowStream:
 
     def __init__(self,
                  name: str = "Ecoflow Stream",
-                 type: str = "stream",
+                 type: str = "ecoflow_stream",
                  id: int = 0,
                  configuration: EcoflowStreamConfiguration = None) -> None:
         self.name = name
