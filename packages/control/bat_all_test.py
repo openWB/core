@@ -6,7 +6,7 @@ from packages.conftest import hierarchy_standard
 from control import bat_all
 from control.bat import Bat
 
-from control.bat_all import BatAll, BatPowerLimitMode, BatPowerLimitCondition, ManualMode
+from control.bat_all import BatAll, BatConsiderationMode, BatPowerLimitMode, BatPowerLimitCondition, ManualMode
 from control import data
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_all import AllChargepointData, AllChargepoints, AllGet
@@ -27,31 +27,70 @@ def data_fixture() -> None:
 
 
 @pytest.mark.parametrize(
-    "bat_power, required_power, pv_power, expected_power",
+    "bat_power, pv_power, expected_power",
     [
-        pytest.param(-1000, 1000, 0, 1000, id="Leistung verfügbar"),
-        pytest.param(-4900, 5100, -100, 4900, id="max Leistung des WR um 100W überschritten, Speicher entlädt"),
-        pytest.param(1000, 1600, -4500, 500, id="Speicher lädt, soll entladen"),
+        pytest.param(-1000, 0, 4000, id="Leistung verfügbar"),
+        pytest.param(-4900, -100, 0, id="max Leistung des WR um 100W überschritten, Speicher entlädt"),
+        pytest.param(1000, -4500, 500, id="Speicher lädt, soll entladen"),
     ])
-def test_limit_bat_power_discharge(bat_power: int,
-                                   required_power: int,
-                                   pv_power: int,
-                                   expected_power: int,
-                                   monkeypatch: pytest.MonkeyPatch):
+def test_get_charging_power_left_diff_hybrid(bat_power: int,
+                                             pv_power: int,
+                                             expected_power: int,
+                                             monkeypatch: pytest.MonkeyPatch):
     # setup
     data.data.pv_data = {"pv2": Pv(2)}
     data.data.pv_data["pv2"].data.get.power = pv_power
     data.data.pv_data["pv2"].data.config.max_ac_out = 5000
     data.data.bat_data["bat1"] = Bat(1)
     data.data.bat_data["bat1"].data.get.power = bat_power
-    mock_entry_children = Mock(return_value={"children": [{"id": 1, "type": "bat"}]})
-    monkeypatch.setattr(data.data.counter_all_data, "get_entry_of_element", mock_entry_children)
+    data.data.bat_data["bat1"].data.get.soc = 71
+    data.data.general_data.data.chargemode_config.pv_charging.bat_mode = BatConsiderationMode.MIN_SOC_BAT.value
+    data.data.general_data.data.chargemode_config.pv_charging.bat_power_discharge = 5000
+    data.data.general_data.data.chargemode_config.pv_charging.bat_power_discharge_active = True
+    monkeypatch.setattr(data.data.counter_all_data, "get_hybrid_bat_ids", Mock(return_value=[1]))
+    monkeypatch.setattr(data.data.counter_all_data, "get_non_hybrid_bat_ids", Mock(return_value=[]))
+    monkeypatch.setattr(data.data.counter_all_data, "get_hybrid_inverter_ids", Mock(return_value=[2]))
 
-    b = BatAll()
-    b.data.get.power = bat_power
+    b_all = BatAll()
+    b_all.data.get.power = bat_power
+    b_all.data.get.soc = 71
 
     # execution
-    power = b._limit_bat_power_discharge(required_power)  # pyright: ignore[reportPrivateUsage]
+    b_all.get_charging_power_left_diff()
+
+    # evaluation
+    assert b_all.data.set.charging_power_left == expected_power
+
+
+@pytest.mark.parametrize(
+    "hybrid_bat_ids, non_hybrid_bat_ids, hybrid_inverter_ids, expected_power",
+    [
+        pytest.param([], [1], [], float("inf"), id="no hybrid"),
+        pytest.param([1], [], [2], 4900, id="hybrid,"),
+        pytest.param([1], [3], [2], 10900, id="hybrid an non hybrid bat"),
+    ])
+def test__absolute_bat_discharge_power(hybrid_bat_ids: List[int],
+                                       non_hybrid_bat_ids: List[int],
+                                       hybrid_inverter_ids: List[int],
+                                       expected_power: float,
+                                       monkeypatch: pytest.MonkeyPatch):
+    # setup
+    data.data.pv_data = {"pv2": Pv(2)}
+    data.data.pv_data["pv2"].data.get.power = -100
+    data.data.pv_data["pv2"].data.config.max_ac_out = 5000
+    data.data.bat_data["bat1"] = Bat(1)
+    data.data.bat_data["bat1"].data.get.power = -4900
+    data.data.bat_data["bat3"] = Bat(3)
+    data.data.bat_data["bat3"].data.get.max_discharge_power = 6000
+    monkeypatch.setattr(data.data.counter_all_data, "get_hybrid_bat_ids", Mock(return_value=hybrid_bat_ids))
+    monkeypatch.setattr(data.data.counter_all_data, "get_non_hybrid_bat_ids", Mock(return_value=non_hybrid_bat_ids))
+    monkeypatch.setattr(data.data.counter_all_data, "get_hybrid_inverter_ids", Mock(return_value=hybrid_inverter_ids))
+
+    b = BatAll()
+    b.data.get.power = -4900
+
+    # execution
+    power = b._absolute_bat_discharge_power()  # pyright: ignore[reportPrivateUsage]
 
     # evaluation
     assert power == expected_power
@@ -138,15 +177,49 @@ def test_get_charging_power_left(params: Params, caplog, data_, monkeypatch):
     b.data.get.power = params.power
     data.data.bat_data["bat0"] = b
     data.data.general_data.data.chargemode_config.pv_charging = params.config
-    mock_limit_bat_power_discharge = MagicMock(side_effect=lambda x: x)
-    monkeypatch.setattr(BatAll, "_limit_bat_power_discharge", mock_limit_bat_power_discharge)
+    mock_absolute_bat_discharge_power = MagicMock(return_value=10000)
+    monkeypatch.setattr(BatAll, "_absolute_bat_discharge_power", mock_absolute_bat_discharge_power)
 
     # execution
-    b_all._get_charging_power_left()
+    b_all.get_charging_power_left_diff()
 
     # evaluation
     assert b_all.data.set.charging_power_left == params.expected_charging_power_left
     assert b_all.data.set.regulate_up == params.expected_regulate_up
+
+
+def test_get_charging_power_left_uses_limited_bat_discharge_in_hysteresis(
+        data_: data.Data, monkeypatch: pytest.MonkeyPatch):
+    # setup: min/max-SoC-Bereich mit aktiver Hysterese und erlaubter Entladeleistung
+    b_all = BatAll()
+    b_all.data.get.power = -2500
+    b_all.data.get.soc = 60
+    b_all.data.set.hysteresis_discharge = True
+    b_all.data.set.power_limit = None
+    data.data.general_data.data.chargemode_config.pv_charging = PvCharging(
+        bat_mode="min_soc_bat_mode",
+        min_bat_soc=40,
+        max_bat_soc=80,
+        bat_power_discharge=8000,
+        bat_power_discharge_active=True,
+    )
+
+    # Hybrid-Setup fuer reale Berechnung in _limit_bat_power_discharge
+    data.data.pv_data = {"pv2": Pv(2)}
+    data.data.pv_data["pv2"].data.get.power = -7500
+    data.data.pv_data["pv2"].data.config.max_ac_out = 10000
+    data.data.bat_data["bat1"] = Bat(1)
+    data.data.bat_data["bat1"].data.get.power = -2500
+    monkeypatch.setattr(data.data.counter_all_data, "get_hybrid_bat_ids", Mock(return_value=[1]))
+    monkeypatch.setattr(data.data.counter_all_data, "get_non_hybrid_bat_ids", Mock(return_value=[]))
+    monkeypatch.setattr(data.data.counter_all_data, "get_hybrid_inverter_ids", Mock(return_value=[2]))
+
+    # execution
+    b_all.get_charging_power_left_diff()
+
+    # evaluation: reale Begrenzung (300W) + base_power (400W)
+    assert b_all.data.set.charging_power_left == 0
+    assert b_all.data.set.regulate_up is False
 
 
 def default_chargepoint_factory() -> List[Chargepoint]:
@@ -344,3 +417,117 @@ def test_control_price_limit(params: BatControlParams, data_, monkeypatch):
     data.data.bat_all_data._set_bat_power_active_control(data.data.bat_all_data.data.set.power_limit)
 
     assert data.data.bat_data["bat2"].data.set.power_limit == params.expected_power_limit_bat
+
+
+@pytest.mark.parametrize(
+    "control_activated, condition, limit, manual_mode, expected_result",
+    [
+        pytest.param(False,
+                     BatPowerLimitCondition.MANUAL.value,
+                     BatPowerLimitMode.MODE_NO_DISCHARGE.value,
+                     ManualMode.MANUAL_DISABLE.value, True,
+                     id="Speichersteuerung nicht aktiviert, aber aktiviert -> laden"),
+        pytest.param(True,
+                     BatPowerLimitCondition.MANUAL.value,
+                     BatPowerLimitMode.MODE_NO_DISCHARGE.value,
+                     ManualMode.MANUAL_DISABLE.value, True,
+                     id="Manuell, Eigenregelung, volle Entladesperre -> nicht laden"),
+        pytest.param(True,
+                     BatPowerLimitCondition.MANUAL.value,
+                     BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION.value,
+                     ManualMode.MANUAL_LIMIT.value, False,
+                     id="Manuell, Entladung in Fahrzeuge sperren -> nicht laden"),
+        pytest.param(True,
+                     BatPowerLimitCondition.MANUAL.value,
+                     BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value,
+                     ManualMode.MANUAL_CHARGE.value, False,
+                     id="Manuell, PV-Ertrag speichern -> nicht laden"),
+        pytest.param(True,
+                     BatPowerLimitCondition.VEHICLE_CHARGING.value,
+                     BatPowerLimitMode.MODE_NO_DISCHARGE.value,
+                     ManualMode.MANUAL_DISABLE.value, False,
+                     id="Fahrzeuge laden, volle Entladesperre -> nicht laden"),
+        pytest.param(True,
+                     BatPowerLimitCondition.VEHICLE_CHARGING.value,
+                     BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION.value,
+                     ManualMode.MANUAL_DISABLE.value, False,
+                     id="Fahrzeuge laden, Entladung in Fahrzeuge sperren -> nicht laden"),
+        pytest.param(True,
+                     BatPowerLimitCondition.VEHICLE_CHARGING.value,
+                     BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value,
+                     ManualMode.MANUAL_DISABLE.value, False,
+                     id="Fahrzeuge laden, PV-Ertrag speichern -> nicht laden"),
+        pytest.param(True,
+                     BatPowerLimitCondition.PRICE_LIMIT.value,
+                     BatPowerLimitMode.MODE_NO_DISCHARGE.value,
+                     ManualMode.MANUAL_DISABLE.value, False,
+                     id="Preislimit, volle Entladesperre -> nicht laden"),
+        pytest.param(True,
+                     BatPowerLimitCondition.PRICE_LIMIT.value,
+                     BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION.value,
+                     ManualMode.MANUAL_DISABLE.value, False,
+                     id="Preislimit, Entladung in Fahrzeuge sperren -> nicht laden"),
+
+    ]
+)
+def test_time_charging_min_bat_soc_allowed(control_activated: bool,
+                                           condition: str,
+                                           limit: str,
+                                           manual_mode: str,
+                                           expected_result: bool):
+    # setup
+    b = BatAll()
+    b.data.config.configured = True
+    b.data.config.power_limit_condition = condition
+    b.data.config.power_limit_mode = limit
+    b.data.config.bat_control_activated = control_activated
+    b.data.config.manual_mode = manual_mode
+
+    # execution
+    result = b.time_charging_min_bat_soc_allowed()
+
+    # evaluation
+    assert result == expected_result
+
+
+@pytest.mark.parametrize(
+    "ep_configured, price_limit_activated, price_charge_activated, price_threshold_mock, expected_result",
+    [
+        pytest.param(False, True, True, [True, True], True,
+                     id="Preislimit aktiviert, aber kein Preis konfiguriert -> Eigenregelung -> laden"),
+        pytest.param(True, True, False, [True], True,
+                     id="Strompreis für Regelmodus, Preis unter Limit -> laden"),
+        pytest.param(True, True, False, [False], False,
+                     id="Strompreis für Regelmodus, Preis über Limit -> nicht laden"),
+        pytest.param(True, False, True, [True], True,
+                     id="Strompreis für aktives Laden, Preis unter Limit -> laden"),
+        pytest.param(True, False, True, [False], False,
+                     id="Strompreis für aktives Laden, Preis unter Limit -> nicht laden"),
+        pytest.param(True, False, False, [], False,
+                     id="beide Strompreise deaktiviert -> nicht laden"),
+    ]
+)
+def test_time_charging_min_bat_soc_allowed_pricing(ep_configured: bool,
+                                                   price_limit_activated: bool,
+                                                   price_charge_activated: bool,
+                                                   price_threshold_mock: List[bool],
+                                                   expected_result: bool,
+                                                   monkeypatch: pytest.MonkeyPatch):
+    # setup
+    b = BatAll()
+    b.data.config.configured = True
+    b.data.config.power_limit_condition = BatPowerLimitCondition.PRICE_LIMIT.value
+    b.data.config.power_limit_mode = BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value
+    b.data.config.price_limit_activated = price_limit_activated
+    b.data.config.price_charge_activated = price_charge_activated
+    data.data.optional_data.data.electricity_pricing.configured = ep_configured
+    b.data.config.bat_control_activated = True
+
+    monkeypatch.setattr(data.data.optional_data, "ep_is_charging_allowed_price_threshold",
+                        Mock(side_effect=price_threshold_mock))
+
+    # execution
+    result = b.time_charging_min_bat_soc_allowed()
+
+    # evaluation
+    assert result == expected_result

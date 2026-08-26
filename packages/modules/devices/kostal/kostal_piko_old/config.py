@@ -39,5 +39,6 @@ class KostalPikoOldInverterSetup(ComponentSetup[KostalPikoOldInverterConfigurati
                  name: str = "Kostal Piko (alte Generation) Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: KostalPikoOldInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or KostalPikoOldInverterConfiguration())
+                 configuration: KostalPikoOldInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or KostalPikoOldInverterConfiguration(), **kwargs)

@@ -37,5 +37,6 @@ class KostalStecaInverterSetup(ComponentSetup[KostalStecaInverterConfiguration])
                  name: str = "Kostal Piko MP oder Steca Grid Coolcept Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: KostalStecaInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or KostalStecaInverterConfiguration())
+                 configuration: KostalStecaInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or KostalStecaInverterConfiguration(), **kwargs)

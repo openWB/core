@@ -7,7 +7,8 @@ from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
 from modules.common.modbus import ModbusTcpClient_
 from modules.devices.sample_modbus.sample_modbus.bat import SampleBat
-from modules.devices.sample_modbus.sample_modbus.config import Sample, SampleBatSetup, SampleCounterSetup, SampleInverterSetup
+from modules.devices.sample_modbus.sample_modbus.config import (Sample, SampleBatSetup, SampleCounterSetup,
+                                                                SampleInverterSetup)
 from modules.devices.sample_modbus.sample_modbus.counter import SampleCounter
 from modules.devices.sample_modbus.sample_modbus.inverter import SampleInverter
 
@@ -18,15 +19,12 @@ def create_device(device_config: Sample):
     client = None
 
     def create_bat_component(component_config: SampleBatSetup):
-        nonlocal client
         return SampleBat(component_config, device_id=device_config.id, client=client)
 
     def create_counter_component(component_config: SampleCounterSetup):
-        nonlocal client
         return SampleCounter(component_config, device_id=device_config.id, client=client)
 
     def create_inverter_component(component_config: SampleInverterSetup):
-        nonlocal client
         return SampleInverter(component_config, device_id=device_config.id, client=client)
 
     def update_components(components: Iterable[Union[SampleBat, SampleCounter, SampleInverter]]):

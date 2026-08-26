@@ -5,19 +5,20 @@
   </div>
   <q-btn-dropdown
     v-else-if="isMobile"
-    color="grey"
+    color="var(--q-text)"
     transition-show="scale"
     transition-hide="scale"
     transition-duration="500"
     size="md"
     dropdown-icon="none"
     cover
-    push
+    outline
     class="no-drop-down-arrow"
+    content-class="vehicle-select-dropdown-menu"
   >
     <template #label>
       <span class="block ellipsis" :title="connectedVehicle?.name">
-        <q-icon name="directions_car" />
+        <q-icon name="directions_car" color="primary" />
         {{ connectedVehicle?.name }}
       </span>
     </template>
@@ -28,7 +29,11 @@
           v-close-popup
           @click="connectedVehicle = vehicle"
           :active="connectedVehicle?.id === vehicle.id"
-          active-class="bg-primary text-white"
+          class="vehicle-item"
+          :style="{
+            '--vehicle-color':
+              mqttStore.vehicleColor(vehicle.id) || 'var(--q-vehicle-stroke)',
+          }"
         >
           <q-item-section class="text-center text-weight-bold">
             <q-item-label class="ellipsis" :title="vehicle.name">{{
@@ -40,10 +45,17 @@
       </template>
     </q-list>
   </q-btn-dropdown>
-  <q-btn-dropdown v-else color="grey" dense no-caps>
+  <q-btn-dropdown
+    v-else
+    color="grey"
+    dense
+    no-caps
+    outline
+    content-class="vehicle-select-dropdown-menu"
+  >
     <template #label>
       <span class="ellipsis q-ml-xs" :title="connectedVehicle?.name">
-        <q-icon name="directions_car" />
+        <q-icon name="directions_car" color="primary" />
         {{ connectedVehicle?.name }}
       </span>
     </template>
@@ -54,7 +66,13 @@
         clickable
         v-close-popup
         dense
+        :active="connectedVehicle?.id === vehicle.id"
         @click="connectedVehicle = vehicle"
+        class="vehicle-item vehicle-item--desktop"
+        :style="{
+          '--vehicle-color':
+            mqttStore.vehicleColor(vehicle.id) || 'var(--q-vehicle-stroke)',
+        }"
       >
         <q-item-section>
           <q-item-label class="ellipsis" :title="vehicle.name">{{
@@ -98,5 +116,25 @@ const vehicles = computed(() => mqttStore.vehicleList);
   width: 0;
   padding: 0;
   margin: 0;
+}
+.vehicle-select-dropdown-menu .q-item--active {
+  color: var(--q-primary) !important;
+}
+.vehicle-item {
+  position: relative;
+}
+.vehicle-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.2rem;
+  bottom: 0.2rem;
+  width: 4px;
+  border-radius: 2px;
+  background: var(--vehicle-color, var(--q-vehicle-stroke));
+}
+/* Reduce default Quasar item left padding on desktop */
+.vehicle-item--desktop {
+  padding-left: 0.6rem;
 }
 </style>

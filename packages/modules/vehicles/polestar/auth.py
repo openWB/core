@@ -6,7 +6,7 @@ import re
 from datetime import datetime, timedelta
 import base64
 import hashlib
-from modules.common.store import RAMDISK_PATH
+from helpermodules.constants import RAMDISK_PATH
 from typing import Optional
 
 AUTH_CLIENT_ID = 'l3oopkc_10'
@@ -168,7 +168,7 @@ class PolestarAuth:
         params = {
             "grant_type": "authorization_code",
             'client_id': AUTH_CLIENT_ID,
-         }
+        }
         data = {
             'pf.username': self.username,
             'pf.pass': self.password

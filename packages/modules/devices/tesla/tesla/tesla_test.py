@@ -147,7 +147,7 @@ def assert_battery_state_correct(state: BatState):
 def test_powerwall_update_if_cookie_cached(monkeypatch, requests_mock: requests_mock.Mocker):
     # setup
     mock_bat_value_store = Mock()
-    monkeypatch.setattr(bat, "get_bat_value_store", Mock(return_value=mock_bat_value_store))
+    monkeypatch.setattr(bat, "get_component_value_store", Mock(return_value=mock_bat_value_store))
     requests_mock.get("https://sample-address/api/meters/aggregates", text=sample_aggregates_json,
                       additional_matcher=match_cookie_ok)
     requests_mock.get("https://sample-address/api/system_status/soe", text=sample_soe_json,

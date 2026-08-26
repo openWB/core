@@ -26,19 +26,15 @@ def create_device(device_config: SmaSunnyBoy):
     client = None
 
     def create_bat_component(component_config: SmaSunnyBoyBatSetup):
-        nonlocal client
         return SunnyBoyBat(component_config, device_id=device_config.id, client=client)
 
     def create_counter_component(component_config: SmaSunnyBoyCounterSetup):
-        nonlocal client
         return SmaSunnyBoyCounter(component_config, device_id=device_config.id, client=client)
 
     def create_inverter_component(component_config: SmaSunnyBoyInverterSetup):
-        nonlocal client
         return SmaSunnyBoyInverter(component_config, client=client, device_id=device_config.id)
 
     def update_components(components: Iterable[sma_modbus_tcp_component_classes]):
-        nonlocal client
         with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):

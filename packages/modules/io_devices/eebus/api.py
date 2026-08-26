@@ -98,8 +98,6 @@ def create_io(config: Eebus):
             name="eebus_binary"))
 
     def read():
-        nonlocal broker
-        nonlocal received_topics
         nonlocal thread_exception
 
         if is_thread_alive("eebus_binary") is False:

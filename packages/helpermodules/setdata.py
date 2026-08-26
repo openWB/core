@@ -365,6 +365,8 @@ class SetData:
         try:
             if "/name" in msg.topic:
                 self._validate_value(msg, str)
+            elif "/color" in msg.topic:
+                self._validate_value(msg, str)
             elif "/info" in msg.topic:
                 self._validate_value(msg, "json")
             elif "openWB/set/vehicle/set/vehicle_update_completed" in msg.topic:
@@ -851,6 +853,8 @@ class SetData:
             self.process_pv_topic(msg)
         elif "openWB/set/mqtt/vehicle/" in msg.topic:
             self.process_vehicle_topic(msg)
+        elif "openWB/set/mqtt/loadmanager/" in msg.topic:
+            self.loadmanager_topic(msg)
 
     def process_optional_topic(self, msg: mqtt.MQTTMessage):
         """ Handler für die Optionalen-Topics
@@ -1070,7 +1074,8 @@ class SetData:
                   "openWB/set/system/hostname" in msg.topic or
                   "openWB/set/system/release_train" in msg.topic):
                 self._validate_value(msg, str)
-            elif "openWB/set/system/mqtt/bridge/" in msg.topic:
+            elif ("openWB/set/system/mqtt/bridge/" in msg.topic or
+                  msg.topic == "openWB/set/system/pnp_ip"):
                 self._validate_value(msg, "json")
             elif "openWB/set/system/mqtt/valid_partner_ids" == msg.topic:
                 self._validate_value(msg, str, collection=list)
@@ -1213,3 +1218,19 @@ class SetData:
 
     def _get_ramdisk_path(self) -> Path:
         return Path(__file__).resolve().parents[2]/"ramdisk"
+
+    def loadmanager_topic(self, msg: mqtt.MQTTMessage):
+        """ Handler für die LoadManager-Topics
+
+         Parameters
+        ----------
+        msg:
+            enthält Topic und Payload
+        """
+        try:
+            if re.search("^openWB/set/mqtt/loadmanager/[0-9]+/set/loadmanager$", msg.topic) is not None:
+                self._validate_value(msg, "json")
+            else:
+                self.__unknown_topic(msg)
+        except Exception:
+            log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")

@@ -37,8 +37,9 @@ class AlgodueCounterSetup(ComponentSetup[AlgodueCounterConfiguration]):
                  name: str = "Algodue Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: AlgodueCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or AlgodueCounterConfiguration())
+                 configuration: AlgodueCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or AlgodueCounterConfiguration(), **kwargs)
 
 
 @auto_str
@@ -53,8 +54,9 @@ class AlgodueInverterSetup(ComponentSetup[AlgodueInverterConfiguration]):
                  name: str = "Algodue Wechselrichterzähler",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: AlgodueInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or AlgodueInverterConfiguration())
+                 configuration: AlgodueInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or AlgodueInverterConfiguration(), **kwargs)
 
 
 @auto_str
@@ -69,5 +71,6 @@ class AlgodueBatSetup(ComponentSetup[AlgodueBatConfiguration]):
                  name: str = "Algodue Speicherzähler",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: AlgodueBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or AlgodueBatConfiguration())
+                 configuration: AlgodueBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or AlgodueBatConfiguration(), **kwargs)

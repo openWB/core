@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 import logging
-from typing import Iterable, Optional, Union, List
+from typing import Iterable, Union
 
-from helpermodules.cli import run_using_positional_cli_args
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
-from modules.devices.solar_world.solar_world import counter, inverter
 from modules.devices.solar_world.solar_world.config import (
-    SolarWorld, SolarWorldConfiguration, SolarWorldCounterSetup, SolarWorldInverterSetup)
+    SolarWorld, SolarWorldCounterSetup, SolarWorldInverterSetup)
 from modules.devices.solar_world.solar_world.counter import SolarWorldCounter
 from modules.devices.solar_world.solar_world.inverter import SolarWorldInverter
 
@@ -38,34 +36,6 @@ def create_device(device_config: SolarWorld):
         ),
         component_updater=MultiComponentUpdater(update_components)
     )
-
-
-COMPONENT_TYPE_TO_MODULE = {
-    "counter": counter,
-    "inverter": inverter
-}
-
-
-def read_legacy(component_type: str, ip_address: str, num: Optional[int]) -> None:
-    device_config = SolarWorld(configuration=SolarWorldConfiguration(ip_address=ip_address))
-    dev = create_device(device_config)
-    if component_type in COMPONENT_TYPE_TO_MODULE:
-        component_config = COMPONENT_TYPE_TO_MODULE[component_type].component_descriptor.configuration_factory()
-    else:
-        raise Exception(
-            "illegal component type " + component_type + ". Allowed values: " +
-            ','.join(COMPONENT_TYPE_TO_MODULE.keys())
-        )
-    component_config.id = num
-    dev.add_component(component_config)
-
-    log.debug('SolarWorld IP-Adresse: ' + ip_address)
-
-    dev.update()
-
-
-def main(argv: List[str]):
-    run_using_positional_cli_args(read_legacy, argv)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=SolarWorld)

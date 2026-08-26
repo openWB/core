@@ -3,6 +3,13 @@ import { useMqttStore } from "@/stores/mqtt.js";
 import DashboardCard from "@/components/DashboardCard.vue";
 import ChargeModeModal from "../ChargePoints/ChargeModeModal.vue";
 import BatteryModeModal from "../Battery/BatteryModeModal.vue";
+import BatteryIcon from "../../assets/icons/owbBattery.svg?component";
+import Battery40Icon from "../../assets/icons/owbBattery40.svg?component";
+import GridIcon from "../../assets/icons/owbGrid.svg?component";
+import PvIcon from "../../assets/icons/owbPV.svg?component";
+import HouseIcon from "../../assets/icons/owbHouse.svg?component";
+import VehicleIcon from "../../assets/icons/owbVehicle.svg?component";
+import ChargePointIcon from "../../assets/icons/owbChargePoint.svg?component";
 
 export default {
   name: "DashboardFlowCard",
@@ -27,6 +34,7 @@ export default {
         textSize: 5,
         numRows: 4,
         numColumns: 3,
+        padding: 1,
       },
       modalChargeModeSettingsVisible: false,
       modalBatteryModeSettingsVisible: false,
@@ -43,7 +51,10 @@ export default {
     },
     svgRectWidth() {
       return (
-        (this.svgSize.xMax - this.svgSize.xMin - this.svgSize.strokeWidth - this.svgSize.numColumns) /
+        (this.svgSize.xMax -
+          this.svgSize.xMin -
+          this.svgSize.strokeWidth -
+          this.svgSize.numColumns * this.svgSize.padding) /
         this.svgSize.numColumns
       );
     },
@@ -127,6 +138,24 @@ export default {
     chargePoint3Name() {
       return this.mqttStore.getChargePointName(this.connectedChargePoints[2]);
     },
+    chargePoint1Color() {
+      return (
+        this.mqttStore.getChargePointColor(this.connectedChargePoints[0]) ||
+        "var(--color--primary)"
+      );
+    },
+    chargePoint2Color() {
+      return (
+        this.mqttStore.getChargePointColor(this.connectedChargePoints[1]) ||
+        "var(--color--primary)"
+      );
+    },
+    chargePoint3Color() {
+      return (
+        this.mqttStore.getChargePointColor(this.connectedChargePoints[2]) ||
+        "var(--color--primary)"
+      );
+    },
     chargePoint1VehicleConnected() {
       return this.mqttStore.getChargePointPlugState(
         this.connectedChargePoints[0],
@@ -155,6 +184,27 @@ export default {
     chargePoint3ConnectedVehicleName() {
       return this.mqttStore.getChargePointConnectedVehicleName(
         this.connectedChargePoints[2],
+      );
+    },
+    chargePoint1ConnectedVehicleColor() {
+      return (
+        this.mqttStore.getChargePointConnectedVehicleColor(
+          this.connectedChargePoints[0],
+        ) || "var(--color--teal)"
+      );
+    },
+    chargePoint2ConnectedVehicleColor() {
+      return (
+        this.mqttStore.getChargePointConnectedVehicleColor(
+          this.connectedChargePoints[1],
+        ) || "var(--color--teal)"
+      );
+    },
+    chargePoint3ConnectedVehicleColor() {
+      return (
+        this.mqttStore.getChargePointConnectedVehicleColor(
+          this.connectedChargePoints[2],
+        ) || "var(--color--teal)"
       );
     },
     chargePoint1ConnectedVehicleChargeMode() {
@@ -242,12 +292,16 @@ export default {
       return this.chargePoint3Power.value < 0;
     },
     batteryModeIcon() {
-    const mode = this.mqttStore.getBatteryMode;
+      const mode = this.mqttStore.getBatteryMode;
       switch (mode) {
-        case "ev_mode": return "icons/owbVehicle.svg";
-        case "bat_mode": return "icons/owbBattery.svg";
-        case "min_soc_bat_mode": return "icons/owbBattery40.svg";
-        default: return "---";
+        case "ev_mode":
+          return VehicleIcon;
+        case "bat_mode":
+          return BatteryIcon;
+        case "min_soc_bat_mode":
+          return Battery40Icon;
+        default:
+          return "---";
       }
     },
     svgComponents() {
@@ -261,7 +315,11 @@ export default {
           id: "grid",
           class: {
             base: "grid",
-            valueLabel: this.gridFeedIn ? "fill-success" : (this.gridConsumption ? "fill-danger" : ""),
+            valueLabel: this.gridFeedIn
+              ? "fill-success"
+              : this.gridConsumption
+                ? "fill-danger"
+                : "",
             animated: this.gridConsumption,
             animatedReverse: this.gridFeedIn,
           },
@@ -270,7 +328,8 @@ export default {
             column: 0,
           },
           label: ["EVU", this.absoluteValue(this.gridPower).textValue],
-          icon: "icons/owbGrid.svg",
+          iconComponent: GridIcon,
+          iconColor: "var(--color--danger)",
         });
       }
       // add home component
@@ -292,7 +351,8 @@ export default {
             column: 2,
           },
           label: ["Haus", this.absoluteValue(this.homePower).textValue],
-          icon: "icons/owbHouse.svg",
+          iconComponent: HouseIcon,
+          iconColor: "var(--color--light)",
         });
       }
       // add pv sum component
@@ -304,7 +364,8 @@ export default {
           id: "pv",
           class: {
             base: "pv",
-            valueLabel: this.pvProduction || this.pvConsumption ? "fill-success" : "",
+            valueLabel:
+              this.pvProduction || this.pvConsumption ? "fill-success" : "",
             animated: this.pvProduction,
             animatedReverse: this.pvConsumption,
           },
@@ -313,7 +374,8 @@ export default {
             column: 0,
           },
           label: ["PV", this.absoluteValue(this.pvPower).textValue],
-          icon: "icons/owbPV.svg",
+          iconComponent: PvIcon,
+          iconColor: "var(--color--success)",
         });
       }
       // add battery sum component
@@ -335,7 +397,8 @@ export default {
           },
           label: ["Speicher", this.absoluteValue(this.batteryPower).textValue],
           soc: this.batterySoc,
-          icon: "icons/owbBattery.svg",
+          iconComponent: BatteryIcon,
+          iconColor: "var(--color--warning)",
           clicked: () => {
             this.selectBatteryMode();
           },
@@ -361,8 +424,12 @@ export default {
               row: 2,
               column: this.connectedChargePoints.length > 1 ? 0 : 1,
             },
-            label: [this.chargePoint1Name, this.absoluteValue(this.chargePoint1Power).textValue],
-            icon: "icons/owbChargePoint.svg",
+            label: [
+              this.chargePoint1Name,
+              this.absoluteValue(this.chargePoint1Power).textValue,
+            ],
+            iconComponent: ChargePointIcon,
+            iconColor: this.chargePoint1Color,
           });
           if (
             this.chargePoint1VehicleConnected &&
@@ -373,8 +440,7 @@ export default {
               id: "vehicle-1",
               class: {
                 base: "vehicle",
-                valueLabel:
-                  "fill-" + this.chargePoint1ConnectedVehicleChargeMode?.class,
+                valueLabel: "",
                 animated: this.chargePoint1Discharging,
                 animatedReverse: this.chargePoint1Charging,
               },
@@ -387,7 +453,8 @@ export default {
                 this.chargePoint1ConnectedVehicleChargeMode?.label || "---",
               ],
               soc: this.chargePoint1ConnectedVehicleSoc,
-              icon: "icons/owbVehicle.svg",
+              iconComponent: VehicleIcon,
+              iconColor: this.chargePoint1ConnectedVehicleColor,
               clicked: () => {
                 this.selectChargeMode(this.connectedChargePoints[0]);
               },
@@ -407,20 +474,24 @@ export default {
                 row: 2,
                 column: this.connectedChargePoints.length > 2 ? 1 : 2,
               },
-              label: [this.chargePoint2Name, this.absoluteValue(this.chargePoint2Power).textValue],
-              icon: "icons/owbChargePoint.svg",
+              label: [
+                this.chargePoint2Name,
+                this.absoluteValue(this.chargePoint2Power).textValue,
+              ],
+              iconComponent: ChargePointIcon,
+              iconColor: this.chargePoint2Color,
             });
             if (
               this.chargePoint2VehicleConnected &&
-              this.mqttStore.getThemeConfiguration.enable_dashboard_card_vehicles
+              this.mqttStore.getThemeConfiguration
+                .enable_dashboard_card_vehicles
             ) {
               // add vehicle 2 component
               components.push({
                 id: "vehicle-2",
                 class: {
                   base: "vehicle",
-                  valueLabel:
-                    "fill-" + this.chargePoint2ConnectedVehicleChargeMode?.class,
+                  valueLabel: "",
                   animated: this.chargePoint2Discharging,
                   animatedReverse: this.chargePoint2Charging,
                 },
@@ -433,7 +504,11 @@ export default {
                   this.chargePoint2ConnectedVehicleChargeMode?.label || "---",
                 ],
                 soc: this.chargePoint2ConnectedVehicleSoc,
-                icon: "icons/owbVehicle.svg",
+                iconComponent: VehicleIcon,
+                iconColor: this.chargePoint2ConnectedVehicleColor,
+                clicked: () => {
+                  this.selectChargeMode(this.connectedChargePoints[1]);
+                },
               });
             }
             if (this.connectedChargePoints.length > 2) {
@@ -450,20 +525,24 @@ export default {
                   row: 2,
                   column: 2,
                 },
-                label: [this.chargePoint3Name, this.absoluteValue(this.chargePoint3Power).textValue],
-                icon: "icons/owbChargePoint.svg",
+                label: [
+                  this.chargePoint3Name,
+                  this.absoluteValue(this.chargePoint3Power).textValue,
+                ],
+                iconComponent: ChargePointIcon,
+                iconColor: this.chargePoint3Color,
               });
               if (
                 this.chargePoint3VehicleConnected &&
-                this.mqttStore.getThemeConfiguration.enable_dashboard_card_vehicles
+                this.mqttStore.getThemeConfiguration
+                  .enable_dashboard_card_vehicles
               ) {
                 // add vehicle 3 component
                 components.push({
                   id: "vehicle-3",
                   class: {
                     base: "vehicle",
-                    valueLabel:
-                      "fill-" + this.chargePoint3ConnectedVehicleChargeMode?.class,
+                    valueLabel: "",
                     animated: this.chargePoint3Discharging,
                     animatedReverse: this.chargePoint3Charging,
                   },
@@ -476,7 +555,11 @@ export default {
                     this.chargePoint3ConnectedVehicleChargeMode?.label || "---",
                   ],
                   soc: this.chargePoint3ConnectedVehicleSoc,
-                  icon: "icons/owbVehicle.svg",
+                  iconComponent: VehicleIcon,
+                  iconColor: this.chargePoint3ConnectedVehicleColor,
+                  clicked: () => {
+                    this.selectChargeMode(this.connectedChargePoints[2]);
+                  },
                 });
               }
             }
@@ -495,14 +578,18 @@ export default {
               row: 2,
               column: 1,
             },
-            label: ["Ladepunkte", this.absoluteValue(this.chargePointSumPower).textValue],
-            icon: "icons/owbChargePoint.svg",
-          })
+            label: [
+              "Ladepunkte",
+              this.absoluteValue(this.chargePointSumPower).textValue,
+            ],
+            iconComponent: ChargePointIcon,
+            iconColor: "var(--color--primary)",
+          });
         }
       }
       // set number of rows if no vehicles displayed
       if (
-        !this.mqttStore.getThemeConfiguration.enable_dashboard_card_vehicles ||
+        !this.mqttStore.getThemeConfiguration?.enable_dashboard_card_vehicles ||
         this.connectedChargePoints.length === 0 ||
         this.connectedChargePoints.length > 3
       ) {
@@ -544,19 +631,27 @@ export default {
       let yMin =
         this.svgSize.yMin +
         this.svgSize.strokeWidth +
+        this.svgSize.padding +
         this.svgSize.circleRadius;
       let yMax =
         this.svgSize.yMax -
         this.svgSize.strokeWidth -
+        this.svgSize.padding -
         this.svgSize.circleRadius;
       let yRange = yMax - yMin;
       return row * (yRange / (this.svgSize.numRows - 1)) + yMin;
     },
     calcColumnX(column) {
       let xMin =
-        this.svgSize.xMin + this.svgSize.strokeWidth + this.svgRectWidth / 2;
+        this.svgSize.xMin +
+        this.svgSize.strokeWidth +
+        this.svgSize.padding +
+        this.svgRectWidth / 2;
       let xMax =
-        this.svgSize.xMax - this.svgSize.strokeWidth - this.svgRectWidth / 2;
+        this.svgSize.xMax -
+        this.svgSize.strokeWidth -
+        this.svgSize.padding -
+        this.svgRectWidth / 2;
       let xRange = xMax - xMin;
       return column * (xRange / (this.svgSize.numColumns - 1)) + xMin;
     },
@@ -564,15 +659,14 @@ export default {
       let columnX = this.calcColumnX(column);
       if (column < (this.svgSize.numColumns - 1) / 2) {
         return columnX + this.svgRectWidth / 2 - this.svgSize.circleRadius;
-      }
-      else if (column > (this.svgSize.numColumns - 1) / 2) {
+      } else if (column > (this.svgSize.numColumns - 1) / 2) {
         return columnX - this.svgRectWidth / 2 + this.svgSize.circleRadius;
       }
       return columnX;
     },
     calcSvgElementBoundingBox(elementId) {
       let element = document.getElementById(elementId);
-      if (element == undefined){
+      if (element == undefined) {
         return { x: 0, y: 0, width: 0, height: 0 };
       }
       let boundingBox = element.getBBox();
@@ -584,7 +678,7 @@ export default {
       };
     },
     beginAnimation(elementId) {
-      if (this.$refs[elementId] == undefined){
+      if (this.$refs[elementId] == undefined) {
         return;
       }
       this.$refs[elementId][0]?.beginElement();
@@ -609,12 +703,10 @@ export default {
     v-model="modalChargeModeSettingsVisible"
     :charge-point-id="modalChargePointId"
   />
-  <battery-mode-modal
-    v-model="modalBatteryModeSettingsVisible"
-  />
-  <dashboard-card color="primary">
+  <battery-mode-modal v-model="modalBatteryModeSettingsVisible" />
+  <dashboard-card color="dark">
     <template #headerLeft>
-      Übersicht - Energiefluss
+      Energiefluss
     </template>
     <i-container>
       <div class="svg-container">
@@ -624,10 +716,28 @@ export default {
           xmlns="http://www.w3.org/2000/svg"
           xmlns:svg="http://www.w3.org/2000/svg"
         >
+          <defs>
+            <!-- drop shadow for all elements -->
+            <filter
+              id="f-shadow"
+              width="200%"
+              height="200%"
+              x="-50%"
+              y="-50%"
+            >
+              <feDropShadow
+                dx="0"
+                dy="0"
+                stdDeviation="1"
+                flood-color="#00000099"
+              />
+            </filter>
+          </defs>
           <g
             id="layer1"
             style="display: inline"
           >
+            <!-- flow lines -->
             <path
               v-for="component in svgComponents"
               :key="component.id"
@@ -656,6 +766,7 @@ export default {
               :cx="calcColumnX(1)"
               :cy="calcRowY(1)"
               :r="svgSize.circleRadius / 3"
+              filter="url(#f-shadow)"
             />
 
             <!-- components -->
@@ -664,9 +775,13 @@ export default {
               :key="component.id"
               :class="component.class.base"
               :transform="`translate(${calcColumnX(component.position.column)}, ${calcRowY(component.position.row)})`"
-              @click="beginAnimation(`animate-label-${component.id}`); component.clicked ? component.clicked() : null"
+              @click="
+                beginAnimation(`animate-label-${component.id}`);
+                component.clicked ? component.clicked() : null;
+              "
             >
               <defs>
+                <!-- clipping component soc circle according -->
                 <clipPath
                   v-if="component.soc !== undefined"
                   :id="`clip-soc-${component.id}`"
@@ -685,6 +800,7 @@ export default {
                     "
                   />
                 </clipPath>
+                <!-- clipping component label text -->
                 <clipPath :id="`clip-label-${component.id}`">
                   <rect
                     :x="-svgRectWidth / 2"
@@ -696,6 +812,7 @@ export default {
                   />
                 </clipPath>
               </defs>
+              <!-- background rectangle -->
               <rect
                 :x="-svgRectWidth / 2"
                 :y="-svgSize.circleRadius"
@@ -703,12 +820,13 @@ export default {
                 :height="svgSize.circleRadius * 2"
                 :rx="svgSize.circleRadius"
                 :ry="svgSize.circleRadius"
+                filter="url(#f-shadow)"
               />
-              <text
-                :clip-path="`url(#clip-label-${component.id})`"
-              >
+              <text :clip-path="`url(#clip-label-${component.id})`">
+                <!-- label -->
                 <tspan
                   :id="`label-${component.id}`"
+                  class="label"
                   text-anchor="start"
                   :x="
                     -svgRectWidth / 2 +
@@ -718,15 +836,24 @@ export default {
                   :y="-svgSize.textSize / 2"
                 >
                   <animate
-                    v-if="calcSvgElementBoundingBox(`label-${component.id}`).width > svgRectWidth - 2 * svgSize.circleRadius - 2 * svgSize.strokeWidth"
+                    v-if="
+                      calcSvgElementBoundingBox(`label-${component.id}`).width >
+                        svgRectWidth -
+                        2 * svgSize.circleRadius -
+                        2 * svgSize.strokeWidth
+                    "
                     :ref="`animate-label-${component.id}`"
                     xmlns="http://www.w3.org/2000/svg"
                     attributeName="x"
                     dur="5s"
                     :values="
                       '0; ' +
-                        (- calcSvgElementBoundingBox(`label-${component.id}`).width
-                          + svgRectWidth - 2.5 * svgSize.circleRadius - 2 * svgSize.strokeWidth) + '; 0;'
+                        (-calcSvgElementBoundingBox(`label-${component.id}`)
+                          .width +
+                          svgRectWidth -
+                          2.5 * svgSize.circleRadius -
+                          2 * svgSize.strokeWidth) +
+                        '; 0;'
                     "
                     repeatCount="0"
                     begin="2s"
@@ -734,14 +861,13 @@ export default {
                   />
                   {{ component.label[0] }}
                 </tspan>
+                <!-- value -->
                 <tspan
                   :id="`value-${component.id}`"
+                  class="value"
                   :class="component.class.valueLabel"
                   text-anchor="end"
-                  :x="
-                    2 * svgSize.circleRadius +
-                      svgSize.strokeWidth
-                  "
+                  :x="2 * svgSize.circleRadius + svgSize.strokeWidth"
                   :y="svgSize.textSize"
                 >
                   {{ component.label[1] }}
@@ -750,27 +876,33 @@ export default {
               <g
                 :transform="`translate(${svgSize.circleRadius - svgRectWidth / 2}, 0)`"
               >
+                <!-- circle left side -->
                 <circle
                   cx="0"
                   cy="0"
-                  :r="svgSize.circleRadius"
-                  :class="{ soc: component.soc !== undefined }"
+                  :r="svgSize.circleRadius-1"
+                  filter="url(#f-shadow)"
                 />
+                <!-- soc fill -->
                 <circle
                   v-if="component.soc !== undefined"
+                  class="soc"
                   cx="0"
                   cy="0"
-                  :r="svgSize.circleRadius"
+                  :r="svgSize.circleRadius-1"
                   :clip-path="`url(#clip-soc-${component.id})`"
                 />
-                <image
-                  :href="component.icon"
+                <!-- icon -->
+                <component
+                  :is="component.iconComponent"
                   :x="-svgIconWidth / 2"
                   :y="-svgIconHeight / 2"
                   :height="svgIconHeight"
                   :width="svgIconWidth"
+                  :style="{ color: component.iconColor }"
                 />
               </g>
+              <!-- battery mode button -->
               <g v-if="component.id === 'battery'">
                 <rect
                   :x="svgSize.circleRadius * 1.2"
@@ -781,13 +913,15 @@ export default {
                   :ry="svgSize.circleRadius * 0.55"
                   class="battery-mode-button"
                   opacity="1"
+                  filter="url(#f-shadow)"
                 />
-                <image
-                  :href="batteryModeIcon"
+                <component
+                  :is="batteryModeIcon"
                   :x="svgSize.circleRadius * 1.45"
                   :y="-svgSize.circleRadius * 1.35"
                   :height="svgSize.circleRadius * 0.6"
                   :width="svgSize.circleRadius * 0.6"
+                  :style="{ color: 'var(--color--warning)' }"
                 />
               </g>
             </g>
@@ -857,16 +991,12 @@ path.animatedReverse.vehicle {
 }
 
 circle {
-  fill: black;
+  fill: #3b3b3d;
   fill-opacity: 1;
-  stroke: gray;
-  stroke-width: v-bind(svgStrokeWidth);
-  stroke-miterlimit: 2;
-  stroke-opacity: 1;
 }
 
 rect {
-  stroke-width: v-bind(svgStrokeWidth);
+  fill: #3b3b3d;
 }
 
 @keyframes dash {
@@ -885,7 +1015,7 @@ text {
   font-size: v-bind(svgFontSize);
   line-height: 1.25;
   font-family: Arial;
-  fill: white;
+  fill: #e8eaee;
   fill-opacity: 1;
 }
 
@@ -901,85 +1031,43 @@ text .fill-dark {
   fill: var(--color--dark);
 }
 
-.grid text {
-  fill: var(--color--danger);
-}
-
-.grid circle,
-.grid rect {
-  stroke: var(--color--danger);
-}
-
-.grid circle {
-  fill: var(--color--danger-90);
-}
-
-.pv text {
-  fill: var(--color--success);
-}
-
-.pv circle,
-.pv rect {
-  stroke: var(--color--success);
-}
-
-.pv circle {
-  fill: var(--color--success-90);
-}
-
-.battery text {
+.battery .value {
   fill: var(--color--warning);
 }
 
-.battery circle,
-.battery rect {
-  stroke: var(--color--warning);
+.battery circle.soc {
+  fill: var(--color--warning-80);
 }
 
-.battery circle:not(.soc) {
-  fill: var(--color--warning-90);
-}
-
-.battery-mode-button {
-  stroke: var(--color--warning) !important;
-}
-
-.home text {
+.home .value {
   fill: var(--color--light);
 }
 
-.home circle,
-.home rect {
-  stroke: var(--color--light);
+#value-charge-point-1 {
+  fill: v-bind(chargePoint1Color);
 }
 
-.home circle {
-  fill: var(--color--dark-70);
+#value-charge-point-2 {
+  fill: v-bind(chargePoint2Color);
 }
 
-.charge-point text {
-  fill: var(--color--primary);
+#value-charge-point-3 {
+  fill: v-bind(chargePoint3Color);
 }
 
-.charge-point circle,
-.charge-point rect {
-  stroke: var(--color--primary);
+#value-vehicle-1 {
+  fill: v-bind(chargePoint1ConnectedVehicleColor);
 }
 
-.charge-point circle {
-  fill: var(--color--primary-85);
+#value-vehicle-2 {
+  fill: v-bind(chargePoint2ConnectedVehicleColor);
 }
 
-.vehicle text {
-  fill: var(--color--teal);
+#value-vehicle-3 {
+  fill: v-bind(chargePoint3ConnectedVehicleColor);
 }
 
-.vehicle circle,
-.vehicle rect {
-  stroke: var(--color--teal);
-}
-
-.vehicle circle:not(.soc) {
-  fill: var(--color--teal-85);
+.vehicle circle.soc {
+  fill: var(--color--teal-70);
 }
 </style>

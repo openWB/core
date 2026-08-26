@@ -58,8 +58,9 @@ class FroniusBatSetup(ComponentSetup[FroniusBatConfiguration]):
                  name: str = "Fronius Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: FroniusBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or FroniusBatConfiguration())
+                 configuration: FroniusBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or FroniusBatConfiguration(), **kwargs)
 
 
 class FroniusS0CounterConfiguration:
@@ -72,8 +73,9 @@ class FroniusS0CounterSetup(ComponentSetup[FroniusS0CounterConfiguration]):
                  name: str = "Fronius S0 Zähler",
                  type: str = "counter_s0",
                  id: int = 0,
-                 configuration: FroniusS0CounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or FroniusS0CounterConfiguration())
+                 configuration: FroniusS0CounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or FroniusS0CounterConfiguration(), **kwargs)
 
 
 class FroniusSmCounterConfiguration:
@@ -87,8 +89,9 @@ class FroniusSmCounterSetup(ComponentSetup[FroniusSmCounterConfiguration]):
                  name: str = "Fronius SM Zähler",
                  type: str = "counter_sm",
                  id: int = 0,
-                 configuration: FroniusSmCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or FroniusSmCounterConfiguration())
+                 configuration: FroniusSmCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or FroniusSmCounterConfiguration(), **kwargs)
 
 
 class FroniusInverterConfiguration:
@@ -101,8 +104,9 @@ class FroniusInverterSetup(ComponentSetup[FroniusInverterConfiguration]):
                  name: str = "Fronius Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: FroniusInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or FroniusInverterConfiguration())
+                 configuration: FroniusInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or FroniusInverterConfiguration(), **kwargs)
 
 
 class FroniusSecondaryInverterConfiguration:
@@ -115,8 +119,9 @@ class FroniusSecondaryInverterSetup(ComponentSetup[FroniusSecondaryInverterConfi
                  name: str = "Sekundärer Wechselrichter",
                  type: str = "inverter_secondary",
                  id: int = 0,
-                 configuration: FroniusSecondaryInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or FroniusSecondaryInverterConfiguration())
+                 configuration: FroniusSecondaryInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or FroniusSecondaryInverterConfiguration(), **kwargs)
 
 
 class FroniusProductionMeterConfiguration:
@@ -130,5 +135,6 @@ class FroniusProductionMeterSetup(ComponentSetup[FroniusProductionMeterConfigura
                  name: str = "Fronius Erzeugerzähler",
                  type: str = "inverter_production_meter",
                  id: int = 0,
-                 configuration: FroniusProductionMeterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or FroniusProductionMeterConfiguration())
+                 configuration: FroniusProductionMeterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or FroniusProductionMeterConfiguration(), **kwargs)

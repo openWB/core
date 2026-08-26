@@ -17,7 +17,6 @@ def create_device(device_config: Orno):
     client = None
 
     def create_counter_component(component_config: OrnoCounterSetup):
-        nonlocal client
         return OrnoCounter(component_config, client=client)
 
     def update_components(components: Iterable[OrnoCounter]):

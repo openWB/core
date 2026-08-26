@@ -472,7 +472,6 @@ class ModuleDataReceivedContext:
         self.event_module_update_completed = event_module_update_completed
 
     def __enter__(self):
-        global data
         try:
             timeout = data.general_data.data.control_interval/2
         except KeyError:

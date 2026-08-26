@@ -143,6 +143,10 @@ class ChargeTemplate:
     TIME_CHARGING_NO_PLAN_ACTIVE = "Kein Zeitfenster für Zeitladen aktiv."
     TIME_CHARGING_SOC_REACHED = "Das Ladeziel für das Zeitladen wurde erreicht."
     TIME_CHARGING_AMOUNT_REACHED = "Die gewünschte Energiemenge für das Zeitladen wurde geladen."
+    TIME_CHARGING_CONFLICT_ACTIVE_BAT_CONTROL = ("Laden mit Zeitladen nach Speicher-SoC nicht möglich, da dies im "
+                                                 "Konflikt mit der aktiven Speichersteuerung steht.")
+    TIME_CHARGING_MIN_BAT_SOC_REACHED = ("Laden mit Zeitladen nach Speicher-SoC nicht möglich, da der SoC des"
+                                         " Speichers unter dem minimalen SoC liegt.")
 
     def time_charging(self,
                       soc: Optional[float],
@@ -151,34 +155,40 @@ class ChargeTemplate:
         """ prüft, ob ein Zeitfenster aktiv ist und setzt entsprechend den Ladestrom
         """
         message = None
-        sub_mode = "time_charging"
+        sub_mode = "stop"
+        current = 0
         id = None
         phases = None
         try:
             if self.data.time_charging.plans:
                 plan = timecheck.check_plans_timeframe(self.data.time_charging.plans)
                 if plan is not None:
-                    current = plan.current if charging_type == ChargingType.AC.value else plan.dc_current
-                    phases = plan.phases_to_use
                     id = plan.id
+                    phases = plan.phases_to_use
                     if plan.limit.selected == "soc" and soc is not None and soc >= plan.limit.soc:
                         # SoC-Limit erreicht
-                        current = 0
-                        sub_mode = "stop"
                         message = self.TIME_CHARGING_SOC_REACHED
                     elif plan.limit.selected == "amount" and used_amount_time_charging >= plan.limit.amount:
                         # Energie-Limit erreicht
-                        current = 0
-                        sub_mode = "stop"
                         message = self.TIME_CHARGING_AMOUNT_REACHED
+                    elif plan.min_bat_soc is not None and data.data.bat_all_data.data.config.configured:
+                        if data.data.bat_all_data.time_charging_min_bat_soc_allowed():
+                            if data.data.bat_all_data.data.get.soc < plan.min_bat_soc:
+                                message = self.TIME_CHARGING_MIN_BAT_SOC_REACHED
+                            else:
+                                log.debug(
+                                    "Zeitladen: minimaler Speicher-SoC überschritten, Laden mit Zeitladen möglich.")
+                                current = plan.current if charging_type == ChargingType.AC.value else plan.dc_current
+                                sub_mode = "time_charging"
+                        else:
+                            message = self.TIME_CHARGING_CONFLICT_ACTIVE_BAT_CONTROL
+                    else:
+                        current = plan.current if charging_type == ChargingType.AC.value else plan.dc_current
+                        sub_mode = "time_charging"
                 else:
                     message = self.TIME_CHARGING_NO_PLAN_ACTIVE
-                    current = 0
-                    sub_mode = "stop"
             else:
                 message = self.TIME_CHARGING_NO_PLAN_CONFIGURED
-                current = 0
-                sub_mode = "stop"
             return current, sub_mode, message, id, phases
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.data.id))

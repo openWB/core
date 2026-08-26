@@ -1,30 +1,21 @@
 from unittest.mock import Mock
 
-import pytest
 import requests_mock
 
 from dataclass_utils import dataclass_from_dict
-from helpermodules import compatibility
 from modules.conftest import SAMPLE_IP
 from modules.common.component_state import InverterState
 from modules.devices.fronius.fronius import inverter_production_meter
 from modules.devices.fronius.fronius.config import FroniusConfiguration, FroniusProductionMeterSetup
-from test_utils.mock_ramdisk import MockRamdisk
-
-
-@pytest.fixture
-def mock_ramdisk(monkeypatch):
-    monkeypatch.setattr(compatibility, "is_ramdisk_in_use", lambda: True)
-    return MockRamdisk(monkeypatch)
 
 
 def test_production_count(monkeypatch, requests_mock: requests_mock.mock):
     mock_inverter_value_store = Mock()
-    monkeypatch.setattr(inverter_production_meter, "get_inverter_value_store",
+    monkeypatch.setattr(inverter_production_meter, "get_component_value_store",
                         Mock(return_value=mock_inverter_value_store))
     requests_mock.get(f"http://{SAMPLE_IP}/solar_api/v1/GetMeterRealtimeData.cgi", json=json_ext_var2)
     mock_inverter_value_store = Mock()
-    monkeypatch.setattr(inverter_production_meter, "get_inverter_value_store",
+    monkeypatch.setattr(inverter_production_meter, "get_component_value_store",
                         Mock(return_value=mock_inverter_value_store))
 
     component_config = FroniusProductionMeterSetup()

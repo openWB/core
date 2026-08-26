@@ -38,8 +38,9 @@ class DeyeBatSetup(ComponentSetup[DeyeBatConfiguration]):
                  name: str = "Deye/Jinko Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: DeyeBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or DeyeBatConfiguration())
+                 configuration: DeyeBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or DeyeBatConfiguration(), **kwargs)
 
 
 @auto_str
@@ -54,8 +55,9 @@ class DeyeCounterSetup(ComponentSetup[DeyeCounterConfiguration]):
                  name: str = "Deye/Jinko Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: DeyeCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or DeyeCounterConfiguration())
+                 configuration: DeyeCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or DeyeCounterConfiguration(), **kwargs)
 
 
 @auto_str
@@ -70,5 +72,6 @@ class DeyeInverterSetup(ComponentSetup[DeyeInverterConfiguration]):
                  name: str = "Deye/Jinko Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: DeyeInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or DeyeInverterConfiguration())
+                 configuration: DeyeInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or DeyeInverterConfiguration(), **kwargs)

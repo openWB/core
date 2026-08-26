@@ -33,5 +33,6 @@ class SunwaysInverterSetup(ComponentSetup[SunwaysInverterConfiguration]):
                  name: str = "Sunways Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: SunwaysInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SunwaysInverterConfiguration())
+                 configuration: SunwaysInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SunwaysInverterConfiguration(), **kwargs)

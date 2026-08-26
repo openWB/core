@@ -9,7 +9,7 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount import SimCounter
-from modules.common.store import get_bat_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.kostal.kostal_plenticore.config import KostalPlenticoreBatSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
@@ -34,10 +34,10 @@ class KostalPlenticoreBat(AbstractBat):
         self.modbus_id: int = self.kwargs['modbus_id']
         self.endianess: Endian = self.kwargs['endianess']
         self.client: ModbusTcpClient_ = self.kwargs['client']
-        self.store = get_bat_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
         self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, self.component_config.type)
 
     def update(self) -> None:
         power = self.client.read_holding_registers(
@@ -89,8 +89,9 @@ class KostalPlenticoreBat(AbstractBat):
             self.client.write_register(1034, power_value, data_type=ModbusDataType.FLOAT_32,
                                        wordorder=self.endianess, unit=unit)
 
-    def power_limit_controllable(self) -> bool:
-        return True
+
+def power_limit_controllable(self) -> bool:
+    return True
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=KostalPlenticoreBatSetup)

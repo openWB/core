@@ -16,7 +16,6 @@ def create_device(device_config: VenusCE):
     client = None
 
     def create_bat_component(component_config: VenusCEBatSetup):
-        nonlocal client
         return VenusCEBat(component_config, device_id=device_config.id, client=client)
 
     def update_components(components: Iterable[VenusCEBat]):

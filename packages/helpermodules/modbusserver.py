@@ -55,13 +55,15 @@ def _form_int16(value: Union[int, float, bool], register: int):
 
 
 def _form_str(value: Optional[str], register: int):
-    if value is None or len(value) == 0:
-        data_store[register] = 0
-    else:
+    string_max_length = 20
+    # initialize all registers to 0 to avoid leftover data from previous, longer values
+    for i in range(0, string_max_length):
+        data_store[register + i] = 0
+    if not (value is None or len(value) == 0):
         bytes = value.encode("utf-8")
         length = len(bytes)
-        if length > 20:
-            raise ValueError("String darf max 20 Zeichen enthalten.")
+        if length > string_max_length:
+            raise ValueError(f"String darf max {string_max_length} Zeichen enthalten.")
         register_offset = 0
         for i in range(0, length, 2):
             try:
@@ -147,6 +149,8 @@ try:
                 71: lambda value: Pub().pub(f"{cp_topic}set_current", value / 100),
                 80: lambda value: Pub().pub(f"{cp_topic}phases_to_use", value),
                 81: lambda value: Pub().pub(f"{cp_topic}trigger_phase_switch", value),
+                97: lambda value: Pub().pub("openWB/set/internal_chargepoint/last_tag", None) if value == 1
+                else log.warning(f"Ungültiger Wert für last_tag: {value}"),
                 98: lambda value: Pub().pub(f"{cp_topic}cp_interruption_duration", value),
                 99: lambda _: Pub().pub("openWB/set/command/modbus_server/todo",
                                         {"command": "systemUpdate", "data": {}})

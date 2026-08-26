@@ -73,30 +73,20 @@ class AllChargepoints:
         try:
             fault_state = 0
             for cp in data.data.cp_data.values():
-                if cp.data.get.fault_state < 2:
-                    try:
-                        imported = imported + cp.data.get.imported
-                        exported = exported + cp.data.get.exported
-                    except Exception:
-                        log.exception(f"Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt {cp.num}")
-                    try:
-                        power = power + cp.data.get.power
-                    except Exception:
-                        log.exception(f"Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt {cp.num}")
-                else:
-                    if fault_state < cp.data.get.fault_state:
-                        fault_state = cp.data.get.fault_state
+                imported = imported + cp.data.get.imported
+                exported = exported + cp.data.get.exported
+                try:
+                    power = power + cp.data.get.power
+                except Exception:
+                    log.exception(f"Fehler in der allgemeinen Ladepunkt-Klasse für Ladepunkt {cp.num}")
+                fault_state = max(fault_state, cp.data.get.fault_state)
             # Ladepunkte setzen ihre Werte im Fehlerfall selbst zurück
             self.data.get.power = power
             self.data.get.imported = imported
             self.data.get.exported = exported
-            if fault_state == 0:
-                self.data.get.fault_state = 0
-                self.data.get.fault_str = NO_ERROR
-            else:
-                self.data.get.fault_state = fault_state
-                self.data.get.fault_str = ("Bitte die Statusmeldungen der Ladepunkte prüfen. Es konnte kein "
-                                           "aktueller Zählerstand ermittelt werden, da nicht alle Ladepunkte Werte "
-                                           "liefern.")
+            self.data.get.fault_state = fault_state
+            self.data.get.fault_str = NO_ERROR if fault_state == 0 else (
+                "Bitte die Statusmeldungen der Ladepunkte prüfen. "
+                "Es haben nicht alle Ladepunkte aktuelle Zählerstände geliefert.")
         except Exception:
             log.exception("Fehler in der allgemeinen Ladepunkt-Klasse")

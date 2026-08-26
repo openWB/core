@@ -7,11 +7,11 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, Endian, ModbusTcpClient_
 from modules.common.simcount import SimCounter
-from modules.common.store import get_counter_value_store
 from modules.devices.sungrow.sungrow_sh.config import SungrowSH, SungrowSHCounterSetup
 from modules.devices.sungrow.sungrow_sh.version import Version
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
+from modules.common.store import get_component_value_store
 
 
 class KwargsDict(TypedDict):
@@ -27,8 +27,8 @@ class SungrowSHCounter(AbstractCounter):
     def initialize(self) -> None:
         self.device_config: SungrowSH = self.kwargs['device_config']
         self.__tcp_client: ModbusTcpClient_ = self.kwargs['client']
-        self.sim_counter = SimCounter(self.device_config.id, self.component_config.id, prefix="evu")
-        self.store = get_counter_value_store(self.component_config.id)
+        self.sim_counter = SimCounter(self.device_config.id, self.component_config.id, self.component_config.type)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.fault_text = "Dieser Sungrow Zähler liefert von Werk aus (entgegen der Dokumentation) "\
             "keine Leistung der einzelnen Phasen. "\

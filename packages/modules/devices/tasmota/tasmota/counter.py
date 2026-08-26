@@ -6,7 +6,7 @@ from modules.devices.tasmota.tasmota.config import TasmotaCounterSetup
 from modules.common.abstract_device import AbstractCounter
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.store import get_counter_value_store
+from modules.common.store import get_component_value_store
 from modules.common.simcount import SimCounter
 from modules.common import req
 from modules.common.component_state import CounterState
@@ -30,9 +30,9 @@ class TasmotaCounter(AbstractCounter):
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
         self.__ip_address: str = self.kwargs['ip_address']
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, self.component_config.type)
         self.__phase: int = self.kwargs['phase']
-        self.store = get_counter_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
@@ -60,8 +60,12 @@ class TasmotaCounter(AbstractCounter):
             _, exported = self.sim_counter.sim_count(power)
         elif 'Itron' in response['StatusSNS']:
             power = float(response['StatusSNS']['Itron']['Power'])
-            imported = float(response['StatusSNS']['Itron']['E_in']*1000)
-            exported = float(response['StatusSNS']['Itron']['E_out']*1000)
+            if 'E_in' in response['StatusSNS']['Itron']:
+                imported = float(response['StatusSNS']['Itron']['E_in']*1000)
+                exported = float(response['StatusSNS']['Itron']['E_out']*1000)
+            else:
+                imported = float(response['StatusSNS']['Itron']['ImportActive']*1000)
+                exported = float(response['StatusSNS']['Itron']['ExportActive']*1000)
             imported, exported = self.peak_filter.check_values(power, imported, exported)
         elif 'MT681' in response['StatusSNS']:
             power = float(response['StatusSNS']['MT681']['Watt_summe'])
@@ -82,6 +86,11 @@ class TasmotaCounter(AbstractCounter):
                 powers = [float(response['StatusSNS']['eBZ']['36_7_0']),
                           float(response['StatusSNS']['eBZ']['56_7_0']),
                           float(response['StatusSNS']['eBZ']['76_7_0'])]
+        elif 'MT631' in response['StatusSNS']:
+            power = float(response['StatusSNS']['MT631']['Power'])
+            imported = float(response['StatusSNS']['MT631']['E_in']*1000)
+            exported = float(response['StatusSNS']['MT631']['E_out']*1000)
+            imported, exported = self.peak_filter.check_values(power, imported, exported)
         else:
             raise ValueError("Nicht unterstützter Tasmota Zählertyp. Bitte an den Support wenden.")
 

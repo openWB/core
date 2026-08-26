@@ -34,8 +34,6 @@ class KostalSemCounterSetup(ComponentSetup[KostalSemCounterConfiguration]):
                  name: str = "Kostal Smart Energy Meter oder TQ EM 410 Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: KostalSemCounterConfiguration = None) -> None:
-        self.name = name
-        self.type = type
-        self.id = id
-        super().__init__(name, type, id, configuration or KostalSemCounterConfiguration())
+                 configuration: KostalSemCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or KostalSemCounterConfiguration(), **kwargs)

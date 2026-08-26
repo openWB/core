@@ -34,8 +34,9 @@ class SonnenbatterieBatSetup(ComponentSetup[SonnenbatterieBatConfiguration]):
                  name: str = "SonnenBatterie Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: SonnenbatterieBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SonnenbatterieBatConfiguration())
+                 configuration: SonnenbatterieBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SonnenbatterieBatConfiguration(), **kwargs)
 
 
 class SonnenbatterieCounterConfiguration:
@@ -48,8 +49,9 @@ class SonnenbatterieCounterSetup(ComponentSetup[SonnenbatterieCounterConfigurati
                  name: str = "SonnenBatterie EVU-Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: SonnenbatterieCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SonnenbatterieCounterConfiguration())
+                 configuration: SonnenbatterieCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SonnenbatterieCounterConfiguration(), **kwargs)
 
 
 class SonnenbatterieConsumptionCounterConfiguration:
@@ -62,8 +64,9 @@ class SonnenbatterieConsumptionCounterSetup(ComponentSetup[SonnenbatterieConsump
                  name: str = "SonnenBatterie Verbrauchs-Zähler",
                  type: str = "counter_consumption",
                  id: int = 0,
-                 configuration: SonnenbatterieConsumptionCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SonnenbatterieConsumptionCounterConfiguration())
+                 configuration: SonnenbatterieConsumptionCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SonnenbatterieConsumptionCounterConfiguration(), **kwargs)
 
 
 class SonnenbatterieInverterConfiguration:
@@ -76,5 +79,6 @@ class SonnenbatterieInverterSetup(ComponentSetup[SonnenbatterieInverterConfigura
                  name: str = "SonnenBatterie Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: SonnenbatterieInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SonnenbatterieInverterConfiguration())
+                 configuration: SonnenbatterieInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SonnenbatterieInverterConfiguration(), **kwargs)

@@ -17,6 +17,7 @@ class WestfalenWindTariffConfiguration:
     password: Optional[str] = None
     contract_id: Optional[str] = None
     token: WestfalenWindToken = field(default_factory=WestfalenWindToken, compare=False)
+    update_hours: list[int] = field(default_factory=lambda: [0])  # letzter Preis für 23:45
 
 
 @dataclass

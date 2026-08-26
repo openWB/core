@@ -70,7 +70,7 @@
 	"anonymousGroup": "anonymous",
 	"roles": [
 		{
-			"rolename": "openwb-version:5",
+			"rolename": "openwb-version:8",
 			"textname": "openWB Versionsnummer",
 			"textdescription": "Diese Rolle ist ein Platzhalter für die openWB Versionsnummer und wird automatisch aktualisiert. Sie hat keine direkten Berechtigungen.",
 			"acls": []
@@ -80,6 +80,18 @@
 			"textname": "Basisdaten für das Display",
 			"textdescription": "Diese Rolle erlaubt das Auslesen der Display-Einstellungen und wird für das integrierte Display benötigt. Notwendig für die anonyme Gruppe!",
 			"acls": [
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/systemReboot",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/systemShutdown",
+					"priority": 0,
+					"allow": true
+				},
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/optional/rfid/active",
@@ -289,6 +301,12 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/vehicle/+/name",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/vehicle/+/color",
 					"priority": 0,
 					"allow": true
 				}
@@ -875,6 +893,12 @@
 				},
 				{
 					"acltype": "publishClientReceive",
+					"topic": "openWB/vehicle/+/color",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
 					"topic": "openWB/vehicle/+/name",
 					"priority": 0,
 					"allow": true
@@ -1431,6 +1455,12 @@
 				},
 				{
 					"acltype": "publishClientReceive",
+					"topic": "openWB/counter/get/hierarchy",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
 					"topic": "openWB/system/device/+/config",
 					"priority": 0,
 					"allow": true
@@ -1444,6 +1474,12 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/configurable/devices_components",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/chargepoint/+/config",
 					"priority": 0,
 					"allow": true
 				}
@@ -1764,6 +1800,12 @@
 				},
 				{
 					"acltype": "publishClientSend",
+					"topic": "openWB/set/vehicle/+/color",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
 					"topic": "openWB/set/vehicle/+/charge_template",
 					"priority": 0,
 					"allow": true
@@ -1837,6 +1879,12 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/vehicle/+/info",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/vehicle/+/color",
 					"priority": 0,
 					"allow": true
 				},
@@ -2482,6 +2530,12 @@
 				},
 				{
 					"acltype": "publishClientSend",
+					"topic": "openWB/set/system/pnp_ip",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
 					"topic": "openWB/set/system/secondary_auto_update",
 					"priority": 0,
 					"allow": true
@@ -2549,6 +2603,12 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/mac_address",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/pnp_ip",
 					"priority": 0,
 					"allow": true
 				},

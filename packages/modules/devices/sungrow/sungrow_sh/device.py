@@ -19,15 +19,12 @@ def create_device(device_config: SungrowSH):
     client = None
 
     def create_bat_component(component_config: SungrowSHBatSetup):
-        nonlocal client
         return SungrowSHBat(component_config, device_config=device_config, client=client)
 
     def create_counter_component(component_config: SungrowSHCounterSetup):
-        nonlocal client
         return SungrowSHCounter(component_config, device_config=device_config, client=client)
 
     def create_inverter_component(component_config: SungrowSHInverterSetup):
-        nonlocal client
         return SungrowSHInverter(component_config, device_config=device_config, client=client)
 
     def update_components(components: Iterable[Union[SungrowSHBat, SungrowSHCounter, SungrowSHInverter]]):
@@ -52,4 +49,7 @@ def create_device(device_config: SungrowSH):
     )
 
 
-device_descriptor = DeviceDescriptor(configuration_factory=SungrowSH)
+device_descriptor = DeviceDescriptor(
+    configuration_factory=SungrowSH,
+    compatibility_device_note="Ältere Modelle verfügen über einen nativen LAN-Port, neue Modelle benötigen den "
+    "Winet-S oder Winet-S2 Dongle.")

@@ -33,8 +33,9 @@ class StuderBatSetup(ComponentSetup[StuderBatConfiguration]):
                  name: str = "Studer Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: StuderBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or StuderBatConfiguration())
+                 configuration: StuderBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or StuderBatConfiguration(), **kwargs)
 
 
 class StuderInverterConfiguration:
@@ -48,5 +49,6 @@ class StuderInverterSetup(ComponentSetup[StuderInverterConfiguration]):
                  name: str = "Studer Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: StuderInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or StuderInverterConfiguration())
+                 configuration: StuderInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or StuderInverterConfiguration(), **kwargs)

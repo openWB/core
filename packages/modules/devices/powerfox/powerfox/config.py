@@ -33,8 +33,9 @@ class PowerfoxCounterSetup(ComponentSetup[PowerfoxCounterConfiguration]):
                  name: str = "Powerfox Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: PowerfoxCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or PowerfoxCounterConfiguration())
+                 configuration: PowerfoxCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or PowerfoxCounterConfiguration(), **kwargs)
 
 
 class PowerfoxInverterConfiguration:
@@ -47,5 +48,6 @@ class PowerfoxInverterSetup(ComponentSetup[PowerfoxInverterConfiguration]):
                  name: str = "Powerfox Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: PowerfoxInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or PowerfoxInverterConfiguration())
+                 configuration: PowerfoxInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or PowerfoxInverterConfiguration(), **kwargs)

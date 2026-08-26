@@ -33,8 +33,9 @@ class SolarmaxMsCounterSetup(ComponentSetup[SolarmaxMsCounterConfiguration]):
                  name: str = "Solarmax MAX.STORAGE / MAX.STORAGE Ultimate Zähler",
                  type: str = "counter_maxstorage",
                  id: Optional[int] = 0,
-                 configuration: SolarmaxMsCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SolarmaxMsCounterConfiguration())
+                 configuration: SolarmaxMsCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SolarmaxMsCounterConfiguration(), **kwargs)
 
 
 class SolarmaxBatConfiguration:
@@ -48,8 +49,9 @@ class SolarmaxBatSetup(ComponentSetup[SolarmaxBatConfiguration]):
                  name: str = "Solarmax MAX.STORAGE / MAX.STORAGE Ultimate Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: SolarmaxBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SolarmaxBatConfiguration())
+                 configuration: SolarmaxBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SolarmaxBatConfiguration(), **kwargs)
 
 
 class SolarmaxMsInverterConfiguration:
@@ -62,8 +64,9 @@ class SolarmaxMsInverterSetup(ComponentSetup[SolarmaxMsInverterConfiguration]):
                  name: str = "Solarmax MAX.STORAGE / MAX.STORAGE Ultimate Wechselrichter",
                  type: str = "inverter_maxstorage",
                  id: int = 0,
-                 configuration: SolarmaxMsInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SolarmaxMsInverterConfiguration())
+                 configuration: SolarmaxMsInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SolarmaxMsInverterConfiguration(), **kwargs)
 
 
 class SolarmaxInverterConfiguration:
@@ -76,5 +79,6 @@ class SolarmaxInverterSetup(ComponentSetup[SolarmaxInverterConfiguration]):
                  name: str = "Solarmax Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: SolarmaxInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SolarmaxInverterConfiguration())
+                 configuration: SolarmaxInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SolarmaxInverterConfiguration(), **kwargs)

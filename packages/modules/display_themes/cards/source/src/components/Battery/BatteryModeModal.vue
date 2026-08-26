@@ -25,7 +25,18 @@
               setBatteryMode(mode.value)
             "
           >
-            {{ mode.label }}
+            <i-row>
+              <i-column>
+                <font-awesome-icon
+                  fixed-width
+                  :icon="mode.symbol.icon"
+                  :rotation="mode.symbol.rotation"
+                />
+              </i-column>
+              <i-column>
+                {{ mode.label }}
+              </i-column>
+            </i-row>
           </i-button>
         </i-button-group>
       </i-form-group>
@@ -35,8 +46,21 @@
 
 <script>
 import { useMqttStore } from "@/stores/mqtt.js";
+
+/* fontawesome */
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import {
+  faBatteryFull as fasBatteryFull,
+  faBatteryHalf as fasBatteryHalf,
+  faCar as fasCar
+} from "@fortawesome/free-solid-svg-icons";
+/* add icons to the library */
+library.add(fasBatteryFull, fasBatteryHalf, fasCar);
+
 export default {
   name: "BatteryModeModal",
+  components: { FontAwesomeIcon },
   props: {
     modelValue: { required: true, type: Boolean },
   },
@@ -49,16 +73,25 @@ export default {
           value: 'ev_mode',
           label: 'Fahrzeuge',
           color: 'primary',
+          symbol: { icon: ['fas', 'fa-car'], rotation: 0 },
         },
         {
           value: 'bat_mode',
           label: 'Speicher',
           color: 'primary',
+          symbol: {
+            icon: ['fas', 'battery-full'],
+            rotation: 270,
+          },
         },
         {
           value: 'min_soc_bat_mode',
           label: 'Mindest-SoC',
           color: 'primary',
+          symbol: {
+            icon: ['fas', 'battery-half'],
+            rotation: 270,
+          },
         },
       ]
     };

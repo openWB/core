@@ -1,20 +1,7 @@
-from helpermodules import compatibility
 from modules.common.component_state import BatState
 from modules.common.store import ValueStore
 from modules.common.store._api import LoggingValueStore
 from modules.common.store._broker import pub_to_broker
-from modules.common.store.ramdisk import files
-
-
-class BatteryValueStoreRamdisk(ValueStore[BatState]):
-    def __init__(self, component_num: int) -> None:
-        self.num = component_num
-
-    def set(self, bat_state: BatState):
-        files.battery.power.write(bat_state.power)
-        files.battery.soc.write(bat_state.soc)
-        files.battery.energy_imported.write(bat_state.imported)
-        files.battery.energy_exported.write(bat_state.exported)
 
 
 class BatteryValueStoreBroker(ValueStore[BatState]):
@@ -47,6 +34,4 @@ class PurgeBatteryState:
 
 
 def get_bat_value_store(component_num: int) -> ValueStore[BatState]:
-    return PurgeBatteryState(LoggingValueStore(
-        (BatteryValueStoreRamdisk if compatibility.is_ramdisk_in_use() else BatteryValueStoreBroker)(component_num)
-    ))
+    return PurgeBatteryState(LoggingValueStore(BatteryValueStoreBroker(component_num)))
