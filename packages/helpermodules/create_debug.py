@@ -123,6 +123,7 @@ def config_and_state():
                 f"Feed_In_Yield: {chargemode_config.pv_charging.feed_in_yield}W\n"
                 f"Bat_Mode: {chargemode_config.pv_charging.bat_mode}\n"
                 f"Min_Bat_SoC: {chargemode_config.pv_charging.min_bat_soc}%\n"
+                f"Max_Bat_SoC: {chargemode_config.pv_charging.max_bat_soc}%\n"
                 f"Bat_Power_Reserve_Active: {chargemode_config.pv_charging.bat_power_reserve_active}\n"
                 f"Bat_Power_Reserve: {chargemode_config.pv_charging.bat_power_reserve}W\n"
                 f"Bat_Power_Discharge_Active: {chargemode_config.pv_charging.bat_power_discharge_active}\n"
@@ -425,7 +426,10 @@ def create_debug_log(input_data) -> Optional[dict]:
             write_to_file(df, lambda: "# section: form data #")
             write_to_file(df, lambda: header)
             write_to_file(df, lambda: f'# section: system #\n{get_common_data()}'
-                                      f'Kernel: {run_shell_command("uname -s -r -v -m -o")}\n'
+                                      f'Kernel: {run_shell_command("uname -s -r -v -m -o")}'
+                                      'Model: '
+                                      f'{run_shell_command("cat /proc/device-tree/model 2>/dev/null||echo unknown")}\n'
+                                      f'CID:\n{run_shell_command("mmc cid read /sys/block/mmcblk0/device")}\n'
                                       f'Uptime:{run_command(["uptime"])}{run_command(["free"])}\n')
             write_to_file(df, lambda: f'# section: hardware #\n{get_hardware_data()}')
             write_to_file(df, lambda: f'USB_Devices:\n{run_shell_command(["lsusb"])}\n')
@@ -479,7 +483,8 @@ def create_debug_log(input_data) -> Optional[dict]:
 class BrokerContent:
     def __init__(self) -> None:
         self.content = ""
-        self.count = 0
+        self.count_active = 0
+        self.count_inactive = 0
 
     def get_broker(self):
         BrokerClient("processBrokerBranch", self.__on_connect_broker, self.__get_content).start_finite_loop()
@@ -517,7 +522,8 @@ class BrokerContent:
     def get_cloud(self):
         BrokerClient("processBrokerBranch", self.__on_connect_bridges, self.__get_cloud).start_finite_loop()
         BrokerClient("processBrokerBranch", self.__on_connect_bridges, self.__get_partner).start_finite_loop()
-        self.content += f"Active_MQTT_Bridges: {self.count}\n"
+        self.content += f"Active_MQTT_Bridges: {self.count_active}\n"
+        self.content += f"Inactive_MQTT_Bridges: {self.count_inactive}\n"
         return self.content
 
     def __get_cloud(self, client, userdata, msg):
@@ -531,7 +537,10 @@ class BrokerContent:
                     else:
                         self.content += "Partnerzugang: Aus\n"
                 else:
-                    self.count += 1
+                    self.count_active += 1
+            else:
+                if not payload['remote'].get("is_openwb_cloud"):
+                    self.count_inactive += 1
 
     def __get_partner(self, client, userdata, msg):
         if "openWB/system/mqtt/valid_partner_ids" in msg.topic:

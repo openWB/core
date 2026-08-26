@@ -286,8 +286,9 @@ class Chargepoint(ChargepointRfidMixin):
                 if self.data.config.control_pilot_interruption_hw:
                     control_parameter = self.data.control_parameter
                     retry_interval = charging_ev.ev_template.data.control_pilot_interruption_retry_interval
-                    # Wird die Ladung gestartet?
-                    started_now = self.data.set.current_prev == 0 and self.data.set.current != 0
+                    # Wird die Ladung gestartet? (nicht nach Phasenumschaltung, da diese bereits CP umschaltet)
+                    started_now = (self.data.set.current_prev == 0 and self.data.set.current != 0 and
+                                   self.data.control_parameter.state != ChargepointState.WAIT_FOR_USING_PHASES)
                     # Ladung angefordert, Auto lädt aber trotz gültigem Signal seit geraumer Zeit nicht.
                     stuck = (
                         retry_interval > 0 and
