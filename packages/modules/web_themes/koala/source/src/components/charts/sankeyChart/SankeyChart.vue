@@ -73,8 +73,10 @@ const chartData = computed<ChartData<'sankey'>>(() => {
         data: edges.map((edge) => ({ from: edge.from, to: edge.to, flow: edge.flow })),
         labels,
         column: columns,
-        colorFrom: (ctx) => colorForNode(ctx.raw.from),
-        colorTo: (ctx) => colorForNode(ctx.raw.to),
+        colorFrom: (ctx) =>
+          colorForNode((ctx.raw as SankeyDataPoint | undefined)?.from ?? ''),
+        colorTo: (ctx) =>
+          colorForNode((ctx.raw as SankeyDataPoint | undefined)?.to ?? ''),
         colorMode: 'gradient',
         borderWidth: 0,
         color: textColor,
@@ -89,6 +91,7 @@ const chartData = computed<ChartData<'sankey'>>(() => {
 const chartOptions = computed<ChartOptions<'sankey'>>(() => ({
   responsive: true,
   maintainAspectRatio: false,
+  animation: false,
   plugins: {
     tooltip: {
       callbacks: {
