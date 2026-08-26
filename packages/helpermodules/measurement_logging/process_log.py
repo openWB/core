@@ -866,7 +866,7 @@ def generate_daily_totals_for_year(year: str):
     if current_year == year:
         # aktuelles Jahr
         current_month = timecheck.create_timestamp_YYYYMM()[4:6]
-        for month in range(1, int(current_month)):
+        for month in range(1, int(current_month) + 1):
             month_str = f"{current_year}{month:02d}"
             months_list.append(month_str)
     else:
