@@ -5,7 +5,7 @@ from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
 from modules.common.component_type import ComponentType
-from modules.common.configurable_consumer import ConfigurableConsumer
+from modules.common.configurable_consumer import ConfigurableConsumer, SetLimitData
 from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.generic.http.config import Http
 from modules.devices.generic.http.api import (create_post_function, create_request_function,
@@ -71,7 +71,7 @@ def create_consumer(config: Http):
         # Authorization?
         post_switch_off(session, params={"state": False})
 
-    def set_power_limit(power_limit: int):
+    def set_power_limit(power_limit: float, data: SetLimitData) -> None:
         # Authorization?
         post_set_power_limit(session, params={"power_limit": power_limit})
 
