@@ -24,8 +24,8 @@ def create_consumer(config: Ratiotherm):
 
     def set_power_limit(power_limit: float, data: SetLimitData) -> None:
         # Absturz bei negativen Zahlen
-        client.write_register(100, max(power_limit, 0), ModbusDataType.INT_16, unit=config.configuration.modbus_id)
-
+        raw_value = int(round(max(power_limit, 0)))
+        client.write_register(100, raw_value, ModbusDataType.INT_16, unit=config.configuration.modbus_id)
     return ConfigurableConsumer(consumer_config=config,
                                 initializer=initializer,
                                 error_handler=error_handler,
