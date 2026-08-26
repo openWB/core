@@ -181,6 +181,8 @@ class Process:
             consumer.data.set.current = consumer.data.set.current_prev
         else:
             consumer.data.set.current = round(consumer.data.set.current, 2)
+        if consumer.data.set.current != consumer.data.set.current_prev:
+            consumer.data.set.timestamp_last_current_set = timecheck.create_timestamp()
         if consumer.data.set.current != 0 and control_parameter.state not in CHARGING_STATES:
             control_parameter.state = ChargepointState.CHARGING_ALLOWED
         if control_parameter.state != ChargepointState.NO_CHARGING_ALLOWED or consumer.data.set.current != 0:
@@ -191,8 +193,6 @@ class Process:
                  f"state {ChargepointState(control_parameter.state).name}")
 
     def _start_consumer(self, consumer: Consumer) -> Thread:
-        if consumer.data.set.current != consumer.data.set.current_prev:
-            consumer.data.set.timestamp_last_current_set = timecheck.create_timestamp()
         if consumer.data.usage.type in (ConsumerUsage.CONTINUOUS,
                                         ConsumerUsage.SUSPENDABLE_ONOFF):
             return Thread(
