@@ -40,6 +40,16 @@ export function useSankeyData() {
     }),
   );
 
+  // Hybrid inverter/battery pairs: how much of each hybrid battery's charge is
+  // covered by its own inverter's PV on the DC bus. pvPowerIndividual reports
+  // production as negative; batteryPower reports charging as positive.
+  const hybrid = computed(() =>
+    mqttStore.hybridInverters.map(({ inverterId, batteryId }) => ({
+      inverterPv: Math.max(0, -num(mqttStore.pvPowerIndividual(inverterId, 'value'))),
+      batteryCharge: Math.max(0, num(mqttStore.batteryPower(batteryId, 'value'))),
+    })),
+  );
+
   const allocation = computed<AllocationResult>(() =>
     allocate({
       grid: num(mqttStore.counterPower('value')),
@@ -49,6 +59,7 @@ export function useSankeyData() {
         : 0,
       chargePoints: chargePoints.value,
       consumers: consumers.value,
+      hybrid: hybrid.value,
     }),
   );
 

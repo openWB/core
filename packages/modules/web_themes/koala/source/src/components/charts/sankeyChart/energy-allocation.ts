@@ -18,6 +18,17 @@ export interface EnergyFlowInput {
   battery: number;
   chargePoints: DynamicNodeInput[];
   consumers: DynamicNodeInput[];
+  /**
+   * Hybrid inverter/battery pairs. A hybrid battery charges from its inverter's
+   * PV directly on the shared DC bus, before the remaining PV mixes with grid
+   * on the AC side. Absent/empty means no hybrid handling (standard behavior).
+   */
+  hybrid?: HybridPair[];
+}
+
+export interface HybridPair {
+  inverterPv: number;
+  batteryCharge: number;
 }
 
 export interface DynamicNodeInput {
@@ -136,19 +147,64 @@ export function groupNodes(
 }
 
 /**
- * Compute the Sankey edges from the raw component totals using the uniform
- * proportional rule. Returns edges plus the classified nodes and totals.
+ * Compute the Sankey edges from the raw component totals.
+ *
+ * Rule: uniform proportional (every sink gets the same source mix), with one
+ * pre-step for hybrid systems. On a hybrid inverter the battery charges from
+ * that inverter's PV directly on the DC bus, upstream of where PV and grid mix
+ * on the AC side. So we first carve a fixed PV -> battery edge for that DC
+ * charge, then run the proportional rule on whatever source/sink power remains.
+ * With no hybrid pairs this reduces to plain uniform proportional.
  */
 export function allocate(input: EnergyFlowInput): AllocationResult {
   const { sources, sinks } = classifyNodes(input);
   const totalSources = sumPower(sources);
   const totalSinks = sumPower(sinks);
 
+  // Hybrid carve-out: PV routed to hybrid batteries on the DC bus.
+  const pvNode = sources.find((node) => node.id === NODE_PV);
+  const batteryNode = sinks.find((node) => node.id === NODE_BATTERY);
+  let pvDirectToBattery = 0;
+  if (pvNode !== undefined && batteryNode !== undefined) {
+    for (const pair of input.hybrid ?? []) {
+      pvDirectToBattery += Math.min(pair.inverterPv, pair.batteryCharge);
+    }
+    // Never route more than the PV we actually have or the battery took.
+    pvDirectToBattery = Math.max(
+      0,
+      Math.min(pvDirectToBattery, pvNode.power, batteryNode.power),
+    );
+  }
+
+  // Amounts fed into the proportional pass, with the DC charge removed. Node
+  // totals are reconstituted from (fixed edge + proportional edges), so node
+  // sizes in the diagram stay correct.
+  const propSources = sources.map((node) =>
+    node.id === NODE_PV
+      ? { ...node, power: node.power - pvDirectToBattery }
+      : node,
+  );
+  const propSinks = sinks.map((node) =>
+    node.id === NODE_BATTERY
+      ? { ...node, power: node.power - pvDirectToBattery }
+      : node,
+  );
+  const remainingSourceTotal = sumPower(propSources);
+
   const edges: FlowEdge[] = [];
-  if (totalSources > 0 && totalSinks > 0) {
-    for (const source of sources) {
-      const share = source.power / totalSources;
-      for (const sink of sinks) {
+  if (pvDirectToBattery >= MIN_EDGE_WATTS) {
+    edges.push({ from: NODE_PV, to: NODE_BATTERY, flow: pvDirectToBattery });
+  }
+  if (remainingSourceTotal > 0) {
+    for (const source of propSources) {
+      if (source.power <= 0) {
+        continue;
+      }
+      const share = source.power / remainingSourceTotal;
+      for (const sink of propSinks) {
+        if (sink.power <= 0) {
+          continue;
+        }
         const flow = sink.power * share;
         if (flow >= MIN_EDGE_WATTS) {
           edges.push({ from: source.id, to: sink.id, flow });
