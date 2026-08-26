@@ -15,14 +15,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import { useQuasar } from 'quasar';
 import { createTypedChart } from 'vue-chartjs';
 import { Tooltip, LinearScale } from 'chart.js';
 import { SankeyController, Flow } from 'chartjs-chart-sankey';
-import type { ChartData, ChartOptions, Plugin, TooltipItem } from 'chart.js';
+import type { ChartData, ChartOptions, TooltipItem } from 'chart.js';
 import type { SankeyDataPoint } from 'chartjs-chart-sankey';
 import { useSankeyData } from './useSankeyData';
+import { useSankeyHover } from './useSankeyHover';
 
 // A typed sankey component (like vue-chartjs's built-in Line/Bar) so the
 // `data`/`options` props are fixed to 'sankey' instead of the whole ChartType
@@ -46,78 +47,8 @@ const { allocation, colorForNode, labelColor } = useSankeyData();
 
 const hasFlows = computed(() => allocation.value.edges.length > 0);
 
-// Index of the flow currently under the cursor (null = none). Used to fade all
-// other flows so the hovered one stands out, like other Sankey products.
-const hoveredIndex = ref<number | null>(null);
-
-// Non-hovered flows are pushed toward grey so the hovered one keeps its color.
-// The plugin re-applies its own alpha to flow gradients, so fading by alpha
-// alone changes only the nodes, not the flows — we must change the RGB.
-const FADE_TOWARD = 150; // mid grey (neutral in light and dark)
-const FADE_AMOUNT = 0.65; // 0 = untouched, 1 = fully grey
-
-// Parse a hex or rgb/rgba colour string to its RGB channels.
-const toRgb = (color: string): { r: number; g: number; b: number } | null => {
-  if (color.startsWith('#')) {
-    let hex = color.slice(1);
-    if (hex.length === 3) {
-      hex = hex
-        .split('')
-        .map((char) => char + char)
-        .join('');
-    }
-    const value = parseInt(hex, 16);
-    return { r: (value >> 16) & 255, g: (value >> 8) & 255, b: value & 255 };
-  }
-  const match = color.match(/rgba?\(([^)]+)\)/);
-  if (match) {
-    const [r, g, b] = match[1].split(',').map((part) => parseInt(part.trim(), 10));
-    return { r, g, b };
-  }
-  return null;
-};
-
-// Faded version of a colour for non-hovered flows: mixed toward grey.
-const fade = (color: string): string => {
-  const rgb = toRgb(color);
-  if (rgb === null) {
-    return color;
-  }
-  const mix = (channel: number) =>
-    Math.round(channel * (1 - FADE_AMOUNT) + FADE_TOWARD * FADE_AMOUNT);
-  return `rgb(${mix(rgb.r)}, ${mix(rgb.g)}, ${mix(rgb.b)})`;
-};
-
-// The color for one end of a flow, faded when another flow is hovered.
-// `hovered` is passed in (not read from the ref) so that chartData, which
-// captures it, re-runs and yields a fresh dataset whenever the hover changes —
-// that is what forces Chart.js to re-resolve the flow colors.
-const flowColor = (
-  nodeId: string,
-  dataIndex: number,
-  hovered: number | null,
-): string => {
-  const base = colorForNode(nodeId);
-  return hovered !== null && dataIndex !== hovered ? fade(base) : base;
-};
-
-// Hover is tracked from a plugin rather than the `onHover` option
-const hoverFocus: Plugin<'sankey'> = {
-  id: 'sankeyHoverFocus',
-  afterEvent(chart, args) {
-    // Ignore the post-update replay: it re-reports a stale in-area position and
-    // would resurrect a highlight we just cleared.
-    if (args.replay) {
-      return;
-    }
-    const left = !args.inChartArea || args.event.type === 'mouseout';
-    hoveredIndex.value = left
-      ? null
-      : (chart.getActiveElements()[0]?.index ?? null);
-  },
-};
-
-const chartPlugins = [hoverFocus];
+const { hoverPlugin, focusColors } = useSankeyHover(colorForNode);
+const chartPlugins = [hoverPlugin];
 
 const formatWatts = (watts: number): string => {
   if (Math.abs(watts) >= 1000) {
@@ -134,10 +65,9 @@ const chartData = computed<ChartData<'sankey'>>(() => {
   // the CSS color variables.
   void $q.dark.isActive;
 
-  // Capturing the hovered flow here makes this recompute (and emit a fresh
-  // dataset) on every hover change, which is what forces Chart.js to re-resolve
-  // the flow colors
-  const hovered = hoveredIndex.value;
+  // Reading the hover state here (rather than in the color callbacks, which
+  // Chart.js calls later) is what makes this recompute on every hover change.
+  const flowColor = focusColors();
 
   const { edges, nodes, sources } = allocation.value;
   const labels: Record<string, string> = {};
@@ -160,13 +90,11 @@ const chartData = computed<ChartData<'sankey'>>(() => {
           flowColor(
             (ctx.raw as SankeyDataPoint | undefined)?.from ?? '',
             ctx.dataIndex,
-            hovered,
           ),
         colorTo: (ctx) =>
           flowColor(
             (ctx.raw as SankeyDataPoint | undefined)?.to ?? '',
             ctx.dataIndex,
-            hovered,
           ),
         colorMode: 'gradient',
         borderWidth: 0,
