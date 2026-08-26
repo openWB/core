@@ -45,7 +45,8 @@ class HierarchyMixin:
         return self.connected_loads
 
     def _get_all_loads_connected_to_counter(self: HierarchyProtocol, child: Dict) -> None:
-        """ Rekursive Funktion, die alle Ladepunkte und Verbraucher ermittelt, die an den angegebenen Zähler angeschlossen sind.
+        """ Rekursive Funktion, die alle Ladepunkte und Verbraucher ermittelt, die an den angegebenen Zähler
+        angeschlossen sind.
         """
         # Alle Objekte der Ebene durchgehen
         for child in child["children"]:
@@ -91,8 +92,8 @@ class HierarchyMixin:
             return {}
 
     def _get_all_counter_in_branch(self: HierarchyProtocol, child: Dict, id_to_find: int) -> bool:
-        """ Rekursive Funktion, die alle Zweige durchgeht, bis der entsprechende Ladepunkt/Verbraucher gefunden wird und dann alle
-        Zähler in diesem Pfad der Liste anhängt.
+        """ Rekursive Funktion, die alle Zweige durchgeht, bis der entsprechende Ladepunkt/Verbraucher gefunden wird
+        und dann alle Zähler in diesem Pfad der Liste anhängt.
         """
         parent_id = child["id"]
         for child in child["children"]:
