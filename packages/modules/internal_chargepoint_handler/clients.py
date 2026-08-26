@@ -1,5 +1,4 @@
 import logging
-from pathlib import Path
 from typing import List, NamedTuple, Optional, Tuple, Union
 from helpermodules.logger import ModifyLoglevelContext
 from modules.chargepoints.internal_openwb.config import InternalChargepointMode
@@ -11,13 +10,13 @@ from modules.common import mpm3pm, sdm
 from modules.common import evse
 from modules.common import b23
 
+from modules.common.serial_modbus_devices import get_serial_modbus_devices, BUS_SOURCES
+
 log = logging.getLogger(__name__)
 
-
-BUS_SOURCES = ("/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyACM0", "/dev/serial0")
-
-METERS = Union[mpm3pm.Mpm3pm, sdm.Sdm630_72, b23.B23]
-meter_config = NamedTuple("meter_config", [('type', METERS), ('modbus_id', int)])
+MeterClient = Union[mpm3pm.Mpm3pm, sdm.Sdm630_72, b23.B23]
+MeterType = Union[type[mpm3pm.Mpm3pm], type[sdm.Sdm630_72], type[b23.B23]]
+meter_config = NamedTuple("meter_config", [('type', MeterType), ('modbus_id', int)])
 CP0_METERS = [meter_config(mpm3pm.Mpm3pm, modbus_id=5),
               meter_config(sdm.Sdm630_72, modbus_id=105),
               meter_config(b23.B23, modbus_id=201)]
@@ -64,18 +63,24 @@ class ClientHandler(SeriesHardwareCheckMixin):
     @staticmethod
     def find_meter_client(meters: List[meter_config],
                           client: Union[ModbusSerialClient_, ModbusTcpClient_],
-                          fault_state: FaultState) -> METERS:
+                          fault_state: FaultState) -> Optional[MeterClient]:
         for meter_type, modbus_id in meters:
             try:
                 with client:
-                    meter_client = meter_type(modbus_id, client, fault_state)
-                    if meter_client.get_voltages()[0] > 200:
+                    meter_client: MeterClient = meter_type(modbus_id, client, fault_state)
+                    voltages = meter_client.get_voltages()
+                    if voltages[0] > 200:
                         with ModifyLoglevelContext(log, logging.DEBUG):
                             log.debug("Verbauter Zähler: "+str(meter_type)+" mit Modbus-ID: "+str(modbus_id))
                         return meter_client
+                    else:
+                        with ModifyLoglevelContext(log, logging.DEBUG):
+                            log.debug(f"Zähler {meter_type} mit Modbus-ID:{modbus_id} antwortet, "
+                                      f"aber Spannung ist nicht plausibel: {voltages}.")
             except Exception:
-                log.debug(client)
-                log.debug(f"Zähler {meter_type} mit Modbus-ID:{modbus_id} antwortet nicht.")
+                with ModifyLoglevelContext(log, logging.DEBUG):
+                    log.debug(client)
+                    log.debug(f"Zähler {meter_type} mit Modbus-ID:{modbus_id} antwortet nicht.")
         else:
             return None
 
@@ -108,11 +113,8 @@ def get_modbus_client(mode: InternalChargepointMode,
                       created_client_handler: Optional[ClientHandler] = None,
                       fault_state: Optional[FaultState] = None) -> Tuple[Union[ModbusSerialClient_, ModbusTcpClient_],
                                                                          List[int]]:
-    tty_devices = list(Path("/dev/serial/by-path").glob("*"))
-    log.debug("tty_devices"+str(tty_devices))
-    resolved_devices = [str(file.resolve()) for file in tty_devices]
-    log.debug("resolved_devices"+str(resolved_devices))
-    counter = len(resolved_devices)
+    resolved_devices, counter = get_serial_modbus_devices()
+
     if counter == 0:
         # Wenn kein USB-Gerät gefunden wird, wird der Modbus-Anschluss der AddOn-Platine genutzt (/dev/serial0)
         serial_client = ModbusSerialClient_("/dev/serial0")

@@ -6,9 +6,9 @@ import SparkLine from "@/components/SparkLine.vue";
 /* fontawesome */
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faCarBattery as fasCarBattery } from "@fortawesome/free-solid-svg-icons";
+import { faBatteryFull as fasBatteryFull } from "@fortawesome/free-solid-svg-icons";
 /* add icons to the library */
-library.add(fasCarBattery);
+library.add(fasBatteryFull);
 
 export default {
   name: "BatteryCard",
@@ -30,7 +30,8 @@ export default {
     <template #headerLeft>
       <font-awesome-icon
         fixed-width
-        :icon="['fas', 'fa-car-battery']"
+        :icon="['fas', 'battery-full']"
+        :rotation="270"
       />
       Speicher
     </template>

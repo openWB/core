@@ -14,7 +14,7 @@ class TeslaSocToken:
 
 
 class TeslaSocConfiguration:
-    def __init__(self, tesla_ev_num: int = 0, token: TeslaSocToken = None) -> None:
+    def __init__(self, tesla_ev_num: int = 0, token: Optional[TeslaSocToken] = None) -> None:
         self.tesla_ev_num = tesla_ev_num
         self.token = token or TeslaSocToken()
 
@@ -24,7 +24,7 @@ class TeslaSoc:
                  name: str = "Tesla",
                  type: str = "tesla",
                  official: bool = False,
-                 configuration: TeslaSocConfiguration = None) -> None:
+                 configuration: Optional[TeslaSocConfiguration] = None) -> None:
         self.name = name
         self.type = type
         self.official = official

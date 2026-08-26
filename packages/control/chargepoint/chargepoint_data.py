@@ -7,7 +7,7 @@ from control.chargepoint.control_parameter import ControlParameter, control_para
 from control.ev.charge_template import ChargeTemplate
 from control.ev.ev import Ev
 from dataclass_utils.factories import currents_list_factory, empty_dict_factory, voltages_list_factory
-from helpermodules.constants import NO_ERROR
+from helpermodules.constants import DEFAULT_COLORS, NO_ERROR
 from modules.chargepoints.openwb_pro.chargepoint_module import EvseSignaling
 from modules.common.abstract_chargepoint import AbstractChargepoint
 
@@ -113,9 +113,10 @@ class Get:
     current_branch: Optional[str] = None
     current_commit: Optional[str] = None
     currents: List[float] = field(default_factory=currents_list_factory)
-    daily_imported: float = 0
-    daily_exported: float = 0
-    error_timestamp: int = 0
+    daily_imported: float = field(default=0, metadata={"topic": "get/daily_imported"})
+    daily_exported: float = field(default=0, metadata={"topic": "get/daily_exported"})
+    error_code: Optional[int] = None
+    error_timestamp: Optional[int] = None
     evse_current: Optional[float] = None
     # kann auch zur Laufzeit geändert werden
     evse_signaling: Optional[EvseSignaling] = None
@@ -177,8 +178,9 @@ class Set:
 @dataclass
 class Config:
     configuration: Dict = field(default_factory=empty_dict_factory)
-    ev: int = 0
+    _ev: int = 0
     name: str = "neuer Ladepunkt"
+    color: str = DEFAULT_COLORS.CHARGEPOINT.value
     type: Optional[str] = None
     template: int = 0
     connected_phases: int = 3

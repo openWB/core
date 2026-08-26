@@ -10,6 +10,7 @@ class JsonSocConfiguration:
             soc_pattern: Optional[str] = None,
             range_pattern: Optional[str] = None,
             timestamp_pattern: Optional[str] = None,
+            odometer_pattern: Optional[str] = None,
             timeout: Optional[int] = None,
             calculate_soc: bool = False
             ):
@@ -17,6 +18,7 @@ class JsonSocConfiguration:
         self.soc_pattern = soc_pattern
         self.range_pattern = range_pattern
         self.timestamp_pattern = timestamp_pattern
+        self.odometer_pattern = odometer_pattern
         self.timeout = timeout
         self.calculate_soc = calculate_soc
 

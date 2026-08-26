@@ -8,6 +8,7 @@ from control import data
 from control.chargelog import chargelog
 from control.chargelog.chargelog import calc_energy_costs
 from control.chargepoint.chargepoint import Chargepoint
+from control.general import Prices
 
 
 @pytest.fixture()
@@ -44,7 +45,8 @@ def mock_daily_log(monkeypatch):
                               'pv': {'all': {'exported': 2500}, 'pv1': {'exported': 2500}},
                               'sh': {},
                               'timestamp': 1652683200,
-                              'prices': {'grid': 0.0003, 'pv': 0.00015, 'bat': 0.0002, 'cp': 0}}]}
+                              'prices': {'grid': 0.0003, 'pv': 0.00015, 'bat': 0.0002, 'cp': 0}}],
+                 "names": {"bat2": "Speicher2", "cp4": "LP 4", "pv1": "PV 1", "ev0": "EV0", "counter0": "Zähler0"}}
     mock_todays_daily_log = Mock(return_value=daily_log)
     monkeypatch.setattr(chargelog, "get_todays_daily_log", mock_todays_daily_log)
     return daily_log
@@ -62,7 +64,7 @@ def test_calc_charge_cost_reference_middle(mock_data, monkeypatch):
         calc_energy_costs(cp)
 
     assert cp.data.set.log.charged_energy_by_source == {
-        'grid': 1243, 'pv': 386, 'bat': 671, 'cp': 0.0}
+        'grid': 1242.8, 'pv': 385.8, 'bat': 671.4, 'cp': 0.0}
     assert round(cp.data.set.log.costs, 5) == 0.5
 
 
@@ -77,8 +79,7 @@ def test_calc_charge_cost_reference_start(mock_data, monkeypatch):
     with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
         calc_energy_costs(cp)
 
-    assert cp.data.set.log.charged_energy_by_source == {
-        'bat': 28.549999999999997, 'cp': 0.0, 'grid': 57.15, 'pv': 14.299999999999999}
+    assert cp.data.set.log.charged_energy_by_source == {'bat': 28.57, 'cp': 0.0, 'grid': 57.14, 'pv': 14.29}
     assert round(cp.data.set.log.costs, 5) == 0.025
 
 
@@ -93,8 +94,24 @@ def test_calc_charge_cost_reference_end(mock_data, monkeypatch):
     with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
         calc_energy_costs(cp, True)
 
-    assert cp.data.set.log.charged_energy_by_source == {'bat': 699.55, 'cp': 0.0, 'grid': 1300.15, 'pv': 400.3}
+    assert cp.data.set.log.charged_energy_by_source == {'bat': 699.57, 'cp': 0.0, 'grid': 1300.14, 'pv': 400.29}
     assert round(cp.data.set.log.costs, 5) == 0.025
+
+
+def test_calc_charge_cost_reference_end_unique_price(mock_data, monkeypatch):
+    cp = Chargepoint(4, None)
+    cp.data.set.log.imported_since_plugged = cp.data.set.log.imported_since_mode_switch = 3950
+    cp.data.set.log.timestamp_mode_switch = 1652682600  # 8:30
+    cp.data.get.imported = 4100
+    cp.data.set.log.charged_energy_by_source = {'grid': 1243, 'pv': 386, 'bat': 671, 'cp': 0.0}
+    daily_log = mock_daily_log(monkeypatch)
+    data.data.general_data.data.prices = Prices(bat=0.0002, cp=0, grid=0.0002, pv=0.0002)
+
+    with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
+        calc_energy_costs(cp, True)
+
+    assert cp.data.set.log.charged_energy_by_source == {'bat': 699.57, 'cp': 0.0, 'grid': 1300.14, 'pv': 400.29}
+    assert round(cp.data.set.log.costs, 5) == 0.79
 
 
 def test_calc_charge_cost_reference_middle_day_change(mock_data, monkeypatch):
@@ -116,7 +133,9 @@ def test_calc_charge_cost_reference_middle_day_change(mock_data, monkeypatch):
                                         'pv': {'all': {'exported': 2000}, 'pv1': {'exported': 2000}},
                                         'sh': {},
                                         'timestamp': 1652682900,
-                                        'prices': {'grid': 0.0003, 'pv': 0.00015, 'bat': 0.0002, 'cp': 0}}]}
+                                        'prices': {'grid': 0.0003, 'pv': 0.00015, 'bat': 0.0002, 'cp': 0}}],
+                           "names": {
+                               "bat2": "Speicher2", "cp4": "LP 4", "pv1": "PV 1", "ev0": "EV0", "counter0": "Zähler0"}}
     mock_yesterdays_daily_log = Mock(return_value=yesterday_daily_log)
     monkeypatch.setattr(chargelog, "get_daily_log", mock_yesterdays_daily_log)
 
@@ -133,7 +152,8 @@ def test_calc_charge_cost_reference_middle_day_change(mock_data, monkeypatch):
                               'pv': {'all': {'exported': 2500}, 'pv1': {'exported': 2500}},
                               'sh': {},
                               'timestamp': 1652683200,
-                              'prices': {'grid': 0.0003, 'pv': 0.00015, 'bat': 0.0002, 'cp': 0}}]}
+                              'prices': {'grid': 0.0003, 'pv': 0.00015, 'bat': 0.0002, 'cp': 0}}],
+                 "names": {"bat2": "Speicher2", "cp4": "LP 4", "pv1": "PV 1", "ev0": "EV0", "counter0": "Zähler0"}}
     mock_todays_daily_log = Mock(return_value=daily_log)
     monkeypatch.setattr(chargelog, "get_todays_daily_log", mock_todays_daily_log)
 
@@ -144,5 +164,5 @@ def test_calc_charge_cost_reference_middle_day_change(mock_data, monkeypatch):
         calc_energy_costs(cp)
 
     assert cp.data.set.log.charged_energy_by_source == {
-        'grid': 1243, 'pv': 386, 'bat': 671, 'cp': 0.0}
+        'grid': 1242.8, 'pv': 385.8, 'bat': 671.4, 'cp': 0.0}
     assert round(cp.data.set.log.costs, 5) == 0.5

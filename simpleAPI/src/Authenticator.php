@@ -8,10 +8,12 @@ namespace SimpleAPI;
 class Authenticator
 {
     private $config;
+    private $mqttClient;
 
-    public function __construct($config)
+    public function __construct($config, $mqttClient = null)
     {
         $this->config = $config;
+        $this->mqttClient = $mqttClient;
     }
 
     /**
@@ -36,6 +38,11 @@ class Authenticator
 
         // Token aus Parameter prüfen
         if ($this->checkParameterToken($params)) {
+            return true;
+        }
+
+        // Fallback: Prüfen ob MQTT Broker ohne Authentifizierung zugänglich ist
+        if ($this->checkMqttNoAuth()) {
             return true;
         }
 
@@ -130,20 +137,27 @@ class Authenticator
     {
         $users = $this->config['auth']['users'] ?? [];
 
-        if (!isset($users[$username])) {
-            return false;
+        // Zuerst gegen definierte Benutzer prüfen
+        if (!empty($users) && isset($users[$username])) {
+            $storedPassword = $users[$username];
+
+            // Passwort-Hash prüfen
+            if (strpos($storedPassword, '$') === 0) {
+                // Gehashtes Passwort
+                return password_verify($password, $storedPassword);
+            } else {
+                // Klartext (nicht empfohlen)
+                return hash_equals($storedPassword, $password);
+            }
         }
 
-        $storedPassword = $users[$username];
-
-        // Passwort-Hash prüfen
-        if (strpos($storedPassword, '$') === 0) {
-            // Gehashtes Passwort
-            return password_verify($password, $storedPassword);
-        } else {
-            // Klartext (nicht empfohlen)
-            return hash_equals($storedPassword, $password);
+        // Wenn keine lokalen Benutzer definiert sind oder MqttClient verfügbar ist:
+        // Anmeldedaten gegen MQTT Broker testen
+        if ($this->mqttClient && (empty($users) || !isset($users[$username]))) {
+            return $this->mqttClient->testCredentials($username, $password);
         }
+
+        return false;
     }
 
     /**
@@ -180,5 +194,19 @@ class Authenticator
         return (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ||
             $_SERVER['SERVER_PORT'] == 443 ||
             (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+    }
+
+    /**
+     * Prüfen ob MQTT Broker ohne Authentifizierung zugänglich ist
+     */
+    private function checkMqttNoAuth()
+    {
+        // Nur wenn MqttClient verfügbar ist
+        if (!$this->mqttClient) {
+            return false;
+        }
+
+        // Test-Verbindung ohne Anmeldedaten
+        return $this->mqttClient->testCredentials('', '');
     }
 }

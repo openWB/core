@@ -7,7 +7,7 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, Endian, ModbusTcpClient_
 from modules.common.simcount import SimCounter
-from modules.common.store import get_counter_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.sungrow.sungrow_ihm.config import SungrowIHM, SungrowIHMCounterSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
@@ -26,25 +26,29 @@ class SungrowIHMCounter(AbstractCounter):
     def initialize(self) -> None:
         self.device_config: SungrowIHM = self.kwargs['device_config']
         self.__tcp_client: ModbusTcpClient_ = self.kwargs['client']
-        self.sim_counter = SimCounter(self.device_config.id, self.component_config.id, prefix="evu")
-        self.store = get_counter_value_store(self.component_config.id)
+        self.sim_counter = SimCounter(self.device_config.id, self.component_config.id, self.component_config.type)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self):
         unit = self.device_config.configuration.modbus_id
         power = self.__tcp_client.read_input_registers(8156, ModbusDataType.INT_32,
-                                                       wordorder=Endian.Little, unit=unit) * -10
+                                                       wordorder=Endian.Little, unit=unit) * 10
 
-        powers = self.__tcp_client.read_input_registers(8558, [ModbusDataType.UINT_32] * 3,
+        powers = self.__tcp_client.read_input_registers(8558, [ModbusDataType.INT_32] * 3,
                                                         wordorder=Endian.Little, unit=unit)
 
         frequency = self.__tcp_client.read_input_registers(8557, ModbusDataType.UINT_16, unit=unit) / 10
 
         voltages = self.__tcp_client.read_input_registers(8554, [ModbusDataType.UINT_16] * 3,
                                                           wordorder=Endian.Little, unit=unit)
-
-        voltages = [value / 10 for value in voltages]
+        # Die Register liefern nur Spannung Phase zu Phase und nicht Phase zu N, daher durch Wurzel 3.
+        # Dies setzt voraus, dass die Phasen symmetrisch belastet sind, was in der Praxis nicht
+        # der Fall sein muss, es ist jedoch eine gute Näherung.
+        # Bei einer erlaubten Schieflast von 20A (allgemeine Vorgabe in Deutschland) könnte die Spannung
+        # auf einer Phase um 5 bis zu 20% höher sein als auf den anderen Phasen.
+        voltages = [value / 10 / (3 ** 0.5) for value in voltages]
 
         self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)

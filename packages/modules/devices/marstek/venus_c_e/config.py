@@ -38,5 +38,6 @@ class VenusCEBatSetup(ComponentSetup[VenusCEBatConfiguration]):
                  name: str = "Marstek Venus C, E Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: VenusCEBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or VenusCEBatConfiguration())
+                 configuration: VenusCEBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or VenusCEBatConfiguration(), **kwargs)

@@ -18,13 +18,13 @@ export function processEtProviderMessages(topic: string, message: string) {
 		}
 	} else if (topic == 'openWB/optional/ep/get/prices') {
 		const plist = JSON.parse(message)
-		etData.etPriceList = new Map<Date, number>()
+		const newlist = new Map<Date, number>()
 		Object.keys(plist).forEach((datestring) => {
-			etData.etPriceList.set(
-				new Date(+datestring * 1000),
-				plist[datestring] * 100000,
-			)
+			newlist.set(new Date(+datestring * 1000), plist[datestring] * 100000)
 		})
+		if (newlist.size > 0) {
+			etData.etPriceList = newlist
+		}
 	} else {
 		// console.warn('Ignored ET Provider message: ' + topic)
 	}

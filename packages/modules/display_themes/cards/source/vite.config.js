@@ -1,7 +1,8 @@
 import { fileURLToPath, URL } from "node:url";
 
 import { defineConfig } from "vite";
-import Vue from "@vitejs/plugin-vue";
+import vue from "@vitejs/plugin-vue";
+import svgLoader from "vite-svg-loader";
 
 import { nodePolyfills } from "vite-plugin-node-polyfills";
 import rollupNodePolyfills from "rollup-plugin-polyfill-node";
@@ -11,7 +12,7 @@ import terser from '@rollup/plugin-terser';
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }) => {
   var myConfiguration = {
-    plugins: [Vue()],
+    plugins: [vue(), svgLoader()],
     base: "/openWB/web/display/themes/cards/",
     resolve: {
       alias: {

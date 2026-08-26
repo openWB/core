@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional, Tuple
 from unittest.mock import Mock
 
 import pytest
@@ -12,28 +12,31 @@ COUNTER_NAME = "test counter"
 
 
 @pytest.mark.parametrize(
-    "available_currents, raw_power_left, expected_currents",
+    "available_currents, raw_power_left, expected_ret",
     [
         pytest.param([5, 10, 15], 6900, ([5, 10, 15], LoadmanagementLimit(None,  None))),
         pytest.param([5, 10, 25], 1000, ([0.5434782608695652, 1.0869565217391304,
                      2.717391304347826], LoadmanagementLimit(LimitingValue.POWER.value.format(COUNTER_NAME),
                                                              LimitingValue.POWER))),
+        pytest.param([5, 10, 25], 0, ([0, 0, 0], LoadmanagementLimit(LimitingValue.POWER.value.format(COUNTER_NAME),
+                                                                     LimitingValue.POWER))),
+        pytest.param([5, 10, 25], None, ([5, 10, 25], LoadmanagementLimit(None, None))),
         pytest.param([5, 10, 25], 5000, ([2.717391304347826, 5.434782608695652,
                      13.58695652173913], LoadmanagementLimit(LimitingValue.POWER.value.format(COUNTER_NAME),
                                                              LimitingValue.POWER))),
     ])
 def test_limit_by_power(available_currents: List[float],
-                        raw_power_left: float,
-                        expected_currents: List[float],
+                        raw_power_left: Optional[float],
+                        expected_ret: Tuple[List[float], LoadmanagementLimit],
                         monkeypatch):
     # setup
     counter_name_mock = Mock(return_value=COUNTER_NAME)
     monkeypatch.setattr(loadmanagement, "get_component_name_by_id", counter_name_mock)
     # evaluation
-    currents = Loadmanagement()._limit_by_power(Counter(0), available_currents, 230, raw_power_left, None)
+    ret = Loadmanagement()._limit_by_power(Counter(0), available_currents, 230, raw_power_left, None)
 
     # assertion
-    assert currents == expected_currents
+    assert ret == expected_ret
 
 
 @pytest.mark.parametrize(

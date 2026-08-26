@@ -17,11 +17,9 @@ def create_device(device_config: SungrowSG):
     client = None
 
     def create_counter_component(component_config: SungrowSGCounterSetup):
-        nonlocal client
         return SungrowSGCounter(component_config, device_config=device_config, client=client)
 
     def create_inverter_component(component_config: SungrowSGInverterSetup):
-        nonlocal client
         return SungrowSGInverter(component_config, device_config=device_config, client=client)
 
     def update_components(components: Iterable[Union[SungrowSGCounter, SungrowSGInverter]]):
@@ -45,4 +43,7 @@ def create_device(device_config: SungrowSG):
     )
 
 
-device_descriptor = DeviceDescriptor(configuration_factory=SungrowSG)
+device_descriptor = DeviceDescriptor(
+    configuration_factory=SungrowSG,
+    compatibility_device_note="Ältere Modelle verfügen über einen nativen LAN-Port, neue Modelle benötigen den "
+    "Winet-S oder Winet-S2 Dongle.")

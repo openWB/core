@@ -16,7 +16,6 @@ def create_device(device_config: SungrowMicro):
     client = None
 
     def create_inverter_component(component_config: SungrowMicroInverterSetup):
-        nonlocal client
         return SungrowMicroInverter(component_config, device_config=device_config, client=client)
 
     def update_components(components: Iterable[Union[SungrowMicroInverter]]):

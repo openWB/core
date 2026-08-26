@@ -18,19 +18,15 @@ def create_device(device_config: FoxEss):
     client = None
 
     def create_bat_component(component_config: FoxEssBatSetup):
-        nonlocal client
         return FoxEssBat(component_config=component_config, client=client)
 
     def create_counter_component(component_config: FoxEssCounterSetup):
-        nonlocal client
         return FoxEssCounter(component_config=component_config, client=client)
 
     def create_inverter_component(component_config: FoxEssInverterSetup):
-        nonlocal client
         return FoxEssInverter(component_config=component_config, client=client)
 
     def update_components(components: Iterable[Union[FoxEssBat, FoxEssCounter, FoxEssInverter]]):
-        nonlocal client
         with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):

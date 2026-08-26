@@ -8,7 +8,7 @@ from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType
-from modules.common.store import get_inverter_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.solax.solax.config import SolaxInverterSetup, Solax
 from modules.devices.solax.solax.version import SolaxVersion
 from modules.common.utils.peak_filter import PeakFilter
@@ -28,7 +28,7 @@ class SolaxInverter(AbstractInverter):
     def initialize(self) -> None:
         self.__tcp_client = self.kwargs['client']
         self.device_config = self.kwargs['device_config']
-        self.store = get_inverter_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 

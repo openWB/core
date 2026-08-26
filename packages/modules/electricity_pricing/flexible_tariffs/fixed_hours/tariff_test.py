@@ -96,6 +96,7 @@ class TestValidateTariffTimes:
                         "active_times": {
                             "dates": [("01-01", "31-12")],
                             "times": [("08:00", "12:00")],
+                            "weekdays": [0, 1, 2, 3, 4, 5, 6],
                         },
                     },
                     {
@@ -104,6 +105,7 @@ class TestValidateTariffTimes:
                         "active_times": {
                             "dates": [("01-01", "31-12")],
                             "times": [("14:00", "18:00")],
+                            "weekdays": [0, 1, 2, 3, 4, 5, 6],
                         },
                     },
                 ],
@@ -119,6 +121,7 @@ class TestValidateTariffTimes:
                         "active_times": {
                             "dates": [("01-01", "31-12")],
                             "times": [("08:00", "12:00")],
+                            "weekdays": [0, 1, 2, 3, 4, 5, 6],
                         },
                     },
                     {
@@ -127,11 +130,62 @@ class TestValidateTariffTimes:
                         "active_times": {
                             "dates": [("01-01", "31-12")],
                             "times": [("12:00", "14:00")],
+                            "weekdays": [0, 1, 2, 3, 4, 5, 6],
                         },
                     },
                 ],
                 True,
                 id="adjacent_times",
+            ),
+            # Overlapping times but different weekdays
+            pytest.param(
+                [
+                    {
+                        "name": "tariff1",
+                        "price": 100,
+                        "active_times": {
+                            "dates": [("01-01", "31-12")],
+                            "times": [("08:00", "12:00")],
+                            "weekdays": [0, 1, 2, 3, 4],  # active on weekdays
+                        },
+                    },
+                    {
+                        "name": "tariff2",
+                        "price": 200,
+                        "active_times": {
+                            "dates": [("01-01", "31-12")],
+                            "times": [("08:00", "12:00")],
+                            "weekdays": [5, 6],  # active on weekends
+                        },
+                    },
+                ],
+                True,
+                id="differing weekdays allows overlap",
+            ),
+            # Overlapping times one day overlapping
+            pytest.param(
+                [
+                    {
+                        "name": "tariff1",
+                        "price": 100,
+                        "active_times": {
+                            "dates": [("01-01", "31-12")],
+                            "times": [("08:00", "12:00")],
+                            "weekdays": [0, 1, 2, 3, 4],  # active on weekdays
+                        },
+                    },
+                    {
+                        "name": "tariff2",
+                        "price": 200,
+                        "active_times": {
+                            "dates": [("01-01", "31-12")],
+                            "times": [("08:00", "12:00")],
+                            "weekdays": [4, 5, 6],  # active on weekends
+                        },
+                    },
+                ],
+                False,
+                id="differing weekdays one day overlaps",
             ),
             # Empty tariffs
             pytest.param([], True, id="empty_tariffs"),
@@ -155,7 +209,7 @@ class TestFetch:
         "default_price,tariffs,expected_price",
         [
             # No tariffs, use default price
-            pytest.param(1500, [], 1.5, id="no_tariffs"),
+            pytest.param(1500, [], 1500, id="no_tariffs"),
             # All-day tariff
             pytest.param(
                 1500,
@@ -166,10 +220,11 @@ class TestFetch:
                         "active_times": {
                             "dates": [("01-01", "31-12")],
                             "times": [("00:00", "24:00")],
+                            "weekdays": [0, 1, 2, 3, 4, 5, 6],
                         },
                     }
                 ],
-                2.0,
+                2000,
                 id="all_day_tariff",
             ),
             # Tariff that matches all times
@@ -182,16 +237,17 @@ class TestFetch:
                         "active_times": {
                             "dates": [("01-01", "31-12")],
                             "times": [("00:00", "24:00")],
+                            "weekdays": [0, 1, 2, 3, 4, 5, 6],
                         },
                     }
                 ],
-                2.5,
+                2500,
                 id="full_day_tariff",
             ),
             # Very low price
-            pytest.param(500, [], 0.5, id="low_price"),
+            pytest.param(500, [], 500, id="low_price"),
             # Very high price
-            pytest.param(5000, [], 5.0, id="high_price"),
+            pytest.param(5000, [], 5000, id="high_price"),
         ],
     )
     def test_fetch_price_configurations(self, default_price, tariffs, expected_price):
@@ -205,7 +261,7 @@ class TestFetch:
         assert isinstance(result, TariffState)
         assert len(result.prices) > 0
         for price in result.prices.values():
-            assert isinstance(price, float)
+            assert isinstance(price, (float, int))
             assert price == expected_price
 
     @pytest.mark.parametrize(
@@ -223,6 +279,7 @@ class TestFetch:
                         "active_times": {
                             "dates": [("01-01", "31-12")],
                             "times": [("00:00", "24:00")],
+                            "weekdays": [0, 1, 2, 3, 4, 5, 6],
                         },
                     }
                 ],
@@ -262,7 +319,7 @@ class TestCreateElectricityTariff:
         "default_price,tariffs,expected_price",
         [
             # No tariffs, use default
-            pytest.param(1500, [], 1.5, id="no_tariffs"),
+            pytest.param(1500, [], 1500, id="no_tariffs"),
             # With all-day tariff
             pytest.param(
                 1500,
@@ -273,10 +330,11 @@ class TestCreateElectricityTariff:
                         "active_times": {
                             "dates": [("01-01", "31-12")],
                             "times": [("00:00", "24:00")],
+                            "weekdays": [0, 1, 2, 3, 4, 5, 6],
                         },
                     }
                 ],
-                2.5,
+                2500,
                 id="all_day_tariff",
             ),
             # Another tariff configuration
@@ -289,10 +347,11 @@ class TestCreateElectricityTariff:
                         "active_times": {
                             "dates": [("01-01", "31-12")],
                             "times": [("00:00", "24:00")],
+                            "weekdays": [0, 1, 2, 3, 4, 5, 6],
                         },
                     }
                 ],
-                3.5,
+                3500,
                 id="premium_tariff",
             ),
             pytest.param(
@@ -304,10 +363,11 @@ class TestCreateElectricityTariff:
                         "active_times": {
                             "dates": [("01-01", "01-01")],
                             "times": [("00:00", "00:00")],
+                            "weekdays": [0, 1, 2, 3, 4, 5, 6],
                         },
                     }
                 ],
-                2.0,
+                2000,
                 id="not_matching_tariff returns default price",
             ),
         ],

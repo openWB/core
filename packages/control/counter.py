@@ -78,7 +78,7 @@ class Set:
     error_timer: Optional[float] = field(default=None, metadata={"topic": "set/error_timer"})
     reserved_surplus: float = field(default=0, metadata={"topic": "set/reserved_surplus"})
     released_surplus: float = field(default=0, metadata={"topic": "set/released_surplus"})
-    raw_power_left: float = 0
+    raw_power_left: Optional[float] = 0
     raw_currents_left: List[float] = field(default_factory=currents_list_factory)
     surplus_power_left: float = 0
 
@@ -198,14 +198,14 @@ class Counter:
         # Mittelwert der Spannungen verwenden, um Phasenverdrehung zu kompensieren
         # (Probleme bei einphasig angeschlossenen Wallboxen)
         self.data.set.raw_currents_left = list(map(operator.sub, self.data.set.raw_currents_left, diffs))
-        if self.data.set.raw_power_left:
+        if self.data.set.raw_power_left is not None:
             self.data.set.raw_power_left -= sum([c * cp_voltage for c in diffs])
         log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
                   f'{self.data.set.raw_power_left}W verbleibende Leistung')
 
     def update_surplus_values_left(self, diffs, cp_voltage: float) -> None:
         self.data.set.raw_currents_left = list(map(operator.sub, self.data.set.raw_currents_left, diffs))
-        if self.data.set.surplus_power_left:
+        if self.data.set.surplus_power_left is not None:
             self.data.set.surplus_power_left -= sum([c * cp_voltage for c in diffs])
         log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
                   f'{self.data.set.surplus_power_left}W verbleibender Überschuss')

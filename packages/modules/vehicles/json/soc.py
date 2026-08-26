@@ -61,7 +61,9 @@ def fetch_soc(config: JsonSocSetup, compiled_queries: Dict) -> CarState:
                                              compiled_queries["timestamp"],
                                              config.configuration.timestamp_pattern))
                  if compiled_queries["timestamp"] is not None else None)
-    return CarState(soc=soc, range=range, soc_timestamp=timestamp)
+    odometer = (float(parse_data(raw_data, compiled_queries["odometer"], config.configuration.odometer_pattern))
+                if compiled_queries["odometer"] is not None else None)
+    return CarState(soc=soc, range=range, soc_timestamp=timestamp, odometer=odometer)
 
 
 def initialize_vehicle(vehicle_config: JsonSocSetup, compiled_queries: Dict) -> None:
@@ -71,13 +73,16 @@ def initialize_vehicle(vehicle_config: JsonSocSetup, compiled_queries: Dict) -> 
     compiled_queries["range"] = jq.compile(config.range_pattern) if config.range_pattern is not None else None
     compiled_queries["timestamp"] = (jq.compile(config.timestamp_pattern)
                                      if config.timestamp_pattern is not None else None)
+    compiled_queries["odometer"] = (jq.compile(config.odometer_pattern)
+                                    if config.odometer_pattern is not None else None)
 
 
 def create_vehicle(vehicle_config: JsonSocSetup, vehicle: int):
     compiled_queries = {
         'soc': None,
         'range': None,
-        'timestamp': None
+        'timestamp': None,
+        'odometer': None
     }
 
     def initializer() -> None:
@@ -97,14 +102,17 @@ def json_update(charge_point: int,
                 soc_pattern: str,
                 range_pattern: Optional[str] = None,
                 timestamp_pattern: Optional[str] = None,
+                odometer_pattern: Optional[str] = None,
                 calculate_soc: Optional[bool] = False):
     log.debug(f'json-soc: charge_point={charge_point} url="{url}" soc-pattern="{soc_pattern}" '
-              f'range-pattern="{range_pattern}" timestamp-pattern="{timestamp_pattern}" calculate-soc={calculate_soc}')
+              f'range-pattern="{range_pattern}" timestamp-pattern="{timestamp_pattern}" '
+              f'odometer-pattern="{odometer_pattern}" calculate-soc={calculate_soc}')
     store.get_car_value_store(charge_point).store.set(
         fetch_soc(JsonSocSetup(configuration=JsonSocConfiguration(url=url,
                                                                   soc_pattern=soc_pattern,
                                                                   range_pattern=range_pattern,
                                                                   timestamp_pattern=timestamp_pattern,
+                                                                  odometer_pattern=odometer_pattern,
                                                                   calculate_soc=calculate_soc))))
 
 

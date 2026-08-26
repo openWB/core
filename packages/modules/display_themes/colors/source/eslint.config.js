@@ -15,33 +15,34 @@ const compat = new FlatCompat({
     allConfig: js.configs.all
 });
 
-export default [...compat.extends(
-    "eslint:recommended",
-    "plugin:@typescript-eslint/eslint-recommended",
-    "plugin:@typescript-eslint/recommended",
-    "plugin:vue/vue3-recommended",
-    "prettier",
-), {
-    plugins: {
-        "@typescript-eslint": typescriptEslint,
-    },
+export default [
+    ...compat.extends(
+        "eslint:recommended",
+        "plugin:@typescript-eslint/eslint-recommended",
+        "plugin:@typescript-eslint/recommended",
+        "plugin:vue/vue3-recommended",
+        "prettier",
+    ),
+    {
+        files: ['**/*.vue', '**/*.js', '**/*.ts'],
+        plugins: {
+            "@typescript-eslint": typescriptEslint,
+        },
 
-    languageOptions: {
-        parser: parser,
-        ecmaVersion: 5,
-        sourceType: "module",
+        languageOptions: {
+            parser: parser,
+            ecmaVersion: 5,
+            sourceType: "module",
 
-        parserOptions: {
-            parser: "@typescript-eslint/parser",
+            parserOptions: {
+                parser: "@typescript-eslint/parser",
+            },
+        },
+
+        rules: {
+            "no-unused-vars": "off",
+            "@typescript-eslint/no-unused-vars": "error",
         },
     },
-
-    rules: {
-        "no-unused-vars": "off",
-        "@typescript-eslint/no-unused-vars": "error",
-    },
-		files: ['**/*.vue', '**/*.js', '**/*.ts'],
-	},
-		includeIgnoreFile(gitignorePath),
-	{},
+    includeIgnoreFile(gitignorePath),
 ];

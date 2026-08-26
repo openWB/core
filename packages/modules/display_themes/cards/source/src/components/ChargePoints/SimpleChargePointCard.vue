@@ -39,7 +39,7 @@ library.add(
 );
 
 export default {
-  name: "ChargePointCard",
+  name: "SimpleChargePointCard",
   components: {
     DashboardCard,
     ChargePointPlugBadge,
@@ -83,6 +83,9 @@ export default {
       }
       return this.mqttStore.chargeModeList()
     },
+    chargePointColor() {
+      return this.mqttStore.getChargePointColor(this.chargePointId) || "var(--color--primary)";
+    },
   },
   methods: {
     handleVehicleClick(chargePointId) {
@@ -108,7 +111,10 @@ export default {
 </script>
 
 <template>
-  <dashboard-card color="primary">
+  <dashboard-card
+    color="dark"
+    :highlight-color="chargePointColor"
+  >
     <template #headerLeft>
       {{ mqttStore.getChargePointName(chargePointId) }}
     </template>
@@ -149,6 +155,7 @@ export default {
                   <font-awesome-icon
                     fixed-width
                     :icon="['fas', 'fa-car']"
+                    :style="{ color: mqttStore.getChargePointConnectedVehicleColor(chargePointId) }"
                   />
                   {{ mqttStore.getChargePointConnectedVehicleName(chargePointId) }}
                   <font-awesome-icon

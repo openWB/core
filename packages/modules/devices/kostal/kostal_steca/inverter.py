@@ -5,12 +5,14 @@ from typing import Any, Optional, Tuple, TypedDict
 import xml.etree.ElementTree as ET
 from math import isnan
 
+from requests.adapters import HTTPAdapter
+
 from modules.common import req
 from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.store import get_inverter_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.kostal.kostal_steca.config import KostalStecaInverterSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
@@ -29,7 +31,7 @@ class KostalStecaInverter(AbstractInverter):
 
     def initialize(self) -> None:
         self.ip_address: str = self.kwargs['ip_address']
-        self.store = get_inverter_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
@@ -47,26 +49,28 @@ class KostalStecaInverter(AbstractInverter):
         # DetMoerk 20210323: Anpassung für ein- und dreiphasige WR der Serie. Anstatt eine feste Zeile aus
         # dem Ergebnis zu schneiden wird nach der Zeile mit AC_Power gesucht.
 
-        # call for XML file and parse it for current PV power
-        measurements = req.get_http_session().get("http://" + self.ip_address + "/measurements.xml", timeout=2).text
-        power_raw = ET.fromstring(measurements).find(".//Measurement[@Type='AC_Power']").get("Value")
-        power = 0 if power_raw is None else float(power_raw) * -1
-        power = 0 if isnan(power) else power
+        with req.get_http_session() as session:
+            session.default_timeout = 2
+            session.mount("http://", HTTPAdapter(max_retries=2))
+            # call for XML file and parse it for current PV power
+            measurements = session.get("http://" + self.ip_address + "/measurements.xml").text
+            power_raw = ET.fromstring(measurements).find(".//Measurement[@Type='AC_Power']").get("Value")
+            power = 0 if power_raw is None else float(power_raw) * -1
+            power = 0 if isnan(power) else power
 
-        if self.component_config.configuration.variant_steca:
-            # call for XML file and parse it for total produced kwh
-            yields = req.get_http_session().get("http://" + self.ip_address + "/yields.xml", timeout=2).text
-            exported = float(ET.fromstring(yields).find(".//Yield[@Type='Produced']/YieldValue").get("Value"))
-        else:
-            # call for .js file and parse it for total produced Wh
-            yields = req.get_http_session().get("http://" + self.ip_address + "/gen.yield.total.chart.js",
-                                                timeout=2).text
-            match = re.search(r'"data":\s*\[\s*([^\]]*)\s*]', yields)
-            try:
-                exported = sum(float(s) * 1e6 for s in match.group(1).split(','))
-            except AttributeError:
-                log.debug("PVkWh: Could not find 'data' in gen.yield.total.chart.js.")
-                exported = None
+            if self.component_config.configuration.variant_steca:
+                # call for XML file and parse it for total produced kwh
+                yields = session.get("http://" + self.ip_address + "/yields.xml").text
+                exported = float(ET.fromstring(yields).find(".//Yield[@Type='Produced']/YieldValue").get("Value"))
+            else:
+                # call for .js file and parse it for total produced Wh
+                yields = session.get("http://" + self.ip_address + "/gen.yield.total.chart.js").text
+                match = re.search(r'"data":\s*\[\s*([^\]]*)\s*]', yields)
+                try:
+                    exported = sum(float(s) * 1e6 for s in match.group(1).split(','))
+                except AttributeError:
+                    log.debug("PVkWh: Could not find 'data' in gen.yield.total.chart.js.")
+                    exported = None
         _, exported = self.peak_filter.check_values(power, None, exported)
         return power, exported
 

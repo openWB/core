@@ -97,6 +97,7 @@ class TimeChargingPlan(TimeframePlan):
     dc_current: float = 145
     id: Optional[int] = None
     limit: Limit = field(default_factory=limit_factory)
+    min_bat_soc: Optional[int] = None
     name: str = "neuer Zeitladen-Plan"
     phases_to_use: int = 1
 

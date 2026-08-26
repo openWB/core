@@ -37,5 +37,6 @@ class MystromCounterSetup(ComponentSetup[MystromCounterConfiguration]):
                  name: str = "mystrom Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: MystromCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or MystromCounterConfiguration())
+                 configuration: MystromCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or MystromCounterConfiguration(), **kwargs)

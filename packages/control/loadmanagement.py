@@ -26,6 +26,9 @@ class Loadmanagement:
             available_currents, new_limit = self._limit_by_dimming(available_currents, cp)
             limit = new_limit if new_limit.limiting_value is not None else limit
 
+            available_currents, new_limit = self._limit_loadmanager(available_currents, cp)
+            limit = new_limit if new_limit.limiting_value is not None else limit
+
             available_currents, new_limit = self._limit_by_ripple_control_receiver(available_currents, cp)
             limit = new_limit if new_limit.limiting_value is not None else limit
         except ValueError as e:
@@ -102,9 +105,11 @@ class Loadmanagement:
         # (Probleme bei einphasig angeschlossenen Wallboxen)
         currents = available_currents.copy()
         limit = LoadmanagementLimit(None, None)
-        if raw_power_left:
-            if feed_in:
-                raw_power_left = raw_power_left - feed_in
+        if raw_power_left is None:
+            return currents, limit
+        elif raw_power_left > 0:
+            if feed_in is not None:
+                raw_power_left = max(raw_power_left - feed_in, 0)
                 log.debug(f"Verbleibende Leistung unter Berücksichtigung der Einspeisegrenze: {raw_power_left}W")
             if sum([c * cp_voltage for c in available_currents]) > raw_power_left:
                 for i in range(0, 3):
@@ -117,7 +122,10 @@ class Loadmanagement:
                 log.debug(f"Leistungsüberschreitung auf {raw_power_left}W korrigieren: {available_currents}")
                 limit = LoadmanagementLimit(LimitingValue.POWER.value.format(get_component_name_by_id(counter.num)),
                                             LimitingValue.POWER)
-        return currents, limit
+            return currents, limit
+        else:
+            return [0]*3, LoadmanagementLimit(LimitingValue.POWER.value.format(get_component_name_by_id(counter.num)),
+                                              LimitingValue.POWER)
 
     # tested
     def _limit_by_current(self,
@@ -152,7 +160,7 @@ class Loadmanagement:
                           available_currents: List[float],
                           cp: Chargepoint) -> Tuple[List[float], LoadmanagementLimit]:
         dimming_power_left, limit = data.data.io_actions.dimming_get_import_power_left({"type": "cp", "id": cp.num})
-        if dimming_power_left:
+        if dimming_power_left is not None:
             if sum(available_currents)*230 > dimming_power_left:
                 phases = 3-available_currents.count(0)
                 overload_per_phase = (sum(available_currents) - dimming_power_left/230)/phases
@@ -175,4 +183,30 @@ class Loadmanagement:
             available_currents = [max(min(max_current*value - cp.data.set.target_current, c), 0)
                                   if c > 0 else 0 for c in available_currents]
             log.debug(f"Reduzierung durch RSE-Kontakt auf {value*100}%, maximal {max_current*value}A")
+        return available_currents, limit
+
+    def _limit_loadmanager(self,
+                           available_currents: List[float],
+                           cp: Chargepoint) -> Tuple[List[float], LoadmanagementLimit]:
+
+        loadmanager_power_left, loadmanager_current_left, limit = data.data.io_actions.get_limit_loadmanager()
+
+        if loadmanager_power_left is not None and loadmanager_current_left is not None:
+            if sum(available_currents)*voltages_mean(cp.data.get.voltages) > loadmanager_power_left:
+                phases = 3-available_currents.count(0)
+                overload_per_phase = (sum(available_currents) -
+                                      loadmanager_power_left/voltages_mean(cp.data.get.voltages))/phases
+                available_currents = [c - overload_per_phase if c > 0 else 0 for c in available_currents]
+                log.debug(
+                    f"Reduzierung der Leistung auf {sum(available_currents)*voltages_mean(cp.data.get.voltages)}W "
+                    f"durch den Lastmanager. (Leistungsgrenze: {loadmanager_power_left}W)")
+                return available_currents, limit
+            if sum(available_currents) > loadmanager_current_left:
+                phases = 3 - available_currents.count(0)
+                overload_per_phase = (sum(available_currents) - loadmanager_current_left) / phases
+                available_currents = [max(c - overload_per_phase, 0) if c > 0 else 0 for c in available_currents]
+                log.debug(
+                    f"Reduzierung der Ströme auf {available_currents}A durch den Lastmanager. "
+                    f"(Stromgrenze: {loadmanager_current_left}A)")
+                return available_currents, limit
         return available_currents, limit

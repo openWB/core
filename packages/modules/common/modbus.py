@@ -8,7 +8,8 @@ import logging
 import struct
 from enum import Enum
 import time
-from typing import Any, Callable, Iterable, Optional, Union, overload, List
+from types import TracebackType
+from typing import Any, Callable, Dict, Iterable, Literal, Optional, Type, Union, overload, List
 
 import pymodbus
 from pymodbus.client.sync import ModbusTcpClient, ModbusUdpClient, ModbusSerialClient
@@ -52,7 +53,7 @@ class ModbusClient:
     def __init__(self,
                  delegate: Union[ModbusSerialClient, ModbusTcpClient, ModbusUdpClient],
                  address: str, port: int = 502,
-                 sleep_after_connect: Optional[int] = 0):
+                 sleep_after_connect: int = 0):
         self._delegate = delegate
         self.address = address
         self.port = port
@@ -67,7 +68,10 @@ class ModbusClient:
             raise e
         return self
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
+    def __exit__(self,
+                 exc_type: Optional[Type[BaseException]],
+                 exc_value: Optional[BaseException],
+                 exc_traceback: Optional[TracebackType]):
         self._delegate.__exit__(exc_type, exc_value, exc_traceback)
 
     def connect(self) -> None:
@@ -84,12 +88,12 @@ class ModbusClient:
     def is_socket_open(self) -> bool:
         return self._delegate.is_socket_open()
 
-    def __read_registers(self, read_register_method: Callable,
+    def __read_registers(self, read_register_method: Callable[[int, int], Any],
                          address: int,
                          types: Union[Iterable[ModbusDataType], ModbusDataType],
-                         byteorder: Endian = Endian.Big,
-                         wordorder: Endian = Endian.Big,
-                         **kwargs):
+                         byteorder: str = Endian.Big,
+                         wordorder: str = Endian.Big,
+                         **kwargs: Any):
         if self.is_socket_open() is False:
             self.connect()
         try:
@@ -123,40 +127,40 @@ class ModbusClient:
             raise Exception(__name__+" "+str(type(e))+" " + str(e)) from e
 
     @overload
-    def read_holding_registers(self, address: int, types: Iterable[ModbusDataType], byteorder: Endian = Endian.Big,
-                               wordorder: Endian = Endian.Big, **kwargs) -> List[Number]:
+    def read_holding_registers(self, address: int, types: Iterable[ModbusDataType], byteorder: str = Endian.Big,
+                               wordorder: str = Endian.Big, **kwargs: Any) -> List[Number]:
         pass
 
     @overload
-    def read_holding_registers(self, address: int, types: ModbusDataType, byteorder: Endian = Endian.Big,
-                               wordorder: Endian = Endian.Big, **kwargs) -> Number:
+    def read_holding_registers(self, address: int, types: ModbusDataType, byteorder: str = Endian.Big,
+                               wordorder: str = Endian.Big, **kwargs: Any) -> Number:
         pass
 
     def read_holding_registers(self, address: int,
                                types: Union[Iterable[ModbusDataType], ModbusDataType],
-                               byteorder: Endian = Endian.Big,
-                               wordorder: Endian = Endian.Big,
-                               **kwargs):
+                               byteorder: str = Endian.Big,
+                               wordorder: str = Endian.Big,
+                               **kwargs: Any):
         return self.__read_registers(
             self._delegate.read_holding_registers, address, types, byteorder, wordorder, **kwargs
         )
 
     @overload
-    def read_input_registers(self, address: int, types: Iterable[ModbusDataType], byteorder: Endian = Endian.Big,
-                             wordorder: Endian = Endian.Big,
-                             **kwargs) -> List[Number]:
+    def read_input_registers(self, address: int, types: Iterable[ModbusDataType], byteorder: str = Endian.Big,
+                             wordorder: str = Endian.Big,
+                             **kwargs: Any) -> List[Number]:
         pass
 
     @overload
-    def read_input_registers(self, address: int, types: ModbusDataType, byteorder: Endian = Endian.Big,
-                             wordorder: Endian = Endian.Big, **kwargs) -> Number:
+    def read_input_registers(self, address: int, types: ModbusDataType, byteorder: str = Endian.Big,
+                             wordorder: str = Endian.Big, **kwargs: Any) -> Number:
         pass
 
     def read_input_registers(self, address: int,
                              types: Union[Iterable[ModbusDataType], ModbusDataType],
-                             byteorder: Endian = Endian.Big,
-                             wordorder: Endian = Endian.Big,
-                             **kwargs):
+                             byteorder: str = Endian.Big,
+                             wordorder: str = Endian.Big,
+                             **kwargs: Any):
         return self.__read_registers(self._delegate.read_input_registers,
                                      address,
                                      types,
@@ -165,16 +169,14 @@ class ModbusClient:
                                      **kwargs)
 
     @overload
-    def read_coils(self, address: int, types: Iterable[ModbusDataType], byteorder: Endian = Endian.Big,
-                   wordorder: Endian = Endian.Big,
-                   **kwargs) -> List[bool]:
+    def read_coils(self, address: int, count: Literal[1] = 1, **kwargs: Any) -> bool:
         pass
 
     @overload
-    def read_coils(self, address: int, count: int, **kwargs) -> bool:
+    def read_coils(self, address: int, count: int, **kwargs: Any) -> Union[bool, List[bool]]:
         pass
 
-    def read_coils(self, address: int, count: int, **kwargs):
+    def read_coils(self, address: int, count: int = 1, **kwargs: Any) -> Union[bool, List[bool]]:
         try:
             response = self._delegate.read_coils(address, count, **kwargs)
             if response.isError():
@@ -190,8 +192,8 @@ class ModbusClient:
     def _build_binary_payload(self,
                               value: Union[int, float],
                               data_type: ModbusDataType,
-                              byteorder: Endian = Endian.Big,
-                              wordorder: Endian = Endian.Big) -> list:
+                              byteorder: str = Endian.Big,
+                              wordorder: str = Endian.Big) -> List[int]:
         builder = BinaryPayloadBuilder(byteorder=byteorder, wordorder=wordorder)
         if data_type == ModbusDataType.FLOAT_16:
             # FLOAT_16 (IEEE 754 Half-Precision) manuelle Konvertierung
@@ -205,7 +207,7 @@ class ModbusClient:
         return builder.to_registers()
 
     def write_register(self, address: int, value: Union[int, float], data_type: Optional[ModbusDataType] = None,
-                       byteorder: Endian = Endian.Big, wordorder: Endian = Endian.Big, **kwargs):
+                       byteorder: str = Endian.Big, wordorder: str = Endian.Big, **kwargs: Any):
         if data_type is not None:
             if data_type.bits > 16 or data_type in [ModbusDataType.FLOAT_16,
                                                     ModbusDataType.FLOAT_32,
@@ -219,15 +221,20 @@ class ModbusClient:
             # Fallback für bestehenden Code ohne data_type
             self._delegate.write_registers(address, value, **kwargs)
 
-    def write_single_coil(self, address: int, value: Any, **kwargs):
+    def write_single_coil(self, address: int, value: bool, **kwargs: Any):
         self._delegate.write_coil(address, value, **kwargs)
 
+    def write_coils(self, address: int, value: List[bool], **kwargs: Any):
+        self._delegate.write_coils(address, value, **kwargs)
+
     def __read_bulk(self,
-                    read_register_method: Callable,
+                    read_register_method: Callable[[int, int], Any],
                     start_address: int,
                     count: int,
                     mapping: list[tuple[int, Union[ModbusDataType, Iterable[ModbusDataType]]]],
-                    byteorder: Endian = Endian.Big, wordorder: Endian = Endian.Big, **kwargs):
+                    byteorder: str = Endian.Big,
+                    wordorder: str = Endian.Big,
+                    **kwargs: Any) -> Dict[int, Union[Number, list[Number]]]:
         """
         Liest einen Registerbereich und gibt ein dict mit reg als Key und dekodiertem Wert als Value zurück.
         mapping: Liste von Tupeln (reg, ModbusDataType)
@@ -267,9 +274,9 @@ class ModbusClient:
                                   start_address: int,
                                   count: int,
                                   mapping: list[tuple[int, Union[ModbusDataType, Iterable[ModbusDataType]]]],
-                                  byteorder: Endian = Endian.Big,
-                                  wordorder: Endian = Endian.Big,
-                                  **kwargs):
+                                  byteorder: str = Endian.Big,
+                                  wordorder: str = Endian.Big,
+                                  **kwargs: Any):
         return self.__read_bulk(self._delegate.read_input_registers,
                                 start_address,
                                 count,
@@ -282,9 +289,9 @@ class ModbusClient:
                                     start_address: int,
                                     count: int,
                                     mapping: list[tuple[int, Union[ModbusDataType, Iterable[ModbusDataType]]]],
-                                    byteorder: Endian = Endian.Big,
-                                    wordorder: Endian = Endian.Big,
-                                    **kwargs):
+                                    byteorder: str = Endian.Big,
+                                    wordorder: str = Endian.Big,
+                                    **kwargs: Any):
         return self.__read_bulk(self._delegate.read_holding_registers,
                                 start_address,
                                 count,
@@ -298,13 +305,17 @@ class ModbusTcpClient_(ModbusClient):
     def __init__(self,
                  address: str,
                  port: int = 502,
-                 sleep_after_connect: Optional[int] = 0,
+                 sleep_after_connect: int = 0,
                  framer: type[ModbusSocketFramer] = ModbusSocketFramer,
-                 **kwargs):
+                 **kwargs: Any):
         parsed_url = parse_url(address)
         host = parsed_url.host
         if parsed_url.port is not None:
             port = parsed_url.port
+        kwargs.setdefault('retry_on_empty', True)
+        kwargs.setdefault('retry_on_invalid', True)
+        kwargs.setdefault('retries', 2)
+        kwargs.setdefault('timeout', 2)
         super().__init__(ModbusTcpClient(host, port, framer, **kwargs), address, port, sleep_after_connect)
 
 
@@ -312,8 +323,8 @@ class ModbusUdpClient_(ModbusClient):
     def __init__(self,
                  address: str,
                  port: int = 502,
-                 sleep_after_connect: Optional[int] = 0,
-                 **kwargs):
+                 sleep_after_connect: int = 0,
+                 **kwargs: Any):
         parsed_url = parse_url(address)
         host = parsed_url.host
         if parsed_url.port is not None:
@@ -324,8 +335,8 @@ class ModbusUdpClient_(ModbusClient):
 class ModbusSerialClient_(ModbusClient):
     def __init__(self,
                  port: int,
-                 sleep_after_connect: Optional[int] = 0,
-                 **kwargs):
+                 sleep_after_connect: int = 0,
+                 **kwargs: Any):
         super().__init__(ModbusSerialClient(method="rtu",
                                             port=port,
                                             baudrate=9600,

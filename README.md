@@ -26,6 +26,12 @@ Unterstützt wird jedes Fahrzeug, das den AC Ladestandard unterstützt.
 
 openWB gibt es unter <https://openwb.de/shop/>.
 
+Ein Image für Raspberry Pi 3 gibt es hier:
+
+https://link.openwb.de/lateststableimage
+
+Bitte nur mit balena Etcher flashen!
+
 ## Installation
 
 Bei fertig erworbenen openWB ist die Software bereits vorinstalliert.
@@ -33,10 +39,10 @@ Bei fertig erworbenen openWB ist die Software bereits vorinstalliert.
 Software:
 
 - Installiertes Raspberry Pi OS auf einem Raspberry Pi 3b oder besser.
-- Raspberry Pi OS Lite installieren. Aktuell wird in der Version 2.1 nur **Debian 11 "Bullseye"** (derzeit "oldstable") unterstützt.
-<https://downloads.raspberrypi.org/raspios_oldstable_lite_armhf/>
+- Raspberry Pi OS Lite installieren. Aktuell wird nur **Debian 11 "Bullseye"** unterstützt.
+<https://downloads.raspberrypi.org/raspios_oldstable_lite_armhf/images/raspios_oldstable_lite_armhf-2025-05-07/>
 - alternativ kann auch ein x86_64 System (Hardware oder als VM) mit installiertem **Debian 11 "Bullseye"** als Basis verwendet werden.
-- Eine Installation unter **Debian 12 "Bookworm"** wird noch nicht unterstützt!
+- Eine Installation unter neueren Versionen (**Debian 12 "Bookworm"** oder aktueller) wird noch nicht unterstützt!
 - Bitte beachten das **Debian 11 "Bullseye"** nur mit erheblichem Aufwand mit einem Raspberry Pi 5 kompatibel ist. Wir empfehlen die Nutzung von einem Raspberry Pi 3b.
 
 In der Shell folgendes eingeben:

@@ -12,7 +12,7 @@ class SmaSunnyIslandConfiguration:
 
 class SmaSunnyIsland:
     def __init__(self,
-                 name: str = "SMA Sunny Island, Sunny Tripower X",
+                 name: str = "SMA Sunny Island / Tripower X",
                  type: str = "sma_sunny_island",
                  id: int = 0,
                  configuration: SmaSunnyIslandConfiguration = None) -> None:
@@ -30,8 +30,9 @@ class SmaSunnyIslandBatConfiguration:
 
 class SmaSunnyIslandBatSetup(ComponentSetup[SmaSunnyIslandBatConfiguration]):
     def __init__(self,
-                 name: str = "SMA Sunny Island Speicher, Sunny Tripower X",
+                 name: str = "SMA Sunny Island / Tripower X Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: SmaSunnyIslandBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SmaSunnyIslandBatConfiguration())
+                 configuration: SmaSunnyIslandBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SmaSunnyIslandBatConfiguration(), **kwargs)

@@ -32,8 +32,9 @@ class SolarLogCounterSetup(ComponentSetup[SolarLogCounterConfiguration]):
                  name: str = "Solar-Log Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: SolarLogCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SolarLogCounterConfiguration())
+                 configuration: SolarLogCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SolarLogCounterConfiguration(), **kwargs)
 
 
 class SolarLogInverterConfiguration:
@@ -46,5 +47,6 @@ class SolarLogInverterSetup(ComponentSetup[SolarLogInverterConfiguration]):
                  name: str = "Solar-Log Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: SolarLogInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SolarLogInverterConfiguration())
+                 configuration: SolarLogInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SolarLogInverterConfiguration(), **kwargs)

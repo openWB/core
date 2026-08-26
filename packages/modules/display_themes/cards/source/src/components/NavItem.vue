@@ -14,7 +14,7 @@ export default {
   <i-nav-item
     :to="to"
     active-class="-active"
-    class="_border _border-color:primary _text-align:center"
+    class="_border _text-align:center"
   >
     <slot />
   </i-nav-item>
@@ -24,9 +24,11 @@ export default {
 .nav-item {
   margin-bottom: var(--spacing) !important;
   border-radius: var(--border-radius);
+  border-color: var(--color--light);
 }
 
 .nav-item.-active {
-  background-color: var(--color--primary);
+  background-color: var(--color--dark-40);
+  color: var(--color--light);
 }
 </style>

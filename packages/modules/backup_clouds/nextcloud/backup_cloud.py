@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 import logging
 import re
-from typing import List
+from typing import Callable, List, Tuple
 
+from dataclass_utils._dataclass_asdict import asdict
+from helpermodules.pub import Pub
 from modules.backup_clouds.nextcloud.config import NextcloudBackupCloud, NextcloudBackupCloudConfiguration
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
@@ -10,7 +12,7 @@ from modules.common.abstract_device import DeviceDescriptor
 log = logging.getLogger(__name__)
 
 
-def _parse_nextcloud_base_url_and_user(config: NextcloudBackupCloudConfiguration, backup_filename: str):
+def _parse_nextcloud_upload_url_and_user(config: NextcloudBackupCloudConfiguration) -> Tuple[str, str]:
     """
     Liefert Basis-URL (ohne /public.php/webdav/...) und Benutzer (Token oder User).
     Zusätzlich wird der WebDAV-Pfad zum Backup-Verzeichnis zurückgegeben.
@@ -24,17 +26,10 @@ def _parse_nextcloud_base_url_and_user(config: NextcloudBackupCloudConfiguration
             )
         upload_url = f"{url_match[1]}://{url_match[2]}"
         user = url_match[url_match.lastindex]
-        base_path = "/public.php/webdav"
     else:
         upload_url = config.ip_address
         user = config.user
-        # Für Benutzer-Accounts ist normalerweise /remote.php/dav/files/<user>/ üblich.
-        # In dieser Implementierung verwenden wir aber bewusst weiterhin den
-        # öffentlichen WebDAV-Pfad wie beim vorherigen Verhalten:
-        #   /public.php/webdav/<filename>
-        base_path = "/public.php/webdav"
-
-    return upload_url, user, base_path
+    return upload_url, user
 
 
 def _list_backups(config: NextcloudBackupCloudConfiguration,
@@ -46,8 +41,10 @@ def _list_backups(config: NextcloudBackupCloudConfiguration,
     max_backups = config.max_backups
     if not max_backups or max_backups <= 0:
         return []
+    if config.base_path is None:
+        return []
 
-    upload_url, user, base_path = _parse_nextcloud_base_url_and_user(config, backup_filename)
+    upload_url, user = _parse_nextcloud_upload_url_and_user(config)
 
     # Robust gruppieren: OpenWB-Backups enden entweder auf ".openwb-backup"
     # oder auf ".openwb-backup.gpg". Der Teil vor dem ersten Punkt kann
@@ -63,7 +60,7 @@ def _list_backups(config: NextcloudBackupCloudConfiguration,
         return []
 
     # WebDAV PROPFIND, um Dateiliste zu bekommen
-    list_path = f"{base_path}/"
+    list_path = f"{config.base_path}/"
     response = req.get_http_session().request(
         "PROPFIND",
         f"{upload_url}{list_path}",
@@ -108,8 +105,10 @@ def _enforce_retention(config: NextcloudBackupCloudConfiguration, backup_filenam
     max_backups = config.max_backups
     if not max_backups or max_backups <= 0:
         return
+    if config.base_path is None:
+        return
 
-    upload_url, user, base_path = _parse_nextcloud_base_url_and_user(config, backup_filename)
+    upload_url, user = _parse_nextcloud_upload_url_and_user(config)
     all_backups = _list_backups(config, backup_filename)
     if len(all_backups) <= max_backups:
         return
@@ -118,7 +117,7 @@ def _enforce_retention(config: NextcloudBackupCloudConfiguration, backup_filenam
     to_delete = all_backups[:-max_backups]
 
     for name in to_delete:
-        delete_path = f"{base_path}/{name}" if base_path else name
+        delete_path = f"{config.base_path}/{name}" if config.base_path else name
         try:
             log.info("Lösche altes Nextcloud-Backup: %s", delete_path)
             resp = req.get_http_session().delete(
@@ -135,21 +134,62 @@ def _enforce_retention(config: NextcloudBackupCloudConfiguration, backup_filenam
                       delete_path, str(error).split("\n")[0])
 
 
-def upload_backup(config: NextcloudBackupCloudConfiguration, backup_filename: str, backup_file: bytes) -> None:
-    upload_url, user, base_path = _parse_nextcloud_base_url_and_user(config, backup_filename)
-
-    # Backup-Datei hochladen
+def _put_backup_file(upload_url: str,
+                     base_path: str,
+                     backup_filename: str,
+                     backup_file: bytes,
+                     user: str,
+                     password: str) -> None:
     req.get_http_session().put(
         f"{upload_url}{base_path}/{backup_filename.lstrip('/')}",
         headers={'X-Requested-With': 'XMLHttpRequest', },
         data=backup_file,
-        auth=(user, '' if config.password is None else config.password),
+        auth=(user, password),
         timeout=60
     )
 
+
+def _determine_working_base_path(config: NextcloudBackupCloud,
+                                 user: str,
+                                 upload_call: Callable[[str], None]) -> None:
+    base_path_candidates = ["/public.php/webdav",
+                            f"/public.php/dav/files/{user}",
+                            "/remote.php/webdav",
+                            f"/remote.php/dav/files/{user}"]
+
+    for base_path in [config.configuration.base_path] + base_path_candidates:
+        try:
+            if base_path:
+                upload_call(base_path)
+                if base_path != config.configuration.base_path:
+                    config.configuration.base_path = base_path
+                    Pub().pub("openWB/set/system/backup_cloud/config", asdict(config))
+                return
+        except Exception as error:
+            log.warning("Fehler beim Upload des Nextcloud-Backups mit base_path '%s': %s",
+                        base_path, str(error).split("\n")[0])
+
+    raise ValueError("Upload des Nextcloud-Backups mit keinem der üblichen Upload-Pfade erfolgreich. "
+                     "Bitte überprüfen Sie die Konfiguration und die Erreichbarkeit der Nextcloud.")
+
+
+def upload_backup(config: NextcloudBackupCloud, backup_filename: str, backup_file: bytes) -> None:
+    upload_url, user = _parse_nextcloud_upload_url_and_user(config.configuration)
+    password = '' if config.configuration.password is None else config.configuration.password
+
+    # Erst den bekannten base_path versuchen, dann Kandidaten.
+    _determine_working_base_path(config, user,
+                                 lambda base_path: _put_backup_file(upload_url,
+                                                                    base_path,
+                                                                    backup_filename,
+                                                                    backup_file,
+                                                                    user,
+                                                                    password)
+                                 )
+
     # Aufbewahrung alter Backups erzwingen (wenn konfiguriert)
     try:
-        _enforce_retention(config, backup_filename)
+        _enforce_retention(config.configuration, backup_filename)
     except Exception as error:
         log.error("Fehler bei der Bereinigung alter Nextcloud-Backups: %s",
                   str(error).split("\n")[0])
@@ -157,7 +197,7 @@ def upload_backup(config: NextcloudBackupCloudConfiguration, backup_filename: st
 
 def create_backup_cloud(config: NextcloudBackupCloud):
     def updater(backup_filename: str, backup_file: bytes):
-        upload_backup(config.configuration, backup_filename, backup_file)
+        upload_backup(config, backup_filename, backup_file)
     return updater
 
 

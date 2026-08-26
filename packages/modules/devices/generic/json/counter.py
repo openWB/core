@@ -7,7 +7,7 @@ from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount._simcounter import SimCounter
-from modules.common.store import get_counter_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.generic.json.config import JsonCounterSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
@@ -32,11 +32,12 @@ class JsonCounter(AbstractCounter):
         self.jq_voltages = [jq.compile(v) for v in config.jq_voltages] if all(config.jq_voltages) else None
         self.jq_imported = jq.compile(config.jq_imported) if config.jq_imported else None
         self.jq_exported = jq.compile(config.jq_exported) if config.jq_exported else None
+        self.jq_frequency = jq.compile(config.jq_frequency) if config.jq_frequency else None
 
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
-        self.store = get_counter_value_store(self.component_config.id)
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, self.component_config.type)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self._compile_jq_filters()
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
@@ -64,6 +65,11 @@ class JsonCounter(AbstractCounter):
             if self.jq_voltages is not None else None
         )
 
+        frequency = (
+            float(self.jq_frequency.input(response).first())
+            if self.jq_frequency is not None else None
+        )
+
         if self.jq_imported is None or self.jq_exported is None:
             self.peak_filter.check_values(power)
             imported, exported = self.sim_counter.sim_count(power)
@@ -79,7 +85,8 @@ class JsonCounter(AbstractCounter):
             powers=powers,
             currents=currents,
             power_factors=power_factors,
-            voltages=voltages
+            voltages=voltages,
+            frequency=frequency
         )
         self.store.set(counter_state)
 

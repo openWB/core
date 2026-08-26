@@ -14,10 +14,10 @@
 				>{{ currentSoc }}%
 			</InfoItem>
 			<InfoItem class="infoitem" heading="Batterie-Kapazität"
-				>{{ (evTemplate.battery_capacity ?? 0) / 1000 }} kWh
+				>{{ (evTemplate?.battery_capacity ?? 0) / 1000 }} kWh
 			</InfoItem>
 			<InfoItem class="infoitem" heading="Ladestrom">
-				{{ evTemplate.max_current_multi_phases ?? 0 }} A
+				{{ evTemplate?.max_current_multi_phases ?? 0 }} A
 			</InfoItem>
 			<ConfigItem2
 				title="Ziel-SoC"
@@ -94,11 +94,11 @@ const props = defineProps<{
 }>()
 const emit = defineEmits(['update:modelValue', 'deletePlan'])
 const cp = computed(() => chargePoints[props.cpId])
-const currentSoc = ref(cp.value.soc)
+const currentSoc = ref(cp.value?.soc ?? 0)
 var targetSoc = ref(currentSoc.value < 80 ? 80 : 100)
 const bufferMinutes = ref(30)
-const evTemplate = computed(() => evTemplates[cp.value.evTemplate])
-//const chargeTemplate = computed(() => chargeTemplates[cp.value.evTemplate])
+const evTemplate = computed(() => evTemplates[cp.value?.evTemplate])
+//const chargeTemplate = computed(() => chargeTemplates[cp.value?.evTemplate])
 
 const price = computed({
 	get() {

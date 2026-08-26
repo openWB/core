@@ -41,8 +41,9 @@ class GoodWeBatSetup(ComponentSetup[GoodWeBatConfiguration]):
                  name: str = "GoodWe Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: GoodWeBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or GoodWeBatConfiguration())
+                 configuration: GoodWeBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or GoodWeBatConfiguration(), **kwargs)
 
 
 class GoodWeCounterConfiguration:
@@ -55,8 +56,9 @@ class GoodWeCounterSetup(ComponentSetup[GoodWeCounterConfiguration]):
                  name: str = "GoodWe Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: GoodWeCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or GoodWeCounterConfiguration())
+                 configuration: GoodWeCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or GoodWeCounterConfiguration(), **kwargs)
 
 
 class GoodWeInverterConfiguration:
@@ -69,5 +71,6 @@ class GoodWeInverterSetup(ComponentSetup[GoodWeInverterConfiguration]):
                  name: str = "GoodWe Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: GoodWeInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or GoodWeInverterConfiguration())
+                 configuration: GoodWeInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or GoodWeInverterConfiguration(), **kwargs)

@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 import logging
-from typing import Dict, Iterable, List, Optional, Union
+from typing import Dict, Iterable, Optional, Union
 
-from helpermodules.cli import run_using_positional_cli_args
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.common import req
 from modules.devices.solar_watt.solar_watt.bat import SolarWattBat
 from modules.devices.solar_watt.solar_watt.counter import SolarWattCounter
 from modules.devices.solar_watt.solar_watt.config import (SolarWatt, SolarWattBatSetup,
-                                                          SolarWattConfiguration,
                                                           SolarWattCounterSetup,
                                                           SolarWattInverterSetup)
 from modules.devices.solar_watt.solar_watt.inverter import SolarWattInverter
@@ -66,42 +64,6 @@ def create_device(device_config: SolarWatt):
         ),
         component_updater=MultiComponentUpdater(update_components)
     )
-
-
-def read_legacy(component_type: str,
-                ip_address: str,
-                ip2_address: Optional[str] = None,
-                gateway: Optional[int] = None) -> None:
-    if gateway is not None:
-        if gateway == 0:
-            energy_manager = True
-        else:
-            energy_manager = False
-    else:
-        energy_manager = False
-
-    if component_type == "bat" or component_type == "counter":
-        if energy_manager:
-            ip = ip_address
-        else:
-            ip = ip2_address
-        device = create_device(SolarWatt(configuration=SolarWattConfiguration(
-            ip_address=ip, energy_manager=bool(energy_manager))))
-        if component_type == "bat":
-            device.add_component(SolarWattBatSetup(id=None))
-        else:
-            device.add_component(SolarWattCounterSetup(id=None))
-    else:
-        device = create_device(SolarWatt(configuration=SolarWattConfiguration(
-            ip_address=ip_address, energy_manager=bool(energy_manager))))
-        device.add_component(SolarWattInverterSetup(id=1))
-    log.debug('SolarWatt ip_address: ' + ip_address + ', ip2_address: ' +
-              str(ip2_address) + ", gateway: " + str(gateway))
-    device.update()
-
-
-def main(argv: List[str]):
-    run_using_positional_cli_args(read_legacy, argv)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=SolarWatt)

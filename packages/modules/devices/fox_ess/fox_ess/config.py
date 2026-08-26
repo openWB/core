@@ -38,8 +38,9 @@ class FoxEssBatSetup(ComponentSetup[FoxEssBatConfiguration]):
                  name: str = "FoxESS Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: FoxEssBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or FoxEssBatConfiguration())
+                 configuration: FoxEssBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or FoxEssBatConfiguration(), **kwargs)
 
 
 @auto_str
@@ -54,8 +55,9 @@ class FoxEssCounterSetup(ComponentSetup[FoxEssCounterConfiguration]):
                  name: str = "FoxESS Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: FoxEssCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or FoxEssCounterConfiguration())
+                 configuration: FoxEssCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or FoxEssCounterConfiguration(), **kwargs)
 
 
 @auto_str
@@ -70,5 +72,6 @@ class FoxEssInverterSetup(ComponentSetup[FoxEssInverterConfiguration]):
                  name: str = "FoxESS Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: FoxEssInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or FoxEssInverterConfiguration())
+                 configuration: FoxEssInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or FoxEssInverterConfiguration(), **kwargs)

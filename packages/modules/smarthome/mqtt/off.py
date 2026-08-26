@@ -10,7 +10,7 @@ def on_connect(client, userdata, flags, rc) -> None:
 
 
 def on_message(client, userdata, msg) -> None:
-    global numberOfSupportedDevices
+    pass  # No action needed for incoming messages in this script
 
 
 devicenumber = str(sys.argv[1])
@@ -21,7 +21,7 @@ client.on_connect = on_connect
 client.on_message = on_message
 startTime = time.time()
 waitTime = 2
-client.connect("localhost")
+client.connect(host="localhost", port=1886)
 while True:
     client.loop()
     elapsedTime = time.time() - startTime

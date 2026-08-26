@@ -37,8 +37,9 @@ class SungrowSGCounterSetup(ComponentSetup[SungrowSGCounterConfiguration]):
                  name: str = "Sungrow SG Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: SungrowSGCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SungrowSGCounterConfiguration())
+                 configuration: SungrowSGCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SungrowSGCounterConfiguration(), **kwargs)
 
 
 class SungrowSGInverterConfiguration:
@@ -51,5 +52,6 @@ class SungrowSGInverterSetup(ComponentSetup[SungrowSGInverterConfiguration]):
                  name: str = "Sungrow SG Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: SungrowSGInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or SungrowSGInverterConfiguration())
+                 configuration: SungrowSGInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or SungrowSGInverterConfiguration(), **kwargs)

@@ -1,9 +1,9 @@
 <template>
   <BaseMessage
-  :show-message="showMessage"
-  :message="message"
-  :type="messageType"
-/>
+    :show-message="showMessage"
+    :message="message"
+    :type="messageType"
+  />
 </template>
 
 <script setup lang="ts">
@@ -16,7 +16,6 @@ const props = defineProps<{
   faultMessage?: boolean;
 }>();
 const mqttStore = useMqttStore();
-
 
 const showMessage = computed(() => {
   return state.value !== undefined && state.value !== 0;

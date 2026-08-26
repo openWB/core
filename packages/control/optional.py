@@ -42,7 +42,7 @@ class Optional(OcppMixin):
     def flexible_tariff_module(self, value: TypingOptional[ConfigurableFlexibleTariff]):
         if (value is None or
                 (self._flexible_tariff_module and value and
-                 self._flexible_tariff_module.config.name != value.config.name)):
+                 self._flexible_tariff_module.config != value.config)):
             self.data.electricity_pricing.flexible_tariff.get = PricingGet()
             self._reset_state(self.data.electricity_pricing.flexible_tariff)
         self._flexible_tariff_module = value
@@ -56,7 +56,7 @@ class Optional(OcppMixin):
     def grid_fee_module(self, value: TypingOptional[ConfigurableGridFee]):
         if (value is None or
                 (self._grid_fee_module and value and
-                 self._grid_fee_module.config.name != value.config.name)):
+                 self._grid_fee_module.config != value.config)):
             self.data.electricity_pricing.grid_fee.get = PricingGet()
             self._reset_state(self.data.electricity_pricing.grid_fee)
         self._grid_fee_module = value

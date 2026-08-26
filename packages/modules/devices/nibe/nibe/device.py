@@ -16,7 +16,6 @@ def create_device(device_config: Nibe):
     client = None
 
     def create_counter_component(component_config: NibeCounterSetup):
-        nonlocal client
         return NibeCounter(component_config, device_id=device_config.id, client=client)
 
     def update_components(components: Iterable[NibeCounter]):
