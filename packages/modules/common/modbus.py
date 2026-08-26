@@ -173,7 +173,7 @@ class ModbusClient:
         pass
 
     @overload
-    def read_coils(self, address: int, count: int, **kwargs: Any) -> List[bool]:
+    def read_coils(self, address: int, count: int, **kwargs: Any) -> Union[bool, List[bool]]:
         pass
 
     def read_coils(self, address: int, count: int = 1, **kwargs: Any) -> Union[bool, List[bool]]:
