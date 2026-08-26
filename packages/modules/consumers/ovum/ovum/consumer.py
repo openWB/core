@@ -6,7 +6,7 @@ from modules.common.abstract_consumer import CurrentValues
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
 from modules.common.component_type import ComponentType
-from modules.common.configurable_consumer import ConfigurableConsumer
+from modules.common.configurable_consumer import ConfigurableConsumer, SetLimitData
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.ovum.ovum.config import Ovum
@@ -54,7 +54,7 @@ def create_consumer(config: Ovum):
             exported=exported
         )
 
-    def set_limit(power_limit: Optional[float]) -> None:
+    def set_power_limit(power_limit: Optional[float], data: SetLimitData) -> None:
         # ConsumerUsage.SUSPENDABLE_TUNABLE: externe Leistungsvorgabe. Ist-Modus wird vor dem
         # Schreiben gelesen, um unnötige Moduswechsel-Befehle zu vermeiden.
         unit = config.configuration.modbus_id
@@ -119,7 +119,7 @@ def create_consumer(config: Ovum):
                                 error_handler=error_handler,
                                 update=update,
                                 send_values=send_values,
-                                set_power_limit=set_limit,
+                                set_power_limit=set_power_limit,
                                 switch_on=switch_on,
                                 switch_off=switch_off)
 

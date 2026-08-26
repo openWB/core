@@ -5,7 +5,7 @@ from modules.common.abstract_consumer import CurrentValues
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
 from modules.common.component_type import ComponentType
-from modules.common.configurable_consumer import ConfigurableConsumer
+from modules.common.configurable_consumer import ConfigurableConsumer, SetLimitData
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.sample.sample.config import SampleConsumer
@@ -55,7 +55,7 @@ def create_consumer(config: SampleConsumer):
         )
 
     # ConsumerUsage.SUSPENDABLE_TUNABLE
-    def set_limit(power_limit: float) -> None:
+    def set_power_limit(power_limit: float, data: SetLimitData) -> None:
         nonlocal client
         client.write_registers(1000, power_limit, unit=config.configuration.modbus_id)
 
@@ -80,7 +80,7 @@ def create_consumer(config: SampleConsumer):
                                 error_handler=error_handler,
                                 update=update,
                                 send_values=send_values,
-                                set_power_limit=set_limit,
+                                set_power_limit=set_power_limit,
                                 switch_on=switch_on,
                                 switch_off=switch_off)
 

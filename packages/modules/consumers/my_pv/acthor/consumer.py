@@ -4,7 +4,7 @@ import logging
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
 from modules.common.component_type import ComponentType
-from modules.common.configurable_consumer import ConfigurableConsumer
+from modules.common.configurable_consumer import ConfigurableConsumer, SetLimitData
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.my_pv.acthor.config import Acthor
@@ -61,14 +61,14 @@ def create_consumer(config: Acthor):
             temperatures=[resp[Register.TEMP0]/10, resp[Register.TEMP1]/10, resp[Register.TEMP2]/10]
         )
 
-    def set_limit(power_limit: float) -> None:
+    def set_power_limit(power_limit: float, data: SetLimitData) -> None:
         power_limit = power_limit * FACTORS.get(config.configuration.model, 9000)/config.configuration.max_power
         client.write_registers(1000, power_limit, unit=config.configuration.modbus_id)
     return ConfigurableConsumer(consumer_config=config,
                                 initializer=initializer,
                                 error_handler=error_handler,
                                 update=update,
-                                set_power_limit=set_limit,)
+                                set_power_limit=set_power_limit,)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=Acthor)
