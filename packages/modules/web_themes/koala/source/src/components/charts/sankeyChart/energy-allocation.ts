@@ -147,6 +147,28 @@ export function groupNodes(
 }
 
 /**
+ * Fold edges sharing the same from/to into one summed edge. The hybrid
+ * carve-out and the proportional pass can both emit a PV -> battery edge
+ * whenever both nodes still have power left over (any system with a second
+ * inverter or a second battery). Left unmerged that draws two ribbons between
+ * the same pair of nodes and lists two tooltip entries for one flow.
+ */
+function mergeEdges(edges: FlowEdge[]): FlowEdge[] {
+  const merged: FlowEdge[] = [];
+  for (const edge of edges) {
+    const existing = merged.find(
+      (candidate) => candidate.from === edge.from && candidate.to === edge.to,
+    );
+    if (existing === undefined) {
+      merged.push({ ...edge });
+    } else {
+      existing.flow += edge.flow;
+    }
+  }
+  return merged;
+}
+
+/**
  * Compute the Sankey edges from the raw component totals.
  *
  * Rule: uniform proportional (every sink gets the same source mix), with one
@@ -214,7 +236,7 @@ export function allocate(input: EnergyFlowInput): AllocationResult {
   }
 
   return {
-    edges,
+    edges: mergeEdges(edges),
     nodes: [...sources, ...sinks],
     sources,
     sinks,
