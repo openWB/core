@@ -6,7 +6,7 @@ from modules.common.abstract_consumer import CurrentValues
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
 from modules.common.component_type import ComponentType
-from modules.common.configurable_consumer import ConfigurableConsumer
+from modules.common.configurable_consumer import ConfigurableConsumer, SetLimitData
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.idm.idm.config import Idm
@@ -71,7 +71,7 @@ def create_consumer(config: Idm):
             exported=exported
         )
 
-    def set_limit(power_limit: float) -> None:
+    def set_power_limit(power_limit: float, data: SetLimitData) -> None:
         # Schreibt den von openWB berechneten Überschuss in Register 74 (PV-Überschuss [kW]).
         # Keine echte Leistungsvorgabe - die IDM-Regelung berechnet ihre Strategie selbst anhand dieses Wertes.
         # Hinweis: Dies überschreibt den intern berechneten PV-Überschuss der IDM-Regelung und kann
@@ -84,7 +84,7 @@ def create_consumer(config: Idm):
                                 error_handler=error_handler,
                                 update=update,
                                 send_values=send_values,
-                                set_power_limit=set_limit)
+                                set_power_limit=set_power_limit)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=Idm)

@@ -3,7 +3,7 @@ import logging
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
 from modules.common.component_type import ComponentType
-from modules.common.configurable_consumer import ConfigurableConsumer
+from modules.common.configurable_consumer import ConfigurableConsumer, SetLimitData
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.askoma.askoheat.config import Askoheat
@@ -33,14 +33,14 @@ def create_consumer(config: Askoheat):
             temperatures=[client.read_input_registers(638, ModbusDataType.INT_16, unit=config.configuration.modbus_id)]
         )
 
-    def set_limit(power_limit: float) -> None:
+    def set_power_limit(power_limit: float, data: SetLimitData) -> None:
         client.write_register(201, power_limit, unit=config.configuration.modbus_id)
 
     return ConfigurableConsumer(consumer_config=config,
                                 initializer=initializer,
                                 error_handler=error_handler,
                                 update=update,
-                                set_power_limit=set_limit,)
+                                set_power_limit=set_power_limit,)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=Askoheat)
