@@ -17,7 +17,6 @@ from modules.common.component_type import ComponentType
 class KwargsDict(TypedDict):
     device_id: int
     modbus_id: int
-    endianess: Endian
     client: ModbusTcpClient_
 
 
@@ -29,7 +28,6 @@ class KostalPlenticoreInverter(AbstractInverter):
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
         self.modbus_id: int = self.kwargs['modbus_id']
-        self.endianess: Endian = self.kwargs['endianess']
         self.client: ModbusTcpClient_ = self.kwargs['client']
         self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
@@ -42,15 +40,15 @@ class KostalPlenticoreInverter(AbstractInverter):
 
     def update(self) -> None:
         power = self.client.read_holding_registers(
-            575, ModbusDataType.INT_16, unit=self.modbus_id, wordorder=self.endianess) * -1
+            575, ModbusDataType.INT_16, unit=self.modbus_id, wordorder=Endian.Little) * -1
         currents = [self.client.read_holding_registers(
-            reg, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=self.endianess) for reg in [154, 160, 166]]
+            reg, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=Endian.Little) for reg in [154, 160, 166]]
         exported = self.client.read_holding_registers(
-            320, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=self.endianess)
+            320, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=Endian.Little)
         # Try to read dc_power, if it fails just skip it and set to None
         try:
             dc_power = self.client.read_holding_registers(
-                1066, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=self.endianess) * -1
+                1066, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=Endian.Little) * -1
             self.fault_state.no_error()
         except Exception:
             dc_power = None
