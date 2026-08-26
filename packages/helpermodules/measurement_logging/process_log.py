@@ -272,7 +272,7 @@ def get_monthly_log(date: str):
         log.debug(f"Ungültiges Datum für Monats-Summen: {date}")
         return {"entries": [], "names": {}, "colors": {}, "totals": {}}
     # Nur Logs ab dem ältesten Tageslog auswerten
-    # Sonst werden unötige totals Werte gespeichert
+    # Sonst werden unnötige Totals-Werte gespeichert
     oldest_log_day = _oldest_log_day()
     if (oldest_log_day is None
             or date < oldest_log_day[:6]):    # Jahr und Monat
@@ -879,8 +879,8 @@ def generate_daily_totals_for_year(year: str):
             results = list(executor.map(get_monthly_parallel, months_list))
 
     except BrokenProcessPool:
-        print(f"Beim vorgenerieren der daily totals fürs Jahr {year} "
-              f"ist ein Worker-Prozess unerwartet gestorben!")
+        log.exception(f"Beim vorgenerieren der daily totals fürs Jahr {year} "
+                      f"ist ein Worker-Prozess unerwartet gestorben!")
         results = []
 
     log.debug(f"Tages-Summen für das Jahr {year} wurden berechnet und gespeichert.")

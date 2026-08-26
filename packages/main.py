@@ -240,7 +240,7 @@ class HandlerAlgorithm:
             prev_month = timecheck.get_relative_date_string(today, month_offset=-1)[:6]
             # Neuer Monat hat angefangen, daher Monats Totals speichern
             if today[6:8] == "01":
-                save_monthly_source_totals(prev_month ,None, saving=True)       
+                save_monthly_source_totals(prev_month, None, saving=True)       
                 
             thread_errors_path = Path(Path(__file__).resolve().parents[1]/"ramdisk"/"thread_errors.log")
             with thread_errors_path.open("w") as f:

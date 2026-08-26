@@ -5,6 +5,7 @@ from typing import Dict
 from unittest.mock import Mock, mock_open
 import pytest
 import datetime
+import tempfile
 
 from helpermodules.measurement_logging.process_log import (
     analyse_percentage,
@@ -432,8 +433,9 @@ def test_get_monthly_log_aggregates_days_and_saves_missing_month_totals(monkeypa
     get_totals_mock = Mock(return_value={"mocked": "totals"})
 
     monkeypatch.setattr("helpermodules.measurement_logging.process_log._oldest_log_day", Mock(return_value="20240401"))
+
     monkeypatch.setattr("helpermodules.measurement_logging.process_log._get_data_folder_path",
-                        Mock(return_value="/tmp"))
+                        Mock(return_value=tempfile.mkdtemp(prefix="process_log_test_")))
     monkeypatch.setattr("helpermodules.measurement_logging.process_log.timecheck.create_timestamp_YYYYMM",
                         Mock(return_value="202406"))
     monkeypatch.setattr("helpermodules.measurement_logging.process_log.timecheck.create_timestamp_YYYYMMDD",
