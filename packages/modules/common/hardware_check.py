@@ -93,7 +93,7 @@ class SeriesHardwareCheckMixin:
                             pymodbus.exceptions.ConnectionException) as e:
                         evse_check_passed = self.handle_exception(e)
                         # nur warten, wenn danach noch ein Versuch folgt
-                        if attempt < MAX_ATTEMPTS - 2 and evse_check_passed is False:
+                        if attempt < MAX_ATTEMPTS - 1 and evse_check_passed is False:
                             time.sleep(RETRY_DELAY_SECONDS)
         except Exception as e:
             evse_check_passed = self.handle_exception(e)
