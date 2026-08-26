@@ -857,8 +857,12 @@ def generate_daily_totals_for_year(year: str):
     if not (len(year) == 4 and year.isdigit()):
         log.debug(f"Ungültiges Jahr für Jahres-Summen: {year}")
         return []
-    months_list = []
+
     current_year = timecheck.create_timestamp_YYYY()
+    if year > current_year:
+        return []
+
+    months_list = []
     if current_year == year:
         # aktuelles Jahr
         current_month = timecheck.create_timestamp_YYYYMM()[4:6]
@@ -871,20 +875,20 @@ def generate_daily_totals_for_year(year: str):
             month_str = f"{year}{month:02d}"
             months_list.append(month_str)
     try:
-        with ProcessPoolExecutor() as executor:
+        with ProcessPoolExecutor(max_workers=2) as executor:
             results = list(executor.map(get_monthly_parallel, months_list))
 
     except BrokenProcessPool:
-        # Fängt Out of Memory: Killed process ab
         print(f"Beim vorgenerieren der daily totals fürs Jahr {year} "
               f"ist ein Worker-Prozess unerwartet gestorben!")
+        results = []
 
     log.debug(f"Tages-Summen für das Jahr {year} wurden berechnet und gespeichert.")
     return results
 
 
 def get_monthly_parallel(month: str):
-    this_month = timecheck.create_timestamp_YYYYMM()[4:6]
+    this_month = timecheck.create_timestamp_YYYYMM()
     monthly_entries = []
     monthly_names = {}
     monthly_colors = {}
