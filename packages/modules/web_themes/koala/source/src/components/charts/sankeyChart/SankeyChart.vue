@@ -19,23 +19,24 @@
 import { computed } from 'vue';
 import { useQuasar } from 'quasar';
 import { createTypedChart } from 'vue-chartjs';
-import { Tooltip, LinearScale } from 'chart.js';
+import { LinearScale } from 'chart.js';
 import { SankeyController, Flow } from 'chartjs-chart-sankey';
-import type { ChartData, ChartOptions, TooltipItem } from 'chart.js';
+import type { ChartData, ChartOptions } from 'chart.js';
 import type { SankeyDataPoint } from 'chartjs-chart-sankey';
 import { useSankeyData } from './useSankeyData';
 import { useSankeyHover } from './useSankeyHover';
+import { createFlowLabels } from './sankey-flow-labels';
 
 // A typed sankey component (like vue-chartjs's built-in Line/Bar) so the
 // `data`/`options` props are fixed to 'sankey' instead of the whole ChartType
 // union. createTypedChart also registers what we pass: the sankey controller
 // and element, plus the LinearScale its defaults require (non-obvious, since a
-// sankey shows no axes) and the Tooltip.
+// sankey shows no axes). The Tooltip is deliberately not registered — values
+// are drawn on the flows instead, see sankey-flow-labels.
 const ChartjsSankey = createTypedChart('sankey', [
   SankeyController,
   Flow,
   LinearScale,
-  Tooltip,
 ]);
 
 defineOptions({ name: 'SankeyChart' });
@@ -56,9 +57,6 @@ const hasFlows = computed(() => allocation.value.edges.length > 0);
 // have no color and fall back to black. A fresh chart parses only once.
 const edgeCount = computed(() => allocation.value.edges.length);
 
-const { hoverPlugin, focusColors } = useSankeyHover(colorForNode);
-const chartPlugins = [hoverPlugin];
-
 const formatWatts = (watts: number): string => {
   if (Math.abs(watts) >= 1000) {
     return `${(watts / 1000).toLocaleString('de-DE', {
@@ -68,6 +66,12 @@ const formatWatts = (watts: number): string => {
   }
   return `${Math.round(watts)} W`;
 };
+
+const { hoverPlugin, focusColors } = useSankeyHover(colorForNode);
+const chartPlugins = [
+  hoverPlugin,
+  createFlowLabels({ format: formatWatts, color: labelColor }),
+];
 
 const chartData = computed<ChartData<'sankey'>>(() => {
   // Reference the theme so a light/dark toggle rebuilds data and re-resolves
@@ -120,18 +124,6 @@ const chartOptions = computed<ChartOptions<'sankey'>>(() => ({
   responsive: true,
   maintainAspectRatio: false,
   animation: false,
-  plugins: {
-    tooltip: {
-      callbacks: {
-        label: (item: TooltipItem<'sankey'>) => {
-          const raw = item.raw as SankeyDataPoint;
-          const from = allocation.value.nodes.find((node) => node.id === raw.from);
-          const to = allocation.value.nodes.find((node) => node.id === raw.to);
-          return `${from?.label ?? raw.from} → ${to?.label ?? raw.to}: ${formatWatts(raw.flow)}`;
-        },
-      },
-    },
-  },
 }));
 </script>
 
