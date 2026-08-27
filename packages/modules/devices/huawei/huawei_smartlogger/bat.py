@@ -58,7 +58,7 @@ class Huawei_SmartloggerBat(AbstractBat):
                 self.__tcp_client.write_register(47100, 0, data_type=ModbusDataType.UINT_16, unit=modbus_id)
                 self.last_mode = None
         elif power_limit == 0:
-            log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt und nicht entladen")
+            log.debug("Aktive Batteriesteuerung Huawei Smartlogger. Batterie wird auf Stop gesetzt und nicht entladen")
             if self.last_mode != 'stop':
                 self.last_mode = 'stop'
             # discharge
@@ -67,7 +67,7 @@ class Huawei_SmartloggerBat(AbstractBat):
             self.__tcp_client.write_register(47083, 1, data_type=ModbusDataType.UINT_16, unit=modbus_id)
             self.__tcp_client.write_register(47249, 0, data_type=ModbusDataType.UINT_16, unit=modbus_id)
         elif power_limit < 0:
-            log.debug(f"Aktive Batteriesteuerung Victron:"
+            log.debug(f"Aktive Batteriesteuerung Huawei Smartlogger:"
                       f"Speicher soll mit {power_limit} W entladen werden.")
             if self.last_mode != 'discharge':
                 self.last_mode = 'discharge'
@@ -77,7 +77,7 @@ class Huawei_SmartloggerBat(AbstractBat):
             self.__tcp_client.write_register(47083, 1, data_type=ModbusDataType.UINT_16, unit=modbus_id)
             self.__tcp_client.write_register(47249, -power_limit, data_type=ModbusDataType.UINT_16, unit=modbus_id)
         elif power_limit > 0:
-            log.debug(f"Aktive Batteriesteuerung Victron:"
+            log.debug(f"Aktive Batteriesteuerung Huawei Smartlogger:"
                       f"Speicher soll mit {power_limit} W geladen werden.")
             if self.last_mode != 'charge':
                 self.last_mode = 'charge'
