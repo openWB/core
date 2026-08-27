@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import TypedDict, Any
+from typing import TypedDict, Any, Optional
 
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
@@ -49,6 +49,49 @@ class FoxEssH3SmartBat(AbstractBat):
             exported=exported
         )
         self.store.set(bat_state)
+
+    def set_power_limit(self, power_limit: Optional[int]) -> None:
+        unit = self.component_config.configuration.modbus_id
+
+        if power_limit is None:
+            log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
+            if self.last_mode is not None:
+                # remote control disabled, mode self use (1)
+                self.__tcp_client.write_register(46001, 0, data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_register(49203, 1, data_type=ModbusDataType.UINT_16, unit=unit)
+                self.last_mode = None
+        elif power_limit == 0:
+            # remote control enabled, watchdog 60s, active power 0W, mode FeedIn Priority (2)
+            log.debug("Aktive Batteriesteuerung. FoxEss H3 Smart wird auf Stop gesetzt und nicht entladen")
+            if self.last_mode != 'stop':
+                self.__tcp_client.write_register(46001, 1, data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_register(46002, 60, data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_register(49203, 2, data_type=ModbusDataType.UINT_16, unit=unit)
+                self.last_mode = 'stop'
+            self.__tcp_client.write_register(46003, 0, data_type=ModbusDataType.UINT_16, unit=unit)
+        elif power_limit < 0:
+            # remote control enabled, watchdog 60s, active power 0W, mode Backup (3)
+            log.debug(f"Aktive Batteriesteuerung FoxEss H3 Smart:"
+                      f"Speicher soll mit {power_limit} W entladen werden")
+            if self.last_mode != 'discharge':
+                self.__tcp_client.write_register(46001, 1, data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_register(46002, 60, data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_register(49203, 3, data_type=ModbusDataType.UINT_16, unit=unit)
+                self.last_mode = 'discharge'
+            self.__tcp_client.write_register(46003, -power_limit, data_type=ModbusDataType.UINT_16, unit=unit)
+        elif power_limit > 0:
+            # remote control enabled, watchdog 60s, active power 0W, mode Backup (3)
+            log.debug(f"Aktive Batteriesteuerung FoxEss H3 Smart:"
+                      f"Speicher soll mit {power_limit} W geladen werden")
+            if self.last_mode != 'charge':
+                self.__tcp_client.write_register(46001, 1, data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_register(46002, 60, data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_register(49203, 3, data_type=ModbusDataType.UINT_16, unit=unit)
+                self.last_mode = 'charge'
+            self.__tcp_client.write_register(46003, -power_limit, data_type=ModbusDataType.UINT_16, unit=unit)
+
+    def power_limit_controllable(self) -> bool:
+        return True
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=FoxEssH3SmartBatSetup)
