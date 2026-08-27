@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import TypedDict, Any, Optional 
+from typing import TypedDict, Any, Optional
 
 from modules.common import modbus
 from modules.common.abstract_device import AbstractBat
@@ -87,7 +87,6 @@ class Huawei_SmartloggerBat(AbstractBat):
             self.__tcp_client.write_register(47083, 1, data_type=ModbusDataType.UINT_16, unit=modbus_id)
             self.__tcp_client.write_register(47247, power_limit, data_type=ModbusDataType.UINT_16, unit=modbus_id)
             self.__tcp_client.write_register(47087, 1, data_type=ModbusDataType.UINT_16, unit=modbus_id)
-
 
     def power_limit_controllable(self) -> bool:
         return True
