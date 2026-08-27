@@ -2,6 +2,7 @@
 from enum import IntEnum
 import logging
 from modules.common.abstract_device import DeviceDescriptor
+from typing import Optional
 from modules.common.component_state import ConsumerState
 from modules.common.component_type import ComponentType
 from modules.common.configurable_consumer import ConfigurableConsumer, SetLimitData
@@ -15,16 +16,16 @@ log = logging.getLogger(__name__)
 class Register(IntEnum):
     POWER = 1000
     TEMP0 = 1001
-    STATUS = 1003
+    STATE = 1003
 
 
 REG_MAPPING = (
     (Register.POWER, [ModbusDataType.INT_16]),
     (Register.TEMP0, [ModbusDataType.INT_16]),
-    (Register.STATUS, ModbusDataType.INT_16),
+    (Register.STATE, ModbusDataType.INT_16),
 )
 
-STATUS = {
+STATE_MAPPING = {
     2: "Heat",
     3: "Standby",
     4: "Boost heat",
@@ -39,11 +40,11 @@ STATUS = {
 
 
 def create_consumer(config: Elwa):
-    client = None
+    client: Optional[ModbusTcpClient_] = None
     fuse = 1
     power = 0
-    sim_counter = None
-    status = None
+    sim_counter: Optional[SimCounterConsumer] = None
+    state = None
 
     def initializer():
         nonlocal client, fuse, sim_counter
@@ -55,13 +56,13 @@ def create_consumer(config: Elwa):
         initializer()
 
     def update() -> ConsumerState:
-        nonlocal power, status
+        nonlocal power, state
         resp = client.read_holding_registers_bulk(
             Register.POWER, 4, mapping=REG_MAPPING, unit=config.configuration.modbus_id)
         power = resp[Register.POWER]
-        status = resp[Register.STATUS]
-        if status > 200:
-            raise Exception(f"Elwa-E meldet einen Fehler-Status: {STATUS.get(status, 'Unknown status')}")
+        state = resp[Register.STATE]
+        if state > 200:
+            raise Exception(f"Elwa-E meldet einen Fehler-Status: {STATE_MAPPING.get(state, 'Unknown fault state')}")
         imported, exported = sim_counter.sim_count(power)
         return ConsumerState(
             power=power,
@@ -71,7 +72,7 @@ def create_consumer(config: Elwa):
         )
 
     def set_power_limit(power_limit: float, data: SetLimitData) -> None:
-        if status == 4:
+        if state == 4:
             log.debug("Elwa-E im Boost-Heat Modus, keine Leistungsvorgabe möglich")
             return
         if power_limit < power:

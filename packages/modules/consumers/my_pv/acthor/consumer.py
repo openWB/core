@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from enum import IntEnum
 import logging
+from typing import Optional
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
 from modules.common.component_type import ComponentType
@@ -38,8 +39,8 @@ REG_MAPPING = (
 
 
 def create_consumer(config: Acthor):
-    client = None
-    sim_counter = None
+    client: Optional[ModbusTcpClient_] = None
+    sim_counter: Optional[SimCounterConsumer] = None
 
     def initializer():
         nonlocal client, sim_counter

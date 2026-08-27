@@ -3,6 +3,7 @@ import hashlib
 import logging
 import time
 import xml.etree.ElementTree as ET
+from typing import Optional
 
 from dataclass_utils._dataclass_asdict import asdict
 from helpermodules.pub import Pub
@@ -18,7 +19,7 @@ INVALID_SESSIONID = "0000000000000000"
 
 
 def create_consumer(config: Avm):
-    ain = None  # Actuator Identification Number
+    ain: Optional[str] = None  # Actuator Identification Number
 
     def update() -> ConsumerState:
         nonlocal ain
@@ -61,6 +62,7 @@ def create_consumer(config: Avm):
                     state=state,
                     voltages=voltages
                 )
+        raise RuntimeError(f"Device with name '{config.configuration.name}' not found in AVM device list")
 
     def ensure_valid_session_id():
         if check_valid_session_id() is False:

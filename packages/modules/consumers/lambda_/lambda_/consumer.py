@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from pymodbus.constants import Endian
 import logging
+from typing import Optional
 
 from modules.common.abstract_consumer import CurrentValues
 from modules.common.abstract_device import DeviceDescriptor
@@ -15,8 +16,8 @@ log = logging.getLogger(__name__)
 
 
 def create_consumer(config: Lambda):
-    client = None
-    sim_counter = None
+    client: Optional[ModbusTcpClient_] = None
+    sim_counter: Optional[SimCounterConsumer] = None
 
     def initializer():
         nonlocal client, sim_counter

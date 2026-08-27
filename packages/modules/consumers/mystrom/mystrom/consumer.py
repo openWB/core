@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import logging
 from modules.common import req
+from typing import Optional
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
 from modules.common.component_type import ComponentType
@@ -12,8 +13,8 @@ log = logging.getLogger(__name__)
 
 
 def create_consumer(config: MyStrom):
-    session = None
-    sim_counter = None
+    session: Optional[req.CustomSession] = None
+    sim_counter: Optional[SimCounterConsumer] = None
 
     def initializer():
         nonlocal session, sim_counter

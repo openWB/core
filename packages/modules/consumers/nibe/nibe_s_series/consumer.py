@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import logging
+from typing import Optional
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
 from modules.common.component_type import ComponentType
@@ -12,8 +13,8 @@ log = logging.getLogger(__name__)
 
 
 def create_consumer(config: Nibe):
-    client = None
-    sim_counter = None
+    client: Optional[ModbusTcpClient_] = None
+    sim_counter: Optional[SimCounterConsumer] = None
 
     def initializer():
         nonlocal client, sim_counter

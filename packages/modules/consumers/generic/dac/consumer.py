@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import logging
+from typing import Optional
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_type import ComponentType
 from modules.common.configurable_consumer import ConfigurableConsumer, SetLimitData
@@ -12,8 +13,8 @@ log = logging.getLogger(__name__)
 
 
 def create_consumer(config: Dac):
-    client: ModbusTcpClient_ = None
-    sim_counter = None
+    client: Optional[ModbusTcpClient_] = None
+    sim_counter: Optional[SimCounterConsumer] = None
 
     def initializer():
         nonlocal client, sim_counter
@@ -31,18 +32,18 @@ def create_consumer(config: Dac):
         elif config.configuration.model == Model.DA02:
             client.write_register(0x01f4, power_limit * 4000 / data.max_power, ModbusDataType.INT_16, unit=modbus_id)
         elif config.configuration.model == Model.M120T:
-            #  ausgabe nicht kleiner 0,9V sonst Leistungsregelung der WP aus
+            #  Ausgabe nicht kleiner 0,9V sonst Leistungsregelung der WP aus
             power_limit = max(power_limit * 4095 / data.max_power, 370)
             client.write_register(0x01f4, power_limit, ModbusDataType.INT_16, unit=modbus_id)
         elif config.configuration.model == Model.AA02B:
             power_limit = max((power_limit * (4095-820) / data.max_power)+820, 820)
-            #  ausgabe nicht kleiner 4ma sonst Leistungsregelung der WP aus
+            #  Ausgabe nicht kleiner 4ma sonst Leistungsregelung der WP aus
             client.write_register(0x01f4, power_limit, ModbusDataType.INT_16, unit=modbus_id)
 
     return ConfigurableConsumer(consumer_config=config,
                                 initializer=initializer,
                                 error_handler=error_handler,
-                                set_power_limit=set_power_limit,)
+                                set_power_limit=set_power_limit)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=Dac)
