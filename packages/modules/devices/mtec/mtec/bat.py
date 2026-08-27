@@ -71,7 +71,7 @@ class MTecBat(AbstractBat):
         elif power_limit > 0:
             log.debug(f"Aktive Batteriesteuerung M-Tec:"
                       f"Speicher soll mit {power_limit} W geladen werden. "
-                      "kann aber nur mit maximaler leistung laden")
+                      "kann aber nur mit maximaler Leistung laden")
             if self.last_mode != 'charge':
                 self.__tcp_client.write_register(50000, 259, data_type=ModbusDataType.UINT_16, unit=modbus_id)
                 self.last_mode = 'charge'
