@@ -8,6 +8,7 @@ from helpermodules.pub import Pub
 from modules.common.abstract_device import AbstractBat, AbstractDevice
 from modules.common.component_context import SingleComponentUpdateContext, MultiComponentUpdateContext
 from modules.common.fault_state import ComponentInfo, FaultState
+from control.bat import Set as SetPoint
 
 T_DEVICE_CONFIG = TypeVar("T_DEVICE_CONFIG")
 T_COMPONENT = TypeVar("T_COMPONENT")
@@ -130,9 +131,9 @@ class ConfigurableDevice(Generic[T_COMPONENT, T_DEVICE_CONFIG, T_COMPONENT_CONFI
         self.__component_updater(initialized_components, self.error_handler)
 
 
-def set_power_limit_wrapper(bat_component: AbstractBat, power_limit: Optional[int]):
+def set_power_limit_wrapper(bat_component: AbstractBat, setpoint: Optional[SetPoint]):
     """set_power_limit innerhalb des SingleComponentUpdateContext aufrufen,
     damit Fehler im fault_state-Handler behandelt werden
     """
     with SingleComponentUpdateContext(bat_component.fault_state, update_always=False):
-        bat_component.set_power_limit(power_limit)
+        bat_component.set_power_limit(setpoint)
