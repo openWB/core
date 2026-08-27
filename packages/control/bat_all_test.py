@@ -44,7 +44,7 @@ def test_get_charging_power_left_diff_hybrid(bat_power: int,
     data.data.bat_data["bat1"] = Bat(1)
     data.data.bat_data["bat1"].data.get.power = bat_power
     data.data.bat_data["bat1"].data.get.soc = 71
-    data.data.general_data.data.chargemode_config.bat.mode = BatConsiderationMode.MIN_SOC_BAT.value
+    data.data.general_data.data.chargemode_config.bat.mode = BatConsiderationMode.MIN_SOC_BAT
     data.data.general_data.data.chargemode_config.bat.power_discharge = 5000
     data.data.general_data.data.chargemode_config.bat.power_discharge_active = True
     monkeypatch.setattr(data.data.counter_all_data, "get_hybrid_bat_ids", Mock(return_value=[1]))
@@ -105,70 +105,75 @@ class Params:
     expected_charging_power_left: float
     expected_regulate_up: bool
     power_limit: Optional[float] = None
-    hysteresis_discharge: Optional[bool] = False
+    hysteresis_discharge: bool = False
 
 
 cases = [
-    Params("Speicher, Speicher lädt", ChargemodeConfigBat(mode="bat_mode"), 500, 90, -100, True),
-    Params("Speicher, Speicher entlädt", ChargemodeConfigBat(mode="bat_mode"), -500, 90, -600, True),
-    Params("Speicher, Speicher ist voll", ChargemodeConfigBat(mode="bat_mode"), 0, 100, 0, False),
-    Params("EV, Speicher lädt", ChargemodeConfigBat(mode="ev_mode"), 500, 90, 500, False),
-    Params("EV, Speicher entlädt", ChargemodeConfigBat(mode="ev_mode"), -500, 90, -500, False),
-    Params("EV, Speicher ist voll", ChargemodeConfigBat(mode="ev_mode"), 0, 100, 0, False),
+    Params("Speicher, Speicher lädt", ChargemodeConfigBat(mode=BatConsiderationMode.BAT_MODE), 500, 90, -100, True),
+    Params("Speicher, Speicher entlädt",
+           ChargemodeConfigBat(mode=BatConsiderationMode.BAT_MODE), -500, 90, -600, True),
+    Params("Speicher, Speicher ist voll", ChargemodeConfigBat(mode=BatConsiderationMode.BAT_MODE), 0, 100, 0, False),
+    Params("EV, Speicher lädt", ChargemodeConfigBat(mode=BatConsiderationMode.EV_MODE), 500, 90, 500, False),
+    Params("EV, Speicher entlädt", ChargemodeConfigBat(mode=BatConsiderationMode.EV_MODE), -500, 90, -500, False),
+    Params("EV, Speicher ist voll", ChargemodeConfigBat(mode=BatConsiderationMode.EV_MODE), 0, 100, 0, False),
     Params("Mindest-SoC, SoC nicht erreicht, Speicher entlädt",
-           ChargemodeConfigBat(mode="min_soc_bat_mode"), -500, 40, -600, True),
+           ChargemodeConfigBat(mode=BatConsiderationMode.MIN_SOC_BAT), -500, 40, -600, True),
     Params("Mindest-SoC, SoC nicht erreicht, Speicher lädt",
-           ChargemodeConfigBat(mode="min_soc_bat_mode"), 500, 40, -100, True),
+           ChargemodeConfigBat(mode=BatConsiderationMode.MIN_SOC_BAT), 500, 40, -100, True),
     Params("Mindest-SoC, SoC nicht erreicht, Speicher-Reserve, Speicher entlädt",
-           ChargemodeConfigBat(mode="min_soc_bat_mode", power_reserve=2000, power_reserve_active=True),
+           ChargemodeConfigBat(mode=BatConsiderationMode.MIN_SOC_BAT, power_reserve=2000, power_reserve_active=True),
            -500, 40, -600, True),
     Params("Mindest-SoC, SoC nicht erreicht, Speicher-Reserve nicht ausgenutzt, Speicher lädt",
-           ChargemodeConfigBat(mode="min_soc_bat_mode", power_reserve=2000, power_reserve_active=True),
+           ChargemodeConfigBat(mode=BatConsiderationMode.MIN_SOC_BAT, power_reserve=2000, power_reserve_active=True),
            1600, 40, -500, True),
     Params("Mindest-SoC, SoC nicht erreicht, Speicher-Reserve ausgenutzt, Speicher lädt",
-           ChargemodeConfigBat(mode="min_soc_bat_mode", power_reserve=2000, power_reserve_active=True),
+           ChargemodeConfigBat(mode=BatConsiderationMode.MIN_SOC_BAT, power_reserve=2000, power_reserve_active=True),
            2200, 40, 200, False),
-    Params("Mindest-SoC, SoC erreicht, Speicher entlädt", ChargemodeConfigBat(mode="min_soc_bat_mode"), -500, 90, -500,
-           False),
+    Params("Mindest-SoC, SoC erreicht, Speicher entlädt", ChargemodeConfigBat(mode=BatConsiderationMode.MIN_SOC_BAT),
+           -500, 90, -500, False),
     Params("Mindest-SoC, SoC erreicht, Speicher lädt",
-           ChargemodeConfigBat(mode="min_soc_bat_mode"), 500, 90, 500, False),
+           ChargemodeConfigBat(mode=BatConsiderationMode.MIN_SOC_BAT), 500, 90, 500, False),
     Params("Mindest-SoC, SoC erreicht, Speicher ist voll",
-           ChargemodeConfigBat(mode="min_soc_bat_mode"), 0, 100, 0, False),
+           ChargemodeConfigBat(mode=BatConsiderationMode.MIN_SOC_BAT), 0, 100, 0, False),
     Params("Mindest-SoC, SoC erreicht, Entladung in Auto, Speicher entlädt, Entladeleistung nicht erreicht",
-           ChargemodeConfigBat(mode="min_soc_bat_mode", power_discharge=500, power_discharge_active=True),
+           ChargemodeConfigBat(mode=BatConsiderationMode.MIN_SOC_BAT, power_discharge=500, power_discharge_active=True),
            -400, 90, 100, False),
     Params("Mindest-SoC, SoC erreicht, Entladung in Auto, Speicher entlädt, mehr als Entladeleistung",
-           ChargemodeConfigBat(mode="min_soc_bat_mode", power_discharge=500, power_discharge_active=True),
+           ChargemodeConfigBat(mode=BatConsiderationMode.MIN_SOC_BAT, power_discharge=500, power_discharge_active=True),
            -600, 90, -100, False),
     Params("Mindest-SoC, SoC erreicht, Entladung in Auto, Speicher entlädt, Entladeleistung erreicht",
-           ChargemodeConfigBat(mode="min_soc_bat_mode", power_discharge=500, power_discharge_active=True),
+           ChargemodeConfigBat(mode=BatConsiderationMode.MIN_SOC_BAT, power_discharge=500, power_discharge_active=True),
            -500, 90, 0, False),
     Params("Mindest-SoC, SoC erreicht, Entladung in Auto, Speicher lädt mit mehr als Entladeleistung",
-           ChargemodeConfigBat(mode="min_soc_bat_mode", power_discharge=500, power_discharge_active=True),
+           ChargemodeConfigBat(mode=BatConsiderationMode.MIN_SOC_BAT, power_discharge=500, power_discharge_active=True),
            650, 90, 1150, False),
     Params("Mindest-SoC, SoC erreicht, Entladung in Auto, Speicher lädt mit weniger als Entladeleistung",
-           ChargemodeConfigBat(mode="min_soc_bat_mode", power_discharge=500, power_discharge_active=True),
+           ChargemodeConfigBat(mode=BatConsiderationMode.MIN_SOC_BAT, power_discharge=500, power_discharge_active=True),
            400, 90, 900, False),
     Params("Mindest-SoC, SoC erreicht, Entladung in Auto, Speicher voll",
-           ChargemodeConfigBat(mode="min_soc_bat_mode", power_reserve=500, power_reserve_active=True,
+           ChargemodeConfigBat(mode=BatConsiderationMode.MIN_SOC_BAT, power_reserve=500, power_reserve_active=True,
                                min_soc=100), 0, 100, 0, False),
     Params(("Mindest-SoC, SoC erreicht, Entladung in Auto, Speicher lädt mit weniger als Entladeleistung, "
            "Speicher-Sperre aktiv"),
-           ChargemodeConfigBat(mode="min_soc_bat_mode", power_discharge=500, power_discharge_active=True),
+           ChargemodeConfigBat(mode=BatConsiderationMode.MIN_SOC_BAT,
+                               power_discharge=500, power_discharge_active=True),
            400, 90, 0, False, 600),
     Params(("Mindest-SoC, Hysterese, EV-Vorrang, keine Speichernutzung"),
-           ChargemodeConfigBat(mode="min_soc_bat_mode"), 400, 60, 400, False, hysteresis_discharge=False),
+           ChargemodeConfigBat(mode=BatConsiderationMode.MIN_SOC_BAT),
+           400, 60, 400, False, hysteresis_discharge=False),
     Params(("Mindest-SoC, Hysterese, Speicherentladung, Speichernutzung erlaubt"),
-           ChargemodeConfigBat(mode="min_soc_bat_mode", power_discharge=500, power_discharge_active=True),
+           ChargemodeConfigBat(mode=BatConsiderationMode.MIN_SOC_BAT,
+                               power_discharge=500, power_discharge_active=True),
            400, 60, 900, False, hysteresis_discharge=True),
     Params(("Mindest-SoC, Hysterese, Speicherentladung, Speichernutzung erlaubt, Speicher-Sperre aktiv"),
-           ChargemodeConfigBat(mode="min_soc_bat_mode", power_discharge=500, power_discharge_active=True),
+           ChargemodeConfigBat(mode=BatConsiderationMode.MIN_SOC_BAT,
+                               power_discharge=500, power_discharge_active=True),
            400, 60, 0, False, 600, hysteresis_discharge=True),
 ]
 
 
 @pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
-def test_get_charging_power_left(params: Params, caplog, data_, monkeypatch):
+def test_get_charging_power_left(params: Params, data_, monkeypatch: pytest.MonkeyPatch):
     # setup
     b_all = BatAll()
     b_all.data.get.power = params.power
@@ -199,7 +204,7 @@ def test_get_charging_power_left_uses_limited_bat_discharge_in_hysteresis(
     b_all.data.set.hysteresis_discharge = True
     b_all.data.set.power_limit = None
     data.data.general_data.data.chargemode_config.bat = ChargemodeConfigBat(
-        mode="min_soc_bat_mode",
+        mode=BatConsiderationMode.MIN_SOC_BAT,
         min_soc=40,
         max_soc=80,
         power_discharge=8000,
@@ -234,20 +239,19 @@ def default_chargepoint_factory() -> List[Chargepoint]:
 class BatControlParams:
     name: str
     expected_power_limit_bat: Optional[float]
-    power_limit_mode: str = BatPowerLimitMode.MODE_NO_DISCHARGE.value
-    power_limit_condition: str = BatPowerLimitCondition.VEHICLE_CHARGING.value
-    bat_manual_mode: str = ManualMode.MANUAL_DISABLE.value
+    power_limit_mode: BatPowerLimitMode = BatPowerLimitMode.MODE_NO_DISCHARGE
+    power_limit_condition: BatPowerLimitCondition = BatPowerLimitCondition.VEHICLE_CHARGING
+    bat_manual_mode: ManualMode = ManualMode.MANUAL_DISABLE
     power_limit_controllable: bool = True
     bat_power: float = -10
     bat_soc: float = 50.0
     evu_power: float = 200
     pv_power: float = -654
-    bat_control_permitted: bool = True
     bat_control_activated: bool = True
     max_charge_power: float = 5000
     max_discharge_power: float = -5000
-    bat_control_min_soc: float = 10.0
-    bat_control_max_soc: float = 90.0
+    bat_control_min_soc: int = 10
+    bat_control_max_soc: int = 90
     price_limit_activated: bool = False
     price_charge_activated: bool = False
     price_limit: float = 0.30
@@ -256,46 +260,46 @@ class BatControlParams:
 
 cases = [
     BatControlParams("Speicher nicht regelbar", None, power_limit_controllable=False,
-                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
+                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE),
     BatControlParams("Speichersteuerung deaktiviert", None, bat_control_activated=False,
-                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
+                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE),
     # Manuelle Steuerung
     BatControlParams("Manuelle Steuerung, Speichersteuerung deaktiviert", None,
-                     power_limit_condition=BatPowerLimitCondition.MANUAL.value,
-                     bat_manual_mode=ManualMode.MANUAL_DISABLE.value),
+                     power_limit_condition=BatPowerLimitCondition.MANUAL,
+                     bat_manual_mode=ManualMode.MANUAL_DISABLE),
     BatControlParams("Manuelle Steuerung, Entladung sperren", 0,
-                     power_limit_condition=BatPowerLimitCondition.MANUAL.value,
-                     bat_manual_mode=ManualMode.MANUAL_LIMIT.value),
+                     power_limit_condition=BatPowerLimitCondition.MANUAL,
+                     bat_manual_mode=ManualMode.MANUAL_LIMIT),
     BatControlParams("Manuelle Steuerung, Begrenzung Hausverbrauch", -456,
-                     power_limit_condition=BatPowerLimitCondition.MANUAL.value,
-                     bat_manual_mode=ManualMode.MANUAL_LIMIT.value,
-                     power_limit_mode=BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION.value),
+                     power_limit_condition=BatPowerLimitCondition.MANUAL,
+                     bat_manual_mode=ManualMode.MANUAL_LIMIT,
+                     power_limit_mode=BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION),
     BatControlParams("Manuelle Steuerung, Ladung PV Überschuss", 198,
-                     power_limit_condition=BatPowerLimitCondition.MANUAL.value,
-                     bat_manual_mode=ManualMode.MANUAL_LIMIT.value,
-                     power_limit_mode=BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value),
+                     power_limit_condition=BatPowerLimitCondition.MANUAL,
+                     bat_manual_mode=ManualMode.MANUAL_LIMIT,
+                     power_limit_mode=BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION),
     BatControlParams("Manuelle Steuerung, Aktive Ladung", 5000,
-                     power_limit_condition=BatPowerLimitCondition.MANUAL.value,
-                     bat_manual_mode=ManualMode.MANUAL_CHARGE.value),
+                     power_limit_condition=BatPowerLimitCondition.MANUAL,
+                     bat_manual_mode=ManualMode.MANUAL_CHARGE),
     # Wenn Fahrzeuge Laden
     BatControlParams("Fahrzeuge laden, Begrenzung immer, Speicher lädt", None, bat_power=100,
-                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
+                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE),
     BatControlParams("Fahrzeuge laden, Begrenzung immer,Einspeisung", None, evu_power=-110,
-                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
+                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE),
     BatControlParams("Fahrzeuge laden, Begrenzung immer", 0,
-                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
+                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE),
     BatControlParams("Fahrzeuge laden, Begrenzung Hausverbrauch", -456,
-                     power_limit_mode=BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION.value),
+                     power_limit_mode=BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION),
     BatControlParams("Fahrzeuge laden, Ladung PV Überschuss", 198,
-                     power_limit_mode=BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value),
+                     power_limit_mode=BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION),
     BatControlParams("Fahrzeuge laden, Ladung PV Überschuss, Eigenverbrauch PV-Anlage", -456,
-                     power_limit_mode=BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value,
+                     power_limit_mode=BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION,
                      pv_power=100),
 ]
 
 
 @pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
-def test_active_bat_control(params: BatControlParams, data_, monkeypatch):
+def test_active_bat_control(params: BatControlParams, data_, monkeypatch: pytest.MonkeyPatch):
     b_all = BatAll()
     b_all.data.config.bat_control_activated = params.bat_control_activated
     b_all.data.config.power_limit_mode = params.power_limit_mode
@@ -336,43 +340,43 @@ def test_active_bat_control(params: BatControlParams, data_, monkeypatch):
 cases = [
     # Nach Preisgrenze
     BatControlParams("Preisgrenze, Grenze deaktiviert, Eigenregelung", None,
-                     power_limit_condition=BatPowerLimitCondition.PRICE_LIMIT.value,
+                     power_limit_condition=BatPowerLimitCondition.PRICE_LIMIT,
                      price_limit_activated=False,
                      price_limit=0.40,
-                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
+                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE),
     BatControlParams("Preisgrenze, Entladung sperren, Grenze unterschritten", 0,
-                     power_limit_condition=BatPowerLimitCondition.PRICE_LIMIT.value,
+                     power_limit_condition=BatPowerLimitCondition.PRICE_LIMIT,
                      price_limit_activated=True,
                      price_limit=0.30,
-                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
+                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE),
     BatControlParams("Preisgrenze, Überschuss Laden, Grenze unterschritten", 198,
-                     power_limit_condition=BatPowerLimitCondition.PRICE_LIMIT.value,
+                     power_limit_condition=BatPowerLimitCondition.PRICE_LIMIT,
                      price_limit_activated=True,
                      price_limit=0.30,
-                     power_limit_mode=BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value),
+                     power_limit_mode=BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION),
     BatControlParams("Preisgrenze, Entladung sperren, Grenze greift nicht", None,
-                     power_limit_condition=BatPowerLimitCondition.PRICE_LIMIT.value,
+                     power_limit_condition=BatPowerLimitCondition.PRICE_LIMIT,
                      price_limit_activated=True,
                      price_limit=0.10,
-                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE.value),
+                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE),
     # Aktive Ladung
     BatControlParams("Preisgrenze, Grenze deaktiviert, Eigenregelung", None,
-                     power_limit_condition=BatPowerLimitCondition.PRICE_LIMIT.value,
+                     power_limit_condition=BatPowerLimitCondition.PRICE_LIMIT,
                      price_charge_activated=False,
                      charge_limit=0.40),
     BatControlParams("Preisgrenze, Grenze unterschritten, Ladung", 5000,
-                     power_limit_condition=BatPowerLimitCondition.PRICE_LIMIT.value,
+                     power_limit_condition=BatPowerLimitCondition.PRICE_LIMIT,
                      price_charge_activated=True,
                      charge_limit=0.30),
     BatControlParams("Preisgrenze, Grenze greift nicht, Eigenregelung", None,
-                     power_limit_condition=BatPowerLimitCondition.PRICE_LIMIT.value,
+                     power_limit_condition=BatPowerLimitCondition.PRICE_LIMIT,
                      price_charge_activated=True,
                      charge_limit=0.10),
 ]
 
 
 @pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
-def test_control_price_limit(params: BatControlParams, data_, monkeypatch):
+def test_control_price_limit(params: BatControlParams, data_, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(data.data.optional_data, "ep_get_current_price", Mock(return_value=0.2))
     b_all = BatAll()
     b_all.data.config.bat_control_activated = params.bat_control_activated
@@ -416,57 +420,57 @@ def test_control_price_limit(params: BatControlParams, data_, monkeypatch):
     "control_activated, condition, limit, manual_mode, expected_result",
     [
         pytest.param(False,
-                     BatPowerLimitCondition.MANUAL.value,
-                     BatPowerLimitMode.MODE_NO_DISCHARGE.value,
-                     ManualMode.MANUAL_DISABLE.value, True,
+                     BatPowerLimitCondition.MANUAL,
+                     BatPowerLimitMode.MODE_NO_DISCHARGE,
+                     ManualMode.MANUAL_DISABLE, True,
                      id="Speichersteuerung nicht aktiviert, aber aktiviert -> laden"),
         pytest.param(True,
-                     BatPowerLimitCondition.MANUAL.value,
-                     BatPowerLimitMode.MODE_NO_DISCHARGE.value,
-                     ManualMode.MANUAL_DISABLE.value, True,
+                     BatPowerLimitCondition.MANUAL,
+                     BatPowerLimitMode.MODE_NO_DISCHARGE,
+                     ManualMode.MANUAL_DISABLE, True,
                      id="Manuell, Eigenregelung, volle Entladesperre -> nicht laden"),
         pytest.param(True,
-                     BatPowerLimitCondition.MANUAL.value,
-                     BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION.value,
-                     ManualMode.MANUAL_LIMIT.value, False,
+                     BatPowerLimitCondition.MANUAL,
+                     BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION,
+                     ManualMode.MANUAL_LIMIT, False,
                      id="Manuell, Entladung in Fahrzeuge sperren -> nicht laden"),
         pytest.param(True,
-                     BatPowerLimitCondition.MANUAL.value,
-                     BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value,
-                     ManualMode.MANUAL_CHARGE.value, False,
+                     BatPowerLimitCondition.MANUAL,
+                     BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION,
+                     ManualMode.MANUAL_CHARGE, False,
                      id="Manuell, PV-Ertrag speichern -> nicht laden"),
         pytest.param(True,
-                     BatPowerLimitCondition.VEHICLE_CHARGING.value,
-                     BatPowerLimitMode.MODE_NO_DISCHARGE.value,
-                     ManualMode.MANUAL_DISABLE.value, False,
+                     BatPowerLimitCondition.VEHICLE_CHARGING,
+                     BatPowerLimitMode.MODE_NO_DISCHARGE,
+                     ManualMode.MANUAL_DISABLE, False,
                      id="Fahrzeuge laden, volle Entladesperre -> nicht laden"),
         pytest.param(True,
-                     BatPowerLimitCondition.VEHICLE_CHARGING.value,
-                     BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION.value,
-                     ManualMode.MANUAL_DISABLE.value, False,
+                     BatPowerLimitCondition.VEHICLE_CHARGING,
+                     BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION,
+                     ManualMode.MANUAL_DISABLE, False,
                      id="Fahrzeuge laden, Entladung in Fahrzeuge sperren -> nicht laden"),
         pytest.param(True,
-                     BatPowerLimitCondition.VEHICLE_CHARGING.value,
-                     BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value,
-                     ManualMode.MANUAL_DISABLE.value, False,
+                     BatPowerLimitCondition.VEHICLE_CHARGING,
+                     BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION,
+                     ManualMode.MANUAL_DISABLE, False,
                      id="Fahrzeuge laden, PV-Ertrag speichern -> nicht laden"),
         pytest.param(True,
-                     BatPowerLimitCondition.PRICE_LIMIT.value,
-                     BatPowerLimitMode.MODE_NO_DISCHARGE.value,
-                     ManualMode.MANUAL_DISABLE.value, False,
+                     BatPowerLimitCondition.PRICE_LIMIT,
+                     BatPowerLimitMode.MODE_NO_DISCHARGE,
+                     ManualMode.MANUAL_DISABLE, False,
                      id="Preislimit, volle Entladesperre -> nicht laden"),
         pytest.param(True,
-                     BatPowerLimitCondition.PRICE_LIMIT.value,
-                     BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION.value,
-                     ManualMode.MANUAL_DISABLE.value, False,
+                     BatPowerLimitCondition.PRICE_LIMIT,
+                     BatPowerLimitMode.MODE_DISCHARGE_HOME_CONSUMPTION,
+                     ManualMode.MANUAL_DISABLE, False,
                      id="Preislimit, Entladung in Fahrzeuge sperren -> nicht laden"),
 
     ]
 )
 def test_time_charging_min_bat_soc_allowed(control_activated: bool,
-                                           condition: str,
-                                           limit: str,
-                                           manual_mode: str,
+                                           condition: BatPowerLimitCondition,
+                                           limit: BatPowerLimitMode,
+                                           manual_mode: ManualMode,
                                            expected_result: bool):
     # setup
     b = BatAll()
@@ -509,8 +513,8 @@ def test_time_charging_min_bat_soc_allowed_pricing(ep_configured: bool,
     # setup
     b = BatAll()
     b.data.config.configured = True
-    b.data.config.power_limit_condition = BatPowerLimitCondition.PRICE_LIMIT.value
-    b.data.config.power_limit_mode = BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value
+    b.data.config.power_limit_condition = BatPowerLimitCondition.PRICE_LIMIT
+    b.data.config.power_limit_mode = BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION
     b.data.config.price_limit_activated = price_limit_activated
     b.data.config.price_charge_activated = price_charge_activated
     data.data.optional_data.data.electricity_pricing.configured = ep_configured
