@@ -3,6 +3,7 @@
     <div class="chart-wrapper">
       <ChartjsSankey
         v-if="hasFlows"
+        :key="edgeCount"
         :data="chartData"
         :options="chartOptions"
         :plugins="chartPlugins"
@@ -46,6 +47,14 @@ const $q = useQuasar();
 const { allocation, colorForNode, labelColor } = useSankeyData();
 
 const hasFlows = computed(() => allocation.value.edges.length > 0);
+
+// Remount the chart whenever the number of flows changes. The sankey plugin
+// rebuilds its whole node map on every parse, but Chart.js parses twice when
+// data grows — once for the existing elements, then again for the inserted
+// ones. The second parse discards the node objects the existing flows point
+// at, so those flows color orphans while the chart paints the new nodes, which
+// have no color and fall back to black. A fresh chart parses only once.
+const edgeCount = computed(() => allocation.value.edges.length);
 
 const { hoverPlugin, focusColors } = useSankeyHover(colorForNode);
 const chartPlugins = [hoverPlugin];
