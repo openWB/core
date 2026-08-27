@@ -62,7 +62,9 @@ def create_consumer(config: Avm):
                     state=state,
                     voltages=voltages
                 )
-        raise RuntimeError(f"Device with name '{config.configuration.name}' not found in AVM device list")
+        raise RuntimeError(
+            f"Device with name '{config.configuration.name}' was not found or is not currently available"
+        )
 
     def ensure_valid_session_id():
         if check_valid_session_id() is False:
