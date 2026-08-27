@@ -32,6 +32,7 @@ from packaging import version
 logger = logging.getLogger(__name__)
 logger.info('Loading Fronius bat control API module')
 
+
 def hash_utf8(x, algorithm="MD5"):
     """Hash a string or bytes object.
 
@@ -55,6 +56,7 @@ class MockResponse:
         self.text = '{"writeSuccess": ["timeofuse"]}'
         self.status_code = 200
 
+
 @dataclass
 class FroniusApiConfig:
     """Configuration for Fronius API endpoints and behavior."""
@@ -70,6 +72,7 @@ class FroniusApiConfig:
     commands_login_path: str
     commands_logout_path: str
     auth_algorithm: str = "SHA256"  # Authentication algorithm: "MD5" or "SHA256"
+
 
 # Alle Konfigurationen in einer Liste
 API_CONFIGS = [
@@ -162,8 +165,8 @@ class FroniusWR:
         self.login_attempts = 0
         self.address = str(config.get('address', None))
         self.nonce = 0
-        self.user = str(config.get('user', None)) #config['user']
-        self.password = str(config.get('password', None)) # config['password']
+        self.user = str(config.get('user', None))
+        self.password = str(config.get('password', None))
 
         # Fronius API IDs - configurable with defaults
         self.controller_id = str(config.get('fronius_controller_id', '0'))
@@ -231,7 +234,7 @@ class FroniusWR:
         response_dict = json.loads(response.text)
         expected_write_successes = ['HYB_EVU_CHARGEFROMGRID']
         for expected_write_success in expected_write_successes:
-            if not expected_write_success in response_dict['writeSuccess']:
+            if expected_write_success not in response_dict['writeSuccess']:
                 raise RuntimeError(f'failed to set {expected_write_success}')
         return response
 
@@ -247,7 +250,7 @@ class FroniusWR:
         response_dict = json.loads(response.text)
         expected_write_successes = ['SolarAPIv1Enabled']
         for expected_write_success in expected_write_successes:
-            if not expected_write_success in response_dict['writeSuccess']:
+            if expected_write_success not in response_dict['writeSuccess']:
                 raise RuntimeError(f'failed to set {expected_write_success}')
         return response
 
@@ -376,7 +379,7 @@ class FroniusWR:
         response_dict = json.loads(response.text)
         expected_write_successes = ['timeofuse']
         for expected_write_success in expected_write_successes:
-            if not expected_write_success in response_dict['writeSuccess']:
+            if expected_write_success not in response_dict['writeSuccess']:
                 raise RuntimeError(f'failed to set {expected_write_success}')
 
         # Invalidate the cache after successfully updating the configuration
@@ -498,8 +501,7 @@ class FroniusWR:
         if auth:
             headers['Authorization'] = self.get_auth_header(
                 method=method, path=fullpath)
-            logger.debug("Fronius Bat Auth: Requesting %s , header: %s",
-                              fullpath, headers)
+            logger.debug("Fronius Bat Auth: Requesting %s , header: %s", fullpath, headers)
 
         for i in range(3):
             # 3 retries if connection can't be established

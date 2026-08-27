@@ -17,6 +17,7 @@ from modules.devices.fronius.fronius.bat_api.bat_api import FroniusWR
 
 log = logging.getLogger(__name__)
 
+
 class KwargsDict(TypedDict):
     device_config: FroniusConfiguration
     device_id: int
@@ -36,6 +37,7 @@ class FroniusBat(AbstractBat):
         self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
         self.last_mode = 'Undefined'
         self.bat_api = None
+
     def update(self) -> None:
         meter_id = str(self.component_config.configuration.meter_id)
 
@@ -70,14 +72,8 @@ class FroniusBat(AbstractBat):
         self.store.set(bat_state)
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
-        if self.component_config.configuration.username is None:
-            username = "technician"
-        else:
-            username = self.component_config.configuration.username
-        if self.component_config.configuration.password is None:
-            password = "gain-^LwP3T4"
-        else:
-            password = self.component_config.configuration.password
+        username = self.component_config.configuration.username
+        password = self.component_config.configuration.password
         if self.bat_api is None:
             config = {
                 'address': self.device_config.ip_address,
@@ -102,7 +98,8 @@ class FroniusBat(AbstractBat):
                     self.last_mode = 'stop'
             elif power_limit < 0:
                 self.bat_api.set_mode_force_discharge(abs(power_limit))
-                log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {abs(power_limit)} W entladen für den Hausverbrauch")
+                log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {abs(power_limit)} W "
+                          "entladen für den Hausverbrauch")
                 self.last_mode = 'discharge'
             elif power_limit > 0:
                 self.bat_api.set_mode_force_charge(power_limit)
@@ -110,7 +107,6 @@ class FroniusBat(AbstractBat):
                 self.last_mode = 'charge'
         else:
             log.warning("Fronius Speicher: Keine Batteriesteuerung möglich, da keine Zugangsdaten hinterlegt sind.")
-
 
     def power_limit_controllable(self) -> bool:
         return True
