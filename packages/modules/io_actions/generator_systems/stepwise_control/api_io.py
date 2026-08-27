@@ -74,11 +74,17 @@ class StepwiseControlIo(AbstractIoAction):
                                 control_command_log.info(
                                     f"EZA-Begrenzung mit Wert {int(pattern['value']*100)}% aktiviert.")
                                 for device in self.config.configuration.devices:
-                                    if device["type"] == "inverter":
-                                        control_command_log.info(
-                                            f"Erzeugungsanlage {get_component_name_by_id(device['id'])} "
-                                            f"auf {int(pattern['value']*100)}% begrenzt."
-                                        )
+                                    try:
+                                        if device["type"] == "inverter":
+                                            control_command_log.info(
+                                                f"Erzeugungsanlage {get_component_name_by_id(device['id'])} "
+                                                f"auf {int(pattern['value']*100)}% begrenzt."
+                                            )
+                                    except ValueError:
+                                        control_command_log.warning(
+                                            f"Zugriff auf gelöschtes Gerät nicht möglich: {device}")
+                                    except Exception:
+                                        control_command_log.exception(f"Fehler beim Zugriff auf Gerät {device}")
                             break
                 else:
                     if changed:

@@ -1,6 +1,7 @@
 import logging
 import traceback
-from typing import Optional, Callable, TypeVar
+from types import TracebackType
+from typing import Optional, Callable, Type, TypeVar
 
 from helpermodules import exceptions
 from helpermodules.pub import Pub
@@ -85,6 +86,33 @@ class FaultState(Exception):
         else:
             self.fault_str, self.fault_state = exceptions.get_default_exception_registry().translate_exception(
                 exception)
+
+
+class FaultStateContext:
+    def __init__(self, fault_state: FaultState, update_always: bool = True, reraise: bool = False) -> None:
+        self.__fault_state = fault_state
+        self.update_always = update_always
+        self.reraise = reraise
+
+    def __enter__(self) -> None:
+        if self.update_always:
+            self.__fault_state.no_error()
+        return None
+
+    def __exit__(self,
+                 exc_type: Optional[Type[BaseException]],
+                 exc_value: Optional[BaseException],
+                 traceback: Optional[TracebackType]) -> bool:
+        if isinstance(exc_value, Exception):
+            self.__fault_state.from_exception(exc_value)
+        elif self.update_always is False and self.__fault_state.fault_state == 0:
+            # Fehlerstatus nicht überschreiben
+            return True
+        self.__fault_state.store_error()
+        if self.reraise is False or exc_value is None:
+            return True
+        else:
+            return False
 
 
 T_C = TypeVar("T_C", bound=Callable)

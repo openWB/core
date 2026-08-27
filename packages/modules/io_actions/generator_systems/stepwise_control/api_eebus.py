@@ -92,11 +92,16 @@ class StepwiseControlEebus(AbstractIoAction):
                         control_command_log.info(
                             f"EEBus-Steuerung: EZA-Begrenzung mit LPP-Wert {self.lpp_value}W aktiviert.")
                         for device in self.config.configuration.devices:
-                            control_command_log.info(
-                                f"Erzeugungsanlage {get_component_name_by_id(device['id'])} "
-                                f"auf {self.lpp_value}W begrenzt. Gestufte Ansteuerung: "
-                                f"{self.step*100:.0f}% der maximalen Ausgangsleistung."
-                            )
+                            try:
+                                control_command_log.info(
+                                    f"Erzeugungsanlage {get_component_name_by_id(device['id'])} "
+                                    f"auf {self.lpp_value}W begrenzt. Gestufte Ansteuerung: "
+                                    f"{self.step*100:.0f}% der maximalen Ausgangsleistung."
+                                )
+                            except ValueError:
+                                control_command_log.warning(f"Zugriff auf gelöschtes Gerät nicht möglich: {device}")
+                            except Exception:
+                                control_command_log.exception(f"Fehler beim Zugriff auf Gerät {device}")
                 else:
                     self.step = 1
                     if changed:
