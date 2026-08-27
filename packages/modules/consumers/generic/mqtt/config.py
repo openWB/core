@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Optional
 
 from control.consumer.consumer_data import ConsumerUsage
 from helpermodules.auto_str import auto_str
@@ -18,7 +18,7 @@ class Mqtt(ConsumerSetup[MqttConfiguration]):
                  name: str = "MQTT-Verbraucher",
                  type: str = "mqtt",
                  id: int = 0,
-                 configuration: MqttConfiguration = None,
+                 configuration: Optional[MqttConfiguration] = None,
                  usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.METER_ONLY,
                                                      ConsumerUsage.CONTINUOUS,
                                                      ConsumerUsage.SELF_CONTROLLED,
