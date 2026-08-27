@@ -340,7 +340,7 @@ class BatAll:
                 # wenn aktive Speichersteuerung in Höhe PV-Leistung lädt
                 # hat Speicher Priorität vor EV-Ladung
                 if (self.data.config.bat_control_activated and
-                        self.data.config.power_limit_mode == BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value):
+                        self.data.config.power_limit_mode == BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION):
                     charging_power_left = 0
                 else:
                     charging_power_left = self.data.get.power
@@ -379,7 +379,7 @@ class BatAll:
                             # set allowed power
                             if (self.data.config.bat_control_activated and
                                     self.data.config.power_limit_mode ==
-                                    BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value):
+                                    BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION):
                                 base_power = 0
                             else:
                                 base_power = self.data.get.power
@@ -389,7 +389,7 @@ class BatAll:
                             # -> dann erlaubte Speicherentladeleistung addieren
                             power_discharge_allowed = (self.data.config.bat_control_activated is False or
                                                        (self.data.config.power_limit_condition ==
-                                                        BatPowerLimitCondition.PRICE_LIMIT.value and
+                                                        BatPowerLimitCondition.PRICE_LIMIT and
                                                         self.data.set.power_limit is None))
                             if config.power_discharge_active and power_discharge_allowed:
                                 # max Entladeleistung auf max Ausgangsleistung des WR begrenzen
@@ -416,7 +416,7 @@ class BatAll:
                     if self.data.set.power_limit is None:
                         # set allowed power
                         if (self.data.config.bat_control_activated and
-                                self.data.config.power_limit_mode == BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value):
+                                self.data.config.power_limit_mode == BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION):
                             base_power = 0
                         else:
                             base_power = self.data.get.power
@@ -426,7 +426,7 @@ class BatAll:
                         # -> dann erlaubte Speicherentladeleistung addieren
                         power_discharge_allowed = (self.data.config.bat_control_activated is False or
                                                    (self.data.config.power_limit_condition ==
-                                                    BatPowerLimitCondition.PRICE_LIMIT.value and
+                                                    BatPowerLimitCondition.PRICE_LIMIT and
                                                     self.data.set.power_limit is None))
                         if config.power_discharge_active and power_discharge_allowed:
                             # max Entladeleistung auf max Ausgangsleistung des WR begrenzen
@@ -648,11 +648,11 @@ class BatAll:
     def time_charging_min_bat_soc_allowed(self) -> bool:
         if self.data.config.configured and self.data.config.bat_control_activated:
             # manueller Modus und keine Eigenregelung oder aktive Speichersteuerung bei Fahrzeugladung
-            if ((self.data.config.power_limit_condition == BatPowerLimitCondition.MANUAL.value and
-                 self.data.config.manual_mode != ManualMode.MANUAL_DISABLE.value) or
-                    self.data.config.power_limit_condition == BatPowerLimitCondition.VEHICLE_CHARGING.value):
+            if ((self.data.config.power_limit_condition == BatPowerLimitCondition.MANUAL and
+                 self.data.config.manual_mode != ManualMode.MANUAL_DISABLE) or
+                    self.data.config.power_limit_condition == BatPowerLimitCondition.VEHICLE_CHARGING):
                 return False
-            elif self.data.config.power_limit_condition == BatPowerLimitCondition.PRICE_LIMIT.value:
+            elif self.data.config.power_limit_condition == BatPowerLimitCondition.PRICE_LIMIT:
                 if ((self.data.config.price_limit_activated and
                         data.data.optional_data.ep_is_charging_allowed_price_threshold(
                             self.data.config.price_limit))

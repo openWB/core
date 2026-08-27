@@ -30,7 +30,7 @@ class ChargemodeConfigBat:
         "topic": "chargemode_config/bat/min_soc"})
     max_soc: int = field(default=70, metadata={
         "topic": "chargemode_config/bat/max_soc"})
-    mode: str = field(default=BatConsiderationMode.EV_MODE.value, metadata={
+    mode: BatConsiderationMode = field(default=BatConsiderationMode.EV_MODE, metadata={
         "topic": "chargemode_config/bat/mode"})
 
 
