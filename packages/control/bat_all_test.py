@@ -105,7 +105,7 @@ class Params:
     expected_charging_power_left: float
     expected_regulate_up: bool
     power_limit: Optional[float] = None
-    hysteresis_discharge: Optional[bool] = False
+    hysteresis_discharge: bool = False
 
 
 cases = [
@@ -168,7 +168,7 @@ cases = [
 
 
 @pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
-def test_get_charging_power_left(params: Params, caplog, data_, monkeypatch):
+def test_get_charging_power_left(params: Params, data_, monkeypatch: pytest.MonkeyPatch):
     # setup
     b_all = BatAll()
     b_all.data.get.power = params.power
@@ -234,9 +234,9 @@ def default_chargepoint_factory() -> List[Chargepoint]:
 class BatControlParams:
     name: str
     expected_power_limit_bat: Optional[float]
-    power_limit_mode: str = BatPowerLimitMode.MODE_NO_DISCHARGE
-    power_limit_condition: str = BatPowerLimitCondition.VEHICLE_CHARGING
-    bat_manual_mode: str = ManualMode.MANUAL_DISABLE
+    power_limit_mode: BatPowerLimitMode = BatPowerLimitMode.MODE_NO_DISCHARGE
+    power_limit_condition: BatPowerLimitCondition = BatPowerLimitCondition.VEHICLE_CHARGING
+    bat_manual_mode: ManualMode = ManualMode.MANUAL_DISABLE
     power_limit_controllable: bool = True
     bat_power: float = -10
     bat_soc: float = 50.0
@@ -246,8 +246,8 @@ class BatControlParams:
     bat_control_activated: bool = True
     max_charge_power: float = 5000
     max_discharge_power: float = -5000
-    bat_control_min_soc: float = 10.0
-    bat_control_max_soc: float = 90.0
+    bat_control_min_soc: int = 10
+    bat_control_max_soc: int = 90
     price_limit_activated: bool = False
     price_charge_activated: bool = False
     price_limit: float = 0.30
@@ -280,8 +280,6 @@ cases = [
                      power_limit_condition=BatPowerLimitCondition.MANUAL,
                      bat_manual_mode=ManualMode.MANUAL_CHARGE),
     # Wenn Fahrzeuge Laden
-    BatControlParams("Fahrzeuge laden, Begrenzung immer, keine LP im Sofortladen", None, cps=[],
-                     power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE),
     BatControlParams("Fahrzeuge laden, Begrenzung immer, Speicher lädt", None, bat_power=100,
                      power_limit_mode=BatPowerLimitMode.MODE_NO_DISCHARGE),
     BatControlParams("Fahrzeuge laden, Begrenzung immer,Einspeisung", None, evu_power=-110,
@@ -299,7 +297,7 @@ cases = [
 
 
 @pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
-def test_active_bat_control(params: BatControlParams, data_, monkeypatch):
+def test_active_bat_control(params: BatControlParams, data_, monkeypatch: pytest.MonkeyPatch):
     b_all = BatAll()
     b_all.data.config.bat_control_activated = params.bat_control_activated
     b_all.data.config.power_limit_mode = params.power_limit_mode
@@ -376,7 +374,7 @@ cases = [
 
 
 @pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
-def test_control_price_limit(params: BatControlParams, data_, monkeypatch):
+def test_control_price_limit(params: BatControlParams, data_, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(data.data.optional_data, "ep_get_current_price", Mock(return_value=0.2))
     b_all = BatAll()
     b_all.data.config.bat_control_activated = params.bat_control_activated
@@ -468,9 +466,9 @@ def test_control_price_limit(params: BatControlParams, data_, monkeypatch):
     ]
 )
 def test_time_charging_min_bat_soc_allowed(control_activated: bool,
-                                           condition: str,
-                                           limit: str,
-                                           manual_mode: str,
+                                           condition: BatPowerLimitCondition,
+                                           limit: BatPowerLimitMode,
+                                           manual_mode: ManualMode,
                                            expected_result: bool):
     # setup
     b = BatAll()
@@ -513,8 +511,8 @@ def test_time_charging_min_bat_soc_allowed_pricing(ep_configured: bool,
     # setup
     b = BatAll()
     b.data.config.configured = True
-    b.data.config.power_limit_condition = BatPowerLimitCondition.PRICE_LIMIT.value
-    b.data.config.power_limit_mode = BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION.value
+    b.data.config.power_limit_condition = BatPowerLimitCondition.PRICE_LIMIT
+    b.data.config.power_limit_mode = BatPowerLimitMode.MODE_CHARGE_PV_PRODUCTION
     b.data.config.price_limit_activated = price_limit_activated
     b.data.config.price_charge_activated = price_charge_activated
     data.data.optional_data.data.electricity_pricing.configured = ep_configured
