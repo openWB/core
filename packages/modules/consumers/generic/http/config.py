@@ -1,5 +1,4 @@
-from typing import Tuple
-
+from typing import Tuple, Optional
 from control.consumer.consumer_data import ConsumerUsage
 from helpermodules.auto_str import auto_str
 from modules.common.consumer_setup import ConsumerSetup
@@ -9,17 +8,17 @@ from ..vendor import vendor_descriptor
 @auto_str
 class HttpConfiguration:
     def __init__(self,
-                 url: str = None,
-                 current_l1_path: str = None,
-                 current_l2_path: str = None,
-                 current_l3_path: str = None,
-                 power_path: str = None,
-                 temperatures_path: str = None,
-                 imported_path: str = None,
-                 exported_path: str = None,
-                 switch_on_path: str = None,
-                 switch_off_path: str = None,
-                 set_power_limit_path: str = None):
+                 url: Optional[str] = None,
+                 current_l1_path: Optional[str] = None,
+                 current_l2_path: Optional[str] = None,
+                 current_l3_path: Optional[str] = None,
+                 power_path: Optional[str] = None,
+                 temperatures_path: Optional[str] = None,
+                 imported_path: Optional[str] = None,
+                 exported_path: Optional[str] = None,
+                 switch_on_path: Optional[str] = None,
+                 switch_off_path: Optional[str] = None,
+                 set_power_limit_path: Optional[str] = None):
         self.url = url
         self.current_l1_path = current_l1_path
         self.current_l2_path = current_l2_path
@@ -39,7 +38,7 @@ class Http(ConsumerSetup[HttpConfiguration]):
                  name: str = "HTTP-Verbraucher",
                  type: str = "http",
                  id: int = 0,
-                 configuration: HttpConfiguration = None,
+                 configuration: Optional[HttpConfiguration] = None,
                  usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.METER_ONLY,
                                                      ConsumerUsage.CONTINUOUS,
                                                      ConsumerUsage.SUSPENDABLE_ONOFF,

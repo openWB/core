@@ -10,8 +10,8 @@ from ..vendor import vendor_descriptor
 class LambdaConfiguration:
     def __init__(self,
                  ip_address: Optional[str] = None,
-                 port: Optional[int] = 502,
-                 modbus_id: Optional[int] = 1):
+                 port: int = 502,
+                 modbus_id: int = 1):
         self.ip_address = ip_address
         self.port = port
         self.modbus_id = modbus_id
@@ -23,7 +23,7 @@ class Lambda(ConsumerSetup[LambdaConfiguration]):
                  name: str = "Lambda Wärmepumpe",
                  type: str = "lambda_",
                  id: int = 0,
-                 configuration: LambdaConfiguration = None,
+                 configuration: Optional[LambdaConfiguration] = None,
                  usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_TUNABLE,
                                                      ConsumerUsage.SELF_CONTROLLED,
                                                      ConsumerUsage.METER_ONLY),

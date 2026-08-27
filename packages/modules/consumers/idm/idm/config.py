@@ -10,8 +10,8 @@ from ..vendor import vendor_descriptor
 class IdmConfiguration:
     def __init__(self,
                  ip_address: Optional[str] = None,
-                 port: Optional[int] = 502,
-                 modbus_id: Optional[int] = 1,
+                 port: int = 502,
+                 modbus_id: int = 1,
                  version: int = 1):
         self.ip_address = ip_address
         self.port = port
@@ -25,7 +25,7 @@ class Idm(ConsumerSetup[IdmConfiguration]):
                  name: str = "Wärmepumpe der Firma IDM mit Navigatorregelung 1.7/2.0",
                  type: str = "idm",
                  id: int = 0,
-                 configuration: IdmConfiguration = None,
+                 configuration: Optional[IdmConfiguration] = None,
                  usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_TUNABLE,
                                                      ConsumerUsage.SELF_CONTROLLED,
                                                      ConsumerUsage.METER_ONLY),

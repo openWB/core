@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Optional
 
 from control.consumer.consumer_data import ConsumerUsage
 from helpermodules.auto_str import auto_str
@@ -9,17 +9,17 @@ from ..vendor import vendor_descriptor
 @auto_str
 class JsonConfiguration:
     def __init__(self,
-                 url: str = None,
-                 jq_current_l1: str = None,
-                 jq_current_l2: str = None,
-                 jq_current_l3: str = None,
-                 jq_power: str = None,
-                 jq_temperatures: str = None,
-                 jq_imported: str = None,
-                 jq_exported: str = None,
-                 jq_switch_on: str = None,
-                 jq_switch_off: str = None,
-                 jq_set_power_limit: str = None):
+                 url: Optional[str] = None,
+                 jq_current_l1: Optional[str] = None,
+                 jq_current_l2: Optional[str] = None,
+                 jq_current_l3: Optional[str] = None,
+                 jq_power: Optional[str] = None,
+                 jq_temperatures: Optional[str] = None,
+                 jq_imported: Optional[str] = None,
+                 jq_exported: Optional[str] = None,
+                 jq_switch_on: Optional[str] = None,
+                 jq_switch_off: Optional[str] = None,
+                 jq_set_power_limit: Optional[str] = None):
         self.url = url
         self.jq_currents = (jq_current_l1, jq_current_l2, jq_current_l3)
         self.jq_power = jq_power
@@ -37,7 +37,7 @@ class Json(ConsumerSetup[JsonConfiguration]):
                  name: str = "JSON-Verbraucher",
                  type: str = "json",
                  id: int = 0,
-                 configuration: JsonConfiguration = None,
+                 configuration: Optional[JsonConfiguration] = None,
                  usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.METER_ONLY,
                                                      ConsumerUsage.CONTINUOUS,
                                                      ConsumerUsage.SUSPENDABLE_ONOFF,
