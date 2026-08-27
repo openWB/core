@@ -13,7 +13,7 @@ from modules.devices.fronius.fronius.config import FroniusBatSetup
 from modules.devices.fronius.fronius.config import FroniusConfiguration
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
-from modules.devices.fronius.fronius.bat_api import FroniusWR
+from modules.devices.fronius.fronius.fronius_api import FroniusWR
 
 log = logging.getLogger(__name__)
 
