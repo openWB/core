@@ -8,7 +8,7 @@ from ..vendor import vendor_descriptor
 
 @auto_str
 class SolvisConfiguration:
-    def __init__(self, ip_address: Optional[str] = None, port: Optional[int] = 502, modbus_id: Optional[int] = 1):
+    def __init__(self, ip_address: Optional[str] = None, port: int = 502, modbus_id: int = 1):
         self.ip_address = ip_address
         self.port = port
         self.modbus_id = modbus_id
@@ -20,7 +20,7 @@ class SolvisHeatPump(ConsumerSetup[SolvisConfiguration]):
                  name: str = "Solvis Wärmepumpe",
                  type: str = "solvis",
                  id: int = 0,
-                 configuration: SolvisConfiguration = None,
+                 configuration: Optional[SolvisConfiguration] = None,
                  usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.METER_ONLY,),
                  **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(

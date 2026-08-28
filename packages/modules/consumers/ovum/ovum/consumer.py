@@ -15,8 +15,8 @@ log = logging.getLogger(__name__)
 
 
 def create_consumer(config: Ovum):
-    client = None
-    sim_counter = None
+    client: Optional[ModbusTcpClient_] = None
+    sim_counter: Optional[SimCounterConsumer] = None
 
     def initializer():
         nonlocal client, sim_counter

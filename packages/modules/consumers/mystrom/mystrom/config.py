@@ -18,7 +18,7 @@ class MyStrom(ConsumerSetup[MyStromConfiguration]):
                  name: str = "MyStrom",
                  type: str = "mystrom",
                  id: int = 0,
-                 configuration: MyStromConfiguration = None,
+                 configuration: Optional[MyStromConfiguration] = None,
                  usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_ONOFF,
                                                      ConsumerUsage.METER_ONLY),
                  **kwargs) -> None:

@@ -9,7 +9,7 @@ log = logging.getLogger(__name__)
 ALPHABETICAL_INDEX = ['a', 'b', 'c']
 
 
-def get_generation(address: str) -> Tuple[Optional[int], str]:
+def get_generation(address: str) -> Tuple[int, str]:
     device_info = req.get_http_session().get(f"http://{address}/shelly", timeout=3).json()
     generation = 1  # default to gen 1
     model = "unknown"

@@ -1,5 +1,4 @@
 from typing import Optional, Tuple
-
 from control.consumer.consumer_data import ConsumerUsage
 from helpermodules.auto_str import auto_str
 from modules.common.consumer_setup import ConsumerSetup
@@ -13,7 +12,7 @@ class AvmConfiguration:
                  username: Optional[str] = None,
                  password: Optional[str] = None,
                  session_id: Optional[str] = None,
-                 session_mtime: Optional[str] = None,
+                 session_mtime: Optional[float] = None,
                  name: Optional[str] = None) -> None:
         self.ip_address = ip_address
         self.username = username
@@ -29,7 +28,7 @@ class Avm(ConsumerSetup[AvmConfiguration]):
                  name: str = "AVM Fritz!Box",
                  type: str = "avm",
                  id: int = 0,
-                 configuration: AvmConfiguration = None,
+                 configuration: Optional[AvmConfiguration] = None,
                  usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_TUNABLE,
                                                      ConsumerUsage.METER_ONLY),
                  **kwargs) -> None:

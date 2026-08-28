@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from typing import Optional
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.configurable_consumer import ConfigurableConsumer
 from modules.common.modbus import ModbusTcpClient_
@@ -6,7 +7,7 @@ from modules.consumers.viessmann.viessmann_heat_pump.config import ViessmannHeat
 
 
 def create_consumer(config: ViessmannHeatPump):
-    client = None
+    client: Optional[ModbusTcpClient_] = None
 
     def initializer():
         nonlocal client
