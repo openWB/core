@@ -8,8 +8,7 @@ from helpermodules.measurement_logging.process_log import (get_totals,
                                                            load_daily_source_totals_content,
                                                            load_monthly_source_totals_content,
                                                            save_daily_source_totals,
-                                                           get_monthly_log,
-                                                           generate_daily_totals_for_year)
+                                                           get_monthly_log)
 
 log = logging.getLogger(__name__)
 
@@ -49,12 +48,10 @@ def update_pv_monthly_yearly_yields(daily_totals: Dict) -> None:
     """
     veröffentlicht die monatlichen und jährlichen Erträge für PV
     """
-
-    folder = _get_parent_path()/"data"/"daily_totals"
-    if not folder.exists():
-        # Nur wenn es noch keine Tages-Totals-Folder gibt,
-        # werden die totals fürs aktuelle Jahr berechnet und gespeichert.
-        generate_daily_totals_for_year(timecheck.create_timestamp_YYYY())
+    # pv_data und pv_all_data werden nur aktualisiert, wenn das Update der Logfiles abgeschlossen ist.
+    if not data.data.system_data["system"].data["log_totals_generation_finished"]:
+        log.debug("Update der Logfiles läuft noch. Monatliche und jährliche PV-Erträge werden nicht aktualisiert.")
+        return
 
     monthly_totals = _get_pv_monthly_yields(daily_totals)
     yearly_totals = _get_pv_yearly_yields(monthly_totals)

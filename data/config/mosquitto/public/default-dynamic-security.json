@@ -185,6 +185,12 @@
 				},
 				{
 					"acltype": "publishClientReceive",
+					"topic": "openWB/system/log_totals_generation_finished",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
 					"topic": "openWB/system/usage_terms_acknowledged",
 					"priority": 0,
 					"allow": true

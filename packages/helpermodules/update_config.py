@@ -9,6 +9,8 @@ import logging
 from pathlib import Path
 import re
 import time
+import sys
+import subprocess
 from typing import List, Optional
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
 
@@ -59,6 +61,8 @@ NO_MODULE = {"type": None, "configuration": {}}
 class UpdateConfig:
 
     DATASTORE_VERSION = 137
+
+    FILE_OPERATION_VERSION = 0
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -526,10 +530,12 @@ class UpdateConfig:
         "^openWB/system/device/[0-9]+/component/[0-9]+/simulation/timestamp_present$",
         "^openWB/system/device/[0-9]+/config$",
         "^openWB/system/device/module_update_completed$",
+        "^openWB/system/file_operation_version$",
         "^openWB/system/hostname$",
         "^openWB/system/io/[0-9]+/config$",
         "^openWB/system/ip_address$",
         "^openWB/system/lastlivevaluesJson$",
+        "^openWB/system/log_totals_generation_finished$",
         "^openWB/system/mac_address$",
         "^openWB/system/mqtt/bridge/[0-9]+$",
         "^openWB/system/mqtt/valid_partner_ids$",
@@ -727,6 +733,7 @@ class UpdateConfig:
         try:
             # erst breaking changes auflösen, sonst sind alte Topics schon gelöscht
             self.__solve_breaking_changes()
+            self.__solve_breaking_changes_filesystem()
             self.__remove_outdated_topics()
             self._remove_invalid_topics()
             self.__pub_missing_defaults()
@@ -827,6 +834,54 @@ class UpdateConfig:
                 pub_system_message(
                     {}, "Fehler bei der Aktualisierung der Konfiguration des Brokers.", MessageType.ERROR)
 
+    def __solve_breaking_changes_filesystem(self) -> None:
+        """ """
+        file_operation_version = decode_payload(self.all_received_topics.get("openWB/system/file_operation_version"))
+        if file_operation_version is None or isinstance(file_operation_version, int):
+            file_operation_version = list(range(file_operation_version or self.FILE_OPERATION_VERSION+1))
+            self.__update_topic("openWB/system/file_operation_version", file_operation_version)
+        log.debug(f"current file operation version: {file_operation_version}")
+        log.debug(f"target file operation version: {self.FILE_OPERATION_VERSION}")
+        for version in list(range(self.FILE_OPERATION_VERSION+1)):
+            try:
+                if version not in file_operation_version:
+                    log.debug(f"upgrading File Operation version '{version}'")
+                    getattr(self, f"upgrade_file_operation_{version}")()
+            except AttributeError:
+                log.error(f"missing upgrade function! '{version}'")
+            except Exception:
+                log.exception("Fehler bei der Aktualisierung des Brokers.")
+                pub_system_message(
+                    {}, "Fehler bei der Aktualisierung der Konfiguration des Brokers.", MessageType.ERROR)
+
+    def upgrade_file_operation_0(self) -> None:
+        """
+        Generiere die Totals-Summen für Tage und Monate
+        """
+
+        self.__update_topic("openWB/system/log_totals_generation_finished", False)
+        try:
+            _generate_totals_subprocess = subprocess.Popen(
+                [
+                    sys.executable,
+                    "-m",
+                    "helpermodules.measurement_logging.generate_totals_subprocess"
+                ],
+                cwd="/var/www/html/openWB/packages",
+                start_new_session=True,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                close_fds=True
+            )
+
+            log.debug("generate_totals_subprocess gestartet, PID: %s", _generate_totals_subprocess.pid)
+            print(f"generate_totals_subprocess gestartet, PID: {_generate_totals_subprocess.pid}")
+        except Exception:
+            _generate_totals_subprocess = None
+            log.exception("Fehler beim Starten des generate_totals_subprocess.")
+        self._append_file_operation_version(0)
+
     def _loop_all_received_topics(self, callback) -> None:
         modified_topics = {}
         for topic, payload in self.all_received_topics.items():
@@ -844,6 +899,12 @@ class UpdateConfig:
         if version not in datastore_versions:
             datastore_versions.append(version)
             self.__update_topic("openWB/system/datastore_version", datastore_versions)
+
+    def _append_file_operation_version(self, version: int) -> None:
+        file_operation_versions = decode_payload(self.all_received_topics.get("openWB/system/file_operation_version"))
+        if version not in file_operation_versions:
+            file_operation_versions.append(version)
+            self.__update_topic("openWB/system/file_operation_version", file_operation_versions)
 
     def upgrade_datastore_0(self) -> None:
         def upgrade(topic: str, payload) -> Optional[dict]:

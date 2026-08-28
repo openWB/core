@@ -182,9 +182,9 @@ class HandlerAlgorithm:
         try:
             with ChangedValuesContext(loadvars_.event_module_update_completed):
                 entries = save_log()
-                #daily_totals = update_daily_yields(entries)
-                #if daily_totals is not None:
-                #    update_pv_monthly_yearly_yields(daily_totals)
+                daily_totals = update_daily_yields(entries)
+                if daily_totals is not None:
+                    update_pv_monthly_yearly_yields(daily_totals)
 
                 for cp in data.data.cp_data.values():
                     calc_energy_costs(cp)

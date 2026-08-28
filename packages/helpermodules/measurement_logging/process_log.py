@@ -2,15 +2,9 @@ from enum import Enum
 from copy import deepcopy
 import json
 import logging
-import gc
-import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
-from concurrent.futures import ProcessPoolExecutor
-from concurrent.futures.process import BrokenProcessPool
-from multiprocessing import Pool, TimeoutError as MultiprocessingTimeoutError
-from datetime import datetime, timedelta, date
-
+from datetime import datetime
 from helpermodules import timecheck
 from helpermodules.measurement_logging.write_log import (LegacySmartHomeLogData, create_entry,
                                                          get_previous_entry)
@@ -238,8 +232,6 @@ def get_totals(entries: List, process_entries: bool = True) -> Dict:
 
 
 def get_daily_log(date: str):
-    # generate_all_totals_files()
-    # return None
     data = _collect_daily_log_data(date)
     data["entries"] = _process_entries(data["entries"], CalculationType.ALL)
     data["totals"] = get_totals(data["entries"], False)
@@ -287,7 +279,6 @@ def get_monthly_log(date: str):
     monthly_names = {}
     monthly_colors = {}
 
-    this_month = timecheck.create_timestamp_YYYYMM()
     today = timecheck.create_timestamp_YYYYMMDD()
     day = f"{date}01"
 
@@ -301,7 +292,7 @@ def get_monthly_log(date: str):
 
         content = load_daily_source_totals_content(day)
         if content is None:
-            # aktuelle Tageswerte nur berechnen, historische Tage zusaetzlich speichern
+            # Dürfte eigentlich nie passieren...
             content = save_daily_source_totals(day, saving=(day != today))
 
         if isinstance(content, dict):
@@ -326,14 +317,6 @@ def get_monthly_log(date: str):
         data["totals"] = get_totals(data["entries"], False)
         data["totals"] = analyse_percentage_totals(data["entries"], data["totals"])
         data = _analyse_energy_source(data)
-
-        # Fallback für ältere Monate
-        # da wir den Monat jetzt schon berechnet haben, können wir ihn auch direkt speichern
-        # falls er noch nicht existiert.
-        filepath = Path(_get_data_folder_path()) / "monthly_totals" / f"{date}_totals.json"
-        if not filepath.is_file() and date != this_month and date >= oldest_log_day[:6]:
-            save_monthly_source_totals(date, data, saving=True)
-
         return data
 
     # Fallback, wenn keine Daten vorhanden sind
@@ -347,32 +330,47 @@ def get_yearly_log(year: str):
     if oldest_log_day is None or year < oldest_log_day[:4]:
         return {"entries": [], "names": {}, "colors": {}, "totals": {}}
 
-    results = generate_daily_totals_for_year(year)
     monthly_entries = []
     monthly_names = {}
     monthly_colors = {}
+    this_month = timecheck.create_timestamp_YYYYMM()
+    month = f"{year}01"
 
-    for monthly_data in results:
-        if not isinstance(monthly_data, dict):
+    while month.startswith(year):
+        if month > this_month:
+            break
+
+        if month < oldest_log_day[:6]:
+            month = timecheck.get_relative_date_string(month, month_offset=1)
             continue
 
-        result_entries = monthly_data.get("entries")
-        result_names = monthly_data.get("names")
-        result_colors = monthly_data.get("colors")
+        content = load_monthly_source_totals_content(month)
+        if content is None:
+            # Dürfte eigentlich nie passieren...
+            content = save_monthly_source_totals(month, None, saving=(month != this_month))
 
-        if isinstance(result_entries, list) and len(result_entries) > 0:
-            monthly_entries.extend(result_entries)
-        if isinstance(result_names, dict):
-            monthly_names.update(result_names)
-        if isinstance(result_colors, dict):
-            monthly_colors.update(result_colors)
+        if isinstance(content, dict):
+            monthly_totals = content.get("totals")
+            monthly_entry = content.get("entry")
+
+            if isinstance(monthly_totals, dict) and isinstance(monthly_entry, dict) and len(monthly_entry) > 0:
+                monthly_entry = deepcopy(monthly_entry)
+                monthly_entry["date"] = month
+                _apply_source_totals(monthly_entry, monthly_totals)
+
+                monthly_entries.append(monthly_entry)
+                if isinstance(content.get("names"), dict):
+                    monthly_names.update(content["names"])
+                if isinstance(content.get("colors"), dict):
+                    monthly_colors.update(content["colors"])
+
+        month = timecheck.get_relative_date_string(month, month_offset=1)
 
     if len(monthly_entries) > 0:
         data = {"entries": monthly_entries, "names": monthly_names, "colors": monthly_colors}
         data["totals"] = get_totals(data["entries"], False)
         data["totals"] = analyse_percentage_totals(data["entries"], data["totals"])
         data = _analyse_energy_source(data)
-
         return data
 
     # Fallback, wenn keine Daten vorhanden sind
@@ -528,33 +526,59 @@ def calc_energy_imported_by_source(entry, names, message_key_filter: Optional[st
 
 
 def analyse_percentage_totals(entries, totals):
-    for section in ("hc", "cp"):
-        if "all" not in totals[section].keys():
-            totals[section]["all"] = {}
-    for source in ("grid", "pv", "bat", "cp"):
-        totals["hc"]["all"].update({f"energy_imported_{source}": 0})
-        for entry in entries:
-            if "hc" in entry.keys() and "all" in entry["hc"].keys():
-                current_value = totals["hc"]["all"][f"energy_imported_{source}"]
-                add_value = entry["hc"]["all"].get(f"energy_imported_{source}", 0)
-                totals["hc"]["all"][f"energy_imported_{source}"] = decimal_add(
-                    current_value, add_value)
-            for key in entry["cp"].keys():
-                if f"energy_imported_{source}" in entry["cp"][key].keys():
-                    if totals["cp"][key].get(f"energy_imported_{source}") is None:
-                        totals["cp"][key].update({f"energy_imported_{source}": 0})
-                    current_value = totals["cp"][key][f"energy_imported_{source}"]
-                    add_value = entry["cp"][key][f"energy_imported_{source}"]
-                    totals["cp"][key][f"energy_imported_{source}"] = decimal_add(
+    sources = ("grid", "pv", "bat", "cp")
+
+    def ensure_zero_source_keys(module_totals: Dict):
+        if isinstance(module_totals, dict):
+            for source in sources:
+                module_totals[f"energy_imported_{source}"] = 0
+
+    try:
+        for section in ("hc", "cp"):
+            if "all" not in totals[section].keys():
+                totals[section]["all"] = {}
+        for source in sources:
+            totals["hc"]["all"].update({f"energy_imported_{source}": 0})
+            for entry in entries:
+                if "hc" in entry.keys() and "all" in entry["hc"].keys():
+                    current_value = totals["hc"]["all"][f"energy_imported_{source}"]
+                    add_value = entry["hc"]["all"].get(f"energy_imported_{source}", 0)
+                    totals["hc"]["all"][f"energy_imported_{source}"] = decimal_add(
                         current_value, add_value)
-            for key, counter in entry["counter"].items():
-                if counter["grid"] is False:
-                    if totals["counter"][key].get(f"energy_imported_{source}") is None:
-                        totals["counter"][key].update({f"energy_imported_{source}": 0})
-                    current_value = totals["counter"][key][f"energy_imported_{source}"]
-                    add_value = counter[f"energy_imported_{source}"]
-                    totals["counter"][key][f"energy_imported_{source}"] = decimal_add(
-                        current_value, add_value)
+                for key in entry["cp"].keys():
+                    if f"energy_imported_{source}" in entry["cp"][key].keys():
+                        if totals["cp"][key].get(f"energy_imported_{source}") is None:
+                            totals["cp"][key].update({f"energy_imported_{source}": 0})
+                        current_value = totals["cp"][key][f"energy_imported_{source}"]
+                        add_value = entry["cp"][key][f"energy_imported_{source}"]
+                        totals["cp"][key][f"energy_imported_{source}"] = decimal_add(
+                            current_value, add_value)
+                for key, counter in entry["counter"].items():
+                    if counter["grid"] is False:
+                        if totals["counter"][key].get(f"energy_imported_{source}") is None:
+                            totals["counter"][key].update({f"energy_imported_{source}": 0})
+                        current_value = totals["counter"][key][f"energy_imported_{source}"]
+                        add_value = counter[f"energy_imported_{source}"]
+                        totals["counter"][key][f"energy_imported_{source}"] = decimal_add(
+                            current_value, add_value)
+    except Exception:
+        log.exception("Fehler beim Berechnen der Summen der Energiequellen")
+        # Im Fehlerfall werden die Totals auf 0 gesetzt
+        # -> dann wird nur die Ladung/Entladung-Leistung angezeigt.
+        # -> sprich keine Aufteilung der Energiequellen, sondern nur die Gesamtwerte.
+        totals.setdefault("hc", {})
+        totals["hc"].setdefault("all", {})
+        ensure_zero_source_keys(totals["hc"]["all"])
+
+        totals.setdefault("cp", {})
+        for key, module_totals in totals["cp"].items():
+            ensure_zero_source_keys(module_totals)
+
+        totals.setdefault("counter", {})
+        for key, module_totals in totals["counter"].items():
+            ensure_zero_source_keys(module_totals)
+
+        return totals
     return totals
 
 
@@ -718,17 +742,11 @@ def save_daily_source_totals(date: str, saving: bool = True):
 
         if saving:
             totals_dir.mkdir(parents=True, exist_ok=True)
-            if not filepath.is_file():
-                with open(str(filepath), "w") as jsonFile:
-                    json.dump(content, jsonFile, ensure_ascii=False, indent=2)
+            with open(str(filepath), "w") as jsonFile:
+                json.dump(content, jsonFile, ensure_ascii=False, indent=2)
 
-                log.debug(f"Tages-Summen für {date} gespeichert in {filepath}")
-            else:
-                log.debug(f"Tages-Summen existieren bereits: {filepath}")
+            log.debug(f"Tages-Summen für {date} gespeichert in {filepath}")
 
-        del data
-        del source_entries
-        gc.collect()
         return content
 
     except FILE_ERRORS:
@@ -866,173 +884,3 @@ def _oldest_log_day() -> Optional[str]:
     except Exception:
         log.exception("Fehler beim Ermitteln des ältesten Tageslogs")
         return None
-
-
-def generate_daily_totals_for_year(year: str):
-    if not (len(year) == 4 and year.isdigit()):
-        log.debug(f"Ungültiges Jahr für Jahres-Summen: {year}")
-        return []
-
-    current_year = timecheck.create_timestamp_YYYY()
-    if year > current_year:
-        return []
-
-    months_list = []
-    if current_year == year:
-        # aktuelles Jahr
-        current_month = timecheck.create_timestamp_YYYYMM()[4:6]
-        for month in range(1, int(current_month) + 1):
-            month_str = f"{current_year}{month:02d}"
-            months_list.append(month_str)
-    else:
-        # historisches Jahr
-        for month in range(1, 13):
-            month_str = f"{year}{month:02d}"
-            months_list.append(month_str)
-    try:
-        with ProcessPoolExecutor() as executor:
-            results = list(executor.map(get_monthly_parallel, months_list))
-
-    except BrokenProcessPool:
-        log.exception(f"Beim vorgenerieren der daily totals fürs Jahr {year} "
-                      f"ist ein Worker-Prozess unerwartet gestorben!")
-        results = []
-
-    log.debug(f"Tages-Summen für das Jahr {year} wurden berechnet und gespeichert.")
-    return results
-
-
-def get_monthly_parallel(month: str):
-    this_month = timecheck.create_timestamp_YYYYMM()
-    monthly_entries = []
-    monthly_names = {}
-    monthly_colors = {}
-
-    content = load_monthly_source_totals_content(month)
-    if content is None:
-        content = save_monthly_source_totals(month, None, saving=(month != this_month))
-
-    if isinstance(content, dict):
-        monthly_totals = content.get("totals")
-        monthly_entry = content.get("entry")
-
-        if isinstance(monthly_totals, dict) and isinstance(monthly_entry, dict) and len(monthly_entry) > 0:
-            monthly_entry = deepcopy(monthly_entry)
-            monthly_entry["date"] = month
-            _apply_source_totals(monthly_entry, monthly_totals)
-
-            monthly_entries.append(monthly_entry)
-            if isinstance(content.get("names"), dict):
-                monthly_names.update(content["names"])
-            if isinstance(content.get("colors"), dict):
-                monthly_colors.update(content["colors"])
-    return {"entries": monthly_entries, "names": monthly_names, "colors": monthly_colors}
-
-
-def _save_daily_source_totals_worker(day: str) -> int:
-    """Worker-Wrapper: große Inhalte lokal schreiben, nur kleines Ack zurückgeben."""
-    save_daily_source_totals(day, saving=True)
-    return 1
-
-
-def _save_monthly_source_totals_worker(month: str) -> int:
-    """Worker-Wrapper: große Inhalte lokal schreiben, nur kleines Ack zurückgeben."""
-    save_monthly_source_totals(month, None, saving=True)
-    return 1
-
-
-def _drain_pool_results(iterator, total: int, label: str, timeout_seconds: int = 120, max_timeouts: int = 3):
-    """Konsumiert Pool-Ergebnisse mit Timeout, um stille Hänger sichtbar zu machen."""
-    completed = 0
-    timeout_count = 0
-    log.info(f"{label}: starte drain ({total} Tasks, timeout={timeout_seconds}s).")
-
-    while completed < total:
-        try:
-            iterator.next(timeout=timeout_seconds)
-            completed += 1
-            timeout_count = 0
-            if completed % 50 == 0 or completed == total:
-                log.info(f"{label}: Fortschritt {completed}/{total}.")
-        except MultiprocessingTimeoutError:
-            timeout_count += 1
-            log.warning(
-                f"{label}: seit {timeout_seconds}s kein Ergebnis ("
-                f"{completed}/{total}). Timeout {timeout_count}/{max_timeouts}.")
-            if timeout_count >= max_timeouts:
-                raise TimeoutError(
-                    f"{label}: keine neuen Ergebnisse nach {max_timeouts * timeout_seconds}s "
-                    f"({completed}/{total} erledigt)."
-                )
-
-    log.info(f"{label}: drain abgeschlossen ({completed}/{total}).")
-
-
-def generate_all_totals_files():
-
-    oldest_log_day = "20260101"  # _oldest_log_day()
-    if oldest_log_day is None:
-        return
-
-    start = datetime.strptime(oldest_log_day, "%Y%m%d").date()
-    today = date.today()
-
-    tage = [
-        (start + timedelta(days=i)).strftime("%Y%m%d")
-        for i in range((today - start).days + 1)
-    ]
-
-    monate = sorted(set(tag[:6] for tag in tage))
-
-    totals_dir = Path(_get_data_folder_path()) / "daily_totals"
-    if not totals_dir.is_dir():
-        print("daily_totals existiert noch nicht")
-
-        start = time.perf_counter()
-        try:
-            print("_with_TIMOUT___POOL_TAGE_2_!!!!!")
-            with Pool(processes=2, maxtasksperchild=30) as pool:
-                # Ergebnisse streamen und mit Timeout überwachen, damit Hänger nicht still bleiben.
-                iterator = pool.imap_unordered(_save_daily_source_totals_worker, tage, chunksize=1)
-                log.info(f"daily_totals: iterator erstellt, starte drain für {len(tage)} Tage.")
-                _drain_pool_results(iterator, len(tage), "daily_totals")
-
-            print("Erfolgreich beendet, ohne den RAM zu sprengen!")
-
-        except Exception:
-            log.exception(
-                f"Beim Vorgenerieren der daily totals für Tage ist ein Fehler aufgetreten "
-                f"({len(tage)} Tage).")
-        ende = time.perf_counter()
-        dauer_t = ende - start
-        print(f"Dauer TAGE : {dauer_t:.6f} Sekunden")
-        # print(tage)
-
-    totals_dir = Path(_get_data_folder_path()) / "monthly_totals"
-    if not totals_dir.is_dir():
-        print("monthly_totals existiert noch nicht")
-
-        start = time.perf_counter()
-        try:
-
-            # Alle 5 Task wird der speicher komplett geleert, damit kein Prozess unbemerkt abstürzt
-            # und der RAM nicht überläuft.
-            # chunksize=1 -> pro Task nur ein Monat
-            # maxtasksperchild=5 -> nach 5 Tasks wird der Prozess beendet und ein neuer gestartet
-            print("POOL_Monate_2_!!!!!")
-            with Pool(processes=2, maxtasksperchild=5) as pool:
-                # Ergebnisse streamen und mit Timeout überwachen, damit Hänger nicht still bleiben.
-                iterator = pool.imap_unordered(_save_monthly_source_totals_worker, monate, chunksize=1)
-                log.info(f"monthly_totals: iterator erstellt, starte drain für {len(monate)} Monate.")
-                _drain_pool_results(iterator, len(monate), "monthly_totals")
-
-            print("Erfolgreich beendet, ohne den RAM zu sprengen!")
-
-        except Exception:
-            log.exception(
-                f"Beim Vorgenerieren der monthly totals für Monate ist ein Fehler aufgetreten "
-                f"({len(monate)} Monate).")
-        ende = time.perf_counter()
-        dauer_m = ende - start
-        print(f"Dauer MONATE : {dauer_m:.6f} Sekunden")
-        # print(monate)
