@@ -10,10 +10,10 @@ from ..vendor import vendor_descriptor
 class ActhorConfiguration:
     def __init__(self,
                  ip_address: Optional[str] = None,
-                 port: Optional[int] = 502,
-                 modbus_id: Optional[int] = 1,
-                 model: Optional[str] = "9s45",
-                 max_power: Optional[int] = 1000):
+                 port: int = 502,
+                 modbus_id: int = 1,
+                 model: str = "9s45",
+                 max_power: int = 1000):
         self.ip_address = ip_address
         self.port = port
         self.modbus_id = modbus_id
@@ -27,7 +27,7 @@ class Acthor(ConsumerSetup[ActhorConfiguration]):
                  name: str = "my-PV Acthor oder Elwa2 Heizstab",
                  type: str = "acthor",
                  id: int = 0,
-                 configuration: ActhorConfiguration = None,
+                 configuration: Optional[ActhorConfiguration] = None,
                  usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_TUNABLE,
                                                      ConsumerUsage.METER_ONLY),
                  **kwargs) -> None:

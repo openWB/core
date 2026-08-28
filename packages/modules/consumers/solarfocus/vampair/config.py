@@ -8,7 +8,7 @@ from ..vendor import vendor_descriptor
 
 @auto_str
 class VampairConfiguration:
-    def __init__(self, ip_address: Optional[str] = None, port: Optional[int] = 502, modbus_id: Optional[int] = 1):
+    def __init__(self, ip_address: Optional[str] = None, port: int = 502, modbus_id: int = 1):
         self.ip_address = ip_address
         self.port = port
         self.modbus_id = modbus_id
@@ -20,7 +20,7 @@ class Vampair(ConsumerSetup[VampairConfiguration]):
                  name: str = "Vampair Wärmepumpe",
                  type: str = "vampair",
                  id: int = 0,
-                 configuration: VampairConfiguration = None,
+                 configuration: Optional[VampairConfiguration] = None,
                  usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SELF_CONTROLLED,
                                                      ConsumerUsage.SUSPENDABLE_TUNABLE,
                                                      ConsumerUsage.METER_ONLY),
