@@ -10,8 +10,8 @@ from ..vendor import vendor_descriptor
 class OvumConfiguration:
     def __init__(self,
                  ip_address: Optional[str] = None,
-                 port: Optional[int] = 502,
-                 modbus_id: Optional[int] = 1):
+                 port: int = 502,
+                 modbus_id: int = 1):
         self.ip_address = ip_address
         self.port = port
         self.modbus_id = modbus_id
@@ -23,7 +23,7 @@ class Ovum(ConsumerSetup[OvumConfiguration]):
                  name: str = "OVUM Wärmepumpe (CubeSpeicher/MPlus)",
                  type: str = "ovum",
                  id: int = 0,
-                 configuration: OvumConfiguration = None,
+                 configuration: Optional[OvumConfiguration] = None,
                  # OVUM unterstützt eine echte Leistungsvorgabe (SUSPENDABLE_TUNABLE),
                  # Eigenregelung anhand der Systemwerte (SELF_CONTROLLED) sowie
                  # SG-Ready-Ein-/Ausschalten (SUSPENDABLE_ONOFF)

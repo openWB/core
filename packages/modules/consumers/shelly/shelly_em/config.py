@@ -10,8 +10,8 @@ from ..vendor import vendor_descriptor
 class ShellyConfiguration:
     def __init__(self,
                  ip_address: Optional[str] = None,
-                 factor: Optional[int] = -1,
-                 phase: Optional[int] = 1,
+                 factor: int = -1,
+                 phase: int = 1,
                  username: Optional[str] = None,
                  password: Optional[str] = None) -> None:
         self.ip_address = ip_address
@@ -27,7 +27,7 @@ class ShellyEM(ConsumerSetup[ShellyConfiguration]):
                  name: str = "Shelly EM (Messen)",
                  type: str = "shelly_em",
                  id: int = 0,
-                 configuration: ShellyConfiguration = None,
+                 configuration: Optional[ShellyConfiguration] = None,
                  usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.METER_ONLY,),
                  **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(

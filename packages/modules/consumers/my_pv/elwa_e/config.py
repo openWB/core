@@ -10,8 +10,8 @@ from ..vendor import vendor_descriptor
 class ElwaConfiguration:
     def __init__(self,
                  ip_address: Optional[str] = None,
-                 port: Optional[int] = 502,
-                 modbus_id: Optional[int] = 1):
+                 port: int = 502,
+                 modbus_id: int = 1):
         self.ip_address = ip_address
         self.port = port
         self.modbus_id = modbus_id
@@ -23,7 +23,7 @@ class Elwa(ConsumerSetup[ElwaConfiguration]):
                  name: str = "my-PV Elwa-E Heizstab",
                  type: str = "elwa_e",
                  id: int = 0,
-                 configuration: ElwaConfiguration = None,
+                 configuration: Optional[ElwaConfiguration] = None,
                  usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_TUNABLE,
                                                      ConsumerUsage.METER_ONLY),
                  **kwargs) -> None:

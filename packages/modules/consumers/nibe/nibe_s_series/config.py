@@ -10,7 +10,7 @@ from ..vendor import vendor_descriptor
 class NibeConfiguration:
     def __init__(self,
                  ip_address: Optional[str] = None,
-                 modbus_id: Optional[int] = 1):
+                 modbus_id: int = 1):
         self.ip_address = ip_address
         self.modbus_id = modbus_id
 
@@ -21,7 +21,7 @@ class Nibe(ConsumerSetup[NibeConfiguration]):
                  name: str = "Nibe S-Series Wärmepumpe",
                  type: str = "nibe_s_series",
                  id: int = 0,
-                 configuration: NibeConfiguration = None,
+                 configuration: Optional[NibeConfiguration] = None,
                  usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.METER_ONLY,),
                  **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from modules.common import req
+from typing import Optional
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
 from modules.common.component_type import ComponentType
@@ -10,8 +11,9 @@ from modules.devices.shelly.shelly.status_handler import get_generation, request
 
 
 def create_consumer(config: ShellyPM):
-    sim_counter = model = None
-    generation = 1
+    sim_counter: Optional[SimCounterConsumer] = None
+    model: Optional[str] = None
+    generation: int = 1
 
     def initializer():
         nonlocal sim_counter, generation, model

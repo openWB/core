@@ -15,8 +15,8 @@ log = logging.getLogger(__name__)
 
 
 def create_consumer(config: Json):
-    session = None
-    sim_counter = None
+    session: Optional[req.CustomSession] = None
+    sim_counter: Optional[SimCounterConsumer] = None
     jq_power = None
     jq_imported = None
     jq_exported = None
@@ -57,7 +57,7 @@ def create_consumer(config: Json):
         jq_switch_on = create_post_function(config.configuration.jq_switch_on)
         jq_switch_off = create_post_function(config.configuration.jq_switch_off)
 
-    def update() -> None:
+    def update() -> ConsumerState:
         response = req.get_http_session().get(config.configuration.url, timeout=5).json()
         power = float(jq_power.input(response).first())
         temperatures = float(jq_temperatures.input(response).first()) if jq_temperatures is not None else None

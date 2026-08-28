@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import logging
+from typing import Optional, Callable
 
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
@@ -14,16 +15,16 @@ log = logging.getLogger(__name__)
 
 
 def create_consumer(config: Http):
-    session = None
-    sim_counter = None
-    get_power = None
-    get_imported = None
-    get_exported = None
-    get_currents = None
-    get_temperatures = None
-    post_set_power_limit = None
-    post_switch_on = None
-    post_switch_off = None
+    session: Optional[req.CustomSession] = None
+    sim_counter: Optional[SimCounterConsumer] = None
+    get_power: Optional[Callable] = None
+    get_imported: Optional[Callable] = None
+    get_exported: Optional[Callable] = None
+    get_currents: Optional[Callable] = None
+    get_temperatures: Optional[Callable] = None
+    post_set_power_limit: Optional[Callable] = None
+    post_switch_on: Optional[Callable] = None
+    post_switch_off: Optional[Callable] = None
 
     def initializer():
         nonlocal session, sim_counter
@@ -65,15 +66,15 @@ def create_consumer(config: Http):
 
     def switch_on():
         # Authorization?
-        post_switch_on(session, params={"state": True})
+        post_switch_on(session, {"state": True})
 
     def switch_off():
         # Authorization?
-        post_switch_off(session, params={"state": False})
+        post_switch_off(session, {"state": False})
 
     def set_power_limit(power_limit: float, data: SetLimitData) -> None:
         # Authorization?
-        post_set_power_limit(session, params={"power_limit": power_limit})
+        post_set_power_limit(session, {"power_limit": power_limit})
 
     return ConfigurableConsumer(consumer_config=config,
                                 initializer=initializer,

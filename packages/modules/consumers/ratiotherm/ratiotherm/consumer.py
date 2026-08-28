@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import logging
+from typing import Optional
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_type import ComponentType
 from modules.common.configurable_consumer import ConfigurableConsumer, SetLimitData
@@ -11,8 +12,8 @@ log = logging.getLogger(__name__)
 
 
 def create_consumer(config: Ratiotherm):
-    client = None
-    sim_counter = None
+    client: Optional[ModbusTcpClient_] = None
+    sim_counter: Optional[SimCounterConsumer] = None
 
     def initializer():
         nonlocal client, sim_counter
@@ -26,6 +27,7 @@ def create_consumer(config: Ratiotherm):
         # Absturz bei negativen Zahlen
         raw_value = int(round(max(power_limit, 0)))
         client.write_register(100, raw_value, ModbusDataType.INT_16, unit=config.configuration.modbus_id)
+
     return ConfigurableConsumer(consumer_config=config,
                                 initializer=initializer,
                                 error_handler=error_handler,

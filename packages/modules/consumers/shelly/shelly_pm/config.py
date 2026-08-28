@@ -10,8 +10,8 @@ from ..vendor import vendor_descriptor
 class ShellyConfiguration:
     def __init__(self,
                  ip_address: Optional[str] = None,
-                 factor: Optional[int] = -1,
-                 phase: Optional[int] = 1,
+                 factor: int = -1,
+                 phase: int = 1,
                  channel: int = 0,
                  username: Optional[str] = None,
                  password: Optional[str] = None) -> None:
@@ -29,7 +29,7 @@ class ShellyPM(ConsumerSetup[ShellyConfiguration]):
                  name: str = "Shelly PM (Messen & Schalten)",
                  type: str = "shelly_pm",
                  id: int = 0,
-                 configuration: ShellyConfiguration = None,
+                 configuration: Optional[ShellyConfiguration] = None,
                  usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.METER_ONLY,
                                                      ConsumerUsage.SUSPENDABLE_ONOFF),
                  **kwargs) -> None:
