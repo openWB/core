@@ -54,8 +54,6 @@ def check_packages() -> dict[str, list[str]]:
 def install_requirements() -> None:
     subprocess.run(
         [
-            sys.executable,
-            "-m",
             "pip3",
             "install",
             "--only-binary",
@@ -73,8 +71,6 @@ def reinstall(packages: set[str]) -> None:
 
     subprocess.run(
         [
-            sys.executable,
-            "-m",
             "pip3",
             "install",
             "--only-binary",
