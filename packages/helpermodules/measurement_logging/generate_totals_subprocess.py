@@ -10,8 +10,15 @@ from helpermodules.measurement_logging.process_log import (save_daily_source_tot
 import logging
 from logging.handlers import RotatingFileHandler
 
+
+BASE_PATH = Path(__file__).resolve().parents[3]
+LOG_DIR = BASE_PATH / "ramdisk"
+LOG_FILE = LOG_DIR / "generate_totals.log"
+
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+
 handler = RotatingFileHandler(
-    filename="/var/www/html/openWB/ramdisk/generate_totals.log",
+    filename=LOG_FILE,
     maxBytes=5 * 1024 * 1024,  # 5 MB,
     backupCount=1,
 )
@@ -24,12 +31,12 @@ logging.basicConfig(
 
 log = logging.getLogger(__name__)
 
-LOCK_FILE = Path(__file__).resolve().parents[3] / "data" / "generate_totals.lock"
+LOCK_FILE = BASE_PATH / "data" / "generate_totals.lock"
 
 
 def get_all_days_to_calc():
     try:
-        daily_log_dir = Path(__file__).resolve().parents[3] / "data" / "daily_log"
+        daily_log_dir = BASE_PATH / "data" / "daily_log"
         if not daily_log_dir.is_dir():
             return None
 
