@@ -24,7 +24,7 @@ interface FlowGeometry {
 
 export function createFlowLabels(options: {
   format: (watts: number) => string;
-  color: () => string;
+  color: (dataIndex: number) => string;
 }): Plugin<'sankey'> {
   return {
     id: 'sankeyFlowLabels',
@@ -39,9 +39,10 @@ export function createFlowLabels(options: {
       ctx.font = font.string;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillStyle = options.color();
 
-      for (const flow of flows) {
+      // The index is the flow's position in the dataset, which is what the
+      // hover focus keys off, so `color` can dim a label with its band.
+      for (const [dataIndex, flow] of flows.entries()) {
         // Bands thinner than a line of text cannot hold the label legibly.
         if (flow.height < font.lineHeight) {
           continue;
@@ -55,6 +56,7 @@ export function createFlowLabels(options: {
         }
         const x = (flow.x + flow.x2) / 2;
         const y = (flow.y + flow.y2) / 2 + flow.height / 2;
+        ctx.fillStyle = options.color(dataIndex);
         ctx.fillText(text, x, y);
       }
       ctx.restore();

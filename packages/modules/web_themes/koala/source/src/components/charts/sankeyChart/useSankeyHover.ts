@@ -58,7 +58,17 @@ export function useSankeyHover(colorForNode: (id: string) => string) {
     };
   };
 
-  return { hoverPlugin, focusColors };
+  /**
+   * Fades an arbitrary color unless its flow is the hovered one, for things
+   * drawn outside the dataset — the flow value labels, which would otherwise
+   * stay at full contrast over a dimmed band.
+   */
+  const dimIfUnfocused = (color: string, dataIndex: number): string => {
+    const hovered = hoveredIndex.value;
+    return hovered !== null && dataIndex !== hovered ? fade(color) : color;
+  };
+
+  return { hoverPlugin, focusColors, dimIfUnfocused };
 }
 
 /**

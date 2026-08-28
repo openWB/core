@@ -67,10 +67,14 @@ const formatWatts = (watts: number): string => {
   return `${Math.round(watts)} W`;
 };
 
-const { hoverPlugin, focusColors } = useSankeyHover(colorForNode);
+const { hoverPlugin, focusColors, dimIfUnfocused } = useSankeyHover(colorForNode);
+
 const chartPlugins = [
   hoverPlugin,
-  createFlowLabels({ format: formatWatts, color: labelColor }),
+  createFlowLabels({
+    format: formatWatts,
+    color: (dataIndex) => dimIfUnfocused(labelColor(), dataIndex),
+  }),
 ];
 
 const chartData = computed<ChartData<'sankey'>>(() => {
