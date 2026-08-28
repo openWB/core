@@ -10,8 +10,8 @@ from ..vendor import vendor_descriptor
 class RatiothermConfiguration:
     def __init__(self,
                  ip_address: Optional[str] = None,
-                 port: Optional[int] = 502,
-                 modbus_id: Optional[int] = 1):
+                 port: int = 502,
+                 modbus_id: int = 1):
         self.ip_address = ip_address
         self.port = port
         self.modbus_id = modbus_id
@@ -23,7 +23,7 @@ class Ratiotherm(ConsumerSetup[RatiothermConfiguration]):
                  name: str = "Ratiotherm Wärmepumpe",
                  type: str = "ratiotherm",
                  id: int = 0,
-                 configuration: RatiothermConfiguration = None,
+                 configuration: Optional[RatiothermConfiguration] = None,
                  usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_TUNABLE,),
                  **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(

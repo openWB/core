@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from typing import Optional
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
 from modules.common.component_type import ComponentType
@@ -9,8 +10,8 @@ from modules.consumers.solvis.solvis.config import SolvisHeatPump
 
 
 def create_consumer(config: SolvisHeatPump):
-    client = None
-    sim_counter = None
+    client: Optional[ModbusTcpClient_] = None
+    sim_counter: Optional[SimCounterConsumer] = None
 
     def initializer():
         nonlocal client, sim_counter

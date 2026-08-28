@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from typing import Optional
 from modules.common.abstract_consumer import CurrentValues
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ConsumerState
@@ -10,8 +11,8 @@ from modules.consumers.solarfocus.vampair.config import Vampair
 
 
 def create_consumer(config: Vampair):
-    client = None
-    sim_counter = None
+    client: Optional[ModbusTcpClient_] = None
+    sim_counter: Optional[SimCounterConsumer] = None
 
     def initializer():
         nonlocal client, sim_counter
