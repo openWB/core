@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import TypedDict, Any
+from typing import TypedDict, Any, Optional
 
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
@@ -55,6 +55,29 @@ class MTecBat(AbstractBat):
             exported=exported
         )
         self.store.set(bat_state)
+
+    def set_power_limit(self, power_limit: Optional[int]) -> None:
+        modbus_id = self.component_config.configuration.modbus_id
+        if power_limit is None:
+            log.debug("Keine Batteriesteuerung, Selbstregelung durch Speicher")
+            if self.last_mode is not None:
+                self.__tcp_client.write_register(50000, 257, data_type=ModbusDataType.UINT_16, unit=modbus_id)
+                self.last_mode = None
+        elif power_limit <= 0:
+            log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt und nicht entladen")
+            if self.last_mode != 'stop':
+                self.__tcp_client.write_register(50000, 258, data_type=ModbusDataType.UINT_16, unit=modbus_id)
+                self.last_mode = 'stop'
+        elif power_limit > 0:
+            log.debug(f"Aktive Batteriesteuerung M-Tec:"
+                      f"Speicher soll mit {power_limit} W geladen werden. "
+                      "kann aber nur mit maximaler Leistung laden")
+            if self.last_mode != 'charge':
+                self.__tcp_client.write_register(50000, 259, data_type=ModbusDataType.UINT_16, unit=modbus_id)
+                self.last_mode = 'charge'
+
+    def power_limit_controllable(self) -> bool:
+        return True
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=MTecBatSetup)
