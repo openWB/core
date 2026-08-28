@@ -19,7 +19,7 @@
 import { computed } from 'vue';
 import { useQuasar } from 'quasar';
 import { createTypedChart } from 'vue-chartjs';
-import { LinearScale } from 'chart.js';
+import { LinearScale, Tooltip } from 'chart.js';
 import { SankeyController, Flow } from 'chartjs-chart-sankey';
 import type { ChartData, ChartOptions } from 'chart.js';
 import type { SankeyDataPoint } from 'chartjs-chart-sankey';
@@ -31,12 +31,14 @@ import { createFlowLabels } from './sankey-flow-labels';
 // `data`/`options` props are fixed to 'sankey' instead of the whole ChartType
 // union. createTypedChart also registers what we pass: the sankey controller
 // and element, plus the LinearScale its defaults require (non-obvious, since a
-// sankey shows no axes). The Tooltip is deliberately not registered — values
-// are drawn on the flows instead, see sankey-flow-labels.
+// sankey shows no axes). The Tooltip is the fallback for values that
+// sankey-flow-labels could not draw on the flow itself: a band too thin to
+// hold a line of text, or a label with nowhere to go that did not collide.
 const ChartjsSankey = createTypedChart('sankey', [
   SankeyController,
   Flow,
   LinearScale,
+  Tooltip,
 ]);
 
 defineOptions({ name: 'SankeyChart' });
@@ -128,6 +130,16 @@ const chartOptions = computed<ChartOptions<'sankey'>>(() => ({
   responsive: true,
   maintainAspectRatio: false,
   animation: false,
+  plugins: {
+    tooltip: {
+      displayColors: false,
+      callbacks: {
+        // The default title is the flow's index, which means nothing here.
+        title: () => '',
+        label: (item) => formatWatts((item.raw as SankeyDataPoint).flow),
+      },
+    },
+  },
 }));
 </script>
 
