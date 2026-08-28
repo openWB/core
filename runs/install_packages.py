@@ -24,7 +24,7 @@ def check_packages() -> dict[str, list[str]]:
     broken = {}
 
     for dist in importlib.metadata.distributions():
-        package = dist._path.name.removesuffix(".dist-info")
+        package = f"{dist.metadata['Name']}=={dist.version}"
         record = dist.read_text("RECORD")
 
         if not record:
@@ -40,12 +40,12 @@ def check_packages() -> dict[str, list[str]]:
                 broken.setdefault(package, []).append(str(path))
                 continue
 
-            algorithm, expected_hash = row[1].split("=", 1)
-
-            if algorithm != "sha256":
+            try:
+                algorithm, expected_hash = row[1].split("=", 1)
+                digest = hashlib.new(algorithm, path.read_bytes()).digest()
+            except ValueError:
+                broken.setdefault(package, []).append(str(path))
                 continue
-
-            digest = hashlib.sha256(path.read_bytes()).digest()
             actual_hash = (
                 base64.urlsafe_b64encode(digest)
                 .rstrip(b"=")
