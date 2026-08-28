@@ -63,7 +63,7 @@ def install_requirements() -> None:
         [
             sys.executable,
             "-m",
-            "pip",
+            "pip3",
             "install",
             "--only-binary",
             ":all:",
@@ -82,7 +82,7 @@ def reinstall(packages: set[str]) -> None:
         [
             sys.executable,
             "-m",
-            "pip",
+            "pip3",
             "install",
             "--only-binary",
             ":all:",
