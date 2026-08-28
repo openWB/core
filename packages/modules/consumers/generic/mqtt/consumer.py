@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 
 
 def create_consumer(config: Mqtt):
-    def update() -> None:
+    def update() -> ConsumerState:
         def parse_received_topics(value: str):
             return received_topics.get(f"{topic_prefix}{value}", get_default(ConsumerState, value))
 
