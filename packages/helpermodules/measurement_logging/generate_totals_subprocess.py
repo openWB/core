@@ -1,3 +1,4 @@
+import fcntl
 from pathlib import Path
 from datetime import date
 
@@ -23,6 +24,8 @@ logging.basicConfig(
 )
 
 log = logging.getLogger(__name__)
+
+LOCK_FILE = Path(__file__).resolve().parents[3] / "data" / "generate_totals.lock"
 
 
 def get_all_days_to_calc():
@@ -54,31 +57,46 @@ def get_all_months_to_calc(days: List[str] = None):
     return months
 
 
-def generate_totals():
+def _generate_totals():
+
+    log.debug("Starte Totals-Migration.")
+    log.debug(f"Current Flag: {data.data.system_data['system'].data.get('log_totals_generation_finished')}")
+
     errors = 0
-    try:
-        days_to_calc = get_all_days_to_calc() or []
-        months_to_calc = get_all_months_to_calc(days_to_calc) or []
+    days_to_calc = get_all_days_to_calc() or []
+    months_to_calc = get_all_months_to_calc(days_to_calc) or []
 
-        for day in days_to_calc:
-            try:
-                save_daily_source_totals(day.stem, saving=True)
-            except Exception:
-                log.exception(f"Fehler beim Generieren der Tageserträge für {day.stem}, Tag wird übersprungen.")
-                errors += 1
-                continue
+    for day in days_to_calc:
+        try:
+            save_daily_source_totals(day.stem, saving=True)
+        except Exception:
+            log.exception(f"Fehler beim Generieren der Tageserträge für {day.stem}, Tag wird übersprungen.")
+            errors += 1
+            continue
 
-        for month in months_to_calc:
-            try:
-                save_monthly_source_totals(month, saving=True)
-            except Exception:
-                log.exception(f"Fehler beim Generieren der Monatswerte für {month}, Monat wird übersprungen.")
-                errors += 1
-                continue
+    for month in months_to_calc:
+        try:
+            save_monthly_source_totals(month, saving=True)
+        except Exception:
+            log.exception(f"Fehler beim Generieren der Monatswerte für {month}, Monat wird übersprungen.")
+            errors += 1
+            continue
 
-    finally:
-        log.debug(f"Totals-Migration abgeschlossen. Fehlerhafte Logs: {errors}.")
-        pub.Pub().pub("openWB/set/system/log_totals_generation_finished", True)
+    log.info(f"Totals-Migration abgeschlossen. Fehlerhafte Logs: {errors}.")
+    pub.Pub().pub("openWB/set/system/log_totals_generation_finished", True)
+
+
+def generate_totals():
+    LOCK_FILE.parent.mkdir(parents=True, exist_ok=True)
+
+    with LOCK_FILE.open("w") as lock_file:
+        try:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except Exception:
+            log.exception("generate_totals_subprocess läuft bereits. "
+                          "Der zweite Prozess wird beendet.")
+            return
+        _generate_totals()
 
 
 if __name__ == "__main__":

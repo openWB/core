@@ -835,16 +835,30 @@ class UpdateConfig:
                     {}, "Fehler bei der Aktualisierung der Konfiguration des Brokers.", MessageType.ERROR)
 
     def __solve_breaking_changes_filesystem(self) -> None:
-        """ """
+        """Führt dateisystembezogene Migrationen anhand der file_operation_version aus."""
         file_operation_version = decode_payload(self.all_received_topics.get("openWB/system/file_operation_version"))
-        if file_operation_version is None or isinstance(file_operation_version, int):
-            file_operation_version = list(range(file_operation_version or self.FILE_OPERATION_VERSION+1))
+        if file_operation_version is None:
+            # Neues Topic (z.B. bei Upgrade von älteren Versionen): alle File-Operation-Upgrades ausführen.
+            file_operation_version = []
             self.__update_topic("openWB/system/file_operation_version", file_operation_version)
+        elif isinstance(file_operation_version, int):
+            # Legacy-Format (int): bereits ausgeführte Upgrades als Liste abbilden.
+            file_operation_version = list(range(file_operation_version))
+            self.__update_topic("openWB/system/file_operation_version", file_operation_version)
+
         log.debug(f"current file operation version: {file_operation_version}")
         log.debug(f"target file operation version: {self.FILE_OPERATION_VERSION}")
         for version in list(range(self.FILE_OPERATION_VERSION+1)):
             try:
-                if version not in file_operation_version:
+                operation_required = version not in file_operation_version
+                if version == 0:
+                    # Version 0 erneut ausführen, solange die Hintergrund-Generierung der Tages-/Monatssummen
+                    # noch nicht erfolgreich abgeschlossen ist (Flag ist nicht True).
+                    log_totals_generation_finished = decode_payload(
+                        self.all_received_topics.get("openWB/system/log_totals_generation_finished"))
+                    operation_required = operation_required or log_totals_generation_finished is not True
+
+                if operation_required:
                     log.debug(f"upgrading File Operation version '{version}'")
                     getattr(self, f"upgrade_file_operation_{version}")()
             except AttributeError:
@@ -876,11 +890,10 @@ class UpdateConfig:
             )
 
             log.debug("generate_totals_subprocess gestartet, PID: %s", _generate_totals_subprocess.pid)
-            print(f"generate_totals_subprocess gestartet, PID: {_generate_totals_subprocess.pid}")
+            self._append_file_operation_version(0)
         except Exception:
             _generate_totals_subprocess = None
             log.exception("Fehler beim Starten des generate_totals_subprocess.")
-        self._append_file_operation_version(0)
 
     def _loop_all_received_topics(self, callback) -> None:
         modified_topics = {}

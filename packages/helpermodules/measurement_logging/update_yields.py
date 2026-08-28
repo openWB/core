@@ -49,7 +49,7 @@ def update_pv_monthly_yearly_yields(daily_totals: Dict) -> None:
     veröffentlicht die monatlichen und jährlichen Erträge für PV
     """
     # pv_data und pv_all_data werden nur aktualisiert, wenn das Update der Logfiles abgeschlossen ist.
-    if not data.data.system_data["system"].data["log_totals_generation_finished"]:
+    if not data.data.system_data["system"].data.get("log_totals_generation_finished", False):
         log.debug("Update der Logfiles läuft noch. Monatliche und jährliche PV-Erträge werden nicht aktualisiert.")
         return
 
@@ -59,7 +59,9 @@ def update_pv_monthly_yearly_yields(daily_totals: Dict) -> None:
     pv_all_monthly_yield = 0
     pv_all_yearly_yield = 0
 
-    for pv_module in data.data.pv_data.values():
+    for pv_key, pv_module in data.data.pv_data.items():
+        if pv_key == "all" or not hasattr(pv_module, "num"):
+            continue
 
         # Was wurde im Monat/Jahr exportiert
         monthly_yield = monthly_totals.get(f"pv{pv_module.num}", {}).get("energy_exported", 0)

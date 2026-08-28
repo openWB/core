@@ -233,3 +233,20 @@ def test_upgrade_datastore_125_is_idempotent_for_already_converted_values(mock_p
     assert uc.all_received_topics["openWB/optional/ep/grid_fee/provider"] == expected_grid_fee
     assert uc.all_received_topics["openWB/system/datastore_version"] == [123, 124, 125]
     assert mock_pub.pub.call_count == 1  # einmal publishen für Upgrade der Datastore-Version
+
+
+@pytest.mark.parametrize("file_operation_version, finished, expected_calls", [
+    ([], False, 1),  # erster Start
+    ([0], True, 0),   # bereits fertig -> kein Neustart
+    ([0], False, 1),  # angefangen, aber nicht fertig -> Neustart
+])
+def test_file_operation_0_start_behavior(file_operation_version, finished, expected_calls):
+    update_config = UpdateConfig()
+    update_config.all_received_topics = {
+        "openWB/system/file_operation_version": file_operation_version,
+        "openWB/system/log_totals_generation_finished": finished
+    }
+
+    with patch.object(update_config, "upgrade_file_operation_0") as upgrade_mock:
+        update_config._UpdateConfig__solve_breaking_changes_filesystem()
+    assert upgrade_mock.call_count == expected_calls
