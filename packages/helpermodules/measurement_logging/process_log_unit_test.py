@@ -297,10 +297,10 @@ def test_collect_daily_log_data_current_day(monkeypatch):
     monkeypatch.setattr('helpermodules.measurement_logging.process_log.json.load', mock_json_load)
 
     mock_create_entry = Mock(return_value=mock_current_entry)
-    monkeypatch.setattr('helpermodules.measurement_logging.process_log.create_entry', mock_create_entry)
+    monkeypatch.setattr('helpermodules.measurement_logging.write_log.create_entry', mock_create_entry)
 
     mock_get_previous_entry = Mock(return_value={"timestamp": 1234567800, "data": "previous"})
-    monkeypatch.setattr('helpermodules.measurement_logging.process_log.get_previous_entry', mock_get_previous_entry)
+    monkeypatch.setattr('helpermodules.measurement_logging.write_log.get_previous_entry', mock_get_previous_entry)
 
     monkeypatch.setattr('builtins.open', mock_open(read_data=json.dumps(mock_log_data)))
 

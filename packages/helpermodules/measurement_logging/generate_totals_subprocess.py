@@ -3,7 +3,6 @@ from pathlib import Path
 from datetime import date
 
 from typing import List
-from control import data
 from helpermodules import pub
 from helpermodules.measurement_logging.process_log import (save_daily_source_totals,
                                                            save_monthly_source_totals)
@@ -58,9 +57,6 @@ def get_all_months_to_calc(days: List[str] = None):
 
 
 def _generate_totals():
-
-    log.debug("Starte Totals-Migration.")
-    log.debug(f"Current Flag: {data.data.system_data['system'].data.get('log_totals_generation_finished')}")
 
     errors = 0
     days_to_calc = get_all_days_to_calc() or []

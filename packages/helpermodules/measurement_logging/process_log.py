@@ -6,8 +6,6 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 from datetime import datetime
 from helpermodules import timecheck
-from helpermodules.measurement_logging.write_log import (LegacySmartHomeLogData, create_entry,
-                                                         get_previous_entry)
 from helpermodules.messaging import MessageType, pub_system_message
 from helpermodules.utils.precision_math import decimal_add, decimal_divide, decimal_multiply, decimal_subtract
 
@@ -245,6 +243,12 @@ def _collect_daily_log_data(date: str):
         with open(str(parent_file / (date+".json")), "r") as json_file:
             log_data = json.load(json_file)
             if date == timecheck.create_timestamp_YYYYMMDD():
+                # Behebt Circular-Import-Fehler
+                from helpermodules.measurement_logging.write_log import (
+                    LegacySmartHomeLogData,
+                    create_entry,
+                    get_previous_entry
+                )
                 # beim aktuellen Tag den aktuellen Datensatz ergänzen
                 log_data["entries"].append(create_entry(LegacySmartHomeLogData(),
                                                         get_previous_entry(parent_file, log_data)))
@@ -316,7 +320,6 @@ def get_monthly_log(date: str):
         data = {"entries": monthly_entries, "names": monthly_names, "colors": monthly_colors}
         data["totals"] = get_totals(data["entries"], False)
         data["totals"] = analyse_percentage_totals(data["entries"], data["totals"])
-        data = _analyse_energy_source(data)
         return data
 
     # Fallback, wenn keine Daten vorhanden sind
@@ -370,7 +373,6 @@ def get_yearly_log(year: str):
         data = {"entries": monthly_entries, "names": monthly_names, "colors": monthly_colors}
         data["totals"] = get_totals(data["entries"], False)
         data["totals"] = analyse_percentage_totals(data["entries"], data["totals"])
-        data = _analyse_energy_source(data)
         return data
 
     # Fallback, wenn keine Daten vorhanden sind
