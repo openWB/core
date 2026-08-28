@@ -62,15 +62,27 @@ class PorscheCaptchaRequired(PorscheApiError):
 
 
 class PorscheConnectApi:
-    def __init__(self, email: str, password: str, vehicle_id: int) -> None:
-        if not email or not password:
-            raise PorscheApiError("E-Mail und Passwort muessen konfiguriert sein.")
+    def __init__(self, email: Optional[str] = None, password: Optional[str] = None,
+                 vehicle_id: int = 0, token: Optional[Dict] = None, persist_cb=None) -> None:
+        # E-Mail/Passwort sind nur im Datei-/CLI-Modus fuer den vollen Login noetig.
+        # Im openWB-Betrieb (Config-Modus) laeuft die Anmeldung ueber die UI, das Modul
+        # nutzt nur den refresh_token.
         self.email = email
         self.password = password
         self.vehicle_id = vehicle_id
+        self._persist_cb = persist_cb
         self.session = requests.Session()
         self.session.headers.update({"User-Agent": USER_AGENT, "X-Client-ID": X_CLIENT_ID})
-        self._token: Dict = self._load_token()
+        # Zwei Betriebsarten:
+        #  - Config-Modus (openWB): Tokens kommen aus der Fahrzeug-Config, neue Tokens
+        #    werden ueber persist_cb zurueck in die Config (MQTT) geschrieben.
+        #  - Datei-Modus (CLI/standalone): Tokens werden lokal in einer JSON-Datei gecacht.
+        if token is not None or persist_cb is not None:
+            self._file_mode = False
+            self._token: Dict = dict(token) if token else {}
+        else:
+            self._file_mode = True
+            self._token = self._load_token()
 
     # --- Token-Persistenz ----------------------------------------------------
     @property
@@ -85,6 +97,15 @@ class PorscheConnectApi:
             return {}
 
     def _save_token(self) -> None:
+        if not self._file_mode:
+            # Config-Modus: neue/rotierte Tokens zurueck in die openWB-Fahrzeug-Config.
+            if self._persist_cb:
+                try:
+                    self._persist_cb(self._token)
+                except Exception:
+                    log.exception("Porsche-Token konnte nicht in die Config geschrieben werden "
+                                  "(nicht kritisch).")
+            return
         try:
             _DATA_PATH.mkdir(parents=True, exist_ok=True)
             with open(self._token_file, "w") as f:
@@ -237,6 +258,15 @@ class PorscheConnectApi:
             return self._token["access_token"]
         if self._token.get("refresh_token") and self._refresh():
             return self._token["access_token"]
+        if not self._file_mode:
+            # openWB-Betrieb: der Login (inkl. Captcha) laeuft ueber die UI, hier kein
+            # Passwort. Fehlt/verfaellt der Token, muss der Nutzer sich neu anmelden.
+            raise PorscheApiError(
+                "Nicht angemeldet oder Sitzung abgelaufen. Bitte in der openWB-Oberflaeche "
+                "unter 'Porsche verbinden' erneut anmelden.")
+        # Datei-/CLI-Modus: vollstaendiger Login mit E-Mail/Passwort.
+        if not self.email or not self.password:
+            raise PorscheApiError("E-Mail und Passwort muessen konfiguriert sein.")
         code = self._fetch_authorization_code()
         self._exchange_code(code)
         return self._token["access_token"]
