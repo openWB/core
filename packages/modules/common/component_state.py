@@ -250,10 +250,10 @@ class TariffState:
 class IoState:
     """JSON erlaubt nur Zeichenketten als Schlüssel für Objekte"""
 
-    def __init__(self, analog_input: Dict[str, float] = None,
-                 digital_input: Dict[str, bool] = None,
-                 analog_output: Dict[str, float] = None,
-                 digital_output: Dict[str, bool] = None) -> None:
+    def __init__(self, analog_input: Optional[Dict[str, float]] = None,
+                 digital_input: Optional[Dict[str, bool]] = None,
+                 analog_output: Optional[Dict[str, float]] = None,
+                 digital_output: Optional[Dict[str, bool]] = None) -> None:
         self.analog_input = analog_input
         self.digital_input = digital_input
         self.analog_output = analog_output
@@ -266,3 +266,36 @@ class EvseState:
         self.charge_state = charge_state
         self.set_current = set_current
         self.max_current = max_current
+
+
+@auto_str
+class ConsumerState:
+    def __init__(
+        self,
+        imported: Optional[float] = None,
+        exported: Optional[float] = None,
+        power: Optional[float] = None,
+        voltages: Optional[List[Optional[float]]] = None,
+        currents: Optional[List[Optional[float]]] = None,
+        powers: Optional[List[Optional[float]]] = None,
+        set_power: Optional[float] = None,
+        state: Optional[bool] = False,
+        temperatures: Optional[List[Optional[float]]] = None,
+    ):
+        """Args:
+            imported: total imported energy in Wh
+            exported: total exported energy in Wh
+            power: actual power in W
+            voltages: actual voltages for 3 phases in V
+            currents: actual currents for 3 phases in A
+            powers: actual powers for 3 phases in W
+            power_factors: actual power factors for 3 phases
+            frequency: actual grid frequency in Hz
+        """
+        self.currents, self.powers, self.voltages = _calculate_powers_and_currents(currents, powers, voltages)
+        self.imported = imported
+        self.exported = exported
+        self.power = power
+        self.set_power = set_power
+        self.state = state
+        self.temperatures = temperatures

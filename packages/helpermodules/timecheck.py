@@ -9,7 +9,8 @@ from helpermodules.utils.error_handling import ImportErrorContext
 with ImportErrorContext():
     from dateutil.relativedelta import relativedelta
 
-from helpermodules.abstract_plans import AutolockPlan, ScheduledChargingPlan, TimeChargingPlan
+from helpermodules.abstract_plans import (AutolockPlan, ScheduledChargingPlan, ScheduledPlanConsumer,
+                                          TimeChargingPlan, TimeChargingPlanConsumer)
 
 log = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ def is_now_in_locking_time(now: datetime.datetime,
             return False
 
 
-T = TypeVar("T", AutolockPlan, TimeChargingPlan)
+T = TypeVar("T", AutolockPlan, TimeChargingPlan, TimeChargingPlanConsumer)
 
 
 def check_plans_timeframe(plans: List[T]) -> Optional[T]:
@@ -113,8 +114,8 @@ def check_timeframe(plan: Union[AutolockPlan, TimeChargingPlan]) -> bool:
         return state
 
 
-def check_end_time(plan: ScheduledChargingPlan,
-                   buffer: Optional[float]) -> Optional[float]:
+def check_end_time(plan: Union[ScheduledPlanConsumer, ScheduledChargingPlan, TimeChargingPlanConsumer],
+                   buffer: Optional[float]) -> float:
     """ gibt die verbleibende Zeit in Sekunden zurück.
 
     Return
@@ -124,7 +125,6 @@ def check_end_time(plan: ScheduledChargingPlan,
     """
     now = datetime.datetime.today()
     end = datetime.datetime.strptime(plan.time, '%H:%M')
-    remaining_time = None
     if plan.frequency.selected == "once":
         endDate = datetime.datetime.strptime(plan.frequency.once, "%Y-%m-%d")
         end = end.replace(endDate.year, endDate.month, endDate.day)

@@ -126,6 +126,30 @@ export interface VehicleInfo {
   manufacturer: string;
   model: string;
 }
+
+export interface Consumer {
+  id: number;
+  name: string;
+}
+export interface ConsumerInfo {
+  manufacturer: string | null;
+  model: string | null;
+}
+export interface ConsumerModule {
+  name: string;
+  info: ConsumerInfo;
+  type: string;
+  id: number;
+  vendor: string;
+  color?: string | null;
+}
+export type ConsumerUsageType =
+  | 'meter_only'
+  | 'self_controlled'
+  | 'suspendable_tunable'
+  | 'suspendable_onoff'
+  | 'continuous';
+export type ConsumerResetTrigger = 'never' | 'midnight' | 'time';
 export interface ScheduledChargingPlan {
   id: number;
   name: string;
@@ -195,10 +219,12 @@ export interface GraphDataPoint {
   grid: number;
   'house-power': number;
   'charging-all': number;
+  'consumer-all': number;
   'pv-all': number;
   'bat-all-power': number;
   'bat-all-soc': number;
   [key: `cp${number}-power`]: number;
+  [key: `consumer${number}-power`]: number;
   [key: `ev${number}-soc`]: number | null;
 }
 

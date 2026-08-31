@@ -7,7 +7,7 @@ from pathlib import Path
 import re
 import string
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 from control import data
 from helpermodules.broker import BrokerClient
@@ -75,6 +75,17 @@ log = logging.getLogger(__name__)
 #                         "imported": Wh,
 #                         "exported": Wh,
 #                         "soc": int in %
+#                     }
+#                     ... (dynamisch, je nach konfigurierter Anzahl)
+#                 }
+#                 "consumer": {
+#                     "all": {
+#                         "imported": Wh,
+#                         "exported": Wh,
+#                     }
+#                     "consumer0": {
+#                         "imported": Wh,
+#                         "exported": Wh,
 #                     }
 #                     ... (dynamisch, je nach konfigurierter Anzahl)
 #                 }
@@ -249,7 +260,14 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
     for counter in data.data.counter_data.values():
         try:
             home_consumption_source_id = data.data.counter_all_data.data.config.home_consumption_source_id
-            if (home_consumption_source_id is None or counter.num != home_consumption_source_id):
+            if home_consumption_source_id is not None and counter.num == home_consumption_source_id:
+                continue
+            skip_counter = False
+            for consumer in data.data.consumer_data:
+                if counter.num == data.data.consumer_data[consumer].data.extra_meter:
+                    skip_counter = True
+                    break
+            if skip_counter is False:
                 counter_dict.update(
                     {f"counter{counter.num}": {
                         "imported": counter.data.get.imported,
@@ -293,6 +311,22 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
                 log.exception("Fehler im Werte-Logging-Modul für Speicher "+str(bat))
 
     try:
+        consumer_dict: Dict[str, Dict[str, Union[float, int]]] = {"all": {
+            "imported": data.data.consumer_all_data.data.get.imported,
+            "exported": data.data.consumer_all_data.data.get.exported,
+            "fault_state": data.data.consumer_all_data.data.get.fault_state}}
+    except Exception:
+        log.exception("Fehler im Werte-Logging-Modul für Verbraucher-Daten")
+        consumer_dict = {}
+    for consumer in data.data.consumer_data:
+        try:
+            consumer_dict.update({consumer: {"imported": data.data.consumer_data[consumer].data.get.imported,
+                                             "exported": data.data.consumer_data[consumer].data.get.exported,
+                                             "fault_state": data.data.consumer_data[consumer].data.get.fault_state}})
+        except Exception:
+            log.exception("Fehler im Werte-Logging-Modul für Verbraucher "+str(consumer))
+
+    try:
         hc_dict = {"all": {
             "imported": data.data.counter_all_data.data.set.imported_home_consumption,
             "fault_state": 2 if data.data.counter_all_data.data.set.invalid_home_consumption >= 3 else 0}}
@@ -308,6 +342,7 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
         "counter": counter_dict,
         "pv": pv_dict,
         "bat": bat_dict,
+        "consumer": consumer_dict,
         "sh": sh_log_data.sh_dict,
         "hc": hc_dict
     }
@@ -352,7 +387,7 @@ def get_names(elements: Dict, sh_names: Dict, valid_names: Optional[Dict] = None
     """
     names = sh_names
     for group in elements.items():
-        if group[0] not in ("bat", "counter", "cp", "pv", "ev", "sh"):
+        if group[0] not in ("bat", "consumer", "counter", "cp", "pv", "ev", "sh"):
             continue
         for entry in group[1]:
             # valid_names wird aus update_config übergeben, da dort noch kein Zugriff auf data möglich ist
@@ -368,6 +403,8 @@ def get_names(elements: Dict, sh_names: Dict, valid_names: Optional[Dict] = None
                 try:
                     if "ev" in entry:
                         names.update({entry: data.data.ev_data[entry].data.name})
+                    elif "consumer" in entry:
+                        names.update({entry: data.data.consumer_data[entry].data.module.name})
                     elif "cp" in entry:
                         names.update({entry: data.data.cp_data[entry].data.config.name})
                     elif "all" != entry:
@@ -388,13 +425,15 @@ def get_colors(elements: Dict) -> Dict:
     """
     colors = {}
     for group in elements.items():
-        if group[0] not in ("ev", "cp", "counter", "pv", "bat"):
+        if group[0] not in ("ev", "cp", "counter", "consumer", "pv", "bat"):
             continue
         for entry in group[1]:
             if "all" != entry:
                 try:
                     if "ev" in entry:
                         colors.update({entry: data.data.ev_data[entry].data.color})
+                    elif "consumer" in entry:
+                        colors.update({entry: data.data.consumer_data[entry].data.module.color})
                     elif "cp" in entry:
                         colors.update({entry: data.data.cp_data[entry].data.config.color})
                     else:

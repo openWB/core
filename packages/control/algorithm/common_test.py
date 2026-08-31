@@ -9,6 +9,7 @@ from control.chargepoint.chargepoint import Chargepoint
 from control.ev.ev import Ev
 from control.counter import Counter
 from control.counter_all.counter_all import CounterAll
+from control.consumer.consumer import Consumer
 from control.io_device import IoActions
 
 
@@ -123,7 +124,7 @@ def test_available_currents_for_cp(counts: List[int],
     cp.data.set.target_current = 10
 
     # evaluation
-    current = common.available_current_for_cp(cp, counts, available_currents, missing_currents)
+    current = common.available_current_for_load(cp, counts, available_currents, missing_currents)
 
     # assertion
     assert current == expected_current
@@ -173,6 +174,35 @@ def test_consider_less_charging_chargepoint_in_loadmanagement(consider_less_char
 
     # evaluation
     considered = common.consider_less_charging_chargepoint_in_loadmanagement(cp, 10)
+
+    # assertion
+    assert considered == expected_considered
+
+
+@pytest.mark.parametrize(
+    "consider_less_charging, set_current, get_currents, current_prev, expected_considered",
+    [
+        pytest.param(False, 10, [2]*3, 1, 2,
+                     id="consumer less charging considered via timestamp none and current_prev"),
+        pytest.param(False, 10, [10]*3, 1, 10,
+                     id="consumer expected_current threshold not reached"),
+        pytest.param(True, 10, [0]*3, 10, 10,
+                     id="consider_less_charging"),
+    ])
+def test_consider_less_charging_consumer_in_loadmanagement(consider_less_charging: bool,
+                                                           set_current: float,
+                                                           get_currents: List[float],
+                                                           current_prev: float,
+                                                           expected_considered: float):
+    # setup
+    consumer = Consumer(7)
+    consumer.data.get.currents = get_currents
+    consumer.data.set.current_prev = current_prev
+    consumer.data.control_parameter.timestamp_charge_start = 1652683152
+    data.data.counter_all_data.data.config.consider_less_charging = consider_less_charging
+
+    # evaluation
+    considered = common.consider_less_charging_chargepoint_in_loadmanagement(consumer, set_current)
 
     # assertion
     assert considered == expected_considered
