@@ -1796,30 +1796,6 @@ export const useMqttStore = defineStore('mqtt', () => {
     });
   };
 
-  /**
-   * Get or set the charge point connected vehicle pv feed in limit active identified by the charge point id
-   * @param chargePointId charge point id
-   * @returns object | undefined
-   */
-  const chargePointConnectedVehiclePvChargeFeedInLimit = (
-    chargePointId: number,
-  ) => {
-    return computed({
-      get() {
-        return chargePointConnectedVehicleChargeTemplate(chargePointId).value
-          ?.chargemode?.pv_charging?.feed_in_limit;
-      },
-      set(newValue: boolean) {
-        console.debug('set pv feed in limit active', newValue, chargePointId);
-        return updateTopic(
-          `openWB/chargepoint/${chargePointId}/set/charge_template`,
-          newValue,
-          'chargemode.pv_charging.feed_in_limit',
-          true,
-        );
-      },
-    });
-  };
 
   /**
    * Get or set the charge point connected vehicle eco charging current identified by the charge point id
@@ -1958,10 +1934,10 @@ export const useMqttStore = defineStore('mqtt', () => {
   const batteryChargePriorityRange = computed<RangeValue>({
     get() {
       const minSoc = getValue.value(
-        'openWB/general/chargemode_config/pv_charging/min_bat_soc',
+        'openWB/general/chargemode_config/bat/min_soc',
       ) as number | undefined;
       const maxSoc = getValue.value(
-        'openWB/general/chargemode_config/pv_charging/max_bat_soc',
+        'openWB/general/chargemode_config/bat/max_soc',
       ) as number | undefined;
       return {
         min: minSoc ?? 0,
@@ -1970,13 +1946,13 @@ export const useMqttStore = defineStore('mqtt', () => {
     },
     set(newRange: RangeValue) {
       updateTopic(
-        'openWB/general/chargemode_config/pv_charging/min_bat_soc',
+        'openWB/general/chargemode_config/bat/min_soc',
         newRange.min,
         undefined,
         true,
       );
       updateTopic(
-        'openWB/general/chargemode_config/pv_charging/max_bat_soc',
+        'openWB/general/chargemode_config/bat/max_soc',
         newRange.max,
         undefined,
         true,
@@ -2887,13 +2863,13 @@ export const useMqttStore = defineStore('mqtt', () => {
       get() {
         return (
           (getValue.value(
-            'openWB/general/chargemode_config/pv_charging/bat_mode',
+            'openWB/general/chargemode_config/bat/mode',
           ) as string) || undefined
         );
       },
       set(newValue: string) {
         return updateTopic(
-          'openWB/general/chargemode_config/pv_charging/bat_mode',
+          'openWB/general/chargemode_config/bat/mode',
           newValue,
           undefined,
           true,
@@ -4191,7 +4167,6 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointConnectedVehiclePvDcChargePower,
     chargePointConnectedVehiclePvDcMinSocPower,
     chargePointConnectedVehiclePvChargePhasesMinSoc,
-    chargePointConnectedVehiclePvChargeFeedInLimit,
     chargePointConnectedVehicleEcoChargeCurrent,
     chargePointConnectedVehicleEcoChargeDcPower,
     chargePointConnectedVehicleEcoChargePhases,
