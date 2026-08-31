@@ -1,0 +1,1 @@
+import{_ as t}from"./vendor-BZMdo8n8.js";const o={props:{device:{type:Object,required:!0}},emits:["update:configuration"],methods:{updateConfiguration(e,i=void 0){this.$emit("update:configuration",{value:e,object:i})}}},s=t(o,[["__file","/opt/openWB-dev/openwb-ui-settings/src/components/devices/DeviceConfigMixin.vue"]]);export{s as D};
