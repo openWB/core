@@ -71,13 +71,11 @@ const formatWatts = (watts: number): string => {
 
 const { hoverPlugin, focusColors, dimIfUnfocused } = useSankeyHover(colorForNode);
 
-const chartPlugins = [
-  hoverPlugin,
-  createFlowLabels({
-    format: formatWatts,
-    color: (dataIndex) => dimIfUnfocused(labelColor(), dataIndex),
-  }),
-];
+const flowLabels = createFlowLabels({
+  format: formatWatts,
+  color: (dataIndex) => dimIfUnfocused(labelColor(), dataIndex),
+});
+const chartPlugins = [hoverPlugin, flowLabels.plugin];
 
 const chartData = computed<ChartData<'sankey'>>(() => {
   // Reference the theme so a light/dark toggle rebuilds data and re-resolves
@@ -133,8 +131,9 @@ const chartOptions = computed<ChartOptions<'sankey'>>(() => ({
   plugins: {
     tooltip: {
       displayColors: false,
+      // Only flows whose value is not already drawn on the band.
+      filter: (item) => !flowLabels.labelled.has(item.dataIndex),
       callbacks: {
-        // The default title is the flow's index, which means nothing here.
         title: () => '',
         label: (item) => formatWatts((item.raw as SankeyDataPoint).flow),
       },

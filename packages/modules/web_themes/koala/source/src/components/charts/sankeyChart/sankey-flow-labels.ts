@@ -59,8 +59,11 @@ function overlaps(a: LabelBox, b: LabelBox): boolean {
 export function createFlowLabels(options: {
   format: (watts: number) => string;
   color: (dataIndex: number) => string;
-}): Plugin<'sankey'> {
-  return {
+}): { plugin: Plugin<'sankey'>; labelled: ReadonlySet<number> } {
+  // tooltip not displayed for flows with labels.
+  const labelled = new Set<number>();
+
+  const plugin: Plugin<'sankey'> = {
     id: 'sankeyFlowLabels',
     afterDatasetsDraw(chart) {
       const { ctx } = chart;
@@ -75,6 +78,7 @@ export function createFlowLabels(options: {
       ctx.textBaseline = 'middle';
 
       const placed: LabelBox[] = [];
+      labelled.clear();
 
       for (const [dataIndex, flow] of flows.entries()) {
         // Bands thinner than a line of text cannot hold the label legibly.
@@ -113,10 +117,13 @@ export function createFlowLabels(options: {
         }
 
         placed.push(box);
+        labelled.add(dataIndex);
         ctx.fillStyle = options.color(dataIndex);
         ctx.fillText(text, center.x, center.y);
       }
       ctx.restore();
     },
   };
+
+  return { plugin, labelled };
 }
