@@ -58,7 +58,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 139
+    DATASTORE_VERSION = 140
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -3526,3 +3526,29 @@ class UpdateConfig:
                     return {topic: payload_device}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(139)
+
+    def upgrade_datastore_140(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            # Add the Sankey diagram to the koala carousel order so it also appears for existing
+            # installations.
+            if re.search("^openWB/general/web_theme$", topic) is not None:
+                configuration_payload = decode_payload(payload)
+                if configuration_payload.get("type") == "koala":
+                    configuration = configuration_payload.setdefault("configuration", {})
+                    slide_order = configuration.get("top_carousel_slide_order")
+                    if not isinstance(slide_order, list):
+                        slide_order = [
+                            "flow_diagram",
+                            "history_chart",
+                            "daily_totals",
+                            "sankey_chart",
+                        ]
+                    elif "sankey_chart" not in slide_order:
+                        slide_order.append("sankey_chart")
+                    else:
+                        return None
+                    configuration["top_carousel_slide_order"] = slide_order
+                    return {topic: configuration_payload}
+            return None
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(140)
