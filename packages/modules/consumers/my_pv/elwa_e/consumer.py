@@ -1,0 +1,91 @@
+#!/usr/bin/env python3
+from enum import IntEnum
+import logging
+from modules.common.abstract_device import DeviceDescriptor
+from typing import Optional
+from modules.common.component_state import ConsumerState
+from modules.common.component_type import ComponentType
+from modules.common.configurable_consumer import ConfigurableConsumer, SetLimitData
+from modules.common.modbus import ModbusDataType, ModbusTcpClient_
+from modules.common.simcount._simcounter import SimCounterConsumer
+from modules.consumers.my_pv.elwa_e.config import Elwa
+
+log = logging.getLogger(__name__)
+
+
+class Register(IntEnum):
+    POWER = 1000
+    TEMP0 = 1001
+    STATE = 1003
+
+
+REG_MAPPING = (
+    (Register.POWER, [ModbusDataType.INT_16]),
+    (Register.TEMP0, [ModbusDataType.INT_16]),
+    (Register.STATE, ModbusDataType.INT_16),
+)
+
+STATE_MAPPING = {
+    2: "Heat",
+    3: "Standby",
+    4: "Boost heat",
+    5: "Heat finished",
+    9: "Setup",
+    201: "Error Overtemp Fuse blown",
+    202: "Error Overtemp measured",
+    203: "Error Overtemp Electronics",
+    204: "Error Hardware Fault",
+    205: "Error Temp Sensor"
+}
+
+
+def create_consumer(config: Elwa):
+    client: Optional[ModbusTcpClient_] = None
+    fuse = 1
+    power = 0
+    sim_counter: Optional[SimCounterConsumer] = None
+    state = None
+
+    def initializer():
+        nonlocal client, fuse, sim_counter
+        client = ModbusTcpClient_(config.configuration.ip_address, config.configuration.port)
+        fuse = client.read_input_registers(1014, ModbusDataType.INT_16, unit=config.configuration.modbus_id)
+        sim_counter = SimCounterConsumer(config.id, ComponentType.CONSUMER)
+
+    def error_handler() -> None:
+        initializer()
+
+    def update() -> ConsumerState:
+        nonlocal power, state
+        resp = client.read_holding_registers_bulk(
+            Register.POWER, 4, mapping=REG_MAPPING, unit=config.configuration.modbus_id)
+        power = resp[Register.POWER]
+        state = resp[Register.STATE]
+        if state > 200:
+            raise Exception(f"Elwa-E meldet einen Fehler-Status: {STATE_MAPPING.get(state, 'Unknown fault state')}")
+        imported, exported = sim_counter.sim_count(power)
+        return ConsumerState(
+            power=power,
+            imported=imported,
+            exported=exported,
+            temperatures=[resp[Register.TEMP0]/10]
+        )
+
+    def set_power_limit(power_limit: float, data: SetLimitData) -> None:
+        if state == 4:
+            log.debug("Elwa-E im Boost-Heat Modus, keine Leistungsvorgabe möglich")
+            return
+        if power_limit < power:
+            power_limit = power + (power - power_limit) * fuse
+        power_limit = min(power_limit, 4000)
+        power_limit = max(power_limit, 0)
+
+        client.write_registers(1000, power_limit, unit=config.configuration.modbus_id)
+    return ConfigurableConsumer(consumer_config=config,
+                                initializer=initializer,
+                                error_handler=error_handler,
+                                update=update,
+                                set_power_limit=set_power_limit,)
+
+
+device_descriptor = DeviceDescriptor(configuration_factory=Elwa)
