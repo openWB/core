@@ -4,7 +4,7 @@ from typing import Optional
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_type import ComponentType
 from modules.common.configurable_consumer import ConfigurableConsumer, SetLimitData
-from modules.common.modbus import ModbusDataType, ModbusTcpClient_
+from modules.common.modbus import ModbusTcpClient_
 from modules.common.simcount._simcounter import SimCounterConsumer
 from modules.consumers.generic.dac.config import Dac
 from modules.consumers.generic.dac.model import Model
@@ -27,18 +27,26 @@ def create_consumer(config: Dac):
     def set_power_limit(power_limit: float, data: SetLimitData) -> None:
         power_limit = max(power_limit, 0)
         modbus_id = config.configuration.modbus_id
-        if config.configuration.model == Model.N4Dac02:
-            client.write_register(1, power_limit * 1000 / data.max_power, ModbusDataType.INT_16, unit=modbus_id)
-        elif config.configuration.model == Model.DA02:
-            client.write_register(0x01f4, power_limit * 4000 / data.max_power, ModbusDataType.INT_16, unit=modbus_id)
-        elif config.configuration.model == Model.M120T:
-            #  Ausgabe nicht kleiner 0,9V sonst Leistungsregelung der WP aus
-            power_limit = max(power_limit * 4095 / data.max_power, 370)
-            client.write_register(0x01f4, power_limit, ModbusDataType.INT_16, unit=modbus_id)
-        elif config.configuration.model == Model.AA02B:
-            power_limit = max((power_limit * (4095-820) / data.max_power)+820, 820)
-            #  Ausgabe nicht kleiner 4ma sonst Leistungsregelung der WP aus
-            client.write_register(0x01f4, power_limit, ModbusDataType.INT_16, unit=modbus_id)
+        try:
+            model_settings = Model[config.configuration.model].value
+        except KeyError:
+            raise ValueError(f"Unknown DAC model: {config.configuration.model}")
+
+        # signal range calculation
+        min_value = model_settings["min_value"]
+        max_value = model_settings["max_value"]
+        signal_range = max_value - min_value
+        if not config.configuration.full_signal_range:
+            min_value = round(min_value + signal_range * model_settings["output_type"].value["live_zero_factor"])
+            signal_range *= (1 - model_settings["output_type"].value["live_zero_factor"])
+
+        # power mapping to signal range
+        mapped_power_limit = round(min_value + (power_limit / data.max_power) * signal_range)
+        mapped_power_limit = max(min(mapped_power_limit, max_value), min_value)
+
+        # modbus write
+        client.write_register(model_settings["register"], mapped_power_limit,
+                              model_settings["data_type"], unit=modbus_id)
 
     return ConfigurableConsumer(consumer_config=config,
                                 initializer=initializer,
