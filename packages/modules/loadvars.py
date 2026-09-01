@@ -43,6 +43,8 @@ class Loadvars:
             wait_for_module_update_completed(self.event_module_update_completed, topic)
             if (data.data.optional_data.data.electricity_pricing.configured):
                 self.ep_get_prices()
+            if data.data.optional_data.data.forecast.configured:
+                self.forecast_get_values()
         except Exception:
             log.exception("Fehler im loadvars-Modul")
 
@@ -159,6 +161,14 @@ class Loadvars:
             log.exception("Fehler im loadvars-Modul")
         finally:
             return threads
+
+    def forecast_get_values(self):
+        try:
+            forecast_module = getattr(data.data.optional_data, "forecast_module", None)
+            if forecast_module is not None:
+                forecast_module.update()
+        except Exception as e:
+            log.exception("Fehler im Forecast-Optional-Modul: %s", e)
 
     def ep_get_prices(self):
         def append_thread_set_values(module_name: str) -> None:

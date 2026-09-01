@@ -454,6 +454,7 @@ def create_debug_log(input_data) -> Optional[dict]:
                 df,
                 lambda: f'# section: internal chargepoint log #\n{merge_log_files("internal_chargepoint", 1000)}\n')
             write_to_file(df, lambda: f'# section: mqtt log #\n{merge_log_files("mqtt", 1000)}\n')
+            write_to_file(df, lambda: f'# section: forecast log #\n{merge_log_files("forecast", 1000)}\n')
             write_to_file(df, lambda: f'# section: soc log #\n{merge_log_files("soc", 1000)}\n')
             write_to_file(df, lambda: f'# section: charge log #\n{merge_log_files("chargelog", 1000)}\n')
             write_to_file(df, lambda: f"# section: broker #\n{broker.get_broker()}")

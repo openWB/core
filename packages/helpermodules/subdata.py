@@ -35,6 +35,7 @@ from modules.common.abstract_device import AbstractDevice
 from modules.common.abstract_vehicle import CalculatedSocState, GeneralVehicleConfig
 from modules.common.component_type import ComponentType
 from modules.common.configurable_backup_cloud import ConfigurableBackupCloud
+from modules.common.configurable_forecast import ConfigurableForecastProvider
 from modules.common.configurable_tariff import ConfigurableFlexibleTariff, ConfigurableGridFee
 from modules.common.simcount.simcounter_state import SimCounterState
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
@@ -798,6 +799,27 @@ class SubData:
                     self.set_json_payload_class(var.data.electricity_pricing.get, msg)
                 elif re.search("/optional/ep/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.electricity_pricing, msg)
+                elif re.search("/optional/forecast/provider$", msg.topic) is not None:
+                    config_dict = decode_payload(msg.payload)
+                    if not isinstance(config_dict, dict) or config_dict.get("type") is None:
+                        # Ignore during startup to avoid stale retained null payloads clearing a valid provider.
+                        if self.event_subdata_initialized.is_set():
+                            if var.forecast_module is not None or var.data.forecast.provider is not None:
+                                var.data.forecast.provider = None
+                                var.forecast_module = None
+                    else:
+                        var.data.forecast.provider = config_dict
+                        mod = importlib.import_module(
+                            f".forecast.{config_dict['type']}.forecast", "modules")
+                        config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
+                        # Compare parsed config (unknown fields stripped) to avoid re-init on every retained update.
+                        current_config = asdict(var.forecast_module.config) if var.forecast_module is not None else None
+                        if current_config != asdict(config):
+                            var.forecast_module = ConfigurableForecastProvider(config, mod.create_forecast)
+                elif re.search("/optional/forecast/get/", msg.topic) is not None:
+                    self.set_json_payload_class(var.data.forecast.get, msg)
+                elif re.search("/optional/forecast/", msg.topic) is not None:
+                    self.set_json_payload_class(var.data.forecast, msg)
                 elif "module_update_completed" in msg.topic:
                     self.event_module_update_completed.set()
                 elif re.search("/optional/ocpp/", msg.topic) is not None:
