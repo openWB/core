@@ -31,9 +31,11 @@ class TestSoc(unittest.TestCase):
                 'soc_pattern': '.energy[0].level',
                 'range_pattern': '.energy[0].autonomy',
                 'timestamp_pattern': '.energy[0].updated_at',
+                'odometer_pattern': None,
                 'expected_soc': 69,
                 'expected_range': 214,
-                'expected_timestamp': 1735984813
+                'expected_timestamp': 1735984813,
+                'expected_odometer': None
             },
             {
                 'sample_data': {
@@ -46,9 +48,30 @@ class TestSoc(unittest.TestCase):
                 'soc_pattern': '.response.value',
                 'range_pattern': None,
                 'timestamp_pattern': '.response.timestamp',
+                'odometer_pattern': None,
                 'expected_soc': 20.2,
                 'expected_range': None,
-                'expected_timestamp': 1736108141
+                'expected_timestamp': 1736108141,
+                'expected_odometer': None
+            },
+            {
+                'sample_data': {
+                    "response": {
+                        "soc": "45.5",
+                        "range": 300,
+                        "timestamp": 1736108141,
+                        "odometer": 12345.67
+                    }
+                },
+                'url': "http://example.com/soc3",
+                'soc_pattern': '.response.soc',
+                'range_pattern': '.response.range',
+                'timestamp_pattern': '.response.timestamp',
+                'odometer_pattern': '.response.odometer',
+                'expected_soc': 45.5,
+                'expected_range': 300,
+                'expected_timestamp': 1736108141,
+                'expected_odometer': 12345.67
             }
         ]
 
@@ -62,13 +85,15 @@ class TestSoc(unittest.TestCase):
             compiled_queries = {
                 'soc': None,
                 'range': None,
-                'timestamp': None
+                'timestamp': None,
+                'odometer': None
             }
             vehicle_config = JsonSocSetup(configuration=JsonSocConfiguration(
                 url=case['url'],
                 soc_pattern=case['soc_pattern'],
                 range_pattern=case['range_pattern'],
-                timestamp_pattern=case['timestamp_pattern']
+                timestamp_pattern=case['timestamp_pattern'],
+                odometer_pattern=case['odometer_pattern']
             ))
             initialize_vehicle(vehicle_config, compiled_queries)
             car_state = fetch_soc(vehicle_config, compiled_queries)
@@ -76,3 +101,4 @@ class TestSoc(unittest.TestCase):
             self.assertEqual(car_state.soc, case['expected_soc'])
             self.assertEqual(car_state.range, case['expected_range'])
             self.assertEqual(car_state.soc_timestamp, case['expected_timestamp'])
+            self.assertEqual(car_state.odometer, case['expected_odometer'])

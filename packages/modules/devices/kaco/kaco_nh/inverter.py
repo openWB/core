@@ -6,9 +6,11 @@ from modules.common.abstract_device import AbstractInverter
 from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.store import get_inverter_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.kaco.kaco_nh.config import KacoNHInverterSetup
 from modules.devices.kaco.kaco_nh.config import KacoNHConfiguration
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -22,8 +24,9 @@ class KacoNHInverter(AbstractInverter):
 
     def initialize(self) -> None:
         self.device_config: KacoNHConfiguration = self.kwargs['device_config']
-        self.store = get_inverter_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         response = req.get_http_session().get(
@@ -34,6 +37,7 @@ class KacoNHInverter(AbstractInverter):
         power = float(response["pac"]) * -1
         exported = float(response["eto"]) * 100
 
+        _, exported = self.peak_filter.check_values(power, None, exported)
         self.store.set(InverterState(
             power=power,
             exported=exported

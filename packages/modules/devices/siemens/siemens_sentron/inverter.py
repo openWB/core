@@ -7,8 +7,10 @@ from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType
-from modules.common.store import get_inverter_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.siemens.siemens_sentron.config import SiemensSentronInverterSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -24,14 +26,16 @@ class SiemensSentronInverter(AbstractInverter):
     def initialize(self) -> None:
         self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['client']
         self.__modbus_id: int = self.kwargs['modbus_id']
-        self.store = get_inverter_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         with self.__tcp_client:
             power = self.__tcp_client.read_holding_registers(65, ModbusDataType.FLOAT_32, unit=self.__modbus_id) * -1
             exported = self.__tcp_client.read_holding_registers(809, ModbusDataType.FLOAT_64, unit=self.__modbus_id)
 
+        _, exported = self.peak_filter.check_values(power, None, exported)
         inverter_state = InverterState(
             power=power,
             exported=exported

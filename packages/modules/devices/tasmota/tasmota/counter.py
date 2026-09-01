@@ -6,10 +6,12 @@ from modules.devices.tasmota.tasmota.config import TasmotaCounterSetup
 from modules.common.abstract_device import AbstractCounter
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.store import get_counter_value_store
+from modules.common.store import get_component_value_store
 from modules.common.simcount import SimCounter
 from modules.common import req
 from modules.common.component_state import CounterState
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -28,15 +30,20 @@ class TasmotaCounter(AbstractCounter):
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
         self.__ip_address: str = self.kwargs['ip_address']
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, self.component_config.type)
         self.__phase: int = self.kwargs['phase']
-        self.store = get_counter_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self):
         url = "http://" + self.__ip_address + "/cm?cmnd=Status%208"
         response = req.get_http_session().get(url, timeout=5).json()
 
+        voltages = None
+        currents = None
+        powers = None
+        power_factors = None
         if 'ENERGY' in response['StatusSNS']:
             voltages = [0.0, 0.0, 0.0]
             powers = [0.0, 0.0, 0.0]
@@ -49,31 +56,53 @@ class TasmotaCounter(AbstractCounter):
             currents[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Current'])
             power_factors[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Factor'])
             imported = float(response['StatusSNS']['ENERGY']['Total']*1000)
+            imported, _ = self.peak_filter.check_values(power, imported, None)
             _, exported = self.sim_counter.sim_count(power)
         elif 'Itron' in response['StatusSNS']:
             power = float(response['StatusSNS']['Itron']['Power'])
-            imported = float(response['StatusSNS']['Itron']['E_in']*1000)
-            exported = float(response['StatusSNS']['Itron']['E_out']*1000)
+            if 'E_in' in response['StatusSNS']['Itron']:
+                imported = float(response['StatusSNS']['Itron']['E_in']*1000)
+                exported = float(response['StatusSNS']['Itron']['E_out']*1000)
+            else:
+                imported = float(response['StatusSNS']['Itron']['ImportActive']*1000)
+                exported = float(response['StatusSNS']['Itron']['ExportActive']*1000)
+            imported, exported = self.peak_filter.check_values(power, imported, exported)
         elif 'MT681' in response['StatusSNS']:
             power = float(response['StatusSNS']['MT681']['Watt_summe'])
             imported = float(response['StatusSNS']['MT681']['Total_in']*1000)
             exported = float(response['StatusSNS']['MT681']['Total_out']*1000)
+            imported, exported = self.peak_filter.check_values(power, imported, exported)
+        elif 'eBZ' in response['StatusSNS']:
+            powers = [0.0, 0.0, 0.0]
+            power = float(response['StatusSNS']['eBZ']['Power'])
+            imported = float(response['StatusSNS']['eBZ']['E_in']*1000)
+            exported = float(response['StatusSNS']['eBZ']['E_out']*1000)
+            imported, exported = self.peak_filter.check_values(power, imported, exported)
+            if (
+                '36_7_0' in response['StatusSNS']['eBZ'] and
+                '56_7_0' in response['StatusSNS']['eBZ'] and
+                '76_7_0' in response['StatusSNS']['eBZ']
+            ):
+                powers = [float(response['StatusSNS']['eBZ']['36_7_0']),
+                          float(response['StatusSNS']['eBZ']['56_7_0']),
+                          float(response['StatusSNS']['eBZ']['76_7_0'])]
+        elif 'MT631' in response['StatusSNS']:
+            power = float(response['StatusSNS']['MT631']['Power'])
+            imported = float(response['StatusSNS']['MT631']['E_in']*1000)
+            exported = float(response['StatusSNS']['MT631']['E_out']*1000)
+            imported, exported = self.peak_filter.check_values(power, imported, exported)
         else:
             raise ValueError("Nicht unterstützter Tasmota Zählertyp. Bitte an den Support wenden.")
 
         counter_state = CounterState(
             power=power,
             imported=imported,
-            exported=exported
+            exported=exported,
+            voltages=voltages,
+            currents=currents,
+            powers=powers,
+            power_factors=power_factors
         )
-        if 'voltages' in locals():
-            counter_state.voltages = voltages
-        if 'currents' in locals():
-            counter_state.currents = currents
-        if 'powers' in locals():
-            counter_state.powers = powers
-        if 'power_factors' in locals():
-            counter_state.power_factors = power_factors
 
         self.store.set(counter_state)
 

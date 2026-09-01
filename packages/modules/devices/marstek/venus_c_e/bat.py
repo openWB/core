@@ -6,8 +6,10 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount import SimCounter
-from modules.common.store import get_bat_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.marstek.venus_c_e.config import VenusCEBatSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -23,9 +25,10 @@ class VenusCEBat(AbstractBat):
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
         self.client: ModbusTcpClient_ = self.kwargs['client']
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
-        self.store = get_bat_value_store(self.component_config.id)
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, self.component_config.type)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
 
     def _read_reg(self, addr: int, type_: ModbusDataType) -> Union[int, float]:
         return self.client.read_holding_registers(addr, type_, unit=self.component_config.configuration.modbus_id)
@@ -38,6 +41,7 @@ class VenusCEBat(AbstractBat):
         power = -self._read_reg(32202, ModbusDataType.INT_32)
         soc = self._read_reg(32104, ModbusDataType.UINT_16)
 
+        self.peak_filter.check_values(power)
         # Marstek Venus has internal counter but it's buggy, hence we cannot use it
         imported, exported = self.sim_counter.sim_count(power)
 

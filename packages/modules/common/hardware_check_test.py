@@ -8,7 +8,7 @@ from modules.common import hardware_check
 from modules.common.component_state import CounterState, EvseState
 from modules.common.evse import Evse
 from modules.common.hardware_check import (
-    EVSE_BROKEN, LAN_ADAPTER_BROKEN, METER_BROKEN_VOLTAGES, METER_PROBLEM, OPEN_TICKET, USB_ADAPTER_BROKEN,
+    READ_EVSE_AGAIN, READ_LAN_ADAPTER_AGAIN, READ_METER_VOLTAGES_AGAIN, METER_PROBLEM, READ_USB_ADAPTER_AGAIN,
     SeriesHardwareCheckMixin, _check_meter_values)
 from modules.common.modbus import NO_CONNECTION, ModbusSerialClient_, ModbusTcpClient_
 from modules.conftest import SAMPLE_IP, SAMPLE_PORT
@@ -18,17 +18,17 @@ from modules.internal_chargepoint_handler.clients import ClientHandler
 @pytest.mark.parametrize(
     ("evse_side_effect, meter_side_effect, meter_return_value, handle_exception_side_effect,"
      "handle_exception_return_value, client_spec, expected_error_msg"),
-    [pytest.param(Exception("Modbus"), None, [230]*3, None, False, ModbusSerialClient_, EVSE_BROKEN,
+    [pytest.param(Exception("Modbus"), None, [230]*3, None, False, ModbusSerialClient_, READ_EVSE_AGAIN,
                   id="EVSE defekt"),
      pytest.param(Exception("Modbus"), None, [230, 0, 230], None, False, ModbusSerialClient_,
-                  EVSE_BROKEN + " " + METER_BROKEN_VOLTAGES.format([230, 0, 230]) + OPEN_TICKET,
+                  READ_EVSE_AGAIN + " " + READ_METER_VOLTAGES_AGAIN.format([230, 0, 230]),
                   id="EVSE defekt und Zähler eine Phase defekt"),
      pytest.param(None, Exception("Modbus"), None, None, None,
                   ModbusSerialClient_, METER_PROBLEM, id="Zähler falsch konfiguriert"),
      pytest.param(Exception("Modbus"), Exception("Modbus"), None, None, False, ModbusSerialClient_,
-                  USB_ADAPTER_BROKEN, id="USB-Adapter defekt"),
+                  READ_USB_ADAPTER_AGAIN, id="USB-Adapter defekt"),
      pytest.param(Exception("Modbus"), Exception("Modbus"), None, None, False, ModbusTcpClient_,
-                  LAN_ADAPTER_BROKEN, id="LAN-Adapter defekt"),
+                  READ_LAN_ADAPTER_AGAIN, id="LAN-Adapter defekt"),
      pytest.param(Exception("Modbus"), Exception("Modbus"), None,
                   Exception(NO_CONNECTION.format(SAMPLE_IP, SAMPLE_PORT)), None, ModbusTcpClient_,
                   NO_CONNECTION.format(SAMPLE_IP, SAMPLE_PORT), id="LAN-Adapter nicht erreichbar"),
@@ -90,12 +90,12 @@ def test_hardware_check_succeeds(monkeypatch):
 @pytest.mark.parametrize(
     "voltages, power, expected_msg",
     [pytest.param([230, 0, 0], 0, None, id="einphasig oder zweiphasig L2 defekt (nicht erkennbar)"),
-     pytest.param([0, 0, 0], 0, METER_BROKEN_VOLTAGES.format([0]*3), id="einphasig, L1 defekt"),
+     pytest.param([0, 0, 0], 0, READ_METER_VOLTAGES_AGAIN.format([0]*3), id="einphasig, L1 defekt"),
      pytest.param([230, 230, 0], 0, None, id="zweiphasig oder dreiphasig, L3 defekt (nicht erkennbar)"),
-     pytest.param([0, 230, 0], 0, METER_BROKEN_VOLTAGES.format([0, 230, 0]), id="zweiphasig, L1 defekt"),
+     pytest.param([0, 230, 0], 0, READ_METER_VOLTAGES_AGAIN.format([0, 230, 0]), id="zweiphasig, L1 defekt"),
      pytest.param([230, 230, 230], 0, None, id="dreiphasig"),
-     pytest.param([0, 230, 230], 0, METER_BROKEN_VOLTAGES.format([0, 230, 230]), id="dreiphasig, L1 defekt"),
-     pytest.param([230, 0, 230], 0, METER_BROKEN_VOLTAGES.format([230, 0, 230]), id="dreiphasig, L2 defekt"),
+     pytest.param([0, 230, 230], 0, READ_METER_VOLTAGES_AGAIN.format([0, 230, 230]), id="dreiphasig, L1 defekt"),
+     pytest.param([230, 0, 230], 0, READ_METER_VOLTAGES_AGAIN.format([230, 0, 230]), id="dreiphasig, L2 defekt"),
      pytest.param([230]*3, 100, METER_PROBLEM, id="Phantom-Leistung"),
      ]
 )

@@ -6,10 +6,12 @@ from modules.devices.tasmota.tasmota.config import TasmotaInverterSetup
 from modules.common.abstract_device import AbstractInverter
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.store import get_inverter_value_store
+from modules.common.store import get_component_value_store
 from modules.common.simcount import SimCounter
 from modules.common import req
 from modules.common.component_state import InverterState
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -28,35 +30,50 @@ class TasmotaInverter(AbstractInverter):
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
         self.__ip_address: str = self.kwargs['ip_address']
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, self.component_config.type)
         self.__phase: int = self.kwargs['phase']
-        self.store = get_inverter_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self):
         url = "http://" + self.__ip_address + "/cm?cmnd=Status%208"
         response = req.get_http_session().get(url, timeout=5).json()
 
+        currents = None
         if 'ENERGY' in response['StatusSNS']:
             currents = [0.0, 0.0, 0.0]
-
             power = float(response['StatusSNS']['ENERGY']['Power']) * -1
-            currents[self.__phase-1] = (response['StatusSNS']['ENERGY']['Current']), 0.0, 0.0
+            currents[self.__phase-1] = float(response['StatusSNS']['ENERGY']['Current'])
+            self.peak_filter.check_values(power)
             _, exported = self.sim_counter.sim_count(power)
-
-            inverter_state = InverterState(
-                power=power,
-                currents=currents,
-                exported=exported
-            )
-        else:
+        elif 'Itron' in response['StatusSNS']:
             power = float(response['StatusSNS']['Itron']['Power']) * -1
-            exported = float(response['StatusSNS']['Itron']['E_out']*1000)
+            if 'E_in' in response['StatusSNS']['Itron']:
+                exported = float(response['StatusSNS']['Itron']['E_out']*1000)
+            else:
+                exported = float(response['StatusSNS']['Itron']['ExportActive']*1000)
+            _, exported = self.peak_filter.check_values(power, None, exported)
+        elif 'MT681' in response['StatusSNS']:
+            power = float(response['StatusSNS']['MT681']['Watt_summe']) * -1
+            exported = float(response['StatusSNS']['MT681']['Total_out']*1000)
+            _, exported = self.peak_filter.check_values(power, None, exported)
+        elif 'eBZ' in response['StatusSNS']:
+            power = float(response['StatusSNS']['eBZ']['Power']) * -1
+            exported = float(response['StatusSNS']['eBZ']['E_out']*1000)
+            _, exported = self.peak_filter.check_values(power, None, exported)
+        elif 'MT631' in response['StatusSNS']:
+            power = float(response['StatusSNS']['MT631']['Power']) * -1
+            exported = float(response['StatusSNS']['MT631']['E_out']*1000)
+            _, exported = self.peak_filter.check_values(power, None, exported)
+        else:
+            raise ValueError("Nicht unterstützter Tasmota Zählertyp. Bitte an den Support wenden.")
 
-            inverter_state = InverterState(
-                power=power,
-                exported=exported
-            )
+        inverter_state = InverterState(
+            power=power,
+            exported=exported,
+            currents=currents
+        )
 
         self.store.set(inverter_state)
 

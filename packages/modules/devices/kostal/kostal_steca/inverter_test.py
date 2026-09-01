@@ -30,4 +30,4 @@ def test_get_values(measurements_file, expected_power, requests_mock):
 
     # evaluation
     assert power == expected_power
-    assert exported == 12306056
+    assert exported == 12306056.0

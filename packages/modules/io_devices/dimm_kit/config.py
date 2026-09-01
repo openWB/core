@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 from helpermodules.auto_str import auto_str
 from modules.common.io_setup import IoDeviceSetup
@@ -45,12 +45,12 @@ class IoLanConfiguration:
         self.modbus_id = modbus_id
 
 
-def init_input():
+def init_input() -> Dict[str, Union[Dict[str, bool], Dict[str, float], Dict[str, None]]]:
     return {"analog": {pin.name: None for pin in AnalogInputMapping},
             "digital": {pin.name: False for pin in DigitalInputMapping}}
 
 
-def init_output():
+def init_output() -> Dict[str, Union[Dict[str, bool], Dict[str, float], Dict[str, None]]]:
     return {"analog": {},
             "digital": {pin.name: False for pin in DigitalOutputMapping}}
 
@@ -61,9 +61,9 @@ class IoLan(IoDeviceSetup[IoLanConfiguration]):
                  name: str = "openWB Dimm- & Control-Kit",
                  type: str = "dimm_kit",
                  id: int = 0,
-                 configuration: IoLanConfiguration = None,
-                 input: Dict[str, Dict[int, float]] = None,
-                 output: Dict[str, Dict[int, float]] = None) -> None:
+                 configuration: Optional[IoLanConfiguration] = None,
+                 input: Optional[Dict[str, Union[Dict[str, bool], Dict[str, float], Dict[str, None]]]] = None,
+                 output: Optional[Dict[str, Union[Dict[str, bool], Dict[str, float], Dict[str, None]]]] = None) -> None:
         if input is None:
             input = init_input()
         if output is None:

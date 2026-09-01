@@ -8,7 +8,7 @@ in der Regelung neu priorisiert werden und eine neue Zuteilung des Stroms erhalt
 """
 from modules.common.configurable_vehicle import ConfigurableVehicle
 from modules.common.abstract_vehicle import VehicleUpdateData
-from helpermodules.constants import NO_ERROR
+from helpermodules.constants import DEFAULT_COLORS, NO_ERROR
 from helpermodules import timecheck
 from dataclass_utils.factories import empty_list_factory
 from control.text import BidiState
@@ -34,6 +34,7 @@ def get_vehicle_default() -> dict:
         "charge_template": 0,
         "ev_template": 0,
         "name": "Fahrzeug",
+        "color": DEFAULT_COLORS.VEHICLE.value,
         "info": {
             "manufacturer": None,
             "model": None,
@@ -63,6 +64,7 @@ class Get:
     force_soc_update: bool = field(default=False, metadata={
                                    "topic": "get/force_soc_update"})
     range: Optional[float] = field(default=None, metadata={"topic": "get/range"})
+    odometer: Optional[float] = field(default=None, metadata={"topic": "get/odometer"})
     fault_state: int = field(default=0, metadata={"topic": "get/fault_state"})
     fault_str: str = field(default=NO_ERROR, metadata={"topic": "get/fault_str"})
 
@@ -77,6 +79,7 @@ class EvData:
     charge_template: int = field(default=0, metadata={"topic": "charge_template"})
     ev_template: int = field(default=0, metadata={"topic": "ev_template"})
     name: str = field(default="neues Fahrzeug", metadata={"topic": "name"})
+    color: str = field(default=DEFAULT_COLORS.VEHICLE.value, metadata={"topic": "color"})
     tag_id: List[str] = field(default_factory=empty_list_factory, metadata={
         "topic": "tag_id"})
     get: Get = field(default_factory=get_factory)
@@ -254,40 +257,35 @@ class Ev:
     NOT_ENOUGH_POWER = ", da nicht ausreichend Überschuss für mehrphasiges Laden zur Verfügung steht."
 
     def _check_phase_switch_conditions(self,
-                                       charge_template: ChargeTemplate,
                                        control_parameter: ControlParameter,
                                        evse_current: float,
                                        get_currents: List[float],
                                        get_power: float,
                                        max_current_cp: int,
-                                       limit: LoadmanagementLimit) -> Tuple[bool, Optional[str]]:
+                                       limit: LoadmanagementLimit,
+                                       surplus: float) -> Tuple[bool, Optional[str]]:
         # Manche EV laden mit 6.1A bei 6A Soll-Strom
         min_current = max(control_parameter.min_current, control_parameter.required_current)
         min_current_range = min_current + self.ev_template.data.nominal_difference
         max_current = min(self.ev_template.data.max_current_single_phase, max_current_cp)
         max_current_range = max_current - self.ev_template.data.nominal_difference
         phases_in_use = control_parameter.phases
-        pv_config = data.data.general_data.data.chargemode_config.pv_charging
         max_phases_ev = self.ev_template.data.max_phases
-        if charge_template.data.chargemode.pv_charging.feed_in_limit:
-            feed_in_yield = pv_config.feed_in_yield
-        else:
-            feed_in_yield = 0
-        all_surplus = data.data.counter_all_data.get_evu_counter().get_usable_surplus(feed_in_yield)
         required_surplus = control_parameter.min_current * max_phases_ev * 230 - get_power
         unbalanced_load_limit_reached = limit.limiting_value == LimitingValue.UNBALANCED_LOAD
-        condition_1_to_3 = (((get_medium_charging_current(get_currents) > max_current_range and
-                            all_surplus > required_surplus) or unbalanced_load_limit_reached) and
+        current_limit_reached = limit.limiting_value == LimitingValue.CURRENT
+        condition_1_to_3 = ((((get_medium_charging_current(get_currents) > max_current_range or current_limit_reached)
+                            and surplus > required_surplus) or unbalanced_load_limit_reached) and
                             phases_in_use == 1)
         condition_3_to_1 = get_medium_charging_current(
-            get_currents) < min_current_range and all_surplus <= 0 and phases_in_use > 1
+            get_currents) < min_current_range and surplus <= 0 and phases_in_use > 1
         if condition_1_to_3 or condition_3_to_1:
             return True, None
         else:
-            if phases_in_use > 1 and all_surplus > 0:
+            if phases_in_use > 1 and surplus > 0:
                 # genug Leistung, um weiter mehrphasig zu laden
                 return False, self.ENOUGH_POWER
-            elif phases_in_use == 1 and (all_surplus < required_surplus or unbalanced_load_limit_reached):
+            elif phases_in_use == 1 and (surplus < required_surplus or unbalanced_load_limit_reached):
                 # nicht genug Leistung, um mehrphasig zu laden, also einphasig laden
                 return False, self.NOT_ENOUGH_POWER
             elif ((get_medium_charging_current(get_currents) < max_current_range and
@@ -322,7 +320,6 @@ class Ev:
             feed_in_yield = pv_config.feed_in_yield
         else:
             feed_in_yield = 0
-        all_surplus = data.data.counter_all_data.get_evu_counter().get_usable_surplus(feed_in_yield)
         delay = pv_config.phase_switch_delay * 60
         if phases_in_use == 1:
             direction_str = f"Umschaltung von 1 auf {max_phases}"
@@ -339,19 +336,26 @@ class Ev:
             new_phase = 1
             new_current = self.ev_template.data.max_current_single_phase
             waiting_time = pv_config.switch_off_delay
+        all_surplus = data.data.counter_all_data.get_evu_counter().get_usable_surplus(feed_in_yield)
+        if control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY:
+            # eigene reservierte Leistung addieren, wenn die Verzögerung für die Umschaltung läuft,
+            # da diese Leistung bereits für die Umschaltung reserviert ist.
+            surplus = all_surplus + max(0, required_reserved_power)
+        else:
+            surplus = all_surplus
 
         log.debug(
-            f'Genutzter Strom: {get_medium_charging_current(get_currents)}A, Überschuss: {all_surplus}W, benötigte '
+            f'Genutzter Strom: {get_medium_charging_current(get_currents)}A, Überschuss: {surplus}W, benötigte '
             f'neue Leistung: {required_reserved_power}W')
         # Wenn gerade umgeschaltet wird, darf kein Timer gestartet werden.
         if not self.ev_template.data.prevent_phase_switch:
-            condition, condition_msg = self._check_phase_switch_conditions(charge_template,
-                                                                           control_parameter,
+            condition, condition_msg = self._check_phase_switch_conditions(control_parameter,
                                                                            evse_current,
                                                                            get_currents,
                                                                            get_power,
                                                                            max_current_cp,
-                                                                           limit)
+                                                                           limit,
+                                                                           surplus)
             if control_parameter.state not in PHASE_SWITCH_STATES:
                 if condition:
                     # Wenn nach der Umschaltung weniger Leistung benötigt wird, soll während der Verzögerung keine
@@ -400,7 +404,7 @@ class Ev:
 
     def _remaining_phase_switch_time(self, control_parameter: ControlParameter,
                                      waiting_time: float,
-                                     buffer: float) -> float:
+                                     buffer: float) -> Tuple[bool, Optional[str]]:
         if control_parameter.timestamp_phase_switch_buffer_start is None:
             control_parameter.timestamp_phase_switch_buffer_start = timecheck.create_timestamp()
         # Wenn der Puffer seit der letzen Umschaltung abgelaufen ist, warte noch die Umschaltverzögerung ab. ODER
@@ -427,27 +431,31 @@ class Ev:
                 control_parameter.timestamp_phase_switch_buffer_start = None
                 return True, None
 
-    def reset_phase_switch(self, control_parameter: ControlParameter):
+    def reset_phase_switch_delay(self, control_parameter: ControlParameter, max_phases: int):
         """ Zurücksetzen der Zeitstempel und reservierten Leistung.
 
         Die Phasenumschaltung kann nicht abgebrochen werden!
         """
         if control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY:
-            # Wenn der Timer läuft, ist den Control-Parametern die alte Phasenzahl hinterlegt.
+            control_parameter.timestamp_phase_switch_buffer_start = None
+            control_parameter.state = ChargepointState.CHARGING_ALLOWED
             if control_parameter.phases == 1:
-                reserved = control_parameter.required_current * \
-                    3 * 230 - self.ev_template.data.max_current_single_phase * 230
-                data.data.counter_all_data.get_evu_counter().data.set.reserved_surplus -= reserved
-                log.debug(
-                    "Zurücksetzen der reservierten Leistung für die Phasenumschaltung. reservierte Leistung: " +
-                    str(data.data.counter_all_data.get_evu_counter().data.set.reserved_surplus))
+                # Wenn der Timer läuft, ist den Control-Parametern die alte Phasenzahl hinterlegt.
+                # bei der Umschaltung 3p1p wird keine Leistung reserviert
+                evu_counter = data.data.counter_all_data.get_evu_counter()
+                reserved = max(0, control_parameter.min_current * max_phases * 230 -
+                               self.ev_template.data.max_current_single_phase * 230)
+                evu_counter.data.set.reserved_surplus -= reserved
+                log.debug(f"Zurücksetzen von {reserved}W reservierter Leistung für die Phasenumschaltung. "
+                          f"reservierte Leistung: {evu_counter.data.set.reserved_surplus} W")
+
+    def reset_phase_switch(self, control_parameter: ControlParameter):
+        if control_parameter.state == ChargepointState.PERFORMING_PHASE_SWITCH:
+            evu_counter = data.data.counter_all_data.get_evu_counter()
+            if control_parameter.phases == 1:
+                evu_counter.data.set.reserved_surplus -= self.ev_template.data.max_current_single_phase * 230
             else:
-                reserved = self.ev_template.data.max_current_single_phase * \
-                    230 - control_parameter.required_current * 3 * 230
-                data.data.counter_all_data.get_evu_counter().data.set.reserved_surplus -= reserved
-                log.debug(
-                    "Zurücksetzen der reservierten Leistung für die Phasenumschaltung. reservierte Leistung: " +
-                    str(data.data.counter_all_data.get_evu_counter().data.set.reserved_surplus))
+                evu_counter.data.set.reserved_surplus -= self.ev_template.data.max_current_single_phase * 3 * 230
 
 
 def get_ev_to_rfid(rfid: Optional[str] = None, vehicle_id: Optional[str] = None) -> Optional[int]:

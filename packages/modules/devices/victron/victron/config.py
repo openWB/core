@@ -24,9 +24,8 @@ class Victron:
 
 
 class VictronBatConfiguration:
-    def __init__(self, modbus_id: int = 100, vebus_id: int = 228):
+    def __init__(self, modbus_id: int = 100):
         self.modbus_id = modbus_id
-        self.vebus_id = vebus_id
 
 
 class VictronBatSetup(ComponentSetup[VictronBatConfiguration]):
@@ -34,8 +33,9 @@ class VictronBatSetup(ComponentSetup[VictronBatConfiguration]):
                  name: str = "Victron Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: VictronBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or VictronBatConfiguration())
+                 configuration: VictronBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or VictronBatConfiguration(), **kwargs)
 
 
 class VictronCounterConfiguration:
@@ -49,8 +49,9 @@ class VictronCounterSetup(ComponentSetup[VictronCounterConfiguration]):
                  name: str = "Victron Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: VictronCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or VictronCounterConfiguration())
+                 configuration: VictronCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or VictronCounterConfiguration(), **kwargs)
 
 
 class VictronInverterConfiguration:
@@ -64,5 +65,6 @@ class VictronInverterSetup(ComponentSetup[VictronInverterConfiguration]):
                  name: str = "Victron Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: VictronInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or VictronInverterConfiguration())
+                 configuration: VictronInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or VictronInverterConfiguration(), **kwargs)

@@ -473,7 +473,7 @@ def test_et_price_update_required(monkeypatch, flexible_tariff, grid_fee, curren
     # setup
     opt = Optional()
     opt._flexible_tariff_module = Mock()
-    opt._grid_fee_module = Mock()
+    opt._grid_fee_module = None
     opt.data.electricity_pricing.get.prices = flexible_tariff["prices"]
     opt.data.electricity_pricing.flexible_tariff.get.prices = flexible_tariff["prices"]
     opt.data.electricity_pricing.flexible_tariff.get.next_query_time = flexible_tariff["next_query_time"]

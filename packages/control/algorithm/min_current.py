@@ -27,7 +27,8 @@ class MinCurrent:
                     if max(missing_currents) > 0:
                         available_currents, limit = Loadmanagement().get_available_currents(
                             missing_currents, counter, cp)
-                        cp.data.control_parameter.limit = limit
+                        if limit.limiting_value is not None:
+                            cp.data.control_parameter.limit = limit
                         available_for_cp = common.available_current_for_cp(
                             cp, counts, available_currents, missing_currents)
                         current = common.get_current_to_set(

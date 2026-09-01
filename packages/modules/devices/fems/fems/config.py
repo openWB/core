@@ -33,8 +33,9 @@ class FemsBatSetup(ComponentSetup[FemsBatConfiguration]):
                  name: str = "openEMS, Fenecon FEMS, CENTURIO 10, Kaco Hy-Control Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: FemsBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or FemsBatConfiguration())
+                 configuration: FemsBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or FemsBatConfiguration(), **kwargs)
 
 
 class FemsCounterConfiguration:
@@ -47,8 +48,9 @@ class FemsCounterSetup(ComponentSetup[FemsCounterConfiguration]):
                  name: str = "openEMS, Fenecon FEMS, CENTURIO 10, Kaco Hy-Control Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: FemsCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or FemsCounterConfiguration())
+                 configuration: FemsCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or FemsCounterConfiguration(), **kwargs)
 
 
 class FemsInverterConfiguration:
@@ -61,5 +63,6 @@ class FemsInverterSetup(ComponentSetup[FemsInverterConfiguration]):
                  name: str = "openEMS, Fenecon FEMS, CENTURIO 10, Kaco Hy-Control Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: FemsInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or FemsInverterConfiguration())
+                 configuration: FemsInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or FemsInverterConfiguration(), **kwargs)

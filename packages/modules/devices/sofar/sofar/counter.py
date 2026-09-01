@@ -2,12 +2,14 @@
 from typing import Any, TypedDict
 
 from modules.devices.sofar.sofar.config import SofarCounterSetup
-from modules.common.store import get_counter_value_store
+from modules.common.store import get_component_value_store
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.component_state import CounterState
 from modules.common.abstract_device import AbstractCounter
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -23,8 +25,9 @@ class SofarCounter(AbstractCounter):
     def initialize(self) -> None:
         self.client: ModbusTcpClient_ = self.kwargs['client']
         self.__modbus_id: int = self.kwargs['modbus_id']
-        self.store = get_counter_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self):
         # 0x0485 ActivePower_output_total Int16 in kW accuracy 0,01 discharge + charge -
@@ -47,6 +50,7 @@ class SofarCounter(AbstractCounter):
         # 0x068F Energy_Purchase_Total UInt32 in kwH accuracy 0,01
         imported = self.client.read_holding_registers(0x068E, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
 
+        imported, exported = self.peak_filter.check_values(power, imported, exported)
         counter_state = CounterState(
             imported=imported,
             exported=exported,

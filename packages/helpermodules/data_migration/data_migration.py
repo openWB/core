@@ -15,7 +15,6 @@ import os
 import pathlib
 import shutil
 import tarfile
-from paho.mqtt.client import Client as MqttClient, MQTTMessage
 from threading import Thread
 from typing import Callable, Dict, List, Optional, Union
 
@@ -23,13 +22,13 @@ from control import data
 from control.ev import ev
 from dataclass_utils import dataclass_from_dict
 import dataclass_utils
-from helpermodules.broker import BrokerClient
 from helpermodules.data_migration.id_mapping import MapId
 from helpermodules.hardware_configuration import update_hardware_configuration
-from helpermodules.measurement_logging.process_log import get_totals, string_to_float, string_to_int
+from helpermodules.measurement_logging.process_log import get_totals
 from helpermodules.measurement_logging.write_log import LegacySmartHomeLogData, get_names
 from helpermodules.timecheck import convert_timedelta_to_time_string, get_difference
 from helpermodules.utils import joined_thread_handler
+from helpermodules.utils.precision_math import string_to_float, string_to_int
 from helpermodules.utils.topic_parser import get_index
 from helpermodules.pub import Pub
 from helpermodules.utils.json_file_handler import write_and_check
@@ -255,11 +254,11 @@ class MigrateData:
                             },
                             "data":
                             {
-                                "range_charged": float(row[2]),
-                                "imported_since_mode_switch": float(row[3]) * 1000,
+                                "range_charged": string_to_float(row[2]),
+                                "imported_since_mode_switch": string_to_float(row[3]) * 1000,
                                 "imported_since_plugged": 0,
-                                "power": float(row[4]),
-                                "costs": float(row[9])
+                                "power": string_to_float(row[4]),
+                                "costs": string_to_float(row[9])
                             }
                         }
                         entries.append(new_entry)
@@ -638,21 +637,3 @@ class MigrateData:
             reduce(self._merge_records_by(key), records)
             for _, records in groupby(sorted(lst, key=key_prop), key_prop)
         ]
-
-
-class BrokerCphargepoints:
-    def get_configured_cp_ids(self) -> List:
-        self.all_received_topics = {}
-        BrokerClient("update-config", self.on_connect, self.on_message).start_finite_loop()
-        cp_ids = []
-        for topic, payload in self.all_received_topics.items():
-            cp_ids.append(get_index(topic))
-        return cp_ids
-
-    def on_connect(self, client: MqttClient, userdata, flags: dict, rc: int):
-        """ connect to broker and subscribe to set topics
-        """
-        client.subscribe("openWB/chargepoint/+/config", 2)
-
-    def on_message(self, client: MqttClient, userdata, msg: MQTTMessage):
-        self.all_received_topics.update({msg.topic: msg.payload})

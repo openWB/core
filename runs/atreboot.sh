@@ -228,12 +228,8 @@ chmod 666 "$LOGFILE"
 		echo "pending restore detected"
 		# remove flag to prevent a boot loop on failure
 		rm "${OPENWBBASEDIR}/data/restore/run_on_boot"
-		if ((hasInet == 1)); then
-			"${OPENWBBASEDIR}/runs/restore.sh"
-			# restore.sh will reboot if successful
-		else
-			echo "no internet connection, restore not possible, skipping"
-		fi
+		"${OPENWBBASEDIR}/runs/restore.sh"
+		# restore.sh will reboot if successful
 	else
 		echo "no restore pending, normal startup"
 	fi

@@ -36,8 +36,9 @@ class Huawei_EmmaBatSetup(ComponentSetup[Huawei_EmmaBatConfiguration]):
                  name: str = "Huawei EMMA Speicher",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: Huawei_EmmaBatConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or Huawei_EmmaBatConfiguration())
+                 configuration: Huawei_EmmaBatConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or Huawei_EmmaBatConfiguration(), **kwargs)
 
 
 class Huawei_EmmaCounterConfiguration:
@@ -50,8 +51,9 @@ class Huawei_EmmaCounterSetup(ComponentSetup[Huawei_EmmaCounterConfiguration]):
                  name: str = "Huawei EMMA Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: Huawei_EmmaCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or Huawei_EmmaCounterConfiguration())
+                 configuration: Huawei_EmmaCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or Huawei_EmmaCounterConfiguration(), **kwargs)
 
 
 class Huawei_EmmaInverterConfiguration:
@@ -64,5 +66,6 @@ class Huawei_EmmaInverterSetup(ComponentSetup[Huawei_EmmaInverterConfiguration])
                  name: str = "Huawei EMMA Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: Huawei_EmmaInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or Huawei_EmmaInverterConfiguration())
+                 configuration: Huawei_EmmaInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or Huawei_EmmaInverterConfiguration(), **kwargs)

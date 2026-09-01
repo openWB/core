@@ -11,8 +11,8 @@
 			<template #inline-item>
 				<SwitchInput v-model="useMinPv" />
 			</template>
-			<div class="subconfigstack grid-col-12 mt-4">
-				<div v-if="useMinPv" class="subconfig subgrid">
+			<div v-if="useMinPv" class="subconfigstack grid-col-12 mt-4">
+				<div class="subconfig subgrid">
 					<span class="subconfigtitle grid-col-1">Stärke:</span>
 					<RangeInput
 						id="minCurrent"

@@ -1,5 +1,5 @@
 <template>
-  <q-card class="rounded-borders-md">
+  <q-card class="rounded-borders-md card-width">
     <q-card-section>
       <div class="row no-wrap">
         <div class="text-h6 ellipsis" :title="planName.value">
@@ -8,6 +8,12 @@
         <q-space />
         <q-btn icon="close" flat round dense v-close-popup />
       </div>
+      <BaseMessage
+        :show-message="temporaryChargeModeActive"
+        message="Temporärer Modus aktiv. Alle Planänderungen werden nach dem Abstecken verworfen."
+        type="warning"
+        :collapsed="false"
+      />
     </q-card-section>
     <q-separator />
     <q-card-section>
@@ -38,22 +44,25 @@
       </div>
       <div class="q-mb-sm">
         <div class="text-subtitle2 q-mt-md">Wiederholungen</div>
-        <q-btn-group spread>
+        <q-btn-group outline spread>
           <q-btn
             size="sm"
             :color="planFrequency.value === 'once' ? 'primary' : 'grey'"
+            :outline="planFrequency.value !== 'once'"
             @click="planFrequency.value = 'once'"
             label="Einmalig"
           />
           <q-btn
             size="sm"
             :color="planFrequency.value === 'daily' ? 'primary' : 'grey'"
+            :outline="planFrequency.value !== 'daily'"
             @click="planFrequency.value = 'daily'"
             label="Täglich"
           />
           <q-btn
             size="sm"
             :color="planFrequency.value === 'weekly' ? 'primary' : 'grey'"
+            :outline="planFrequency.value !== 'weekly'"
             @click="planFrequency.value = 'weekly'"
             label="Wöchentlich"
           />
@@ -114,12 +123,13 @@
         <div
           class="row items-center justify-center q-ma-none q-pa-none no-wrap"
         >
-          <q-btn-group class="col">
+          <q-btn-group class="col" outline>
             <q-btn
               v-for="option in phaseOptions"
               :key="option.value"
               :color="planNumPhases.value === option.value ? 'primary' : 'grey'"
               :label="option.label"
+              :outline="planNumPhases.value !== option.value"
               size="sm"
               class="col"
               @click="planNumPhases.value = option.value"
@@ -128,11 +138,12 @@
         </div>
       </div>
       <div class="text-subtitle2 q-mt-sm">Begrenzung</div>
-      <q-btn-group class="full-width">
+      <q-btn-group class="full-width" outline spread>
         <q-btn
           size="sm"
           class="flex-grow"
           :color="planLimitSelected.value === 'none' ? 'primary' : 'grey'"
+          :outline="planLimitSelected.value !== 'none'"
           @click="planLimitSelected.value = 'none'"
           label="Keine"
         />
@@ -140,6 +151,7 @@
           size="sm"
           class="flex-grow"
           :color="planLimitSelected.value === 'soc' ? 'primary' : 'grey'"
+          :outline="planLimitSelected.value !== 'soc'"
           @click="planLimitSelected.value = 'soc'"
           label="EV-SoC"
         />
@@ -147,6 +159,7 @@
           size="sm"
           class="flex-grow"
           :color="planLimitSelected.value === 'amount' ? 'primary' : 'grey'"
+          :outline="planLimitSelected.value !== 'amount'"
           @click="planLimitSelected.value = 'amount'"
           label="Energie"
         />
@@ -181,6 +194,18 @@
           >Plan löschen</q-btn
         >
       </div>
+      <div
+        v-if="temporaryChargeModeActive && chargeTemplateId != null"
+        class="row q-mt-md"
+      >
+        <q-btn
+          size="sm"
+          class="col charge-plan-link-button"
+          :href="`/openWB/web/settings/#/VehicleConfiguration/charge_template/${chargeTemplateId ?? ''}`"
+          ><q-icon left size="xs" name="settings" /> Persistente
+          Ladeplan-Einstellungen</q-btn
+        >
+      </div>
     </q-card-section>
   </q-card>
 </template>
@@ -189,6 +214,7 @@
 import { useMqttStore } from 'src/stores/mqtt-store';
 import SliderStandard from './SliderStandard.vue';
 import ToggleStandard from './ToggleStandard.vue';
+import BaseMessage from './BaseMessage.vue';
 import { type TimeChargingPlan } from '../stores/mqtt-store-model';
 import { computed } from 'vue';
 
@@ -298,6 +324,16 @@ const acChargingEnabled = computed(
   () => mqttStore.chargePointChargeType(props.chargePointId).value === 'AC',
 );
 
+const temporaryChargeModeActive = computed(
+  () => mqttStore.temporaryChargeModeActive,
+);
+
+const chargeTemplateId = computed(
+  () =>
+    mqttStore.chargePointConnectedVehicleChargeTemplate(props.chargePointId)
+      .value?.id,
+);
+
 const removeTimeChargingPlan = (planId: number) => {
   mqttStore.removeTimeChargingPlanForChargePoint(props.chargePointId, planId);
   emit('close');
@@ -305,9 +341,18 @@ const removeTimeChargingPlan = (planId: number) => {
 </script>
 
 <style scoped>
+.card-width {
+  max-width: 26em;
+}
+
 .q-btn-group .q-btn {
   min-width: 100px !important;
   font-size: 10px !important;
+}
+
+.charge-plan-link-button {
+  background-color: var(--q-charge-plan-link-button);
+  color: white;
 }
 
 .flex-grow {

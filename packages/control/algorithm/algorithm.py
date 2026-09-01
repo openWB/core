@@ -29,6 +29,8 @@ class Algorithm:
             self._check_auto_phase_switch_delay()
             self.surplus_controlled.check_submode_pv_charging()
             common.reset_current()
+            for cp in data.data.cp_data.values():
+                cp.reset_values_before_algorithm()
             log.info("**Mindestrom setzen**")
             self.min_current.set_min_current()
             log.info("**Soll-Strom setzen**")

@@ -7,8 +7,10 @@ from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType
-from modules.common.store import get_counter_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.siemens.siemens_sentron.config import SiemensSentronCounterSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -24,8 +26,9 @@ class SiemensSentronCounter(AbstractCounter):
     def initialize(self) -> None:
         self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['client']
         self.__modbus_id: int = self.kwargs['modbus_id']
-        self.store = get_counter_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         with self.__tcp_client:
@@ -40,6 +43,7 @@ class SiemensSentronCounter(AbstractCounter):
             power_factors = self.__tcp_client.read_holding_registers(
                 37, [ModbusDataType.FLOAT_32] * 3, unit=self.__modbus_id)
 
+        imported, exported = self.peak_filter.check_values(power, imported, exported)
         counter_state = CounterState(
             imported=imported,
             exported=exported,

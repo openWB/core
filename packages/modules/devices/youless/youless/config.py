@@ -37,5 +37,6 @@ class YoulessInverterSetup(ComponentSetup[YoulessInverterConfiguration]):
                  name: str = "Youless LS120 Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: YoulessInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or YoulessInverterConfiguration())
+                 configuration: YoulessInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or YoulessInverterConfiguration(), **kwargs)

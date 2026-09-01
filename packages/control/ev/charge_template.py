@@ -134,7 +134,7 @@ class ChargeTemplate:
     """ Klasse der Lade-Profile
     """
     data: ChargeTemplateData = field(default_factory=charge_template_data_factory, metadata={
-        "topic": ""})
+        "topic": "set/charge_template"})
 
     CHARGING_PRICE_EXCEEDED = ("Der aktuelle Strompreis liegt über dem maximalen Strompreis. ")
     CHARGING_PRICE_LOW = "Laden, da der aktuelle Strompreis unter dem maximalen Strompreis liegt."
@@ -143,6 +143,10 @@ class ChargeTemplate:
     TIME_CHARGING_NO_PLAN_ACTIVE = "Kein Zeitfenster für Zeitladen aktiv."
     TIME_CHARGING_SOC_REACHED = "Das Ladeziel für das Zeitladen wurde erreicht."
     TIME_CHARGING_AMOUNT_REACHED = "Die gewünschte Energiemenge für das Zeitladen wurde geladen."
+    TIME_CHARGING_CONFLICT_ACTIVE_BAT_CONTROL = ("Laden mit Zeitladen nach Speicher-SoC nicht möglich, da dies im "
+                                                 "Konflikt mit der aktiven Speichersteuerung steht.")
+    TIME_CHARGING_MIN_BAT_SOC_REACHED = ("Laden mit Zeitladen nach Speicher-SoC nicht möglich, da der SoC des"
+                                         " Speichers unter dem minimalen SoC liegt.")
 
     def time_charging(self,
                       soc: Optional[float],
@@ -151,34 +155,40 @@ class ChargeTemplate:
         """ prüft, ob ein Zeitfenster aktiv ist und setzt entsprechend den Ladestrom
         """
         message = None
-        sub_mode = "time_charging"
+        sub_mode = "stop"
+        current = 0
         id = None
         phases = None
         try:
             if self.data.time_charging.plans:
                 plan = timecheck.check_plans_timeframe(self.data.time_charging.plans)
                 if plan is not None:
-                    current = plan.current if charging_type == ChargingType.AC.value else plan.dc_current
-                    phases = plan.phases_to_use
                     id = plan.id
-                    if plan.limit.selected == "soc" and soc and soc >= plan.limit.soc:
+                    phases = plan.phases_to_use
+                    if plan.limit.selected == "soc" and soc is not None and soc >= plan.limit.soc:
                         # SoC-Limit erreicht
-                        current = 0
-                        sub_mode = "stop"
                         message = self.TIME_CHARGING_SOC_REACHED
                     elif plan.limit.selected == "amount" and used_amount_time_charging >= plan.limit.amount:
                         # Energie-Limit erreicht
-                        current = 0
-                        sub_mode = "stop"
                         message = self.TIME_CHARGING_AMOUNT_REACHED
+                    elif plan.min_bat_soc is not None and data.data.bat_all_data.data.config.configured:
+                        if data.data.bat_all_data.time_charging_min_bat_soc_allowed():
+                            if data.data.bat_all_data.data.get.soc < plan.min_bat_soc:
+                                message = self.TIME_CHARGING_MIN_BAT_SOC_REACHED
+                            else:
+                                log.debug(
+                                    "Zeitladen: minimaler Speicher-SoC überschritten, Laden mit Zeitladen möglich.")
+                                current = plan.current if charging_type == ChargingType.AC.value else plan.dc_current
+                                sub_mode = "time_charging"
+                        else:
+                            message = self.TIME_CHARGING_CONFLICT_ACTIVE_BAT_CONTROL
+                    else:
+                        current = plan.current if charging_type == ChargingType.AC.value else plan.dc_current
+                        sub_mode = "time_charging"
                 else:
                     message = self.TIME_CHARGING_NO_PLAN_ACTIVE
-                    current = 0
-                    sub_mode = "stop"
             else:
                 message = self.TIME_CHARGING_NO_PLAN_CONFIGURED
-                current = 0
-                sub_mode = "stop"
             return current, sub_mode, message, id, phases
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.data.id))
@@ -204,7 +214,7 @@ class ChargeTemplate:
             else:
                 current = instant_charging.dc_current
 
-            if instant_charging.limit.selected == "soc" and soc and soc >= instant_charging.limit.soc:
+            if instant_charging.limit.selected == "soc" and soc is not None and soc >= instant_charging.limit.soc:
                 current = 0
                 sub_mode = "stop"
                 message = self.SOC_REACHED
@@ -236,7 +246,7 @@ class ChargeTemplate:
             phases = pv_charging.phases_to_use
             min_pv_current = (pv_charging.min_current if charging_type == ChargingType.AC.value
                               else pv_charging.dc_min_current)
-            if pv_charging.limit.selected == "soc" and soc and soc >= pv_charging.limit.soc:
+            if pv_charging.limit.selected == "soc" and soc is not None and soc >= pv_charging.limit.soc:
                 current = 0
                 sub_mode = "stop"
                 message = self.SOC_REACHED
@@ -282,7 +292,7 @@ class ChargeTemplate:
             phases = eco_charging.phases_to_use
             current = eco_charging.current if charging_type == ChargingType.AC.value else eco_charging.dc_current
 
-            if eco_charging.limit.selected == "soc" and soc and soc >= eco_charging.limit.soc:
+            if eco_charging.limit.selected == "soc" and soc is not None and soc >= eco_charging.limit.soc:
                 current = 0
                 sub_mode = "stop"
                 message = self.SOC_REACHED
@@ -417,41 +427,44 @@ class ChargeTemplate:
                              charging_type: str,
                              control_parameter_phases: int,
                              soc_request_interval_offset: int,
-                             bidi_state: BidiState) -> SelectedPlan:
+                             bidi_state: BidiState) -> Tuple[float, float, int, float]:
         bidi = bidi_state == BidiState.BIDI_CAPABLE and plan.bidi_charging_enabled
+        battery_capacity = ev_template.data.battery_capacity
+        efficiency = ev_template.data.efficiency
+
+        def calc_for_phases(phases_to_use: int) -> Tuple[float, float]:
+            return self._calculate_duration(
+                plan,
+                soc,
+                battery_capacity,
+                efficiency,
+                used_amount,
+                phases_to_use,
+                charging_type,
+                ev_template,
+                bidi)
+
         if bidi:
-            duration, missing_amount = self._calculate_duration(
-                plan, soc, ev_template.data.battery_capacity,
-                used_amount, control_parameter_phases, charging_type, ev_template, bidi)
+            duration, missing_amount = calc_for_phases(control_parameter_phases)
             remaining_time = plan_end_time - duration
             phases = control_parameter_phases
         elif plan.phases_to_use == 0:
             if max_hw_phases == 1:
-                duration, missing_amount = self._calculate_duration(
-                    plan, soc, ev_template.data.battery_capacity,
-                    used_amount, 1, charging_type, ev_template, bidi)
+                duration, missing_amount = calc_for_phases(1)
                 remaining_time = plan_end_time - duration
                 phases = 1
             elif phase_switch_supported is False:
-                duration, missing_amount = self._calculate_duration(
-                    plan, soc, ev_template.data.battery_capacity, used_amount, control_parameter_phases,
-                    charging_type, ev_template, bidi)
+                duration, missing_amount = calc_for_phases(control_parameter_phases)
                 phases = control_parameter_phases
                 remaining_time = plan_end_time - duration
             elif plan.et_active:
-                duration, missing_amount = self._calculate_duration(
-                    plan, soc, ev_template.data.battery_capacity, used_amount, max_hw_phases,
-                    charging_type, ev_template, bidi)
+                duration, missing_amount = calc_for_phases(max_hw_phases)
                 phases = max_hw_phases
                 remaining_time = plan_end_time - duration
             else:
-                duration_3p, missing_amount = self._calculate_duration(
-                    plan, soc, ev_template.data.battery_capacity, used_amount, max_hw_phases,
-                    charging_type, ev_template, bidi)
+                duration_3p, missing_amount = calc_for_phases(max_hw_phases)
                 remaining_time_3p = plan_end_time - duration_3p
-                duration_1p, missing_amount = self._calculate_duration(
-                    plan, soc, ev_template.data.battery_capacity, used_amount, 1,
-                    charging_type, ev_template, bidi)
+                duration_1p, missing_amount = calc_for_phases(1)
                 remaining_time_1p = plan_end_time - duration_1p
                 # Kurz vor dem nächsten Abfragen des SoC, wenn noch der alte SoC da ist, kann es sein, dass die Zeit
                 # für 1p nicht mehr reicht, weil die Regelung den neuen SoC noch nicht kennt.
@@ -466,11 +479,9 @@ class ChargeTemplate:
                     phases = 1
                 log.debug(f"Dauer 1p: {duration_1p}, Dauer 3p: {duration_3p}")
         elif plan.phases_to_use == 3 or plan.phases_to_use == 1:
-            duration, missing_amount = self._calculate_duration(
-                plan, soc, ev_template.data.battery_capacity,
-                used_amount, min(plan.phases_to_use, max_hw_phases), charging_type, ev_template, bidi)
+            phases = min(plan.phases_to_use, max_hw_phases)
+            duration, missing_amount = calc_for_phases(phases)
             remaining_time = plan_end_time - duration
-            phases = plan.phases_to_use
 
         log.debug(f"Verbleibende Zeit bis zum Ladestart [s]:{remaining_time}, Dauer [h]: {duration/3600}")
         return remaining_time, missing_amount, phases, duration
@@ -479,6 +490,7 @@ class ChargeTemplate:
                             plan: ScheduledChargingPlan,
                             soc: Optional[float],
                             battery_capacity: float,
+                            efficiency: float,
                             used_amount: float,
                             phases: int,
                             charging_type: str,
@@ -487,7 +499,7 @@ class ChargeTemplate:
 
         if plan.limit.selected == "soc":
             if soc is not None:
-                missing_amount = ((plan.limit.soc_scheduled - soc) / 100) * battery_capacity
+                missing_amount = ((plan.limit.soc_scheduled - soc) / 100) * battery_capacity / (efficiency / 100)
             else:
                 raise ValueError("Um Zielladen mit SoC-Ziel nutzen zu können, bitte ein SoC-Modul konfigurieren.")
         else:

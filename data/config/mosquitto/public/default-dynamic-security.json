@@ -70,7 +70,7 @@
 	"anonymousGroup": "anonymous",
 	"roles": [
 		{
-			"rolename": "openwb-version:2",
+			"rolename": "openwb-version:8",
 			"textname": "openWB Versionsnummer",
 			"textdescription": "Diese Rolle ist ein Platzhalter für die openWB Versionsnummer und wird automatisch aktualisiert. Sie hat keine direkten Berechtigungen.",
 			"acls": []
@@ -80,6 +80,18 @@
 			"textname": "Basisdaten für das Display",
 			"textdescription": "Diese Rolle erlaubt das Auslesen der Display-Einstellungen und wird für das integrierte Display benötigt. Notwendig für die anonyme Gruppe!",
 			"acls": [
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/systemReboot",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/systemShutdown",
+					"priority": 0,
+					"allow": true
+				},
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/optional/rfid/active",
@@ -112,13 +124,13 @@
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/internal_chargepoint/global_data",
+					"topic": "openWB/internal_chargepoint/global_data",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/internal_chargepoint/+/data/parent_cp",
+					"topic": "openWB/internal_chargepoint/+/data/parent_cp",
 					"priority": 0,
 					"allow": true
 				}
@@ -289,6 +301,12 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/vehicle/+/name",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/vehicle/+/color",
 					"priority": 0,
 					"allow": true
 				}
@@ -875,6 +893,12 @@
 				},
 				{
 					"acltype": "publishClientReceive",
+					"topic": "openWB/vehicle/+/color",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
 					"topic": "openWB/vehicle/+/name",
 					"priority": 0,
 					"allow": true
@@ -1120,12 +1144,6 @@
 					"topic": "openWB/general/chargemode_config/pv_charging/switch_off_delay",
 					"priority": 0,
 					"allow": true
-				},
-				{
-					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/phases_to_use",
-					"priority": 0,
-					"allow": true
 				}
 			]
 		},
@@ -1161,12 +1179,6 @@
 				{
 					"acltype": "publishClientSend",
 					"topic": "openWB/set/bat/config/bat_control_min_soc",
-					"priority": 0,
-					"allow": true
-				},
-				{
-					"acltype": "publishClientSend",
-					"topic": "openWB/set/bat/config/bat_control_permitted",
 					"priority": 0,
 					"allow": true
 				},
@@ -1293,12 +1305,6 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/bat/config/bat_control_min_soc",
-					"priority": 0,
-					"allow": true
-				},
-				{
-					"acltype": "publishClientReceive",
-					"topic": "openWB/bat/config/bat_control_permitted",
 					"priority": 0,
 					"allow": true
 				},
@@ -1449,6 +1455,12 @@
 				},
 				{
 					"acltype": "publishClientReceive",
+					"topic": "openWB/counter/get/hierarchy",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
 					"topic": "openWB/system/device/+/config",
 					"priority": 0,
 					"allow": true
@@ -1464,6 +1476,12 @@
 					"topic": "openWB/system/configurable/devices_components",
 					"priority": 0,
 					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/chargepoint/+/config",
+					"priority": 0,
+					"allow": true
 				}
 			]
 		},
@@ -1472,6 +1490,12 @@
 			"textname": "Zugang zu den Einstellungen des Lastmanagements",
 			"textdescription": "Erlaubt den Zugang zu den Einstellungen des Lastmanagements.",
 			"acls": [
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/bat/+/config/max_power",
+					"priority": 0,
+					"allow": true
+				},
 				{
 					"acltype": "publishClientSend",
 					"topic": "openWB/set/counter/config/home_consumption_source_id",
@@ -1517,6 +1541,12 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/access/LoadManagementConfiguration",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/bat/+/config/max_power",
 					"priority": 0,
 					"allow": true
 				},
@@ -1770,6 +1800,12 @@
 				},
 				{
 					"acltype": "publishClientSend",
+					"topic": "openWB/set/vehicle/+/color",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
 					"topic": "openWB/set/vehicle/+/charge_template",
 					"priority": 0,
 					"allow": true
@@ -1843,6 +1879,12 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/vehicle/+/info",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/vehicle/+/color",
 					"priority": 0,
 					"allow": true
 				},
@@ -2488,6 +2530,12 @@
 				},
 				{
 					"acltype": "publishClientSend",
+					"topic": "openWB/set/system/pnp_ip",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
 					"topic": "openWB/set/system/secondary_auto_update",
 					"priority": 0,
 					"allow": true
@@ -2555,6 +2603,12 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/mac_address",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/pnp_ip",
 					"priority": 0,
 					"allow": true
 				},
@@ -2754,6 +2808,19 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/chargepoint/get/+",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "tenant-energy-configuration-access",
+			"textname": "Leserechte für Mieterstromdaten",
+			"textdescription": "Erlaubt das Empfangen von Mieterstrom Daten.",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/access/TenantEnergyConfiguration",
 					"priority": 0,
 					"allow": true
 				}

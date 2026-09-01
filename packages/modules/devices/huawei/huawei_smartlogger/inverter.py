@@ -9,8 +9,10 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType
 from modules.common.simcount import SimCounter
-from modules.common.store import get_inverter_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.huawei.huawei_smartlogger.config import Huawei_SmartloggerInverterSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -28,14 +30,17 @@ class Huawei_SmartloggerInverter(AbstractInverter):
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
         self.client: modbus.ModbusTcpClient_ = self.kwargs['tcp_client']
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
-        self.store = get_inverter_value_store(self.component_config.id)
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, self.component_config.type)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         modbus_id = self.component_config.configuration.modbus_id
         power = self.client.read_holding_registers(32080, ModbusDataType.INT_32, unit=modbus_id) * -1
         exported = self.client.read_holding_registers(32106, ModbusDataType.INT_32, unit=modbus_id) * 10
+
+        _, exported = self.peak_filter.check_values(power, None, exported)
         inverter_state = InverterState(
             power=power,
             exported=exported

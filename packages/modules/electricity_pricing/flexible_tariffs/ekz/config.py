@@ -1,16 +1,16 @@
+from dataclasses import dataclass, field
+
+
+@dataclass
 class EkzTariffConfiguration:
-    def __init__(self):
-        self.country = "ch"
-        self.unit = "Rp"
+    country: str = "ch"
+    unit: str = "Rp"
+    update_hours: list[int] = field(default_factory=lambda: [18, 19])
 
 
+@dataclass
 class EkzTariff:
-    def __init__(self,
-                 name: str = "EKZ (CH)",
-                 type: str = "ekz",
-                 official: bool = False,
-                 configuration: EkzTariffConfiguration = None) -> None:
-        self.name = name
-        self.type = type
-        self.official = official
-        self.configuration = configuration or EkzTariffConfiguration()
+    name: str = "EKZ (CH)"
+    type: str = "ekz"
+    official: bool = False
+    configuration: EkzTariffConfiguration = field(default_factory=EkzTariffConfiguration)

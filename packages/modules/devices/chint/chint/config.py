@@ -38,5 +38,6 @@ class CHINTCounterSetup(ComponentSetup[CHINTCounterConfiguration]):
                  name: str = "CHINT DTSU666 Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: CHINTCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or CHINTCounterConfiguration())
+                 configuration: CHINTCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or CHINTCounterConfiguration(), **kwargs)

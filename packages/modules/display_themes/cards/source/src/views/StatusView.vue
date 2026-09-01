@@ -25,7 +25,7 @@ export default {
 </script>
 
 <template>
-  <dashboard-card color="primary">
+  <dashboard-card color="dark">
     <template #headerLeft>
       Status
     </template>

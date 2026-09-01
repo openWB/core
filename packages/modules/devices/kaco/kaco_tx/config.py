@@ -33,5 +33,6 @@ class KacoInverterSetup(ComponentSetup[KacoInverterConfiguration]):
                  name: str = "Kaco Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: KacoInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or KacoInverterConfiguration())
+                 configuration: KacoInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or KacoInverterConfiguration(), **kwargs)

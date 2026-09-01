@@ -1,8 +1,10 @@
 <template>
   <q-card
     ref="cardRef"
-    class="card-width"
-    :class="{ 'full-height': props.fullHeight }"
+    class="vehicle-card"
+    :class="{
+      'full-height': props.fullHeight,
+    }"
   >
     <q-card-section class="row no-wrap">
       <div class="text-h6 text-bold ellipsis" :title="vehicle?.name">
@@ -104,11 +106,18 @@ const refreshSoc = () => {
     message: 'SoC Update angefordert.',
   });
 };
+
+const vehicleColor = computed(() => {
+  return mqttStore.vehicleColor(props.vehicleId) || 'var(--q-vehicle-stroke)';
+});
 </script>
 
 <style lang="scss" scoped>
-.card-width {
+.vehicle-card {
   width: 22em;
+  border: none;
+  border-left: 4px solid v-bind(vehicleColor);
+  border-radius: 15px;
 }
 
 .q-card__section {

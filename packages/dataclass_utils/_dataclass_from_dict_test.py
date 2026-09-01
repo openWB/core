@@ -1,8 +1,10 @@
+from dataclasses import dataclass, field
 from typing import Dict, Generic, Optional, Type, TypeVar
 
 import pytest
 
 from dataclass_utils import dataclass_from_dict
+from dataclass_utils.conftest import MyDataclass
 
 T = TypeVar('T')
 
@@ -39,6 +41,12 @@ class GenericDict:
     def __init__(self, a: str, o: Dict[int, float] = None):
         self.a = a
         self.o = o
+
+
+@dataclass
+class DataclassWithDefaultFactoryList:
+    values: list[int] = field(default_factory=lambda: [14])
+    name: str = "default-name"
 
 
 def test_from_dict_simple():
@@ -125,3 +133,78 @@ def test_from_dict_without_optional():
     # evaluation
     assert actual.a == "aValue"
     assert actual.o is None
+
+
+def test_from_dict_dataclass_uses_default_factory_if_key_missing():
+    # execution
+    actual = dataclass_from_dict(DataclassWithDefaultFactoryList, {"name": "configured"})
+    default_instance = DataclassWithDefaultFactoryList()
+
+    # evaluation
+    assert actual.name == "configured"
+    assert actual.values == default_instance.values  # vergleicht die Werte
+    assert actual.values is not default_instance.values  # vergleicht die Instanzen
+
+
+MY_DATACLASS_AS_DICT = {
+    "str_value": "string_value",
+    "float_value": 5.2,
+    "int_value": 6,
+    "enum_value": "value1",
+    "nested_dataclass": {
+        "nested_str": "nested string",
+        "nested_int": 42
+    },
+    "nested_dataclass_enum_value": {
+        "D1": "value1",
+        "D2": "value2"
+    },
+    "dict_value": {"a": "a", "b": 2},
+    "dict2_value": {"a": 1, "b": 2},
+    "list_value": ["a", 2, None],
+    "list2_value": ["a", 2, None],
+    "tuple_value": (None, "a", 2),
+    "tuple2_value": (None, "a", 2),
+
+    "optional_str_value": "string_value",
+    "optional_float_value": 5.2,
+    "optional_int_value": 6,
+    "optional_enum_value": "value1",
+    "optional_nested_dataclass": {
+        "nested_str": "nested string",
+        "nested_int": 42
+    },
+    "optional_nested_dataclass_enum_value": {
+        "D1": "value1",
+        "D2": "value2"
+    },
+    "optional_dict_value": {"a": "a", "b": 2},
+    "optional_dict2_value": {"a": 1, "b": 2},
+    "optional_list_value": ["a", 2, None],
+    "optional_list2_value": ["a", 2, None],
+    "optional_tuple_value": (None, "a", 2),
+    "optional_tuple2_value": (None, "a", 2),
+
+    "none_str_value": None,
+    "none_float_value": None,
+    "none_int_value": None,
+    "none_enum_value": None,
+    "none_nested_dataclass": None,
+    "none_nested_dataclass_enum_value": None,
+    "none_dict_of_dataclass_value": None,
+    "none_dict_value": None,
+    "none_dict2_value": None,
+    "none_list_value": None,
+    "none_list2_value": None,
+    "none_tuple_value": None,
+    "none_tuple2_value": None,
+
+}
+
+
+def test_dataclass_from_dict():
+    # execution
+    actual_dict = dataclass_from_dict(MyDataclass, MY_DATACLASS_AS_DICT)
+
+    # evaluation
+    assert vars(actual_dict) == vars(MyDataclass())

@@ -56,6 +56,8 @@ export default {
       modalVehicleId: 0,
       modalActiveTab: "tab-general",
       modalManualSocInputVisible: false,
+      modalScheduledPlanVisible: false,
+      modalScheduledPlanKey: null,
     };
   },
   computed: {
@@ -65,7 +67,17 @@ export default {
           chargePointId,
         ) === true;
       };
-    }
+    },
+    selectedScheduledPlan() {
+      if (this.modalScheduledPlanKey === null) {
+        return null;
+      }
+      const plans =
+        this.mqttStore.getChargePointConnectedVehicleScheduledChargingPlans(
+          this.modalChargePointId,
+        );
+      return plans ? plans[this.modalScheduledPlanKey] : null;
+    },
   },
   watch: {
     changesLocked(newValue, oldValue) {
@@ -75,6 +87,7 @@ export default {
         this.modalVehicleSelectVisible = false;
         this.modalChargePointSettingsVisible = false;
         this.modalManualSocInputVisible = false;
+        this.modalScheduledPlanVisible = false;
       }
     },
   },
@@ -371,6 +384,49 @@ export default {
         template,
       );
     },
+    openScheduledPlanDialog(planKey) {
+      this.modalScheduledPlanKey = planKey;
+      this.modalScheduledPlanVisible = true;
+    },
+    scheduledChargingPlanHours(time) {
+      return parseInt(time.split(":")[0], 10);
+    },
+    scheduledChargingPlanMinutes(time) {
+      return parseInt(time.split(":")[1], 10);
+    },
+    setChargePointConnectedVehicleScheduledChargingPlanTime(
+      id,
+      plan_id,
+      hours,
+      minutes,
+    ) {
+      const newTime = `${String(hours).padStart(2, "0")}:${String(minutes,).padStart(2, "0")}`;
+      const templateTopic = `openWB/chargepoint/${id}/set/charge_template`;
+      const template = this.mqttStore.updateState(
+        templateTopic,
+        newTime,
+        `chargemode.scheduled_charging.plans.${plan_id}.time`,
+      );
+      this.$root.sendTopicToBroker(templateTopic, template);
+    },
+    setChargePointConnectedVehicleScheduledChargingPlanSoc(id, plan_id, soc) {
+      this.updateChargePointChargeTemplate(
+        id,
+        parseInt(soc),
+        `chargemode.scheduled_charging.plans.${plan_id}.limit.soc_scheduled`,
+      );
+    },
+    setChargePointConnectedVehicleScheduledChargingPlanAmount(
+      id,
+      plan_id,
+      amount,
+    ) {
+      this.updateChargePointChargeTemplate(
+        id,
+        amount,
+        `chargemode.scheduled_charging.plans.${plan_id}.limit.amount`,
+      );
+    },
   },
 };
 </script>
@@ -405,6 +461,7 @@ export default {
   <i-modal
     v-model="modalChargePointSettingsVisible"
     size="lg"
+    :hide-on-click-outside="false"
   >
     <template #header>
       Einstellungen für Fahrzeug "{{
@@ -1287,7 +1344,7 @@ export default {
           Es wurden noch keine Zeitpläne für das Zielladen eingerichtet.
         </i-alert>
         <i-form v-else>
-          <i-form-group
+          <div
             v-for="(
               plan, planKey
             ) in mqttStore.getChargePointConnectedVehicleScheduledChargingPlans(
@@ -1295,76 +1352,72 @@ export default {
             )"
             :key="planKey"
           >
-            <i-container>
-              <i-row>
-                <i-button
-                  size="lg"
-                  block
-                  :color="plan.active ? 'success' : 'danger'"
-                  @click="
-                    setChargePointConnectedVehicleScheduledChargingPlanActive(
-                      modalChargePointId,
-                      planKey,
-                      !plan.active,
-                    )
-                  "
-                >
-                  <div class="plan-name">
-                    {{ plan.name }}
-                  </div>
-                  <div class="plan-details">
-                    <div v-if="plan.frequency.selected == 'once'">
-                      <font-awesome-icon
-                        :icon="['fas', 'calendar-day']"
-                      />
-                      {{ mqttStore.formatDate(plan.frequency.once) }}
+            <i-form-group class="_margin-bottom:2">
+              <i-container>
+                <i-row>
+                  <i-button
+                    size="lg"
+                    block
+                    :color="plan.active ? 'success' : 'danger'"
+                    @click="openScheduledPlanDialog(planKey)"
+                  >
+                    <div class="plan-name">
+                      {{ plan.name }}
                     </div>
-                    <div v-if="plan.frequency.selected == 'daily'">
-                      <font-awesome-icon
-                        :icon="['fas', 'calendar-week']"
-                      />
-                      täglich
+                    <div class="plan-details">
+                      <div v-if="plan.frequency.selected == 'once'">
+                        <font-awesome-icon
+                          :icon="['fas', 'calendar-day']"
+                        />
+                        {{ mqttStore.formatDate(plan.frequency.once) }}
+                      </div>
+                      <div v-if="plan.frequency.selected == 'daily'">
+                        <font-awesome-icon
+                          :icon="['fas', 'calendar-week']"
+                        />
+                        täglich
+                      </div>
+                      <div v-if="plan.frequency.selected == 'weekly'">
+                        <font-awesome-icon
+                          :icon="['fas', 'calendar-alt']"
+                        />
+                        {{
+                          mqttStore.formatWeeklyScheduleDays(plan.frequency.weekly)
+                        }}
+                      </div>
+                      <div>
+                        <font-awesome-icon
+                          :icon="['fas', 'clock']"
+                        />
+                        {{ plan.time }}
+                      </div>
+                      <div v-if="plan.limit.selected == 'soc'">
+                        <font-awesome-icon
+                          :icon="['fas', 'car-battery']"
+                        />
+                        {{ plan.limit.soc_scheduled }}&nbsp;%
+                        <font-awesome-icon
+                          :icon="['fas', plan.bidi_charging_enabled ? 'right-left' : 'right-long']"
+                        />
+                        {{ plan.limit.soc_limit }}&nbsp;%
+                      </div>
+                      <div v-if="plan.limit.selected == 'amount'">
+                        <font-awesome-icon
+                          :icon="['fas', 'bolt']"
+                        />
+                        {{ plan.limit.amount / 1000 }}&nbsp;kWh
+                      </div>
+                      <div v-if="plan.et_active">
+                        <font-awesome-icon
+                          :icon="['fas', 'coins']"
+                        />
+                      </div>
                     </div>
-                    <div v-if="plan.frequency.selected == 'weekly'">
-                      <font-awesome-icon
-                        :icon="['fas', 'calendar-alt']"
-                      />
-                      {{
-                        mqttStore.formatWeeklyScheduleDays(plan.frequency.weekly)
-                      }}
-                    </div>
-                    <div>
-                      <font-awesome-icon
-                        :icon="['fas', 'clock']"
-                      />
-                      {{ plan.time }}
-                    </div>
-                    <div v-if="plan.limit.selected == 'soc'">
-                      <font-awesome-icon
-                        :icon="['fas', 'car-battery']"
-                      />
-                      {{ plan.limit.soc_scheduled }}&nbsp;%
-                      <font-awesome-icon
-                        :icon="['fas', plan.bidi_charging_enabled ? 'right-left' : 'right-long']"
-                      />
-                      {{ plan.limit.soc_limit }}&nbsp;%
-                    </div>
-                    <div v-if="plan.limit.selected == 'amount'">
-                      <font-awesome-icon
-                        :icon="['fas', 'bolt']"
-                      />
-                      {{ plan.limit.amount / 1000 }}&nbsp;kWh
-                    </div>
-                    <div v-if="plan.et_active">
-                      <font-awesome-icon
-                        :icon="['fas', 'coins']"
-                      />
-                    </div>
-                  </div>
-                </i-button>
-              </i-row>
-            </i-container>
-          </i-form-group>
+                  </i-button>
+                </i-row>
+              </i-container>
+            </i-form-group>
+          </div>
         </i-form>
       </i-tab>
       <i-tab
@@ -1504,6 +1557,123 @@ export default {
     </i-tabs>
   </i-modal>
   <!-- end charge point settings modal-->
+  <!-- scheduled charging plan dialog -->
+  <i-modal
+    v-model="modalScheduledPlanVisible"
+    size="md"
+  >
+    <template #header>
+      {{ selectedScheduledPlan ? selectedScheduledPlan.name : "" }}
+    </template>
+    <i-form v-if="selectedScheduledPlan">
+      <i-form-group class="_margin-bottom:2">
+        <i-form-label>Plan aktiv</i-form-label>
+        <i-button-group block>
+          <i-button
+            :color="!selectedScheduledPlan.active ? 'danger' : ''"
+            @click="
+              setChargePointConnectedVehicleScheduledChargingPlanActive(
+                modalChargePointId,
+                modalScheduledPlanKey,
+                false,
+              )
+            "
+          >
+            Nein
+          </i-button>
+          <i-button
+            :color="selectedScheduledPlan.active ? 'success' : ''"
+            @click="
+              setChargePointConnectedVehicleScheduledChargingPlanActive(
+                modalChargePointId,
+                modalScheduledPlanKey,
+                true,
+              )
+            "
+          >
+            Ja
+          </i-button>
+        </i-button-group>
+      </i-form-group>
+      <i-form-group class="_margin-bottom:2">
+        <i-form-label>Ziel-Termin</i-form-label>
+        <i-row>
+          <i-column class="_margin-bottom:1">
+            <extended-number-input
+              unit="Uhr"
+              :min="0"
+              :max="23"
+              :step="1"
+              :model-value="
+                scheduledChargingPlanHours(selectedScheduledPlan.time)
+              "
+              @update:model-value="
+                setChargePointConnectedVehicleScheduledChargingPlanTime(
+                  modalChargePointId,
+                  modalScheduledPlanKey,
+                  $event,
+                  scheduledChargingPlanMinutes(selectedScheduledPlan.time),
+                )
+              "
+            />
+          </i-column>
+          <i-column class="_margin-bottom:1">
+            <extended-number-input
+              unit="Min."
+              :min="0"
+              :max="55"
+              :step="5"
+              :model-value="
+                scheduledChargingPlanMinutes(selectedScheduledPlan.time)
+              "
+              @update:model-value="
+                setChargePointConnectedVehicleScheduledChargingPlanTime(
+                  modalChargePointId,
+                  modalScheduledPlanKey,
+                  scheduledChargingPlanHours(selectedScheduledPlan.time),
+                  $event,
+                )
+              "
+            />
+          </i-column>
+        </i-row>
+      </i-form-group>
+      <i-form-group v-if="selectedScheduledPlan.limit.selected == 'soc'">
+        <i-form-label>Ziel-SoC</i-form-label>
+        <extended-number-input
+          unit="%"
+          :min="5"
+          :max="100"
+          :step="5"
+          :model-value="selectedScheduledPlan.limit.soc_scheduled"
+          @update:model-value="
+            setChargePointConnectedVehicleScheduledChargingPlanSoc(
+              modalChargePointId,
+              modalScheduledPlanKey,
+              $event,
+            )
+          "
+        />
+      </i-form-group>
+      <i-form-group v-else>
+        <i-form-label>Ziel-Energie</i-form-label>
+        <extended-number-input
+          unit="kWh"
+          :min="1"
+          :max="100"
+          :step="5"
+          :model-value="selectedScheduledPlan.limit.amount / 1000"
+          @update:model-value="
+            setChargePointConnectedVehicleScheduledChargingPlanAmount(
+              modalChargePointId,
+              modalScheduledPlanKey,
+              $event * 1000,
+            )
+          "
+        />
+      </i-form-group>
+    </i-form>
+  </i-modal>
   <!-- manual soc input -->
   <manual-soc-input
     v-model="modalManualSocInputVisible"

@@ -30,7 +30,7 @@ export class ChargePoint implements PowerItem {
 	private _hasPriority = false
 	currentPlan = ''
 	averageConsumption = 0
-	vehicleName = ''
+	private _vehicleName = ''
 	rangeCharged = 0
 	rangeUnit = ''
 	counter = 0
@@ -91,6 +91,12 @@ export class ChargePoint implements PowerItem {
 
 	constructor(index: number) {
 		this.id = index
+	}
+	get vehicleName() {
+		return vehicles[this.connectedVehicle]?.name ?? ''
+	}
+	set vehicleName(name: string) {
+		this._vehicleName = name
 	}
 	get isLocked() {
 		return this._isLocked
@@ -167,7 +173,7 @@ export class ChargePoint implements PowerItem {
 			this.chargeTemplate?.chargemode.instant_charging.limit.selected ?? 'none'
 		)
 	}
-	set instantChargeLimitMode(mode: string) {
+	set instantChargeLimitMode(mode: 'none' | 'soc' | 'amount') {
 		if (this.chargeTemplate) {
 			this.chargeTemplate.chargemode.instant_charging.limit.selected = mode
 			updateChargeTemplate(this.id)
@@ -260,7 +266,7 @@ export class ChargePoint implements PowerItem {
 	get pvChargeLimitMode() {
 		return this.chargeTemplate?.chargemode.pv_charging.limit.selected ?? 'none'
 	}
-	set pvChargeLimitMode(mode: string) {
+	set pvChargeLimitMode(mode: 'none' | 'soc' | 'amount') {
 		if (this.chargeTemplate) {
 			this.chargeTemplate.chargemode.pv_charging.limit.selected = mode
 			updateChargeTemplate(this.id)
@@ -314,7 +320,7 @@ export class ChargePoint implements PowerItem {
 	get ecoChargeLimitMode() {
 		return this.chargeTemplate?.chargemode.eco_charging.limit.selected ?? 'none'
 	}
-	set ecoChargeLimitMode(mode: string) {
+	set ecoChargeLimitMode(mode: 'none' | 'soc' | 'amount') {
 		if (this.chargeTemplate) {
 			this.chargeTemplate.chargemode.eco_charging.limit.selected = mode
 			updateChargeTemplate(this.id)
@@ -471,6 +477,12 @@ export interface ChargeSchedule {
 		weekly: [boolean, boolean, boolean, boolean, boolean, boolean, boolean]
 	}
 }
+export interface ChargeLimit {
+	selected: 'none' | 'soc' | 'amount'
+	amount: number
+	soc: number
+}
+
 export interface ChargeTemplate {
 	id: number
 	name: string
@@ -485,11 +497,7 @@ export interface ChargeTemplate {
 		eco_charging: {
 			current: number
 			dc_current: number
-			limit: {
-				selected: string
-				soc: number
-				amount: number
-			}
+			limit: ChargeLimit
 			max_price: number
 			phases_to_use: number
 		}
@@ -497,11 +505,7 @@ export interface ChargeTemplate {
 			dc_min_current: number
 			dc_min_soc_current: number
 			feed_in_limit: boolean
-			limit: {
-				selected: string
-				amount: number
-				soc: number
-			}
+			limit: ChargeLimit
 			min_current: number
 			min_soc_current: number
 			min_soc: number
@@ -514,11 +518,7 @@ export interface ChargeTemplate {
 		instant_charging: {
 			current: number
 			dc_current: number
-			limit: {
-				selected: string
-				soc: number
-				amount: number
-			}
+			limit: ChargeLimit
 			phases_to_use: number
 		}
 	}
@@ -535,6 +535,7 @@ export interface EvTemplate {
 	min_current: number
 	max_current_one_phase: number
 	battery_capacity: number
+	efficiency: number
 	nominal_difference: number
 	request_interval_charging: number
 	request_interval_not_charging: number
@@ -575,37 +576,22 @@ export function resetChargePoints() {
 }
 
 export const topVehicles = computed(() => {
-	const result: number[] = []
-	const cps = Object.values(chargePoints)
-	const vhcls = Object.values(vehicles).filter((v) => v.visible)
-	// vehicle 1
-	let v1 = -1
-	switch (cps.length) {
-		case 0:
-			v1 = vhcls[0] ? vhcls[0].id : -1
-			break
-		default:
-			v1 = cps[0].connectedVehicle //?? vhcls[0] ? vhcls[0].id : -1
-	}
-	// vehicle 2
-	let v2 = -1
-	switch (cps.length) {
-		case 0:
-		case 1:
-			v2 = vhcls[0] ? vhcls[0].id : -1
-			break
-		default:
-			v2 = cps[1].connectedVehicle //?? vhcls[1] ? vhcls[1].id : -1
-	}
-	// change v2 if the same as v1
-	if (v1 == v2) {
-		v2 = vhcls[1] ? vhcls[1].id : -1
-	}
-	if (v1 != -1) {
-		result.push(v1)
-	}
-	if (v2 != -1) {
-		result.push(v2)
+	let result: number[] = []
+	const connectedVehicles = Object.values(chargePoints)
+		.filter(
+			(cp) =>
+				vehicles[cp.connectedVehicle] &&
+				vehicles[cp.connectedVehicle].isSocConfigured,
+		)
+		.map((cp) => cp.connectedVehicle)
+	const otherVehicles = Object.values(vehicles).filter(
+		(v) => v.visible && v.isSocConfigured && !connectedVehicles.includes(v.id),
+	) // only show vehicles with configured soc and that are visible
+	result = connectedVehicles.concat(otherVehicles.map((v) => v.id)).slice(0, 2)
+	if (result.length == 0) {
+		result = [-1, -1]
+	} else if (result.length == 1) {
+		result.push(-1)
 	}
 	return result
 })

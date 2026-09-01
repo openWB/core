@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Final
 
 from control import data
 from control.algorithm import common
@@ -19,6 +19,8 @@ from helpermodules.phase_handling import voltages_mean
 
 
 log = logging.getLogger(__name__)
+
+MAX_EVSE_CURRENT_CHANGE: Final[float] = 2  # Ampere
 
 
 class SurplusControlled:
@@ -61,7 +63,9 @@ class SurplusControlled:
                 cp,
                 feed_in=feed_in_yield
             )
-            cp.data.control_parameter.limit = limit
+            # im PV-Laden wird der Strom immer durch die Leistung begrenzt
+            if limit.limiting_value is not None and limit.limiting_value != LimitingValue.POWER:
+                cp.data.control_parameter.limit = limit
             available_for_cp = common.available_current_for_cp(cp, counts, available_currents, missing_currents)
             if counter.get_control_range_state(feed_in_yield) == ControlRangeState.MIDDLE:
                 pv_charging = data.data.general_data.data.chargemode_config.pv_charging
@@ -116,8 +120,9 @@ class SurplusControlled:
         nicht erreicht wird.
         Wenn die Soll-Stromstärke nicht angepasst worden ist, nicht den ungenutzten EVSE-Strom aufschlagen."""
         evse_current = chargepoint.data.get.evse_current
-        if evse_current and chargepoint.data.set.current != chargepoint.data.set.current_prev:
+        if evse_current is not None and chargepoint.data.set.current != chargepoint.data.set.current_prev:
             offset = evse_current - get_medium_charging_current(chargepoint.data.get.currents)
+            offset = min(offset, MAX_EVSE_CURRENT_CHANGE)
             current_with_offset = chargepoint.data.set.current + offset
             current = min(current_with_offset, chargepoint.data.control_parameter.required_current)
             if current != chargepoint.data.set.current:
@@ -205,11 +210,9 @@ def limit_adjust_current(chargepoint: Chargepoint, new_current: float) -> float:
         else:
             if new_current < get_medium_charging_current(chargepoint.data.get.currents):
                 current = get_medium_charging_current(chargepoint.data.get.currents) - MAX_CURRENT
-                msg = f"Es darf um max {MAX_CURRENT}A unter den aktuell genutzten Strom geregelt werden."
 
             else:
                 current = get_medium_charging_current(chargepoint.data.get.currents) + MAX_CURRENT
-                msg = f"Es darf um max {MAX_CURRENT}A über den aktuell genutzten Strom geregelt werden."
         chargepoint.set_state_and_log(msg)
         return max(current,
                    chargepoint.data.control_parameter.min_current,

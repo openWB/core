@@ -32,6 +32,7 @@ export const masterData: { [key: string]: ItemProps } = reactive({
 	counters: { name: 'Zähler', color: 'var(--color-counters)', icon: '\uf0eb' },
 	batIn: { name: '> Bat', color: 'var(--color-battery)', icon: '\uf061\uf5df' },
 	house: { name: 'Haus', color: 'var(--color-house)', icon: '\uf015' },
+	price: { name: 'Strompreis', color: 'crimson', icon: '\uf0d6' },
 })
 export const colormap: Map<string, string[]> = new Map([
 	[

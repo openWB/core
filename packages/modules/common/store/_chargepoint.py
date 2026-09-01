@@ -2,22 +2,6 @@ from modules.common.component_state import ChargepointState
 from modules.common.store import ValueStore
 from modules.common.store._api import LoggingValueStore
 from modules.common.store._broker import pub_to_broker
-from modules.common.store.ramdisk import files
-from helpermodules import compatibility
-
-
-class ChargepointValueStoreRamdisk(ValueStore[ChargepointState]):
-    def __init__(self, cp_id: int):
-        self.num = cp_id
-
-    def set(self, cp_state: ChargepointState):
-        charge_point = files.charge_points[self.num]
-        charge_point.is_charging.write(cp_state.charge_state)
-        charge_point.voltages.write(cp_state.voltages)
-        charge_point.currents.write(cp_state.currents)
-        charge_point.energy.write(cp_state.imported/1000)
-        charge_point.is_plugged.write(cp_state.plug_state)
-        charge_point.power.write(int(cp_state.power))
 
 
 class ChargepointValueStoreBroker(ValueStore[ChargepointState]):
@@ -48,7 +32,8 @@ class ChargepointValueStoreBroker(ValueStore[ChargepointState]):
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/charge_state", self.state.charge_state, 2)
         if self.state.plug_state is not None:
             pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/plug_state", self.state.plug_state, 2)
-        pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/rfid", self.state.rfid)
+        if self.state.rfid is not None:
+            pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/rfid", self.state.rfid)
         if self.state.rfid_timestamp is not None:
             pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/rfid_timestamp", self.state.rfid_timestamp)
         pub_to_broker("openWB/set/chargepoint/" + str(self.num) + "/get/serial_number", self.state.serial_number)
@@ -67,6 +52,4 @@ class ChargepointValueStoreBroker(ValueStore[ChargepointState]):
 
 
 def get_chargepoint_value_store(id: int) -> ValueStore[ChargepointState]:
-    return LoggingValueStore(
-        ChargepointValueStoreRamdisk(id) if compatibility.is_ramdisk_in_use() else ChargepointValueStoreBroker(id)
-    )
+    return LoggingValueStore(ChargepointValueStoreBroker(id))

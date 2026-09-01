@@ -43,7 +43,7 @@ export default {
       Hausverbrauch
     </template>
     <template #headerRight>
-      {{ homePower.value.textValue }}
+      {{ homePower.textValue }}
     </template>
     <spark-line
       color="var(--color--light)"

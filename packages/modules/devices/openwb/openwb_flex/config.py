@@ -37,8 +37,9 @@ class BatKitFlexSetup(ComponentSetup[BatKitFlexConfiguration]):
                  name: str = "openWB Speicher-Kit flex",
                  type: str = "bat",
                  id: int = 0,
-                 configuration: BatKitFlexConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or BatKitFlexConfiguration())
+                 configuration: BatKitFlexConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or BatKitFlexConfiguration(), **kwargs)
 
 
 class EvuKitFlexConfiguration:
@@ -52,8 +53,9 @@ class EvuKitFlexSetup(ComponentSetup[EvuKitFlexConfiguration]):
                  name: str = "openWB EVU-Kit flex",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: EvuKitFlexConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or EvuKitFlexConfiguration())
+                 configuration: EvuKitFlexConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or EvuKitFlexConfiguration(), **kwargs)
 
 
 class ConsumptionCounterFlexConfiguration:
@@ -67,8 +69,9 @@ class ConsumptionCounterFlexSetup(ComponentSetup[ConsumptionCounterFlexConfigura
                  name: str = "openWB Verbrauchszähler flex",
                  type: str = "consumption_counter",
                  id: int = 0,
-                 configuration: ConsumptionCounterFlexConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or ConsumptionCounterFlexConfiguration())
+                 configuration: ConsumptionCounterFlexConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or ConsumptionCounterFlexConfiguration(), **kwargs)
 
 
 class PvKitFlexConfiguration:
@@ -82,8 +85,9 @@ class PvKitFlexSetup(ComponentSetup[PvKitFlexConfiguration]):
                  name: str = "openWB PV-Kit flex",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: PvKitFlexConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or PvKitFlexConfiguration())
+                 configuration: PvKitFlexConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or PvKitFlexConfiguration(), **kwargs)
 
 
 @overload

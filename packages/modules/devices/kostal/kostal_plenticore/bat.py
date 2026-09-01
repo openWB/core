@@ -9,8 +9,10 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount import SimCounter
-from modules.common.store import get_bat_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.kostal.kostal_plenticore.config import KostalPlenticoreBatSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -18,7 +20,6 @@ log = logging.getLogger(__name__)
 class KwargsDict(TypedDict):
     device_id: int
     modbus_id: int
-    endianess: Endian
     client: ModbusTcpClient_
 
 
@@ -30,24 +31,29 @@ class KostalPlenticoreBat(AbstractBat):
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
         self.modbus_id: int = self.kwargs['modbus_id']
-        self.endianess: Endian = self.kwargs['endianess']
         self.client: ModbusTcpClient_ = self.kwargs['client']
-        self.store = get_bat_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, self.component_config.type)
 
     def update(self) -> None:
         power = self.client.read_holding_registers(
-            582, ModbusDataType.INT_16, unit=self.modbus_id, wordorder=self.endianess) * -1
+            582, ModbusDataType.INT_16, unit=self.modbus_id, wordorder=Endian.Little) * -1
         soc = self.client.read_holding_registers(
-            514, ModbusDataType.INT_16, unit=self.modbus_id, wordorder=self.endianess)
+            514, ModbusDataType.INT_16, unit=self.modbus_id, wordorder=Endian.Little)
         if power < 0:
             power = self.client.read_holding_registers(
-                106, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=self.endianess) * -1
-        imported, exported = self.sim_counter.sim_count(power)
+                106, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=Endian.Little) * -1
+        bat_current = self.client.read_holding_registers(200, ModbusDataType.FLOAT_32,
+                                                         unit=self.modbus_id, wordorder=Endian.Little) * -1
+        currents = [bat_current / 3] * 3
 
+        self.peak_filter.check_values(power)
+        imported, exported = self.sim_counter.sim_count(power)
         bat_state = BatState(
             power=power,
+            currents=currents,
             soc=soc,
             imported=imported,
             exported=exported
@@ -69,24 +75,21 @@ class KostalPlenticoreBat(AbstractBat):
             # wiederholt auf Stop setzen damit sich Register nicht zurücksetzt
             log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt und nicht entladen")
             self.client.write_register(1034, 0.0, data_type=ModbusDataType.FLOAT_32,
-                                       wordorder=self.endianess, unit=unit)
+                                       wordorder=Endian.Little, unit=unit)
         elif power_limit < 0:
-            log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W entladen für den Hausverbrauch")
-            # Die maximale Entladeleistung begrenzen auf 7000W
-            power_value = float(min(abs(power_limit), 7000))
+            power_value = float(abs(power_limit))
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_value} W entladen für den Hausverbrauch")
             self.client.write_register(1034, power_value, data_type=ModbusDataType.FLOAT_32,
-                                       wordorder=self.endianess, unit=unit)
+                                       wordorder=Endian.Little, unit=unit)
         elif power_limit > 0:
-            log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W geladen")
-            # Die maximale Ladeleistung begrenzen auf 7000W
-            power_value = float(min(abs(power_limit), 7000)) * -1
+            power_value = float(abs(power_limit)) * -1
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_value} W geladen")
             self.client.write_register(1034, power_value, data_type=ModbusDataType.FLOAT_32,
-                                       wordorder=self.endianess, unit=unit)
+                                       wordorder=Endian.Little, unit=unit)
 
-    def power_limit_controllable(self) -> bool:
-        return True
+
+def power_limit_controllable(self) -> bool:
+    return True
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=KostalPlenticoreBatSetup)

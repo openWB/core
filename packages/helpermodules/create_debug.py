@@ -123,6 +123,7 @@ def config_and_state():
                 f"Feed_In_Yield: {chargemode_config.pv_charging.feed_in_yield}W\n"
                 f"Bat_Mode: {chargemode_config.pv_charging.bat_mode}\n"
                 f"Min_Bat_SoC: {chargemode_config.pv_charging.min_bat_soc}%\n"
+                f"Max_Bat_SoC: {chargemode_config.pv_charging.max_bat_soc}%\n"
                 f"Bat_Power_Reserve_Active: {chargemode_config.pv_charging.bat_power_reserve_active}\n"
                 f"Bat_Power_Reserve: {chargemode_config.pv_charging.bat_power_reserve}W\n"
                 f"Bat_Power_Discharge_Active: {chargemode_config.pv_charging.bat_power_discharge_active}\n"
@@ -160,32 +161,34 @@ def config_and_state():
                             elif "inverter" in comp_value.component_config.type:
                                 component_data = data.data.pv_data[f"pv{comp_value.component_config.id}"]
                             if "bat" in comp_value.component_config.type:
-                                parsed_data += (f"--| Bat_Power: {component_data.data.get.power/1000}kW\n"
-                                                f"--| Bat_SoC: {component_data.data.get.soc}%\n"
+                                parsed_data += (f"--| Bat_Power: {component_data.data.get.power/1000} kW\n"
+                                                f"--| Bat_SoC: {component_data.data.get.soc} %\n"
                                                 f"--| Bat_Error_Status: {component_data.data.get.fault_str}\n\n")
                             elif "inverter" in comp_value.component_config.type:
-                                parsed_data += (f"--| Inverter_Power: {component_data.data.get.power/1000}kW\n"
-                                                f"--| Max_AC_Out: {component_data.data.config.max_ac_out/1000}kW\n"
+                                parsed_data += (f"--| Inverter_Power: {component_data.data.get.power/1000} kW\n"
+                                                f"--| Max_AC_Out: {component_data.data.config.max_ac_out/1000} kW\n"
                                                 f"--| Inverter_Error_Status: {component_data.data.get.fault_str}\n\n")
                             else:
                                 counter_all_data = data.data.counter_all_data
                                 if counter_all_data.get_evu_counter_str() == f"counter{component_data.num}":
                                     parsed_data += ("--| Counter_Type: EVU-Zähler\n"
                                                     "--| Counter_Max_Power: "
-                                                    f"{component_data.data.config.max_total_power}\n"
+                                                    f"{component_data.data.config.max_total_power} W\n"
                                                     "--| Counter_Max_Currents: "
-                                                    f"{component_data.data.config.max_currents}\n")
+                                                    f"{component_data.data.config.max_currents} A\n"
+                                                    "--| Counter_Max_Power_Errorcase: "
+                                                    f"{component_data.data.config.max_power_errorcase} W\n")
                                 elif counter_all_data.data.config.home_consumption_source_id == component_data.num:
                                     parsed_data += ("--| Counter_Type: Hausverbrauchszähler\n"
                                                     "--| Counter_Max_Power: "
-                                                    f"{component_data.data.config.max_total_power}\n"
+                                                    f"{component_data.data.config.max_total_power} W\n"
                                                     "--| Counter_Max_Currents: "
-                                                    f"{component_data.data.config.max_currents}\n")
+                                                    f"{component_data.data.config.max_currents} A\n")
                                 else:
                                     parsed_data += ("--| Counter_Type: Sonstiger Zähler\n--| Counter_Max_Currents: "
                                                     f"{component_data.data.config.max_currents}\n")
-                                parsed_data += (f"--| Counter_Power: {component_data.data.get.power/1000}kW\n"
-                                                f"--| Counter_Currents: {component_data.data.get.currents}A\n"
+                                parsed_data += (f"--| Counter_Power: {component_data.data.get.power/1000} kW\n"
+                                                f"--| Counter_Currents: {component_data.data.get.currents} A\n"
                                                 f"--| Counter_Error_Status: {component_data.data.get.fault_str}\n\n")
             with ErrorHandlingContext():
                 parsed_data += "\n## Total Powers ##\n"
@@ -217,7 +220,7 @@ def config_and_state():
                 parsed_data += f"Home_Consumption:\n {home_consumption}\n"
             with ErrorHandlingContext():
                 parsed_data += "\n## Charge Points ##\n"
-                parsed_data += f"CP_All_Power: {data.data.cp_all_data.data.get.power / 1000}kW\n\n"
+                parsed_data += f"CP_All_Power: {data.data.cp_all_data.data.get.power / 1000} kW\n\n"
                 for cp in data.data.cp_data.values():
                     parsed_data += get_parsed_cp_data(cp)
     return parsed_data
@@ -257,7 +260,7 @@ def get_hierarchy(hierarchy, level=0):
                                         parsed_data += f"counter_type: {counter_type}, "
                                     elif "inverter" in comp_value.component_config.type:
                                         component_data = data.data.pv_data[f"pv{comp_value.component_config.id}"]
-                                        parsed_data += f"max_ac_out: {component_data.data.config.max_ac_out/1000}kW, "
+                                        parsed_data += f"max_ac_out: {component_data.data.config.max_ac_out/1000} kW, "
                                     parsed_data += f"ID: {element['id']})\n"
             except Exception:
                 parsed_data += f"{element['type']} (ID: {element['id']})\n"
@@ -423,7 +426,10 @@ def create_debug_log(input_data) -> Optional[dict]:
             write_to_file(df, lambda: "# section: form data #")
             write_to_file(df, lambda: header)
             write_to_file(df, lambda: f'# section: system #\n{get_common_data()}'
-                                      f'Kernel: {run_shell_command("uname -s -r -v -m -o")}\n'
+                                      f'Kernel: {run_shell_command("uname -s -r -v -m -o")}'
+                                      'Model: '
+                                      f'{run_shell_command("cat /proc/device-tree/model 2>/dev/null||echo unknown")}\n'
+                                      f'CID:\n{run_shell_command("mmc cid read /sys/block/mmcblk0/device")}\n'
                                       f'Uptime:{run_command(["uptime"])}{run_command(["free"])}\n')
             write_to_file(df, lambda: f'# section: hardware #\n{get_hardware_data()}')
             write_to_file(df, lambda: f'USB_Devices:\n{run_shell_command(["lsusb"])}\n')
@@ -477,7 +483,8 @@ def create_debug_log(input_data) -> Optional[dict]:
 class BrokerContent:
     def __init__(self) -> None:
         self.content = ""
-        self.count = 0
+        self.count_active = 0
+        self.count_inactive = 0
 
     def get_broker(self):
         BrokerClient("processBrokerBranch", self.__on_connect_broker, self.__get_content).start_finite_loop()
@@ -515,7 +522,8 @@ class BrokerContent:
     def get_cloud(self):
         BrokerClient("processBrokerBranch", self.__on_connect_bridges, self.__get_cloud).start_finite_loop()
         BrokerClient("processBrokerBranch", self.__on_connect_bridges, self.__get_partner).start_finite_loop()
-        self.content += f"Active_MQTT_Bridges: {self.count}\n"
+        self.content += f"Active_MQTT_Bridges: {self.count_active}\n"
+        self.content += f"Inactive_MQTT_Bridges: {self.count_inactive}\n"
         return self.content
 
     def __get_cloud(self, client, userdata, msg):
@@ -529,7 +537,10 @@ class BrokerContent:
                     else:
                         self.content += "Partnerzugang: Aus\n"
                 else:
-                    self.count += 1
+                    self.count_active += 1
+            else:
+                if not payload['remote'].get("is_openwb_cloud"):
+                    self.count_inactive += 1
 
     def __get_partner(self, client, userdata, msg):
         if "openWB/system/mqtt/valid_partner_ids" in msg.topic:

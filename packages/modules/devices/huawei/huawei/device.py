@@ -21,7 +21,6 @@ def create_device(device_config: Huawei):
     client = None
 
     def create_bat_component(component_config: HuaweiBatSetup):
-        nonlocal client
         return HuaweiBat(component_config,
                          device_id=device_config.id,
                          modbus_id=device_config.configuration.modbus_id,
@@ -29,7 +28,6 @@ def create_device(device_config: Huawei):
                          client=client)
 
     def create_counter_component(component_config: HuaweiCounterSetup):
-        nonlocal client
         return HuaweiCounter(component_config,
                              device_id=device_config.id,
                              modbus_id=device_config.configuration.modbus_id,
@@ -37,7 +35,6 @@ def create_device(device_config: Huawei):
                              client=client)
 
     def create_inverter_component(component_config: HuaweiInverterSetup):
-        nonlocal client
         return HuaweiInverter(component_config,
                               device_id=device_config.id,
                               modbus_id=device_config.configuration.modbus_id,
@@ -45,7 +42,6 @@ def create_device(device_config: Huawei):
                               client=client)
 
     def update_components(components: Iterable[Union[HuaweiBat, HuaweiCounter, HuaweiInverter]]):
-        nonlocal client
         with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):
@@ -83,4 +79,8 @@ def create_device(device_config: Huawei):
     )
 
 
-device_descriptor = DeviceDescriptor(configuration_factory=Huawei)
+device_descriptor = DeviceDescriptor(
+    configuration_factory=Huawei,
+    compatibility_device_note="Die Auslesung über den Huawei SDongle hängt von der verwendeten Dongle-Version und "
+    "Firmware ab.\nIm Falle von Inkompatibilität kann eine Auslesung über unseren Netzwerk Modbus Adapter v2 erfolgen."
+)

@@ -21,6 +21,7 @@ class ChargepointModule(AbstractChargepoint):
         self.client_error_context = ErrorTimerContext(
             f"openWB/set/chargepoint/{self.config.id}/get/error_timestamp", CP_ERROR, hide_exception=True)
         self.session = req.get_http_session()
+        self.old_phases_in_use = 3
 
     def set_current(self, current: float) -> None:
         if self.client_error_context.error_counter_exceeded():
@@ -56,7 +57,9 @@ class ChargepointModule(AbstractChargepoint):
 
                 phases_in_use = sum(1 for current in currents if current > 3)
                 if phases_in_use == 0:
-                    phases_in_use = None
+                    phases_in_use = self.old_phases_in_use
+                else:
+                    self.old_phases_in_use = phases_in_use
 
                 if json_rsp.get("voltageP1"):
                     voltages = [json_rsp["voltageP1"], json_rsp["voltageP2"], json_rsp["voltageP3"]]
@@ -97,7 +100,7 @@ class ChargepointModule(AbstractChargepoint):
                                                      imported=None,
                                                      exported=None,
                                                      currents=[0]*3,
-                                                     phases_in_use=0,
+                                                     phases_in_use=self.old_phases_in_use,
                                                      power=0)
             self.store.set(chargepoint_state)
 

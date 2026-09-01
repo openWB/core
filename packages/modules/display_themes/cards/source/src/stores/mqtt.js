@@ -19,11 +19,13 @@ export const useMqttStore = defineStore("mqtt", {
 
     getChargePointFilter: (state) => {
       let filter = [];
-      if (state.settings.parentChargePoint1 !== undefined) {
-        filter.push(state.settings.parentChargePoint1);
-      }
-      if (state.settings.parentChargePoint2 !== undefined) {
-        filter.push(state.settings.parentChargePoint2);
+      if (state.topics["openWB/optional/int_display/only_local_charge_points"] === true) {
+        if (state.settings.parentChargePoint1 !== undefined) {
+          filter.push(state.settings.parentChargePoint1);
+        }
+        if (state.settings.parentChargePoint2 !== undefined) {
+          filter.push(state.settings.parentChargePoint2);
+        }
       }
       return filter;
     },
@@ -120,6 +122,7 @@ export const useMqttStore = defineStore("mqtt", {
       ) => {
         var scaled = false;
         var value = state.topics[topic];
+        var textValue;
         if (
           value === undefined ||
           (topicElement !== undefined && value[topicElement] === undefined)
@@ -133,10 +136,6 @@ export const useMqttStore = defineStore("mqtt", {
           if (inverted) {
             value *= -1;
           }
-          var textValue = value.toLocaleString(undefined, {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-          });
           var scaledValue = value;
           while (scale && (scaledValue > 999 || scaledValue < -999)) {
             scaledValue = scaledValue / 1000;
@@ -462,6 +461,14 @@ export const useMqttStore = defineStore("mqtt", {
         return state.getChargePointName(chargePointId) !== undefined;
       };
     },
+    getChargePointFaultState(state) {
+      return (chargePointId) => {
+        if (state.topics[`openWB/chargepoint/${chargePointId}/get/fault_state`]) {
+          return state.topics[`openWB/chargepoint/${chargePointId}/get/fault_state`];
+        }
+        return 0;
+      };
+    },
     getChargePointName(state) {
       return (chargePointId) => {
         if (
@@ -470,6 +477,18 @@ export const useMqttStore = defineStore("mqtt", {
         ) {
           return state.topics[`openWB/chargepoint/${chargePointId}/config`]
             .name;
+        }
+        return undefined;
+      };
+    },
+    getChargePointColor(state) {
+      return (chargePointId) => {
+        if (
+          state.topics[`openWB/chargepoint/${chargePointId}/config`] !==
+          undefined
+        ) {
+          return state.topics[`openWB/chargepoint/${chargePointId}/config`]
+            .color;
         }
         return undefined;
       };
@@ -681,11 +700,28 @@ export const useMqttStore = defineStore("mqtt", {
         return undefined;
       };
     },
+    getChargePointConnectedVehicleColor(state) {
+      return (chargePointId) => {
+        const vehicleId = state.getChargePointConnectedVehicleId(chargePointId);
+        if (vehicleId === undefined) {
+          return undefined;
+        }
+        return state.getVehicleColor(vehicleId);
+      };
+    },
+    getVehicleColor(state) {
+      return (vehicleId) => {
+        return state.topics[
+          `openWB/vehicle/${vehicleId}/color`
+        ];
+      };
+    },
     getChargePointConnectedVehicleSoc(state) {
       return (chargePointId) => {
-        return state.topics[
+        let socState = state.topics[
           `openWB/chargepoint/${chargePointId}/get/connected_vehicle/soc`
         ];
+        return socState ? {...socState, soc: Math.round(socState.soc)} : undefined;
       };
     },
     getChargePointConnectedVehicleTimeChargingActive(state) {
@@ -1026,7 +1062,7 @@ export const useMqttStore = defineStore("mqtt", {
           .split(".")
           .reduce(
             (o, p, i) =>
-              (o[p] = path.split(".").length === ++i ? value : o[p] || {}),
+              (o[p] = path.split(".").length === i + 1 ? value : o[p] || {}),
             object,
           );
 
@@ -1092,7 +1128,7 @@ export const useMqttStore = defineStore("mqtt", {
         case "eco_charging":
           return { mode: mode, label: "Eco", class: "secondary" };
         case "stop":
-          return { mode: mode, label: "Stop", class: "dark" };
+          return { mode: mode, label: "Stop", class: "light" };
         default:
           console.warn("unknown charge mode:", mode);
           return { mode: mode, label: mode, class: mode };

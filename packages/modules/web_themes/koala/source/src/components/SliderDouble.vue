@@ -1,8 +1,8 @@
 <template>
-  <div class="double-slider-container">
+  <div>
     <div class="slider-container">
       <q-slider
-        :model-value="currentValue"
+        :model-value="props.currentValue"
         :min="0"
         :max="maxValue"
         :markers="props.limitMode == 'amount' ? 10000 : 10"
@@ -16,6 +16,7 @@
         @touchmove.stop
         @touchend.stop
       />
+      <slot name="tooltip" />
       <q-slider
         v-if="props.limitMode == 'soc'"
         v-model="target"
@@ -36,26 +37,36 @@
       <div class="col">
         <div>{{ props.limitMode == 'amount' ? 'Geladen' : 'Ladestand' }}</div>
         <div>
-          {{
-            props.limitMode == 'amount'
-              ? formatEnergy(currentValue)
-              : currentValue + '%'
-          }}
+          <slot name="value">
+            {{
+              props.limitMode === 'amount'
+                ? formatEnergy(props.currentValue)
+                : !props.vehicleSocType
+                  ? 'Kein SoC-Modul konfiguriert'
+                  : props.currentValue + '%'
+            }}
+          </slot>
           <q-icon
-            v-if="vehicleSocType === 'manual' && limitMode !== 'amount'"
+            v-if="
+              props.vehicleSocType === 'manual' && props.limitMode !== 'amount'
+            "
             name="edit"
             size="xs"
             class="q-ml-xs cursor-pointer"
-            @click="onEditSoc"
+            @click.stop="onEditSoc"
           >
             <q-tooltip>Ladestand eingeben</q-tooltip>
           </q-icon>
           <q-icon
-            v-else-if="vehicleSocType !== undefined && limitMode !== 'amount'"
+            v-else-if="
+              props.vehicleSocType &&
+              props.vehicleSocType !== 'manual' &&
+              props.limitMode !== 'amount'
+            "
             name="refresh"
             size="xs"
             class="q-ml-xs cursor-pointer"
-            @click="onRefreshSoc"
+            @click.stop="onRefreshSoc"
           >
             <q-tooltip>Ladestand aktualisieren</q-tooltip>
           </q-icon>
@@ -116,7 +127,7 @@ const props = defineProps({
   vehicleSocType: {
     type: String,
     required: false,
-    default: undefined,
+    default: null,
   },
   onEditSoc: {
     type: Function,

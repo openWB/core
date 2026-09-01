@@ -6,10 +6,12 @@ from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.store import get_counter_value_store
+from modules.common.store import get_component_value_store
 from modules.common.simcount._simcounter import SimCounter
 from modules.devices.shelly.shelly.config import ShellyCounterSetup
 from modules.devices.shelly.shelly.constants import ALPHABETICAL_INDEX
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -33,9 +35,10 @@ class ShellyCounter(AbstractCounter):
         self.factor: int = self.kwargs['factor']
         self.phase: int = self.kwargs['phase']
         self.generation: Optional[int] = self.kwargs['generation']
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
-        self.store = get_counter_value_store(self.component_config.id)
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, self.component_config.type)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         power = 0
@@ -108,9 +111,11 @@ class ShellyCounter(AbstractCounter):
                 powers[self.phase-1] = meters['apower'] * self.factor
                 voltages[self.phase-1] = meters['voltage']
                 currents[self.phase-1] = meters['current'] * self.factor
-                # power_factors[self.phase-1] = meters['pf']
+                if 'pf' in meters:
+                    power_factors[self.phase-1] = meters['pf']
                 power = meters['apower'] * self.factor
-                frequency = meters['freq']
+                if 'freq' in meters:
+                    frequency = meters['freq']
             else:
                 log.debug("single phase shelly")
                 powers = [0.0, 0.0, 0.0]
@@ -125,6 +130,7 @@ class ShellyCounter(AbstractCounter):
                 power = meters['act_power']  # shelly Pro EM Gen 2
                 frequency = meters['freq']
 
+            self.peak_filter.check_values(power)
             imported, exported = self.sim_counter.sim_count(power)
 
             counter_state = CounterState(

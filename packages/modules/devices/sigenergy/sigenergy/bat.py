@@ -7,8 +7,10 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount import SimCounter
-from modules.common.store import get_bat_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.sigenergy.sigenergy.config import SigenergyBatSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -26,9 +28,10 @@ class SigenergyBat(AbstractBat):
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
         self.client: ModbusTcpClient_ = self.kwargs['client']
-        self.store = get_bat_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, self.component_config.type)
         self.last_mode = 'Undefined'
 
     def update(self) -> None:
@@ -37,8 +40,9 @@ class SigenergyBat(AbstractBat):
         power = self.client.read_holding_registers(30037, ModbusDataType.INT_32, unit=unit)
         # soc unit 0.1%
         soc = self.client.read_holding_registers(30014, ModbusDataType.UINT_16, unit=unit) / 10
-        imported, exported = self.sim_counter.sim_count(power)
 
+        self.peak_filter.check_values(power)
+        imported, exported = self.sim_counter.sim_count(power)
         bat_state = BatState(
             power=power,
             soc=soc,

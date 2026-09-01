@@ -24,21 +24,18 @@ def create_device(device_config: AlphaEss):
     client = None
 
     def create_bat_component(component_config: AlphaEssBatSetup):
-        nonlocal client
         return bat.AlphaEssBat(component_config,
                                device_id=device_config.id,
                                tcp_client=client,
                                modbus_id=device_config.configuration.modbus_id)
 
     def create_counter_component(component_config: AlphaEssCounterSetup):
-        nonlocal client
         return counter.AlphaEssCounter(component_config,
                                        tcp_client=client,
                                        device_config=device_config.configuration,
                                        modbus_id=device_config.configuration.modbus_id)
 
     def create_inverter_component(component_config: AlphaEssInverterSetup):
-        nonlocal client
         return inverter.AlphaEssInverter(component_config=component_config,
                                          device_id=device_config.id,
                                          tcp_client=client,
@@ -46,7 +43,6 @@ def create_device(device_config: AlphaEss):
                                          modbus_id=device_config.configuration.modbus_id)
 
     def update_components(components: Iterable[Union[alpha_ess_component_classes]]):
-        nonlocal client
         with client:
             for component in components:
                 with SingleComponentUpdateContext(component.fault_state):
@@ -81,4 +77,11 @@ def create_device(device_config: AlphaEss):
     )
 
 
-device_descriptor = DeviceDescriptor(configuration_factory=AlphaEss)
+device_descriptor = DeviceDescriptor(
+    configuration_factory=AlphaEss,
+    compatibility_bat_note="Kann Entladung nur komplett sperren. Über Webinterface oder App müssen einmalig Zeiten "
+    "für das Netzladen definiert werden. (Einstellungen - Funktionseinstellungen - Netzladen/Entladen). Hier einen "
+    "durchgängigen Zeitraum eintragen (Ladezeit_1: 00:00-23:00, Ladezeit_2: 23:00-00:00). Den Schalter 'Netzladen' "
+    "deaktivieren!",
+    compatibility_device_note="Für den Alpha Smile (ohne HI) wird ein Alpha Kit benötigt"
+)

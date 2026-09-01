@@ -8,7 +8,9 @@ from modules.common import modbus
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.store import get_bat_value_store
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
+from modules.common.store import get_component_value_store
 
 
 class KwargsDict(TypedDict):
@@ -25,15 +27,18 @@ class ElgrisBat(AbstractBat):
         self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['tcp_client']
         self.__modbus_id: int = self.kwargs['modbus_id']
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
         self.elgris = Elgris(self.__modbus_id, self.__tcp_client, self.fault_state)
-        self.store = get_bat_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
 
     def update(self):
-        with self.__tcp_client:
-            counter_state = self.elgris.get_counter_state()
+        counter_state = self.elgris.get_counter_state()
+        imported, exported = self.peak_filter.check_values(counter_state.power,
+                                                           counter_state.imported,
+                                                           counter_state.exported)
         bat_state = BatState(
-            exported=counter_state.exported,
-            imported=counter_state.imported,
+            exported=exported,
+            imported=imported,
             power=counter_state.power,
             currents=counter_state.currents,
         )

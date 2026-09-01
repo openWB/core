@@ -8,10 +8,12 @@ from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType
-from modules.common.store import get_inverter_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.solaredge.solaredge.config import SolaredgeExternalInverterSetup
 from modules.devices.solaredge.solaredge.scale import scale_registers
 from modules.devices.solaredge.solaredge.meter import SolaredgeMeterRegisters, set_component_registers
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -31,8 +33,9 @@ class SolaredgeExternalInverter(AbstractInverter):
     def initialize(self) -> None:
         self.__tcp_client = self.kwargs['client']
         self.registers = SolaredgeMeterRegisters(self.component_config.configuration.meter_id)
-        self.store = get_inverter_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
         components = list(self.kwargs['components'].values())
         components.append(self)
@@ -54,9 +57,13 @@ class SolaredgeExternalInverter(AbstractInverter):
             self.registers.currents, 52, mapping=reg_mapping, unit=self.component_config.configuration.modbus_id)
 
         factor = self.component_config.configuration.factor
+
+        exported = scale_registers(resp[self.registers.exported], resp[self.registers.imp_exp_scale])
+        power = scale_registers(resp[self.registers.power], resp[self.registers.powers_scale]) * factor
+        _, exported = self.peak_filter.check_values(power, None, exported)
         return InverterState(
-            exported=scale_registers(resp[self.registers.exported], resp[self.registers.imp_exp_scale]),
-            power=scale_registers(resp[self.registers.power], resp[self.registers.powers_scale]) * factor,
+            exported=exported,
+            power=power,
             currents=scale_registers(resp[self.registers.currents], resp[self.registers.currents_scale])
         )
 

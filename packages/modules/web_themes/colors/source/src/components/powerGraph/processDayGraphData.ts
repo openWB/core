@@ -160,6 +160,10 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 					currentItem.evuIn +
 					currentItem.batOut)
 		}
+		// Prices
+		if (currentRow.prices.grid > 0) {
+			currentItem.price = currentRow.prices.grid * 100000
+		}
 	})
 
 	// Counters

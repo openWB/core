@@ -1,11 +1,11 @@
-from typing import Dict, List
+from typing import Any, Dict, List
 
 
-def empty_dict_factory() -> Dict:
+def empty_dict_factory() -> Dict[str, Any]:
     return {}
 
 
-def empty_list_factory() -> List:
+def empty_list_factory() -> List[Any]:
     return []
 
 
@@ -17,7 +17,7 @@ def voltages_list_factory() -> List[float]:
     return [230.0]*3
 
 
-def empty_io_pattern_boolean_factory():
+def empty_io_pattern_boolean_factory() -> List[Dict[str, Any]]:
     return [
         {
             "value": True,  # dimmen
@@ -30,7 +30,7 @@ def empty_io_pattern_boolean_factory():
     ]
 
 
-def empty_io_pattern_stepwise_factory():
+def empty_io_pattern_stepwise_factory() -> List[Dict[str, Any]]:
     return [
         {
             "value": 1.0,  # keine Begrenzung

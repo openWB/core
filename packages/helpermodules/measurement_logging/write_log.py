@@ -12,85 +12,89 @@ from typing import Dict, Optional
 from control import data
 from helpermodules.broker import BrokerClient
 from helpermodules import timecheck
+from helpermodules.constants import DEFAULT_COLORS
 from helpermodules.utils.json_file_handler import write_and_check
 from helpermodules.utils.topic_parser import decode_payload, get_index
-from modules.common.utils.component_parser import get_component_name_by_id
+from modules.common.utils.component_parser import get_component_name_by_id, get_component_color_by_id
 
 log = logging.getLogger(__name__)
 
 # erstellt für jeden Tag eine Datei, die die Daten für den Langzeitgraph enthält.
 #     Dazu werden alle 5 Min folgende Daten als json-Liste gespeichert:
-#     {"entries": [
-#         {
-#             "timestamp": int,
-#             "date": str,
-#             "prices": {
-#                 "grid": Preis für Netzbezug,
-#                 "pv": Preis für PV-Strom,
-#                 "bat": Preis für Speicherstrom
-#             }
-#             "cp": {
-#                 "cp1": {
-#                     "imported": Zählerstand in Wh,
-#                     "exported": Zählerstand in Wh
+#     {
+#         "entries": [
+#             {
+#                 "timestamp": int,
+#                 "date": str,
+#                 "prices": {
+#                     "grid": Preis für Netzbezug,
+#                     "pv": Preis für PV-Strom,
+#                     "bat": Preis für Speicherstrom
+#                 }
+#                     "cp": {
+#                     "cp1": {
+#                         "imported": Zählerstand in Wh,
+#                         "exported": Zählerstand in Wh
+#                         }
+#                     ... (dynamisch, je nach konfigurierter Anzahl)
+#                     "all": {
+#                         "imported": Zählerstand in Wh,
+#                         "exported": Zählerstand in Wh
+#                         }
+#                 }
+#                 "ev": {
+#                     "ev1": {
+#                         "soc": int in %
 #                     }
-#                 ... (dynamisch, je nach konfigurierter Anzahl)
-#                 "all": {
-#                     "imported": Zählerstand in Wh,
-#                     "exported": Zählerstand in Wh
+#                     ... (dynamisch, je nach konfigurierter Anzahl)
+#                 }
+#                 "counter": {
+#                     "counter0": {
+#                         "grid": bool,
+#                         "imported": Wh,
+#                         "exported": Wh
 #                     }
-#             }
-#             "ev": {
-#                 "ev1": {
-#                     "soc": int in %
+#                     ... (dynamisch, je nach konfigurierter Anzahl)
 #                 }
-#                 ... (dynamisch, je nach konfigurierter Anzahl)
-#             }
-#             "counter": {
-#                 "counter0": {
-#                     "grid": bool,
-#                     "imported": Wh,
-#                     "exported": Wh
+#                 "pv": {
+#                     "all": {
+#                         "exported": Wh
+#                     }
+#                     "pv0": {
+#                         "exported": Wh
+#                     }
+#                     ... (dynamisch, je nach konfigurierter Anzahl)
 #                 }
-#                 ... (dynamisch, je nach konfigurierter Anzahl)
-#             }
-#             "pv": {
-#                 "all": {
-#                     "exported": Wh
+#                 "bat": {
+#                     "all": {
+#                         "imported": Wh,
+#                         "exported": Wh,
+#                         "soc": int in %
+#                     }
+#                     "bat0": {
+#                         "imported": Wh,
+#                         "exported": Wh,
+#                         "soc": int in %
+#                     }
+#                     ... (dynamisch, je nach konfigurierter Anzahl)
 #                 }
-#                 "pv0": {
-#                     "exported": Wh
-#                 }
-#                 ... (dynamisch, je nach konfigurierter Anzahl)
-#             }
-#             "bat": {
-#                 "all": {
-#                     "imported": Wh,
-#                     "exported": Wh,
-#                     "soc": int in %
-#                 }
-#                 "bat0": {
-#                     "imported": Wh,
-#                     "exported": Wh,
-#                     "soc": int in %
-#                 }
-#                 ... (dynamisch, je nach konfigurierter Anzahl)
-#             }
-#             "sh": {
-#                 "sh1": {
-#                     "exported": Wh,
-#                     "imported": Wh,
-#                     wenn konfiguriert:
-#                     "temp1": int in °C,
-#                     "temp2": int in °C,
-#                     "temp3": int in °C
+#                 "sh": {
+#                     "sh1": {
+#                         "exported": Wh,
+#                         "imported": Wh,
+#                         wenn konfiguriert:
+#                         "temp1": int in °C,
+#                         "temp2": int in °C,
+#                         "temp3": int in °C
+#                     },
+#                     ... (dynamisch, je nach Anzahl konfigurierter Geräte)
 #                 },
-#                 ... (dynamisch, je nach Anzahl konfigurierter Geräte)
-#             },
-#             "hc": {"all": {"imported": Wh # Hausverbrauch}}
-#         }],
-#      "names": "names": {"sh1": "", "cp1": "", "counter2": "", "pv3": ""}
-#      }
+#                 "hc": {"all": {"imported": Wh # Hausverbrauch}}
+#             }
+#         ],
+#         "names": {"cp1": "", "counter2": "", "pv3": ""},
+#         "colors": {"cp1": "", "counter2": "", "pv3": ""},
+#     }
 
 
 class LogType(Enum):
@@ -165,6 +169,7 @@ def save_log(log_type: LogType):
         entries = content["entries"]
         entries.append(new_entry)
         content["names"] = get_names(content["entries"][-1], sh_log_data.sh_names)
+        content["colors"] = get_colors(content["entries"][-1])
         write_and_check(filepath, content)
         return content["entries"]
     except Exception:
@@ -200,19 +205,24 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
         prices = data.data.general_data.data.prices
         try:
             grid_price = data.data.optional_data.ep_get_current_price()
+            fault_state = max(data.data.optional_data.data.electricity_pricing.flexible_tariff.get.fault_state,
+                              data.data.optional_data.data.electricity_pricing.grid_fee.get.fault_state)
         except Exception:
             grid_price = prices.grid
+            fault_state = 0
         prices_dict = {"grid": grid_price,
                        "pv": prices.pv,
                        "bat": prices.bat,
-                       "cp": prices.cp}
+                       "cp": prices.cp,
+                       "fault_state": fault_state}
     except Exception:
         log.exception("Fehler im Werte-Logging-Modul für Preise")
-        prices_dict = {}
+        prices_dict = {"fault_state": 0}
 
     try:
         cp_dict = {"all": {"imported": data.data.cp_all_data.data.get.imported,
-                           "exported": data.data.cp_all_data.data.get.exported}}
+                           "exported": data.data.cp_all_data.data.get.exported,
+                           "fault_state": data.data.cp_all_data.data.get.fault_state}}
     except Exception:
         log.exception("Fehler im Werte-Logging-Modul")
         cp_dict = {}
@@ -220,7 +230,8 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
         try:
             if "cp" in cp:
                 cp_dict.update({cp: {"imported": data.data.cp_data[cp].data.get.imported,
-                                     "exported": data.data.cp_data[cp].data.get.exported}})
+                                     "exported": data.data.cp_data[cp].data.get.exported,
+                                     "fault_state": data.data.cp_data[cp].data.get.fault_state}})
         except Exception:
             log.exception("Fehler im Werte-Logging-Modul für Ladepunkt "+str(cp))
 
@@ -229,7 +240,8 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
         try:
             if "ev" in ev:
                 ev_dict.update(
-                    {ev: {"soc": data.data.ev_data[ev].data.get.soc}})
+                    {ev: {"soc": data.data.ev_data[ev].data.get.soc,
+                          "fault_state": data.data.ev_data[ev].data.get.fault_state}})
         except Exception:
             log.exception("Fehler im Werte-Logging-Modul für EV "+str(ev))
 
@@ -242,12 +254,14 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
                     {f"counter{counter.num}": {
                         "imported": counter.data.get.imported,
                         "exported": counter.data.get.exported,
-                        "grid": True if data.data.counter_all_data.get_id_evu_counter() == counter.num else False}})
+                        "grid": True if data.data.counter_all_data.get_id_evu_counter() == counter.num else False,
+                        "fault_state": counter.data.get.fault_state}})
         except Exception:
             log.exception("Fehler im Werte-Logging-Modul für Zähler "+str(counter))
 
     try:
-        pv_dict = {"all": {"exported": data.data.pv_all_data.data.get.exported}}
+        pv_dict = {"all": {"exported": data.data.pv_all_data.data.get.exported,
+                           "fault_state": data.data.pv_all_data.data.get.fault_state}}
     except Exception:
         log.exception("Fehler im Werte-Logging-Modul für PV-Daten")
         pv_dict = {}
@@ -255,14 +269,16 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
         for pv in data.data.pv_data:
             try:
                 pv_dict.update(
-                    {pv: {"exported": data.data.pv_data[pv].data.get.exported}})
+                    {pv: {"exported": data.data.pv_data[pv].data.get.exported,
+                          "fault_state": data.data.pv_data[pv].data.get.fault_state}})
             except Exception:
                 log.exception("Fehler im Werte-Logging-Modul für Wechselrichter "+str(pv))
 
     try:
         bat_dict = {"all": {"imported": data.data.bat_all_data.data.get.imported,
                             "exported": data.data.bat_all_data.data.get.exported,
-                            "soc": data.data.bat_all_data.data.get.soc}}
+                            "soc": data.data.bat_all_data.data.get.soc,
+                            "fault_state": data.data.bat_all_data.data.get.fault_state}}
     except Exception:
         log.exception("Fehler im Werte-Logging-Modul für Batteriespeicher-Daten")
         bat_dict = {}
@@ -271,12 +287,15 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
             try:
                 bat_dict.update({bat: {"imported": data.data.bat_data[bat].data.get.imported,
                                        "exported": data.data.bat_data[bat].data.get.exported,
-                                       "soc": data.data.bat_data[bat].data.get.soc}})
+                                       "soc": data.data.bat_data[bat].data.get.soc,
+                                       "fault_state": data.data.bat_data[bat].data.get.fault_state}})
             except Exception:
                 log.exception("Fehler im Werte-Logging-Modul für Speicher "+str(bat))
 
     try:
-        hc_dict = {"all": {"imported": data.data.counter_all_data.data.set.imported_home_consumption}}
+        hc_dict = {"all": {
+            "imported": data.data.counter_all_data.data.set.imported_home_consumption,
+            "fault_state": 2 if data.data.counter_all_data.data.set.invalid_home_consumption >= 3 else 0}}
     except Exception:
         log.exception("Fehler im Werte-Logging-Modul für Hausverbrauch")
         hc_dict = {}
@@ -357,3 +376,30 @@ def get_names(elements: Dict, sh_names: Dict, valid_names: Optional[Dict] = None
                 except (ValueError, KeyError, AttributeError):
                     names.update({entry: entry})
     return names
+
+
+def get_colors(elements: Dict) -> Dict:
+    """ Ermittelt die Farben der Fahrzeuge, Ladepunkte und Komponenten, welche
+    in elements vorhanden sind und gibt diese als Dictionary zurück.
+    Parameter
+    ---------
+    elements: dict
+        Dictionary, das die Messwerte enthält.
+    """
+    colors = {}
+    for group in elements.items():
+        if group[0] not in ("ev", "cp", "counter", "pv", "bat"):
+            continue
+        for entry in group[1]:
+            if "all" != entry:
+                try:
+                    if "ev" in entry:
+                        colors.update({entry: data.data.ev_data[entry].data.color})
+                    elif "cp" in entry:
+                        colors.update({entry: data.data.cp_data[entry].data.config.color})
+                    else:
+                        id = entry.strip(string.ascii_letters)
+                        colors.update({entry: get_component_color_by_id(int(id))})
+                except (ValueError, KeyError, AttributeError):
+                    colors.update({entry: DEFAULT_COLORS.UNKNOWN.value})
+    return colors

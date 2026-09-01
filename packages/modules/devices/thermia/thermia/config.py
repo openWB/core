@@ -38,5 +38,6 @@ class ThermiaCounterSetup(ComponentSetup[ThermiaCounterConfiguration]):
                  name: str = "Thermia Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: ThermiaCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or ThermiaCounterConfiguration())
+                 configuration: ThermiaCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or ThermiaCounterConfiguration(), **kwargs)

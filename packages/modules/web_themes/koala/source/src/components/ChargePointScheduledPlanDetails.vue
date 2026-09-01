@@ -1,5 +1,5 @@
 <template>
-  <q-card>
+  <q-card class="card-width">
     <q-card-section>
       <div class="row no-wrap">
         <div class="text-h6 ellipsis" :title="planName.value">
@@ -8,6 +8,12 @@
         <q-space />
         <q-btn icon="close" flat round dense v-close-popup />
       </div>
+      <BaseMessage
+        :show-message="temporaryChargeModeActive"
+        message="Temporärer Modus aktiv. Alle Planänderungen werden nach dem Abstecken verworfen."
+        type="warning"
+        :collapsed="false"
+      />
     </q-card-section>
     <q-separator />
     <q-card-section>
@@ -25,22 +31,25 @@
       <q-separator />
       <div class="q-mb-sm">
         <div class="text-subtitle2 q-mb-sm q-mt-sm">Wiederholungen</div>
-        <q-btn-group spread>
+        <q-btn-group outline spread>
           <q-btn
             size="sm"
             :color="planFrequency.value === 'once' ? 'primary' : 'grey'"
+            :outline="planFrequency.value !== 'once'"
             @click="planFrequency.value = 'once'"
             label="Einmalig"
           />
           <q-btn
             size="sm"
             :color="planFrequency.value === 'daily' ? 'primary' : 'grey'"
+            :outline="planFrequency.value !== 'daily'"
             @click="planFrequency.value = 'daily'"
             label="Täglich"
           />
           <q-btn
             size="sm"
             :color="planFrequency.value === 'weekly' ? 'primary' : 'grey'"
+            :outline="planFrequency.value !== 'weekly'"
             @click="planFrequency.value = 'weekly'"
             label="Wöchentlich"
           />
@@ -90,8 +99,7 @@
           />
         </div>
         <div
-          class="row q-mt-sm q-pa-sm text-white no-wrap items-center bg-primary"
-          style="border-radius: 10px"
+          class="info-box tinted-box row q-mt-sm q-pa-sm no-wrap items-center rounded-borders"
         >
           <q-icon name="info" size="sm" class="q-mr-xs" />
           <ChargePointScheduledPlanSummary
@@ -126,12 +134,13 @@
         <div
           class="row items-center justify-center q-ma-none q-pa-none no-wrap"
         >
-          <q-btn-group class="col">
+          <q-btn-group class="col" outline>
             <q-btn
               v-for="option in phaseOptions"
               :key="option.value"
               :color="planNumPhases.value === option.value ? 'primary' : 'grey'"
               :label="option.label"
+              :outline="planNumPhases.value !== option.value"
               size="sm"
               class="col"
               @click="planNumPhases.value = option.value"
@@ -144,7 +153,7 @@
         <div
           class="row items-center justify-center q-ma-none q-pa-none no-wrap"
         >
-          <q-btn-group class="col">
+          <q-btn-group class="col" outline>
             <q-btn
               v-for="option in phaseOptions"
               :key="option.value"
@@ -152,6 +161,7 @@
                 planNumPhasesPv.value === option.value ? 'primary' : 'grey'
               "
               :label="option.label"
+              :outline="planNumPhasesPv.value !== option.value"
               size="sm"
               class="col"
               @click="planNumPhasesPv.value = option.value"
@@ -160,11 +170,12 @@
         </div>
       </div>
       <div class="text-subtitle2 q-mt-sm q-mr-sm">Ziel</div>
-      <q-btn-group class="full-width">
+      <q-btn-group class="full-width" outline>
         <q-btn
           size="sm"
           class="flex-grow"
           :color="planLimitSelected.value === 'soc' ? 'primary' : 'grey'"
+          :outline="planLimitSelected.value !== 'soc'"
           @click="planLimitSelected.value = 'soc'"
           label="EV-SoC"
         />
@@ -172,6 +183,7 @@
           size="sm"
           class="flex-grow"
           :color="planLimitSelected.value === 'amount' ? 'primary' : 'grey'"
+          :outline="planLimitSelected.value !== 'amount'"
           @click="planLimitSelected.value = 'amount'"
           label="Energie"
         />
@@ -239,13 +251,25 @@
           color="positive"
         />
       </div>
-      <div class="row q-mt-md">
+      <div class="row q-mt-lg">
         <q-btn
           size="sm"
           class="col"
           color="negative"
           @click="removeScheduledChargingPlan(plan.id)"
           >Plan löschen</q-btn
+        >
+      </div>
+      <div
+        v-if="temporaryChargeModeActive && chargeTemplateId != null"
+        class="row q-mt-md"
+      >
+        <q-btn
+          size="sm"
+          class="col charge-plan-link-button"
+          :href="`/openWB/web/settings/#/VehicleConfiguration/charge_template/${chargeTemplateId ?? ''}`"
+          ><q-icon left size="xs" name="settings" />Persistente
+          Ladeplan-Einstellungen</q-btn
         >
       </div>
     </q-card-section>
@@ -257,6 +281,7 @@ import { useMqttStore } from 'src/stores/mqtt-store';
 import { useQuasar } from 'quasar';
 import SliderStandard from './SliderStandard.vue';
 import ToggleStandard from './ToggleStandard.vue';
+import BaseMessage from './BaseMessage.vue';
 import { computed } from 'vue';
 import ChargePointScheduledPlanSummary from './ChargePointScheduledPlanSummary.vue';
 import { type ScheduledChargingPlan } from '../stores/mqtt-store-model';
@@ -426,22 +451,48 @@ const planDcPower = computed(() =>
   ),
 );
 
-const removeScheduledChargingPlan = (planId) => {
+const removeScheduledChargingPlan = (planId: number) => {
   mqttStore.removeScheduledChargingPlanForChargePoint(
     props.chargePointId,
     planId,
   );
   emit('close');
 };
+
+const temporaryChargeModeActive = computed(
+  () => mqttStore.temporaryChargeModeActive,
+);
+
+const chargeTemplateId = computed(
+  () =>
+    mqttStore.chargePointConnectedVehicleChargeTemplate(props.chargePointId)
+      .value?.id,
+);
 </script>
 
 <style scoped>
+.card-width {
+  max-width: 26em;
+}
 .q-btn-group .q-btn {
   min-width: 100px !important;
   font-size: 10px !important;
 }
 
+.charge-plan-link-button {
+  background-color: var(--q-charge-plan-link-button);
+  color: white;
+}
+
 .flex-grow {
   flex-grow: 1;
+}
+
+.info-box {
+  --tint-accent: var(--q-primary);
+  --tint-text: color-mix(in srgb, var(--q-text) 80%, transparent);
+}
+.info-box :deep(.q-icon) {
+  color: var(--q-primary);
 }
 </style>

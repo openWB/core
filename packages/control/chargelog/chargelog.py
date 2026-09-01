@@ -120,6 +120,7 @@ def collect_data(chargepoint):
                 log_data.ev = get_value_or_default(lambda: chargepoint.data.set.charging_ev_data.num, 0)
                 log_data.prio = get_value_or_default(lambda: chargepoint.data.control_parameter.prio, False)
                 log_data.rfid = get_value_or_default(lambda: chargepoint.data.set.rfid)
+                log_data.odometer = get_value_or_default(lambda: charging_ev.data.get.odometer)
                 log_data.imported_since_mode_switch = get_value_or_default(
                     lambda: chargepoint.data.get.imported - log_data.imported_at_mode_switch, 0)
                 log_data.exported_since_mode_switch = get_value_or_default(
@@ -270,6 +271,7 @@ def _create_entry(chargepoint, charging_ev):
             "chargemode": get_value_or_default(lambda: log_data.chargemode_log_entry),
             "prio": get_value_or_default(lambda: log_data.prio),
             "rfid": get_value_or_default(lambda: log_data.rfid),
+            "odometer": get_value_or_default(lambda: log_data.odometer),
             "soc_at_start": get_value_or_default(lambda: log_data.soc_at_start),
             "soc_at_end": get_value_or_default(lambda: charging_ev.data.get.soc),
             "range_at_start": get_value_or_default(lambda: log_data.range_at_start),
@@ -325,14 +327,19 @@ def write_new_entry(new_entry):
 def calc_energy_costs(cp, create_log_entry: bool = False):
     try:
         if cp.data.set.log.imported_since_plugged != 0 and cp.data.set.log.imported_since_mode_switch != 0:
-            processed_entries, reference_entries = _get_reference_entries()
+            processed_entries, reference_entries = _get_reference_entries(cp)
             charged_energy_by_source = calculate_charged_energy_by_source(
                 cp, processed_entries, reference_entries, create_log_entry)
             _add_charged_energy_by_source(cp, charged_energy_by_source)
             log.debug(f"charged_energy_by_source {charged_energy_by_source} "
                       f"total charged_energy_by_source {cp.data.set.log.charged_energy_by_source}")
-            costs = _calc_costs(charged_energy_by_source, reference_entries[-1]["prices"])
-            cp.data.set.log.costs += costs
+            prices = data.data.general_data.data.prices
+            if (prices.bat == prices.grid == prices.pv and
+                    data.data.optional_data.data.electricity_pricing.configured is False):
+                cp.data.set.log.costs = cp.data.set.log.imported_since_mode_switch * prices.bat
+            else:
+                costs = _calc_costs(charged_energy_by_source, reference_entries[-1]["prices"])
+                cp.data.set.log.costs += costs
     except Exception:
         log.exception(f"Fehler beim Berechnen der Ladekosten für Ladepunkt {cp.num}")
 
@@ -352,7 +359,7 @@ def calculate_charged_energy_by_source(cp, processed_entries, reference_entries,
             charged_energy = (reference_entries[-1]["cp"][f"cp{cp.num}"]["imported"] -
                               reference_entries[0]["cp"][f"cp{cp.num}"]["imported"])
         elif reference == ReferenceTime.END:
-            if ((timecheck.create_timestamp()-cp.data.set.log.timestamp_mode_switch) < MEASUREMENT_LOGGING_INTERVAL):
+            if sum(cp.data.set.log.charged_energy_by_source.values()) == 0:
                 charged_energy = cp.data.set.log.imported_since_mode_switch
             else:
                 log.debug(f"cp.data.get.imported {cp.data.get.imported}")
@@ -394,11 +401,13 @@ def _get_reference_position(cp, create_log_entry: bool) -> ReferenceTime:
             return ReferenceTime.MIDDLE
 
 
-def _get_reference_entries() -> Tuple[List[Dict], List]:
+def _get_reference_entries(cp) -> Tuple[List[Dict], List]:
     processed_entries = {}
     reference_entries = []
     try:
-        entries = get_todays_daily_log()["entries"]
+        log_data = get_todays_daily_log()
+        names = log_data["names"]
+        entries = log_data["entries"]
         if len(entries) >= 2:
             reference_entries = [entries[-2], entries[-1]]
         else:
@@ -407,8 +416,9 @@ def _get_reference_entries() -> Tuple[List[Dict], List]:
             reference_entries = [entries_day_before[-1], entries[0]]
         processed_entries["entries"] = copy.deepcopy(reference_entries)
         processed_entries["entries"] = _process_entries(processed_entries["entries"], CalculationType.ENERGY)
+        processed_entries["names"] = names
         processed_entries["totals"] = get_totals(processed_entries["entries"], False)
-        processed_entries = _analyse_energy_source(processed_entries)
+        processed_entries = _analyse_energy_source(processed_entries, f"cp{cp.num}")
     except Exception:
         log.exception("Fehler beim Zusammenstellen der zwei letzten Logeinträge")
     finally:

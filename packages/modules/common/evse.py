@@ -46,6 +46,7 @@ class Evse:
                 if self.is_precise_current_active() is False:
                     self.activate_precise_current()
                 self._precise_current = self.is_precise_current_active()
+        self.evse_current = 0
 
     def get_plug_charge_state(self) -> Tuple[bool, bool, float]:
         time.sleep(0.1)
@@ -61,9 +62,10 @@ class Evse:
                              str(state)+", Soll-Stromstärke: "+str(self.evse_current))
         plugged = state.plugged
         charging = self.evse_current > 0 if state.charge_enabled else False
-        if self.evse_current > 32:
-            self.evse_current = self.evse_current / 100
-        return plugged, charging, self.evse_current
+        # self.evse_current bleibt als Rohwert im Register-Format erhalten,
+        # damit der Vergleich in set_current() korrekt funktioniert.
+        set_current_amps = self.evse_current / 100 if self._precise_current else float(self.evse_current)
+        return plugged, charging, set_current_amps
 
     def get_firmware_version(self) -> int:
         return self.version
@@ -111,11 +113,11 @@ class Evse:
 
     def set_current(self, current: int, phases_in_use: Optional[int] = None) -> None:
         time.sleep(0.1)
-        formatted_current = round(current*100) if self._precise_current else round(current)
         if self.max_current == 20 and phases_in_use is not None and phases_in_use != 0:
             # Bei 20A EVSE und bekannter Phasenzahl auf 16A begrenzen, sonst erstmal Ladung mit Minimalstrom starten,
             # um Phasenzahl zu ermitteln
-            if formatted_current > 16 and phases_in_use > 1:
-                formatted_current = 16
+            if current > 16 and phases_in_use > 1:
+                current = 16
+        formatted_current = round(current*100) if self._precise_current else round(current)
         if self.evse_current != formatted_current:
             self.client.write_register(1000, formatted_current, unit=self.id)

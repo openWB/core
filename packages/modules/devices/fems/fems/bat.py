@@ -6,9 +6,11 @@ from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.common.store import get_bat_value_store
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.store import get_component_value_store
 from modules.devices.fems.fems.version import FemsVersion, get_version
 from helpermodules.scale_metric import scale_metric
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -26,8 +28,9 @@ class FemsBat(AbstractBat):
     def initialize(self) -> None:
         self.ip_address: str = self.kwargs['ip_address']
         self.session: Session = self.kwargs['session']
-        self.store = get_bat_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
         if self.component_config.configuration.num == 1:
             self._data = "ess0"
         else:
@@ -86,6 +89,7 @@ class FemsBat(AbstractBat):
                 elif address == "_sum/ConsumptionActivePower":
                     haus = scale_metric(singleValue['value'], singleValue.get('unit'), 'W')
         power = grid + pv - haus
+        imported, exported = self.peak_filter.check_values(power, imported, exported)
         bat_state = BatState(
             power=power,
             soc=soc,

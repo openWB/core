@@ -87,10 +87,12 @@ try:
                             chargebox_id: str,
                             fault_state: FaultState,
                             connector_id: int,
+                            transaction_id: int,
                             imported: int) -> None:
             try:
                 self._process_call(chargebox_id, fault_state, call.MeterValues(
                     connector_id=connector_id,
+                    transaction_id=transaction_id,
                     meter_value=[{"timestamp": self._get_formatted_time(),
                                   "sampledValue": [
                         {

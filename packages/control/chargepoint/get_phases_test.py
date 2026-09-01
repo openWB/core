@@ -4,10 +4,12 @@ from typing import Optional
 import pytest
 
 from control.chargepoint.chargepoint import Chargepoint
+from control.chargepoint.chargepoint_state import ChargepointState
 from control.chargepoint.chargepoint_template import CpTemplate, get_chargepoint_template_default
 from control.ev.ev import Ev
 from control.general import General
 from control import data
+from modules.chargepoints.openwb_pro.chargepoint_module import EvseSignaling
 
 
 @pytest.fixture
@@ -172,3 +174,95 @@ def test_set_phases(monkeypatch, cp: Chargepoint, params: SetPhasesParams):
 
     # evaluation
     assert phases == params.expected_phases
+
+
+@pytest.mark.parametrize(
+    "auto_phase_switch_hw, evse_signaling, prevent_phase_switch, imported_since_plugged, expected",
+    [
+        pytest.param(True, EvseSignaling.PWM, False, 10, True, id="supported-without-prevent-flag"),
+        pytest.param(False, EvseSignaling.PWM, False, 10, False, id="hardware-disabled"),
+        pytest.param(True, EvseSignaling.HLC, False, 10, False, id="hlc-signaling"),
+        pytest.param(True, EvseSignaling.PWM, True, 10, False, id="prevent-phase-switch-after-start"),
+        pytest.param(True, EvseSignaling.PWM, True, 0, True, id="prevent-phase-switch-before-start"),
+    ],
+)
+def test_hw_supports_phase_switch(cp: Chargepoint,
+                                  auto_phase_switch_hw: bool,
+                                  evse_signaling: EvseSignaling,
+                                  prevent_phase_switch: bool,
+                                  imported_since_plugged: float,
+                                  expected: bool):
+    # setup
+    cp.data.config.auto_phase_switch_hw = auto_phase_switch_hw
+    cp.data.get.evse_signaling = evse_signaling
+    cp.data.set.charging_ev_data.ev_template.data.prevent_phase_switch = prevent_phase_switch
+    cp.data.set.log.imported_since_plugged = imported_since_plugged
+
+    # execution
+    result = cp.hw_supports_phase_switch()
+
+    # evaluation
+    assert result is expected
+
+
+@pytest.mark.parametrize(
+    "retry_failed_phase_switches, failed_phase_switches, expected",
+    [
+        pytest.param(True, Chargepoint.MAX_FAILED_PHASE_SWITCHES+1, True, id="retry-enabled-limit-reached"),
+        pytest.param(True, Chargepoint.MAX_FAILED_PHASE_SWITCHES, False, id="retry-enabled-at-limit"),
+        pytest.param(False, Chargepoint.MAX_FAILED_PHASE_SWITCHES-1, True, id="retry-disabled-failed"),
+        pytest.param(False, 0, False, id="retry-disabled-not-failed"),
+    ],
+)
+def test_failed_phase_switches_reached(cp: Chargepoint,
+                                       retry_failed_phase_switches: bool,
+                                       failed_phase_switches: int,
+                                       expected: bool):
+    # setup
+    data.data.general_data.data.chargemode_config.pv_charging.retry_failed_phase_switches = (
+        retry_failed_phase_switches
+    )
+    cp.data.control_parameter.failed_phase_switches = failed_phase_switches
+
+    # execution
+    result = cp.failed_phase_switches_reached()
+
+    # evaluation
+    assert result is expected
+
+
+@pytest.mark.parametrize(
+    "hw_supports_phase_switch, charge_state, state, failed_phase_switches_reached, expected",
+    [
+        pytest.param(True, True, ChargepointState.CHARGING_ALLOWED, False, True,
+                     id="charging-allowed-and-ready"),
+        pytest.param(True, True, ChargepointState.PHASE_SWITCH_DELAY, False, True,
+                     id="phase-switch-delay-and-ready"),
+        pytest.param(False, True, ChargepointState.CHARGING_ALLOWED, False, False,
+                     id="no-hardware-support"),
+        pytest.param(True, False, ChargepointState.CHARGING_ALLOWED, False, False,
+                     id="not-charging"),
+        pytest.param(True, True, ChargepointState.SWITCH_OFF_DELAY, False, False,
+                     id="state-not-allowed"),
+        pytest.param(True, True, ChargepointState.CHARGING_ALLOWED, True, False,
+                     id="failed-switch-limit-reached"),
+    ],
+)
+def test_cp_state_hw_support_phase_switch(monkeypatch,
+                                          cp: Chargepoint,
+                                          hw_supports_phase_switch: bool,
+                                          charge_state: bool,
+                                          state: ChargepointState,
+                                          failed_phase_switches_reached: bool,
+                                          expected: bool):
+    # setup
+    cp.data.get.charge_state = charge_state
+    cp.data.control_parameter.state = state
+    monkeypatch.setattr(cp, "hw_supports_phase_switch", Mock(return_value=hw_supports_phase_switch))
+    monkeypatch.setattr(cp, "failed_phase_switches_reached", Mock(return_value=failed_phase_switches_reached))
+
+    # execution
+    result = cp.cp_state_hw_support_phase_switch()
+
+    # evaluation
+    assert result is expected

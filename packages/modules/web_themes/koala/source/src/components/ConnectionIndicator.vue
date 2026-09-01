@@ -1,27 +1,18 @@
 <template>
-  <div
-    v-if="showIcon"
-    id="mqtt-connection-indicator"
-  >
+  <div v-if="showIcon" id="mqtt-connection-indicator">
     <q-badge
       rounded
       align="middle"
       :color="connected ? 'positive' : 'negative'"
       class="non-selectable"
     >
-      <q-icon
-        :name="connected ? 'link' : 'link_off'"
-        size="sm"
-      >
+      <q-icon :name="connected ? 'link' : 'link_off'" size="sm">
         <q-tooltip v-if="connected">Verbindung hergestellt</q-tooltip>
         <q-tooltip v-else>Verbindung getrennt</q-tooltip>
       </q-icon>
     </q-badge>
   </div>
-  <q-dialog
-    v-model="showModal"
-    persistent
-  >
+  <q-dialog v-model="showModal" persistent>
     <q-card>
       <q-card-section class="row items-center">
         <q-avatar icon="link_off" color="negative" text-color="white" />

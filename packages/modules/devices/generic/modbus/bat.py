@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+from typing import TypedDict, Any
+
+from modules.common.abstract_device import AbstractBat
+from modules.common.component_state import BatState
+from modules.common.component_type import ComponentDescriptor
+from modules.common.fault_state import ComponentInfo, FaultState
+from modules.common.modbus import ModbusTcpClient_
+from modules.common.store._factory import get_component_value_store
+from modules.devices.generic.modbus.config import GenericModbusBatSetup, GenericModbusConfiguration
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
+from modules.common.simcount import SimCounter
+
+from modules.devices.generic.modbus.helper import read_phase_values, read_value
+
+
+class KwargsDict(TypedDict):
+    device_id: int
+    client: ModbusTcpClient_
+    device_configuration: GenericModbusConfiguration
+
+
+class GenericModbusBat(AbstractBat):
+    def __init__(self, component_config: GenericModbusBatSetup, **kwargs: Any) -> None:
+        self.component_config = component_config
+        self.kwargs: KwargsDict = kwargs
+
+    def initialize(self) -> None:
+        self.__device_id: int = self.kwargs['device_id']
+        self.client: ModbusTcpClient_ = self.kwargs['client']
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
+        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, self.component_config.type)
+
+        self.device_configuration = self.kwargs['device_configuration']
+
+    def update(self) -> None:
+
+        unit = self.component_config.configuration.modbus_id
+        config = self.component_config.configuration
+
+        # power
+        power = read_value(self.client, unit, self.device_configuration, config.power)
+        if power is None:
+            raise ValueError("Leistungsregister muss angegeben werden.")
+
+        # SOC
+        soc_value = read_value(self.client, unit, self.device_configuration, config.soc)
+        if soc_value is not None:
+            soc = soc_value
+
+        # currents
+        currents_value = read_phase_values(self.client, unit, self.device_configuration,
+                                           config.current_L1, config.current_L2, config.current_L3)
+        if currents_value is not None:
+            currents = currents_value
+
+        # Import
+        imported = read_value(self.client, unit, self.device_configuration, config.imported)
+
+        # Export
+        exported = read_value(self.client, unit, self.device_configuration, config.exported)
+
+        # Serial Number
+        serial_number_value = read_value(self.client, unit, self.device_configuration, config.serial_number)
+        if serial_number_value is not None:
+            serial_number = serial_number_value
+
+        if imported is None or exported is None:
+            self.peak_filter.check_values(power)
+            imported, exported = self.sim_counter.sim_count(power)
+        else:
+            imported, exported = self.peak_filter.check_values(power, imported, exported)
+
+        bat_state = BatState(
+            imported=imported,
+            exported=exported,
+            power=power,
+        )
+
+        if "soc" in locals():
+            bat_state.soc = soc
+        if "currents" in locals():
+            bat_state.currents = currents
+        if "serial_number" in locals():
+            bat_state.serial_number = serial_number
+
+        self.store.set(bat_state)
+
+
+component_descriptor = ComponentDescriptor(configuration_factory=GenericModbusBatSetup)

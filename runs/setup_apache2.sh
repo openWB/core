@@ -134,7 +134,7 @@ fi
 
 # check for pro+
 echo "Pro+ setup..."
-if lsusb | grep -q 'RTL8153'; then
+if lsusb | grep -Eq 'RTL8153|AX88179'; then
 	echo "second network for pro plus detected"
 	# enable pro+ specific configurations
 	enableSite apache-proplus

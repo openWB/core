@@ -203,7 +203,7 @@ export interface GraphDataPoint {
   [key: `ev${number}-soc`]: number | null;
 }
 
-export interface BatteryConfiguration {
+export interface ComponentConfiguration {
   name: string;
   info: {
     manufacturer: string;
@@ -212,15 +212,10 @@ export interface BatteryConfiguration {
   type: string;
   id: number;
   configuration: object;
+  color: string;
 }
 
-export interface CounterConfiguration {
-  name: string;
-  info: {
-    manufacturer: string;
-    model: string;
-  };
-  type: string;
-  id: number;
-  configuration: object;
+export interface RangeValue {
+  min: number;
+  max: number;
 }

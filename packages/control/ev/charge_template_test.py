@@ -6,6 +6,7 @@ import pytest
 
 from control import data
 from control import optional
+from control.bat_all import BatAll
 from control.chargepoint.control_parameter import ControlParameter
 from control.ev.charge_template import SelectedPlan
 from control.chargepoint.charging_type import ChargingType
@@ -68,6 +69,44 @@ def test_time_charging(plans: Dict[int, TimeChargingPlan], soc: float, used_amou
 
     # execution
     ret = ct.time_charging(soc, used_amount_time_charging, ChargingType.AC.value)
+
+    # evaluation
+    assert ret == expected
+
+
+@pytest.mark.parametrize(
+    "min_bat_soc, charging_allowed_mock, soc, expected",
+    [
+        pytest.param(80, False, 81, (0, "stop", ChargeTemplate.TIME_CHARGING_CONFLICT_ACTIVE_BAT_CONTROL, 0, 1),
+                     id="Konflikt mit aktiver Speichersteuerung -> nicht laden"),
+        pytest.param(80, True, 79, (0, "stop", ChargeTemplate.TIME_CHARGING_MIN_BAT_SOC_REACHED, 0, 1),
+                     id="Mindest-SoC des Speichers unterschritten -> nicht laden"),
+        pytest.param(80, True, 80, (16, "time_charging", None, 0, 1), id="laden erlaubt"),
+        pytest.param(None, True, 80, (16, "time_charging", None, 0, 1),
+                     id="Mindest-SoC-Beachtung nicht konfiguriert, laden erlaubt"),
+    ]
+)
+def test_time_charging_min_bat_soc(min_bat_soc: Optional[int],
+                                   charging_allowed_mock: bool,
+                                   soc: float,
+                                   expected: Tuple[int, str, Optional[str], Optional[str], int],
+                                   monkeypatch: pytest.MonkeyPatch):
+    # setup
+    ct = ChargeTemplate()
+    plan = TimeChargingPlan(id=0)
+    plan.min_bat_soc = min_bat_soc
+    ct.data.time_charging.plans = [plan]
+    check_plans_timeframe_mock = Mock(return_value=plan)
+    monkeypatch.setattr(timecheck, "check_plans_timeframe", check_plans_timeframe_mock)
+
+    data.data.bat_all_data = BatAll()
+    data.data.bat_all_data.data.config.configured = True
+    data.data.bat_all_data.data.get.soc = soc
+    monkeypatch.setattr(data.data.bat_all_data, "time_charging_min_bat_soc_allowed",
+                        Mock(return_value=charging_allowed_mock))
+
+    # execution
+    ret = ct.time_charging(soc, 100, ChargingType.AC.value)
 
     # evaluation
     assert ret == expected
@@ -169,9 +208,9 @@ def test_calc_remaining_time(phases_to_use,
 @pytest.mark.parametrize(
     "selected, phases, bidi_charging_enabled, expected_duration, expected_missing_amount",
     [
-        pytest.param("soc", 1, False, 10062.111801242236, 9000, id="soc, one phase"),
+        pytest.param("soc", 1, False, 11180.124223602485, 10000, id="soc, one phase"),
         pytest.param("amount", 2, False, 447.2049689440994, 800, id="amount, two phases"),
-        pytest.param("soc", 2, True, 3240.0, 9000, id="bidi"),
+        pytest.param("soc", 2, True, 3600.0, 10000, id="bidi"),
     ])
 def test_calculate_duration(selected: str,
                             phases: int,
@@ -184,7 +223,7 @@ def test_calculate_duration(selected: str,
     plan.limit.selected = selected
     # execution
     duration, missing_amount = ct._calculate_duration(
-        plan, 60, 45000, 200, phases, ChargingType.AC.value, EvTemplate(), bidi_charging_enabled)
+        plan, 60, 45000, 90, 200, phases, ChargingType.AC.value, EvTemplate(), bidi_charging_enabled)
 
     # evaluation
     assert duration == expected_duration

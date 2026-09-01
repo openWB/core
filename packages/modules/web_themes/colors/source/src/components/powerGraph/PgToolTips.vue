@@ -4,7 +4,20 @@
 		:origin="autozoom"
 		:transform="'translate(' + margin.left + ',' + margin.top + ')'"
 	>
-		<g v-for="d in data" :key="d.date" class="ttarea">
+		<g v-for="d in data" :key="d.date" class="ttitems">
+			<PgToolTipItem
+				v-if="popupToShow == d.date"
+				:entry="d"
+				:boxwidth="boxwidth"
+				:x-scale="xScale2"
+			></PgToolTipItem>
+		</g>
+		<g
+			v-for="d in data"
+			:key="d.date"
+			class="ttarea"
+			@mouseleave="popupToShow = 0"
+		>
 			<rect
 				:x="xScale(d.date)"
 				y="0"
@@ -13,18 +26,14 @@
 				:width="graphData.data.length > 0 ? width / graphData.data.length : 0"
 				opacity="1%"
 				fill="var(--color-charging)"
+				@mouseover="showPopup(d.date)"
 			></rect>
-			<PgToolTipItem
-				:entry="d"
-				:boxwidth="boxwidth"
-				:x-scale="xScale2"
-			></PgToolTipItem>
 		</g>
 	</g>
 </template>
 <script setup lang="ts">
 import { extent, scaleTime, scaleUtc, select } from 'd3'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { graphData, zoomedRange, type GraphDataItem } from './model'
 import PgToolTipItem from './PgToolTipItem.vue'
 
@@ -35,6 +44,7 @@ const props = defineProps<{
 	data: GraphDataItem[]
 }>()
 const boxwidth = 140
+const popupToShow = ref(0)
 const xScale = computed(() => {
 	const e = extent(props.data, (d) => new Date(d.date))
 	if (e[0] && e[1]) {
@@ -73,5 +83,8 @@ const autozoom = computed(() => {
 	}
 	return 'PgToolTips.vue:autozoom'
 })
+function showPopup(d: number) {
+	popupToShow.value = d
+}
 </script>
 <style scoped></style>

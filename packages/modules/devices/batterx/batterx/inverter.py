@@ -7,7 +7,9 @@ from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount import SimCounter
-from modules.common.store import get_inverter_value_store
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
+from modules.common.store import get_component_value_store
 
 
 class KwargsDict(TypedDict):
@@ -21,14 +23,16 @@ class BatterXInverter(AbstractInverter):
 
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="pv")
-        self.store = get_inverter_value_store(self.component_config.id)
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, self.component_config.type)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def get_power(self, resp: Dict) -> float:
         return resp["1634"]["0"] * -1
 
     def get_inverter_state(self, power: float) -> InverterState:
+        self.peak_filter.check_values(power)
         _, exported = self.sim_counter.sim_count(power)
 
         return InverterState(

@@ -13,6 +13,7 @@ class PSACCVehicleSocConfiguration(JsonSocConfiguration):
         super().__init__(soc_pattern=prf + "level",
                          range_pattern=prf + "autonomy",
                          timestamp_pattern=prf + "updated_at",
+                         odometer_pattern=".timed_odometer.mileage",
                          timeout=10,
                          calculate_soc=True)
 

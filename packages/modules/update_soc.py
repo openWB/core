@@ -63,6 +63,7 @@ class UpdateSoc:
                                 f"EV{ev.num}: Nach dreimaliger erfolgloser SoC-Abfrage wird ein SoC von 0% angenommen.")
                             Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc", 0)
                             Pub().pub(f"openWB/set/vehicle/{ev.num}/get/range", None)
+                            Pub().pub(f"openWB/set/vehicle/{ev.num}/get/odometer", None)
                         # Es wird ein Zeitstempel gesetzt, unabhängig ob die Abfrage erfolgreich war, da einige
                         # Hersteller bei zu häufigen Abfragen Accounts sperren.
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc_request_timestamp",
@@ -86,6 +87,8 @@ class UpdateSoc:
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/get/soc_request_timestamp", None)
                     if ev.data.get.range is not None:
                         Pub().pub(f"openWB/set/vehicle/{ev.num}/get/range", None)
+                    if ev.data.get.odometer is not None:
+                        Pub().pub(f"openWB/set/vehicle/{ev.num}/get/odometer", None)
             except Exception:
                 log.exception("Fehler im update_soc-Modul")
         return threads_update, threads_store

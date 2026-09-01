@@ -7,8 +7,10 @@ from modules.common.component_state import InverterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
-from modules.common.store import get_inverter_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.qcells.qcells.config import QCellsInverterSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -24,8 +26,9 @@ class QCellsInverter(AbstractInverter):
     def initialize(self) -> None:
         self.__modbus_id: int = self.kwargs['modbus_id']
         self.client: ModbusTcpClient_ = self.kwargs['client']
-        self.store = get_inverter_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.INVERTER, self.component_config.id, self.fault_state)
 
     def update(self) -> None:
         power_string1 = (self.client.read_input_registers(
@@ -38,6 +41,7 @@ class QCellsInverter(AbstractInverter):
         exported = self.client.read_input_registers(0x0094, ModbusDataType.UINT_32, wordorder=Endian.Little,
                                                     unit=self.__modbus_id) * 100
 
+        _, exported = self.peak_filter.check_values(power, None, exported)
         inverter_state = InverterState(
             power=power,
             exported=exported

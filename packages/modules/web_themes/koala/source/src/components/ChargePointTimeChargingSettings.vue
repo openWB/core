@@ -21,15 +21,11 @@
       @click="addScheduledChargingPlan"
     />
   </div>
-  <div
+  <BaseMessage
     v-if="plans.length === 0 && timeChargingEnabled"
-    class="row q-mt-sm q-pa-sm bg-primary text-white no-wrap message-text"
-    color="primary"
-    style="border-radius: 10px"
-  >
-    <q-icon name="info" size="sm" class="q-mr-xs" />
-    Keine Zeitpläne vorhanden.
-  </div>
+    message="Keine Zeitpläne vorhanden."
+    type="info"
+  />
   <div v-else-if="timeChargingEnabled">
     <div v-for="(plan, index) in plans" :key="index" class="row q-mt-sm">
       <ChargePointTimeChargingPlanButton
@@ -61,7 +57,9 @@ import { computed, ref } from 'vue';
 import ChargePointTimeCharging from './ChargePointTimeCharging.vue';
 import ChargePointTimeChargingPlanButton from './ChargePointTimeChargingPlanButton.vue';
 import ChargePointTimeChargingPlanDetails from './ChargePointTimeChargingPlanDetails.vue';
+import BaseMessage from './BaseMessage.vue';
 import { Screen } from 'quasar';
+import { TimeChargingPlan } from 'src/stores/mqtt-store-model';
 
 const props = defineProps<{
   chargePointId: number;
@@ -70,7 +68,7 @@ const props = defineProps<{
 const isSmallScreen = computed(() => Screen.lt.sm);
 
 const currentPlanDetailsVisible = ref<boolean>(false);
-const selectedPlan = ref(null);
+const selectedPlan = ref<TimeChargingPlan | null>(null);
 
 const mqttStore = useMqttStore();
 
@@ -86,7 +84,7 @@ const addScheduledChargingPlan = () => {
   mqttStore.addTimeChargingPlanForChargePoint(props.chargePointId);
 };
 
-const openPlanDialog = (plan) => {
+const openPlanDialog = (plan: TimeChargingPlan) => {
   selectedPlan.value = plan;
   currentPlanDetailsVisible.value = true;
 };

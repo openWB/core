@@ -3,6 +3,7 @@ import { useMqttStore } from "@/stores/mqtt.js";
 import DashboardCard from "@/components/DashboardCard.vue";
 import SparkLine from "@/components/SparkLine.vue";
 import ChargePointPlugBadge from "@/components/ChargePointPlugBadge.vue";
+import ChargePointFaultBadge from "@/components/ChargePointFaultBadge.vue";
 import ChargePointLockButton from "@/components/ChargePointLockButton.vue";
 import ChargePointCodeButton from "@/components/ChargePointCodeButton.vue";
 
@@ -45,6 +46,7 @@ export default {
     DashboardCard,
     SparkLine,
     ChargePointPlugBadge,
+    ChargePointFaultBadge,
     ChargePointLockButton,
     ChargePointCodeButton,
     FontAwesomeIcon,
@@ -70,6 +72,11 @@ export default {
       mqttStore: useMqttStore(),
     };
   },
+  computed: {
+    chargePointColor() {
+      return this.mqttStore.getChargePointColor(this.chargePointId) || "var(--color--primary)";
+    },
+  },
   methods: {
     handleVehicleClick(chargePointId) {
       this.$emit("vehicle-click", chargePointId);
@@ -88,12 +95,22 @@ export default {
 </script>
 
 <template>
-  <dashboard-card color="primary">
+  <dashboard-card
+    color="dark"
+    :highlight-color="chargePointColor"
+  >
     <template #headerLeft>
       {{ mqttStore.getChargePointName(chargePointId) }}
     </template>
     <template #headerRight>
-      <charge-point-plug-badge :charge-point-id="[chargePointId]" />
+      <charge-point-fault-badge
+        class="_margin-right:1 drop-shadow"
+        :charge-point-id="[chargePointId]"
+      />
+      <charge-point-plug-badge
+        class="drop-shadow"
+        :charge-point-id="[chargePointId]"
+      />
     </template>
     <i-container>
       <i-row>
@@ -139,6 +156,7 @@ export default {
                 <font-awesome-icon
                   fixed-width
                   :icon="['fas', 'fa-car']"
+                  :style="{ color: mqttStore.getChargePointConnectedVehicleColor(chargePointId) }"
                 />
                 {{ mqttStore.getChargePointConnectedVehicleName(chargePointId) }}
               </i-badge>
@@ -177,7 +195,7 @@ export default {
                         : ['fas', 'fa-car-battery']
                     "
                   />
-                  {{ mqttStore.getChargePointConnectedVehicleSoc(chargePointId).soc }}%
+                  {{ mqttStore.getChargePointConnectedVehicleSoc(chargePointId)?.soc ?? "-" }}%
                 </span>
                 <font-awesome-icon
                   v-if="
@@ -305,5 +323,9 @@ export default {
 
 .clickable {
   cursor: pointer;
+}
+
+.drop-shadow {
+  box-shadow: 0px 0px 4px black;
 }
 </style>

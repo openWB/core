@@ -3,6 +3,12 @@ export default {
   name: "DashboardCard",
   props: {
     color: { type: String, required: true },
+    highlightColor: { type: String, required: false, default: undefined },
+  },
+  computed: {
+    cardBorderColor() {
+      return this.highlightColor || "#00000000"; // default to transparent if highlightColor is not provided
+    },
   },
 };
 </script>
@@ -40,5 +46,6 @@ export default {
 .card {
   ----background: inherit !important;
   ----body--color: var(--contrast-color-for-dark-background) !important;
+  box-shadow: -4px 0px v-bind(cardBorderColor);
 }
 </style>

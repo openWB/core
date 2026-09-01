@@ -38,8 +38,9 @@ class KostalPikoCiCounterSetup(ComponentSetup[KostalPikoCiCounterConfiguration])
                  name: str = "Kostal Piko CI Zähler",
                  type: str = "counter",
                  id: int = 0,
-                 configuration: KostalPikoCiCounterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or KostalPikoCiCounterConfiguration())
+                 configuration: KostalPikoCiCounterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or KostalPikoCiCounterConfiguration(), **kwargs)
 
 
 @auto_str
@@ -54,5 +55,6 @@ class KostalPikoCiInverterSetup(ComponentSetup[KostalPikoCiInverterConfiguration
                  name: str = "Kostal Piko CI Wechselrichter",
                  type: str = "inverter",
                  id: int = 0,
-                 configuration: KostalPikoCiInverterConfiguration = None) -> None:
-        super().__init__(name, type, id, configuration or KostalPikoCiInverterConfiguration())
+                 configuration: KostalPikoCiInverterConfiguration = None,
+                 **kwargs) -> None:
+        super().__init__(name, type, id, configuration or KostalPikoCiInverterConfiguration(), **kwargs)

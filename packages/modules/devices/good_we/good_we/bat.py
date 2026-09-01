@@ -9,9 +9,11 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.modbus import ModbusDataType
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount import SimCounter
-from modules.common.store import get_bat_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.good_we.good_we.config import GoodWeBatSetup
 from modules.devices.good_we.good_we.version import GoodWeVersion
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -35,9 +37,10 @@ class GoodWeBat(AbstractBat):
         self.version: GoodWeVersion = self.kwargs['version']
         self.firmware: int = self.kwargs['firmware']
         self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['client']
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="speicher")
-        self.store = get_bat_value_store(self.component_config.id)
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, self.component_config.type)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
         self.last_mode = 'Undefined'
 
     def update(self) -> None:
@@ -55,9 +58,11 @@ class GoodWeBat(AbstractBat):
                     35206, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
                 exported = self.__tcp_client.read_holding_registers(
                     35209, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
+                imported, exported = self.peak_filter.check_values(power, imported, exported)
             else:
                 power = self.__tcp_client.read_holding_registers(35264, ModbusDataType.INT_32, unit=self.__modbus_id)*-1
                 soc = self.__tcp_client.read_holding_registers(39005, ModbusDataType.UINT_16, unit=self.__modbus_id)
+                self.peak_filter.check_values(power)
                 imported, exported = self.sim_counter.sim_count(power)
 
         bat_state = BatState(

@@ -7,8 +7,10 @@ from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType
-from modules.common.store import get_counter_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.victron.victron_3p75ct.config import VictronCounterSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -23,8 +25,9 @@ class VictronCounter(AbstractCounter):
 
     def initialize(self) -> None:
         self.__udp_client = self.kwargs['client']
-        self.store = get_counter_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self):
         unit = 1  # Modbus ID ist immer 1 da Standalone Produkt
@@ -47,6 +50,7 @@ class VictronCounter(AbstractCounter):
             imported = self.__udp_client.read_holding_registers(0x3034, ModbusDataType.UINT_32, unit=unit) * 10
             exported = self.__udp_client.read_holding_registers(0x3036, ModbusDataType.UINT_32, unit=unit) * 10
 
+        imported, exported = self.peak_filter.check_values(power, imported, exported)
         counter_state = CounterState(
             voltages=voltages,
             currents=currents,

@@ -198,6 +198,7 @@ class HandlerAlgorithm:
     def handler5Min(self):
         """ Handler, der alle 5 Minuten aufgerufen wird und die Heartbeats der Threads überprüft und die Aufgaben
         ausführt, die nur alle 5 Minuten ausgeführt werden müssen.
+        ChangedValuesHandler hier nicht verwenden, da secondaries data.data nicht aktualisieren.
         """
         try:
             log.debug("5 Minuten Handler ausführen.")
@@ -222,8 +223,7 @@ class HandlerAlgorithm:
                     general_internal_chargepoint_handler.event_start.set()
                 else:
                     general_internal_chargepoint_handler.internal_chargepoint_handler.heartbeat = False
-            with ChangedValuesContext(loadvars_.event_module_update_completed):
-                sub.system_data["system"].update_ip_address()
+            sub.system_data["system"].update_ip_address()
         except Exception:
             log.exception("Fehler im Main-Modul")
 

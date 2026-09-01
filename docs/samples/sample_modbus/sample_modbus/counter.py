@@ -7,8 +7,10 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.simcount import SimCounter
-from modules.common.store import get_counter_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.sample_modbus.sample_modbus.config import SampleCounterSetup
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 
 class KwargsDict(TypedDict):
@@ -44,9 +46,10 @@ class SampleCounter(AbstractCounter):
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
         self.client: ModbusTcpClient_ = self.kwargs['client']
-        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="bezug")
-        self.store = get_counter_value_store(self.component_config.id)
+        self.sim_counter = SimCounter(self.__device_id, self.component_config.id, self.component_config.type)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
     def update(self):
         unit = self.component_config.configuration.modbus_id
@@ -55,9 +58,12 @@ class SampleCounter(AbstractCounter):
         # Register-Mapping und die Modbus-ID
         resp = self.client.read_input_registers_bulk(
             Register.VOLTAGE_L1, 76, mapping=self.REG_MAPPING, unit=self.id)
+        imported, exported = self.peak_filter.check_values(sum(resp[Register.POWER_L1]),
+                                                           resp[Register.IMPORTED],
+                                                           resp[Register.EXPORTED])
         counter_state = CounterState(
-            imported=resp[Register.IMPORTED],
-            exported=resp[Register.EXPORTED],
+            imported=imported,
+            exported=exported,
             power=sum(resp[Register.POWER_L1]),
             voltages=resp[Register.VOLTAGE_L1],
             currents=resp[Register.CURRENT_L1],
@@ -69,6 +75,7 @@ class SampleCounter(AbstractCounter):
 
         # Einzelregister lesen (dauert länger, bei sehr weit >100 auseinanderliegenden Registern sinnvoll)
         power = self.client.read_holding_registers(reg, ModbusDataType.INT_32, unit=unit)
+        self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
 
         counter_state = CounterState(

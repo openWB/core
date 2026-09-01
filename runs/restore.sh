@@ -11,42 +11,32 @@ LOG_FILE="$OPENWB_BASE_DIR/data/log/restore.log"
 {
 	echo "$(date +"%Y-%m-%d %H:%M:%S") Restore of backup started..."
 	echo "****************************************"
-	echo "Step 1: validating extracted files"
-	if [[ ! -f "$WORKING_DIR/SHA256SUM" ]] ||
-		[[ ! -f "$WORKING_DIR/GIT_BRANCH" ]] ||
-		[[ ! -f "$WORKING_DIR/GIT_HASH" ]] ||
-		[[ ! -d "$WORKING_DIR/openWB" ]] ||
-		[[ ! -f "$WORKING_DIR/mosquitto/mosquitto.db" ]] ||
-		[[ ! -f "$WORKING_DIR/mosquitto_local/mosquitto.db" ]]; then
-		echo "this is not a complete archive! aborting restore"
-		exit 1
-	fi
-	if ! (cd "$WORKING_DIR" && sudo sha256sum --quiet --check "SHA256SUM"); then
-		echo "some files were modified or removed! aborting restore"
-		exit 1
-	fi
-	echo "****************************************"
-	echo "Step 2: stop mosquitto services"
+	# already done in prepare_restore.sh:
+	# Step 1: creating working directory
+	# Step 2: extract archive to working directory
+	# Step 3: validating extracted files
+	# Step 4: sync with git
+	echo "Step 5: stop mosquitto services"
 	# no need to stop openwb2.service as we are in pre start script
 	sudo systemctl stop mosquitto.service mosquitto_local.service
 	# give systemctl some time to finish, may be unnecessary?
 	sleep 2
 	echo "****************************************"
-	echo "Step 3: sync with git"
+	echo "Step 6: checkout matching git branch and tag"
 	BRANCH=$(<"$WORKING_DIR/GIT_BRANCH")
 	TAG=$(<"$WORKING_DIR/GIT_HASH")
-	echo "Step 3.1: checkout branch: $BRANCH"
+	echo "Step 6.1: checkout branch: $BRANCH"
 	if ! git -C "$OPENWB_BASE_DIR" checkout --force "$BRANCH"; then
 		echo "checkout of branch \"$BRANCH\" failed! aborting restore"
 		exit 1
 	fi
-	echo "Step 3.2: reset to matching version: [$TAG]"
+	echo "Step 6.2: reset to matching version: [$TAG]"
 	if ! git -C "$OPENWB_BASE_DIR" reset --hard "$TAG"; then
 		echo "reset to version [$TAG] failed! aborting restore"
 		exit 1
 	fi
 	echo "****************************************"
-	echo "Step 4: restore contents of backup"
+	echo "Step 7: restore contents of backup"
 	# we use cp not mv because of not empty directories in destination
 	sudo cp -v -p -r "${WORKING_DIR}/openWB/." "${OPENWB_BASE_DIR}/"
 	if [[ -f "$WORKING_DIR/configuration.json" ]]; then
@@ -60,7 +50,7 @@ LOG_FILE="$OPENWB_BASE_DIR/data/log/restore.log"
 		echo "Backup does not contain mosquitto_ctrl. Skipping restore."
 	fi
 	echo "****************************************"
-	echo "Step 5.1: restore mosquitto db"
+	echo "Step 7.1: restore mosquitto db"
 	if [[ -f "${WORKING_DIR}/mosquitto/mosquitto.db" ]]; then
 		sudo mv -v -f "${WORKING_DIR}/mosquitto/mosquitto.db" "$MOSQUITTO_DB_DIR/mosquitto.db"
 		sudo chown mosquitto:mosquitto "$MOSQUITTO_DB_DIR/mosquitto.db"
@@ -81,7 +71,7 @@ LOG_FILE="$OPENWB_BASE_DIR/data/log/restore.log"
 		echo "Backup does not contain local mosquitto.db. Skipping restore."
 	fi
 	echo "****************************************"
-	echo "Step 5.2: restore mosquitto configuration"
+	echo "Step 7.2: restore mosquitto configuration"
 	if [[ -d "${WORKING_DIR}/conf_local.d" ]]; then
 		# remove old configuration
 		sudo rm -v -r "$MOSQUITTO_CONF_DIR/conf_local.d"
@@ -90,19 +80,15 @@ LOG_FILE="$OPENWB_BASE_DIR/data/log/restore.log"
 	else
 		echo "Backup does not contain mosquitto configuration. Skipping restore."
 	fi
-	# already done in prepare_restore.sh
-	# echo "****************************************"
-	# echo "Step 5.3: clean mosquitto configuration, will be recreated on next start"
-	# sudo rm -v -f "$MOSQUITTO_CONF_DIR/conf.d/openwb-*.conf"
 	echo "****************************************"
-	echo "Step 6: restore boot file"
+	echo "Step 8: restore boot file"
 	if [[ -f "${WORKING_DIR}/boot/config.txt" ]]; then
 		sudo mv -v -f "${WORKING_DIR}/boot/config.txt" "/boot/"
 	else
 		echo "Backup does not contain boot file. Skipping restore."
 	fi
 	echo "****************************************"
-	echo "Step 7: cleanup after restore"
+	echo "Step 9: cleanup after restore"
 	sudo rm "$SOURCE_FILE"
 	sudo rm -R "$WORKING_DIR"
 	echo "****************************************"

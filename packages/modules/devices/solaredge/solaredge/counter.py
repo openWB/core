@@ -8,10 +8,12 @@ from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.modbus import ModbusDataType
-from modules.common.store import get_counter_value_store
+from modules.common.store import get_component_value_store
 from modules.devices.solaredge.solaredge.config import SolaredgeCounterSetup
 from modules.devices.solaredge.solaredge.scale import scale_registers
 from modules.devices.solaredge.solaredge.meter import SolaredgeMeterRegisters, set_component_registers
+from modules.common.utils.peak_filter import PeakFilter
+from modules.common.component_type import ComponentType
 
 log = logging.getLogger(__name__)
 
@@ -29,8 +31,9 @@ class SolaredgeCounter(AbstractCounter):
     def initialize(self) -> None:
         self.__tcp_client: modbus.ModbusTcpClient_ = self.kwargs['client']
         self.registers = SolaredgeMeterRegisters()
-        self.store = get_counter_value_store(self.component_config.id)
+        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.COUNTER, self.component_config.id, self.fault_state)
 
         components = list(self.kwargs['components'].values())
         components.append(self)
@@ -56,10 +59,14 @@ class SolaredgeCounter(AbstractCounter):
         resp = self.__tcp_client.read_holding_registers_bulk(
             self.registers.currents, 52, mapping=reg_mapping, unit=self.component_config.configuration.modbus_id)
 
+        imported = scale_registers(resp[self.registers.imported], resp[self.registers.imp_exp_scale])
+        exported = scale_registers(resp[self.registers.exported], resp[self.registers.imp_exp_scale])
+        power = scale_registers(resp[self.registers.power], resp[self.registers.powers_scale]) * -1
+        imported, exported = self.peak_filter.check_values(power, imported, exported)
         counter_state = CounterState(
-            imported=scale_registers(resp[self.registers.imported], resp[self.registers.imp_exp_scale]),
-            exported=scale_registers(resp[self.registers.exported], resp[self.registers.imp_exp_scale]),
-            power=scale_registers(resp[self.registers.power], resp[self.registers.powers_scale]) * -1,
+            imported=imported,
+            exported=exported,
+            power=power,
             powers=[-power for power in scale_registers(resp[self.registers.powers],
                                                         resp[self.registers.powers_scale])],
             voltages=scale_registers(resp[self.registers.voltages], resp[self.registers.voltages_scale]),
