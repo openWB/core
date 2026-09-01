@@ -935,8 +935,6 @@ class SetData:
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "openWB/set/counter/get/hierarchy" in msg.topic:
                 self._validate_value(msg, None)
-            elif "openWB/set/counter/config/home_consumption_source_id" in msg.topic:
-                self._validate_value(msg, int)
             elif "openWB/set/counter/set/simulation" in msg.topic:
                 self._validate_value(msg, "json")
             elif "/set/consumption_left" in msg.topic:
@@ -948,6 +946,8 @@ class SetData:
             elif ("/config/max_total_power" in msg.topic or
                   "/config/max_power_errorcase" in msg.topic):
                 self._validate_value(msg, int, [(0,  float("inf"))])
+            elif ("/config/is_home_consumption_counter" in msg.topic):
+                self._validate_value(msg, str)
             elif subdata.SubData.counter_data.get(f"counter{get_index(msg.topic)}"):
                 if ("/get/powers" in msg.topic or
                         "/get/currents" in msg.topic):
