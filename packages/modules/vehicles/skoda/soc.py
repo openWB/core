@@ -14,13 +14,13 @@ log = logging.getLogger(__name__)
 def fetch(vehicle_config: Myskoda, vehicle_update_data: VehicleUpdateData) -> CarState:
     config = vehicle_config.configuration
 
-    data = api.fetch_vehicle(config.api_key, config.vin, config.sandbox)
+    data = api.fetch_vehicle(config.api_key, config.vin)
 
     soc = api.extract_soc(data)
-    range = api.extract_range(data)
-    odometer = api.extract_odometer(data)
+    range_km = api.extract_range(data)
+    odometer_km = api.extract_odometer(data)
 
-    return CarState(soc=soc, range=range, odometer=odometer)
+    return CarState(soc=soc, range=range_km, odometer=odometer_km)
 
 
 def create_vehicle(vehicle_config: Myskoda, vehicle: int):
