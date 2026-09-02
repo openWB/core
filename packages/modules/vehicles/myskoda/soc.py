@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import logging
 
+from dataclass_utils import asdict
+from helpermodules.pub import Pub
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.abstract_vehicle import VehicleUpdateData
 from modules.common.component_state import CarState
@@ -11,10 +13,16 @@ from modules.vehicles.myskoda.config import Myskoda
 log = logging.getLogger(__name__)
 
 
-def fetch(vehicle_config: Myskoda, vehicle_update_data: VehicleUpdateData) -> CarState:
+def fetch(vehicle_config: Myskoda, vehicle: int) -> CarState:
     config = vehicle_config.configuration
 
-    data = api.fetch_vehicle(config.api_key, config.vin)
+    data, key_expires_at = api.fetch_vehicle(config.api_key, config.vin)
+
+    # Ablaufdatum nur bei Änderung zurückschreiben, um nicht bei jedem Zyklus
+    # unnötig eine retained MQTT-Message zu publishen
+    if key_expires_at and key_expires_at != config.key_expires_at:
+        config.key_expires_at = key_expires_at
+        Pub().pub(f"openWB/set/vehicle/{vehicle}/soc_module/config", asdict(vehicle_config))
 
     soc = api.extract_soc(data)
     range_km = api.extract_range(data)
@@ -25,7 +33,7 @@ def fetch(vehicle_config: Myskoda, vehicle_update_data: VehicleUpdateData) -> Ca
 
 def create_vehicle(vehicle_config: Myskoda, vehicle: int):
     def updater(vehicle_update_data: VehicleUpdateData) -> CarState:
-        return fetch(vehicle_config, vehicle_update_data)
+        return fetch(vehicle_config, vehicle)
 
     return ConfigurableVehicle(vehicle_config=vehicle_config,
                                 component_updater=updater,
