@@ -67,7 +67,8 @@ def charge_action(api_key: str, vin: str, start: bool) -> None:
 
 
 def extract_soc(data: dict) -> float:
-    status = ((data.get("charging") or {}).get("status")) or {}
+    vehicle = data.get("vehicle") or {}
+    status = ((vehicle.get("charging") or {}).get("status")) or {}
     battery = status.get("battery")
     if battery is None or battery.get("stateOfChargeInPercent") is None:
         raise part_error(data, "CHARGING")
@@ -75,7 +76,8 @@ def extract_soc(data: dict) -> float:
 
 
 def extract_range(data: dict) -> Optional[float]:
-    status = ((data.get("charging") or {}).get("status")) or {}
+    vehicle = data.get("vehicle") or {}
+    status = ((vehicle.get("charging") or {}).get("status")) or {}
     battery = status.get("battery")
     meters = battery.get("remainingCruisingRangeInMeters") if battery else None
     if meters is None:
@@ -84,7 +86,8 @@ def extract_range(data: dict) -> Optional[float]:
 
 
 def extract_odometer(data: dict) -> Optional[float]:
-    odometer = data.get("odometer")
+    vehicle = data.get("vehicle") or {}
+    odometer = vehicle.get("odometer")
     if odometer is None or odometer.get("mileageInKm") is None:
         return None
     return float(odometer["mileageInKm"])
