@@ -6,7 +6,6 @@ log = logging.getLogger(__name__)
 
 # https://public.api.connect.skoda-auto.cz/docs/myskoda-public-api.yaml
 BASE_URI = "https://public.api.connect.skoda-auto.cz/api/v1"
-SANDBOX_URI = "https://public.test-api.connect.skoda-auto.cz/api/v1"
 
 # Teile, die wir für SoC/Reichweite/Kilometerstand benötigen
 INCLUDE_PARTS = ("charging", "odometer")
@@ -21,11 +20,7 @@ class MyskodaApiError(Exception):
     pass
 
 
-def _base_uri(sandbox: bool) -> str:
-    return SANDBOX_URI if sandbox else BASE_URI
-
-
-def fetch_vehicle(api_key: str, vin: str, sandbox: bool = False, include: tuple = INCLUDE_PARTS) -> dict:
+def fetch_vehicle(api_key: str, vin: str, include: tuple = INCLUDE_PARTS) -> dict:
     """Ruft den Fahrzeugstatus von der MyŠkoda Public API ab.
 
     Die API liefert bei nicht verfügbaren Teilen (z.B. Auto offline) keinen Fehler-Status,
@@ -33,7 +28,7 @@ def fetch_vehicle(api_key: str, vin: str, sandbox: bool = False, include: tuple 
     """
     from modules.common import req  # lokaler Import: api.py bleibt standalone testbar (siehe test_api.py)
 
-    uri = f"{_base_uri(sandbox)}/vehicles/{vin}"
+    uri = f"{BASE_URI}/vehicles/{vin}"
     if include:
         uri += "?include=" + ",".join(include)
 
@@ -57,13 +52,13 @@ def part_error(data: dict, part_prefix: str) -> MyskodaApiError:
     return MyskodaApiError(f"{part_prefix} nicht verfügbar")
 
 
-def charge_action(api_key: str, vin: str, start: bool, sandbox: bool = False) -> None:
+def charge_action(api_key: str, vin: str, start: bool) -> None:
     """Startet oder stoppt die Ladung. Wird von openWB soc.py aktuell nicht genutzt,
     steht aber für spätere Ladesteuerung über dieses Modul bereit."""
     from modules.common import req
 
     action = "start" if start else "stop"
-    uri = f"{_base_uri(sandbox)}/vehicles/{vin}/charging/{action}"
+    uri = f"{BASE_URI}/vehicles/{vin}/charging/{action}"
 
     session = req.get_http_session()
     session.headers.update({"X-API-Key": api_key})
