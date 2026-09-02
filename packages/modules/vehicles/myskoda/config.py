@@ -1,16 +1,22 @@
+from dataclasses import dataclass
+
+
+@dataclass
 class MyskodaConfiguration:
-    def __init__(self,
-                 api_key: str = None,
-                 vin: str = None) -> None:
-        self.api_key = api_key
-        self.vin = vin
+    api_key: str = ""
+    vin: str = ""
+    # wird vom Backend nach jedem erfolgreichen Abruf aus dem API-Response-Header
+    # zurückgeschrieben (ISO-8601), nicht vom Nutzer editierbar - siehe soc.py
+    key_expires_at: str = ""
 
 
+@dataclass
 class Myskoda:
-    def __init__(self,
-                 name: str = "MyŠkoda (Public API)",
-                 type: str = "myskoda",
-                 configuration: MyskodaConfiguration = None) -> None:
-        self.name = name
-        self.type = type
-        self.configuration = configuration or MyskodaConfiguration()
+    name: str = "MyŠkoda (Public API)"
+    type: str = "myskoda"
+    official: bool = False
+    configuration: MyskodaConfiguration = None
+
+    def __post_init__(self):
+        if self.configuration is None:
+            self.configuration = MyskodaConfiguration()
