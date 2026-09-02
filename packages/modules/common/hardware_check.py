@@ -15,15 +15,15 @@ EVSE_MIN_FIRMWARE = 7
 MAX_ATTEMPTS = 3
 RETRY_DELAY_SECONDS = 0.3
 
-RS485_ADAPTER_BROKEN = "Erneutes Auslesen des {}"
-USB_ADAPTER_BROKEN = RS485_ADAPTER_BROKEN.format('USB-Adapters')
-LAN_ADAPTER_BROKEN = RS485_ADAPTER_BROKEN.format('LAN-Konverters')
+READ_RS485_ADAPTER_AGAIN = "Erneutes Auslesen des {}"
+READ_USB_ADAPTER_AGAIN = READ_RS485_ADAPTER_AGAIN.format('USB-Adapters')
+READ_LAN_ADAPTER_AGAIN = READ_RS485_ADAPTER_AGAIN.format('LAN-Konverters')
 METER_PROBLEM = "Erneutes Auslesen des Zählers"
-METER_BROKEN_VOLTAGES = "Erneutes Auslesen der Spannungen am Zähler: {}V"
+READ_METER_VOLTAGES_AGAIN = "Erneutes Auslesen der Spannungen am Zähler: {}V"
 METER_NO_SERIAL_NUMBER = ("Die Seriennummer des Zählers für das Ladelog kann nicht ausgelesen werden. Wenn Du die "
                           "Seriennummer für Abrechnungszwecke benötigst, wende Dich bitte an unseren Support. Die "
                           "Funktionalität wird dadurch nicht beeinträchtigt!")
-EVSE_BROKEN = "Erneutes Auslesen der EVSE"
+READ_EVSE_AGAIN = "Erneutes Auslesen der EVSE"
 
 
 def check_meter_values(counter_state: CounterState, fault_state: Optional[FaultState] = None) -> None:
@@ -40,7 +40,7 @@ def _check_meter_values(counter_state: CounterState) -> Optional[str]:
     # beim Ladestart sind Strom und Spannung nicht immer konsistent.
     voltages = counter_state.voltages
     if (voltages[1] == 0 and voltages[2] > 30) or voltages[0] == 0:
-        return METER_BROKEN_VOLTAGES.format(voltages)
+        return READ_METER_VOLTAGES_AGAIN.format(voltages)
     return None
 
 
@@ -93,31 +93,31 @@ class SeriesHardwareCheckMixin:
                             pymodbus.exceptions.ConnectionException) as e:
                         evse_check_passed = self.handle_exception(e)
                         # nur warten, wenn danach noch ein Versuch folgt
-                        if attempt < MAX_ATTEMPTS - 2 and evse_check_passed is False:
+                        if attempt < MAX_ATTEMPTS - 1 and evse_check_passed is False:
                             time.sleep(RETRY_DELAY_SECONDS)
         except Exception as e:
             evse_check_passed = self.handle_exception(e)
         meter_check_passed, meter_error_msg, counter_state = self.check_meter()
         if meter_check_passed is False and evse_check_passed is False:
             if isinstance(self.client, ModbusTcpClient_):
-                raise Exception(LAN_ADAPTER_BROKEN)
+                raise Exception(READ_LAN_ADAPTER_AGAIN)
             else:
-                raise Exception(USB_ADAPTER_BROKEN)
+                raise Exception(READ_USB_ADAPTER_AGAIN)
         if meter_check_passed is False:
             if evse_check_passed is False:
                 if isinstance(self.client, ModbusTcpClient_):
-                    raise Exception(LAN_ADAPTER_BROKEN)
+                    raise Exception(READ_LAN_ADAPTER_AGAIN)
                 else:
-                    raise Exception(USB_ADAPTER_BROKEN)
+                    raise Exception(READ_USB_ADAPTER_AGAIN)
             else:
                 raise Exception(meter_error_msg)
         elif evse_check_passed and meter_check_passed and meter_error_msg is not None:
             fault_state.warning(meter_error_msg)
         if evse_check_passed is False:
             if meter_error_msg is not None:
-                raise Exception(EVSE_BROKEN + " " + meter_error_msg)
+                raise Exception(f"{READ_EVSE_AGAIN} {meter_error_msg}")
             else:
-                raise Exception(EVSE_BROKEN)
+                raise Exception(READ_EVSE_AGAIN)
         return evse_state, counter_state
 
     def check_meter(self: ClientHandlerProtocol) -> Tuple[bool, Optional[str], CounterState]:

@@ -58,7 +58,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 137
+    DATASTORE_VERSION = 139
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -577,9 +577,9 @@ class UpdateConfig:
         ("openWB/bat/config/bat_control_max_soc", 90),
         ("openWB/bat/config/manual_mode", "manual_disable"),
         ("openWB/bat/config/price_limit_activated", False),
-        ("openWB/bat/config/price_limit$", 0.3),
+        ("openWB/bat/config/price_limit", 0.3),
         ("openWB/bat/config/price_charge_activated", False),
-        ("openWB/bat/config/charge_limit$", 0.3),
+        ("openWB/bat/config/charge_limit", 0.3),
         ("openWB/bat/config/configured", False),
         ("openWB/bat/get/fault_state", 0),
         ("openWB/bat/get/fault_str", NO_ERROR),
@@ -2858,12 +2858,9 @@ class UpdateConfig:
                 if payload.get("type") == "bmwbc":
                     pub_system_message(
                         {},
-                        "Die Schnittstelle des bisherigen BMW-Moduls wurde eingestellt und in openWB entfernt. Bitte "
-                        "beachte, dass Du ohne die Konfiguration eines anderen Fahrzeug-Moduls kein SoC-basiertes "
-                        "Laden nutzen kannst.<br />Unsere Fahrzeug-Module werden von der Community entwickelt. Wenn du "
-                        "also ein BMW-Fahrer bist und gerne ein neues BMW-Modul in openWB programmieren möchtest, "
-                        "findest Du im <a href='https://forum.openwb.de/viewtopic.php?t=4870&start=960'>Forum</a> "
-                        "weitere Informationen.",
+                        "Die Schnittstelle des bisherigen BMW-Moduls wurde eingestellt und "
+                        "die SoC-Abfrage über die neue Schnittstelle BMW CarData von der Community implementiert. "
+                        "Bitte die Kopplung im neuen BMW-Modul durchführen.",
                         MessageType.INFO,
                     )
                     return {topic: NO_MODULE}
@@ -3481,3 +3478,51 @@ class UpdateConfig:
                     return {topic: payload}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(137)
+
+    def upgrade_datastore_138(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("^openWB/system/device/[0-9]+/config$", topic) is not None:
+                payload_device = decode_payload(payload)
+                if payload_device.get("type") == "anker_solix":
+                    index = get_index(topic)
+                    modbus_id = None
+                    for topic_component, payload_component in self.all_received_topics.items():
+                        if re.search(f"^openWB/system/device/{index}/component/[0-9]+/config$",
+                                     topic_component) is not None:
+                            payload_component = decode_payload(payload_component)
+                            component_modbus_id = payload_component.get("configuration", {}).get("modbus_id")
+                            if component_modbus_id is not None:
+                                modbus_id = component_modbus_id
+                                break
+                    payload_device["type"] = "solarbank_max_ac"
+                    if modbus_id is not None:
+                        payload_device["configuration"]["modbus_id"] = modbus_id
+                    return {topic: payload_device}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(138)
+
+    def upgrade_datastore_139(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("^openWB/system/device/[0-9]+/config$", topic) is not None:
+                payload_device = decode_payload(payload)
+                if payload_device.get("type") in ("solarbank_4_e5000", "solarbank_max_ac"):
+                    old_type = payload_device["type"]
+                    payload_device["type"] = "solarbank"
+                    if old_type == "solarbank_max_ac":
+                        index = get_index(topic)
+                        for topic_component, payload_component in self.all_received_topics.items():
+                            if re.search(f"^openWB/system/device/{index}/component/[0-9]+/config$",
+                                         topic_component) is not None:
+                                payload_component = decode_payload(payload_component)
+                                if payload_component.get("type") == ComponentType.COUNTER.value:
+                                    pub_system_message(
+                                        payload_device,
+                                        "Die Solarbank Max AC unterstuetzt den Zaehler nicht mehr als eigene "
+                                        "Komponente. Bitte lege den Anker SOLIX Smart Meter Gen 2 als "
+                                        "eigenstaendiges Geraet mit eigener IP-Adresse an und entferne die "
+                                        "bisherige Zaehler-Komponente unter Einstellungen -> Konfiguration -> "
+                                        "Geraete manuell.", MessageType.WARNING)
+                                    break
+                    return {topic: payload_device}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(139)
