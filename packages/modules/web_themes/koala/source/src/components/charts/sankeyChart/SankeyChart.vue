@@ -61,7 +61,7 @@ const edgeCount = computed(() => allocation.value.edges.length);
 
 const formatWatts = (watts: number): string => {
   if (Math.abs(watts) >= 1000) {
-    return `${(watts / 1000).toLocaleString('de-DE', {
+    return `${(watts / 1000).toLocaleString(undefined, {
       minimumFractionDigits: 1,
       maximumFractionDigits: 1,
     })} kW`;
@@ -69,7 +69,8 @@ const formatWatts = (watts: number): string => {
   return `${Math.round(watts)} W`;
 };
 
-const { hoverPlugin, focusColors, dimIfUnfocused } = useSankeyHover(colorForNode);
+const { hoverPlugin, focusColors, dimIfUnfocused } =
+  useSankeyHover(colorForNode);
 
 const flowLabels = createFlowLabels({
   format: formatWatts,
@@ -100,7 +101,11 @@ const chartData = computed<ChartData<'sankey'>>(() => {
     datasets: [
       {
         label: 'Energiefluss',
-        data: edges.map((edge) => ({ from: edge.from, to: edge.to, flow: edge.flow })),
+        data: edges.map((edge) => ({
+          from: edge.from,
+          to: edge.to,
+          flow: edge.flow,
+        })),
         labels,
         column: columns,
         colorFrom: (ctx) =>
