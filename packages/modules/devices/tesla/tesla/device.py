@@ -2,14 +2,23 @@
 import logging
 import requests
 from requests import HTTPError
-from typing import Iterable, Union, Optional
+from typing import Iterable, Optional, Union
 
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
-from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
+from modules.common.configurable_device import (
+    ComponentFactoryByType,
+    ConfigurableDevice,
+    MultiComponentUpdater,
+)
 from modules.common.req import get_http_session
 from modules.devices.tesla.tesla.bat import TeslaBat
-from modules.devices.tesla.tesla.config import Tesla, TeslaBatSetup, TeslaCounterSetup, TeslaInverterSetup
+from modules.devices.tesla.tesla.config import (
+    Tesla,
+    TeslaBatSetup,
+    TeslaCounterSetup,
+    TeslaInverterSetup,
+)
 from modules.devices.tesla.tesla.counter import TeslaCounter
 from modules.devices.tesla.tesla.http_client import PowerwallHttpClient
 from modules.devices.tesla.tesla.inverter import TeslaInverter
@@ -24,29 +33,35 @@ def __update_components(
     aggregate = client.get_json("/api/meters/aggregates")
 
     for component in components:
-        try:
-            # For Tesla/Powerwall we want fail-fast behaviour:
-            # if one critical component update fails (especially EVU / house transition point),
-            # abort the remaining Tesla component updates in this cycle.
-            with SingleComponentUpdateContext(component.fault_state, reraise=True):
-                component.update(client, aggregate)
-        except Exception:
-            break
+        with SingleComponentUpdateContext(component.fault_state):
+            component.update(client, aggregate)
 
 
-def _authenticate(session: requests.Session, url: str, email: str, password: str):
+def _authenticate(
+    session: requests.Session,
+    url: str,
+    email: str,
+    password: str,
+):
     """
     email is not yet required for login (2022/01), but we simulate the whole login page
     """
     response = session.post(
         "https://" + url + "/api/login/Basic",
-        json={"username": "customer", "email": email, "password": password, "force_sm_off": False},
+        json={
+            "username": "customer",
+            "email": email,
+            "password": password,
+            "force_sm_off": False,
+        },
         verify=False,
         timeout=5,
     )
-    response.raise_for_status()
 
-    return {"AuthCookie": response.cookies["AuthCookie"], "UserRecord": response.cookies["UserRecord"]}
+    return {
+        "AuthCookie": response.cookies["AuthCookie"],
+        "UserRecord": response.cookies["UserRecord"],
+    }
 
 
 def create_device(device_config: Tesla):
@@ -62,52 +77,89 @@ def create_device(device_config: Tesla):
     def create_inverter_component(component_config: TeslaInverterSetup):
         return TeslaInverter(component_config)
 
-							  
-									 
-												  
-						 
-												  
-																							  
-
-    def update_components(components: Iterable[Union[TeslaBat, TeslaCounter, TeslaInverter]]):
+    def update_components(
+        components: Iterable[Union[TeslaBat, TeslaCounter, TeslaInverter]],
+    ):
         nonlocal http_client, session
+
         log.debug("Beginning update")
+
         address = device_config.configuration.ip_address
         email = device_config.configuration.email
-        password = device_config.configuration.password							 
+        password = device_config.configuration.password
 
-        # First run after process start: no cookies -> authenticate once
         if http_client.cookies is None:
-            http_client.cookies = _authenticate(session, address, email, password)
-											 
+            http_client.cookies = _authenticate(
+                session,
+                address,
+                email,
+                password,
+            )
             __update_components(http_client, components)
             return
 
-        # Normal operation: reuse cookie. If it fails with 401/403 -> re-auth
         try:
             __update_components(http_client, components)
             return
         except HTTPError as e:
-            status = getattr(getattr(e, "response", None), "status_code", None)
+            status = getattr(
+                getattr(e, "response", None),
+                "status_code",
+                None,
+            )
+
             if status not in (401, 403):
                 raise
+
             log.warning(
-                "Login to powerwall with existing cookie failed (status=%s). Will retry with new cookie...",
+                "Login to powerwall with existing cookie failed "
+                "(status=%s). Will retry with new cookie...",
                 status,
             )
 
-        http_client.cookies = _authenticate(session, address, email, password)
-										 
+        http_client.cookies = _authenticate(
+            session,
+            address,
+            email,
+            password,
+        )
         __update_components(http_client, components)
 
     def initializer():
         nonlocal http_client, session
+
+        address = device_config.configuration.ip_address
+        email = device_config.configuration.email
+        password = device_config.configuration.password
+
         session = get_http_session()
-        http_client = PowerwallHttpClient(device_config.configuration.ip_address, session, None)
+
+        http_client = PowerwallHttpClient(
+            address,
+            session,
+            None,
+        )
+
+        http_client.cookies = _authenticate(
+            session,
+            address,
+            email,
+            password,
+        )
+
+        try:
+            status = http_client.get_json("/api/status")
+            log.debug("Firmware: %s", status["version"])
+        except (KeyError, requests.RequestException, ValueError):
+            log.debug(
+                "Could not read Tesla Powerwall firmware version.",
+                exc_info=True,
+            )
 
     return ConfigurableDevice(
         device_config=device_config,
         initializer=initializer,
+        error_handler=initializer,
         component_factory=ComponentFactoryByType(
             bat=create_bat_component,
             counter=create_counter_component,
@@ -118,8 +170,5 @@ def create_device(device_config: Tesla):
 
 
 device_descriptor = DeviceDescriptor(
-    configuration_factory=Tesla,
-    compatibility_device_note="Tesla hat die lokale API Anfang 2025 mittels Firmwareupdate abgeschaltet.\nFür "
-    "Neuanlagen muss aktuell auf unsere Zählerkits zurückgegriffen werden.",
-    special_icon="ℹ️"
+    configuration_factory=Tesla
 )
