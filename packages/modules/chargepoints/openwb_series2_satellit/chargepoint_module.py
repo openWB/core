@@ -108,7 +108,8 @@ class ChargepointModule(AbstractChargepoint):
                 except Exception:
                     if self.client_error_context.error_counter_exceeded():
                         run_command(f"{Path(__file__).resolve().parents[3]}/modules/chargepoints/"
-                                    "openwb_series2_satellit/restart_protoss_satellite")
+                                    "openwb_series2_satellit/restart_protoss_satellite",
+                                    self.config.configuration.ip_address)
                         chargepoint_state = ChargepointState(
                             plug_state=None, charge_state=False, imported=None,
                             # bei im-/exported None werden keine Werte gepublished
