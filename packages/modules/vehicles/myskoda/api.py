@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from typing import Optional, Tuple
+
+from modules.common import req
 
 log = logging.getLogger(__name__)
 
@@ -43,7 +45,7 @@ def check_key_expiry(response, warn_days: int = KEY_EXPIRY_WARN_DAYS) -> None:
         )
 
 
-def fetch_vehicle(api_key: str, vin: str, include: tuple = INCLUDE_PARTS) -> "tuple[dict, Optional[str]]":
+def fetch_vehicle(api_key: str, vin: str, include: tuple = INCLUDE_PARTS) -> Tuple[dict, Optional[str]]:
     """Ruft den Fahrzeugstatus von der MyŠkoda Public API ab.
 
     Die API liefert bei nicht verfügbaren Teilen (z.B. Auto offline) keinen Fehler-Status,
@@ -53,8 +55,6 @@ def fetch_vehicle(api_key: str, vin: str, include: tuple = INCLUDE_PARTS) -> "tu
     key_expires_at wird von soc.py in die Fahrzeug-Konfiguration zurückgeschrieben,
     damit die Gültigkeit des Keys auch im UI angezeigt werden kann.
     """
-    from modules.common import req  # lokaler Import: api.py bleibt standalone testbar (siehe test_api.py)
-
     uri = f"{BASE_URI}/vehicles/{vin}"
     if include:
         uri += "?include=" + ",".join(include)
@@ -83,8 +83,6 @@ def part_error(data: dict, part_prefix: str) -> MyskodaApiError:
 def charge_action(api_key: str, vin: str, start: bool) -> None:
     """Startet oder stoppt die Ladung. Wird von openWB soc.py aktuell nicht genutzt,
     steht aber für spätere Ladesteuerung über dieses Modul bereit."""
-    from modules.common import req
-
     action = "start" if start else "stop"
     uri = f"{BASE_URI}/vehicles/{vin}/charging/{action}"
 
