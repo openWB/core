@@ -1,12 +1,9 @@
 class MyskodaConfiguration:
     def __init__(self,
                  api_key: str = None,
-                 vin: str = None,
-                 sandbox: bool = False) -> None:
+                 vin: str = None) -> None:
         self.api_key = api_key
         self.vin = vin
-        # sandbox=True nutzt public.test-api.connect.skoda-auto.cz statt der Produktiv-API
-        self.sandbox = sandbox
 
 
 class Myskoda:
