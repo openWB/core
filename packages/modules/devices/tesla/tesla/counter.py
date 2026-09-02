@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import logging
 import math
-from requests import HTTPError
 
 from modules.common.abstract_device import AbstractCounter
 from modules.common.component_state import CounterState
@@ -19,24 +18,23 @@ class TeslaCounter(AbstractCounter):
         self.component_config = component_config
 
     def initialize(self) -> None:
-        self.store = get_component_value_store(self.component_config.type, self.component_config.id)
-        self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
-
-    @staticmethod
-    def _safe_float(val, default: float = 0.0) -> float:
-        try:
-            if val is None:
-                return default
-            return float(val)
-        except (TypeError, ValueError):
-            return default
+        self.store = get_component_value_store(
+            self.component_config.type,
+            self.component_config.id,
+        )
+        self.fault_state = FaultState(
+            ComponentInfo.from_component_config(self.component_config)
+        )
 
     @staticmethod
     def _nearly_zero(x: float, eps: float = 1e-9) -> bool:
         return abs(x) < eps
 
     def _calc_currents_and_pf_from_pqu(
-        self, voltages: list[float], p_list: list[float], q_list: list[float]
+        self,
+        voltages: list[float],
+        p_list: list[float],
+        q_list: list[float],
     ) -> tuple[list[float], list[float]]:
         """
         Calculates signed currents (A) and signed power factors per phase from P/Q/U.
@@ -51,9 +49,9 @@ class TeslaCounter(AbstractCounter):
         pfs: list[float] = [0.0, 0.0, 0.0]
 
         for i in range(3):
-            u = self._safe_float(voltages[i], 0.0)
-            p = self._safe_float(p_list[i], 0.0)
-            q = self._safe_float(q_list[i], 0.0)
+            u = voltages[i]
+            p = p_list[i]
+            q = q_list[i]
 
             if self._nearly_zero(u):
                 currents[i] = 0.0
@@ -74,48 +72,41 @@ class TeslaCounter(AbstractCounter):
         return currents, pfs
 
     def update(self, client: PowerwallHttpClient, aggregate):
-							   
-														   
-																			 
-						   
-													
-							  
-													 
-							  
-
-					   
-				
-																		
-															   
-															  
-							 
-																			
-					
-
         try:
             meters_site = client.get_json("/api/meters/site")
             cached = meters_site[0]["Cached_readings"]
 
-            # --- voltages / powers / reactive powers (per phase) ---
-            voltages = [self._safe_float(cached.get(f"v_l{phase}n")) for phase in range(1, 4)]
-            p_list = [self._safe_float(cached.get(f"real_power_{ph}")) for ph in ["a", "b", "c"]]
-            q_list = [self._safe_float(cached.get(f"reactive_power_{ph}")) for ph in ["a", "b", "c"]]
+            voltages = [
+                float(cached[f"v_l{phase}n"])
+                for phase in range(1, 4)
+            ]
 
-            # --- currents from API (often all 0 on Neurio/Tesla) ---
-            api_currents = [self._safe_float(cached.get(f"i_{ph}_current")) for ph in ["a", "b", "c"]]
+            p_list = [
+                float(cached[f"real_power_{phase}"])
+                for phase in ["a", "b", "c"]
+            ]
 
-            # --- energy counters: use aggregate site values as sole source ---
-            imported = self._safe_float(aggregate["site"]["energy_imported"])
-            exported = self._safe_float(aggregate["site"]["energy_exported"])
+            q_list = [
+                float(cached[f"reactive_power_{phase}"])
+                for phase in ["a", "b", "c"]
+            ]
 
-            # --- local fallback for Tesla/Neurio setups with missing phase currents ---
-            calculated_currents, power_factors = self._calc_currents_and_pf_from_pqu(
-                voltages=voltages,
-                p_list=p_list,
-                q_list=q_list,
+            api_currents = [
+                float(cached[f"i_{phase}_current"])
+                for phase in ["a", "b", "c"]
+            ]
+
+            imported = aggregate["site"]["energy_imported"]
+            exported = aggregate["site"]["energy_exported"]
+
+            calculated_currents, power_factors = (
+                self._calc_currents_and_pf_from_pqu(
+                    voltages=voltages,
+                    p_list=p_list,
+                    q_list=q_list,
+                )
             )
 
-						
             if all(self._nearly_zero(i) for i in api_currents):
                 currents = calculated_currents
                 log.debug(
@@ -124,9 +115,11 @@ class TeslaCounter(AbstractCounter):
                 )
             else:
                 currents = api_currents
-                log.debug("Using phase currents from Tesla/Neurio API.")
+                log.debug(
+                    "Using phase currents from Tesla/Neurio API."
+                )
 
-            freq = self._safe_float(aggregate["site"].get("frequency", 50.0), 50.0)
+            frequency = float(aggregate["site"]["frequency"])
 
             serial = cached.get("serial_number")
             serial_number = str(serial) if serial else None
@@ -134,27 +127,31 @@ class TeslaCounter(AbstractCounter):
             powerwall_state = CounterState(
                 imported=imported,
                 exported=exported,
-                power=self._safe_float(aggregate["site"]["instant_power"]),
+                power=aggregate["site"]["instant_power"],
                 voltages=voltages,
                 currents=currents,
                 powers=p_list,
                 power_factors=power_factors,
-                frequency=round(freq, 2),
+                frequency=round(frequency, 2),
                 serial_number=serial_number,
             )
 
-        except (KeyError, HTTPError, IndexError, TypeError) as e:
+        except (KeyError, IndexError, TypeError, ValueError) as e:
             log.debug(
-                "Firmware seems not to provide detailed phase measurements. Fallback to total power only. (%s)",
+                "Firmware seems not to provide detailed phase measurements. "
+                "Fallback to total power only. (%s)",
                 str(e),
             )
+
             powerwall_state = CounterState(
-                imported=self._safe_float(aggregate["site"]["energy_imported"]),
-                exported=self._safe_float(aggregate["site"]["energy_exported"]),
-                power=self._safe_float(aggregate["site"]["instant_power"]),
+                imported=aggregate["site"]["energy_imported"],
+                exported=aggregate["site"]["energy_exported"],
+                power=aggregate["site"]["instant_power"],
             )
 
         self.store.set(powerwall_state)
 
 
-component_descriptor = ComponentDescriptor(configuration_factory=TeslaCounterSetup)
+component_descriptor = ComponentDescriptor(
+    configuration_factory=TeslaCounterSetup
+)
