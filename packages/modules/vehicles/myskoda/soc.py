@@ -36,11 +36,11 @@ def create_vehicle(vehicle_config: Myskoda, vehicle: int):
         return fetch(vehicle_config, vehicle)
 
     return ConfigurableVehicle(vehicle_config=vehicle_config,
-                                component_updater=updater,
-                                vehicle=vehicle,
-                                # SoC ist während der Ladung über die Public API abrufbar,
-                                # daher keine manuelle Berechnung nötig
-                                calc_while_charging=False)
+                               component_updater=updater,
+                               vehicle=vehicle,
+                               # SoC ist während der Ladung über die Public API abrufbar,
+                               # daher keine manuelle Berechnung nötig
+                               calc_while_charging=False)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=Myskoda)
