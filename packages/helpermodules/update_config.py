@@ -3531,7 +3531,7 @@ class UpdateConfig:
         def upgrade(topic: str, payload) -> Optional[dict]:
             # Add the Sankey diagram to the koala carousel order so it also appears for existing
             # installations.
-            if re.search("^openWB/general/web_theme$", topic) is not None:
+            if topic == "openWB/general/web_theme":
                 configuration_payload = decode_payload(payload)
                 if configuration_payload.get("type") == "koala":
                     configuration = configuration_payload.setdefault("configuration", {})
