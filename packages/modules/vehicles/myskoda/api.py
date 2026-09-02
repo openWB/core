@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import logging
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 log = logging.getLogger(__name__)
@@ -10,9 +11,9 @@ BASE_URI = "https://public.api.connect.skoda-auto.cz/api/v1"
 # Teile, die wir für SoC/Reichweite/Kilometerstand benötigen
 INCLUDE_PARTS = ("charging", "odometer")
 
-# Zustände, die einer laufenden Ladung entsprechen (analog evcc-Mapping)
-CHARGING_STATES = ("CHARGING", "CONSERVING")
-PLUGGED_STATES = ("READY_FOR_CHARGING", "CHARGING_INTERRUPTED", "DISCHARGING") + CHARGING_STATES
+# Header, über den die API das Ablaufdatum des Keys mitteilt (siehe Livetest-Ausgabe)
+KEY_EXPIRY_HEADER = "X-API-Key-Expires-At"
+KEY_EXPIRY_WARN_DAYS = 14
 
 
 class MyskodaApiError(Exception):
@@ -20,11 +21,37 @@ class MyskodaApiError(Exception):
     pass
 
 
-def fetch_vehicle(api_key: str, vin: str, include: tuple = INCLUDE_PARTS) -> dict:
+def check_key_expiry(response, warn_days: int = KEY_EXPIRY_WARN_DAYS) -> None:
+    """Loggt eine Warnung, wenn der API-Key laut Response-Header innerhalb von
+    warn_days Tagen abläuft. Bricht den Abruf nicht ab - der SoC-Wert wird trotzdem
+    zurückgegeben, es soll nur rechtzeitig auf die nötige Erneuerung in der
+    MyŠkoda-App hingewiesen werden.
+    """
+    expires_at = response.headers.get(KEY_EXPIRY_HEADER)
+    if not expires_at:
+        return
+    try:
+        expiry = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+    except ValueError:
+        log.debug(f"Konnte {KEY_EXPIRY_HEADER}-Header nicht parsen: {expires_at}")
+        return
+    remaining = expiry - datetime.now(timezone.utc)
+    if remaining <= timedelta(days=warn_days):
+        log.warning(
+            f"MyŠkoda API-Key läuft am {expiry.strftime('%d.%m.%Y')} ab "
+            f"(noch {max(remaining.days, 0)} Tage) - bitte rechtzeitig in der MyŠkoda-App erneuern."
+        )
+
+
+def fetch_vehicle(api_key: str, vin: str, include: tuple = INCLUDE_PARTS) -> "tuple[dict, Optional[str]]":
     """Ruft den Fahrzeugstatus von der MyŠkoda Public API ab.
 
     Die API liefert bei nicht verfügbaren Teilen (z.B. Auto offline) keinen Fehler-Status,
     sondern listet den betroffenen Teil stattdessen unter "errors" auf - siehe part_error().
+
+    Rückgabe: (rohe JSON-Antwort, key_expires_at aus dem Response-Header oder None).
+    key_expires_at wird von soc.py in die Fahrzeug-Konfiguration zurückgeschrieben,
+    damit die Gültigkeit des Keys auch im UI angezeigt werden kann.
     """
     from modules.common import req  # lokaler Import: api.py bleibt standalone testbar (siehe test_api.py)
 
@@ -36,7 +63,8 @@ def fetch_vehicle(api_key: str, vin: str, include: tuple = INCLUDE_PARTS) -> dic
     session.headers.update({"X-API-Key": api_key})
     response = session.get(uri, timeout=10)
     response.raise_for_status()
-    return response.json()
+    check_key_expiry(response)
+    return response.json(), response.headers.get(KEY_EXPIRY_HEADER)
 
 
 def part_error(data: dict, part_prefix: str) -> MyskodaApiError:
@@ -66,6 +94,7 @@ def charge_action(api_key: str, vin: str, start: bool) -> None:
     response.raise_for_status()
 
 
+# Feldnamen bestätigt gegen eine echte API-Antwort (02.09.2026, Enyaq).
 def extract_soc(data: dict) -> float:
     vehicle = data.get("vehicle") or {}
     status = ((vehicle.get("charging") or {}).get("status")) or {}
