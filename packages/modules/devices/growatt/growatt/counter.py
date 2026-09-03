@@ -38,7 +38,8 @@ class GrowattCounter(AbstractCounter):
             # Dort bereits: positiv = Bezug, negativ = Einspeisung - keine Invertierung nötig.
             power = self.client.read_input_registers(31112, ModbusDataType.INT_32,
                                                      unit=self.__modbus_id) * 0.1
-            # VPP liefert keine separaten Phasenleistungen am Zähler (nur Summe 31112).
+            # VPP liefert keine separaten Phasenleistungen am Zähler (nur Summe 31112)
+            powers = None
 
             exported = self.client.read_input_registers(31124, ModbusDataType.UINT_32,
                                                         unit=self.__modbus_id) * 100
