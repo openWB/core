@@ -58,14 +58,7 @@ function validateUrl(candidateUrl, configuredValue) {
     return null;
   }
 
-  const hostname = parsedUrl.hostname;
-  const isLocalhost = hostname === "localhost";
-  const isIpv4 = /^(25[0-5]|2[0-4]\d|1?\d?\d)(\.(25[0-5]|2[0-4]\d|1?\d?\d)){3}$/.test(hostname);
-  const normalizedHostname = hostname.replace(/^\[/, "").replace(/\]$/, "");
-  const isIpv6 = normalizedHostname.includes(":") && /^[0-9a-f:]+$/i.test(normalizedHostname);
-  const hasDotInHostname = hostname.includes(".");
-
-  if (!isLocalhost && !isIpv4 && !isIpv6 && !hasDotInHostname) {
+  if (!parsedUrl.hostname) {
     setStatus(`Fehler: Ungültiger Hostname in der URL-Konfiguration (Wert: ${configuredValue}).`);
     return null;
   }

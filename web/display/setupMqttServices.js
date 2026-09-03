@@ -108,10 +108,11 @@ function totalTopicCount() {
 	var counter = Object.keys(topicsToSubscribe).length;
 	if (data["openWB/general/extern"] === true) {
 		counter += Object.keys(secondaryTopicsToSubscribe).length;
+		if (data["openWB/general/extern_display_mode"] === "local") {
+			counter += Object.keys(primaryTopicsToSubscribe).length;
+		}
 	} else {
-		Object.keys(primaryTopicsToSubscribe).forEach((topic) => {
-			counter += primaryTopicsToSubscribe[topic];
-		});
+		counter += Object.keys(primaryTopicsToSubscribe).length;
 	}
 	return counter;
 }
@@ -129,6 +130,13 @@ function missingTopics() {
 				counter++;
 			};
 		});
+		if (data["openWB/general/extern_display_mode"] === "local") {
+			Object.keys(primaryTopicsToSubscribe).forEach((topic) => {
+				if (primaryTopicsToSubscribe[topic] === false) {
+					counter++;
+				};
+			});
+		}
 	} else {
 		Object.keys(primaryTopicsToSubscribe).forEach((topic) => {
 			if (primaryTopicsToSubscribe[topic] === false) {
