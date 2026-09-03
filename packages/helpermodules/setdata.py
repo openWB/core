@@ -13,10 +13,12 @@ import logging
 from control import data
 from helpermodules import hardware_configuration, subdata
 from helpermodules.broker import BrokerClient
+from helpermodules.messaging import MessageType, pub_system_message
 from helpermodules.pub import Pub
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_index_position
 from helpermodules.update_config import UpdateConfig
 import dataclass_utils
+from modules.display_themes import deserialize_display_theme
 
 log = logging.getLogger(__name__)
 mqtt_log = logging.getLogger("mqtt")
@@ -905,7 +907,14 @@ class SetData:
             elif "openWB/set/optional/int_display/standby" in msg.topic:
                 self._validate_value(msg, int, [(0, 600)])
             elif "openWB/set/optional/int_display/theme" in msg.topic:
-                self._validate_value(msg, "json")
+                try:
+                    theme = deserialize_display_theme(decode_payload(msg.payload))
+                    Pub().pub(msg.topic.replace('set/', '', 1), dataclass_utils.asdict(theme))
+                    Pub().pub(msg.topic, "")
+                except ValueError as exc:
+                    log.warning("Ungültige Display-Theme-Konfiguration: %s", exc)
+                    pub_system_message({}, str(exc), MessageType.ERROR)
+                    Pub().pub(msg.topic, "")
             elif "openWB/set/optional/led/active" in msg.topic:
                 self._validate_value(msg, bool)
             else:

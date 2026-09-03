@@ -36,6 +36,7 @@ from modules.common.abstract_vehicle import CalculatedSocState, GeneralVehicleCo
 from modules.common.component_type import ComponentType
 from modules.common.configurable_backup_cloud import ConfigurableBackupCloud
 from modules.common.configurable_tariff import ConfigurableFlexibleTariff, ConfigurableGridFee
+from modules.display_themes import deserialize_display_theme
 from modules.common.simcount.simcounter_state import SimCounterState
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
     GlobalHandlerData, InternalChargepoint, RfidData)
@@ -758,7 +759,21 @@ class SubData:
                 elif re.search("/optional/ocpp/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.ocpp, msg)
                 elif re.search("/optional/int_display/", msg.topic) is not None:
-                    self.set_json_payload_class(var.data.int_display, msg)
+                    if msg.topic == "openWB/optional/int_display/theme":
+                        try:
+                            var.data.int_display.theme = deserialize_display_theme(decode_payload(msg.payload))
+                        except ValueError as exc:
+                            log.warning("Ungültige Display-Theme-Konfiguration: %s", exc)
+                            theme = decode_payload(msg.payload)
+                            if isinstance(theme, dict) and theme.get("type") == "url_display":
+                                if not isinstance(theme.get("configuration"), dict):
+                                    theme["configuration"] = {}
+                                theme["configuration"]["url"] = ""
+                                var.data.int_display.theme = deserialize_display_theme(theme)
+                                Pub().pub(msg.topic, asdict(var.data.int_display.theme))
+                            pub_system_message({}, str(exc), MessageType.ERROR)
+                    else:
+                        self.set_json_payload_class(var.data.int_display, msg)
                     if re.search("/(standby|active|rotation)$", msg.topic) is not None:
                         # some topics require an update of the display manager or boot settings
                         run_command([
