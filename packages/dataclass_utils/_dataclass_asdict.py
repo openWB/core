@@ -24,6 +24,7 @@ def asdict(value: Any) -> AsDictValue:
         sequence = cast(List[Any], value)
         return [None if item is None else asdict(item) for item in sequence]
     if not isinstance(value, dict):
-        value = vars(cast(object, value))
+        state = getattr(value, "__getstate__", None)
+        value = state() if state is not None else vars(cast(object, value))
     mapping = cast(Dict[Any, Any], value)
     return {key: None if item is None else asdict(item) for key, item in mapping.items()}

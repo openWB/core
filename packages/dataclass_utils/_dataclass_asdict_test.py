@@ -15,6 +15,15 @@ class MultiValue:
         self.b = b
 
 
+class ValueWithUnserializableState:
+    def __init__(self, value):
+        self.value = value
+        self.unserializable_state = object()
+
+    def __getstate__(self):
+        return {"value": self.value}
+
+
 @pytest.mark.parametrize(["object", "expected_dict"], [
     # Test serialization of basic types:
     pytest.param(SingleValue("someString"), {"value": "someString"}, id="single string"),
@@ -24,6 +33,8 @@ class MultiValue:
     pytest.param(SingleValue(["a", 2, None]), {"value": ["a", 2, None]}, id="single list"),
     pytest.param(SingleValue((None, "a", 2)), {"value": [None, "a", 2]}, id="single tuple"),
     pytest.param(SingleValue({"a": "a", "b": 2}), {"value": {"a": "a", "b": 2}}, id="single object"),
+    pytest.param(ValueWithUnserializableState("someString"), {"value": "someString"},
+                 id="object with custom state"),
 
     # Test nesting:
     pytest.param(SingleValue(SingleValue("nested")), {"value": {"value": "nested"}}, id="nested object"),
