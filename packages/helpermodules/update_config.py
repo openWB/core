@@ -58,7 +58,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 143
+    DATASTORE_VERSION = 144
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -3706,3 +3706,21 @@ class UpdateConfig:
         with ThreadPoolExecutor() as executor:
             executor.map(add_consumer_dict, files)
         self._append_datastore_version(143)
+
+    def upgrade_datastore_144(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("^openWB/system/device/[0-9]+/config$", topic) is not None:
+                payload_device = decode_payload(payload)
+                if payload_device.get("type") == "growatt" and \
+                   payload_device.get("configuration", {}).get("version") == "MAX":
+                    payload_device["configuration"]["version"] = "SPH"
+                    pub_system_message(
+                        payload_device,
+                        "Die Growatt-Geräte-Konfiguration wurde aktualisiert: 'MAX Series' hieß "
+                        "in Wirklichkeit 'SPH/SPA Hybrid mit Speicher' und wurde entsprechend "
+                        "umbenannt. Außerdem wurde ein Vorzeichenfehler bei der Speicherleistung "
+                        "korrigiert - Laden/Entladen wurden bisher vertauscht angezeigt.",
+                        MessageType.WARNING)
+                    return {topic: payload_device}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(144)
