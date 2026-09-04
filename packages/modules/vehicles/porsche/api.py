@@ -9,10 +9,8 @@ requests-Implementierung ohne zusaetzliche Abhaengigkeiten.
 WICHTIG: Diese Schnittstelle ist nicht offiziell von Porsche unterstuetzt und kann
 sich jederzeit aendern. Ein aktives Porsche-Connect-Abo ist Voraussetzung.
 """
-import json
 import logging
 import time
-from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from urllib.parse import parse_qs, urlparse
 
@@ -41,9 +39,6 @@ SCOPE = ("openid profile email offline_access mbb ssodb badge vin dealers cars "
 # Nur die Messgroessen, die openWB braucht (schlanke Antwort, weckt das Auto nicht).
 MEASUREMENTS = ["BATTERY_LEVEL", "E_RANGE", "RANGE", "MILEAGE", "BATTERY_CHARGING_STATE"]
 
-# Token-Persistenz: repo/data/modules/porsche/  (parents[4] == Repo-Wurzel)
-_DATA_PATH = Path(__file__).resolve().parents[4] / "data" / "modules" / "porsche"
-
 
 class PorscheApiError(Exception):
     """Allgemeiner API-Fehler."""
@@ -64,54 +59,26 @@ class PorscheCaptchaRequired(PorscheApiError):
 class PorscheConnectApi:
     def __init__(self, email: Optional[str] = None, password: Optional[str] = None,
                  vehicle_id: int = 0, token: Optional[Dict] = None, persist_cb=None) -> None:
-        # E-Mail/Passwort sind nur im Datei-/CLI-Modus fuer den vollen Login noetig.
-        # Im openWB-Betrieb (Config-Modus) laeuft die Anmeldung ueber die UI, das Modul
-        # nutzt nur den refresh_token.
+        # Tokens werden NICHT im Dateisystem gespeichert. Im openWB-Betrieb kommen sie
+        # aus der Fahrzeug-Config und werden ueber persist_cb dorthin (MQTT/Broker)
+        # zurueckgeschrieben. E-Mail/Passwort werden nur fuer den vollen Login benoetigt
+        # (Standalone/CLI); im openWB-Betrieb laeuft die Anmeldung ueber die UI.
         self.email = email
         self.password = password
         self.vehicle_id = vehicle_id
         self._persist_cb = persist_cb
         self.session = requests.Session()
         self.session.headers.update({"User-Agent": USER_AGENT, "X-Client-ID": X_CLIENT_ID})
-        # Zwei Betriebsarten:
-        #  - Config-Modus (openWB): Tokens kommen aus der Fahrzeug-Config, neue Tokens
-        #    werden ueber persist_cb zurueck in die Config (MQTT) geschrieben.
-        #  - Datei-Modus (CLI/standalone): Tokens werden lokal in einer JSON-Datei gecacht.
-        if token is not None or persist_cb is not None:
-            self._file_mode = False
-            self._token: Dict = dict(token) if token else {}
-        else:
-            self._file_mode = True
-            self._token = self._load_token()
+        self._token: Dict = dict(token) if token else {}
 
     # --- Token-Persistenz ----------------------------------------------------
-    @property
-    def _token_file(self) -> Path:
-        return _DATA_PATH / f"token_{self.vehicle_id}.json"
-
-    def _load_token(self) -> Dict:
-        try:
-            with open(self._token_file, "r") as f:
-                return json.load(f)
-        except (FileNotFoundError, ValueError):
-            return {}
-
     def _save_token(self) -> None:
-        if not self._file_mode:
-            # Config-Modus: neue/rotierte Tokens zurueck in die openWB-Fahrzeug-Config.
-            if self._persist_cb:
-                try:
-                    self._persist_cb(self._token)
-                except Exception:
-                    log.exception("Porsche-Token konnte nicht in die Config geschrieben werden "
-                                  "(nicht kritisch).")
-            return
-        try:
-            _DATA_PATH.mkdir(parents=True, exist_ok=True)
-            with open(self._token_file, "w") as f:
-                json.dump(self._token, f)
-        except OSError:
-            log.exception("Porsche-Token konnte nicht gespeichert werden (nicht kritisch).")
+        # Neue/rotierte Tokens ueber den Callback zurueckgeben (openWB -> Fahrzeug-Config).
+        if self._persist_cb:
+            try:
+                self._persist_cb(self._token)
+            except Exception:
+                log.exception("Porsche-Token konnte nicht gespeichert werden (nicht kritisch).")
 
     def _token_expired(self, leeway: int = 60) -> bool:
         expires_at = self._token.get("expires_at")
@@ -258,18 +225,15 @@ class PorscheConnectApi:
             return self._token["access_token"]
         if self._token.get("refresh_token") and self._refresh():
             return self._token["access_token"]
-        if not self._file_mode:
-            # openWB-Betrieb: der Login (inkl. Captcha) laeuft ueber die UI, hier kein
-            # Passwort. Fehlt/verfaellt der Token, muss der Nutzer sich neu anmelden.
-            raise PorscheApiError(
-                "Nicht angemeldet oder Sitzung abgelaufen. Bitte in der openWB-Oberflaeche "
-                "unter 'Porsche verbinden' erneut anmelden.")
-        # Datei-/CLI-Modus: vollstaendiger Login mit E-Mail/Passwort.
-        if not self.email or not self.password:
-            raise PorscheApiError("E-Mail und Passwort muessen konfiguriert sein.")
-        code = self._fetch_authorization_code()
-        self._exchange_code(code)
-        return self._token["access_token"]
+        # Voller Login nur im Standalone/CLI-Betrieb (E-Mail+Passwort vorhanden).
+        # Im openWB-Betrieb laeuft die Anmeldung (inkl. Captcha) ueber die UI.
+        if self.email and self.password:
+            code = self._fetch_authorization_code()
+            self._exchange_code(code)
+            return self._token["access_token"]
+        raise PorscheApiError(
+            "Nicht angemeldet oder Sitzung abgelaufen. Bitte in der openWB-Oberflaeche "
+            "unter 'Porsche verbinden' erneut anmelden.")
 
     # --- Daten-Endpunkte -----------------------------------------------------
     def _api_get(self, path: str) -> Dict:

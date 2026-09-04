@@ -7,9 +7,7 @@ from modules.vehicles.porsche import api
 from modules.vehicles.porsche.api import PorscheApiError, PorscheConnectApi
 
 
-def make_api(monkeypatch, tmp_path):
-    # Token-Persistenz in ein temporaeres Verzeichnis umlenken
-    monkeypatch.setattr(api, "_DATA_PATH", tmp_path)
+def make_api():
     client = PorscheConnectApi("mail@example.com", "secret", vehicle_id=0)
     # gueltiges Token vorsetzen -> OAuth-Flow wird uebersprungen
     client._token = {"access_token": "tok", "refresh_token": "ref",
@@ -31,7 +29,7 @@ def status_sample():
 
 
 def test_fetch_soc_parses_values(monkeypatch, tmp_path):
-    client = make_api(monkeypatch, tmp_path)
+    client = make_api()
     vin = "WP0ZZZ12345678901"
     with requests_mock.Mocker() as m:
         m.get(f"{api.API_BASE_URL}/connect/v1/vehicles/{vin}", json=status_sample())
@@ -43,7 +41,7 @@ def test_fetch_soc_parses_values(monkeypatch, tmp_path):
 
 
 def test_fetch_soc_missing_battery_raises(monkeypatch, tmp_path):
-    client = make_api(monkeypatch, tmp_path)
+    client = make_api()
     vin = "WP0ZZZ12345678901"
     with requests_mock.Mocker() as m:
         m.get(f"{api.API_BASE_URL}/connect/v1/vehicles/{vin}",
@@ -53,13 +51,13 @@ def test_fetch_soc_missing_battery_raises(monkeypatch, tmp_path):
 
 
 def test_resolve_vin_uses_configured(monkeypatch, tmp_path):
-    client = make_api(monkeypatch, tmp_path)
+    client = make_api()
     # kein HTTP noetig, wenn VIN konfiguriert ist
     assert client.resolve_vin("wp0zzz12345678901") == "WP0ZZZ12345678901"
 
 
 def test_resolve_vin_single_vehicle(monkeypatch, tmp_path):
-    client = make_api(monkeypatch, tmp_path)
+    client = make_api()
     with requests_mock.Mocker() as m:
         m.get(f"{api.API_BASE_URL}/connect/v1/vehicles",
               json=[{"vin": "WP0ZZZ12345678901"}])
@@ -67,7 +65,7 @@ def test_resolve_vin_single_vehicle(monkeypatch, tmp_path):
 
 
 def test_resolve_vin_multiple_requires_config(monkeypatch, tmp_path):
-    client = make_api(monkeypatch, tmp_path)
+    client = make_api()
     with requests_mock.Mocker() as m:
         m.get(f"{api.API_BASE_URL}/connect/v1/vehicles",
               json=[{"vin": "WP0AAA"}, {"vin": "WP0BBB"}])
@@ -77,7 +75,7 @@ def test_resolve_vin_multiple_requires_config(monkeypatch, tmp_path):
 
 def test_direct_charge_polls_until_done(monkeypatch, tmp_path):
     monkeypatch.setattr(api.time, "sleep", lambda *_: None)  # nicht wirklich warten
-    client = make_api(monkeypatch, tmp_path)
+    client = make_api()
     vin = "WP0ZZZ12345678901"
     with requests_mock.Mocker() as m:
         m.post(f"{api.API_BASE_URL}/connect/v1/vehicles/{vin}/commands",
@@ -90,7 +88,7 @@ def test_direct_charge_polls_until_done(monkeypatch, tmp_path):
 
 def test_direct_charge_error_raises(monkeypatch, tmp_path):
     monkeypatch.setattr(api.time, "sleep", lambda *_: None)
-    client = make_api(monkeypatch, tmp_path)
+    client = make_api()
     vin = "WP0ZZZ12345678901"
     with requests_mock.Mocker() as m:
         m.post(f"{api.API_BASE_URL}/connect/v1/vehicles/{vin}/commands",
@@ -102,7 +100,7 @@ def test_direct_charge_error_raises(monkeypatch, tmp_path):
 
 
 def test_expired_token_triggers_refresh(monkeypatch, tmp_path):
-    client = make_api(monkeypatch, tmp_path)
+    client = make_api()
     client._token["expires_at"] = int(time.time()) - 10  # abgelaufen
     vin = "WP0ZZZ12345678901"
     with requests_mock.Mocker() as m:

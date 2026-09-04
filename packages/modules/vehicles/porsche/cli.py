@@ -30,7 +30,22 @@ def build_client(args) -> "api.PorscheConnectApi":
     password = args.password or os.environ.get("PORSCHE_PASSWORD")
     if not email or not password:
         sys.exit("Bitte --email/--password angeben (oder PORSCHE_EMAIL/PORSCHE_PASSWORD setzen).")
-    return api.PorscheConnectApi(email, password, vehicle_id=args.vehicle_id)
+    # Lokaler Token-Cache NUR fuer dieses CLI - das Modul selbst speichert keine Dateien.
+    token_file = Path(__file__).resolve().parent / f".token_{args.vehicle_id}.json"
+    token = {}
+    try:
+        token = json.loads(token_file.read_text())
+    except (FileNotFoundError, ValueError):
+        pass
+
+    def persist(tok):
+        try:
+            token_file.write_text(json.dumps(tok))
+        except OSError:
+            pass
+
+    return api.PorscheConnectApi(email, password, vehicle_id=args.vehicle_id,
+                                 token=token, persist_cb=persist)
 
 
 def main(argv=None):
