@@ -87,13 +87,28 @@ const chartData = computed<ChartData<'sankey'>>(() => {
   // Chart.js calls later) is what makes this recompute on every hover change.
   const flowColor = focusColors();
 
-  const { edges, nodes, sources } = allocation.value;
+  const { edges, nodes, sources, sinks } = allocation.value;
   const labels: Record<string, string> = {};
   const columns: Record<string, number> = {};
   for (const node of nodes) {
     labels[node.id] = node.label;
     columns[node.id] = sources.some((source) => source.id === node.id) ? 0 : 1;
   }
+
+  // Assign a per-column priority from node power.
+  // Sources descending (largest on top).
+  // Sinks ascending (largest on the bottom).
+  const priority: Record<string, number> = {};
+  [...sources]
+    .sort((a, b) => b.power - a.power)
+    .forEach((node, index) => {
+      priority[node.id] = index;
+    });
+  [...sinks]
+    .sort((a, b) => a.power - b.power)
+    .forEach((node, index) => {
+      priority[node.id] = index;
+    });
 
   const textColor = labelColor();
 
@@ -108,6 +123,7 @@ const chartData = computed<ChartData<'sankey'>>(() => {
         })),
         labels,
         column: columns,
+        priority,
         colorFrom: (ctx) =>
           flowColor(
             (ctx.raw as SankeyDataPoint | undefined)?.from ?? '',
