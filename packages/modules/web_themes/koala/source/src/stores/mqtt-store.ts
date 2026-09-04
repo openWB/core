@@ -3937,6 +3937,34 @@ export const useMqttStore = defineStore('mqtt', () => {
     );
   });
 
+   /**
+   * Get the hybrid inverter/battery pairs. A battery is treated as "hybrid"
+   * when it is a direct child of an inverter in the component hierarchy
+   * The pairing is needed for the flow calculation - (Sankey Chart).
+   * @returns array of { inverterId, batteryId } pairs
+   */
+  const hybridInverters = computed(() => {
+    const result: { inverterId: number; batteryId: number }[] = [];
+    function walk(nodes: Hierarchy[] | undefined) {
+      if (nodes === undefined) {
+        return;
+      }
+      nodes.forEach((node) => {
+        if (node.type === 'inverter') {
+          const firstBatChild = node.children.find(
+            (child) => child.type === 'bat',
+          );
+          if (firstBatChild !== undefined) {
+            result.push({ inverterId: node.id, batteryId: firstBatChild.id });
+          }
+        }
+        walk(node.children);
+      });
+    }
+    walk(getValue.value('openWB/counter/get/hierarchy') as Hierarchy[]);
+    return result;
+  });
+
   /**
    * Get pv power
    * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
@@ -4284,6 +4312,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     homeDailyYield,
     // PV data
     pvConfigured,
+    hybridInverters,
     pvPowerTotal,
     pvDailyExported,
     pvIds,

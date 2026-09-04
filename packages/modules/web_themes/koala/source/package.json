@@ -17,6 +17,7 @@
     "@quasar/extras": "^1.18.0",
     "chart.js": "^4.5.1",
     "chartjs-adapter-luxon": "^1.3.1",
+    "chartjs-chart-sankey": "^0.15.0",
     "chartjs-plugin-annotation": "^3.1.0",
     "chartjs-plugin-zoom": "^2.2.0",
     "luxon": "^3.7.2",
