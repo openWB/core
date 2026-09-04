@@ -8,5 +8,10 @@ class PowerwallHttpClient:
         self.__session = session
 
     def get_json(self, relative_url: str):
-        url = self.__base_url + relative_url
-        return self.__session.get(url, cookies=self.cookies, verify=False, timeout=5).json()
+        response = self.__session.get(
+            self.__base_url + relative_url,
+            cookies=self.cookies,
+            verify=False,
+            timeout=5,
+        )
+        return response.json()
