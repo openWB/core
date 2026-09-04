@@ -70,7 +70,7 @@
 	"anonymousGroup": "anonymous",
 	"roles": [
 		{
-			"rolename": "openwb-version:8",
+			"rolename": "openwb-version:9",
 			"textname": "openWB Versionsnummer",
 			"textdescription": "Diese Rolle ist ein Platzhalter für die openWB Versionsnummer und wird automatisch aktualisiert. Sie hat keine direkten Berechtigungen.",
 			"acls": []
@@ -603,6 +603,12 @@
 				},
 				{
 					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/legacy_smarthome_active",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
 					"topic": "openWB/set/general/modbus_control",
 					"priority": 0,
 					"allow": true
@@ -670,6 +676,12 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/general/http_api",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/legacy_smarthome_active",
 					"priority": 0,
 					"allow": true
 				},

@@ -103,6 +103,7 @@ class GeneralData:
     temporary_charge_templates_active: bool = False
     prices: Prices = field(default_factory=prices_factory)
     range_unit: str = "km"
+    legacy_smarthome_active: bool = field(default=True, metadata={"topic": "legacy_smarthome_active"})
 
 
 class General:
