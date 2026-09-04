@@ -244,7 +244,7 @@ def test_file_operation_0_start_behavior(file_operation_version, finished, expec
     update_config = UpdateConfig()
     update_config.all_received_topics = {
         "openWB/system/file_operation_version": file_operation_version,
-        "openWB/system/log_totals_generation_finished": finished
+        "openWB/system/log_data_ready": finished
     }
 
     with patch.object(update_config, "upgrade_file_operation_0") as upgrade_mock:

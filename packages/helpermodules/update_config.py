@@ -535,7 +535,7 @@ class UpdateConfig:
         "^openWB/system/io/[0-9]+/config$",
         "^openWB/system/ip_address$",
         "^openWB/system/lastlivevaluesJson$",
-        "^openWB/system/log_totals_generation_finished$",
+        "^openWB/system/log_data_ready$",
         "^openWB/system/mac_address$",
         "^openWB/system/mqtt/bridge/[0-9]+$",
         "^openWB/system/mqtt/valid_partner_ids$",
@@ -855,7 +855,7 @@ class UpdateConfig:
                     # Version 0 erneut ausführen, solange die Hintergrund-Generierung der Tages-/Monatssummen
                     # noch nicht erfolgreich abgeschlossen ist (Flag ist nicht True).
                     log_totals_generation_finished = decode_payload(
-                        self.all_received_topics.get("openWB/system/log_totals_generation_finished"))
+                        self.all_received_topics.get("openWB/system/log_data_ready"))
                     operation_required = operation_required or log_totals_generation_finished is not True
 
                 if operation_required:
@@ -873,7 +873,7 @@ class UpdateConfig:
         Generiere die Totals-Summen für Tage und Monate
         """
 
-        self.__update_topic("openWB/system/log_totals_generation_finished", False)
+        self.__update_topic("openWB/system/log_data_ready", False)
         try:
             _generate_totals_subprocess = subprocess.Popen(
                 [

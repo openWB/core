@@ -31,7 +31,7 @@ def test_update_module_yields(daily_log_totals, mock_pub):
 
 def test_update_pv_monthly_yearly_yields_skips_when_generation_not_finished(monkeypatch):
     # setup
-    data.data.system_data = {"system": Mock(data={"log_totals_generation_finished": False})}
+    data.data.system_data = {"system": Mock(data={"log_data_ready": False})}
     get_monthly_mock = Mock()
     get_yearly_mock = Mock()
 
@@ -48,7 +48,7 @@ def test_update_pv_monthly_yearly_yields_skips_when_generation_not_finished(monk
 
 def test_update_pv_monthly_yearly_yields_with_daily_and_monthly_fallback(monkeypatch, tmp_path):
     # setup
-    data.data.system_data = {"system": Mock(data={"log_totals_generation_finished": True})}
+    data.data.system_data = {"system": Mock(data={"log_data_ready": True})}
 
     parent_path = tmp_path
     daily_log_path = parent_path / "data" / "daily_log"

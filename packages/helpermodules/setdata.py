@@ -1045,7 +1045,7 @@ class SetData:
                     "openWB/set/system/perform_update" in msg.topic or
                     "openWB/set/system/wizard_done" in msg.topic or
                     "openWB/set/system/update_in_progress" in msg.topic or
-                    "openWB/set/system/log_totals_generation_finished" in msg.topic or
+                    "openWB/set/system/log_data_ready" in msg.topic or
                     "openWB/set/system/backup_cloud/backup_before_update" in msg.topic or
                     "openWB/set/system/installAssistantDone" in msg.topic or
                     "openWB/set/system/dataprotection_acknowledged" in msg.topic or

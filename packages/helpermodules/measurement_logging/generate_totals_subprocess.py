@@ -86,7 +86,7 @@ def _generate_totals():
             continue
 
     log.info(f"Totals-Migration abgeschlossen. Fehlerhafte Logs: {errors}.")
-    pub.Pub().pub("openWB/set/system/log_totals_generation_finished", True)
+    pub.Pub().pub("openWB/set/system/log_data_ready", True)
 
 
 def generate_totals():

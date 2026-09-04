@@ -49,7 +49,7 @@ def update_pv_monthly_yearly_yields(daily_totals: Dict) -> None:
     veröffentlicht die monatlichen und jährlichen Erträge für PV
     """
     # pv_data und pv_all_data werden nur aktualisiert, wenn das Update der Logfiles abgeschlossen ist.
-    if not data.data.system_data["system"].data.get("log_totals_generation_finished", False):
+    if not data.data.system_data["system"].data.get("log_data_ready", False):
         log.debug("Update der Logfiles läuft noch. Monatliche und jährliche PV-Erträge werden nicht aktualisiert.")
         return
 
