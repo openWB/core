@@ -58,7 +58,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 146
+    DATASTORE_VERSION = 147
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -3819,3 +3819,31 @@ class UpdateConfig:
 
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(146)
+
+    def upgrade_datastore_147(self) -> None:
+        """Fronius-Modul aufgeräumt: in fronius_http_api umbenannt, sekundären Wechselrichter in den
+        Wechselrichter und S0-/SmartMeter-Zähler in einen gemeinsamen Zähler-Typ zusammengeführt."""
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("^openWB/system/device/[0-9]+/config$", topic) is not None:
+                payload_device = decode_payload(payload)
+                if payload_device.get("type") == "fronius":
+                    payload_device["type"] = "fronius_http_api"
+                    return {topic: payload_device}
+            elif re.search("^openWB/system/device/[0-9]+/component/[0-9]+/config$", topic) is not None:
+                payload_component = decode_payload(payload)
+                comp_type = payload_component.get("type")
+                if comp_type == "inverter_secondary":
+                    secondary_id = payload_component.get("configuration", {}).get("id", 1)
+                    payload_component["type"] = "inverter"
+                    payload_component["configuration"] = {"secondary_id": secondary_id}
+                    return {topic: payload_component}
+                elif comp_type == "counter_s0":
+                    # 3 == COUNTER_VARIANT_S0 in modules.devices.fronius.fronius_http_api.config
+                    payload_component["type"] = "counter"
+                    payload_component["configuration"] = {"variant": 3, "meter_id": 0}
+                    return {topic: payload_component}
+                elif comp_type == "counter_sm":
+                    payload_component["type"] = "counter"
+                    return {topic: payload_component}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(147)

@@ -33,7 +33,7 @@ class FroniusConfiguration:
 class Fronius:
     def __init__(self,
                  name: str = "Fronius",
-                 type: str = "fronius",
+                 type: str = "fronius_http_api",
                  id: int = 0,
                  configuration: FroniusConfiguration = None) -> None:
         self.name = name
@@ -44,8 +44,15 @@ class Fronius:
 
 
 class FroniusBatConfiguration:
-    def __init__(self, meter_id: int = 0):
+    def __init__(self,
+                 meter_id: int = 0,
+                 username: Optional[str] = None,
+                 password: Optional[str] = None):
         self.meter_id = meter_id
+        # Installateur-Zugangsdaten, nur für die aktive Speichersteuerung benötigt. Ohne sie wird der
+        # Speicher weiterhin ausgelesen, kann aber nicht aktiv gesteuert werden.
+        self.username = username
+        self.password = password
 
 
 class FroniusBatSetup(ComponentSetup[FroniusBatConfiguration]):
@@ -58,40 +65,33 @@ class FroniusBatSetup(ComponentSetup[FroniusBatConfiguration]):
         super().__init__(name, type, id, configuration or FroniusBatConfiguration(), **kwargs)
 
 
-class FroniusS0CounterConfiguration:
-    def __init__(self):
-        pass
+# Zähler ist im Wechselrichter integriert (S0), keine eigene SmartMeter-Hardware -- die Netz-Leistung
+# wird aus der ohnehin für andere Komponenten abgerufenen PowerFlow-Antwort gelesen, meter_id ist dann
+# ohne Bedeutung.
+COUNTER_VARIANT_S0 = 3
 
 
-class FroniusS0CounterSetup(ComponentSetup[FroniusS0CounterConfiguration]):
-    def __init__(self,
-                 name: str = "Fronius S0 Zähler",
-                 type: str = "counter_s0",
-                 id: int = 0,
-                 configuration: FroniusS0CounterConfiguration = None,
-                 **kwargs) -> None:
-        super().__init__(name, type, id, configuration or FroniusS0CounterConfiguration(), **kwargs)
-
-
-class FroniusSmCounterConfiguration:
+class FroniusCounterConfiguration:
     def __init__(self, meter_id: int = 0, variant: int = 0):
         self.meter_id = meter_id
         self.variant = variant
 
 
-class FroniusSmCounterSetup(ComponentSetup[FroniusSmCounterConfiguration]):
+class FroniusCounterSetup(ComponentSetup[FroniusCounterConfiguration]):
     def __init__(self,
-                 name: str = "Fronius SM Zähler",
-                 type: str = "counter_sm",
+                 name: str = "Fronius Zähler",
+                 type: str = "counter",
                  id: int = 0,
-                 configuration: FroniusSmCounterConfiguration = None,
+                 configuration: FroniusCounterConfiguration = None,
                  **kwargs) -> None:
-        super().__init__(name, type, id, configuration or FroniusSmCounterConfiguration(), **kwargs)
+        super().__init__(name, type, id, configuration or FroniusCounterConfiguration(), **kwargs)
 
 
 class FroniusInverterConfiguration:
-    def __init__(self):
-        pass
+    def __init__(self, secondary_id: Optional[int] = None):
+        # None: primärer Wechselrichter (Site.P_PV der PowerFlow-Antwort).
+        # gesetzt: sekundärer/companion Wechselrichter mit dieser ID (Body.Data.SecondaryMeters).
+        self.secondary_id = secondary_id
 
 
 class FroniusInverterSetup(ComponentSetup[FroniusInverterConfiguration]):
@@ -102,21 +102,6 @@ class FroniusInverterSetup(ComponentSetup[FroniusInverterConfiguration]):
                  configuration: FroniusInverterConfiguration = None,
                  **kwargs) -> None:
         super().__init__(name, type, id, configuration or FroniusInverterConfiguration(), **kwargs)
-
-
-class FroniusSecondaryInverterConfiguration:
-    def __init__(self, id: int = 1):
-        self.id = id
-
-
-class FroniusSecondaryInverterSetup(ComponentSetup[FroniusSecondaryInverterConfiguration]):
-    def __init__(self,
-                 name: str = "Sekundärer Wechselrichter",
-                 type: str = "inverter_secondary",
-                 id: int = 0,
-                 configuration: FroniusSecondaryInverterConfiguration = None,
-                 **kwargs) -> None:
-        super().__init__(name, type, id, configuration or FroniusSecondaryInverterConfiguration(), **kwargs)
 
 
 class FroniusProductionMeterConfiguration:
