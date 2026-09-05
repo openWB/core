@@ -19,19 +19,18 @@ function setIframeSource() {
 		var host = "";
 		var query = new URLSearchParams();
 		var destination = "";
-		if (data["openWB/general/extern"] === true) {
+		if (data["openWB/general/extern"] === true &&
+			data["openWB/general/extern_display_mode"] !== "local") {
 			// load secondary display (from secondary openWB)
 			switch (data["openWB/general/extern_display_mode"]) {
-				case "local":
-					// host = location.host;
-					// ...
-					// break;
-					// ToDo, fallback to primary
-					addLog("Local display in secondary mode not yet supported! fallback to primary display");
 				case "primary":
 				default:
 					// retrieve display theme from primary
 					host = data["openWB/internal_chargepoint/global_data"]["parent_ip"];
+					if (!host) {
+						addLog("Keine primäre openWB konfiguriert.", true);
+						return;
+					}
 					const queryObject = {
 						// we need our own ip address for status information
 						localIp: data["openWB/system/ip_address"],
@@ -46,7 +45,6 @@ function setIframeSource() {
 					query.append("data", JSON.stringify(queryObject));
 					break;
 			}
-			// load display from primary or local
 			destination = `${location.protocol}//${host}/openWB/web/display/?${query.toString()}`;
 			addLog(`all done, loading theme from primary`);
 			// no iframe here as this would result in another nesting with the wrapper on primary
@@ -54,7 +52,7 @@ function setIframeSource() {
 				location.href = destination;
 			}, 2000);
 		} else {
-			// load primary display (from primary or secondary openWB)
+			// load configured theme locally (on primary or secondary openWB)
 			host = location.host;
 			const theme = data["openWB/optional/int_display/theme"].type;
 			const searchParams = new URLSearchParams(location.search);
