@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-from typing import Any, TypedDict
+from typing import Any, TypedDict, Optional
+import logging
 
 from modules.common import req
 from modules.common.abstract_device import AbstractBat
@@ -12,6 +13,9 @@ from modules.devices.fronius.fronius.config import FroniusBatSetup
 from modules.devices.fronius.fronius.config import FroniusConfiguration
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
+from modules.devices.fronius.fronius.fronius_api import FroniusWR
+
+log = logging.getLogger(__name__)
 
 
 class KwargsDict(TypedDict):
@@ -31,6 +35,8 @@ class FroniusBat(AbstractBat):
         self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
+        self.last_mode = 'Undefined'
+        self.bat_api = None
 
     def update(self) -> None:
         meter_id = str(self.component_config.configuration.meter_id)
@@ -64,6 +70,46 @@ class FroniusBat(AbstractBat):
             exported=exported
         )
         self.store.set(bat_state)
+
+    def set_power_limit(self, power_limit: Optional[int]) -> None:
+        username = self.component_config.configuration.username
+        password = self.component_config.configuration.password
+        if self.bat_api is None:
+            config = {
+                'address': self.device_config.ip_address,
+                'user': username,
+                'password': password
+            }
+            self.bat_api = FroniusWR(config)
+        if username is not None and password is not None:
+            self.bat_api.set_config(self.device_config.ip_address, username, password)
+
+            log.debug(f'last_mode: {self.last_mode}')
+
+            if power_limit is None:
+                log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
+                if self.last_mode is not None:
+                    self.bat_api.set_mode_self_regulation()
+                    self.last_mode = None
+            elif power_limit == 0:
+                log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt und nicht entladen")
+                if self.last_mode != 'stop':
+                    self.bat_api.set_mode_avoid_discharge()
+                    self.last_mode = 'stop'
+            elif power_limit < 0:
+                self.bat_api.set_mode_force_discharge(abs(power_limit))
+                log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {abs(power_limit)} W "
+                          "entladen für den Hausverbrauch")
+                self.last_mode = 'discharge'
+            elif power_limit > 0:
+                self.bat_api.set_mode_force_charge(power_limit)
+                log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_limit} W geladen")
+                self.last_mode = 'charge'
+        else:
+            log.warning("Fronius Speicher: Keine Batteriesteuerung möglich, da keine Zugangsdaten hinterlegt sind.")
+
+    def power_limit_controllable(self) -> bool:
+        return True
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=FroniusBatSetup)
