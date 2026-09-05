@@ -6,7 +6,7 @@ from typing import Dict, List, Tuple
 from control import data
 
 from control.data import Data
-from dataclass_utils._dataclass_asdict import asdict
+from dataclass_utils import asdict
 from helpermodules.pub import Pub
 
 
