@@ -1,48 +1,5 @@
 var credentialsFetched = false;
 
-function loadLocalTheme(startup, iframe) {
-	const host = location.host;
-	const theme = data["openWB/optional/int_display/theme"].type;
-	const query = new URLSearchParams();
-	const searchParams = new URLSearchParams(location.search);
-
-	if (searchParams.has("data")) {
-		console.warn("Detected query parameters! Forwarding data to display theme:", searchParams.get("data"));
-		query.append("data", searchParams.get("data"));
-	}
-	if (credentialsFetched) {
-		query.append("hide_login", "1");
-	}
-
-	const destination = `${location.protocol}//${host}/openWB/web/display/themes/${theme}/?${query.toString()}`;
-	const request = new XMLHttpRequest();
-	request.onload = function () {
-		if (this.readyState == 4) {
-			if (this.status == 200) {
-				addLog(`theme '${theme}' is valid`)
-				if (destination != iframe.src) {
-					addLog(`all done, starting theme '${theme}' with url '${destination}'`);
-					iframe.src = destination;
-				}
-				setTimeout(() => {
-					startup.classList.add("hide");
-					iframe.classList.remove("hide");
-				}, 2000);
-			} else {
-				addLog(`theme '${theme}' not found on server!`);
-			}
-		}
-	};
-	request.ontimeout = function () {
-		console.warn("onTimeout", this.readyState, this.status);
-		addLog(`check for theme '${theme}' timed out!`);
-	};
-	request.timeout = 2000;
-	console.debug("checking url:", destination);
-	request.open("GET", destination, true);
-	request.send();
-}
-
 function setIframeSource() {
 	if (allTopicsReceived()) {
 		const startup = document.querySelector("#notReady");
@@ -62,12 +19,10 @@ function setIframeSource() {
 		var host = "";
 		var query = new URLSearchParams();
 		var destination = "";
-		if (data["openWB/general/extern"] === true) {
+		if (data["openWB/general/extern"] === true &&
+			data["openWB/general/extern_display_mode"] !== "local") {
 			// load secondary display (from secondary openWB)
 			switch (data["openWB/general/extern_display_mode"]) {
-				case "local":
-					loadLocalTheme(startup, iframe);
-					break;
 				case "primary":
 				default:
 					// retrieve display theme from primary
@@ -88,17 +43,56 @@ function setIframeSource() {
 						parentChargePoint2: data["openWB/internal_chargepoint/1/data/parent_cp"]
 					}
 					query.append("data", JSON.stringify(queryObject));
-					destination = `${location.protocol}//${host}/openWB/web/display/?${query.toString()}`;
-					addLog(`all done, loading theme from primary`);
-					// no iframe here as this would result in another nesting with the wrapper on primary
-					setTimeout(() => {
-						location.href = destination;
-					}, 2000);
 					break;
 			}
+			destination = `${location.protocol}//${host}/openWB/web/display/?${query.toString()}`;
+			addLog(`all done, loading theme from primary`);
+			// no iframe here as this would result in another nesting with the wrapper on primary
+			setTimeout(() => {
+				location.href = destination;
+			}, 2000);
 		} else {
-			// load primary display (from primary or secondary openWB)
-			loadLocalTheme(startup, iframe);
+			// load configured theme locally (on primary or secondary openWB)
+			host = location.host;
+			const theme = data["openWB/optional/int_display/theme"].type;
+			const searchParams = new URLSearchParams(location.search);
+
+			if (searchParams.has("data")) {
+				console.warn("Detected query parameters! Forwarding data to display theme:", searchParams.get("data"));
+				query.append("data", searchParams.get("data"));
+			}
+			if (credentialsFetched) {
+				query.append("hide_login", "1");
+			}
+
+			destination = `${location.protocol}//${host}/openWB/web/display/themes/${theme}/?${query.toString()}`;
+
+			var request = new XMLHttpRequest();
+			request.onload = function () {
+				if (this.readyState == 4) {
+					if (this.status == 200) {
+						addLog(`theme '${theme}' is valid`)
+						if (destination != iframe.src) {
+							addLog(`all done, starting theme '${theme}' with url '${destination}'`);
+							iframe.src = destination;
+						}
+						setTimeout(() => {
+							startup.classList.add("hide");
+							iframe.classList.remove("hide");
+						}, 2000);
+					} else {
+						addLog(`theme '${theme}' not found on server!`);
+					}
+				}
+			};
+			request.ontimeout = function () {
+				console.warn("onTimeout", this.readyState, this.status);
+				addLog(`check for theme '${theme}' timed out!`);
+			};
+			request.timeout = 2000;
+			console.debug("checking url:", destination);
+			request.open("GET", destination, true);
+			request.send();
 		}
 	} else {
 		console.debug("some topics still missing");
