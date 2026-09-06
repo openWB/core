@@ -459,6 +459,25 @@ class Chargepoint(ChargepointRfidMixin):
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
 
+    def _get_phases_at_pv_charging_start(self, charging_ev: Ev) -> int:
+        # Ist bereits vor Ladestart genug Überschuss für mehrphasiges Laden vorhanden, direkt mehrphasig
+        # starten. Sonst müsste erst einphasig gestartet und nach der Umschaltverzögerung wieder
+        # hochgeschaltet werden, siehe Hilfetext zu "Pufferzeit zwischen automat. Phasenumschaltungen".
+        max_phase_hw = self.get_max_phase_hw()
+        pv_config = data.data.general_data.data.chargemode_config.pv_charging
+        if (self.data.control_parameter.submode == Chargemode.PV_CHARGING and
+                self.data.set.charge_template.data.chargemode.pv_charging.phases_to_use == 0 and
+                max_phase_hw > 1):
+            if self.data.set.charge_template.data.chargemode.pv_charging.feed_in_limit:
+                feed_in_yield = pv_config.feed_in_yield
+            else:
+                feed_in_yield = 0
+            usable_surplus = data.data.counter_all_data.get_evu_counter().get_usable_surplus(feed_in_yield)
+            required_surplus = charging_ev.ev_template.data.min_current * max_phase_hw * 230
+            if usable_surplus > required_surplus:
+                return max_phase_hw
+        return 1
+
     def get_phases_by_selected_chargemode(self, phases_chargemode: int) -> int:
         charging_ev = self.data.set.charging_ev_data
         if self.data.get.evse_signaling == EvseSignaling.HLC:
@@ -480,7 +499,7 @@ class Chargepoint(ChargepointRfidMixin):
                 if ((not charging_ev.ev_template.data.prevent_phase_switch or
                         self.data.set.log.imported_since_plugged == 0) and
                         self.data.config.auto_phase_switch_hw):
-                    phases = 1
+                    phases = self._get_phases_at_pv_charging_start(charging_ev)
                 else:
                     if self.data.set.phases_to_use != 0:
                         phases = self.data.set.phases_to_use
