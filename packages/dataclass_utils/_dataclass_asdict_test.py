@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Any
 
 import pytest
@@ -34,6 +35,11 @@ class WithTupleState:
 class WithNoneState:
     def __getstate__(self):
         return None
+
+
+@dataclass
+class DataclassWithRuntimeAttribute:
+    value: int = 1
 
 
 @pytest.mark.parametrize(["object", "expected_dict"], [
@@ -143,3 +149,14 @@ def test_asdict_with_getstate_tuple():
 
 def test_asdict_with_getstate_none():
     assert asdict(WithNoneState()) is None
+
+
+def test_dataclass_only_declared_fields_are_serialized():
+    value = DataclassWithRuntimeAttribute()
+    setattr(value, "runtime_only", "ignore me")
+    assert asdict(value) == {"value": 1}
+
+
+def test_asdict_raises_for_unsupported_object():
+    with pytest.raises(TypeError, match=r"vars\(\) argument must have __dict__ attribute"):
+        asdict(object())
