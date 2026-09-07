@@ -29,7 +29,7 @@ def asdict(value: Any) -> AsDictValue:
     elif is_dataclass(value) and not isinstance(value, type):
         # Bei Dataclasses nur deklarierte Felder serialisieren
         return {
-            field.name: None if getattr(value, field.name) is None else asdict(getattr(value, field.name))
+            field.name: asdict(getattr(value, field.name))
             for field in fields(value)
         }
     elif isinstance(value, dict):
