@@ -27,8 +27,8 @@ def asdict(value: Any) -> AsDictValue:
         return [None if item is None else asdict(item) for item in sequence]
     if not isinstance(value, dict):
         default_getstate = getattr(object, "__getstate__", None)
-        if callable(state) and getattr(type(value), "__getstate__", None) is not default_getstate:
-            return asdict(state())
+        if callable(default_getstate) and getattr(type(value), "__getstate__", None) is not default_getstate:
+            return asdict(default_getstate())
         try:
             value = vars(cast(object, value))
         except TypeError:
