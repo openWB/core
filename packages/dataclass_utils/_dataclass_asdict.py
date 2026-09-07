@@ -16,6 +16,8 @@ def asdict(value: Any) -> AsDictValue:
     is introduced, because openWB still requires compatibility with Python 3.5
     This function should be replaced when switching to actual Python 3.7 dataclasses.
     """
+    if value is None:
+        return None
     if isinstance(value, (str, int, float)):
         return value
     if isinstance(value, Enum):
@@ -25,6 +27,11 @@ def asdict(value: Any) -> AsDictValue:
         return [None if item is None else asdict(item) for item in sequence]
     if not isinstance(value, dict):
         state = getattr(value, "__getstate__", None)
-        value = state() if state is not None else vars(cast(object, value))
+        if callable(state):
+            return asdict(state())
+        try:
+            value = vars(cast(object, value))
+        except TypeError:
+            return cast(AsDictValue, value)
     mapping = cast(Dict[Any, Any], value)
     return {key: None if item is None else asdict(item) for key, item in mapping.items()}

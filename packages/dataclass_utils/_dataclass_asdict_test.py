@@ -1,3 +1,5 @@
+from typing import Any
+
 import pytest
 
 from dataclass_utils import asdict
@@ -16,12 +18,22 @@ class MultiValue:
 
 
 class ValueWithUnserializableState:
-    def __init__(self, value):
+    def __init__(self, value: Any):
         self.value = value
         self.unserializable_state = object()
 
     def __getstate__(self):
         return {"value": self.value}
+
+
+class WithTupleState:
+    def __getstate__(self):
+        return ("a", 2, None)
+
+
+class WithNoneState:
+    def __getstate__(self):
+        return None
 
 
 @pytest.mark.parametrize(["object", "expected_dict"], [
@@ -123,3 +135,11 @@ def test_dataclass_as_dict():
 
     # evaluation
     assert actual_dict == MY_DATACLASS_AS_DICT
+
+
+def test_asdict_with_getstate_tuple():
+    assert asdict(WithTupleState()) == ["a", 2, None]
+
+
+def test_asdict_with_getstate_none():
+    assert asdict(WithNoneState()) is None
