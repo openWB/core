@@ -7,7 +7,7 @@ from modules.devices.vendors import VendorGroup
 class Vendor:
     def __init__(self):
         self.type = Path(__file__).parent.name
-        self.vendor = "M-Tec"
+        self.vendor = "M-Tec, Wattsonic, Solinteg"
         self.group = VendorGroup.VENDORS.value
 
 
