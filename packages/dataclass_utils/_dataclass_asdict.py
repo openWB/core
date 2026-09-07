@@ -26,8 +26,8 @@ def asdict(value: Any) -> AsDictValue:
         sequence = cast(List[Any], value)
         return [None if item is None else asdict(item) for item in sequence]
     if not isinstance(value, dict):
-        state = getattr(value, "__getstate__", None)
-        if callable(state):
+        default_getstate = getattr(object, "__getstate__", None)
+        if callable(state) and getattr(type(value), "__getstate__", None) is not default_getstate:
             return asdict(state())
         try:
             value = vars(cast(object, value))
