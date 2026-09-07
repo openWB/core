@@ -166,3 +166,33 @@ def test_calc_charge_cost_reference_middle_day_change(mock_data, monkeypatch):
     assert cp.data.set.log.charged_energy_by_source == {
         'grid': 1242.8, 'pv': 385.8, 'bat': 671.4, 'cp': 0.0}
     assert round(cp.data.set.log.costs, 5) == 0.5
+
+
+def test_small_positive_charge_is_assigned_to_energy_sources(mock_data, monkeypatch):
+    cp = Chargepoint(4, None)
+    charged_energy = 80
+    cp.data.set.log.imported_since_plugged = cp.data.set.log.imported_since_mode_switch = charged_energy
+
+    # Beispielhafte Verteilung
+    processed_entries = {
+        "totals": {
+            "cp": {
+                "cp4": {
+                    "energy_imported": 1000,
+                    "bat": 250,
+                    "cp": 0,
+                    "grid": 500,
+                    "pv": 250,
+                }
+            }
+        }
+    }
+    monkeypatch.setattr(chargelog, "_get_reference_position", Mock(return_value=chargelog.ReferenceTime.START))
+
+    charged_energy_by_source = chargelog.calculate_charged_energy_by_source(
+        cp, processed_entries, []
+    )
+
+    assert charged_energy_by_source == {'bat': 20, 'cp': 0, 'grid': 40, 'pv': 20}
+
+    assert sum(charged_energy_by_source.values()) == cp.data.set.log.imported_since_mode_switch

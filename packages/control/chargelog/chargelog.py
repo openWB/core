@@ -369,7 +369,7 @@ def calculate_charged_energy_by_source(cp, processed_entries, reference_entries,
             raise TypeError(f"Unbekannter Referenz-Zeitpunkt {reference}")
         log.debug(f'power source {relative_energy_source}')
         log.debug(f"charged_energy {charged_energy}")
-        if charged_energy < 100:
+        if charged_energy <= 0:
             # wenn nur entladen wurde, keine Anteile berechnen
             return {source: 0 for source in ENERGY_SOURCES}
         return _get_charged_energy_by_source(
