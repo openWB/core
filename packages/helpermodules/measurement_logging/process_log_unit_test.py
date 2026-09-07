@@ -427,57 +427,50 @@ def test_pv_export_and_bat_export_and_bat_import():
             }
         }
     }
+
+    # Einspeisung - Priorität
+    # 1 Pv
+    # 2 Bat
+    # 3 CP
+    # -> erst komplette Einspeisung von PV berücksichtigen
+    # -> wenn dann noch weitere Einspeisung übrig ist -> Bat und dann CP
+
+    # Speicherimport - Priorität
+    # 1 Pv
+    # 2 Grid
+    # 3 CP
+
     # Pv 10 Exported
     # Grid 2 Imported, 3 Exported
     # Bat   1 Imported, 5 Exported
 
-    # Reale Verbräuche
-    # 2-3+10+5-1+0 = 13
+    # Realer Verbrauch
+    # 2 - 3 + 10 + 5 - 1 + 0 = 13
 
     # Export aufteilen
-    # Lokal erzeugt 10+5 = 15
-    # PV Anteil am Export: 2/3 ---> 2 kWh Einspeisung
-    # Bat Anteil am Export: 1/3 ---> 1 kWh Einspeisung
+    # Pv - Export = 10 - 3 = 7
 
-    # Pv = 8
-    # Bat = 4
+    # Bat import aufteilen
+    # Pv - Bat_imported = 7 - 1 = 6
+
+    # Tatsächlicher Verbrauch:
+    # Pv = 6
     # Grid = 2
-
-    # Batterie Import aufteilen
-    # Pv + Grid = 8 + 2 = 10
-    # Anteil an Bat import
-    # PV 0,8  -> 0.8kWh
-    # Grid 0,2  -> 0.2kWh
-
-    # Tatsächlicher Verbruach:
-    # Pv = 8 - 0.8 = 7.2
-    # Grid = 2  - 0.2 = 1.8
-    # Bat = 4
+    # Bat = 5
     # ---------------------
     # Summe = 13
 
     # Anteil der Energiequellen:
-    # Grid: 1,8/13 ≈ 0.1385
-    # PV = 7,2/13 ≈ 0.5538
-    # Bat = 4/13 ≈ 0.3077
+    # Grid: 2/13 ≈ 0.1538
+    # PV = 6/13 ≈ 0.4615
+    # Bat = 5/13 ≈ 0.3846
     # CP = 0/13 ≈ 0.0
-
-    # Einspeisung
-    # 1 Pv
-    # 2 Bat
-    # CP
-
-    # Speicherladen
-    # 1 Pv
-    # Grid
-    # CP
-
     result, message = analyse_percentage(entry)
 
     assert result["energy_source"] == {
-        "grid": 0.1385,
-        "pv": 0.5538,
-        "bat": 0.3077,
+        "grid": 0.1538,
+        "pv": 0.4615,
+        "bat": 0.3846,
         "cp": 0.0
     }
     assert message == ""
@@ -494,6 +487,7 @@ def test_pv_export_and_bat_export_and_bat_import():
             0.0,  # cp_exported
             2.0,  # grid_imported
             3.0,  # grid_exported
+            #        2/9           7/9
             {"grid": 0.2222, "pv": 0.7778, "bat": 0.0, "cp": 0.0}
         ),
         (
@@ -504,7 +498,8 @@ def test_pv_export_and_bat_export_and_bat_import():
             0.0,  # cp_exported
             0.0,  # grid_imported
             3.0,  # grid_exported
-            {"grid": 0.0, "pv": 0.6667, "bat": 0.3333, "cp": 0.0}
+            #        0/12        7/12           5/12
+            {"grid": 0.0, "pv": 0.5833, "bat": 0.4167, "cp": 0.0}
         ),
         (
             "grid export and bat import",
@@ -514,7 +509,8 @@ def test_pv_export_and_bat_export_and_bat_import():
             0.0,  # cp_exported
             2.0,  # grid_imported
             3.0,  # grid_exported
-            {"grid": 0.1385, "pv": 0.5538, "bat": 0.3077, "cp": 0.0}
+            #        2/13        6/13           5/13
+            {"grid": 0.1538, "pv": 0.4615, "bat": 0.3846, "cp": 0.0}
         ),
         (
             "grid export proportional pv and cp ",
@@ -524,7 +520,8 @@ def test_pv_export_and_bat_export_and_bat_import():
             3.0,  # cp_exported
             0.0,  # grid_imported
             3.0,  # grid_exported
-            {"grid": 0.0, "pv": 0.6667, "bat": 0.0, "cp": 0.3333}
+            #        0/6        3/6           0/6       3/6
+            {"grid": 0.0, "pv": 0.5, "bat": 0.0, "cp": 0.5}
         ),
         (
             "bat import proportional pv and grid",
@@ -534,11 +531,18 @@ def test_pv_export_and_bat_export_and_bat_import():
             0.0,  # cp_exported
             2.0,  # grid_imported
             0.0,  # grid_exported
-            {"grid": 0.2, "pv": 0.8, "bat": 0.0, "cp": 0.0}
+            #        2/8        6/8           0/8       8/8
+            {"grid": 0.25, "pv": 0.75, "bat": 0.0, "cp": 0.0}
         ),
     ]
 )
-def test_analyse_percentage_proportional_distribution(name, pv_exported, bat_exported, bat_imported, cp_exported, grid_imported, grid_exported, expected):
+def test_analyse_percentage_proportional_distribution(name,
+                                                      pv_exported,
+                                                      bat_exported,
+                                                      bat_imported,
+                                                      cp_exported,
+                                                      grid_imported,
+                                                      grid_exported, expected):
     entry = {
         "timestamp": 1234567890,
         "date": "00:00",

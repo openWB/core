@@ -463,36 +463,49 @@ def analyse_percentage(entry) -> Tuple[Dict, str]:
 
             try:
                 """
-                Neue Berechnung der Energiequellenanteile basierend auf Verbrauch und Einspeisung.
-                1. Die Einspeisung aus PV, Batterie und CP wird proportional auf die Quellen verteilt.
-                -> Geneaue Aufteilung nicht bekannt -> deshalb proportional verteilt.
+                Berechnung der Energiequellenanteile:
+                Da die genaue Aufteilung der Energiequellen nicht bekannt ist,
+                wird die Einspeißung (grid_exported) entsprechend der folgenden Priorität aufgeteilt:
+                    1. PV
+                    2. Batterie
+                    3. CP
+                Sollte die Einspeißung nicht komplett von PV gedeckt werden,
+                wird der Rest von der Batterie übernommen, und falls nötig, vom CP.
 
-                2. Der Batteriestrom import wird proportional auf die Quellen verteilt.
-                -> Nicht bekannt ob Pv/Grid/CP die Bat geladen hat -> deshalb proportional verteilt.
+                Entsprechend ähnlich wird der Batterieimport nach folgender Priorität aufgeteilt:
+                    1. PV
+                    2. Grid
+                    3. CP
 
-                3. Der wirkliche Verbrauch (ohne Einspeisung und Bat laden) wird aufgeteilt auf energy_source.
+                Anschließend wird der Verbrauch (ohne Einspeisung und Batterieimport) auf energy_source aufgeteilt.
                 """
-                # """
                 if consumption <= 0:
                     entry["energy_source"] = {"grid": 0, "pv": 0, "bat": 0, "cp": 0}
                 else:
 
                     direct = {"grid": grid_imported, "pv": pv_exported, "bat": bat_exported, "cp": cp_exported}
 
-                    # Netzeinspeisung proportional auf die Quellen verteilen
-                    remaining_grid_export = subtract_proportionally(direct, grid_exported, ("pv", "bat", "cp"))
+                    # Einspeißung aufteilen
+                    unassigned_export = grid_exported
+                    for source in ("pv", "bat", "cp"):
+                        if direct[source] > unassigned_export:
+                            direct[source] -= unassigned_export
+                            break
+                        else:
+                            unassigned_export -= direct[source]
+                            direct[source] = 0
 
-                    # Mehr eingespeister Strom als verfügbarer Verbrauch
-                    if remaining_grid_export > 0:
-                        subtract_proportionally(direct, remaining_grid_export, ("grid",))
+                    # Batterieimport aufteilen
+                    unassigned_bat_import = bat_imported
+                    for source in ("pv", "grid", "cp"):
+                        if direct[source] > unassigned_bat_import:
+                            direct[source] -= unassigned_bat_import
+                            break
+                        else:
+                            unassigned_bat_import -= direct[source]
+                            direct[source] = 0
 
-                    # Batterie Import aufteilen
-                    remaining_bat_import = subtract_proportionally(direct, bat_imported, ("pv", "cp", "grid"))
-
-                    # Mehr importierter Strom als verfügbarer Verbrauch
-                    if remaining_bat_import > 0:
-                        subtract_proportionally(direct, remaining_bat_import, ("bat",))
-                    # Reinen Verbrauch aufteilen
+                    # Anschließend Verbrauch aufteilen, wenn vorhanden
                     direct_total = sum(direct.values())
 
                     if direct_total <= 0:
@@ -503,25 +516,6 @@ def analyse_percentage(entry) -> Tuple[Dict, str]:
                             "pv": format(direct["pv"] / direct_total),
                             "bat": format(direct["bat"] / direct_total),
                             "cp": format(direct["cp"] / direct_total)}
-                # """
-                """OLD
-                pv_direct = min(pv_exported - grid_exported - bat_imported, consumption)
-                remaining = consumption - pv_direct
-
-                bat_direct = min(bat_exported, remaining)
-                remaining -= bat_direct
-
-                cp_direct = min(cp_exported, remaining)
-                remaining -= cp_direct
-
-                grid_direct = min(grid_imported, remaining)
-
-                entry["energy_source"] = {
-                    "grid": format(grid_direct / consumption),
-                    "pv": format(pv_direct / consumption),
-                    "bat": format(bat_direct / consumption),
-                    "cp": format(cp_direct / consumption)}
-                # """
             except ZeroDivisionError:
                 entry["energy_source"] = {"grid": 0, "pv": 0, "bat": 0, "cp": 0}
     except Exception:
