@@ -36,6 +36,18 @@ def consumer() -> Consumer:
     return load
 
 
+def test_get_parameter_clears_previous_state_string_when_switch_interval_is_active(consumer: Consumer):
+    # setup
+    consumer.data.set.switch_interval_elapsed = False
+    consumer.data.set.state_str_prev = "previous state"
+
+    # execution
+    _, _, state_string, _, _ = consumer.get_parameter()
+
+    # evaluation
+    assert state_string is None
+
+
 @pytest.mark.parametrize(
     ("wait_for_start_active",
      "state", "currents",

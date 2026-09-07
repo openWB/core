@@ -109,7 +109,7 @@ class Consumer(Load):
             log.debug("Intervall für neuen Schaltbefehl nicht abgelaufen.")
             return (0,
                     0,
-                    self.data.set.state_str_prev,
+                    None,
                     self.data.control_parameter.chargemode,
                     self.data.control_parameter.submode)
 
