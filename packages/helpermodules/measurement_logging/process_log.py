@@ -414,23 +414,6 @@ def analyse_percentage(entry) -> Tuple[Dict, str]:
                 return counter
         else:
             raise KeyError(f"Kein Zähler für das Netz gefunden in Eintrag '{entry['timestamp']}'.")
-
-    def subtract_proportionally(direct: Dict, amount: float, sources: Dict) -> Dict:
-        amount = max(amount, 0)
-        available = {source: max(0, direct[source]) for source in sources}
-
-        total_available = sum(available.values())
-        if amount <= 0 or total_available <= 0:
-            return amount
-        amount_to_subtract = min(amount, total_available)
-        for source, value in available.items():
-            share = value / total_available
-            direct[source] -= share * amount_to_subtract
-
-            direct[source] = max(0, direct[source])
-
-        return amount - amount_to_subtract
-
     try:
         message = ""
         grid_counter = get_grid_counter(entry)
