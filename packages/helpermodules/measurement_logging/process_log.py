@@ -445,23 +445,21 @@ def analyse_percentage(entry) -> Tuple[Dict, str]:
                 consumption = 0
 
             try:
-                """
-                Berechnung der Energiequellenanteile:
-                Da die genaue Aufteilung der Energiequellen nicht bekannt ist,
-                wird die Einspeißung (grid_exported) entsprechend der folgenden Priorität aufgeteilt:
-                    1. PV
-                    2. Batterie
-                    3. CP
-                Sollte die Einspeißung nicht komplett von PV gedeckt werden,
-                wird der Rest von der Batterie übernommen, und falls nötig, vom CP.
-
-                Entsprechend ähnlich wird der Batterieimport nach folgender Priorität aufgeteilt:
-                    1. PV
-                    2. Grid
-                    3. CP
-
-                Anschließend wird der Verbrauch (ohne Einspeisung und Batterieimport) auf energy_source aufgeteilt.
-                """
+                # Berechnung der Energiequellenanteile:
+                # Da die genaue Aufteilung der Energiequellen nicht bekannt ist,
+                # wird die Einspeisung (grid_exported) entsprechend der folgenden Priorität aufgeteilt:
+                #     1. PV
+                #     2. Batterie
+                #     3. CP
+                # Sollte die Einspeisung nicht komplett von PV gedeckt werden,
+                # wird der Rest von der Batterie übernommen, und falls nötig, vom CP.
+                #
+                # Entsprechend ähnlich wird der Batterieimport nach folgender Priorität aufgeteilt:
+                #     1. PV
+                #     2. Grid
+                #     3. CP
+                #
+                # Anschließend wird der Verbrauch (ohne Einspeisung und Batterieimport) auf energy_source aufgeteilt.
                 if consumption <= 0:
                     entry["energy_source"] = {"grid": 0, "pv": 0, "bat": 0, "cp": 0}
                 else:
@@ -473,20 +471,36 @@ def analyse_percentage(entry) -> Tuple[Dict, str]:
                     for source in ("pv", "bat", "cp"):
                         if direct[source] > unassigned_export:
                             direct[source] -= unassigned_export
+                            unassigned_export = 0
                             break
                         else:
                             unassigned_export -= direct[source]
                             direct[source] = 0
+
+                    if unassigned_export > 0:
+                        # Fehler / inkonsistente Energiebilanz
+                        log.warning(
+                            f"grid_exported konnte nicht vollständig verteilt werden. "
+                            f"Unverteilter Anteil: {unassigned_export}"
+                        )
 
                     # Batterieimport aufteilen
                     unassigned_bat_import = bat_imported
                     for source in ("pv", "grid", "cp"):
                         if direct[source] > unassigned_bat_import:
                             direct[source] -= unassigned_bat_import
+                            unassigned_bat_import = 0
                             break
                         else:
                             unassigned_bat_import -= direct[source]
                             direct[source] = 0
+
+                    if unassigned_bat_import > 0:
+                        # Fehler / inkonsistente Energiebilanz
+                        log.warning(
+                            f"bat_imported konnte nicht vollständig verteilt werden. "
+                            f"Unverteilter Anteil: {unassigned_bat_import}"
+                        )
 
                     # Anschließend Verbrauch aufteilen, wenn vorhanden
                     direct_total = sum(direct.values())
