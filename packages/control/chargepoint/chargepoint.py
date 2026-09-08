@@ -1,5 +1,3 @@
-from dataclasses import asdict
-import dataclasses
 import logging
 from threading import Thread, Event
 import traceback
@@ -21,6 +19,7 @@ from control import phase_switch
 from control.chargepoint.chargepoint_state import CHARGING_STATES, ChargepointState
 from control.limiting_value import loadmanagement_limit_factory
 from control.text import BidiState
+from dataclass_utils import asdict
 from helpermodules.constants import DEFAULT_COLORS
 from helpermodules.phase_handling import convert_single_evu_phase_to_cp_phase
 from helpermodules.pub import Pub
@@ -218,7 +217,7 @@ class Chargepoint(ChargepointRfidMixin):
     def setup_values_at_start(self):
         self._set_values_at_start()
 
-    def set_control_parameter(self, submode: str):
+    def set_control_parameter(self, submode: Chargemode):
         """ setzt die Regel-Parameter, die der Algorithmus verwendet.
 
         Parameter
@@ -227,12 +226,11 @@ class Chargepoint(ChargepointRfidMixin):
             neuer Lademodus, in dem geladen werden soll
         """
         try:
-            self.data.control_parameter.submode = Chargemode(submode)
-            if submode == "time_charging":
+            self.data.control_parameter.submode = submode
+            if submode == Chargemode.TIME_CHARGING:
                 self.data.control_parameter.chargemode = Chargemode.TIME_CHARGING
             else:
-                self.data.control_parameter.chargemode = Chargemode(
-                    self.data.set.charge_template.data.chargemode.selected)
+                self.data.control_parameter.chargemode = self.data.set.charge_template.data.chargemode.selected
             self.data.control_parameter.prio = self.data.set.charge_template.data.prio
             if self.template.data.charging_type == ChargingType.AC.value:
                 self.data.control_parameter.min_current = self.data.set.charging_ev_data.ev_template.data.min_current
@@ -602,9 +600,10 @@ class Chargepoint(ChargepointRfidMixin):
         elif self.data.set.current == 0:
             self.data.control_parameter.timestamp_charge_start = None
 
-    def set_chargemode_changed(self, submode: str) -> None:
-        if ((submode == "time_charging" and self.data.control_parameter.chargemode != "time_charging") or
-                (submode != "time_charging" and
+    def set_chargemode_changed(self, submode: Chargemode) -> None:
+        if ((submode == Chargemode.TIME_CHARGING and
+             self.data.control_parameter.chargemode != Chargemode.TIME_CHARGING) or
+                (submode != Chargemode.TIME_CHARGING and
                  self.data.control_parameter.chargemode != self.data.set.charge_template.data.chargemode.selected)):
             self.chargemode_changed = True
             log.debug("Änderung des Lademodus")
@@ -612,7 +611,7 @@ class Chargepoint(ChargepointRfidMixin):
         else:
             self.chargemode_changed = False
 
-    def set_submode_changed(self, submode: str) -> None:
+    def set_submode_changed(self, submode: Chargemode) -> None:
         self.submode_changed = (submode != self.data.control_parameter.submode)
 
     def update_ev(self, ev_list: Dict[str, Ev]) -> None:
@@ -700,7 +699,7 @@ class Chargepoint(ChargepointRfidMixin):
                             f", mittlerer Ist-Strom: {get_medium_charging_current(self.data.get.currents)}")
                 except Exception:
                     log.exception("Fehler im Prepare-Modul für Ladepunkt "+str(self.num))
-                    self.data.control_parameter.submode = "stop"
+                    self.data.control_parameter.submode = Chargemode.STOP
             else:
                 self._process_charge_stop()
                 if vehicle != -1:
@@ -781,8 +780,7 @@ class Chargepoint(ChargepointRfidMixin):
     def update_charge_template(self, charge_template: ChargeTemplate) -> None:
         # Prüfen, ob ein temporäres Ladeprofil aktiv ist und dieses übernehmen
         self.data.set.charge_template = charge_template
-        Pub().pub(f"openWB/set/chargepoint/{self.num}/set/charge_template",
-                  dataclasses.asdict(charge_template.data))
+        Pub().pub(f"openWB/set/chargepoint/{self.num}/set/charge_template", asdict(charge_template.data))
 
     def _pub_connected_vehicle(self, vehicle: Ev):
         """ published die Daten, die zur Anzeige auf der Hauptseite benötigt werden.
@@ -807,8 +805,8 @@ class Chargepoint(ChargepointRfidMixin):
                 self.data.get.connected_vehicle.soc.range = vehicle.data.get.range
             self.data.get.connected_vehicle.info = ConnectedInfo(id=vehicle.num,
                                                                  name=vehicle.data.name)
-            if (self.data.set.charge_template.data.chargemode.selected == "time_charging" or
-                    self.data.set.charge_template.data.chargemode.selected == "scheduled_charging"):
+            if (self.data.set.charge_template.data.chargemode.selected == Chargemode.TIME_CHARGING or
+                    self.data.set.charge_template.data.chargemode.selected == Chargemode.SCHEDULED_CHARGING):
                 current_plan = self.data.control_parameter.current_plan
             else:
                 current_plan = None
@@ -820,7 +818,7 @@ class Chargepoint(ChargepointRfidMixin):
                 current_plan=current_plan,
                 average_consumption=vehicle.ev_template.data.average_consump,
                 time_charging_in_use=True if (self.data.control_parameter.submode ==
-                                              "time_charging") else False)
+                                              Chargemode.TIME_CHARGING) else False)
         except Exception:
             log.exception("Fehler im Prepare-Modul")
 

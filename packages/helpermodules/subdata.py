@@ -1,5 +1,6 @@
 """ Modul, um die Daten vom Broker zu erhalten.
 """
+from enum import Enum
 import importlib
 import logging
 from pathlib import Path
@@ -245,7 +246,12 @@ class SubData:
                     payload = decode_payload(msg.payload)
                     if isinstance(payload, Dict):
                         for key, value in payload.items():
+                            current_value = getattr(class_obj, key, None)
+                            if isinstance(current_value, Enum):
+                                value = type(current_value)(value)
                             setattr(class_obj, key, value)
+                    elif isinstance(getattr(class_obj, key, None), Enum):
+                        setattr(class_obj, key, type(getattr(class_obj, key))(payload))
                     else:
                         setattr(class_obj, key, decode_payload(msg.payload))
                 else:

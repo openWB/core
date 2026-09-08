@@ -5,7 +5,7 @@ import time
 from typing import Iterable
 import xml.etree.ElementTree as ET
 
-from dataclass_utils._dataclass_asdict import asdict
+from dataclass_utils import asdict
 from helpermodules.pub import Pub
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor

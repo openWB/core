@@ -1,10 +1,11 @@
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from enum import IntEnum
 from typing import Dict, List, Optional, Tuple
 from unittest.mock import Mock
 
 import pytest
 
+from dataclass_utils import asdict
 from dataclass_utils.factories import currents_list_factory
 from helpermodules.changed_values_handler import ChangedValuesHandler
 

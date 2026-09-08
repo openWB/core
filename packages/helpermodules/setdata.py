@@ -2,7 +2,6 @@
 """
 
 import copy
-import dataclasses
 from pathlib import Path
 from threading import Event
 from typing import List, Optional, Tuple
@@ -170,7 +169,7 @@ class SetData:
                     elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config.*$", msg.topic) is not None:
                         event = self.event_cp_config
                         if "cp"+str(index) in subdata.SubData.cp_data:
-                            template = dataclasses.asdict(
+                            template = dataclass_utils.asdict(
                                 subdata.SubData.cp_data["cp"+str(index)].chargepoint.data.config)
                         else:
                             template = {}

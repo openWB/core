@@ -1,4 +1,4 @@
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 import logging
 import traceback
 from typing import List, Tuple
@@ -6,6 +6,7 @@ from typing import List, Tuple
 from control import data
 from control.ev import ev as ev_module
 from control.chargepoint.charging_type import ChargingType
+from dataclass_utils import asdict
 from dataclass_utils.factories import empty_list_factory
 from helpermodules.abstract_plans import AutolockPlan
 from helpermodules import timecheck

@@ -1,3 +1,6 @@
+from dataclasses import dataclass
+from typing import Any
+
 import pytest
 
 from dataclass_utils import asdict
@@ -15,6 +18,30 @@ class MultiValue:
         self.b = b
 
 
+class ValueWithUnserializableState:
+    def __init__(self, value: Any):
+        self.value = value
+        self.unserializable_state = object()
+
+    def __getstate__(self):
+        return {"value": self.value}
+
+
+class WithTupleState:
+    def __getstate__(self):
+        return ("a", 2, None)
+
+
+class WithNoneState:
+    def __getstate__(self):
+        return None
+
+
+@dataclass
+class DataclassWithRuntimeAttribute:
+    value: int = 1
+
+
 @pytest.mark.parametrize(["object", "expected_dict"], [
     # Test serialization of basic types:
     pytest.param(SingleValue("someString"), {"value": "someString"}, id="single string"),
@@ -24,6 +51,8 @@ class MultiValue:
     pytest.param(SingleValue(["a", 2, None]), {"value": ["a", 2, None]}, id="single list"),
     pytest.param(SingleValue((None, "a", 2)), {"value": [None, "a", 2]}, id="single tuple"),
     pytest.param(SingleValue({"a": "a", "b": 2}), {"value": {"a": "a", "b": 2}}, id="single object"),
+    pytest.param(ValueWithUnserializableState("someString"), {"value": "someString"},
+                 id="object with custom state"),
 
     # Test nesting:
     pytest.param(SingleValue(SingleValue("nested")), {"value": {"value": "nested"}}, id="nested object"),
@@ -112,3 +141,22 @@ def test_dataclass_as_dict():
 
     # evaluation
     assert actual_dict == MY_DATACLASS_AS_DICT
+
+
+def test_asdict_with_getstate_tuple():
+    assert asdict(WithTupleState()) == ["a", 2, None]
+
+
+def test_asdict_with_getstate_none():
+    assert asdict(WithNoneState()) is None
+
+
+def test_dataclass_only_declared_fields_are_serialized():
+    value = DataclassWithRuntimeAttribute()
+    setattr(value, "runtime_only", "ignore me")
+    assert asdict(value) == {"value": 1}
+
+
+def test_asdict_raises_for_unsupported_object():
+    with pytest.raises(TypeError, match=r"vars\(\) argument must have __dict__ attribute"):
+        asdict(object())

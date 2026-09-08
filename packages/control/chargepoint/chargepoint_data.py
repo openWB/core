@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from threading import Event
 from typing import Dict, List, Optional, Protocol
+from control.chargemode import Chargemode
 from control.chargepoint.chargepoint_template import CpTemplate
 
 from control.chargepoint.control_parameter import ControlParameter, control_parameter_factory
@@ -38,7 +39,7 @@ class ConnectedInfo:
 class ConnectedConfig:
     average_consumption: float = 17
     charge_template: int = 0
-    chargemode: str = "stop"
+    chargemode: Chargemode = Chargemode.STOP
     current_plan: Optional[int] = 0
     ev_template: int = 0
     priority: bool = False

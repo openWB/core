@@ -1,6 +1,5 @@
 from concurrent.futures import ProcessPoolExecutor
 import copy
-from dataclasses import asdict
 import datetime
 import glob
 import importlib
@@ -13,7 +12,6 @@ from typing import List, Optional
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
 
 from control.limiting_value import LoadmanagementLimit
-import dataclass_utils
 
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
 from helpermodules import timecheck
@@ -43,6 +41,7 @@ from control.ev import ev
 from control.ev.ev_template import EvTemplateData
 from control.general import Prices, PvCharging
 from control.optional_data import OcppConfig
+from dataclass_utils import asdict
 from modules.common.abstract_vehicle import GeneralVehicleConfig
 from modules.common.component_type import ComponentType
 from modules.devices.sungrow.sungrow_sh.version import Version
@@ -595,7 +594,7 @@ class UpdateConfig:
         ("openWB/vehicle/0/info", {"manufacturer": None, "model": None}),
         ("openWB/vehicle/0/charge_template", ev.Ev(0).charge_template.data.id),
         ("openWB/vehicle/0/soc_module/config", NO_MODULE),
-        ("openWB/vehicle/0/soc_module/general_config", dataclass_utils.asdict(GeneralVehicleConfig())),
+        ("openWB/vehicle/0/soc_module/general_config", asdict(GeneralVehicleConfig())),
         ("openWB/vehicle/0/ev_template", ev.Ev(0).ev_template.data.id),
         ("openWB/vehicle/0/tag_id", ev.Ev(0).data.tag_id),
         ("openWB/vehicle/0/get/soc", ev.Ev(0).data.get.soc),
@@ -634,7 +633,7 @@ class UpdateConfig:
         ("openWB/general/prices/pv", Prices().pv),
         ("openWB/general/range_unit", "km"),
         ("openWB/general/temporary_charge_templates_active", False),
-        ("openWB/general/web_theme", dataclass_utils.asdict(KoalaWebTheme())),
+        ("openWB/general/web_theme", asdict(KoalaWebTheme())),
         ("openWB/graph/config/duration", 120),
         ("openWB/internal_chargepoint/0/data/parent_cp", None),
         ("openWB/internal_chargepoint/1/data/parent_cp", None),
@@ -647,10 +646,10 @@ class UpdateConfig:
         ("openWB/optional/int_display/pin_code", "0000"),
         ("openWB/optional/int_display/standby", 60),
         ("openWB/optional/int_display/rotation", 0),
-        ("openWB/optional/int_display/theme", dataclass_utils.asdict(CardsDisplayTheme())),
+        ("openWB/optional/int_display/theme", asdict(CardsDisplayTheme())),
         ("openWB/optional/int_display/only_local_charge_points", False),
         ("openWB/optional/monitoring/config", NO_MODULE),
-        ("openWB/optional/ocpp/config", dataclass_utils.asdict(OcppConfig())),
+        ("openWB/optional/ocpp/config", asdict(OcppConfig())),
         ("openWB/optional/rfid/active", False),
         ("openWB/pv/config/configured", False),
         ("openWB/system/backup_password", None),
@@ -1097,8 +1096,7 @@ class UpdateConfig:
             if re.search("openWB/vehicle/[0-9]+/soc_module/config", topic) is not None:
                 payload = decode_payload(payload)
                 index = get_index(topic)
-                return {f"openWB/set/vehicle/{index}/soc_module/interval_config":
-                        dataclass_utils.asdict(GeneralVehicleConfig())}
+                return {f"openWB/set/vehicle/{index}/soc_module/interval_config": asdict(GeneralVehicleConfig())}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(12)
 
@@ -2181,15 +2179,15 @@ class UpdateConfig:
                             {"value": 0, "input_matrix": {"RSE1": True, "RSE2": False}},
                             {"value": 0, "input_matrix": {"RSE1": True, "RSE2": True}}]
 
-                    return {'openWB/system/io/0/config': dataclass_utils.asdict(io_device),
-                            'openWB/io/action/0/config': dataclass_utils.asdict(action)}
+                    return {'openWB/system/io/0/config': asdict(io_device),
+                            'openWB/io/action/0/config': asdict(action)}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(75)
 
     def upgrade_datastore_76(self) -> None:
         def upgrade(topic: str, payload) -> Optional[dict]:
             if re.search("openWB/chargepoint/[0-9]+/control_parameter/limit", topic) is not None:
-                return {topic: dataclass_utils.asdict(LoadmanagementLimit(None,  None))}
+                return {topic: asdict(LoadmanagementLimit(None,  None))}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(76)
 
@@ -2301,7 +2299,7 @@ class UpdateConfig:
 
                 payload = decode_payload(payload)
                 charge_template = copy.deepcopy(payload)
-                charge_template["chargemode"]["eco_charging"] = dataclass_utils.asdict(EcoCharging())
+                charge_template["chargemode"]["eco_charging"] = asdict(EcoCharging())
                 if payload["chargemode"]["selected"] == "standby":
                     charge_template["chargemode"]["selected"] = "stop"
                 if payload["et"]["active"] is True:
@@ -2317,7 +2315,7 @@ class UpdateConfig:
                 charge_template["chargemode"]["pv_charging"]["phases_to_use"] = get_new_phases_to_use(
                     "openWB/general/chargemode_config/pv_charging/phases_to_use")
                 charge_template["chargemode"]["pv_charging"]["phases_to_use_min_soc"] = min(max_phases_ev, 3)
-                charge_template["chargemode"]["pv_charging"]["limit"] = dataclass_utils.asdict(Limit())
+                charge_template["chargemode"]["pv_charging"]["limit"] = asdict(Limit())
                 if payload["chargemode"]["pv_charging"]["max_soc"] == 101:
                     charge_template["chargemode"]["pv_charging"]["limit"]["selected"] = "none"
                 else:
