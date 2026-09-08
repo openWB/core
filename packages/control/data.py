@@ -27,6 +27,7 @@ from control.ev.ev import Ev
 from control.ev.ev_template import EvTemplate
 from control.general import General
 from control.io_device import IoActions, IoStates
+from control.ocpp import get_ocpp_client
 from control.optional import Optional
 from modules.common.abstract_device import AbstractDevice
 from modules.common.abstract_io import AbstractIoDevice
@@ -88,6 +89,7 @@ class Data:
         self._io_actions: IoActions = {}
         self._io_states: Dict[str, IoStates] = {}
         self._optional_data = Optional()
+        self._ocpp_client = get_ocpp_client()
         self._pv_data: Dict[str, Pv] = {}
         self._pv_all_data = PvAll()
         self._system_data = {}
@@ -253,6 +255,15 @@ class Data:
     @locked(optional_data_lock)
     def optional_data(self, value):
         self._optional_data = value
+
+    @property
+    def ocpp_client(self):
+        return self._ocpp_client
+
+    @ocpp_client.setter
+    @locked(optional_data_lock)
+    def ocpp_client(self, value):
+        self._ocpp_client = value
 
     @property
     def pv_data(self) -> Dict[str, Pv]:
