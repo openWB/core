@@ -8,8 +8,9 @@ from typing import Dict, List, Optional as TypingOptional, Union
 from datetime import datetime
 
 from control import data
-from control.ocpp import OcppMixin
 from control.optional_data import FlexibleTariff, ForecastGet, GridFee, OptionalData, PricingGet
+from control.ocpp import OcppClient
+from control.optional_data import FlexibleTariff, GridFee, OptionalData, PricingGet
 from helpermodules import hardware_configuration
 from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
@@ -24,9 +25,11 @@ AS_EURO_PER_KWH = 1000.0  # Umrechnung von €/Wh in €/kWh
 MQTT_PREFIX = "openWB/set/optional/ep"
 
 
-class Optional(OcppMixin):
-    def __init__(self):
+class Optional:
+    def __init__(self, ocpp_client: TypingOptional[OcppClient] = None):
         try:
+            if ocpp_client is not None:
+                data.data.ocpp_client = ocpp_client
             self.data = OptionalData()
             self._flexible_tariff_module: TypingOptional[ConfigurableFlexibleTariff] = None
             self._grid_fee_module: TypingOptional[ConfigurableGridFee] = None
@@ -307,26 +310,19 @@ class Optional(OcppMixin):
     def ocpp_transfer_meter_values(self):
         try:
             if self.data.ocpp.config.active:
-                thread_handler(Thread(target=self._transfer_meter_values, args=(), name="OCPP Client"))
+                self._transfer_meter_values()
         except Exception as e:
             log.exception("Fehler im OCPP-Optional-Modul: %s", e)
 
     def _transfer_meter_values(self):
+        client = data.data.ocpp_client
         for cp in data.data.cp_data.values():
             try:
-                if self.data.ocpp.boot_notification_sent is False:
-                    self.data.ocpp.boot_notification_sent = True
-                    # Boot-Notification nicht in der init-Funktion aufrufen, da noch nicht alles initialisiert ist
-                    self.boot_notification(cp.data.config.ocpp_chargebox_id,
-                                           cp.chargepoint_module.fault_state,
-                                           cp.chargepoint_module.config.type,
-                                           cp.data.get.serial_number)
+                chargebox_id = cp.data.config.ocpp_chargebox_id
                 if cp.data.set.ocpp_transaction_id is not None:
-                    self.send_heart_beat(cp.data.config.ocpp_chargebox_id, cp.chargepoint_module.fault_state)
-                    self.transfer_values(cp.data.config.ocpp_chargebox_id,
-                                         cp.chargepoint_module.fault_state,
-                                         cp.num,
-                                         cp.data.set.ocpp_transaction_id,
-                                         int(cp.data.get.imported))
+                    client.transfer_values(chargebox_id,
+                                           cp.num,
+                                           cp.data.set.ocpp_transaction_id,
+                                           int(cp.data.get.imported))
             except Exception:
                 log.exception("Fehler im OCPP-Optional-Modul")
