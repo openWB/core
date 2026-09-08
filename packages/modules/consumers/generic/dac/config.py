@@ -13,17 +13,19 @@ class DacConfiguration:
                  ip_address: Optional[str] = None,
                  port: int = 502,
                  modbus_id: int = 1,
-                 model: Model = Model.N4Dac02):
+                 model: str = Model.N4Dac02.name,
+                 full_signal_range: bool = False) -> None:
         self.ip_address = ip_address
         self.port = port
         self.modbus_id = modbus_id
         self.model = model
+        self.full_signal_range = full_signal_range
 
 
 @auto_str
 class Dac(ConsumerSetup[DacConfiguration]):
     def __init__(self,
-                 name: str = "Digital-Analog-Konverter (DAC) 0.01V bis 10.0V",
+                 name: str = "Digital-Analog-Wandler (DAC)",
                  type: str = "dac",
                  id: int = 0,
                  configuration: Optional[DacConfiguration] = None,
