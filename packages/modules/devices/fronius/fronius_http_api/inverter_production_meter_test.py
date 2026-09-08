@@ -1,19 +1,23 @@
+import copy
 from unittest.mock import Mock
 
-import requests_mock
+import pytest
 
 from dataclass_utils import dataclass_from_dict
 from modules.conftest import SAMPLE_IP
 from modules.common.component_state import InverterState
-from modules.devices.fronius.fronius import inverter_production_meter
-from modules.devices.fronius.fronius.config import FroniusConfiguration, FroniusProductionMeterSetup
+from modules.devices.fronius.fronius_http_api import inverter_production_meter, meter_reader
+from modules.devices.fronius.fronius_http_api.config import FroniusConfiguration, FroniusProductionMeterSetup
 
 
-def test_production_count(monkeypatch, requests_mock: requests_mock.mock):
-    mock_inverter_value_store = Mock()
-    monkeypatch.setattr(inverter_production_meter, "get_component_value_store",
-                        Mock(return_value=mock_inverter_value_store))
-    requests_mock.get(f"http://{SAMPLE_IP}/solar_api/v1/GetMeterRealtimeData.cgi", json=json_ext_var2)
+@pytest.fixture(autouse=True)
+def clear_meter_location_cache():
+    meter_reader._last_known_location.clear()
+    yield
+    meter_reader._last_known_location.clear()
+
+
+def test_production_count(monkeypatch):
     mock_inverter_value_store = Mock()
     monkeypatch.setattr(inverter_production_meter, "get_component_value_store",
                         Mock(return_value=mock_inverter_value_store))
@@ -28,13 +32,60 @@ def test_production_count(monkeypatch, requests_mock: requests_mock.mock):
     i.initialize()
 
     # execution
-    i.update()
+    i.update(json_ext_var2)
 
     # evaluation
     assert vars(mock_inverter_value_store.set.call_args[0][0]) == vars(SAMPLE_INVERTER_STATE)
 
 
-SAMPLE_INVERTER_STATE = InverterState(power=3809.4,
+def test_update_var2_missing_location_falls_back_to_cache(monkeypatch):
+    mock_inverter_value_store = Mock()
+    monkeypatch.setattr(inverter_production_meter, "get_component_value_store",
+                        Mock(return_value=mock_inverter_value_store))
+
+    json_ext_var2_missing_location = copy.deepcopy(json_ext_var2)
+    del json_ext_var2_missing_location["Body"]["Data"]["1"]["SMARTMETER_VALUE_LOCATION_U16"]
+
+    component_config = FroniusProductionMeterSetup()
+    component_config.configuration.variant = 2
+    device_config = FroniusConfiguration()
+    device_config.ip_address = SAMPLE_IP
+    component_config.configuration.meter_id = 1
+    i = inverter_production_meter.FroniusProductionMeter(component_config, device_config=dataclass_from_dict(
+        FroniusConfiguration, device_config), device_id=0)
+    i.initialize()
+
+    i.update(json_ext_var2)  # populates the meter-location cache
+    i.update(json_ext_var2_missing_location)  # location field missing this time, must fall back
+
+    assert mock_inverter_value_store.set.call_count == 2
+
+
+def test_update_var2_missing_location_without_cache_raises(monkeypatch):
+    mock_inverter_value_store = Mock()
+    monkeypatch.setattr(inverter_production_meter, "get_component_value_store",
+                        Mock(return_value=mock_inverter_value_store))
+
+    json_ext_var2_missing_location = copy.deepcopy(json_ext_var2)
+    del json_ext_var2_missing_location["Body"]["Data"]["1"]["SMARTMETER_VALUE_LOCATION_U16"]
+
+    component_config = FroniusProductionMeterSetup()
+    component_config.configuration.variant = 2
+    device_config = FroniusConfiguration()
+    device_config.ip_address = SAMPLE_IP
+    component_config.configuration.meter_id = 1
+    i = inverter_production_meter.FroniusProductionMeter(component_config, device_config=dataclass_from_dict(
+        FroniusConfiguration, device_config), device_id=0)
+    i.initialize()
+
+    with pytest.raises(KeyError):
+        i.update(json_ext_var2_missing_location)
+
+
+# external location: per Fronius Solar API V1 (4.8.7), positive PowerReal_P_Sum means generation --
+# openWB's InverterState.power convention is the opposite (negative = production, see inverter.py),
+# so the raw value is sign-flipped.
+SAMPLE_INVERTER_STATE = InverterState(power=-3809.4,
                                       currents=[-5.373121093182142, -5.664436188811191, -5.585225225225224],
                                       exported=200)
 

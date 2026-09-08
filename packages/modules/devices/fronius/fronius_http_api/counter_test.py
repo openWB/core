@@ -1,21 +1,32 @@
+import copy
 from unittest.mock import Mock
 
+import pytest
 import requests_mock
 
 from dataclass_utils import dataclass_from_dict
 from modules.common.store._api import LoggingValueStore
 from modules.conftest import SAMPLE_IP
-from modules.devices.fronius.fronius import counter_sm
-from modules.devices.fronius.fronius.config import FroniusConfiguration, FroniusSmCounterSetup
+from modules.devices.fronius.fronius_http_api import meter_reader
+from modules.devices.fronius.fronius_http_api.config import (
+    FroniusConfiguration, FroniusCounterSetup, COUNTER_VARIANT_S0)
+from modules.devices.fronius.fronius_http_api.counter import FroniusCounter
+
+
+@pytest.fixture(autouse=True)
+def clear_meter_location_cache():
+    meter_reader._last_known_location.clear()
+    yield
+    meter_reader._last_known_location.clear()
 
 
 def test_update_grid(monkeypatch, requests_mock: requests_mock.Mocker, mock_simcount):
-    component_config = FroniusSmCounterSetup()
+    component_config = FroniusCounterSetup()
     assert component_config.configuration.variant == 0
     device_config = FroniusConfiguration()
     device_config.ip_address = SAMPLE_IP
     assert component_config.configuration.meter_id == 0
-    counter = counter_sm.FroniusSmCounter(component_config, device_config=dataclass_from_dict(
+    counter = FroniusCounter(component_config, device_config=dataclass_from_dict(
         FroniusConfiguration, device_config), device_id=0)
     counter.initialize()
 
@@ -26,7 +37,7 @@ def test_update_grid(monkeypatch, requests_mock: requests_mock.Mocker, mock_simc
         "http://" + SAMPLE_IP + "/solar_api/v1/GetMeterRealtimeData.cgi",
         json=json_grid)
 
-    counter.update()
+    counter.update({})
 
     # mock.assert_called_once()
     counter_state = mock.call_args[0][0]
@@ -41,24 +52,21 @@ def test_update_grid(monkeypatch, requests_mock: requests_mock.Mocker, mock_simc
     assert counter_state.power == sum(counter_state.powers)
 
 
-def test_update_grid_var2(monkeypatch, requests_mock: requests_mock.Mocker, mock_simcount):
-    component_config = FroniusSmCounterSetup()
+def test_update_grid_var2(monkeypatch, mock_simcount):
+    component_config = FroniusCounterSetup()
     component_config.configuration.variant = 2
     device_config = FroniusConfiguration()
     device_config.ip_address = SAMPLE_IP
     assert component_config.configuration.meter_id == 0
-    counter = counter_sm.FroniusSmCounter(component_config, device_config=dataclass_from_dict(
+    counter = FroniusCounter(component_config, device_config=dataclass_from_dict(
         FroniusConfiguration, device_config), device_id=0)
     counter.initialize()
 
     mock = Mock(return_value=None)
     monkeypatch.setattr(LoggingValueStore, "set", mock)
     mock_simcount.return_value = 0, 0
-    requests_mock.get(
-        "http://" + SAMPLE_IP + "/solar_api/v1/GetMeterRealtimeData.cgi",
-        json=json_grid_var2)
 
-    counter.update()
+    counter.update({}, json_grid_var2)
 
     # mock.assert_called_once()
     counter_state = mock.call_args[0][0]
@@ -72,24 +80,21 @@ def test_update_grid_var2(monkeypatch, requests_mock: requests_mock.Mocker, mock
     assert counter_state.voltages == [232.3, 231.5, 233.4]
 
 
-def test_update_external_var2(monkeypatch, requests_mock: requests_mock.Mocker, mock_simcount):
-    component_config = FroniusSmCounterSetup()
+def test_update_external_var2(monkeypatch, mock_simcount):
+    component_config = FroniusCounterSetup()
     component_config.configuration.variant = 2
     device_config = FroniusConfiguration()
     device_config.ip_address = SAMPLE_IP
     component_config.configuration.meter_id = 1
-    counter = counter_sm.FroniusSmCounter(component_config, device_config=dataclass_from_dict(
+    counter = FroniusCounter(component_config, device_config=dataclass_from_dict(
         FroniusConfiguration, device_config), device_id=0)
     counter.initialize()
 
     mock = Mock(return_value=None)
     monkeypatch.setattr(LoggingValueStore, "set", mock)
     mock_simcount.return_value = 0, 0
-    requests_mock.get(
-        "http://" + SAMPLE_IP + "/solar_api/v1/GetMeterRealtimeData.cgi",
-        json=json_ext_var2)
 
-    counter.update()
+    counter.update({}, json_ext_var2)
 
     # mock.assert_called_once()
     counter_state = mock.call_args[0][0]
@@ -97,19 +102,22 @@ def test_update_external_var2(monkeypatch, requests_mock: requests_mock.Mocker, 
     assert counter_state.imported == 0
     assert counter_state.currents == [-5.373121093182142, -5.664436188811191, -5.585225225225224]
     assert counter_state.frequency == 49.9
-    assert counter_state.power == 3809.4
+    # external location: per Fronius Solar API V1 (4.8.7), positive PowerReal_P_Sum means generation
+    # and negative means consumption -- the opposite of the "grid" location convention that openWB's
+    # CounterState.power follows, so the raw value is sign-flipped.
+    assert counter_state.power == -3809.4
     assert counter_state.powers == [-1232.0566666666653, -1296.0230000000006, -1281.2506666666663]
     assert counter_state.power_factors == [0.643, 0.68, 0.667]
     assert counter_state.voltages == [229.3, 228.8, 229.4]
 
 
 def test_update_load(monkeypatch, requests_mock: requests_mock.Mocker, mock_simcount):
-    component_config = FroniusSmCounterSetup()
+    component_config = FroniusCounterSetup()
     assert component_config.configuration.variant == 0
     device_config = FroniusConfiguration()
     device_config.ip_address = SAMPLE_IP
     component_config.configuration.meter_id = 2
-    counter = counter_sm.FroniusSmCounter(component_config, device_config=dataclass_from_dict(
+    counter = FroniusCounter(component_config, device_config=dataclass_from_dict(
         FroniusConfiguration, device_config), device_id=0)
     counter.initialize()
 
@@ -120,11 +128,7 @@ def test_update_load(monkeypatch, requests_mock: requests_mock.Mocker, mock_simc
         "http://" + SAMPLE_IP + "/solar_api/v1/GetMeterRealtimeData.cgi",
         json=json_load_meter)
 
-    requests_mock.get(
-        "http://" + SAMPLE_IP + "/solar_api/v1/GetPowerFlowRealtimeData.fcgi",
-        json=json_load_power)
-
-    counter.update()
+    counter.update(json_load_power)
 
     # mock.assert_called_once()
     counter_state = mock.call_args[0][0]
@@ -138,6 +142,142 @@ def test_update_load(monkeypatch, requests_mock: requests_mock.Mocker, mock_simc
     assert counter_state.voltages == [236.6, 235.5, 235.1]
     assert abs(counter_state.power - sum(counter_state.powers)) < 5
 
+
+def test_update_s0(monkeypatch, mock_simcount):
+    # Im Wechselrichter integrierter S0-Zähler: liest den Netz-Wert direkt aus der PowerFlow-Antwort,
+    # ohne eigene SmartMeter-Abfrage.
+    component_config = FroniusCounterSetup()
+    component_config.configuration.variant = COUNTER_VARIANT_S0
+    device_config = FroniusConfiguration()
+    device_config.ip_address = SAMPLE_IP
+    counter = FroniusCounter(component_config, device_config=dataclass_from_dict(
+        FroniusConfiguration, device_config), device_id=0)
+    counter.initialize()
+
+    mock = Mock(return_value=None)
+    monkeypatch.setattr(LoggingValueStore, "set", mock)
+    mock_simcount.return_value = 0, 0
+
+    counter.update(json_s0_power)
+
+    counter_state = mock.call_args[0][0]
+    assert counter_state.exported == 0
+    assert counter_state.imported == 0
+    assert counter_state.currents == [0.0, 0.0, 0.0]
+    assert counter_state.frequency == 50
+    assert counter_state.power == 330.7664210983294
+    assert counter_state.powers == [0, 0, 0]
+    assert counter_state.power_factors == [0, 0, 0]
+    assert counter_state.voltages == [230, 230, 230]
+
+
+def test_update_s0_connection_error_raises(monkeypatch, mock_simcount):
+    # Anders als beim Wechselrichter ist ein "keine Antwort" beim Zähler kein normaler
+    # Nachtmodus-Zustand (der Zähler misst weiterhin) -- die Komponente muss fehlerhaft werden,
+    # statt falsche 0-Werte zu melden.
+    component_config = FroniusCounterSetup()
+    component_config.configuration.variant = COUNTER_VARIANT_S0
+    device_config = FroniusConfiguration()
+    device_config.ip_address = SAMPLE_IP
+    counter = FroniusCounter(component_config, device_config=dataclass_from_dict(
+        FroniusConfiguration, device_config), device_id=0)
+    counter.initialize()
+
+    mock = Mock(return_value=None)
+    monkeypatch.setattr(LoggingValueStore, "set", mock)
+    mock_simcount.return_value = 0, 0
+
+    with pytest.raises(ConnectionError):
+        counter.update(ConnectionError("no response"))
+
+
+def test_update_var2_missing_location_falls_back_to_cache(monkeypatch, mock_simcount):
+    component_config = FroniusCounterSetup()
+    component_config.configuration.variant = 2
+    device_config = FroniusConfiguration()
+    device_config.ip_address = SAMPLE_IP
+    counter = FroniusCounter(component_config, device_config=dataclass_from_dict(
+        FroniusConfiguration, device_config), device_id=0)
+    counter.initialize()
+
+    mock = Mock(return_value=None)
+    monkeypatch.setattr(LoggingValueStore, "set", mock)
+    mock_simcount.return_value = 0, 0
+
+    json_grid_var2_missing_location = copy.deepcopy(json_grid_var2)
+    del json_grid_var2_missing_location["Body"]["Data"]["0"]["SMARTMETER_VALUE_LOCATION_U16"]
+
+    counter.update({}, json_grid_var2)  # populates the meter-location cache
+    counter.update({}, json_grid_var2_missing_location)  # location field missing this time, must fall back
+
+    assert mock.call_count == 2
+
+
+def test_update_var2_missing_location_without_cache_raises(monkeypatch, mock_simcount):
+    component_config = FroniusCounterSetup()
+    component_config.configuration.variant = 2
+    device_config = FroniusConfiguration()
+    device_config.ip_address = SAMPLE_IP
+    counter = FroniusCounter(component_config, device_config=dataclass_from_dict(
+        FroniusConfiguration, device_config), device_id=0)
+    counter.initialize()
+
+    mock = Mock(return_value=None)
+    monkeypatch.setattr(LoggingValueStore, "set", mock)
+    mock_simcount.return_value = 0, 0
+
+    json_grid_var2_missing_location = copy.deepcopy(json_grid_var2)
+    del json_grid_var2_missing_location["Body"]["Data"]["0"]["SMARTMETER_VALUE_LOCATION_U16"]
+
+    with pytest.raises(KeyError):
+        counter.update({}, json_grid_var2_missing_location)
+
+
+json_s0_power = {
+    "Body": {
+        "Data": {
+            "Inverters": {
+                "1": {
+                    "DT": 105,
+                    "E_Day": 9668,
+                    "E_Total": 45503300,
+                    "E_Year": 7010823.5,
+                    "P": 0
+                },
+                "2": {
+                    "DT": 115,
+                    "E_Day": 16189,
+                    "E_Total": 16581639,
+                    "E_Year": 11989318,
+                    "P": 0
+                }
+            },
+            "Site": {
+                "E_Day": 25857,
+                "E_Total": 62084939,
+                "E_Year": 19000141.5,
+                "Meter_Location": "load",
+                "Mode": "vague-meter",
+                "P_Akku": None,
+                "P_Grid": 330.7664210983294,
+                "P_Load": -330.7664210983294,
+                "P_PV": None,
+                "rel_Autonomy": 0,
+                "rel_SelfConsumption": None
+            },
+            "Version": "12"
+        }
+    },
+    "Head": {
+        "RequestArguments": {},
+        "Status": {
+            "Code": 0,
+            "Reason": "",
+            "UserMessage": ""
+        },
+        "Timestamp": "2021-08-11T06:27:35+00:00"
+    }
+}
 
 json_grid = {
     "Body": {

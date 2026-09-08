@@ -87,6 +87,71 @@ def test_upgrade_datastore_124_adds_missing_odometer_pattern_for_json_soc_module
     assert "odometer_pattern" not in ha_config
 
 
+def test_upgrade_datastore_141_cleans_up_fronius_module():
+    update_con = UpdateConfig()
+    update_con.all_received_topics = {
+        "openWB/system/datastore_version": list(range(141)),
+        "openWB/system/device/0/config": {
+            "name": "Fronius",
+            "type": "fronius",
+            "id": 0,
+            "vendor": "fronius",
+            "configuration": {"ip_address": "192.168.1.10"}
+        },
+        "openWB/system/device/1/config": {
+            "name": "Some other device",
+            "type": "sma_sunny_boy",
+            "id": 1,
+            "vendor": "sma",
+            "configuration": {}
+        },
+        "openWB/system/device/0/component/1/config": {
+            "name": "Sekundärer Wechselrichter",
+            "type": "inverter_secondary",
+            "id": 1,
+            "configuration": {"id": 2}
+        },
+        "openWB/system/device/0/component/2/config": {
+            "name": "Fronius Speicher",
+            "type": "bat",
+            "id": 2,
+            "configuration": {"meter_id": 0}
+        },
+        "openWB/system/device/0/component/3/config": {
+            "name": "Fronius S0 Zähler",
+            "type": "counter_s0",
+            "id": 3,
+            "configuration": {}
+        },
+        "openWB/system/device/1/component/1/config": {
+            "name": "Fronius SM Zähler",
+            "type": "counter_sm",
+            "id": 1,
+            "configuration": {"meter_id": 1, "variant": 2}
+        }
+    }
+
+    update_con.upgrade_datastore_141()
+
+    assert update_con.all_received_topics["openWB/system/device/0/config"]["type"] == "fronius_http_api"
+    assert update_con.all_received_topics["openWB/system/device/1/config"]["type"] == "sma_sunny_boy"
+
+    migrated_inverter = update_con.all_received_topics["openWB/system/device/0/component/1/config"]
+    assert migrated_inverter["type"] == "inverter"
+    assert migrated_inverter["configuration"] == {"secondary_id": 2}
+
+    unaffected_bat = update_con.all_received_topics["openWB/system/device/0/component/2/config"]
+    assert unaffected_bat["type"] == "bat"
+
+    s0_migrated = update_con.all_received_topics["openWB/system/device/0/component/3/config"]
+    assert s0_migrated["type"] == "counter"
+    assert s0_migrated["configuration"] == {"variant": 3, "meter_id": 0}
+
+    sm_migrated = update_con.all_received_topics["openWB/system/device/1/component/1/config"]
+    assert sm_migrated["type"] == "counter"
+    assert sm_migrated["configuration"] == {"meter_id": 1, "variant": 2}
+
+
 @pytest.mark.parametrize("name", [
     "happy_path",
     "missing_prices_dict",
