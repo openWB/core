@@ -799,7 +799,7 @@ class Command:
             if SubData.system_data["system"].data["security"]["user_management_active"]:
                 remove_acl_role("vehicle-<id>-access", payload["data"]["id"])
                 remove_acl_role("vehicle-<id>-write-access", payload["data"]["id"])
-            SubData.counter_all_data.remove_loadmanagement_prio_item(payload["data"]["id"])
+            SubData.counter_all_data.remove_loadmanagement_prio_item(ComponentType.VEHICLE, payload["data"]["id"])
             Pub().pub("openWB/set/counter/get/loadmanagement_prios",
                       SubData.counter_all_data.data.get.loadmanagement_prios)
             pub_user_message(
@@ -1214,7 +1214,7 @@ class Command:
         ProcessBrokerBranch(f'consumer/{payload["data"]["consumer_id"]}/').remove_topics()
         SubData.counter_all_data.hierarchy_remove_item(payload["data"]["consumer_id"])
         Pub().pub("openWB/set/counter/get/hierarchy", SubData.counter_all_data.data.get.hierarchy)
-        SubData.counter_all_data.remove_loadmanagement_prio_item(payload["data"]["consumer_id"])
+        SubData.counter_all_data.remove_loadmanagement_prio_item(ComponentType.CONSUMER, payload["data"]["consumer_id"])
         Pub().pub("openWB/set/counter/get/loadmanagement_prios", SubData.counter_all_data.data.get.loadmanagement_prios)
         pub_user_message(payload, connection_id,
                          f'Verbraucher mit ID \'{payload["data"]["consumer_id"]}\' gelöscht.', MessageType.SUCCESS)
