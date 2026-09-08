@@ -11,6 +11,8 @@ from helpermodules.measurement_logging.process_log import (
     process_entry,
     get_totals,
     _collect_daily_log_data,
+    _get_last_entry_for_period,
+    _apply_source_totals,
     calc_energy_imported_by_source,
     analyse_percentage_totals,
     CalculationType)
@@ -295,10 +297,10 @@ def test_collect_daily_log_data_current_day(monkeypatch):
     monkeypatch.setattr('helpermodules.measurement_logging.process_log.json.load', mock_json_load)
 
     mock_create_entry = Mock(return_value=mock_current_entry)
-    monkeypatch.setattr('helpermodules.measurement_logging.process_log.create_entry', mock_create_entry)
+    monkeypatch.setattr('helpermodules.measurement_logging.write_log.create_entry', mock_create_entry)
 
     mock_get_previous_entry = Mock(return_value={"timestamp": 1234567800, "data": "previous"})
-    monkeypatch.setattr('helpermodules.measurement_logging.process_log.get_previous_entry', mock_get_previous_entry)
+    monkeypatch.setattr('helpermodules.measurement_logging.write_log.get_previous_entry', mock_get_previous_entry)
 
     monkeypatch.setattr('builtins.open', mock_open(read_data=json.dumps(mock_log_data)))
 
@@ -392,3 +394,78 @@ def test_collect_daily_log_data_json_decode_error(monkeypatch):
     # evaluation
     expected_result = {"entries": [], "names": {}}
     assert result == expected_result
+
+
+def test_apply_source_totals_updates_existing_and_creates_missing_sections():
+    # setup
+    entry = {
+        "cp": {
+            "all": {"energy_imported": 5, "keep": "x"},
+            "cp9": {"keep_cp": True}
+        },
+        "meta": {"unchanged": True}
+    }
+    daily_totals = {
+        "cp": {
+            "all": {"energy_imported": 12, "energy_exported": 3},
+            "cp1": {"energy_imported": 7},
+            "cp_invalid": 99
+        },
+        "hc": {
+            "all": {"energy_imported": 2}
+        },
+        "invalid_section": "ignore_me"
+    }
+
+    # execution
+    result = _apply_source_totals(entry, daily_totals)
+
+    # evaluation
+    # in-place behavior
+    assert result is entry
+
+    # existing module gets overwritten/extended, unrelated fields stay
+    assert result["cp"]["all"]["energy_imported"] == 12
+    assert result["cp"]["all"]["energy_exported"] == 3
+    assert result["cp"]["all"]["keep"] == "x"
+
+    # missing module and section are created
+    assert result["cp"]["cp1"]["energy_imported"] == 7
+    assert result["hc"]["all"]["energy_imported"] == 2
+
+    # invalid totals are ignored
+    assert "cp_invalid" not in result["cp"]
+    assert "invalid_section" not in result
+
+    # unrelated data stays unchanged
+    assert result["cp"]["cp9"]["keep_cp"] is True
+    assert result["meta"]["unchanged"] is True
+
+
+@pytest.mark.parametrize(
+    "entries, period, period_format, expected",
+    [
+        (
+            [
+                {"timestamp": 1711929600, "value": "april_1"},
+                {"timestamp": 1712016000, "value": "april_2"},
+                {"timestamp": 1714608000, "value": "may_2"},
+            ],
+            "202404",
+            "%Y%m",
+            {"timestamp": 1712016000, "value": "april_2"},
+        ),
+        (
+            [],
+            "202404",
+            "%Y%m",
+            None,
+        ),
+    ],
+)
+def test_get_last_entry_for_period(entries, period, period_format, expected):
+    # execution
+    result = _get_last_entry_for_period(entries, period, period_format)
+
+    # evaluation
+    assert result == expected
