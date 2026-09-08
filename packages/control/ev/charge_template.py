@@ -711,7 +711,7 @@ class ChargeTemplate:
                     phases = plan.phases_to_use_pv
         return current, submode, message, phases
 
-    def stop(self) -> Tuple[int, str, str]:
+    def stop(self) -> Tuple[int, ChargemodeEnum, str]:
         return 0, ChargemodeEnum.STOP, "Keine Ladung, da der Lademodus Stop aktiv ist."
 
     def bidi_charging_allowed(self, selected_plan: int, soc: float):
