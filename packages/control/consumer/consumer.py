@@ -121,25 +121,28 @@ class Consumer(Load):
         submode = Chargemode.STOP
         mode = self.data.usage.chargemode
         message = None
+        wait_for_start_defined_chargemode = False
         if self.data.usage.chargemode == Chargemode.SCHEDULED_CHARGING:
-            required_current, tmp_message, submode = self.wait_for_start_handler(self.scheduled_charging)
+            required_current, tmp_message, submode, wait_for_start_defined_chargemode = self.wait_for_start_handler(
+                self.scheduled_charging)
             message = f"{tmp_message or ''}".strip()
-        if submode != Chargemode.INSTANT_CHARGING and self.data.usage.time_charging.active:
-            required_current, tmp_message, submode = self.time_charging()
-            # Info vom Zielladen erhalten
-            message = f"{message or ''} {tmp_message or ''}".strip()
-        if required_current == 0:
-            if self.data.usage.chargemode == Chargemode.INSTANT_CHARGING:
-                required_current, tmp_message, submode = self.instant_charging()
-            elif self.data.usage.chargemode == Chargemode.ECO_CHARGING:
-                required_current, tmp_message, submode = self.wait_for_start_handler(self.eco_charging)
-            elif self.data.usage.chargemode == Chargemode.PV_CHARGING:
-                required_current, tmp_message, submode = self.wait_for_start_handler(self.pv_charging)
-            else:
-                tmp_message = None
-            message = f"{message or ''} {tmp_message or ''}".strip()
-        if self.data.usage.chargemode == Chargemode.STOP:
-            required_current, message, submode = self.stop()
+        if wait_for_start_defined_chargemode is False:
+            if submode != Chargemode.INSTANT_CHARGING and self.data.usage.time_charging.active:
+                required_current, tmp_message, submode = self.time_charging()
+                # Info vom Zielladen erhalten
+                message = f"{message or ''} {tmp_message or ''}".strip()
+            if required_current == 0:
+                if self.data.usage.chargemode == Chargemode.INSTANT_CHARGING:
+                    required_current, tmp_message, submode = self.instant_charging()
+                elif self.data.usage.chargemode == Chargemode.ECO_CHARGING:
+                    required_current, tmp_message, submode, _ = self.wait_for_start_handler(self.eco_charging)
+                elif self.data.usage.chargemode == Chargemode.PV_CHARGING:
+                    required_current, tmp_message, submode, _ = self.wait_for_start_handler(self.pv_charging)
+                else:
+                    tmp_message = None
+                message = f"{message or ''} {tmp_message or ''}".strip()
+            if self.data.usage.chargemode == Chargemode.STOP:
+                required_current, message, submode = self.stop()
         return min_current, required_current, message, mode, submode
 
     def _parse_required_current_by_usage(self, required_current: float) -> float:
@@ -401,7 +404,8 @@ class Consumer(Load):
 
     def wait_for_start_handler(
             self, func: Callable[[], Tuple[float, Optional[str], Chargemode]]
-    ) -> Tuple[float, Optional[str], Chargemode]:
+    ) -> Tuple[float, Optional[str], Chargemode, bool]:
+        chargemode_defined_by_wait_for_start_handler = False
         if self.data.usage.wait_for_start_active:
             if self.data.set.wait_for_start_state == WaitForStartStates.WAIT_FOR_DEVICE_START:
                 # mit Minimalstrom prüfen, damit Standby-Geräte nicht als laufend erkannt werden
@@ -410,11 +414,13 @@ class Consumer(Load):
                     required_current = 0
                     message = self.WAIT_FOR_STOPPED_DEVICE
                     submode = Chargemode.STOP
+                    chargemode_defined_by_wait_for_start_handler = True
                 else:
                     required_current = self._parse_required_current_by_usage(
                         self._convert_power_to_current(self.data.config.max_power))
                     message = self.WAIT_FOR_DEVICE_START
                     submode = Chargemode.INSTANT_CHARGING
+                    chargemode_defined_by_wait_for_start_handler = True
             elif self.data.set.wait_for_start_state == WaitForStartStates.WAIT_FOR_STOPPED_DEVICE:
                 # mit Minimalstrom prüfen, damit Standby-Geräte nicht als laufend erkannt werden
                 if max(self.data.get.currents) < self.data.config.min_current:
@@ -426,6 +432,7 @@ class Consumer(Load):
                     required_current = 0
                     message = self.WAIT_FOR_STOPPED_DEVICE
                     submode = Chargemode.STOP
+                    chargemode_defined_by_wait_for_start_handler = True
             elif self.data.set.wait_for_start_state == WaitForStartStates.DEVICE_WAITING_FOR_START:
                 # mit Minimalstrom prüfen, damit Standby-Geräte nicht als laufend erkannt werden
                 if max(self.data.get.currents) > self.data.config.min_current:
@@ -441,7 +448,7 @@ class Consumer(Load):
                     f"Ungültiger wait_for_start_state {self.data.set.wait_for_start_state} für Verbraucher {self.num}")
         else:
             required_current, message, submode = func()
-        return required_current, message, submode
+        return required_current, message, submode, chargemode_defined_by_wait_for_start_handler
 
     def reset_wait_for_start(self):
         self.data.set.wait_for_start_state = WaitForStartStates.WAIT_FOR_DEVICE_START
