@@ -219,7 +219,7 @@ def test_failed_phase_switches_reached(cp: Chargepoint,
                                        failed_phase_switches: int,
                                        expected: bool):
     # setup
-    data.data.general_data.data.chargemode_config.pv_charging.retry_failed_phase_switches = (
+    data.data.general_data.data.chargemode_config.surplus.vehicle.retry_failed_phase_switches = (
         retry_failed_phase_switches
     )
     cp.data.control_parameter.failed_phase_switches = failed_phase_switches

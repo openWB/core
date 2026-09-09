@@ -66,7 +66,7 @@
 			color: grey;
 		}
 	</style>
-	<link rel="stylesheet" href="style.css?v=20250731">
+	<link rel="stylesheet" href="style.css?v=20260818">
 	<!-- important scripts to be loaded -->
 	<script src="js/jquery-3.6.0.min.js"></script>
 	<script src="js/bootstrap-4.4.1/bootstrap.bundle.min.js"></script>
@@ -161,7 +161,7 @@
 								</div>
 								<div class="col-md-8 btn-group btn-group-toggle bat-consideration-mode"
 									data-toggle="buttons" data-name="bat_consideration_mode"
-									data-topic="openWB/set/general/chargemode_config/pv_charging/bat_mode">
+									data-topic="openWB/set/general/chargemode_config/bat/mode">
 									<label class="btn btn-outline-primary btn-toggle" title="Fahrzeuge">
 										<input type="radio" name="bat_mode_name" data-option="ev_mode"><i class="fas fa-car-side"></i>
 									</label>
@@ -955,20 +955,6 @@
 											<label class="btn btn-outline-info btn-toggle">
 												<input type="radio" name="phasesCp" data-option="3"> Maximum
 											</label>
-										</div>
-									</div>
-									<div class="form-row mb-1">
-										<div class="col">
-											Einspeisegrenze beachten
-										</div>
-										<div class="col-md-8 text-right">
-											<input class="charge-point-pv-charge-feed-in-limit" type="checkbox"
-												data-toggle="toggle"
-												data-topic="openWB/set/chargepoint/<cp>/set/charge_template"
-												data-object="chargeTemplate"
-												data-object-path="chargemode.pv_charging.feed_in_limit"
-												data-on="Ja" data-off="Nein" data-onstyle="success"
-												data-offstyle="danger" data-size="sm" data-style="w-100">
 										</div>
 									</div>
 								</div>

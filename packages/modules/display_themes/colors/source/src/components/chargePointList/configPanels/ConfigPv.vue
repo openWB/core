@@ -107,13 +107,6 @@
 				unit="kWh"
 			/>
 		</ConfigItem>
-		<ConfigItem
-			title="Einspeisegrenze beachten"
-			icon="fa-hand"
-			:fullwidth="true"
-		>
-			<SwitchInput v-model="cp.pvFeedInLimit" />
-		</ConfigItem>
 	</div>
 </template>
 

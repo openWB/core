@@ -63,7 +63,7 @@ export default {
         "openWB/counter/+/get/power",
         "openWB/counter/get/hierarchy",
         "openWB/counter/set/home_consumption",
-        "openWB/general/chargemode_config/pv_charging/bat_mode",
+        "openWB/general/chargemode_config/bat/mode",
         "openWB/optional/ep/configured",
         "openWB/optional/ep/get/prices",
         "openWB/optional/int_display/only_local_charge_points",

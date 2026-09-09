@@ -826,7 +826,7 @@ class SimpleMQTTDaemon:
             log.error(f"Invalid bat_mode: {payload}. Valid values: {valid_modes}")
             return False
 
-        target_topic = "openWB/set/general/chargemode_config/pv_charging/bat_mode"
+        target_topic = "openWB/set/general/chargemode_config/bat/mode"
         self.client.publish(target_topic, payload, qos=0, retain=True)
         log.info(f"Set bat_mode to {payload}")
         return True
@@ -850,7 +850,7 @@ class SimpleMQTTDaemon:
             log.error(f"Invalid bat_power_reserve value: {watts}. Must be >= 0.")
             return False
 
-        target_topic = "openWB/set/general/chargemode_config/pv_charging/bat_power_reserve"
+        target_topic = "openWB/set/general/chargemode_config/bat/power_reserve"
         self.client.publish(target_topic, watts, qos=0, retain=True)
         log.info(f"Set bat_power_reserve to {watts}W")
         return True
