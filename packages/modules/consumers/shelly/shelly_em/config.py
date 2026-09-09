@@ -11,12 +11,10 @@ class ShellyConfiguration:
     def __init__(self,
                  ip_address: Optional[str] = None,
                  factor: int = -1,
-                 phase: int = 1,
                  username: Optional[str] = None,
                  password: Optional[str] = None) -> None:
         self.ip_address = ip_address
         self.factor = factor
-        self.phase = phase
         self.username = username
         self.password = password
 

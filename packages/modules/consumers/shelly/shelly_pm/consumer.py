@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from control import data
 from modules.common import req
 from typing import Optional
 from modules.common.abstract_device import DeviceDescriptor
@@ -62,7 +63,7 @@ def create_consumer(config: ShellyPM):
     def update() -> ConsumerState:
         status = request_status(config.configuration.ip_address, generation)
         powers, voltages, currents, _, power, _ = parse_data(
-            config.configuration.phase, config.configuration.factor, status)
+            data.data.consumer_data[f"consumer{config.id}"].data.config.phase_1, config.configuration.factor, status)
         imported, exported = sim_counter.sim_count(power)
         return ConsumerState(
             power=power,
