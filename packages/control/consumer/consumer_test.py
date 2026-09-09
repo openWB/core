@@ -124,7 +124,7 @@ def test_wait_for_start_handler(
         state: WaitForStartStates,
         currents: List[float],
         func_result: Tuple[int, str, Optional[Chargemode]],
-        expected_result: Tuple[int, str, Optional[Chargemode]],
+        expected_result: Tuple[int, str, Optional[Chargemode], bool],
         expected_state: WaitForStartStates,
         func_calls: int,
 ):
