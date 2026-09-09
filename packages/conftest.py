@@ -224,8 +224,7 @@ def data_hc_counter_() -> None:
                                                 config=Mock(spec=Config, phase_1=1),
                                                 get=Mock(spec=Get, currents=[30, 0, 0], power=6900,
                                                          daily_imported=10000, daily_exported=0, imported=56000,
-                                                         fault_state=0),
-                                                set=Mock(spec=Set, loadmanagement_available=True)))}
+                                                         fault_state=0)))}
     data.data.pv_data.update({"pv1": Mock(spec=Pv, data=Mock(
         spec=PvData, get=Mock(spec=PvGet, power=-10000, daily_exported=6000, exported=27000, currents=None,
                               fault_state=0)))})

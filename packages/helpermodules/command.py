@@ -1,4 +1,5 @@
 import copy
+from dataclasses import fields
 import importlib
 import json
 import logging
@@ -175,6 +176,15 @@ class Command:
                         Pub().pub(msg.topic, "")
         except Exception:
             log.exception("Fehler im Command-Modul")
+
+    def _publish_default_metadata_fields(self, topic_prefix: str, data_obj: object) -> None:
+        data_dict = asdict(data_obj)
+        for data_field in fields(data_obj):
+            topic = data_field.metadata.get("topic")
+            if not topic:
+                continue
+            field_value = data_dict.get(data_field.name)
+            Pub().pub(f"{topic_prefix}/{topic}", field_value)
 
     def addDevice(self, connection_id: str, payload: dict) -> None:
         """ sendet das Topic, zu dem ein neues Device erstellt werden soll.
@@ -1190,10 +1200,8 @@ class Command:
                              MessageType.ERROR)
         Pub().pub(f'openWB/set/consumer/{new_id}/module', consumer_default)
         Pub().pub(f"openWB/set/consumer/{new_id}/config", asdict(ConsumerConfig()))
-        for (k, v) in asdict(ConsumerGet()).items():
-            Pub().pub(f"openWB/set/consumer/{new_id}/get/"+k, v)
-        for (k, v) in asdict(ConsumerSet()).items():
-            Pub().pub(f"openWB/set/consumer/{new_id}/set/"+k, v)
+        self._publish_default_metadata_fields(f"openWB/set/consumer/{new_id}", ConsumerGet())
+        self._publish_default_metadata_fields(f"openWB/set/consumer/{new_id}", ConsumerSet())
         Pub().pub(f"openWB/set/consumer/{new_id}/extra_meter", None)
         Pub().pub(f"openWB/set/consumer/{new_id}/usage", asdict(Usage()))
         self.max_id_hierarchy = new_id

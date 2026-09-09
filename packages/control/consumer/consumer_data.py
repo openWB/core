@@ -4,7 +4,7 @@ from typing import List, Optional
 from control.chargemode import Chargemode
 from control.chargepoint.control_parameter import ControlParameter, control_parameter_factory
 from control.consumer.usage import ConsumerUsage
-from dataclass_utils.factories import empty_list_factory
+from dataclass_utils.factories import empty_list_factory, voltages_list_factory
 from helpermodules.abstract_plans import ScheduledPlanConsumer, TimeChargingPlanConsumer
 from helpermodules.constants import NO_ERROR
 from modules.common.consumer_setup import ConsumerSetup
@@ -82,13 +82,12 @@ class Get:
     set_power: Optional[float] = None
     state: Optional[bool] = False
     state_str: Optional[str] = field(default=None, metadata={"topic": "get/state_str"})
-    voltages: Optional[List[Optional[float]]] = None
+    voltages: List[float] = field(default_factory=voltages_list_factory)
 
 
 @dataclass
 class Set:
     current: float = field(default=0, metadata={"topic": "set/current"})
-    loadmanagement_available: bool = field(default=False)
     phases_to_use: int = field(default=1, metadata={"topic": "set/phases_to_use"})
     plug_time: Optional[float] = field(default=None, metadata={"topic": "set/plug_time"})
     required_power: float = field(default=0)

@@ -1241,41 +1241,39 @@ class SubData:
     def process_consumer_topic(self, client: mqtt.Client, var: Dict[str, Consumer], msg: mqtt.MQTTMessage):
         try:
             index = get_index(msg.topic)
-            if re.search("openWB/consumer/[0-9]+/module", msg.topic) is not None:
+            if re.search("openWB/consumer/[0-9]+/", msg.topic) is not None:
                 if decode_payload(msg.payload) == "":
                     if "consumer"+index in var:
                         var.pop("consumer"+index)
-                    else:
-                        log.error("Es konnte kein Verbraucher mit der ID " +
-                                  str(index)+" gefunden werden.")
                 else:
                     if f"consumer{index}" not in var:
                         var[f"consumer{index}"] = Consumer(int(index))
-                    consumer_config = decode_payload(msg.payload)
-                    con = importlib.import_module(
-                        f".consumers.{consumer_config['vendor']}.{consumer_config['type']}.consumer",
-                        "modules")
-                    config = dataclass_from_dict(con.device_descriptor.configuration_factory, consumer_config)
-                    var["consumer"+index].module = con.create_consumer(config)
-                    var["consumer"+index].data.module = config
-            elif re.search("openWB/consumer/[0-9]+/config", msg.topic) is not None:
-                self.set_json_payload_class(var["consumer"+index].data.config, msg)
-            elif re.search("openWB/consumer/[0-9]+/get", msg.topic) is not None:
-                self.set_json_payload_class(var["consumer"+index].data.get, msg)
-            elif re.search("openWB/consumer/[0-9]+/set", msg.topic) is not None:
-                self.set_json_payload_class(var["consumer"+index].data.set, msg)
-            elif re.search("openWB/consumer/[0-9]+/extra_meter", msg.topic) is not None:
-                self.set_json_payload_class(var[f"consumer{index}"].data, msg)
-            elif re.search("openWB/consumer/[0-9]+/usage$", msg.topic) is not None:
-                var[f"consumer{index}"].data.usage = dataclass_from_dict(Usage, decode_payload(msg.payload))
-            elif re.search("openWB/consumer/[0-9]+/control_parameter/", msg.topic) is not None:
-                if re.search("openWB/consumer/[0-9]+/control_parameter/limit", msg.topic) is not None:
-                    payload = decode_payload(msg.payload)
-                    var[f"consumer{index}"].data.control_parameter.limit = dataclass_from_dict(
-                        LoadmanagementLimit, payload)
-                else:
-                    self.set_json_payload_class(var[f"consumer{index}"].data.control_parameter, msg)
-            elif re.search("/consumer/get/", msg.topic) is not None:
-                self.set_json_payload_class(self.consumer_all_data.data.get, msg)
+                    if re.search("openWB/consumer/[0-9]+/module", msg.topic) is not None:
+                        consumer_config = decode_payload(msg.payload)
+                        con = importlib.import_module(
+                            f".consumers.{consumer_config['vendor']}.{consumer_config['type']}.consumer",
+                            "modules")
+                        config = dataclass_from_dict(con.device_descriptor.configuration_factory, consumer_config)
+                        var["consumer"+index].module = con.create_consumer(config)
+                        var["consumer"+index].data.module = config
+                    elif re.search("openWB/consumer/[0-9]+/config", msg.topic) is not None:
+                        self.set_json_payload_class(var["consumer"+index].data.config, msg)
+                    elif re.search("openWB/consumer/[0-9]+/get", msg.topic) is not None:
+                        self.set_json_payload_class(var["consumer"+index].data.get, msg)
+                    elif re.search("openWB/consumer/[0-9]+/set", msg.topic) is not None:
+                        self.set_json_payload_class(var["consumer"+index].data.set, msg)
+                    elif re.search("openWB/consumer/[0-9]+/extra_meter", msg.topic) is not None:
+                        self.set_json_payload_class(var[f"consumer{index}"].data, msg)
+                    elif re.search("openWB/consumer/[0-9]+/usage$", msg.topic) is not None:
+                        var[f"consumer{index}"].data.usage = dataclass_from_dict(Usage, decode_payload(msg.payload))
+                    elif re.search("openWB/consumer/[0-9]+/control_parameter/", msg.topic) is not None:
+                        if re.search("openWB/consumer/[0-9]+/control_parameter/limit", msg.topic) is not None:
+                            payload = decode_payload(msg.payload)
+                            var[f"consumer{index}"].data.control_parameter.limit = dataclass_from_dict(
+                                LoadmanagementLimit, payload)
+                        else:
+                            self.set_json_payload_class(var[f"consumer{index}"].data.control_parameter, msg)
+                    elif re.search("/consumer/get/", msg.topic) is not None:
+                        self.set_json_payload_class(self.consumer_all_data.data.get, msg)
         except Exception:
             log.exception("Fehler im subdata-Modul")
