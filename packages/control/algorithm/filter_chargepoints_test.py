@@ -68,6 +68,25 @@ def mock_consumer3() -> Consumer:
                       {"type": "consumer", "id": 3},
                       {"type": "vehicle", "id": 2}],
                      [1, 3, 2], id="required current 0 for cp 1"),
+        pytest.param(6, 1, ((Chargemode.SCHEDULED_CHARGING, Chargemode.INSTANT_CHARGING),),
+                     [{"type": "vehicle", "id": 1},
+                      # Verbraucher 99 wurde gelöscht, ist aber (Bug) noch in der Prioritätensteuerung
+                      # gelistet. Darf die Ermittlung der anderen Lasten nicht zum Absturz bringen.
+                      {"type": "consumer", "id": 99},
+                      {"type": "vehicle", "id": 2},
+                      {"type": "consumer", "id": 3}],
+                     [1, 3], id="stale consumer reference is skipped, not fatal"),
+        pytest.param(6, 1, ((Chargemode.SCHEDULED_CHARGING, Chargemode.INSTANT_CHARGING),),
+                     [{"type": "vehicle", "id": 1},
+                      {
+                         "type": "group",
+                         "label": "Gruppe 1",
+                         "children": [
+                             {"type": "vehicle", "id": 2},
+                             # ebenfalls gelöschter, aber noch gelisteter Verbraucher, diesmal in einer Gruppe
+                             {"type": "consumer", "id": 99},
+                             {"type": "consumer", "id": 3}]}],
+                     [1, 3], id="stale consumer reference in group is skipped, not fatal"),
     ])
 def test_get_loads_by_chargemodes(
         required_current_1: int,

@@ -15,14 +15,16 @@ class LoadmanagementPrioMixin:
 
     def remove_loadmanagement_prio_item(self: LoadmanagementPrioProtocol, type: ComponentType, id: int) -> None:
         if self._remove_loadmanagement_prio_item(type, id, self.data.get.loadmanagement_prios) is False:
-            raise IndexError(f"Element {id} konnte nicht in der Prioritätensteuerung gefunden werden.")
+            # Kann z.B. passieren, wenn das Element schon entfernt wurde oder die id als str statt int ankam.
+            # Kein Grund, die Löschung des restlichen Elements (Topics, Hierarchie) abzubrechen.
+            log.warning(f"Element {type.value}/{id} konnte nicht in der Prioritätensteuerung gefunden werden.")
 
     def _remove_loadmanagement_prio_item(self: LoadmanagementPrioProtocol,
                                          type: ComponentType,
                                          id: int,
                                          entry: List[Dict]) -> bool:
         for item in entry:
-            if item["type"] == type.value and item["id"] == id:
+            if item["type"] == type.value and str(item["id"]) == str(id):
                 entry.remove(item)
                 return True
             elif item["type"] == "group":
