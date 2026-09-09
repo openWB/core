@@ -26,7 +26,6 @@ class LoadGet:
 @dataclass
 class LoadSet:
     current: float
-    loadmanagement_available: bool
     phases_to_use: int
     plug_time: Optional[float]
     required_power: float
