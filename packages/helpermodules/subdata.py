@@ -1273,7 +1273,7 @@ class SubData:
                                 LoadmanagementLimit, payload)
                         else:
                             self.set_json_payload_class(var[f"consumer{index}"].data.control_parameter, msg)
-                    elif re.search("/consumer/get/", msg.topic) is not None:
-                        self.set_json_payload_class(self.consumer_all_data.data.get, msg)
+            elif re.search("/consumer/get/", msg.topic) is not None:
+                self.set_json_payload_class(self.consumer_all_data.data.get, msg)
         except Exception:
             log.exception("Fehler im subdata-Modul")
