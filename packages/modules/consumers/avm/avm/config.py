@@ -29,7 +29,7 @@ class Avm(ConsumerSetup[AvmConfiguration]):
                  type: str = "avm",
                  id: int = 0,
                  configuration: Optional[AvmConfiguration] = None,
-                 usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_TUNABLE,
+                 usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_ONOFF,
                                                      ConsumerUsage.METER_ONLY),
                  **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
