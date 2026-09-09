@@ -781,11 +781,11 @@ class SetData:
                     "openWB/set/general/chargemode_config/surplus/vehicle/switch_on_threshold" in msg.topic or
                     "openWB/set/general/chargemode_config/surplus/vehicle/switch_on_delay" in msg.topic or
                     "openWB/set/general/chargemode_config/surplus/vehicle/switch_off_delay" in msg.topic or
-                    "openWB/set/general/consumer/config/switch_on_delay" in msg.topic or
-                    "openWB/set/general/consumer/config/switch_off_delay" in msg.topic):
+                    "openWB/set/general/chargemode_config/surplus/consumer/switch_on_delay" in msg.topic or
+                    "openWB/set/general/chargemode_config/surplus/consumer/switch_off_delay" in msg.topic):
                 self._validate_value(msg, int, [(0, float("inf"))])
             elif ("openWB/set/general/chargemode_config/surplus/vehicle/switch_off_threshold" in msg.topic or
-                    "openWB/set/general/consumer/config/switch_off_threshold" in msg.topic):
+                    "openWB/set/general/chargemode_config/surplus/consumer/switch_off_threshold" in msg.topic):
                 self._validate_value(msg, float)
             elif "openWB/set/general/chargemode_config/surplus/vehicle/phase_switch_delay" in msg.topic:
                 self._validate_value(msg, int, [(5, 180)])
