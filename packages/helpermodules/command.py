@@ -12,10 +12,11 @@ import traceback
 from pathlib import Path
 
 import paho.mqtt.client as mqtt
-from control import bat, bridge, counter, counter_all, pv
+from control import bat, bridge, counter, data, pv
 from control.chargelog.process_chargelog import get_log_data
 from control.chargepoint import chargepoint
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
+from control.counter_all import counter_all
 from control.ev import ev
 from control.ev.charge_template import ChargeTemplate, get_new_charge_template
 from control.ev.ev_template import EvTemplateData
@@ -772,6 +773,9 @@ class Command:
         # add ACL roles for vehicle access, if user management is active
         if SubData.system_data["system"].data["security"]["user_management_active"]:
             add_acl_role("vehicle-<id>-access", new_id)
+        data.data.counter_all_data.add_loadmanagement_prio_item(ComponentType.VEHICLE, new_id)
+        Pub().pub("openWB/set/counter/get/loadmanagement_prios",
+                  data.data.counter_all_data.data.get.loadmanagement_prios)
         pub_user_message(payload, connection_id, f'Neues EV mit ID \'{new_id}\' hinzugefügt.', MessageType.SUCCESS)
 
     def removeVehicle(self, connection_id: str, payload: dict) -> None:
@@ -787,6 +791,9 @@ class Command:
             if SubData.system_data["system"].data["security"]["user_management_active"]:
                 remove_acl_role("vehicle-<id>-access", payload["data"]["id"])
                 remove_acl_role("vehicle-<id>-write-access", payload["data"]["id"])
+            data.data.counter_all_data.remove_loadmanagement_prio_item(ComponentType.VEHICLE, payload["data"]["id"])
+            Pub().pub("openWB/set/counter/get/loadmanagement_prios",
+                      data.data.counter_all_data.data.get.loadmanagement_prios)
             pub_user_message(
                 payload, connection_id,
                 f'EV mit ID \'{payload["data"]["id"]}\' gelöscht.', MessageType.SUCCESS)

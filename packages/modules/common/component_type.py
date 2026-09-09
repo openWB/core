@@ -11,6 +11,7 @@ class ComponentType(Enum):
     GRID_FEE = "grid_tariff"
     INVERTER = "inverter"
     IO = "io"
+    VEHICLE = "vehicle"
 
 
 def special_to_general_type_mapping(component_type: str) -> ComponentType:
