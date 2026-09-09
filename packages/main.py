@@ -248,7 +248,7 @@ class HandlerAlgorithm:
             str(Path(__file__).resolve().parents[1] / "runs" / "update_local_display.sh"), "1"
         ], process_exception=True)
         try:
-            data.data.system_data["system"].thread_backup_and_send_to_cloud()
+            sub.system_data["system"].thread_backup_and_send_to_cloud()
         except Exception:
             log.exception("Fehler im Main-Modul")
 
