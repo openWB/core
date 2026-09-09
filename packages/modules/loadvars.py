@@ -3,6 +3,7 @@ from threading import Event, Thread
 from typing import List
 
 from control import data
+from control.consumer.usage import ConsumerUsage
 from modules.common.abstract_io import AbstractIoDevice
 from modules.common.store._tariff import get_price_value_store
 from modules.utils import wait_for_module_update_completed
@@ -64,9 +65,11 @@ class Loadvars:
                 log.exception(f"Fehler im loadvars-Modul bei Element {cp.num}")
         for consumer in data.data.consumer_data.values():
             try:
-                modules_threads.append(Thread(target=consumer.module.update,
-                                              args=(),
-                                              name=f"set values consumer{consumer.data.module.id}"))
+                if ConsumerUsage.METER_ONLY.value in consumer.module.config.usage:
+                    # Nur Verbraucher mit eingebautem Zähler haben eine update-Funktion.
+                    modules_threads.append(Thread(target=consumer.module.update,
+                                                  args=(),
+                                                  name=f"set values consumer{consumer.data.module.id}"))
             except Exception:
                 log.exception(f"Fehler im loadvars-Modul bei Element {consumer.num}")
         return joined_thread_handler(modules_threads, data.data.general_data.data.control_interval/3)

@@ -2,7 +2,7 @@
 """
 import logging
 from threading import Thread
-from typing import List
+from typing import List, Optional
 
 from control.bat_all import get_bat_components_by_controllability
 from control.chargelog import chargelog
@@ -91,7 +91,9 @@ class Process:
                             else:
                                 consumer.data.get.state_str = "Verbraucher wird gestartet... "
 
-                    modules_threads.append(self._start_consumer(consumer))
+                    consumer_thread = self._start_consumer(consumer)
+                    if consumer_thread is not None:
+                        modules_threads.append(consumer_thread)
                 except Exception:
                     log.exception("Fehler im Process-Modul für Verbaucher "+str(consumer))
             for action in data.data.io_actions.actions.values():
@@ -192,12 +194,14 @@ class Process:
         log.info(f"Verbraucher{consumer.num}: set current {consumer.data.set.current} A, "
                  f"state {ChargepointState(control_parameter.state).name}")
 
-    def _start_consumer(self, consumer: Consumer) -> Thread:
-        if consumer.data.usage.type in (ConsumerUsage.CONTINUOUS,
-                                        ConsumerUsage.SUSPENDABLE_ONOFF):
+    def _start_consumer(self, consumer: Consumer) -> Optional[Thread]:
+        if consumer.data.usage.type == ConsumerUsage.METER_ONLY:
+            return None
+        elif consumer.data.usage.type in (ConsumerUsage.CONTINUOUS,
+                                          ConsumerUsage.SUSPENDABLE_ONOFF):
             return Thread(
                 target=consumer.module.switch_on if consumer.data.set.current > 0 else consumer.module.switch_off,
-                name=f"set current consumer{consumer.num}")
+                name=f"set state consumer{consumer.num}")
         elif consumer.data.usage.type == ConsumerUsage.SELF_CONTROLLED:
             current_values = CurrentValues(
                 bat_power=data.data.bat_all_data.data.get.power,
@@ -210,8 +214,11 @@ class Process:
             return Thread(target=consumer.module.send_values,
                           args=(current_values,),
                           name=f"send values consumer{consumer.num}")
-        else:
+        elif consumer.data.usage.type == ConsumerUsage.SUSPENDABLE_TUNABLE:
             set_limit_data = SetLimitData(max_power=consumer.data.config.max_power)
             return Thread(target=consumer.module.set_power_limit,
                           args=(consumer.data.set.power, set_limit_data),
-                          name=f"set current consumer{consumer.num}")
+                          name=f"set power consumer{consumer.num}")
+        else:
+            log.error(f"Verbraucher{consumer.num}: Unbekannter usage.type {consumer.data.usage.type}")
+            return None
