@@ -29,7 +29,7 @@ def test_set_loadmanagement_state(fault_state: FaultStateLevel,
                                   data_):
     # setup
     connected_cps_mock = Mock(return_value=["cp3", "cp4"])
-    monkeypatch.setattr(data.data.counter_all_data, "get_chargepoints_of_counter", connected_cps_mock)
+    monkeypatch.setattr(data.data.counter_all_data, "get_loads_of_counter", connected_cps_mock)
     id_mock = Mock(return_value=0)
     monkeypatch.setattr(data.data.counter_all_data, "get_id_evu_counter", id_mock)
     name_mock = Mock(return_value="Test")
@@ -79,8 +79,8 @@ def test_set_current_left(loadmanagement_available: bool,
                           monkeypatch,
                           data_):
     # setup
-    get_chargepoints_of_counter_mock = Mock(return_value=["cp3", "cp4", "cp5"])
-    monkeypatch.setattr(data.data.counter_all_data, "get_chargepoints_of_counter", get_chargepoints_of_counter_mock)
+    get_loads_of_counter_mock = Mock(return_value=["cp3", "cp4", "cp5"])
+    monkeypatch.setattr(data.data.counter_all_data, "get_loads_of_counter", get_loads_of_counter_mock)
     counter = Counter(0)
     counter.data.config.max_currents = max_currents
     counter.data.config.max_total_power = sum(max_currents)*230
@@ -111,21 +111,22 @@ class Params:
 cases = [
     Params("Einschaltschwelle wurde unterschritten, Timer zurücksetzen", False, 1500, -119,
            1500, 1652683250.0, ChargepointState.SWITCH_ON_DELAY,
-           Counter.SWITCH_ON_FALLEN_BELOW.format(1500), None, 0),
+           Counter.SWITCH_ON_TEXTS_CP.fallen_below.format(1500), None, 0),
     Params("Timer starten", False, 0, 1501, 1500, None, ChargepointState.NO_CHARGING_ALLOWED,
-           Counter.SWITCH_ON_WAITING.format("30 Sek."), 1652683252.0, 1500),
+           Counter.SWITCH_ON_TEXTS_CP.waiting.format("30 Sek."), 1652683252.0, 1500),
     Params("Einschaltschwelle nicht erreicht", False, 0, 1499, 1500,
-           None, ChargepointState.NO_CHARGING_ALLOWED, Counter.SWITCH_ON_NOT_EXCEEDED.format(1500), None, 0),
+           None, ChargepointState.NO_CHARGING_ALLOWED, Counter.SWITCH_ON_TEXTS_CP.not_exceeded, None, 0),
     Params("Einschaltschwelle läuft", False, 1500, 121, 1500,
            1652683250.0, ChargepointState.SWITCH_ON_DELAY, None, 1652683250.0, 1500),
     Params("Feed_in_limit, Einschaltschwelle wurde unterschritten, Timer zurücksetzen", True, 1500,
            -681, 15000, 1652683250.0, ChargepointState.SWITCH_ON_DELAY,
-           Counter.SWITCH_ON_FALLEN_BELOW.format(1500), None, 0),
+           Counter.SWITCH_ON_TEXTS_CP.fallen_below.format(1500), None, 0),
     Params("Feed_in_limit, Timer starten", True, 0, 15001, 15000, None, ChargepointState.NO_CHARGING_ALLOWED,
-           Counter.SWITCH_ON_WAITING.format("30 Sek.") + " Die Einspeisegrenze wird berücksichtigt.",
+           Counter.SWITCH_ON_TEXTS_CP.waiting.format("30 Sek.")+" Die Einspeisegrenze wird berücksichtigt.",
            1652683252.0, 1500),
     Params("Feed_in_limit, Einschaltschwelle nicht erreicht", True, 0, 14999,
-           15000, None, ChargepointState.NO_CHARGING_ALLOWED, Counter.SWITCH_ON_NOT_EXCEEDED.format(1500), None, 0),
+           15000, None, ChargepointState.NO_CHARGING_ALLOWED,
+           Counter.SWITCH_ON_TEXTS_CP.not_exceeded.format(1500), None, 0),
     Params("Feed_in_limit, Einschaltschwelle läuft", True, 1500, 15001,
            15000, 1652683250.0, ChargepointState.SWITCH_ON_DELAY, None, 1652683250.0, 1500),
 ]

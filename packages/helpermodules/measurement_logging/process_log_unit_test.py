@@ -171,6 +171,7 @@ def test_analyse_percentage_totals():
     totals = {
         "hc": {"all": {"energy_imported": 3500}},
         "cp": {
+            "all": {"energy_imported": 58933},
             "cp1": {"energy_imported": 18500},
             "cp2": {"energy_imported": 29000},
             "cp3": {"energy_imported": 11433}
@@ -179,6 +180,11 @@ def test_analyse_percentage_totals():
             "counter0": {"grid": True, "energy_imported": 45892},
             "counter1": {"grid": False, "energy_imported": 10000},
             "counter2": {"grid": False, "energy_imported": 8735}
+        },
+        "consumer": {
+            "all": {"energy_imported": 10928},
+            "consumer6": {"energy_imported": 4248},
+            "consumer7": {"energy_imported": 7182}
         }
     }
 
@@ -191,6 +197,11 @@ def test_analyse_percentage_totals():
     assert result["hc"]["all"]["energy_imported_pv"] == 2980
     assert result["hc"]["all"]["energy_imported_bat"] == 912
     assert result["hc"]["all"]["energy_imported_cp"] == 273
+
+    assert result["cp"]["all"]["energy_imported_grid"] == 52376
+    assert result["cp"]["all"]["energy_imported_pv"] == 20302
+    assert result["cp"]["all"]["energy_imported_bat"] == 8390
+    assert result["cp"]["all"]["energy_imported_cp"] == 1804
 
     # Check cp totals (in Wh)
     assert result["cp"]["cp1"]["energy_imported_grid"] == 22222
@@ -220,6 +231,21 @@ def test_analyse_percentage_totals():
     assert result["counter"]["counter2"]["energy_imported_pv"] == 3290
     assert result["counter"]["counter2"]["energy_imported_bat"] == 1634
     assert result["counter"]["counter2"]["energy_imported_cp"] == 824
+
+    assert result["consumer"]["all"]["energy_imported_grid"] == 6858
+    assert result["consumer"]["all"]["energy_imported_pv"] == 2468
+    assert result["consumer"]["all"]["energy_imported_bat"] == 1134
+    assert result["consumer"]["all"]["energy_imported_cp"] == 468
+
+    assert result["consumer"]["consumer6"]["energy_imported_grid"] == 2468
+    assert result["consumer"]["consumer6"]["energy_imported_pv"] == 1134
+    assert result["consumer"]["consumer6"]["energy_imported_bat"] == 468
+    assert result["consumer"]["consumer6"]["energy_imported_cp"] == 178
+
+    assert result["consumer"]["consumer7"]["energy_imported_grid"] == 4890
+    assert result["consumer"]["consumer7"]["energy_imported_pv"] == 1356
+    assert result["consumer"]["consumer7"]["energy_imported_bat"] == 690
+    assert result["consumer"]["consumer7"]["energy_imported_cp"] == 246
 
 
 def test_calc_energy_imported_by_source_message_filtering():

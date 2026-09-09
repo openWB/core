@@ -52,6 +52,16 @@ class ChargemodeConfigSurplusVehicle:
 
 
 @dataclass
+class ChargemodeConfigSurplusConsumer:
+    switch_off_delay: int = field(default=60, metadata={
+                                  "topic": "chargemode_config/surplus/consumer/switch_off_delay"})
+    switch_off_threshold: int = field(default=0, metadata={
+        "topic": "chargemode_config/surplus/consumer/switch_off_threshold"})
+    switch_on_delay: int = field(default=30, metadata={
+        "topic": "chargemode_config/surplus/consumer/switch_on_delay"})
+
+
+@dataclass
 class ChargemodeConfigSurplus:
     control_range: List = field(default_factory=control_range_factory, metadata={
         "topic": "chargemode_config/surplus/control_range"})
@@ -59,6 +69,8 @@ class ChargemodeConfigSurplus:
         "topic": "chargemode_config/surplus/feed_in_limit"})
     feed_in_yield: int = field(default=15000, metadata={
         "topic": "chargemode_config/surplus/feed_in_yield"})
+    consumer: ChargemodeConfigSurplusConsumer = field(
+        default_factory=lambda: ChargemodeConfigSurplusConsumer())
     vehicle: ChargemodeConfigSurplusVehicle = field(
         default_factory=lambda: ChargemodeConfigSurplusVehicle())
 

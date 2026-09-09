@@ -18,12 +18,22 @@
       :getItemLineType="getItemLineType"
       menuAnchor="bottom middle"
       menuSelf="top middle"
-      menuFormat="q-mx-lg"
     />
 
     <HistoryChartLegendCategory
       :label="'Fahrzeuge'"
       :items="categorizedLegendItems.vehicle"
+      :toggleDataset="toggleDataset"
+      :getItemColor="getItemColor"
+      :getItemLineType="getItemLineType"
+      menuAnchor="bottom middle"
+      menuSelf="top middle"
+    />
+
+    <HistoryChartLegendCategory
+      v-if="categorizedLegendItems.consumer.length"
+      :label="'Verbraucher'"
+      :items="categorizedLegendItems.consumer"
       :toggleDataset="toggleDataset"
       :getItemColor="getItemColor"
       :getItemLineType="getItemLineType"
@@ -36,12 +46,21 @@
 <script setup lang="ts">
 import HistoryChartLegendCategory from './HistoryChartLegendCategory.vue';
 import type { LegendItem } from 'chart.js';
-import type { Category } from './history-chart-model';
+import type { Category, LegendItemWithCategory } from './history-chart-model';
 
 defineProps<{
-  categorizedLegendItems: Record<Category, LegendItem[]>;
-  toggleDataset: (datasetName: string, datasetIndex: number) => void;
+  categorizedLegendItems: Record<Category, LegendItemWithCategory[]>;
+  toggleDataset: (datasetKey: string | undefined, datasetIndex: number) => void;
   getItemColor: (dataset: LegendItem) => string;
   getItemLineType: (dataset: LegendItem) => string | undefined;
 }>();
 </script>
+
+<style scoped>
+:deep(.q-btn):not(:first-child) {
+  margin-left: 4px;
+}
+:deep(.q-btn) .q-btn-dropdown__arrow {
+  margin-left: 0;
+}
+</style>

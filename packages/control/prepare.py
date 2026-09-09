@@ -3,7 +3,7 @@
 
 import logging
 
-from control import data
+from control import data, load
 from modules.common.component_type import ComponentType
 
 
@@ -24,8 +24,11 @@ class Prepare:
             data.data.bat_all_data.calc_power_for_all_components()
             for cp in data.data.cp_data.values():
                 cp.setup_values_at_start()
-            levels = data.data.counter_all_data.get_list_of_elements_per_level()
-            for level in reversed(levels):
+            # Für die Initialisierung des LM muss bekannt sein, ob der Soll-Strom des Verbrauchers in diesem Intervall
+            # angepasst wird (switch_interval_elapsed).
+            for consumer in data.data.consumer_data.values():
+                consumer.update()
+            for level in reversed(data.data.counter_all_data.get_list_of_elements_per_level()):
                 for element in level:
                     if element["type"] == ComponentType.COUNTER.value:
                         data.data.counter_data[f"counter{element['id']}"].setup_counter()
@@ -33,8 +36,9 @@ class Prepare:
                 cp.update(data.data.ev_data)
             # Nach cp update, da für die Speicher-Sperre der Lademodus bekannt sein muss.
             data.data.bat_all_data.setup_bat()
+            data.data.consumer_all_data.get_consumer_sum()
             data.data.cp_all_data.get_cp_sum()
-            data.data.cp_all_data.no_charge()
+            load.no_charge()
             data.data.counter_all_data.set_home_consumption()
         except Exception:
             log.exception("Fehler im Prepare-Modul")

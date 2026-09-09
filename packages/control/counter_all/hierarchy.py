@@ -26,10 +26,10 @@ class HierarchyMixin:
             except Exception:
                 log.exception("Fehler in der allgemeinen Zähler-Klasse")
 
-    def get_chargepoints_of_counter(self: HierarchyProtocol, counter: str) -> List[str]:
-        """ gibt eine Liste der Ladepunkte, die in den folgenden Zweigen des Zählers sind, zurück.
+    def get_loads_of_counter(self: HierarchyProtocol, counter: str) -> List[str]:
+        """ gibt eine Liste der Ladepunkte und Verbraucher, die in den folgenden Zweigen des Zählers sind, zurück.
         """
-        self.connected_chargepoints = []
+        self.connected_loads = []
         if counter == self.get_evu_counter_str():
             counter_object = self.data.get.hierarchy[0]
         else:
@@ -38,28 +38,31 @@ class HierarchyMixin:
                 int(counter[7:]),
                 self._get_entry_of_element)
         try:
-            self._get_all_cp_connected_to_counter(counter_object)
+            self._get_all_loads_connected_to_counter(counter_object)
         except KeyError:
             # Kein Ladepunkt unter dem Zähler
             pass
-        return self.connected_chargepoints
+        return self.connected_loads
 
-    def _get_all_cp_connected_to_counter(self: HierarchyProtocol, child: Dict) -> None:
-        """ Rekursive Funktion, die alle Ladepunkte ermittelt, die an den angegebenen Zähler angeschlossen sind.
+    def _get_all_loads_connected_to_counter(self: HierarchyProtocol, child: Dict) -> None:
+        """ Rekursive Funktion, die alle Ladepunkte und Verbraucher ermittelt, die an den angegebenen Zähler
+        angeschlossen sind.
         """
         # Alle Objekte der Ebene durchgehen
         for child in child["children"]:
             try:
                 if child["type"] == ComponentType.CHARGEPOINT.value:
-                    self.connected_chargepoints.append(f"cp{child['id']}")
+                    self.connected_loads.append(f"cp{child['id']}")
+                elif child["type"] == ComponentType.CONSUMER.value:
+                    self.connected_loads.append(f"consumer{child['id']}")
                 # Wenn das Objekt noch Kinder hat, diese ebenfalls untersuchen.
                 elif len(child["children"]) != 0:
-                    self._get_all_cp_connected_to_counter(child)
+                    self._get_all_loads_connected_to_counter(child)
             except Exception:
                 log.exception("Fehler in der allgemeinen Zähler-Klasse")
 
     def get_counters_to_check(self: HierarchyProtocol, num: int) -> List[str]:
-        """ ermittelt alle Zähler im Zweig des Ladepunkts.
+        """ ermittelt alle Zähler im Zweig des Ladepunkts/Verbrauchers.
         """
         self.connected_counters = []
         self._get_all_counter_in_branch(self.data.get.hierarchy[0], num)
@@ -89,8 +92,8 @@ class HierarchyMixin:
             return {}
 
     def _get_all_counter_in_branch(self: HierarchyProtocol, child: Dict, id_to_find: int) -> bool:
-        """ Rekursive Funktion, die alle Zweige durchgeht, bis der entsprechende Ladepunkt gefunden wird und dann alle
-        Zähler in diesem Pfad der Liste anhängt.
+        """ Rekursive Funktion, die alle Zweige durchgeht, bis der entsprechende Ladepunkt/Verbraucher gefunden wird
+        und dann alle Zähler in diesem Pfad der Liste anhängt.
         """
         parent_id = child["id"]
         for child in child["children"]:
@@ -133,8 +136,8 @@ class HierarchyMixin:
     def hierarchy_add_item_aside(self: HierarchyProtocol,
                                  new_id: int, new_type: ComponentType,
                                  id_to_find: int) -> None:
-        """ ruft die rekursive Funktion zum Hinzufügen eines Zählers oder Ladepunkts in die Zählerhierarchie auf
-        derselben Ebene wie das angegebene Element.
+        """ ruft die rekursive Funktion zum Hinzufügen eines Zählers, Ladepunkts oder Verbrauchers in die
+        Zählerhierarchie auf derselben Ebene wie das angegebene Element.
         """
         if self._is_id_in_top_level(id_to_find):
             self.data.get.hierarchy.append({"id": new_id, "type": new_type.value, "children": []})
@@ -309,6 +312,7 @@ class HierarchyMixin:
                 check_and_remove("counter", ComponentType.COUNTER, data.data.counter_data)
                 check_and_remove("cp", ComponentType.CHARGEPOINT, data.data.cp_data)
                 check_and_remove("pv", ComponentType.INVERTER, data.data.pv_data)
+                check_and_remove("consumer", ComponentType.CONSUMER, data.data.consumer_data)
 
     def _add_missing_entries(self: HierarchyProtocol):
         def check_and_add(type_name: ComponentType, data_structure):
@@ -345,6 +349,7 @@ class HierarchyMixin:
             check_and_add(ComponentType.BAT, data.data.bat_data)
             check_and_add(ComponentType.CHARGEPOINT, data.data.cp_data)
             check_and_add(ComponentType.INVERTER, data.data.pv_data)
+            check_and_add(ComponentType.CONSUMER, data.data.consumer_data)
         except TypeError:
             pub_system_message({}, ("Es konnte kein Zähler gefunden werden, der als EVU-Zähler an die Spitze des "
                                "Lastmanagements gesetzt werden kann. Bitte zuerst einen EVU-Zähler hinzufügen."),

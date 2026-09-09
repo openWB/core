@@ -81,6 +81,8 @@ class ChangedValuesHandler:
             self._update_value("openWB/set/bat/", self.prev_data.bat_all_data.data, data.data.bat_all_data.data)
             self._update_value("openWB/set/chargepoint/", self.prev_data.cp_all_data.data.get,
                                data.data.cp_all_data.data.get)
+            self._update_value("openWB/set/consumer/", self.prev_data.consumer_all_data.data,
+                               data.data.consumer_all_data.data)
             self._update_value("openWB/set/counter/", self.prev_data.counter_all_data.data,
                                data.data.counter_all_data.data)
             self._update_value("openWB/set/optional/", self.prev_data.optional_data.data,
@@ -94,6 +96,9 @@ class ChangedValuesHandler:
             for key, value in data.data.counter_data.items():
                 self._update_value(f"openWB/set/counter/{value.num}/",
                                    self.prev_data.counter_data[key].data, value.data)
+            for key, value in data.data.consumer_data.items():
+                self._update_value(f"openWB/set/consumer/{value.num}/",
+                                   self.prev_data.consumer_data[key].data, value.data)
             for key, value in data.data.pv_data.items():
                 self._update_value(f"openWB/set/pv/{value.num}/", self.prev_data.pv_data[key].data, value.data)
             # chargepoint, ev template, autolock, time and scheduled charging plans mutable_by_algorithm immer false

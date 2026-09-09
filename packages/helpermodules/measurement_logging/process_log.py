@@ -170,7 +170,7 @@ UNIT_KEYS_KILO = ("energy_imported",
 
 def convert_legacy_units(data: dict) -> dict:
     for entry in data["entries"]:
-        for group in ("bat", "counter", "cp", "pv", "sh", "hc"):
+        for group in ("bat", "consumer", "counter", "cp", "pv", "sh", "hc"):
             if group in entry:
                 for module in entry[group].keys():
                     try:
@@ -201,7 +201,7 @@ def get_totals(entries: List, process_entries: bool = True) -> Dict:
     """
     if process_entries:
         entries = _process_entries(entries, CalculationType.ENERGY)
-    totals = {"cp": {}, "counter": {}, "pv": {}, "bat": {}, "sh": {}, "hc": {}}
+    totals = {"consumer": {}, "cp": {}, "counter": {}, "pv": {}, "bat": {}, "sh": {}, "hc": {}}
     for totals_group in totals.keys():
         for entry in entries:
             if totals_group in entry:
@@ -324,6 +324,7 @@ def _collect_yearly_log_data(year: str):
                     log.debug(f"Keine Logdatei für Monat {next_month} gefunden, "
                               f"füge letzten Datensatz von {month} ein: {entries[-1]['date']}")
             names.update(content["names"])
+            colors.update(content["colors"])
         except FILE_ERRORS:
             log.debug(f"Kein Log für Monat {month} gefunden.")
 
@@ -338,6 +339,7 @@ def _collect_yearly_log_data(year: str):
 
     entries = []
     names = {}
+    colors = {}
     dates = []
 
     # we have to find a valid data range
@@ -378,7 +380,7 @@ def _collect_yearly_log_data(year: str):
             log.exception(f"Fehler beim Zusammenstellen der Jahresdaten für Monat {next_date}")
 
     # return our data
-    return {"entries": entries, "names": names}
+    return {"entries": entries, "names": names, "colors": colors}
 
 
 def _analyse_energy_source(data, calc_cp: Optional[str] = None) -> Dict:
@@ -509,6 +511,21 @@ def calc_energy_imported_by_source(entry, names, message_key_filter: Optional[st
                             if message_key_filter is None or message_key_filter == cp_key:
                                 message += ERROR_STATE_MESSAGE.format(f"Ladepunkt {names.get(cp_key, cp_key)}")
 
+            consumer_section = entry.get("consumer")
+            if isinstance(consumer_section, dict):
+                for consumer_key, consumer_data in consumer_section.items():
+                    if isinstance(consumer_data, dict):
+                        if consumer_data.get("fault_state", 0) != 2 and "energy_imported" in consumer_data:
+                            for source in ("grid", "pv", "bat", "cp"):
+                                consumer_data[f"energy_imported_{source}"] = decimal_multiply(
+                                    consumer_data["energy_imported"], energy_source[source])
+                        else:
+                            for source in ("grid", "pv", "bat", "cp"):
+                                consumer_data[f"energy_imported_{source}"] = 0
+                            if message_key_filter is None or message_key_filter == consumer_key:
+                                message += ERROR_STATE_MESSAGE.format(
+                                    f"Verbraucher {names.get(consumer_key, consumer_key)}")
+
             counter_section = entry.get("counter")
             if isinstance(counter_section, dict):
                 for counter_key, counter_data in counter_section.items():
@@ -530,7 +547,7 @@ def calc_energy_imported_by_source(entry, names, message_key_filter: Optional[st
 
 
 def analyse_percentage_totals(entries, totals):
-    for section in ("hc", "cp"):
+    for section in ("consumer", "cp", "hc"):
         if "all" not in totals[section].keys():
             totals[section]["all"] = {}
     for source in ("grid", "pv", "bat", "cp"):
@@ -549,6 +566,14 @@ def analyse_percentage_totals(entries, totals):
                     add_value = entry["cp"][key][f"energy_imported_{source}"]
                     totals["cp"][key][f"energy_imported_{source}"] = decimal_add(
                         current_value, add_value)
+            for key in entry["consumer"].keys():
+                if f"energy_imported_{source}" in entry["consumer"][key].keys():
+                    if totals["consumer"][key].get(f"energy_imported_{source}") is None:
+                        totals["consumer"][key].update({f"energy_imported_{source}": 0})
+                    current_value = totals["consumer"][key][f"energy_imported_{source}"]
+                    add_value = entry["consumer"][key][f"energy_imported_{source}"]
+                    totals["consumer"][key][f"energy_imported_{source}"] = decimal_add(
+                        current_value, add_value)
             for key, counter in entry["counter"].items():
                 if counter["grid"] is False:
                     if totals["counter"][key].get(f"energy_imported_{source}") is None:
@@ -565,7 +590,7 @@ def _process_entries(entries: List, calculation: CalculationType):
         if len(entries) == 1:
             # Wenn es nur einen Eintrag gibt, kann keine Differenz berechnet werden und die Werte sind 0.
             entry = entries[0]
-            for type in ("bat", "counter", "cp", "pv", "sh", "hc"):
+            for type in ("bat", "consumer", "counter", "cp", "pv", "sh", "hc"):
                 if type in entry:
                     for module in entry[type].keys():
                         if calculation in [CalculationType.POWER, CalculationType.ALL]:
@@ -590,7 +615,7 @@ def _process_entries(entries: List, calculation: CalculationType):
 
 def process_entry(entry: dict, next_entry: dict, calculation: CalculationType):
     time_diff = next_entry["timestamp"] - entry["timestamp"]
-    for type in ("bat", "counter", "cp", "pv", "sh", "hc"):
+    for type in ("bat", "consumer", "counter", "cp", "pv", "sh", "hc"):
         if type in entry:
             for module in entry[type].keys():
                 try:

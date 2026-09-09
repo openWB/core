@@ -1,0 +1,109 @@
+from dataclasses import dataclass
+import logging
+from typing import Callable, Optional, TypeVar, Generic
+
+from helpermodules import timecheck
+from helpermodules.pub import Pub
+from modules.common.abstract_consumer import CurrentValues
+from modules.common.abstract_device import AbstractCounter
+from modules.common.component_context import SingleComponentUpdateContext
+from modules.common.component_state import ConsumerState
+from modules.common.component_type import ComponentType
+from modules.common.fault_state import ComponentInfo, FaultState
+from modules.common.simcount._simcounter import SimCounterConsumer
+from modules.common.store._factory import get_component_value_store
+from modules.common.utils.peak_filter import PeakFilter
+
+T_CONSUMER = TypeVar("T_CONSUMER")
+
+
+@dataclass
+class SetLimitData:
+    max_power: float = 0.0
+
+
+log = logging.getLogger(__name__)
+
+
+class ConfigurableConsumer(Generic[T_CONSUMER]):
+    def __init__(self,
+                 consumer_config: T_CONSUMER,
+                 initializer: Optional[Callable] = lambda: None,
+                 error_handler: Optional[Callable] = lambda: None,
+                 update: Optional[Callable[[], ConsumerState]] = lambda: None,
+                 send_values: Optional[Callable[[CurrentValues], None]] = lambda _values: None,
+                 set_power_limit: Optional[Callable] = lambda: None,
+                 switch_on: Optional[Callable] = lambda: None,
+                 switch_off: Optional[Callable] = lambda: None,) -> None:
+        self.config = consumer_config
+        self.module_initializer = initializer
+        self.module_error_handler = error_handler
+        self.module_updater = update
+        self.module_send_values = send_values
+        self.module_set_power_limit = set_power_limit
+        self.module_switch_on = switch_on
+        self.module_switch_off = switch_off
+
+        self.error_timestamp = None
+        self.sim_counter = SimCounterConsumer(self.config.id, ComponentType.CONSUMER)
+        self.store = get_component_value_store(ComponentType.CONSUMER.value, self.config.id)
+        self.fault_state = FaultState(ComponentInfo(self.config.id, self.config.name, ComponentType.CONSUMER.value))
+        self.peak_filter = PeakFilter(ComponentType.CONSUMER, self.config.id, self.fault_state)
+        try:
+            self.module_initializer()
+        except Exception:
+            log.exception(f"Initialisierung von Gerät {self.config.name} fehlgeschlagen")
+
+    def error_handler(self) -> None:
+        error_timestamp_topic = f"openWB/set/consumer/{self.config.id}/get/error_timestamp"
+        if self.error_timestamp is None:
+            self.error_timestamp = timecheck.create_timestamp()
+            Pub().pub(error_timestamp_topic, self.error_timestamp)
+            log.debug(f"Fehler bei Gerät {self.config.name} aufgetreten, "
+                      f"Fehlerzeitstempel: {self.error_timestamp}")
+        if timecheck.check_timestamp(self.error_timestamp, 60) is False:
+            try:
+                self.module_error_handler()
+            except Exception:
+                log.exception(f"Fehlerbehandlung für Gerät {self.config.name} fehlgeschlagen")
+            else:
+                log.debug(f"Fehlerbehandlung für Gerät {self.config.name} wurde durchgeführt.")
+
+            self.error_timestamp = None
+            Pub().pub(error_timestamp_topic, self.error_timestamp)
+
+    def update(self):
+        with SingleComponentUpdateContext(self.fault_state):
+            if self.module_updater is not None:
+                consumer_state = self.module_updater()
+                imported, exported = self.peak_filter.check_values(
+                    consumer_state.power,
+                    consumer_state.imported,
+                    consumer_state.exported if consumer_state.exported is not None else 0)
+                if imported != consumer_state.imported or exported != consumer_state.exported:
+                    consumer_state.imported = imported
+                    consumer_state.exported = exported
+                self.store.set(consumer_state)
+
+    def set_power_limit(self, power_limit: float, data: SetLimitData) -> None:
+        with SingleComponentUpdateContext(self.fault_state):
+            self.module_set_power_limit(power_limit, data)
+
+    def switch_on(self) -> None:
+        with SingleComponentUpdateContext(self.fault_state):
+            self.module_switch_on()
+
+    def switch_off(self) -> None:
+        with SingleComponentUpdateContext(self.fault_state):
+            self.module_switch_off()
+
+    def send_values(self, values: CurrentValues) -> None:
+        with SingleComponentUpdateContext(self.fault_state):
+            self.module_send_values(values)
+
+
+def dependency_injection_devices_components(component: AbstractCounter):
+    component.sim_counter.component_type = ComponentType.CONSUMER.value
+    component.store = get_component_value_store(ComponentType.CONSUMER.value, component.component_config.id)
+    component.fault_state.component_info.type = ComponentType.CONSUMER.value
+    return component
