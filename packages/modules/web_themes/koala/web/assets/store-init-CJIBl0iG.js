@@ -1,0 +1,1 @@
+import{a as e}from"./index-CaAneSes.js";import{t}from"./mqtt-store-BNJe8Hw0.js";var n=e(()=>{t().initialize()});export{n as default};
