@@ -73,8 +73,8 @@ class ConfigurableConsumer(Generic[T_CONSUMER]):
             Pub().pub(error_timestamp_topic, self.error_timestamp)
 
     def update(self):
-        if self.module_updater is not None:
-            with SingleComponentUpdateContext(self.fault_state):
+        with SingleComponentUpdateContext(self.fault_state):
+            if self.module_updater is not None:
                 consumer_state = self.module_updater()
                 imported, exported = self.peak_filter.check_values(
                     consumer_state.power,
