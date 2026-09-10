@@ -30,7 +30,7 @@ class ConfigurableConsumer(Generic[T_CONSUMER]):
                  consumer_config: T_CONSUMER,
                  initializer: Optional[Callable] = lambda: None,
                  error_handler: Optional[Callable] = lambda: None,
-                 update: Optional[Callable[[], ConsumerState]] = lambda: None,
+                 update: Optional[Callable[[], ConsumerState]] = None,
                  send_values: Optional[Callable[[CurrentValues], None]] = lambda _values: None,
                  set_power_limit: Optional[Callable] = lambda: None,
                  switch_on: Optional[Callable] = lambda: None,
