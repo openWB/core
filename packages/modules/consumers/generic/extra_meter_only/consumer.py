@@ -3,7 +3,7 @@ import logging
 
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.configurable_consumer import ConfigurableConsumer
-from modules.consumers.extra_meter_only.extra_meter_only.config import ExtraMeterOnly
+from modules.consumers.generic.extra_meter_only.config import ExtraMeterOnly
 
 log = logging.getLogger(__name__)
 

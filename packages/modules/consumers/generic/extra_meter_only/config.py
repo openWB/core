@@ -14,7 +14,7 @@ class ExtraMeterOnlyConfiguration:
 @auto_str
 class ExtraMeterOnly(ConsumerSetup[ExtraMeterOnlyConfiguration]):
     def __init__(self,
-                 name: str = "Separater Zähler ohne zu steuernden Verbraucher",
+                 name: str = "Zähler aus Geräte & Komponenten für separate Leistungsmessung",
                  type: str = "extra_meter_only",
                  id: int = 0,
                  configuration: Optional[ExtraMeterOnlyConfiguration] = None,
