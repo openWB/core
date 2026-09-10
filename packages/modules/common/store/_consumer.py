@@ -1,9 +1,10 @@
 from control import data
 from modules.common.component_state import ConsumerState
+from modules.common.component_type import ComponentType
 from modules.common.store import ValueStore
 from modules.common.store._api import LoggingValueStore
 from modules.common.store._broker import pub_to_broker
-from modules.common.utils.component_parser import get_component_obj_by_id
+from modules.common.utils.component_parser import get_hierarchy_obj_by_id
 
 
 class ConsumerValueStoreBroker(ValueStore[ConsumerState]):
@@ -43,15 +44,15 @@ class PurgeConsumerState(ValueStore[ConsumerState]):
         extra_meter_id = data.data.consumer_data[f"consumer{self.delegate.delegate.num}"].data.extra_meter
         if extra_meter_id is not None:
             try:
-                component = get_component_obj_by_id(extra_meter_id)
-                component_state = component.store.delegate.delegate.state
+                consumer = get_hierarchy_obj_by_id(extra_meter_id, ComponentType.COUNTER.value)
+                consumer_state = consumer.store.delegate.delegate.state
                 self.set(ConsumerState(
-                    power=component_state.power,
-                    imported=component_state.imported,
-                    exported=component_state.exported,
-                    voltages=component_state.voltages,
-                    currents=component_state.currents,
-                    powers=component_state.powers,
+                    power=consumer_state.power,
+                    imported=consumer_state.imported,
+                    exported=consumer_state.exported,
+                    voltages=consumer_state.voltages,
+                    currents=consumer_state.currents,
+                    powers=consumer_state.powers,
                 ))
             except Exception:
                 raise Exception(f"Fehler beim Auslesen des Verbrauchszählers {extra_meter_id} "

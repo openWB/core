@@ -4,6 +4,7 @@ from typing import Any, List, Optional
 from control import data
 from modules.common.abstract_device import AbstractDevice
 from modules.common.abstract_io import AbstractIoDevice
+from modules.common.component_type import ComponentType
 from modules.common.component_type import type_to_topic_mapping
 log = logging.getLogger(__name__)
 
@@ -60,12 +61,19 @@ def get_finished_component_obj_by_id(id: int, not_finished_threads: List[str]) -
         return None
 
 
-def get_component_obj_by_id(id: int) -> Optional[Any]:
-    for item in data.data.system_data.values():
-        if isinstance(item, AbstractDevice):
-            for comp in item.components.values():
-                if comp.component_config.id == id:
-                    return comp
+def get_hierarchy_obj_by_id(id: int, element_type: str) -> Any:
+    obj = None
+    if element_type == ComponentType.CHARGEPOINT.value:
+        obj = data.data.cp_data.get(f"cp{id}")
+    elif element_type == ComponentType.CONSUMER.value:
+        obj = data.data.consumer_data.get(f"consumer{id}")
+    elif element_type in (ComponentType.BAT.value, ComponentType.COUNTER.value, ComponentType.INVERTER.value):
+        for item in data.data.system_data.values():
+            if isinstance(item, AbstractDevice):
+                for comp in item.components.values():
+                    if comp.component_config.id == id:
+                        obj = comp
     else:
-        log.error(f"Element {id} konnte keinem Gerät zugeordnet werden.")
-        return None
+        raise ValueError(f"Element {id} vom Typ {element_type} konnte nicht aufgelöst werden.")
+    if obj is not None:
+        return obj
