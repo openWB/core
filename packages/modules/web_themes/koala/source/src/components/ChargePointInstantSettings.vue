@@ -11,7 +11,7 @@
   <SliderStandard
     v-if="dcChargingEnabled"
     title="DC-Sollleistung"
-    :min="4"
+    :min="-11"
     :max="300"
     unit="kW"
     v-model="instantChargeCurrentDc.value"
