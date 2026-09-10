@@ -133,10 +133,12 @@ class JsonApiVersion(Enum):
 
 class JsonApi():
     class OperatingMode(Enum):
+        # only define modes we can override savely
         MANUAL = "1"
         SELF_CONSUMPTION = "2"
+        # MODULE_EXTENSION = "6"
         TIME_OF_USE = "10"
-        OPTIMIZATION = "11"
+        # OPTIMIZATION = "11"
 
     class PowerMeterDirection(Enum):
         PRODUCTION = "production"
@@ -448,12 +450,18 @@ class JsonApi():
         configurations = self.__get_configurations()
         if "EM_OperatingMode" not in configurations:
             raise KeyError("The key 'EM_OperatingMode' is missing in the API response.")
+        try:
+            self.OperatingMode(configurations["EM_OperatingMode"])
+        except ValueError:
+            raise ValueError("Aktive Speichersteuerung wird in "
+                             f"Betriebsmodus {configurations['EM_OperatingMode']} "
+                             "nicht unterstützt.")
         if self.default_operating_mode is None:
             # Store the default operating mode for later restoration
             self.default_operating_mode = self.OperatingMode(configurations["EM_OperatingMode"])
             log.debug(f"default_operating_mode set to: {self.default_operating_mode}")
-
         operating_mode = self.OperatingMode(configurations["EM_OperatingMode"])
+
         if power_limit is None:
             # No specific power limit is set, activating default mode to allow the system to optimize energy usage by it
             # self.
