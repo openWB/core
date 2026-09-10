@@ -14,7 +14,7 @@ class ExtraMeterOnlyConfiguration:
 @auto_str
 class ExtraMeterOnly(ConsumerSetup[ExtraMeterOnlyConfiguration]):
     def __init__(self,
-                 name: str = "Zähler aus Geräte & Komponenten für separate Leistungsmessung",
+                 name: str = "Rein passive Messung",
                  type: str = "extra_meter_only",
                  id: int = 0,
                  configuration: Optional[ExtraMeterOnlyConfiguration] = None,
