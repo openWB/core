@@ -135,14 +135,24 @@ mock_comp_obj_counter_inv_bat = [Mock(spec=MqttCounter,
                          [pytest.param(mock_comp_obj_inv_bat, hierarchy_standard, id="standard"),
                           pytest.param(mock_comp_obj_inv_bat, hierarchy_hybrid, id="hybrid"),
                           pytest.param(mock_comp_obj_counter_inv_bat, hierarchy_nested, id="nested")])
-def test_virtual_counter_hierarchies(mock, counter_all: Callable[[], CounterAll], data_, mock_pub: Mock, monkeypatch):
+def test_virtual_counter_hierarchies(mock,
+                                     counter_all: Callable[[], CounterAll],
+                                     data_,
+                                     mock_pub: Mock,
+                                     monkeypatch: pytest.MonkeyPatch):
     # setup
     virtual_counter = counter.VirtualCounter(VirtualCounterSetup(
         id=0, configuration=VirtualCounterConfiguration(external_consumption=0)), device_id=0)
     virtual_counter.initialize()
     data.data.counter_all_data = counter_all()
     mock_comp_obj = Mock(side_effect=mock)
-    monkeypatch.setattr(_counter, "get_component_obj_by_id", mock_comp_obj)
+
+    def mock_get_hierarchy_obj_by_id(component_id: int, component_type: str):
+        if component_type == "cp":
+            return data.data.cp_data[f"cp{component_id}"]
+        return mock_comp_obj(component_id, component_type)
+
+    monkeypatch.setattr(_counter, "get_hierarchy_obj_by_id", mock_get_hierarchy_obj_by_id)
 
     # execution
     virtual_counter.update()
