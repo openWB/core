@@ -631,7 +631,6 @@ class UpdateConfig:
         ("openWB/counter/get/hierarchy", []),
         ("openWB/counter/get/loadmanagement_prios", [{"type": "vehicle", "id": 0}]),
         ("openWB/counter/config/consider_less_charging", counter_all_data.Config().consider_less_charging),
-        ("openWB/counter/config/home_consumption_source_id", counter_all_data.Config().home_consumption_source_id),
         ("openWB/vehicle/0/name", "Standard-Fahrzeug"),
         ("openWB/vehicle/0/color", DEFAULT_COLORS.VEHICLE.value),
         ("openWB/vehicle/0/info", {"manufacturer": None, "model": None}),
