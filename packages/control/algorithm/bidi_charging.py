@@ -9,7 +9,6 @@ from helpermodules.phase_handling import voltages_mean
 from control.limiting_value import LoadmanagementLimit
 from control.loadmanagement import Loadmanagement
 
-from control.chargepoint.chargepoint import Chargepoint
 import control.algorithm.common as common
 from typing import List
 
@@ -55,7 +54,7 @@ class Bidi:
                     if limit.limiting_value is not None:
                         cp.data.control_parameter.limit = limit
 
-                    available_for_cp = common.available_current_for_cp(
+                    available_for_cp = common.available_current_for_load(
                         cp, counts, available_currents, missing_currents, bidi_mode=True)
 
                     # Der neue Strom darf nicht höher als der bisher gesetzte Strom sein

@@ -231,12 +231,12 @@ class ChargeTemplate:
                     message = self.AMOUNT_REACHED
             elif current < 0:
                 if bidi_state == BidiState.BIDI_CAPABLE:
-                    sub_mode = "bidi_charging"
+                    sub_mode = ChargemodeEnum.BIDI_CHARGING
                     message = self.INSTANT_CHARGING_BIDI
                 else:
                     message = bidi_state.value
                     current = 0
-                    sub_mode = "stop"
+                    sub_mode = ChargemodeEnum.STOP
 
             return current, sub_mode, message, phases
         except Exception:
