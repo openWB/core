@@ -5,7 +5,6 @@ import logging
 from typing import Any, Dict, List, Tuple
 
 from control import data
-from control.counter import Counter
 from control.counter_all.counter_all_data import CounterAllData
 from control.counter_all.hierarchy import HierarchyMixin
 from control.counter_all.loadmanagement_prio import LoadmanagementPrioMixin

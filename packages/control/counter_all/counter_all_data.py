@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Callable, Dict, Generator, List, Optional, Protocol, Tuple, Union
+from typing import Callable, Dict, Generator, List, Protocol, Tuple, Union
 
 from control.chargepoint.chargepoint import Chargepoint
 from dataclass_utils.factories import empty_list_factory
