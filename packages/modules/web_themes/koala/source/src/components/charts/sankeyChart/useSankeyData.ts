@@ -7,13 +7,13 @@ import {
   allocate,
   groupNodes,
   type AllocationResult,
-  type DynamicNodeInput,
 } from './energy-allocation';
 
 // Aggregate chargepoints/consumers into a single node once there are more than the threshold.
 const GROUP_THRESHOLD = 3;
 const CP_GROUP_ID = 'cp_group';
 const CONSUMER_GROUP_ID = 'consumer_group';
+const CONSUMER_ID_PREFIX = 'consumer';
 
 export function useSankeyData() {
   const mqttStore = useMqttStore();
@@ -31,13 +31,19 @@ export function useSankeyData() {
     ),
   );
 
-  // Consumer placeholder
   const consumers = computed(() =>
-    groupNodes([] as DynamicNodeInput[], {
-      threshold: GROUP_THRESHOLD,
-      id: CONSUMER_GROUP_ID,
-      label: 'Verbraucher',
-    }),
+    groupNodes(
+      mqttStore.consumerIds.map((id) => ({
+        id: `${CONSUMER_ID_PREFIX}${id}`,
+        label: mqttStore.consumerName(id) || `Verbraucher ${id}`,
+        power: num(mqttStore.consumerPower(id, 'value')),
+      })),
+      {
+        threshold: GROUP_THRESHOLD,
+        id: CONSUMER_GROUP_ID,
+        label: 'Verbraucher',
+      },
+    ),
   );
 
   // Hybrid inverter/battery pairs: how much of each hybrid battery's charge is
@@ -79,13 +85,16 @@ export function useSankeyData() {
       case CP_GROUP_ID:
         return cssVar('--q-charge-point-stroke');
       case CONSUMER_GROUP_ID:
-        return cssVar('--q-vehicle-stroke');
+        return cssVar('--q-consumer');
     }
     if (id.startsWith('cp')) {
       const cpId = Number(id.slice(2));
       return mqttStore.chargePointColor(cpId) || cssVar('--q-charge-point-stroke');
     }
-    // Placeholder
+    if (id.startsWith(CONSUMER_ID_PREFIX)) {
+      const consumerId = Number(id.slice(CONSUMER_ID_PREFIX.length));
+      return mqttStore.consumerColor(consumerId) || cssVar('--q-consumer');
+    }
     return cssVar('--q-vehicle-stroke');
   };
 
