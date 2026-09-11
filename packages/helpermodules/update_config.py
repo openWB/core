@@ -3726,7 +3726,7 @@ class UpdateConfig:
         self._append_datastore_version(144)
 
     def upgrade_datastore_145(self) -> None:
-       def get_direct_child_counter_ids(hierarchy, parent_counter_id: int) -> List[int]:
+        def get_direct_child_counter_ids(hierarchy, parent_counter_id: int) -> List[int]:
             def find_counter_entry(elements) -> Optional[dict]:
                 for element in elements:
                     if element.get("type") == "counter" and element.get("id") == parent_counter_id:
