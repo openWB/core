@@ -131,8 +131,15 @@ def test_calc_virtual(params: Params, monkeypatch):
     purge = PurgeCounterState(delegate=Mock(delegate=Mock(num=0)),
                               add_child_values=True,
                               simcounter=SimCounter(0, 0, ComponentType.COUNTER))
-    mock_comp_obj = Mock(side_effect=params.mock_comp)
-    monkeypatch.setattr(_counter, "get_component_obj_by_id", mock_comp_obj)
+    original_get_hierarchy_obj_by_id = _counter.get_hierarchy_obj_by_id
+    mock_comp_obj_iter = iter(params.mock_comp)
+
+    def mock_get_hierarchy_obj_by_id(component_id, component_type):
+        if component_type == ComponentType.CHARGEPOINT.value:
+            return original_get_hierarchy_obj_by_id(component_id, component_type)
+        return next(mock_comp_obj_iter)
+
+    monkeypatch.setattr(_counter, "get_hierarchy_obj_by_id", mock_get_hierarchy_obj_by_id)
 
     # execution
     state = purge.calc_virtual(CounterState(power=-5001, currents=[7.25]*3, exported=200, imported=100))
@@ -228,14 +235,16 @@ def test_calc_uncounted_consumption(monkeypatch):
         )
     )
 
-    def mock_get_component_obj_by_id(component_id):
+    original_get_hierarchy_obj_by_id = _counter.get_hierarchy_obj_by_id
+
+    def mock_get_hierarchy_obj_by_id(component_id, component_type):
         if component_id == 0:  # Parent counter
             return parent_counter_component
         elif component_id == 2:  # Regular counter
             return regular_counter_component
-        return None
+        return original_get_hierarchy_obj_by_id(component_id, component_type)
 
-    monkeypatch.setattr(_counter, "get_component_obj_by_id", mock_get_component_obj_by_id)
+    monkeypatch.setattr(_counter, "get_hierarchy_obj_by_id", mock_get_hierarchy_obj_by_id)
 
     virtual_counter_purge = PurgeCounterState(
         delegate=Mock(delegate=Mock(num=3)),
@@ -261,3 +270,80 @@ def test_calc_uncounted_consumption(monkeypatch):
     )
 
     assert vars(result_state) == vars(expected_state)
+
+
+def test_calc_consumers_skips_assigned_extra_meter_counter(monkeypatch):
+    # setup
+    data.data.counter_all_data.data.get.hierarchy = [
+        {
+            "id": 0,
+            "type": "counter",
+            "children": [
+                {"id": 1, "type": "consumer", "children": []},
+                {"id": 2, "type": "counter", "children": []},
+            ],
+        }
+    ]
+    elements = [
+        {"id": 1, "type": "consumer", "children": []},
+        {"id": 2, "type": "counter", "children": []},
+    ]
+
+    consumer_state = Mock(
+        power=1000,
+        currents=[1.0, 1.0, 1.0],
+        imported=10,
+        exported=0,
+    )
+    consumer_obj = Mock(
+        data=Mock(extra_meter=2),
+        module=Mock(
+            store=Mock(
+                delegate=Mock(
+                    delegate=Mock(state=consumer_state)
+                )
+            )
+        )
+    )
+    data.data.consumer_data["consumer1"] = consumer_obj
+
+    counter_state = CounterState(
+        power=2000,
+        currents=[2.0, 2.0, 2.0],
+        imported=20,
+        exported=0,
+    )
+    counter_component = Mock(
+        store=Mock(
+            delegate=Mock(
+                delegate=Mock(state=counter_state)
+            )
+        )
+    )
+
+    def mock_get_hierarchy_obj_by_id(component_id, component_type):
+        if component_id == 1 and component_type == ComponentType.CONSUMER.value:
+            return consumer_obj
+        if component_id == 2 and component_type == ComponentType.COUNTER.value:
+            return counter_component
+        raise ValueError(f"unexpected lookup: {component_type}{component_id}")
+
+    monkeypatch.setattr(_counter, "get_hierarchy_obj_by_id", mock_get_hierarchy_obj_by_id)
+
+    purge = PurgeCounterState(delegate=Mock(delegate=Mock(num=0)),
+                              add_child_values=True,
+                              simcounter=SimCounter(0, 0, ComponentType.COUNTER))
+    purge.currents = [0.0, 0.0, 0.0]
+    purge.power = 0
+    purge.imported = 0
+    purge.exported = 0
+    purge.incomplete_currents = False
+
+    # execution
+    result_state = purge.calc_consumers(elements, calc_imported_exported=True)
+
+    # evaluation
+    assert result_state.power == 1000
+    assert result_state.currents == [1.0, 1.0, 1.0]
+    assert result_state.imported == 10
+    assert result_state.exported == 0
