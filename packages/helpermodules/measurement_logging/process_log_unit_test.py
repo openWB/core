@@ -248,6 +248,45 @@ def test_analyse_percentage_totals():
     assert result["consumer"]["consumer7"]["energy_imported_cp"] == 246
 
 
+def test_analyse_percentage_totals_entry_missing_grid_counter():
+    # Ein Eintrag, bei dem analyse_percentage() zuvor fehlgeschlagen ist (z.B. weil der EVU-Zähler
+    # nicht als "grid" markiert wurde), hat kein "energy_source" und calc_energy_imported_by_source()
+    # setzt für dessen Zähler dann kein "energy_imported_*". Das darf die Auswertung der übrigen,
+    # intakten Einträge nicht mit einem KeyError abbrechen.
+    entries = [
+        {
+            "hc": {},
+            "cp": {},
+            "consumer": {},
+            "counter": {
+                "counter0": {"grid": False},  # fehlerhafter Eintrag ohne "energy_imported_*"
+            },
+        },
+        {
+            "hc": {},
+            "cp": {},
+            "consumer": {},
+            "counter": {
+                "counter0": {"grid": False, "energy_imported_grid": 100, "energy_imported_pv": 50,
+                             "energy_imported_bat": 20, "energy_imported_cp": 10},
+            },
+        },
+    ]
+    totals = {
+        "hc": {},
+        "cp": {},
+        "consumer": {},
+        "counter": {"counter0": {"grid": False, "energy_imported": 100}},
+    }
+
+    result = analyse_percentage_totals(entries, totals)
+
+    assert result["counter"]["counter0"]["energy_imported_grid"] == 100
+    assert result["counter"]["counter0"]["energy_imported_pv"] == 50
+    assert result["counter"]["counter0"]["energy_imported_bat"] == 20
+    assert result["counter"]["counter0"]["energy_imported_cp"] == 10
+
+
 def test_calc_energy_imported_by_source_message_filtering():
     """Test message filtering when component is in fault state and name is missing."""
     # setup

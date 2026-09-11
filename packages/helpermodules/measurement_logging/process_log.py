@@ -575,7 +575,7 @@ def analyse_percentage_totals(entries, totals):
                     totals["consumer"][key][f"energy_imported_{source}"] = decimal_add(
                         current_value, add_value)
             for key, counter in entry["counter"].items():
-                if counter["grid"] is False:
+                if counter["grid"] is False and f"energy_imported_{source}" in counter:
                     if totals["counter"][key].get(f"energy_imported_{source}") is None:
                         totals["counter"][key].update({f"energy_imported_{source}": 0})
                     current_value = totals["counter"][key][f"energy_imported_{source}"]
