@@ -75,7 +75,7 @@ class Process:
                         Thread(
                             target=set_power_limit_wrapper,
                             args=(bat_component,
-                                  data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set.power_limit),
+                                  data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set),
                             name=f"set power limit {bat_component.component_config.id}"))
             for consumer in data.data.consumer_data.values():
                 try:
