@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Callable, Dict, Generator, List, Optional, Protocol, Tuple, Union
+from typing import Callable, Dict, Generator, List, Protocol, Tuple, Union
 
 from control.chargepoint.chargepoint import Chargepoint
 from dataclass_utils.factories import empty_list_factory
@@ -8,8 +8,6 @@ from modules.common.component_type import ComponentType
 
 @dataclass
 class Config:
-    home_consumption_source_id: Optional[str] = field(
-        default=None, metadata={"topic": "config/home_consumption_source_id"})
     consider_less_charging: bool = field(
         default=False, metadata={"topic": "config/consider_less_charging"})
 
