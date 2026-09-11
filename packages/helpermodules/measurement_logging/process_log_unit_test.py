@@ -418,3 +418,193 @@ def test_collect_daily_log_data_json_decode_error(monkeypatch):
     # evaluation
     expected_result = {"entries": [], "names": {}}
     assert result == expected_result
+
+
+def test_pv_export_and_bat_export_and_bat_import():
+    entry = {
+        "timestamp": 1234567890,
+        "date": "00:00",
+        "bat": {
+            "all": {
+                "energy_imported": 1.0,
+                "energy_exported": 5.0,
+                "fault_state": 0,
+            }
+        },
+        "cp": {
+            "all": {
+                "energy_imported": 0.0,
+                "energy_exported": 0.0,
+                "fault_state": 0,
+            }
+        },
+        "pv": {
+            "all": {
+                "energy_exported": 10.0,
+                "fault_state": 0,
+            }
+        },
+        "counter": {
+            "counter0": {
+                "grid": True,
+                "energy_imported": 2.0,
+                "energy_exported": 3.0,
+                "fault_state": 0,
+            }
+        }
+    }
+
+    # Einspeisung - Priorität
+    # 1 Pv
+    # 2 Bat
+    # 3 CP
+    # -> erst komplette Einspeisung von PV berücksichtigen
+    # -> wenn dann noch weitere Einspeisung übrig ist -> Bat und dann CP
+
+    # Speicherimport - Priorität
+    # 1 Pv
+    # 2 Grid
+    # 3 CP
+
+    # Pv 10 Exported
+    # Grid 2 Imported, 3 Exported
+    # Bat   1 Imported, 5 Exported
+
+    # Realer Verbrauch
+    # 2 - 3 + 10 + 5 - 1 + 0 = 13
+
+    # Export aufteilen
+    # Pv - Export = 10 - 3 = 7
+
+    # Bat import aufteilen
+    # Pv - Bat_imported = 7 - 1 = 6
+
+    # Tatsächlicher Verbrauch:
+    # Pv = 6
+    # Grid = 2
+    # Bat = 5
+    # ---------------------
+    # Summe = 13
+
+    # Anteil der Energiequellen:
+    # Grid: 2/13 ≈ 0.1538
+    # PV = 6/13 ≈ 0.4615
+    # Bat = 5/13 ≈ 0.3846
+    # CP = 0/13 ≈ 0.0
+    result, message = analyse_percentage(entry)
+
+    assert result["energy_source"] == {
+        "grid": 0.1538,
+        "pv": 0.4615,
+        "bat": 0.3846,
+        "cp": 0.0
+    }
+    assert message == ""
+
+
+@pytest.mark.parametrize(
+    "name, pv_exported, bat_exported, bat_imported, cp_exported, grid_imported, grid_exported, expected",
+    [
+        (
+            "grid import and export",
+            10.0,  # pv_exported
+            0.0,  # bat_exported
+            0.0,  # bat_imported
+            0.0,  # cp_exported
+            2.0,  # grid_imported
+            3.0,  # grid_exported
+            #        2/9           7/9
+            {"grid": 0.2222, "pv": 0.7778, "bat": 0.0, "cp": 0.0}
+        ),
+        (
+            "grid export proportional pv and bat",
+            10.0,  # pv_exported
+            5.0,  # bat_exported
+            0.0,  # bat_imported
+            0.0,  # cp_exported
+            0.0,  # grid_imported
+            3.0,  # grid_exported
+            #        0/12        7/12           5/12
+            {"grid": 0.0, "pv": 0.5833, "bat": 0.4167, "cp": 0.0}
+        ),
+        (
+            "grid export and bat import",
+            10.0,  # pv_exported
+            5.0,  # bat_exported
+            1.0,  # bat_imported
+            0.0,  # cp_exported
+            2.0,  # grid_imported
+            3.0,  # grid_exported
+            #        2/13        6/13           5/13
+            {"grid": 0.1538, "pv": 0.4615, "bat": 0.3846, "cp": 0.0}
+        ),
+        (
+            "grid export proportional pv and cp ",
+            6.0,  # pv_exported
+            0.0,  # bat_exported
+            0.0,  # bat_imported
+            3.0,  # cp_exported
+            0.0,  # grid_imported
+            3.0,  # grid_exported
+            #        0/6        3/6           0/6       3/6
+            {"grid": 0.0, "pv": 0.5, "bat": 0.0, "cp": 0.5}
+        ),
+        (
+            "bat import proportional pv and grid",
+            8.0,  # pv_exported
+            0.0,  # bat_exported
+            2.0,  # bat_imported
+            0.0,  # cp_exported
+            2.0,  # grid_imported
+            0.0,  # grid_exported
+            #        2/8        6/8           0/8       8/8
+            {"grid": 0.25, "pv": 0.75, "bat": 0.0, "cp": 0.0}
+        ),
+    ]
+)
+def test_analyse_percentage_proportional_distribution(name,
+                                                      pv_exported,
+                                                      bat_exported,
+                                                      bat_imported,
+                                                      cp_exported,
+                                                      grid_imported,
+                                                      grid_exported, expected):
+    entry = {
+        "timestamp": 1234567890,
+        "date": "00:00",
+        "bat": {
+            "all": {
+                "energy_imported": bat_imported,
+                "energy_exported": bat_exported,
+                "fault_state": 0,
+            }
+        },
+        "cp": {
+            "all": {
+                "energy_exported": cp_exported,
+                "fault_state": 0,
+            }
+        },
+        "pv": {
+            "all": {
+                "energy_exported": pv_exported,
+                "fault_state": 0,
+            }
+        },
+        "counter": {
+            "counter0": {
+                "grid": True,
+                "energy_imported": grid_imported,
+                "energy_exported": grid_exported,
+                "fault_state": 0,
+            }
+        }
+    }
+
+    result, message = analyse_percentage(entry)
+
+    assert result["energy_source"] == expected
+    assert message == ""
+
+    # Strommix muss zusammen 100% ergeben
+    assert sum(result["energy_source"].values()) == pytest.approx(1.0, abs=0.0002)
