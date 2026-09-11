@@ -58,7 +58,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 145
+    DATASTORE_VERSION = 146
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -194,6 +194,7 @@ class UpdateConfig:
         "^openWB/consumer/get/daily_imported$",
         "^openWB/consumer/[0-9]+/module$",
         "^openWB/consumer/[0-9]+/config$",
+        "^openWB/consumer/[0-9]+/config/is_home_consumption_consumer$",
         "^openWB/consumer/[0-9]+/extra_meter$",
         "^openWB/consumer/[0-9]+/usage$",
         "^openWB/consumer/[0-9]+/get/currents$",
@@ -3802,3 +3803,19 @@ class UpdateConfig:
                             "Direkte Kind-Zaehler des bisherigen Hausverbrauchs-Zaehlers wurden nicht angepasst."
                         )
         self._append_datastore_version(145)
+
+    def upgrade_datastore_146(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search(r"^openWB/consumer/[0-9]+/config$", topic) is not None:
+                config_payload = decode_payload(payload)
+                if (
+                    isinstance(config_payload, dict)
+                    and "is_home_consumption_consumer" not in config_payload
+                ):
+                    updated_payload = config_payload
+                    updated_payload["is_home_consumption_consumer"] = CounterMode.AUTO_HOME_CONSUMPTION.value
+                    return {topic: updated_payload}
+            return None
+
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(146)

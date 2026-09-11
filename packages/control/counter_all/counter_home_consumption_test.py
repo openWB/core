@@ -95,6 +95,53 @@ def test_set_home_consumption(home_consumption: int,
     assert c.data.set.home_consumption == expected_home_consumption
 
 
+@pytest.mark.parametrize(
+    ["counter_mode", "consumer_mode", "expected_home_consumption"],
+    [
+        pytest.param(CounterMode.HOME_CONSUMPTION.value, "auto_home_consumption", 1000,
+                     id="consumer_auto_inherits_home"),
+        pytest.param(CounterMode.HOME_CONSUMPTION.value, "no_home_consumption", 700,
+                     id="consumer_explicit_no_home"),
+        pytest.param(CounterMode.NOT_HOME_CONSUMPTION.value, "home_consumption", 300,
+                     id="consumer_explicit_home_overrides_parent"),
+    ],
+)
+def test_calc_home_consumption_with_consumer_modes(counter_mode: str,
+                                                   consumer_mode: str,
+                                                   expected_home_consumption: int):
+    data.data_init(Mock())
+    c = CounterAll()
+    c.data.get.hierarchy = [{
+        "id": 0,
+        "type": "counter",
+        "children": [{"id": 7, "type": "consumer", "children": []}],
+    }]
+
+    data.data.counter_data = {
+        "counter0": Mock(
+            spec=Counter,
+            num=0,
+            data=Mock(
+                spec=CounterData,
+                get=Mock(spec=CounterGet, power=1000, fault_state=0),
+                config=Mock(spec=CounterConfig, is_home_consumption_counter=counter_mode),
+            ),
+        ),
+    }
+    data.data.consumer_data = {
+        "consumer7": Mock(
+            num=7,
+            data=Mock(
+                get=Mock(power=300, fault_state=0),
+                config=Mock(is_home_consumption_consumer=consumer_mode),
+            ),
+        ),
+    }
+
+    home_consumption = c._calc_home_consumption()[0]
+    assert home_consumption == expected_home_consumption
+
+
 def hierarchy_home_consumption_standard() -> CounterAll:
     # counter0
     #        |
