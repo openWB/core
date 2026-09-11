@@ -44,8 +44,13 @@ class Fronius:
 
 
 class FroniusBatConfiguration:
-    def __init__(self, meter_id: int = 0):
+    def __init__(self,
+                 meter_id: int = 0,
+                 username: Optional[str] = None,
+                 password: Optional[str] = None):
         self.meter_id = meter_id
+        self.username = username
+        self.password = password
 
 
 class FroniusBatSetup(ComponentSetup[FroniusBatConfiguration]):
