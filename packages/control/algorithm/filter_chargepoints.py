@@ -32,6 +32,20 @@ def get_grouped_loads_by_mode_and_counter(chargemodes: Tuple[Tuple[Optional[str]
     return _group_loads_by_chargemode(chargemodes, _is_valid_for_chargemode)[1]
 
 
+def _get_consumer_by_prio_item(item: dict) -> Optional[Consumer]:
+    """Liefert den Verbraucher zu einem Eintrag der Prioritätensteuerung.
+
+    Ein Eintrag kann kurzzeitig auf einen bereits gelöschten Verbraucher verweisen, wenn dessen Entfernung
+    aus der Prioritätensteuerung fehlgeschlagen ist. Ein einzelner solcher Karteileichen-Eintrag darf nicht
+    die komplette Regelung für alle Ladepunkte zum Absturz bringen.
+    """
+    consumer = data.data.consumer_data.get(f"{item['type']}{item['id']}")
+    if consumer is None:
+        log.warning(f"Verbraucher {item['id']} aus der Prioritätensteuerung existiert nicht (mehr), "
+                    "wird ignoriert.")
+    return consumer
+
+
 def _group_loads_by_chargemode(chargemodes: Tuple[Tuple[Optional[str], str]],
                                filter_func) -> Tuple[List[Load], List[List[Load]]]:
     grouped_loads: List[List[Load]] = []
@@ -48,8 +62,8 @@ def _group_loads_by_chargemode(chargemodes: Tuple[Tuple[Optional[str], str]],
                                     sub_valid_chargemode.append(cp)
                                     flat_loads.append(cp)
                     elif group_item["type"] == "consumer":
-                        consumer = data.data.consumer_data[f"{group_item['type']}{group_item['id']}"]
-                        if filter_func(consumer, chargemode, flat_loads):
+                        consumer = _get_consumer_by_prio_item(group_item)
+                        if consumer is not None and filter_func(consumer, chargemode, flat_loads):
                             sub_valid_chargemode.append(consumer)
                             flat_loads.append(consumer)
                 grouped_loads.append(sub_valid_chargemode)
@@ -60,8 +74,8 @@ def _group_loads_by_chargemode(chargemodes: Tuple[Tuple[Optional[str], str]],
                             grouped_loads.append([cp])
                             flat_loads.append(cp)
             elif item["type"] == "consumer":
-                consumer = data.data.consumer_data[f"{item['type']}{item['id']}"]
-                if filter_func(consumer, chargemode, flat_loads):
+                consumer = _get_consumer_by_prio_item(item)
+                if consumer is not None and filter_func(consumer, chargemode, flat_loads):
                     grouped_loads.append([consumer])
                     flat_loads.append(consumer)
     return flat_loads, grouped_loads
