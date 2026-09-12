@@ -134,6 +134,8 @@ class Loadvars:
         for counter in data.data.counter_data.values():
             try:
                 component = get_finished_component_obj_by_id(counter.num, not_finished_threads)
+                if component is None:
+                    continue
                 if component.component_config.type == "virtual":
                     if len(data.data.counter_all_data.get_entry_of_element(counter.num)["children"]) == 0:
                         thread_name = f"component{component.component_config.id}"
