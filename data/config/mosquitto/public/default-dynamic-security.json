@@ -483,6 +483,24 @@
 			"textdescription": "Erlaubt den Zugang zu den Einstellungen. Für weitere Optionen werden noch zusätzliche Rollen benötigt!",
 			"acls": [
 				{
+					"acltype": "subscribePattern",
+					"topic": "openWB/system/security/access/+",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "unsubscribePattern",
+					"topic": "openWB/system/security/access/+",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/access/+",
+					"priority": 0,
+					"allow": true
+				},
+				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/security/access/Settings",
 					"priority": 0,
@@ -1684,6 +1702,43 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/chargepoint/+/config",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "forecast-configuration-access",
+			"textname": "Zugang zu der PV-Prognose",
+			"textdescription": "Erlaubt den Zugang zu der PV-Prognose.",
+			"acls": [
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/optional/forecast/provider",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/optional/forecast/get/force_update",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/access/ForecastConfiguration",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/configurable/forecasts",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/forecast/#",
 					"priority": 0,
 					"allow": true
 				}

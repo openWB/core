@@ -247,6 +247,16 @@ class TariffState:
 
 
 @auto_str
+class ForecastState:
+    def __init__(self,
+                 forecast_values: Optional[Dict[str, float]] = None,
+                 daily_kwh: Optional[Dict[str, float]] = None
+                 ) -> None:
+        self.forecast_values = forecast_values
+        self.daily_kwh = daily_kwh
+
+
+@auto_str
 class IoState:
     """JSON erlaubt nur Zeichenketten als Schlüssel für Objekte"""
 
