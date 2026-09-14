@@ -41,7 +41,6 @@ import {
 	line,
 	type Selection,
 	select,
-	curveStepAfter,
 	curveStepBefore,
 } from 'd3'
 import { graphData, type GraphDataItem, zoomedRange } from './model'
