@@ -5,17 +5,18 @@ from functools import partial
 from helpermodules.utils.error_handling import ImportErrorContext
 with ImportErrorContext():
     from ocpp.v16 import ChargePoint as cp
-    from ocpp.v16 import call, call_result
-    from ocpp.v16.enums import ChargePointStatus, ChargePointErrorCode, AvailabilityStatus, Action, RegistrationStatus
+    from ocpp.v16 import call, call_result, datatypes
+    from ocpp.v16.enums import ChargePointStatus, ChargePointErrorCode, AvailabilityType, AvailabilityStatus, Action, RegistrationStatus
     from ocpp.routing import on
 with ImportErrorContext():
     import websockets
 import asyncio
 from typing import Callable, Optional
+from helpermodules.pub import Pub
+
 
 from control import data
 from modules.common.fault_state import FaultState
-
 
 log = logging.getLogger(__name__)
 
@@ -103,15 +104,6 @@ class OcppClient:
             chargebox_id,
             ws
         )
-
-        # Handler registrieren für incoming OCPP-Nachrichten
-        # cp.route_map[Action.change_availability] = {
-        #    "_on_action": partial(
-        #        self.handle_change_availability,
-        #        chargebox_id=chargebox_id
-        #    ),
-        #    "_skip_schema_validation": False,
-        # }
 
         connection = OcppConnection(
             chargebox_id=chargebox_id,
@@ -218,11 +210,7 @@ class OcppClient:
                                      imported=int(imported))
 
             if response is not None and response.transaction_id is not None:
-                transaction_id = response.transaction_id
-                log.debug(f"Transaction ID: {transaction_id} für Chargebox ID: {chargebox_id} mit Tag: {id_tag} "
-                          f"und Zählerstand: {imported} erhalten.")
-                print(f"Set Transaction ID: {transaction_id}")
-                return transaction_id
+                return response.transaction_id
         except Exception as e:
             log.error(
                 f"Fehler beim Starten der Transaction für Chargebox ID: {chargebox_id} mit Tag: {id_tag}: {e}")
@@ -261,7 +249,7 @@ class OcppClient:
                                      connector_id=connector_id,
                                      transaction_id=transaction_id,
                                      meter_value=[{
-                                         "timestamp": self._get_formatted_time(),
+                                         "timestamp": _get_formatted_time(),
                                          "sampledValue": [{
                                              "value": str(int(imported)),
                                              "context": "Sample.Periodic",
@@ -302,19 +290,6 @@ class OcppClient:
         except Exception as e:
             log.error(f"Fehler beim Senden der Status Notification an Chargebox ID: {chargebox_id}: {e}")
 
-    @on(Action.change_availability)
-    async def handle_change_availability(cp, connector_id: int, type: str, **kwargs):
-        # cp = der OCPP-Client, der die Anfrage erhalten hat
-        # connector_id = die ID des Steckers, für den die Verfügbarkeitsänderung angefordert wurde
-        # type = der neue Verfügbarkeitsstatus ("Operative" oder "Inoperative")
-
-        print(f"Server-Anfrage erhalten: Connector {connector_id} -> {type}")
-        # Hier  rüber muss ich dann den Chargepoint sperren
-        # oder halt sagen, dass der Chargepoint wieder verfügbar ist.
-        return call_result.ChangeAvailability(
-            status="Accepted"
-        )
-
 
 class OcppConnection:
 
@@ -327,29 +302,6 @@ class OcppConnection:
         self.chargebox_id = chargebox_id
         self.ws = ws
         self.cp = cp
-        self.start_task = None
-        self.boot_accepted = False
-
-
-def get_ocpp_client() -> OcppClient:
-    return OcppClient()
-
-
-def get_cp_from_chargebox_id(chargebox_id):
-    for cp in data.data.cp_data.values():
-        if cp.data.config.ocpp_chargebox_id == chargebox_id:
-            return cp
-    return None
-
-
-def get_ocpp_error_code(fault_state: FaultState):
-    if fault_state:
-        return "Faulted"
-    return "NoError"
-
-
-def _get_formatted_time() -> str:
-    return datetime.now(timezone.utc).isoformat()
 
 
 class OcppChargePoint(cp):
@@ -360,10 +312,32 @@ class OcppChargePoint(cp):
         self.ws = ws
         self.openwb_cp = get_cp_from_chargebox_id(chargebox_id)
         self.openwb_num = self.openwb_cp.num if self.openwb_cp is not None else None
+        self.transaction_id = None
+        # Speichert den aktuellen Status des CPs
         self._last_update: dict[
             tuple[str, int],
             tuple[ChargePointStatus, ChargePointErrorCode]
         ] = {}
+
+        # Change Availability Status des CPs
+        self._pending_availability = {}
+        # Default Availability Status des CPs
+        self.availability = {
+            1: AvailabilityType.operative
+        }
+
+        self.configuration = {
+            "HeartBeatInterval": datatypes.KeyValue(
+                key="HeartBeatInterval",
+                readonly=False,
+                value="60"
+            ),
+            "MeterValueSampleInterval": datatypes.KeyValue(
+                key="MeterValueSampleInterval",
+                readonly=False,
+                value="60"
+            ),
+        }
 
     async def change_availability(self, connector_id: int, type: str, **kwargs):
         print(f"Server-Anfrage erhalten: Connector {connector_id} -> {type}")
@@ -407,6 +381,10 @@ class OcppChargePoint(cp):
 
         response: call_result.StartTransaction = await self.call(request)
         print(f"StartTransaction response: {response}")
+        if response is not None and response.transaction_id is not None:
+            self.transaction_id = response.transaction_id
+            print(f"Set Transaction ID: {self.transaction_id}")
+
         return response
 
     async def _stop_transaction(self,
@@ -426,6 +404,11 @@ class OcppChargePoint(cp):
         )
         response: call_result.StopTransaction = await self.call(request)
         print(f"StopTransaction response: {response}")
+        self.transaction_id = None
+
+        # Apply pending availability
+        if self._pending_availability:
+            await self.apply_pending_availability()
         return response
 
     async def _heartbeat(self) -> Optional[object]:
@@ -474,7 +457,6 @@ class OcppChargePoint(cp):
         self._last_update[key] = current_status
 
         # Key rausschicken
-
         request = call.StatusNotification(
             connector_id=chargebox_num,
             error_code=get_ocpp_error_code(fault_state),
@@ -489,11 +471,88 @@ class OcppChargePoint(cp):
         print(f"StatusNotification response: {response}")
         return response
 
-    @on(Action.get_configuration)
-    async def get_configuration(self, key=None, **kwargs):
-        requested_keys = key or []
+    @on(Action.change_availability)
+    async def my___on_change_availability(
+            self,
+            connector_id: int,
+            type: AvailabilityType,
+            **kwargs,
+    ):
+        try:
+            availability_type = type
+            print(
+                f"CHANGE_AVAILABILITY     CP_Nr: {self.openwb_num} "
+                f"OCPP_Nr: {self.chargebox_id}"
+            )
 
-        return call_result.GetConfiguration(
-            configuration_key=[],
-            unknown_key=requested_keys,
-        )
+            if connector_id not in (0, 1):
+                log.warning("Ungültige Connector-ID für ChangeAvailability: %s", connector_id)
+                return call_result.ChangeAvailability(
+                    status=AvailabilityStatus.rejected
+                )
+
+            if (availability_type == AvailabilityType.inoperative
+                    and self.transaction_id is not None):
+                self._pending_availability[connector_id] = availability_type
+                return call_result.ChangeAvailability(
+                    status=AvailabilityStatus.scheduled
+                )
+
+            await self._set_availability(connector_id, availability_type)
+
+            if availability_type == AvailabilityType.operative:
+                self._pending_availability.pop(connector_id, None)
+
+            return call_result.ChangeAvailability(
+                status=AvailabilityStatus.accepted
+            )
+
+        except Exception:
+            log.exception("Fehler bei ChangeAvailability für %s", self.chargebox_id)
+            return call_result.ChangeAvailability(
+                status=AvailabilityStatus.rejected
+            )
+
+    async def _set_availability(self, connector_id: int, availability_type: AvailabilityType):
+        if connector_id == 0:
+            for current_connector_id in self.availability:
+                self.availability[current_connector_id] = availability_type
+        else:
+            self.availability[connector_id] = availability_type
+
+        # Hier dann setz MQTT-Topic
+        Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp_availability",
+                  True if availability_type == AvailabilityType.operative else False)
+
+    async def apply_pending_availability(self):
+        for connector_id, availability_type in list(self._pending_availability.items()):
+            await self._set_availability(connector_id, availability_type)
+            print(
+                f"Applying pending availability for connector_id: {connector_id}, availability_type: {availability_type}")
+            self._pending_availability.pop(connector_id, None)
+
+    @on(Action.get_configuration)
+    async def my___get_configuration(self, key=None, **kwargs):
+
+        pass
+
+
+def get_cp_from_chargebox_id(chargebox_id):
+    for cp in data.data.cp_data.values():
+        if cp.data.config.ocpp_chargebox_id == chargebox_id:
+            return cp
+    return None
+
+
+def get_ocpp_error_code(fault_state: FaultState):
+    if fault_state:
+        return "Faulted"
+    return "NoError"
+
+
+def _get_formatted_time() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def get_ocpp_client() -> OcppClient:
+    return OcppClient()

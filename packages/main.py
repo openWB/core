@@ -193,9 +193,7 @@ class HandlerAlgorithm:
                     chargebox_id = cp.data.config.ocpp_chargebox_id
                     if chargebox_id in data.data.ocpp_client._boot_notification_chargeboxes:
                         data.data.ocpp_client.send_heart_beat(
-                            cp.data.config.ocpp_chargebox_id, 
-                            cp.chargepoint_module.fault_state)
-
+                            cp.data.config.ocpp_chargebox_id)
                 data.data.general_data.grid_protection()
                 data.data.optional_data.ocpp_transfer_meter_values()
                 data.data.counter_all_data.validate_hierarchy()

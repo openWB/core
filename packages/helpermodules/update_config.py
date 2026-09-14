@@ -668,6 +668,10 @@ class UpdateConfig:
         "^openWB/system/version$",
     ]
     default_topic = (
+        # TEMP
+        ("openWB/chargepoint/3/get/ocpp_availability", False),
+
+
         ("openWB/bat/config/bat_control_activated", False),
         ("openWB/bat/config/power_limit_mode", "mode_no_discharge"),
         ("openWB/bat/config/power_limit_condition", "vehicle_charging"),

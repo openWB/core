@@ -587,7 +587,8 @@ class SetData:
         elif "/get/phases_in_use" in msg.topic:
             self._validate_value(msg, int, [(0, 3)])
         elif ("/get/charge_state" in msg.topic or
-                "/get/plug_state" in msg.topic):
+                "/get/plug_state" in msg.topic or
+                "/get/ocpp_availability" in msg.topic):
             self._validate_value(msg, bool)
         elif "/get/fault_state" in msg.topic:
             self._validate_value(msg, int, [(0, 2)])

@@ -159,6 +159,17 @@ class Chargepoint(ChargepointRfidMixin, Load):
             message = None
         return state, message
 
+    def _is_ocpp(self) -> Tuple[bool, Optional[str]]:
+        state = self.data.get.ocpp_availability
+        if not state:
+            print("#####################################")
+            print("OCPP nicht verfügbar")
+            print("#####################################")
+            message = "Keine Ladung, da OCPP nicht verfügbar ist."
+        else:
+            message = None
+        return state, message
+
     def is_charging_possible(self) -> Tuple[bool, Optional[str]]:
         message = "Keine Ladung, da ein Fehler aufgetreten ist."
         try:
@@ -169,6 +180,8 @@ class Chargepoint(ChargepointRfidMixin, Load):
                     charging_possible, message = self._is_ev_plugged()
                     if charging_possible:
                         charging_possible, message = self._is_autolock_inactive()
+                        if charging_possible:
+                            charging_possible, message = self._is_ocpp()
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
             return False, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
@@ -879,7 +892,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
             return ChargePointStatus.charging
 
         if self.data.set.current == 0:
-            return ChargePointStatus.suspended_eves
+            return ChargePointStatus.suspended_evse
 
         return ChargePointStatus.suspended_ev
 
@@ -894,19 +907,3 @@ class Chargepoint(ChargepointRfidMixin, Load):
             fault_state_str=self.data.get.fault_str,
             status=self.get_ocpp_status()
         )
-#            connector_id=self.num,
-#            error_code=self.get_ocpp_error_code(),
-#            status=self.get_ocpp_status(),
-#            timestamp=self._get_formatted_time(),
- #           info=self.data.get.fault_str,
- #           vendor_id="openWB",
- #           vendor_error_code=self.data.get.fault_state,
- # )
-
-        #        connector_id=self.num,
-        #        error_code=,
-        #        status=status,
-        #        timestamp=self._get_formatted_time(),
-        #        info=self.data.get.fault_str,
-        #        vendor_id="openWB",
-        #        vendor_error_code=self.data.get.fault_state,
