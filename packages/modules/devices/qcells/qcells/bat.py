@@ -13,6 +13,7 @@ from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 from modules.common.store import get_component_value_store
 from modules.common.utils.peak_filter import PeakFilter
 from modules.devices.qcells.qcells.config import QCellsBatSetup
+from control.bat import Set as SetPoint
 
 log = logging.getLogger(__name__)
 
@@ -68,11 +69,11 @@ class QCellsBat(AbstractBat):
         )
         self.store.set(bat_state)
 
-    def set_power_limit(self, power_limit: Optional[int]) -> None:
+    def set_power_limit(self, setpoint: SetPoint) -> None:
         unit = self.__modbus_id
-        log.debug(f"QCells set_power_limit: power_limit={power_limit}, last_mode={self.last_mode}")
+        log.debug(f"QCells set_power_limit: power_limit={setpoint.power_limit}, last_mode={self.last_mode}")
 
-        if power_limit is None:
+        if setpoint.power_limit is None:
             log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
             if self.last_mode is not None:
                 with self.client:
@@ -85,14 +86,14 @@ class QCellsBat(AbstractBat):
                 self.last_mode = None
             return
 
-        if power_limit < 0:
+        if setpoint.power_limit < 0:
             self.last_mode = "discharge"
-        elif power_limit > 0:
+        elif setpoint.power_limit > 0:
             self.last_mode = "charge"
         else:
             self.last_mode = "stop"
 
-        push_power = self._get_mode4_push_power(int(power_limit))
+        push_power = self._get_mode4_push_power(int(setpoint.power_limit))
         self._write_mode4(push_power, unit)
 
     def _get_mode4_push_power(self, power_limit: int) -> int:
