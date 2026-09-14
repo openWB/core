@@ -39,6 +39,7 @@ def create_consumer(config: Mqtt):
                 powers=parse_received_topics("powers"),
                 voltages=parse_received_topics("voltages"),
                 currents=received_topics[f"{topic_prefix}currents"],
+                temperatures=received_topics[f"{topic_prefix}temperatures"],
             )
         except KeyError:
             raise KeyError("Es wurden nicht alle notwendigen Daten empfangen.")
