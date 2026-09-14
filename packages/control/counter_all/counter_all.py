@@ -141,7 +141,8 @@ class CounterAll(HierarchyMixin, LoadmanagementPrioMixin):
                 if child["type"] == ComponentType.COUNTER.value:
                     home_consumption += self._calc_home_consumption_from_counter(child, child_home_consumption)
                 elif child["type"] == ComponentType.CONSUMER.value:
-                    if self._get_is_home_consumption_consumer(comp, child_home_consumption) == CounterMode.HOME_CONSUMPTION.value:
+                    if self._get_is_home_consumption_consumer(
+                            comp, child_home_consumption) == CounterMode.HOME_CONSUMPTION.value:
                         home_consumption += comp.data.get.power
             else:
                 log.warning(
