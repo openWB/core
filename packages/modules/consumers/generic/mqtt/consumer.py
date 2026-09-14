@@ -34,12 +34,12 @@ def create_consumer(config: Mqtt):
         try:
             return ConsumerState(
                 power=received_topics[f"{topic_prefix}power"],
-                imported=received_topics[f"{topic_prefix}imported"],
-                exported=received_topics[f"{topic_prefix}exported"],
+                imported=parse_received_topics("imported"),
+                exported=parse_received_topics("exported"),
                 powers=parse_received_topics("powers"),
                 voltages=parse_received_topics("voltages"),
-                currents=received_topics[f"{topic_prefix}currents"],
-                temperatures=received_topics[f"{topic_prefix}temperatures"],
+                currents=parse_received_topics("currents"),
+                temperatures=parse_received_topics("temperatures"),
             )
         except KeyError:
             raise KeyError("Es wurden nicht alle notwendigen Daten empfangen.")
