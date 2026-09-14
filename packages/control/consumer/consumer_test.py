@@ -149,7 +149,8 @@ def test_wait_for_start_handler(
         pytest.param({}, None, (0,
                      Consumer.TIME_CHARGING_NO_PLAN_CONFIGURED, Chargemode.STOP), id="no plan defined"),
         pytest.param({"0": TimeChargingPlanConsumer(id=0)}, None,
-                     (0, Consumer.TIME_CHARGING_NO_PLAN_ACTIVE, Chargemode.STOP), id="no plan active"),
+                     (0, Consumer.TIME_CHARGING_NO_PLAN_ACTIVE, Chargemode.STOP),
+                     id="no plan active without next start"),
         pytest.param({"0": TimeChargingPlanConsumer(id=0)}, TimeChargingPlanConsumer(id=0),
                      (10, None, Chargemode.TIME_CHARGING), id="plan active"),
         pytest.param({"0": TimeChargingPlanConsumer(id=0)}, None,
@@ -166,12 +167,42 @@ def test_time_charging(plans: Dict[int, TimeChargingPlanConsumer],
     consumer.data.usage.time_charging.plans = plans
     check_plans_timeframe_mock = Mock(return_value=plan_found)
     monkeypatch.setattr(timecheck, "check_plans_timeframe", check_plans_timeframe_mock)
+    monkeypatch.setattr(timecheck, "get_next_timeframe_plan_start", Mock(return_value=None))
 
     # execution
     ret = consumer.time_charging()
 
     # evaluation
     assert ret == expected
+
+
+def test_time_charging_no_plan_active_includes_next_start(
+        consumer: Consumer,
+        monkeypatch: pytest.MonkeyPatch):
+    # setup
+    consumer.data.usage.time_charging.plans = [TimeChargingPlanConsumer(id=0)]
+    next_start = datetime.datetime(2026, 1, 2, 14, 30)
+
+    monkeypatch.setattr(timecheck, "check_plans_timeframe", Mock(return_value=None))
+    monkeypatch.setattr(
+        timecheck,
+        "get_next_timeframe_plan_start",
+        Mock(return_value=next_start),
+    )
+    monkeypatch.setattr(
+        "control.consumer.consumer.format_next_time_charging_start",
+        Mock(return_value="Nächster Zeitladen-Plan startet am 02.01. um 14:30 Uhr."),
+    )
+
+    # execution
+    ret = consumer.time_charging()
+
+    # evaluation
+    assert ret == (
+        0,
+        "Nächster Zeitladen-Plan startet am 02.01. um 14:30 Uhr.",
+        Chargemode.STOP,
+    )
 
 
 @pytest.mark.parametrize(

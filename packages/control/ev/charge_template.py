@@ -10,7 +10,7 @@ from control.chargepoint.chargepoint_state import CHARGING_STATES
 from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.control_parameter import ControlParameter
 from control.ev.ev_template import EvTemplate
-from control.text import BidiState
+from control.text import BidiState, format_next_time_charging_start
 from dataclass_utils import asdict
 from dataclass_utils.factories import empty_list_factory
 from helpermodules.abstract_plans import Limit, limit_factory, ScheduledChargingPlan, TimeChargingPlan
@@ -187,7 +187,11 @@ class ChargeTemplate:
                         current = plan.current if charging_type == ChargingType.AC.value else plan.dc_current
                         sub_mode = ChargemodeEnum.TIME_CHARGING
                 else:
-                    message = self.TIME_CHARGING_NO_PLAN_ACTIVE
+                    next_start = timecheck.get_next_timeframe_plan_start(self.data.time_charging.plans)
+                    if next_start is not None:
+                        message = format_next_time_charging_start(next_start)
+                    else:
+                        message = self.TIME_CHARGING_NO_PLAN_ACTIVE
             else:
                 message = self.TIME_CHARGING_NO_PLAN_CONFIGURED
             return current, sub_mode, message, id, phases
