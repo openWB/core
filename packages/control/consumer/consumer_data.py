@@ -64,6 +64,7 @@ class ConsumerConfig:
     max_power: float = 5000
     min_current: float = 0.5
     min_interval: int = 60
+    is_home_consumption_consumer: str = "auto_home_consumption"
 
 
 @dataclass

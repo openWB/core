@@ -78,6 +78,8 @@ class CounterAll(HierarchyMixin, LoadmanagementPrioMixin):
             return data.data.counter_data[f"counter{element['id']}"]
         elif element["type"] == ComponentType.CHARGEPOINT.value:
             return data.data.cp_data[f"cp{element['id']}"]
+        elif element["type"] == ComponentType.CONSUMER.value:
+            return data.data.consumer_data[f"consumer{element['id']}"]
         elif element["type"] == ComponentType.BAT.value:
             return data.data.bat_data[f"bat{element['id']}"]
         elif element["type"] == ComponentType.INVERTER.value:
@@ -92,6 +94,13 @@ class CounterAll(HierarchyMixin, LoadmanagementPrioMixin):
             return parent_home_consumption
 
         return counter.data.config.is_home_consumption_counter
+
+    def _get_is_home_consumption_consumer(self, consumer: Any, parent_home_consumption: str) -> str:
+        consumer_mode = getattr(consumer.data.config, "is_home_consumption_consumer",
+                                CounterMode.AUTO_HOME_CONSUMPTION.value)
+        if consumer_mode == CounterMode.AUTO_HOME_CONSUMPTION.value:
+            return parent_home_consumption
+        return consumer_mode
 
     def _get_local_power_from_counter(self, element: Dict) -> float:
         # Wird nur von Countern aufgerufen
@@ -131,6 +140,10 @@ class CounterAll(HierarchyMixin, LoadmanagementPrioMixin):
             if comp.data.get.fault_state < 2:
                 if child["type"] == ComponentType.COUNTER.value:
                     home_consumption += self._calc_home_consumption_from_counter(child, child_home_consumption)
+                elif child["type"] == ComponentType.CONSUMER.value:
+                    if self._get_is_home_consumption_consumer(
+                            comp, child_home_consumption) == CounterMode.HOME_CONSUMPTION.value:
+                        home_consumption += comp.data.get.power
             else:
                 log.warning(
                     f"Komponente {element['type']}{comp.num} ist im Fehlerzustand und wird nicht berücksichtigt.")
