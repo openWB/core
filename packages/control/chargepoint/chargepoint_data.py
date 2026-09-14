@@ -106,6 +106,7 @@ def connected_vehicle_factory() -> ConnectedVehicle:
 
 @dataclass
 class Get:
+    ocpp_availability: bool = False
     charge_state: bool = False
     charging_current: Optional[float] = 0
     charging_power: Optional[float] = 0
