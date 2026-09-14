@@ -272,20 +272,24 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
 
     for counter in data.data.counter_data.values():
         try:
+            # Der EVU-Zähler muss immer geloggt werden, unabhängig von Hausverbrauchs- oder
+            # extra_meter-Zuordnung - sonst findet process_log.get_grid_counter() keinen Netzzähler mehr.
+            is_grid_counter = counter_all_data.get_id_evu_counter() == counter.num
             is_home_consumption_counter = is_home_consumption_by_counter.get(counter.num, False)
-            if is_home_consumption_counter and home_consumption_counter_count == 1:
+            if not is_grid_counter and is_home_consumption_counter and home_consumption_counter_count == 1:
                 continue
             skip_counter = False
-            for consumer in data.data.consumer_data:
-                if counter.num == data.data.consumer_data[consumer].data.extra_meter:
-                    skip_counter = True
-                    break
+            if not is_grid_counter:
+                for consumer in data.data.consumer_data:
+                    if counter.num == data.data.consumer_data[consumer].data.extra_meter:
+                        skip_counter = True
+                        break
             if skip_counter is False:
                 counter_dict.update(
                     {f"counter{counter.num}": {
                         "imported": counter.data.get.imported,
                         "exported": counter.data.get.exported,
-                        "grid": True if counter_all_data.get_id_evu_counter() == counter.num else False,
+                        "grid": is_grid_counter,
                         "fault_state": counter.data.get.fault_state}})
         except Exception:
             log.exception("Fehler im Werte-Logging-Modul für Zähler "+str(counter))
