@@ -7,7 +7,7 @@ import pytest
 from helpermodules.abstract_plans import (ScheduledChargingPlan, ScheduledPlanConsumer, TimeChargingPlan,
                                           TimeChargingPlanConsumer)
 from helpermodules import timecheck
-from control import optional, text
+from control import optional
 from control import data
 from control.general import General
 from control.bat_all import BatAll
