@@ -160,7 +160,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
         return state, message
 
     def _is_ocpp(self) -> Tuple[bool, Optional[str]]:
-        state = self.data.get.ocpp_availability
+        state = self.data.get.ocpp.availability
         if not state:
             print("#####################################")
             print("OCPP nicht verfügbar")

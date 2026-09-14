@@ -669,7 +669,7 @@ class UpdateConfig:
     ]
     default_topic = (
         # TEMP
-        ("openWB/chargepoint/3/get/ocpp_availability", False),
+        ("openWB/chargepoint/3/get/ocpp/availability", False),
 
 
         ("openWB/bat/config/bat_control_activated", False),

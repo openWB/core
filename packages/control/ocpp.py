@@ -152,6 +152,10 @@ class OcppClient:
 
     async def _disconnect(self, chargebox_id: str):
 
+        log.debug(
+            "Trenne OCPP-Verbindung zu Chargebox %s",
+            chargebox_id,
+        )
         connection = self.connections.pop(
             chargebox_id,
             None,
@@ -521,7 +525,7 @@ class OcppChargePoint(cp):
             self.availability[connector_id] = availability_type
 
         # Hier dann setz MQTT-Topic
-        Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp_availability",
+        Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/availability",
                   True if availability_type == AvailabilityType.operative else False)
 
     async def apply_pending_availability(self):
@@ -530,11 +534,12 @@ class OcppChargePoint(cp):
             print(
                 f"Applying pending availability for connector_id: {connector_id}, availability_type: {availability_type}")
             self._pending_availability.pop(connector_id, None)
-
+    """
     @on(Action.get_configuration)
     async def my___get_configuration(self, key=None, **kwargs):
 
         pass
+    """
 
 
 def get_cp_from_chargebox_id(chargebox_id):
