@@ -67,6 +67,11 @@ class ConnectedVehicle:
     soc: ConnectedSoc = field(default_factory=connected_soc_factory, metadata={"topic": "get/connected_vehicle/soc"})
 
 
+@dataclass
+class Ocpp:
+    availability: bool = False
+
+
 def empty_enery_source_dict_factory():
     return {'bat': 0, 'cp': 0, 'grid': 0, 'pv': 0}
 
@@ -104,9 +109,13 @@ def connected_vehicle_factory() -> ConnectedVehicle:
     return ConnectedVehicle()
 
 
+def ocpp_factory() -> Ocpp:
+    return Ocpp()
+
+
 @dataclass
 class Get:
-    ocpp_availability: bool = False
+    # ocpp_availability: bool = False
     charge_state: bool = False
     charging_current: Optional[float] = 0
     charging_power: Optional[float] = 0
@@ -129,6 +138,7 @@ class Get:
     max_charge_power: Optional[float] = None
     max_discharge_power: Optional[float] = None
     max_evse_current: Optional[int] = None
+    ocpp: Ocpp = field(default_factory=ocpp_factory)
     phases_in_use: int = 0
     plug_state: bool = False
     power: float = 0
