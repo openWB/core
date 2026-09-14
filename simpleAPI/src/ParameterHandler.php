@@ -1604,7 +1604,7 @@ class ParameterHandler
 
     /**
      * Reservierte Batterie-Ladeleistung setzen (W)
-     * Setzt openWB/set/general/chargemode_config/pv_charging/bat_power_reserve
+     * Setzt openWB/set/general/chargemode_config/bat/power_reserve
      * Ermöglicht externes Energiemanagement der Speicherreservierung ohne UI-Eingriff.
      */
     private function setBatPowerReserve($value)
@@ -1616,7 +1616,7 @@ class ParameterHandler
         }
 
         try {
-            $topic = "openWB/set/general/chargemode_config/pv_charging/bat_power_reserve";
+            $topic = "openWB/set/general/chargemode_config/bat/power_reserve";
 
             if ($this->mqttClient->setValue($topic, $watts)) {
                 return [
