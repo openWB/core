@@ -6,6 +6,7 @@ import pytest
 
 from control import data
 from control import optional
+from control import text
 from control.bat_all import BatAll
 from control.chargemode import Chargemode
 from control.chargepoint.control_parameter import ControlParameter
@@ -14,7 +15,7 @@ from control.chargepoint.charging_type import ChargingType
 from control.ev.charge_template import ChargeTemplate
 from control.ev.ev_template import EvTemplate, EvTemplateData
 from control.general import General
-from control.text import BidiState
+from control.text import BidiState, format_next_time_charging_start
 from helpermodules import timecheck
 from helpermodules.abstract_plans import Limit, ScheduledChargingPlan, TimeChargingPlan, ScheduledLimit
 
@@ -62,18 +63,50 @@ def data_module() -> None:
 def test_time_charging(plans: Dict[int, TimeChargingPlan], soc: float, used_amount_time_charging: float,
                        plan_found: TimeChargingPlan,
                        expected: Tuple[int, Chargemode, Optional[str], Optional[str], Optional[int]],
-                       monkeypatch):
+                       monkeypatch: pytest.MonkeyPatch):
     # setup
     ct = ChargeTemplate()
     ct.data.time_charging.plans = plans
     check_plans_timeframe_mock = Mock(return_value=plan_found)
     monkeypatch.setattr(timecheck, "check_plans_timeframe", check_plans_timeframe_mock)
+    monkeypatch.setattr(timecheck, "get_next_timeframe_plan_start", Mock(return_value=None))
 
     # execution
     ret = ct.time_charging(soc, used_amount_time_charging, ChargingType.AC.value)
 
     # evaluation
     assert ret == expected
+
+
+def test_time_charging_no_plan_active_includes_next_start(monkeypatch: pytest.MonkeyPatch):
+    # setup
+    ct = ChargeTemplate()
+    ct.data.time_charging.plans = [TimeChargingPlan(id=0)]
+    next_start = datetime.datetime(2026, 1, 2, 14, 30)
+
+    monkeypatch.setattr(timecheck, "check_plans_timeframe", Mock(return_value=None))
+    monkeypatch.setattr(
+        timecheck,
+        "get_next_timeframe_plan_start",
+        Mock(return_value=next_start),
+    )
+    monkeypatch.setattr(
+        text,
+        "format_next_time_charging_start",
+        Mock(return_value="Nächster Zeitladen-Plan startet am 02.01. um 14:30 Uhr."),
+    )
+
+    # execution
+    ret = ct.time_charging(0, 0, ChargingType.AC.value)
+
+    # evaluation
+    assert ret == (
+        0,
+        Chargemode.STOP,
+        format_next_time_charging_start(next_start),
+        None,
+        None,
+    )
 
 
 @pytest.mark.parametrize(

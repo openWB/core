@@ -9,6 +9,7 @@ from control.chargemode import Chargemode
 from control.chargepoint.chargepoint_state import CHARGING_STATES, ChargepointState
 from control.consumer.consumer_data import ConsumerData, ConsumerUsage, ResetModes, WaitForStartStates
 from control.load_protocol import Load
+from control.text import format_next_time_charging_start
 from helpermodules import timecheck
 from helpermodules.abstract_plans import ScheduledPlanConsumer
 from helpermodules.phase_handling import convert_single_evu_phase_to_cp_phase, voltages_mean
@@ -350,7 +351,11 @@ class Consumer(Load):
                         self._convert_power_to_current(self.data.config.max_power))
                     submode = Chargemode.TIME_CHARGING
             else:
-                message = self.TIME_CHARGING_NO_PLAN_ACTIVE
+                next_start = timecheck.get_next_timeframe_plan_start(self.data.usage.time_charging.plans)
+                if next_start is not None:
+                    message = format_next_time_charging_start(next_start)
+                else:
+                    message = self.TIME_CHARGING_NO_PLAN_ACTIVE
         else:
             message = self.TIME_CHARGING_NO_PLAN_CONFIGURED
         return required_current, message, submode
