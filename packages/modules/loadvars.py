@@ -64,6 +64,9 @@ class Loadvars:
                 log.exception(f"Fehler im loadvars-Modul bei Element {cp.num}")
         for consumer in data.data.consumer_data.values():
             try:
+                if consumer.module is None:
+                    # Verbraucher, dessen Modul nicht erstellt werden konnte (z.B. defekte Konfiguration).
+                    continue
                 modules_threads.append(Thread(target=consumer.module.update,
                                               args=(),
                                               name=f"set values consumer{consumer.data.module.id}"))
@@ -113,6 +116,9 @@ class Loadvars:
                             name=f"update values cp{chargepoint.chargepoint_module.config.id}"))
                 elif element["type"] == ComponentType.CONSUMER.value:
                     consumer = data.data.consumer_data[f'{type_to_topic_mapping(element["type"])}{element["id"]}']
+                    if consumer.module is None:
+                        # Verbraucher, dessen Modul nicht erstellt werden konnte (z.B. defekte Konfiguration).
+                        continue
                     thread_name = f"set values consumer{consumer.data.module.id}"
                     if thread_name not in not_finished_threads:
                         modules_threads.append(Thread(

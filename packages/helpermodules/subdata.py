@@ -1248,14 +1248,25 @@ class SubData:
                 else:
                     if f"consumer{index}" not in var:
                         var[f"consumer{index}"] = Consumer(int(index))
-                    if re.search("openWB/consumer/[0-9]+/module", msg.topic) is not None:
+                    if re.search("openWB/consumer/[0-9]+/module$", msg.topic) is not None:
                         consumer_config = decode_payload(msg.payload)
-                        con = importlib.import_module(
-                            f".consumers.{consumer_config['vendor']}.{consumer_config['type']}.consumer",
-                            "modules")
-                        config = dataclass_from_dict(con.device_descriptor.configuration_factory, consumer_config)
-                        var["consumer"+index].module = con.create_consumer(config)
-                        var["consumer"+index].data.module = config
+                        try:
+                            con = importlib.import_module(
+                                f".consumers.{consumer_config['vendor']}.{consumer_config['type']}.consumer",
+                                "modules")
+                            config = dataclass_from_dict(
+                                con.device_descriptor.configuration_factory, consumer_config)
+                            var["consumer"+index].module = con.create_consumer(config)
+                            var["consumer"+index].data.module = config
+                        except Exception:
+                            fault_str = (
+                                f"Verbraucher {index}: Modul für "
+                                f"{consumer_config.get('vendor')}/{consumer_config.get('type')} konnte nicht "
+                                "erstellt werden, siehe Log.")
+                            log.exception(fault_str)
+                            var["consumer"+index].data.get.fault_state = 2
+                            var["consumer"+index].data.get.fault_str = fault_str
+                            pub_system_message({}, fault_str, MessageType.ERROR)
                     elif re.search("openWB/consumer/[0-9]+/config", msg.topic) is not None:
                         self.set_json_payload_class(var["consumer"+index].data.config, msg)
                     elif re.search("openWB/consumer/[0-9]+/get", msg.topic) is not None:

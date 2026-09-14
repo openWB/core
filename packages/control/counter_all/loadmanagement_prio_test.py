@@ -83,6 +83,9 @@ def test_add_item(loadmanagement_prios: List[Dict],
                      ComponentType.VEHICLE, 2, [{"type": "vehicle", "id": 3}], id="flat list, remove vehicle"),
         pytest.param([{"type": "vehicle", "id": 3}, {"type": "consumer", "id": 2}],
                      ComponentType.CONSUMER, 2, [{"type": "vehicle", "id": 3}], id="flat list, remove consumer"),
+        pytest.param([{"type": "vehicle", "id": 3}, {"type": "consumer", "id": 2}],
+                     ComponentType.CONSUMER, 99, [{"type": "vehicle", "id": 3}, {"type": "consumer", "id": 2}],
+                     id="id not present, must not raise and must not change the list"),
         pytest.param([
             {
                 "type": "group",

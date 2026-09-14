@@ -1248,6 +1248,7 @@ class SetData:
                     "openWB/set/consumer/get/daily_exported" in msg.topic):
                 self._validate_value(msg, float)
             elif (re.search("openWB/set/consumer/[0-9]+/module$", msg.topic) is not None or
+                  re.search("openWB/set/consumer/[0-9]+/module/simulation$", msg.topic) is not None or
                   re.search("openWB/set/consumer/[0-9]+/config$", msg.topic) is not None or
                     re.search("openWB/set/consumer/[0-9]+/usage$", msg.topic) is not None):
                 self._validate_value(msg, "json")
