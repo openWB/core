@@ -190,8 +190,7 @@ def test_time_charging_no_plan_active_includes_next_start(
         Mock(return_value=next_start),
     )
     monkeypatch.setattr(
-        text,
-        "format_next_time_charging_start",
+        "control.consumer.consumer.format_next_time_charging_start",
         Mock(return_value="Nächster Zeitladen-Plan startet am 02.01. um 14:30 Uhr."),
     )
 
@@ -201,7 +200,7 @@ def test_time_charging_no_plan_active_includes_next_start(
     # evaluation
     assert ret == (
         0,
-        text.format_next_time_charging_start(next_start),
+        "Nächster Zeitladen-Plan startet am 02.01. um 14:30 Uhr.",
         Chargemode.STOP,
     )
 
