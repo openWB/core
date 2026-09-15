@@ -68,10 +68,9 @@ def set_current_counterdiff(diff_current: float,
     required_currents = load.data.control_parameter.required_currents
     considered_current = consider_less_charging_chargepoint_in_loadmanagement(
         load, current)
-    # gar nicht ladende Autos?
-    diff = max(considered_current - diff_current, 0)
+    diff = considered_current - diff_current
     diffs = [diff if required_currents[i] != 0 else 0 for i in range(3)]
-    if max(diffs) > 0:
+    if any(diff_value != 0 for diff_value in diffs):
         counters = data.data.counter_all_data.get_counters_to_check(load.num)
         for counter in counters:
             if surplus:
@@ -98,10 +97,16 @@ def get_current_to_set(set_current: float, diff: float, prev_current: float) -> 
     wird."""
     new_current = prev_current + diff
     if set_current is not None:
-        if new_current > set_current:
-            log.debug("Neuer Soll-Strom darf nicht höher als bisher gesetzter sein: "
-                      f"bisher {set_current}A, neuer {new_current}")
-            return set_current
+        if diff < 0:
+            if new_current < set_current:
+                log.debug("Neuer Soll-Strom darf beim Entladen nicht niedriger als bisher gesetzter sein: "
+                          f"bisher {set_current}A, neuer {new_current}")
+                return set_current
+        else:
+            if new_current > set_current:
+                log.debug("Neuer Soll-Strom darf nicht höher als bisher gesetzter sein: "
+                          f"bisher {set_current}A, neuer {new_current}")
+                return set_current
     return new_current
 
 # tested
@@ -110,10 +115,28 @@ def get_current_to_set(set_current: float, diff: float, prev_current: float) -> 
 def available_current_for_load(load: Load,
                                counts: List[int],
                                available_currents: List[float],
-                               missing_currents: List[float]) -> float:
+                               missing_currents: List[float],
+                               bidi_mode: bool = False) -> float:
     control_parameter = load.data.control_parameter
     available_current = float("inf")
     missing_current_cp = control_parameter.required_current - load.data.set.target_current
+
+    if bidi_mode:
+        is_discharge = missing_current_cp < 0
+        available_current = float("-inf") if is_discharge else float("inf")
+        for i in range(0, 3):
+            if control_parameter.required_currents[i] == 0 or counts[i] == 0:
+                continue
+            phase_available_current = available_currents[i] / counts[i]
+            if is_discharge:
+                available_current = max(
+                    max(missing_current_cp, phase_available_current), available_current)
+            else:
+                available_current = min(
+                    min(missing_current_cp, phase_available_current), available_current)
+        if available_current in [float("inf"), float("-inf")]:
+            available_current = missing_current_cp
+        return available_current
 
     for i in range(0, 3):
         shared_with = counts[i]

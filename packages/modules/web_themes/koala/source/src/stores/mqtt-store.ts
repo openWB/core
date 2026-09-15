@@ -1395,6 +1395,27 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
+   * Get the maximum DC power of the charge point template identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns number | undefined
+   */
+  const chargePointDcMaxPower = (chargePointId: number) =>
+    computed(() => {
+      const templateId = getValue.value(
+        `openWB/chargepoint/${chargePointId}/config`,
+        'template',
+      ) as number | undefined;
+      if (templateId === undefined) return undefined;
+      const dcMaxCurrent = getValue.value(
+        `openWB/chargepoint/template/${templateId}`,
+        'dc_max_current',
+      ) as number | undefined;
+      return dcMaxCurrent === undefined
+        ? undefined
+        : convertDcCurrentToPower(dcMaxCurrent);
+  });
+
+  /**
    * Get or set the charge point connected vehicle instant charging DC power identified by the charge point id
    * @param chargePointId charge point id
    * @returns number
@@ -4477,6 +4498,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointFaultMessage,
     temporaryChargeModeActive,
     chargePointChargeType,
+    chargePointDcMaxPower,
     dcChargingEnabled,
     chargePointConnectedVehicleInfo,
     chargePointConnectedVehicleForceSocUpdate,
