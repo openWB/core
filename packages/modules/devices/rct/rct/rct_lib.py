@@ -470,14 +470,9 @@ class RCT():
     def connect_to_server(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.settimeout(2.0)
-        try:
-            self.socket.connect((self.host, self.port))
-            log.debug('connect to {} port {}'.format(self.host, self.port))
-            return True
-        except Exception:
-            print("-"*100)
-            traceback.print_exc(file=sys.stdout)
-            return False
+        self.socket.connect((self.host, self.port))
+        log.debug('connect to {} port {}'.format(self.host, self.port))
+        return True
 
     # this function reads from the socket.
     # Note: unexpected bytes within buf are discarded.
