@@ -7,7 +7,7 @@ from modules.common.component_type import ComponentDescriptor
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount import SimCounter
 from modules.common.store import get_component_value_store
-from modules.devices.fronius.fronius.config import FroniusInverterSetup
+from modules.devices.fronius.fronius_http_api.config import FroniusInverterSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
 
@@ -33,8 +33,16 @@ class FroniusInverter(AbstractInverter):
         if isinstance(response, Exception):
             power = 0.0
         else:
+            secondary_id = self.component_config.configuration.secondary_id
             try:
-                power = float(response["Body"]["Data"]["Site"]["P_PV"]) * -1
+                if secondary_id is None:
+                    power = float(response["Body"]["Data"]["Site"]["P_PV"]) * -1
+                else:
+                    secondary_data = response["Body"]["Data"]["SecondaryMeters"][str(secondary_id)]
+                    if secondary_data["Category"] == "METER_CAT_WR":
+                        power = float(secondary_data["P"]) * -1
+                    else:
+                        raise ValueError(f"Sekundäres Gerät {secondary_id} ist kein Wechselrichter.")
             except TypeError:
                 # Ohne PV Produktion liefert der WR 'null', ersetze durch Zahl 0
                 power = 0
