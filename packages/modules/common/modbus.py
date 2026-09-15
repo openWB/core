@@ -6,6 +6,7 @@ formatieren.
 """
 import logging
 import struct
+import threading
 from enum import Enum
 import time
 from types import TracebackType
@@ -58,32 +59,39 @@ class ModbusClient:
         self.address = address
         self.port = port
         self.sleep_after_connect = sleep_after_connect
+        # Serialisiert alle Zugriffe auf die (ggf. von mehreren Threads geteilte) Verbindung, zB.
+        # Haupt-Poll-Thread und Phasenumschaltungs-/CP-Unterbrechungs-Thread bei internem Ladepunkt.
+        self._lock = threading.RLock()
 
     def __enter__(self):
-        try:
-            self._delegate.__enter__()
-            time.sleep(self.sleep_after_connect)
-        except pymodbus.exceptions.ConnectionException as e:
-            e.args += (NO_CONNECTION.format(self.address, self.port),)
-            raise e
+        with self._lock:
+            try:
+                self._delegate.__enter__()
+                time.sleep(self.sleep_after_connect)
+            except pymodbus.exceptions.ConnectionException as e:
+                e.args += (NO_CONNECTION.format(self.address, self.port),)
+                raise e
         return self
 
     def __exit__(self,
                  exc_type: Optional[Type[BaseException]],
                  exc_value: Optional[BaseException],
                  exc_traceback: Optional[TracebackType]):
-        self._delegate.__exit__(exc_type, exc_value, exc_traceback)
+        with self._lock:
+            self._delegate.__exit__(exc_type, exc_value, exc_traceback)
 
     def connect(self) -> None:
-        self._delegate.connect()
-        time.sleep(self.sleep_after_connect)
+        with self._lock:
+            self._delegate.connect()
+            time.sleep(self.sleep_after_connect)
 
     def close(self) -> None:
-        try:
-            log.debug("Close Modbus TCP connection")
-            self._delegate.close()
-        except Exception as e:
-            raise Exception(__name__+" "+str(type(e))+" " + str(e)) from e
+        with self._lock:
+            try:
+                log.debug("Close Modbus TCP connection")
+                self._delegate.close()
+            except Exception as e:
+                raise Exception(__name__+" "+str(type(e))+" " + str(e)) from e
 
     def is_socket_open(self) -> bool:
         return self._delegate.is_socket_open()
@@ -94,37 +102,38 @@ class ModbusClient:
                          byteorder: str = Endian.Big,
                          wordorder: str = Endian.Big,
                          **kwargs: Any):
-        if self.is_socket_open() is False:
-            self.connect()
-        try:
-            multi_request = isinstance(types, Iterable)
-            if not multi_request:
-                types = [types]
+        with self._lock:
+            if self.is_socket_open() is False:
+                self.connect()
+            try:
+                multi_request = isinstance(types, Iterable)
+                if not multi_request:
+                    types = [types]
 
-            def divide_rounding_up(numerator: int, denominator: int):
-                return -(-numerator // denominator)
+                def divide_rounding_up(numerator: int, denominator: int):
+                    return -(-numerator // denominator)
 
-            number_of_addresses = sum(divide_rounding_up(
-                t.bits, _MODBUS_HOLDING_REGISTER_SIZE) for t in types)
-            response = read_register_method(
-                address, number_of_addresses, **kwargs)
-            if response.isError():
-                raise Exception(__name__+" "+str(response))
-            decoder = BinaryPayloadDecoder.fromRegisters(response.registers, byteorder, wordorder)
-            result = [struct.unpack(">e", struct.pack(">H", decoder.decode_16bit_uint())) if t ==
-                      ModbusDataType.FLOAT_16 else getattr(decoder, t.decoding_method)() for t in types]
-            return result if multi_request else result[0]
-        except pymodbus.exceptions.ConnectionException as e:
-            self.close()
-            e.args += (NO_CONNECTION.format(self.address, self.port),)
-            raise e
-        except pymodbus.exceptions.ModbusIOException as e:
-            self.close()
-            e.args += (NO_VALUES.format(self.address, self.port),)
-            raise e
-        except Exception as e:
-            self.close()
-            raise Exception(__name__+" "+str(type(e))+" " + str(e)) from e
+                number_of_addresses = sum(divide_rounding_up(
+                    t.bits, _MODBUS_HOLDING_REGISTER_SIZE) for t in types)
+                response = read_register_method(
+                    address, number_of_addresses, **kwargs)
+                if response.isError():
+                    raise Exception(__name__+" "+str(response))
+                decoder = BinaryPayloadDecoder.fromRegisters(response.registers, byteorder, wordorder)
+                result = [struct.unpack(">e", struct.pack(">H", decoder.decode_16bit_uint())) if t ==
+                          ModbusDataType.FLOAT_16 else getattr(decoder, t.decoding_method)() for t in types]
+                return result if multi_request else result[0]
+            except pymodbus.exceptions.ConnectionException as e:
+                self.close()
+                e.args += (NO_CONNECTION.format(self.address, self.port),)
+                raise e
+            except pymodbus.exceptions.ModbusIOException as e:
+                self.close()
+                e.args += (NO_VALUES.format(self.address, self.port),)
+                raise e
+            except Exception as e:
+                self.close()
+                raise Exception(__name__+" "+str(type(e))+" " + str(e)) from e
 
     @overload
     def read_holding_registers(self, address: int, types: Iterable[ModbusDataType], byteorder: str = Endian.Big,
@@ -177,17 +186,18 @@ class ModbusClient:
         pass
 
     def read_coils(self, address: int, count: int = 1, **kwargs: Any) -> Union[bool, List[bool]]:
-        try:
-            response = self._delegate.read_coils(address, count, **kwargs)
-            if response.isError():
-                raise Exception(__name__+" "+str(response))
-            return response.bits[0] if count == 1 else response.bits[:count]
-        except pymodbus.exceptions.ConnectionException as e:
-            e.args += (NO_CONNECTION.format(self.address, self.port),)
-            raise e
-        except pymodbus.exceptions.ModbusIOException as e:
-            e.args += (NO_VALUES.format(self.address, self.port),)
-            raise e
+        with self._lock:
+            try:
+                response = self._delegate.read_coils(address, count, **kwargs)
+                if response.isError():
+                    raise Exception(__name__+" "+str(response))
+                return response.bits[0] if count == 1 else response.bits[:count]
+            except pymodbus.exceptions.ConnectionException as e:
+                e.args += (NO_CONNECTION.format(self.address, self.port),)
+                raise e
+            except pymodbus.exceptions.ModbusIOException as e:
+                e.args += (NO_VALUES.format(self.address, self.port),)
+                raise e
 
     def _build_binary_payload(self,
                               value: Union[int, float],
@@ -208,24 +218,27 @@ class ModbusClient:
 
     def write_register(self, address: int, value: Union[int, float], data_type: Optional[ModbusDataType] = None,
                        byteorder: str = Endian.Big, wordorder: str = Endian.Big, **kwargs: Any):
-        if data_type is not None:
-            if data_type.bits > 16 or data_type in [ModbusDataType.FLOAT_16,
-                                                    ModbusDataType.FLOAT_32,
-                                                    ModbusDataType.FLOAT_64]:
-                registers = self._build_binary_payload(value, data_type, byteorder, wordorder)
-                self._delegate.write_registers(address, registers, **kwargs)
+        with self._lock:
+            if data_type is not None:
+                if data_type.bits > 16 or data_type in [ModbusDataType.FLOAT_16,
+                                                        ModbusDataType.FLOAT_32,
+                                                        ModbusDataType.FLOAT_64]:
+                    registers = self._build_binary_payload(value, data_type, byteorder, wordorder)
+                    self._delegate.write_registers(address, registers, **kwargs)
+                else:
+                    # Einfache 16-bit oder kleinere Werte können direkt geschrieben werden
+                    self._delegate.write_registers(address, [value], **kwargs)
             else:
-                # Einfache 16-bit oder kleinere Werte können direkt geschrieben werden
-                self._delegate.write_registers(address, [value], **kwargs)
-        else:
-            # Fallback für bestehenden Code ohne data_type
-            self._delegate.write_registers(address, value, **kwargs)
+                # Fallback für bestehenden Code ohne data_type
+                self._delegate.write_registers(address, value, **kwargs)
 
     def write_single_coil(self, address: int, value: bool, **kwargs: Any):
-        self._delegate.write_coil(address, value, **kwargs)
+        with self._lock:
+            self._delegate.write_coil(address, value, **kwargs)
 
     def write_coils(self, address: int, value: List[bool], **kwargs: Any):
-        self._delegate.write_coils(address, value, **kwargs)
+        with self._lock:
+            self._delegate.write_coils(address, value, **kwargs)
 
     def __read_bulk(self,
                     read_register_method: Callable[[int, int], Any],
@@ -239,36 +252,37 @@ class ModbusClient:
         Liest einen Registerbereich und gibt ein dict mit reg als Key und dekodiertem Wert als Value zurück.
         mapping: Liste von Tupeln (reg, ModbusDataType)
         """
-        if self.is_socket_open() is False:
-            self.connect()
-        try:
-            response = read_register_method(start_address, count, **kwargs)
-            if response.isError():
-                raise Exception(__name__+" "+str(response))
-            decoder = BinaryPayloadDecoder.fromRegisters(response.registers, byteorder, wordorder)
-            results = {}
-            for register_address, data_type in mapping:
-                multiple_register_requested = isinstance(data_type, Iterable)
-                if not multiple_register_requested:
-                    data_type = [data_type]
-                offset = register_address - start_address
-                decoder.reset()
-                decoder.skip_bytes(offset * 2)
-                val = [struct.unpack(">e", struct.pack(">H", decoder.decode_16bit_uint())) if t ==
-                       ModbusDataType.FLOAT_16 else getattr(decoder, t.decoding_method)() for t in data_type]
-                results[register_address] = val if multiple_register_requested else val[0]
-            return results
-        except pymodbus.exceptions.ConnectionException as e:
-            self.close()
-            e.args += (NO_CONNECTION.format(self.address, self.port),)
-            raise e
-        except pymodbus.exceptions.ModbusIOException as e:
-            self.close()
-            e.args += (NO_VALUES.format(self.address, self.port),)
-            raise e
-        except Exception as e:
-            self.close()
-            raise Exception(__name__+" "+str(type(e))+" " + str(e)) from e
+        with self._lock:
+            if self.is_socket_open() is False:
+                self.connect()
+            try:
+                response = read_register_method(start_address, count, **kwargs)
+                if response.isError():
+                    raise Exception(__name__+" "+str(response))
+                decoder = BinaryPayloadDecoder.fromRegisters(response.registers, byteorder, wordorder)
+                results = {}
+                for register_address, data_type in mapping:
+                    multiple_register_requested = isinstance(data_type, Iterable)
+                    if not multiple_register_requested:
+                        data_type = [data_type]
+                    offset = register_address - start_address
+                    decoder.reset()
+                    decoder.skip_bytes(offset * 2)
+                    val = [struct.unpack(">e", struct.pack(">H", decoder.decode_16bit_uint())) if t ==
+                           ModbusDataType.FLOAT_16 else getattr(decoder, t.decoding_method)() for t in data_type]
+                    results[register_address] = val if multiple_register_requested else val[0]
+                return results
+            except pymodbus.exceptions.ConnectionException as e:
+                self.close()
+                e.args += (NO_CONNECTION.format(self.address, self.port),)
+                raise e
+            except pymodbus.exceptions.ModbusIOException as e:
+                self.close()
+                e.args += (NO_VALUES.format(self.address, self.port),)
+                raise e
+            except Exception as e:
+                self.close()
+                raise Exception(__name__+" "+str(type(e))+" " + str(e)) from e
 
     def read_input_registers_bulk(self,
                                   start_address: int,
