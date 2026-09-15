@@ -232,6 +232,12 @@ class ModbusClient:
                 # Fallback für bestehenden Code ohne data_type
                 self._delegate.write_registers(address, value, **kwargs)
 
+    def write_single_register_raw(self, address: int, value: int, **kwargs: Any):
+        # FC06 (Write Single Register) statt FC16 wie write_register() oben - manche Geräte akzeptieren
+        # FC16 nicht zuverlässig für ein einzelnes Register.
+        with self._lock:
+            self._delegate.write_register(address, value, **kwargs)
+
     def write_single_coil(self, address: int, value: bool, **kwargs: Any):
         with self._lock:
             self._delegate.write_coil(address, value, **kwargs)
