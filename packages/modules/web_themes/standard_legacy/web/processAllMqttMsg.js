@@ -503,7 +503,7 @@ function handleMessage(mqttTopic, mqttPayload) {
 	else if (mqttTopic.match(/^openWB\/pv\//i)) { processPvMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openWB\/chargepoint\//i)) { processChargePointMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openWB\/vehicle\//i)) { processVehicleMessages(mqttTopic, mqttPayload); }
-	else if (mqttTopic.match(/^openWB\/general\/chargemode_config\/pv_charging\//i)) { processPvConfigMessages(mqttTopic, mqttPayload); }
+	else if (mqttTopic.match(/^openWB\/general\/chargemode_config\/bat\/mode$/i)) { processPvConfigMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openWB\/graph\//i)) { processGraphMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openWB\/optional\/ep\//i)) { processETProviderMessages(mqttTopic, mqttPayload); }
 	else if (mqttTopic.match(/^openWB\/optional\//i)) { processOptionalMessages(mqttTopic, mqttPayload); }
