@@ -47,14 +47,10 @@ class GrowattBat(AbstractBat):
 
         elif self.version == GrowattVersion.sph:
             # Quelle: Protocol II V1.39, Storage-Block Input 1000-1249 (SPH/SPA-Hybrid).
-            # KORREKTUR ggü. bisherigem Stand ("max_series"): Vorzeichen von
-            # Pcharge1/Pdischarge1 war vertauscht (Laden fälschlich positiv statt negativ) -
-            # widersprach der eigenen Konvention im tlx-Zweig unten und in counter.py, wo
-            # beide Zweige konsistent sind.
             power_in = self.client.read_input_registers(1011, ModbusDataType.UINT_32,
-                                                        unit=self.__modbus_id) * -0.1  # Pcharge1
+                                                        unit=self.__modbus_id) * 0.1  # Pcharge1
             power_out = self.client.read_input_registers(1009, ModbusDataType.UINT_32,
-                                                         unit=self.__modbus_id) * 0.1   # Pdischarge1
+                                                         unit=self.__modbus_id) * -0.1   # Pdischarge1
             power = power_in + power_out
 
             soc = self.client.read_input_registers(1014, ModbusDataType.UINT_16, unit=self.__modbus_id)
@@ -66,9 +62,9 @@ class GrowattBat(AbstractBat):
         else:  # GrowattVersion.tlx
             # Quelle: Protocol II V1.39, BDC1-Block Input 3160-3233 (TL-X/TL-XH/TL3-XH inkl. MOD-XH+APX).
             power_in = self.client.read_input_registers(3180, ModbusDataType.UINT_32,
-                                                        unit=self.__modbus_id) * -0.1  # Pchr
+                                                        unit=self.__modbus_id) * 0.1  # Pchr
             power_out = self.client.read_input_registers(3178, ModbusDataType.UINT_32,
-                                                         unit=self.__modbus_id) * 0.1   # Pdischr
+                                                         unit=self.__modbus_id) * -0.1   # Pdischr
             power = power_in + power_out
 
             soc = self.client.read_input_registers(3171, ModbusDataType.UINT_16, unit=self.__modbus_id)
