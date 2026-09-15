@@ -149,7 +149,7 @@ class Counter:
             log.exception("Fehler in der Zähler-Klasse von "+str(self.num))
 
     # tested
-    def _get_loadmanagement_state(self) -> None:
+    def _get_loadmanagement_state(self) -> bool:
         # Wenn der Zähler keine Werte liefert, darf nicht geladen werden.
         connected_cps = data.data.counter_all_data.get_loads_of_counter(f'counter{self.num}')
         if self.data.get.fault_state == FaultStateLevel.ERROR:
@@ -168,6 +168,8 @@ class Counter:
                             f" maximal Ströme von {[int(round(self.data.config.max_power_errorcase/230/3, 0))]*3} A"
                             " genutzt.")
                 return False
+            else:
+                return True
         else:
             self.data.set.error_timer = None
             return True

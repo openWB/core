@@ -3,6 +3,7 @@ from typing import List, Optional
 from unittest.mock import Mock
 import pytest
 
+from helpermodules import timecheck
 from control import counter as counter_module
 from control import data
 from control.chargepoint.chargepoint import Chargepoint
@@ -42,6 +43,21 @@ def test_set_loadmanagement_state(fault_state: FaultStateLevel,
 
     # evaluation
     assert counter.data.set.error_timer == expected_loadmanagement_available
+
+
+def test_get_loadmanagement_state_within_grace_period_stays_available(monkeypatch, data_):
+    # setup
+    connected_cps_mock = Mock(return_value=["cp3", "cp4"])
+    monkeypatch.setattr(data.data.counter_all_data, "get_loads_of_counter", connected_cps_mock)
+    counter = Counter(0)
+    counter.data.get.fault_state = FaultStateLevel.ERROR
+    counter.data.set.error_timer = timecheck.create_timestamp()
+
+    # execution
+    loadmanagement_available = counter._get_loadmanagement_state()
+
+    # evaluation
+    assert loadmanagement_available is True
 
 
 @pytest.mark.parametrize("raw_currents_left, expected_max_exceeding",
