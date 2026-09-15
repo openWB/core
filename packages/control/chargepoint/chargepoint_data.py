@@ -70,6 +70,9 @@ class ConnectedVehicle:
 @dataclass
 class Ocpp:
     availability: bool = False
+    transaction_id: Optional[int] = None
+    tag_accepted: bool = False
+    remote_stop: bool = False
 
 
 def empty_enery_source_dict_factory():
@@ -115,7 +118,6 @@ def ocpp_factory() -> Ocpp:
 
 @dataclass
 class Get:
-    # ocpp_availability: bool = False
     charge_state: bool = False
     charging_current: Optional[float] = 0
     charging_power: Optional[float] = 0
@@ -183,7 +185,6 @@ class Set:
     current_prev: float = field(default=0.0, metadata={"topic": "set/current_prev"})
     target_current: float = field(default=0)  # Zwischenergebnis vom Algorithmus
     charging_ev_data: Ev = field(default_factory=ev_factory)
-    ocpp_transaction_id: Optional[int] = field(default=None, metadata={"topic": "set/ocpp_transaction_id"})
     charge_state_prev: bool = field(default=False, metadata={"topic": "set/charge_state_prev"})
     # control_parameter.state aus dem vorherigen Zyklus, um eine Control-Pilot-Unterbrechung beim
     # Ladestart von einer, die direkt nach einer echten Phasenumschaltung erfolgt, zu unterscheiden

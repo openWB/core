@@ -105,6 +105,10 @@ class OcppClient:
             ws
         )
 
+        # wenn im Broker eine transaction_id vorhanden ist, sollte hier die Transaktion fortgesetzt werden.
+        if cp.openwb_cp.data.get.ocpp.transaction_id is not None:
+            cp.transaction_id = cp.openwb_cp.data.get.ocpp.transaction_id
+
         connection = OcppConnection(
             chargebox_id=chargebox_id,
             ws=ws,
@@ -115,7 +119,7 @@ class OcppClient:
         self._boot_notification_chargeboxes.discard(chargebox_id)
 
         connection.start_task = asyncio.create_task(
-            cp.start()
+            self._run_charge_point(connection)
         )
 
         response = await cp._boot_notification()
@@ -138,6 +142,8 @@ class OcppClient:
             "BootNotification für Chargebox ID %s akzeptiert.",
             chargebox_id,
         )
+
+        # Wenn eine Transaktion_id im Broker ist, dann sollte hier die Transaktion fortgesetzt werden.
 
         return connection
 
@@ -183,6 +189,33 @@ class OcppClient:
             chargebox_id,
         )
 
+    async def _run_charge_point(self, connection):
+        # Startet die OCPP connection und prüft, ob Verbindung noch vorhanden ist
+        try:
+            print(f"OCPP connection started: {connection.cp.id}")
+
+            await connection.cp.start()
+
+        except asyncio.CancelledError:
+            print(f"OCPP task cancelled: {connection.cp.id}")
+            raise
+
+        except Exception as e:
+            print(f"OCPP connection lost: {connection.cp.id} - {e}")
+
+        finally:
+            print(f"OCPP connection ended: {connection.cp.id}")
+
+            # Backend informieren
+            await self._on_connection_lost(connection.cp.id)
+
+    async def _on_connection_lost(self, chargebox_id: str):
+        log.debug(
+            "OCPP-Verbindung zu Chargebox %s verloren",
+            chargebox_id,
+        )
+        self.disconnect(chargebox_id)
+
     def _execute(self, chargebox_id, func, *args, **kwargs):
         connection = self.connections.get(chargebox_id)
         if connection is None:
@@ -208,13 +241,27 @@ class OcppClient:
                           id_tag: str,
                           imported: int) -> Optional[int]:
         try:
+            # prüfe Tag zuerst
+            authorize_response = self._execute(
+                chargebox_id, "_authorize", id_tag=id_tag
+            )
+            status = getattr(authorize_response, "id_tag_info", {}).get("status")
+            if status != "Accepted":
+                log.warning("Authorize abgelehnt für %s: %s", chargebox_id, status)
+                return None
+
             response = self._execute(chargebox_id, "_start_transaction",
                                      connector_id=connector_id,
                                      id_tag=id_tag if id_tag else "",
                                      imported=int(imported))
 
-            if response is not None and response.transaction_id is not None:
-                return response.transaction_id
+            if response is None:
+                return None
+
+            if getattr(getattr(response, "id_tag_info", None), "status", None) != "Accepted":
+                return None
+
+            return response.transaction_id
         except Exception as e:
             log.error(
                 f"Fehler beim Starten der Transaction für Chargebox ID: {chargebox_id} mit Tag: {id_tag}: {e}")
@@ -330,16 +377,18 @@ class OcppChargePoint(cp):
             1: AvailabilityType.operative
         }
 
+        # später dann aus einer Datei lesen
+        # -> damit die Config auch nach einem Neustart noch vorhanden ist
         self.configuration = {
-            "HeartBeatInterval": datatypes.KeyValue(
-                key="HeartBeatInterval",
+            "HeartbeatInterval": datatypes.KeyValue(
+                key="HeartbeatInterval",
                 readonly=False,
-                value="60"
+                value="12"
             ),
             "MeterValueSampleInterval": datatypes.KeyValue(
                 key="MeterValueSampleInterval",
-                readonly=False,
-                value="60"
+                readonly=True,
+                value="34"
             ),
         }
 
@@ -369,12 +418,43 @@ class OcppChargePoint(cp):
             print(f"Exception occurred: {e}")
         return None
 
+    async def _authorize(self,
+                         id_tag: str) -> Optional[object]:
+
+        print(f"AUTHORIZE        CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
+
+        self.openwb_cp.data.get.ocpp.tag_accepted = False
+        Pub().pub(f"openWB/chargepoint/{self.openwb_num}/get/ocpp/tag_accepted", False)
+
+        # Todo
+        # Only Temporary
+        # Nach prüfung wird id wieder gelöscht, damit nr einmal geprüft wird dann erst wieder
+        # wenn ein neuer Tag nagehaltenw wird
+        Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/rfid", None)
+
+        request = call.Authorize(
+            id_tag=id_tag if id_tag else ""
+        )
+
+        response: call_result.Authorize = await self.call(request)
+        print(f"Authorize response: {response}")
+
+        status = getattr(response, "id_tag_info", {}).get("status")
+        accepted = status == "Accepted"
+        self.openwb_cp.data.get.ocpp.tag_accepted = accepted
+        Pub().pub(f"openWB/chargepoint/{self.openwb_num}/get/ocpp/tag_accepted", accepted)
+
+        return response
+
     async def _start_transaction(self,
                                  connector_id: int,
                                  id_tag: str,
                                  imported: int) -> Optional[object]:
 
         print(f"START_TRANSACTION        CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
+
+        # Reset Variable
+        Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/remote_stop", False)
 
         request = call.StartTransaction(
             connector_id=connector_id,
@@ -385,9 +465,25 @@ class OcppChargePoint(cp):
 
         response: call_result.StartTransaction = await self.call(request)
         print(f"StartTransaction response: {response}")
-        if response is not None and response.transaction_id is not None:
+
+        status = getattr(response, "id_tag_info", {}).get("status")
+        accepted = status == "Accepted"
+        self.openwb_cp.data.get.ocpp.tag_accepted = accepted
+        Pub().pub(f"openWB/chargepoint/{self.openwb_num}/get/ocpp/tag_accepted", accepted)
+
+        if response is not None and response.transaction_id is not None and accepted:
             self.transaction_id = response.transaction_id
+            Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/transaction_id",
+                      self.transaction_id)
             print(f"Set Transaction ID: {self.transaction_id}")
+        elif not accepted:
+            self.transaction_id = None
+            Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/transaction_id", None)
+            log.warning(
+                "StartTransaction für CP %s abgelehnt, Status: %s",
+                self.openwb_num,
+                status,
+            )
 
         return response
 
@@ -409,7 +505,11 @@ class OcppChargePoint(cp):
         response: call_result.StopTransaction = await self.call(request)
         print(f"StopTransaction response: {response}")
         self.transaction_id = None
-
+        Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/transaction_id",
+                  None)
+        Pub().pub(f"openWB/chargepoint/{self.openwb_num}/get/ocpp/tag_accepted", False)
+        # Remote Stop wurde ausgeführt
+        Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/remote_stop", False)
         # Apply pending availability
         if self._pending_availability:
             await self.apply_pending_availability()
@@ -429,11 +529,14 @@ class OcppChargePoint(cp):
                             meter_value: list) -> Optional[object]:
         print(f"METER_VALUES            CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
 
+        if self.transaction_id is None:
+            print(f"Can't send MeterValues because transaction_id is None")
+            return None
+
         request = call.MeterValues(
             connector_id=connector_id,
             transaction_id=transaction_id,
-            meter_value=meter_value,
-            timestamp=_get_formatted_time(),
+            meter_value=meter_value
         )
         response: call_result.MeterValues = await self.call(request)
         print(f"MeterValues response: {response}")
@@ -476,7 +579,7 @@ class OcppChargePoint(cp):
         return response
 
     @on(Action.change_availability)
-    async def my___on_change_availability(
+    async def on_change_availability(
             self,
             connector_id: int,
             type: AvailabilityType,
@@ -534,12 +637,116 @@ class OcppChargePoint(cp):
             print(
                 f"Applying pending availability for connector_id: {connector_id}, availability_type: {availability_type}")
             self._pending_availability.pop(connector_id, None)
-    """
-    @on(Action.get_configuration)
-    async def my___get_configuration(self, key=None, **kwargs):
 
-        pass
-    """
+    @on(Action.get_configuration)
+    async def get_configuration(self, key=None, **kwargs):
+        print(
+            f"GET_CONFIGURATION     CP_Nr: {self.openwb_num} "
+            f"OCPP_Nr: {self.chargebox_id} "
+            f"\nKey: {key}"
+        )
+
+        unknown_keys = []
+        configuration = {}
+        requested_keys = ([key] if isinstance(key, str) else key) or []
+
+        if requested_keys:
+            for requested_key in requested_keys:
+                config_value = self.configuration.get(requested_key)
+                if config_value is None:
+                    unknown_keys.append(requested_key)
+                else:
+                    configuration[requested_key] = config_value
+        else:
+            # Wenn kein key angegeben wurde, alle Konfigurationen zurückgeben
+            configuration = self.configuration
+
+        response = dict(
+            configuration_key=[
+                datatypes.KeyValue(
+                    key=k,
+                    readonly=v.readonly,
+                    value=v.value
+                ) for k, v in configuration.items()
+            ],
+            unknown_key=unknown_keys
+        )
+        print(response)
+        return call_result.GetConfiguration(
+            configuration_key=response["configuration_key"],
+            unknown_key=response["unknown_key"]
+        )
+
+    @on(Action.change_configuration)
+    async def change_configuration(self, key, value, **kwargs):
+        print(
+            f"CHANGE_CONFIGURATION  CP_Nr: {self.openwb_num} "
+            f"OCPP_Nr: {self.chargebox_id} "
+            f"\nKey: {key} "
+            f"Value: {value}"
+        )
+
+        if key in self.configuration:
+            self.configuration[key].value = value
+            return call_result.ChangeConfiguration(
+                status="Accepted"
+            )
+        return call_result.ChangeConfiguration(
+            status="Rejected"
+        )
+
+    @on(Action.remote_start_transaction)
+    async def remote_start_transaction(self, id_tag: str, connector_id: Optional[int] = None, **kwargs):
+        print(
+            f"REMOTE_START_TRANSACTION  CP_Nr: {self.openwb_num} "
+            f"OCPP_Nr: {self.chargebox_id} "
+            f"\nId Tag: {id_tag} "
+            f"Connector ID: {connector_id} "
+            f"\nKwargs: {kwargs}"
+        )
+
+        """
+        Wenn der Cp nicht gesperrt ist durch OCPP_Availability, 
+        kann die Remote-Start-Transaktion akzeptiert werden.
+
+        Wir setzten einfach den übergebenen id_tag  in die rfif-Topic
+        dann handelt alels weiter der openWB-Backend
+
+        wenn Fahrzeug nicht eingesteckt ist -> Transaktion wird sofort wieder beendet.
+        wenn Fahrzeug eingesteckt ist -> Transaktion wird gestartet.
+                                    -> prüft zunächst den Tag. Wenn ok, dann startet die Transaktion.
+
+        """
+        requested_connector_id = connector_id if connector_id is not None else 1
+        if self.availability.get(requested_connector_id) != AvailabilityType.operative:
+            return call_result.RemoteStartTransaction(
+                status="Rejected"
+            )
+
+        # Ich sag einfach hier ist das RFID-Tag
+        # Wenn der CP das akzeptiert, wird die Transaktion gestartet
+        Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/rfid", id_tag)
+
+        return call_result.RemoteStartTransaction(
+            status="Accepted"
+        )
+
+    @on(Action.remote_stop_transaction)
+    async def remote_stop_transaction(self, transaction_id: int, **kwargs):
+        print(
+            f"REMOTE_STOP_TRANSACTION  CP_Nr: {self.openwb_num} "
+            f"OCPP_Nr: {self.chargebox_id} "
+            f"\nTransaction ID: {transaction_id} "
+            f"\nKwargs: {kwargs}"
+        )
+
+        # wie Stopp ich die Transaktion remote?????
+        Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/remote_stop", True)
+        Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/set/rfid", None)
+
+        return call_result.RemoteStopTransaction(
+            status="Accepted"
+        )
 
 
 def get_cp_from_chargebox_id(chargebox_id):

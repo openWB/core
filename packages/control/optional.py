@@ -319,10 +319,10 @@ class Optional:
         for cp in data.data.cp_data.values():
             try:
                 chargebox_id = cp.data.config.ocpp_chargebox_id
-                if cp.data.set.ocpp_transaction_id is not None:
+                if cp.data.get.ocpp.transaction_id is not None:
                     client.transfer_values(chargebox_id,
                                            cp.num,
-                                           cp.data.set.ocpp_transaction_id,
+                                           cp.data.get.ocpp.transaction_id,
                                            int(cp.data.get.imported))
             except Exception:
                 log.exception("Fehler im OCPP-Optional-Modul")

@@ -166,6 +166,19 @@ class Chargepoint(ChargepointRfidMixin, Load):
             print("OCPP nicht verfügbar")
             print("#####################################")
             message = "Keine Ladung, da OCPP nicht verfügbar ist."
+
+        elif not self.data.get.ocpp.tag_accepted:
+            print("#####################################")
+            print("OCPP Tag nicht akzeptiert")
+            print("#####################################")
+            message = "Keine Ladung, da das OCPP-Tag nicht akzeptiert wurde."
+            state = False
+        elif self.data.get.ocpp.remote_stop:
+            print("#####################################")
+            print("OCPP Remote Stop aktiv")
+            print("#####################################")
+            message = "Keine Ladung, da ein OCPP Remote Stop aktiv ist. Stecker ziehen und neu verbinden für nächsten Ladevorgang..."
+            state = False
         else:
             message = None
         return state, message
@@ -182,6 +195,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
                         charging_possible, message = self._is_autolock_inactive()
                         if charging_possible:
                             charging_possible, message = self._is_ocpp()
+
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
             return False, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
@@ -191,13 +205,13 @@ class Chargepoint(ChargepointRfidMixin, Load):
         # Charging Ev ist noch das EV des vorherigen Zyklus, wenn das nicht -1 war und jetzt nicht mehr geladen
         # werden soll (-1), Daten zurücksetzen.
         # Ocpp Stop Funktion aufrufen
-        if not self.data.get.plug_state and self.data.set.ocpp_transaction_id is not None:
+        if (not self.data.get.plug_state and self.data.get.ocpp.transaction_id is not None) or self.data.get.ocpp.remote_stop:
             data.data.ocpp_client.stop_transaction(
                 self.data.config.ocpp_chargebox_id,
                 self.data.get.imported,
-                self.data.set.ocpp_transaction_id,
+                self.data.get.ocpp.transaction_id,
                 self.data.set.rfid)
-            self.data.set.ocpp_transaction_id = None
+            self.data.get.ocpp.transaction_id = None
         # muss vor dem Zurücksetzen der control parameter aufgerufen werden
         self.data.set.charging_ev_data.reset_phase_switch(self.data.control_parameter)
         self.data.set.charging_ev_data.reset_phase_switch_delay(self.data.control_parameter, self.get_max_phase_hw())
@@ -736,14 +750,19 @@ class Chargepoint(ChargepointRfidMixin, Load):
                 f"                                                                                                        {self.get_ocpp_status()}")
             self.ocpp_send_status_notification()
             data.data.ocpp_client.send_heart_beat(self.data.config.ocpp_chargebox_id)
+            data.data.ocpp_client.transfer_values(self.data.config.ocpp_chargebox_id,
+                                                  self.num,
+                                                  self.data.get.ocpp.transaction_id,
+                                                  int(self.data.get.imported))
+
             # OCPP Start Transaction nach Anstecken
             if ((self.data.get.plug_state and self.data.set.plug_state_prev is False) or
-                    (self.data.set.ocpp_transaction_id is None and self.data.get.charge_state)):
+                    (self.data.get.ocpp.transaction_id is None)):  # and self.data.get.charge_state)):
                 # Starte nur Transaction wenn auch die chargepoint ID im Backend gesetzt wurde
                 if self.data.config.ocpp_chargebox_id:
                     # Starte nur Transaction wenn bereits ein RFID Tag oder die Fahrzeug ID erkannt wurde
                     if (self.data.set.rfid or self.data.get.rfid or self.data.get.vehicle_id):
-                        self.data.set.ocpp_transaction_id = data.data.ocpp_client.start_transaction(
+                        self.data.get.ocpp.transaction_id = data.data.ocpp_client.start_transaction(
                             self.data.config.ocpp_chargebox_id,
                             self.num,
                             self.data.set.rfid or self.data.get.rfid or self.data.get.vehicle_id,
@@ -885,7 +904,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
         if not self.data.get.plug_state:
             return ChargePointStatus.available
 
-        if self.data.set.ocpp_transaction_id is None:
+        if self.data.get.ocpp.transaction_id is None:
             return ChargePointStatus.preparing
 
         if self.data.get.charge_state:

@@ -164,6 +164,9 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/get/connected_vehicle/soc$",
         "^openWB/chargepoint/[0-9]+/get/connected_vehicle/info$",
         "^openWB/chargepoint/[0-9]+/get/connected_vehicle/config$",
+        "^openWB/chargepoint/[0-9]+/get/ocpp/availability$",
+        # "^openWB/chargepoint/[0-9]+/get/ocpp/tag_accepted$",
+        # "^openWB/chargepoint/[0-9]+/get/ocpp/transaction_id$",
         "^openWB/chargepoint/[0-9]+/get/rfid$",
         "^openWB/chargepoint/[0-9]+/get/rfid_timestamp$",
         "^openWB/chargepoint/[0-9]+/set/charge_template$",
@@ -175,7 +178,6 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/set/rfid$",
         "^openWB/chargepoint/[0-9]+/set/log$",
         "^openWB/chargepoint/[0-9]+/set/phases_to_use$",
-        "^openWB/chargepoint/[0-9]+/set/ocpp_transaction_id$",
         "^openWB/chargepoint/[0-9]+/set/ocpp_transaction_active$",
 
         "^openWB/command/max_id/autolock_plan$",
@@ -670,6 +672,9 @@ class UpdateConfig:
     default_topic = (
         # TEMP
         ("openWB/chargepoint/3/get/ocpp/availability", False),
+        ("openWB/chargepoint/3/get/ocpp/transaction_id", None),
+        ("openWB/chargepoint/3/get/ocpp/tag_accepted", False),
+        ("openWB/chargepoint/3/get/ocpp/remote_stop", False),
 
 
         ("openWB/bat/config/bat_control_activated", False),
