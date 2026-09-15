@@ -49,6 +49,7 @@ class CounterAll(HierarchyMixin, LoadmanagementPrioMixin):
     def set_home_consumption(self) -> None:
         try:
             home_consumption, elements = self._calc_home_consumption()
+            home_consumption = round(home_consumption, 2)
             if home_consumption < 0:
                 log.error(
                     f"Ungültiger Hausverbrauch: {home_consumption}W, Berücksichtigte Komponenten neben EVU {elements}")
@@ -69,7 +70,7 @@ class CounterAll(HierarchyMixin, LoadmanagementPrioMixin):
                 self.data.set.invalid_home_consumption = 0
             self.data.set.home_consumption = home_consumption
             imported, _ = self.sim_counter.sim_count(self.data.set.home_consumption)
-            self.data.set.imported_home_consumption = imported
+            self.data.set.imported_home_consumption = round(imported, 2)
         except Exception:
             log.exception("Fehler in der allgemeinen Zähler-Klasse")
 
