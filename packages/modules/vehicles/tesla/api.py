@@ -100,7 +100,7 @@ def __charge_limit_warning(charge_state: dict) -> Optional[str]:
     limit = charge_state.get("charge_limit_soc")
     if limit is None or limit >= 100:
         return None
-    return f"Das Fahrzeug begrenzt den Ladestand fahrzeugseitig auf {int(limit)}%."
+    return f"Das Fahrzeug begrenzt die Ladung selbst auf {int(limit)}%."
 
 
 def request_data(vehicle: int, token: TeslaSocToken) -> Tuple[float, int, float, int, Optional[str]]:

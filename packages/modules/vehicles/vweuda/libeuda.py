@@ -737,8 +737,7 @@ def parse_vehicle_data(payload: dict) -> dict:
     if get_field_value_by_fieldname(data, 'setting.bcam_activation') == 'BCAM_ACTIVATION_ACTIVATED':
         bcam_threshold = get_field_value_by_fieldname(data, 'battery_care_mode.charge_bcam_threshold')
         if bcam_threshold:
-            warning = (f"Battery Care Mode ist im Fahrzeug aktiv und begrenzt die Ladung selbst auf "
-                       f"{bcam_threshold}%, unabhängig von der in openWB eingestellten Ziel-SoC.")
+            warning = f"Battery Care Mode ist im Fahrzeug aktiv und begrenzt die Ladung selbst auf {bcam_threshold}%."
 
     return {
         'soc': soc,

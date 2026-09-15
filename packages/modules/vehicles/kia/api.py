@@ -890,7 +890,7 @@ def getStatusFull(vehicle_id: str, control_token: str,
             target_soc = int(response_dict['resMsg']['state']['Vehicle']['Green']
                                           ['ChargingInformation']['TargetSoC']['Standard'])
             if target_soc < 100:
-                warning = f"Das Fahrzeug begrenzt den Ladestand fahrzeugseitig auf {target_soc}% (AC-Ladeziel)."
+                warning = f"Das Fahrzeug begrenzt die Ladung selbst auf {target_soc}% (AC-Ladeziel)."
         except (KeyError, TypeError, ValueError):
             log.debug("kia.getStatusFull: AC-Ladeziel not available in vehicle status response")
 

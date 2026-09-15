@@ -128,4 +128,4 @@ def extract_warning(data: dict) -> Optional[str]:
     target = settings.get("targetStateOfChargeInPercent")
     if target is None or target >= 100:
         return None
-    return f"Battery Care Mode ist aktiv und begrenzt den Ladestand fahrzeugseitig auf {target}%."
+    return f"Battery Care Mode ist im Fahrzeug aktiv und begrenzt die Ladung selbst auf {target}%."

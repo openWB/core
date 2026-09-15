@@ -299,7 +299,7 @@ def fetch_soc(config: BmwCardataSetup, vehicle: int = 0) -> CarState:
 
     warning = None
     if target_soc is not None and target_soc < 100:
-        warning = f"Das Fahrzeug begrenzt den Ladestand fahrzeugseitig auf {target_soc}%."
+        warning = f"Das Fahrzeug begrenzt die Ladung selbst auf {target_soc}%."
 
     if vehicle_range is None and cfg.container_id:
         log.warning(
