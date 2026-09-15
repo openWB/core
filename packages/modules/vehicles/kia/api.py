@@ -885,12 +885,21 @@ def getStatusFull(vehicle_id: str, control_token: str,
             log.warning("kia.getStatusFull: odometer not available in "
                         "vehicle status response")
 
+        warning = None
+        try:
+            target_soc = int(response_dict['resMsg']['state']['Vehicle']['Green']
+                                          ['ChargingInformation']['TargetSoC']['Standard'])
+            if target_soc < 100:
+                warning = f"Das Fahrzeug begrenzt den Ladestand fahrzeugseitig auf {target_soc}% (AC-Ladeziel)."
+        except (KeyError, TypeError, ValueError):
+            log.debug("kia.getStatusFull: AC-Ladeziel not available in vehicle status response")
+
     except Exception:
         log.exception("kia.getStatusFull: receiving update error: " +
                       response)
         raise
 
-    return CarState(soc=soc, range=range, odometer=odometer)
+    return CarState(soc=soc, range=range, odometer=odometer, warning=warning)
 
 # ---------- main function ----------
 

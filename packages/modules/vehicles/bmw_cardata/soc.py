@@ -45,6 +45,7 @@ FIELD_ODOMETER_CANDIDATES = [
     # wird nur bei Fahrtende befüllt ("Mileage after last drive")
     "vehicle.trip.segment.end.travelledDistance",
 ]
+FIELD_TARGET_SOC = "vehicle.powertrain.electric.battery.stateOfCharge.target"
 
 CONTAINER_NAME = "ChargeStats"
 CONTAINER_PURPOSE = "openWB"
@@ -53,13 +54,16 @@ CONTAINER_DESCRIPTORS = [
     *FIELD_SOC_CANDIDATES,
     *FIELD_RANGE_CANDIDATES,
     *FIELD_ODOMETER_CANDIDATES,
+    FIELD_TARGET_SOC,
 ]
-# Manche neueren Fahrzeuge kennen das älteste (erste) SoC-Attribut nicht mehr.
-# Legt man einen Container mit einem für das Fahrzeug nicht verfügbaren
-# Descriptor an, antwortet die BMW-API dabei offenbar teils mit einem
-# Serverfehler statt einer sauberen 400er. Als Fallback wird die
-# Container-Erstellung ohne dieses eine Attribut wiederholt.
-CONTAINER_DESCRIPTORS_FALLBACK = [d for d in CONTAINER_DESCRIPTORS if d != FIELD_SOC_CANDIDATES[0]]
+# Manche neueren Fahrzeuge kennen das älteste (erste) SoC-Attribut oder das
+# Lade-Ziel-Attribut nicht mehr. Legt man einen Container mit einem für das
+# Fahrzeug nicht verfügbaren Descriptor an, antwortet die BMW-API dabei
+# offenbar teils mit einem Serverfehler statt einer sauberen 400er. Als
+# Fallback wird die Container-Erstellung ohne diese Attribute wiederholt.
+CONTAINER_DESCRIPTORS_FALLBACK = [
+    d for d in CONTAINER_DESCRIPTORS if d not in (FIELD_SOC_CANDIDATES[0], FIELD_TARGET_SOC)
+]
 
 
 def _get_session(token: Optional[str] = None):
@@ -144,7 +148,8 @@ def _create_container(token: str, descriptors: List[str] = None, _is_retry: bool
         if not _is_retry:
             log.warning(
                 "BMW CarData: Container-Erstellung fehlgeschlagen (%s). Versuche erneut ohne "
-                "'%s' (evtl. für dieses Fahrzeug nicht verfügbar).", e, FIELD_SOC_CANDIDATES[0],
+                "'%s'/'%s' (evtl. für dieses Fahrzeug nicht verfügbar).",
+                e, FIELD_SOC_CANDIDATES[0], FIELD_TARGET_SOC,
             )
             return _create_container(token, CONTAINER_DESCRIPTORS_FALLBACK, _is_retry=True)
         raise Exception(f"BMW CarData: Container konnte nicht erstellt werden: {e}")
@@ -282,13 +287,19 @@ def fetch_soc(config: BmwCardataSetup, vehicle: int = 0) -> CarState:
     range_raw = _extract_first_value(td, FIELD_RANGE_CANDIDATES)
     status = _extract_value(td, FIELD_STATUS)
     odometer_raw = _extract_first_value(td, FIELD_ODOMETER_CANDIDATES)
+    target_soc_raw = _extract_value(td, FIELD_TARGET_SOC)
 
     soc = int(float(soc_raw)) if soc_raw is not None else None
     vehicle_range = int(float(range_raw)) if range_raw is not None else None
     odometer = int(float(odometer_raw)) if odometer_raw is not None else None
+    target_soc = int(float(target_soc_raw)) if target_soc_raw is not None else None
 
     if soc is None:
         raise Exception("BMW CarData: Kein SoC-Wert in API-Antwort gefunden!")
+
+    warning = None
+    if target_soc is not None and target_soc < 100:
+        warning = f"Das Fahrzeug begrenzt den Ladestand fahrzeugseitig auf {target_soc}%."
 
     if vehicle_range is None and cfg.container_id:
         log.warning(
@@ -304,7 +315,7 @@ def fetch_soc(config: BmwCardataSetup, vehicle: int = 0) -> CarState:
         status,
         odometer,
     )
-    return CarState(soc=soc, range=vehicle_range, odometer=odometer)
+    return CarState(soc=soc, range=vehicle_range, odometer=odometer, warning=warning)
 
 
 def create_vehicle(vehicle_config: BmwCardataSetup, vehicle: int):

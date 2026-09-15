@@ -15,9 +15,9 @@ log = logging.getLogger(__name__)
 
 
 def fetch(vehicle_update_data: VehicleUpdateData, config: VWEUDA, vehicle: int) -> CarState:
-    soc, range, soc_ts, soc_tsX, odometer = libeuda.fetch_soc(config, vehicle, vehicle_update_data)
+    soc, range, soc_ts, soc_tsX, odometer, warning = libeuda.fetch_soc(config, vehicle, vehicle_update_data)
     log.debug(f"soc return: soc={soc}, range={range}, soc_ts={soc_ts}, soc_tsX={soc_tsX}, odometer={odometer}")
-    return CarState(soc=soc, range=range, soc_timestamp=soc_ts, odometer=odometer)
+    return CarState(soc=soc, range=range, soc_timestamp=soc_ts, odometer=odometer, warning=warning)
 
 
 def create_vehicle(vehicle_config: VWEUDA, vehicle: int):

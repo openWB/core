@@ -4,7 +4,7 @@ import ssl
 import logging
 import time
 import json
-from typing import Tuple
+from typing import Optional, Tuple
 
 from requests.adapters import HTTPAdapter
 from urllib3 import PoolManager
@@ -96,17 +96,26 @@ def post_wake_up_command(vehicle: int, token: TeslaSocToken) -> str:
         return response["response"]["state"]
 
 
-def request_data(vehicle: int, token: TeslaSocToken) -> Tuple[float, int, float, int]:
+def __charge_limit_warning(charge_state: dict) -> Optional[str]:
+    limit = charge_state.get("charge_limit_soc")
+    if limit is None or limit >= 100:
+        return None
+    return f"Das Fahrzeug begrenzt den Ladestand fahrzeugseitig auf {int(limit)}%."
+
+
+def request_data(vehicle: int, token: TeslaSocToken) -> Tuple[float, int, float, int, Optional[str]]:
     vehicle_id = __get_vehicle_id(vehicle, token)
     data_part = f"vehicles/{vehicle_id}/vehicle_data"
     response = __request_data(data_part, token)
     response = json.loads(response)
-    soc = float(response["response"]["charge_state"]["battery_level"])
+    charge_state = response["response"]["charge_state"]
+    soc = float(charge_state["battery_level"])
     # convert miles to km
-    range = int(float(response["response"]["charge_state"]["battery_range"]) * 1.60934)
+    range = int(float(charge_state["battery_range"]) * 1.60934)
     odometer = int(float(response["response"]["vehicle_state"]["odometer"]) * 1.60934)
-    soc_timestamp = float(response["response"]["charge_state"]["timestamp"]) / 1000
-    return soc, range, soc_timestamp, odometer
+    soc_timestamp = float(charge_state["timestamp"]) / 1000
+    warning = __charge_limit_warning(charge_state)
+    return soc, range, soc_timestamp, odometer, warning
 
 
 def validate_token(token: TeslaSocToken) -> TeslaSocToken:

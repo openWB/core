@@ -58,7 +58,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 147
+    DATASTORE_VERSION = 148
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -3847,3 +3847,20 @@ class UpdateConfig:
                     return {topic: payload_component}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(147)
+
+    def upgrade_datastore_148(self) -> None:
+        """PSA-Modul entfernt: Die Schnittstelle wurde von PSA/Stellantis bereits 2024 abgeschaltet,
+        das Modul lieferte seitdem nur noch eine Fehlermeldung statt eines SoC-Werts."""
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("^openWB/vehicle/[0-9]+/soc_module/config$", topic) is not None:
+                payload = decode_payload(payload)
+                if payload.get("type") == "psa":
+                    pub_system_message(
+                        {},
+                        "Das PSA-Fahrzeug-Modul wurde entfernt, da PSA/Stellantis die Schnittstelle bereits "
+                        "2024 abgeschaltet hat. Bitte konfiguriere ein anderes Fahrzeug-Modul, z.B. Tronity.",
+                        MessageType.WARNING,
+                    )
+                    return {topic: NO_MODULE}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(148)
