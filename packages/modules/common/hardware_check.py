@@ -89,8 +89,7 @@ class SeriesHardwareCheckMixin:
                         evse_state = self.evse_client.get_evse_state()
                         evse_check_passed = True
                         break
-                    except (pymodbus.exceptions.ModbusIOException,
-                            pymodbus.exceptions.ConnectionException) as e:
+                    except Exception as e:
                         evse_check_passed = self.handle_exception(e)
                         # nur warten, wenn danach noch ein Versuch folgt
                         if attempt < MAX_ATTEMPTS - 1 and evse_check_passed is False:
