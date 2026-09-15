@@ -23,7 +23,7 @@
 				<path :d="upperPath!" stroke="red" />
 				<path :d="maxPricePath!" stroke="yellow" />
 			</g>
-			<g id="tooltips" />
+			<g :id="`tooltips-${id}`" />
 		</svg>
 	</figure>
 </template>
@@ -228,7 +228,7 @@ const draw = computed(() => {
 	yAxis.select('.domain').attr('stroke', 'var(--color-bg)')
 	// Tooltips
 	const ttarea: Selection<SVGGElement, [Date, number], BaseType, unknown> =
-		select('g#tooltips')
+		select(`g#tooltips-${props.id}`)
 	ttarea.selectAll('*').remove()
 	const ttips = ttarea
 		.selectAll('ttip')
