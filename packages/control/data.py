@@ -27,7 +27,7 @@ from control.ev.ev import Ev
 from control.ev.ev_template import EvTemplate
 from control.general import General
 from control.io_device import IoActions, IoStates
-from control.ocpp import get_ocpp_client
+from control.ocpp.ocpp_client import get_ocpp_client
 from control.optional import Optional
 from modules.common.abstract_device import AbstractDevice
 from modules.common.abstract_io import AbstractIoDevice

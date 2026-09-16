@@ -1,3 +1,4 @@
+"""
 from datetime import datetime, timezone
 import logging
 import threading
@@ -6,7 +7,7 @@ from helpermodules.utils.error_handling import ImportErrorContext
 with ImportErrorContext():
     from ocpp.v16 import ChargePoint as cp
     from ocpp.v16 import call, call_result, datatypes
-    from ocpp.v16.enums import ChargePointStatus, ChargePointErrorCode, AvailabilityType, AvailabilityStatus, Action, RegistrationStatus
+    from ocpp.v16.enums import ChargePointStatus, ChargePointErrorCode, AvailabilityType, AvailabilityStatus, Action, RegistrationStatus, UnlockStatus
     from ocpp.routing import on
 with ImportErrorContext():
     import websockets
@@ -64,10 +65,10 @@ class OcppClient:
         self.loop.run_forever()
 
     def connect(self, chargebox_id: str):
-        """
-        Wird synchron aus deinem normalen Programm aufgerufen.
-        Baut die OCPP-Verbindung im asyncio-Thread auf.
-        """
+        #"""
+# Wird synchron aus deinem normalen Programm aufgerufen.
+# Baut die OCPP-Verbindung im asyncio-Thread auf.
+"""
         future = asyncio.run_coroutine_threadsafe(
             self._connect(chargebox_id),
             self.loop,
@@ -705,18 +706,19 @@ class OcppChargePoint(cp):
             f"\nKwargs: {kwargs}"
         )
 
-        """
-        Wenn der Cp nicht gesperrt ist durch OCPP_Availability, 
-        kann die Remote-Start-Transaktion akzeptiert werden.
+        """"""
+Wenn der Cp nicht gesperrt ist durch OCPP_Availability,
+kann die Remote-Start-Transaktion akzeptiert werden.
 
-        Wir setzten einfach den übergebenen id_tag  in die rfif-Topic
-        dann handelt alels weiter der openWB-Backend
+Wir setzten einfach den übergebenen id_tag in die rfif-Topic
+dann handelt alels weiter der openWB-Backend
 
-        wenn Fahrzeug nicht eingesteckt ist -> Transaktion wird sofort wieder beendet.
-        wenn Fahrzeug eingesteckt ist -> Transaktion wird gestartet.
-                                    -> prüft zunächst den Tag. Wenn ok, dann startet die Transaktion.
+wenn Fahrzeug nicht eingesteckt ist -> Transaktion wird sofort wieder beendet.
+wenn Fahrzeug eingesteckt ist -> Transaktion wird gestartet.
+-> prüft zunächst den Tag. Wenn ok, dann startet die Transaktion.
 
-        """
+"""
+"""
         requested_connector_id = connector_id if connector_id is not None else 1
         if self.availability.get(requested_connector_id) != AvailabilityType.operative:
             return call_result.RemoteStartTransaction(
@@ -748,6 +750,24 @@ class OcppChargePoint(cp):
             status="Accepted"
         )
 
+    @on(Action.unlock_connector)
+    async def unlock_connector(self, connector_id: int, **kwargs):
+        print(
+            f"UNLOCK_CONNECTOR  CP_Nr: {self.openwb_num} "
+            f"OCPP_Nr: {self.chargebox_id} "
+            f"\nConnector ID: {connector_id} "
+            f"\nKwargs: {kwargs}"
+        )
+
+        # ???
+        # Sollte ich das einfach so machen?
+        # oder hat das manual_lock noch eine andere wichtige Funktion?
+        Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/set/manual_lock", False)
+
+        return call_result.UnlockConnector(
+            status=UnlockStatus.not_supported
+        )
+
 
 def get_cp_from_chargebox_id(chargebox_id):
     for cp in data.data.cp_data.values():
@@ -768,3 +788,4 @@ def _get_formatted_time() -> str:
 
 def get_ocpp_client() -> OcppClient:
     return OcppClient()
+"""
