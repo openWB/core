@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 import logging
+from typing import Iterable, Union
 
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, IndependentComponentUpdater
+from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
 from modules.devices.generic.http.bat import HttpBat
 from modules.devices.generic.http.config import (HTTP, HttpBatSetup, HttpCounterSetup,
                                                  HttpInverterSetup)
@@ -35,6 +36,12 @@ def create_device(device_config: HTTP):
         nonlocal session
         session = req.get_http_session()
 
+    def update_components(components: Iterable[Union[HttpBat, HttpCounter, HttpInverter]]):
+        # Zähler, Wechselrichter und Speicher werden alle über dieselbe URL ausgelesen - ist das Backend nicht
+        # erreichbar, muss das für alle drei gelten, nicht nur für die zuerst geprüfte Komponente.
+        for component in components:
+            component.update(session)
+
     return ConfigurableDevice(
         device_config=device_config,
         initializer=initializer,
@@ -43,7 +50,7 @@ def create_device(device_config: HTTP):
             counter=create_counter_component,
             inverter=create_inverter_component,
         ),
-        component_updater=IndependentComponentUpdater(lambda component: component.update(session))
+        component_updater=MultiComponentUpdater(update_components)
     )
 
 
