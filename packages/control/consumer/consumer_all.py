@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 import logging
 
 from control import data
+from control.error_state import effective_power
 from helpermodules.constants import NO_ERROR
 
 
@@ -41,7 +42,10 @@ class AllConsumers:
         try:
             for consumer in data.data.consumer_data.values():
                 try:
-                    power = power + consumer.data.get.power
+                    result = effective_power(
+                        consumer.data.get.power, consumer.data.get.fault_state, consumer.data.set.error_timer)
+                    consumer.data.set.error_timer = result.error_timer
+                    power = power + result.power
                 except Exception:
                     log.exception(f"Fehler in der allgemeinen Verbaucher-Klasse für Verbaucher {consumer}")
                 imported = imported + consumer.data.get.imported

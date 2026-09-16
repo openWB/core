@@ -12,6 +12,8 @@ from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_all import AllChargepointData, AllChargepoints, AllGet
 from control.general import ChargemodeConfigBat, General
 from control.pv import Config, Get, Pv, PvData
+from helpermodules import timecheck
+from modules.common.fault_state_level import FaultStateLevel
 from modules.devices.generic.mqtt.bat import MqttBat
 from modules.devices.generic.mqtt.config import MqttBatSetup
 
@@ -60,6 +62,24 @@ def test_get_charging_power_left_diff_hybrid(bat_power: int,
 
     # evaluation
     assert b_all.data.set.charging_power_left == expected_power
+
+
+def test_calc_power_for_all_components_excludes_battery_after_60s(data_):
+    # setup
+    error_timer = timecheck.create_timestamp() - 61
+    data.data.bat_data = {"bat1": Bat(1), "bat2": Bat(2)}
+    data.data.bat_data["bat1"].data.get.power = -500
+    data.data.bat_data["bat2"].data.get.power = -2000
+    data.data.bat_data["bat2"].data.get.fault_state = FaultStateLevel.ERROR
+    data.data.bat_data["bat2"].data.set.error_timer = error_timer
+    b_all = BatAll()
+
+    # execution
+    b_all.calc_power_for_all_components()
+
+    # evaluation
+    assert b_all.data.get.power == -500
+    assert data.data.bat_data["bat2"].data.set.error_timer == error_timer
 
 
 @pytest.mark.parametrize(

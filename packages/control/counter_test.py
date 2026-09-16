@@ -13,6 +13,7 @@ from control.ev.ev import Ev
 from control.ev.charge_template import ChargeTemplate
 from control.general import General
 from control.chargepoint.chargepoint_state import ChargepointState
+from helpermodules import timecheck
 from modules.common.fault_state import FaultStateLevel
 
 
@@ -109,6 +110,28 @@ def test_set_current_left(loadmanagement_available: bool,
 
     # evaluation
     assert counter.data.set.raw_currents_left == expected_raw_currents_left
+
+
+def test_set_power_left_excludes_consumer_power_after_60s(monkeypatch, data_):
+    # setup
+    get_evu_counter_str_mock = Mock(return_value="counter0")
+    monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter_str", get_evu_counter_str_mock)
+    counter = Counter(0)
+    counter.data.config.max_total_power = 24000
+    counter.data.get.power = 1000
+    data.data.cp_data = {}
+    data.data.consumer_data = {"consumer1": Consumer(1)}
+    data.data.consumer_data["consumer1"].data.get.power = 2000
+    data.data.consumer_data["consumer1"].data.get.fault_state = FaultStateLevel.ERROR
+    data.data.consumer_data["consumer1"].data.set.error_timer = timecheck.create_timestamp() - 61
+    data.data.consumer_data["consumer1"].data.set.switch_interval_elapsed = True
+
+    # execution
+    counter._set_power_left(True)
+
+    # evaluation
+    # power_raw = 1000 - 0 (kein Verbraucher wird nach 60s Fehler mehr abgezogen) -> raw_power_left = 24000 - 1000
+    assert counter.data.set.raw_power_left == 23000
 
 
 @dataclass

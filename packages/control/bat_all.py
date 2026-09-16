@@ -23,6 +23,7 @@ import logging
 from typing import List, Optional, Tuple
 
 from control import data
+from control.error_state import effective_power
 from helpermodules.constants import NO_ERROR
 from modules.common.abstract_device import AbstractDevice
 from modules.common.component_context import SingleComponentUpdateContext
@@ -150,7 +151,10 @@ class BatAll:
                 fault_state = 0
                 for battery in data.data.bat_data.values():
                     try:
-                        power += battery.data.get.power
+                        result = effective_power(
+                            battery.data.get.power, battery.data.get.fault_state, battery.data.set.error_timer)
+                        battery.data.set.error_timer = result.error_timer
+                        power += result.power
                     except Exception:
                         log.exception(f"Fehler im Bat-Modul {battery.num}")
                     imported += battery.data.get.imported

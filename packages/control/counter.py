@@ -21,6 +21,7 @@ from typing import List, Optional, Tuple
 
 from control import data
 from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE
+from control.error_state import effective_power
 
 log = logging.getLogger(__name__)
 
@@ -271,7 +272,10 @@ class Counter:
                     # Wenn der Verbraucher nicht angesteuert werden darf, im LM als nicht veränderbaren Verbrauch
                     # berücksichtigen.
                     if consumer.data.set.switch_interval_elapsed:
-                        power_raw -= consumer.data.get.power
+                        # error_timer wird von ConsumerAll.get_consumer_sum() verwaltet, hier nur lesend verwendet.
+                        power_raw -= effective_power(
+                            consumer.data.get.power, consumer.data.get.fault_state, consumer.data.set.error_timer
+                        ).power
                     else:
                         log.debug(f"Verbraucher {consumer.num} als unveränderlichen Verbrauch im LM "
                                   f"mit {consumer.data.get.power}W berücksichtigt.")
