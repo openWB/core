@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 """Unit tests for SunEnergyXT 500 Series battery module."""
-import pytest
-import requests_mock as req_mock
-
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from modules.devices.sunenergyxt.sunenergyxt.bat import SunEnergyXTBat
 from modules.devices.sunenergyxt.sunenergyxt.config import (
     SunEnergyXT,
@@ -39,16 +36,16 @@ def _make_bat() -> SunEnergyXTBat:
 
 
 # ---------------------------------------------------------------------------
-# update() – Parsing SC / PB / IS
+# update() - Parsing SC / BP / IS
 # ---------------------------------------------------------------------------
 
 class TestUpdate:
     def test_update_parses_soc_and_power(self, requests_mock):
-        """update() liest SC (SoC) und PB (Batteriepower) korrekt aus."""
+        """update() liest SC (SoC) und BP (Batteriepower) korrekt aus."""
         bat = _make_bat()
         requests_mock.get(
             f"{BASE_URL}/read",
-            json={"state": {"reported": {"SC": 75, "PB": -500, "IS": 800}}}
+            json={"state": {"reported": {"SC": 75, "BP": -500, "IS": 800}}}
         )
 
         bat.update()
@@ -63,7 +60,7 @@ class TestUpdate:
         bat = _make_bat()
         requests_mock.get(
             f"{BASE_URL}/read",
-            json={"state": {"reported": {"SC": 50, "PB": 0, "IS": 2400}}}
+            json={"state": {"reported": {"SC": 50, "BP": 0, "IS": 2400}}}
         )
 
         bat.update()
@@ -75,7 +72,7 @@ class TestUpdate:
         bat = _make_bat()
         requests_mock.get(
             f"{BASE_URL}/read",
-            json={"state": {"reported": {"SC": 50, "PB": 0, "IS": 0}}}
+            json={"state": {"reported": {"SC": 50, "BP": 0, "IS": 0}}}
         )
 
         bat.update()
@@ -87,7 +84,7 @@ class TestUpdate:
         bat = _make_bat()
         requests_mock.get(
             f"{BASE_URL}/read",
-            json={"SC": 42, "PB": 300, "IS": 800}
+            json={"SC": 42, "BP": 300, "IS": 800}
         )
 
         bat.update()
@@ -102,7 +99,7 @@ class TestUpdate:
         bat.sim_counter.sim_count.return_value = (2000.0, 1000.0)
         requests_mock.get(
             f"{BASE_URL}/read",
-            json={"state": {"reported": {"SC": 80, "PB": -1000, "IS": 800}}}
+            json={"state": {"reported": {"SC": 80, "BP": -1000, "IS": 800}}}
         )
 
         bat.update()

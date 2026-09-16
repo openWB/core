@@ -25,7 +25,7 @@ class SunEnergyXTBat(AbstractBat):
 
     def initialize(self) -> None:
         self.device_config: SunEnergyXT = self.kwargs['device_config']
-        self.sim_counter = SimCounter(self.device_config.id, self.component_config.id, component_type="bat")
+        self.sim_counter = SimCounter(self.device_config.id, self.component_config.id, self.component_config.type)
         self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self._base_url = f"http://{self.device_config.configuration.ip_address}"
@@ -48,7 +48,7 @@ class SunEnergyXTBat(AbstractBat):
         reported = data.get("state", {}).get("reported", data)
 
         soc = int(float(reported.get("SC", 0)))
-        power = float(reported.get("BP", 0)))
+        power = float(reported.get("BP", 0))
 
         # IS = max. Inverterleistung: hängt von Modell (500/Pro) und Modulanzahl (BN) ab.
         # Wird als dynamisches GS-Limit verwendet.
