@@ -9,8 +9,7 @@ from datetime import datetime
 
 from control import data
 from control.optional_data import FlexibleTariff, ForecastGet, GridFee, OptionalData, PricingGet
-from control.ocpp import OcppClient
-from control.optional_data import FlexibleTariff, GridFee, OptionalData, PricingGet
+from control.ocpp.ocpp_client import OcppClient
 from helpermodules import hardware_configuration
 from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
