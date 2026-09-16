@@ -631,6 +631,14 @@ def _created_on(entry: dict) -> datetime | None:
         return _filename_timestamp(entry.get("name", ""))
 
 
+def get_field_value_by_fieldname(D: dict, field: str) -> str:
+    ret = None
+    for f in D:
+        if f['dataFieldName'] == field:
+            ret = f['value']
+    return ret
+
+
 def get_field_value_by_key(D: dict, key: str, field: str) -> str:
     ret = None
     for f in D:
@@ -725,12 +733,19 @@ def parse_vehicle_data(payload: dict) -> dict:
     else:
         _LOGGER.warning("soc_timestamp not found!")
 
+    warning = None
+    if get_field_value_by_fieldname(data, 'setting.bcam_activation') == 'BCAM_ACTIVATION_ACTIVATED':
+        bcam_threshold = get_field_value_by_fieldname(data, 'battery_care_mode.charge_bcam_threshold')
+        if bcam_threshold:
+            warning = f"Battery Care Mode ist im Fahrzeug aktiv und begrenzt die Ladung selbst auf {bcam_threshold}%."
+
     return {
         'soc': soc,
         'range': range,
         'soc_timestamp': soc_timestamp,
         'soc_timestamp_str': soc_timestamp_str,
         'odometer': odometer,
+        'warning': warning,
     }
 
 
@@ -962,7 +977,7 @@ class euda():
     async def get_status(self,
                          conf: VWEUDA,
                          vehicle: int,
-                         vehicle_update_data: VehicleUpdateData) -> Union[int, float, str, float, float]:
+                         vehicle_update_data: VehicleUpdateData) -> Union[int, float, str, float, float, str]:
 
         # error codes SOCERR-xx raised:
         # SOCERR-00: general error
@@ -1022,12 +1037,14 @@ class euda():
                 _LOGGER.info(f"wait for first EUDA result for VIN {ano_vin(self.vin)}")
                 time.sleep(1)
 
+            warning = None
             if self.vin in euda.result:
                 _LOGGER.debug(f"vehicle match: {ano_vin(self.vin)}")
                 _ano_j = {}
                 for vin in euda.result:
                     _ano_j[ano_vin(vin)] = euda.result[vin]
                 _LOGGER.info(f"result from thread:\n{json.dumps(_ano_j, indent=4)}")
+                warning = euda.result[self.vin].get('warning')
                 soc = euda.result[self.vin]['soc']
                 range = euda.result[self.vin]['range']
                 try:
@@ -1091,7 +1108,7 @@ class euda():
             # _LOGGER.info(f"get_status: publish soc_timestamp as 0: topic: {topic}, message: {ep0}")
             # Pub().pub(topic, ep0)
 
-            return float(soc), float(range), float(ts), ts_str, float(odometer)
+            return float(soc), float(range), float(ts), ts_str, float(odometer), warning
         except Exception as e:
             _LOGGER.exception(f"get_status failed 0, exception={e}")
             # if exception is a SOCERR reraise it, otherwise raise general SOCERR-00
@@ -1106,7 +1123,7 @@ class euda():
 # sync function
 def fetch_soc(conf: VWEUDA,
               vehicle: int,
-              vehicle_update_data: VehicleUpdateData) -> Union[float, float, float, str, float]:
+              vehicle_update_data: VehicleUpdateData) -> Union[float, float, float, str, float, str]:
 
     # prepare and call async method
     loop = new_event_loop()
@@ -1114,7 +1131,7 @@ def fetch_soc(conf: VWEUDA,
 
     # get soc, range from server
     a = euda()
-    soc, range, soc_ts, soc_tsX, odometer =\
+    soc, range, soc_ts, soc_tsX, odometer, warning =\
         loop.run_until_complete(a.get_status(conf, vehicle, vehicle_update_data))
 
-    return soc, range, soc_ts, soc_tsX, odometer
+    return soc, range, soc_ts, soc_tsX, odometer, warning

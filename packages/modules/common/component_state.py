@@ -158,12 +158,15 @@ class CarState:
     def __init__(self, soc: float,
                  range: Optional[float] = None,
                  soc_timestamp: Optional[float] = None,
-                 odometer: Optional[float] = None):
+                 odometer: Optional[float] = None,
+                 warning: Optional[str] = None):
         """Args:
             soc: actual state of charge in percent
             range: actual range in km
             soc_timestamp: timestamp of last request as unix timestamp
             odometer: actual odometer of vehicle in km
+            warning: informational message about a vehicle-side setting affecting charging
+                (eg. a manufacturer battery-care-mode limit), shown to the user but not an error
         """
         self.soc = soc
         self.range = range
@@ -175,6 +178,7 @@ class CarState:
                 soc_timestamp /= 1000
             self.soc_timestamp = soc_timestamp
         self.odometer = odometer
+        self.warning = warning
 
 
 @auto_str
