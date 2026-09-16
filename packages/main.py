@@ -189,10 +189,9 @@ class HandlerAlgorithm:
 
                 for cp in data.data.cp_data.values():
                     calc_energy_costs(cp)
+                    
                     chargebox_id = cp.data.config.ocpp_chargebox_id
-                    connection = data.data.ocpp_client.connections.get(
-                        chargebox_id
-                    )
+                    connection = data.data.ocpp_client.connections.get(chargebox_id)
                     if (
                         connection is not None
                         and connection.boot_accepted
@@ -204,7 +203,6 @@ class HandlerAlgorithm:
                                                                int(cp.data.get.imported))
                         
                 data.data.general_data.grid_protection()
-                #data.data.optional_data.ocpp_transfer_meter_values()
                 data.data.counter_all_data.validate_hierarchy()
                 data.data.optional_data.remove_outdated_prices()
             loadvars_.ep_get_prices()

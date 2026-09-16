@@ -167,17 +167,17 @@ class Chargepoint(ChargepointRfidMixin, Load):
             print("#####################################")
             message = "Keine Ladung, da OCPP nicht verfügbar ist."
 
-        elif not self.data.get.ocpp.tag_accepted:
-            print("#####################################")
-            print("OCPP Tag nicht akzeptiert")
-            print("#####################################")
-            message = "Keine Ladung, da das OCPP-Tag nicht akzeptiert wurde."
-            state = False
         elif self.data.get.ocpp.remote_stop:
             print("#####################################")
             print("OCPP Remote Stop aktiv")
             print("#####################################")
             message = "Keine Ladung, da ein OCPP Remote Stop aktiv ist. Stecker ziehen und neu verbinden für nächsten Ladevorgang..."
+            state = False
+        elif not self.data.get.ocpp.tag_accepted:
+            print("#####################################")
+            print("OCPP Tag nicht akzeptiert")
+            print("#####################################")
+            message = "Keine Ladung, da das OCPP-Tag nicht akzeptiert wurde."
             state = False
         else:
             message = None
@@ -205,6 +205,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
         # Charging Ev ist noch das EV des vorherigen Zyklus, wenn das nicht -1 war und jetzt nicht mehr geladen
         # werden soll (-1), Daten zurücksetzen.
         # Ocpp Stop Funktion aufrufen
+        """
         if (not self.data.get.plug_state and self.data.get.ocpp.transaction_id is not None) or self.data.get.ocpp.remote_stop:
             data.data.ocpp_client.stop_transaction(
                 self.data.config.ocpp_chargebox_id,
@@ -212,12 +213,46 @@ class Chargepoint(ChargepointRfidMixin, Load):
                 self.data.get.ocpp.transaction_id,
                 self.data.set.rfid)
             self.data.get.ocpp.transaction_id = None
+        """
+        chargebox_id = self.data.config.ocpp_chargebox_id
+        if chargebox_id:    # <- als ocpp Chargepoint konfiguriert
+            if (self.data.get.ocpp.connected  # <- mit OCPP-Server verbunden
+                    and self.data.get.ocpp.remote_stop):
+
+                data.data.ocpp_client.request_stop(
+                    chargebox_id=chargebox_id,
+                    imported=self.data.get.imported,
+                    id_tag=(
+                        self.data.set.rfid
+                        or self.data.get.rfid
+                        or ""
+                    ),
+                    reason="Remote",
+                )
+
+            elif (self.data.get.ocpp.connected  # <- mit OCPP-Server verbunden
+                    and not self.data.get.plug_state and self.data.get.ocpp.transaction_id is not None):
+                data.data.ocpp_client.request_stop(
+                    chargebox_id=chargebox_id,
+                    imported=self.data.get.imported,
+                    id_tag=(
+                        self.data.set.rfid
+                        or self.data.get.rfid
+                        or ""
+                    ),
+                    reason="EVDisconnected",
+                )
+            elif (not self.data.get.plug_state):
+                # nicht connected
+                print("STOP-CP, aber NICHT connected to OCPP-SERVER")
+                # hier dann die Stop-Transaktion speichern
+                pass
         # muss vor dem Zurücksetzen der control parameter aufgerufen werden
         self.data.set.charging_ev_data.reset_phase_switch(self.data.control_parameter)
         self.data.set.charging_ev_data.reset_phase_switch_delay(self.data.control_parameter, self.get_max_phase_hw())
         self.reset_control_parameter_at_charge_stop()
         data.data.counter_all_data.get_evu_counter().reset_switch_on_off(self)
-        if self.data.get.plug_state is False and self.data.set.plug_state_prev is True:
+        if (self.data.get.plug_state is False and self.data.set.plug_state_prev is True) or self.data.get.ocpp.remote_stop:
             charging_ev = data.data.ev_data[f"ev{self.data.config.ev}"]
             chargelog.save_and_reset_data(self, charging_ev)
             self.data.control_parameter = control_parameter_factory()
@@ -657,6 +692,11 @@ class Chargepoint(ChargepointRfidMixin, Load):
 
     def update(self, ev_list: Dict[str, Ev]) -> None:
         try:
+            # Wenn Stecker abgezogen wurde, reset remote_stop
+            if self.data.get.ocpp.remote_stop and self.data.get.plug_state is False:
+                self.data.get.ocpp.remote_stop = False
+                Pub().pub(f"openWB/set/chargepoint/"f"{self.num}/get/ocpp/remote_stop", False)
+
             self._validate_rfid()
             charging_possible, message = self.is_charging_possible()
             if self.data.get.rfid is not None and self.data.get.plug_state:
@@ -746,16 +786,12 @@ class Chargepoint(ChargepointRfidMixin, Load):
             except Exception:
                 log.exception(f"Fehler bei Ladestop,cp{self.num}")
 
-            if self.data.config.ocpp_chargebox_id:
-                print(
-                    f"                                                                                                        {self.get_ocpp_status()}")
-                self.ocpp_send_status_notification()
-            # data.data.ocpp_client.send_heart_beat(self.data.config.ocpp_chargebox_id)
-            data.data.ocpp_client.transfer_values(self.data.config.ocpp_chargebox_id,
-                                                  self.num,
-                                                  self.data.get.ocpp.transaction_id,
-                                                  int(self.data.get.imported))
-
+# data.data.ocpp_client.send_heart_beat(self.data.config.ocpp_chargebox_id)
+            # data.data.ocpp_client.transfer_values(self.data.config.ocpp_chargebox_id,
+            #                                      self.num,
+            #                                      self.data.get.ocpp.transaction_id,
+            #                                      int(self.data.get.imported))
+            """
             # OCPP Start Transaction nach Anstecken
             if ((self.data.get.plug_state and self.data.set.plug_state_prev is False) or
                     (self.data.get.ocpp.transaction_id is None)):  # and self.data.get.charge_state)):
@@ -769,6 +805,34 @@ class Chargepoint(ChargepointRfidMixin, Load):
                             self.num,
                             self.data.set.rfid or self.data.get.rfid or self.data.get.vehicle_id,
                             self.data.get.imported)
+            """
+            if self.data.config.ocpp_chargebox_id:
+                print(
+                    f"                                                                                                        {self.get_ocpp_status()}")
+                self.ocpp_send_status_notification()
+
+            chargebox_id = self.data.config.ocpp_chargebox_id
+
+            id_tag = (
+                self.data.set.rfid
+                or self.data.get.rfid
+                or self.data.get.vehicle_id
+            )
+            if chargebox_id:    # <- als ocpp Chargepoint konfiguriert
+                if (self.data.get.ocpp.connected  # <- mit OCPP-Server verbunden
+                        and self.data.get.plug_state and id_tag):
+                    data.data.ocpp_client.request_start(
+                        chargebox_id=chargebox_id,
+                        connector_id=self.num,
+                        id_tag=id_tag,
+                        imported=self.data.get.imported,
+                    )
+                elif (self.data.get.plug_state):
+                    # nicht connected
+                    print("START-CP, aber NICHT connected to OCPP-SERVER")
+                    # hier dann die Start-Transaktion speichern
+                    pass
+
             if self.data.get.plug_state and self.data.set.plug_state_prev is False:
                 self.data.control_parameter.timestamp_chargemode_changed = create_timestamp()
             # SoC nach Anstecken aktualisieren

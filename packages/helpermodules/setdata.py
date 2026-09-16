@@ -592,7 +592,9 @@ class SetData:
                 "/get/plug_state" in msg.topic or
                 "/get/ocpp/availability" in msg.topic or
                 "/get/ocpp/remote_stop" in msg.topic or
-                "/get/ocpp/tag_accepted" in msg.topic):
+                "/get/ocpp/tag_accepted" in msg.topic or
+                "/get/ocpp/test_reconnect" in msg.topic or
+                "/get/ocpp/connected" in msg.topic):
             self._validate_value(msg, bool)
         elif "/get/fault_state" in msg.topic:
             self._validate_value(msg, int, [(0, 2)])
@@ -602,7 +604,8 @@ class SetData:
             self._validate_value(msg, float, [(-3200, 3200)])
         elif ("/get/version" in msg.topic or
               "/get/current_branch" in msg.topic or
-              "/get/current_commit" in msg.topic):
+              "/get/current_commit" in msg.topic or
+              "/get/ocpp/transaction_id_tag" in msg.topic):
             self._validate_value(msg, str)
         elif ("/get/error_timestamp" in msg.topic or
                 "/get/rfid_timestamp" in msg.topic):
@@ -620,7 +623,8 @@ class SetData:
         elif ("/get/simulation" in msg.topic or
               "/get/connected_vehicle/config" in msg.topic or
               "/get/connected_vehicle/info" in msg.topic or
-              "/get/connected_vehicle/soc" in msg.topic):
+              "/get/connected_vehicle/soc" in msg.topic or
+              "/get/ocpp/pending_transactions" in msg.topic):
             self._validate_value(msg, "json")
         else:
             self.__unknown_topic(msg)
