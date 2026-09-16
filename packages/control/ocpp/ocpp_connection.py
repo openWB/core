@@ -13,3 +13,10 @@ class OcppConnection:
         self.chargebox_id = chargebox_id
         self.ws = ws
         self.cp = cp
+
+        self.start_task = None
+        self.heartbeat_task = None
+        self.meter_task = None
+
+        self.boot_accepted = False
+        self.closing = False

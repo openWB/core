@@ -189,11 +189,15 @@ class HandlerAlgorithm:
 
                 for cp in data.data.cp_data.values():
                     calc_energy_costs(cp)
-                    #OCPP Heartbeat senden -> immer
                     chargebox_id = cp.data.config.ocpp_chargebox_id
-                    if chargebox_id in data.data.ocpp_client._boot_notification_chargeboxes:
-                        data.data.ocpp_client.send_heart_beat(
-                            cp.data.config.ocpp_chargebox_id)
+                    connection = data.data.ocpp_client.connections.get(
+                        chargebox_id
+                    )
+                    if (
+                        connection is not None
+                        and connection.boot_accepted
+                        and cp.data.get.ocpp.transaction_id is not None
+                    ):
                         data.data.ocpp_client.transfer_values(chargebox_id,
                                                                cp.num,
                                                                cp.data.get.ocpp.transaction_id,
