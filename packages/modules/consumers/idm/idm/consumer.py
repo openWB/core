@@ -54,8 +54,10 @@ def create_consumer(config: Idm):
         # Reg 82: Hausverbrauch [kW], Default 0
         client.write_register(82, values.home_consumption / 1000, data_type=ModbusDataType.FLOAT_32,
                               wordorder=Endian.Little, unit=modbus_id)
-        # Reg 84: Batterieentladung [kW], Default 0 (negativ = Ladung)
-        client.write_register(84, values.bat_power / 1000, data_type=ModbusDataType.FLOAT_32,
+        # Reg 84: Batterieentladung [kW], Default 0 (negativ = Ladung). values.bat_power kommt roh aus
+        # process.py (negativ = Entladung, positiv = Ladung, gleiche Konvention wie z.B. bei Sungrow) ->
+        # Vorzeichen drehen, um auf die von IDM erwartete Konvention zu kommen
+        client.write_register(84, -values.bat_power / 1000, data_type=ModbusDataType.FLOAT_32,
                               wordorder=Endian.Little, unit=modbus_id)
         # Reg 86: Batteriefüllstand [%], Default -1 (= kein Speicher)
         client.write_register(86, battery_soc, data_type=ModbusDataType.INT_16, unit=modbus_id)
