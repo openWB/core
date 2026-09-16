@@ -12,7 +12,7 @@ from helpermodules.pub import Pub
 
 from control import data
 from modules.common.fault_state import FaultState
-from control.ocpp.helper import _get_formatted_time
+from control.ocpp.helper import _get_formatted_time, get_cp_from_chargebox_id
 
 log = logging.getLogger(__name__)
 
@@ -61,9 +61,6 @@ class OcppChargePoint(cp):
 
         print(f"START_TRANSACTION        CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
 
-        # Reset Variable
-        Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/remote_stop", False)
-
         request = call.StartTransaction(
             connector_id=connector_id,
             id_tag=id_tag if id_tag else "",
@@ -73,25 +70,6 @@ class OcppChargePoint(cp):
 
         response: call_result.StartTransaction = await self.call(request)
         print(f"StartTransaction response: {response}")
-
-        status = getattr(response, "id_tag_info", {}).get("status")
-        accepted = status == "Accepted"
-        self.openwb_cp.data.get.ocpp.tag_accepted = accepted
-        Pub().pub(f"openWB/chargepoint/{self.openwb_num}/get/ocpp/tag_accepted", accepted)
-
-        if response is not None and response.transaction_id is not None and accepted:
-            self.transaction_id = response.transaction_id
-            Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/transaction_id",
-                      self.transaction_id)
-            print(f"Set Transaction ID: {self.transaction_id}")
-        elif not accepted:
-            self.transaction_id = None
-            Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/transaction_id", None)
-            log.warning(
-                "StartTransaction für CP %s abgelehnt, Status: %s",
-                self.openwb_num,
-                status,
-            )
 
         return response
 
@@ -126,26 +104,12 @@ class OcppChargePoint(cp):
 
         print(f"AUTHORIZE        CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
 
-        self.openwb_cp.data.get.ocpp.tag_accepted = False
-        Pub().pub(f"openWB/chargepoint/{self.openwb_num}/get/ocpp/tag_accepted", False)
-
-        # Todo
-        # Only Temporary
-        # Nach prüfung wird id wieder gelöscht, damit nr einmal geprüft wird dann erst wieder
-        # wenn ein neuer Tag nagehaltenw wird
-        Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/rfid", None)
-
         request = call.Authorize(
             id_tag=id_tag if id_tag else ""
         )
 
         response: call_result.Authorize = await self.call(request)
         print(f"Authorize response: {response}")
-
-        status = getattr(response, "id_tag_info", {}).get("status")
-        accepted = status == "Accepted"
-        self.openwb_cp.data.get.ocpp.tag_accepted = accepted
-        Pub().pub(f"openWB/chargepoint/{self.openwb_num}/get/ocpp/tag_accepted", accepted)
 
         return response
 
@@ -166,15 +130,7 @@ class OcppChargePoint(cp):
         )
         response: call_result.StopTransaction = await self.call(request)
         print(f"StopTransaction response: {response}")
-        self.transaction_id = None
-        Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/transaction_id",
-                  None)
-        Pub().pub(f"openWB/chargepoint/{self.openwb_num}/get/ocpp/tag_accepted", False)
-        # Remote Stop wurde ausgeführt
-        Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/remote_stop", False)
-        # Apply pending availability
-        if self._pending_availability:
-            await self.apply_pending_availability()
+
         return response
 
     async def _heartbeat(self) -> Optional[object]:
@@ -211,7 +167,7 @@ class OcppChargePoint(cp):
                                    status: ChargePointStatus,
                                    force: bool) -> Optional[object]:
 
-        print(f"STATUS_NOTIFICATION     CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
+        # print(f"STATUS_NOTIFICATION     CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
 
         current_status = (status, get_ocpp_error_code(fault_state))
 
@@ -219,8 +175,9 @@ class OcppChargePoint(cp):
 
         # Wenn sich key nicht verändert hat, mach nix
         if not force and self._last_update.get(key) == current_status:
-            print(f"--------- No status change for key: {key}")
+            # print(f"--------- No status change for key: {key}")
             return None
+        print(f"STATUS_NOTIFICATION     CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
         print(f"--------- Status change detected for key: {key}")
 
         # Key rausschicken
@@ -375,11 +332,13 @@ class OcppChargePoint(cp):
         kann die Remote-Start-Transaktion akzeptiert werden.
 
         Wir setzten einfach den übergebenen id_tag  in die rfif-Topic
-        dann handelt alels weiter der openWB-Backend
+        dann handelt alles weiter der openWB-Backend
 
-        wenn Fahrzeug nicht eingesteckt ist -> Transaktion wird sofort wieder beendet.
+        Wenn Tag erlaubt ist:
+        wenn Fahrzeug nicht eingesteckt ist -> Nachricht: sie haben 5 min um das auto einzustecken.
         wenn Fahrzeug eingesteckt ist -> Transaktion wird gestartet.
-                                    -> prüft zunächst den Tag. Wenn ok, dann startet die Transaktion.
+            -> standart reactionvon openWB, wie wenn man direkt nen tag gescannt hat
+                                   
 
         """
         requested_connector_id = connector_id if connector_id is not None else 1
@@ -407,7 +366,7 @@ class OcppChargePoint(cp):
 
         # wie Stopp ich die Transaktion remote?????
         Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/remote_stop", True)
-        Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/set/rfid", None)
+        # Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/set/rfid", None)
 
         return call_result.RemoteStopTransaction(
             status="Accepted"
@@ -430,13 +389,6 @@ class OcppChargePoint(cp):
         return call_result.UnlockConnector(
             status=UnlockStatus.not_supported
         )
-
-
-def get_cp_from_chargebox_id(chargebox_id):
-    for cp in data.data.cp_data.values():
-        if cp.data.config.ocpp_chargebox_id == chargebox_id:
-            return cp
-    return None
 
 
 def get_ocpp_error_code(fault_state: FaultState):
