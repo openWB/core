@@ -7,6 +7,7 @@ from helpermodules import timecheck
 from control import counter as counter_module
 from control import data
 from control.chargepoint.chargepoint import Chargepoint
+from control.consumer.consumer import Consumer
 from control.counter import Counter, CounterData, Get
 from control.ev.ev import Ev
 from control.ev.charge_template import ChargeTemplate
@@ -196,3 +197,47 @@ def test_control_range(control_range, evu_power, expected_range_offset, general_
 
     # evaluation
     assert range_offset == expected_range_offset
+
+
+def test_reset_switch_on_off_ignores_stale_timestamp_without_delay_state(general_data_fixture, monkeypatch):
+    # setup
+    evu_counter = Counter(0)
+    evu_counter.data.set.reserved_surplus = 690
+    monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", Mock(return_value=evu_counter))
+
+    consumer = Consumer(7)
+    consumer.data.control_parameter.timestamp_switch_on_off = 1652683250.0
+    consumer.data.control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
+    consumer.data.control_parameter.required_current = 21.70138888888889
+    consumer.data.control_parameter.phases = 1
+    consumer.data.get.charge_state = False
+
+    # execution
+    evu_counter.reset_switch_on_off(consumer)
+
+    # evaluation
+    assert evu_counter.data.set.reserved_surplus == 690
+    assert consumer.data.control_parameter.timestamp_switch_on_off is None
+    assert consumer.data.control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED
+
+
+def test_reset_switch_on_off_releases_reserved_surplus_on_switch_on_delay(general_data_fixture, monkeypatch):
+    # setup
+    evu_counter = Counter(0)
+    evu_counter.data.set.reserved_surplus = 690
+    monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", Mock(return_value=evu_counter))
+
+    consumer = Consumer(6)
+    consumer.data.control_parameter.timestamp_switch_on_off = 1652683250.0
+    consumer.data.control_parameter.state = ChargepointState.SWITCH_ON_DELAY
+    consumer.data.control_parameter.required_current = 3
+    consumer.data.control_parameter.phases = 1
+    consumer.data.get.charge_state = False
+
+    # execution
+    evu_counter.reset_switch_on_off(consumer)
+
+    # evaluation
+    assert evu_counter.data.set.reserved_surplus == 0
+    assert consumer.data.control_parameter.timestamp_switch_on_off is None
+    assert consumer.data.control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED

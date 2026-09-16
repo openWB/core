@@ -596,23 +596,30 @@ class Counter:
             if load.data.control_parameter.timestamp_switch_on_off is not None:
                 load.data.control_parameter.timestamp_switch_on_off = None
                 evu_counter = data.data.counter_all_data.get_evu_counter()
-                # Wenn bereits geladen wird, lief die Abschaltverzögerung -> Leistung, die nach Abschalten frei
-                # geworden wäre, nicht mehr zum zur Verfügung stehenden Überschuss zählen.
-                # Wenn nicht geladen wird, reservierte Leistung freigeben.
-                surplus_config = data.data.general_data.data.chargemode_config.surplus
-                if isinstance(load, Chargepoint):
-                    if not load.data.get.charge_state:
-                        threshold = surplus_config.vehicle.switch_on_threshold * load.data.set.phases_to_use
+                # Reservierungen nur zurücknehmen, wenn wirklich ein Verzögerungszustand aktiv war.
+                state = load.data.control_parameter.state
+                if state in (ChargepointState.SWITCH_ON_DELAY, ChargepointState.SWITCH_OFF_DELAY):
+                    surplus_config = data.data.general_data.data.chargemode_config.surplus
+                    if isinstance(load, Chargepoint):
+                        if state == ChargepointState.SWITCH_ON_DELAY:
+                            threshold = surplus_config.vehicle.switch_on_threshold * load.data.set.phases_to_use
+                        else:
+                            threshold = surplus_config.vehicle.switch_on_threshold * load.data.control_parameter.phases
                     else:
-                        threshold = surplus_config.vehicle.switch_on_threshold * load.data.control_parameter.phases
-                else:
-                    threshold = (load.data.control_parameter.required_current *
-                                 230 *
-                                 load.data.control_parameter.phases)
-                if not load.data.get.charge_state:
-                    evu_counter.data.set.reserved_surplus -= threshold
-                else:
-                    evu_counter.data.set.released_surplus -= threshold
+                        threshold = (load.data.control_parameter.required_current *
+                                     230 *
+                                     load.data.control_parameter.phases)
+
+                    if state == ChargepointState.SWITCH_ON_DELAY:
+                        evu_counter.data.set.reserved_surplus = max(
+                            0,
+                            evu_counter.data.set.reserved_surplus - threshold,
+                        )
+                    else:
+                        evu_counter.data.set.released_surplus = max(
+                            0,
+                            evu_counter.data.set.released_surplus - threshold,
+                        )
                 load.data.control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")
