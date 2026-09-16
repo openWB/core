@@ -54,7 +54,7 @@ class Usage:
     time_charging: TimeCharging = field(default_factory=lambda: TimeCharging())
     type: ConsumerUsage = ConsumerUsage.METER_ONLY
     reset_chargemode: ResetChargemode = field(default_factory=lambda: ResetChargemode())
-    wait_for_start_active: bool = True
+    wait_for_start_active: bool = False
 
 
 @dataclass
