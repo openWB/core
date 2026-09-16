@@ -3,33 +3,16 @@ from pathlib import Path
 from datetime import date
 
 from typing import List
-from helpermodules import pub
+from helpermodules import logger, pub
 from helpermodules.measurement_logging.process_log import (save_daily_source_totals,
                                                            save_monthly_source_totals)
 
 import logging
-from logging.handlers import RotatingFileHandler
 
 
 BASE_PATH = Path(__file__).resolve().parents[3]
-LOG_DIR = BASE_PATH / "ramdisk"
-LOG_FILE = LOG_DIR / "generate_totals.log"
-
-LOG_DIR.mkdir(parents=True, exist_ok=True)
-
-handler = RotatingFileHandler(
-    filename=LOG_FILE,
-    maxBytes=5 * 1024 * 1024,  # 5 MB,
-    backupCount=1,
-)
-
-logging.basicConfig(
-    handlers=[handler],
-    level=logging.DEBUG,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-)
-
-log = logging.getLogger(__name__)
+logger.setup_logging()
+log = logging.getLogger("generate_totals")
 
 LOCK_FILE = BASE_PATH / "data" / "generate_totals.lock"
 

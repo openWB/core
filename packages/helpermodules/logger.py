@@ -274,6 +274,15 @@ def setup_logging() -> None:
     mqtt_file_handler.addFilter(RedactingFilter())
     mqtt_log.addHandler(mqtt_file_handler)
 
+    # Totals generation logger
+    generate_totals_log = logging.getLogger("generate_totals")
+    generate_totals_log.propagate = False
+    generate_totals_file_handler = RotatingFileHandler(
+        RAMDISK_PATH / 'generate_totals.log', maxBytes=mb_to_bytes(3), backupCount=1)
+    generate_totals_file_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
+    generate_totals_file_handler.addFilter(RedactingFilter())
+    generate_totals_log.addHandler(generate_totals_file_handler)
+
     # Steuve control command logger
     steuve_control_command_log = logging.getLogger("steuve_control_command")
     steuve_control_command_log.propagate = False
