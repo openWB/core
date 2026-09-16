@@ -12,7 +12,7 @@ from helpermodules.pub import Pub
 
 from control import data
 from modules.common.fault_state import FaultState
-from control.ocpp.helper import get_cp_from_chargebox_id, _get_formatted_time, get_ocpp_error_code
+from control.ocpp.helper import _get_formatted_time
 
 log = logging.getLogger(__name__)
 
@@ -53,6 +53,47 @@ class OcppChargePoint(cp):
                 value="34"
             ),
         }
+
+    async def _start_transaction(self,
+                                 connector_id: int,
+                                 id_tag: str,
+                                 imported: int) -> Optional[object]:
+
+        print(f"START_TRANSACTION        CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
+
+        # Reset Variable
+        Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/remote_stop", False)
+
+        request = call.StartTransaction(
+            connector_id=connector_id,
+            id_tag=id_tag if id_tag else "",
+            meter_start=int(imported),
+            timestamp=_get_formatted_time(),
+        )
+
+        response: call_result.StartTransaction = await self.call(request)
+        print(f"StartTransaction response: {response}")
+
+        status = getattr(response, "id_tag_info", {}).get("status")
+        accepted = status == "Accepted"
+        self.openwb_cp.data.get.ocpp.tag_accepted = accepted
+        Pub().pub(f"openWB/chargepoint/{self.openwb_num}/get/ocpp/tag_accepted", accepted)
+
+        if response is not None and response.transaction_id is not None and accepted:
+            self.transaction_id = response.transaction_id
+            Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/transaction_id",
+                      self.transaction_id)
+            print(f"Set Transaction ID: {self.transaction_id}")
+        elif not accepted:
+            self.transaction_id = None
+            Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/transaction_id", None)
+            log.warning(
+                "StartTransaction für CP %s abgelehnt, Status: %s",
+                self.openwb_num,
+                status,
+            )
+
+        return response
 
     async def change_availability(self, connector_id: int, type: str, **kwargs):
         print(f"Server-Anfrage erhalten: Connector {connector_id} -> {type}")
@@ -105,47 +146,6 @@ class OcppChargePoint(cp):
         accepted = status == "Accepted"
         self.openwb_cp.data.get.ocpp.tag_accepted = accepted
         Pub().pub(f"openWB/chargepoint/{self.openwb_num}/get/ocpp/tag_accepted", accepted)
-
-        return response
-
-    async def _start_transaction(self,
-                                 connector_id: int,
-                                 id_tag: str,
-                                 imported: int) -> Optional[object]:
-
-        print(f"START_TRANSACTION        CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
-
-        # Reset Variable
-        Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/remote_stop", False)
-
-        request = call.StartTransaction(
-            connector_id=connector_id,
-            id_tag=id_tag if id_tag else "",
-            meter_start=int(imported),
-            timestamp=_get_formatted_time(),
-        )
-
-        response: call_result.StartTransaction = await self.call(request)
-        print(f"StartTransaction response: {response}")
-
-        status = getattr(response, "id_tag_info", {}).get("status")
-        accepted = status == "Accepted"
-        self.openwb_cp.data.get.ocpp.tag_accepted = accepted
-        Pub().pub(f"openWB/chargepoint/{self.openwb_num}/get/ocpp/tag_accepted", accepted)
-
-        if response is not None and response.transaction_id is not None and accepted:
-            self.transaction_id = response.transaction_id
-            Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/transaction_id",
-                      self.transaction_id)
-            print(f"Set Transaction ID: {self.transaction_id}")
-        elif not accepted:
-            self.transaction_id = None
-            Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/transaction_id", None)
-            log.warning(
-                "StartTransaction für CP %s abgelehnt, Status: %s",
-                self.openwb_num,
-                status,
-            )
 
         return response
 
@@ -222,8 +222,6 @@ class OcppChargePoint(cp):
             print(f"--------- No status change for key: {key}")
             return None
         print(f"--------- Status change detected for key: {key}")
-        # Key hat sich geändert
-        self._last_update[key] = current_status
 
         # Key rausschicken
         request = call.StatusNotification(
@@ -238,6 +236,10 @@ class OcppChargePoint(cp):
         )
         response: call_result.StatusNotification = await self.call(request)
         print(f"StatusNotification response: {response}")
+
+        # Key hat sich geändert
+        self._last_update[key] = current_status
+
         return response
 
     @on(Action.change_availability)
@@ -353,6 +355,7 @@ class OcppChargePoint(cp):
             return call_result.ChangeConfiguration(
                 status="Accepted"
             )
+
         return call_result.ChangeConfiguration(
             status="Rejected"
         )
@@ -427,3 +430,16 @@ class OcppChargePoint(cp):
         return call_result.UnlockConnector(
             status=UnlockStatus.not_supported
         )
+
+
+def get_cp_from_chargebox_id(chargebox_id):
+    for cp in data.data.cp_data.values():
+        if cp.data.config.ocpp_chargebox_id == chargebox_id:
+            return cp
+    return None
+
+
+def get_ocpp_error_code(fault_state: FaultState):
+    if fault_state:
+        return "Faulted"
+    return "NoError"
