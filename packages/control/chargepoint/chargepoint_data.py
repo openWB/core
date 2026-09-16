@@ -69,10 +69,21 @@ class ConnectedVehicle:
 
 @dataclass
 class Ocpp:
+    connected: bool = False
     availability: bool = False
     transaction_id: Optional[int] = None
     tag_accepted: bool = False
     remote_stop: bool = False
+    test_reconnect: bool = False
+    # RFID/IdTag der laufenden OCPP-Transaction.
+    # Wichtig, wenn openWB während einer Transaction neu startet.
+    transaction_id_tag: Optional[str] = None
+
+    # Start-/Stop-Events, die während einer Offline-Phase aufgetreten sind.
+    # Nach einem erfolgreichen Reconnect werden sie in chronologischer Reihenfolge
+    # erneut abgearbeitet.
+    pending_transactions: list = field(default_factory=list,
+                                       metadata={"topic": "get/ocpp/pending_transactions"})
 
 
 def empty_enery_source_dict_factory():
