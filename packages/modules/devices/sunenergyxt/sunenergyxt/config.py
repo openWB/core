@@ -5,8 +5,12 @@ from ..vendor import vendor_descriptor
 
 class SunEnergyXTConfiguration:
     def __init__(self,
-                 ip_address: Optional[str] = None):
+                 ip_address: Optional[str] = None,
+                 port: int = 80,
+                 timeout: int = 5):
         self.ip_address = ip_address
+        self.port = port
+        self.timeout = timeout
 
 
 class SunEnergyXT:

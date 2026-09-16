@@ -30,19 +30,22 @@ class SunEnergyXTBat(AbstractBat):
         self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
-        self._base_url = f"http://{self.device_config.configuration.ip_address}"
+        self._timeout = self.device_config.configuration.timeout
+        self._base_url = (
+            f"http://{self.device_config.configuration.ip_address}:{self.device_config.configuration.port}"
+        )
         # Wird beim ersten update() aus IS (Max. Inverterleistung) gesetzt.
         # IS berücksichtigt automatisch Modell (500 / 500 Pro) und Anzahl Module (BN).
         self._gs_max: int = _GS_MAX_FALLBACK
 
     def _read(self) -> dict:
         url = f"{self._base_url}/read"
-        return req.get_http_session().get(url, timeout=5).json()
+        return req.get_http_session().get(url, timeout=self._timeout).json()
 
     def _write(self, **kwargs) -> None:
         url = f"{self._base_url}/write"
         payload = {"state": kwargs}
-        resp = req.get_http_session().post(url, json=payload, timeout=5)
+        resp = req.get_http_session().post(url, json=payload, timeout=self._timeout)
         log.debug("SunEnergyXT write %s → %s", kwargs, resp.text)
 
     def update(self) -> None:
@@ -68,7 +71,7 @@ class SunEnergyXTBat(AbstractBat):
             exported=exported,
         )
         self.store.set(bat_state)
-        log.debug("SunEnergyXT: SoC=%d%%, PB=%.0fW, IS=%dW (gs_max)", soc, power, self._gs_max)
+        log.debug("SunEnergyXT: SoC=%d%%,BP=%.0fW, IS=%dW (gs_max)", soc, power, self._gs_max)
 
     def set_power_limit(self, power_limit: Optional[int]) -> None:
         if power_limit is None:
@@ -77,12 +80,12 @@ class SunEnergyXTBat(AbstractBat):
         elif power_limit == 0:
             log.debug("SunEnergyXT: Entladung gesperrt (MM=0, GS=0)")
             self._write(MM=0, GS=0)
-        elif power_limit > 0:
-            p = int(min(power_limit, self._gs_max))
+        elif power_limit < 0:
+            p = int(min(abs(power_limit), self._gs_max))
             log.debug("SunEnergyXT: Entladen mit %dW (gs_max=%dW)", p, self._gs_max)
             self._write(MM=0, GS=p)
         else:
-            p = int(min(abs(power_limit), self._gs_max))
+            p = int(min(power_limit, self._gs_max))
             log.debug("SunEnergyXT: Laden mit %dW (gs_max=%dW)", p, self._gs_max)
             self._write(MM=0, GS=-p)
 
