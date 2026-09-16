@@ -6,7 +6,9 @@ from requests.exceptions import HTTPError as RequestsHTTPError
 from modules.common import store
 from modules.common.abstract_vehicle import VehicleUpdateData
 from modules.common.component_context import SingleComponentUpdateContext
-from modules.vehicles.bmw_cardata.soc import FIELD_SOC_CANDIDATES, create_vehicle, fetch_soc
+from modules.vehicles.bmw_cardata.soc import (
+    FIELD_SOC_CANDIDATES, FIELD_TARGET_SOC, create_vehicle, fetch_soc,
+)
 from modules.vehicles.bmw_cardata.config import BmwCardataSetup, BmwCardataConfiguration
 
 
@@ -168,6 +170,92 @@ class TestBmwCardata:
 
         result = fetch_soc(self._make_config())
         assert result.odometer == 45000
+
+    def test_target_soc_below_100_has_warning(self, monkeypatch):
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "telematicData": {
+                "vehicle.drivetrain.electricEngine.charging.level": {"value": "75", "unit": "%"},
+                "vehicle.powertrain.electric.battery.stateOfCharge.target": {"value": "80", "unit": "%"},
+            }
+        }
+        mock_session = Mock()
+        mock_session.get.return_value = mock_response
+        mock_session.headers = {}
+        monkeypatch.setattr("modules.vehicles.bmw_cardata.soc.req.get_http_session", Mock(return_value=mock_session))
+
+        result = fetch_soc(self._make_config())
+        assert result.warning is not None
+        assert "80" in result.warning
+
+    def test_target_soc_100_has_no_warning(self, monkeypatch):
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "telematicData": {
+                "vehicle.drivetrain.electricEngine.charging.level": {"value": "75", "unit": "%"},
+                "vehicle.powertrain.electric.battery.stateOfCharge.target": {"value": "100", "unit": "%"},
+            }
+        }
+        mock_session = Mock()
+        mock_session.get.return_value = mock_response
+        mock_session.headers = {}
+        monkeypatch.setattr("modules.vehicles.bmw_cardata.soc.req.get_http_session", Mock(return_value=mock_session))
+
+        result = fetch_soc(self._make_config())
+        assert result.warning is None
+
+    def test_no_target_soc_has_no_warning(self, monkeypatch):
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "telematicData": {
+                "vehicle.drivetrain.electricEngine.charging.level": {"value": "75", "unit": "%"},
+            }
+        }
+        mock_session = Mock()
+        mock_session.get.return_value = mock_response
+        mock_session.headers = {}
+        monkeypatch.setattr("modules.vehicles.bmw_cardata.soc.req.get_http_session", Mock(return_value=mock_session))
+
+        result = fetch_soc(self._make_config())
+        assert result.warning is None
+
+    def test_container_create_retries_without_target_soc_descriptor(self, monkeypatch):
+        mock_get_response_empty = Mock()
+        mock_get_response_empty.json.return_value = {"containers": []}
+
+        post_call_count = [0]
+
+        def mock_post(url, json=None):
+            if "containers" in url:
+                post_call_count[0] += 1
+                if post_call_count[0] == 1:
+                    mock_resp = Mock()
+                    mock_resp.status_code = 500
+                    raise RequestsHTTPError(response=mock_resp)
+                assert FIELD_TARGET_SOC not in json["technicalDescriptors"]
+                assert FIELD_SOC_CANDIDATES[0] not in json["technicalDescriptors"]
+                return Mock(json=Mock(return_value={"containerId": "fallback-container-id"}))
+            raise AssertionError(f"Unerwarteter POST an {url}")
+
+        mock_session = Mock()
+        mock_session.get.return_value = mock_get_response_empty
+        mock_session.post.side_effect = mock_post
+        mock_session.headers = {}
+        monkeypatch.setattr("modules.vehicles.bmw_cardata.soc.req.get_http_session", Mock(return_value=mock_session))
+        monkeypatch.setattr(
+            "modules.vehicles.bmw_cardata.soc._fetch_telematic_data",
+            Mock(return_value={
+                "telematicData": {
+                    "vehicle.powertrain.electric.battery.stateOfCharge.displayed": {"value": "58", "unit": "%"},
+                }
+            }),
+        )
+
+        config = self._make_config(container_id="")
+        result = fetch_soc(config)
+
+        assert result.soc == 58
+        assert post_call_count[0] == 2
 
     def test_no_soc_raises(self, monkeypatch):
         mock_response = Mock()
