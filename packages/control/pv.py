@@ -6,7 +6,7 @@ der sonst in das Netz eingespeist werden würde.
 
 from dataclasses import dataclass, field
 import logging
-from typing import List
+from typing import List, Optional
 
 from dataclass_utils.factories import currents_list_factory
 
@@ -44,9 +44,19 @@ def get_factory() -> Get:
 
 
 @dataclass
+class Set:
+    error_timer: Optional[float] = field(default=None, metadata={"topic": "set/error_timer"})
+
+
+def set_factory() -> Set:
+    return Set()
+
+
+@dataclass
 class PvData:
     config: Config = field(default_factory=config_factory)
     get: Get = field(default_factory=get_factory)
+    set: Set = field(default_factory=set_factory)
 
 
 class Pv:
