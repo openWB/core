@@ -763,10 +763,11 @@ class Chargepoint(ChargepointRfidMixin, Load):
             except Exception:
                 log.exception(f"Fehler bei Ladestop,cp{self.num}")
 
-            print(
-                f"                                                                                                        {self.get_ocpp_status()}")
-            self.ocpp_send_status_notification()
-            data.data.ocpp_client.send_heart_beat(self.data.config.ocpp_chargebox_id)
+            if self.data.config.ocpp_chargebox_id:
+                print(
+                    f"                                                                                                        {self.get_ocpp_status()}")
+                self.ocpp_send_status_notification()
+            # data.data.ocpp_client.send_heart_beat(self.data.config.ocpp_chargebox_id)
             data.data.ocpp_client.transfer_values(self.data.config.ocpp_chargebox_id,
                                                   self.num,
                                                   self.data.get.ocpp.transaction_id,
@@ -782,7 +783,8 @@ class Chargepoint(ChargepointRfidMixin, Load):
                     if self.find_duo_partner() is None or not self.data.get.plug_state:
                         rfid = rfid or self.data.get.rfid
                     if (rfid or self.data.get.vehicle_id):
-                        self.data.get.ocpp.transaction_id = data.data.ocpp_client.start_transaction(
+                        # self.data.get.ocpp.transaction_id =
+                        data.data.ocpp_client.start_transaction(
                             self.data.config.ocpp_chargebox_id,
                             self.num,
                             rfid or self.data.get.vehicle_id,
