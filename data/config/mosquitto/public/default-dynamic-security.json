@@ -500,6 +500,12 @@
 					"topic": "openWB/system/security/access/Status",
 					"priority": 0,
 					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/counter/get/loadmanagement_prios",
+					"priority": 0,
+					"allow": true
 				}
 			]
 		},
