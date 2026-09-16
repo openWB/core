@@ -27,6 +27,7 @@ def _make_bat() -> SunEnergyXTBat:
     # Mock internal helpers so no real HA infrastructure is needed
     bat.sim_counter = MagicMock()
     bat.sim_counter.sim_count.return_value = (1000.0, 500.0)
+    bat.peak_filter = MagicMock()
     bat.store = MagicMock()
     bat.fault_state = MagicMock()
     bat._base_url = BASE_URL

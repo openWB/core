@@ -6,10 +6,11 @@ from typing import Any, Optional
 from modules.common import req
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
-from modules.common.component_type import ComponentDescriptor
+from modules.common.component_type import ComponentDescriptor, ComponentType
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount import SimCounter
 from modules.common.store import get_component_value_store
+from modules.common.utils.peak_filter import PeakFilter
 from modules.devices.sunenergyxt.sunenergyxt.config import SunEnergyXT, SunEnergyXTBatSetup
 
 log = logging.getLogger(__name__)
@@ -28,6 +29,7 @@ class SunEnergyXTBat(AbstractBat):
         self.sim_counter = SimCounter(self.device_config.id, self.component_config.id, self.component_config.type)
         self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
+        self.peak_filter = PeakFilter(ComponentType.BAT, self.component_config.id, self.fault_state)
         self._base_url = f"http://{self.device_config.configuration.ip_address}"
         # Wird beim ersten update() aus IS (Max. Inverterleistung) gesetzt.
         # IS berücksichtigt automatisch Modell (500 / 500 Pro) und Anzahl Module (BN).
@@ -56,6 +58,7 @@ class SunEnergyXTBat(AbstractBat):
         if is_value > 0:
             self._gs_max = is_value
 
+        self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)
 
         bat_state = BatState(
