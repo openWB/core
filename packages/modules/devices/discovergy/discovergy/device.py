@@ -1,7 +1,8 @@
 import logging
+from typing import Iterable, Union
 
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, IndependentComponentUpdater
+from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
 from modules.common.req import get_http_session
 from modules.devices.discovergy.discovergy import counter, inverter
 from modules.devices.discovergy.discovergy.config import (
@@ -26,11 +27,18 @@ def create_device(device_config: Discovergy):
         session = get_http_session()
         session.auth = (device_config.configuration.user, device_config.configuration.password)
 
+    def update_components(components: Iterable[Union[counter.DiscovergyCounter, inverter.DiscovergyInverter]]):
+        # Zähler und Wechselrichter teilen sich Login/Session beim selben Discovergy-Konto - ist die Anmeldung
+        # ungültig oder die API nicht erreichbar, muss das für beide gelten, nicht nur für die zuerst geprüfte
+        # Komponente.
+        for component in components:
+            component.update(session)
+
     return ConfigurableDevice(
         device_config=device_config,
         initializer=initializer,
         component_factory=ComponentFactoryByType(counter=create_counter_component, inverter=create_inverter_component),
-        component_updater=IndependentComponentUpdater(lambda component: component.update(session)),
+        component_updater=MultiComponentUpdater(update_components),
     )
 
 
