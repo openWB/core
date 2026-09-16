@@ -11,7 +11,7 @@ import logging
 
 
 BASE_PATH = Path(__file__).resolve().parents[3]
-logger.setup_logging()
+logger.setup_generate_totals_logging(include_process_log=True)
 log = logging.getLogger("generate_totals")
 
 LOCK_FILE = BASE_PATH / "data" / "generate_totals.lock"
