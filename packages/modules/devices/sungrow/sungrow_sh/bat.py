@@ -80,8 +80,7 @@ class SungrowSHBat(AbstractBat):
             bat_current = self.__tcp_client.read_input_registers(13020, ModbusDataType.INT_16, unit=unit) * -0.1
             bat_power = self.__tcp_client.read_input_registers(13021, ModbusDataType.UINT_16, unit=unit)
 
-            resp = self.__tcp_client._delegate.read_input_registers(13000, 1, unit=unit)
-            running_state = resp.registers[0]
+            running_state = self.__tcp_client.read_input_registers(13000, ModbusDataType.UINT_16, unit=unit)
             is_charging = (running_state & 0x02) != 0
             is_discharging = (running_state & 0x04) != 0
 
