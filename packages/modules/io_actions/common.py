@@ -30,7 +30,7 @@ def get_device_log_message(device: Dict[str, Union[int, str]]) -> str:
         control_command_log.warning(f"Zugriff auf gelöschtes Gerät nicht möglich: {device}")
     except Exception:
         control_command_log.exception(f"Fehler beim Zugriff auf Gerät {device}")
-    return "Unbekanntes Gerät, "
+    return f", Unbekanntes Gerät: {device}"
 
 
 def get_power_log_message(devices: List[Dict[str, Union[int, str]]]) -> str:

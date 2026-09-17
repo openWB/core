@@ -25,7 +25,7 @@ class ExceptionRegistry:
     def translate_exception(self, exception: Exception) -> Tuple[str, FaultStateLevel]:
         entry = self.find_registry_entry(exception)
         if entry is None:
-            message = str(exception.args[0]) if exception.args else str(exception)
+            message = (str(exception.args[0]) if exception.args else str(exception)) or exception.__class__.__name__
             return message, FaultStateLevel.ERROR
         if isinstance(entry.handler, str):
             return entry.handler, FaultStateLevel.ERROR

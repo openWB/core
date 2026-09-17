@@ -92,7 +92,7 @@ class StepwiseControlIo(AbstractIoAction):
                         control_command_log.info(get_power_log_message(self.config.configuration.devices))
                         break
             else:
-                if changed:
+                if changed or self.timestamp:
                     Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", None)
                     control_command_log.info("EZA-Begrenzung aufgehoben.")
 
