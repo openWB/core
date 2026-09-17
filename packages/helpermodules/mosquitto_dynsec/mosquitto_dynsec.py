@@ -143,6 +143,10 @@ def check_roles_at_start():
                 add_acl_role("vehicle-<id>-access", ev.num)
                 if ev.soc_module is not None and ev.soc_module.vehicle_config.type == "mqtt":
                     add_acl_role("vehicle-<id>-write-access", ev.num)
+            for consumer in SubData.consumer_data.values():
+                add_acl_role("consumer-<id>-access", consumer.num)
+                if consumer.data.module is not None and consumer.data.module.type == "mqtt":
+                    add_acl_role("consumer-<id>-write-access", consumer.num)
             for io_action in SubData.io_actions.actions.values():
                 add_acl_role("io-action-<id>-access", io_action.config.id)
             for key, value in SubData.system_data.items():
