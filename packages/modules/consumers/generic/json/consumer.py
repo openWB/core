@@ -47,8 +47,6 @@ def create_consumer(config: Json):
     def initializer():
         nonlocal session, sim_counter
         nonlocal jq_set_power_limit, jq_switch_on, jq_switch_off
-        if not config.configuration.url.startswith('https://'):
-            raise ValueError("Only HTTPS URLs allowed for security")
         session = req.get_http_session()
         sim_counter = SimCounterConsumer(config.id, ComponentType.CONSUMER)
 
