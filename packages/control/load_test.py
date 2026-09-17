@@ -49,3 +49,16 @@ def test_do_not_reset_pv_data_with_plugged_chargepoint_no_charging_allowed():
     load.reset_pv_data_if_no_active_delays()
 
     evu_counter.reset_pv_data.assert_not_called()
+
+
+def test_reset_pv_data_with_unplugged_chargepoint_no_charging_allowed():
+    cp = Mock(spec=Chargepoint, num="1")
+    cp.data = Mock(
+        control_parameter=Mock(state=ChargepointState.NO_CHARGING_ALLOWED),
+        get=Mock(plug_state=False),
+    )
+    evu_counter = _setup_control_data({"cp1": cp}, {})
+
+    load.reset_pv_data_if_no_active_delays()
+
+    evu_counter.reset_pv_data.assert_called_once()
