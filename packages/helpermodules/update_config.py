@@ -29,6 +29,7 @@ from helpermodules.hardware_configuration import (
 from helpermodules.measurement_logging.process_log import get_default_charge_log_columns, get_totals
 from helpermodules.measurement_logging.write_log import get_names
 from helpermodules.messaging import MessageType, pub_system_message
+from helpermodules.mosquitto_dynsec.role_handler import add_acl_role, remove_acl_role
 from helpermodules.pub import Pub
 from helpermodules.utils.json_file_handler import write_and_check
 from helpermodules.utils.run_command import run_command
@@ -58,7 +59,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 148
+    DATASTORE_VERSION = 149
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -3864,3 +3865,23 @@ class UpdateConfig:
                     return {topic: NO_MODULE}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(148)
+
+    def upgrade_datastore_149(self) -> None:
+        user_management_active = decode_payload(
+            self.all_received_topics.get("openWB/system/security/user_management_active")
+        )
+        if user_management_active is True:
+            for topic, payload in self.all_received_topics.items():
+                match = re.search(r"^openWB/consumer/(\d+)/module$", topic)
+                if match is None:
+                    continue
+                consumer_id = int(match.group(1))
+                consumer_module = decode_payload(payload)
+                consumer_type = consumer_module.get("type") if isinstance(consumer_module, dict) else None
+
+                add_acl_role("consumer-<id>-access", consumer_id)
+                if consumer_type == "mqtt":
+                    add_acl_role("consumer-<id>-write-access", consumer_id)
+                else:
+                    remove_acl_role("consumer-<id>-write-access", consumer_id)
+        self._append_datastore_version(149)
