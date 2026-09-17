@@ -97,8 +97,7 @@ class Process:
                         modules_threads.append(consumer_thread)
                 except Exception:
                     log.exception("Fehler im Process-Modul für Verbaucher "+str(consumer))
-            for action in data.data.io_actions.actions.values():
-                io_device = data.data.system_data[f"io{action.config.configuration.io_device}"]
+            for action, io_device in data.data.io_actions.iter_actions_with_io_device():
                 with FaultStateContext(io_device.fault_state, update_always=False):
                     try:
                         if isinstance(action, DimmingDirectControl):

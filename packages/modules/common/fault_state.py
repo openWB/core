@@ -103,16 +103,15 @@ class FaultStateContext:
                  exc_type: Optional[Type[BaseException]],
                  exc_value: Optional[BaseException],
                  traceback: Optional[TracebackType]) -> bool:
+        if exc_value is not None and not isinstance(exc_value, Exception):
+            return False
         if isinstance(exc_value, Exception):
             self.__fault_state.from_exception(exc_value)
         elif self.update_always is False and self.__fault_state.fault_state == 0:
             # Fehlerstatus nicht überschreiben
             return True
         self.__fault_state.store_error()
-        if self.reraise is False or exc_value is None:
-            return True
-        else:
-            return False
+        return self.reraise is False or exc_value is None
 
 
 T_C = TypeVar("T_C", bound=Callable)

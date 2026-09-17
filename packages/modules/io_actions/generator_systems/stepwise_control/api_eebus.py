@@ -8,7 +8,7 @@ from helpermodules.timecheck import create_timestamp
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.abstract_io import AbstractIoAction
 from modules.common.utils.component_parser import get_component_name_by_id, get_io_name_by_id
-from modules.io_actions.common import check_fault_state_io_device
+from modules.io_actions.common import check_fault_state_io_device, get_power_log_message
 from modules.io_actions.generator_systems.stepwise_control.config import StepwiseControlSetup
 from modules.io_devices.eebus.config import AnalogInputMapping, DigitalInputMapping
 
@@ -73,40 +73,46 @@ class StepwiseControlEebus(AbstractIoAction):
     def setup(self) -> None:
         with ModifyLoglevelContext(control_command_log, logging.DEBUG):
             if check_fault_state_io_device(self.config.configuration.io_device):
-                control_command_log.info("Fehler des IO-Geräts: EZA-Begrenzung kann nicht erfasst werden.")
-            else:
-                self.lpp_value = data.data.io_states[f"io_states{self.config.configuration.io_device}"
-                                                     ].data.get.analog_input[AnalogInputMapping.LPP_VALUE.name]
-                lpp_value_prev = data.data.io_states[f"io_states{self.config.configuration.io_device}"
-                                                     ].data.get.analog_input_prev[AnalogInputMapping.LPP_VALUE.name]
-                self.lpp_active = data.data.io_states[f"io_states{self.config.configuration.io_device}"
-                                                      ].data.get.digital_input[DigitalInputMapping.LPP_ACTIVE.name]
-                lpp_active_prev = data.data.io_states[f"io_states{self.config.configuration.io_device}"
-                                                      ].data.get.digital_input_prev[DigitalInputMapping.LPP_ACTIVE.name]
-                changed = True if self.lpp_value != lpp_value_prev or self.lpp_active != lpp_active_prev else False
+                if self.timestamp is None:
+                    Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
+                    control_command_log.info("Fehler des IO-Geräts: EZA-Begrenzung aktiviert für Failsafe-Modus.")
+                control_command_log.info(get_power_log_message(self.config.configuration.devices))
+                self.step = 0
+                return
 
-                if self.lpp_active:
-                    self.step = self.get_step()
-                    if changed:
-                        Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
-                        control_command_log.info(
-                            f"EEBus-Steuerung: EZA-Begrenzung mit LPP-Wert {self.lpp_value}W aktiviert.")
-                        for device in self.config.configuration.devices:
-                            try:
-                                control_command_log.info(
-                                    f"Erzeugungsanlage {get_component_name_by_id(device['id'])} "
-                                    f"auf {self.lpp_value}W begrenzt. Gestufte Ansteuerung: "
-                                    f"{self.step*100:.0f}% der maximalen Ausgangsleistung."
-                                )
-                            except ValueError:
-                                control_command_log.warning(f"Zugriff auf gelöschtes Gerät nicht möglich: {device}")
-                            except Exception:
-                                control_command_log.exception(f"Fehler beim Zugriff auf Gerät {device}")
-                else:
-                    self.step = 1
-                    if changed:
-                        Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", None)
-                        control_command_log.info("EZA-Begrenzung aufgehoben.")
+            self.lpp_value = data.data.io_states[f"io_states{self.config.configuration.io_device}"
+                                                 ].data.get.analog_input[AnalogInputMapping.LPP_VALUE.name]
+            lpp_value_prev = data.data.io_states[f"io_states{self.config.configuration.io_device}"
+                                                 ].data.get.analog_input_prev[AnalogInputMapping.LPP_VALUE.name]
+            self.lpp_active = data.data.io_states[f"io_states{self.config.configuration.io_device}"
+                                                  ].data.get.digital_input[DigitalInputMapping.LPP_ACTIVE.name]
+            lpp_active_prev = data.data.io_states[f"io_states{self.config.configuration.io_device}"
+                                                  ].data.get.digital_input_prev[DigitalInputMapping.LPP_ACTIVE.name]
+            changed = True if self.lpp_value != lpp_value_prev or self.lpp_active != lpp_active_prev else False
+
+            if self.lpp_active:
+                self.step = self.get_step()
+                if changed:
+                    Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
+                    control_command_log.info(
+                        f"EEBus-Steuerung: EZA-Begrenzung mit LPP-Wert {self.lpp_value}W aktiviert.")
+                    for device in self.config.configuration.devices:
+                        try:
+                            control_command_log.info(
+                                f"Erzeugungsanlage {get_component_name_by_id(device['id'])} "
+                                f"auf {self.lpp_value}W begrenzt. Gestufte Ansteuerung: "
+                                f"{self.step*100:.0f}% der maximalen Ausgangsleistung."
+                            )
+                        except ValueError:
+                            control_command_log.warning(f"Zugriff auf gelöschtes Gerät nicht möglich: {device}")
+                        except Exception:
+                            control_command_log.exception(f"Fehler beim Zugriff auf Gerät {device}")
+                control_command_log.info(get_power_log_message(self.config.configuration.devices))
+            else:
+                self.step = 1
+                if changed:
+                    Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", None)
+                    control_command_log.info("EZA-Begrenzung aufgehoben.")
 
     def control_stepwise(self) -> Tuple[Optional[float], LoadmanagementLimit]:
         if check_fault_state_io_device(self.config.configuration.io_device):

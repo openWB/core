@@ -9,7 +9,7 @@ from helpermodules.timecheck import create_timestamp
 from dataclass_utils import asdict
 from modules.common.abstract_io import AbstractIoAction
 from modules.common.utils.component_parser import get_io_name_by_id
-from modules.io_actions.common import check_fault_state_io_device, get_device_log_message
+from modules.io_actions.common import check_fault_state_io_device, get_power_log_message
 from modules.io_actions.controllable_consumers.dimming.config import DimmingSetup
 from modules.io_actions.controllable_consumers.dimming.utils import calc_dimming_surplus
 from modules.io_devices.eebus.config import AnalogInputMapping, DigitalInputMapping
@@ -61,11 +61,7 @@ class DimmingEebus(AbstractIoAction):
                         control_command_log.info(f"Dimmen aktiviert. Übermittelter LPC-Wert: {lpc_value/1000}kWh. "
                                                  "Leistungswerte vor Ausführung des Steuerbefehls:")
 
-                evu_counter = data.data.counter_data[data.data.counter_all_data.get_evu_counter_str()]
-                msg = f"EVU-Zähler: {evu_counter.data.get.powers}W, {evu_counter.data.get.power}W"
-                for device in self.config.configuration.devices:
-                    msg += get_device_log_message(device)
-                control_command_log.info(msg)
+                control_command_log.info(get_power_log_message(self.config.configuration.devices))
             elif self.timestamp:
                 Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", None)
                 control_command_log.info("Dimmen deaktiviert.")
