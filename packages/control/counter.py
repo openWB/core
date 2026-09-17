@@ -628,6 +628,12 @@ class Counter:
         """ setzt die Daten zurück, die über mehrere Regelzyklen genutzt werden.
         """
         try:
+            if self.data.set.reserved_surplus != 0 or self.data.set.released_surplus != 0:
+                log.info(
+                    f"PV-Algorithmus-Werte werden zurückgesetzt: reservierter Überschuss "
+                    f"{self.data.set.reserved_surplus}W, freigegebener Überschuss "
+                    f"{self.data.set.released_surplus}W."
+                )
             self.data.set.reserved_surplus = 0
             self.data.set.released_surplus = 0
         except Exception:
