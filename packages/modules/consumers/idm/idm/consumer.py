@@ -46,15 +46,21 @@ def create_consumer(config: Idm):
         battery_soc = int(values.bat_soc) if values.bat_soc is not None else -1
 
         # Reg 74: Aktueller PV-Überschuss [kW]
-        client.write_register(74, surplus / 1000, wordorder=Endian.Little, unit=modbus_id)
+        client.write_register(74, surplus / 1000, data_type=ModbusDataType.FLOAT_32,
+                              wordorder=Endian.Little, unit=modbus_id)
         # Reg 78: Aktuelle PV-Produktion [kW]
-        client.write_register(78, pv_power / 1000, wordorder=Endian.Little, unit=modbus_id)
+        client.write_register(78, pv_power / 1000, data_type=ModbusDataType.FLOAT_32,
+                              wordorder=Endian.Little, unit=modbus_id)
         # Reg 82: Hausverbrauch [kW], Default 0
-        client.write_register(82, values.home_consumption / 1000, wordorder=Endian.Little, unit=modbus_id)
-        # Reg 84: Batterieentladung [kW], Default 0 (negativ = Ladung)
-        client.write_register(84, values.bat_power / 1000, wordorder=Endian.Little, unit=modbus_id)
+        client.write_register(82, values.home_consumption / 1000, data_type=ModbusDataType.FLOAT_32,
+                              wordorder=Endian.Little, unit=modbus_id)
+        # Reg 84: Batterieentladung [kW], Default 0 (negativ = Ladung). values.bat_power kommt roh aus
+        # process.py (negativ = Entladung, positiv = Ladung, gleiche Konvention wie z.B. bei Sungrow) ->
+        # Vorzeichen drehen, um auf die von IDM erwartete Konvention zu kommen
+        client.write_register(84, -values.bat_power / 1000, data_type=ModbusDataType.FLOAT_32,
+                              wordorder=Endian.Little, unit=modbus_id)
         # Reg 86: Batteriefüllstand [%], Default -1 (= kein Speicher)
-        client.write_register(86, battery_soc, unit=modbus_id)
+        client.write_register(86, battery_soc, data_type=ModbusDataType.INT_16, unit=modbus_id)
 
     def update() -> ConsumerState:
         if config.configuration.version == 1:
@@ -63,7 +69,7 @@ def create_consumer(config: Idm):
         else:
             power = client.read_input_registers(
                 4122, ModbusDataType.FLOAT_32, unit=config.configuration.modbus_id)
-        power *= 100
+        power *= 1000
         imported, exported = sim_counter.sim_count(power)
 
         return ConsumerState(
@@ -77,8 +83,8 @@ def create_consumer(config: Idm):
         # Keine echte Leistungsvorgabe - die IDM-Regelung berechnet ihre Strategie selbst anhand dieses Wertes.
         # Hinweis: Dies überschreibt den intern berechneten PV-Überschuss der IDM-Regelung und kann
         # die PV-Eigenverbrauchs-Statistik im IDM-Portal verfälschen.
-        client.write_register(74, max(power_limit, 0) / 1000, wordorder=Endian.Little,
-                              unit=config.configuration.modbus_id)
+        client.write_register(74, max(power_limit, 0) / 1000, data_type=ModbusDataType.FLOAT_32,
+                              wordorder=Endian.Little, unit=config.configuration.modbus_id)
 
     return ConfigurableConsumer(consumer_config=config,
                                 initializer=initializer,
