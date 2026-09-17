@@ -80,8 +80,6 @@ def create_device(device_config: Tesla):
     def update_components(
         components: Iterable[Union[TeslaBat, TeslaCounter, TeslaInverter]],
     ):
-        nonlocal http_client, session
-
         log.debug("Beginning update")
 
         address = device_config.configuration.ip_address
