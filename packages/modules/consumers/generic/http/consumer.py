@@ -30,8 +30,6 @@ def create_consumer(config: Http):
         nonlocal session, sim_counter
         nonlocal get_power, get_imported, get_exported, get_currents, get_temperatures
         nonlocal post_set_power_limit, post_switch_on, post_switch_off
-        if not config.configuration.url.startswith('https://'):
-            raise ValueError("Only HTTPS URLs allowed for security")
         session = req.get_http_session()
         sim_counter = SimCounterConsumer(config.id, ComponentType.CONSUMER)
 
