@@ -62,7 +62,6 @@ class OcppTransaction:
 
     transaction_id: Optional[int] = None
     id_tag: Optional[str] = None
-    meter_start: Optional[int] = None
 
     pending_stop: Optional[PendingStop] = None
 
@@ -72,7 +71,6 @@ class OcppTransaction:
         self.state = TransactionState.IDLE
         self.transaction_id = None
         self.id_tag = None
-        self.meter_start = None
         self.pending_stop = None
         self.last_error = None
 
@@ -124,10 +122,6 @@ class OcppClient:
 
         # Neuester Zählerstand aus dem openWB-Backend.
         self._meter_snapshots = {}
-
-        # Verhindert parallele Start-/StopTransaction-Aufrufe.
-        self._start_pending = set()
-        self._stop_pending = set()
 
         self._transactions: dict[str, OcppTransaction] = {}
 
@@ -212,9 +206,9 @@ class OcppClient:
             if existing is not None:
                 await self._cleanup_connection(existing)
 
-            # Reconnect zum testen verzögern
-            if data.data.cp_data["cp3"].data.get.ocpp.test_reconnect:
-                return
+            # Reconnect zum Testen gezielt für genau diesen Ladepunkt verzögern.
+            if openwb_cp.data.get.ocpp.test_reconnect:
+                return None
 
             return await self._connect(chargebox_id)
 
@@ -264,20 +258,36 @@ class OcppClient:
             response is None
             or response.status != RegistrationStatus.accepted
         ):
+            await self._cleanup_connection(connection)
             raise RuntimeError(f"BootNotification von {chargebox_id} wurde nicht akzeptiert")
 
         connection.boot_accepted = True
 
+        # Heartbeat-Intervall des CSMS übernehmen.
+        """
+        heartbeat_interval = getattr(response, "interval", None)
+        if heartbeat_interval is not None:
+            try:
+                heartbeat_interval = int(heartbeat_interval)
+                if heartbeat_interval > 0:
+                    cp.configuration["HeartbeatInterval"].value = str(heartbeat_interval)
+            except (TypeError, ValueError):
+                log.warning(
+                    "Ungültiges Heartbeat-Intervall vom CSMS für %s: %r",
+                    chargebox_id,
+                    heartbeat_interval,
+                )
+        """
+        # Den lokal gepflegten OCPP-Availability-Zustand mit openWB synchronisieren.
+        await cp._set_availability(1, cp.availability[1])
+
+        # Ausstehende Offline-Ereignisse vor Freigabe für neue Requests abarbeiten.
         await self._play_pending_transactions(
             chargebox_id,
             connection,
         )
 
-        # Heartbeat-Intervall des CSMS übernehmen.
-        # if getattr(response, "interval", None):
-        #    cp.configuration["HeartbeatInterval"].value = str(
-        #        response.interval
-        #    )
+        _set_connected(cp, True)
 
         # Periodische Tasks starten.
         connection.heartbeat_task = asyncio.create_task(
@@ -325,6 +335,8 @@ class OcppClient:
         connection: OcppConnection,
     ):
         connection.closing = True
+
+        _set_connected(connection.cp, False)
 
         chargebox_id = connection.chargebox_id
 
@@ -380,8 +392,9 @@ class OcppClient:
 
         await self._cleanup_connection(connection)
 
-        # Reconnect zum testen verzögern
-        if data.data.cp_data["cp3"].data.get.ocpp.test_reconnect:
+        # Reconnect zum Testen gezielt für genau diesen Ladepunkt verzögern.
+        openwb_cp = get_cp_from_chargebox_id(chargebox_id)
+        if openwb_cp is not None and openwb_cp.data.get.ocpp.test_reconnect:
             return
         #
         # Wenn Verbindung weiterhin gewünscht:
@@ -617,7 +630,7 @@ class OcppClient:
     def status_notification(
         self,
         chargebox_id: str,
-        chargebox_num: int,
+        connector_id: int,
         fault_state: FaultState,
         fault_state_str: str,
         status: ChargePointStatus,
@@ -631,7 +644,7 @@ class OcppClient:
             self._call(
                 chargebox_id,
                 "_status_notification",
-                chargebox_num=chargebox_num,
+                connector_id=connector_id,
                 fault_state=fault_state,
                 fault_state_str=fault_state_str,
                 status=status,
@@ -698,7 +711,7 @@ class OcppClient:
 
         # Schon aktiv?
         if transaction.state == TransactionState.ACTIVE:
-            return
+            return True
 
         # Gerade beschäftigt?
         if transaction.state in (
@@ -706,13 +719,13 @@ class OcppClient:
             TransactionState.STARTING,
             TransactionState.STOPPING,
         ):
-            return
+            return False
 
         # Gleicher Tag wurde bereits abgelehnt.
         if transaction.state == TransactionState.REJECTED:
             if transaction.id_tag == id_tag:
                 log.debug(f"OCPP {chargebox_id}: Tag {id_tag} wurde bereits abgelehnt.")
-                return
+                return True
 
             # Neuer Tag -> neuer Versuch erlaubt.
             log.info(f"OCPP {chargebox_id}: neuer Tag nach Ablehnung: {transaction.id_tag} -> {id_tag}")
@@ -723,17 +736,22 @@ class OcppClient:
         # StartTransaction automatisch wiederholen.
         if transaction.state == TransactionState.ERROR:
             if transaction.id_tag == id_tag:
-                return
+                return False
 
             transaction.reset()
 
         transaction.id_tag = id_tag
-        transaction.meter_start = int(imported)
         transaction.last_error = None
 
-        connection = await self._ensure_connected(
-            chargebox_id
-        )
+        try:
+            connection = await self._ensure_connected(chargebox_id)
+        except Exception:
+            connection = None
+
+        if connection is None:
+            log.info(f"OCPP {chargebox_id}: Start nicht ausgeführt, keine Verbindung zum OCPP-Server")
+            transaction.reset()
+            return False
 
         cp = connection.cp
 
@@ -752,15 +770,17 @@ class OcppClient:
         except Exception as e:
             transaction.last_error = str(e)
 
+            # Authorize selbst startet keine Transaction. Ein erneuter Versuch
+            # nach Reconnect ist deshalb sicher.
             self._set_transaction_state(
                 chargebox_id,
                 transaction,
-                TransactionState.ERROR,
+                TransactionState.IDLE,
             )
 
             log.exception(f"Authorize für {chargebox_id} fehlgeschlagen")
 
-            return
+            return False
 
         status = _get_id_tag_status(response)
 
@@ -774,7 +794,7 @@ class OcppClient:
             )
 
             _set_tag_accepted(cp, False,)
-            return
+            return True
 
         _set_tag_accepted(cp, True, accepted_tag=id_tag)
 
@@ -787,7 +807,7 @@ class OcppClient:
 
             _set_tag_accepted(cp, False)
 
-            return
+            return True
 
         # START TRANSACTION
         self._set_transaction_state(
@@ -823,9 +843,13 @@ class OcppClient:
                 TransactionState.ERROR,
             )
 
+            # Ohne bestätigte Transaction-ID darf openWB die Ladung nicht auf
+            # Basis eines zuvor erfolgreichen Authorize weiter freigeben.
+            _set_tag_accepted(cp, False)
+
             log.exception(f"StartTransaction für {chargebox_id} fehlgeschlagen")
 
-            return
+            return False
 
         status = _get_id_tag_status(response)
 
@@ -844,7 +868,7 @@ class OcppClient:
 
             _set_tag_accepted(cp, False)
 
-            return
+            return True
 
         # TRANSACTION AKTIV
         transaction.transaction_id = response.transaction_id
@@ -875,6 +899,8 @@ class OcppClient:
                 transaction=transaction,
                 request=pending_stop,
             )
+
+        return True
 
     def request_stop(
         self,
@@ -928,11 +954,11 @@ class OcppClient:
 
             log.debug(f"OCPP {chargebox_id}: Stop vorgemerkt, State={transaction.state.value}")
 
-            return
+            return False
 
         # Stop läuft bereits.
         if transaction.state == TransactionState.STOPPING:
-            return
+            return False
 
         # Es existiert überhaupt keine Transaction.
         if transaction.state in (
@@ -941,7 +967,7 @@ class OcppClient:
         ):
             transaction.reset()
 
-            return
+            return True
 
         # Bei ERROR mit echter transaction_id können wir
         # einen Stop weiterhin versuchen.
@@ -949,10 +975,10 @@ class OcppClient:
             transaction.state == TransactionState.ERROR
             and transaction.transaction_id is None
         ):
-            return
+            return False
 
         if transaction.transaction_id is None:
-            return
+            return True
 
         try:
             connection = await self._ensure_connected(chargebox_id)
@@ -961,21 +987,16 @@ class OcppClient:
 
         if connection is None:
             transaction.pending_stop = stop_request
-            self._persist_offline_transaction_event(
+            self._persist_offline_stop(
                 chargebox_id,
-                {
-                    "action": "stop",
-                    "transaction_id": transaction.transaction_id,
-                    "id_tag": stop_request.id_tag,
-                    "imported": stop_request.meter_stop,
-                    "reason": stop_request.reason,
-                },
+                transaction_id=transaction.transaction_id,
+                request=stop_request,
             )
 
             log.info(f"OCPP {chargebox_id}: Stop wegen fehlender Verbindung vorgemerkt.")
-            return
+            return False
 
-        await self._stop_active_transaction(
+        return await self._stop_active_transaction(
             chargebox_id=chargebox_id,
             connection=connection,
             transaction=transaction,
@@ -1042,7 +1063,7 @@ class OcppClient:
         transaction_id = transaction.transaction_id
 
         if transaction_id is None:
-            return
+            return True
 
         self._set_transaction_state(
             chargebox_id,
@@ -1076,11 +1097,12 @@ class OcppClient:
 
             log.exception(f"StopTransaction {transaction_id} für {chargebox_id} fehlgeschlagen")
 
-            return
+            return False
 
         log.info(f"OCPP Transaction {transaction_id} für {chargebox_id} beendet.")
 
         transaction.transaction_id = None
+        connection.cp.transaction_id = None
         _publish_transaction_id(connection.cp, None)
         _set_tag_accepted(connection.cp, False)
 
@@ -1093,6 +1115,8 @@ class OcppClient:
 
         transaction.reset()
 
+        return True
+
     # Führt nach reconnect ausstehende Transaktionen aus.
     async def _play_pending_transactions(
         self,
@@ -1103,101 +1127,66 @@ class OcppClient:
         if openwb_cp is None:
             return
 
-        pending_transactions = list(
-            getattr(openwb_cp.data.get.ocpp, "pending_transactions", []) or []
+        pending_transactions = (
+            openwb_cp.data.get.ocpp.pending_transactions or []
         )
         if not pending_transactions:
             return
 
-        for entry in pending_transactions:
+        # immer nur die letzte
+        # falls alte Duplikate existieren
+        entry = pending_transactions[-1]
 
-            action = entry.get("action")
-            if action == "start":
-                await self._request_start(
-                    chargebox_id=chargebox_id,
-                    connector_id=int(entry.get("connector_id", 1)),
-                    id_tag=str(entry.get("id_tag", "")),
-                    imported=int(entry.get("imported", 0)),
-                )
-            elif action == "stop":
+        transaction_id = entry.get("transaction_id")
 
-                await self._request_stop(
-                    chargebox_id=chargebox_id,
-                    imported=int(entry.get("imported", 0)),
-                    id_tag=str(entry.get("id_tag", "")),
-                    reason=str(entry.get("reason", "EVDisconnected")),
-                )
+        if transaction_id is None:
+            _clear_pending_transactions(openwb_cp)
+            return
 
-        openwb_cp.data.get.ocpp.pending_transactions = []
-        Pub().pub(
-            f"openWB/set/chargepoint/{openwb_cp.num}/get/ocpp/pending_transactions",
-            [],
-        )
+        transaction_id = int(transaction_id)
 
-    def _persist_offline_transaction_event(
+        transaction = self._get_transaction(chargebox_id)
+
+        transaction.transaction_id = transaction_id
+        transaction.id_tag = str(entry.get("id_tag", ""))
+        transaction.state = TransactionState.ACTIVE
+
+        connection.cp.transaction_id = transaction_id
+
+        stop_request = PendingStop(meter_stop=int(entry.get("imported", 0)),
+                                   id_tag=entry.get("id_tag", ""),
+                                   reason=str(entry.get("reason", "EVDisconnected")))
+
+        successful = await self._stop_active_transaction(chargebox_id=chargebox_id, connection=connection, transaction=transaction, request=stop_request)
+
+        if successful:
+            _clear_pending_transactions(openwb_cp)
+
+    def _persist_offline_stop(
         self,
         chargebox_id: str,
-        event: dict,
+        transaction_id: int,
+        request: PendingStop
     ) -> None:
         openwb_cp = get_cp_from_chargebox_id(chargebox_id)
         if openwb_cp is None:
             return
 
-        pending_transactions = list(
-            getattr(openwb_cp.data.get.ocpp, "pending_transactions", []) or []
+        event = {
+            "action": "stop",
+            "transaction_id": transaction_id,
+            "id_tag": str(request.id_tag),
+            "imported": int(request.meter_stop),
+            "reason": str(request.reason),
+        }
+
+        pending_transactions = [event]
+
+        openwb_cp.data.get.ocpp.pending_transactions = pending_transactions
+        Pub().pub(
+            f"openWB/set/chargepoint/{openwb_cp.num}/get/ocpp/pending_transactions",
+            pending_transactions,
         )
-
-        transaction_id = event.get("transaction_id")
-        if (transaction_id is None or
-                    not any(
-                        pending_event.get("transaction_id") == transaction_id
-                        for pending_event in pending_transactions
-                    )
-                ):
-            pending_transactions.append(event)
-
-            openwb_cp.data.get.ocpp.pending_transactions = pending_transactions
-            Pub().pub(
-                f"openWB/set/chargepoint/{openwb_cp.num}/get/ocpp/pending_transactions",
-                pending_transactions,
-            )
-
-            # Temp erstmal nur um testen
-            openwb_cp.data.get.ocpp.transaction_id = (
-                None
-            )
-
-            Pub().pub(
-                f"openWB/set/chargepoint/"
-                f"{openwb_cp.num}/get/ocpp/transaction_id",
-                None,
-            )
-
-            openwb_cp.data.get.ocpp.tag_accepted = False
-            Pub().pub(
-                f"openWB/set/chargepoint/"
-                f"{openwb_cp.num}/get/ocpp/transaction_id_tag",
-                None,
-            )
-
-            Pub().pub(
-                f"openWB/set/chargepoint/"
-                f"{openwb_cp.num}/get/ocpp/tag_accepted",
-                False,
-            )
-
-            """
-            Idee:
-            das triggert jetzt nur, wenn während einer laufenden Transktion die Conneciton lost geht
-                -> dann hier einmal alles reseten, die transaktion ist ja im Broker
-
-            -> alle weiteren Transaktionen werden dann außerhalb vom Client geloggt
-                -> client ist nutzlos ohne verbindung...
-            """
-            # Broker zurücksetzen:
-            # - Transaktion_id
-            # - tag_accepted
-            # - transaction_id_tag ????evtl.
 
 
 """
@@ -1250,6 +1239,20 @@ def _publish_transaction_id(
     )
 
 
+def _set_connected(
+    cp: "OcppChargePoint",
+    connected: bool,
+):
+    if cp is None or getattr(cp, "openwb_cp", None) is None:
+        return
+
+    cp.openwb_cp.data.get.ocpp.connected = connected
+    Pub().pub(
+        f"openWB/set/chargepoint/{cp.openwb_num}/get/ocpp/connected",
+        connected,
+    )
+
+
 def _set_tag_accepted(
     cp: "OcppChargePoint",
     accepted: bool,
@@ -1261,12 +1264,19 @@ def _set_tag_accepted(
     cp.openwb_cp.data.get.ocpp.tag_accepted = (
         accepted
     )
-    if accepted:
-        Pub().pub(
-            f"openWB/set/chargepoint/"
-            f"{cp.openwb_num}/get/ocpp/transaction_id_tag",
-            str(accepted_tag),
-        )
+
+    transaction_id_tag = (
+        str(accepted_tag)
+        if accepted and accepted_tag is not None
+        else None
+    )
+    cp.openwb_cp.data.get.ocpp.transaction_id_tag = transaction_id_tag
+
+    Pub().pub(
+        f"openWB/set/chargepoint/"
+        f"{cp.openwb_num}/get/ocpp/transaction_id_tag",
+        str(transaction_id_tag),
+    )
 
     Pub().pub(
         f"openWB/set/chargepoint/"
@@ -1287,4 +1297,14 @@ def _set_remote_stop(
         f"openWB/set/chargepoint/"
         f"{cp.openwb_num}/get/ocpp/remote_stop",
         remote_stop,
+    )
+
+
+def _clear_pending_transactions(
+    openwb_cp: "OcppChargePoint",
+):
+    openwb_cp.data.get.ocpp.pending_transactions = []
+    Pub().pub(
+        f"openWB/set/chargepoint/{openwb_cp.num}/get/ocpp/pending_transactions",
+        [],
     )

@@ -584,7 +584,7 @@ class SetData:
             self._validate_value(msg, float, [(float("-inf"), 0)])
         elif "/get/power" in msg.topic:
             self._validate_value(msg, float)
-        elif "/get/ocpp/transaction_id" in msg.topic:
+        elif msg.topic.endswith("/get/ocpp/transaction_id"):
             self._validate_value(msg, int)
         elif "/get/phases_in_use" in msg.topic:
             self._validate_value(msg, int, [(0, 3)])
@@ -604,8 +604,7 @@ class SetData:
             self._validate_value(msg, float, [(-3200, 3200)])
         elif ("/get/version" in msg.topic or
               "/get/current_branch" in msg.topic or
-              "/get/current_commit" in msg.topic or
-              "/get/ocpp/transaction_id_tag" in msg.topic):
+              "/get/current_commit" in msg.topic):
             self._validate_value(msg, str)
         elif ("/get/error_timestamp" in msg.topic or
                 "/get/rfid_timestamp" in msg.topic):
@@ -626,6 +625,8 @@ class SetData:
               "/get/connected_vehicle/soc" in msg.topic or
               "/get/ocpp/pending_transactions" in msg.topic):
             self._validate_value(msg, "json")
+        elif msg.topic.endswith("/get/ocpp/transaction_id_tag"):
+            self._validate_value(msg, str)
         else:
             self.__unknown_topic(msg)
 

@@ -320,7 +320,7 @@ class Optional:
                 chargebox_id = cp.data.config.ocpp_chargebox_id
                 if cp.data.get.ocpp.transaction_id is not None:
                     client.transfer_values(chargebox_id,
-                                           cp.num,
+                                           1,
                                            cp.data.get.ocpp.transaction_id,
                                            int(cp.data.get.imported))
             except Exception:
