@@ -4,7 +4,16 @@ from helpermodules.utils.error_handling import ImportErrorContext
 with ImportErrorContext():
     from ocpp.v16 import ChargePoint as cp
     from ocpp.v16 import call, call_result, datatypes
-    from ocpp.v16.enums import ChargePointStatus, ChargePointErrorCode, AvailabilityType, AvailabilityStatus, Action, UnlockStatus
+    from ocpp.v16.enums import (
+        Action,
+        AvailabilityStatus,
+        AvailabilityType,
+        ChargePointErrorCode,
+        ChargePointStatus,
+        ConfigurationStatus,
+        RemoteStartStopStatus,
+        UnlockStatus,
+    )
     from ocpp.routing import on
 from typing import Optional
 from helpermodules.pub import Pub
@@ -161,7 +170,7 @@ class OcppChargePoint(cp):
         return response
 
     async def _status_notification(self,
-                                   chargebox_num: int,
+                                   connector_id: int,
                                    fault_state: FaultState,
                                    fault_state_str: str,
                                    status: ChargePointStatus,
@@ -171,7 +180,7 @@ class OcppChargePoint(cp):
 
         current_status = (status, get_ocpp_error_code(fault_state))
 
-        key = (self.chargebox_id, chargebox_num)
+        key = (self.chargebox_id, connector_id)
 
         # Wenn sich key nicht verändert hat, mach nix
         if not force and self._last_update.get(key) == current_status:
@@ -182,7 +191,7 @@ class OcppChargePoint(cp):
 
         # Key rausschicken
         request = call.StatusNotification(
-            connector_id=chargebox_num,
+            connector_id=connector_id,
             error_code=get_ocpp_error_code(fault_state),
             status=status,
             timestamp=_get_formatted_time(),
@@ -248,9 +257,12 @@ class OcppChargePoint(cp):
         else:
             self.availability[connector_id] = availability_type
 
-        # Hier dann setz MQTT-Topic
+        available = availability_type == AvailabilityType.operative
+        if self.openwb_cp is not None:
+            self.openwb_cp.data.get.ocpp.availability = available
+
         Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/availability",
-                  True if availability_type == AvailabilityType.operative else False)
+                  available)
 
     async def apply_pending_availability(self):
         for connector_id, availability_type in list(self._pending_availability.items()):
@@ -307,14 +319,38 @@ class OcppChargePoint(cp):
             f"Value: {value}"
         )
 
-        if key in self.configuration:
-            self.configuration[key].value = value
+        config_value = self.configuration.get(key)
+
+        if config_value is None:
             return call_result.ChangeConfiguration(
-                status="Accepted"
+                status=ConfigurationStatus.rejected
             )
 
+        if config_value.readonly:
+            return call_result.ChangeConfiguration(
+                status=ConfigurationStatus.rejected
+            )
+
+        # Die aktuell unterstützten schreibbaren Intervalle müssen positive
+        # Ganzzahlen sein, da sie später mit int(...) ausgewertet werden.
+        if key in ("HeartbeatInterval", "MeterValueSampleInterval"):
+            try:
+                parsed_value = int(value)
+            except (TypeError, ValueError):
+                return call_result.ChangeConfiguration(
+                    status=ConfigurationStatus.rejected
+                )
+
+            if parsed_value <= 0:
+                return call_result.ChangeConfiguration(
+                    status=ConfigurationStatus.rejected
+                )
+
+            value = str(parsed_value)
+
+        config_value.value = value
         return call_result.ChangeConfiguration(
-            status="Rejected"
+            status=ConfigurationStatus.accepted
         )
 
     @on(Action.remote_start_transaction)
@@ -344,7 +380,7 @@ class OcppChargePoint(cp):
         requested_connector_id = connector_id if connector_id is not None else 1
         if self.availability.get(requested_connector_id) != AvailabilityType.operative:
             return call_result.RemoteStartTransaction(
-                status="Rejected"
+                status=RemoteStartStopStatus.rejected
             )
 
         # Ich sag einfach hier ist das RFID-Tag
@@ -352,7 +388,7 @@ class OcppChargePoint(cp):
         Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/rfid", id_tag)
 
         return call_result.RemoteStartTransaction(
-            status="Accepted"
+            status=RemoteStartStopStatus.accepted
         )
 
     @on(Action.remote_stop_transaction)
@@ -364,12 +400,23 @@ class OcppChargePoint(cp):
             f"\nKwargs: {kwargs}"
         )
 
-        # wie Stopp ich die Transaktion remote?????
+        if self.transaction_id is None or int(transaction_id) != int(self.transaction_id):
+            log.warning(
+                "RemoteStopTransaction für unbekannte Transaction %s auf %s (aktiv: %s)",
+                transaction_id,
+                self.chargebox_id,
+                self.transaction_id,
+            )
+            return call_result.RemoteStopTransaction(
+                status=RemoteStartStopStatus.rejected
+            )
+
+        if self.openwb_cp is not None:
+            self.openwb_cp.data.get.ocpp.remote_stop = True
         Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/remote_stop", True)
-        # Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/set/rfid", None)
 
         return call_result.RemoteStopTransaction(
-            status="Accepted"
+            status=RemoteStartStopStatus.accepted
         )
 
     @on(Action.unlock_connector)
@@ -393,5 +440,5 @@ class OcppChargePoint(cp):
 
 def get_ocpp_error_code(fault_state: FaultState):
     if fault_state:
-        return "Faulted"
-    return "NoError"
+        return ChargePointErrorCode.other_error
+    return ChargePointErrorCode.no_error
