@@ -3,6 +3,7 @@ from typing import Dict, List, Union
 
 from control import data
 from modules.common.fault_state_level import FaultStateLevel
+from modules.common.utils.component_parser import get_component_name_by_id
 
 
 control_command_log = logging.getLogger("steuve_control_command")
@@ -20,11 +21,11 @@ def get_device_log_message(device: Dict[str, Union[int, str]]) -> str:
                     f"{data.data.cp_data[cp].data.get.powers}W")
         if device["type"] == "inverter":
             inverter = f"pv{device['id']}"
-            return (f", Erzeugungsanlage {data.data.pv_data[inverter].data.config.name}: "
+            return (f", Erzeugungsanlage {get_component_name_by_id(device['id'])}: "
                     f"{data.data.pv_data[inverter].data.get.power}W")
         if device["type"] == "io":
             io = f"io{device['id']}"
-            return (f", {data.data.system_data[io].config.name}: "
+            return (f", {data.data.system_data[io].config.name} {device['digital_output']}: "
                     "Leistung unbekannt")
     except KeyError:
         control_command_log.warning(f"Zugriff auf gelöschtes Gerät nicht möglich: {device}")

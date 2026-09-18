@@ -27,22 +27,24 @@ class StepwiseControlIo(AbstractIoAction):
             for device in self.config.configuration.devices
             if device["type"] == "inverter"
         ]
-        assigned_outputs = [
-            f"{device['id']}/{device['digital_output']}"
-            for device in self.config.configuration.devices
-            if device["type"] == "io"
-        ]
+        self.__unique_outputs = []
+        for pattern in self.config.configuration.output_pattern:
+            for key in pattern["matrix"].keys():
+                if key not in self.__unique_outputs:
+                    self.__unique_outputs.append(key)
         with ModifyLoglevelContext(control_command_log, logging.DEBUG):
             # Log the configuration details
             # We cannot use configured names here, as the devices are not yet initialized
             # and thus the names are not available.
-            control_command_log.info(
+            info_message = (
                 f"Stufenweise Steuerung von EZA: I/O-Gerät: {self.config.configuration.io_device}, "
                 f"Überwachte digitale Eingänge: {self.__unique_inputs}, "
-                f"zugeordnete Erzeugungsanlagen: {assigned_inverters} "
-                f"zugeordnete IO-Ausgänge: {assigned_outputs} "
-                "Die Begrenzung muss in den EZA vorgenommen werden!"
+                f"zugeordnete Erzeugungsanlagen: {assigned_inverters}, "
+                f"zugeordnete IO-Ausgänge: {self.__unique_outputs}"
             )
+            if len(self.__unique_outputs) == 0:
+                info_message += ", Die Begrenzung muss in den EZA vorgenommen werden!"
+            control_command_log.info(info_message)
         super().__init__()
 
     def setup(self) -> None:
@@ -50,7 +52,7 @@ class StepwiseControlIo(AbstractIoAction):
             if check_fault_state_io_device(self.config.configuration.io_device):
                 if self.timestamp is None:
                     Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
-                    control_command_log.info("Fehler des IO-Geräts: EZA-Begrenzung aktiviert für Failsafe-Modus.")
+                control_command_log.info("Fehler des IO-Geräts: EZA-Begrenzung aktiviert für Failsafe-Modus.")
                 control_command_log.info(get_power_log_message(self.config.configuration.devices))
                 return
 

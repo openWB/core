@@ -27,6 +27,7 @@ from modules.io_actions.generator_systems.stepwise_control.api_eebus import Step
 from modules.io_actions.generator_systems.stepwise_control.api_io import StepwiseControlIo
 
 log = logging.getLogger(__name__)
+control_command_log = logging.getLogger("steuve_control_command")
 
 
 class Process:
@@ -125,6 +126,8 @@ class Process:
                                                 f"io_states{action.config.configuration.io_output_device}"
                                             ].data.set.digital_output[output] = pattern["matrix"][output]
                     except KeyError as e:
+                        control_command_log.error(
+                            f"Ausgang konnte für die Aktion {action.config.name} nicht zugeordnet werden.")
                         raise KeyError(f"Ausgang konnte für die Aktion {action.config.name} nicht zugeordnet werden. "
                                        "Bitte prüfen Sie die Konfiguration.") from e
             for io in data.data.system_data.values():

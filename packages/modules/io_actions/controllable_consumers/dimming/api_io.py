@@ -55,9 +55,9 @@ class DimmingIo(AbstractIoAction):
             if check_fault_state_io_device(self.config.configuration.io_device) or self.dimming_active():
                 if self.timestamp is None:
                     Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
-                    if check_fault_state_io_device(self.config.configuration.io_device):
-                        control_command_log.info("Fehler des IO-Geräts: Dimmen aktiviert für Failsafe-Modus.")
                     control_command_log.info("Dimmen aktiviert. Leistungswerte vor Ausführung des Steuerbefehls:")
+                if check_fault_state_io_device(self.config.configuration.io_device):
+                    control_command_log.info("Fehler des IO-Geräts: Dimmen aktiviert für Failsafe-Modus.")
 
                 control_command_log.info(get_power_log_message(self.config.configuration.devices))
             elif self.timestamp:

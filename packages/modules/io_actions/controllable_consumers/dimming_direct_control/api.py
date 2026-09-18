@@ -32,31 +32,31 @@ class DimmingDirectControl(AbstractIoAction):
 
     def setup(self) -> None:
         with ModifyLoglevelContext(control_command_log, logging.DEBUG):
+            device = self.config.configuration.devices[0]
+            if device["type"] == "cp":
+                cp = f"cp{device['id']}"
+                device_name = f"an Ladepunkt {data.data.cp_data[cp].data.config.name}"
+            elif device["type"] == "io":
+                io = f"io{device['id']}"
+                device_name = f"an IO-Gerät {data.data.system_data[io].config.name} {device['digital_output']}"
+            else:
+                device_name = f"an unbekanntem Gerät {device['id']}"
+
             if (data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get.digital_input[
                 self.dimming_input] == self.dimming_value or
                     check_fault_state_io_device(self.config.configuration.io_device)):
-                device = self.config.configuration.devices[0]
                 if self.timestamp is None:
                     Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
                     if check_fault_state_io_device(self.config.configuration.io_device):
                         control_command_log.info(
                             "Fehler des IO-Geräts: Direktsteuerung aktiviert für Failsafe-Modus.")
-
-                    if device["type"] == "cp":
-                        cp = f"cp{device['id']}"
-                        device_name = f"an Ladepunkt {data.data.cp_data[cp].data.config.name}"
-                    elif device["type"] == "io":
-                        io = f"io{device['id']}"
-                        device_name = f"an IO-Gerät {data.data.system_data[io].config.name}"
-                    else:
-                        device_name = f"an unbekanntem Gerät {device['id']}"
                     control_command_log.info(
                         f"Direktsteuerung {device_name} aktiviert. Leistungswerte vor Ausführung des Steuerbefehls:")
 
                 control_command_log.info(get_power_log_message([device]))
             elif self.timestamp:
                 Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", None)
-                control_command_log.info("Direktsteuerung deaktiviert.")
+                control_command_log.info(f"Direktsteuerung {device_name} deaktiviert.")
 
     def dimming_via_direct_control(self) -> Tuple[Optional[float], LoadmanagementLimit]:
         if check_fault_state_io_device(self.config.configuration.io_device):
