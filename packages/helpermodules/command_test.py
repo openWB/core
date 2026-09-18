@@ -94,7 +94,7 @@ def test_add_consumer_uses_module_default_usage_type(usage_type, mock_pub, monke
     monkeypatch.setattr(command.importlib, "import_module", Mock(return_value=SimpleNamespace(
         device_descriptor=descriptor)))
     monkeypatch.setattr(command, "pub_user_message", Mock())
-    SubData.counter_all_data = Mock()
+    monkeypatch.setattr(SubData, "counter_all_data", Mock())
     SubData.counter_all_data.get_id_evu_counter.return_value = 0
     SubData.counter_all_data.data.get.hierarchy = []
     SubData.counter_all_data.data.get.loadmanagement_prios = []
