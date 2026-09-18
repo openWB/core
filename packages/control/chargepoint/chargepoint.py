@@ -165,17 +165,18 @@ class Chargepoint(ChargepointRfidMixin, Load):
             return True, None
 
         state = self.data.get.ocpp.availability
-        if not self.data.get.ocpp.connected:
+        if not self.data.get.ocpp.connected and self.data.get.ocpp.transaction_id is None:
             print("#####################################")
             print("OCPP NO CONN")
             print("#####################################")
             message = "Keine Ladung, da keine Verbindung zum OCPP-Server."
             state = False
-        if not state:
+        elif not state:
             print("#####################################")
             print("OCPP nicht verfügbar")
             print("#####################################")
             message = "Keine Ladung, da OCPP nicht verfügbar ist."
+            state = False
 
         elif self.data.get.ocpp.remote_stop:
             print("#####################################")
@@ -812,6 +813,13 @@ class Chargepoint(ChargepointRfidMixin, Load):
                 or self.data.get.rfid
                 or self.data.get.vehicle_id
             )
+
+            if chargebox_id and self.data.get.ocpp.transaction_id is not None:
+                data.data.ocpp_client.transfer_values(chargebox_id,
+                                                      1,
+                                                      self.data.get.ocpp.transaction_id,
+                                                      int(self.data.get.imported))
+
             if chargebox_id:    # <- als ocpp Chargepoint konfiguriert
                 if (self.data.get.ocpp.connected  # <- mit OCPP-Server verbunden
                         and self.data.get.plug_state and id_tag):

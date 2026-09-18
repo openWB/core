@@ -383,6 +383,11 @@ class OcppChargePoint(cp):
                 status=RemoteStartStopStatus.rejected
             )
 
+        if data.data.cp_data[f"cp{self.openwb_num}"].data.get.ocpp.transaction_id is not None:
+            return call_result.RemoteStartTransaction(
+                status=RemoteStartStopStatus.rejected
+            )
+
         # Ich sag einfach hier ist das RFID-Tag
         # Wenn der CP das akzeptiert, wird die Transaktion gestartet
         Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/rfid", id_tag)
@@ -400,20 +405,13 @@ class OcppChargePoint(cp):
             f"\nKwargs: {kwargs}"
         )
 
-        if self.transaction_id is None or int(transaction_id) != int(self.transaction_id):
-            log.warning(
-                "RemoteStopTransaction für unbekannte Transaction %s auf %s (aktiv: %s)",
-                transaction_id,
-                self.chargebox_id,
-                self.transaction_id,
-            )
+        if self.openwb_cp is not None:
+            self.openwb_cp.data.get.ocpp.remote_stop = True
+            Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/remote_stop", True)
+        else:
             return call_result.RemoteStopTransaction(
                 status=RemoteStartStopStatus.rejected
             )
-
-        if self.openwb_cp is not None:
-            self.openwb_cp.data.get.ocpp.remote_stop = True
-        Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/remote_stop", True)
 
         return call_result.RemoteStopTransaction(
             status=RemoteStartStopStatus.accepted
