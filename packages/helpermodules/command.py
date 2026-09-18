@@ -1203,7 +1203,7 @@ class Command:
         self._publish_default_metadata_fields(f"openWB/set/consumer/{new_id}", ConsumerGet())
         self._publish_default_metadata_fields(f"openWB/set/consumer/{new_id}", ConsumerSet())
         Pub().pub(f"openWB/set/consumer/{new_id}/extra_meter", None)
-        Pub().pub(f"openWB/set/consumer/{new_id}/usage", asdict(Usage()))
+        Pub().pub(f"openWB/set/consumer/{new_id}/usage", asdict(Usage(type=consumer_default["usage"][0])))
         self.max_id_hierarchy = new_id
         Pub().pub("openWB/set/command/max_id/hierarchy", new_id)
         pub_user_message(

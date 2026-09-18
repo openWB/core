@@ -1,10 +1,13 @@
 from unittest.mock import Mock
+from types import SimpleNamespace
 
 import pytest
 
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state_update import ChargepointStateUpdate
+from control.consumer.usage import ConsumerUsage
 import dataclass_utils
+from helpermodules import command
 from helpermodules.command import Command
 from helpermodules.measurement_logging import process_log
 from helpermodules.subdata import SubData
@@ -74,3 +77,33 @@ def test_getDailyLog(regular_daily_log_entry,
     assert len(mock_pub.method_calls) == 1
     assert mock_pub.method_calls[0][1][0] == 'openWB/set/log/daily/20250616'
     assert mock_pub.method_calls[0][1][1] == regular_daily_log_entry_processed_legacy_converted
+
+
+@pytest.mark.parametrize("usage_type", [ConsumerUsage.SUSPENDABLE_TUNABLE, ConsumerUsage.METER_ONLY])
+def test_add_consumer_uses_module_default_usage_type(usage_type, mock_pub, monkeypatch):
+    consumer_setup = SimpleNamespace(
+        id=0,
+        type="test_consumer",
+        name="Test-Verbraucher",
+        info={},
+        configuration=SimpleNamespace(),
+        vendor="test",
+        usage=(usage_type,),
+    )
+    descriptor = SimpleNamespace(configuration_factory=Mock(return_value=consumer_setup))
+    monkeypatch.setattr(command.importlib, "import_module", Mock(return_value=SimpleNamespace(
+        device_descriptor=descriptor)))
+    monkeypatch.setattr(command, "pub_user_message", Mock())
+    monkeypatch.setattr(SubData, "counter_all_data", Mock())
+    SubData.counter_all_data.get_id_evu_counter.return_value = 0
+    SubData.counter_all_data.data.get.hierarchy = []
+    SubData.counter_all_data.data.get.loadmanagement_prios = []
+    command_instance = Command.__new__(Command)
+    command_instance.max_id_hierarchy = 0
+
+    command_instance.addConsumer("test", {"data": {"vendor": "test", "type": "test_consumer"}})
+
+    usage_calls = [call for call in mock_pub.pub.call_args_list
+                   if call.args[0] == "openWB/set/consumer/1/usage"]
+    assert len(usage_calls) == 1
+    assert usage_calls[0].args[1]["type"] == usage_type.value
