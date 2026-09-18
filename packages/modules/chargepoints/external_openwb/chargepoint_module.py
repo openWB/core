@@ -66,12 +66,15 @@ class ChargepointModule(AbstractChargepoint):
                     received_topics.update({message.topic: decode_payload(message.payload)})
 
                 received_topics = {}
+                # Höheres Timeout als der Default: muss zuverlässig alle ~20 retained Topics über eine
+                # echte Netzwerkverbindung zu einer ggf. gerade stark ausgelasteten Gegenstelle einsammeln
+                # (zB während einer laufenden Ladung), nicht nur ein oder zwei lokale Werte.
                 BrokerClient(f"subscribeSeriesChargepoint{self.config.id}",
                              on_connect,
                              on_message,
                              host=self.config.configuration.ip_address,
                              port=1886 if self.config.configuration.ip_address == "localhost" else 1883
-                             ).start_finite_loop()
+                             ).start_finite_loop(timeout=2)
 
                 if received_topics:
                     log.debug(f"Empfange MQTT Daten für Ladepunkt {self.config.id}: {received_topics}")
