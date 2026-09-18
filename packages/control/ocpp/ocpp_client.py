@@ -721,16 +721,26 @@ class OcppClient:
         ):
             return False
 
-        # Gleicher Tag wurde bereits abgelehnt.
+        # Ein abgelehnter Tag soll nicht dauerhaft gesperrt bleiben.
+        # Das gleiche RFID darf nach einer Ablehnung erneut gescannt werden,
+        # solange kein anderer Startvorgang aktiv ist.
         if transaction.state == TransactionState.REJECTED:
-            if transaction.id_tag == id_tag:
-                log.debug(f"OCPP {chargebox_id}: Tag {id_tag} wurde bereits abgelehnt.")
-                return True
-
-            # Neuer Tag -> neuer Versuch erlaubt.
-            log.info(f"OCPP {chargebox_id}: neuer Tag nach Ablehnung: {transaction.id_tag} -> {id_tag}")
-
+            log.info(
+                "OCPP %s: Tag nach Ablehnung erneut zugelassen: %s",
+                chargebox_id,
+                id_tag,
+            )
+            cp = get_cp_from_chargebox_id(chargebox_id)
+            # Tag wurde rejected -> aus broker löschen, damit nicht automatisch wieder neu versucht wird
+            Pub().pub(f"openWB/set/chargepoint/{cp.num}/get/rfid", None)
+            Pub().pub(f"openWB/set/chargepoint/{cp.num}/set/rfid", None)
             transaction.reset()
+            self._set_transaction_state(
+                chargebox_id,
+                transaction,
+                TransactionState.IDLE,
+            )
+            return False
 
         # Nach einem unklaren Fehler nicht denselben
         # StartTransaction automatisch wiederholen.
@@ -1186,6 +1196,25 @@ class OcppClient:
         Pub().pub(
             f"openWB/set/chargepoint/{openwb_cp.num}/get/ocpp/pending_transactions",
             pending_transactions,
+        )
+
+        # lokale OCPP Transaktion beenden
+        openwb_cp.data.get.ocpp.transaction_id = None
+        openwb_cp.data.get.ocpp.transaction_id_tag = None
+        openwb_cp.data.get.ocpp.tag_accepted = False
+
+        Pub().pub(
+            f"openWB/set/chargepoint/{openwb_cp.num}/get/ocpp/transaction_id",
+            None,
+        )
+
+        Pub().pub(
+            f"openWB/set/chargepoint/{openwb_cp.num}/get/ocpp/transaction_id_tag",
+            None,
+        )
+        Pub().pub(
+            f"openWB/set/chargepoint/{openwb_cp.num}/get/ocpp/tag_accepted",
+            False,
         )
 
 
