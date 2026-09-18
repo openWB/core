@@ -1247,6 +1247,9 @@ class SubData:
                         var.pop("consumer"+index)
                 else:
                     if f"consumer{index}" not in var:
+                        if re.search(
+                                r"openWB/consumer/[0-9]+/(module|config|usage|extra_meter)$", msg.topic) is None:
+                            return
                         var[f"consumer{index}"] = Consumer(int(index))
                     if re.search("openWB/consumer/[0-9]+/module$", msg.topic) is not None:
                         consumer_config = decode_payload(msg.payload)
