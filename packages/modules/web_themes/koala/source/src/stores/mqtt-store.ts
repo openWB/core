@@ -3829,6 +3829,41 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
+   * Get the temperature readings of a consumer identified by the consumer id.
+   * @param consumerId
+   * @returns { sensorCount, sensors }
+   */
+  const consumerTemperatures = computed(() => {
+    return (
+      consumerId: number,
+    ): {
+      sensorCount: number;
+      sensors: { index: number; value: number; textValue: string }[];
+    } => {
+      const temperatures = getValue.value(
+        `openWB/consumer/${consumerId}/get/temperatures`,
+      );
+      if (!Array.isArray(temperatures)) {
+        return { sensorCount: 0, sensors: [] };
+      }
+      const sensors = temperatures
+        .map((value: unknown, index: number) => ({ index, value }))
+        .filter(
+          (sensor): sensor is { index: number; value: number } =>
+            typeof sensor.value === 'number',
+        )
+        .map((sensor) => ({
+          ...sensor,
+          textValue: `${sensor.value.toLocaleString(undefined, {
+            minimumFractionDigits: 1,
+            maximumFractionDigits: 1,
+          })} °C`,
+        }));
+      return { sensorCount: temperatures.length, sensors };
+    };
+  });
+
+  /**
    * Get the status text of a consumer identified by the consumer id
    * @param consumerId consumer id
    * @returns string | undefined
@@ -4584,6 +4619,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     consumerSumPower,
     consumerDailyImported,
     consumerOnTime,
+    consumerTemperatures,
     consumerStateStr,
     consumerFaultState,
     consumerFaultStr,
