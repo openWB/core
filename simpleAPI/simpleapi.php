@@ -325,7 +325,6 @@ class SimpleAPI
             'get_consumer_state_str',
             'get_consumer_fault_str',
             'get_consumer_fault_state',
-            'get_consumer_config_name',
             'get_consumer_usage_type',
             // IO - Ausgaenge
             'get_io_output_all',

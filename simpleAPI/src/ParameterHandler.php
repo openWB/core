@@ -236,8 +236,6 @@ class ParameterHandler
                 return $this->getConsumerFaultStr($id);
             case 'get_consumer_fault_state':
                 return $this->getConsumerFaultState($id);
-            case 'get_consumer_config_name':
-                return $this->getConsumerConfigName($id);
             case 'get_consumer_usage_type':
                 return $this->getConsumerUsageType($id);
 
@@ -438,8 +436,8 @@ class ParameterHandler
                     floatval($powers[1] ?? 0),
                     floatval($powers[2] ?? 0)
                 ],
-                'state_str' => $values[$prefix . 'state_str'] ?? 'Unbekannt',
-                'fault_str' => $values[$prefix . 'fault_str'] ?? 'Kein Fehler',
+                'state_str' => $this->decodeStringValue($values[$prefix . 'state_str'] ?? null, 'Unbekannt'),
+                'fault_str' => $this->decodeStringValue($values[$prefix . 'fault_str'] ?? null, 'Kein Fehler'),
                 'fault_state' => intval($values[$prefix . 'fault_state'] ?? 0),
                 'imported' => floatval($values[$prefix . 'imported'] ?? 0),
                 'exported' => floatval($values[$prefix . 'exported'] ?? 0),
@@ -458,7 +456,7 @@ class ParameterHandler
                     floatval($powerFactors[1] ?? 0),
                     floatval($powerFactors[2] ?? 0)
                 ],
-                'rfid' => $values[$prefix . 'rfid'] ?? null,
+                'rfid' => $this->decodeStringValue($values[$prefix . 'rfid'] ?? null, null),
                 'rfid_timestamp' => $values[$prefix . 'rfid_timestamp'] ?? null,
                 'config_name' => $configName,
                 'connected_vehicle_name' => $connectedVehicleName,
@@ -495,6 +493,21 @@ class ParameterHandler
 
         $value = strtolower(trim($value, '"'));
         return in_array($value, ['true', '1', 'yes', 'on']);
+    }
+
+    /**
+     * String-Wert aus MQTT dekodieren. OpenWB kodiert auch reine String-Payloads per
+     * json.dumps() (z.B. "Kein Fehler." statt Kein Fehler.) - ohne json_decode() blieben die
+     * Anführungszeichen im Wert erhalten und würden beim äußeren json_encode() der Antwort
+     * nochmal escaped. Fällt bei nicht-JSON-Werten (z.B. leer) auf den Rohwert/Default zurück.
+     */
+    private function decodeStringValue($value, $default = '')
+    {
+        if ($value === null || $value === '') {
+            return $default;
+        }
+        $decoded = json_decode($value, true);
+        return is_string($decoded) ? $decoded : $value;
     }
 
     /**
@@ -700,7 +713,7 @@ class ParameterHandler
                 'exported' => floatval($values[$prefix . 'exported'] ?? 0),
                 'daily_imported' => floatval($values[$prefix . 'daily_imported'] ?? 0),
                 'daily_exported' => floatval($values[$prefix . 'daily_exported'] ?? 0),
-                'fault_str' => $values[$prefix . 'fault_str'] ?? 'Kein Fehler',
+                'fault_str' => $this->decodeStringValue($values[$prefix . 'fault_str'] ?? null, 'Kein Fehler'),
                 'fault_state' => intval($values[$prefix . 'fault_state'] ?? 0),
                 'power_limit_controllable' => $this->parseBooleanValue($values[$prefix . 'power_limit_controllable'] ?? 'false')
             ]
@@ -747,7 +760,7 @@ class ParameterHandler
                 'daily_exported' => floatval($values[$prefix . 'daily_exported'] ?? 0),
                 'monthly_exported' => floatval($values[$prefix . 'monthly_exported'] ?? 0),
                 'yearly_exported' => floatval($values[$prefix . 'yearly_exported'] ?? 0),
-                'fault_str' => $values[$prefix . 'fault_str'] ?? 'Kein Fehler',
+                'fault_str' => $this->decodeStringValue($values[$prefix . 'fault_str'] ?? null, 'Kein Fehler'),
                 'fault_state' => intval($values[$prefix . 'fault_state'] ?? 0)
             ]
         ];
@@ -774,7 +787,6 @@ class ParameterHandler
             $prefix . 'state_str',
             $prefix . 'fault_str',
             $prefix . 'fault_state',
-            "openWB/consumer/{$id}/config",
             "openWB/consumer/{$id}/usage"
         ];
 
@@ -791,15 +803,6 @@ class ParameterHandler
             $powers = [0, 0, 0];
         }
 
-        // Name und Verwendungsart aus Config/Usage extrahieren
-        $configName = null;
-        try {
-            $configInfo = json_decode($values["openWB/consumer/{$id}/config"] ?? '{}', true);
-            $configName = $configInfo['name'] ?? null;
-        } catch (Exception $e) {
-            // Fallback
-        }
-
         $usageType = null;
         try {
             $usageInfo = json_decode($values["openWB/consumer/{$id}/usage"] ?? '{}', true);
@@ -810,7 +813,6 @@ class ParameterHandler
 
         return [
             "consumer_{$id}" => [
-                'name' => $configName,
                 'usage_type' => $usageType,
                 'power' => floatval($values[$prefix . 'power'] ?? 0),
                 'currents' => [
@@ -833,8 +835,8 @@ class ParameterHandler
                 'daily_imported' => floatval($values[$prefix . 'daily_imported'] ?? 0),
                 'phases_in_use' => intval($values[$prefix . 'phases_in_use'] ?? 0),
                 'charge_state' => $this->parseBooleanValue($values[$prefix . 'charge_state'] ?? 'false'),
-                'state_str' => $values[$prefix . 'state_str'] ?? null,
-                'fault_str' => $values[$prefix . 'fault_str'] ?? 'Kein Fehler',
+                'state_str' => $this->decodeStringValue($values[$prefix . 'state_str'] ?? null, null),
+                'fault_str' => $this->decodeStringValue($values[$prefix . 'fault_str'] ?? null, 'Kein Fehler'),
                 'fault_state' => intval($values[$prefix . 'fault_state'] ?? 0)
             ]
         ];
@@ -906,7 +908,7 @@ class ParameterHandler
                 'daily_exported' => floatval($values[$prefix . 'daily_exported'] ?? 0),
                 'imported' => floatval($values[$prefix . 'imported'] ?? 0),
                 'daily_imported' => floatval($values[$prefix . 'daily_imported'] ?? 0),
-                'fault_str' => $values[$prefix . 'fault_str'] ?? 'Kein Fehler',
+                'fault_str' => $this->decodeStringValue($values[$prefix . 'fault_str'] ?? null, 'Kein Fehler'),
                 'fault_state' => intval($values[$prefix . 'fault_state'] ?? 0)
             ]
         ];
@@ -1148,7 +1150,7 @@ class ParameterHandler
         try {
             $topic = "openWB/chargepoint/{$id}/get/rfid";
             $value = $this->mqttClient->getValue($topic);
-            return ["chargepoint_{$id}" => ['rfid' => strval($value ?? '')]];
+            return ["chargepoint_{$id}" => ['rfid' => $this->decodeStringValue($value)]];
         } catch (Exception $e) {
             return ["chargepoint_{$id}" => ['rfid' => '']];
         }
@@ -1443,7 +1445,7 @@ class ParameterHandler
         try {
             $topic = "openWB/chargepoint/{$id}/get/state_str";
             $value = $this->mqttClient->getValue($topic);
-            return ["chargepoint_{$id}" => ['state_str' => strval($value ?? '')]];
+            return ["chargepoint_{$id}" => ['state_str' => $this->decodeStringValue($value)]];
         } catch (Exception $e) {
             return ["chargepoint_{$id}" => ['state_str' => '']];
         }
@@ -1457,7 +1459,7 @@ class ParameterHandler
         try {
             $topic = "openWB/chargepoint/{$id}/get/fault_str";
             $value = $this->mqttClient->getValue($topic);
-            return ["chargepoint_{$id}" => ['fault_str' => strval($value ?? '')]];
+            return ["chargepoint_{$id}" => ['fault_str' => $this->decodeStringValue($value)]];
         } catch (Exception $e) {
             return ["chargepoint_{$id}" => ['fault_str' => '']];
         }
@@ -1527,7 +1529,7 @@ class ParameterHandler
         try {
             $topic = "openWB/chargepoint/{$id}/get/chargemode";
             $value = $this->mqttClient->getValue($topic);
-            return ["chargepoint_{$id}" => ['chargemode' => strval($value ?? '')]];
+            return ["chargepoint_{$id}" => ['chargemode' => $this->decodeStringValue($value)]];
         } catch (Exception $e) {
             return ["chargepoint_{$id}" => ['chargemode' => '']];
         }
@@ -2068,7 +2070,7 @@ class ParameterHandler
         try {
             $topic = "openWB/counter/{$id}/get/fault_str";
             $value = $this->mqttClient->getValue($topic);
-            return ["counter_{$id}" => ['fault_str' => strval($value ?? 'Kein Fehler')]];
+            return ["counter_{$id}" => ['fault_str' => $this->decodeStringValue($value, 'Kein Fehler')]];
         } catch (Exception $e) {
             return ["counter_{$id}" => ['fault_str' => 'Kein Fehler']];
         }
@@ -2208,7 +2210,7 @@ class ParameterHandler
         try {
             $topic = "openWB/bat/{$id}/get/fault_str";
             $value = $this->mqttClient->getValue($topic);
-            return ["battery_{$id}" => ['fault_str' => strval($value ?? 'Kein Fehler')]];
+            return ["battery_{$id}" => ['fault_str' => $this->decodeStringValue($value, 'Kein Fehler')]];
         } catch (Exception $e) {
             return ["battery_{$id}" => ['fault_str' => 'Kein Fehler']];
         }
@@ -2387,7 +2389,7 @@ class ParameterHandler
         try {
             $topic = "openWB/pv/{$id}/get/fault_str";
             $value = $this->mqttClient->getValue($topic);
-            return ["pv_{$id}" => ['fault_str' => strval($value ?? 'Kein Fehler')]];
+            return ["pv_{$id}" => ['fault_str' => $this->decodeStringValue($value, 'Kein Fehler')]];
         } catch (Exception $e) {
             return ["pv_{$id}" => ['fault_str' => 'Kein Fehler']];
         }
@@ -2571,7 +2573,7 @@ class ParameterHandler
         try {
             $topic = "openWB/consumer/{$id}/get/state_str";
             $value = $this->mqttClient->getValue($topic);
-            return ["consumer_{$id}" => ['state_str' => $value !== '' ? $value : null]];
+            return ["consumer_{$id}" => ['state_str' => $this->decodeStringValue($value, null)]];
         } catch (Exception $e) {
             return ["consumer_{$id}" => ['state_str' => null]];
         }
@@ -2585,7 +2587,7 @@ class ParameterHandler
         try {
             $topic = "openWB/consumer/{$id}/get/fault_str";
             $value = $this->mqttClient->getValue($topic);
-            return ["consumer_{$id}" => ['fault_str' => strval($value ?? 'Kein Fehler')]];
+            return ["consumer_{$id}" => ['fault_str' => $this->decodeStringValue($value, 'Kein Fehler')]];
         } catch (Exception $e) {
             return ["consumer_{$id}" => ['fault_str' => 'Kein Fehler']];
         }
@@ -2602,21 +2604,6 @@ class ParameterHandler
             return ["consumer_{$id}" => ['fault_state' => intval($value ?? 0)]];
         } catch (Exception $e) {
             return ["consumer_{$id}" => ['fault_state' => 0]];
-        }
-    }
-
-    /**
-     * Consumer Config Name
-     */
-    private function getConsumerConfigName($id)
-    {
-        try {
-            $topic = "openWB/consumer/{$id}/config";
-            $value = $this->mqttClient->getValue($topic);
-            $config = json_decode($value ?? '{}', true);
-            return ["consumer_{$id}" => ['name' => $config['name'] ?? null]];
-        } catch (Exception $e) {
-            return ["consumer_{$id}" => ['name' => null]];
         }
     }
 
