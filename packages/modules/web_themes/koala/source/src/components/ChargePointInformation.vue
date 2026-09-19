@@ -26,13 +26,21 @@
     <!-- full view table body slots -->
     <template #body-cell-name="slotProps">
       <div class="row items-center no-wrap">
-        <div class="ellipsis" :title="slotProps.row.name">
+        <ChargePointFaultIcon
+          v-if="faultPresent"
+          :charge-point-id="slotProps.row.id"
+          class="q-mr-xs"
+        />
+        <div class="col ellipsis" @mouseenter="titleIfTruncated">
           {{ slotProps.row.name }}
         </div>
+        <q-tooltip v-if="slotProps.row.faultState > 0 && tooltipsEnabled">
+          {{ slotProps.row.faultMessage }}
+        </q-tooltip>
       </div>
     </template>
     <template #body-cell-vehicle="slotProps">
-      <div class="ellipsis" :title="slotProps.row.vehicle">
+      <div class="ellipsis" @mouseenter="titleIfTruncated">
         {{ slotProps.row.vehicle }}
       </div>
     </template>
@@ -70,13 +78,23 @@
     <!-- compact view table body slots -->
     <!-- compact view charge point name and vehicle name displayed in one field -->
     <template #body-cell-nameAndVehicle="slotProps">
-      <div>
-        <div class="ellipsis" :title="slotProps.row.name">
-          {{ slotProps.row.name }}
+      <div class="row items-center no-wrap">
+        <ChargePointFaultIcon
+          v-if="faultPresent"
+          :charge-point-id="slotProps.row.id"
+          class="q-mr-xs"
+        />
+        <div class="col">
+          <div class="ellipsis" @mouseenter="titleIfTruncated">
+            {{ slotProps.row.name }}
+          </div>
+          <div class="ellipsis text-caption" @mouseenter="titleIfTruncated">
+            {{ slotProps.row.vehicle }}
+          </div>
         </div>
-        <div class="ellipsis text-caption" :title="slotProps.row.vehicle">
-          {{ slotProps.row.vehicle }}
-        </div>
+        <q-tooltip v-if="slotProps.row.faultState > 0 && tooltipsEnabled">
+          {{ slotProps.row.faultMessage }}
+        </q-tooltip>
       </div>
     </template>
 
@@ -133,7 +151,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { Screen } from 'quasar';
+import { Screen, useQuasar } from 'quasar';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import { useChargeModes } from 'src/composables/useChargeModes';
 import BaseCarousel from 'src/components/BaseCarousel.vue';
@@ -143,10 +161,15 @@ import ChargePointStateIcon from 'src/components/ChargePointStateIcon.vue';
 import ChargePointMode from './ChargePointMode.vue';
 import ChargePointTimeCharging from './ChargePointTimeCharging.vue';
 import ChargePointPowerData from './ChargePointPowerData.vue';
+import ChargePointFaultIcon from './ChargePointFaultIcon.vue';
 import {
   ColumnConfiguration,
   ChargePointRow,
 } from 'src/components/models/table-model';
+
+const $q = useQuasar();
+
+const tooltipsEnabled = !$q.platform.is.mobile;
 
 const mqttStore = useMqttStore();
 const { chargeModes } = useChargeModes();
@@ -156,6 +179,10 @@ const cardViewBreakpoint = computed(
 );
 const searchInputVisible = computed(
   () => mqttStore.themeConfiguration?.chargePoint_table_search_input_field,
+);
+
+const faultPresent = computed(() =>
+  chargePointIds.value.some((id) => mqttStore.chargePointFaultState(id) > 0),
 );
 const isSmallScreen = computed(() => Screen.lt.sm);
 const compactTable = computed(() => Screen.lt.md);
@@ -189,6 +216,8 @@ const tableRowData = computed<(id: number) => ChargePointRow>(() => {
     // typecasting necessary as chargePointChargingCurrent has a union type in store and needs to be narrowed to string
     const current = mqttStore.chargePointChargingCurrent(id) as string;
     const powerColumn = '';
+    const faultState = mqttStore.chargePointFaultState(id);
+    const faultMessage = mqttStore.chargePointFaultMessage(id) ?? '';
     const color =
       mqttStore.chargePointColor(id) || 'var(--q-charge-point-stroke)';
     return {
@@ -204,6 +233,8 @@ const tableRowData = computed<(id: number) => ChargePointRow>(() => {
       current,
       powerColumn,
       charged,
+      faultState,
+      faultMessage,
       color,
     };
   };
@@ -249,6 +280,20 @@ const tableColumnsCompact = columnConfigCompact.filter(
 const expansionColumnsCompact = columnConfigCompact.filter(
   (column) => column.expandField,
 );
+
+// the browser tooltip is only set if the text is really cut off by the
+// ellipsis, otherwise it would pop up next to the fault message tooltip
+// without adding any information
+const titleIfTruncated = (event: MouseEvent) => {
+  const element = event.currentTarget as HTMLElement;
+  const text = element.textContent?.trim() ?? '';
+  // one pixel tolerance, scrollWidth and clientWidth are rounded values
+  if (text && element.scrollWidth - element.clientWidth > 1) {
+    element.title = text;
+  } else {
+    element.removeAttribute('title');
+  }
+};
 
 const onRowClick = (row: ChargePointRow) => {
   selectedChargePointId.value = row.id;
