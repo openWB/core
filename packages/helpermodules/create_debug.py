@@ -241,8 +241,12 @@ def get_hierarchy(hierarchy, level=0):
             except Exception:
                 parsed_data += f"{element['type']} (ID: {element['id']})\n"
         elif element["type"] == "consumer":
-            consumer = data.data.consumer_data[f"consumer{element['id']}"].data.module
-            parsed_data += f"{element['type']}: {consumer.name} (ID: {element['id']}, consumer_type: {consumer.type})\n"
+            try:
+                consumer = data.data.consumer_data[f"consumer{element['id']}"].data.module
+                parsed_data += (f"{element['type']}: {consumer.name} "
+                                f"(ID: {element['id']}, consumer_type: {consumer.type})\n")
+            except Exception:
+                parsed_data += f"{element['type']} (ID: {element['id']})\n"
         else:
             try:
                 for key, value in data.data.system_data.items():
@@ -284,10 +288,7 @@ def get_priorities(priorities, level=0):
             parsed_data += f"Prio: {priority}, "
             priority += 1
         if element["type"] == "group":
-            try:
-                parsed_data += f"{element['type']}: {element['label']}\n"
-            except Exception:
-                parsed_data += f"{element['type']} (ID: {element['id']})\n"
+            parsed_data += f"{element['type']}: {element.get('label', 'unnamed')}\n"
         elif element["type"] == "vehicle":
             vehicle = data.data.ev_data[f"ev{element['id']}"].data
             parsed_data += f"{element['type']}: {vehicle.name} (ID: {element['id']})\n"
