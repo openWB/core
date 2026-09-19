@@ -1,5 +1,6 @@
 from abc import abstractmethod
 from typing import Optional, Type
+from control.bat import Set as SetPoint
 
 
 class AbstractDevice:
@@ -31,7 +32,7 @@ class AbstractBat:
         pass
 
     @abstractmethod
-    def set_power_limit(self, power_limit: Optional[int]) -> None:
+    def set_power_limit(self, setpoint: SetPoint) -> None:
         # power limit None heißt, auf maximale Speicherleistung setzen = Speicher-Begrenzung aufheben
         pass
 
