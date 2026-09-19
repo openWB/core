@@ -3,6 +3,7 @@ from unittest.mock import Mock
 from typing import Optional
 import pytest
 
+from control.chargemode import Chargemode
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state import ChargepointState
 from control.chargepoint.chargepoint_template import CpTemplate, get_chargepoint_template_default
@@ -98,6 +99,62 @@ def test_get_phases_by_selected_chargemode(cp: Chargepoint, params: Params):
 
     # execution
     phases = cp.get_phases_by_selected_chargemode(params.chargemode_phases)
+
+    # evaluation
+    assert phases == params.expected_phases
+
+
+class SurplusAtStartParams:
+    def __init__(self,
+                 name: str,
+                 submode: Chargemode,
+                 phases_to_use_config: int,
+                 usable_surplus: float,
+                 min_current: float,
+                 expected_phases: int) -> None:
+        self.name = name
+        self.submode = submode
+        self.phases_to_use_config = phases_to_use_config
+        self.usable_surplus = usable_surplus
+        self.min_current = min_current
+        self.expected_phases = expected_phases
+
+
+surplus_at_start_cases = [
+    SurplusAtStartParams("pv charging, enough surplus: start with max phases", submode=Chargemode.PV_CHARGING,
+                         phases_to_use_config=0, usable_surplus=5000, min_current=6, expected_phases=3),
+    SurplusAtStartParams("pv charging, not enough surplus: start with 1 phase", submode=Chargemode.PV_CHARGING,
+                         phases_to_use_config=0, usable_surplus=100, min_current=6, expected_phases=1),
+    SurplusAtStartParams("pv charging, fixed phases_to_use: no surplus check, start with 1 phase",
+                         submode=Chargemode.PV_CHARGING,
+                         phases_to_use_config=3, usable_surplus=3000, min_current=6, expected_phases=1),
+    SurplusAtStartParams("instant charging: no surplus check, start with 1 phase", submode=Chargemode.INSTANT_CHARGING,
+                         phases_to_use_config=0, usable_surplus=3000, min_current=6, expected_phases=1),
+]
+
+
+@pytest.mark.parametrize("params", surplus_at_start_cases, ids=[c.name for c in surplus_at_start_cases])
+def test_get_phases_at_pv_charging_start_uses_surplus(
+        monkeypatch: pytest.MonkeyPatch, cp: Chargepoint, params: SurplusAtStartParams):
+    # setup
+    cp.data.config.connected_phases = 3
+    cp.data.config.auto_phase_switch_hw = True
+    cp.data.get.charge_state = False
+    cp.data.set.phases_to_use = 3
+    cp.data.get.phases_in_use = 3
+    cp.data.set.log.imported_since_plugged = 0
+    cp.data.control_parameter.submode = params.submode
+    cp.data.control_parameter.phases = 3
+    cp.data.set.charge_template.data.chargemode.pv_charging.phases_to_use = params.phases_to_use_config
+    charging_ev_data = cp.data.set.charging_ev_data
+    charging_ev_data.ev_template.data.prevent_phase_switch = False
+    charging_ev_data.ev_template.data.min_current = params.min_current
+    mock_evu = Mock()
+    monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", Mock(return_value=mock_evu))
+    monkeypatch.setattr(mock_evu, "get_usable_surplus", Mock(return_value=params.usable_surplus))
+
+    # execution
+    phases = cp.get_phases_by_selected_chargemode(0)
 
     # evaluation
     assert phases == params.expected_phases
