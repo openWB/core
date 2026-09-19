@@ -90,6 +90,12 @@ class SimpleAPI
                 }
             }
 
+            // Komponenten-Übersicht: alle verfügbaren IDs je Typ auflisten
+            if (isset($params['list_components'])) {
+                echo json_encode($this->mqttClient->findAllAvailableIds());
+                return;
+            }
+
             // Schreibvorgänge prüfen
             $writeParams = $this->getWriteParameters($params);
             if (!empty($writeParams)) {
@@ -302,6 +308,25 @@ class SimpleAPI
             'get_pv_yearly_exported',
             'get_pv_fault_str',
             'get_pv_fault_state',
+            // Consumer - Alle Daten
+            'consumer',
+            'get_consumer',
+            'get_consumer_all',
+            // Consumer - Einzelwerte
+            'get_consumer_power',
+            'get_consumer_currents',
+            'get_consumer_voltages',
+            'get_consumer_powers',
+            'get_consumer_imported',
+            'get_consumer_exported',
+            'get_consumer_daily_imported',
+            'get_consumer_phases_in_use',
+            'get_consumer_charge_state',
+            'get_consumer_state_str',
+            'get_consumer_fault_str',
+            'get_consumer_fault_state',
+            'get_consumer_config_name',
+            'get_consumer_usage_type',
             // IO - Ausgaenge
             'get_io_output_all',
             'get_io_output',
@@ -458,6 +483,8 @@ class SimpleAPI
             return 'pv';
         } elseif (strpos($param, 'counter') !== false) {
             return 'counter';
+        } elseif (strpos($param, 'consumer') !== false) {
+            return 'consumer';
         }
 
         return 'chargepoint'; // Fallback
@@ -485,7 +512,13 @@ class SimpleAPI
             'get_counter_power_factors',
             'get_battery_currents',
             'get_pv_currents',
-            'get_io_output_all'
+            'get_io_output_all',
+            'get_consumer_all',
+            'get_consumer',
+            'consumer',
+            'get_consumer_currents',
+            'get_consumer_voltages',
+            'get_consumer_powers'
         ];
 
         return in_array($param, $complexParameters);

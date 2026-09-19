@@ -206,6 +206,41 @@ class ParameterHandler
             case 'get_pv_fault_state':
                 return $this->getPvFaultState($id);
 
+                // Consumer - Alle Daten
+            case 'consumer':
+            case 'get_consumer':
+            case 'get_consumer_all':
+                return $this->getConsumerAll($id);
+                // Consumer - Einzelwerte
+            case 'get_consumer_power':
+                return $this->getConsumerPower($id);
+            case 'get_consumer_currents':
+                return $this->getConsumerCurrents($id);
+            case 'get_consumer_voltages':
+                return $this->getConsumerVoltages($id);
+            case 'get_consumer_powers':
+                return $this->getConsumerPowers($id);
+            case 'get_consumer_imported':
+                return $this->getConsumerImported($id);
+            case 'get_consumer_exported':
+                return $this->getConsumerExported($id);
+            case 'get_consumer_daily_imported':
+                return $this->getConsumerDailyImported($id);
+            case 'get_consumer_phases_in_use':
+                return $this->getConsumerPhasesInUse($id);
+            case 'get_consumer_charge_state':
+                return $this->getConsumerChargeState($id);
+            case 'get_consumer_state_str':
+                return $this->getConsumerStateStr($id);
+            case 'get_consumer_fault_str':
+                return $this->getConsumerFaultStr($id);
+            case 'get_consumer_fault_state':
+                return $this->getConsumerFaultState($id);
+            case 'get_consumer_config_name':
+                return $this->getConsumerConfigName($id);
+            case 'get_consumer_usage_type':
+                return $this->getConsumerUsageType($id);
+
             case 'get_io_output_all':
                 return $this->getIoOutputAll($id);
             case 'get_io_output':
@@ -712,6 +747,93 @@ class ParameterHandler
                 'daily_exported' => floatval($values[$prefix . 'daily_exported'] ?? 0),
                 'monthly_exported' => floatval($values[$prefix . 'monthly_exported'] ?? 0),
                 'yearly_exported' => floatval($values[$prefix . 'yearly_exported'] ?? 0),
+                'fault_str' => $values[$prefix . 'fault_str'] ?? 'Kein Fehler',
+                'fault_state' => intval($values[$prefix . 'fault_state'] ?? 0)
+            ]
+        ];
+    }
+
+    /**
+     * Verbraucher-Daten (Consumer) - Performance-optimiert
+     */
+    private function getConsumerAll($id)
+    {
+        $prefix = "openWB/consumer/{$id}/get/";
+
+        // Alle benötigten Topics in einem Aufruf abfragen
+        $topics = [
+            $prefix . 'power',
+            $prefix . 'currents',
+            $prefix . 'voltages',
+            $prefix . 'powers',
+            $prefix . 'imported',
+            $prefix . 'exported',
+            $prefix . 'daily_imported',
+            $prefix . 'phases_in_use',
+            $prefix . 'charge_state',
+            $prefix . 'state_str',
+            $prefix . 'fault_str',
+            $prefix . 'fault_state',
+            "openWB/consumer/{$id}/config",
+            "openWB/consumer/{$id}/usage"
+        ];
+
+        $values = $this->mqttClient->getMultipleValues($topics);
+
+        // Arrays parsen
+        try {
+            $currents = json_decode($values[$prefix . 'currents'] ?? '[]', true) ?: [0, 0, 0];
+            $voltages = json_decode($values[$prefix . 'voltages'] ?? '[]', true) ?: [0, 0, 0];
+            $powers = json_decode($values[$prefix . 'powers'] ?? '[]', true) ?: [0, 0, 0];
+        } catch (Exception $e) {
+            $currents = [0, 0, 0];
+            $voltages = [0, 0, 0];
+            $powers = [0, 0, 0];
+        }
+
+        // Name und Verwendungsart aus Config/Usage extrahieren
+        $configName = null;
+        try {
+            $configInfo = json_decode($values["openWB/consumer/{$id}/config"] ?? '{}', true);
+            $configName = $configInfo['name'] ?? null;
+        } catch (Exception $e) {
+            // Fallback
+        }
+
+        $usageType = null;
+        try {
+            $usageInfo = json_decode($values["openWB/consumer/{$id}/usage"] ?? '{}', true);
+            $usageType = $usageInfo['type'] ?? null;
+        } catch (Exception $e) {
+            // Fallback
+        }
+
+        return [
+            "consumer_{$id}" => [
+                'name' => $configName,
+                'usage_type' => $usageType,
+                'power' => floatval($values[$prefix . 'power'] ?? 0),
+                'currents' => [
+                    floatval($currents[0] ?? 0),
+                    floatval($currents[1] ?? 0),
+                    floatval($currents[2] ?? 0)
+                ],
+                'voltages' => [
+                    floatval($voltages[0] ?? 0),
+                    floatval($voltages[1] ?? 0),
+                    floatval($voltages[2] ?? 0)
+                ],
+                'powers' => [
+                    floatval($powers[0] ?? 0),
+                    floatval($powers[1] ?? 0),
+                    floatval($powers[2] ?? 0)
+                ],
+                'imported' => floatval($values[$prefix . 'imported'] ?? 0),
+                'exported' => floatval($values[$prefix . 'exported'] ?? 0),
+                'daily_imported' => floatval($values[$prefix . 'daily_imported'] ?? 0),
+                'phases_in_use' => intval($values[$prefix . 'phases_in_use'] ?? 0),
+                'charge_state' => $this->parseBooleanValue($values[$prefix . 'charge_state'] ?? 'false'),
+                'state_str' => $values[$prefix . 'state_str'] ?? null,
                 'fault_str' => $values[$prefix . 'fault_str'] ?? 'Kein Fehler',
                 'fault_state' => intval($values[$prefix . 'fault_state'] ?? 0)
             ]
@@ -2282,6 +2404,234 @@ class ParameterHandler
             return ["pv_{$id}" => ['fault_state' => intval($value ?? 0)]];
         } catch (Exception $e) {
             return ["pv_{$id}" => ['fault_state' => 0]];
+        }
+    }
+
+    /**
+     * Consumer Power
+     */
+    private function getConsumerPower($id)
+    {
+        try {
+            $topic = "openWB/consumer/{$id}/get/power";
+            $value = $this->mqttClient->getValue($topic);
+            return ["consumer_{$id}" => ['power' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["consumer_{$id}" => ['power' => 0]];
+        }
+    }
+
+    /**
+     * Consumer Currents
+     */
+    private function getConsumerCurrents($id)
+    {
+        try {
+            $topic = "openWB/consumer/{$id}/get/currents";
+            $value = $this->mqttClient->getValue($topic);
+            $currents = json_decode($value ?? '[]', true) ?: [0, 0, 0];
+
+            return [
+                "consumer_{$id}" => [
+                    'currents' => [
+                        floatval($currents[0] ?? 0),
+                        floatval($currents[1] ?? 0),
+                        floatval($currents[2] ?? 0)
+                    ]
+                ]
+            ];
+        } catch (Exception $e) {
+            return ["consumer_{$id}" => ['currents' => [0, 0, 0]]];
+        }
+    }
+
+    /**
+     * Consumer Voltages
+     */
+    private function getConsumerVoltages($id)
+    {
+        try {
+            $topic = "openWB/consumer/{$id}/get/voltages";
+            $value = $this->mqttClient->getValue($topic);
+            $voltages = json_decode($value ?? '[]', true) ?: [0, 0, 0];
+
+            return [
+                "consumer_{$id}" => [
+                    'voltages' => [
+                        floatval($voltages[0] ?? 0),
+                        floatval($voltages[1] ?? 0),
+                        floatval($voltages[2] ?? 0)
+                    ]
+                ]
+            ];
+        } catch (Exception $e) {
+            return ["consumer_{$id}" => ['voltages' => [0, 0, 0]]];
+        }
+    }
+
+    /**
+     * Consumer Powers
+     */
+    private function getConsumerPowers($id)
+    {
+        try {
+            $topic = "openWB/consumer/{$id}/get/powers";
+            $value = $this->mqttClient->getValue($topic);
+            $powers = json_decode($value ?? '[]', true) ?: [0, 0, 0];
+
+            return [
+                "consumer_{$id}" => [
+                    'powers' => [
+                        floatval($powers[0] ?? 0),
+                        floatval($powers[1] ?? 0),
+                        floatval($powers[2] ?? 0)
+                    ]
+                ]
+            ];
+        } catch (Exception $e) {
+            return ["consumer_{$id}" => ['powers' => [0, 0, 0]]];
+        }
+    }
+
+    /**
+     * Consumer Imported
+     */
+    private function getConsumerImported($id)
+    {
+        try {
+            $topic = "openWB/consumer/{$id}/get/imported";
+            $value = $this->mqttClient->getValue($topic);
+            return ["consumer_{$id}" => ['imported' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["consumer_{$id}" => ['imported' => 0]];
+        }
+    }
+
+    /**
+     * Consumer Exported
+     */
+    private function getConsumerExported($id)
+    {
+        try {
+            $topic = "openWB/consumer/{$id}/get/exported";
+            $value = $this->mqttClient->getValue($topic);
+            return ["consumer_{$id}" => ['exported' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["consumer_{$id}" => ['exported' => 0]];
+        }
+    }
+
+    /**
+     * Consumer Daily Imported
+     */
+    private function getConsumerDailyImported($id)
+    {
+        try {
+            $topic = "openWB/consumer/{$id}/get/daily_imported";
+            $value = $this->mqttClient->getValue($topic);
+            return ["consumer_{$id}" => ['daily_imported' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["consumer_{$id}" => ['daily_imported' => 0]];
+        }
+    }
+
+    /**
+     * Consumer Phases In Use
+     */
+    private function getConsumerPhasesInUse($id)
+    {
+        try {
+            $topic = "openWB/consumer/{$id}/get/phases_in_use";
+            $value = $this->mqttClient->getValue($topic);
+            return ["consumer_{$id}" => ['phases_in_use' => intval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["consumer_{$id}" => ['phases_in_use' => 0]];
+        }
+    }
+
+    /**
+     * Consumer Charge State
+     */
+    private function getConsumerChargeState($id)
+    {
+        try {
+            $topic = "openWB/consumer/{$id}/get/charge_state";
+            $value = $this->mqttClient->getValue($topic);
+            return ["consumer_{$id}" => ['charge_state' => $this->parseBooleanValue($value ?? 'false')]];
+        } catch (Exception $e) {
+            return ["consumer_{$id}" => ['charge_state' => false]];
+        }
+    }
+
+    /**
+     * Consumer State String
+     */
+    private function getConsumerStateStr($id)
+    {
+        try {
+            $topic = "openWB/consumer/{$id}/get/state_str";
+            $value = $this->mqttClient->getValue($topic);
+            return ["consumer_{$id}" => ['state_str' => $value !== '' ? $value : null]];
+        } catch (Exception $e) {
+            return ["consumer_{$id}" => ['state_str' => null]];
+        }
+    }
+
+    /**
+     * Consumer Fault String
+     */
+    private function getConsumerFaultStr($id)
+    {
+        try {
+            $topic = "openWB/consumer/{$id}/get/fault_str";
+            $value = $this->mqttClient->getValue($topic);
+            return ["consumer_{$id}" => ['fault_str' => strval($value ?? 'Kein Fehler')]];
+        } catch (Exception $e) {
+            return ["consumer_{$id}" => ['fault_str' => 'Kein Fehler']];
+        }
+    }
+
+    /**
+     * Consumer Fault State
+     */
+    private function getConsumerFaultState($id)
+    {
+        try {
+            $topic = "openWB/consumer/{$id}/get/fault_state";
+            $value = $this->mqttClient->getValue($topic);
+            return ["consumer_{$id}" => ['fault_state' => intval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["consumer_{$id}" => ['fault_state' => 0]];
+        }
+    }
+
+    /**
+     * Consumer Config Name
+     */
+    private function getConsumerConfigName($id)
+    {
+        try {
+            $topic = "openWB/consumer/{$id}/config";
+            $value = $this->mqttClient->getValue($topic);
+            $config = json_decode($value ?? '{}', true);
+            return ["consumer_{$id}" => ['name' => $config['name'] ?? null]];
+        } catch (Exception $e) {
+            return ["consumer_{$id}" => ['name' => null]];
+        }
+    }
+
+    /**
+     * Consumer Usage Type
+     */
+    private function getConsumerUsageType($id)
+    {
+        try {
+            $topic = "openWB/consumer/{$id}/usage";
+            $value = $this->mqttClient->getValue($topic);
+            $usage = json_decode($value ?? '{}', true);
+            return ["consumer_{$id}" => ['usage_type' => $usage['type'] ?? null]];
+        } catch (Exception $e) {
+            return ["consumer_{$id}" => ['usage_type' => null]];
         }
     }
 
