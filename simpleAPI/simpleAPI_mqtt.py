@@ -116,12 +116,14 @@ class SimpleMQTTDaemon:
             client.subscribe("openWB/pv/#", qos=0)
             client.subscribe("openWB/chargepoint/#", qos=0)
             client.subscribe("openWB/counter/#", qos=0)
+            client.subscribe("openWB/consumer/#", qos=0)
 
             # Subscribe to simpleAPI set topics for write operations
             client.subscribe("openWB/simpleAPI/set/#", qos=0)
 
             log.info(
-                "Subscribed to openWB component topics (bat, pv, chargepoint, counter) and simpleAPI set topics")
+                "Subscribed to openWB component topics (bat, pv, chargepoint, counter, consumer) "
+                "and simpleAPI set topics")
         else:
             log.error(f"Failed to connect to MQTT broker. Return code: {rc}")
 
@@ -261,8 +263,11 @@ class SimpleMQTTDaemon:
         """Parse payload as JSON, tuple, or raw value."""
         payload = payload.strip()
 
-        # Try to parse as JSON
-        if payload.startswith('{') or payload.startswith('['):
+        # Try to parse as JSON. openWB JSON-encodes every payload it publishes, including plain
+        # strings (e.g. fault_str arrives on the wire as '"Kein Fehler."', not 'Kein Fehler.') -
+        # without also matching a leading '"' here, those quote characters would be republished
+        # literally as part of the simpleAPI value.
+        if payload.startswith('{') or payload.startswith('[') or payload.startswith('"'):
             try:
                 return json.loads(payload)
             except json.JSONDecodeError as e:
