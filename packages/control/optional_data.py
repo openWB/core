@@ -1,9 +1,44 @@
 from dataclasses import dataclass, field
-from typing import Dict, Optional, Protocol
+from typing import Any, Dict, Optional, Protocol, Union
 
 from dataclass_utils.factories import empty_dict_factory
 from helpermodules.constants import NO_ERROR
 from modules.display_themes.cards.config import CardsDisplayTheme
+
+
+@dataclass
+class ForecastGet:
+    fault_state: int = field(default=0)
+    fault_str: str = field(default=NO_ERROR)
+    force_update: bool = field(default=False)
+    values: Dict = field(default_factory=empty_dict_factory)
+    today_values: Dict = field(default_factory=empty_dict_factory)
+    tomorrow_values: Dict = field(default_factory=empty_dict_factory)
+    daily_kwh: Dict = field(default_factory=empty_dict_factory)
+    today_kwh: float = field(default=0.0)
+    tomorrow_kwh: float = field(default=0.0)
+    next_query_time: int = field(default=0)
+    last_update_time: int = field(default=0)
+
+
+def create_forecast_get_with_topics(topic_prefix: str) -> ForecastGet:
+    forecast_get = ForecastGet()
+    forecast_get.__dataclass_fields__['fault_state'].metadata = {"topic": f"{topic_prefix}/get/fault_state"}
+    forecast_get.__dataclass_fields__['fault_str'].metadata = {"topic": f"{topic_prefix}/get/fault_str"}
+    forecast_get.__dataclass_fields__['force_update'].metadata = {"topic": f"{topic_prefix}/get/force_update"}
+    forecast_get.__dataclass_fields__['values'].metadata = {"topic": f"{topic_prefix}/get/values"}
+    forecast_get.__dataclass_fields__['today_values'].metadata = {"topic": f"{topic_prefix}/get/today_values"}
+    forecast_get.__dataclass_fields__['tomorrow_values'].metadata = {"topic": f"{topic_prefix}/get/tomorrow_values"}
+    forecast_get.__dataclass_fields__['daily_kwh'].metadata = {"topic": f"{topic_prefix}/get/daily_kwh"}
+    forecast_get.__dataclass_fields__['today_kwh'].metadata = {"topic": f"{topic_prefix}/get/today_kwh"}
+    forecast_get.__dataclass_fields__['tomorrow_kwh'].metadata = {"topic": f"{topic_prefix}/get/tomorrow_kwh"}
+    forecast_get.__dataclass_fields__['next_query_time'].metadata = {"topic": f"{topic_prefix}/get/next_query_time"}
+    forecast_get.__dataclass_fields__['last_update_time'].metadata = {"topic": f"{topic_prefix}/get/last_update_time"}
+    return forecast_get
+
+
+def forecast_get_factory() -> ForecastGet:
+    return create_forecast_get_with_topics("forecast")
 
 
 @dataclass
@@ -77,8 +112,19 @@ class ElectricityPricing:
     get: ElectricityPricingGet = field(default_factory=electricity_pricing_get_factory)
 
 
+@dataclass
+class Forecast:
+    configured: bool = field(default=False, metadata={"topic": "forecast/configured"})
+    provider: Optional[Union[str, Dict[str, Any]]] = field(default=None, metadata={"topic": "forecast/provider"})
+    get: ForecastGet = field(default_factory=forecast_get_factory)
+
+
 def ep_factory() -> ElectricityPricing:
     return ElectricityPricing()
+
+
+def forecast_factory() -> Forecast:
+    return Forecast()
 
 
 def cards_display_theme_factory() -> CardsDisplayTheme:
@@ -136,6 +182,7 @@ def ocpp_factory() -> Ocpp:
 @dataclass
 class OptionalData:
     electricity_pricing: ElectricityPricing = field(default_factory=ep_factory)
+    forecast: Forecast = field(default_factory=forecast_factory)
     int_display: InternalDisplay = field(default_factory=int_display_factory)
     rfid: Rfid = field(default_factory=rfid_factory)
     dc_charging: bool = field(default=False, metadata={"topic": "dc_charging"})

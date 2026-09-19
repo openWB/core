@@ -274,6 +274,15 @@ def setup_logging() -> None:
     mqtt_file_handler.addFilter(RedactingFilter())
     mqtt_log.addHandler(mqtt_file_handler)
 
+    # Forecast logger
+    forecast_log = logging.getLogger("forecast")
+    forecast_log.propagate = False
+    forecast_log.setLevel(logging.INFO)
+    forecast_file_handler = RotatingFileHandler(RAMDISK_PATH / 'forecast.log', maxBytes=mb_to_bytes(1), backupCount=1)
+    forecast_file_handler.setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
+    forecast_file_handler.addFilter(RedactingFilter())
+    forecast_log.addHandler(forecast_file_handler)
+
     # Steuve control command logger
     steuve_control_command_log = logging.getLogger("steuve_control_command")
     steuve_control_command_log.propagate = False
