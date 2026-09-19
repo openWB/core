@@ -359,7 +359,9 @@ class ParameterHandler
         $instantChargingAmount = 0;
         $instantChargingSoc = 0;
         $maxPriceEco = 0;
-        
+        $soc = 0;
+        $rangeCharged = 0;
+
         try {
             $template = json_decode($values["openWB/chargepoint/{$id}/set/charge_template"] ?? '{}', true);
             $chargemode = $template['chargemode']['selected'] ?? 'stop';
@@ -476,7 +478,11 @@ class ParameterHandler
 
         // manual_lock Status auslesen
         $manualLockTopic = "openWB/chargepoint/{$id}/set/manual_lock";
-        $manualLock = $this->mqttClient->getValue($manualLockTopic);
+        try {
+            $manualLock = $this->mqttClient->getValue($manualLockTopic);
+        } catch (Exception $e) {
+            $manualLock = 'false';
+        }
         $data["chargepoint_{$id}"]['manual_lock'] = $this->parseBooleanValue($manualLock ?? 'false');
 
         return $data;
