@@ -9,6 +9,7 @@ from helpermodules.utils.topic_parser import decode_payload
 from modules.common.abstract_chargepoint import AbstractChargepoint
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_state import ChargepointState
+from modules.common import evse_transition_filter
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store import get_internal_chargepoint_value_store, get_chargepoint_value_store
 from modules.internal_chargepoint_handler.clients import ClientHandler
@@ -144,14 +145,19 @@ class ChargepointModule(AbstractChargepoint):
     def perform_phase_switch(self, phases_to_use: int) -> None:
         gpio_cp, gpio_relay = self._client.get_pins_phase_switch(phases_to_use)
         evse = self._client.evse_client
+        # Vor dem Relais erst das Freigabefenster abwarten; unter Last darf nicht geschaltet werden.
+        if not evse_transition_filter.wait_for_window(evse.id, 0):
+            log.error(f"Phasenumschaltung an LP{self.local_charge_point_num} abgebrochen: die EVSE darf noch "
+                      "nicht abgeschaltet werden. Die Umschaltung wird spaeter erneut angefordert.")
+            return
         with SingleComponentUpdateContext(self.fault_state, update_always=False, reraise=True):
-            evse.set_current(0)
+            evse.set_current(0, wait=True)
             for _ in range(20):  # poll up to 10s (20 × 0.5s) for EVSE to confirm 0 A
                 _, _, evse_current = evse.get_plug_charge_state()
                 if evse_current == 0:
                     break
                 time.sleep(0.5)
-                evse.set_current(0)
+                evse.set_current(0, wait=True)
             else:
                 raise Exception("Ladung konnte nicht gestoppt werden - Phasenumschaltung abgebrochen.")
         GPIO.output(gpio_cp, GPIO.HIGH)  # CP off
@@ -165,8 +171,13 @@ class ChargepointModule(AbstractChargepoint):
 
     def perform_cp_interruption(self, duration: int) -> None:
         gpio_cp = self._client.get_pins_cp_interruption()
+        # Wie bei der Phasenumschaltung: erst das Freigabefenster abwarten, dann den CP unterbrechen.
+        if not evse_transition_filter.wait_for_window(self._client.evse_client.id, 0):
+            log.error(f"CP-Unterbrechung an LP{self.local_charge_point_num} abgebrochen: die EVSE darf noch "
+                      "nicht abgeschaltet werden.")
+            return
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
-            self._client.evse_client.set_current(0)
+            self._client.evse_client.set_current(0, wait=True)
         GPIO.setwarnings(False)
         GPIO.setmode(GPIO.BOARD)
         GPIO.setup(gpio_cp, GPIO.OUT)
