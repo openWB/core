@@ -133,11 +133,12 @@ def test_unterdrueckter_schreibzugriff_bewaffnet_die_timer_nicht(clock):
 # Eigenschaft 3: es gibt keine Umgehung, nur Warten
 
 
-def test_es_gibt_keinen_bypass(clock):
-    """Der Filter kennt kein force. Die Signatur darf nie wieder eines bekommen."""
+def test_regelung_hat_keinen_bypass(clock, monkeypatch):
+    """Ohne force bleibt der Filter unumgehbar; die Regelung bekommt nie ein force."""
     import inspect
-    for func in (filt.allow_write, filt.record_write, filt.remaining):
-        assert "force" not in inspect.signature(func).parameters
+    assert "force" not in inspect.signature(filt.record_write).parameters
+    assert "force" not in inspect.signature(filt.remaining).parameters
+    assert inspect.signature(filt.allow_write).parameters["force"].default is False
 
 
 def test_wait_kehrt_sofort_zurueck_wenn_das_fenster_offen_ist(clock, monkeypatch):
@@ -230,7 +231,46 @@ def test_abgewartete_abschaltung_zaehlt_fuer_die_relay_loop_diagnose(clock, monk
     for current in (6, 0, 6, 0):
         filt.record_write(1, current, arm_window=False)
         clock[0] += 1
-    assert "possible relay loop" in warnings(mock_log)
+    assert "Relaisschleife" in warnings(mock_log)
+
+
+# Eigenschaft 5: einzige Ausnahme ist der Verlust des Heartbeats
+
+
+def test_heartbeat_verlust_schaltet_sofort_ab(clock, monkeypatch):
+    monkeypatch.setattr(filt, "log", Mock())
+    assert write(1, 6) is True
+    clock[0] += 10
+    # Ohne force waere die Abschaltung gesperrt.
+    assert filt.allow_write(1, 0) is False
+    assert filt.allow_write(1, 0, force=True) is True
+
+
+def test_heartbeat_ausnahme_zieht_das_fenster_auf(clock, monkeypatch):
+    """Der Wiederanlauf nach der Ausnahme ist wie ueblich begrenzt."""
+    monkeypatch.setattr(filt, "log", Mock())
+    assert write(1, 6) is True
+    clock[0] += 10
+    assert filt.allow_write(1, 0, force=True) is True
+    filt.record_write(1, 0)
+    clock[0] += 10
+    assert write(1, 6) is False
+
+
+def test_force_wird_als_ausnahme_protokolliert(clock, monkeypatch):
+    mock_log = Mock()
+    monkeypatch.setattr(filt, "log", mock_log)
+    assert write(1, 6) is True
+    clock[0] += 10
+    filt.allow_write(1, 0, force=True)
+    assert "Heartbeat-Verlust" in warnings(mock_log)
+
+
+def test_force_ohne_gesperrtes_fenster_aendert_nichts(clock, monkeypatch):
+    mock_log = Mock()
+    monkeypatch.setattr(filt, "log", mock_log)
+    assert filt.allow_write(1, 0, force=True) is True
+    assert "Heartbeat-Verlust" not in warnings(mock_log)
 
 
 # Trennung nach evse_id
@@ -260,7 +300,7 @@ def test_relay_loop_warnung_ab_drei_wechseln(clock, monkeypatch):
     for current in (6, 0, 6, 0):
         filt.record_write(1, current)
         clock[0] += 1
-    assert "possible relay loop" in warnings(mock_log)
+    assert "Relaisschleife" in warnings(mock_log)
 
 
 def test_keine_relay_loop_warnung_ausserhalb_des_fensters(clock, monkeypatch):
@@ -269,7 +309,7 @@ def test_keine_relay_loop_warnung_ausserhalb_des_fensters(clock, monkeypatch):
     for current in (6, 0, 6, 0):
         filt.record_write(1, current)
         clock[0] += filt.TOGGLE_WINDOW_S + 1
-    assert "possible relay loop" not in warnings(mock_log)
+    assert "Relaisschleife" not in warnings(mock_log)
 
 
 # Fail-open

@@ -112,7 +112,8 @@ class Evse:
         else:
             return
 
-    def set_current(self, current: int, phases_in_use: Optional[int] = None, wait: bool = False) -> None:
+    def set_current(self, current: int, phases_in_use: Optional[int] = None,
+                    wait: bool = False, force: bool = False) -> None:
         time.sleep(0.1)
         if self.max_current == 20 and phases_in_use is not None and phases_in_use != 0:
             # Bei 20A EVSE und bekannter Phasenzahl auf 16A begrenzen, sonst erstmal Ladung mit Minimalstrom starten,
@@ -125,7 +126,7 @@ class Evse:
             # Schreibzugriff daher nicht in den nächsten Zyklus verschieben können.
             if wait:
                 evse_transition_filter.wait_for_window(self.id, formatted_current)
-            if not evse_transition_filter.allow_write(self.id, formatted_current):
+            if not evse_transition_filter.allow_write(self.id, formatted_current, force=force):
                 return
             self.client.write_register(1000, formatted_current, unit=self.id)
             # Ein abgewarteter Schreibzugriff darf den Wiederanlauf nach der Umschaltung nicht sperren.

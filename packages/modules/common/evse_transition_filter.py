@@ -5,12 +5,13 @@ selbst befreien, wenn die Ladefreigabe zu schnell hintereinander entzogen und
 wieder erteilt wird. Dieser Filter erzwingt daher eine Mindest-Ein- und eine
 Mindest-Aus-Zeit auf Register 1000.
 
-**Der Filter hat Vorrang vor allem anderen.** Es gibt keine Umgehung. Ein
-Schreibzugriff, der die Mindestzeiten verletzen würde, findet nicht statt --
-auch nicht für Phasenumschaltung, CP-Unterbrechung oder Fehlerabschaltung. Wer
-zwingend schreiben muss, wartet über :func:`wait_for_window`, bis er darf.
+**Der Filter hat Vorrang vor der Regelung.** Ein Schreibzugriff, der die
+Mindestzeiten verletzen würde, findet nicht statt -- auch nicht für
+Phasenumschaltung, CP-Unterbrechung oder Fehlerabschaltung. Wer zwingend
+schreiben muss, wartet über :func:`wait_for_window`, bis er darf. Es gibt
+genau eine dokumentierte Ausnahme, siehe Punkt 5.
 
-Drei Eigenschaften, die gelten müssen:
+Fünf Eigenschaften, die gelten müssen:
 
 1. **Nur der Wechsel 0 <-> ungleich 0 wird begrenzt.** Eine Änderung von 6A auf
    10A läuft immer durch, sonst wäre die Überschussregelung ausgehebelt.
@@ -39,6 +40,13 @@ Drei Eigenschaften, die gelten müssen:
    angeboten -- obwohl der Aufrufer die Mindest-Ein-Zeit bereits voll
    abgewartet hat. Das ist keine Umgehung: geschaltet wird erst, wenn das
    Fenster offen ist; nur die Buchführung danach unterbleibt.
+5. **Einzige Ausnahme: Verlust des Heartbeats.** Fällt die Verbindung zur
+   übergeordneten openWB aus, muss die Ladung sofort stoppen; darauf zu warten,
+   dass ein Fenster aufgeht, wäre hier falsch. Dieser Fall ist selten und
+   erzeugt daher keine Schleife. ``force=True`` in :func:`allow_write` lässt den
+   0-Schreibzugriff sofort durch und protokolliert ihn als Ausnahme. Das Fenster
+   wird dabei aufgezogen, der anschließende Wiederanlauf ist also wie üblich
+   begrenzt -- der Schutz für das Fahrzeug bleibt vollständig erhalten.
 
 Der Zustand liegt bewusst auf Modul-Ebene und wird über ``evse_id`` getrennt
 gehalten.
@@ -132,17 +140,23 @@ def remaining(evse_id: int, formatted_current: int) -> float:
         return max(0.0, MIN_OFF_TIME_S - (now - state.last_zero_ts))
 
 
-def allow_write(evse_id: int, formatted_current: int) -> bool:
+def allow_write(evse_id: int, formatted_current: int, force: bool = False) -> bool:
     """Darf dieser Schreibzugriff auf Register 1000 jetzt raus?
 
+    :param force: Nur für den Verlust des Heartbeats, siehe Punkt 5 im
+                  Modul-Docstring. Lässt den Schreibzugriff sofort durch.
     :return: True -> schreiben. False -> diesen Zyklus überspringen, die
              Regelung stellt den Wunsch im nächsten Zyklus erneut.
     """
     try:
         left = remaining(evse_id, formatted_current)
         if left > 0:
-            kind = "zero" if formatted_current == 0 else "non-zero"
-            log.warning(f"EVSE id={evse_id}: {kind}-write suppressed, {left:.1f}s left in window")
+            vorgang = "Abschaltung" if formatted_current == 0 else "Einschaltung"
+            if force:
+                log.warning(f"EVSE id={evse_id}: {vorgang} trotz gesperrtem Fenster geschrieben "
+                            f"(Ausnahme Heartbeat-Verlust), {left:.1f}s verblieben")
+                return True
+            log.warning(f"EVSE id={evse_id}: {vorgang} unterdrückt, Fenster noch {left:.1f}s gesperrt")
             return False
         return True
     except Exception:
@@ -198,8 +212,8 @@ def record_write(evse_id: int, formatted_current: int, arm_window: bool = True) 
             now = time.monotonic()
             # Einzige positive Spur eines echten Schreibzugriffs auf Register 1000: ohne sie ist im Log
             # nicht unterscheidbar, ob nichts geschrieben wurde oder nur nichts unterdrückt wurde.
-            log.warning(f"EVSE id={evse_id}: register 1000 written, value={formatted_current}"
-                        f"{'' if arm_window else ' (awaited, window not re-armed)'}")
+            log.warning(f"EVSE id={evse_id}: Register 1000 geschrieben, Wert={formatted_current}"
+                        f"{'' if arm_window else ' (abgewartet, Fenster wird nicht neu aufgezogen)'}")
             if arm_window:
                 if is_zero:
                     state.last_zero_ts = now
@@ -209,8 +223,8 @@ def record_write(evse_id: int, formatted_current: int, arm_window: bool = True) 
                 state.transitions.append(now)
                 state.transitions = [t for t in state.transitions if now - t <= TOGGLE_WINDOW_S]
                 if len(state.transitions) >= TOGGLE_WARN_COUNT:
-                    log.warning(f"EVSE id={evse_id}: {len(state.transitions)} zero/non-zero toggles "
-                                f"in {TOGGLE_WINDOW_S:.0f}s — possible relay loop!")
+                    log.warning(f"EVSE id={evse_id}: {len(state.transitions)} Wechsel zwischen 0 und "
+                                f"ungleich 0 in {TOGGLE_WINDOW_S:.0f}s — mögliche Relaisschleife!")
             state.last_was_zero = is_zero
     except Exception:
         log.exception("Fehler im EVSE-Übergangsfilter")

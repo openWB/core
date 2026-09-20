@@ -145,7 +145,7 @@ class ChargepointModule(AbstractChargepoint):
             # Ausserhalb des Client-Kontextes warten, damit die Modbus-Verbindung nicht minutenlang offen steht.
             if not evse_transition_filter.wait_for_window(self._client.evse_client.id, 0):
                 log.error(f"Phasenumschaltung an LP{self.config.id} abgebrochen: die EVSE darf noch nicht "
-                          "abgeschaltet werden. Die Umschaltung wird spaeter erneut angefordert.")
+                          "abgeschaltet werden. Die Umschaltung wird später erneut angefordert.")
                 return
             with SingleComponentUpdateContext(self.fault_state, update_always=False):
                 with self.client_error_context:

@@ -72,9 +72,9 @@ class ChargepointModule(AbstractChargepoint):
             BrokerClient(f"subscribeInternalCp{self.local_charge_point_num}",
                          on_connect, on_message).start_finite_loop()
 
-    def set_current(self, current: float) -> None:
+    def set_current(self, current: float, force: bool = False) -> None:
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
-            self._client.evse_client.set_current(current, phases_in_use=self.old_phases_in_use)
+            self._client.evse_client.set_current(current, phases_in_use=self.old_phases_in_use, force=force)
 
     def get_values(self, phase_switch_cp_active: bool, last_tag: str) -> ChargepointState:
         def store_state(chargepoint_state: ChargepointState) -> None:
@@ -148,7 +148,7 @@ class ChargepointModule(AbstractChargepoint):
         # Vor dem Relais erst das Freigabefenster abwarten; unter Last darf nicht geschaltet werden.
         if not evse_transition_filter.wait_for_window(evse.id, 0):
             log.error(f"Phasenumschaltung an LP{self.local_charge_point_num} abgebrochen: die EVSE darf noch "
-                      "nicht abgeschaltet werden. Die Umschaltung wird spaeter erneut angefordert.")
+                      "nicht abgeschaltet werden. Die Umschaltung wird später erneut angefordert.")
             return
         with SingleComponentUpdateContext(self.fault_state, update_always=False, reraise=True):
             evse.set_current(0, wait=True)
