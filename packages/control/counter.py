@@ -500,6 +500,12 @@ class Counter:
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")
 
+    def _get_switch_off_threshold_by_load(self, load: Load) -> int:
+        if isinstance(load, Chargepoint):
+            return data.data.general_data.data.chargemode_config.surplus.vehicle.switch_off_threshold
+        else:
+            return data.data.general_data.data.chargemode_config.surplus.consumer.switch_off_threshold
+
     def calc_switch_off_threshold(self, load: Load) -> float:
         surplus_config = data.data.general_data.data.chargemode_config.surplus
         control_parameter = load.data.control_parameter
@@ -510,7 +516,7 @@ class Counter:
             threshold = (-surplus_config.feed_in_yield
                          + surplus_config.vehicle.switch_on_threshold*control_parameter.phases)
         else:
-            threshold = surplus_config.consumer.switch_off_threshold
+            threshold = self._get_switch_off_threshold_by_load(load)
         return threshold
 
     def calc_switch_off(self, load: Load) -> Tuple[float, float]:

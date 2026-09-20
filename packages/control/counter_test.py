@@ -199,6 +199,24 @@ def test_control_range(control_range, evu_power, expected_range_offset, general_
     assert range_offset == expected_range_offset
 
 
+@pytest.mark.parametrize("load_factory, expected",
+                         [pytest.param(lambda: Chargepoint(0, None), -200, id="Ladepunkt"),
+                          pytest.param(lambda: Consumer(0), -50, id="Verbraucher")])
+def test_calc_switch_off_threshold_by_load(load_factory, expected: float, general_data_fixture):
+    # setup
+    surplus_config = data.data.general_data.data.chargemode_config.surplus
+    surplus_config.feed_in_limit = False
+    surplus_config.vehicle.switch_off_threshold = -200
+    surplus_config.consumer.switch_off_threshold = -50
+    c = Counter(0)
+
+    # execution
+    threshold = c.calc_switch_off_threshold(load_factory())
+
+    # evaluation
+    assert threshold == expected
+
+
 def test_reset_switch_on_off_ignores_stale_timestamp_without_delay_state(general_data_fixture, monkeypatch):
     # setup
     evu_counter = Counter(0)
