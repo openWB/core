@@ -318,6 +318,31 @@ class BatAll:
         except Exception:
             log.exception("Fehler im Bat-Modul")
 
+    def _charging_power_left_while_recovering(self, config) -> float:
+        """ Speicher-Vorrang, waehrend sich der Speicher auf dem Weg zum naechsten SoC-Ziel befindet
+        (unterhalb Mindest-SoC, oder oberhalb Mindest-SoC aber noch nicht wieder beim Maximal-SoC
+        angekommen, hysteresis_discharge=False): ermittelt, wie viel Leistung den Fahrzeugen dabei
+        verbleibt, unter Beruecksichtigung einer optional reservierten Ladeleistung.
+        """
+        if self.data.get.power < 0:
+            # Wenn der Speicher entladen wird, darf diese Leistung nicht zum Laden der Fahrzeuge
+            # genutzt werden. Wenn der Speicher schneller regelt als die LP, würde sonst der Speicher
+            # reduziert werden.
+            charging_power_left = self.data.get.power
+            self.data.set.regulate_up = True
+        else:
+            if config.power_reserve_active:
+                # Die Differenz zwischen aktueller Batterie-Leistung und Reserveleistung bestimmt,
+                # was fuer EV-Ladung verbleibt (positiv) oder zusaetzlich benoetigt wird (negativ).
+                charging_power_left = self.data.get.power - config.power_reserve
+                if charging_power_left < 0:
+                    self.data.set.regulate_up = True
+            else:
+                # Speicher wird geladen
+                charging_power_left = 0
+                self.data.set.regulate_up = True
+        return charging_power_left
+
     def get_charging_power_left_diff(self):
         """Ermittelt die Differenz zur aktuellen Batterie-Leistung,
         die zum Laden der EV verwendet werden darf.
@@ -349,30 +374,18 @@ class BatAll:
                 # Speicher soll geladen werden um min SoC zu erreichen
                 if self.data.get.soc < config.min_soc:
                     self.data.set.hysteresis_discharge = False
-                    if self.data.get.power < 0:
-                        # Wenn der Speicher entladen wird, darf diese Leistung nicht zum Laden der Fahrzeuge
-                        # genutzt werden. Wenn der Speicher schneller regelt als die LP, würde sonst der Speicher
-                        # reduziert werden.
-                        charging_power_left = self.data.get.power
-                        self.data.set.regulate_up = True
-                    else:
-                        # Speicher-Vorrang bis zum Min-Soc
-                        if config.power_reserve_active:
-                            # Die Differenz zwischen aktueller Batterie-Leistung und Reserveleistung bestimmt,
-                            # was fuer EV-Ladung verbleibt (positiv) oder zusaetzlich benoetigt wird (negativ).
-                            charging_power_left = self.data.get.power - config.power_reserve
-                            if charging_power_left < 0:
-                                self.data.set.regulate_up = True
-                        else:
-                            # Speicher wird geladen
-                            charging_power_left = 0
-                            self.data.set.regulate_up = True
+                    charging_power_left = self._charging_power_left_while_recovering(config)
                 # Speicher zwischen min und max SoC
                 elif int(self.data.get.soc) >= config.min_soc and int(self.data.get.soc) < config.max_soc:
                     # Speicher soll aktiv weder ge- noch entladen werden.
                     # Mindest-SoC wird gehalten oder der Speicher mit weiterem vorhanden Überschuss geladen.
                     if self.data.set.hysteresis_discharge is False:
-                        charging_power_left = self.data.get.power
+                        # Speicher befindet sich noch in der Erholung nach Unterschreiten des Mindest-SoC:
+                        # Vorrang fuer den Speicher bis zum Erreichen des Maximal-SoC (hysteresis_discharge
+                        # wird erst dort wieder True), analog zum Zweig unterhalb des Mindest-SoC - sonst
+                        # bleibt der Speicher dauerhaft knapp oberhalb des Mindest-SoC haengen, weil die
+                        # Hysterese nie zurueckgesetzt wird.
+                        charging_power_left = self._charging_power_left_while_recovering(config)
                     # Speicher darf wegen Hysterese bis min_soc entladen werden.
                     else:
                         if self.data.set.power_limit is None:
