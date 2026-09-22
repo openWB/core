@@ -281,6 +281,12 @@ class ParameterHandler
                     return $this->setInstantChargingAmount($targetId, $value);
                 case 'instant_charging_soc':
                     return $this->setInstantChargingSoc($targetId, $value);
+                case 'pv_charging_limit':
+                    return $this->setPvChargingLimit($targetId, $value);
+                case 'pv_charging_amount':
+                    return $this->setPvChargingAmount($targetId, $value);
+                case 'pv_charging_soc':
+                    return $this->setPvChargingSoc($targetId, $value);
                 case 'vehicle':
                     return $this->setVehicle($targetId, $value);
                 case 'manual_soc':
@@ -358,6 +364,9 @@ class ParameterHandler
         $instantChargingLimit = 'none';
         $instantChargingAmount = 0;
         $instantChargingSoc = 0;
+        $pvChargingLimit = 'none';
+        $pvChargingAmount = 0;
+        $pvChargingSoc = 0;
         $maxPriceEco = 0;
         $soc = 0;
         $rangeCharged = 0;
@@ -375,7 +384,12 @@ class ParameterHandler
             $instantChargingLimit = $template['chargemode']['instant_charging']['limit']['selected'] ?? 'none';
             $instantChargingAmount = $template['chargemode']['instant_charging']['limit']['amount'] ?? 0;
             $instantChargingSoc = $template['chargemode']['instant_charging']['limit']['soc'] ?? 0;
-            
+
+            // PV Charging Limit-Parameter extrahieren
+            $pvChargingLimit = $template['chargemode']['pv_charging']['limit']['selected'] ?? 'none';
+            $pvChargingAmount = $template['chargemode']['pv_charging']['limit']['amount'] ?? 0;
+            $pvChargingSoc = $template['chargemode']['pv_charging']['limit']['soc'] ?? 0;
+
             // ECO Charging max_price extrahieren
             $maxPriceEco = isset($template['chargemode']['eco_charging']['max_price']) ? number_format((float)$template['chargemode']['eco_charging']['max_price'], 6, '.', '') : '0.0000';
             $maxPriceEco = $maxPriceEco * 100000; 
@@ -469,6 +483,9 @@ class ParameterHandler
                 'instant_charging_limit' => $instantChargingLimit,
                 'instant_charging_amount' => intval($instantChargingAmount),
                 'instant_charging_soc' => intval($instantChargingSoc),
+                'pv_charging_limit' => $pvChargingLimit,
+                'pv_charging_amount' => intval($pvChargingAmount),
+                'pv_charging_soc' => intval($pvChargingSoc),
                 'max_price_eco' => floatval($maxPriceEco),
                 'soc' => floatval($soc),
                 'range_charged' => floatval($rangeCharged),
@@ -1647,6 +1664,115 @@ class ParameterHandler
             return ['success' => false, 'message' => 'Failed to update charge template'];
         } catch (Exception $e) {
             return ['success' => false, 'message' => 'Error setting instant charging SoC: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * PV Charging Limit setzen
+     */
+    private function setPvChargingLimit($chargepointId, $value)
+    {
+        $validLimits = ['none', 'amount', 'soc'];
+
+        if (!in_array($value, $validLimits)) {
+            return ['success' => false, 'message' => 'Invalid pv_charging_limit. Valid values: ' . implode(', ', $validLimits)];
+        }
+
+        try {
+            $templateTopic = "openWB/chargepoint/{$chargepointId}/set/charge_template";
+            $templateJson = $this->mqttClient->getValue($templateTopic);
+            if (!$templateJson) {
+                return ['success' => false, 'message' => 'Could not read current charge template'];
+            }
+
+            $template = json_decode($templateJson, true);
+            if (!$template || !isset($template['chargemode']['pv_charging'])) {
+                return ['success' => false, 'message' => 'Invalid charge template format or missing pv_charging'];
+            }
+
+            $template['chargemode']['pv_charging']['limit']['selected'] = $value;
+            $setTopic = "openWB/set/chargepoint/{$chargepointId}/set/charge_template";
+            $newTemplateJson = json_encode($template);
+
+            if ($this->mqttClient->setValue($setTopic, $newTemplateJson)) {
+                return ['success' => true, 'message' => "PV charging limit set to {$value} for chargepoint {$chargepointId}"];
+            }
+            return ['success' => false, 'message' => 'Failed to update charge template'];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error setting PV charging limit: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * PV Charging Amount setzen (kWh -> Wh)
+     */
+    private function setPvChargingAmount($chargepointId, $value)
+    {
+        $amount = floatval($value);
+        if ($amount < 0) {
+            return ['success' => false, 'message' => 'Amount must be >= 0'];
+        }
+
+        // kWh zu Wh konvertieren
+        $amountWh = intval($amount * 1000);
+
+        try {
+            $templateTopic = "openWB/chargepoint/{$chargepointId}/set/charge_template";
+            $templateJson = $this->mqttClient->getValue($templateTopic);
+            if (!$templateJson) {
+                return ['success' => false, 'message' => 'Could not read current charge template'];
+            }
+
+            $template = json_decode($templateJson, true);
+            if (!$template || !isset($template['chargemode']['pv_charging'])) {
+                return ['success' => false, 'message' => 'Invalid charge template format or missing pv_charging'];
+            }
+
+            $template['chargemode']['pv_charging']['limit']['amount'] = $amountWh;
+            $setTopic = "openWB/set/chargepoint/{$chargepointId}/set/charge_template";
+            $newTemplateJson = json_encode($template);
+
+            if ($this->mqttClient->setValue($setTopic, $newTemplateJson)) {
+                return ['success' => true, 'message' => "PV charging amount set to {$value}kWh ({$amountWh}Wh) for chargepoint {$chargepointId}"];
+            }
+            return ['success' => false, 'message' => 'Failed to update charge template'];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error setting PV charging amount: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * PV Charging SoC setzen
+     */
+    private function setPvChargingSoc($chargepointId, $value)
+    {
+        $soc = intval($value);
+        if ($soc < 0 || $soc > 100) {
+            return ['success' => false, 'message' => 'SoC must be between 0 and 100'];
+        }
+
+        try {
+            $templateTopic = "openWB/chargepoint/{$chargepointId}/set/charge_template";
+            $templateJson = $this->mqttClient->getValue($templateTopic);
+            if (!$templateJson) {
+                return ['success' => false, 'message' => 'Could not read current charge template'];
+            }
+
+            $template = json_decode($templateJson, true);
+            if (!$template || !isset($template['chargemode']['pv_charging'])) {
+                return ['success' => false, 'message' => 'Invalid charge template format or missing pv_charging'];
+            }
+
+            $template['chargemode']['pv_charging']['limit']['soc'] = $soc;
+            $setTopic = "openWB/set/chargepoint/{$chargepointId}/set/charge_template";
+            $newTemplateJson = json_encode($template);
+
+            if ($this->mqttClient->setValue($setTopic, $newTemplateJson)) {
+                return ['success' => true, 'message' => "PV charging SoC set to {$soc}% for chargepoint {$chargepointId}"];
+            }
+            return ['success' => false, 'message' => 'Failed to update charge template'];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error setting PV charging SoC: ' . $e->getMessage()];
         }
     }
 

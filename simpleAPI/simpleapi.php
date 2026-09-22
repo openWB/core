@@ -192,6 +192,9 @@ class SimpleAPI
             'instant_charging_limit',
             'instant_charging_amount',
             'instant_charging_soc',
+            'pv_charging_limit',
+            'pv_charging_amount',
+            'pv_charging_soc',
             'vehicle',
             'manual_soc',
             'set_io_output'
@@ -540,6 +543,9 @@ class SimpleAPI
             'instant_charging_limit',
             'instant_charging_amount',
             'instant_charging_soc',
+            'pv_charging_limit',
+            'pv_charging_amount',
+            'pv_charging_soc',
             'vehicle',
             'manual_soc'
         ];
@@ -571,6 +577,12 @@ class SimpleAPI
                 return "Instant charging amount for chargepoint {$chargepointId} set to {$value}kWh.";
             case 'instant_charging_soc':
                 return "Instant charging SoC for chargepoint {$chargepointId} set to {$value}%.";
+            case 'pv_charging_limit':
+                return "PV charging limit for chargepoint {$chargepointId} set to {$value}.";
+            case 'pv_charging_amount':
+                return "PV charging amount for chargepoint {$chargepointId} set to {$value}kWh.";
+            case 'pv_charging_soc':
+                return "PV charging SoC for chargepoint {$chargepointId} set to {$value}%.";
             case 'vehicle':
                 return "Vehicle {$value} assigned to chargepoint {$chargepointId}.";
             case 'manual_soc':
