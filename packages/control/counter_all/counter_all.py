@@ -167,7 +167,7 @@ class CounterAll(HierarchyMixin, LoadmanagementPrioMixin):
         home_consumption = 0.0
 
         # Rekursion startet immer beim EVU-Zähler.
-        home_consumption = self._calc_home_consumption_from_counter(evu_element, CounterMode.NOT_HOME_CONSUMPTION.value)
+        home_consumption = self._calc_home_consumption_from_counter(evu_element, CounterMode.HOME_CONSUMPTION.value)
 
         home_consumption -= self.data.set.smarthome_power_excluded_from_home_consumption
 
