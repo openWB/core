@@ -83,12 +83,12 @@ def create_consumer(config: Avm):
         )
 
     def ensure_valid_session_id():
-        if check_valid_session_id() is False:
+        if session_id_expired():
             config.configuration.session_id = get_session_id()
             config.configuration.session_mtime = time.time()
             Pub().pub(f"openWB/set/system/device/{config.id}/config", asdict(config))
 
-    def check_valid_session_id() -> bool:
+    def session_id_expired() -> bool:
         return (config.configuration.session_id is None or
                 config.configuration.session_mtime is None or
                 time.time() - config.configuration.session_mtime > 300)
