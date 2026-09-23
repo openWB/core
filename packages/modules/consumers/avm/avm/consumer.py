@@ -21,13 +21,30 @@ INVALID_SESSIONID = "0000000000000000"
 def create_consumer(config: Avm):
     ain: Optional[str] = None  # Actuator Identification Number
 
-    def update() -> ConsumerState:
-        nonlocal ain
+    def get_device_list() -> ET.Element:
         ensure_valid_session_id()
         response = req.get_http_session().get(
             f"http://{config.configuration.ip_address}/webservices/homeautoswitch.lua?sid="
             f"{config.configuration.session_id}&switchcmd=getdevicelistinfos")
-        deviceListElementTree = ET.fromstring(response.text.strip())
+        return ET.fromstring(response.text.strip())
+
+    def ensure_valid_ain(deviceListElementTree: Optional[ET.Element] = None) -> str:
+        # switch_on/switch_off dürfen nicht davon abhängen, dass update() bereits einmal gelaufen ist -
+        # sonst würde ein Schaltbefehl vor dem ersten erfolgreichen update() mit ain=None gesendet.
+        nonlocal ain
+        if ain is not None:
+            return ain
+        for device in deviceListElementTree if deviceListElementTree is not None else get_device_list():
+            if device.find("name").text == config.configuration.name and device.find("present").text == '1':
+                ain = device.attrib["identifier"]
+                return ain
+        raise RuntimeError(
+            f"Device with name '{config.configuration.name}' was not found or is not currently available"
+        )
+
+    def update() -> ConsumerState:
+        deviceListElementTree = get_device_list()
+        ensure_valid_ain(deviceListElementTree)
 
         for device in deviceListElementTree:
             name = device.find("name").text
@@ -36,7 +53,6 @@ def create_consumer(config: Avm):
                 if presentText != '1':
                     continue
 
-                ain = device.attrib["identifier"]
                 powermeterBlock = device.find("powermeter")
                 if powermeterBlock is not None:
                     # AVM returns mW, convert to W here
@@ -87,7 +103,7 @@ def create_consumer(config: Avm):
         challengeResponse = ET.fromstring(response.content)
         session_id = challengeResponse.find('SID').text
         if session_id != INVALID_SESSIONID:
-            return
+            return session_id
         blockTimeXML = challengeResponse.find('BlockTime')
         if blockTimeXML is not None and int(blockTimeXML.text) > 0:
             raise Exception("Durch Anmeldefehler in der Vergangenheit ist der Zugang zur FRITZ!Box "
@@ -119,13 +135,13 @@ def create_consumer(config: Avm):
         ensure_valid_session_id()
         req.get_http_session().get(
             f"http://{config.configuration.ip_address}/webservices/homeautoswitch.lua?sid="
-            f"{config.configuration.session_id}&switchcmd=setswitchon&ain={ain}")
+            f"{config.configuration.session_id}&switchcmd=setswitchon&ain={ensure_valid_ain()}")
 
     def switch_off() -> None:
         ensure_valid_session_id()
         req.get_http_session().get(
             f"http://{config.configuration.ip_address}/webservices/homeautoswitch.lua?sid="
-            f"{config.configuration.session_id}&switchcmd=setswitchoff&ain={ain}")
+            f"{config.configuration.session_id}&switchcmd=setswitchoff&ain={ensure_valid_ain()}")
 
     return ConfigurableConsumer(consumer_config=config,
                                 update=update,
