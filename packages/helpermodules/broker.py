@@ -1,4 +1,5 @@
 import datetime
+import errno
 import logging
 import paho.mqtt.client as mqtt
 import threading
@@ -95,7 +96,11 @@ class PersistentBrokerClient:
         # Aufrufer (insbesondere ErrorTimerContext/client_error_context) eine nicht erreichbare Gegenstelle
         # weiterhin wie bisher als Fehler erkennen und nach 60s die Sicherheitsabschaltung greifen kann.
         if not self.client.is_connected():
-            raise ConnectionError(f"Keine Verbindung zu {self.host}:{self.port}")
+            # errno.EHOSTUNREACH statt nur einer Nachricht, damit der bestehende OSError-Handler
+            # (helpermodules/exceptions/os.py) die schon vorhandene, uebersetzte Meldung "Die Verbindung
+            # zum Host ist fehlgeschlagen..." verwendet, statt auf "Unbekannter Fehler" zurueckzufallen -
+            # der greift nur ueber e.errno/e.strerror, eine reine Textnachricht wuerde er ignorieren.
+            raise ConnectionError(errno.EHOSTUNREACH, f"Keine Verbindung zu {self.host}:{self.port}")
         self.client.publish(topic, payload, qos=qos, retain=retain)
 
     def ensure_subscribed(self, topic_filter: str) -> None:

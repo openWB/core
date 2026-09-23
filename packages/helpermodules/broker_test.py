@@ -1,9 +1,11 @@
+import errno
 import threading
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from helpermodules import broker
+from helpermodules.exceptions.os import handle_os_error
 from helpermodules.broker import PersistentBrokerClient, get_persistent_broker_client
 
 
@@ -21,10 +23,16 @@ class TestPersistentBrokerClient:
         mock_mqtt_client.is_connected.return_value = False
         client = PersistentBrokerClient("10.0.0.5", 1883)
 
-        with pytest.raises(ConnectionError):
+        with pytest.raises(ConnectionError) as excinfo:
             client.publish("some/topic", "1")
 
         mock_mqtt_client.publish.assert_not_called()
+        # errno muss gesetzt sein, sonst faellt der bestehende OSError-Handler
+        # (helpermodules/exceptions/os.py) auf die nichtssagende "Unbekannter Fehler"-Meldung zurueck,
+        # statt die schon vorhandene, uebersetzte "Verbindung zum Host fehlgeschlagen"-Meldung zu nutzen.
+        assert excinfo.value.errno == errno.EHOSTUNREACH
+        assert handle_os_error(excinfo.value) == (
+            "Die Verbindung zum Host ist fehlgeschlagen. Überprüfe Adresse und Netzwerk.")
 
     def test_publish_forwards_when_connected(self, mock_mqtt_client):
         client = PersistentBrokerClient("10.0.0.5", 1883)
