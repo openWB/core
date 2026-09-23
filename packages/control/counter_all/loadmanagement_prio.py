@@ -2,6 +2,7 @@ import logging
 from typing import Dict, Generator, List, Tuple
 
 from control.chargepoint.chargepoint import Chargepoint
+from control.consumer.usage import ConsumerUsage
 from control.counter_all.counter_all_data import LoadmanagementPrioProtocol
 from modules.common.component_type import ComponentType
 
@@ -12,6 +13,27 @@ log = logging.getLogger(__name__)
 class LoadmanagementPrioMixin:
     def add_loadmanagement_prio_item(self: LoadmanagementPrioProtocol, type: ComponentType, id: int) -> None:
         self.data.get.loadmanagement_prios.append({"type": type.value, "id": id})
+
+    def update_consumer_loadmanagement_prio(
+            self: LoadmanagementPrioProtocol, consumer_id: int, usage_type: ConsumerUsage) -> None:
+        consumer_in_prios = self._has_loadmanagement_prio_item(
+            ComponentType.CONSUMER, consumer_id, self.data.get.loadmanagement_prios)
+        if usage_type == ConsumerUsage.METER_ONLY:
+            if consumer_in_prios:
+                self.remove_loadmanagement_prio_item(ComponentType.CONSUMER, consumer_id)
+        elif consumer_in_prios is False:
+            self.add_loadmanagement_prio_item(ComponentType.CONSUMER, consumer_id)
+
+    def _has_loadmanagement_prio_item(self: LoadmanagementPrioProtocol,
+                                      type: ComponentType,
+                                      id: int,
+                                      entries: List[Dict]) -> bool:
+        for entry in entries:
+            if entry["type"] == type.value and entry["id"] == id:
+                return True
+            if entry["type"] == "group" and self._has_loadmanagement_prio_item(type, id, entry["children"]):
+                return True
+        return False
 
     def remove_loadmanagement_prio_item(self: LoadmanagementPrioProtocol, type: ComponentType, id: int) -> None:
         if self._remove_loadmanagement_prio_item(type, id, self.data.get.loadmanagement_prios) is False:

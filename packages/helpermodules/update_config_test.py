@@ -363,3 +363,38 @@ def test_upgrade_datastore_142_ev_chargemode_conversion(ev0_prio: bool,
     assert uc.all_received_topics["openWB/counter/get/loadmanagement_prios"] == expected
     assert uc.all_received_topics["openWB/system/datastore_version"] == [131, 132, 142]
     assert mock_pub.pub.call_count == 2  # einmal publishen für Upgrade der Datastore-Version
+
+
+def test_upgrade_datastore_149_removes_meter_only_consumers(mock_pub: Mock):
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        "openWB/consumer/1/usage": {"type": "continuous"},
+        "openWB/consumer/2/usage": {"type": "meter_only"},
+        "openWB/counter/get/loadmanagement_prios": [
+            {"type": "vehicle", "id": 0},
+            {
+                "type": "group",
+                "label": "Verbraucher",
+                "children": [
+                    {"type": "consumer", "id": 1},
+                    {"type": "consumer", "id": 2},
+                ],
+            },
+            {"type": "consumer", "id": 3},
+        ],
+        "openWB/system/datastore_version": list(range(149)),
+    }
+
+    uc.upgrade_datastore_149()
+
+    assert uc.all_received_topics["openWB/counter/get/loadmanagement_prios"] == [
+        {"type": "vehicle", "id": 0},
+        {
+            "type": "group",
+            "label": "Verbraucher",
+            "children": [{"type": "consumer", "id": 1}],
+        },
+        {"type": "consumer", "id": 3},
+    ]
+    assert uc.all_received_topics["openWB/system/datastore_version"] == list(range(150))
+    assert mock_pub.pub.call_count == 2

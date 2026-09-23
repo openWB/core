@@ -58,7 +58,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 148
+    DATASTORE_VERSION = 149
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -3864,3 +3864,31 @@ class UpdateConfig:
                     return {topic: NO_MODULE}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(148)
+
+    def upgrade_datastore_149(self) -> None:
+        """Verbraucher ohne Lastmanagement aus der Prioritätensteuerung entfernen."""
+        meter_only_consumers = {
+            int(get_index(topic))
+            for topic, payload in self.all_received_topics.items()
+            if re.search(r"^openWB/consumer/[0-9]+/usage$", topic) is not None
+            and decode_payload(payload).get("type") == "meter_only"
+        }
+
+        def remove_meter_only_consumers(entries: list) -> None:
+            for entry in entries.copy():
+                if entry.get("type") == "consumer" and entry.get("id") in meter_only_consumers:
+                    entries.remove(entry)
+                elif entry.get("type") == "group":
+                    children = entry.get("children", [])
+                    remove_meter_only_consumers(children)
+                    if not children:
+                        entries.remove(entry)
+
+        topic = "openWB/counter/get/loadmanagement_prios"
+        if topic in self.all_received_topics:
+            loadmanagement_prios = decode_payload(self.all_received_topics[topic])
+            migrated_loadmanagement_prios = copy.deepcopy(loadmanagement_prios)
+            remove_meter_only_consumers(migrated_loadmanagement_prios)
+            if migrated_loadmanagement_prios != loadmanagement_prios:
+                self.__update_topic(topic, migrated_loadmanagement_prios)
+        self._append_datastore_version(149)
