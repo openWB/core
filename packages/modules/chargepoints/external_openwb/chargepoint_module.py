@@ -3,10 +3,9 @@ import time
 
 from control import data
 from helpermodules import pub, timecheck
-from helpermodules.broker import BrokerClient
+from helpermodules.broker import get_persistent_broker_client
 from helpermodules.utils import get_default
 from helpermodules.utils.error_handling import CP_ERROR, ErrorTimerContext
-from helpermodules.utils.topic_parser import decode_payload
 from modules.chargepoints.external_openwb.config import OpenWBSeries
 from modules.common.abstract_chargepoint import AbstractChargepoint
 from modules.common.abstract_device import DeviceDescriptor
@@ -59,22 +58,11 @@ class ChargepointModule(AbstractChargepoint):
                 pub.pub_single(f"openWB/set/isss/parentCPlp{self.config.configuration.duo_num + 1}",
                                str(num), hostname=ip_address)
 
-                def on_connect(client, userdata, flags, rc):
-                    client.subscribe(f"openWB/internal_chargepoint/{self.config.configuration.duo_num}/get/#")
-
-                def on_message(client, userdata, message):
-                    received_topics.update({message.topic: decode_payload(message.payload)})
-
-                received_topics = {}
-                # Höheres Timeout als der Default: muss zuverlässig alle ~20 retained Topics über eine
-                # echte Netzwerkverbindung zu einer ggf. gerade stark ausgelasteten Gegenstelle einsammeln
-                # (zB während einer laufenden Ladung), nicht nur ein oder zwei lokale Werte.
-                BrokerClient(f"subscribeSeriesChargepoint{self.config.id}",
-                             on_connect,
-                             on_message,
-                             host=self.config.configuration.ip_address,
-                             port=1886 if self.config.configuration.ip_address == "localhost" else 1883
-                             ).start_finite_loop(timeout=2)
+                broker_client = get_persistent_broker_client(
+                    ip_address, 1886 if ip_address == "localhost" else 1883)
+                broker_client.ensure_subscribed(
+                    f"openWB/internal_chargepoint/{self.config.configuration.duo_num}/get/#")
+                received_topics = broker_client.wait_for_fresh_data(max_wait=2)
 
                 if received_topics:
                     log.debug(f"Empfange MQTT Daten für Ladepunkt {self.config.id}: {received_topics}")
