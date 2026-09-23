@@ -195,7 +195,9 @@ class Ev:
                         required_current, submode, tmp_message, phases = charge_template.instant_charging(
                             self.data.get.soc,
                             imported_since_plugged,
-                            charging_type)
+                            charging_type,
+                            bidi
+                        )
                     elif charge_template.data.chargemode.selected == Chargemode.PV_CHARGING:
                         required_current, submode, tmp_message, phases = charge_template.pv_charging(
                             self.data.get.soc, control_parameter.min_current, charging_type, imported_since_plugged)
