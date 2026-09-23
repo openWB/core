@@ -135,6 +135,15 @@ class SurplusControlled:
         for load in get_loads_by_chargemodes(CONSIDERED_CHARGE_MODES_PV_ONLY):
             try:
                 def phase_switch_necessary() -> bool:
+                    if data.data.bat_all_data.is_buffer_depleted():
+                        # Der Speicher-Puffer ist leer und der Speicher hat bis zum Mindest-SoC
+                        # Vorrang. Die Rückschaltung 3 -> 1 ist dann nicht mehr die richtige
+                        # Reaktion, sondern das Abschalten - sonst stapeln sich switch_off_delay
+                        # (Rückschaltung), phase_switch_delay und noch einmal switch_off_delay
+                        # (Abschaltung), und die Ladung laeuft die ganze Zeit aus dem Netz.
+                        # Ev._check_phase_switch_conditions() unterdrückt die Rückschaltung
+                        # passend dazu.
+                        return False
                     return isinstance(load, Chargepoint) and (load.cp_state_hw_support_phase_switch() and
                                                               load.data.get.phases_in_use != 1 and
                                                               load.data.control_parameter.template_phases == 0)

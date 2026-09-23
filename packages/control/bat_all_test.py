@@ -568,3 +568,33 @@ def test_is_buffering(configured: bool,
 
     # evaluation
     assert result == expected_result
+
+
+@pytest.mark.parametrize(
+    "mode, soc, power_discharge_active, expected_result",
+    [
+        pytest.param(BatConsiderationMode.MIN_SOC_BAT.value, 19, True, True,
+                     id="unter Mindest-SoC, Speicher hat Vorrang -> Puffer leer"),
+        pytest.param(BatConsiderationMode.MIN_SOC_BAT.value, 20, True, False,
+                     id="Mindest-SoC erreicht -> Puffer nicht leer"),
+        pytest.param(BatConsiderationMode.MIN_SOC_BAT.value, 19, False, False,
+                     id="keine Entladeleistung freigegeben, es gibt keinen Puffer"),
+        pytest.param(BatConsiderationMode.BAT_MODE.value, 19, True, False,
+                     id="Speicher-Modus, es gibt keinen Puffer"),
+    ])
+def test_is_buffer_depleted(mode: str, soc: int, power_discharge_active: bool, expected_result: bool):
+    # setup
+    b = BatAll()
+    b.data.config.configured = True
+    b.data.config.bat_control_activated = False
+    b.data.get.fault_state = 0
+    b.data.get.soc = soc
+    data.data.general_data.data.chargemode_config.bat.mode = mode
+    data.data.general_data.data.chargemode_config.bat.min_soc = 20
+    data.data.general_data.data.chargemode_config.bat.power_discharge_active = power_discharge_active
+
+    # execution
+    result = b.is_buffer_depleted()
+
+    # evaluation
+    assert result == expected_result

@@ -165,3 +165,41 @@ def test_check_phase_switch_conditions_bat_buffering(phases: int,
 
     # evaluation
     assert result == expected_result
+
+
+@pytest.mark.parametrize(
+    "phases, submode, is_buffer_depleted, expected_result",
+    [
+        pytest.param(3, Chargemode.PV_CHARGING, True, (False, Ev.BAT_BUFFER_DEPLETED),
+                     id="Puffer leer -> keine Rückschaltung 3 -> 1, stattdessen Abschaltung"),
+        pytest.param(3, Chargemode.PV_CHARGING, False, (True, None),
+                     id="Puffer nicht leer -> Rückschaltung 3 -> 1 wie bisher"),
+        pytest.param(1, Chargemode.PV_CHARGING, True, (False, Ev.NOT_ENOUGH_POWER),
+                     id="einphasig, es gibt nichts zurückzuschalten"),
+    ])
+def test_check_phase_switch_conditions_bat_buffer_depleted(phases: int,
+                                                           submode: Chargemode,
+                                                           is_buffer_depleted: bool,
+                                                           expected_result: Tuple[bool, Optional[str]],
+                                                           monkeypatch):
+    # setup
+    ev = Ev(0)
+    control_parameter = ControlParameter()
+    control_parameter.phases = phases
+    control_parameter.submode = submode
+    control_parameter.min_current = 6
+    control_parameter.required_current = 6
+    monkeypatch.setattr(data.data.bat_all_data, "is_buffering", Mock(return_value=False))
+    monkeypatch.setattr(data.data.bat_all_data, "is_buffer_depleted", Mock(return_value=is_buffer_depleted))
+
+    # execution
+    result = ev._check_phase_switch_conditions(control_parameter,
+                                               evse_current=6,
+                                               get_currents=[6, 6, 6],
+                                               get_power=4140,
+                                               max_current_cp=16,
+                                               limit=LoadmanagementLimit(None, None),
+                                               surplus=-500)
+
+    # evaluation
+    assert result == expected_result
