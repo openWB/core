@@ -3,6 +3,7 @@ import logging
 from typing import Iterable, Union
 
 from modules.common.abstract_device import DeviceDescriptor
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.solar_view.solar_view.counter import SolarViewCounter
 from modules.devices.solar_view.solar_view.config import SolarView, SolarViewCounterSetup, SolarViewInverterSetup
@@ -18,13 +19,13 @@ def create_device(device_config: SolarView):
         return SolarViewInverter(component_config)
 
     def update_components(components: Iterable[Union[SolarViewCounter, SolarViewInverter]]):
-        # Zähler und Wechselrichter werden über dieselbe IP-Adresse ausgelesen - ist das Gerät nicht erreichbar,
-        # muss das für beide gelten, nicht nur für die zuerst geprüfte Komponente.
+        # Fehler pro Komponente isoliert, statt bei einem Fehler alle als defekt zu markieren.
         for component in components:
-            component.update(
-                device_config.configuration.ip_address,
-                device_config.configuration.port,
-                device_config.configuration.timeout)
+            with SingleComponentUpdateContext(component.fault_state):
+                component.update(
+                    device_config.configuration.ip_address,
+                    device_config.configuration.port,
+                    device_config.configuration.timeout)
 
     return ConfigurableDevice(
         device_config=device_config,

@@ -5,6 +5,7 @@ import logging
 from typing import Iterable, Union
 
 from modules.common.abstract_device import DeviceDescriptor
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.sonnen.sonnenbatterie.bat import SonnenbatterieBat
 from modules.devices.sonnen.sonnenbatterie.config import (SonnenBatterie, SonnenbatterieBatSetup,
@@ -54,11 +55,10 @@ def create_device(device_config: SonnenBatterie):
             Union[SonnenbatterieBat, SonnenbatterieCounter, SonnenbatterieConsumptionCounter,
                   SonnenbatterieInverter]]
     ):
-        # Speicher, Zähler und Wechselrichter werden alle über dieselbe Adresse/denselben API-Token derselben
-        # SonnenBatterie ausgelesen - ist das Gerät nicht erreichbar, muss das für alle vier gelten, nicht nur
-        # für die zuerst geprüfte Komponente.
+        # Fehler pro Komponente isoliert, statt bei einem Fehler alle als defekt zu markieren.
         for component in components:
-            component.update()
+            with SingleComponentUpdateContext(component.fault_state):
+                component.update()
 
     return ConfigurableDevice(
         device_config=device_config,

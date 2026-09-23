@@ -2,6 +2,7 @@
 import logging
 from typing import Iterable, Union
 
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.common.abstract_device import DeviceDescriptor
 from modules.devices.kostal.kostal_piko import counter
@@ -31,10 +32,10 @@ def create_device(device_config: KostalPiko):
     def update_components(
         components: Iterable[Union[counter.KostalPikoCounter, inverter.KostalPikoInverter, bat.KostalPikoBat]]
     ):
-        # Zähler, Wechselrichter und Speicher werden alle über dieselbe IP-Adresse ausgelesen - ist das Gerät nicht
-        # erreichbar, muss das für alle drei gelten, nicht nur für die zuerst geprüfte Komponente.
+        # Fehler pro Komponente isoliert, statt bei einem Fehler alle als defekt zu markieren.
         for component in components:
-            component.update()
+            with SingleComponentUpdateContext(component.fault_state):
+                component.update()
 
     return ConfigurableDevice(
         device_config=device_config,

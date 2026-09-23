@@ -4,6 +4,7 @@ import time
 from typing import Iterable, Union
 
 from modules.common.abstract_device import DeviceDescriptor
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
 from modules.devices.rct.rct import rct_lib
 from modules.devices.rct.rct.bat import RctBat
@@ -25,14 +26,13 @@ def create_device(device_config: Rct):
         return RctInverter(component_config)
 
     def update_components(components: Iterable[Union[RctBat, RctCounter, RctInverter]]):
-        # Zähler, Wechselrichter und Speicher teilen sich eine physische Verbindung zum RCT-Gerät - eine
-        # fehlgeschlagene Verbindung muss daher für alle drei den Fehlerzustand setzen, nicht nur für die
-        # Komponente, die zufällig zuerst dran war.
+        # Verbindungsfehler betrifft alle Komponenten, ein Fehler pro Komponente nur diese eine.
         rct = rct_lib.RCT(device_config.configuration.ip_address)
         try:
             rct.connect_to_server()
             for component in components:
-                component.update(rct)
+                with SingleComponentUpdateContext(component.fault_state):
+                    component.update(rct)
         finally:
             rct.close()
             time.sleep(0.5)

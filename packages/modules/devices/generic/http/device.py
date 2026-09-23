@@ -4,6 +4,7 @@ from typing import Iterable, Union
 
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
+from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
 from modules.devices.generic.http.bat import HttpBat
 from modules.devices.generic.http.config import (HTTP, HttpBatSetup, HttpCounterSetup,
@@ -37,10 +38,10 @@ def create_device(device_config: HTTP):
         session = req.get_http_session()
 
     def update_components(components: Iterable[Union[HttpBat, HttpCounter, HttpInverter]]):
-        # Zähler, Wechselrichter und Speicher werden alle über dieselbe URL ausgelesen - ist das Backend nicht
-        # erreichbar, muss das für alle drei gelten, nicht nur für die zuerst geprüfte Komponente.
+        # Fehler pro Komponente isoliert, statt bei einem Fehler alle als defekt zu markieren.
         for component in components:
-            component.update(session)
+            with SingleComponentUpdateContext(component.fault_state):
+                component.update(session)
 
     return ConfigurableDevice(
         device_config=device_config,
