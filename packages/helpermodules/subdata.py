@@ -1279,7 +1279,12 @@ class SubData:
                     elif re.search("openWB/consumer/[0-9]+/extra_meter", msg.topic) is not None:
                         self.set_json_payload_class(var[f"consumer{index}"].data, msg)
                     elif re.search("openWB/consumer/[0-9]+/usage$", msg.topic) is not None:
-                        var[f"consumer{index}"].data.usage = dataclass_from_dict(Usage, decode_payload(msg.payload))
+                        usage = dataclass_from_dict(Usage, decode_payload(msg.payload))
+                        var[f"consumer{index}"].data.usage = usage
+                        if (self.event_subdata_initialized.is_set() and
+                                self.counter_all_data.update_consumer_loadmanagement_prio(int(index), usage.type)):
+                            Pub().pub("openWB/set/counter/get/loadmanagement_prios",
+                                      self.counter_all_data.data.get.loadmanagement_prios)
                     elif re.search("openWB/consumer/[0-9]+/control_parameter/", msg.topic) is not None:
                         if re.search("openWB/consumer/[0-9]+/control_parameter/limit", msg.topic) is not None:
                             payload = decode_payload(msg.payload)
