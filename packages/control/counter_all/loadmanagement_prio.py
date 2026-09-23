@@ -2,7 +2,7 @@ import logging
 from typing import Dict, Generator, List, Tuple
 
 from control.chargepoint.chargepoint import Chargepoint
-from control.consumer.usage import ConsumerUsage
+from control.consumer.usage import ConsumerUsage, NOT_CONTROLLED
 from control.counter_all.counter_all_data import LoadmanagementPrioProtocol
 from modules.common.component_type import ComponentType
 
@@ -18,7 +18,7 @@ class LoadmanagementPrioMixin:
             self: LoadmanagementPrioProtocol, consumer_id: int, usage_type: ConsumerUsage) -> bool:
         consumer_in_prios = self._has_loadmanagement_prio_item(
             ComponentType.CONSUMER, consumer_id, self.data.get.loadmanagement_prios)
-        if usage_type == ConsumerUsage.METER_ONLY:
+        if usage_type in NOT_CONTROLLED:
             if consumer_in_prios:
                 self.remove_loadmanagement_prio_item(ComponentType.CONSUMER, consumer_id)
                 return True

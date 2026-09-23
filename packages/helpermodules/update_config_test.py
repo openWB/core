@@ -365,11 +365,12 @@ def test_upgrade_datastore_142_ev_chargemode_conversion(ev0_prio: bool,
     assert mock_pub.pub.call_count == 2  # einmal publishen für Upgrade der Datastore-Version
 
 
-def test_upgrade_datastore_149_removes_meter_only_consumers(mock_pub: Mock):
+def test_upgrade_datastore_149_removes_not_controlled_consumers(mock_pub: Mock):
     uc = UpdateConfig()
     uc.all_received_topics = {
         "openWB/consumer/1/usage": {"type": "continuous"},
         "openWB/consumer/2/usage": {"type": "meter_only"},
+        "openWB/consumer/4/usage": {"type": "self_controlled"},
         "openWB/counter/get/loadmanagement_prios": [
             {"type": "vehicle", "id": 0},
             {
@@ -378,6 +379,7 @@ def test_upgrade_datastore_149_removes_meter_only_consumers(mock_pub: Mock):
                 "children": [
                     {"type": "consumer", "id": 1},
                     {"type": "consumer", "id": 2},
+                    {"type": "consumer", "id": 4},
                 ],
             },
             {"type": "consumer", "id": 3},

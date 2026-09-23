@@ -41,6 +41,13 @@ from helpermodules.subdata import SubData
             False,
             id="ignore absent meter-only consumer",
         ),
+        pytest.param(
+            ConsumerUsage.SELF_CONTROLLED,
+            [{"type": "consumer", "id": 2}],
+            [],
+            True,
+            id="remove self-controlled consumer",
+        ),
     ],
 )
 def test_process_consumer_usage_updates_loadmanagement_prios(usage_type: ConsumerUsage,

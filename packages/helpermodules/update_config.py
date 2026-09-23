@@ -12,6 +12,7 @@ from typing import List, Optional
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
 
 from control.chargemode import Chargemode
+from control.consumer.usage import NOT_CONTROLLED
 from control.limiting_value import LoadmanagementLimit
 
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
@@ -3867,20 +3868,21 @@ class UpdateConfig:
 
     def upgrade_datastore_149(self) -> None:
         """Verbraucher ohne Lastmanagement aus der Prioritätensteuerung entfernen."""
-        meter_only_consumers = {
+        not_controlled_usage_types = {usage_type.value for usage_type in NOT_CONTROLLED}
+        not_controlled_consumers = {
             int(get_index(topic))
             for topic, payload in self.all_received_topics.items()
             if re.search(r"^openWB/consumer/[0-9]+/usage$", topic) is not None
-            and decode_payload(payload).get("type") == "meter_only"
+            and decode_payload(payload).get("type") in not_controlled_usage_types
         }
 
-        def remove_meter_only_consumers(entries: list) -> None:
+        def remove_not_controlled_consumers(entries: list) -> None:
             for entry in entries.copy():
-                if entry.get("type") == "consumer" and entry.get("id") in meter_only_consumers:
+                if entry.get("type") == "consumer" and entry.get("id") in not_controlled_consumers:
                     entries.remove(entry)
                 elif entry.get("type") == "group":
                     children = entry.get("children", [])
-                    remove_meter_only_consumers(children)
+                    remove_not_controlled_consumers(children)
                     if not children:
                         entries.remove(entry)
 
@@ -3888,7 +3890,7 @@ class UpdateConfig:
         if topic in self.all_received_topics:
             loadmanagement_prios = decode_payload(self.all_received_topics[topic])
             migrated_loadmanagement_prios = copy.deepcopy(loadmanagement_prios)
-            remove_meter_only_consumers(migrated_loadmanagement_prios)
+            remove_not_controlled_consumers(migrated_loadmanagement_prios)
             if migrated_loadmanagement_prios != loadmanagement_prios:
                 self.__update_topic(topic, migrated_loadmanagement_prios)
         self._append_datastore_version(149)
