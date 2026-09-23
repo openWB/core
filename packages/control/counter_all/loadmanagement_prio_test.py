@@ -78,28 +78,30 @@ def test_add_item(loadmanagement_prios: List[Dict],
 
 
 @pytest.mark.parametrize(
-    "loadmanagement_prios, usage_type, expected_loadmanagement_prios",
+    "loadmanagement_prios, usage_type, expected_loadmanagement_prios, expected_changed",
     [
-        pytest.param([], ConsumerUsage.CONTINUOUS, [{"type": "consumer", "id": 2}], id="add consumer"),
+        pytest.param([], ConsumerUsage.CONTINUOUS, [{"type": "consumer", "id": 2}], True, id="add consumer"),
         pytest.param([{"type": "consumer", "id": 2}], ConsumerUsage.CONTINUOUS,
-                     [{"type": "consumer", "id": 2}], id="do not add duplicate"),
+                     [{"type": "consumer", "id": 2}], False, id="do not add duplicate"),
         pytest.param([{
             "type": "group",
             "label": "Verbraucher",
             "children": [{"type": "consumer", "id": 2}],
-        }], ConsumerUsage.METER_ONLY, [], id="remove consumer from group"),
-        pytest.param([], ConsumerUsage.METER_ONLY, [], id="ignore absent meter"),
+        }], ConsumerUsage.METER_ONLY, [], True, id="remove consumer from group"),
+        pytest.param([], ConsumerUsage.METER_ONLY, [], False, id="ignore absent meter"),
     ],
 )
 def test_update_consumer_loadmanagement_prio(loadmanagement_prios: List[Dict],
                                              usage_type: ConsumerUsage,
-                                             expected_loadmanagement_prios: List[Dict]):
+                                             expected_loadmanagement_prios: List[Dict],
+                                             expected_changed: bool):
     c = CounterAll()
     c.data.get.loadmanagement_prios = loadmanagement_prios
 
-    c.update_consumer_loadmanagement_prio(2, usage_type)
+    changed = c.update_consumer_loadmanagement_prio(2, usage_type)
 
     assert c.data.get.loadmanagement_prios == expected_loadmanagement_prios
+    assert changed is expected_changed
 
 
 @pytest.mark.parametrize(

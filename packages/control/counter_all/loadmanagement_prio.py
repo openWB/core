@@ -15,14 +15,17 @@ class LoadmanagementPrioMixin:
         self.data.get.loadmanagement_prios.append({"type": type.value, "id": id})
 
     def update_consumer_loadmanagement_prio(
-            self: LoadmanagementPrioProtocol, consumer_id: int, usage_type: ConsumerUsage) -> None:
+            self: LoadmanagementPrioProtocol, consumer_id: int, usage_type: ConsumerUsage) -> bool:
         consumer_in_prios = self._has_loadmanagement_prio_item(
             ComponentType.CONSUMER, consumer_id, self.data.get.loadmanagement_prios)
         if usage_type == ConsumerUsage.METER_ONLY:
             if consumer_in_prios:
                 self.remove_loadmanagement_prio_item(ComponentType.CONSUMER, consumer_id)
+                return True
         elif consumer_in_prios is False:
             self.add_loadmanagement_prio_item(ComponentType.CONSUMER, consumer_id)
+            return True
+        return False
 
     def _has_loadmanagement_prio_item(self: LoadmanagementPrioProtocol,
                                       type: ComponentType,
