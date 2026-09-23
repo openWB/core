@@ -459,6 +459,41 @@ class BatAll:
         except Exception:
             log.exception("Fehler im Bat-Modul")
 
+    def is_buffering(self) -> bool:
+        """ gibt zurück, ob der Speicher die Überschuss-Ladung gerade puffert.
+
+        Wahr im Modus "Mindest-SoC des Speichers" auf dem absteigenden Ast der Hysterese: der
+        Maximal-SoC wurde erreicht (hysteresis_discharge), der Mindest-SoC noch nicht wieder
+        unterschritten, und es ist eine Entladeleistung freigegeben. Genau in diesem Zustand gibt
+        get_charging_power_left_diff() die erlaubte Entladeleistung als Überschuss frei, damit der
+        Speicher eine laufende Ladung über Wolken hinweg stützt.
+
+        Return
+        ------
+        bool: Der Speicher stützt gerade die Ladung.
+        """
+        try:
+            if self.data.config.configured is False or self.data.get.fault_state != 0:
+                return False
+            config = data.data.general_data.data.chargemode_config.bat
+            if config.mode != BatConsiderationMode.MIN_SOC_BAT.value:
+                # hysteresis_discharge wird nur im Mindest-SoC-Modus gepflegt und ist in den
+                # anderen Modi ein Altwert.
+                return False
+            if self.data.set.hysteresis_discharge is False or self.data.set.power_limit is not None:
+                return False
+            # Aktive Steuerung nicht konfiguriert oder
+            # Aktive Steuerung + Preisgrenze aktiv + Grenze nicht unterschritten
+            # -> dann wird die erlaubte Speicherentladeleistung addiert
+            power_discharge_allowed = (self.data.config.bat_control_activated is False or
+                                       (self.data.config.power_limit_condition ==
+                                        BatPowerLimitCondition.PRICE_LIMIT.value and
+                                        self.data.set.power_limit is None))
+            return config.power_discharge_active and power_discharge_allowed
+        except Exception:
+            log.exception("Fehler im Bat-Modul")
+            return False
+
     def power_for_bat_charging(self):
         """ gibt die Leistung zurück, die zum Laden verwendet werden kann.
 

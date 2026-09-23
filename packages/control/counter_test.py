@@ -241,3 +241,62 @@ def test_reset_switch_on_off_releases_reserved_surplus_on_switch_on_delay(genera
     assert evu_counter.data.set.reserved_surplus == 0
     assert consumer.data.control_parameter.timestamp_switch_on_off is None
     assert consumer.data.control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED
+
+
+@dataclass
+class SwitchOffParams:
+    name: str
+    state: ChargepointState
+    charge_state: bool
+    is_buffering: bool
+    expected_state: ChargepointState
+    expected_msg: Optional[str]
+    expected_released_surplus: float
+
+
+switch_off_cases = [
+    SwitchOffParams("laufende Abschaltverzögerung wird abgebrochen, wenn der Speicher puffert",
+                    ChargepointState.SWITCH_OFF_DELAY, True, True,
+                    ChargepointState.CHARGING_ALLOWED, Counter.BAT_BUFFERING, 0),
+    SwitchOffParams("ohne Puffer läuft die Abschaltverzögerung weiter",
+                    ChargepointState.SWITCH_OFF_DELAY, True, False,
+                    ChargepointState.SWITCH_OFF_DELAY, None, 1500),
+    SwitchOffParams("es wird keine Abschaltverzögerung gestartet, wenn der Speicher puffert",
+                    ChargepointState.CHARGING_ALLOWED, True, True,
+                    ChargepointState.CHARGING_ALLOWED, Counter.BAT_BUFFERING, 0),
+    SwitchOffParams("ohne Puffer wird die Abschaltverzögerung gestartet",
+                    ChargepointState.CHARGING_ALLOWED, True, False,
+                    ChargepointState.SWITCH_OFF_DELAY,
+                    Counter.SWITCH_OFF_TEXTS_CP.waiting.format("1 Min."), 1500),
+    SwitchOffParams("eine nicht fließende Ladung wird nicht gehalten",
+                    ChargepointState.CHARGING_ALLOWED, False, True,
+                    ChargepointState.NO_CHARGING_ALLOWED, Counter.SWITCH_OFF_TEXTS_CP.not_charging, 0),
+]
+
+
+@pytest.mark.parametrize("params", switch_off_cases, ids=[c.name for c in switch_off_cases])
+def test_switch_off_check_threshold_bat_buffering(params: SwitchOffParams, general_data_fixture, monkeypatch):
+    # setup
+    c = Counter(0)
+    c.data.set.released_surplus = 1500 if params.state == ChargepointState.SWITCH_OFF_DELAY else 0
+    cp = Chargepoint(0, None)
+    ev = Ev(0)
+    ev.data.charge_template = ChargeTemplate()
+    cp.data.set.charging_ev_data = ev
+    cp.data.set.required_power = 1500
+    cp.data.set.current_prev = 6 if params.charge_state else 0
+    cp.data.get.charge_state = params.charge_state
+    cp.data.get.currents = [6, 6, 6]
+    cp.data.control_parameter.state = params.state
+    cp.data.control_parameter.min_current = 6
+    # Abschaltschwelle überschritten: eigene Leistung herausgerechnet immer noch darüber
+    monkeypatch.setattr(Counter, "calc_switch_off", Mock(return_value=[2000, 0]))
+    monkeypatch.setattr(data.data.bat_all_data, "is_buffering", Mock(return_value=params.is_buffering))
+
+    # execution
+    c.switch_off_check_threshold(cp)
+
+    # evaluation
+    assert cp.data.control_parameter.state == params.expected_state
+    assert cp.data.get.state_str == params.expected_msg
+    assert c.data.set.released_surplus == params.expected_released_surplus

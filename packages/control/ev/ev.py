@@ -256,6 +256,7 @@ class Ev:
                                          + "Stromabweichung aus dem Fahrzeug-Profil/Minimalen Dauerstrom lädt.")
     ENOUGH_POWER = ", da ausreichend Überschuss für mehrphasiges Laden zur Verfügung steht."
     NOT_ENOUGH_POWER = ", da nicht ausreichend Überschuss für mehrphasiges Laden zur Verfügung steht."
+    BAT_BUFFERING = ", da der Speicher die Ladung puffert."
 
     def _check_phase_switch_conditions(self,
                                        control_parameter: ControlParameter,
@@ -271,6 +272,15 @@ class Ev:
         max_current = min(self.ev_template.data.max_current_single_phase, max_current_cp)
         max_current_range = max_current - self.ev_template.data.nominal_difference
         phases_in_use = control_parameter.phases
+        if (phases_in_use > 1 and
+                control_parameter.submode == Chargemode.PV_CHARGING and
+                data.data.bat_all_data.is_buffering()):
+            # Der Speicher stützt die Ladung gerade mit seiner freigegebenen Entladeleistung. Diese
+            # deckt bei mehrphasigem Laden nur einen Teil des Bedarfs, der Überschuss ist also <= 0
+            # und damit die Rückschaltbedingung erfüllt - obwohl genau dieser Zustand der ist, den
+            # der Puffer überbrücken soll. Einphasig wäre die Ladeleistung ein Drittel und der
+            # Puffer damit wirkungslos. Die Hochschaltung 1 -> 3 bleibt unberührt.
+            return False, self.BAT_BUFFERING
         max_phases_ev = self.ev_template.data.max_phases
         required_surplus = control_parameter.min_current * max_phases_ev * 230 - get_power
         unbalanced_load_limit_reached = limit.limiting_value == LimitingValue.UNBALANCED_LOAD
