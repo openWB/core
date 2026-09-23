@@ -80,6 +80,86 @@ def test_calc_power_for_all_components_excludes_battery_after_60s(data_):
     # evaluation
     assert b_all.data.get.power == -500
     assert data.data.bat_data["bat2"].data.set.error_timer == error_timer
+    # eigener get.power-Wert wird jetzt ebenfalls abgebildet (wie bei Counter/Chargepoint), nicht nur die Summe
+    assert data.data.bat_data["bat2"].data.get.power == 0
+
+
+def test_calc_power_for_all_components_recovers_after_error_clears(data_):
+    # setup
+    # Speicher war im Fehlerzustand (error_timer noch gesetzt), liefert jetzt aber wieder gültige Werte
+    # (fault_state == 0) - der alte error_timer darf nicht mehr dazu führen, dass weiterhin 0 genutzt wird.
+    data.data.bat_data = {"bat1": Bat(1)}
+    data.data.bat_data["bat1"].data.get.power = -800
+    data.data.bat_data["bat1"].data.get.fault_state = 0
+    data.data.bat_data["bat1"].data.set.error_timer = timecheck.create_timestamp() - 61
+    b_all = BatAll()
+
+    # execution
+    b_all.calc_power_for_all_components()
+
+    # evaluation
+    assert data.data.bat_data["bat1"].data.get.power == -800
+    assert data.data.bat_data["bat1"].data.set.error_timer is None
+    assert b_all.data.get.power == -800
+
+
+def test_set_bat_power_active_control_ignores_battery_after_60s(data_, monkeypatch):
+    # setup
+    # Speicher seit über 60s im Fehlerzustand - die aktive Speichersteuerung darf sich nicht mehr auf dessen
+    # (möglicherweise veraltete) SoC/Kapazität stützen und muss ihn auf Eigenregelung stellen.
+    error_timer = timecheck.create_timestamp() - 61
+    b_all = BatAll()
+    b_all.data.config.bat_control_max_soc = 95
+    b_all.data.config.bat_control_min_soc = 5
+    data.data.bat_data["bat2"].data.get.soc = 50
+    data.data.bat_data["bat2"].data.get.max_charge_power = 3000
+    data.data.bat_data["bat2"].data.get.max_discharge_power = 3000
+    data.data.bat_data["bat2"].data.get.fault_state = FaultStateLevel.ERROR
+    data.data.bat_data["bat2"].data.set.error_timer = error_timer
+    get_bat_components_by_controllability_mock = Mock(return_value=([MqttBat(MqttBatSetup(id=2), device_id=0)], []))
+    monkeypatch.setattr(bat_all, "get_bat_components_by_controllability",
+                        get_bat_components_by_controllability_mock)
+    monkeypatch.setattr(bat_all, "get_component_name_by_id", Mock(return_value="Speicher 2"))
+
+    # execution
+    b_all._set_bat_power_active_control(1000)
+
+    # evaluation
+    assert data.data.bat_data["bat2"].data.set.power_limit is None
+    assert "Speicher 2" in data.data.bat_data["bat2"].data.get.state_str
+    assert data.data.bat_data["bat2"].data.set.error_timer == error_timer
+
+
+def test_set_bat_power_active_control_excludes_faulted_battery_from_capacity_totals(data_, monkeypatch):
+    # setup
+    # bat2 seit über 60s im Fehlerzustand - dessen (evtl. veraltete) max_charge_power darf nicht in die
+    # Kapazitäts-Summe einfließen, mit der die Leistung auf die gesunden Speicher verteilt wird.
+    error_timer = timecheck.create_timestamp() - 61
+    b_all = BatAll()
+    b_all.data.config.bat_control_max_soc = 95
+    b_all.data.config.bat_control_min_soc = 5
+    data.data.bat_data["bat1"] = Bat(1)
+    data.data.bat_data["bat1"].data.get.soc = 50
+    data.data.bat_data["bat1"].data.get.max_charge_power = 2000
+    data.data.bat_data["bat1"].data.get.max_discharge_power = 2000
+    data.data.bat_data["bat2"].data.get.soc = 50
+    data.data.bat_data["bat2"].data.get.max_charge_power = 3000
+    data.data.bat_data["bat2"].data.get.max_discharge_power = 3000
+    data.data.bat_data["bat2"].data.get.fault_state = FaultStateLevel.ERROR
+    data.data.bat_data["bat2"].data.set.error_timer = error_timer
+    get_bat_components_by_controllability_mock = Mock(return_value=(
+        [MqttBat(MqttBatSetup(id=1), device_id=0), MqttBat(MqttBatSetup(id=2), device_id=0)], []))
+    monkeypatch.setattr(bat_all, "get_bat_components_by_controllability",
+                        get_bat_components_by_controllability_mock)
+    monkeypatch.setattr(bat_all, "get_component_name_by_id", Mock(return_value="Speicher 2"))
+
+    # execution - 1000W laden anfordern
+    b_all._set_bat_power_active_control(1000)
+
+    # evaluation
+    # bat1 bekommt die volle angeforderte Leistung, da bat2s Kapazität nicht mit eingerechnet wird
+    assert data.data.bat_data["bat1"].data.set.power_limit == 1000
+    assert data.data.bat_data["bat2"].data.set.power_limit is None
 
 
 @pytest.mark.parametrize(

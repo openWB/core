@@ -1,23 +1,19 @@
 from control import data
 from control.consumer.consumer import Consumer
 from control.consumer.consumer_all import AllConsumers
-from helpermodules import timecheck
-from modules.common.fault_state_level import FaultStateLevel
 
 
-def test_get_consumer_sum_excludes_consumer_after_60s(data_):
+def test_get_consumer_sum_sums_power(data_):
     # setup
-    error_timer = timecheck.create_timestamp() - 61
+    # Der Fehlerfall (nach COMPONENT_ERROR_DURATION s power=0) wird bereits von Consumer.update() abgebildet -
+    # get_consumer_sum() summiert nur noch, ohne eigene Fehlerfall-Logik.
     data.data.consumer_data = {"consumer1": Consumer(1), "consumer2": Consumer(2)}
     data.data.consumer_data["consumer1"].data.get.power = 500
     data.data.consumer_data["consumer2"].data.get.power = 2000
-    data.data.consumer_data["consumer2"].data.get.fault_state = FaultStateLevel.ERROR
-    data.data.consumer_data["consumer2"].data.set.error_timer = error_timer
     all_consumers = AllConsumers()
 
     # execution
     all_consumers.get_consumer_sum()
 
     # evaluation
-    assert all_consumers.data.get.power == 500
-    assert data.data.consumer_data["consumer2"].data.set.error_timer == error_timer
+    assert all_consumers.data.get.power == 2500

@@ -4,6 +4,10 @@ from pathlib import Path
 
 NO_ERROR = "Kein Fehler."
 
+# Sekunden, nach denen ein andauernder Fehlerzustand einer Komponente dazu führt, dass nicht mehr mit deren
+# letztem bekannten Wert weitergerechnet bzw. weiter gesteuert wird (Counter, Chargepoint, PV, Bat, Consumer).
+COMPONENT_ERROR_DURATION = 60
+
 RAMDISK_PATH = Path(__file__).resolve().parents[2] / "ramdisk"
 
 
