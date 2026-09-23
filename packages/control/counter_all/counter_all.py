@@ -167,7 +167,7 @@ class CounterAll(HierarchyMixin, LoadmanagementPrioMixin):
         home_consumption = 0.0
 
         # Rekursion startet immer beim EVU-Zähler.
-        home_consumption = self._calc_home_consumption_from_counter(evu_element, CounterMode.NOT_HOME_CONSUMPTION.value)
+        home_consumption = self._calc_home_consumption_from_counter(evu_element, CounterMode.HOME_CONSUMPTION.value)
 
         home_consumption -= self.data.set.smarthome_power_excluded_from_home_consumption
 
@@ -206,8 +206,8 @@ class CounterAll(HierarchyMixin, LoadmanagementPrioMixin):
 
         parent = self.get_entry_of_parent(counter_id)
         if not parent or parent["type"] != ComponentType.COUNTER.value:
-            # Auto am Wurzel-Zähler entspricht dem bisherigen Startwert CounterMode.NOT_HOME_CONSUMPTION.
-            return CounterMode.NOT_HOME_CONSUMPTION.value
+            # Auto am Wurzel-Zähler entspricht dem bisherigen Startwert CounterMode.HOME_CONSUMPTION.
+            return CounterMode.HOME_CONSUMPTION.value
 
         return self._is_home_consumption_counter_by_id(parent["id"])
 
