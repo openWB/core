@@ -230,7 +230,7 @@ def write_logs_to_file(logger_name: str = None) -> None:
 
 
 # The totals subprocess needs its own log file, including messages from process_log.
-# In the main process, process_log must keep propagating to main.log.
+# In the main process, process_log must keep propagating to main log.
 def setup_generate_totals_logging(include_process_log: bool = False) -> None:
     generate_totals_log = logging.getLogger("generate_totals")
     generate_totals_log.setLevel(logging.DEBUG)
