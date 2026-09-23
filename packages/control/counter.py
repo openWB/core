@@ -132,8 +132,6 @@ class SwitchOnTexts:
 
 
 class Counter:
-    MAX_EVU_ERROR_DURATION = COMPONENT_ERROR_DURATION
-
     def __init__(self, index):
         try:
             self.data = CounterData()
@@ -161,7 +159,7 @@ class Counter:
             if self.data.set.error_timer is None:
                 self.data.set.error_timer = timecheck.create_timestamp()
                 return True
-            elif timecheck.check_timestamp(self.data.set.error_timer, self.MAX_EVU_ERROR_DURATION) is False:
+            elif timecheck.check_timestamp(self.data.set.error_timer, COMPONENT_ERROR_DURATION) is False:
                 for cp in connected_cps:
                     if self.num == data.data.counter_all_data.get_id_evu_counter():
                         data.data.cp_data[cp].set_state_and_log(
