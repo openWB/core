@@ -3882,8 +3882,9 @@ class UpdateConfig:
                     entries.remove(entry)
                 elif entry.get("type") == "group":
                     children = entry.get("children", [])
+                    had_children = bool(children)
                     remove_not_controlled_consumers(children)
-                    if not children:
+                    if had_children and not children:
                         entries.remove(entry)
 
         topic = "openWB/counter/get/loadmanagement_prios"
