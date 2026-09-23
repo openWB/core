@@ -78,7 +78,7 @@ class Get:
     fault_state: int = 0
     imported: float = 0
     phases_in_use: int = 0
-    power: float = 0
+    power: float = field(default=0, metadata={"topic": "get/power"})
     powers: Optional[List[Optional[float]]] = None
     set_power: Optional[float] = None
     state: Optional[bool] = False
