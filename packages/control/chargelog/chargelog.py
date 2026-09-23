@@ -11,7 +11,7 @@ import pathlib
 from typing import Any, Dict, List, Optional, Tuple
 
 from control import data
-from helpermodules.measurement_logging.process_log import (
+from helpermodules.measurement_logging.process_log_calculation import (
     FILE_ERRORS, CalculationType, _analyse_energy_source, _process_entries, get_totals)
 
 # alte Daten: Startzeitpunkt der Ladung, Endzeitpunkt, Geladene Reichweite, Energie, Leistung, Ladedauer, LP-Nummer,
