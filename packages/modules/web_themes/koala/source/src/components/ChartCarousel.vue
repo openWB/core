@@ -23,7 +23,10 @@
     <template v-slot:control>
       <q-carousel-control position="bottom-left">
         <q-btn
-          v-if="currentSlide === 'history_chart'"
+          v-if="
+            currentSlide === 'history_chart' ||
+            (currentSlide === 'sankey_chart' && $q.screen.lt.sm)
+          "
           size="sm"
           push
           class="q-mr-sm legend-button-text"
