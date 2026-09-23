@@ -26,6 +26,7 @@ import type { SankeyDataPoint } from 'chartjs-chart-sankey';
 import { useSankeyData } from './useSankeyData';
 import { useSankeyHover } from './useSankeyHover';
 import { createFlowLabels } from './sankey-flow-labels';
+import { NODE_HOUSE, NODE_HOUSE_REST } from './energy-allocation';
 
 // A typed sankey component (like vue-chartjs's built-in Line/Bar) so the
 // `data`/`options` props are fixed to 'sankey' instead of the whole ChartType
@@ -87,17 +88,21 @@ const chartData = computed<ChartData<'sankey'>>(() => {
   // Chart.js calls later) is what makes this recompute on every hover change.
   const flowColor = focusColors();
 
-  const { edges, nodes, sources, sinks } = allocation.value;
+  const { edges, nodes, sources, sinks, houseParts } = allocation.value;
   const labels: Record<string, string> = {};
   const columns: Record<string, number> = {};
   for (const node of nodes) {
     labels[node.id] = node.label;
-    columns[node.id] = sources.some((source) => source.id === node.id) ? 0 : 1;
+    columns[node.id] = node.column;
   }
 
   // Assign a per-column priority from node power.
   // Sources descending (largest on top).
-  // Sinks ascending (largest on the bottom).
+  // Sinks ascending (largest on the bottom). When the household splits into a
+  // third column it goes on top instead, level with its parts, so the split
+  // does not have to cross the other sinks.
+  // House parts descending, the remainder last.
+  const houseSplit = houseParts.length > 0;
   const priority: Record<string, number> = {};
   [...sources]
     .sort((a, b) => b.power - a.power)
@@ -106,6 +111,17 @@ const chartData = computed<ChartData<'sankey'>>(() => {
     });
   [...sinks]
     .sort((a, b) => a.power - b.power)
+    .forEach((node, index) => {
+      priority[node.id] = houseSplit && node.id === NODE_HOUSE ? -1 : index;
+    });
+  [...houseParts]
+    .sort((a, b) =>
+      a.id === NODE_HOUSE_REST
+        ? 1
+        : b.id === NODE_HOUSE_REST
+          ? -1
+          : b.power - a.power,
+    )
     .forEach((node, index) => {
       priority[node.id] = index;
     });

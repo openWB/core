@@ -13,6 +13,7 @@ import {
 const GROUP_THRESHOLD = 3;
 const CP_GROUP_ID = 'cp_group';
 const CONSUMER_GROUP_ID = 'consumer_group';
+const CONSUMER_HOUSE_GROUP_ID = 'consumer_house_group';
 const CONSUMER_ID_PREFIX = 'consumer';
 
 export function useSankeyData() {
@@ -31,20 +32,27 @@ export function useSankeyData() {
     ),
   );
 
-  const consumers = computed(() =>
-    groupNodes(
-      mqttStore.consumerIds.map((id) => ({
-        id: `${CONSUMER_ID_PREFIX}${id}`,
-        label: mqttStore.consumerName(id) || `Verbraucher ${id}`,
-        power: num(mqttStore.consumerPower(id, 'value')),
-      })),
-      {
-        threshold: GROUP_THRESHOLD,
-        id: CONSUMER_GROUP_ID,
-        label: 'Verbraucher',
-      },
-    ),
-  );
+  // Consumers counted in the home consumption are drawn as parts of the
+  // household node, the others as sinks of their own. Group each set on its
+  // own so the two never collapse into one node.
+  const consumers = computed(() => {
+    const inHouse = mqttStore.inHomeConsumption.consumerIds;
+    const nodes = mqttStore.consumerIds.map((id) => ({
+      id: `${CONSUMER_ID_PREFIX}${id}`,
+      label: mqttStore.consumerName(id) || `Verbraucher ${id}`,
+      power: num(mqttStore.consumerPower(id, 'value')),
+      inHouse: inHouse.includes(id),
+    }));
+    const group = (inHouseSet: boolean, id: string) =>
+      groupNodes(
+        nodes.filter((node) => node.inHouse === inHouseSet),
+        { threshold: GROUP_THRESHOLD, id, label: 'Verbraucher' },
+      ).map((node) => ({ ...node, inHouse: inHouseSet }));
+    return [
+      ...group(true, CONSUMER_HOUSE_GROUP_ID),
+      ...group(false, CONSUMER_GROUP_ID),
+    ];
+  });
 
   // Hybrid inverter/battery pairs: how much of each hybrid battery's charge is
   // covered by its own inverter's PV on the DC bus. pvPowerIndividual reports
@@ -56,6 +64,21 @@ export function useSankeyData() {
     })),
   );
 
+  // What is not counted in the home consumption and is no consumer: the
+  // sub-counters set to "Nein". The backend publishes only the sum, so the
+  // consumers, which are sinks of their own, are taken out of it.
+  const notInHomeOther = computed(() => {
+    const { consumerIds, counterIds } = mqttStore.notInHomeConsumption;
+    if (counterIds.length === 0) {
+      return 0;
+    }
+    const consumerPower = consumerIds.reduce(
+      (total, id) => total + num(mqttStore.consumerPower(id, 'value')),
+      0,
+    );
+    return num(mqttStore.notInHomeConsumptionPower('value')) - consumerPower;
+  });
+
   const allocation = computed<AllocationResult>(() =>
     allocate({
       grid: num(mqttStore.counterPower('value')),
@@ -65,6 +88,7 @@ export function useSankeyData() {
         : 0,
       chargePoints: chargePoints.value,
       consumers: consumers.value,
+      notInHomeOther: notInHomeOther.value,
       hybrid: hybrid.value,
     }),
   );
@@ -81,10 +105,14 @@ export function useSankeyData() {
       case 'battery':
         return cssVar('--q-battery-stroke');
       case 'house':
+      case 'house_rest':
         return cssVar('--q-home-stroke');
+      case 'not_in_home':
+        return cssVar('--q-secondary-counter-stroke');
       case CP_GROUP_ID:
         return cssVar('--q-charge-point-stroke');
       case CONSUMER_GROUP_ID:
+      case CONSUMER_HOUSE_GROUP_ID:
         return cssVar('--q-consumer');
     }
     if (id.startsWith('cp')) {
