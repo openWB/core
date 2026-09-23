@@ -206,6 +206,39 @@ class ParameterHandler
             case 'get_pv_fault_state':
                 return $this->getPvFaultState($id);
 
+                // Consumer - Alle Daten
+            case 'consumer':
+            case 'get_consumer':
+            case 'get_consumer_all':
+                return $this->getConsumerAll($id);
+                // Consumer - Einzelwerte
+            case 'get_consumer_power':
+                return $this->getConsumerPower($id);
+            case 'get_consumer_currents':
+                return $this->getConsumerCurrents($id);
+            case 'get_consumer_voltages':
+                return $this->getConsumerVoltages($id);
+            case 'get_consumer_powers':
+                return $this->getConsumerPowers($id);
+            case 'get_consumer_imported':
+                return $this->getConsumerImported($id);
+            case 'get_consumer_exported':
+                return $this->getConsumerExported($id);
+            case 'get_consumer_daily_imported':
+                return $this->getConsumerDailyImported($id);
+            case 'get_consumer_phases_in_use':
+                return $this->getConsumerPhasesInUse($id);
+            case 'get_consumer_charge_state':
+                return $this->getConsumerChargeState($id);
+            case 'get_consumer_state_str':
+                return $this->getConsumerStateStr($id);
+            case 'get_consumer_fault_str':
+                return $this->getConsumerFaultStr($id);
+            case 'get_consumer_fault_state':
+                return $this->getConsumerFaultState($id);
+            case 'get_consumer_usage_type':
+                return $this->getConsumerUsageType($id);
+
             case 'get_io_output_all':
                 return $this->getIoOutputAll($id);
             case 'get_io_output':
@@ -248,6 +281,12 @@ class ParameterHandler
                     return $this->setInstantChargingAmount($targetId, $value);
                 case 'instant_charging_soc':
                     return $this->setInstantChargingSoc($targetId, $value);
+                case 'pv_charging_limit':
+                    return $this->setPvChargingLimit($targetId, $value);
+                case 'pv_charging_amount':
+                    return $this->setPvChargingAmount($targetId, $value);
+                case 'pv_charging_soc':
+                    return $this->setPvChargingSoc($targetId, $value);
                 case 'vehicle':
                     return $this->setVehicle($targetId, $value);
                 case 'manual_soc':
@@ -325,8 +364,13 @@ class ParameterHandler
         $instantChargingLimit = 'none';
         $instantChargingAmount = 0;
         $instantChargingSoc = 0;
+        $pvChargingLimit = 'none';
+        $pvChargingAmount = 0;
+        $pvChargingSoc = 0;
         $maxPriceEco = 0;
-        
+        $soc = 0;
+        $rangeCharged = 0;
+
         try {
             $template = json_decode($values["openWB/chargepoint/{$id}/set/charge_template"] ?? '{}', true);
             $chargemode = $template['chargemode']['selected'] ?? 'stop';
@@ -340,7 +384,12 @@ class ParameterHandler
             $instantChargingLimit = $template['chargemode']['instant_charging']['limit']['selected'] ?? 'none';
             $instantChargingAmount = $template['chargemode']['instant_charging']['limit']['amount'] ?? 0;
             $instantChargingSoc = $template['chargemode']['instant_charging']['limit']['soc'] ?? 0;
-            
+
+            // PV Charging Limit-Parameter extrahieren
+            $pvChargingLimit = $template['chargemode']['pv_charging']['limit']['selected'] ?? 'none';
+            $pvChargingAmount = $template['chargemode']['pv_charging']['limit']['amount'] ?? 0;
+            $pvChargingSoc = $template['chargemode']['pv_charging']['limit']['soc'] ?? 0;
+
             // ECO Charging max_price extrahieren
             $maxPriceEco = isset($template['chargemode']['eco_charging']['max_price']) ? number_format((float)$template['chargemode']['eco_charging']['max_price'], 6, '.', '') : '0.0000';
             $maxPriceEco = $maxPriceEco * 100000; 
@@ -403,8 +452,8 @@ class ParameterHandler
                     floatval($powers[1] ?? 0),
                     floatval($powers[2] ?? 0)
                 ],
-                'state_str' => $values[$prefix . 'state_str'] ?? 'Unbekannt',
-                'fault_str' => $values[$prefix . 'fault_str'] ?? 'Kein Fehler',
+                'state_str' => $this->decodeStringValue($values[$prefix . 'state_str'] ?? null, 'Unbekannt'),
+                'fault_str' => $this->decodeStringValue($values[$prefix . 'fault_str'] ?? null, 'Kein Fehler'),
                 'fault_state' => intval($values[$prefix . 'fault_state'] ?? 0),
                 'imported' => floatval($values[$prefix . 'imported'] ?? 0),
                 'exported' => floatval($values[$prefix . 'exported'] ?? 0),
@@ -423,7 +472,7 @@ class ParameterHandler
                     floatval($powerFactors[1] ?? 0),
                     floatval($powerFactors[2] ?? 0)
                 ],
-                'rfid' => $values[$prefix . 'rfid'] ?? null,
+                'rfid' => $this->decodeStringValue($values[$prefix . 'rfid'] ?? null, null),
                 'rfid_timestamp' => $values[$prefix . 'rfid_timestamp'] ?? null,
                 'config_name' => $configName,
                 'connected_vehicle_name' => $connectedVehicleName,
@@ -434,6 +483,9 @@ class ParameterHandler
                 'instant_charging_limit' => $instantChargingLimit,
                 'instant_charging_amount' => intval($instantChargingAmount),
                 'instant_charging_soc' => intval($instantChargingSoc),
+                'pv_charging_limit' => $pvChargingLimit,
+                'pv_charging_amount' => intval($pvChargingAmount),
+                'pv_charging_soc' => intval($pvChargingSoc),
                 'max_price_eco' => floatval($maxPriceEco),
                 'soc' => floatval($soc),
                 'range_charged' => floatval($rangeCharged),
@@ -443,7 +495,11 @@ class ParameterHandler
 
         // manual_lock Status auslesen
         $manualLockTopic = "openWB/chargepoint/{$id}/set/manual_lock";
-        $manualLock = $this->mqttClient->getValue($manualLockTopic);
+        try {
+            $manualLock = $this->mqttClient->getValue($manualLockTopic);
+        } catch (Exception $e) {
+            $manualLock = 'false';
+        }
         $data["chargepoint_{$id}"]['manual_lock'] = $this->parseBooleanValue($manualLock ?? 'false');
 
         return $data;
@@ -460,6 +516,21 @@ class ParameterHandler
 
         $value = strtolower(trim($value, '"'));
         return in_array($value, ['true', '1', 'yes', 'on']);
+    }
+
+    /**
+     * String-Wert aus MQTT dekodieren. OpenWB kodiert auch reine String-Payloads per
+     * json.dumps() (z.B. "Kein Fehler." statt Kein Fehler.) - ohne json_decode() blieben die
+     * Anführungszeichen im Wert erhalten und würden beim äußeren json_encode() der Antwort
+     * nochmal escaped. Fällt bei nicht-JSON-Werten (z.B. leer) auf den Rohwert/Default zurück.
+     */
+    private function decodeStringValue($value, $default = '')
+    {
+        if ($value === null || $value === '') {
+            return $default;
+        }
+        $decoded = json_decode($value, true);
+        return is_string($decoded) ? $decoded : $value;
     }
 
     /**
@@ -665,7 +736,7 @@ class ParameterHandler
                 'exported' => floatval($values[$prefix . 'exported'] ?? 0),
                 'daily_imported' => floatval($values[$prefix . 'daily_imported'] ?? 0),
                 'daily_exported' => floatval($values[$prefix . 'daily_exported'] ?? 0),
-                'fault_str' => $values[$prefix . 'fault_str'] ?? 'Kein Fehler',
+                'fault_str' => $this->decodeStringValue($values[$prefix . 'fault_str'] ?? null, 'Kein Fehler'),
                 'fault_state' => intval($values[$prefix . 'fault_state'] ?? 0),
                 'power_limit_controllable' => $this->parseBooleanValue($values[$prefix . 'power_limit_controllable'] ?? 'false')
             ]
@@ -712,7 +783,83 @@ class ParameterHandler
                 'daily_exported' => floatval($values[$prefix . 'daily_exported'] ?? 0),
                 'monthly_exported' => floatval($values[$prefix . 'monthly_exported'] ?? 0),
                 'yearly_exported' => floatval($values[$prefix . 'yearly_exported'] ?? 0),
-                'fault_str' => $values[$prefix . 'fault_str'] ?? 'Kein Fehler',
+                'fault_str' => $this->decodeStringValue($values[$prefix . 'fault_str'] ?? null, 'Kein Fehler'),
+                'fault_state' => intval($values[$prefix . 'fault_state'] ?? 0)
+            ]
+        ];
+    }
+
+    /**
+     * Verbraucher-Daten (Consumer) - Performance-optimiert
+     */
+    private function getConsumerAll($id)
+    {
+        $prefix = "openWB/consumer/{$id}/get/";
+
+        // Alle benötigten Topics in einem Aufruf abfragen
+        $topics = [
+            $prefix . 'power',
+            $prefix . 'currents',
+            $prefix . 'voltages',
+            $prefix . 'powers',
+            $prefix . 'imported',
+            $prefix . 'exported',
+            $prefix . 'daily_imported',
+            $prefix . 'phases_in_use',
+            $prefix . 'charge_state',
+            $prefix . 'state_str',
+            $prefix . 'fault_str',
+            $prefix . 'fault_state',
+            "openWB/consumer/{$id}/usage"
+        ];
+
+        $values = $this->mqttClient->getMultipleValues($topics);
+
+        // Arrays parsen
+        try {
+            $currents = json_decode($values[$prefix . 'currents'] ?? '[]', true) ?: [0, 0, 0];
+            $voltages = json_decode($values[$prefix . 'voltages'] ?? '[]', true) ?: [0, 0, 0];
+            $powers = json_decode($values[$prefix . 'powers'] ?? '[]', true) ?: [0, 0, 0];
+        } catch (Exception $e) {
+            $currents = [0, 0, 0];
+            $voltages = [0, 0, 0];
+            $powers = [0, 0, 0];
+        }
+
+        $usageType = null;
+        try {
+            $usageInfo = json_decode($values["openWB/consumer/{$id}/usage"] ?? '{}', true);
+            $usageType = $usageInfo['type'] ?? null;
+        } catch (Exception $e) {
+            // Fallback
+        }
+
+        return [
+            "consumer_{$id}" => [
+                'usage_type' => $usageType,
+                'power' => floatval($values[$prefix . 'power'] ?? 0),
+                'currents' => [
+                    floatval($currents[0] ?? 0),
+                    floatval($currents[1] ?? 0),
+                    floatval($currents[2] ?? 0)
+                ],
+                'voltages' => [
+                    floatval($voltages[0] ?? 0),
+                    floatval($voltages[1] ?? 0),
+                    floatval($voltages[2] ?? 0)
+                ],
+                'powers' => [
+                    floatval($powers[0] ?? 0),
+                    floatval($powers[1] ?? 0),
+                    floatval($powers[2] ?? 0)
+                ],
+                'imported' => floatval($values[$prefix . 'imported'] ?? 0),
+                'exported' => floatval($values[$prefix . 'exported'] ?? 0),
+                'daily_imported' => floatval($values[$prefix . 'daily_imported'] ?? 0),
+                'phases_in_use' => intval($values[$prefix . 'phases_in_use'] ?? 0),
+                'charge_state' => $this->parseBooleanValue($values[$prefix . 'charge_state'] ?? 'false'),
+                'state_str' => $this->decodeStringValue($values[$prefix . 'state_str'] ?? null, null),
+                'fault_str' => $this->decodeStringValue($values[$prefix . 'fault_str'] ?? null, 'Kein Fehler'),
                 'fault_state' => intval($values[$prefix . 'fault_state'] ?? 0)
             ]
         ];
@@ -784,7 +931,7 @@ class ParameterHandler
                 'daily_exported' => floatval($values[$prefix . 'daily_exported'] ?? 0),
                 'imported' => floatval($values[$prefix . 'imported'] ?? 0),
                 'daily_imported' => floatval($values[$prefix . 'daily_imported'] ?? 0),
-                'fault_str' => $values[$prefix . 'fault_str'] ?? 'Kein Fehler',
+                'fault_str' => $this->decodeStringValue($values[$prefix . 'fault_str'] ?? null, 'Kein Fehler'),
                 'fault_state' => intval($values[$prefix . 'fault_state'] ?? 0)
             ]
         ];
@@ -1026,7 +1173,7 @@ class ParameterHandler
         try {
             $topic = "openWB/chargepoint/{$id}/get/rfid";
             $value = $this->mqttClient->getValue($topic);
-            return ["chargepoint_{$id}" => ['rfid' => strval($value ?? '')]];
+            return ["chargepoint_{$id}" => ['rfid' => $this->decodeStringValue($value)]];
         } catch (Exception $e) {
             return ["chargepoint_{$id}" => ['rfid' => '']];
         }
@@ -1321,7 +1468,7 @@ class ParameterHandler
         try {
             $topic = "openWB/chargepoint/{$id}/get/state_str";
             $value = $this->mqttClient->getValue($topic);
-            return ["chargepoint_{$id}" => ['state_str' => strval($value ?? '')]];
+            return ["chargepoint_{$id}" => ['state_str' => $this->decodeStringValue($value)]];
         } catch (Exception $e) {
             return ["chargepoint_{$id}" => ['state_str' => '']];
         }
@@ -1335,7 +1482,7 @@ class ParameterHandler
         try {
             $topic = "openWB/chargepoint/{$id}/get/fault_str";
             $value = $this->mqttClient->getValue($topic);
-            return ["chargepoint_{$id}" => ['fault_str' => strval($value ?? '')]];
+            return ["chargepoint_{$id}" => ['fault_str' => $this->decodeStringValue($value)]];
         } catch (Exception $e) {
             return ["chargepoint_{$id}" => ['fault_str' => '']];
         }
@@ -1405,7 +1552,7 @@ class ParameterHandler
         try {
             $topic = "openWB/chargepoint/{$id}/get/chargemode";
             $value = $this->mqttClient->getValue($topic);
-            return ["chargepoint_{$id}" => ['chargemode' => strval($value ?? '')]];
+            return ["chargepoint_{$id}" => ['chargemode' => $this->decodeStringValue($value)]];
         } catch (Exception $e) {
             return ["chargepoint_{$id}" => ['chargemode' => '']];
         }
@@ -1517,6 +1664,115 @@ class ParameterHandler
             return ['success' => false, 'message' => 'Failed to update charge template'];
         } catch (Exception $e) {
             return ['success' => false, 'message' => 'Error setting instant charging SoC: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * PV Charging Limit setzen
+     */
+    private function setPvChargingLimit($chargepointId, $value)
+    {
+        $validLimits = ['none', 'amount', 'soc'];
+
+        if (!in_array($value, $validLimits)) {
+            return ['success' => false, 'message' => 'Invalid pv_charging_limit. Valid values: ' . implode(', ', $validLimits)];
+        }
+
+        try {
+            $templateTopic = "openWB/chargepoint/{$chargepointId}/set/charge_template";
+            $templateJson = $this->mqttClient->getValue($templateTopic);
+            if (!$templateJson) {
+                return ['success' => false, 'message' => 'Could not read current charge template'];
+            }
+
+            $template = json_decode($templateJson, true);
+            if (!$template || !isset($template['chargemode']['pv_charging'])) {
+                return ['success' => false, 'message' => 'Invalid charge template format or missing pv_charging'];
+            }
+
+            $template['chargemode']['pv_charging']['limit']['selected'] = $value;
+            $setTopic = "openWB/set/chargepoint/{$chargepointId}/set/charge_template";
+            $newTemplateJson = json_encode($template);
+
+            if ($this->mqttClient->setValue($setTopic, $newTemplateJson)) {
+                return ['success' => true, 'message' => "PV charging limit set to {$value} for chargepoint {$chargepointId}"];
+            }
+            return ['success' => false, 'message' => 'Failed to update charge template'];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error setting PV charging limit: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * PV Charging Amount setzen (kWh -> Wh)
+     */
+    private function setPvChargingAmount($chargepointId, $value)
+    {
+        $amount = floatval($value);
+        if ($amount < 0) {
+            return ['success' => false, 'message' => 'Amount must be >= 0'];
+        }
+
+        // kWh zu Wh konvertieren
+        $amountWh = intval($amount * 1000);
+
+        try {
+            $templateTopic = "openWB/chargepoint/{$chargepointId}/set/charge_template";
+            $templateJson = $this->mqttClient->getValue($templateTopic);
+            if (!$templateJson) {
+                return ['success' => false, 'message' => 'Could not read current charge template'];
+            }
+
+            $template = json_decode($templateJson, true);
+            if (!$template || !isset($template['chargemode']['pv_charging'])) {
+                return ['success' => false, 'message' => 'Invalid charge template format or missing pv_charging'];
+            }
+
+            $template['chargemode']['pv_charging']['limit']['amount'] = $amountWh;
+            $setTopic = "openWB/set/chargepoint/{$chargepointId}/set/charge_template";
+            $newTemplateJson = json_encode($template);
+
+            if ($this->mqttClient->setValue($setTopic, $newTemplateJson)) {
+                return ['success' => true, 'message' => "PV charging amount set to {$value}kWh ({$amountWh}Wh) for chargepoint {$chargepointId}"];
+            }
+            return ['success' => false, 'message' => 'Failed to update charge template'];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error setting PV charging amount: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * PV Charging SoC setzen
+     */
+    private function setPvChargingSoc($chargepointId, $value)
+    {
+        $soc = intval($value);
+        if ($soc < 0 || $soc > 100) {
+            return ['success' => false, 'message' => 'SoC must be between 0 and 100'];
+        }
+
+        try {
+            $templateTopic = "openWB/chargepoint/{$chargepointId}/set/charge_template";
+            $templateJson = $this->mqttClient->getValue($templateTopic);
+            if (!$templateJson) {
+                return ['success' => false, 'message' => 'Could not read current charge template'];
+            }
+
+            $template = json_decode($templateJson, true);
+            if (!$template || !isset($template['chargemode']['pv_charging'])) {
+                return ['success' => false, 'message' => 'Invalid charge template format or missing pv_charging'];
+            }
+
+            $template['chargemode']['pv_charging']['limit']['soc'] = $soc;
+            $setTopic = "openWB/set/chargepoint/{$chargepointId}/set/charge_template";
+            $newTemplateJson = json_encode($template);
+
+            if ($this->mqttClient->setValue($setTopic, $newTemplateJson)) {
+                return ['success' => true, 'message' => "PV charging SoC set to {$soc}% for chargepoint {$chargepointId}"];
+            }
+            return ['success' => false, 'message' => 'Failed to update charge template'];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error setting PV charging SoC: ' . $e->getMessage()];
         }
     }
 
@@ -1946,7 +2202,7 @@ class ParameterHandler
         try {
             $topic = "openWB/counter/{$id}/get/fault_str";
             $value = $this->mqttClient->getValue($topic);
-            return ["counter_{$id}" => ['fault_str' => strval($value ?? 'Kein Fehler')]];
+            return ["counter_{$id}" => ['fault_str' => $this->decodeStringValue($value, 'Kein Fehler')]];
         } catch (Exception $e) {
             return ["counter_{$id}" => ['fault_str' => 'Kein Fehler']];
         }
@@ -2086,7 +2342,7 @@ class ParameterHandler
         try {
             $topic = "openWB/bat/{$id}/get/fault_str";
             $value = $this->mqttClient->getValue($topic);
-            return ["battery_{$id}" => ['fault_str' => strval($value ?? 'Kein Fehler')]];
+            return ["battery_{$id}" => ['fault_str' => $this->decodeStringValue($value, 'Kein Fehler')]];
         } catch (Exception $e) {
             return ["battery_{$id}" => ['fault_str' => 'Kein Fehler']];
         }
@@ -2265,7 +2521,7 @@ class ParameterHandler
         try {
             $topic = "openWB/pv/{$id}/get/fault_str";
             $value = $this->mqttClient->getValue($topic);
-            return ["pv_{$id}" => ['fault_str' => strval($value ?? 'Kein Fehler')]];
+            return ["pv_{$id}" => ['fault_str' => $this->decodeStringValue($value, 'Kein Fehler')]];
         } catch (Exception $e) {
             return ["pv_{$id}" => ['fault_str' => 'Kein Fehler']];
         }
@@ -2282,6 +2538,219 @@ class ParameterHandler
             return ["pv_{$id}" => ['fault_state' => intval($value ?? 0)]];
         } catch (Exception $e) {
             return ["pv_{$id}" => ['fault_state' => 0]];
+        }
+    }
+
+    /**
+     * Consumer Power
+     */
+    private function getConsumerPower($id)
+    {
+        try {
+            $topic = "openWB/consumer/{$id}/get/power";
+            $value = $this->mqttClient->getValue($topic);
+            return ["consumer_{$id}" => ['power' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["consumer_{$id}" => ['power' => 0]];
+        }
+    }
+
+    /**
+     * Consumer Currents
+     */
+    private function getConsumerCurrents($id)
+    {
+        try {
+            $topic = "openWB/consumer/{$id}/get/currents";
+            $value = $this->mqttClient->getValue($topic);
+            $currents = json_decode($value ?? '[]', true) ?: [0, 0, 0];
+
+            return [
+                "consumer_{$id}" => [
+                    'currents' => [
+                        floatval($currents[0] ?? 0),
+                        floatval($currents[1] ?? 0),
+                        floatval($currents[2] ?? 0)
+                    ]
+                ]
+            ];
+        } catch (Exception $e) {
+            return ["consumer_{$id}" => ['currents' => [0, 0, 0]]];
+        }
+    }
+
+    /**
+     * Consumer Voltages
+     */
+    private function getConsumerVoltages($id)
+    {
+        try {
+            $topic = "openWB/consumer/{$id}/get/voltages";
+            $value = $this->mqttClient->getValue($topic);
+            $voltages = json_decode($value ?? '[]', true) ?: [0, 0, 0];
+
+            return [
+                "consumer_{$id}" => [
+                    'voltages' => [
+                        floatval($voltages[0] ?? 0),
+                        floatval($voltages[1] ?? 0),
+                        floatval($voltages[2] ?? 0)
+                    ]
+                ]
+            ];
+        } catch (Exception $e) {
+            return ["consumer_{$id}" => ['voltages' => [0, 0, 0]]];
+        }
+    }
+
+    /**
+     * Consumer Powers
+     */
+    private function getConsumerPowers($id)
+    {
+        try {
+            $topic = "openWB/consumer/{$id}/get/powers";
+            $value = $this->mqttClient->getValue($topic);
+            $powers = json_decode($value ?? '[]', true) ?: [0, 0, 0];
+
+            return [
+                "consumer_{$id}" => [
+                    'powers' => [
+                        floatval($powers[0] ?? 0),
+                        floatval($powers[1] ?? 0),
+                        floatval($powers[2] ?? 0)
+                    ]
+                ]
+            ];
+        } catch (Exception $e) {
+            return ["consumer_{$id}" => ['powers' => [0, 0, 0]]];
+        }
+    }
+
+    /**
+     * Consumer Imported
+     */
+    private function getConsumerImported($id)
+    {
+        try {
+            $topic = "openWB/consumer/{$id}/get/imported";
+            $value = $this->mqttClient->getValue($topic);
+            return ["consumer_{$id}" => ['imported' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["consumer_{$id}" => ['imported' => 0]];
+        }
+    }
+
+    /**
+     * Consumer Exported
+     */
+    private function getConsumerExported($id)
+    {
+        try {
+            $topic = "openWB/consumer/{$id}/get/exported";
+            $value = $this->mqttClient->getValue($topic);
+            return ["consumer_{$id}" => ['exported' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["consumer_{$id}" => ['exported' => 0]];
+        }
+    }
+
+    /**
+     * Consumer Daily Imported
+     */
+    private function getConsumerDailyImported($id)
+    {
+        try {
+            $topic = "openWB/consumer/{$id}/get/daily_imported";
+            $value = $this->mqttClient->getValue($topic);
+            return ["consumer_{$id}" => ['daily_imported' => floatval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["consumer_{$id}" => ['daily_imported' => 0]];
+        }
+    }
+
+    /**
+     * Consumer Phases In Use
+     */
+    private function getConsumerPhasesInUse($id)
+    {
+        try {
+            $topic = "openWB/consumer/{$id}/get/phases_in_use";
+            $value = $this->mqttClient->getValue($topic);
+            return ["consumer_{$id}" => ['phases_in_use' => intval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["consumer_{$id}" => ['phases_in_use' => 0]];
+        }
+    }
+
+    /**
+     * Consumer Charge State
+     */
+    private function getConsumerChargeState($id)
+    {
+        try {
+            $topic = "openWB/consumer/{$id}/get/charge_state";
+            $value = $this->mqttClient->getValue($topic);
+            return ["consumer_{$id}" => ['charge_state' => $this->parseBooleanValue($value ?? 'false')]];
+        } catch (Exception $e) {
+            return ["consumer_{$id}" => ['charge_state' => false]];
+        }
+    }
+
+    /**
+     * Consumer State String
+     */
+    private function getConsumerStateStr($id)
+    {
+        try {
+            $topic = "openWB/consumer/{$id}/get/state_str";
+            $value = $this->mqttClient->getValue($topic);
+            return ["consumer_{$id}" => ['state_str' => $this->decodeStringValue($value, null)]];
+        } catch (Exception $e) {
+            return ["consumer_{$id}" => ['state_str' => null]];
+        }
+    }
+
+    /**
+     * Consumer Fault String
+     */
+    private function getConsumerFaultStr($id)
+    {
+        try {
+            $topic = "openWB/consumer/{$id}/get/fault_str";
+            $value = $this->mqttClient->getValue($topic);
+            return ["consumer_{$id}" => ['fault_str' => $this->decodeStringValue($value, 'Kein Fehler')]];
+        } catch (Exception $e) {
+            return ["consumer_{$id}" => ['fault_str' => 'Kein Fehler']];
+        }
+    }
+
+    /**
+     * Consumer Fault State
+     */
+    private function getConsumerFaultState($id)
+    {
+        try {
+            $topic = "openWB/consumer/{$id}/get/fault_state";
+            $value = $this->mqttClient->getValue($topic);
+            return ["consumer_{$id}" => ['fault_state' => intval($value ?? 0)]];
+        } catch (Exception $e) {
+            return ["consumer_{$id}" => ['fault_state' => 0]];
+        }
+    }
+
+    /**
+     * Consumer Usage Type
+     */
+    private function getConsumerUsageType($id)
+    {
+        try {
+            $topic = "openWB/consumer/{$id}/usage";
+            $value = $this->mqttClient->getValue($topic);
+            $usage = json_decode($value ?? '{}', true);
+            return ["consumer_{$id}" => ['usage_type' => $usage['type'] ?? null]];
+        } catch (Exception $e) {
+            return ["consumer_{$id}" => ['usage_type' => null]];
         }
     }
 
