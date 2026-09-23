@@ -647,6 +647,8 @@ class SetData:
             elif subdata.SubData.pv_data.get(f"pv{get_index(msg.topic)}"):
                 if "/get/fault_state" in msg.topic:
                     self._validate_value(msg, int, [(0, 2)])
+                elif "/set/error_timer" in msg.topic:
+                    self._validate_value(msg, float, [(0, float("inf"))])
                 elif ("/get/fault_str" in msg.topic or
                       "/get/serial_number" in msg.topic):
                     self._validate_value(msg, str)
@@ -736,6 +738,8 @@ class SetData:
                     self._validate_value(msg, float, [(0, 100)])
                 elif "/get/fault_state" in msg.topic:
                     self._validate_value(msg, int, [(0, 2)])
+                elif "/set/error_timer" in msg.topic:
+                    self._validate_value(msg, float, [(0, float("inf"))])
                 elif ("/get/fault_str" in msg.topic or
                       "/get/serial_number" in msg.topic):
                     self._validate_value(msg, str)
@@ -1264,6 +1268,8 @@ class SetData:
                   re.search("consumer/[0-9]+/set/timestamp_wrote_last_on_time$", msg.topic) is not None or
                   re.search("consumer/[0-9]+/get/set_power$", msg.topic) is not None):
                 self._validate_value(msg, float)
+            elif re.search("consumer/[0-9]+/set/error_timer$", msg.topic) is not None:
+                self._validate_value(msg, float, [(0, float("inf"))])
             elif (re.search("consumer/[0-9]+/get/currents$", msg.topic) is not None or
                   re.search("consumer/[0-9]+/get/voltages$", msg.topic) is not None or
                   re.search("consumer/[0-9]+/get/powers$", msg.topic) is not None or
