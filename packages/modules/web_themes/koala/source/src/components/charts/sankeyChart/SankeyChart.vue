@@ -12,6 +12,19 @@
         Aktuell kein Energiefluss
       </div>
     </div>
+    <div
+      v-if="compact && showLegend && hasFlows"
+      class="legend-wrapper row wrap justify-center q-mt-sm"
+    >
+      <div
+        v-for="item in legendItems"
+        :key="item.id"
+        class="legend-item row items-center no-wrap text-caption"
+      >
+        <span class="legend-swatch" :style="{ backgroundColor: item.color }" />
+        {{ item.label }}
+      </div>
+    </div>
   </div>
 </template>
 
@@ -44,10 +57,11 @@ const ChartjsSankey = createTypedChart('sankey', [
 
 defineOptions({ name: 'SankeyChart' });
 
-// Accepted for parity with the other carousel charts; not used here.
+// The legend is only shown in compact mode, where node names are hidden.
 defineProps<{ showLegend?: boolean }>();
 
 const $q = useQuasar();
+const compact = computed(() => $q.screen.lt.sm);
 const { allocation, colorForNode, labelColor } = useSankeyData();
 
 const hasFlows = computed(() => allocation.value.edges.length > 0);
@@ -79,29 +93,14 @@ const flowLabels = createFlowLabels({
 });
 const chartPlugins = [hoverPlugin, flowLabels.plugin];
 
-const chartData = computed<ChartData<'sankey'>>(() => {
-  // Reference the theme so a light/dark toggle rebuilds data and re-resolves
-  // the CSS color variables.
-  void $q.dark.isActive;
-
-  // Reading the hover state here (rather than in the color callbacks, which
-  // Chart.js calls later) is what makes this recompute on every hover change.
-  const flowColor = focusColors();
-
-  const { edges, nodes, sources, sinks, houseParts } = allocation.value;
-  const labels: Record<string, string> = {};
-  const columns: Record<string, number> = {};
-  for (const node of nodes) {
-    labels[node.id] = node.label;
-    columns[node.id] = node.column;
-  }
-
-  // Assign a per-column priority from node power.
-  // Sources descending (largest on top).
-  // Sinks ascending (largest on the bottom). When the household splits into a
-  // third column it goes on top instead, level with its parts, so the split
-  // does not have to cross the other sinks.
-  // House parts descending, the remainder last.
+// Assign a per-column priority from node power.
+// Sources descending (largest on top).
+// Sinks ascending (largest on the bottom). When the household splits into a
+// third column it goes on top instead, level with its parts, so the split
+// does not have to cross the other sinks.
+// House parts descending, the remainder last.
+const nodePriority = computed(() => {
+  const { sources, sinks, houseParts } = allocation.value;
   const houseSplit = houseParts.length > 0;
   const priority: Record<string, number> = {};
   [...sources]
@@ -125,6 +124,23 @@ const chartData = computed<ChartData<'sankey'>>(() => {
     .forEach((node, index) => {
       priority[node.id] = index;
     });
+  return priority;
+});
+
+const chartData = computed<ChartData<'sankey'>>(() => {
+  // Reference the theme so a light/dark toggle rebuilds data and re-resolves
+  // the CSS color variables.
+  void $q.dark.isActive;
+  // Reading the hover state here (rather than in the color callbacks, which
+  // Chart.js calls later) is what makes this recompute on every hover change.
+  const flowColor = focusColors();
+  const { edges, nodes } = allocation.value;
+  const labels: Record<string, string> = {};
+  const columns: Record<string, number> = {};
+  for (const node of nodes) {
+    labels[node.id] = node.label;
+    columns[node.id] = node.column;
+  }
 
   const textColor = labelColor();
 
@@ -139,7 +155,7 @@ const chartData = computed<ChartData<'sankey'>>(() => {
         })),
         labels,
         column: columns,
-        priority,
+        priority: nodePriority.value,
         colorFrom: (ctx) =>
           flowColor(
             (ctx.raw as SankeyDataPoint | undefined)?.from ?? '',
@@ -153,12 +169,27 @@ const chartData = computed<ChartData<'sankey'>>(() => {
         colorMode: 'gradient',
         borderWidth: 0,
         color: textColor,
-        nodeLabels: { color: textColor },
+        nodeLabels: { color: textColor, display: !compact.value },
         nodeWidth: 16,
         nodePadding: 12,
       },
     ],
   };
+});
+
+const legendItems = computed(() => {
+  void $q.dark.isActive;
+  const priority = nodePriority.value;
+  return [...allocation.value.nodes]
+    .sort(
+      (a, b) =>
+        a.column - b.column || (priority[a.id] ?? 0) - (priority[b.id] ?? 0),
+    )
+    .map((node) => ({
+      id: node.id,
+      label: node.label,
+      color: colorForNode(node.id),
+    }));
 });
 
 const chartOptions = computed<ChartOptions<'sankey'>>(() => ({
@@ -198,6 +229,19 @@ const chartOptions = computed<ChartOptions<'sankey'>>(() => ({
 .chart-wrapper > canvas {
   width: 100% !important;
   height: 100% !important;
+}
+
+.legend-wrapper {
+  flex: 0 0 auto;
+  gap: 2px 10px;
+}
+
+.legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 4px;
+  flex: 0 0 auto;
 }
 
 .sankey-empty {
