@@ -3,6 +3,13 @@ export const NODE_GRID = 'grid';
 export const NODE_PV = 'pv';
 export const NODE_BATTERY = 'battery';
 export const NODE_HOUSE = 'house';
+export const NODE_HOUSE_REST = 'house_rest';
+export const NODE_NOT_IN_HOME = 'not_in_home';
+
+/** Column of each node in the diagram, left to right. */
+export const COLUMN_SOURCE = 0;
+export const COLUMN_SINK = 1;
+export const COLUMN_HOUSE_PART = 2;
 
 /**
  * Raw signed power per component, using the same sign conventions as the
@@ -11,6 +18,10 @@ export const NODE_HOUSE = 'house';
  *   pv      : - production (source)| + consumption (rare)
  *   battery : + charging (sink)   | - discharging (source)
  *   cp/consumer power: + drawing (sink) | - feeding back, e.g. V2G (source)
+ *
+ * Consumers flagged `inHouse` are counted in the home consumption. They are
+ * not drawn as sinks of their own but as parts of the household node, which
+ * splits into them and the remaining household consumption in a third column.
  */
 export interface EnergyFlowInput {
   grid: number;
@@ -18,6 +29,11 @@ export interface EnergyFlowInput {
   battery: number;
   chargePoints: DynamicNodeInput[];
   consumers: DynamicNodeInput[];
+  /**
+   * Power not counted in the home consumption that is no consumer.
+   * + drawing (sink) | - feeding (source).
+   */
+  notInHomeOther?: number;
   /**
    * Hybrid inverter/battery pairs. A hybrid battery charges from its inverter's
    * PV directly on the shared DC bus, before the remaining PV mixes with grid
@@ -35,12 +51,14 @@ export interface DynamicNodeInput {
   id: string;
   label: string;
   power: number;
+  inHouse?: boolean;
 }
 
 export interface FlowNode {
   id: string;
   label: string;
   power: number;
+  column: number;
 }
 
 export interface FlowEdge {
@@ -55,6 +73,8 @@ export interface AllocationResult {
   nodes: FlowNode[];
   sources: FlowNode[];
   sinks: FlowNode[];
+  /** Consumers counted in the home consumption plus the remainder. */
+  houseParts: FlowNode[];
   totalSources: number;
   totalSinks: number;
   imbalance: number;
@@ -70,55 +90,96 @@ const MIN_EDGE_WATTS = 1;
 function classifyNodes(input: EnergyFlowInput): {
   sources: FlowNode[];
   sinks: FlowNode[];
+  houseParts: FlowNode[];
 } {
   const sources: FlowNode[] = [];
   const sinks: FlowNode[] = [];
+  const houseParts: FlowNode[] = [];
+  const source = (id: string, label: string, power: number) =>
+    sources.push({ id, label, power, column: COLUMN_SOURCE });
+  const sink = (id: string, label: string, power: number) =>
+    sinks.push({ id, label, power, column: COLUMN_SINK });
 
   if (input.grid > 0) {
-    sources.push({ id: NODE_GRID, label: 'Netz', power: input.grid });
+    source(NODE_GRID, 'Netz', input.grid);
   } else if (input.grid < 0) {
-    sinks.push({ id: NODE_GRID, label: 'Netz', power: -input.grid });
+    sink(NODE_GRID, 'Netz', -input.grid);
   }
 
   if (input.pv < 0) {
-    sources.push({ id: NODE_PV, label: 'PV', power: -input.pv });
+    source(NODE_PV, 'PV', -input.pv);
   }
 
   if (input.battery > 0) {
-    sinks.push({ id: NODE_BATTERY, label: 'Speicher', power: input.battery });
+    sink(NODE_BATTERY, 'Speicher', input.battery);
   } else if (input.battery < 0) {
-    sources.push({
-      id: NODE_BATTERY,
-      label: 'Speicher',
-      power: -input.battery,
-    });
+    source(NODE_BATTERY, 'Speicher', -input.battery);
   }
 
   for (const cp of input.chargePoints) {
     if (cp.power > 0) {
-      sinks.push({ id: cp.id, label: cp.label, power: cp.power });
+      sink(cp.id, cp.label, cp.power);
     } else if (cp.power < 0) {
-      sources.push({ id: cp.id, label: cp.label, power: -cp.power });
+      source(cp.id, cp.label, -cp.power);
     }
   }
 
   for (const consumer of input.consumers) {
-    if (consumer.power > 0) {
-      sinks.push({ id: consumer.id, label: consumer.label, power: consumer.power });
+    if (consumer.power > 0 && consumer.inHouse) {
+      houseParts.push({
+        id: consumer.id,
+        label: consumer.label,
+        power: consumer.power,
+        column: COLUMN_HOUSE_PART,
+      });
+    } else if (consumer.power > 0) {
+      sink(consumer.id, consumer.label, consumer.power);
     } else if (consumer.power < 0) {
-      sources.push({ id: consumer.id, label: consumer.label, power: -consumer.power });
+      source(consumer.id, consumer.label, -consumer.power);
     }
   }
 
-  // Household consumption = balancing residual.
+  const notInHomeOther = input.notInHomeOther ?? 0;
+  if (notInHomeOther > 0) {
+    sink(NODE_NOT_IN_HOME, 'Sonstige', notInHomeOther);
+  } else if (notInHomeOther < 0) {
+    source(NODE_NOT_IN_HOME, 'Sonstige', -notInHomeOther);
+  }
+
+  // Household consumption = balancing residual. It includes the consumers
+  // counted in the home consumption, as they are not sinks of their own.
   const totalSources = sumPower(sources);
   const otherSinks = sumPower(sinks);
   const house = Math.max(0, totalSources - otherSinks);
   if (house > 0) {
-    sinks.push({ id: NODE_HOUSE, label: 'Hausverbrauch', power: house });
+    sink(NODE_HOUSE, 'Hausverbrauch', house);
   }
 
-  return { sources, sinks };
+  return { sources, sinks, houseParts: splitHouse(house, houseParts) };
+}
+
+/**
+ * Split the household node into the consumers counted in it and the rest.
+ * Measurement noise can make those consumers add up to more than the
+ * residual; they are then scaled down so the household node still balances.
+ */
+function splitHouse(house: number, consumers: FlowNode[]): FlowNode[] {
+  if (house <= 0 || consumers.length === 0) {
+    return [];
+  }
+  const consumerTotal = sumPower(consumers);
+  const scale = Math.min(1, house / consumerTotal);
+  const parts = consumers.map((node) => ({ ...node, power: node.power * scale }));
+  const rest = house - consumerTotal * scale;
+  if (rest >= MIN_EDGE_WATTS) {
+    parts.push({
+      id: NODE_HOUSE_REST,
+      label: 'Sonstiger Hausverbrauch',
+      power: rest,
+      column: COLUMN_HOUSE_PART,
+    });
+  }
+  return parts;
 }
 
 function sumPower(nodes: FlowNode[]): number {
@@ -179,7 +240,7 @@ function mergeEdges(edges: FlowEdge[]): FlowEdge[] {
  * With no hybrid pairs this reduces to plain uniform proportional.
  */
 export function allocate(input: EnergyFlowInput): AllocationResult {
-  const { sources, sinks } = classifyNodes(input);
+  const { sources, sinks, houseParts } = classifyNodes(input);
   const totalSources = sumPower(sources);
   const totalSinks = sumPower(sinks);
 
@@ -235,11 +296,19 @@ export function allocate(input: EnergyFlowInput): AllocationResult {
     }
   }
 
+  // Second stage: household -> the consumers counted in it and the rest.
+  for (const part of houseParts) {
+    if (part.power >= MIN_EDGE_WATTS) {
+      edges.push({ from: NODE_HOUSE, to: part.id, flow: part.power });
+    }
+  }
+
   return {
     edges: mergeEdges(edges),
-    nodes: [...sources, ...sinks],
+    nodes: [...sources, ...sinks, ...houseParts],
     sources,
     sinks,
+    houseParts,
     totalSources,
     totalSinks,
     imbalance: totalSources - totalSinks,
