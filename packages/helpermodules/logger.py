@@ -235,6 +235,7 @@ def setup_generate_totals_logging(include_process_log: bool = False) -> None:
     generate_totals_log = logging.getLogger("generate_totals")
     generate_totals_log.setLevel(logging.DEBUG)
     generate_totals_log.propagate = False
+    RAMDISK_PATH.mkdir(parents=True, exist_ok=True)
     handler = next(
         (handler for handler in generate_totals_log.handlers
          if isinstance(handler, RotatingFileHandler)
