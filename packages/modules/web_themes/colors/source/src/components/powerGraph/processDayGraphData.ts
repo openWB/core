@@ -69,7 +69,6 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 	currentItem.evuOut = 0
 	currentItem.evuIn = 0
 	currentItem.counters = 0
-
 	Object.entries(currentRow.counter).forEach(([id, values]) => {
 		if (values.grid) {
 			currentItem.evuOut += values.power_exported
@@ -149,6 +148,7 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 				currentItem.devices += values.power_imported ?? 0
 			}
 		}
+	
 		// Autarchy PV / Battery calculation
 		if (values.power_imported > 0) {
 			registry.items.get(id)![graphData.graphScope].energyPv +=
@@ -160,27 +160,12 @@ function transformRow(currentRow: RawDayGraphDataItem): GraphDataItem {
 					currentItem.evuIn +
 					currentItem.batOut)
 		}
+	})
 		// Prices
 		if (currentRow.prices.grid > 0) {
 			currentItem.price = currentRow.prices.grid * 100000
 		}
-	})
-
-	// Counters
-	/* currentItem.counters = 0
-	Object.entries(currentRow.counter).forEach(([id, values]) => {
-		if (!values.grid) {
-			currentItem[id] = values.power_imported ?? 0
-			if (!registry.keys().includes(id)) {
-				registry.duplicateItem(id, counters.get(+id.slice(7))!)
-	 */ //registry.items.get(id)!.showInGraph = true
-	/* }
-			const item : Counter = registry.items.get(id) as Counter
-			if (item._showInGraph) {
-				currentItem.counters += values.power_imported ?? 0
-			}
-		}
-	}) */
+	
 	// Self Usage
 	currentItem.selfUsage = Math.max(0, currentItem.pv - currentItem.evuOut)
 	// House
