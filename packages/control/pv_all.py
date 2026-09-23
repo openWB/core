@@ -63,7 +63,8 @@ class PvAll:
                         result = effective_power(
                             module.data.get.power, module.data.get.fault_state, module.data.set.error_timer)
                         module.data.set.error_timer = result.error_timer
-                        power += result.power
+                        module.data.get.power = result.power
+                        power += module.data.get.power
                     except Exception:
                         log.exception(f"Fehler im allgemeinen PV-Modul für pv{module.num}")
                     exported += module.data.get.exported

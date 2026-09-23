@@ -23,10 +23,11 @@ import logging
 from typing import List, Optional, Tuple
 
 from control import data
-from control.error_state import effective_power
+from control.error_state import effective_power, error_duration_exceeded
 from helpermodules.constants import NO_ERROR
 from modules.common.abstract_device import AbstractDevice
 from modules.common.component_context import SingleComponentUpdateContext
+from modules.common.utils.component_parser import get_component_name_by_id
 
 log = logging.getLogger(__name__)
 
@@ -154,7 +155,8 @@ class BatAll:
                         result = effective_power(
                             battery.data.get.power, battery.data.get.fault_state, battery.data.set.error_timer)
                         battery.data.set.error_timer = result.error_timer
-                        power += result.power
+                        battery.data.get.power = result.power
+                        power += battery.data.get.power
                     except Exception:
                         log.exception(f"Fehler im Bat-Modul {battery.num}")
                     imported += battery.data.get.imported
@@ -229,6 +231,9 @@ class BatAll:
         if power is not None:
             for bat_component in controllable_bat_components:
                 bat_component_data = data.data.bat_data[f"bat{bat_component.component_config.id}"].data
+                if error_duration_exceeded(bat_component_data.get.fault_state, bat_component_data.set.error_timer):
+                    # SoC/Kapazität dieses Speichers sind nicht mehr aktuell, nicht in die Summen einrechnen.
+                    continue
                 if bat_component_data.get.soc < self.data.config.bat_control_max_soc:
                     max_charge_power_total += bat_component_data.get.max_charge_power
                     bat_ready_to_charge += 1
@@ -245,8 +250,16 @@ class BatAll:
         # Leistung an einzelne Speicher übergeben
         for bat_component in controllable_bat_components:
             bat_component_data = data.data.bat_data[f"bat{bat_component.component_config.id}"].data
-            # Falls keine Leistung übergeben wird greift die Eigenregelung der Speicher
-            if power is None:
+            # Falls keine Leistung übergeben wird oder der Speicher seit COMPONENT_ERROR_DURATION Sekunden im
+            # Fehlerzustand ist, greift die Eigenregelung der Speicher.
+            if error_duration_exceeded(bat_component_data.get.fault_state, bat_component_data.set.error_timer):
+                power_limit = None
+                bat_component_data.get.state_str = (
+                    f"Fehler beim Auslesen des Speichers {get_component_name_by_id(bat_component.component_config.id)}"
+                    ". Die aktive Speichersteuerung berücksichtigt diesen Speicher nicht mehr.")
+                data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set.power_limit = power_limit
+                continue
+            elif power is None:
                 power_limit = None
                 bat_component_data.get.state_str = "Keine Steuerung"
                 log.debug(("Speichersteuerung: Eigenregelung - Speicher "

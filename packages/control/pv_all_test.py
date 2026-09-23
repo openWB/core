@@ -60,3 +60,25 @@ def test_calc_power_for_all_components_excludes_module_after_60s(data_):
     assert pv_all.data.get.power == -500
     # error_timer bleibt für die "wieviel Zeit ist bereits vergangen"-Logik erhalten, nicht zurückgesetzt
     assert data.data.pv_data["pv2"].data.set.error_timer == error_timer
+    # eigener get.power-Wert wird jetzt ebenfalls abgebildet (wie bei Counter/Chargepoint), nicht nur die Summe
+    assert data.data.pv_data["pv2"].data.get.power == 0
+
+
+def test_calc_power_for_all_components_recovers_after_error_clears(data_):
+    # setup
+    # Modul war im Fehlerzustand (error_timer noch gesetzt), liefert jetzt aber wieder gültige Werte
+    # (fault_state == 0) - der alte error_timer darf nicht mehr dazu führen, dass weiterhin 0 genutzt wird.
+    data.data.pv_data = {"pv1": Pv(1)}
+    data.data.pv_data["pv1"].data.get.power = -1500
+    data.data.pv_data["pv1"].data.get.fault_state = 0
+    data.data.pv_data["pv1"].data.set.error_timer = timecheck.create_timestamp() - 61
+    _setup_io_actions()
+    pv_all = PvAll()
+
+    # execution
+    pv_all.calc_power_for_all_components()
+
+    # evaluation
+    assert data.data.pv_data["pv1"].data.get.power == -1500
+    assert data.data.pv_data["pv1"].data.set.error_timer is None
+    assert pv_all.data.get.power == -1500
