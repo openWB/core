@@ -29,6 +29,8 @@ export interface ChargePointRow extends Record<string, unknown> {
   current: string;
   powerColumn: '';
   charged: string;
+  faultState: number;
+  faultMessage: string;
   color?: string;
 }
 
