@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from typing import TypedDict, Any, Optional
+from typing import TypedDict, Any
 
 from modules.common import modbus
 from modules.common.abstract_device import AbstractBat
@@ -13,6 +13,7 @@ from modules.common.store import get_component_value_store
 from modules.devices.huawei.huawei_smartlogger.config import Huawei_SmartloggerBatSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
+from control.bat import Set as SetPoint
 
 log = logging.getLogger(__name__)
 
@@ -50,14 +51,14 @@ class Huawei_SmartloggerBat(AbstractBat):
         )
         self.store.set(bat_state)
 
-    def set_power_limit(self, power_limit: Optional[int]) -> None:
+    def set_power_limit(self, setpoint: SetPoint) -> None:
         modbus_id = self.component_config.configuration.modbus_id
-        if power_limit is None:
+        if setpoint.power_limit is None:
             log.debug("Keine Batteriesteuerung, Selbstregelung durch Speicher")
             if self.last_mode is not None:
                 self.__tcp_client.write_register(47100, 0, data_type=ModbusDataType.UINT_16, unit=modbus_id)
                 self.last_mode = None
-        elif power_limit == 0:
+        elif setpoint.power_limit == 0:
             log.debug("Aktive Batteriesteuerung Huawei Smartlogger. Batterie wird auf Stop gesetzt und nicht entladen")
             if self.last_mode != 'stop':
                 self.last_mode = 'stop'
@@ -66,26 +67,28 @@ class Huawei_SmartloggerBat(AbstractBat):
             self.__tcp_client.write_register(47246, 0, data_type=ModbusDataType.UINT_16, unit=modbus_id)
             self.__tcp_client.write_register(47083, 1, data_type=ModbusDataType.UINT_16, unit=modbus_id)
             self.__tcp_client.write_register(47249, 0, data_type=ModbusDataType.UINT_16, unit=modbus_id)
-        elif power_limit < 0:
+        elif setpoint.power_limit < 0:
             log.debug(f"Aktive Batteriesteuerung Huawei Smartlogger:"
-                      f"Speicher soll mit {power_limit} W entladen werden.")
+                      f"Speicher soll mit {setpoint.power_limit} W entladen werden.")
             if self.last_mode != 'discharge':
                 self.last_mode = 'discharge'
             # discharge
             self.__tcp_client.write_register(47100, 2, data_type=ModbusDataType.UINT_16, unit=modbus_id)
             self.__tcp_client.write_register(47246, 0, data_type=ModbusDataType.UINT_16, unit=modbus_id)
             self.__tcp_client.write_register(47083, 1, data_type=ModbusDataType.UINT_16, unit=modbus_id)
-            self.__tcp_client.write_register(47249, -power_limit, data_type=ModbusDataType.UINT_16, unit=modbus_id)
-        elif power_limit > 0:
+            self.__tcp_client.write_register(47249, -setpoint.power_limit,
+                                             data_type=ModbusDataType.UINT_16, unit=modbus_id)
+        elif setpoint.power_limit > 0:
             log.debug(f"Aktive Batteriesteuerung Huawei Smartlogger:"
-                      f"Speicher soll mit {power_limit} W geladen werden.")
+                      f"Speicher soll mit {setpoint.power_limit} W geladen werden.")
             if self.last_mode != 'charge':
                 self.last_mode = 'charge'
             # charge
             self.__tcp_client.write_register(47100, 1, data_type=ModbusDataType.UINT_16, unit=modbus_id)
             self.__tcp_client.write_register(47246, 0, data_type=ModbusDataType.UINT_16, unit=modbus_id)
             self.__tcp_client.write_register(47083, 1, data_type=ModbusDataType.UINT_16, unit=modbus_id)
-            self.__tcp_client.write_register(47247, power_limit, data_type=ModbusDataType.UINT_16, unit=modbus_id)
+            self.__tcp_client.write_register(47247, setpoint.power_limit,
+                                             data_type=ModbusDataType.UINT_16, unit=modbus_id)
             self.__tcp_client.write_register(47087, 1, data_type=ModbusDataType.UINT_16, unit=modbus_id)
 
     def power_limit_controllable(self) -> bool:
