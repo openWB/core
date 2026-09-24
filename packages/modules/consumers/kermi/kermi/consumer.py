@@ -35,8 +35,8 @@ def create_consumer(config: Kermi):
         )
 
     def set_power_limit(power_limit: Optional[float], data: SetLimitData) -> None:
-        # Reg 301: PV-Überschussleistung, Auflösung 10W
-        value = int(round((0 if power_limit is None else max(power_limit, 0)) / 10))
+        # Reg 301: PV-Überschussleistung, Auflösung 0,1W (raw = W * 10)
+        value = int(round((0 if power_limit is None else max(power_limit, 0)) * 10))
         client.write_register(301, value, data_type=ModbusDataType.INT_16, unit=config.configuration.modbus_id)
 
     return ConfigurableConsumer(consumer_config=config,

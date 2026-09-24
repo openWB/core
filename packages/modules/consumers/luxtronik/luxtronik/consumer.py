@@ -40,9 +40,9 @@ def create_consumer(config: Luxtronik):
         client.write_register(10005, 0, data_type=ModbusDataType.UINT_16, unit=unit)
 
     def update() -> ConsumerState:
-        # Reg 10301: el. Leistungsaufnahme, Auflösung 10W (kW x0.01)
+        # Reg 10301: el. Leistungsaufnahme, Auflösung 100W (kW x0.1)
         power = client.read_input_registers(
-            10301, ModbusDataType.UINT_16, unit=config.configuration.modbus_id) * 10
+            10301, ModbusDataType.UINT_16, unit=config.configuration.modbus_id) * 100
         imported, exported = sim_counter.sim_count(power)
 
         return ConsumerState(
