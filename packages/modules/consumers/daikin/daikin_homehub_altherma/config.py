@@ -7,7 +7,7 @@ from ..vendor import vendor_descriptor
 
 
 @auto_str
-class DaikinConfiguration:
+class DaikinAlthermaConfiguration:
     def __init__(self,
                  ip_address: Optional[str] = None,
                  port: int = 502,
@@ -18,16 +18,17 @@ class DaikinConfiguration:
 
 
 @auto_str
-class Daikin(ConsumerSetup[DaikinConfiguration]):
+class DaikinAltherma(ConsumerSetup[DaikinAlthermaConfiguration]):
     def __init__(self,
-                 name: str = "Daikin Air2Air (HomeHub EKRHH)",
-                 type: str = "daikin_homehub_air2air",
+                 name: str = "Daikin Altherma (HomeHub)",
+                 type: str = "daikin_homehub_altherma",
                  id: int = 0,
-                 configuration: Optional[DaikinConfiguration] = None,
+                 configuration: Optional[DaikinAlthermaConfiguration] = None,
                  # Register gegen das offizielle EKRHH Installer Reference Guide (4PDE744838,
-                 # Kap. 10 "Modbus TCP/IP oder RTU für Luft-zu-Luft-Wärmepumpe") geprüft.
+                 # Kap. 9 "Modbus TCP/IP oder RTU für Daikin Altherma") geprüft.
                  usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_ONOFF,
-                                                     ConsumerUsage.SUSPENDABLE_TUNABLE),
+                                                     ConsumerUsage.SUSPENDABLE_TUNABLE,
+                                                     ConsumerUsage.METER_ONLY),
                  **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
-        ).type, configuration=configuration or DaikinConfiguration(), usage=usage, **kwargs)
+        ).type, configuration=configuration or DaikinAlthermaConfiguration(), usage=usage, **kwargs)
