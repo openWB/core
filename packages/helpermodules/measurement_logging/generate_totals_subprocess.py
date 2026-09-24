@@ -1,4 +1,5 @@
 import fcntl
+import json
 from pathlib import Path
 from datetime import date
 
@@ -69,7 +70,10 @@ def _generate_totals():
             continue
 
     log.info(f"Totals-Migration abgeschlossen. Fehlerhafte Logs: {errors}.")
-    pub.Pub().pub("openWB/set/system/log_data_ready", True)
+    publisher = pub.Pub()
+    publish_info = publisher.publisher.client.publish(
+        "openWB/set/system/log_data_ready", json.dumps(True), qos=1, retain=True)
+    publish_info.wait_for_publish()
 
 
 def generate_totals():

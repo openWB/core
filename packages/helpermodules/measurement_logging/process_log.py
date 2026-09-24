@@ -10,6 +10,7 @@ from helpermodules.utils.precision_math import decimal_divide
 from helpermodules.measurement_logging.process_log_calculation import (CalculationType,
                                                                        FILE_ERRORS,
                                                                        analyse_percentage_totals,
+                                                                       analyse_percentage,
                                                                        get_totals,
                                                                        _analyse_energy_source,
                                                                        _process_entries)
@@ -493,8 +494,14 @@ def _apply_source_totals(entry: Dict, daily_totals: Dict):
                 module_data = {}
                 section_data[module] = module_data
 
-            # Alle vorhandenen Summenfelder des Moduls mit den Tages-Summen ueberschreiben.
+            # Alle vorhandenen Summenfelder des Moduls mit den aggregierten Summen ueberschreiben.
             module_data.update(module_totals)
+    # Der kopierte Eintrag enthält ggf. noch den energy_source des letzten
+    # Intervalls/Tages. Nach dem Einspielen der aggregierten Energiewerte
+    # muss der Strom-Mix deshlab ebenfalls neu berechnet werden.
+    entry.pop("energy_source", None)
+    entry, _ = analyse_percentage(entry)
+
     return entry
 
 
