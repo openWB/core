@@ -266,6 +266,12 @@ def test_collect_daily_log_data_json_decode_error(monkeypatch):
 def test_apply_source_totals_updates_existing_and_creates_missing_sections():
     # setup
     entry = {
+        # required by analyse_percentage(), which _apply_source_totals() calls internally
+        "date": "22.04.2024",
+        "timestamp": 1713772800,
+        "counter": {
+            "counter0": {"grid": True, "energy_imported": 0, "energy_exported": 0}
+        },
         "cp": {
             "all": {"energy_imported": 5, "keep": "x"},
             "cp9": {"keep_cp": True}
