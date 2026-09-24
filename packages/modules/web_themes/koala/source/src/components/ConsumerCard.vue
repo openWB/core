@@ -39,6 +39,23 @@
     </q-card-section>
 
     <q-card-section
+      v-for="sensor in temperatures.sensors"
+      :key="sensor.index"
+      class="row q-mt-sm text-subtitle2 justify-between full-width"
+    >
+      <div>
+        {{
+          temperatures.sensorCount > 1
+            ? `Temperatur ${sensor.index + 1}:`
+            : 'Temperatur:'
+        }}
+      </div>
+      <div class="q-ml-sm">
+        {{ sensor.textValue }}
+      </div>
+    </q-card-section>
+
+    <q-card-section
       class="row q-mt-sm text-subtitle2 justify-between full-width"
     >
       <div>Laufzeit:</div>
@@ -86,6 +103,10 @@ const powerValue = computed(
   () => (mqttStore.consumerPower(props.consumerId, 'value') as number) || 0,
 );
 const isRunning = computed(() => powerValue.value > 0);
+
+const temperatures = computed(() =>
+  mqttStore.consumerTemperatures(props.consumerId),
+);
 
 const runTime = computed<string>(() => {
   const seconds = mqttStore.consumerOnTime(props.consumerId);
