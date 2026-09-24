@@ -8,7 +8,6 @@ from control.algorithm.bidi_charging import Bidi
 from control.algorithm.min_current import MinCurrent
 from control.algorithm.no_current import NoCurrent
 from control.algorithm.surplus_controlled import SurplusControlled
-from control.chargemode import Chargemode
 
 log = logging.getLogger(__name__)
 
@@ -27,7 +26,6 @@ class Algorithm:
         try:
             log.info("# Algorithmus")
             self.evu_counter = data.data.counter_all_data.get_evu_counter()
-            self._check_phases_at_charging_start()
             self._check_auto_phase_switch_delay()
             self.surplus_controlled.check_submode_pv_charging()
             common.reset_current()
@@ -53,33 +51,6 @@ class Algorithm:
             self.no_current.set_none_current()
         except Exception:
             log.exception("Fehler im Algorithmus-Modul")
-
-    def _check_phases_at_charging_start(self) -> None:
-        """ Ist vor Ladestart bereits genug Überschuss für mehrphasiges Laden vorhanden, direkt
-        mehrphasig starten. Sonst müsste erst einphasig gestartet und nach der Umschaltverzögerung
-        wieder hochgeschaltet werden, siehe Hilfetext zu "Pufferzeit zwischen automat.
-        Phasenumschaltungen". Bewusst hier im Algorithmus und nicht in der Ladepunkt-Klasse, da nur
-        hier die Reihenfolge und der noch verfügbare Überschuss über alle Ladepunkte hinweg bekannt sind:
-        remaining_surplus wird lokal fortgeschrieben, damit nicht zwei gleichzeitig neu startende
-        Ladepunkte unabhängig voneinander denselben Überschuss beanspruchen.
-        """
-        remaining_surplus = self.evu_counter.get_usable_surplus()
-        for cp in data.data.cp_data.values():
-            try:
-                control_parameter = cp.data.control_parameter
-                charging_ev = cp.data.set.charging_ev_data
-                if (control_parameter.submode == Chargemode.PV_CHARGING and
-                        cp.data.get.charge_state is False and
-                        cp.data.set.charge_template.data.chargemode.pv_charging.phases_to_use == 0 and
-                        cp.hw_supports_phase_switch()):
-                    max_phase_hw = cp.get_max_phase_hw()
-                    if max_phase_hw > 1:
-                        required_surplus = charging_ev.ev_template.data.min_current * max_phase_hw * 230
-                        if remaining_surplus > required_surplus:
-                            control_parameter.phases = max_phase_hw
-                            remaining_surplus -= required_surplus
-            except Exception:
-                log.exception(f"Fehler im Algorithmus-Modul für Ladepunkt{cp.num}")
 
     def _check_auto_phase_switch_delay(self) -> None:
         """ geht alle LP durch und prüft, ob eine Ladung aktiv ist, ob automatische Phasenumschaltung

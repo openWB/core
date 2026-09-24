@@ -458,7 +458,6 @@ class Chargepoint(ChargepointRfidMixin, Load):
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
 
     def get_phases_by_selected_chargemode(self, phases_chargemode: int) -> int:
-        charging_ev = self.data.set.charging_ev_data
         if self.data.get.evse_signaling == EvseSignaling.HLC:
             phases = self.data.get.phases_in_use
         elif self.data.config.auto_phase_switch_hw is False and self.data.get.charge_state:
@@ -475,16 +474,16 @@ class Chargepoint(ChargepointRfidMixin, Load):
             if self.data.get.charge_state:
                 phases = self.data.get.phases_in_use
             else:
-                if ((not charging_ev.ev_template.data.prevent_phase_switch or
-                        self.data.set.log.imported_since_plugged == 0) and
-                        self.data.config.auto_phase_switch_hw):
-                    phases = 1
+                # Vor Ladestart keine Phasenzahl erzwingen, sondern die bisherige beibehalten, bis
+                # switch_on_timer_expired() (counter.py) nach Ablauf der Einschaltverzögerung die
+                # endgültige Phasenzahl anhand des tatsächlichen Überschusses festlegt (siehe PR #3899:
+                # ein unconditional phases=1 hier löste eine unnötige Umschaltung noch vor jeder
+                # Einschaltverzögerung aus, wenn die Hardware zufällig noch auf mehr Phasen stand).
+                if self.data.set.phases_to_use != 0:
+                    phases = self.data.set.phases_to_use
                 else:
-                    if self.data.set.phases_to_use != 0:
-                        phases = self.data.set.phases_to_use
-                    else:
-                        # phases_target
-                        phases = self.data.config.connected_phases
+                    # phases_target
+                    phases = self.data.config.connected_phases
             log.debug(f"Phasenzahl Lademodus: {phases}")
         else:
             if phases_chargemode == 0:

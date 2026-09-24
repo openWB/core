@@ -5,9 +5,10 @@ import pytest
 
 from control import data
 from control.chargelog import chargelog
+from control.chargemode import Chargemode
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state import ChargepointState
-from control.chargepoint.chargepoint_template import CpTemplate
+from control.chargepoint.chargepoint_template import CpTemplate, get_chargepoint_template_default
 from control.counter import Counter
 from control.ev.ev import Ev
 from modules.common.configurable_vehicle import ConfigurableVehicle
@@ -131,6 +132,33 @@ params = [
         charge_state=True,
         phase_switch_required=True
     ),
+    # Reproduziert den in PR #3899 beschriebenen Bug: get_phases_by_selected_chargemode() erzwang vor
+    # get_phases_test.py's Fix unconditional phases=1 beim Ladestart, auch wenn die Hardware (Rest vom
+    # vorherigen Ladevorgang) noch auf 3 Phasen steht. Das führt hier - noch bevor überhaupt eine
+    # Einschaltverzögerung beginnt (state=NO_CHARGING_ALLOWED, charge_state=False) - bereits zu einer
+    # unnötigen Umschaltung 3->1.
+    Params(
+        name="Ladestart, Hardware noch auf 3 Phasen: unnötige Umschaltung ohne den Fix",
+        state=ChargepointState.NO_CHARGING_ALLOWED,
+        phases_to_use=1,
+        phases_in_use=3,
+        control_parameter_phases=1,
+        set_current=6,
+        set_current_prev=0,
+        charge_state=False,
+        phase_switch_required=True
+    ),
+    Params(
+        name="Ladestart, Hardware noch auf 3 Phasen: keine Umschaltung mit dem Fix (Überschuss reicht)",
+        state=ChargepointState.NO_CHARGING_ALLOWED,
+        phases_to_use=3,
+        phases_in_use=3,
+        control_parameter_phases=3,
+        set_current=6,
+        set_current_prev=0,
+        charge_state=False,
+        phase_switch_required=False
+    ),
 ]
 
 
@@ -156,6 +184,45 @@ def test_is_phase_switch_required(params: Params):
 
     # assertion
     assert ret == params.phase_switch_required
+
+
+def test_get_phases_and_is_phase_switch_required_no_switch_on_stale_hardware_phases(mock_data):
+    """ Exakte Werte aus einem realen Log (2026-08-08 12:35:43, PR #3899): CUPRA Born
+    (min_current=6, max_phases=3) wird an einem 3-phasigen Ladepunkt neu erkannt, Automatik-
+    Umschaltung, noch nicht ladend, Hardware steht noch auf 3 Phasen (Rest vom vorherigen
+    Ladevorgang). Vor dem Fix erzwang get_phases_by_selected_chargemode() hier unconditional
+    phases=1, was noch vor jeder Einschaltverzögerung (state=NO_CHARGING_ALLOWED) eine unnötige
+    3->1-Umschaltung auslöste ("LP 4: Umschaltung von 3 auf 1 Phase, dafür wird die Ladung
+    unterbrochen."). """
+    # setup
+    cp = Chargepoint(4, None)
+    cp.template = CpTemplate()
+    cp.template.data = get_chargepoint_template_default()
+    cp.data.set.charging_ev_data = Ev(0)
+    cp.data.config.connected_phases = 3
+    cp.data.config.auto_phase_switch_hw = True
+    cp.data.get.charge_state = False
+    cp.data.control_parameter.submode = Chargemode.PV_CHARGING
+    cp.data.control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
+    cp.data.set.phases_to_use = 3  # von _process_charge_stop() beim Abstecken auf phases_in_use gesetzt
+    cp.data.get.phases_in_use = 3
+    cp.data.set.log.imported_since_plugged = 0
+    cp.data.set.charge_template.data.chargemode.pv_charging.phases_to_use = 0
+    cp.data.set.charging_ev_data.ev_template.data.prevent_phase_switch = False
+    cp.data.set.charging_ev_data.ev_template.data.min_current = 6
+    cp.data.set.charging_ev_data.ev_template.data.max_phases = 3
+    cp.data.set.current = 6
+
+    # execution
+    phases = cp.get_phases_by_selected_chargemode(0)
+    cp.data.control_parameter.phases = phases
+
+    # evaluation: bisherige Phasenzahl (3) wird beibehalten statt auf 1 erzwungen
+    assert phases == 3
+    # Downstream-Kette: da control_parameter.phases jetzt korrekt 3 ist (statt 1, wie vor dem Fix),
+    # findet _is_phase_switch_required() keinen Mismatch zur Hardware mehr - genau der Aufruf, der in
+    # process.py nach dem Algorithmus die eigentliche Umschaltung 3->1 ausgelöst hätte.
+    assert cp._is_phase_switch_required() is False
 
 
 @pytest.mark.parametrize(

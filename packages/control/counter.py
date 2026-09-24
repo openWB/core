@@ -403,10 +403,12 @@ class Counter:
     def get_pv_config_py_load(self, load: Load) -> Tuple[float, float, float]:
         surplus_config = data.data.general_data.data.chargemode_config.surplus
         if isinstance(load, Chargepoint):
-            control_parameter = load.data.control_parameter
             switch_on_delay = surplus_config.vehicle.switch_on_delay
-            switch_on_threshold = surplus_config.vehicle.switch_on_threshold * control_parameter.phases
-            power_to_reserve = surplus_config.vehicle.switch_on_threshold*control_parameter.phases
+            # Einschaltschwelle wird bewusst immer für eine Phase berechnet, unabhängig von der
+            # aktuellen/vorherigen Phasenzahl - switch_on_timer_expired() legt die endgültige Phasenzahl
+            # erst anhand des dann tatsächlich verfügbaren Überschusses fest.
+            switch_on_threshold = surplus_config.vehicle.switch_on_threshold
+            power_to_reserve = surplus_config.vehicle.switch_on_threshold
         else:
             switch_on_delay = surplus_config.consumer.switch_on_delay
             switch_on_threshold = (load.data.control_parameter.required_current *
@@ -484,15 +486,19 @@ class Counter:
 
                 if isinstance(load, Chargepoint):
                     charging_ev_data = load.data.set.charging_ev_data
-                    # bei ausreichend Überschuss direkt mit max. Phasen laden
                     ev_template = charging_ev_data.ev_template
-                    max_phases_power = ev_template.data.min_current * ev_template.data.max_phases * 230
                     if (control_parameter.submode == Chargemode.PV_CHARGING and
                         load.data.set.charge_template.data.chargemode.pv_charging.phases_to_use == 0 and
-                            load.hw_supports_phase_switch() and
-                            self.get_usable_surplus() > max_phases_power):
-                        control_parameter.phases = ev_template.data.max_phases
-                        msg += texts.max_phases.format(ev_template.data.max_phases)
+                            load.hw_supports_phase_switch()):
+                        # Phasenzahl hier in jedem Fall explizit setzen, nicht dem Wert überlassen, den
+                        # get_phases_by_selected_chargemode() vor der Einschaltverzögerung gesetzt hatte -
+                        # bei ausreichend Überschuss direkt mit max. Phasen laden, sonst explizit einphasig.
+                        max_phases_power = ev_template.data.min_current * ev_template.data.max_phases * 230
+                        if self.get_usable_surplus() > max_phases_power:
+                            control_parameter.phases = ev_template.data.max_phases
+                            msg += texts.max_phases.format(ev_template.data.max_phases)
+                        else:
+                            control_parameter.phases = 1
                 elif isinstance(load, Consumer):
                     control_parameter.state = ChargepointState.CHARGING_ALLOWED
             load.set_state_and_log(msg)
