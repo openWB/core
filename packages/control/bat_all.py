@@ -400,7 +400,9 @@ class BatAll:
                                 # Ausgangsleistung des WR überschreiten.
                                 # Wenn der Speicher mit mehr als der erlaubten Entladeleistung entladen wird, muss das
                                 # vom Überschuss subtrahiert werden.
-                                charging_power_left = min(required_absolut_discharge_power + base_power,
+                                # Lädt der Speicher, bleibt seine Ladeleistung bei ihm: sie ist der einzige Weg
+                                # zurück auf max_soc und damit aus der Hysterese heraus.
+                                charging_power_left = min(required_absolut_discharge_power + min(0, base_power),
                                                           absolute_bat_discharge_power)
                                 log.debug(f"Erlaubte Entlade-Leistung nutzen {charging_power_left}W")
                             else:
