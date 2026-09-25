@@ -59,7 +59,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 149
+    DATASTORE_VERSION = 150
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -3895,3 +3895,40 @@ class UpdateConfig:
             if migrated_loadmanagement_prios != loadmanagement_prios:
                 self.__update_topic(topic, migrated_loadmanagement_prios)
         self._append_datastore_version(149)
+
+    def upgrade_datastore_150(self) -> None:
+        """Fixed-Hours-Wochentage vom alten Schema (So=0..Sa=6) auf Python weekday() (Mo=0..So=6) migrieren."""
+
+        def _shift_weekday(weekday: int) -> int:
+            return (weekday + 6) % 7
+
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if ("openWB/optional/ep/flexible_tariff/provider" == topic or
+                    "openWB/optional/ep/grid_fee/provider" == topic):
+                provider = decode_payload(payload)
+                if provider.get("type") != "fixed_hours":
+                    return None
+                config = provider.get("configuration", {})
+                tariffs = config.get("tariffs", [])
+                changed = False
+                for tariff in tariffs:
+                    active_times = tariff.get("active_times", {})
+                    weekdays = active_times.get("weekdays")
+                    if isinstance(weekdays, list):
+                        converted = []
+                        for weekday in weekdays:
+                            try:
+                                weekday_int = int(weekday)
+                            except (TypeError, ValueError):
+                                converted.append(weekday)
+                                continue
+                            converted.append(_shift_weekday(weekday_int))
+                        if converted != weekdays:
+                            active_times["weekdays"] = converted
+                            changed = True
+                if changed:
+                    return {topic: provider}
+            return None
+
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(150)
