@@ -59,7 +59,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 150
+    DATASTORE_VERSION = 151
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -3932,3 +3932,43 @@ class UpdateConfig:
 
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(150)
+
+    def upgrade_datastore_151(self):
+        """Bereits verknüpfte Verbraucher-Zähler aus der Hierarchie entfernen."""
+        hierarchy_topic = "openWB/counter/get/hierarchy"
+        hierarchy = decode_payload(self.all_received_topics.get(hierarchy_topic))
+        if not isinstance(hierarchy, list) or not hierarchy:
+            self._append_datastore_version(151)
+            return
+
+        linked_counter_ids = {
+            int(extra_meter_id)
+            for topic, payload in self.all_received_topics.items()
+            if re.search(r"^openWB/consumer/[0-9]+/extra_meter$", topic) is not None
+            for extra_meter_id in [decode_payload(payload)]
+            if extra_meter_id is not None
+        }
+
+        if not linked_counter_ids:
+            self._append_datastore_version(151)
+            return
+
+        migrated_hierarchy = copy.deepcopy(hierarchy)
+        _counter_all = counter_all.CounterAll()
+        _counter_all.data.get.hierarchy = migrated_hierarchy
+        hierarchy_changed = False
+
+        for linked_counter_id in linked_counter_ids:
+            counter_entry = _counter_all.get_entry_of_element(linked_counter_id)
+            if not counter_entry or counter_entry.get("type") != ComponentType.COUNTER.value:
+                continue
+            parent_entry = _counter_all.get_entry_of_parent(linked_counter_id)
+            if not parent_entry or parent_entry.get("type") != ComponentType.COUNTER.value:
+                continue
+            _counter_all.hierarchy_remove_item(linked_counter_id)
+            hierarchy_changed = True
+
+        if hierarchy_changed:
+            self.__update_topic(hierarchy_topic, _counter_all.data.get.hierarchy)
+
+        self._append_datastore_version(151)

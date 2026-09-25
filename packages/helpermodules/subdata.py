@@ -1277,7 +1277,16 @@ class SubData:
                     elif re.search("openWB/consumer/[0-9]+/set", msg.topic) is not None:
                         self.set_json_payload_class(var["consumer"+index].data.set, msg)
                     elif re.search("openWB/consumer/[0-9]+/extra_meter", msg.topic) is not None:
+                        old_extra_meter = var[f"consumer{index}"].data.extra_meter
                         self.set_json_payload_class(var[f"consumer{index}"].data, msg)
+                        if self.event_subdata_initialized.is_set() and old_extra_meter != var[
+                                f"consumer{index}"].data.extra_meter:
+                            if self.counter_all_data.update_linked_counter_hierarchy(
+                                    int(index),
+                                    old_extra_meter,
+                                    var[f"consumer{index}"].data.extra_meter):
+                                Pub().pub("openWB/set/counter/get/hierarchy",
+                                          self.counter_all_data.data.get.hierarchy)
                     elif re.search("openWB/consumer/[0-9]+/usage$", msg.topic) is not None:
                         usage = dataclass_from_dict(Usage, decode_payload(msg.payload))
                         var[f"consumer{index}"].data.usage = usage

@@ -98,3 +98,95 @@ def test_process_consumer_usage_does_not_update_loadmanagement_prios_on_startup(
     assert consumers["consumer2"].data.usage.type == ConsumerUsage.METER_ONLY
     assert counter_all_data.data.get.loadmanagement_prios == [{"type": "consumer", "id": 2}]
     mock_pub.pub.assert_not_called()
+
+
+def test_process_consumer_extra_meter_removes_linked_counter_from_hierarchy(monkeypatch: pytest.MonkeyPatch,
+                                                                            mock_pub: Mock):
+    subdata = SubData.__new__(SubData)
+    subdata.event_subdata_initialized = Mock()
+    subdata.event_subdata_initialized.is_set.return_value = True
+    counter_all_data = CounterAll()
+    counter_all_data.data.get.hierarchy = [{
+        "id": 0,
+        "type": "counter",
+        "children": [
+            {"id": 2, "type": "consumer", "children": []},
+            {"id": 5, "type": "counter", "children": []},
+        ],
+    }]
+    monkeypatch.setattr(SubData, "counter_all_data", counter_all_data)
+    consumers = {"consumer2": Consumer(2)}
+    msg = Mock(topic="openWB/consumer/2/extra_meter", payload=b"5")
+
+    subdata.process_consumer_topic(Mock(), consumers, msg)
+
+    assert consumers["consumer2"].data.extra_meter == 5
+    assert counter_all_data.data.get.hierarchy == [{
+        "id": 0,
+        "type": "counter",
+        "children": [{"id": 2, "type": "consumer", "children": []}],
+    }]
+    mock_pub.pub.assert_called_once_with("openWB/set/counter/get/hierarchy", counter_all_data.data.get.hierarchy)
+
+
+def test_process_consumer_extra_meter_adds_unlinked_counter_to_hierarchy(monkeypatch: pytest.MonkeyPatch,
+                                                                         mock_pub: Mock):
+    subdata = SubData.__new__(SubData)
+    subdata.event_subdata_initialized = Mock()
+    subdata.event_subdata_initialized.is_set.return_value = True
+    counter_all_data = CounterAll()
+    counter_all_data.data.get.hierarchy = [{
+        "id": 0,
+        "type": "counter",
+        "children": [{"id": 2, "type": "consumer", "children": []}],
+    }]
+    monkeypatch.setattr(SubData, "counter_all_data", counter_all_data)
+    consumers = {"consumer2": Consumer(2)}
+    consumers["consumer2"].data.extra_meter = 5
+    msg = Mock(topic="openWB/consumer/2/extra_meter", payload=b"null")
+
+    subdata.process_consumer_topic(Mock(), consumers, msg)
+
+    assert consumers["consumer2"].data.extra_meter is None
+    assert counter_all_data.data.get.hierarchy == [{
+        "id": 0,
+        "type": "counter",
+        "children": [
+            {"id": 2, "type": "consumer", "children": []},
+            {"id": 5, "type": "counter", "children": []},
+        ],
+    }]
+    mock_pub.pub.assert_called_once_with("openWB/set/counter/get/hierarchy", counter_all_data.data.get.hierarchy)
+
+
+def test_process_consumer_extra_meter_switches_linked_counter_in_hierarchy(monkeypatch: pytest.MonkeyPatch,
+                                                                           mock_pub: Mock):
+    subdata = SubData.__new__(SubData)
+    subdata.event_subdata_initialized = Mock()
+    subdata.event_subdata_initialized.is_set.return_value = True
+    counter_all_data = CounterAll()
+    counter_all_data.data.get.hierarchy = [{
+        "id": 0,
+        "type": "counter",
+        "children": [
+            {"id": 2, "type": "consumer", "children": []},
+            {"id": 6, "type": "counter", "children": []},
+        ],
+    }]
+    monkeypatch.setattr(SubData, "counter_all_data", counter_all_data)
+    consumers = {"consumer2": Consumer(2)}
+    consumers["consumer2"].data.extra_meter = 5
+    msg = Mock(topic="openWB/consumer/2/extra_meter", payload=b"6")
+
+    subdata.process_consumer_topic(Mock(), consumers, msg)
+
+    assert consumers["consumer2"].data.extra_meter == 6
+    assert counter_all_data.data.get.hierarchy == [{
+        "id": 0,
+        "type": "counter",
+        "children": [
+            {"id": 2, "type": "consumer", "children": []},
+            {"id": 5, "type": "counter", "children": []},
+        ],
+    }]
+    mock_pub.pub.assert_called_once_with("openWB/set/counter/get/hierarchy", counter_all_data.data.get.hierarchy)
