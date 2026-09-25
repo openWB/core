@@ -12,9 +12,11 @@ from control import data
 from control.general import General
 from control.bat_all import BatAll
 from control.chargemode import Chargemode
+from control.consumer import consumer as consumer_module
 from control.consumer.consumer import Consumer
 from control.consumer.consumer_data import WaitForStartStates
 from control.consumer.usage import ConsumerUsage
+from modules.common.fault_state_level import FaultStateLevel
 
 
 @pytest.fixture(autouse=True)
@@ -46,6 +48,89 @@ def test_get_parameter_clears_previous_state_string_when_switch_interval_is_acti
 
     # evaluation
     assert state_string is None
+
+
+def test_get_parameter_stops_consumer_after_60s_error(consumer: Consumer, monkeypatch):
+    # setup
+    error_timer = timecheck.create_timestamp() - 61
+    consumer.data.get.fault_state = FaultStateLevel.ERROR
+    consumer.data.set.error_timer = error_timer
+    consumer.data.set.switch_interval_elapsed = True
+    monkeypatch.setattr(consumer_module, "get_component_name_by_id", Mock(return_value="Verbraucher 1"))
+
+    # execution
+    min_current, required_current, message, mode, submode = consumer.get_parameter()
+
+    # evaluation
+    assert min_current == 0
+    assert required_current == 0
+    assert submode == Chargemode.STOP
+    assert "Verbraucher 1" in message
+
+
+def test_get_parameter_continues_normally_within_grace_period(consumer: Consumer):
+    # setup
+    # Fehler erst seit 30s - noch innerhalb der Gnadenfrist, get_parameter() darf noch nicht auf STOP gehen.
+    # switch_interval_elapsed=True, damit nur das neue Fehlerfall-Gate über den Rückgabewert entscheidet.
+    error_timer = timecheck.create_timestamp() - 30
+    consumer.data.get.fault_state = FaultStateLevel.ERROR
+    consumer.data.set.error_timer = error_timer
+    consumer.data.set.switch_interval_elapsed = True
+
+    # execution
+    _, _, _, _, submode = consumer.get_parameter()
+
+    # evaluation
+    assert submode != Chargemode.STOP
+
+
+def test_update_zeroes_power_after_60s_error(consumer: Consumer):
+    # setup
+    error_timer = timecheck.create_timestamp() - 61
+    consumer.data.usage.type = ConsumerUsage.METER_ONLY  # NOT_CONTROLLED, kurzer Rückweg nach der Zuordnung
+    consumer.data.get.power = 2000
+    consumer.data.get.fault_state = FaultStateLevel.ERROR
+    consumer.data.set.error_timer = error_timer
+
+    # execution
+    consumer.update()
+
+    # evaluation
+    assert consumer.data.get.power == 0
+    # error_timer bleibt für die "wieviel Zeit ist bereits vergangen"-Logik erhalten, nicht zurückgesetzt
+    assert consumer.data.set.error_timer == error_timer
+
+
+def test_update_keeps_power_within_grace_period(consumer: Consumer):
+    # setup
+    error_timer = timecheck.create_timestamp() - 30
+    consumer.data.usage.type = ConsumerUsage.METER_ONLY
+    consumer.data.get.power = 2000
+    consumer.data.get.fault_state = FaultStateLevel.ERROR
+    consumer.data.set.error_timer = error_timer
+
+    # execution
+    consumer.update()
+
+    # evaluation
+    assert consumer.data.get.power == 2000
+
+
+def test_update_recovers_after_error_clears(consumer: Consumer):
+    # setup
+    # Verbraucher war im Fehlerzustand (error_timer noch gesetzt), liefert jetzt aber wieder gültige Werte
+    # (fault_state == 0) - der alte error_timer darf nicht mehr dazu führen, dass weiterhin 0 genutzt wird.
+    consumer.data.usage.type = ConsumerUsage.METER_ONLY
+    consumer.data.get.power = 1800
+    consumer.data.get.fault_state = 0
+    consumer.data.set.error_timer = timecheck.create_timestamp() - 61
+
+    # execution
+    consumer.update()
+
+    # evaluation
+    assert consumer.data.get.power == 1800
+    assert consumer.data.set.error_timer is None
 
 
 @pytest.mark.parametrize(

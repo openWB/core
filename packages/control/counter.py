@@ -3,7 +3,7 @@
 from modules.common.utils.component_parser import get_component_name_by_id
 from modules.common.fault_state import FaultStateLevel
 from helpermodules.phase_handling import convert_cp_currents_to_evu_currents
-from helpermodules.constants import NO_ERROR
+from helpermodules.constants import COMPONENT_ERROR_DURATION, NO_ERROR
 from helpermodules import timecheck
 from dataclass_utils.factories import currents_list_factory, voltages_list_factory
 from control.load_protocol import Load
@@ -132,8 +132,6 @@ class SwitchOnTexts:
 
 
 class Counter:
-    MAX_EVU_ERROR_DURATION = 60
-
     def __init__(self, index):
         try:
             self.data = CounterData()
@@ -161,7 +159,7 @@ class Counter:
             if self.data.set.error_timer is None:
                 self.data.set.error_timer = timecheck.create_timestamp()
                 return True
-            elif timecheck.check_timestamp(self.data.set.error_timer, self.MAX_EVU_ERROR_DURATION) is False:
+            elif timecheck.check_timestamp(self.data.set.error_timer, COMPONENT_ERROR_DURATION) is False:
                 for cp in connected_cps:
                     if self.num == data.data.counter_all_data.get_id_evu_counter():
                         data.data.cp_data[cp].set_state_and_log(
@@ -271,6 +269,8 @@ class Counter:
                     # Wenn der Verbraucher nicht angesteuert werden darf, im LM als nicht veränderbaren Verbrauch
                     # berücksichtigen.
                     if consumer.data.set.switch_interval_elapsed:
+                        # consumer.data.get.power ist bereits durch Consumer.update() auf den Fehlerfall
+                        # abgebildet (0 nach COMPONENT_ERROR_DURATION s andauerndem Fehler).
                         power_raw -= consumer.data.get.power
                     else:
                         log.debug(f"Verbraucher {consumer.num} als unveränderlichen Verbrauch im LM "

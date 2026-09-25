@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 import logging
 
 from control import data
+from control.error_state import effective_power
 from helpermodules.constants import NO_ERROR
 
 log = logging.getLogger(__name__)
@@ -59,6 +60,10 @@ class PvAll:
                 fault_state = 0
                 for module in data.data.pv_data.values():
                     try:
+                        result = effective_power(
+                            module.data.get.power, module.data.get.fault_state, module.data.set.error_timer)
+                        module.data.set.error_timer = result.error_timer
+                        module.data.get.power = result.power
                         power += module.data.get.power
                     except Exception:
                         log.exception(f"Fehler im allgemeinen PV-Modul für pv{module.num}")

@@ -8,6 +8,8 @@ from control import counter as counter_module
 from control import data
 from control.chargepoint.chargepoint import Chargepoint
 from control.consumer.consumer import Consumer
+from control.consumer.consumer_all import AllConsumers
+from control.consumer.usage import ConsumerUsage
 from control.counter import Counter, CounterData, Get
 from control.ev.ev import Ev
 from control.ev.charge_template import ChargeTemplate
@@ -109,6 +111,61 @@ def test_set_current_left(loadmanagement_available: bool,
 
     # evaluation
     assert counter.data.set.raw_currents_left == expected_raw_currents_left
+
+
+def test_set_power_left_reads_consumer_power_directly(monkeypatch, data_):
+    # setup
+    # Der Fehlerfall (nach COMPONENT_ERROR_DURATION s power=0) wird bereits von Consumer.update() abgebildet -
+    # _set_power_left() liest hier nur noch das bereits abgebildete consumer.data.get.power, ohne eigene
+    # Fehlerfall-Logik. Simuliert einen Verbraucher, der seit über 60s im Fehlerzustand ist: Consumer.update()
+    # hätte get.power bereits auf 0 gesetzt.
+    get_evu_counter_str_mock = Mock(return_value="counter0")
+    monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter_str", get_evu_counter_str_mock)
+    counter = Counter(0)
+    counter.data.config.max_total_power = 24000
+    counter.data.get.power = 1000
+    data.data.cp_data = {}
+    data.data.consumer_data = {"consumer1": Consumer(1)}
+    data.data.consumer_data["consumer1"].data.get.power = 0
+    data.data.consumer_data["consumer1"].data.set.switch_interval_elapsed = True
+
+    # execution
+    counter._set_power_left(True)
+
+    # evaluation
+    # power_raw = 1000 - 0 -> raw_power_left = 24000 - 1000
+    assert counter.data.set.raw_power_left == 23000
+
+
+def test_set_power_left_and_consumer_sum_agree_within_same_cycle(monkeypatch, data_):
+    """ Regressionstest für die vormalige ~1-Zyklus-Verzögerung: Counter._set_power_left() las
+    consumer.data.set.error_timer, bevor ConsumerAll.get_consumer_sum() (der einzige Schreiber) ihn in
+    diesem Zyklus aktualisiert hatte. Jetzt schreibt einzig Consumer.update() (läuft laut prepare.py vor
+    beiden) - _set_power_left() und get_consumer_sum() sehen im selben Zyklus denselben Wert. """
+    # setup
+    get_evu_counter_str_mock = Mock(return_value="counter0")
+    monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter_str", get_evu_counter_str_mock)
+    counter = Counter(0)
+    counter.data.config.max_total_power = 24000
+    counter.data.get.power = 1000
+    data.data.cp_data = {}
+    data.data.consumer_data = {"consumer1": Consumer(1)}
+    consumer = data.data.consumer_data["consumer1"]
+    consumer.data.usage.type = ConsumerUsage.METER_ONLY  # NOT_CONTROLLED, kurzer Rückweg in update()
+    consumer.data.get.power = 2000
+    consumer.data.get.fault_state = FaultStateLevel.ERROR
+    consumer.data.set.error_timer = timecheck.create_timestamp() - 61
+    consumer.data.set.switch_interval_elapsed = True
+
+    # execution - Reihenfolge wie in prepare.py: Consumer.update() vor Counter.setup_counter()/get_consumer_sum()
+    consumer.update()
+    counter._set_power_left(True)
+    all_consumers = AllConsumers()
+    all_consumers.get_consumer_sum()
+
+    # evaluation - beide sehen im selben Zyklus den bereits auf 0 abgebildeten Wert
+    assert counter.data.set.raw_power_left == 24000 - 1000
+    assert all_consumers.data.get.power == 0
 
 
 @dataclass
