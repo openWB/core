@@ -84,7 +84,7 @@ const stateDisplay = computed(() => {
   }
 });
 
-const showIcon = ref(!connected.value);
+const showIcon = ref(false);
 const iconTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
 const connectingDialogTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
 const connectingTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
@@ -119,31 +119,33 @@ const startConnectingTimeouts = () => {
   }, CONNECTING_GRACE_PERIOD);
 };
 
-if (!connected.value) {
-  startConnectingTimeouts();
-}
-
-watch(connected, (newValue) => {
-  if (!newValue) {
-    console.warn('MQTT-Verbindung verloren!');
-    showIcon.value = true;
-    if (iconTimeout.value) {
-      clearTimeout(iconTimeout.value);
+watch(
+  connected,
+  (newValue, oldValue) => {
+    if (!newValue) {
+      if (oldValue !== undefined) {
+        console.warn('MQTT-Verbindung verloren!');
+      }
+      showIcon.value = true;
+      if (iconTimeout.value) {
+        clearTimeout(iconTimeout.value);
+      }
+      startConnectingTimeouts();
+    } else if (oldValue !== undefined) {
+      console.info('MQTT-Verbindung wiederhergestellt!');
+      clearConnectingTimeouts();
+      connectingDialogDelayPassed.value = false;
+      connectingTimedOut.value = false;
+      if (iconTimeout.value) {
+        clearTimeout(iconTimeout.value);
+      }
+      iconTimeout.value = setTimeout(() => {
+        showIcon.value = false;
+      }, 5000);
     }
-    startConnectingTimeouts();
-  } else {
-    console.info('MQTT-Verbindung wiederhergestellt!');
-    clearConnectingTimeouts();
-    connectingDialogDelayPassed.value = false;
-    connectingTimedOut.value = false;
-    if (iconTimeout.value) {
-      clearTimeout(iconTimeout.value);
-    }
-    iconTimeout.value = setTimeout(() => {
-      showIcon.value = false;
-    }, 5000);
-  }
-});
+  },
+  { immediate: true },
+);
 
 onBeforeUnmount(() => {
   clearConnectingTimeouts();
