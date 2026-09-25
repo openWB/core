@@ -400,3 +400,69 @@ def test_upgrade_datastore_149_removes_not_controlled_consumers(mock_pub: Mock):
     ]
     assert uc.all_received_topics["openWB/system/datastore_version"] == list(range(150))
     assert mock_pub.pub.call_count == 2
+
+
+def test_upgrade_datastore_150_migrates_fixed_hours_weekdays(mock_pub):
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        "openWB/optional/ep/flexible_tariff/provider": {
+            "type": "fixed_hours",
+            "configuration": {
+                "tariffs": [
+                    {
+                        "name": "weekdays",
+                        "price": 0.1,
+                        "active_times": {
+                            "dates": [["01-01", "31-12"]],
+                            "times": [["00:00", "24:00"]],
+                            "weekdays": [1, 2, 3, 4, 5],
+                        },
+                    },
+                    {
+                        "name": "weekend",
+                        "price": 0.2,
+                        "active_times": {
+                            "dates": [["01-01", "31-12"]],
+                            "times": [["00:00", "24:00"]],
+                            "weekdays": [0, 6],
+                        },
+                    },
+                ]
+            },
+        },
+        "openWB/optional/ep/grid_fee/provider": {
+            "type": "fixed_hours",
+            "configuration": {
+                "tariffs": [
+                    {
+                        "name": "all-days",
+                        "price": 0.3,
+                        "active_times": {
+                            "dates": [["01-01", "31-12"]],
+                            "times": [["00:00", "24:00"]],
+                            "weekdays": [0, 1, 2, 3, 4, 5, 6],
+                        },
+                    }
+                ]
+            },
+        },
+        "openWB/system/datastore_version": [149],
+    }
+
+    uc.upgrade_datastore_150()
+
+    flexible_tariffs = uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"]["configuration"][
+        "tariffs"
+    ]
+    assert flexible_tariffs[0]["active_times"]["weekdays"] == [0, 1, 2, 3, 4]
+    assert flexible_tariffs[1]["active_times"]["weekdays"] == [6, 5]
+
+    grid_fee_tariffs = uc.all_received_topics["openWB/optional/ep/grid_fee/provider"]["configuration"]["tariffs"]
+    assert grid_fee_tariffs[0]["active_times"]["weekdays"] == [6, 0, 1, 2, 3, 4, 5]
+
+    assert uc.all_received_topics["openWB/system/datastore_version"] == [149, 150]
+
+    updated_topics = [call.args[0] for call in mock_pub.pub.call_args_list]
+    assert "openWB/optional/ep/flexible_tariff/provider" in updated_topics
+    assert "openWB/optional/ep/grid_fee/provider" in updated_topics
+    assert "openWB/system/datastore_version" in updated_topics
