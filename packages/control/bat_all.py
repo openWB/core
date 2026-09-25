@@ -459,6 +459,70 @@ class BatAll:
         except Exception:
             log.exception("Fehler im Bat-Modul")
 
+    def _buffer_configured(self) -> bool:
+        """ gibt zurück, ob der Speicher überhaupt als Puffer für die Ladung wirken kann.
+
+        Nur im Modus "Mindest-SoC des Speichers" und nur, wenn eine Entladeleistung für die
+        Fahrzeuge freigegeben ist. Die Prüfung der Freigabe entspricht der in
+        get_charging_power_left_diff(), wo die erlaubte Entladeleistung dem Überschuss
+        zugeschlagen wird.
+        """
+        if self.data.config.configured is False or self.data.get.fault_state != 0:
+            return False
+        config = data.data.general_data.data.chargemode_config.bat
+        if config.mode != BatConsiderationMode.MIN_SOC_BAT.value:
+            return False
+        # Aktive Steuerung nicht konfiguriert oder
+        # Aktive Steuerung + Preisgrenze aktiv + Grenze nicht unterschritten
+        # -> dann wird die erlaubte Speicherentladeleistung addiert
+        power_discharge_allowed = (self.data.config.bat_control_activated is False or
+                                   (self.data.config.power_limit_condition ==
+                                    BatPowerLimitCondition.PRICE_LIMIT.value and
+                                    self.data.set.power_limit is None))
+        return config.power_discharge_active and power_discharge_allowed
+
+    def is_buffering(self) -> bool:
+        """ gibt zurück, ob der Speicher die Überschuss-Ladung gerade puffert.
+
+        Wahr auf dem absteigenden Ast der Hysterese: der Maximal-SoC wurde erreicht
+        (hysteresis_discharge), der Mindest-SoC noch nicht wieder unterschritten. Genau in diesem
+        Zustand gibt get_charging_power_left_diff() die erlaubte Entladeleistung als Überschuss
+        frei, damit der Speicher eine laufende Ladung über Wolken hinweg stützt.
+
+        hysteresis_discharge wird nur im Mindest-SoC-Modus gepflegt und ist in den anderen Modi ein
+        Altwert, deshalb die Modus-Prüfung in _buffer_configured().
+
+        Return
+        ------
+        bool: Der Speicher stützt gerade die Ladung.
+        """
+        try:
+            return (self._buffer_configured() and
+                    self.data.set.hysteresis_discharge and
+                    self.data.set.power_limit is None)
+        except Exception:
+            log.exception("Fehler im Bat-Modul")
+            return False
+
+    def is_buffer_depleted(self) -> bool:
+        """ gibt zurück, ob der Puffer aufgebraucht ist und der Speicher Vorrang hat.
+
+        Unterhalb des Mindest-SoC gibt get_charging_power_left_diff() keine Entladeleistung mehr
+        frei, setzt hysteresis_discharge zurück und regulate_up, damit der Speicher sich wieder
+        aufladen kann ("Speicher-Vorrang bis zum Min-Soc"). Eine laufende Fahrzeug-Ladung
+        konkurriert ab hier direkt mit dem Speicher.
+
+        Return
+        ------
+        bool: Der Puffer ist leer, der Speicher lädt sich wieder auf.
+        """
+        try:
+            config = data.data.general_data.data.chargemode_config.bat
+            return self._buffer_configured() and self.data.get.soc < config.min_soc
+        except Exception:
+            log.exception("Fehler im Bat-Modul")
+            return False
+
     def power_for_bat_charging(self):
         """ gibt die Leistung zurück, die zum Laden verwendet werden kann.
 

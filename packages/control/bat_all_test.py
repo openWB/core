@@ -524,3 +524,77 @@ def test_time_charging_min_bat_soc_allowed_pricing(ep_configured: bool,
 
     # evaluation
     assert result == expected_result
+
+
+@pytest.mark.parametrize(
+    "configured, fault_state, mode, hysteresis_discharge, power_discharge_active, power_limit, expected_result",
+    [
+        pytest.param(True, 0, BatConsiderationMode.MIN_SOC_BAT.value, True, True, None, True,
+                     id="Mindest-SoC-Modus, Hysterese aktiv, Entladeleistung freigegeben -> puffert"),
+        pytest.param(True, 0, BatConsiderationMode.MIN_SOC_BAT.value, False, True, None, False,
+                     id="Hysterese nicht aktiv -> puffert nicht"),
+        pytest.param(True, 0, BatConsiderationMode.MIN_SOC_BAT.value, True, False, None, False,
+                     id="keine Entladeleistung freigegeben -> puffert nicht"),
+        pytest.param(True, 0, BatConsiderationMode.MIN_SOC_BAT.value, True, True, 2000, False,
+                     id="Speicher wird mit vorgegebener Leistung entladen -> puffert nicht"),
+        pytest.param(True, 0, BatConsiderationMode.BAT_MODE.value, True, True, None, False,
+                     id="Speicher-Modus, hysteresis_discharge ist dort ein Altwert -> puffert nicht"),
+        pytest.param(True, 0, BatConsiderationMode.EV_MODE.value, True, True, None, False,
+                     id="EV-Modus, hysteresis_discharge ist dort ein Altwert -> puffert nicht"),
+        pytest.param(True, 2, BatConsiderationMode.MIN_SOC_BAT.value, True, True, None, False,
+                     id="Fehlerfall, Speicher nicht in der Regelung -> puffert nicht"),
+        pytest.param(False, 0, BatConsiderationMode.MIN_SOC_BAT.value, True, True, None, False,
+                     id="kein Speicher konfiguriert -> puffert nicht"),
+    ])
+def test_is_buffering(configured: bool,
+                      fault_state: int,
+                      mode: str,
+                      hysteresis_discharge: bool,
+                      power_discharge_active: bool,
+                      power_limit: Optional[float],
+                      expected_result: bool):
+    # setup
+    b = BatAll()
+    b.data.config.configured = configured
+    b.data.config.bat_control_activated = False
+    b.data.get.fault_state = fault_state
+    b.data.set.hysteresis_discharge = hysteresis_discharge
+    b.data.set.power_limit = power_limit
+    data.data.general_data.data.chargemode_config.bat.mode = mode
+    data.data.general_data.data.chargemode_config.bat.power_discharge_active = power_discharge_active
+
+    # execution
+    result = b.is_buffering()
+
+    # evaluation
+    assert result == expected_result
+
+
+@pytest.mark.parametrize(
+    "mode, soc, power_discharge_active, expected_result",
+    [
+        pytest.param(BatConsiderationMode.MIN_SOC_BAT.value, 19, True, True,
+                     id="unter Mindest-SoC, Speicher hat Vorrang -> Puffer leer"),
+        pytest.param(BatConsiderationMode.MIN_SOC_BAT.value, 20, True, False,
+                     id="Mindest-SoC erreicht -> Puffer nicht leer"),
+        pytest.param(BatConsiderationMode.MIN_SOC_BAT.value, 19, False, False,
+                     id="keine Entladeleistung freigegeben, es gibt keinen Puffer"),
+        pytest.param(BatConsiderationMode.BAT_MODE.value, 19, True, False,
+                     id="Speicher-Modus, es gibt keinen Puffer"),
+    ])
+def test_is_buffer_depleted(mode: str, soc: int, power_discharge_active: bool, expected_result: bool):
+    # setup
+    b = BatAll()
+    b.data.config.configured = True
+    b.data.config.bat_control_activated = False
+    b.data.get.fault_state = 0
+    b.data.get.soc = soc
+    data.data.general_data.data.chargemode_config.bat.mode = mode
+    data.data.general_data.data.chargemode_config.bat.min_soc = 20
+    data.data.general_data.data.chargemode_config.bat.power_discharge_active = power_discharge_active
+
+    # execution
+    result = b.is_buffer_depleted()
+
+    # evaluation
+    assert result == expected_result

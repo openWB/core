@@ -583,6 +583,26 @@ class Counter:
                   f'freigegebener Überschuss {self.data.set.released_surplus}W')
         return switch_off_power, threshold
 
+    BAT_BUFFERING = "Die Ladung wird gehalten, da der Speicher sie puffert."
+
+    def _bat_buffer_holds_charge(self, load: Load) -> bool:
+        """ prüft, ob der Speicher diese Ladung gegen die Abschaltschwelle stützt.
+
+        Die freigegebene Entladeleistung wird als Überschuss angeboten, damit eine laufende Ladung
+        weiterläuft. Bei mehrphasigen LP mit automatischer Umschaltung verhindert das bereits die
+        Rückschaltung auf eine Phase; bei ein- und festphasigen LP gibt es keine Umschaltung, die
+        greifen könnte, und die Ladung liefe ohne dieses Veto in die Abschaltverzögerung.
+
+        Nur für Ladepunkte mit tatsächlich fließender Ladung: der Puffer soll eine laufende Ladung
+        halten, aber keine neue starten. Verbraucher sind nicht gemeint, für sie gilt weiterhin die
+        Verbraucher-Abschaltschwelle.
+        """
+        if isinstance(load, Chargepoint) is False:
+            return False
+        if bool(load.data.set.current_prev or load.data.get.charge_state) is False:
+            return False
+        return data.data.bat_all_data.is_buffering()
+
     def switch_off_check_threshold(self, load: Load) -> bool:
         """ prüft, ob die Abschaltschwelle erreicht wurde und startet die Abschaltverzögerung.
         Ist die Abschaltverzögerung bereits aktiv, wird geprüft, ob die Abschaltschwelle wieder
@@ -600,6 +620,7 @@ class Counter:
         timestamp_switch_on_off = control_parameter.timestamp_switch_on_off
 
         power_in_use, threshold = self.calc_switch_off(load)
+        bat_buffering = self._bat_buffer_holds_charge(load)
         if control_parameter.state == ChargepointState.SWITCH_OFF_DELAY:
             # Wenn automatische Phasenumschaltung aktiv, die Umschaltung abwarten, bevor die Abschaltschwelle
             # greift.
@@ -610,10 +631,10 @@ class Counter:
                          "Diese wird abgewartet, bevor die Abschaltverzögerung gestartet wird.")
             # Wurde die Abschaltschwelle erreicht?
             # Eigene Leistung aus der freigegebenen Leistung herausrechnen.
-            if power_in_use + load.data.set.required_power < threshold:
+            if bat_buffering or power_in_use + load.data.set.required_power < threshold:
                 timestamp_switch_on_off = None
                 self.data.set.released_surplus -= load.data.set.required_power
-                msg = texts.exceeded
+                msg = self.BAT_BUFFERING if bat_buffering else texts.exceeded
                 control_parameter.state = ChargepointState.CHARGING_ALLOWED
         else:
             # Wurde die Abschaltschwelle ggf. durch die Verzögerung anderer LP erreicht?
@@ -627,7 +648,9 @@ class Counter:
                                      self.data.set.reserved_surplus == 0))
             if (switch_off_condition and (isinstance(load, Consumer) or
                                           get_medium_charging_current(load.data.get.currents) <= min_current)):
-                if load.is_charging_stop_allowed():
+                if bat_buffering:
+                    msg = self.BAT_BUFFERING
+                elif load.is_charging_stop_allowed():
                     # EV, die ohnehin nicht laden, wird direkt die Ladefreigabe entzogen.
                     # Würde man required_power vom released_evu_surplus subtrahieren, würden keine anderen EVs
                     # abgeschaltet werden und nach der Abschaltverzögerung des nicht ladenden EVs wäre die
