@@ -14,6 +14,8 @@ from control import data
 from helpermodules.measurement_logging.process_log import (
     FILE_ERRORS, CalculationType, _analyse_energy_source, _process_entries, get_totals)
 
+from helpermodules.measurement_logging.write_log import LogType, LegacySmartHomeLogData, create_entry
+
 # alte Daten: Startzeitpunkt der Ladung, Endzeitpunkt, Geladene Reichweite, Energie, Leistung, Ladedauer, LP-Nummer,
 # Lademodus, ID-Tag
 # json-Objekt: new_entry = {
@@ -328,7 +330,7 @@ def write_new_entry(new_entry):
 def calc_energy_costs(cp, create_log_entry: bool = False):
     try:
         if cp.data.set.log.imported_since_plugged != 0 and cp.data.set.log.imported_since_mode_switch != 0:
-            processed_entries, reference_entries = _get_reference_entries(cp)
+            processed_entries, reference_entries = _get_reference_entries(cp, create_log_entry)
             charged_energy_by_source = calculate_charged_energy_by_source(
                 cp, processed_entries, reference_entries, create_log_entry)
             _add_charged_energy_by_source(cp, charged_energy_by_source)
@@ -361,15 +363,17 @@ def calculate_charged_energy_by_source(cp, processed_entries, reference_entries,
                               reference_entries[0]["cp"][f"cp{cp.num}"]["imported"])
         elif reference == ReferenceTime.END:
             if sum(cp.data.set.log.charged_energy_by_source.values()) == 0:
+                # Kurze Ladung, für die noch kein 5min-Intervall vergangen ist
                 charged_energy = cp.data.set.log.imported_since_mode_switch
             else:
-                log.debug(f"cp.data.get.imported {cp.data.get.imported}")
-                charged_energy = cp.data.get.imported - \
-                    reference_entries[-1]["cp"][f"cp{cp.num}"]["imported"]
+                # Nur das noch nicht verbuchte Intervall
+                charged_energy = (reference_entries[-1]["cp"][f"cp{cp.num}"]["imported"] -
+                                  reference_entries[0]["cp"][f"cp{cp.num}"]["imported"])
         else:
             raise TypeError(f"Unbekannter Referenz-Zeitpunkt {reference}")
         log.debug(f'power source {relative_energy_source}')
         log.debug(f"charged_energy {charged_energy}")
+        # Wenn keine Energie geladen wurde, keine Anteile berechnen
         if charged_energy <= 0:
             # wenn nur entladen wurde, keine Anteile berechnen
             return {source: 0 for source in ENERGY_SOURCES}
@@ -402,14 +406,26 @@ def _get_reference_position(cp, create_log_entry: bool) -> ReferenceTime:
             return ReferenceTime.MIDDLE
 
 
-def _get_reference_entries(cp) -> Tuple[List[Dict], List]:
+def _get_reference_entries(cp, create_log_entry: bool = False) -> Tuple[List[Dict], List]:
     processed_entries = {}
     reference_entries = []
     try:
         log_data = get_todays_daily_log()
         names = log_data["names"]
         entries = log_data["entries"]
-        if len(entries) >= 2:
+        if create_log_entry:
+            # beim beenden einer Ladung den aktuellen Messwert benutzen
+            if entries:
+                previous_entry = entries[-1]
+            else:
+                # Bei Tageswechsel
+                date_day_before = (datetime.datetime.now() + datetime.timedelta(days=-1)).strftime("%Y%m%d")
+                entries_day_before = get_daily_log(date_day_before)["entries"]
+                previous_entry = entries_day_before[-1]
+
+            current_entry = create_entry(LogType.DAILY, LegacySmartHomeLogData(), previous_entry)
+            reference_entries = [previous_entry, current_entry]
+        elif len(entries) >= 2:
             reference_entries = [entries[-2], entries[-1]]
         else:
             date_day_before = (datetime.datetime.now() + datetime.timedelta(days=-1)).strftime("%Y%m%d")

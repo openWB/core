@@ -409,6 +409,18 @@ def analyse_percentage(entry) -> Tuple[Dict, str]:
     def format(value):
         return round(value, 4)
 
+    def get_valid_energy(section: str, value: str) -> Union[int, float]:
+        """Liefert den Energiewert ohne fehlerhafte Einzelmodule."""
+        modules = entry.get(section, {})
+        if (len(modules) <= 1 or
+                safe_get_nested(entry, section, "all", "fault_state") != 2):
+            return safe_get_nested(entry, section, "all", value)
+        return sum(
+            module_data.get(value, 0)
+            for module_name, module_data in modules.items()
+            if module_name != "all" and module_data.get("fault_state", 0) != 2
+        )
+
     def get_grid_counter(entry) -> Dict:
         # es gibt nur einen Zähler am EVU-Punkt
         for counter in entry["counter"].values():
@@ -419,27 +431,26 @@ def analyse_percentage(entry) -> Tuple[Dict, str]:
     try:
         message = ""
         grid_counter = get_grid_counter(entry)
-        # Wenn neben dem "all" Eintrag kein weiterer Eintrag existiert, dann gibt es keine Komponenten.
-        if ((safe_get_nested(entry, "bat", "all", "fault_state") == 2 and len(entry.get("bat", {})) > 1) or
-                (safe_get_nested(entry, "cp", "all", "fault_state") == 2 and len(entry.get("cp", {})) > 1) or
-                (safe_get_nested(entry, "pv", "all", "fault_state") == 2 and len(entry.get("pv", {})) > 1) or
-                grid_counter.get("fault_state", None) == 2):
-
+        # nur wenn der Grid-Zähler im Feherlzustand ist
+        # ins Fallback gehen
+        if (grid_counter.get("fault_state", None) == 2):
             entry["energy_source"] = {"grid": 1, "pv": 0, "bat": 0, "cp": 0}
-            if safe_get_nested(entry, "bat", "all", "fault_state") == 2 and len(entry.get("bat", {})) > 1:
-                message += EOOR_STATE_MSG.format("mind. einer der Speicher")
-            if safe_get_nested(entry, "cp", "all", "fault_state") == 2 and len(entry.get("cp", {})) > 1:
-                message += EOOR_STATE_MSG.format("mind. einer der Ladepunkte")
-            if safe_get_nested(entry, "pv", "all", "fault_state") == 2 and len(entry.get("pv", {})) > 1:
-                message += EOOR_STATE_MSG.format("mind. einer der Wechselrichter")
-            if grid_counter.get("fault_state", None) == 2:
-                message += EOOR_STATE_MSG.format("der Zähler für das Netz")
-
+            message += EOOR_STATE_MSG.format("der Zähler für das Netz")
         else:
-            bat_imported = safe_get_nested(entry, "bat", "all", "energy_imported")
-            bat_exported = safe_get_nested(entry, "bat", "all", "energy_exported")
-            cp_exported = safe_get_nested(entry, "cp", "all", "energy_exported")
-            pv_exported = safe_get_nested(entry, "pv", "all", "energy_exported")
+            if safe_get_nested(entry, "bat", "all", "fault_state") == 2 and len(entry.get("bat", {})) > 1:
+                message += f"Der Strom-Mix um {entry['date'] }wird trotz Fehlerzustand " \
+                           "mindestens eines Speichers aus den vorhandenen Messwerten berechnet. \n"
+            if safe_get_nested(entry, "cp", "all", "fault_state") == 2 and len(entry.get("cp", {})) > 1:
+                message += f"Der Strom-Mix um {entry['date'] }wird trotz Fehlerzustand " \
+                           "mindestens eines Ladepunkts aus den vorhandenen Messwerten berechnet. \n"
+            if safe_get_nested(entry, "pv", "all", "fault_state") == 2 and len(entry.get("pv", {})) > 1:
+                message += f"Der Strom-Mix um {entry['date'] }wird trotz Fehlerzustand " \
+                           "mindestens eines Wechselrichters aus den vorhandenen Messwerten berechnet. \n"
+
+            bat_imported = get_valid_energy("bat", "energy_imported")
+            bat_exported = get_valid_energy("bat", "energy_exported")
+            cp_exported = get_valid_energy("cp", "energy_exported")
+            pv_exported = get_valid_energy("pv", "energy_exported")
             grid_imported = grid_counter.get("energy_imported", 0)
             grid_exported = grid_counter.get("energy_exported", 0)
             consumption = grid_imported - grid_exported + pv_exported + bat_exported - bat_imported + cp_exported

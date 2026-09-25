@@ -55,6 +55,53 @@ def test_analyse_percentage(name: str,
     assert message == ""
 
 
+def test_analyse_percentage_ignores_faulty_modules():
+    entry = {
+        "timestamp": 1234567890,
+        "date": "00:31",
+        "bat": {
+            "all": {"energy_imported": 0, "energy_exported": 120, "fault_state": 2},
+            "bat1": {"energy_imported": 0, "energy_exported": 20, "fault_state": 0},
+            "bat2": {"energy_imported": 0, "energy_exported": 100, "fault_state": 2},
+        },
+        "cp": {
+            "all": {"energy_exported": 80, "fault_state": 2},
+            "cp1": {"energy_exported": 30, "fault_state": 0},
+            "cp2": {"energy_exported": 50, "fault_state": 2},
+        },
+        "pv": {
+            "all": {"energy_exported": 100, "fault_state": 2},
+            "pv1": {"energy_exported": 40, "fault_state": 0},
+            "pv2": {"energy_exported": 60, "fault_state": 2},
+        },
+        "counter": {
+            "counter0": {
+                "grid": True,
+                "energy_imported": 100,
+                "energy_exported": 0,
+                "fault_state": 0,
+            }
+        },
+    }
+
+    result, message = analyse_percentage(entry)
+
+    assert result["energy_source"] == {
+        "grid": 0.5263,
+        "pv": 0.2105,
+        "bat": 0.1053,
+        "cp": 0.1579,
+    }
+    assert message == (
+        "Der Strom-Mix um 00:31wird trotz Fehlerzustand mindestens eines Speichers aus den vorhandenen Messwerten "
+        "berechnet. \n"
+        "Der Strom-Mix um 00:31wird trotz Fehlerzustand mindestens eines Ladepunkts aus den vorhandenen Messwerten "
+        "berechnet. \n"
+        "Der Strom-Mix um 00:31wird trotz Fehlerzustand mindestens eines Wechselrichters aus den vorhandenen "
+        "Messwerten berechnet. \n"
+    )
+
+
 @pytest.mark.parametrize("test_case, entry_data, expected_energy_source, should_be_unchanged", [
     (
         "zero_consumption",

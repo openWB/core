@@ -92,6 +92,14 @@ def test_calc_charge_cost_reference_end(mock_data, monkeypatch):
     cp.data.get.imported = 4100
     cp.data.set.log.charged_energy_by_source = {'grid': 1243, 'pv': 386, 'bat': 671, 'cp': 0.0}
     daily_log = mock_daily_log(monkeypatch)
+    current_entry = json.loads(json.dumps(daily_log["entries"][-1]))
+    current_entry["bat"]["all"]["exported"] = 4000
+    current_entry["bat"]["bat2"]["exported"] = 4000
+    current_entry["counter"]["counter0"]["imported"] = 4500
+    current_entry["cp"]["cp4"]["imported"] = 4100
+    current_entry["pv"]["all"]["exported"] = 3000
+    current_entry["pv"]["pv1"]["exported"] = 3000
+    monkeypatch.setattr(chargelog, "create_entry", Mock(return_value=current_entry))
 
     with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
         calc_energy_costs(cp, True)
@@ -107,6 +115,14 @@ def test_calc_charge_cost_reference_end_unique_price(mock_data, monkeypatch):
     cp.data.get.imported = 4100
     cp.data.set.log.charged_energy_by_source = {'grid': 1243, 'pv': 386, 'bat': 671, 'cp': 0.0}
     daily_log = mock_daily_log(monkeypatch)
+    current_entry = json.loads(json.dumps(daily_log["entries"][-1]))
+    current_entry["bat"]["all"]["exported"] = 4000
+    current_entry["bat"]["bat2"]["exported"] = 4000
+    current_entry["counter"]["counter0"]["imported"] = 4500
+    current_entry["cp"]["cp4"]["imported"] = 4100
+    current_entry["pv"]["all"]["exported"] = 3000
+    current_entry["pv"]["pv1"]["exported"] = 3000
+    monkeypatch.setattr(chargelog, "create_entry", Mock(return_value=current_entry))
     data.data.general_data.data.prices = Prices(bat=0.0002, cp=0, grid=0.0002, pv=0.0002)
 
     with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
