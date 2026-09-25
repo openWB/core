@@ -24,8 +24,7 @@ class Gree(ConsumerSetup[GreeConfiguration]):
                  configuration: Optional[GreeConfiguration] = None,
                  # UNVERIFIZIERT: kein offizielles Gree-Protokoll veröffentlicht, community-seitig
                  # reverse-engineert (mehrere unabhängige Implementierungen stimmen überein).
-                 usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_ONOFF,
-                                                     ConsumerUsage.METER_ONLY),
+                 usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_ONOFF,),
                  **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
         ).type, configuration=configuration or GreeConfiguration(), usage=usage, **kwargs)

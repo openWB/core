@@ -24,8 +24,7 @@ class MitsubishiModbus(ConsumerSetup[MitsubishiModbusConfiguration]):
                  type: str = "mitsubishi_modbus",
                  id: int = 0,
                  configuration: Optional[MitsubishiModbusConfiguration] = None,
-                 usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_ONOFF,
-                                                     ConsumerUsage.METER_ONLY),
+                 usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_ONOFF,),
                  **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
         ).type, configuration=configuration or MitsubishiModbusConfiguration(), usage=usage, **kwargs)
