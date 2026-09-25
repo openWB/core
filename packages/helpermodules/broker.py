@@ -4,11 +4,17 @@ import logging
 import paho.mqtt.client as mqtt
 import threading
 import time
-from typing import Any, Callable, Dict, Tuple
+from typing import Any, Callable, Dict, List, Tuple
 
 from helpermodules.utils.topic_parser import decode_payload
 
 log = logging.getLogger(__name__)
+
+# Zeitfenster nach dem ersten Verbindungsversuch, in dem "noch nicht verbunden" nicht als Fehler
+# gilt: connect_async()/loop_start() verbinden im Hintergrund, is_connected() ist direkt danach
+# so gut wie immer noch False. Ohne Kulanzfrist würde der allererste publish() an einen neuen Host
+# nach jedem Neustart praktisch garantiert einen falschen Fehler auslösen.
+INITIAL_CONNECT_GRACE = 5.0
 
 
 def get_name_suffix() -> str:
@@ -68,7 +74,13 @@ class PersistentBrokerClient:
         self._lock = threading.Lock()
         self._subscribed_topics: set = set()
         self._received_topics: Dict[str, Any] = {}
-        self._message_event = threading.Event()
+        # eigenes Event je wartendem Aufrufer statt eines gemeinsamen: bei zwei Ladepunkten am selben
+        # Host (duo_num 0/1, gemeinsame Verbindung) laufen mehrere wait_for_fresh_data()-Aufrufe
+        # gleichzeitig auf demselben PersistentBrokerClient - ein gemeinsames Event hätte dazu geführt,
+        # dass ein Aufrufer das Event im eigenen clear() dem anderen wegnimmt (verpasster Wakeup).
+        self._waiters: List[threading.Event] = []
+        self._ever_connected = False
+        self._created_at = time.monotonic()
         self.client = mqtt.Client(f"openWB-persistent-{host}-{port}-{get_name_suffix()}")
         self.client.on_connect = self._on_connect
         self.client.on_message = self._on_message
@@ -80,6 +92,7 @@ class PersistentBrokerClient:
             log.exception(f"Fehler beim Verbindungsaufbau zu {host}:{port}")
 
     def _on_connect(self, client, userdata, flags, rc) -> None:
+        self._ever_connected = True
         with self._lock:
             topics = list(self._subscribed_topics)
         for topic in topics:
@@ -88,7 +101,9 @@ class PersistentBrokerClient:
     def _on_message(self, client, userdata, message) -> None:
         with self._lock:
             self._received_topics[message.topic] = decode_payload(message.payload)
-        self._message_event.set()
+            waiters = list(self._waiters)
+        for waiter in waiters:
+            waiter.set()
 
     def publish(self, topic: str, payload, qos: int = 0, retain: bool = True) -> None:
         # anders als paho publish.single() wirft Client.publish() bei fehlender Verbindung keine Exception,
@@ -96,6 +111,10 @@ class PersistentBrokerClient:
         # Aufrufer (insbesondere ErrorTimerContext/client_error_context) eine nicht erreichbare Gegenstelle
         # weiterhin wie bisher als Fehler erkennen und nach 60s die Sicherheitsabschaltung greifen kann.
         if not self.client.is_connected():
+            if not self._ever_connected and time.monotonic() - self._created_at < INITIAL_CONNECT_GRACE:
+                # Erstverbindung läuft im Hintergrund noch (siehe INITIAL_CONNECT_GRACE weiter oben) -
+                # das ist kein Fehlerfall, Nachricht wird verworfen, naechster Zyklus greift wieder.
+                return
             # errno.EHOSTUNREACH statt nur einer Nachricht, damit der bestehende OSError-Handler
             # (helpermodules/exceptions/os.py) die schon vorhandene, uebersetzte Meldung "Die Verbindung
             # zum Host ist fehlgeschlagen..." verwendet, statt auf "Unbekannter Fehler" zurueckzufallen -
@@ -117,19 +136,25 @@ class PersistentBrokerClient:
         gesamten aktuellen Stand aller je empfangenen Topics zurück (nicht nur die seit dem Aufruf neu
         eingetroffenen) - sonst ein leeres Dict, damit Aufrufer "keine aktuellen Daten diesen Zyklus"
         weiterhin wie bisher von "Daten vorhanden" unterscheiden können (z.B. für Fault-State-Meldungen)."""
-        self._message_event.clear()
-        deadline = time.monotonic() + max_wait
-        if not self._message_event.wait(timeout=max(0.0, deadline - time.monotonic())):
-            return {}
-        while True:
-            remaining = deadline - time.monotonic()
-            if remaining <= 0:
-                break
-            self._message_event.clear()
-            if not self._message_event.wait(timeout=min(settle, remaining)):
-                break
+        waiter = threading.Event()
         with self._lock:
-            return dict(self._received_topics)
+            self._waiters.append(waiter)
+        try:
+            deadline = time.monotonic() + max_wait
+            if not waiter.wait(timeout=max(0.0, deadline - time.monotonic())):
+                return {}
+            while True:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    break
+                waiter.clear()
+                if not waiter.wait(timeout=min(settle, remaining)):
+                    break
+            with self._lock:
+                return dict(self._received_topics)
+        finally:
+            with self._lock:
+                self._waiters.remove(waiter)
 
 
 _persistent_clients: Dict[Tuple[str, int], PersistentBrokerClient] = {}

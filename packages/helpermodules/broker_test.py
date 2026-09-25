@@ -1,5 +1,6 @@
 import errno
 import threading
+import time
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -19,9 +20,22 @@ def mock_mqtt_client():
 
 
 class TestPersistentBrokerClient:
-    def test_publish_raises_when_not_connected(self, mock_mqtt_client):
+    def test_publish_does_not_raise_during_initial_connect_grace_period(self, mock_mqtt_client):
+        """connect_async()/loop_start() verbinden im Hintergrund - direkt nach dem Konstruktor ist
+        is_connected() so gut wie immer noch False, ohne dass das ein echter Fehler waere (siehe
+        Review-Kommentar zu PR #3996: der allererste publish() an einen neuen Host loeste sonst nach
+        jedem Neustart praktisch garantiert einen falschen Fehler aus)."""
         mock_mqtt_client.is_connected.return_value = False
         client = PersistentBrokerClient("10.0.0.5", 1883)
+
+        client.publish("some/topic", "1")
+
+        mock_mqtt_client.publish.assert_not_called()
+
+    def test_publish_raises_once_initial_connect_grace_period_expires(self, mock_mqtt_client):
+        mock_mqtt_client.is_connected.return_value = False
+        client = PersistentBrokerClient("10.0.0.5", 1883)
+        client._created_at -= broker.INITIAL_CONNECT_GRACE + 1
 
         with pytest.raises(ConnectionError) as excinfo:
             client.publish("some/topic", "1")
@@ -33,6 +47,16 @@ class TestPersistentBrokerClient:
         assert excinfo.value.errno == errno.EHOSTUNREACH
         assert handle_os_error(excinfo.value) == (
             "Die Verbindung zum Host ist fehlgeschlagen. Überprüfe Adresse und Netzwerk.")
+
+    def test_publish_raises_immediately_once_connection_has_dropped(self, mock_mqtt_client):
+        """Eine Verbindung, die schon einmal stand und dann abbricht, ist ein echter Ausfall - dafuer
+        gibt es keine Kulanzfrist, das muss weiterhin sofort erkannt werden."""
+        client = PersistentBrokerClient("10.0.0.5", 1883)
+        client._on_connect(mock_mqtt_client, None, None, 0)
+        mock_mqtt_client.is_connected.return_value = False
+
+        with pytest.raises(ConnectionError):
+            client.publish("some/topic", "1")
 
     def test_publish_forwards_when_connected(self, mock_mqtt_client):
         client = PersistentBrokerClient("10.0.0.5", 1883)
@@ -105,6 +129,71 @@ class TestPersistentBrokerClient:
             "openWB/internal_chargepoint/0/get/power": 1500,
             "openWB/internal_chargepoint/0/get/currents": [1.0, 1.0, 1.0],
         }
+
+    def test_wait_for_fresh_data_registers_and_deregisters_its_own_waiter(self, mock_mqtt_client):
+        client = PersistentBrokerClient("10.0.0.5", 1883)
+
+        client.wait_for_fresh_data(max_wait=0.02, settle=0.01)
+
+        assert client._waiters == []
+
+    def test_on_message_notifies_all_concurrent_waiters(self, mock_mqtt_client):
+        """Bei zwei Ladepunkten an einem Secondary (duo_num 0/1, gemeinsame Verbindung) laufen
+        mehrere wait_for_fresh_data()-Aufrufe gleichzeitig auf demselben PersistentBrokerClient -
+        eine eingehende Nachricht muss alle wecken, nicht nur den zuerst registrierten."""
+        client = PersistentBrokerClient("10.0.0.5", 1883)
+        waiter_a = threading.Event()
+        waiter_b = threading.Event()
+        client._waiters.extend([waiter_a, waiter_b])
+
+        message = MagicMock()
+        message.topic = "some/topic"
+        message.payload = b"1"
+        client._on_message(mock_mqtt_client, None, message)
+
+        assert waiter_a.is_set()
+        assert waiter_b.is_set()
+
+    def test_wait_for_fresh_data_both_duo_waiters_receive_their_data(self, mock_mqtt_client):
+        """Reproduziert das im Review zu PR #3996 beschriebene Szenario: zwei Ladepunkte am selben
+        Secondary (duo_num 0/1) rufen wait_for_fresh_data() auf demselben PersistentBrokerClient
+        nahezu gleichzeitig auf. Mit einem einzigen gemeinsamen Event konnte ein Aufrufer per eigenem
+        clear() dem anderen den Wakeup wegnehmen (verpasste Daten trotz eingetroffener Nachricht) -
+        mit einem Event je Aufrufer kann das nicht mehr passieren."""
+        client = PersistentBrokerClient("10.0.0.5", 1883)
+        results = {}
+
+        def waiter(name):
+            results[name] = client.wait_for_fresh_data(max_wait=1, settle=0.05)
+
+        t1 = threading.Thread(target=waiter, args=("cp0",))
+        t2 = threading.Thread(target=waiter, args=("cp1",))
+        t1.start()
+        t2.start()
+
+        deadline = time.monotonic() + 1
+        while len(client._waiters) < 2 and time.monotonic() < deadline:
+            time.sleep(0.005)
+        assert len(client._waiters) == 2
+
+        for topic, payload in [
+            ("openWB/internal_chargepoint/0/get/power", b"1500"),
+            ("openWB/internal_chargepoint/1/get/power", b"2500"),
+        ]:
+            message = MagicMock()
+            message.topic = topic
+            message.payload = payload
+            client._on_message(mock_mqtt_client, None, message)
+
+        t1.join(timeout=2)
+        t2.join(timeout=2)
+
+        expected = {
+            "openWB/internal_chargepoint/0/get/power": 1500,
+            "openWB/internal_chargepoint/1/get/power": 2500,
+        }
+        assert results["cp0"] == expected
+        assert results["cp1"] == expected
 
 
 class TestGetPersistentBrokerClient:
