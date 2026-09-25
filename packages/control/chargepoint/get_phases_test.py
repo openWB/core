@@ -76,9 +76,10 @@ cases = [
     Params("auto phase before charge no hw switch 1", connected_phases=3, auto_phase_switch_hw=False,
            prevent_phase_switch=False, chargemode_phases=0, phases_in_use=1, imported_since_plugged=0,
            expected_phases=1, charge_state=False),
-    Params("auto phase use min phase at start", connected_phases=3, auto_phase_switch_hw=True,
+    Params("auto phase before charge start: keep current phase count, don't force 1 (PR #3899)",
+           connected_phases=3, auto_phase_switch_hw=True,
            prevent_phase_switch=False, chargemode_phases=0, phases_in_use=3, imported_since_plugged=0,
-           expected_phases=1, charge_state=False),
+           expected_phases=3, charge_state=False),
 ]
 
 

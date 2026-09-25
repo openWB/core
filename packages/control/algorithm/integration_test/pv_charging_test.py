@@ -125,7 +125,10 @@ def assert_counter_set(params: ParamsExpectedCounterSet):
 
 
 def test_start_pv_delay(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatch):
-    # alle 3 im PV-laden, keine Ladung -> bei zwei die Verzögerung starten, für den 3. reicht es nicht
+    # alle 3 im PV-laden, keine Ladung, Überschuss reicht für alle 3 -> Verzögerung startet für alle 3.
+    # Die Einschaltschwelle wird seit PR #3899 bewusst immer für eine Phase berechnet (nicht mehr für die
+    # zuvor unconditional auf 1 gesetzte, hier aber unveränderte control_parameter.phases=3), daher reicht
+    # derselbe Überschuss jetzt für alle 3 statt nur für 2 von 3.
     # setup
     data.data.counter_data["counter0"].data.set.raw_power_left = 32090
     data.data.counter_data["counter0"].data.set.raw_currents_left = [32, 30, 31]
@@ -140,7 +143,7 @@ def test_start_pv_delay(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatch)
         assert data.data.cp_data[f"cp{i}"].data.set.current == 0
     assert data.data.consumer_data["consumer7"].data.set.current == 0
     assert data.data.cp_data[
-        "cp3"].data.control_parameter.timestamp_switch_on_off is None
+        "cp3"].data.control_parameter.timestamp_switch_on_off == 1652683252.0
     assert data.data.cp_data[
         "cp4"].data.control_parameter.timestamp_switch_on_off == 1652683252.0
     assert data.data.cp_data[
@@ -149,7 +152,7 @@ def test_start_pv_delay(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatch)
         "consumer7"].data.control_parameter.timestamp_switch_on_off == 1652683252.0
     assert data.data.counter_data["counter0"].data.set.raw_power_left == 32090
     assert data.data.counter_data["counter0"].data.set.surplus_power_left == -690
-    assert data.data.counter_data["counter0"].data.set.reserved_surplus == 9115
+    assert data.data.counter_data["counter0"].data.set.reserved_surplus == 4615.0
 
 
 def test_pv_delay_expired(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatch):
@@ -182,6 +185,9 @@ def test_pv_delay_expired(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatc
     assert data.data.cp_data["cp3"].data.set.current == 10
     assert data.data.cp_data["cp4"].data.set.current == 0
     assert data.data.cp_data["cp5"].data.set.current == 0
+    # switch_on_timer_expired() setzt die Phasenzahl jetzt explizit (PR #3899, statt sich auf einen
+    # zuvor von außen gesetzten Wert zu verlassen) - bei ausreichend Überschuss direkt auf max_phases.
+    assert data.data.cp_data["cp3"].data.control_parameter.phases == 3
     assert data.data.cp_data[
         "cp3"].data.control_parameter.timestamp_switch_on_off is None
     assert data.data.cp_data[
@@ -190,7 +196,7 @@ def test_pv_delay_expired(all_cp_pv_charging_3p, all_cp_not_charging, monkeypatc
         "cp5"].data.control_parameter.timestamp_switch_on_off is None
     assert data.data.counter_data["counter0"].data.set.raw_power_left == 24185
     assert data.data.counter_data["counter0"].data.set.surplus_power_left == -690
-    assert data.data.counter_data["counter0"].data.set.reserved_surplus == 0
+    assert data.data.counter_data["counter0"].data.set.reserved_surplus == 6000.0
 
 
 cases_limit = [
