@@ -48,14 +48,14 @@ const CONNECTING_GRACE_PERIOD = 10000;
 const mqttStore = useMqttStore();
 
 const connected = computed(() => mqttStore.mqttClientConnected);
-const connectingDialogDelayPassed = ref(false);
-const connectingTimedOut = ref(false);
+const dialogDelayPassed = ref(false);
+const gracePeriodExpired = ref(false);
 
 const connectionState = computed(() => {
   if (connected.value) {
     return 'connected';
   }
-  return connectingTimedOut.value ? 'disconnected' : 'connecting';
+  return gracePeriodExpired.value ? 'disconnected' : 'connecting';
 });
 
 const stateDisplay = computed(() => {
@@ -85,37 +85,36 @@ const stateDisplay = computed(() => {
 });
 
 const showIcon = ref(false);
-const iconTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
-const connectingDialogTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
-const connectingTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
+const iconHideTimer = ref<ReturnType<typeof setTimeout> | null>(null);
+const dialogDelayTimer = ref<ReturnType<typeof setTimeout> | null>(null);
+const gracePeriodTimer = ref<ReturnType<typeof setTimeout> | null>(null);
 const showModal = computed(
   () =>
     connectionState.value === 'disconnected' ||
-    (connectionState.value === 'connecting' &&
-      connectingDialogDelayPassed.value),
+    (connectionState.value === 'connecting' && dialogDelayPassed.value),
 );
 
-const clearConnectingTimeouts = () => {
-  if (connectingDialogTimeout.value) {
-    clearTimeout(connectingDialogTimeout.value);
-    connectingDialogTimeout.value = null;
+const clearConnectingTimers = () => {
+  if (dialogDelayTimer.value) {
+    clearTimeout(dialogDelayTimer.value);
+    dialogDelayTimer.value = null;
   }
-  if (connectingTimeout.value) {
-    clearTimeout(connectingTimeout.value);
-    connectingTimeout.value = null;
+  if (gracePeriodTimer.value) {
+    clearTimeout(gracePeriodTimer.value);
+    gracePeriodTimer.value = null;
   }
 };
 
-const startConnectingTimeouts = () => {
-  clearConnectingTimeouts();
-  connectingDialogDelayPassed.value = false;
-  connectingTimedOut.value = false;
-  connectingDialogTimeout.value = setTimeout(() => {
-    connectingDialogDelayPassed.value = true;
+const startConnectingTimers = () => {
+  clearConnectingTimers();
+  dialogDelayPassed.value = false;
+  gracePeriodExpired.value = false;
+  dialogDelayTimer.value = setTimeout(() => {
+    dialogDelayPassed.value = true;
   }, CONNECTING_DIALOG_DELAY);
-  connectingTimeout.value = setTimeout(() => {
+  gracePeriodTimer.value = setTimeout(() => {
     console.warn('MQTT-Verbindung konnte nicht hergestellt werden!');
-    connectingTimedOut.value = true;
+    gracePeriodExpired.value = true;
   }, CONNECTING_GRACE_PERIOD);
 };
 
@@ -127,19 +126,19 @@ watch(
         console.warn('MQTT-Verbindung verloren!');
       }
       showIcon.value = true;
-      if (iconTimeout.value) {
-        clearTimeout(iconTimeout.value);
+      if (iconHideTimer.value) {
+        clearTimeout(iconHideTimer.value);
       }
-      startConnectingTimeouts();
+      startConnectingTimers();
     } else if (oldValue !== undefined) {
       console.info('MQTT-Verbindung wiederhergestellt!');
-      clearConnectingTimeouts();
-      connectingDialogDelayPassed.value = false;
-      connectingTimedOut.value = false;
-      if (iconTimeout.value) {
-        clearTimeout(iconTimeout.value);
+      clearConnectingTimers();
+      dialogDelayPassed.value = false;
+      gracePeriodExpired.value = false;
+      if (iconHideTimer.value) {
+        clearTimeout(iconHideTimer.value);
       }
-      iconTimeout.value = setTimeout(() => {
+      iconHideTimer.value = setTimeout(() => {
         showIcon.value = false;
       }, 5000);
     }
@@ -148,9 +147,9 @@ watch(
 );
 
 onBeforeUnmount(() => {
-  clearConnectingTimeouts();
-  if (iconTimeout.value) {
-    clearTimeout(iconTimeout.value);
+  clearConnectingTimers();
+  if (iconHideTimer.value) {
+    clearTimeout(iconHideTimer.value);
   }
 });
 </script>
