@@ -11,6 +11,55 @@ log = logging.getLogger(__name__)
 
 
 class HierarchyMixin:
+    def _is_entry_of_type(self: HierarchyProtocol, id_to_find: int, type_to_find: ComponentType) -> bool:
+        entry = self.get_entry_of_element(id_to_find)
+        return bool(entry) and entry.get("type") == type_to_find.value
+
+    def _get_parent_counter_id_of_consumer(self: HierarchyProtocol, consumer_id: int) -> Optional[int]:
+        parent = self.get_entry_of_parent(consumer_id)
+        if not parent or parent.get("type") != ComponentType.COUNTER.value:
+            return None
+        return parent["id"]
+
+    def _add_unlinked_counter_below_consumer_parent_if_needed(self: HierarchyProtocol,
+                                                               consumer_id: int,
+                                                               counter_id: int) -> bool:
+        if self._is_entry_of_type(counter_id, ComponentType.COUNTER):
+            return False
+        parent_counter_id = self._get_parent_counter_id_of_consumer(consumer_id)
+        if parent_counter_id is None:
+            return False
+        self.hierarchy_add_item_below(counter_id, ComponentType.COUNTER, parent_counter_id)
+        return True
+
+    def _remove_linked_counter_from_hierarchy_if_present(self: HierarchyProtocol, counter_id: int) -> bool:
+        counter_entry = self.get_entry_of_element(counter_id)
+        if not counter_entry or counter_entry.get("type") != ComponentType.COUNTER.value:
+            return False
+        parent_counter_id = self.get_entry_of_parent(counter_id).get("id")
+        if parent_counter_id is None:
+            return False
+        self.hierarchy_remove_item(counter_id)
+        return True
+
+    def update_linked_counter_hierarchy(self: HierarchyProtocol,
+                                        consumer_id: int,
+                                        old_counter_id: Optional[int],
+                                        new_counter_id: Optional[int]) -> bool:
+        hierarchy_changed = False
+
+        if not self._is_entry_of_type(consumer_id, ComponentType.CONSUMER):
+            return False
+
+        if new_counter_id is not None:
+            hierarchy_changed = self._remove_linked_counter_from_hierarchy_if_present(new_counter_id)
+
+        if old_counter_id is not None and old_counter_id != new_counter_id:
+            if self._add_unlinked_counter_below_consumer_parent_if_needed(consumer_id, old_counter_id):
+                hierarchy_changed = True
+
+        return hierarchy_changed
+
     def get_all_elements_without_children(self: HierarchyProtocol, id: int) -> List[Dict]:
         self.childless = []
         self._get_all_elements_without_children_recursive(self.get_entry_of_element(id))
