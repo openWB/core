@@ -2,9 +2,11 @@
 """ Modul zum Auslesen von SonnenBatterie Speichern.
 """
 import logging
+from typing import Iterable, Union
 
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, IndependentComponentUpdater
+from modules.common.component_context import SingleComponentUpdateContext
+from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
 from modules.devices.sonnen.sonnenbatterie.bat import SonnenbatterieBat
 from modules.devices.sonnen.sonnenbatterie.config import (SonnenBatterie, SonnenbatterieBatSetup,
                                                           SonnenbatterieCounterSetup,
@@ -48,6 +50,16 @@ def create_device(device_config: SonnenBatterie):
                                       device_variant=device_config.configuration.variant,
                                       device_api_v2_token=device_config.configuration.api_v2_token)
 
+    def update_components(
+        components: Iterable[
+            Union[SonnenbatterieBat, SonnenbatterieCounter, SonnenbatterieConsumptionCounter,
+                  SonnenbatterieInverter]]
+    ):
+        # Fehler pro Komponente isoliert, statt bei einem Fehler alle als defekt zu markieren.
+        for component in components:
+            with SingleComponentUpdateContext(component.fault_state):
+                component.update()
+
     return ConfigurableDevice(
         device_config=device_config,
         component_factory=ComponentFactoryByType(
@@ -56,7 +68,7 @@ def create_device(device_config: SonnenBatterie):
             counter_consumption=create_consumption_counter_component,
             inverter=create_inverter_component,
         ),
-        component_updater=IndependentComponentUpdater(lambda component: component.update())
+        component_updater=MultiComponentUpdater(update_components)
     )
 
 

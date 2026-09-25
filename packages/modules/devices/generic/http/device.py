@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 import logging
+from typing import Iterable, Union
 
 from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, IndependentComponentUpdater
+from modules.common.component_context import SingleComponentUpdateContext
+from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
 from modules.devices.generic.http.bat import HttpBat
 from modules.devices.generic.http.config import (HTTP, HttpBatSetup, HttpCounterSetup,
                                                  HttpInverterSetup)
@@ -35,6 +37,12 @@ def create_device(device_config: HTTP):
         nonlocal session
         session = req.get_http_session()
 
+    def update_components(components: Iterable[Union[HttpBat, HttpCounter, HttpInverter]]):
+        # Fehler pro Komponente isoliert, statt bei einem Fehler alle als defekt zu markieren.
+        for component in components:
+            with SingleComponentUpdateContext(component.fault_state):
+                component.update(session)
+
     return ConfigurableDevice(
         device_config=device_config,
         initializer=initializer,
@@ -43,7 +51,7 @@ def create_device(device_config: HTTP):
             counter=create_counter_component,
             inverter=create_inverter_component,
         ),
-        component_updater=IndependentComponentUpdater(lambda component: component.update(session))
+        component_updater=MultiComponentUpdater(update_components)
     )
 
 
