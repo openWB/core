@@ -5,6 +5,8 @@ import pytest
 
 from control import data
 from control.chargelog import chargelog
+from control.chargemode import Chargemode
+from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state import ChargepointState
 from control.chargepoint.chargepoint_template import CpTemplate
@@ -61,6 +63,33 @@ def test_check_min_max_current(required_current, phases, expected_required_curre
     monkeypatch.setattr(Ev, "check_min_max_current", mock_ev_check_min_max_current)
     # evaluation
     ret = cp.check_min_max_current(required_current, phases)
+
+    # assertion
+    assert ret == expected_required_current
+
+
+@pytest.mark.parametrize("required_current, max_discharge_power, dc_max_current, expected_required_current",
+                         [
+                             pytest.param(-50, -30000, 25, -25,
+                                          id="Entladung durch CP-Hardwaregrenze begrenzt"),
+                             pytest.param(-10, -30000, 25, -10,
+                                          id="Entladung innerhalb der CP-Hardwaregrenze"),
+                         ])
+def test_check_min_max_current_bidi_discharge_respects_cp_hardware_limit(
+        required_current, max_discharge_power, dc_max_current, expected_required_current):
+    """ Beim Entladen (BIDI_CHARGING, required_current < 0) muss die eigene Hardware-Stromgrenze des
+    Ladepunkts (dc_max_current) genauso durchgesetzt werden wie beim Laden - vor diesem Fix wurde
+    check_cp_max_current() im Entlade-Zweig gar nicht aufgerufen (siehe #3795). """
+    # setup
+    cp = Chargepoint(0, None)
+    cp.template = CpTemplate()
+    cp.template.data.charging_type = ChargingType.DC.value
+    cp.template.data.dc_max_current = dc_max_current
+    cp.data.control_parameter.submode = Chargemode.BIDI_CHARGING
+    cp.data.get.max_discharge_power = max_discharge_power
+
+    # evaluation
+    ret = cp.check_min_max_current(required_current, 1)
 
     # assertion
     assert ret == expected_required_current
