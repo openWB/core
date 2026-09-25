@@ -23,8 +23,7 @@ def create_consumer(config: Mtec):
         sim_counter = SimCounterConsumer(config.id, ComponentType.CONSUMER)
 
     def update() -> ConsumerState:
-        # Reg 707: elektrische Leistungsaufnahme [W]. UNVERIFIZIERT: keine offizielle
-        # Registerliste gefunden (im Gegensatz zu Reg 1000).
+        # Reg 707: elektrische Leistungsaufnahme [W]
         power = client.read_holding_registers(707, ModbusDataType.INT_16, unit=config.configuration.modbus_id)
         imported, exported = sim_counter.sim_count(power)
 
