@@ -22,8 +22,8 @@ class HierarchyMixin:
         return parent["id"]
 
     def _add_unlinked_counter_below_consumer_parent_if_needed(self: HierarchyProtocol,
-                                                               consumer_id: int,
-                                                               counter_id: int) -> bool:
+                                                              consumer_id: int,
+                                                              counter_id: int) -> bool:
         if self._is_entry_of_type(counter_id, ComponentType.COUNTER):
             return False
         parent_counter_id = self._get_parent_counter_id_of_consumer(consumer_id)
