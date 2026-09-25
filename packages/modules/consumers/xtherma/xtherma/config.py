@@ -25,6 +25,7 @@ class Xtherma(ConsumerSetup[XthermaConfiguration]):
                  id: int = 0,
                  configuration: Optional[XthermaConfiguration] = None,
                  usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_TUNABLE,
+                                                     ConsumerUsage.SUSPENDABLE_ONOFF,
                                                      ConsumerUsage.METER_ONLY),
                  **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(

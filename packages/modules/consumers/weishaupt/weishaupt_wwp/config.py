@@ -27,8 +27,7 @@ class Weishaupt(ConsumerSetup[WeishauptConfiguration]):
                  # kein SUSPENDABLE_ONOFF: die SG-Ready-Eingänge sind auf diesen Geräten laut
                  # Weishaupt-Datenpunktliste (Modbus TCP WWP) nur lesbar, die Leistungsvorgabe
                  # SollwertPV übersteuert SG-Ready ohnehin.
-                 usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_TUNABLE,
-                                                     ConsumerUsage.METER_ONLY),
+                 usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_TUNABLE,),
                  **kwargs) -> None:
         super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
         ).type, configuration=configuration or WeishauptConfiguration(), usage=usage, **kwargs)

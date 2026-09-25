@@ -18,6 +18,7 @@ def create_consumer(config: Xtherma):
     client: Optional[ModbusTcpClient_] = None
     sim_counter: Optional[SimCounterConsumer] = None
     last_write: Optional[float] = None
+    last_sgready_write: Optional[float] = None
 
     def initializer():
         nonlocal client, sim_counter
@@ -51,10 +52,29 @@ def create_consumer(config: Xtherma):
                 71, min(max(round(power_limit), 0), 100000), data_type=ModbusDataType.UINT_16, unit=unit)
             client.write_register(70, 1, data_type=ModbusDataType.UINT_16, unit=unit)
 
+    def switch_on() -> None:
+        # Reg 60: SG-Ready-Modus, darf laut Xtherma-Protokoll höchstens 1x/30min beschrieben
+        # werden. 1 = Normalbetrieb.
+        nonlocal last_sgready_write
+        if last_sgready_write is not None and timecheck.check_timestamp(last_sgready_write, 1800):
+            return
+        last_sgready_write = timecheck.create_timestamp()
+        client.write_register(60, 1, data_type=ModbusDataType.UINT_16, unit=config.configuration.modbus_id)
+
+    def switch_off() -> None:
+        # Reg 60: SG-Ready-Modus, 2 = Sperre.
+        nonlocal last_sgready_write
+        if last_sgready_write is not None and timecheck.check_timestamp(last_sgready_write, 1800):
+            return
+        last_sgready_write = timecheck.create_timestamp()
+        client.write_register(60, 2, data_type=ModbusDataType.UINT_16, unit=config.configuration.modbus_id)
+
     return ConfigurableConsumer(consumer_config=config,
                                 initializer=initializer,
                                 update=update,
-                                set_power_limit=set_power_limit)
+                                set_power_limit=set_power_limit,
+                                switch_on=switch_on,
+                                switch_off=switch_off)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=Xtherma)
