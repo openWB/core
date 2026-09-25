@@ -111,6 +111,30 @@ def test_set_current_left(loadmanagement_available: bool,
     assert counter.data.set.raw_currents_left == expected_raw_currents_left
 
 
+def test_set_current_left_nets_out_own_current_despite_noise_on_unused_phase(monkeypatch, data_):
+    """ Ein einphasig ladender Ladepunkt zeigt auf ungenutzten Phasen oft ein geringes negatives
+    Messrauschen (zB -0.05A). min(element_current) < 0 hat das faelschlich als Einspeisung eingeordnet,
+    wodurch der eigene Ladestrom nirgends von currents_raw abgezogen wurde - das Lastmanagement hielt
+    die eigene Ladung dann faelschlich fuer Fremdlast (siehe Matts Log in Discussion #3908)."""
+    # setup
+    get_loads_of_counter_mock = Mock(return_value=["cp4"])
+    monkeypatch.setattr(data.data.counter_all_data, "get_loads_of_counter", get_loads_of_counter_mock)
+    data.data.cp_data["cp4"].data.config.phase_1 = 1
+    data.data.cp_data["cp4"].data.get.currents = [20, 0.05, -0.05]
+    data.data.cp_data["cp4"].data.get.power = 4600
+    counter = Counter(0)
+    counter.data.config.max_currents = [35]*3
+    counter.data.config.max_total_power = 35*3*230
+    counter.data.config.max_power_errorcase = 7000
+    counter.data.get.currents = [10, -5, -3]
+
+    # execution
+    counter._set_current_left(True)
+
+    # evaluation
+    assert counter.data.set.raw_currents_left == [45, 40.05, 37.95]
+
+
 @dataclass
 class Params:
     name: str

@@ -210,7 +210,12 @@ class Counter:
                         load.data.get.currents)
                 except KeyError:
                     element_current = [get_medium_charging_current(load.data.get.currents)]*3
-                if min(element_current) < 0:
+                # Vorzeichen anhand der Gesamtleistung entscheiden, nicht anhand einzelner Phasenströme
+                # (min(element_current) < 0): bei ein-/zweiphasigem Laden zeigen ungenutzte Phasen oft ein
+                # geringes negatives Messrauschen (zB -0.05A), das sonst den ganzen Load faelschlich als
+                # Einspeisung einordnet - der eigene Ladestrom wird dann nirgends von currents_raw
+                # abgezogen und das Lastmanagement haelt die eigene Ladung faelschlich fuer Fremdlast.
+                if load.data.get.power < 0:
                     # nur Hausverbraucher ohne Einspeisung
                     currents_exported_raw = list(map(operator.sub, currents_exported_raw, element_current))
                 else:
