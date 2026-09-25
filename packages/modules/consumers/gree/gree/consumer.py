@@ -54,7 +54,7 @@ def create_consumer(config: Gree):
         mac = device_info["mac"]
 
         bind_pack = _encrypt(GENERIC_KEY, {"mac": mac, "t": "bind", "uid": 0})
-        bind_envelope = {"cid": mac, "i": 1, "t": "pack", "uid": 0, "pack": bind_pack}
+        bind_envelope = {"cid": "app", "tcid": mac, "i": 1, "t": "pack", "uid": 0, "pack": bind_pack}
         bind_resp = _request(ip_address, port, bind_envelope)
         bind_result = _decrypt(GENERIC_KEY, bind_resp["pack"])
         device_key = bind_result["key"].encode()
