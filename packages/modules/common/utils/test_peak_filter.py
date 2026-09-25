@@ -132,3 +132,20 @@ def test_check_total_energy_forward_jump_then_accept_second_high_and_wait_after_
     checked, previous = pf.check_total_energy(2010, previous, allowed_deviation, max_energy)
     assert checked == 2010
     assert previous == 2010
+
+    # Der niedrigere Folgewert wird einmal verworfen und als neue Vergleichsbasis gesetzt.
+    allowed_deviation = 10
+    max_energy = 3000
+
+    checked, previous = pf.check_total_energy(4000, 2900, allowed_deviation, max_energy)
+    assert checked is None
+    assert previous == 4000
+
+    checked, previous = pf.check_total_energy(2800, previous, allowed_deviation, max_energy)
+    assert checked is None
+    assert previous == 2800
+
+    # Danach wird ein plausibler Folgewert wieder zugelassen.
+    checked, previous = pf.check_total_energy(2805, previous, allowed_deviation, max_energy)
+    assert checked == 2805
+    assert previous == 2805

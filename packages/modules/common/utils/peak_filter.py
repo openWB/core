@@ -93,6 +93,14 @@ class PeakFilter:
                           f"Differenz zum vorherigen Wert: {total_energy - previous_total_energy}Wh. "
                           f"erlaubte Differenz: {round(allowed_deviation, 2)}Wh.")
             elif (total_energy - previous_total_energy) < 0:
+                if previous_total_energy > max_energy:
+                    log.debug("PeakFilter: Erholung nach unplausibel hohem Zählerwert erkannt. "
+                              f"Vorheriger Wert: {previous_total_energy / 1000}kWh über dem 50-Jahres-Limit "
+                              f"({max_energy / 1000}kWh). Aktueller Wert {total_energy / 1000}kWh wird "
+                              "verworfen und als neue Vergleichsbasis verwendet.")
+                    checked_energy = None
+                    prev_energy = total_energy
+                    return checked_energy, prev_energy
                 log.debug(f"PeakFilter: Unplausibler Rückwärtssprung: {total_energy / 1000}kWh. "
                           f"Vorherigen Wert: {previous_total_energy / 1000}kWh. "
                           "Höchststand beibehalten.")
