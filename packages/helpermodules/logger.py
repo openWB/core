@@ -229,6 +229,33 @@ def write_logs_to_file(logger_name: str = None) -> None:
                         f.write(logs)
 
 
+# The totals subprocess needs its own log file, including messages from process_log.
+# In the main process, process_log must keep propagating to main log.
+def setup_generate_totals_logging(include_process_log: bool = False) -> None:
+    generate_totals_log = logging.getLogger("generate_totals")
+    generate_totals_log.setLevel(logging.DEBUG)
+    generate_totals_log.propagate = False
+    RAMDISK_PATH.mkdir(parents=True, exist_ok=True)
+    handler = next(
+        (handler for handler in generate_totals_log.handlers
+         if isinstance(handler, RotatingFileHandler)
+         and handler.baseFilename == str(RAMDISK_PATH / 'generate_totals.log')),
+        None,
+    )
+    if handler is None:
+        handler = RotatingFileHandler(RAMDISK_PATH / 'generate_totals.log', maxBytes=5 * 1000000, backupCount=1)
+        handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
+        handler.addFilter(RedactingFilter())
+        generate_totals_log.addHandler(handler)
+
+    if include_process_log:
+        process_log = logging.getLogger("helpermodules.measurement_logging.process_log")
+        process_log.setLevel(logging.DEBUG)
+        process_log.propagate = False
+        if handler not in process_log.handlers:
+            process_log.addHandler(handler)
+
+
 def setup_logging() -> None:
     def mb_to_bytes(megabytes: int) -> int:
         return megabytes * 1000000
@@ -273,6 +300,9 @@ def setup_logging() -> None:
     mqtt_file_handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
     mqtt_file_handler.addFilter(RedactingFilter())
     mqtt_log.addHandler(mqtt_file_handler)
+
+    # Totals generation logger
+    setup_generate_totals_logging()
 
     # Steuve control command logger
     steuve_control_command_log = logging.getLogger("steuve_control_command")

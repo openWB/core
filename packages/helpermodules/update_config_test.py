@@ -400,3 +400,20 @@ def test_upgrade_datastore_149_removes_not_controlled_consumers(mock_pub: Mock):
     ]
     assert uc.all_received_topics["openWB/system/datastore_version"] == list(range(150))
     assert mock_pub.pub.call_count == 2
+
+
+@pytest.mark.parametrize("file_operation_version, finished, expected_calls", [
+    ([], False, 1),  # erster Start
+    ([0], True, 0),   # bereits fertig -> kein Neustart
+    ([0], False, 1),  # angefangen, aber nicht fertig -> Neustart
+])
+def test_file_operation_0_start_behavior(file_operation_version, finished, expected_calls):
+    update_config = UpdateConfig()
+    update_config.all_received_topics = {
+        "openWB/system/file_operation_version": file_operation_version,
+        "openWB/system/log_data_ready": finished
+    }
+
+    with patch.object(update_config, "upgrade_file_operation_0") as upgrade_mock:
+        update_config._UpdateConfig__solve_breaking_changes_filesystem()
+    assert upgrade_mock.call_count == expected_calls
