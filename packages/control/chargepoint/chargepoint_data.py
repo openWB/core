@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from threading import Event
 from typing import Dict, List, Optional, Protocol
 from control.chargemode import Chargemode
+from control.chargepoint.chargepoint_state import ChargepointState
 from control.chargepoint.chargepoint_template import CpTemplate
 
 from control.chargepoint.control_parameter import ControlParameter, control_parameter_factory
@@ -174,6 +175,11 @@ class Set:
     charging_ev_data: Ev = field(default_factory=ev_factory)
     ocpp_transaction_id: Optional[int] = field(default=None, metadata={"topic": "set/ocpp_transaction_id"})
     charge_state_prev: bool = field(default=False, metadata={"topic": "set/charge_state_prev"})
+    # control_parameter.state aus dem vorherigen Zyklus, um eine Control-Pilot-Unterbrechung beim
+    # Ladestart von einer, die direkt nach einer echten Phasenumschaltung erfolgt, zu unterscheiden
+    # (siehe initiate_control_pilot_interruption()).
+    state_prev: ChargepointState = field(default=ChargepointState.NO_CHARGING_ALLOWED,
+                                         metadata={"topic": "set/state_prev"})
 
 
 @dataclass
