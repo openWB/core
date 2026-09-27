@@ -168,5 +168,12 @@ def create_device(device_config: Tesla):
 
 
 device_descriptor = DeviceDescriptor(
-    configuration_factory=Tesla
+    configuration_factory=Tesla,
+    compatibility_device_note=(
+        "Tesla hat die lokale API mittels Firmwareupdate eingeschränkt.\n"
+        "Je nach Modell und Firmware-Version kann die Verwendung unserer "
+        "Zähler-Kits erforderlich sein, falls die direkte Anbindung nicht "
+        "funktioniert."
+    ),
+    special_icon="ℹ️",
 )
