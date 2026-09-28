@@ -1,6 +1,5 @@
 from typing import List, Optional
 from unittest.mock import Mock, patch, mock_open
-import datetime
 from control.chargemode import Chargemode
 from control.ev.charge_template import ChargeTemplate
 import dataclass_utils
