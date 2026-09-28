@@ -10,7 +10,7 @@ with ImportErrorContext():
     from dateutil.relativedelta import relativedelta
 
 from helpermodules.abstract_plans import (AutolockPlan, ScheduledChargingPlan, ScheduledPlanConsumer,
-                                          TimeChargingPlan, TimeChargingPlanConsumer)
+                                          TimeChargingPlan, TimeChargingPlanConsumer, TimepointPlan)
 
 log = logging.getLogger(__name__)
 
@@ -201,8 +201,8 @@ def _get_next_start_for_timeframe_plan(plan: T, now: datetime.datetime) -> Optio
     return None
 
 
-def check_end_time(plan: Union[ScheduledPlanConsumer, ScheduledChargingPlan, TimeChargingPlanConsumer],
-                   buffer: Optional[float]) -> float:
+def check_end_time(plan: Union[ScheduledPlanConsumer, ScheduledChargingPlan, TimeChargingPlanConsumer, TimepointPlan],
+                   buffer: float = 0) -> float:
     """ gibt die verbleibende Zeit in Sekunden zurück.
 
     Return

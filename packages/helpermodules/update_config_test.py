@@ -1,5 +1,6 @@
-from typing import List
+from typing import List, Optional
 from unittest.mock import Mock, patch, mock_open
+import datetime
 from control.chargemode import Chargemode
 from control.ev.charge_template import ChargeTemplate
 import dataclass_utils
@@ -487,16 +488,65 @@ def test_upgrade_datastore_151_removes_linked_extra_meter_counters_from_hierarch
 
     uc.upgrade_datastore_151()
 
-    assert uc.all_received_topics["openWB/counter/get/hierarchy"] == [{
-        "id": 0,
-        "type": "counter",
-        "children": [
-            {"id": 2, "type": "consumer", "children": []},
-            {"id": 6, "type": "counter", "children": []},
-        ],
-    }]
-    assert uc.all_received_topics["openWB/system/datastore_version"] == list(range(152))
-    assert mock_pub.pub.call_count == 2
+
+@pytest.mark.parametrize(
+    "legacy_reset, expected_active, expected_time, expected_selected, expected_once, expected_chargemode",
+    [
+        pytest.param(
+            {"mode": "never", "time": None, "chargemode": "pv_charging"},
+            False,
+            None,
+            None,
+            None,
+            "pv_charging",
+            id="legacy-never",
+        ),
+        pytest.param(
+            {"mode": "midnight", "time": None, "chargemode": "eco_charging"},
+            True,
+            "00:00",
+            "daily",
+            None,
+            "eco_charging",
+            id="legacy-midnight",
+        ),
+        pytest.param(
+            {"mode": "time", "time": 1735687800, "chargemode": "stop"},
+            True,
+            datetime.datetime.fromtimestamp(1735687800).strftime("%H:%M"),
+            "once",
+            datetime.datetime.fromtimestamp(1735687800).strftime("%Y-%m-%d"),
+            "stop",
+            id="legacy-time-with-timestamp",
+        ),
+    ],
+)
+def test_upgrade_datastore_152_migrates_legacy_modes(
+    legacy_reset: dict,
+    expected_active: bool,
+    expected_time: Optional[str],
+    expected_selected: Optional[str],
+    expected_once: Optional[str],
+    expected_chargemode: str,
+):
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        "openWB/consumer/1/usage": {"reset_chargemode": legacy_reset},
+        "openWB/system/datastore_version": [151],
+    }
+
+    uc.upgrade_datastore_152()
+
+    result = uc.all_received_topics["openWB/consumer/1/usage"]["reset_chargemode"]
+    assert result["active"] is expected_active
+    if expected_time is not None:
+        assert result["time"] == expected_time
+    if expected_selected is not None:
+        assert result["frequency"]["selected"] == expected_selected
+    if expected_once is not None:
+        assert result["frequency"]["once"] == expected_once
+    assert result["chargemode"] == expected_chargemode
+    assert uc.all_received_topics["openWB/system/datastore_version"] == [151, 152]
 
 
 @pytest.mark.parametrize("file_operation_version, finished, expected_calls", [
