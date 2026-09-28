@@ -1,4 +1,4 @@
-
+import asyncio
 import logging
 from helpermodules.utils.error_handling import ImportErrorContext
 with ImportErrorContext():
@@ -13,10 +13,12 @@ with ImportErrorContext():
         ConfigurationStatus,
         RemoteStartStopStatus,
         UnlockStatus,
+        ResetStatus,
+        ResetType
     )
     from ocpp.routing import on
 from typing import Optional
-from helpermodules.pub import Pub
+from helpermodules.pub import Pub, pub_single
 
 
 from control import data
@@ -28,13 +30,13 @@ log = logging.getLogger(__name__)
 
 class OcppChargePoint(cp):
 
-    def __init__(self, chargebox_id, ws):
+    def __init__(self, chargebox_id, ws, reset_callback=None):
         super().__init__(chargebox_id, ws)
         self.chargebox_id = chargebox_id
         self.ws = ws
-        self.openwb_cp = get_cp_from_chargebox_id(chargebox_id)
-        self.openwb_num = self.openwb_cp.num if self.openwb_cp is not None else None
-        self.transaction_id = None
+
+        self.reset_callback = reset_callback
+
         # Speichert den aktuellen Status des CPs
         self._last_update: dict[
             tuple[str, int],
@@ -59,9 +61,19 @@ class OcppChargePoint(cp):
             "MeterValueSampleInterval": datatypes.KeyValue(
                 key="MeterValueSampleInterval",
                 readonly=True,
-                value="34"
+                value="10"
             ),
         }
+
+    # Der openWB-Chargepoint kann beim Reconnect neu erzeugt werden.
+    @property
+    def openwb_cp(self):
+        return get_cp_from_chargebox_id(self.chargebox_id)
+
+    @property
+    def openwb_num(self):
+        openwb_cp = self.openwb_cp
+        return openwb_cp.num if openwb_cp is not None else None
 
     async def _start_transaction(self,
                                  connector_id: int,
@@ -156,10 +168,6 @@ class OcppChargePoint(cp):
                             meter_value: list) -> Optional[object]:
         print(f"METER_VALUES            CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
 
-        if self.transaction_id is None:
-            print(f"Can't send MeterValues because transaction_id is None")
-            return None
-
         request = call.MeterValues(
             connector_id=connector_id,
             transaction_id=transaction_id,
@@ -229,8 +237,10 @@ class OcppChargePoint(cp):
                 )
 
             if (availability_type == AvailabilityType.inoperative
-                    and self.transaction_id is not None):
+                    and self.openwb_cp.data.get.ocpp.transaction_id is not None):
                 self._pending_availability[connector_id] = availability_type
+                self.openwb_cp.data.get.ocpp.pending_availability = True
+                Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/pending_availability", True)
                 return call_result.ChangeAvailability(
                     status=AvailabilityStatus.scheduled
                 )
@@ -265,11 +275,18 @@ class OcppChargePoint(cp):
                   available)
 
     async def apply_pending_availability(self):
+        # Problem beim reconnect wird der ganze Chargepoint neu initialisiert,
+        # -> pending availabilities geht dadurch verloren...
+        if self.openwb_cp is not None and self.openwb_cp.data.get.ocpp.pending_availability and 0 not in self._pending_availability:
+            self._pending_availability[0] = AvailabilityType.inoperative
+
         for connector_id, availability_type in list(self._pending_availability.items()):
             await self._set_availability(connector_id, availability_type)
             print(
                 f"Applying pending availability for connector_id: {connector_id}, availability_type: {availability_type}")
             self._pending_availability.pop(connector_id, None)
+        self.openwb_cp.data.get.ocpp.pending_availability = False
+        Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/pending_availability", False)
 
     @on(Action.get_configuration)
     async def get_configuration(self, key=None, **kwargs):
@@ -417,8 +434,12 @@ class OcppChargePoint(cp):
             status=RemoteStartStopStatus.accepted
         )
 
+    """
     @on(Action.unlock_connector)
     async def unlock_connector(self, connector_id: int, **kwargs):
+        # Laut Doku nur dafür gedacht um den Stecker zu entriegeln, falls nötig
+        # beschreibt das manual_lock hier????
+        
         print(
             f"UNLOCK_CONNECTOR  CP_Nr: {self.openwb_num} "
             f"OCPP_Nr: {self.chargebox_id} "
@@ -433,6 +454,68 @@ class OcppChargePoint(cp):
 
         return call_result.UnlockConnector(
             status=UnlockStatus.not_supported
+        )
+    """
+
+    @on(Action.reset)
+    async def reset(self, type: ResetType, **kwargs):
+        print(
+            f"RESET  CP_Nr: {self.openwb_num} "
+            f"OCPP_Nr: {self.chargebox_id} "
+            f"\nType: {type} "
+            f"\nKwargs: {kwargs}"
+        )
+
+        if type == ResetType.soft:
+            # Soft reset: nur temporäre Zustände zurücksetzen
+            # -> beendet Transaktion und stellt Verbindung neu her
+            if self.reset_callback is None:
+                log.error(
+                    "Kein Reset-Callback für OCPP Chargebox %s registriert",
+                    self.chargebox_id,
+                )
+                return call_result.Reset(
+                    status=ResetStatus.rejected
+                )
+            loop = asyncio.get_running_loop()
+
+            loop.call_later(
+                0.5,
+                lambda: asyncio.create_task(
+                    self.reset_callback(
+                        self.chargebox_id,
+                        type,
+                    )
+                )
+            )
+
+            return call_result.Reset(
+                status=ResetStatus.accepted
+            )
+        elif type == ResetType.hard:
+            # komplett zurücksetzen / kompletter neustart?????
+            # würde über command gehen
+            if self.openwb_cp is None:
+                return call_result.Reset(status=ResetStatus.rejected)
+
+            pub_single(
+                "openWB/set/command/primary/todo",
+                {"command": "systemReboot", "data": {}},
+                hostname=self.openwb_cp.chargepoint_module.config.configuration.ip_address,
+            )
+
+            return call_result.Reset(status=ResetStatus.accepted)
+
+            # -> aus command.py Zeile 884
+            # def chargepointReboot(self, connection_id: str, payload: dict) -> None:
+            #    pub.pub_single("openWB/set/command/primary/todo",
+            #                   {"command": "systemReboot", "data": {}},
+            #                   hostname=SubData.cp_data[f'cp{payload["data"]["chargepoint"]}'
+            #                                            ].chargepoint.chargepoint_module.config.configuration.ip_address)
+            pass
+
+        return call_result.Reset(
+            status=ResetStatus.accepted
         )
 
 
