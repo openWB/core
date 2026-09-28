@@ -23,6 +23,7 @@ import {
 	processVehicleTemplateMessages,
 } from '@/components/chargePointList/processMessages'
 import { processSmarthomeMessages } from '@/components/smartHome/processMessages'
+import { processConsumerMessages } from '@/components/consumerList/processMessages'
 import {
 	addCounter,
 	counters,
@@ -43,6 +44,7 @@ const topicsToSubscribe = [
 	'openWB/optional/ep/#',
 	'openWB/system/#',
 	'openWB/LegacySmartHome/#',
+	'openWB/consumer/#',
 	'openWB/command/' + mqttClientId() + '/#',
 ]
 export function msgInit() {
@@ -94,6 +96,8 @@ function processMqttMessage(topic: string, payload: Buffer) {
 		processSystemMessages(topic, message)
 	} else if (topic.match(/^openwb\/LegacySmartHome\//i)) {
 		processSmarthomeMessages(topic, message)
+	} else if (topic.match(/^openwb\/consumer\//i)) {
+		processConsumerMessages(topic, message)
 	} else if (topic.match(/^openwb\/command\//i)) {
 		processCommandMessages(topic, message)
 	}

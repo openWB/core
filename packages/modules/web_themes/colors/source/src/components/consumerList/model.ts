@@ -6,18 +6,18 @@ import {
 	type EnergyData,
 	type PowerItem,
 } from '@/assets/js/types'
-export class ShDevice implements PowerItem {
-	id: string
-	name = 'Gerät'
-	type = PowerItemType.device
+import { shDevices } from '../smartHome/model'
+
+export class Consumer implements PowerItem {
+	id: number
+	name = 'Verbraucher'
+	icon = 'Verbraucher'
+	type = PowerItemType.consumer
 	power = 0
-	status = 'off'
 	runningTime = 0
-	configured = false
 	private _showInGraph = true
 	color = 'white'
-	canSwitch = false
-	countAsHouse = false
+	showInList = true
 	now: EnergyData = {
 		energy: 0,
 		energyPv: 0,
@@ -30,14 +30,10 @@ export class ShDevice implements PowerItem {
 		energyBat: 0,
 		pvPercentage: 0,
 	}
-	pvPercentage = 0
-	tempConfigured = 0
-	temp = [300.0, 300.0, 300.0]
-	on = false
-	isAutomatic = true
-	icon = ''
-	constructor(index: string) {
+
+	constructor(index: number, showInList = true) {
 		this.id = index
+		this.showInList = showInList
 	}
 	get showInGraph() {
 		return this._showInGraph
@@ -52,15 +48,15 @@ export class ShDevice implements PowerItem {
 	}
 }
 
-export const shDevices = reactive(new Map<string, ShDevice>())
+export const consumers = reactive(new Map<number, Consumer>())
 
-export function addShDevice(shIndex: string) {
-	if (!shDevices.has(shIndex)) {
-		shDevices.set(shIndex, new ShDevice(shIndex))
-		const dev = shDevices.get(shIndex)!
-		dev.color = 'var(--color-sh' + shDevices.size + ')'
-		dev.configured = true
+export function addConsumer(index: number, showInList = true) {
+	if (!consumers.has(index)) {
+		consumers.set(index, new Consumer(index, showInList))
+		const dev = consumers.get(index)!
+		dev.color = 'var(--color-consumer' + consumers.size + ')'
+		// console.log('Added consumer with index ' + index + ' and color ' + dev.color)
 	} else {
-		console.info('Duplicate sh device message: ' + shIndex)
+		console.warn('Consumer with index ' + index + ' already exists.')
 	}
 }
