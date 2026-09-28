@@ -1,16 +1,19 @@
 #!/bin/bash
+set -Ee -o pipefail
+
 OPENWBBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 OPENWBDIRNAME=${OPENWBBASEDIR##*/}
 OPENWBDIRNAME=${OPENWBDIRNAME:-/}
 TARBASEDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 BACKUPDIR="$OPENWBBASEDIR/data/backup"
 RAMDISKDIR="$OPENWBBASEDIR/ramdisk"
-TEMPDIR=$(mktemp -d --tmpdir openwb_backup_XXXXXX)
+TEMPDIR=""
 LOGDIR="$OPENWBBASEDIR/data/log"
 LOGFILE="$LOGDIR/backup.log"
 HOMEDIR="/home/openwb"
 KEYFILE="backup.key"
 VAR_LIB="/var/lib"
+BACKUPFILE=""
 
 # Mosquitto DB files to monitor
 DB_FILES=(
@@ -200,9 +203,11 @@ create_archive() {
 
 		# JSON-Dateien im clients-Ordner sammeln
 		json_files=()
+		find "$TARBASEDIR/$OPENWBDIRNAME/data/clients" -maxdepth 1 -type f -name '*.json' -print0 >"$TEMPDIR/client_json_files"
 		while IFS= read -r -d '' file; do
 			json_files+=("${file#$TARBASEDIR/}")
-		done < <(find "$TARBASEDIR/$OPENWBDIRNAME/data/clients" -maxdepth 1 -type f -name '*.json' -print0)
+		done <"$TEMPDIR/client_json_files"
+		rm "$TEMPDIR/client_json_files"
 
 		sudo tar --create \
 			--file="$BACKUPFILE" \
@@ -306,16 +311,29 @@ create_archive() {
 	fix_permissions
 }
 
+handle_error() {
+	local exit_status=$?
+	local failed_line=${BASH_LINENO[0]:-unknown}
+	trap - ERR
+	echo "ERROR: backup failed at line $failed_line (exit status $exit_status)"
+	if [[ -n "$TEMPDIR" && -d "$TEMPDIR" ]]; then
+		rm -rf -- "$TEMPDIR" || echo "ERROR: failed to remove temporary directory '$TEMPDIR'"
+	fi
+	if [[ -n "$BACKUPFILE" ]]; then
+		rm -f -- "$BACKUPFILE" "$BACKUPFILE$FILENAMESUFFIX" "$BACKUPFILE$FILENAMESUFFIX.gpg" ||
+			echo "ERROR: failed to remove incomplete backup files"
+	fi
+	exit "$exit_status"
+}
+
 {
+	trap handle_error ERR
+	TEMPDIR=$(mktemp -d --tmpdir openwb_backup_XXXXXX)
 	generate_filename
 	log_environment
 	remove_old_backups
-	if collect_git_info; then
-		echo "git information collected successfully"
-	else
-		echo "error: failed to collect git information"
-		exit 1
-	fi
+	collect_git_info
+	echo "git information collected successfully"
 	force_mosquitto_write
 	create_archive
 	echo "backup finished"
