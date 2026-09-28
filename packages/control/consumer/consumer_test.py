@@ -497,3 +497,69 @@ def test_scheduled_charging_calc_current_electricity_tariff(
 
     # evaluation
     assert ret == expected
+
+
+@pytest.mark.parametrize(
+    "is_active,current_mode,target_mode,check_end_time_result,expected_mode,expected_check_end_time_calls",
+    [
+        pytest.param(
+            False,
+            Chargemode.STOP,
+            Chargemode.PV_CHARGING,
+            0,
+            Chargemode.STOP,
+            0,
+            id="inactive-noop",
+        ),
+        pytest.param(
+            True,
+            Chargemode.STOP,
+            Chargemode.PV_CHARGING,
+            5,
+            Chargemode.STOP,
+            1,
+            id="active-not-due-noop",
+        ),
+        pytest.param(
+            True,
+            Chargemode.STOP,
+            Chargemode.PV_CHARGING,
+            0,
+            Chargemode.PV_CHARGING,
+            1,
+            id="active-due-switch",
+        ),
+        pytest.param(
+            True,
+            Chargemode.PV_CHARGING,
+            Chargemode.PV_CHARGING,
+            0,
+            Chargemode.PV_CHARGING,
+            1,
+            id="active-due-already-target",
+        ),
+    ],
+)
+def test_reset_chargemode_at_time(
+    consumer: Consumer,
+    monkeypatch: pytest.MonkeyPatch,
+    is_active: bool,
+    current_mode: Chargemode,
+    target_mode: Chargemode,
+    check_end_time_result: int,
+    expected_mode: Chargemode,
+    expected_check_end_time_calls: int,
+):
+    # setup
+    consumer.data.usage.chargemode = current_mode
+    consumer.data.usage.reset_chargemode.active = is_active
+    consumer.data.usage.reset_chargemode.chargemode = target_mode
+    check_end_time_mock = Mock(return_value=check_end_time_result)
+    monkeypatch.setattr(timecheck, "check_end_time", check_end_time_mock)
+
+    # execution
+    consumer.reset_chargemode_at_time()
+
+    # evaluation
+    assert consumer.data.usage.chargemode == expected_mode
+    assert check_end_time_mock.call_count == expected_check_end_time_calls

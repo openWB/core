@@ -5,7 +5,7 @@ from control.chargemode import Chargemode
 from control.chargepoint.control_parameter import ControlParameter, control_parameter_factory
 from control.consumer.usage import ConsumerUsage
 from dataclass_utils.factories import empty_list_factory, voltages_list_factory
-from helpermodules.abstract_plans import ScheduledPlanConsumer, TimeChargingPlanConsumer
+from helpermodules.abstract_plans import ScheduledPlanConsumer, TimeChargingPlanConsumer, TimepointPlan
 from helpermodules.constants import NO_ERROR
 from modules.common.consumer_setup import ConsumerSetup
 
@@ -33,16 +33,8 @@ class WaitForStartStates(Enum):
     START_SIGNAL_RECEIVED = "start_signal_received"
 
 
-class ResetModes(Enum):
-    NEVER = "never"
-    MIDNIGHT = "midnight"
-    TIME = "time"
-
-
 @dataclass
-class ResetChargemode:
-    mode: ResetModes = ResetModes.NEVER
-    time: Optional[int] = None
+class ResetChargemode(TimepointPlan):
     chargemode: Chargemode = Chargemode.INSTANT_CHARGING
 
 
