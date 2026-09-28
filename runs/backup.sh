@@ -204,7 +204,7 @@ create_archive() {
 			json_files+=("${file#$TARBASEDIR/}")
 		done < <(find "$TARBASEDIR/$OPENWBDIRNAME/data/clients" -maxdepth 1 -type f -name '*.json' -print0)
 
-		sudo tar --verbose --create \
+		sudo tar --create \
 			--file="$BACKUPFILE" \
 			--exclude=".gitignore" \
 			--directory="$TEMPDIR/" \
@@ -226,7 +226,7 @@ create_archive() {
 		
 		if [ -f "$VAR_LIB/mosquitto/dynamic-security.json" ]; then
 			echo "adding mosquitto/dynamic-security.json"
-			sudo tar --verbose --append \
+			sudo tar --append \
 				--file="$BACKUPFILE" \
 				--directory="$VAR_LIB/" \
 					"mosquitto/dynamic-security.json"
@@ -235,7 +235,7 @@ create_archive() {
 		fi
 		if [ -f "$HOMEDIR/.config/mosquitto_ctrl" ]; then
 			echo "adding mosquitto_ctrl file"
-			sudo tar --verbose --append \
+			sudo tar --append \
 				--file="$BACKUPFILE" \
 				--directory="$HOMEDIR/.config/" \
 					"mosquitto_ctrl"
@@ -246,25 +246,22 @@ create_archive() {
 
 	calculate_checksums() {
 		echo "calculating checksums"
-		IFS=$'\n'
-		mapfile -t file_list < <(tar -tf "$BACKUPFILE")
-		# process each file
-		for file in "${file_list[@]}"; do
-			# skip directories
-			if [[ $file =~ /$ ]]; then
-				echo "skipping directory $file"
-				continue
-			fi
-			# extract the file
-			tar -xf "$BACKUPFILE" -C "$TEMPDIR" "$file"
-			# calculate the checksum
-			sha256sum "$TEMPDIR/$file" | sed -n "s|$TEMPDIR/||p" >> "$TEMPDIR/SHA256SUM"
-			# remove the file
-			rm -f "$TEMPDIR/$file"
-		done
+		# Stream each regular file directly into sha256sum. This reads the archive
+		# once and avoids temporary copies of large log files.
+		# shellcheck disable=SC2016
+		if ! tar --extract \
+			--file="$BACKUPFILE" \
+			--to-command='if [ "$TAR_FILETYPE" = "f" ]; then
+				checksum=$(sha256sum) || exit 1
+				printf "%s  %s\n" "${checksum%% *}" "$TAR_FILENAME"
+			fi' \
+			>"$TEMPDIR/SHA256SUM"; then
+			echo "failed to calculate checksums"
+			return 1
+		fi
 
 		echo "adding checksum file to archive"
-		sudo tar --verbose --append \
+		sudo tar --append \
 			--file="$BACKUPFILE" \
 			--directory="$TEMPDIR/" \
 				"SHA256SUM"
@@ -279,7 +276,7 @@ create_archive() {
 			--directory="$LOGDIR/" \
 				"backup.log"
 		echo "zipping archive"
-		gzip --verbose --suffix "$FILENAMESUFFIX" "$BACKUPFILE"
+		gzip --suffix "$FILENAMESUFFIX" "$BACKUPFILE"
 	}
 
 	encrypt_backup() {
