@@ -3838,7 +3838,7 @@ export const useMqttStore = defineStore('mqtt', () => {
       consumerId: number,
     ): {
       sensorCount: number;
-      sensors: { index: number; value: number; textValue: string }[];
+      sensors: { index: number; textValue: string }[];
     } => {
       const temperatures = getValue.value(
         `openWB/consumer/${consumerId}/get/temperatures`,
@@ -3846,19 +3846,19 @@ export const useMqttStore = defineStore('mqtt', () => {
       if (!Array.isArray(temperatures)) {
         return { sensorCount: 0, sensors: [] };
       }
-      const sensors = temperatures
-        .map((value: unknown, index: number) => ({ index, value }))
-        .filter(
-          (sensor): sensor is { index: number; value: number } =>
-            typeof sensor.value === 'number',
-        )
-        .map((sensor) => ({
-          ...sensor,
-          textValue: `${sensor.value.toLocaleString(undefined, {
-            minimumFractionDigits: 1,
-            maximumFractionDigits: 1,
-          })} °C`,
-        }));
+      if (!temperatures.some((value: unknown) => typeof value === 'number')) {
+        return { sensorCount: 0, sensors: [] };
+      }
+      const sensors = temperatures.map((value: unknown, index: number) => ({
+        index,
+        textValue:
+          typeof value === 'number'
+            ? `${value.toLocaleString(undefined, {
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 1,
+              })} °C`
+            : '---',
+      }));
       return { sensorCount: temperatures.length, sensors };
     };
   });
