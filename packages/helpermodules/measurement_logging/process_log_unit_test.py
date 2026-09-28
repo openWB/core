@@ -93,11 +93,11 @@ def test_analyse_percentage_ignores_faulty_modules():
         "cp": 0.1579,
     }
     assert message == (
-        "Der Strom-Mix um 00:31wird trotz Fehlerzustand mindestens eines Speichers aus den vorhandenen Messwerten "
+        "Der Strom-Mix um 00:31 wird trotz Fehlerzustand mindestens eines Speichers aus den vorhandenen Messwerten "
         "berechnet. \n"
-        "Der Strom-Mix um 00:31wird trotz Fehlerzustand mindestens eines Ladepunkts aus den vorhandenen Messwerten "
+        "Der Strom-Mix um 00:31 wird trotz Fehlerzustand mindestens eines Ladepunkts aus den vorhandenen Messwerten "
         "berechnet. \n"
-        "Der Strom-Mix um 00:31wird trotz Fehlerzustand mindestens eines Wechselrichters aus den vorhandenen "
+        "Der Strom-Mix um 00:31 wird trotz Fehlerzustand mindestens eines Wechselrichters aus den vorhandenen "
         "Messwerten berechnet. \n"
     )
 

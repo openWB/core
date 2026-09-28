@@ -438,13 +438,13 @@ def analyse_percentage(entry) -> Tuple[Dict, str]:
             message += EOOR_STATE_MSG.format("der Zähler für das Netz")
         else:
             if safe_get_nested(entry, "bat", "all", "fault_state") == 2 and len(entry.get("bat", {})) > 1:
-                message += f"Der Strom-Mix um {entry['date'] }wird trotz Fehlerzustand " \
+                message += f"Der Strom-Mix um {entry['date'] } wird trotz Fehlerzustand " \
                            "mindestens eines Speichers aus den vorhandenen Messwerten berechnet. \n"
             if safe_get_nested(entry, "cp", "all", "fault_state") == 2 and len(entry.get("cp", {})) > 1:
-                message += f"Der Strom-Mix um {entry['date'] }wird trotz Fehlerzustand " \
+                message += f"Der Strom-Mix um {entry['date'] } wird trotz Fehlerzustand " \
                            "mindestens eines Ladepunkts aus den vorhandenen Messwerten berechnet. \n"
             if safe_get_nested(entry, "pv", "all", "fault_state") == 2 and len(entry.get("pv", {})) > 1:
-                message += f"Der Strom-Mix um {entry['date'] }wird trotz Fehlerzustand " \
+                message += f"Der Strom-Mix um {entry['date'] } wird trotz Fehlerzustand " \
                            "mindestens eines Wechselrichters aus den vorhandenen Messwerten berechnet. \n"
 
             bat_imported = get_valid_energy("bat", "energy_imported")

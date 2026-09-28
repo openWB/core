@@ -108,6 +108,77 @@ def test_calc_charge_cost_reference_end(mock_data, monkeypatch):
     assert round(cp.data.set.log.costs, 5) == 0.025
 
 
+def test_calc_charge_cost_short_charge_uses_current_entry(mock_data, monkeypatch):
+    cp = Chargepoint(4, None)
+
+    # Kurzer Ladevorgang: insgesamt nur 80 Wh geladen.
+    # Es wurde vorher noch kein Energieanteil verbucht.
+    cp.data.set.log.imported_since_plugged = 80
+    cp.data.set.log.imported_since_mode_switch = 80
+    cp.data.set.log.timestamp_mode_switch = 1652683260  # 8:41
+    cp.data.get.imported = 4080
+    cp.data.set.log.charged_energy_by_source = {
+        'bat': 0,
+        'cp': 0,
+        'grid': 0,
+        'pv': 0
+    }
+
+    daily_log = mock_daily_log(monkeypatch)
+
+    # Letzter gespeicherter Daily-Log ist 8:40:
+    #
+    # Grid imported = 2500 Wh
+    # PV exported   = 2500 Wh
+    # CP imported   = 4000 Wh
+    #
+    # Jetzt erzeugen wir den Live-Snapshot beim Ladeende um 8:42.
+    current_entry = json.loads(json.dumps(daily_log["entries"][-1]))
+
+    current_entry["date"] = "8:42"
+    current_entry["timestamp"] = 1652683320
+
+    # Zwischen 8:40 und 8:42:
+    #
+    # +20 Wh Netz
+    # +60 Wh PV
+    # =80 Wh Verbrauch/Ladung
+    #
+    # Erwarteter Strommix:
+    # Netz = 20 / 80 = 25 %
+    # PV   = 60 / 80 = 75 %
+
+    current_entry["counter"]["counter0"]["imported"] = 2520
+
+    current_entry["pv"]["all"]["exported"] = 2560
+    current_entry["pv"]["pv1"]["exported"] = 2560
+
+    current_entry["cp"]["all"]["imported"] = 4080
+    current_entry["cp"]["cp4"]["imported"] = 4080
+
+    # _get_reference_entries() soll diesen aktuellen Snapshot verwenden.
+    monkeypatch.setattr(
+        chargelog,
+        "create_entry",
+        Mock(return_value=current_entry)
+    )
+
+    calc_energy_costs(cp, True)
+
+    assert cp.data.set.log.charged_energy_by_source == pytest.approx({
+        'bat': 0,
+        'cp': 0,
+        'grid': 20,
+        'pv': 60
+    })
+
+    # Kosten:
+    # Netz: 20 Wh * 0.0003 €/Wh  = 0.006 €
+    # PV:   60 Wh * 0.00015 €/Wh = 0.009 €
+    # Gesamt                         0.015 €
+    assert cp.data.set.log.costs == pytest.approx(0.015)
+
+
 def test_calc_charge_cost_reference_end_unique_price(mock_data, monkeypatch):
     cp = Chargepoint(4, None)
     cp.data.set.log.imported_since_plugged = cp.data.set.log.imported_since_mode_switch = 3950
