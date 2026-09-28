@@ -35,6 +35,7 @@ class WaitForStartStates(Enum):
 
 @dataclass
 class ResetChargemode(TimepointPlan):
+    active: bool = False
     chargemode: Chargemode = Chargemode.INSTANT_CHARGING
 
 

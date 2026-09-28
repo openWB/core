@@ -500,7 +500,7 @@ def test_scheduled_charging_calc_current_electricity_tariff(
 
 
 @pytest.mark.parametrize(
-    "is_active,current_mode,target_mode,check_end_time_result,expected_mode,expected_check_end_time_calls",
+    "is_active,current_mode,target_mode,remaining_time,expected_mode,expected_check_end_time_calls",
     [
         pytest.param(
             False,
@@ -546,7 +546,7 @@ def test_reset_chargemode_at_time(
     is_active: bool,
     current_mode: Chargemode,
     target_mode: Chargemode,
-    check_end_time_result: int,
+    remaining_time: int,
     expected_mode: Chargemode,
     expected_check_end_time_calls: int,
 ):
@@ -554,8 +554,8 @@ def test_reset_chargemode_at_time(
     consumer.data.usage.chargemode = current_mode
     consumer.data.usage.reset_chargemode.active = is_active
     consumer.data.usage.reset_chargemode.chargemode = target_mode
-    check_end_time_mock = Mock(return_value=check_end_time_result)
-    monkeypatch.setattr(timecheck, "check_end_time", check_end_time_mock)
+    check_end_time_mock = Mock(return_value=remaining_time)
+    monkeypatch.setattr(timecheck, "check_end_time_current_occurrence", check_end_time_mock)
 
     # execution
     consumer.reset_chargemode_at_time()
@@ -563,3 +563,5 @@ def test_reset_chargemode_at_time(
     # evaluation
     assert consumer.data.usage.chargemode == expected_mode
     assert check_end_time_mock.call_count == expected_check_end_time_calls
+    if expected_check_end_time_calls:
+        check_end_time_mock.assert_called_once_with(consumer.data.usage.reset_chargemode)
