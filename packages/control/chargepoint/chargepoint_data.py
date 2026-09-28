@@ -76,14 +76,20 @@ class Ocpp:
     remote_stop: bool = False
     test_reconnect: bool = False
     # RFID/IdTag der laufenden OCPP-Transaction.
-    # Wichtig, wenn openWB während einer Transaction neu startet.
     transaction_id_tag: Optional[str] = None
 
-    # Start-/Stop-Events, die während einer Offline-Phase aufgetreten sind.
-    # Nach einem erfolgreichen Reconnect werden sie in chronologischer Reihenfolge
-    # erneut abgearbeitet.
+    # Stop-Events, die während einer Offline-Phase aufgetreten sind.
+    # Nach einem erfolgreichen Reconnect wird stop gesendet
     pending_transactions: list = field(default_factory=list,
                                        metadata={"topic": "get/ocpp/pending_transactions"})
+
+    # Bei True
+    # -> Availability wurde gescheduled
+    # -> nach stop muss availability auf False gesetzt werden
+    # Bei False
+    # -> wurde nichts gescheduled
+    # - mach dementsprechend auch nix
+    pending_availability: bool = False
 
 
 def empty_enery_source_dict_factory():

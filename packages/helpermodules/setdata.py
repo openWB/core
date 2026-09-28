@@ -591,6 +591,7 @@ class SetData:
         elif ("/get/charge_state" in msg.topic or
                 "/get/plug_state" in msg.topic or
                 "/get/ocpp/availability" in msg.topic or
+                "/get/ocpp/pending_availability" in msg.topic or
                 "/get/ocpp/remote_stop" in msg.topic or
                 "/get/ocpp/tag_accepted" in msg.topic or
                 "/get/ocpp/test_reconnect" in msg.topic or

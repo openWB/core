@@ -680,6 +680,9 @@ class UpdateConfig:
     default_topic = (
         # TEMP
         ("openWB/chargepoint/3/get/ocpp/availability", True),
+        ("openWB/chargepoint/4/get/ocpp/availability", True),
+        ("openWB/chargepoint/5/get/ocpp/availability", True),
+
         ("openWB/chargepoint/3/get/ocpp/tag_accepted", False),
         ("openWB/chargepoint/3/get/ocpp/transaction_id", None),
         ("openWB/chargepoint/3/get/ocpp/remote_stop", False),

@@ -175,7 +175,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
             print("#####################################")
             print("OCPP nicht verfügbar")
             print("#####################################")
-            message = "Keine Ladung, da OCPP nicht verfügbar ist."
+            message = "Keine Ladung, da OCPP den Ladepunkt auf INOPERATIV gesetzt hat."
             state = False
 
         elif self.data.get.ocpp.remote_stop:
@@ -821,7 +821,9 @@ class Chargepoint(ChargepointRfidMixin, Load):
                                                       int(self.data.get.imported))
 
             if chargebox_id:    # <- als ocpp Chargepoint konfiguriert
-                if (self.data.get.ocpp.connected  # <- mit OCPP-Server verbunden
+                if not self.data.get.plug_state:
+                    data.data.ocpp_client.clear_start_block(chargebox_id)
+                elif (self.data.get.ocpp.connected  # <- mit OCPP-Server verbunden
                         and self.data.get.plug_state and id_tag):
                     data.data.ocpp_client.request_start(
                         chargebox_id=chargebox_id,
@@ -962,6 +964,11 @@ class Chargepoint(ChargepointRfidMixin, Load):
     def get_ocpp_status(self):
         # Hier dann get_OCPP_Status
         #   -> mapped den "openWB-Status" auf nen OCPP_Status
+        if self.data.get.ocpp.availability is False:
+            return ChargePointStatus.unavailable
+
+        if self.data.get.ocpp.remote_stop:
+            return ChargePointStatus.finishing
 
         if self.data.get.fault_state:
             return ChargePointStatus.faulted
@@ -982,7 +989,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
 
     def ocpp_send_status_notification(self):
         # Hier dann die StatusNotification versenden
-        # im Ocpp wird sich der Client gemerkt und
+        # im Ocpp wird sich der Status gemerkt und
         # nur neu gesendet, wenn sich der Status geändert hat
         data.data.ocpp_client.status_notification(
             chargebox_id=self.data.config.ocpp_chargebox_id,
