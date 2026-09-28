@@ -466,3 +466,34 @@ def test_upgrade_datastore_150_migrates_fixed_hours_weekdays(mock_pub):
     assert "openWB/optional/ep/flexible_tariff/provider" in updated_topics
     assert "openWB/optional/ep/grid_fee/provider" in updated_topics
     assert "openWB/system/datastore_version" in updated_topics
+
+
+def test_upgrade_datastore_151_removes_linked_extra_meter_counters_from_hierarchy(mock_pub: Mock):
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        "openWB/consumer/2/extra_meter": 5,
+        "openWB/consumer/3/extra_meter": None,
+        "openWB/counter/get/hierarchy": [{
+            "id": 0,
+            "type": "counter",
+            "children": [
+                {"id": 2, "type": "consumer", "children": []},
+                {"id": 5, "type": "counter", "children": []},
+                {"id": 6, "type": "counter", "children": []},
+            ],
+        }],
+        "openWB/system/datastore_version": list(range(151)),
+    }
+
+    uc.upgrade_datastore_151()
+
+    assert uc.all_received_topics["openWB/counter/get/hierarchy"] == [{
+        "id": 0,
+        "type": "counter",
+        "children": [
+            {"id": 2, "type": "consumer", "children": []},
+            {"id": 6, "type": "counter", "children": []},
+        ],
+    }]
+    assert uc.all_received_topics["openWB/system/datastore_version"] == list(range(152))
+    assert mock_pub.pub.call_count == 2
