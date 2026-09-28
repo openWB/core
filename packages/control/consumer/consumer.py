@@ -472,8 +472,12 @@ class Consumer(Load):
         if self.data.usage.reset_chargemode.active is False:
             return
 
-        if ((data.data.general_data.data.control_interval * -1 < timecheck.check_end_time(
-            self.data.usage.reset_chargemode) <= 0) and
+        control_interval = data.data.general_data.data.control_interval
+        reset_window_start = -control_interval
+        remaining_time = timecheck.check_end_time_current_occurrence(self.data.usage.reset_chargemode)
+        is_within_reset_window = reset_window_start < remaining_time <= 0
+
+        if (is_within_reset_window and
                 self.data.usage.chargemode != self.data.usage.reset_chargemode.chargemode):
             log.info(f"Zurücksetzen des Lademodus auf {self.data.usage.reset_chargemode.chargemode} "
                      f"für Verbraucher {self.num} um definierte Zeit.")

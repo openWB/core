@@ -4078,12 +4078,14 @@ class UpdateConfig:
                 usage = decode_payload(payload)
                 reset_chargemode = usage["reset_chargemode"]
                 if reset_chargemode.get("mode") is not None:
+                    legacy_target_chargemode = reset_chargemode.get("chargemode", Chargemode.INSTANT_CHARGING)
                     # altes Schema
                     if reset_chargemode["mode"] == "never":
-                        reset_chargemode = ResetChargemode(active=False)
+                        reset_chargemode = ResetChargemode(active=False, chargemode=legacy_target_chargemode)
                     elif reset_chargemode["mode"] == "midnight":
                         reset_chargemode = ResetChargemode(active=True, time="00:00",
-                                                           frequency=FrequencyDate(selected="daily"))
+                                                           frequency=FrequencyDate(selected="daily"),
+                                                           chargemode=legacy_target_chargemode)
                     elif reset_chargemode["mode"] == "time":
                         timestamp = reset_chargemode["time"]
                         if timestamp is not None:
@@ -4093,7 +4095,8 @@ class UpdateConfig:
                             date = datetime.datetime.today().strftime("%Y-%m-%d")
                             time = "07:00"
                         reset_chargemode = ResetChargemode(
-                            active=True, time=time, frequency=FrequencyDate(selected="once", once=date))
+                            active=True, time=time, frequency=FrequencyDate(selected="once", once=date),
+                            chargemode=legacy_target_chargemode)
 
                     usage["reset_chargemode"] = reset_chargemode
                     return {topic: asdict(usage)}
