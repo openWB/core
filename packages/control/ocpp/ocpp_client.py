@@ -2,7 +2,7 @@ import logging
 import threading
 from helpermodules.utils.error_handling import ImportErrorContext
 with ImportErrorContext():
-    from ocpp.v16.enums import ChargePointStatus, RegistrationStatus
+    from ocpp.v16.enums import ChargePointStatus, RegistrationStatus, AvailabilityType, ResetType
     from ocpp.routing import on
 with ImportErrorContext():
     import websockets
@@ -125,6 +125,9 @@ class OcppClient:
 
         self._transactions: dict[str, OcppTransaction] = {}
 
+        # Nach einem Soft Reset erst nach dem Ausstecken wieder automatisch starten.
+        self._start_blocked = set()
+
         self._initialized = True
 
     def _run_loop(self):
@@ -175,7 +178,7 @@ class OcppClient:
 
             self._schedule_reconnect(chargebox_id)
 
-    async def _ensure_connected(self, chargebox_id: str):
+    async def _ensure_connected(self, chargebox_id: str, force: bool = False):
         openwb_cp = get_cp_from_chargebox_id(chargebox_id)
         if openwb_cp is None:
             log.warning(
@@ -195,7 +198,8 @@ class OcppClient:
             existing = self.connections.get(chargebox_id)
 
             if (
-                existing is not None
+                not force
+                and existing is not None
                 and existing.boot_accepted
                 and existing.start_task is not None
                 and not existing.start_task.done()
@@ -228,6 +232,7 @@ class OcppClient:
         cp = OcppChargePoint(
             chargebox_id,
             ws,
+            reset_callback=self._handle_reset,
         )
 
         # Bestehende Transaction übernehmen.
@@ -278,14 +283,19 @@ class OcppClient:
                     heartbeat_interval,
                 )
         """
-        # Den lokal gepflegten OCPP-Availability-Zustand mit openWB synchronisieren.
-        await cp._set_availability(1, cp.availability[1])
+        # OCPP-Availability-Zustand auf das setzen, was im Broker steht
+        # -> bei reconnect
+        await cp._set_availability(1, AvailabilityType.operative if cp.openwb_cp.data.get.ocpp.availability else AvailabilityType.inoperative)
 
         # Ausstehende Offline-Ereignisse vor Freigabe für neue Requests abarbeiten.
         await self._play_pending_transactions(
             chargebox_id,
             connection,
         )
+
+        # Die neue Connection besitzt keine alte Pending-Map.
+        # Persistierte ChangeAvailability deshalb nach dem Stop anwenden.
+        await cp.apply_pending_availability()
 
         _set_connected(cp, True)
 
@@ -558,11 +568,12 @@ class OcppClient:
                 if connection.closing:
                     break
 
-                transaction_id = connection.cp.transaction_id
+                transaction = self._transactions.get(chargebox_id)
 
                 # Ohne aktive Transaction keine Transaction-MeterValues.
-                if transaction_id is None:
+                if transaction is None:
                     continue
+                transaction_id = transaction.transaction_id
 
                 snapshot = self._meter_snapshots.get(
                     chargebox_id
@@ -700,6 +711,12 @@ class OcppClient:
             f"StartTransaction {chargebox_id}",
         )
 
+    def clear_start_block(self, chargebox_id: str) -> None:
+        self.loop.call_soon_threadsafe(
+            self._start_blocked.discard,
+            chargebox_id,
+        )
+
     async def _request_start(
         self,
         chargebox_id: str,
@@ -707,6 +724,9 @@ class OcppClient:
         id_tag: str,
         imported: int,
     ):
+        if chargebox_id in self._start_blocked:
+            return False
+
         transaction = self._get_transaction(chargebox_id)
 
         # Schon aktiv?
@@ -1013,6 +1033,127 @@ class OcppClient:
             request=stop_request,
         )
 
+    async def _handle_reset(
+        self,
+        chargebox_id: str,
+        reset_type: ResetType,
+    ):
+        if reset_type == ResetType.soft:
+            await self._soft_reset(chargebox_id)
+            return
+        else:
+            pass
+        return
+
+    async def _soft_reset(
+        self,
+        chargebox_id: str,
+    ):
+        self._start_blocked.add(chargebox_id)
+
+        log.info(
+            "Führe OCPP Soft Reset für %s aus",
+            chargebox_id,
+        )
+
+        transaction = self._get_transaction(chargebox_id)
+
+        openwb_cp = get_cp_from_chargebox_id(chargebox_id)
+
+        if openwb_cp is None:
+            log.warning(
+                "Soft Reset für %s abgebrochen: "
+                "openWB CP nicht gefunden",
+                chargebox_id,
+            )
+            return
+
+        meter_stop = openwb_cp.data.get.imported
+
+        if transaction.state not in (TransactionState.IDLE,
+                                     TransactionState.REJECTED
+                                     ):
+            await self._request_stop(
+                chargebox_id=chargebox_id,
+                imported=meter_stop,
+                id_tag=transaction.id_tag or "",
+                reason="SoftReset",
+            )
+            # Bei Auth/starting wird stop nur vorgemerkt
+            # Warten, bis Stop/Start-Flow fertig ist
+
+            for _ in range(100):
+                if transaction.state not in (TransactionState.AUTHORIZING,
+                                             TransactionState.STARTING, TransactionState.STOPPING):
+                    break
+                await asyncio.sleep(0.1)
+
+        # Wenn openWB die Verbindung inzwischen explizit nicht mehr will,
+        # dürfen wir sie durch den Reset nicht wieder hochziehen.
+        if chargebox_id not in self._wanted_connections:
+            log.info(
+                "Soft Reset für %s abgebrochen: "
+                "Verbindung wird nicht mehr benötigt",
+                chargebox_id,
+            )
+            return
+
+        if (
+            transaction.transaction_id is not None
+            or transaction.state not in (
+                TransactionState.IDLE,
+                TransactionState.REJECTED,
+            )
+        ):
+            log.warning(
+                "Soft Reset für %s abgebrochen: "
+                "Transaction wurde nicht vollständig beendet "
+                "(state=%s, transaction_id=%s)",
+                chargebox_id,
+                transaction.state.value,
+                transaction.transaction_id,
+            )
+            return
+
+        try:
+            connection = await self._ensure_connected(
+                chargebox_id,
+                force=True,
+            )
+
+            if connection is None:
+                log.warning(
+                    "Soft Reset für %s: "
+                    "direkter Reconnect nicht möglich",
+                    chargebox_id,
+                )
+
+                self._schedule_reconnect(
+                    chargebox_id
+                )
+                return
+
+            log.info(
+                "OCPP Soft Reset für %s abgeschlossen",
+                chargebox_id,
+            )
+
+        except asyncio.CancelledError:
+            raise
+
+        except Exception:
+            log.exception(
+                "OCPP Soft Reset für %s fehlgeschlagen",
+                chargebox_id,
+            )
+
+            # Falls der direkte Neuaufbau fehlschlägt:
+            # normalen Reconnect mit Backoff verwenden.
+            if chargebox_id in self._wanted_connections:
+                self._schedule_reconnect(
+                    chargebox_id
+                )
+
     """
     State Handling
     """
@@ -1120,7 +1261,7 @@ class OcppClient:
         # _set_remote_stop(connection.cp, False)
 
         # Pending ChangeAvailability kann jetzt angewendet werden.
-        if connection.cp._pending_availability:
+        if connection.cp._pending_availability or connection.cp.openwb_cp.data.get.ocpp.pending_availability:
             await connection.cp.apply_pending_availability()
 
         transaction.reset()
@@ -1254,7 +1395,10 @@ def _publish_transaction_id(
     cp: "OcppChargePoint",
     transaction_id: Optional[int],
 ):
-    if cp is None or getattr(cp, "openwb_cp", None) is None:
+    if cp is None:
+        return
+
+    if cp.openwb_cp is None:
         return
 
     cp.openwb_cp.data.get.ocpp.transaction_id = (
@@ -1304,7 +1448,7 @@ def _set_tag_accepted(
     Pub().pub(
         f"openWB/set/chargepoint/"
         f"{cp.openwb_num}/get/ocpp/transaction_id_tag",
-        str(transaction_id_tag),
+        str(transaction_id_tag) if transaction_id_tag is not None else None,
     )
 
     Pub().pub(
