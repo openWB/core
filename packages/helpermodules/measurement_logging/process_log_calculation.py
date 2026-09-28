@@ -209,6 +209,7 @@ def analyse_percentage(entry) -> Tuple[Dict, str]:
             for module_name, module_data in modules.items()
             if module_name != "all" and module_data.get("fault_state", 0) != 2
         )
+
     try:
         message = ""
         grid_counter = get_grid_counter(entry)
