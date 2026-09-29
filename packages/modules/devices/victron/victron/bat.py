@@ -62,7 +62,7 @@ class VictronBat(AbstractBat):
             log.debug("Dynamic ESS Mode ist aktiv, daher erfolgt keine Regelung des Speichers durch openWB")
             return
         bat_power = self.__tcp_client.read_holding_registers(842, ModbusDataType.INT_16, unit=modbus_id)
-        if setpoint.power_limit is None:
+        if setpoint.power_limit is None or setpoint.evu_power is None:
             log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
             if self.last_mode is not None:
                 # ESS Mode 1 und grid setpoint auf 0 setzen. Erlaubte Discharge Power 100%
