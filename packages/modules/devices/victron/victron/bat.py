@@ -61,7 +61,6 @@ class VictronBat(AbstractBat):
         if dynamic_ess_mode == 1:
             log.debug("Dynamic ESS Mode ist aktiv, daher erfolgt keine Regelung des Speichers durch openWB")
             return
-        bat_power = self.__tcp_client.read_holding_registers(842, ModbusDataType.INT_16, unit=modbus_id)
         if setpoint.power_limit is None or (setpoint.power_limit != 0 and setpoint.evu_power is None):
             log.debug("Keine Batteriesteuerung, Selbstregelung durch Wechselrichter")
             if self.last_mode is not None:
@@ -80,6 +79,7 @@ class VictronBat(AbstractBat):
                 self.last_mode = 'stop'
             self.__tcp_client.write_register(2716, 0, data_type=ModbusDataType.INT_32, unit=modbus_id)
         elif setpoint.power_limit < 0:
+            bat_power = self.__tcp_client.read_holding_registers(842, ModbusDataType.INT_16, unit=modbus_id)
             grid_setpoint = int(setpoint.evu_power + setpoint.power_limit - bat_power)
             log.debug(f"Aktive Batteriesteuerung Victron:"
                       f"Speicher soll mit {setpoint.power_limit} W entladen werden. \n"
@@ -93,6 +93,7 @@ class VictronBat(AbstractBat):
             # anzupassen um den Zielwert zu erreichen
             self.__tcp_client.write_register(2716, grid_setpoint, data_type=ModbusDataType.INT_32, unit=modbus_id)
         elif setpoint.power_limit > 0:
+            bat_power = self.__tcp_client.read_holding_registers(842, ModbusDataType.INT_16, unit=modbus_id)
             grid_setpoint = int(setpoint.evu_power + setpoint.power_limit - bat_power)
             log.debug(f"Aktive Batteriesteuerung Victron:"
                       f"Speicher soll mit {setpoint.power_limit} W geladen werden. \n"
