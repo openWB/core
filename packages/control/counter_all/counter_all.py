@@ -180,6 +180,7 @@ class CounterAll(HierarchyMixin, LoadmanagementPrioMixin):
             evu_element, CounterMode.HOME_CONSUMPTION.value)
 
         home_consumption -= self.data.set.smarthome_power_excluded_from_home_consumption
+        not_in_home_consumption += self.data.set.smarthome_power_excluded_from_home_consumption
 
         return home_consumption, not_in_home_consumption, evu_element
 
