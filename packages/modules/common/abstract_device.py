@@ -1,9 +1,11 @@
 from __future__ import annotations
 from abc import abstractmethod
-from typing import Optional, Type, TYPE_CHECKING
+from typing import Optional, Type, Protocol
 
-if TYPE_CHECKING:
-    from control.bat import Set as SetPoint
+
+class SetPoint(Protocol):
+    power_limit: Optional[int]
+    evu_power: Optional[int]
 
 
 class AbstractDevice:
