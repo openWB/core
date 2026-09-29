@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
-from helpermodules.pub import Pub
+from helpermodules.pub import Pub, pub_single
 
 
 from control import data
@@ -1038,17 +1038,9 @@ class OcppClient:
         chargebox_id: str,
         reset_type: ResetType,
     ):
-        if reset_type == ResetType.soft:
-            await self._soft_reset(chargebox_id)
-            return
-        else:
-            pass
-        return
 
-    async def _soft_reset(
-        self,
-        chargebox_id: str,
-    ):
+        # Transktion immer erst beeenden, falls aktuell eine läuft
+
         self._start_blocked.add(chargebox_id)
 
         log.info(
@@ -1062,8 +1054,9 @@ class OcppClient:
 
         if openwb_cp is None:
             log.warning(
-                "Soft Reset für %s abgebrochen: "
+                "%s Reset für %s abgebrochen: "
                 "openWB CP nicht gefunden",
+                reset_type.value,
                 chargebox_id,
             )
             return
@@ -1077,7 +1070,7 @@ class OcppClient:
                 chargebox_id=chargebox_id,
                 imported=meter_stop,
                 id_tag=transaction.id_tag or "",
-                reason="SoftReset",
+                reason=f"{reset_type.value}Reset",
             )
             # Bei Auth/starting wird stop nur vorgemerkt
             # Warten, bis Stop/Start-Flow fertig ist
@@ -1092,8 +1085,9 @@ class OcppClient:
         # dürfen wir sie durch den Reset nicht wieder hochziehen.
         if chargebox_id not in self._wanted_connections:
             log.info(
-                "Soft Reset für %s abgebrochen: "
+                "%s Reset für %s abgebrochen: "
                 "Verbindung wird nicht mehr benötigt",
+                reset_type.value,
                 chargebox_id,
             )
             return
@@ -1106,53 +1100,68 @@ class OcppClient:
             )
         ):
             log.warning(
-                "Soft Reset für %s abgebrochen: "
+                "%s Reset für %s abgebrochen: "
                 "Transaction wurde nicht vollständig beendet "
                 "(state=%s, transaction_id=%s)",
+                reset_type.value,
                 chargebox_id,
                 transaction.state.value,
                 transaction.transaction_id,
             )
             return
 
-        try:
-            connection = await self._ensure_connected(
-                chargebox_id,
-                force=True,
-            )
+        if reset_type == ResetType.soft:
+            # Soft reset: nur temporäre Zustände zurücksetzen
+            # -> beendet Transaktion und stellt Verbindung neu her
+            try:
+                connection = await self._ensure_connected(
+                    chargebox_id,
+                    force=True,
+                )
 
-            if connection is None:
-                log.warning(
-                    "Soft Reset für %s: "
-                    "direkter Reconnect nicht möglich",
+                if connection is None:
+                    log.warning(
+                        "Soft Reset für %s: "
+                        "direkter Reconnect nicht möglich",
+                        chargebox_id,
+                    )
+
+                    self._schedule_reconnect(
+                        chargebox_id
+                    )
+                    return
+
+                log.info(
+                    "OCPP Soft Reset für %s abgeschlossen",
                     chargebox_id,
                 )
 
-                self._schedule_reconnect(
-                    chargebox_id
+            except asyncio.CancelledError:
+                raise
+
+            except Exception:
+                log.exception(
+                    "OCPP Soft Reset für %s fehlgeschlagen",
+                    chargebox_id,
                 )
-                return
 
-            log.info(
-                "OCPP Soft Reset für %s abgeschlossen",
-                chargebox_id,
+                # Falls der direkte Neuaufbau fehlschlägt:
+                # normalen Reconnect mit Backoff verwenden.
+                if chargebox_id in self._wanted_connections:
+                    self._schedule_reconnect(
+                        chargebox_id
+                    )
+
+        else:
+            # Hard reset:
+            # -> beendet Transaktion und startet die Box neu
+            # -> aus command.py Zeile 884
+            pub_single(
+                "openWB/set/command/primary/todo",
+                {"command": "systemReboot", "data": {}},
+                hostname=openwb_cp.chargepoint_module.config.configuration.ip_address,
             )
-
-        except asyncio.CancelledError:
-            raise
-
-        except Exception:
-            log.exception(
-                "OCPP Soft Reset für %s fehlgeschlagen",
-                chargebox_id,
-            )
-
-            # Falls der direkte Neuaufbau fehlschlägt:
-            # normalen Reconnect mit Backoff verwenden.
-            if chargebox_id in self._wanted_connections:
-                self._schedule_reconnect(
-                    chargebox_id
-                )
+        return
 
     """
     State Handling
