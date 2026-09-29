@@ -952,6 +952,7 @@ class SetData:
             elif "openWB/set/counter/set/invalid_home_consumption" in msg.topic:
                 self._validate_value(msg, int, [(0, 3)])
             elif ("openWB/set/counter/set/home_consumption" in msg.topic or
+                  "openWB/set/counter/set/not_in_home_consumption" in msg.topic or
                   "openWB/set/counter/set/imported_home_consumption" in msg.topic or
                   "openWB/set/counter/set/daily_yield_home_consumption" in msg.topic or
                   "openWB/set/counter/set/disengageable_smarthome_power" in msg.topic):
