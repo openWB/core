@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 import logging
-from typing import Iterable, Union
 
 from modules.common.abstract_device import DeviceDescriptor
-from modules.common.component_context import SingleComponentUpdateContext
-from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, MultiComponentUpdater
+from modules.common.configurable_device import ComponentFactoryByType, ConfigurableDevice, IndependentComponentUpdater
 from modules.common.req import get_http_session
 from modules.devices.smart_me.smart_me.counter import SmartMeCounter
 from modules.devices.smart_me.smart_me.config import SmartMe, SmartMeCounterSetup, SmartMeInverterSetup
@@ -27,12 +25,6 @@ def create_device(device_config: SmartMe):
         session = get_http_session()
         session.auth = (device_config.configuration.user, device_config.configuration.password)
 
-    def update_components(components: Iterable[Union[SmartMeCounter, SmartMeInverter]]):
-        # Fehler pro Komponente isoliert, statt bei einem Fehler alle als defekt zu markieren.
-        for component in components:
-            with SingleComponentUpdateContext(component.fault_state):
-                component.update(session)
-
     return ConfigurableDevice(
         device_config=device_config,
         initializer=initializer,
@@ -40,7 +32,7 @@ def create_device(device_config: SmartMe):
             counter=create_counter_component,
             inverter=create_inverter_component,
         ),
-        component_updater=MultiComponentUpdater(update_components)
+        component_updater=IndependentComponentUpdater(lambda component: component.update(session))
     )
 
 
