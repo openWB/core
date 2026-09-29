@@ -4,6 +4,9 @@ from helpermodules.measurement_logging import write_log
 from helpermodules.measurement_logging.write_log import get_names
 
 
+from helpermodules.measurement_logging.process_log_entry_builder import fix_values
+
+
 def test_get_names(daily_log_totals, monkeypatch):
     # setup
     component_names_mock = Mock(side_effect=["Speicher", "Zähler", "Wechselrichter"])
@@ -55,7 +58,7 @@ def test_fix_values():
                  'timestamp': 1709109001}
 
     # execution
-    fixed_values = write_log.fix_values(new_entry, previous_entry)
+    fixed_values = fix_values(new_entry, previous_entry)
 
     # evaluation
     assert fixed_values == {'bat': {'all': {'exported': 0, 'imported': 2369.658, 'soc': 97},
@@ -105,7 +108,7 @@ def test_fix_values_missing_components():
                  'timestamp': 1709109001}
 
     # execution
-    fixed_values = write_log.fix_values(new_entry, previous_entry)
+    fixed_values = fix_values(new_entry, previous_entry)
 
     # evaluation
     assert fixed_values == {'bat': {'all': {'exported': 0, 'imported': 2369.658, 'soc': 97},

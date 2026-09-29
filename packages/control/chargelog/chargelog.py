@@ -14,7 +14,7 @@ from control import data
 from helpermodules.measurement_logging.process_log_calculation import (
     FILE_ERRORS, CalculationType, _analyse_energy_source, _process_entries, get_totals)
 
-from helpermodules.measurement_logging.write_log import LegacySmartHomeLogData, create_entry
+from helpermodules.measurement_logging.process_log_entry_builder import LegacySmartHomeLogData, create_entry
 
 # alte Daten: Startzeitpunkt der Ladung, Endzeitpunkt, Geladene Reichweite, Energie, Leistung, Ladedauer, LP-Nummer,
 # Lademodus, ID-Tag

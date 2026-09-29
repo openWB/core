@@ -25,7 +25,8 @@ import dataclass_utils
 from helpermodules.data_migration.id_mapping import MapId
 from helpermodules.hardware_configuration import update_hardware_configuration
 from helpermodules.measurement_logging.process_log import get_totals
-from helpermodules.measurement_logging.write_log import LegacySmartHomeLogData, get_names
+from helpermodules.measurement_logging.process_log_entry_builder import LegacySmartHomeLogData
+from helpermodules.measurement_logging.write_log import get_names
 from helpermodules.timecheck import convert_timedelta_to_time_string, get_difference
 from helpermodules.utils import joined_thread_handler
 from helpermodules.utils.precision_math import string_to_float, string_to_int
