@@ -128,8 +128,47 @@ def fetch_forecast(config: ForecastSolarConfiguration) -> Tuple[Dict[str, float]
         for day, value in string_daily_kwh.items():
             daily_kwh[day] = daily_kwh.get(day, 0.0) + value
 
+    # Die genutzte /estimate/watts-Route liefert grundsätzlich keine vorab aggregierten
+    # Tageswerte (weder mit noch ohne API-Key), daher werden sie aus den Stundenwerten berechnet.
+    if not daily_kwh:
+        daily_kwh = _calculate_daily_kwh_from_values(values)
+
     log.info("Forecast.Solar-Abruf beendet (Werte=%s, Tage=%s)", len(values), len(daily_kwh))
     return values, daily_kwh
+
+
+def _calculate_daily_kwh_from_values(values: Dict[str, float]) -> Dict[str, float]:
+    """Berechne tägliche Energiewerte aus stündlichen Leistungswerten."""
+    points: list[tuple[datetime, float]] = []
+    for timestamp, value in values.items():
+        try:
+            points.append((datetime.fromtimestamp(int(timestamp)), float(value)))
+        except (TypeError, ValueError):
+            continue
+
+    if not points:
+        return {}
+
+    points.sort(key=lambda item: item[0])
+    deltas = [
+        int((points[index + 1][0] - points[index][0]).total_seconds())
+        for index in range(len(points) - 1)
+        if 0 < int((points[index + 1][0] - points[index][0]).total_seconds()) <= 21600
+    ]
+    fallback_step_seconds = min(deltas) if deltas else 3600
+
+    daily_wh: Dict[str, float] = {}
+    for index, (timestamp, power_w) in enumerate(points):
+        if index + 1 < len(points):
+            step_seconds = int((points[index + 1][0] - timestamp).total_seconds())
+            if step_seconds <= 0 or step_seconds > 21600:
+                step_seconds = fallback_step_seconds
+        else:
+            step_seconds = fallback_step_seconds
+        date_key = timestamp.date().isoformat()
+        daily_wh[date_key] = daily_wh.get(date_key, 0.0) + max(0.0, power_w) * (step_seconds / 3600.0)
+
+    return {date_key: energy_wh / 1000.0 for date_key, energy_wh in daily_wh.items()}
 
 
 def create_forecast(config: ForecastSolar):
