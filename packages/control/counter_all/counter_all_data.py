@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Callable, Dict, Generator, List, Protocol, Tuple, Union
+from typing import Callable, Dict, Generator, List, Optional, Protocol, Tuple, Union
 
 from control.chargepoint.chargepoint import Chargepoint
 from control.consumer.usage import ConsumerUsage
@@ -93,6 +93,11 @@ class HierarchyProtocol(Protocol):
     def hierarchy_add_item_below(self, new_id: int, new_type: ComponentType, id_to_find: int) -> None: ...
     def hierarchy_add_item_below_evu(self, new_id: int, new_type: ComponentType) -> None: ...
     def hierarchy_remove_item(self, id_to_find: int, keep_children: bool = True) -> None: ...
+
+    def update_linked_counter_hierarchy(self,
+                                        consumer_id: int,
+                                        old_counter_id: Optional[int],
+                                        new_counter_id: Optional[int]) -> bool: ...
 
 
 class LoadmanagementPrioProtocol(Protocol):
