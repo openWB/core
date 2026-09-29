@@ -77,18 +77,15 @@ class SungrowIHMBat(AbstractBat):
                 self.__tcp_client.write_register(8024, 0xBB, data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = 'discharge'
             power_value = int(setpoint.power_limit / 100)
-            log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {setpoint.power_limit} W "
-                      "entladen für den Hausverbrauch")
             self.__tcp_client.write_register(8025, power_value, data_type=ModbusDataType.UINT_32,
                                              wordorder=Endian.Little, unit=unit)
         elif setpoint.power_limit > 0:
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {setpoint.power_limit} W geladen")
             if self.last_mode != 'charge':
                 self.__tcp_client.write_register(8023, 5, data_type=ModbusDataType.UINT_16, unit=unit)
-                self.__tcp_client.write_register(8025, 0xAA, data_type=ModbusDataType.UINT_16, unit=unit)
+                self.__tcp_client.write_register(8024, 0xAA, data_type=ModbusDataType.UINT_16, unit=unit)
                 self.last_mode = 'charge'
             power_value = int(setpoint.power_limit / 100)
-            log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {setpoint.power_limit} W geladen")
             self.__tcp_client.write_register(8025, power_value, data_type=ModbusDataType.UINT_32,
                                              wordorder=Endian.Little, unit=unit)
 
