@@ -14,7 +14,8 @@ with ImportErrorContext():
         RemoteStartStopStatus,
         UnlockStatus,
         ResetStatus,
-        ResetType
+        ResetType,
+        DiagnosticsStatus
     )
     from ocpp.routing import on
 from typing import Optional
@@ -24,6 +25,7 @@ from helpermodules.pub import Pub, pub_single
 from control import data
 from modules.common.fault_state import FaultState
 from control.ocpp.helper import _get_formatted_time, get_cp_from_chargebox_id
+from control.ocpp.diagnostics import create_diagnostics, upload_diagnostics
 
 log = logging.getLogger(__name__)
 
@@ -466,57 +468,65 @@ class OcppChargePoint(cp):
             f"\nKwargs: {kwargs}"
         )
 
-        if type == ResetType.soft:
-            # Soft reset: nur temporäre Zustände zurücksetzen
-            # -> beendet Transaktion und stellt Verbindung neu her
-            if self.reset_callback is None:
-                log.error(
-                    "Kein Reset-Callback für OCPP Chargebox %s registriert",
+        if self.reset_callback is None:
+            log.error(
+                "Kein Reset-Callback für OCPP Chargebox %s registriert",
+                self.chargebox_id,
+            )
+            return call_result.Reset(status=ResetStatus.rejected)
+
+        loop = asyncio.get_running_loop()
+
+        # Die Reset-Antwort erst über die bestehende OCPP-Verbindung senden,
+        # bevor der Callback beim Soft-Reset den Reconnect startet.
+        loop.call_later(
+            0.5,
+            lambda: asyncio.create_task(
+                self.reset_callback(
                     self.chargebox_id,
-                )
-                return call_result.Reset(
-                    status=ResetStatus.rejected
-                )
-            loop = asyncio.get_running_loop()
-
-            loop.call_later(
-                0.5,
-                lambda: asyncio.create_task(
-                    self.reset_callback(
-                        self.chargebox_id,
-                        type,
-                    )
+                    ResetType(type),
                 )
             )
-
-            return call_result.Reset(
-                status=ResetStatus.accepted
-            )
-        elif type == ResetType.hard:
-            # komplett zurücksetzen / kompletter neustart?????
-            # würde über command gehen
-            if self.openwb_cp is None:
-                return call_result.Reset(status=ResetStatus.rejected)
-
-            pub_single(
-                "openWB/set/command/primary/todo",
-                {"command": "systemReboot", "data": {}},
-                hostname=self.openwb_cp.chargepoint_module.config.configuration.ip_address,
-            )
-
-            return call_result.Reset(status=ResetStatus.accepted)
-
-            # -> aus command.py Zeile 884
-            # def chargepointReboot(self, connection_id: str, payload: dict) -> None:
-            #    pub.pub_single("openWB/set/command/primary/todo",
-            #                   {"command": "systemReboot", "data": {}},
-            #                   hostname=SubData.cp_data[f'cp{payload["data"]["chargepoint"]}'
-            #                                            ].chargepoint.chargepoint_module.config.configuration.ip_address)
-            pass
+        )
 
         return call_result.Reset(
             status=ResetStatus.accepted
         )
+
+    @on(Action.get_diagnostics)
+    async def get_diagnostics(self, location: str, retries: Optional[int] = None, retry_interval: Optional[int] = None, start_time: Optional[str] = None, stop_time: Optional[str] = None, **kwargs):
+        print(
+            f"GET_DIAGNOSTICS  CP_Nr: {self.openwb_num} "
+            f"OCPP_Nr: {self.chargebox_id} "
+            f"\nKwargs: {kwargs}"
+        )
+        log.debug("#############################. TEST")
+        filename = await create_diagnostics(location, retries, retry_interval, start_time, stop_time)
+
+        # Upload in einem eigenen Task
+        asyncio.create_task(self._upload_diagnostics(filename, location, retries or 0, retry_interval or 0))
+
+        return call_result.GetDiagnostics(
+            file_name=filename
+        )
+
+    async def _upload_diagnostics(self, filepath, location, retries: Optional[int] = None, retry_interval: Optional[int] = None):
+        # Set status to uploading
+        await self._diagnostics_status(DiagnosticsStatus.uploading)
+        try:
+            await upload_diagnostics(filepath, location, retries or 0, retry_interval or 0)
+
+            await self._diagnostics_status(DiagnosticsStatus.uploaded)
+        except Exception as e:
+            log.exception("Fehler beim Hochladen der Diagnosedatei: %s", e)
+            await self._diagnostics_status(DiagnosticsStatus.upload_failed)
+
+    async def _diagnostics_status(self, status: DiagnosticsStatus):
+        request = call.DiagnosticsStatusNotification(
+            status=status
+        )
+        response = await self.call(request)
+        return response
 
 
 def get_ocpp_error_code(fault_state: FaultState):
