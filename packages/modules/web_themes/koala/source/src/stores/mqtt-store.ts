@@ -3851,13 +3851,15 @@ export const useMqttStore = defineStore('mqtt', () => {
       }
       const sensors = temperatures.map((value: unknown, index: number) => ({
         index,
-        textValue:
-          typeof value === 'number'
-            ? `${value.toLocaleString(undefined, {
-                minimumFractionDigits: 1,
-                maximumFractionDigits: 1,
-              })} °C`
-            : '---',
+        textValue: getValueObject.value(
+          typeof value === 'number' ? value : undefined,
+          '°C',
+          '',
+          false,
+          false,
+          '---',
+          1,
+        ).textValue,
       }));
       return { sensorCount: temperatures.length, sensors };
     };
