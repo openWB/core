@@ -2996,6 +2996,12 @@
 				},
 				{
 					"acltype": "publishClientReceive",
+					"topic": "openWB/counter/set/not_in_home_consumption",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
 					"topic": "openWB/counter/set/imported_home_consumption",
 					"priority": 0,
 					"allow": true

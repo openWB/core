@@ -225,6 +225,7 @@ class UpdateConfig:
         "^openWB/counter/set/imported_home_consumption$",
         "^openWB/counter/set/invalid_home_consumption$",
         "^openWB/counter/set/home_consumption$",
+        "^openWB/counter/set/not_in_home_consumption$",
         "^openWB/counter/set/daily_yield_home_consumption$",
         "^openWB/counter/set/simulation$",
         "^openWB/counter/[0-9]+/get/voltages$",

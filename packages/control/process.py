@@ -217,7 +217,8 @@ class Process:
                 bat_soc=data.data.bat_all_data.data.get.soc,
                 cp_power=data.data.cp_all_data.data.get.power,
                 evu_power=data.data.counter_all_data.get_evu_counter().data.get.power,
-                home_consumption=data.data.counter_all_data.data.set.home_consumption,
+                home_consumption=(data.data.counter_all_data.data.set.home_consumption +
+                                  data.data.counter_all_data.data.set.not_in_home_consumption),
                 pv_power=data.data.pv_all_data.data.get.power
             )
             return Thread(target=consumer.module.send_values,
