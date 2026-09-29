@@ -190,6 +190,18 @@ def analyse_percentage(entry) -> Tuple[Dict, str]:
     def format(value):
         return round(value, 4)
 
+    def get_valid_energy(section: str, value: str) -> Union[int, float]:
+        """Liefert den Energiewert ohne fehlerhafte Einzelmodule."""
+        modules = entry.get(section, {})
+        if (len(modules) <= 1 or
+                safe_get_nested(entry, section, "all", "fault_state") != 2):
+            return safe_get_nested(entry, section, "all", value)
+        return sum(
+            module_data.get(value, 0)
+            for module_name, module_data in modules.items()
+            if module_name != "all" and module_data.get("fault_state", 0) != 2
+        )
+
     def get_grid_counter(entry) -> Dict:
         # es gibt nur einen Zähler am EVU-Punkt
         for counter in entry["counter"].values():
