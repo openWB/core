@@ -18,6 +18,7 @@ from modules.io_actions.controllable_consumers.dimming.api_io import DimmingIo
 from modules.io_actions.controllable_consumers.dimming_direct_control.api import DimmingDirectControl
 from modules.io_actions.generator_systems.stepwise_control.api_eebus import StepwiseControlEebus
 from modules.io_actions.generator_systems.stepwise_control.api_io import StepwiseControlIo
+from dataclasses import replace
 
 log = logging.getLogger(__name__)
 
@@ -65,11 +66,14 @@ class Process:
                     log.exception("Fehler im Process-Modul für Ladepunkt "+str(cp))
             if data.data.bat_all_data.data.set.set_limit:
                 for bat_component in get_bat_components_by_controllability()[0]:
+                    setpoint = replace(
+                        data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set
+                    )
                     modules_threads.append(
                         Thread(
                             target=set_power_limit_wrapper,
                             args=(bat_component,
-                                  data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set),
+                                  setpoint),
                             name=f"set power limit {bat_component.component_config.id}"))
             for action in data.data.io_actions.actions.values():
                 if isinstance(action, DimmingDirectControl):
