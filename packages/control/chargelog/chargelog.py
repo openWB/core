@@ -11,10 +11,10 @@ import pathlib
 from typing import Any, Dict, List, Optional, Tuple
 
 from control import data
-from helpermodules.measurement_logging.process_log import (
+from helpermodules.measurement_logging.process_log_calculation import (
     FILE_ERRORS, CalculationType, _analyse_energy_source, _process_entries, get_totals)
 
-from helpermodules.measurement_logging.write_log import LogType, LegacySmartHomeLogData, create_entry
+from helpermodules.measurement_logging.write_log import LegacySmartHomeLogData, create_entry
 
 # alte Daten: Startzeitpunkt der Ladung, Endzeitpunkt, Geladene Reichweite, Energie, Leistung, Ladedauer, LP-Nummer,
 # Lademodus, ID-Tag
@@ -423,7 +423,7 @@ def _get_reference_entries(cp, create_log_entry: bool = False) -> Tuple[List[Dic
                 entries_day_before = get_daily_log(date_day_before)["entries"]
                 previous_entry = entries_day_before[-1]
 
-            current_entry = create_entry(LogType.DAILY, LegacySmartHomeLogData(), previous_entry)
+            current_entry = create_entry(LegacySmartHomeLogData(), previous_entry)
             reference_entries = [previous_entry, current_entry]
         elif len(entries) >= 2:
             reference_entries = [entries[-2], entries[-1]]

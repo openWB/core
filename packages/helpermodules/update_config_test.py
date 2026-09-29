@@ -363,3 +363,154 @@ def test_upgrade_datastore_142_ev_chargemode_conversion(ev0_prio: bool,
     assert uc.all_received_topics["openWB/counter/get/loadmanagement_prios"] == expected
     assert uc.all_received_topics["openWB/system/datastore_version"] == [131, 132, 142]
     assert mock_pub.pub.call_count == 2  # einmal publishen für Upgrade der Datastore-Version
+
+
+def test_upgrade_datastore_149_removes_not_controlled_consumers(mock_pub: Mock):
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        "openWB/consumer/1/usage": {"type": "continuous"},
+        "openWB/consumer/2/usage": {"type": "meter_only"},
+        "openWB/consumer/4/usage": {"type": "self_controlled"},
+        "openWB/counter/get/loadmanagement_prios": [
+            {"type": "vehicle", "id": 0},
+            {
+                "type": "group",
+                "label": "Verbraucher",
+                "children": [
+                    {"type": "consumer", "id": 1},
+                    {"type": "consumer", "id": 2},
+                    {"type": "consumer", "id": 4},
+                ],
+            },
+            {"type": "consumer", "id": 3},
+        ],
+        "openWB/system/datastore_version": list(range(149)),
+    }
+
+    uc.upgrade_datastore_149()
+
+    assert uc.all_received_topics["openWB/counter/get/loadmanagement_prios"] == [
+        {"type": "vehicle", "id": 0},
+        {
+            "type": "group",
+            "label": "Verbraucher",
+            "children": [{"type": "consumer", "id": 1}],
+        },
+        {"type": "consumer", "id": 3},
+    ]
+    assert uc.all_received_topics["openWB/system/datastore_version"] == list(range(150))
+    assert mock_pub.pub.call_count == 2
+
+
+def test_upgrade_datastore_150_migrates_fixed_hours_weekdays(mock_pub):
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        "openWB/optional/ep/flexible_tariff/provider": {
+            "type": "fixed_hours",
+            "configuration": {
+                "tariffs": [
+                    {
+                        "name": "weekdays",
+                        "price": 0.1,
+                        "active_times": {
+                            "dates": [["01-01", "31-12"]],
+                            "times": [["00:00", "24:00"]],
+                            "weekdays": [1, 2, 3, 4, 5],
+                        },
+                    },
+                    {
+                        "name": "weekend",
+                        "price": 0.2,
+                        "active_times": {
+                            "dates": [["01-01", "31-12"]],
+                            "times": [["00:00", "24:00"]],
+                            "weekdays": [0, 6],
+                        },
+                    },
+                ]
+            },
+        },
+        "openWB/optional/ep/grid_fee/provider": {
+            "type": "fixed_hours",
+            "configuration": {
+                "tariffs": [
+                    {
+                        "name": "all-days",
+                        "price": 0.3,
+                        "active_times": {
+                            "dates": [["01-01", "31-12"]],
+                            "times": [["00:00", "24:00"]],
+                            "weekdays": [0, 1, 2, 3, 4, 5, 6],
+                        },
+                    }
+                ]
+            },
+        },
+        "openWB/system/datastore_version": [149],
+    }
+
+    uc.upgrade_datastore_150()
+
+    flexible_tariffs = uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"]["configuration"][
+        "tariffs"
+    ]
+    assert flexible_tariffs[0]["active_times"]["weekdays"] == [0, 1, 2, 3, 4]
+    assert flexible_tariffs[1]["active_times"]["weekdays"] == [6, 5]
+
+    grid_fee_tariffs = uc.all_received_topics["openWB/optional/ep/grid_fee/provider"]["configuration"]["tariffs"]
+    assert grid_fee_tariffs[0]["active_times"]["weekdays"] == [6, 0, 1, 2, 3, 4, 5]
+
+    assert uc.all_received_topics["openWB/system/datastore_version"] == [149, 150]
+
+    updated_topics = [call.args[0] for call in mock_pub.pub.call_args_list]
+    assert "openWB/optional/ep/flexible_tariff/provider" in updated_topics
+    assert "openWB/optional/ep/grid_fee/provider" in updated_topics
+    assert "openWB/system/datastore_version" in updated_topics
+
+
+def test_upgrade_datastore_151_removes_linked_extra_meter_counters_from_hierarchy(mock_pub: Mock):
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        "openWB/consumer/2/extra_meter": 5,
+        "openWB/consumer/3/extra_meter": None,
+        "openWB/counter/get/hierarchy": [{
+            "id": 0,
+            "type": "counter",
+            "children": [
+                {"id": 2, "type": "consumer", "children": []},
+                {"id": 5, "type": "counter", "children": []},
+                {"id": 6, "type": "counter", "children": []},
+            ],
+        }],
+        "openWB/system/datastore_version": list(range(151)),
+    }
+
+    uc.upgrade_datastore_151()
+
+    assert uc.all_received_topics["openWB/counter/get/hierarchy"] == [{
+        "id": 0,
+        "type": "counter",
+        "children": [
+            {"id": 2, "type": "consumer", "children": []},
+            {"id": 6, "type": "counter", "children": []},
+        ],
+    }]
+    assert uc.all_received_topics["openWB/system/datastore_version"] == list(range(152))
+    assert mock_pub.pub.call_count == 2
+
+
+@pytest.mark.parametrize("file_operation_version, finished, expected_calls", [
+    ([], False, 1),  # erster Start
+    ([0], True, 0),   # bereits fertig -> kein Neustart
+    ([0], False, 1),  # angefangen, aber nicht fertig -> Neustart
+])
+def test_file_operation_0_start_behavior(file_operation_version, finished, expected_calls):
+    update_config = UpdateConfig()
+    update_config.all_received_topics = {
+        "openWB/system/file_operation_version": file_operation_version,
+        "openWB/system/log_data_ready": finished
+    }
+
+    with patch.object(update_config, "upgrade_file_operation_0") as upgrade_mock:
+        update_config._UpdateConfig__solve_breaking_changes_filesystem()
+    assert upgrade_mock.call_count == expected_calls

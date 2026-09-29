@@ -9,31 +9,26 @@ from control.load_protocol import Load
 
 log = logging.getLogger(__name__)
 
+# Zustände, in denen reserved_surplus/released_surplus gerade eine laufende Reservierung halten (siehe die
+# jeweiligen += beim Eintritt und -= beim Verlassen dieser Zustände in counter.py/ev.py/chargepoint.py).
+# NO_CHARGING_ALLOWED gehört bewusst nicht dazu: jede Reservierung wird spätestens beim Übergang in diesen
+# Zustand bereits wieder freigegeben (siehe zB Counter.reset_switch_on_off()), er wird hier also nie mit einer
+# noch offenen Reservierung erreicht.
+RESERVATION_HOLDING_STATES = (ChargepointState.PERFORMING_PHASE_SWITCH,
+                              ChargepointState.PHASE_SWITCH_DELAY,
+                              ChargepointState.SWITCH_OFF_DELAY,
+                              ChargepointState.SWITCH_ON_DELAY)
+
 
 def reset_pv_data_if_no_active_delays() -> None:
-    """ Wenn keine EV angesteckt sind oder keine Verzögerungen aktiv sind, werden die Algorithmus-Werte
+    """ Wenn keine Komponente gerade eine Reservierung offen hält, werden die Algorithmus-Werte
     zurückgesetzt.
     (dient der Robustheit)
     """
     try:
         for load in list(data.data.cp_data.values()) + list(data.data.consumer_data.values()):
             try:
-                control_parameter = load.data.control_parameter
-                if isinstance(load, Chargepoint):
-                    if (not load.data.get.plug_state or
-                            (control_parameter.state != ChargepointState.PERFORMING_PHASE_SWITCH and
-                             control_parameter.state != ChargepointState.PHASE_SWITCH_DELAY and
-                             control_parameter.state != ChargepointState.SWITCH_OFF_DELAY and
-                             control_parameter.state != ChargepointState.SWITCH_ON_DELAY and
-                             control_parameter.state != ChargepointState.NO_CHARGING_ALLOWED)):
-                        continue
-                    break
-                else:
-                    # Verbraucher haben keinen Plug-Status.
-                    # Nur laufende Ein-/Ausschaltverzögerungen müssen den Reset verhindern.
-                    if (control_parameter.state != ChargepointState.SWITCH_OFF_DELAY and
-                            control_parameter.state != ChargepointState.SWITCH_ON_DELAY):
-                        continue
+                if load.data.control_parameter.state in RESERVATION_HOLDING_STATES:
                     break
             except Exception:
                 log.exception(f"Fehler beim Bereinigen der Werte für Ladepunkt/Verbraucher {load.num}")

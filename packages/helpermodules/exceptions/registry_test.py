@@ -31,6 +31,11 @@ class ErrorF(ErrorD):
     pass
 
 
+class EmptyStringException(Exception):
+    def __str__(self):
+        return ""
+
+
 @pytest.mark.parametrize("exception,expected_message", [
     [ErrorRoot, "ErrorRoot"],
     [ErrorB, "B"],
@@ -68,3 +73,21 @@ def test_accepts_all_supported_formats(handler):
     # evaluation
     assert isinstance(actual[0], str)
     assert actual[0] == "msg"
+
+
+@pytest.mark.parametrize("exception,expected_message", [
+    pytest.param(Exception(), "Exception", id="no args fallback"),
+    pytest.param(EmptyStringException(), "EmptyStringException", id="empty string fallback"),
+])
+def test_translate_exception_falls_back_to_class_name_for_empty_message(exception: Exception,
+                                                                        expected_message: str,
+                                                                        monkeypatch):
+    # setup
+    monkeypatch.setattr(ExceptionRegistry, "registry", [])
+    registry = ExceptionRegistry()
+
+    # execution
+    actual = registry.translate_exception(exception)
+
+    # evaluation
+    assert actual[0] == expected_message

@@ -1395,6 +1395,27 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
+   * Get the maximum DC power of the charge point template identified by the charge point id
+   * @param chargePointId charge point id
+   * @returns number | undefined
+   */
+  const chargePointDcMaxPower = (chargePointId: number) =>
+    computed(() => {
+      const templateId = getValue.value(
+        `openWB/chargepoint/${chargePointId}/config`,
+        'template',
+      ) as number | undefined;
+      if (templateId === undefined) return undefined;
+      const dcMaxCurrent = getValue.value(
+        `openWB/chargepoint/template/${templateId}`,
+        'dc_max_current',
+      ) as number | undefined;
+      return dcMaxCurrent === undefined
+        ? undefined
+        : convertDcCurrentToPower(dcMaxCurrent);
+  });
+
+  /**
    * Get or set the charge point connected vehicle instant charging DC power identified by the charge point id
    * @param chargePointId charge point id
    * @returns number
@@ -3829,6 +3850,43 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
+   * Get the temperature readings of a consumer identified by the consumer id.
+   * @param consumerId
+   * @returns { sensorCount, sensors }
+   */
+  const consumerTemperatures = computed(() => {
+    return (
+      consumerId: number,
+    ): {
+      sensorCount: number;
+      sensors: { index: number; textValue: string }[];
+    } => {
+      const temperatures = getValue.value(
+        `openWB/consumer/${consumerId}/get/temperatures`,
+      );
+      if (!Array.isArray(temperatures)) {
+        return { sensorCount: 0, sensors: [] };
+      }
+      if (!temperatures.some((value: unknown) => typeof value === 'number')) {
+        return { sensorCount: 0, sensors: [] };
+      }
+      const sensors = temperatures.map((value: unknown, index: number) => ({
+        index,
+        textValue: getValueObject.value(
+          typeof value === 'number' ? value : undefined,
+          '°C',
+          '',
+          false,
+          false,
+          '---',
+          1,
+        ).textValue,
+      }));
+      return { sensorCount: temperatures.length, sensors };
+    };
+  });
+
+  /**
    * Get the status text of a consumer identified by the consumer id
    * @param consumerId consumer id
    * @returns string | undefined
@@ -4477,6 +4535,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     chargePointFaultMessage,
     temporaryChargeModeActive,
     chargePointChargeType,
+    chargePointDcMaxPower,
     dcChargingEnabled,
     chargePointConnectedVehicleInfo,
     chargePointConnectedVehicleForceSocUpdate,
@@ -4584,6 +4643,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     consumerSumPower,
     consumerDailyImported,
     consumerOnTime,
+    consumerTemperatures,
     consumerStateStr,
     consumerFaultState,
     consumerFaultStr,

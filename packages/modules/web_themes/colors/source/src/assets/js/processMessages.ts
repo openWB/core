@@ -38,7 +38,7 @@ const topicsToSubscribe = [
 	'openWB/pv/#',
 	'openWB/chargepoint/#',
 	'openWB/vehicle/#',
-	'openWB/general/chargemode_config/pv_charging/#',
+	'openWB/general/chargemode_config/bat/#',
 	'openWB/general/web_theme',
 	'openWB/optional/ep/#',
 	'openWB/system/#',
@@ -74,9 +74,7 @@ function processMqttMessage(topic: string, payload: Buffer) {
 		processVehicleTemplateMessages(topic, message)
 	} else if (topic.match(/^openwb\/vehicle\//i)) {
 		processVehicleMessages(topic, message)
-	} else if (
-		topic.match(/^openwb\/general\/chargemode_config\/pv_charging\//i)
-	) {
+	} else if (topic.match(/^openwb\/general\/chargemode_config\/bat\//i)) {
 		processPvConfigMessages(topic, message)
 	} else if (topic.match(/^openwb\/general\/web_theme/i)) {
 		processThemeConfigMessages(topic, message)
@@ -195,7 +193,7 @@ function processPvConfigMessages(topic: string, message: string) {
 	const elements = topic.split('/')
 	if (elements.length > 0) {
 		switch (elements[4]) {
-			case 'bat_mode':
+			case 'mode':
 				globalData.updatePvBatteryPriority(JSON.parse(message))
 				break
 			default:

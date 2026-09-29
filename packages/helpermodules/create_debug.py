@@ -131,6 +131,9 @@ def config_and_state():
     if secondary is False:
         with ErrorHandlingContext():
             parsed_data += f"\n## Hierarchy ##\n{get_hierarchy(data.data.counter_all_data.data.get.hierarchy)}\n"
+        with ErrorHandlingContext():
+            parsed_data += (f"\n## Priorities ##\n"
+                            f"{get_priorities(data.data.counter_all_data.data.get.loadmanagement_prios)}\n")
 
     with ErrorHandlingContext():
         if secondary:
@@ -237,6 +240,13 @@ def get_hierarchy(hierarchy, level=0):
                 parsed_data += f"{element['type']}: {cp.name} (ID: {element['id']})\n"
             except Exception:
                 parsed_data += f"{element['type']} (ID: {element['id']})\n"
+        elif element["type"] == "consumer":
+            try:
+                consumer = data.data.consumer_data[f"consumer{element['id']}"].data.module
+                parsed_data += (f"{element['type']}: {consumer.name} "
+                                f"(ID: {element['id']}, consumer_type: {consumer.type})\n")
+            except Exception:
+                parsed_data += f"{element['type']} (ID: {element['id']})\n"
         else:
             try:
                 for key, value in data.data.system_data.items():
@@ -265,6 +275,28 @@ def get_hierarchy(hierarchy, level=0):
                 parsed_data += f"{element['type']} (ID: {element['id']})\n"
         if element["children"]:
             parsed_data += get_hierarchy(element["children"], level + 1)
+    return parsed_data
+
+
+def get_priorities(priorities, level=0):
+    # get friendly names of elements
+    priority = 1
+    parsed_data = ""
+    for element in priorities:
+        parsed_data += "-" * (level * 2) + "| "
+        if level == 0:
+            parsed_data += f"Prio: {priority}, "
+            priority += 1
+        if element["type"] == "group":
+            parsed_data += f"{element['type']}: {element.get('label', 'unnamed')}\n"
+        elif element["type"] == "vehicle":
+            vehicle = data.data.ev_data[f"ev{element['id']}"].data
+            parsed_data += f"{element['type']}: {vehicle.name} (ID: {element['id']})\n"
+        elif element["type"] == "consumer":
+            consumer = data.data.consumer_data[f"consumer{element['id']}"].data.module
+            parsed_data += f"{element['type']}: {consumer.name} (ID: {element['id']}, consumer_type: {consumer.type})\n"
+        if "children" in element and element["children"]:
+            parsed_data += get_priorities(element["children"], level + 1)
     return parsed_data
 
 
@@ -426,11 +458,11 @@ def create_debug_log(input_data) -> Optional[dict]:
             write_to_file(df, lambda: header)
             write_to_file(df, lambda: f'# section: system #\n{get_common_data()}'
                                       f'Kernel: {run_shell_command("uname -s -r -v -m -o")}'
-                                      'Model: '
-                                      f'{run_shell_command("cat /proc/device-tree/model 2>/dev/null||echo unknown")}\n'
-                                      f'CID:\n{run_shell_command("mmc cid read /sys/block/mmcblk0/device")}\n'
                                       f'Uptime:{run_command(["uptime"])}{run_command(["free"])}\n')
-            write_to_file(df, lambda: f'# section: hardware #\n{get_hardware_data()}')
+            write_to_file(df, lambda: '# section: hardware #\nModel: '
+                                      f'{run_shell_command("cat /proc/device-tree/model 2>/dev/null||echo unknown")}\n'
+                                      f'CID:\n{run_shell_command("mmc cid read /sys/block/mmcblk0/device")}')
+            write_to_file(df, lambda: f'{get_hardware_data()}')
             write_to_file(df, lambda: f'USB_Devices:\n{run_shell_command(["lsusb"])}\n')
             write_to_file(df, lambda: f"# section: configuration and state #\n{config_and_state()}")
             write_to_file(df, lambda: f"# section: errors #\n{filter_log_file('main', 'ERROR', 30)}\n")

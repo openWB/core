@@ -1,6 +1,6 @@
 import logging
 from control import data
-from typing import Optional
+from typing import Optional, Tuple
 
 from modules.common.fault_state import FaultState
 from modules.common.component_type import ComponentType
@@ -64,12 +64,12 @@ class PeakFilter:
             control_interval = data.data.general_data.data.control_interval
             allowed_deviation = 2 * (control_interval / 3600) * max_power
 
-            imp = self.check_total_energy(imported, self.imported, allowed_deviation, max_energy)
-            self.imported = imported
+            checked_imp, prev_imp = self.check_total_energy(imported, self.imported, allowed_deviation, max_energy)
+            self.imported = prev_imp
 
-            exp = self.check_total_energy(exported, self.exported, allowed_deviation, max_energy)
-            self.exported = exported
-            return imp, exp
+            checked_exp, prev_exp = self.check_total_energy(exported, self.exported, allowed_deviation, max_energy)
+            self.exported = prev_exp
+            return checked_imp, checked_exp
         return imported, exported
 
     def check_total_energy(
@@ -78,7 +78,7 @@ class PeakFilter:
         previous_total_energy: Optional[float],
         allowed_deviation: float,
         max_energy: float
-    ) -> Optional[float]:
+    ) -> Tuple[Optional[float], Optional[float]]:
         if total_energy is not None:
             if total_energy > max_energy:
                 log.debug(f"PeakFilter: Unplausibler Zählerwert: {total_energy / 1000}kWh. "
@@ -88,14 +88,37 @@ class PeakFilter:
                     self.fault_state.warning("PeakFilter: Vorheriger Wert None (Startup), "
                                              f"aktueller Zählerwert: {total_energy / 1000 }kWh. "
                                              "Warte einen Regelintervall.")
-            elif (allowed_deviation > 0 and
-                    ((total_energy - previous_total_energy) > allowed_deviation or
-                     (total_energy - previous_total_energy) < 0)):
+            elif allowed_deviation > 0 and (total_energy - previous_total_energy) > allowed_deviation:
                 log.debug(f"PeakFilter: Unplausibler Zählerwert: {total_energy / 1000}kWh. "
                           f"Differenz zum vorherigen Wert: {total_energy - previous_total_energy}Wh. "
                           f"erlaubte Differenz: {round(allowed_deviation, 2)}Wh.")
+            elif (total_energy - previous_total_energy) < 0:
+                if previous_total_energy > max_energy:
+                    log.debug("PeakFilter: Erholung nach unplausibel hohem Zählerwert erkannt. "
+                              f"Vorheriger Wert: {previous_total_energy / 1000}kWh über dem 50-Jahres-Limit "
+                              f"({max_energy / 1000}kWh). Aktueller Wert {total_energy / 1000}kWh wird "
+                              "verworfen und als neue Vergleichsbasis verwendet.")
+                    checked_energy = None
+                    prev_energy = total_energy
+                    return checked_energy, prev_energy
+                log.debug(f"PeakFilter: Unplausibler Rückwärtssprung: {total_energy / 1000}kWh. "
+                          f"Vorherigen Wert: {previous_total_energy / 1000}kWh. "
+                          "Höchststand beibehalten.")
+                checked_energy = previous_total_energy
+                prev_energy = previous_total_energy
+                return checked_energy, prev_energy
             else:
                 log.debug(f"PeakFilter: Zählerwert: {total_energy}Wh innerhalb der zulässigen Grenzen. "
                           f"Differenz zum vorherigen Wert: {total_energy - previous_total_energy}Wh.")
-                return total_energy
-        return None
+                checked_energy = total_energy
+                prev_energy = total_energy
+                return checked_energy, prev_energy
+            # wenn der Peak-Filter greift, Zählerstand nicht aktualisieren (None).
+            # Zählerstand merken, damit immer nur die zwei letzten verglichen werden, um Vorwärtssprünge abzubilden.
+            checked_energy = None
+            prev_energy = total_energy
+            return checked_energy, prev_energy
+        else:
+            checked_energy = None
+            prev_energy = None
+            return checked_energy, prev_energy

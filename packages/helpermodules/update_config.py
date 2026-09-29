@@ -8,10 +8,13 @@ import logging
 from pathlib import Path
 import re
 import time
+import sys
+import subprocess
 from typing import List, Optional
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
 
 from control.chargemode import Chargemode
+from control.consumer.usage import NOT_CONTROLLED
 from control.limiting_value import LoadmanagementLimit
 
 from control.chargepoint.chargepoint_template import get_chargepoint_template_default
@@ -58,7 +61,9 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 148
+    DATASTORE_VERSION = 151
+
+    FILE_OPERATION_VERSION = 0
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -569,10 +574,12 @@ class UpdateConfig:
         "^openWB/system/device/[0-9]+/component/[0-9]+/simulation/timestamp_present$",
         "^openWB/system/device/[0-9]+/config$",
         "^openWB/system/device/module_update_completed$",
+        "^openWB/system/file_operation_version$",
         "^openWB/system/hostname$",
         "^openWB/system/io/[0-9]+/config$",
         "^openWB/system/ip_address$",
         "^openWB/system/lastlivevaluesJson$",
+        "^openWB/system/log_data_ready$",
         "^openWB/system/mac_address$",
         "^openWB/system/mqtt/bridge/[0-9]+$",
         "^openWB/system/mqtt/valid_partner_ids$",
@@ -595,6 +602,7 @@ class UpdateConfig:
         "^openWB/system/security/access/LoadManagementConfiguration$",
         "^openWB/system/security/access/ChargePointInstallation$",
         "^openWB/system/security/access/VehicleConfiguration$",
+        "^openWB/system/security/access/ConsumerConfiguration$",
         "^openWB/system/security/access/IoConfiguration$",
         "^openWB/system/security/access/LegacySmartHomeConfiguration$",
         "^openWB/system/security/access/InstallAssistant$",
@@ -737,6 +745,7 @@ class UpdateConfig:
         ("openWB/system/security/access/LoadManagementConfiguration", True),
         ("openWB/system/security/access/ChargePointInstallation", True),
         ("openWB/system/security/access/VehicleConfiguration", True),
+        ("openWB/system/security/access/ConsumerConfiguration", True),
         ("openWB/system/security/access/IoConfiguration", True),
         ("openWB/system/security/access/LegacySmartHomeConfiguration", True),
         ("openWB/system/security/access/InstallAssistant", True),
@@ -775,6 +784,7 @@ class UpdateConfig:
         try:
             # erst breaking changes auflösen, sonst sind alte Topics schon gelöscht
             self.__solve_breaking_changes()
+            self.__solve_breaking_changes_filesystem()
             self.__remove_outdated_topics()
             self._remove_invalid_topics()
             self.__pub_missing_defaults()
@@ -875,6 +885,67 @@ class UpdateConfig:
                 pub_system_message(
                     {}, "Fehler bei der Aktualisierung der Konfiguration des Brokers.", MessageType.ERROR)
 
+    def __solve_breaking_changes_filesystem(self) -> None:
+        """Führt dateisystembezogene Migrationen anhand der file_operation_version aus."""
+        file_operation_version = decode_payload(self.all_received_topics.get("openWB/system/file_operation_version"))
+        if file_operation_version is None:
+            # Neues Topic (z.B. bei Upgrade von älteren Versionen): alle File-Operation-Upgrades ausführen.
+            file_operation_version = []
+            self.__update_topic("openWB/system/file_operation_version", file_operation_version)
+        elif isinstance(file_operation_version, int):
+            # Legacy-Format (int): bereits ausgeführte Upgrades als Liste abbilden.
+            file_operation_version = list(range(file_operation_version))
+            self.__update_topic("openWB/system/file_operation_version", file_operation_version)
+
+        log.debug(f"current file operation version: {file_operation_version}")
+        log.debug(f"target file operation version: {self.FILE_OPERATION_VERSION}")
+        for version in list(range(self.FILE_OPERATION_VERSION+1)):
+            try:
+                operation_required = version not in file_operation_version
+                if version == 0:
+                    # Version 0 erneut ausführen, solange die Hintergrund-Generierung der Tages-/Monatssummen
+                    # noch nicht erfolgreich abgeschlossen ist (Flag ist nicht True).
+                    log_totals_generation_finished = decode_payload(
+                        self.all_received_topics.get("openWB/system/log_data_ready"))
+                    operation_required = operation_required or log_totals_generation_finished is not True
+
+                if operation_required:
+                    log.debug(f"upgrading File Operation version '{version}'")
+                    getattr(self, f"upgrade_file_operation_{version}")()
+            except AttributeError:
+                log.error(f"missing upgrade function! '{version}'")
+            except Exception:
+                log.exception("Fehler bei der Aktualisierung des Brokers.")
+                pub_system_message(
+                    {}, "Fehler bei der Aktualisierung der Konfiguration des Brokers.", MessageType.ERROR)
+
+    def upgrade_file_operation_0(self) -> None:
+        """
+        Generiere die Totals-Summen für Tage und Monate
+        """
+
+        self.__update_topic("openWB/system/log_data_ready", False)
+        try:
+            _generate_totals_subprocess = subprocess.Popen(
+                [
+                    sys.executable,
+                    "-m",
+                    "helpermodules.measurement_logging.generate_totals_subprocess"
+                ],
+                cwd="/var/www/html/openWB/packages",
+                start_new_session=True,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                close_fds=True
+            )
+
+            log.debug("generate_totals_subprocess gestartet, PID: %s", _generate_totals_subprocess.pid)
+            self._append_file_operation_version(0)
+        except Exception:
+            _generate_totals_subprocess = None
+            log.exception("Fehler beim Starten des generate_totals_subprocess.")
+
     def _loop_all_received_topics(self, callback) -> None:
         modified_topics = {}
         for topic, payload in self.all_received_topics.items():
@@ -892,6 +963,12 @@ class UpdateConfig:
         if version not in datastore_versions:
             datastore_versions.append(version)
             self.__update_topic("openWB/system/datastore_version", datastore_versions)
+
+    def _append_file_operation_version(self, version: int) -> None:
+        file_operation_versions = decode_payload(self.all_received_topics.get("openWB/system/file_operation_version"))
+        if version not in file_operation_versions:
+            file_operation_versions.append(version)
+            self.__update_topic("openWB/system/file_operation_version", file_operation_versions)
 
     def upgrade_datastore_0(self) -> None:
         def upgrade(topic: str, payload) -> Optional[dict]:
@@ -3864,3 +3941,110 @@ class UpdateConfig:
                     return {topic: NO_MODULE}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(148)
+
+    def upgrade_datastore_149(self) -> None:
+        """Verbraucher ohne Lastmanagement aus der Prioritätensteuerung entfernen."""
+        not_controlled_usage_types = {usage_type.value for usage_type in NOT_CONTROLLED}
+        not_controlled_consumers = {
+            int(get_index(topic))
+            for topic, payload in self.all_received_topics.items()
+            if re.search(r"^openWB/consumer/[0-9]+/usage$", topic) is not None
+            and decode_payload(payload).get("type") in not_controlled_usage_types
+        }
+
+        def remove_not_controlled_consumers(entries: list) -> None:
+            for entry in entries.copy():
+                if entry.get("type") == "consumer" and entry.get("id") in not_controlled_consumers:
+                    entries.remove(entry)
+                elif entry.get("type") == "group":
+                    children = entry.get("children", [])
+                    had_children = bool(children)
+                    remove_not_controlled_consumers(children)
+                    if had_children and not children:
+                        entries.remove(entry)
+
+        topic = "openWB/counter/get/loadmanagement_prios"
+        if topic in self.all_received_topics:
+            loadmanagement_prios = decode_payload(self.all_received_topics[topic])
+            migrated_loadmanagement_prios = copy.deepcopy(loadmanagement_prios)
+            remove_not_controlled_consumers(migrated_loadmanagement_prios)
+            if migrated_loadmanagement_prios != loadmanagement_prios:
+                self.__update_topic(topic, migrated_loadmanagement_prios)
+        self._append_datastore_version(149)
+
+    def upgrade_datastore_150(self) -> None:
+        """Fixed-Hours-Wochentage vom alten Schema (So=0..Sa=6) auf Python weekday() (Mo=0..So=6) migrieren."""
+
+        def _shift_weekday(weekday: int) -> int:
+            return (weekday + 6) % 7
+
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if ("openWB/optional/ep/flexible_tariff/provider" == topic or
+                    "openWB/optional/ep/grid_fee/provider" == topic):
+                provider = decode_payload(payload)
+                if provider.get("type") != "fixed_hours":
+                    return None
+                config = provider.get("configuration", {})
+                tariffs = config.get("tariffs", [])
+                changed = False
+                for tariff in tariffs:
+                    active_times = tariff.get("active_times", {})
+                    weekdays = active_times.get("weekdays")
+                    if isinstance(weekdays, list):
+                        converted = []
+                        for weekday in weekdays:
+                            try:
+                                weekday_int = int(weekday)
+                            except (TypeError, ValueError):
+                                converted.append(weekday)
+                                continue
+                            converted.append(_shift_weekday(weekday_int))
+                        if converted != weekdays:
+                            active_times["weekdays"] = converted
+                            changed = True
+                if changed:
+                    return {topic: provider}
+            return None
+
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(150)
+
+    def upgrade_datastore_151(self):
+        """Bereits verknüpfte Verbraucher-Zähler aus der Hierarchie entfernen."""
+        hierarchy_topic = "openWB/counter/get/hierarchy"
+        hierarchy = decode_payload(self.all_received_topics.get(hierarchy_topic))
+        if not isinstance(hierarchy, list) or not hierarchy:
+            self._append_datastore_version(151)
+            return
+
+        linked_counter_ids = {
+            int(extra_meter_id)
+            for topic, payload in self.all_received_topics.items()
+            if re.search(r"^openWB/consumer/[0-9]+/extra_meter$", topic) is not None
+            for extra_meter_id in [decode_payload(payload)]
+            if extra_meter_id is not None
+        }
+
+        if not linked_counter_ids:
+            self._append_datastore_version(151)
+            return
+
+        migrated_hierarchy = copy.deepcopy(hierarchy)
+        _counter_all = counter_all.CounterAll()
+        _counter_all.data.get.hierarchy = migrated_hierarchy
+        hierarchy_changed = False
+
+        for linked_counter_id in linked_counter_ids:
+            counter_entry = _counter_all.get_entry_of_element(linked_counter_id)
+            if not counter_entry or counter_entry.get("type") != ComponentType.COUNTER.value:
+                continue
+            parent_entry = _counter_all.get_entry_of_parent(linked_counter_id)
+            if not parent_entry or parent_entry.get("type") != ComponentType.COUNTER.value:
+                continue
+            _counter_all.hierarchy_remove_item(linked_counter_id)
+            hierarchy_changed = True
+
+        if hierarchy_changed:
+            self.__update_topic(hierarchy_topic, _counter_all.data.get.hierarchy)
+
+        self._append_datastore_version(151)

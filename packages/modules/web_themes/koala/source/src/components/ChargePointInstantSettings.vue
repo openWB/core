@@ -11,8 +11,8 @@
   <SliderStandard
     v-if="dcChargingEnabled"
     title="DC-Sollleistung"
-    :min="4"
-    :max="300"
+    :min="dcMinPower"
+    :max="dcMaxPower"
     unit="kW"
     v-model="instantChargeCurrentDc.value"
     class="q-mt-sm"
@@ -66,6 +66,14 @@ const dcChargingEnabled = computed(
 const acChargingEnabled = computed(
   () => mqttStore.chargePointChargeType(props.chargePointId).value === 'AC',
 );
+
+const DC_POWER_FALLBACK = 300; // entspricht dc_max_current-Default 435 A
+
+const dcMaxPower = computed(
+() => mqttStore.chargePointDcMaxPower(props.chargePointId).value ?? DC_POWER_FALLBACK,
+);
+
+const dcMinPower = computed(() => -dcMaxPower.value);
 
 const instantChargeCurrentDc = computed(() => {
   return mqttStore.chargePointConnectedVehicleInstantDcChargePower(
