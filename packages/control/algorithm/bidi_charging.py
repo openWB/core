@@ -2,8 +2,9 @@ import logging
 from control import data
 from control.chargemode import Chargemode
 from control.algorithm.chargemodes import CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE
-from control.algorithm.filter_chargepoints import filtered_loads_to_str, get_loads_by_chargemodes
+from control.algorithm.filter_chargepoints import filter_loads_by_chargemodes, filtered_loads_to_str
 from control.chargepoint.chargepoint import Chargepoint
+from control.load_protocol import Load
 from helpermodules.phase_handling import voltages_mean
 
 from control.limiting_value import LoadmanagementLimit
@@ -19,7 +20,7 @@ class Bidi:
     def __init__(self):
         pass
 
-    def set_bidi(self):
+    def set_bidi(self, grouped_loads: List[Load]):
         """Setzt den verfügbaren Strom für bidirektionales Laden und Entladen.
         Dafür gibt es jeweils eine Grenze für das Laden und Entladen
         (raw_currents_left und raw_exported_currents_left).
@@ -33,7 +34,7 @@ class Bidi:
 
         # CPs nach Modus filtern, dann verfügbare Ströme gegen alle relevanten Counter-Limits begrenzen.
         # -> Um bei mehreren Bidi-CPs das Entladen bei der Nullpunktanpassung gleichmäßig zu verteilen
-        preferenced_cps = get_loads_by_chargemodes(CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE)
+        preferenced_cps = filter_loads_by_chargemodes(grouped_loads, CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE)
         if preferenced_cps:
             log.info(f"Verbraucher {filtered_loads_to_str(preferenced_cps)}")
             while len(preferenced_cps):
