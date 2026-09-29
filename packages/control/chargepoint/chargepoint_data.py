@@ -174,6 +174,13 @@ class Set:
     charging_ev_data: Ev = field(default_factory=ev_factory)
     ocpp_transaction_id: Optional[int] = field(default=None, metadata={"topic": "set/ocpp_transaction_id"})
     charge_state_prev: bool = field(default=False, metadata={"topic": "set/charge_state_prev"})
+    # letzter CP-SoC-Timestamp, für den bereits ein force_soc_update ausgelöst wurde, und das zugehörige EV,
+    # um bei dauerhaft veraltetem EV-SoC (zB API-Fehler) nicht jeden Zyklus erneut ein Update anzustoßen,
+    # aber bei einem EV-Wechsel am selben Ladepunkt trotzdem einmal neu auszulösen
+    soc_timestamp_force_update_prev: Optional[int] = field(
+        default=None, metadata={"topic": "set/soc_timestamp_force_update_prev"})
+    soc_timestamp_force_update_prev_ev: Optional[int] = field(
+        default=None, metadata={"topic": "set/soc_timestamp_force_update_prev_ev"})
 
 
 @dataclass
