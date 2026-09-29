@@ -51,6 +51,7 @@ import { useQuasar } from 'quasar';
 import EnergyFlowChart from './charts/energyFlowChart/EnergyFlowChart.vue';
 import HistoryChart from './charts/historyChart/HistoryChart.vue';
 import DailyTotals from './charts/dailyTotals/DailyTotals.vue';
+import SankeyChart from './charts/sankeyChart/SankeyChart.vue';
 import { useLocalDataStore } from 'src/stores/localData-store';
 import { useMqttStore } from 'src/stores/mqtt-store';
 
@@ -78,6 +79,7 @@ const componentMap = {
   flow_diagram: EnergyFlowChart,
   history_chart: HistoryChart,
   daily_totals: DailyTotals,
+  sankey_chart: SankeyChart,
 };
 
 const chartCarouselItems = computed(() => {
@@ -95,6 +97,10 @@ const chartCarouselItems = computed(() => {
       {
         name: 'daily_totals',
         component: DailyTotals,
+      },
+      {
+        name: 'sankey_chart',
+        component: SankeyChart,
       },
     ];
   }

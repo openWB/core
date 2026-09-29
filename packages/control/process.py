@@ -2,17 +2,24 @@
 """
 import logging
 from threading import Thread
-from typing import List
+from typing import List, Optional
 
 from control.bat_all import get_bat_components_by_controllability
 from control.chargelog import chargelog
 from control.chargepoint import chargepoint
 from control import data
-from control.chargepoint.chargepoint_state import ChargepointState
+from control.chargepoint.chargepoint_state import CHARGING_STATES, ChargepointState
+from control.consumer.consumer import Consumer
+from control.consumer.usage import ConsumerUsage
+from helpermodules import timecheck
+from helpermodules.phase_handling import voltages_mean
 from helpermodules.pub import Pub
 from helpermodules.utils._thread_handler import joined_thread_handler
+from modules.common.abstract_consumer import CurrentValues
 from modules.common.abstract_io import AbstractIoDevice
+from modules.common.configurable_consumer import SetLimitData
 from modules.common.configurable_device import set_power_limit_wrapper
+from modules.common.fault_state import FaultStateContext
 from modules.common.fault_state_level import FaultStateLevel
 from modules.io_actions.controllable_consumers.dimming.api_io import DimmingIo
 from modules.io_actions.controllable_consumers.dimming_direct_control.api import DimmingDirectControl
@@ -20,6 +27,7 @@ from modules.io_actions.generator_systems.stepwise_control.api_eebus import Step
 from modules.io_actions.generator_systems.stepwise_control.api_io import StepwiseControlIo
 
 log = logging.getLogger(__name__)
+control_command_log = logging.getLogger("steuve_control_command")
 
 
 class Process:
@@ -42,7 +50,7 @@ class Process:
                         if control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED and cp.data.set.current != 0:
                             control_parameter.state = ChargepointState.WAIT_FOR_USING_PHASES
                         cp.set_timestamp_charge_start()
-                        self._update_state(cp)
+                        self._update_state_cp(cp)
                     else:
                         control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
                         cp.data.set.current = 0
@@ -71,31 +79,57 @@ class Process:
                             args=(bat_component,
                                   data.data.bat_data[f"bat{bat_component.component_config.id}"].data.set.power_limit),
                             name=f"set power limit {bat_component.component_config.id}"))
-            for action in data.data.io_actions.actions.values():
-                if isinstance(action, DimmingDirectControl):
-                    for d in action.config.configuration.devices:
-                        if d["type"] == "io":
-                            data.data.io_states[f"io_states{d['id']}"].data.set.digital_output[d["digital_output"]] = (
-                                action.dimming_via_direct_control()[0] is None  # active output (True) if no dimming
-                            )
-                if isinstance(action, DimmingIo):
-                    for d in action.config.configuration.devices:
-                        if d["type"] == "io":
-                            data.data.io_states[f"io_states{d['id']}"].data.set.digital_output[d["digital_output"]] = (
-                                not action.dimming_active()  # active output (True) if no dimming
-                            )
-                if isinstance(action, (StepwiseControlEebus, StepwiseControlIo)):
-                    # check if passthrough is enabled
-                    if (action.config.configuration.passthrough_enabled and
-                            action.config.configuration.io_output_device is not None):
-                        # find output pattern by value
-                        for pattern in action.config.configuration.output_pattern:
-                            if pattern["value"] == action.control_stepwise()[0]:
-                                # set digital outputs according to matching output_pattern
-                                for output in pattern["matrix"].keys():
-                                    data.data.io_states[
-                                        f"io_states{action.config.configuration.io_output_device}"
-                                    ].data.set.digital_output[output] = pattern["matrix"][output]
+            for consumer in data.data.consumer_data.values():
+                try:
+                    self._update_state_consumer(consumer)
+                    if consumer.data.get.state_str is None:
+                        if consumer.data.usage.type == ConsumerUsage.METER_ONLY:
+                            consumer.data.get.state_str = "Messwerte des Verbrauchers werden erfasst."
+                        elif consumer.data.usage.type == ConsumerUsage.SELF_CONTROLLED:
+                            consumer.data.get.state_str = "Messwerte werden an den Verbraucher übermittelt."
+                        else:
+                            if consumer.data.get.charge_state:
+                                consumer.data.get.state_str = "Verbraucher läuft."
+                            else:
+                                consumer.data.get.state_str = "Verbraucher wird gestartet... "
+
+                    consumer_thread = self._start_consumer(consumer)
+                    if consumer_thread is not None:
+                        modules_threads.append(consumer_thread)
+                except Exception:
+                    log.exception("Fehler im Process-Modul für Verbaucher "+str(consumer))
+            for action, io_device in data.data.io_actions.iter_actions_with_io_device():
+                with FaultStateContext(io_device.fault_state, update_always=False):
+                    try:
+                        if isinstance(action, DimmingDirectControl):
+                            for d in action.config.configuration.devices:
+                                if d["type"] == "io":
+                                    digital_output = data.data.io_states[f"io_states{d['id']}"].data.set.digital_output
+                                    # active output (True) if no dimming
+                                    digital_output[d["digital_output"]] = action.dimming_via_direct_control()[0] is None
+                        if isinstance(action, DimmingIo):
+                            for d in action.config.configuration.devices:
+                                if d["type"] == "io":
+                                    digital_output = data.data.io_states[f"io_states{d['id']}"].data.set.digital_output
+                                    # active output (True) if no dimming
+                                    digital_output[d["digital_output"]] = not action.dimming_active()
+                        if isinstance(action, (StepwiseControlEebus, StepwiseControlIo)):
+                            # check if passthrough is enabled
+                            if (action.config.configuration.passthrough_enabled and
+                                    action.config.configuration.io_output_device is not None):
+                                # find output pattern by value
+                                for pattern in action.config.configuration.output_pattern:
+                                    if pattern["value"] == action.control_stepwise()[0]:
+                                        # set digital outputs according to matching output_pattern
+                                        for output in pattern["matrix"].keys():
+                                            data.data.io_states[
+                                                f"io_states{action.config.configuration.io_output_device}"
+                                            ].data.set.digital_output[output] = pattern["matrix"][output]
+                    except KeyError as e:
+                        control_command_log.error(
+                            f"Ausgang konnte für die Aktion {action.config.name} nicht zugeordnet werden.")
+                        raise KeyError(f"Ausgang konnte für die Aktion {action.config.name} nicht zugeordnet werden. "
+                                       "Bitte prüfen Sie die Konfiguration.") from e
             for io in data.data.system_data.values():
                 if isinstance(io, AbstractIoDevice):
                     modules_threads.append(
@@ -109,7 +143,7 @@ class Process:
         except Exception:
             log.exception("Fehler im Process-Modul")
 
-    def _update_state(self, chargepoint: chargepoint.Chargepoint) -> None:
+    def _update_state_cp(self, chargepoint: chargepoint.Chargepoint) -> None:
         """aktualisiert den Zustand des Ladepunkts.
         """
         charging_ev = chargepoint.data.set.charging_ev_data
@@ -149,3 +183,51 @@ class Process:
         return Thread(target=chargepoint.chargepoint_module.set_current,
                       args=(chargepoint.data.set.current,),
                       name=f"set current cp{chargepoint.chargepoint_module.config.id}")
+
+    def _update_state_consumer(self, consumer: Consumer) -> None:
+        control_parameter = consumer.data.control_parameter
+
+        if consumer.data.set.switch_interval_elapsed is False:
+            log.debug("Intervall für neuen Schaltbefehl nicht abgelaufen.")
+            consumer.data.set.current = consumer.data.set.current_prev
+        else:
+            consumer.data.set.current = round(consumer.data.set.current, 2)
+        if consumer.data.set.current != consumer.data.set.current_prev:
+            consumer.data.set.timestamp_last_current_set = timecheck.create_timestamp()
+        if consumer.data.set.current != 0 and control_parameter.state not in CHARGING_STATES:
+            control_parameter.state = ChargepointState.CHARGING_ALLOWED
+        if control_parameter.state != ChargepointState.NO_CHARGING_ALLOWED or consumer.data.set.current != 0:
+            consumer.set_timestamp_charge_start()
+        consumer.data.set.power = consumer.data.set.current * \
+            voltages_mean(consumer.data.get.voltages) * consumer.data.config.connected_phases
+        log.info(f"Verbraucher{consumer.num}: set current {consumer.data.set.current} A, "
+                 f"state {ChargepointState(control_parameter.state).name}")
+
+    def _start_consumer(self, consumer: Consumer) -> Optional[Thread]:
+        if consumer.data.usage.type == ConsumerUsage.METER_ONLY:
+            return None
+        elif consumer.data.usage.type in (ConsumerUsage.CONTINUOUS,
+                                          ConsumerUsage.SUSPENDABLE_ONOFF):
+            return Thread(
+                target=consumer.module.switch_on if consumer.data.set.current > 0 else consumer.module.switch_off,
+                name=f"set state consumer{consumer.num}")
+        elif consumer.data.usage.type == ConsumerUsage.SELF_CONTROLLED:
+            current_values = CurrentValues(
+                bat_power=data.data.bat_all_data.data.get.power,
+                bat_soc=data.data.bat_all_data.data.get.soc,
+                cp_power=data.data.cp_all_data.data.get.power,
+                evu_power=data.data.counter_all_data.get_evu_counter().data.get.power,
+                home_consumption=data.data.counter_all_data.data.set.home_consumption,
+                pv_power=data.data.pv_all_data.data.get.power
+            )
+            return Thread(target=consumer.module.send_values,
+                          args=(current_values,),
+                          name=f"send values consumer{consumer.num}")
+        elif consumer.data.usage.type == ConsumerUsage.SUSPENDABLE_TUNABLE:
+            set_limit_data = SetLimitData(max_power=consumer.data.config.max_power)
+            return Thread(target=consumer.module.set_power_limit,
+                          args=(consumer.data.set.power, set_limit_data),
+                          name=f"set power consumer{consumer.num}")
+        else:
+            log.error(f"Verbraucher{consumer.num}: Unbekannter usage.type {consumer.data.usage.type}")
+            return None

@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 import logging
 from typing import Iterable, Union
-from pymodbus.constants import Endian
 
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
-from modules.common.modbus import ModbusDataType, ModbusTcpClient_
+from modules.common.modbus import ModbusTcpClient_
 from modules.devices.kostal.kostal_plenticore.bat import KostalPlenticoreBat
 from modules.devices.kostal.kostal_plenticore.counter import KostalPlenticoreCounter
 from modules.devices.kostal.kostal_plenticore.inverter import KostalPlenticoreInverter
@@ -17,27 +16,23 @@ log = logging.getLogger(__name__)
 
 def create_device(device_config: KostalPlenticore):
     client = None
-    endianess = None
 
     def create_bat_component(component_config: KostalPlenticoreBatSetup):
         return KostalPlenticoreBat(component_config,
                                    device_id=device_config.id,
                                    modbus_id=device_config.configuration.modbus_id,
-                                   endianess=endianess,
                                    client=client)
 
     def create_counter_component(component_config: KostalPlenticoreCounterSetup):
         return KostalPlenticoreCounter(component_config,
                                        device_id=device_config.id,
                                        modbus_id=device_config.configuration.modbus_id,
-                                       endianess=endianess,
                                        client=client)
 
     def create_inverter_component(component_config: KostalPlenticoreInverterSetup):
         return KostalPlenticoreInverter(component_config,
                                         device_id=device_config.id,
                                         modbus_id=device_config.configuration.modbus_id,
-                                        endianess=endianess,
                                         client=client)
 
     def update_components(
@@ -47,10 +42,8 @@ def create_device(device_config: KostalPlenticore):
                 component.update()
 
     def initializer():
-        nonlocal client, endianess
+        nonlocal client
         client = ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
-        endianess = Endian.Big if client.read_holding_registers(
-            5, ModbusDataType.UINT_16, unit=device_config.configuration.modbus_id) else Endian.Little
 
     return ConfigurableDevice(
         device_config=device_config,

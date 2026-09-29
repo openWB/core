@@ -1,4 +1,8 @@
+from typing import List
 from unittest.mock import Mock, patch, mock_open
+from control.chargemode import Chargemode
+from control.ev.charge_template import ChargeTemplate
+import dataclass_utils
 from helpermodules import update_config
 import json
 from pathlib import Path
@@ -85,6 +89,71 @@ def test_upgrade_datastore_124_adds_missing_odometer_pattern_for_json_soc_module
 
     ha_config = update_con.all_received_topics["openWB/vehicle/1/soc_module/config"]["configuration"]
     assert "odometer_pattern" not in ha_config
+
+
+def test_upgrade_datastore_147_cleans_up_fronius_module():
+    update_con = UpdateConfig()
+    update_con.all_received_topics = {
+        "openWB/system/datastore_version": list(range(141)),
+        "openWB/system/device/0/config": {
+            "name": "Fronius",
+            "type": "fronius",
+            "id": 0,
+            "vendor": "fronius",
+            "configuration": {"ip_address": "192.168.1.10"}
+        },
+        "openWB/system/device/1/config": {
+            "name": "Some other device",
+            "type": "sma_sunny_boy",
+            "id": 1,
+            "vendor": "sma",
+            "configuration": {}
+        },
+        "openWB/system/device/0/component/1/config": {
+            "name": "Sekundärer Wechselrichter",
+            "type": "inverter_secondary",
+            "id": 1,
+            "configuration": {"id": 2}
+        },
+        "openWB/system/device/0/component/2/config": {
+            "name": "Fronius Speicher",
+            "type": "bat",
+            "id": 2,
+            "configuration": {"meter_id": 0}
+        },
+        "openWB/system/device/0/component/3/config": {
+            "name": "Fronius S0 Zähler",
+            "type": "counter_s0",
+            "id": 3,
+            "configuration": {}
+        },
+        "openWB/system/device/1/component/1/config": {
+            "name": "Fronius SM Zähler",
+            "type": "counter_sm",
+            "id": 1,
+            "configuration": {"meter_id": 1, "variant": 2}
+        }
+    }
+
+    update_con.upgrade_datastore_147()
+
+    assert update_con.all_received_topics["openWB/system/device/0/config"]["type"] == "fronius_http_api"
+    assert update_con.all_received_topics["openWB/system/device/1/config"]["type"] == "sma_sunny_boy"
+
+    migrated_inverter = update_con.all_received_topics["openWB/system/device/0/component/1/config"]
+    assert migrated_inverter["type"] == "inverter"
+    assert migrated_inverter["configuration"] == {"secondary_id": 2}
+
+    unaffected_bat = update_con.all_received_topics["openWB/system/device/0/component/2/config"]
+    assert unaffected_bat["type"] == "bat"
+
+    s0_migrated = update_con.all_received_topics["openWB/system/device/0/component/3/config"]
+    assert s0_migrated["type"] == "counter"
+    assert s0_migrated["configuration"] == {"variant": 3, "meter_id": 0}
+
+    sm_migrated = update_con.all_received_topics["openWB/system/device/1/component/1/config"]
+    assert sm_migrated["type"] == "counter"
+    assert sm_migrated["configuration"] == {"meter_id": 1, "variant": 2}
 
 
 @pytest.mark.parametrize("name", [
@@ -233,3 +302,215 @@ def test_upgrade_datastore_125_is_idempotent_for_already_converted_values(mock_p
     assert uc.all_received_topics["openWB/optional/ep/grid_fee/provider"] == expected_grid_fee
     assert uc.all_received_topics["openWB/system/datastore_version"] == [123, 124, 125]
     assert mock_pub.pub.call_count == 1  # einmal publishen für Upgrade der Datastore-Version
+
+
+@pytest.mark.parametrize("ev0_prio, ev0_chargemode, ev1_prio, ev1_chargemode, ev2_prio, ev2_chargemode, expected", [
+    pytest.param(False, Chargemode.INSTANT_CHARGING.value, False, Chargemode.INSTANT_CHARGING.value,
+                 False, Chargemode.INSTANT_CHARGING.value,
+                 [{"type": "group", "children": [{"type": "vehicle", "id": 0},
+                                                 {"type": "vehicle", "id": 1},
+                                                 {"type": "vehicle", "id": 2}]}],
+                 id="alle gleich"),
+    pytest.param(False, Chargemode.INSTANT_CHARGING.value, False, Chargemode.INSTANT_CHARGING.value,
+                 False, Chargemode.SCHEDULED_CHARGING.value,
+                 [{"type": "vehicle", "id": 2},
+                  {"type": "group", "children": [{"type": "vehicle", "id": 0}, {"type": "vehicle", "id": 1}]}],
+                 id="Lademodi unterschiedlich"),
+    pytest.param(False, Chargemode.INSTANT_CHARGING.value, True, Chargemode.INSTANT_CHARGING.value,
+                 False, Chargemode.INSTANT_CHARGING.value,
+                 [{"type": "vehicle", "id": 1},
+                  {"type": "group", "children": [{"type": "vehicle", "id": 0}, {"type": "vehicle", "id": 2}]}],
+                 id="Prioritäten unterschiedlich")
+]
+)
+def test_upgrade_datastore_142_ev_chargemode_conversion(ev0_prio: bool,
+                                                        ev0_chargemode: str,
+                                                        ev1_prio: bool,
+                                                        ev1_chargemode: str,
+                                                        ev2_prio: bool,
+                                                        ev2_chargemode: str,
+                                                        expected: List[dict],
+                                                        mock_pub: Mock):
+    # setup
+    ev0_charge_template = ChargeTemplate()
+    ev0_charge_template.data.id = 0
+    ev0_charge_template.data.chargemode.selected = ev0_chargemode
+    ev0_charge_template.data.prio = ev0_prio
+    ev1_charge_template = ChargeTemplate()
+    ev1_charge_template.data.id = 1
+    ev1_charge_template.data.chargemode.selected = ev1_chargemode
+    ev1_charge_template.data.prio = ev1_prio
+    ev2_charge_template = ChargeTemplate()
+    ev2_charge_template.data.id = 2
+    ev2_charge_template.data.chargemode.selected = ev2_chargemode
+    ev2_charge_template.data.prio = ev2_prio
+
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        "openWB/vehicle/0/charge_template": 0,
+        "openWB/vehicle/1/charge_template": 1,
+        "openWB/vehicle/2/charge_template": 2,
+        "openWB/vehicle/template/charge_template/0": dataclass_utils.asdict(ev0_charge_template.data),
+        "openWB/vehicle/template/charge_template/1": dataclass_utils.asdict(ev1_charge_template.data),
+        "openWB/vehicle/template/charge_template/2": dataclass_utils.asdict(ev2_charge_template.data),
+        "openWB/system/datastore_version": [131, 132],
+    }
+
+    # execution
+    uc.upgrade_datastore_142()
+
+    # evaluation
+    assert uc.all_received_topics["openWB/counter/get/loadmanagement_prios"] == expected
+    assert uc.all_received_topics["openWB/system/datastore_version"] == [131, 132, 142]
+    assert mock_pub.pub.call_count == 2  # einmal publishen für Upgrade der Datastore-Version
+
+
+def test_upgrade_datastore_149_removes_not_controlled_consumers(mock_pub: Mock):
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        "openWB/consumer/1/usage": {"type": "continuous"},
+        "openWB/consumer/2/usage": {"type": "meter_only"},
+        "openWB/consumer/4/usage": {"type": "self_controlled"},
+        "openWB/counter/get/loadmanagement_prios": [
+            {"type": "vehicle", "id": 0},
+            {
+                "type": "group",
+                "label": "Verbraucher",
+                "children": [
+                    {"type": "consumer", "id": 1},
+                    {"type": "consumer", "id": 2},
+                    {"type": "consumer", "id": 4},
+                ],
+            },
+            {"type": "consumer", "id": 3},
+        ],
+        "openWB/system/datastore_version": list(range(149)),
+    }
+
+    uc.upgrade_datastore_149()
+
+    assert uc.all_received_topics["openWB/counter/get/loadmanagement_prios"] == [
+        {"type": "vehicle", "id": 0},
+        {
+            "type": "group",
+            "label": "Verbraucher",
+            "children": [{"type": "consumer", "id": 1}],
+        },
+        {"type": "consumer", "id": 3},
+    ]
+    assert uc.all_received_topics["openWB/system/datastore_version"] == list(range(150))
+    assert mock_pub.pub.call_count == 2
+
+
+def test_upgrade_datastore_150_migrates_fixed_hours_weekdays(mock_pub):
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        "openWB/optional/ep/flexible_tariff/provider": {
+            "type": "fixed_hours",
+            "configuration": {
+                "tariffs": [
+                    {
+                        "name": "weekdays",
+                        "price": 0.1,
+                        "active_times": {
+                            "dates": [["01-01", "31-12"]],
+                            "times": [["00:00", "24:00"]],
+                            "weekdays": [1, 2, 3, 4, 5],
+                        },
+                    },
+                    {
+                        "name": "weekend",
+                        "price": 0.2,
+                        "active_times": {
+                            "dates": [["01-01", "31-12"]],
+                            "times": [["00:00", "24:00"]],
+                            "weekdays": [0, 6],
+                        },
+                    },
+                ]
+            },
+        },
+        "openWB/optional/ep/grid_fee/provider": {
+            "type": "fixed_hours",
+            "configuration": {
+                "tariffs": [
+                    {
+                        "name": "all-days",
+                        "price": 0.3,
+                        "active_times": {
+                            "dates": [["01-01", "31-12"]],
+                            "times": [["00:00", "24:00"]],
+                            "weekdays": [0, 1, 2, 3, 4, 5, 6],
+                        },
+                    }
+                ]
+            },
+        },
+        "openWB/system/datastore_version": [149],
+    }
+
+    uc.upgrade_datastore_150()
+
+    flexible_tariffs = uc.all_received_topics["openWB/optional/ep/flexible_tariff/provider"]["configuration"][
+        "tariffs"
+    ]
+    assert flexible_tariffs[0]["active_times"]["weekdays"] == [0, 1, 2, 3, 4]
+    assert flexible_tariffs[1]["active_times"]["weekdays"] == [6, 5]
+
+    grid_fee_tariffs = uc.all_received_topics["openWB/optional/ep/grid_fee/provider"]["configuration"]["tariffs"]
+    assert grid_fee_tariffs[0]["active_times"]["weekdays"] == [6, 0, 1, 2, 3, 4, 5]
+
+    assert uc.all_received_topics["openWB/system/datastore_version"] == [149, 150]
+
+    updated_topics = [call.args[0] for call in mock_pub.pub.call_args_list]
+    assert "openWB/optional/ep/flexible_tariff/provider" in updated_topics
+    assert "openWB/optional/ep/grid_fee/provider" in updated_topics
+    assert "openWB/system/datastore_version" in updated_topics
+
+
+def test_upgrade_datastore_151_removes_linked_extra_meter_counters_from_hierarchy(mock_pub: Mock):
+    uc = UpdateConfig()
+    uc.all_received_topics = {
+        "openWB/consumer/2/extra_meter": 5,
+        "openWB/consumer/3/extra_meter": None,
+        "openWB/counter/get/hierarchy": [{
+            "id": 0,
+            "type": "counter",
+            "children": [
+                {"id": 2, "type": "consumer", "children": []},
+                {"id": 5, "type": "counter", "children": []},
+                {"id": 6, "type": "counter", "children": []},
+            ],
+        }],
+        "openWB/system/datastore_version": list(range(151)),
+    }
+
+    uc.upgrade_datastore_151()
+
+    assert uc.all_received_topics["openWB/counter/get/hierarchy"] == [{
+        "id": 0,
+        "type": "counter",
+        "children": [
+            {"id": 2, "type": "consumer", "children": []},
+            {"id": 6, "type": "counter", "children": []},
+        ],
+    }]
+    assert uc.all_received_topics["openWB/system/datastore_version"] == list(range(152))
+    assert mock_pub.pub.call_count == 2
+
+
+@pytest.mark.parametrize("file_operation_version, finished, expected_calls", [
+    ([], False, 1),  # erster Start
+    ([0], True, 0),   # bereits fertig -> kein Neustart
+    ([0], False, 1),  # angefangen, aber nicht fertig -> Neustart
+])
+def test_file_operation_0_start_behavior(file_operation_version, finished, expected_calls):
+    update_config = UpdateConfig()
+    update_config.all_received_topics = {
+        "openWB/system/file_operation_version": file_operation_version,
+        "openWB/system/log_data_ready": finished
+    }
+
+    with patch.object(update_config, "upgrade_file_operation_0") as upgrade_mock:
+        update_config._UpdateConfig__solve_breaking_changes_filesystem()
+    assert upgrade_mock.call_count == expected_calls

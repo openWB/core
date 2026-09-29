@@ -118,6 +118,72 @@ def test_check_timeframe(plan: Union[AutolockPlan, TimeChargingPlan], now: str, 
     assert state == expected_state
 
 
+@pytest.mark.parametrize(
+    "plans, now, expected",
+    [
+        pytest.param(
+            [TimeChargingPlan(active=True, time=["10:00", "12:00"], frequency=FrequencyPeriod(selected="daily"))],
+            datetime.datetime(2026, 1, 2, 9, 0),
+            datetime.datetime(2026, 1, 2, 10, 0),
+            id="daily-start-today",
+        ),
+        pytest.param(
+            [TimeChargingPlan(active=True, time=["10:00", "12:00"], frequency=FrequencyPeriod(selected="daily"))],
+            datetime.datetime(2026, 1, 2, 10, 30),
+            datetime.datetime(2026, 1, 3, 10, 0),
+            id="daily-start-next-day",
+        ),
+        pytest.param(
+            [
+                TimeChargingPlan(
+                    active=True,
+                    time=["10:00", "12:00"],
+                    frequency=FrequencyPeriod(selected="weekly", weekly=[
+                                              False, False, False, False, True, False, False]),
+                )
+            ],
+            datetime.datetime(2026, 1, 2, 9, 0),
+            datetime.datetime(2026, 1, 2, 10, 0),
+            id="weekly-start-same-day",
+        ),
+        pytest.param(
+            [
+                TimeChargingPlan(
+                    active=True,
+                    time=["10:00", "12:00"],
+                    frequency=FrequencyPeriod(selected="once", once=["2026-01-05", "2026-01-05"]),
+                )
+            ],
+            datetime.datetime(2026, 1, 2, 9, 0),
+            datetime.datetime(2026, 1, 5, 10, 0),
+            id="once-start-future",
+        ),
+        pytest.param(
+            [
+                TimeChargingPlan(
+                    active=False,
+                    time=["10:00", "12:00"],
+                    frequency=FrequencyPeriod(selected="daily"),
+                )
+            ],
+            datetime.datetime(2026, 1, 2, 9, 0),
+            None,
+            id="inactive-plan-ignored",
+        ),
+    ],
+)
+def test_get_next_timeframe_plan_start(
+    plans: List[TimeChargingPlan],
+    now: datetime.datetime,
+    expected: Optional[datetime.datetime],
+):
+    # execution
+    result = timecheck.get_next_timeframe_plan_start(plans, now)
+
+    # evaluation
+    assert result == expected
+
+
 @pytest.mark.parametrize("timestamp, expected",
                          [
                              pytest.param(1652683202, "40 Sek."),

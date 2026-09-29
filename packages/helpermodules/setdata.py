@@ -2,7 +2,6 @@
 """
 
 import copy
-import dataclasses
 from pathlib import Path
 from threading import Event
 from typing import List, Optional, Tuple
@@ -105,6 +104,8 @@ class SetData:
                 self.process_internal_chargepoint_topic(msg)
             elif "openWB/set/LegacySmartHome/" in msg.topic:
                 self.process_legacy_smart_home_topic(msg)
+            elif "openWB/set/consumer/" in msg.topic:
+                self.process_consumer_topic(msg)
 
     def _validate_value(self, msg: mqtt.MQTTMessage, data_type, ranges=[], collection=None, pub_json=False,
                         retain: bool = True):
@@ -170,7 +171,7 @@ class SetData:
                     elif re.search("^openWB/set/chargepoint/[1-9][0-9]*/config.*$", msg.topic) is not None:
                         event = self.event_cp_config
                         if "cp"+str(index) in subdata.SubData.cp_data:
-                            template = dataclasses.asdict(
+                            template = dataclass_utils.asdict(
                                 subdata.SubData.cp_data["cp"+str(index)].chargepoint.data.config)
                         else:
                             template = {}
@@ -485,7 +486,8 @@ class SetData:
                     else:
                         self._validate_value(msg, float, [(float("-inf"), 0), (6, 32), (0, 0)])
                 elif "/set/required_power" in msg.topic:
-                    self._validate_value(msg, float, [(0, float("inf"))])
+                    # Don't accept NaN
+                    self._validate_value(msg, float, [(float("-inf"), float("inf"))])
                 elif "/set/phases_to_use" in msg.topic:
                     self._validate_value(msg, int, [(0, 3)])
                 elif ("/set/manual_lock" in msg.topic or
@@ -512,34 +514,8 @@ class SetData:
                         msg, int, [(0, float("inf"))], pub_json=True)
                 elif "get" in msg.topic:
                     self.process_chargepoint_get_topics(msg)
-                elif "/control_parameter/required_current" in msg.topic:
-                    if hardware_configuration.get_hardware_configuration_setting("dc_charging"):
-                        self._validate_value(msg, float, [(0, 0), (6, 32), (0, 450)])
-                    else:
-                        self._validate_value(msg, float, [(6, 32), (0, 0)])
-                elif ("/control_parameter/phases" in msg.topic or
-                      "/control_parameter/template_phases" in msg.topic):
-                    self._validate_value(msg, int, [(0, 3)])
-                elif "/control_parameter/failed_phase_switches" in msg.topic:
-                    self._validate_value(msg, int, [(0, 4)])
-                elif ("/control_parameter/submode" in msg.topic or
-                        "/control_parameter/chargemode" in msg.topic):
-                    self._validate_value(msg, str)
-                elif "/control_parameter/limit" in msg.topic:
-                    self._validate_value(msg, "json")
-                elif "/control_parameter/prio" in msg.topic:
-                    self._validate_value(msg, bool)
-                elif "/control_parameter/current_plan" in msg.topic:
-                    self._validate_value(msg, int)
-                elif ("/control_parameter/min_current" in msg.topic or
-                        "/control_parameter/timestamp_switch_on_off" in msg.topic or
-                        "/control_parameter/timestamp_charge_start" in msg.topic or
-                        "/control_parameter/timestamp_chargemode_changed" in msg.topic or
-                        "/control_parameter/timestamp_last_phase_switch" in msg.topic or
-                        "/control_parameter/timestamp_phase_switch_buffer_start" in msg.topic):
-                    self._validate_value(msg, float, [(0, float("inf"))])
-                elif "/control_parameter/state" in msg.topic:
-                    self._validate_value(msg, int, [(0, 7)])
+                elif "/control_parameter/" in msg.topic:
+                    self.process_control_parameter_topics(msg)
                 elif "/disable_after_unplug" in msg.topic:
                     self._validate_value(msg, bool, pub_json=True)
                 else:
@@ -548,6 +524,39 @@ class SetData:
                 self.__unknown_id(msg)
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
+
+    def process_control_parameter_topics(self, msg):
+        if "/control_parameter/required_current" in msg.topic:
+            if "chargepoint" in msg.topic:
+                if hardware_configuration.get_hardware_configuration_setting("dc_charging"):
+                    self._validate_value(msg, float, [(0, 0), (6, 32), (0, 450)])
+                else:
+                    self._validate_value(msg, float, [(6, 32), (0, 0)])
+            elif "consumer" in msg.topic:
+                self._validate_value(msg, float, [(0, float("inf"))])
+        elif ("/control_parameter/phases" in msg.topic or
+                "/control_parameter/template_phases" in msg.topic):
+            self._validate_value(msg, int, [(0, 3)])
+        elif "/control_parameter/failed_phase_switches" in msg.topic:
+            self._validate_value(msg, int, [(0, 4)])
+        elif ("/control_parameter/submode" in msg.topic or
+                "/control_parameter/chargemode" in msg.topic):
+            self._validate_value(msg, str)
+        elif "/control_parameter/limit" in msg.topic:
+            self._validate_value(msg, "json")
+        elif "/control_parameter/prio" in msg.topic:
+            self._validate_value(msg, bool)
+        elif "/control_parameter/current_plan" in msg.topic:
+            self._validate_value(msg, int)
+        elif ("/control_parameter/min_current" in msg.topic or
+                "/control_parameter/timestamp_switch_on_off" in msg.topic or
+                "/control_parameter/timestamp_charge_start" in msg.topic or
+                "/control_parameter/timestamp_chargemode_changed" in msg.topic or
+                "/control_parameter/timestamp_last_phase_switch" in msg.topic or
+                "/control_parameter/timestamp_phase_switch_buffer_start" in msg.topic):
+            self._validate_value(msg, float, [(0, float("inf"))])
+        elif "/control_parameter/state" in msg.topic:
+            self._validate_value(msg, int, [(0, 7)])
 
     def process_chargepoint_get_topics(self, msg):
         if ("/get/voltages" in msg.topic):
@@ -756,6 +765,7 @@ class SetData:
             elif ("openWB/set/general/http_api" in msg.topic or
                   "openWB/set/general/modbus_control" in msg.topic or
                   "openWB/set/general/extern" in msg.topic or
+                  "openWB/set/general/legacy_smarthome_active" in msg.topic or
                   "openWB/set/general/allow_unencrypted_access" in msg.topic):
                 self._validate_value(msg, bool)
             elif "openWB/set/general/control_interval" in msg.topic:
@@ -763,28 +773,32 @@ class SetData:
             elif "openWB/set/general/chargemode_config/unbalanced_load_limit" in msg.topic:
                 self._validate_value(msg, int, [(10, 32)])
             elif ("openWB/set/general/chargemode_config/unbalanced_load" in msg.topic or
-                  "openWB/set/general/chargemode_config/pv_charging/retry_failed_phase_switches" in msg.topic or
-                  "openWB/set/general/chargemode_config/pv_charging/bat_power_discharge_active" in msg.topic or
-                    "openWB/set/general/chargemode_config/pv_charging/bat_power_reserve_active" in msg.topic):
+                  "openWB/set/general/chargemode_config/surplus/feed_in_limit" in msg.topic or
+                  "openWB/set/general/chargemode_config/surplus/vehicle/retry_failed_phase_switches" in msg.topic or
+                  "openWB/set/general/chargemode_config/bat/power_discharge_active" in msg.topic or
+                    "openWB/set/general/chargemode_config/bat/power_reserve_active" in msg.topic):
                 self._validate_value(msg, bool)
-            elif ("openWB/set/general/chargemode_config/pv_charging/feed_in_yield" in msg.topic or
-                    "openWB/set/general/chargemode_config/pv_charging/switch_on_threshold" in msg.topic or
-                    "openWB/set/general/chargemode_config/pv_charging/switch_on_delay" in msg.topic or
-                    "openWB/set/general/chargemode_config/pv_charging/switch_off_delay" in msg.topic):
+            elif ("openWB/set/general/chargemode_config/surplus/feed_in_yield" in msg.topic or
+                    "openWB/set/general/chargemode_config/surplus/vehicle/switch_on_threshold" in msg.topic or
+                    "openWB/set/general/chargemode_config/surplus/vehicle/switch_on_delay" in msg.topic or
+                    "openWB/set/general/chargemode_config/surplus/vehicle/switch_off_delay" in msg.topic or
+                    "openWB/set/general/chargemode_config/surplus/consumer/switch_on_delay" in msg.topic or
+                    "openWB/set/general/chargemode_config/surplus/consumer/switch_off_delay" in msg.topic):
                 self._validate_value(msg, int, [(0, float("inf"))])
-            elif "openWB/set/general/chargemode_config/pv_charging/switch_off_threshold" in msg.topic:
+            elif ("openWB/set/general/chargemode_config/surplus/vehicle/switch_off_threshold" in msg.topic or
+                    "openWB/set/general/chargemode_config/surplus/consumer/switch_off_threshold" in msg.topic):
                 self._validate_value(msg, float)
-            elif "openWB/set/general/chargemode_config/pv_charging/phase_switch_delay" in msg.topic:
+            elif "openWB/set/general/chargemode_config/surplus/vehicle/phase_switch_delay" in msg.topic:
                 self._validate_value(msg, int, [(5, 180)])
-            elif "openWB/set/general/chargemode_config/pv_charging/control_range" in msg.topic:
+            elif "openWB/set/general/chargemode_config/surplus/control_range" in msg.topic:
                 self._validate_value(msg, int, collection=list)
-            elif ("openWB/set/general/chargemode_config/pv_charging/min_bat_soc" in msg.topic or
-                    "openWB/set/general/chargemode_config/pv_charging/max_bat_soc" in msg.topic):
+            elif ("openWB/set/general/chargemode_config/bat/min_soc" in msg.topic or
+                    "openWB/set/general/chargemode_config/bat/max_soc" in msg.topic):
                 self._validate_value(msg, int, [(0, 100)])
-            elif ("openWB/set/general/chargemode_config/pv_charging/bat_power_discharge" in msg.topic or
-                    "openWB/set/general/chargemode_config/pv_charging/bat_power_reserve" in msg.topic):
+            elif ("openWB/set/general/chargemode_config/bat/power_discharge" in msg.topic or
+                    "openWB/set/general/chargemode_config/bat/power_reserve" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
-            elif "openWB/set/general/chargemode_config/pv_charging/bat_mode" in msg.topic:
+            elif "openWB/set/general/chargemode_config/bat/mode" in msg.topic:
                 self._validate_value(msg, str)
             elif "openWB/set/general/chargemode_config/" in msg.topic and "/phases_to_use" in msg.topic:
                 self._validate_value(msg, int, [(1, 1), (3, 3)])
@@ -845,6 +859,15 @@ class SetData:
     def process_mqtt_topic(self, msg: mqtt.MQTTMessage):
         if "openWB/set/mqtt/chargepoint/" in msg.topic:
             self.process_chargepoint_get_topics(msg)
+        elif "openWB/set/mqtt/consumer/" in msg.topic:
+            if re.search("openWB/set/mqtt/consumer/[0-9]+/set/switch", msg.topic) is not None:
+                self._validate_value(msg, bool)
+            elif re.search("openWB/set/mqtt/consumer/[0-9]+/set/"
+                           + "(power|bat_power|bat_soc|cp_power|evu_power|home_consumption|pv_power)",
+                           msg.topic) is not None:
+                self._validate_value(msg, float)
+            else:
+                self.process_consumer_topic(msg)
         elif "openWB/set/mqtt/counter/" in msg.topic:
             self.process_counter_topic(msg)
         elif "openWB/set/mqtt/bat/" in msg.topic:
@@ -853,6 +876,8 @@ class SetData:
             self.process_pv_topic(msg)
         elif "openWB/set/mqtt/vehicle/" in msg.topic:
             self.process_vehicle_topic(msg)
+        elif "openWB/set/mqtt/loadmanager/" in msg.topic:
+            self.loadmanager_topic(msg)
 
     def process_optional_topic(self, msg: mqtt.MQTTMessage):
         """ Handler für die Optionalen-Topics
@@ -957,10 +982,9 @@ class SetData:
                   "openWB/set/counter/set/daily_yield_home_consumption" in msg.topic or
                   "openWB/set/counter/set/disengageable_smarthome_power" in msg.topic):
                 self._validate_value(msg, float, [(0, float("inf"))])
-            elif "openWB/set/counter/get/hierarchy" in msg.topic:
+            elif ("openWB/set/counter/get/hierarchy" in msg.topic or
+                  "openWB/set/counter/get/loadmanagement_prios" in msg.topic):
                 self._validate_value(msg, None)
-            elif "openWB/set/counter/config/home_consumption_source_id" in msg.topic:
-                self._validate_value(msg, int)
             elif "openWB/set/counter/set/simulation" in msg.topic:
                 self._validate_value(msg, "json")
             elif "/set/consumption_left" in msg.topic:
@@ -972,6 +996,8 @@ class SetData:
             elif ("/config/max_total_power" in msg.topic or
                   "/config/max_power_errorcase" in msg.topic):
                 self._validate_value(msg, int, [(0,  float("inf"))])
+            elif ("/config/is_home_consumption_counter" in msg.topic):
+                self._validate_value(msg, str)
             elif subdata.SubData.counter_data.get(f"counter{get_index(msg.topic)}"):
                 if ("/get/powers" in msg.topic or
                         "/get/currents" in msg.topic):
@@ -1069,6 +1095,7 @@ class SetData:
                     "openWB/set/system/perform_update" in msg.topic or
                     "openWB/set/system/wizard_done" in msg.topic or
                     "openWB/set/system/update_in_progress" in msg.topic or
+                    "openWB/set/system/log_data_ready" in msg.topic or
                     "openWB/set/system/backup_cloud/backup_before_update" in msg.topic or
                     "openWB/set/system/installAssistantDone" in msg.topic or
                     "openWB/set/system/dataprotection_acknowledged" in msg.topic or
@@ -1083,6 +1110,8 @@ class SetData:
                 self._validate_value(msg, float)
             elif "openWB/set/system/datastore_version" in msg.topic:
                 self._validate_value(msg, int, [(0, UpdateConfig.DATASTORE_VERSION)], collection=list)
+            elif "openWB/set/system/file_operation_version" in msg.topic:
+                self._validate_value(msg, int, [(0, UpdateConfig.FILE_OPERATION_VERSION)], collection=list)
             elif "openWB/set/system/GetRemoteSupport" in msg.topic:
                 # Server-Topic enthält kein json-Payload.
                 payload = msg.payload.decode("utf-8")
@@ -1240,5 +1269,74 @@ class SetData:
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
+    def process_consumer_topic(self, msg):
+        try:
+            if ("openWB/set/consumer/get/imported" in msg.topic or
+                    "openWB/set/consumer/get/exported" in msg.topic or
+                    "openWB/set/consumer/get/power" in msg.topic or
+                    "openWB/set/consumer/get/daily_imported" in msg.topic or
+                    "openWB/set/consumer/get/daily_exported" in msg.topic):
+                self._validate_value(msg, float)
+            elif (re.search("openWB/set/consumer/[0-9]+/module$", msg.topic) is not None or
+                  re.search("openWB/set/consumer/[0-9]+/module/simulation$", msg.topic) is not None or
+                  re.search("openWB/set/consumer/[0-9]+/config$", msg.topic) is not None or
+                    re.search("openWB/set/consumer/[0-9]+/usage$", msg.topic) is not None):
+                self._validate_value(msg, "json")
+            elif re.search("openWB/set/consumer/[0-9]+/extra_meter$", msg.topic) is not None:
+                self._validate_value(msg, int)
+            elif (re.search("consumer/[0-9]+/get/power$", msg.topic) is not None or
+                  re.search("consumer/[0-9]+/set/power$", msg.topic) is not None or
+                  re.search("consumer/[0-9]+/set/current$", msg.topic) is not None or
+                  re.search("consumer/[0-9]+/set/on_time$", msg.topic) is not None or
+                  re.search("consumer/[0-9]+/set/plug_time$", msg.topic) is not None or
+                  re.search("consumer/[0-9]+/set/timestamp_last_current_set$", msg.topic) is not None or
+                  re.search("consumer/[0-9]+/set/timestamp_wrote_last_on_time$", msg.topic) is not None or
+                  re.search("consumer/[0-9]+/get/set_power$", msg.topic) is not None):
+                self._validate_value(msg, float)
+            elif (re.search("consumer/[0-9]+/get/currents$", msg.topic) is not None or
+                  re.search("consumer/[0-9]+/get/voltages$", msg.topic) is not None or
+                  re.search("consumer/[0-9]+/get/powers$", msg.topic) is not None or
+                  re.search("consumer/[0-9]+/get/temperatures$", msg.topic) is not None):
+                self._validate_value(msg, float, collection=list)
+            elif (re.search("consumer/[0-9]+/get/exported$", msg.topic) is not None or
+                  re.search("consumer/[0-9]+/get/imported$", msg.topic) is not None or
+                  re.search("consumer/[0-9]+/get/daily_exported$", msg.topic) is not None or
+                  re.search("consumer/[0-9]+/get/daily_imported$", msg.topic) is not None):
+                self._validate_value(msg, float, [(0, float("inf"))])
+            elif (re.search("consumer/[0-9]+/get/fault_state$", msg.topic) is not None or
+                  re.search("consumer/get/fault_state$", msg.topic) is not None):
+                self._validate_value(msg, int, [(0, 2)])
+            elif (re.search("consumer/get/fault_str$", msg.topic) is not None or
+                  re.search("consumer/[0-9]+/get/fault_str$", msg.topic) is not None or
+                  re.search("consumer/[0-9]+/get/state_str$", msg.topic) is not None or
+                  re.search("consumer/[0-9]+/set/wait_for_start_state$", msg.topic) is not None):
+                self._validate_value(msg, str)
+            elif re.search("consumer/[0-9]+/get/state$", msg.topic) is not None:
+                self._validate_value(msg, bool)
+            elif re.search("consumer/[0-9]+/set/phases_to_use$", msg.topic) is not None:
+                self._validate_value(msg, int, [(0, 3)])
+            elif re.search("consumer/[0-9]+/control_parameter/", msg.topic) is not None:
+                self.process_control_parameter_topics(msg)
+            else:
+                self.__unknown_topic(msg)
+        except Exception:
+            log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
+
     def _get_ramdisk_path(self) -> Path:
         return Path(__file__).resolve().parents[2]/"ramdisk"
+
+    def loadmanager_topic(self, msg: mqtt.MQTTMessage):
+        """ Handler für die LoadManager-Topics
+
+         Parameters
+        ----------
+        msg:
+            enthält Topic und Payload
+        """
+        try:
+            if re.search("^openWB/set/mqtt/loadmanager/[0-9]+/set/loadmanager$", msg.topic) is not None:
+                self._validate_value(msg, "json")
+            else:
+                self.__unknown_topic(msg)
+        except Exception:
+            log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")

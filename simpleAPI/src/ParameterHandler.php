@@ -240,6 +240,8 @@ class ParameterHandler
                     return $this->setChargepointLock($targetId, $value);
                 case 'bat_mode':
                     return $this->setBatMode($value);
+                case 'bat_power_reserve':
+                    return $this->setBatPowerReserve($value);
                 case 'instant_charging_limit':
                     return $this->setInstantChargingLimit($targetId, $value);
                 case 'instant_charging_amount':
@@ -1588,7 +1590,7 @@ class ParameterHandler
         }
 
         try {
-            $topic = "openWB/set/general/chargemode_config/pv_charging/bat_mode";
+            $topic = "openWB/set/general/chargemode_config/bat/mode";
 
             if ($this->mqttClient->setValue($topic, $value)) {
                 return ['success' => true, 'message' => "Bat mode set to {$value}"];
@@ -1597,6 +1599,36 @@ class ParameterHandler
             return ['success' => false, 'message' => 'Failed to set bat mode'];
         } catch (Exception $e) {
             return ['success' => false, 'message' => 'Error setting bat mode: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Reservierte Batterie-Ladeleistung setzen (W)
+     * Setzt openWB/set/general/chargemode_config/bat/power_reserve
+     * Ermöglicht externes Energiemanagement der Speicherreservierung ohne UI-Eingriff.
+     */
+    private function setBatPowerReserve($value)
+    {
+        $watts = intval($value);
+
+        if ($watts < 0) {
+            return ['success' => false, 'message' => 'bat_power_reserve must be >= 0'];
+        }
+
+        try {
+            $topic = "openWB/set/general/chargemode_config/bat/power_reserve";
+
+            if ($this->mqttClient->setValue($topic, $watts)) {
+                return [
+                    'success' => true,
+                    'message' => "bat_power_reserve set to {$watts}W",
+                    'data'    => ['bat_power_reserve' => $watts]
+                ];
+            }
+
+            return ['success' => false, 'message' => 'Failed to set bat_power_reserve'];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error setting bat_power_reserve: ' . $e->getMessage()];
         }
     }
 

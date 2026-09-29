@@ -195,7 +195,7 @@ export default {
                         : ['fas', 'fa-car-battery']
                     "
                   />
-                  {{ mqttStore.getChargePointConnectedVehicleSoc(chargePointId).soc }}%
+                  {{ mqttStore.getChargePointConnectedVehicleSoc(chargePointId)?.soc ?? "-" }}%
                 </span>
                 <font-awesome-icon
                   v-if="

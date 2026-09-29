@@ -1,5 +1,17 @@
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TypedDict
+
+
+class FixedHoursActiveTimes(TypedDict):
+    dates: list[tuple[str, str]]
+    weekdays: list[int]
+    times: list[tuple[str, str]]
+
+
+class FixedHoursTariffEntry(TypedDict):
+    name: str
+    price: float
+    active_times: FixedHoursActiveTimes
 
 
 @dataclass
@@ -28,7 +40,7 @@ class FixedHoursTariffConfiguration:
     ]
     '''
     default_price: float = 0
-    tariffs: list[dict[str, Any]] = field(default_factory=list)
+    tariffs: list[FixedHoursTariffEntry] = field(default_factory=list)
     update_hours: list[int] = field(default_factory=lambda: list(range(24)))
 
 

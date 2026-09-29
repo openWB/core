@@ -6,6 +6,7 @@ mit denen das EV aktuell in der Regelung berücksichtigt wird. Bei der Ermittlun
 stärke wird auch geprüft, ob sich an diesen Parametern etwas geändert hat. Falls ja, muss das EV
 in der Regelung neu priorisiert werden und eine neue Zuteilung des Stroms erhalten.
 """
+from control.chargemode import Chargemode
 from modules.common.configurable_vehicle import ConfigurableVehicle
 from modules.common.abstract_vehicle import VehicleUpdateData
 from helpermodules.constants import DEFAULT_COLORS, NO_ERROR
@@ -125,7 +126,7 @@ class Ev:
                              charging_type: str,
                              imported_since_plugged: float,
                              bidi: BidiState,
-                             charge_state: bool) -> Tuple[bool, Optional[str], str, float, int]:
+                             charge_state: bool) -> Tuple[bool, Optional[str], Chargemode, float, int]:
         """ ermittelt, ob und mit welchem Strom das EV geladen werden soll (unabhängig vom Lastmanagement)
 
         Parameter
@@ -150,7 +151,7 @@ class Ev:
         tmp_message = None
         state = True
         try:
-            if charge_template.data.chargemode.selected == "stop":
+            if charge_template.data.chargemode.selected == Chargemode.STOP:
                 required_current, submode, message = charge_template.stop()
                 phases = control_parameter.phases or max_phases_hw
             else:
@@ -160,7 +161,7 @@ class Ev:
                     soc_request_interval_offset = self.soc_module.general_config.request_interval_charging
                 else:
                     soc_request_interval_offset = 0
-                if charge_template.data.chargemode.selected == "scheduled_charging":
+                if charge_template.data.chargemode.selected == Chargemode.SCHEDULED_CHARGING:
                     required_current, submode, tmp_message, phases = charge_template.scheduled_charging(
                         self.data.get.soc,
                         self.ev_template,
@@ -175,7 +176,7 @@ class Ev:
                     message = f"{tmp_message or ''}".strip()
 
                 # Wenn Zielladen auf Überschuss wartet, prüfen, ob Zeitladen aktiv ist.
-                if (submode != "instant_charging" and
+                if (submode != Chargemode.INSTANT_CHARGING and
                         charge_template.data.time_charging.active):
                     tmp_current, tmp_submode, tmp_message, plan_id, tmp_phases = charge_template.time_charging(
                         self.data.get.soc,
@@ -190,21 +191,23 @@ class Ev:
                         submode = tmp_submode
                         phases = tmp_phases
                 if (required_current == 0) or (required_current is None):
-                    if charge_template.data.chargemode.selected == "instant_charging":
+                    if charge_template.data.chargemode.selected == Chargemode.INSTANT_CHARGING:
                         required_current, submode, tmp_message, phases = charge_template.instant_charging(
                             self.data.get.soc,
                             imported_since_plugged,
-                            charging_type)
-                    elif charge_template.data.chargemode.selected == "pv_charging":
+                            charging_type,
+                            bidi
+                        )
+                    elif charge_template.data.chargemode.selected == Chargemode.PV_CHARGING:
                         required_current, submode, tmp_message, phases = charge_template.pv_charging(
                             self.data.get.soc, control_parameter.min_current, charging_type, imported_since_plugged)
-                    elif charge_template.data.chargemode.selected == "eco_charging":
+                    elif charge_template.data.chargemode.selected == Chargemode.ECO_CHARGING:
                         required_current, submode, tmp_message, phases = charge_template.eco_charging(
                             self.data.get.soc, control_parameter, charging_type, imported_since_plugged, max_phases_hw)
                     else:
                         tmp_message = None
                     message = f"{message or ''} {tmp_message or ''}".strip()
-            if submode == "stop" or (charge_template.data.chargemode.selected == "stop"):
+            if submode == Chargemode.STOP or (charge_template.data.chargemode.selected == Chargemode.STOP):
                 state = False
                 if phases is None:
                     log.debug("Keine Phasenvorgabe durch Lademodus. Behalte Phasenzahl bei.")
@@ -212,7 +215,7 @@ class Ev:
             return state, message, submode, required_current, phases
         except Exception as e:
             log.exception("Fehler im ev-Modul "+str(self.num))
-            return (False, f"Kein Ladevorgang, da ein Fehler aufgetreten ist: {' '.join(e.args)}", "stop", 0,
+            return (False, f"Kein Ladevorgang, da ein Fehler aufgetreten ist: {' '.join(e.args)}", Chargemode.STOP, 0,
                     control_parameter.phases)
 
     def check_min_max_current(self,
@@ -302,7 +305,6 @@ class Ev:
     PHASE_SWITCH_DELAY_TEXT = '{} Phasen in {}.'
 
     def auto_phase_switch(self,
-                          charge_template: ChargeTemplate,
                           control_parameter: ControlParameter,
                           cp_num: int,
                           evse_current: float,
@@ -315,12 +317,8 @@ class Ev:
         current = control_parameter.required_current
         phases_to_use = control_parameter.phases
         phases_in_use = control_parameter.phases
-        pv_config = data.data.general_data.data.chargemode_config.pv_charging
-        if charge_template.data.chargemode.pv_charging.feed_in_limit:
-            feed_in_yield = pv_config.feed_in_yield
-        else:
-            feed_in_yield = 0
-        delay = pv_config.phase_switch_delay * 60
+        surplus_config = data.data.general_data.data.chargemode_config.surplus
+        delay = surplus_config.vehicle.phase_switch_delay * 60
         if phases_in_use == 1:
             direction_str = f"Umschaltung von 1 auf {max_phases}"
             required_reserved_power = (control_parameter.min_current * max_phases * 230 -
@@ -328,15 +326,15 @@ class Ev:
 
             new_phase = max_phases
             new_current = control_parameter.min_current
-            waiting_time = pv_config.switch_on_delay
+            waiting_time = surplus_config.vehicle.switch_on_delay
         else:
             direction_str = f"Umschaltung von {max_phases} auf 1"
             # Es kann einphasig mit entsprechend niedriger Leistung gestartet werden.
             required_reserved_power = 0
             new_phase = 1
             new_current = self.ev_template.data.max_current_single_phase
-            waiting_time = pv_config.switch_off_delay
-        all_surplus = data.data.counter_all_data.get_evu_counter().get_usable_surplus(feed_in_yield)
+            waiting_time = surplus_config.vehicle.switch_off_delay
+        all_surplus = data.data.counter_all_data.get_evu_counter().get_usable_surplus()
         if control_parameter.state == ChargepointState.PHASE_SWITCH_DELAY:
             # eigene reservierte Leistung addieren, wenn die Verzögerung für die Umschaltung läuft,
             # da diese Leistung bereits für die Umschaltung reserviert ist.

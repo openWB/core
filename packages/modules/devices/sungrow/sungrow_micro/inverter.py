@@ -34,8 +34,8 @@ class SungrowMicroInverter(AbstractInverter):
     def update(self) -> float:
         unit = self.device_config.configuration.modbus_id
 
-        power = self.__tcp_client.read_input_registers(32213, ModbusDataType.UINT_32,
-                                                       wordorder=Endian.Little, unit=unit) * -1
+        power = self.__tcp_client.read_holding_registers(32213, ModbusDataType.UINT_16,
+                                                         wordorder=Endian.Little, unit=unit) * -1
 
         self.peak_filter.check_values(power)
         imported, exported = self.sim_counter.sim_count(power)

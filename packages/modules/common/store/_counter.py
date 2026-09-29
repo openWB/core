@@ -10,7 +10,7 @@ from modules.common.simcount._simcounter import SimCounter
 from modules.common.store import ValueStore
 from modules.common.store._api import LoggingValueStore
 from modules.common.store._broker import pub_to_broker
-from modules.common.utils.component_parser import get_component_obj_by_id
+from modules.common.utils.component_parser import get_hierarchy_obj_by_id
 
 log = logging.getLogger(__name__)
 
@@ -87,11 +87,20 @@ class PurgeCounterState:
                 self.exported += element.exported
         self.power += element.power
 
+    def _get_assigned_extra_meter_ids(self) -> set:
+        assigned_extra_meter_ids = set()
+        for consumer in data.data.consumer_data.values():
+            extra_meter_id = consumer.data.extra_meter
+            if extra_meter_id is not None:
+                assigned_extra_meter_ids.add(extra_meter_id)
+        return assigned_extra_meter_ids
+
     def calc_consumers(self, elements: Dict, calc_imported_exported: bool = False) -> CounterState:
+        assigned_extra_meter_ids = self._get_assigned_extra_meter_ids()
         for element in elements:
             try:
                 if element["type"] == ComponentType.CHARGEPOINT.value:
-                    chargepoint = data.data.cp_data[f"cp{element['id']}"]
+                    chargepoint = get_hierarchy_obj_by_id(element["id"], element["type"])
                     chargepoint_state = chargepoint.chargepoint_module.store.delegate.state
                     try:
                         self.currents = list(map(add,
@@ -107,8 +116,15 @@ class PurgeCounterState:
                     if calc_imported_exported:
                         self.imported += chargepoint_state.imported
                         self.exported += chargepoint_state.exported
+                elif element["type"] == ComponentType.CONSUMER.value:
+                    consumer = get_hierarchy_obj_by_id(element["id"], element["type"])
+                    consumer_state = consumer.module.store.delegate.delegate.state
+                    self._add_values(consumer_state, calc_imported_exported)
+                elif element["type"] == ComponentType.COUNTER.value and element["id"] in assigned_extra_meter_ids:
+                    log.debug(f"Zähler counter{element['id']} wird übersprungen, da er als separater Zähler "
+                              "einem Verbraucher zugeordnet ist.")
                 else:
-                    component = get_component_obj_by_id(element['id'])
+                    component = get_hierarchy_obj_by_id(element["id"], element["type"])
                     self._add_values(component.store.delegate.delegate.state, calc_imported_exported)
             except Exception:
                 log.exception(f"Fehler beim Hinzufügen der Werte für Element {element}")
@@ -131,7 +147,7 @@ class PurgeCounterState:
         Dazu wird der Zählerstand des übergeordneten Zählers herangezogen und davon die
         Werte aller anderen untergeordneten Komponenten abgezogen."""
         parent_id = data.data.counter_all_data.get_entry_of_parent(self.delegate.delegate.num)["id"]
-        parent_component = get_component_obj_by_id(parent_id)
+        parent_component = get_hierarchy_obj_by_id(parent_id, ComponentType.COUNTER.value)
         if "counter" not in parent_component.component_config.type:
             raise Exception("Die übergeordnete Komponente des virtuellen Zählers muss ein Zähler sein.")
         if parent_component.store.add_child_values:

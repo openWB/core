@@ -39,38 +39,49 @@
 				}
 			],
 			"clients": []
-		}, {
-			"groupname":	"user",
-			"textname":	"Basisgruppe für normale Benutzer",
-			"textdescription":	"Diese Gruppe stellt grundlegende Rechte bereit, welche für alle Benutzer als Ausgangsbasis sinnvoll sind.",
-			"roles":	[{
-					"rolename":	"basic-display-data"
-				}, {
-					"rolename":	"basic-system-data"
-				}, {
-					"rolename":	"basic-theme-data"
-				}, {
-					"rolename":	"basic-user-data"
-				}],
-			"clients":	[]
-		}, {
-			"groupname":	"display",
-			"textname":	"Basisgruppe für alle integrierten Displays",
-			"textdescription":	"Diese Gruppe stellt grundlegende Rechte bereit, welche für alle Displays als Ausgangsbasis sinnvoll sind.",
-			"roles":	[{
-					"rolename":	"basic-display-data"
-				}, {
-					"rolename":	"basic-system-data"
-				}, {
-					"rolename":	"basic-user-data"
-				}],
-			"clients":	[]
+		},
+		{
+			"groupname": "user",
+			"textname": "Basisgruppe für normale Benutzer",
+			"textdescription": "Diese Gruppe stellt grundlegende Rechte bereit, welche für alle Benutzer als Ausgangsbasis sinnvoll sind.",
+			"roles": [
+				{
+					"rolename": "basic-display-data"
+				},
+				{
+					"rolename": "basic-system-data"
+				},
+				{
+					"rolename": "basic-theme-data"
+				},
+				{
+					"rolename": "basic-user-data"
+				}
+			],
+			"clients": []
+		},
+		{
+			"groupname": "display",
+			"textname": "Basisgruppe für alle integrierten Displays",
+			"textdescription": "Diese Gruppe stellt grundlegende Rechte bereit, welche für alle Displays als Ausgangsbasis sinnvoll sind.",
+			"roles": [
+				{
+					"rolename": "basic-display-data"
+				},
+				{
+					"rolename": "basic-system-data"
+				},
+				{
+					"rolename": "basic-user-data"
+				}
+			],
+			"clients": []
 		}
 	],
 	"anonymousGroup": "anonymous",
 	"roles": [
 		{
-			"rolename": "openwb-version:9",
+			"rolename": "openwb-version:10",
 			"textname": "openWB Versionsnummer",
 			"textdescription": "Diese Rolle ist ein Platzhalter für die openWB Versionsnummer und wird automatisch aktualisiert. Sie hat keine direkten Berechtigungen.",
 			"acls": []
@@ -180,6 +191,12 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/update_in_progress",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/log_data_ready",
 					"priority": 0,
 					"allow": true
 				},
@@ -507,6 +524,12 @@
 					"topic": "openWB/system/security/access/Status",
 					"priority": 0,
 					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/counter/get/loadmanagement_prios",
+					"priority": 0,
+					"allow": true
 				}
 			]
 		},
@@ -621,6 +644,12 @@
 				},
 				{
 					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/legacy_smarthome_active",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
 					"topic": "openWB/set/general/modbus_control",
 					"priority": 0,
 					"allow": true
@@ -688,6 +717,12 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/general/http_api",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/legacy_smarthome_active",
 					"priority": 0,
 					"allow": true
 				},
@@ -1063,49 +1098,73 @@
 			"acls": [
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/control_range",
+					"topic": "openWB/set/general/chargemode_config/surplus/control_range",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/feed_in_yield",
+					"topic": "openWB/set/general/chargemode_config/surplus/feed_in_limit",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/phase_switch_delay",
+					"topic": "openWB/set/general/chargemode_config/surplus/feed_in_yield",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/switch_on_threshold",
+					"topic": "openWB/set/general/chargemode_config/surplus/vehicle/phase_switch_delay",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/retry_failed_phase_switches",
+					"topic": "openWB/set/general/chargemode_config/surplus/vehicle/switch_on_threshold",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/switch_on_delay",
+					"topic": "openWB/set/general/chargemode_config/surplus/vehicle/retry_failed_phase_switches",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/switch_off_threshold",
+					"topic": "openWB/set/general/chargemode_config/surplus/vehicle/switch_on_delay",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/switch_off_delay",
+					"topic": "openWB/set/general/chargemode_config/surplus/vehicle/switch_off_threshold",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/chargemode_config/surplus/vehicle/switch_off_delay",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/chargemode_config/surplus/consumer/switch_on_delay",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/chargemode_config/surplus/consumer/switch_off_delay",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/chargemode_config/surplus/consumer/switch_off_threshold",
 					"priority": 0,
 					"allow": true
 				},
@@ -1117,49 +1176,73 @@
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/control_range",
+					"topic": "openWB/general/chargemode_config/surplus/control_range",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/feed_in_yield",
+					"topic": "openWB/general/chargemode_config/surplus/feed_in_limit",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/phase_switch_delay",
+					"topic": "openWB/general/chargemode_config/surplus/feed_in_yield",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/switch_on_threshold",
+					"topic": "openWB/general/chargemode_config/surplus/vehicle/phase_switch_delay",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/retry_failed_phase_switches",
+					"topic": "openWB/general/chargemode_config/surplus/vehicle/switch_on_threshold",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/switch_on_delay",
+					"topic": "openWB/general/chargemode_config/surplus/vehicle/retry_failed_phase_switches",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/switch_off_threshold",
+					"topic": "openWB/general/chargemode_config/surplus/vehicle/switch_on_delay",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/switch_off_delay",
+					"topic": "openWB/general/chargemode_config/surplus/vehicle/switch_off_threshold",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/chargemode_config/surplus/vehicle/switch_off_delay",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/chargemode_config/surplus/consumer/switch_on_delay",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/chargemode_config/surplus/consumer/switch_off_delay",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/chargemode_config/surplus/consumer/switch_off_threshold",
 					"priority": 0,
 					"allow": true
 				}
@@ -1244,43 +1327,43 @@
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/bat_mode",
+					"topic": "openWB/set/general/chargemode_config/bat/mode",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/bat_power_discharge",
+					"topic": "openWB/set/general/chargemode_config/bat/power_discharge",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/bat_power_discharge_active",
+					"topic": "openWB/set/general/chargemode_config/bat/power_discharge_active",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/bat_power_reserve",
+					"topic": "openWB/set/general/chargemode_config/bat/power_reserve",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/bat_power_reserve_active",
+					"topic": "openWB/set/general/chargemode_config/bat/power_reserve_active",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/max_bat_soc",
+					"topic": "openWB/set/general/chargemode_config/bat/max_soc",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientSend",
-					"topic": "openWB/set/general/chargemode_config/pv_charging/min_bat_soc",
+					"topic": "openWB/set/general/chargemode_config/bat/min_soc",
 					"priority": 0,
 					"allow": true
 				},
@@ -1376,43 +1459,43 @@
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/bat_mode",
+					"topic": "openWB/general/chargemode_config/bat/mode",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/bat_power_discharge",
+					"topic": "openWB/general/chargemode_config/bat/power_discharge",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/bat_power_discharge_active",
+					"topic": "openWB/general/chargemode_config/bat/power_discharge_active",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/bat_power_reserve",
+					"topic": "openWB/general/chargemode_config/bat/power_reserve",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/bat_power_reserve_active",
+					"topic": "openWB/general/chargemode_config/bat/power_reserve_active",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/max_bat_soc",
+					"topic": "openWB/general/chargemode_config/bat/max_soc",
 					"priority": 0,
 					"allow": true
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/min_bat_soc",
+					"topic": "openWB/general/chargemode_config/bat/min_soc",
 					"priority": 0,
 					"allow": true
 				},
@@ -1494,6 +1577,12 @@
 					"topic": "openWB/system/configurable/devices_components",
 					"priority": 0,
 					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/chargepoint/+/config",
+					"priority": 0,
+					"allow": true
 				}
 			]
 		},
@@ -1505,12 +1594,6 @@
 				{
 					"acltype": "publishClientSend",
 					"topic": "openWB/set/bat/+/config/max_power",
-					"priority": 0,
-					"allow": true
-				},
-				{
-					"acltype": "publishClientSend",
-					"topic": "openWB/set/counter/config/home_consumption_source_id",
 					"priority": 0,
 					"allow": true
 				},
@@ -1534,7 +1617,19 @@
 				},
 				{
 					"acltype": "publishClientSend",
+					"topic": "openWB/set/counter/get/loadmanagement_prios",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
 					"topic": "openWB/set/counter/+/config/max_currents",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/counter/+/config/is_home_consumption_counter",
 					"priority": 0,
 					"allow": true
 				},
@@ -1564,12 +1659,6 @@
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/counter/config/home_consumption_source_id",
-					"priority": 0,
-					"allow": true
-				},
-				{
-					"acltype": "publishClientReceive",
 					"topic": "openWB/counter/config/consider_less_charging",
 					"priority": 0,
 					"allow": true
@@ -1577,6 +1666,12 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/counter/get/hierarchy",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/counter/get/loadmanagement_prios",
 					"priority": 0,
 					"allow": true
 				},
@@ -1600,6 +1695,12 @@
 				},
 				{
 					"acltype": "publishClientReceive",
+					"topic": "openWB/counter/+/config/is_home_consumption_counter",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
 					"topic": "openWB/counter/+/config/max_total_power",
 					"priority": 0,
 					"allow": true
@@ -1613,6 +1714,18 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/chargepoint/+/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/consumer/+/module",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/consumer/+/extra_meter",
 					"priority": 0,
 					"allow": true
 				}
@@ -1753,6 +1866,151 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/system/configurable/chargepoints_internal",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "consumer-configuration-access",
+			"textname": "Zugang zu den Verbrauchereinstellungen",
+			"textdescription": "Erlaubt den Zugang zu den Verbrauchereinstellungen.",
+			"acls": [
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/addConsumer",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/removeConsumer",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/addConsumerSchedulePlan",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/removeConsumerSchedulePlan",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/addConsumerTimePlan",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/command/+/todo/removeConsumerTimePlan",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/consumer/+/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/consumer/+/module",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/consumer/+/usage",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/consumer/+/extra_meter",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientSend",
+					"topic": "openWB/set/general/legacy_smarthome_active",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/security/access/ConsumerConfiguration",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/consumer/+/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/consumer/+/module",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/consumer/+/usage",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/consumer/+/extra_meter",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/extern",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/general/legacy_smarthome_active",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/counter/get/hierarchy",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/device/+/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/device/+/component/+/config",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/system/configurable/consumers",
+					"priority": 0,
+					"allow": true
+				},
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/optional/ep/configured",
 					"priority": 0,
 					"allow": true
 				}
@@ -2843,7 +3101,7 @@
 				},
 				{
 					"acltype": "publishClientReceive",
-					"topic": "openWB/general/chargemode_config/pv_charging/bat_mode",
+					"topic": "openWB/general/chargemode_config/bat/mode",
 					"priority": 0,
 					"allow": true
 				}
@@ -2857,6 +3115,19 @@
 				{
 					"acltype": "publishClientReceive",
 					"topic": "openWB/chargepoint/get/+",
+					"priority": 0,
+					"allow": true
+				}
+			]
+		},
+		{
+			"rolename": "consumer-sum-access",
+			"textname": "Leserechte für Verbrauchersummendaten",
+			"textdescription": "Erlaubt das Empfangen von Daten für die Summe aller Verbraucher.",
+			"acls": [
+				{
+					"acltype": "publishClientReceive",
+					"topic": "openWB/consumer/get/+",
 					"priority": 0,
 					"allow": true
 				}

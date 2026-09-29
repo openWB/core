@@ -30,6 +30,7 @@ def mock_daily_log(monkeypatch):
                               'hc': {'all': {'imported': 0}},
                               'pv': {'all': {'exported': 2000}, 'pv1': {'exported': 2000}},
                               'sh': {},
+                              'consumer': {},
                               'timestamp': 1652682900,
                               'prices': {'grid': 0.0003, 'pv': 0.00015, 'bat': 0.0002, 'cp': 0}},
                              {'bat': {'all': {'exported': 3000, 'imported': 2000, 'soc': 100},
@@ -44,6 +45,7 @@ def mock_daily_log(monkeypatch):
                               'hc': {'all': {'imported': 0}},
                               'pv': {'all': {'exported': 2500}, 'pv1': {'exported': 2500}},
                               'sh': {},
+                              'consumer': {},
                               'timestamp': 1652683200,
                               'prices': {'grid': 0.0003, 'pv': 0.00015, 'bat': 0.0002, 'cp': 0}}],
                  "names": {"bat2": "Speicher2", "cp4": "LP 4", "pv1": "PV 1", "ev0": "EV0", "counter0": "Zähler0"}}
@@ -132,6 +134,7 @@ def test_calc_charge_cost_reference_middle_day_change(mock_data, monkeypatch):
                                         'hc': {'all': {'imported': 0}},
                                         'pv': {'all': {'exported': 2000}, 'pv1': {'exported': 2000}},
                                         'sh': {},
+                                        'consumer': {},
                                         'timestamp': 1652682900,
                                         'prices': {'grid': 0.0003, 'pv': 0.00015, 'bat': 0.0002, 'cp': 0}}],
                            "names": {
@@ -151,6 +154,7 @@ def test_calc_charge_cost_reference_middle_day_change(mock_data, monkeypatch):
                               'hc': {'all': {'imported': 0}},
                               'pv': {'all': {'exported': 2500}, 'pv1': {'exported': 2500}},
                               'sh': {},
+                              'consumer': {},
                               'timestamp': 1652683200,
                               'prices': {'grid': 0.0003, 'pv': 0.00015, 'bat': 0.0002, 'cp': 0}}],
                  "names": {"bat2": "Speicher2", "cp4": "LP 4", "pv1": "PV 1", "ev0": "EV0", "counter0": "Zähler0"}}

@@ -48,11 +48,15 @@ class Graph:
                         data_line.update({f"counter{counter.num}-power": _convert_to_kW(counter.data.get.power)})
             data_line.update({"house-power": _convert_to_kW(data.data.counter_all_data.data.set.home_consumption)})
             data_line.update({"charging-all": _convert_to_kW(data.data.cp_all_data.data.get.power)})
+            data_line.update({"consumer-all": _convert_to_kW(data.data.consumer_all_data.data.get.power)})
             if data.data.pv_all_data.data.config.configured:
                 data_line.update({"pv-all": _convert_to_kW(data.data.pv_all_data.data.get.power)*-1})
             for cp in data.data.cp_data.values():
                 if cp.data.get.fault_state < FaultStateLevel.ERROR:
                     data_line.update({f"cp{cp.num}-power": _convert_to_kW(cp.data.get.power)})
+            for consumer in data.data.consumer_data.values():
+                if consumer.data.get.fault_state < FaultStateLevel.ERROR:
+                    data_line.update({f"consumer{consumer.num}-power": _convert_to_kW(consumer.data.get.power)})
             for ev in data.data.ev_data.values():
                 if ev.soc_module:
                     data_line.update({f"ev{ev.num}-soc": ev.data.get.soc})

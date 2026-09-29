@@ -26,6 +26,9 @@ REDACTION_PATTERNS = [
     (r'"{field}":\s*"(.*?)"', r'"{field}": "***REDACTED***"'),  # "field": "value", JSON formatted data
     (r'\'{field}\':\s*\'(.*?)\'', r"'{field}': '***REDACTED***'")  # 'field': 'value', JSON formatted data
 ]
+# Credentials in a URL (scheme://user:password@host/) carry no field name for REDACTION_PATTERNS
+# to key on. The user name is kept, it is useful when diagnosing authentication problems.
+URL_CREDENTIALS_PATTERN = (r'(\w+://[^/\s:@]*):[^/\s]+@', r'\1:***REDACTED***@')
 
 
 def redact_sensitive_info(message: str, additional_fields: list = None) -> str:
@@ -37,6 +40,9 @@ def redact_sensitive_info(message: str, additional_fields: list = None) -> str:
     redacted are defined in the KNOWN_SENSITIVE_FIELDS list. The function uses
     predefined patterns to identify and replace the sensitive information.
 
+    Passwords given as URL credentials (scheme://user:password@host/) are redacted as well,
+    those carry no field name to key on.
+
     Args:
         message (str): The log message to be redacted.
 
@@ -44,6 +50,7 @@ def redact_sensitive_info(message: str, additional_fields: list = None) -> str:
         str: The redacted log message.
     """
     fields_to_redact = KNOWN_SENSITIVE_FIELDS + (additional_fields or [])
+    message = re.sub(URL_CREDENTIALS_PATTERN[0], URL_CREDENTIALS_PATTERN[1], message)
     for field in fields_to_redact:
         for pattern, replacement in REDACTION_PATTERNS:
             pattern = pattern.replace('{field}', field)
@@ -222,6 +229,33 @@ def write_logs_to_file(logger_name: str = None) -> None:
                         f.write(logs)
 
 
+# The totals subprocess needs its own log file, including messages from process_log.
+# In the main process, process_log must keep propagating to main log.
+def setup_generate_totals_logging(include_process_log: bool = False) -> None:
+    generate_totals_log = logging.getLogger("generate_totals")
+    generate_totals_log.setLevel(logging.DEBUG)
+    generate_totals_log.propagate = False
+    RAMDISK_PATH.mkdir(parents=True, exist_ok=True)
+    handler = next(
+        (handler for handler in generate_totals_log.handlers
+         if isinstance(handler, RotatingFileHandler)
+         and handler.baseFilename == str(RAMDISK_PATH / 'generate_totals.log')),
+        None,
+    )
+    if handler is None:
+        handler = RotatingFileHandler(RAMDISK_PATH / 'generate_totals.log', maxBytes=5 * 1000000, backupCount=1)
+        handler.setFormatter(logging.Formatter(FORMAT_STR_SHORT))
+        handler.addFilter(RedactingFilter())
+        generate_totals_log.addHandler(handler)
+
+    if include_process_log:
+        process_log = logging.getLogger("helpermodules.measurement_logging.process_log")
+        process_log.setLevel(logging.DEBUG)
+        process_log.propagate = False
+        if handler not in process_log.handlers:
+            process_log.addHandler(handler)
+
+
 def setup_logging() -> None:
     def mb_to_bytes(megabytes: int) -> int:
         return megabytes * 1000000
@@ -275,6 +309,9 @@ def setup_logging() -> None:
     forecast_file_handler.setFormatter(logging.Formatter(FORMAT_STR_DETAILED))
     forecast_file_handler.addFilter(RedactingFilter())
     forecast_log.addHandler(forecast_file_handler)
+
+    # Totals generation logger
+    setup_generate_totals_logging()
 
     # Steuve control command logger
     steuve_control_command_log = logging.getLogger("steuve_control_command")
@@ -353,9 +390,9 @@ def setup_logging() -> None:
         with open(thread_errors_path, "a") as f:
             f.write("Uncaught exception in thread:\n")
             f.write(f"Type: {args.exc_type}\n")
-            f.write(f"Value: {args.exc_value}\n")
+            f.write(redact_sensitive_info(f"Value: {args.exc_value}\n"))
             import traceback
-            traceback.print_tb(args.exc_traceback, file=f)
+            f.write(redact_sensitive_info("".join(traceback.format_tb(args.exc_traceback))))
     threading.excepthook = threading_excepthook
 
     def handle_unhandled_exception(exc_type, exc_value, exc_traceback):
@@ -365,8 +402,9 @@ def setup_logging() -> None:
         with open(thread_errors_path, "a") as f:
             f.write("Uncaught exception:\n")
             f.write(f"Type: {exc_type}\n")
-            f.write(f"Value: {exc_value}\n")
-            f.write(f"Traceback:{exc_traceback}\n")
+            f.write(redact_sensitive_info(f"Value: {exc_value}\n"))
+            import traceback
+            f.write(redact_sensitive_info("".join(traceback.format_tb(exc_traceback))))
     sys.excepthook = handle_unhandled_exception
 
 

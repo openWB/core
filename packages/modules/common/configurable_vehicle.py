@@ -130,6 +130,9 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
             try:
                 _carState = self.__component_updater(vehicle_update_data)
                 if type(_carState) is CarState:
+                    if _carState.warning:
+                        self.fault_state.warning(_carState.warning)
+                        self.fault_state.store_error()
                     _odometer = _carState.odometer
                     _now = int(time.time())
                     _diff = 0

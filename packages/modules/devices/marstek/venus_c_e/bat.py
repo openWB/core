@@ -35,7 +35,7 @@ class VenusCEBat(AbstractBat):
 
     def _write_reg(self, addr: int, val: int) -> None:
         # Marstek Venus does not work with write_registers!
-        self.client._delegate.write_register(addr, val, unit=self.component_config.configuration.modbus_id)
+        self.client.write_single_register_raw(addr, val, unit=self.component_config.configuration.modbus_id)
 
     def update(self) -> None:
         power = -self._read_reg(32202, ModbusDataType.INT_32)

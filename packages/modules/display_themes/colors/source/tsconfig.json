@@ -14,7 +14,8 @@
     },
     "moduleResolution": "node",
     "skipLibCheck": true,
-		},
+    "ignoreDeprecations": "6.0"
+  },
   //"references": [
   //  {
   //    "path": "./tsconfig.vite-config.json"

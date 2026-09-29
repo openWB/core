@@ -20,7 +20,6 @@ log = logging.getLogger(__name__)
 class KwargsDict(TypedDict):
     device_id: int
     modbus_id: int
-    endianess: Endian
     client: ModbusTcpClient_
 
 
@@ -32,7 +31,6 @@ class KostalPlenticoreBat(AbstractBat):
     def initialize(self) -> None:
         self.__device_id: int = self.kwargs['device_id']
         self.modbus_id: int = self.kwargs['modbus_id']
-        self.endianess: Endian = self.kwargs['endianess']
         self.client: ModbusTcpClient_ = self.kwargs['client']
         self.store = get_component_value_store(self.component_config.type, self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
@@ -41,14 +39,14 @@ class KostalPlenticoreBat(AbstractBat):
 
     def update(self) -> None:
         power = self.client.read_holding_registers(
-            582, ModbusDataType.INT_16, unit=self.modbus_id, wordorder=self.endianess) * -1
+            582, ModbusDataType.INT_16, unit=self.modbus_id, wordorder=Endian.Little) * -1
         soc = self.client.read_holding_registers(
-            514, ModbusDataType.INT_16, unit=self.modbus_id, wordorder=self.endianess)
+            514, ModbusDataType.INT_16, unit=self.modbus_id, wordorder=Endian.Little)
         if power < 0:
             power = self.client.read_holding_registers(
-                106, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=self.endianess) * -1
+                106, ModbusDataType.FLOAT_32, unit=self.modbus_id, wordorder=Endian.Little) * -1
         bat_current = self.client.read_holding_registers(200, ModbusDataType.FLOAT_32,
-                                                         unit=self.modbus_id, wordorder=self.endianess) * -1
+                                                         unit=self.modbus_id, wordorder=Endian.Little) * -1
         currents = [bat_current / 3] * 3
 
         self.peak_filter.check_values(power)
@@ -77,17 +75,17 @@ class KostalPlenticoreBat(AbstractBat):
             # wiederholt auf Stop setzen damit sich Register nicht zurücksetzt
             log.debug("Aktive Batteriesteuerung. Batterie wird auf Stop gesetzt und nicht entladen")
             self.client.write_register(1034, 0.0, data_type=ModbusDataType.FLOAT_32,
-                                       wordorder=self.endianess, unit=unit)
+                                       wordorder=Endian.Little, unit=unit)
         elif power_limit < 0:
             power_value = float(abs(power_limit))
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_value} W entladen für den Hausverbrauch")
             self.client.write_register(1034, power_value, data_type=ModbusDataType.FLOAT_32,
-                                       wordorder=self.endianess, unit=unit)
+                                       wordorder=Endian.Little, unit=unit)
         elif power_limit > 0:
             power_value = float(abs(power_limit)) * -1
             log.debug(f"Aktive Batteriesteuerung. Batterie wird mit {power_value} W geladen")
             self.client.write_register(1034, power_value, data_type=ModbusDataType.FLOAT_32,
-                                       wordorder=self.endianess, unit=unit)
+                                       wordorder=Endian.Little, unit=unit)
 
 
 def power_limit_controllable(self) -> bool:

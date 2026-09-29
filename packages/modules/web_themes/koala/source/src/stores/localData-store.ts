@@ -18,28 +18,28 @@ export const useLocalDataStore = defineStore('localData', () => {
   const hiddenDatasets = ref<string[]>([]);
 
   // Function to add a dataset to hidden list
-  const hideDataset = (datasetName: string) => {
-    if (!hiddenDatasets.value.includes(datasetName)) {
-      hiddenDatasets.value.push(datasetName);
+  const hideDataset = (datasetKey: string) => {
+    if (!hiddenDatasets.value.includes(datasetKey)) {
+      hiddenDatasets.value.push(datasetKey);
     }
   };
 
-  const showDataset = (datasetName: string) => {
+  const showDataset = (datasetKey: string) => {
     hiddenDatasets.value = hiddenDatasets.value.filter(
-      (item) => item !== datasetName,
+      (item) => item !== datasetKey,
     );
   };
 
-  const toggleDataset = (datasetName: string) => {
-    if (hiddenDatasets.value.includes(datasetName)) {
-      showDataset(datasetName);
+  const toggleDataset = (datasetKey: string) => {
+    if (hiddenDatasets.value.includes(datasetKey)) {
+      showDataset(datasetKey);
     } else {
-      hideDataset(datasetName);
+      hideDataset(datasetKey);
     }
   };
 
-  const isDatasetHidden = (datasetName: string): boolean => {
-    return hiddenDatasets.value.includes(datasetName);
+  const isDatasetHidden = (datasetKey: string): boolean => {
+    return hiddenDatasets.value.includes(datasetKey);
   };
 
   return {

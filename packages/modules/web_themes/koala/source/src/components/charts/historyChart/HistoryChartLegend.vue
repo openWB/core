@@ -30,10 +30,13 @@
 import { ref, watch, computed, nextTick } from 'vue';
 import { useLocalDataStore } from 'src/stores/localData-store';
 import { Chart, ChartDataset, LegendItem } from 'chart.js';
-import type {
-  Category,
-  CategorizedDataset,
-  LegendItemWithCategory,
+import {
+  CONSUMER_TOTAL_KEY,
+  BATTERY_TOTAL_KEY,
+  BATTERY_SOC_KEY,
+  type Category,
+  type CategorizedDataset,
+  type LegendItemWithCategory,
 } from './history-chart-model';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import { useQuasar } from 'quasar';
@@ -60,27 +63,26 @@ const batteryConfigured = computed(() => {
 
 const updateLegendItems = () => {
   if (!props.chart) return;
-  let items =
-    props.chart.options.plugins?.legend?.labels?.generateLabels?.(
-      props.chart,
-    ) || [];
-  if (!batteryConfigured.value) {
-    items = items.filter(
-      (item: LegendItemWithCategory) =>
-        item.text !== 'Speicher ges.' && item.text !== 'Speicher SoC',
-    );
-  }
-  (items as LegendItemWithCategory[]).forEach((item) => {
-    if (item.text && localDataStore.isDatasetHidden(item.text)) {
-      item.hidden = true;
-    }
-    // Inject the category from the dataset
+  let items = (props.chart.options.plugins?.legend?.labels?.generateLabels?.(
+    props.chart,
+  ) || []) as LegendItemWithCategory[];
+  items.forEach((item) => {
+    // Inject the category and key from the dataset
     const dataset = props.chart?.data.datasets[
       item.datasetIndex!
     ] as unknown as CategorizedDataset;
     item.category = dataset.category;
+    item.key = dataset.key;
+    if (item.key && localDataStore.isDatasetHidden(item.key)) {
+      item.hidden = true;
+    }
   });
-  legendItems.value = items as LegendItemWithCategory[];
+  if (!batteryConfigured.value) {
+    items = items.filter(
+      (item) => item.key !== BATTERY_TOTAL_KEY && item.key !== BATTERY_SOC_KEY,
+    );
+  }
+  legendItems.value = items;
 };
 
 const categorizedLegendItems = computed(() => {
@@ -88,6 +90,7 @@ const categorizedLegendItems = computed(() => {
     chargepoint: [],
     vehicle: [],
     battery: [],
+    consumer: [],
     component: [],
   };
   for (const item of legendItems.value) {
@@ -98,11 +101,24 @@ const categorizedLegendItems = computed(() => {
       categories.component.push(item);
     }
   }
-  // Sort each category's items alphabetically
+
   Object.keys(categories).forEach((key) => {
-    categories[key as Category].sort((a, b) =>
-      (a.text || '').localeCompare(b.text || '', undefined, { numeric: true }),
+    const category = key as Category;
+    categories[category].sort((a, b) =>
+      (a.text || '').localeCompare(b.text || '', undefined, {
+        numeric: true,
+      }),
     );
+
+    if (category === 'consumer') {
+      const totalIndex = categories[category].findIndex(
+        (item) => item.key === CONSUMER_TOTAL_KEY,
+      );
+      if (totalIndex > 0) {
+        const [total] = categories[category].splice(totalIndex, 1);
+        categories[category].unshift(total);
+      }
+    }
   });
   return categories;
 });
@@ -124,10 +140,10 @@ const getItemLineType = (item: LegendItem) => {
     : 'solid';
 };
 
-const toggleDataset = (datasetName?: string, datasetIndex?: number) => {
-  if (!props.chart || !datasetName || datasetIndex === undefined) return;
-  localDataStore.toggleDataset(datasetName);
-  if (localDataStore.isDatasetHidden(datasetName)) {
+const toggleDataset = (datasetKey?: string, datasetIndex?: number) => {
+  if (!props.chart || !datasetKey || datasetIndex === undefined) return;
+  localDataStore.toggleDataset(datasetKey);
+  if (localDataStore.isDatasetHidden(datasetKey)) {
     props.chart.hide(datasetIndex);
   } else {
     props.chart.show(datasetIndex);
@@ -141,10 +157,8 @@ watch(
   (newChart) => {
     if (newChart) {
       newChart.data.datasets.forEach((dataset, index) => {
-        if (
-          typeof dataset.label === 'string' &&
-          localDataStore.isDatasetHidden(dataset.label)
-        ) {
+        const { key } = dataset as unknown as CategorizedDataset;
+        if (key && localDataStore.isDatasetHidden(key)) {
           newChart.hide(index);
         }
       });

@@ -1,4 +1,3 @@
-from enum import Enum
 import os
 import json
 import logging
@@ -7,7 +6,7 @@ from pathlib import Path
 import re
 import string
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 from control import data
 from helpermodules.broker import BrokerClient
@@ -78,6 +77,17 @@ log = logging.getLogger(__name__)
 #                     }
 #                     ... (dynamisch, je nach konfigurierter Anzahl)
 #                 }
+#                 "consumer": {
+#                     "all": {
+#                         "imported": Wh,
+#                         "exported": Wh,
+#                     }
+#                     "consumer0": {
+#                         "imported": Wh,
+#                         "exported": Wh,
+#                     }
+#                     ... (dynamisch, je nach konfigurierter Anzahl)
+#                 }
 #                 "sh": {
 #                     "sh1": {
 #                         "exported": Wh,
@@ -95,11 +105,6 @@ log = logging.getLogger(__name__)
 #         "names": {"cp1": "", "counter2": "", "pv3": ""},
 #         "colors": {"cp1": "", "counter2": "", "pv3": ""},
 #     }
-
-
-class LogType(Enum):
-    DAILY = "daily"
-    MONTHLY = "monthly"
 
 
 class LegacySmartHomeLogData:
@@ -133,20 +138,11 @@ class LegacySmartHomeLogData:
         self.all_received_topics.update({msg.topic: msg.payload})
 
 
-def save_log(log_type: LogType):
-    """ Parameter
-    ---------
-    folder: str
-        gibt an, ob ein Tages-oder Monats-Log-Eintrag erstellt werden soll.
-    """
+def save_log():
     try:
-        parent_file = Path(__file__).resolve().parents[3] / "data" / \
-            ("daily_log" if log_type == LogType.DAILY else "monthly_log")
+        parent_file = Path(__file__).resolve().parents[3] / "data" / "daily_log"
         parent_file.mkdir(mode=0o755, parents=True, exist_ok=True)
-        if log_type == LogType.DAILY:
-            file_name = timecheck.create_timestamp_YYYYMMDD()
-        else:
-            file_name = timecheck.create_timestamp_YYYYMM()
+        file_name = timecheck.create_timestamp_YYYYMMDD()
         filepath = str(parent_file / f"{file_name}.json")
 
         try:
@@ -162,7 +158,7 @@ def save_log(log_type: LogType):
         previous_entry = get_previous_entry(parent_file, content)
 
         sh_log_data = LegacySmartHomeLogData()
-        new_entry = create_entry(log_type, sh_log_data, previous_entry)
+        new_entry = create_entry(sh_log_data, previous_entry)
 
         # json-Objekt in Datei einfügen
 
@@ -194,11 +190,8 @@ def get_previous_entry(parent_file: Path, content: Dict) -> Optional[Dict]:
     return previous_entry
 
 
-def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previous_entry: Optional[Dict]) -> Dict:
-    if log_type == LogType.DAILY:
-        date = timecheck.create_timestamp_HH_MM()
-    else:
-        date = timecheck.create_timestamp_YYYYMMDD()
+def create_entry(sh_log_data: LegacySmartHomeLogData, previous_entry: Optional[Dict]) -> Dict:
+    date = timecheck.create_timestamp_HH_MM()
     current_timestamp = int(timecheck.create_timestamp())
 
     try:
@@ -246,15 +239,39 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
             log.exception("Fehler im Werte-Logging-Modul für EV "+str(ev))
 
     counter_dict = {}
+    counter_all_data = data.data.counter_all_data
+    # Zählt alle effektiven Hausverbrauchs-Zähler, auch bei Auto-Vererbung über den Parent.
+    is_home_consumption_by_counter = {}
+    for current_counter in data.data.counter_data.values():
+        try:
+            is_home_consumption_by_counter[current_counter.num] = counter_all_data.is_home_consumption_counter(
+                current_counter.num)
+        except Exception:
+            log.exception("Fehler beim Ermitteln der Hausverbrauchszähler.")
+            is_home_consumption_by_counter[current_counter.num] = False
+
+    home_consumption_counter_count = sum(1 for is_hc in is_home_consumption_by_counter.values() if is_hc)
+
     for counter in data.data.counter_data.values():
         try:
-            home_consumption_source_id = data.data.counter_all_data.data.config.home_consumption_source_id
-            if (home_consumption_source_id is None or counter.num != home_consumption_source_id):
+            # Der EVU-Zähler muss immer geloggt werden, unabhängig von Hausverbrauchs- oder
+            # extra_meter-Zuordnung - sonst findet process_log.get_grid_counter() keinen Netzzähler mehr.
+            is_grid_counter = counter_all_data.get_id_evu_counter() == counter.num
+            is_home_consumption_counter = is_home_consumption_by_counter.get(counter.num, False)
+            if not is_grid_counter and is_home_consumption_counter and home_consumption_counter_count == 1:
+                continue
+            skip_counter = False
+            if not is_grid_counter:
+                for consumer in data.data.consumer_data:
+                    if counter.num == data.data.consumer_data[consumer].data.extra_meter:
+                        skip_counter = True
+                        break
+            if skip_counter is False:
                 counter_dict.update(
                     {f"counter{counter.num}": {
                         "imported": counter.data.get.imported,
                         "exported": counter.data.get.exported,
-                        "grid": True if data.data.counter_all_data.get_id_evu_counter() == counter.num else False,
+                        "grid": is_grid_counter,
                         "fault_state": counter.data.get.fault_state}})
         except Exception:
             log.exception("Fehler im Werte-Logging-Modul für Zähler "+str(counter))
@@ -293,6 +310,22 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
                 log.exception("Fehler im Werte-Logging-Modul für Speicher "+str(bat))
 
     try:
+        consumer_dict: Dict[str, Dict[str, Union[float, int]]] = {"all": {
+            "imported": data.data.consumer_all_data.data.get.imported,
+            "exported": data.data.consumer_all_data.data.get.exported,
+            "fault_state": data.data.consumer_all_data.data.get.fault_state}}
+    except Exception:
+        log.exception("Fehler im Werte-Logging-Modul für Verbraucher-Daten")
+        consumer_dict = {}
+    for consumer in data.data.consumer_data:
+        try:
+            consumer_dict.update({consumer: {"imported": data.data.consumer_data[consumer].data.get.imported,
+                                             "exported": data.data.consumer_data[consumer].data.get.exported,
+                                             "fault_state": data.data.consumer_data[consumer].data.get.fault_state}})
+        except Exception:
+            log.exception("Fehler im Werte-Logging-Modul für Verbraucher "+str(consumer))
+
+    try:
         hc_dict = {"all": {
             "imported": data.data.counter_all_data.data.set.imported_home_consumption,
             "fault_state": 2 if data.data.counter_all_data.data.set.invalid_home_consumption >= 3 else 0}}
@@ -308,6 +341,7 @@ def create_entry(log_type: LogType, sh_log_data: LegacySmartHomeLogData, previou
         "counter": counter_dict,
         "pv": pv_dict,
         "bat": bat_dict,
+        "consumer": consumer_dict,
         "sh": sh_log_data.sh_dict,
         "hc": hc_dict
     }
@@ -352,7 +386,7 @@ def get_names(elements: Dict, sh_names: Dict, valid_names: Optional[Dict] = None
     """
     names = sh_names
     for group in elements.items():
-        if group[0] not in ("bat", "counter", "cp", "pv", "ev", "sh"):
+        if group[0] not in ("bat", "consumer", "counter", "cp", "pv", "ev", "sh"):
             continue
         for entry in group[1]:
             # valid_names wird aus update_config übergeben, da dort noch kein Zugriff auf data möglich ist
@@ -368,6 +402,8 @@ def get_names(elements: Dict, sh_names: Dict, valid_names: Optional[Dict] = None
                 try:
                     if "ev" in entry:
                         names.update({entry: data.data.ev_data[entry].data.name})
+                    elif "consumer" in entry:
+                        names.update({entry: data.data.consumer_data[entry].data.module.name})
                     elif "cp" in entry:
                         names.update({entry: data.data.cp_data[entry].data.config.name})
                     elif "all" != entry:
@@ -388,13 +424,15 @@ def get_colors(elements: Dict) -> Dict:
     """
     colors = {}
     for group in elements.items():
-        if group[0] not in ("ev", "cp", "counter", "pv", "bat"):
+        if group[0] not in ("ev", "cp", "counter", "consumer", "pv", "bat"):
             continue
         for entry in group[1]:
             if "all" != entry:
                 try:
                     if "ev" in entry:
                         colors.update({entry: data.data.ev_data[entry].data.color})
+                    elif "consumer" in entry:
+                        colors.update({entry: data.data.consumer_data[entry].data.module.color})
                     elif "cp" in entry:
                         colors.update({entry: data.data.cp_data[entry].data.config.color})
                     else:

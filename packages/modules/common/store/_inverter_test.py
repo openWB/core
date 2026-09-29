@@ -1,6 +1,6 @@
 from modules.common.store._inverter import PurgeInverterState
 from modules.common.component_state import InverterState
-from control.counter_all import CounterAll
+from control.counter_all.counter_all import CounterAll
 from control.bat import Bat, BatData, Get
 from typing import List, NamedTuple
 from unittest.mock import Mock

@@ -3,9 +3,11 @@ from typing import List, Optional
 from unittest.mock import Mock
 import pytest
 
+from helpermodules import timecheck
 from control import counter as counter_module
 from control import data
 from control.chargepoint.chargepoint import Chargepoint
+from control.consumer.consumer import Consumer
 from control.counter import Counter, CounterData, Get
 from control.ev.ev import Ev
 from control.ev.charge_template import ChargeTemplate
@@ -29,7 +31,7 @@ def test_set_loadmanagement_state(fault_state: FaultStateLevel,
                                   data_):
     # setup
     connected_cps_mock = Mock(return_value=["cp3", "cp4"])
-    monkeypatch.setattr(data.data.counter_all_data, "get_chargepoints_of_counter", connected_cps_mock)
+    monkeypatch.setattr(data.data.counter_all_data, "get_loads_of_counter", connected_cps_mock)
     id_mock = Mock(return_value=0)
     monkeypatch.setattr(data.data.counter_all_data, "get_id_evu_counter", id_mock)
     name_mock = Mock(return_value="Test")
@@ -42,6 +44,21 @@ def test_set_loadmanagement_state(fault_state: FaultStateLevel,
 
     # evaluation
     assert counter.data.set.error_timer == expected_loadmanagement_available
+
+
+def test_get_loadmanagement_state_within_grace_period_stays_available(monkeypatch, data_):
+    # setup
+    connected_cps_mock = Mock(return_value=["cp3", "cp4"])
+    monkeypatch.setattr(data.data.counter_all_data, "get_loads_of_counter", connected_cps_mock)
+    counter = Counter(0)
+    counter.data.get.fault_state = FaultStateLevel.ERROR
+    counter.data.set.error_timer = timecheck.create_timestamp()
+
+    # execution
+    loadmanagement_available = counter._get_loadmanagement_state()
+
+    # evaluation
+    assert loadmanagement_available is True
 
 
 @pytest.mark.parametrize("raw_currents_left, expected_max_exceeding",
@@ -79,8 +96,8 @@ def test_set_current_left(loadmanagement_available: bool,
                           monkeypatch,
                           data_):
     # setup
-    get_chargepoints_of_counter_mock = Mock(return_value=["cp3", "cp4", "cp5"])
-    monkeypatch.setattr(data.data.counter_all_data, "get_chargepoints_of_counter", get_chargepoints_of_counter_mock)
+    get_loads_of_counter_mock = Mock(return_value=["cp3", "cp4", "cp5"])
+    monkeypatch.setattr(data.data.counter_all_data, "get_loads_of_counter", get_loads_of_counter_mock)
     counter = Counter(0)
     counter.data.config.max_currents = max_currents
     counter.data.config.max_total_power = sum(max_currents)*230
@@ -92,6 +109,30 @@ def test_set_current_left(loadmanagement_available: bool,
 
     # evaluation
     assert counter.data.set.raw_currents_left == expected_raw_currents_left
+
+
+def test_set_current_left_nets_out_own_current_despite_noise_on_unused_phase(monkeypatch, data_):
+    """ Ein einphasig ladender Ladepunkt zeigt auf ungenutzten Phasen oft ein geringes negatives
+    Messrauschen (zB -0.05A). min(element_current) < 0 hat das faelschlich als Einspeisung eingeordnet,
+    wodurch der eigene Ladestrom nirgends von currents_raw abgezogen wurde - das Lastmanagement hielt
+    die eigene Ladung dann faelschlich fuer Fremdlast (siehe Matts Log in Discussion #3908)."""
+    # setup
+    get_loads_of_counter_mock = Mock(return_value=["cp4"])
+    monkeypatch.setattr(data.data.counter_all_data, "get_loads_of_counter", get_loads_of_counter_mock)
+    data.data.cp_data["cp4"].data.config.phase_1 = 1
+    data.data.cp_data["cp4"].data.get.currents = [20, 0.05, -0.05]
+    data.data.cp_data["cp4"].data.get.power = 4600
+    counter = Counter(0)
+    counter.data.config.max_currents = [35]*3
+    counter.data.config.max_total_power = 35*3*230
+    counter.data.config.max_power_errorcase = 7000
+    counter.data.get.currents = [10, -5, -3]
+
+    # execution
+    counter._set_current_left(True)
+
+    # evaluation
+    assert counter.data.set.raw_currents_left == [45, 40.05, 37.95]
 
 
 @dataclass
@@ -111,20 +152,22 @@ class Params:
 cases = [
     Params("Einschaltschwelle wurde unterschritten, Timer zurücksetzen", False, 1500, -119,
            1500, 1652683250.0, ChargepointState.SWITCH_ON_DELAY,
-           Counter.SWITCH_ON_FALLEN_BELOW.format(1500), None, 0),
+           Counter.SWITCH_ON_TEXTS_CP.fallen_below.format(1500), None, 0),
     Params("Timer starten", False, 0, 1501, 1500, None, ChargepointState.NO_CHARGING_ALLOWED,
-           Counter.SWITCH_ON_WAITING.format("30 Sek."), 1652683252.0, 1500),
+           Counter.SWITCH_ON_TEXTS_CP.waiting.format("30 Sek."), 1652683252.0, 1500),
     Params("Einschaltschwelle nicht erreicht", False, 0, 1499, 1500,
-           None, ChargepointState.NO_CHARGING_ALLOWED, Counter.SWITCH_ON_NOT_EXCEEDED.format(1500), None, 0),
+           None, ChargepointState.NO_CHARGING_ALLOWED, Counter.SWITCH_ON_TEXTS_CP.not_exceeded, None, 0),
     Params("Einschaltschwelle läuft", False, 1500, 121, 1500,
            1652683250.0, ChargepointState.SWITCH_ON_DELAY, None, 1652683250.0, 1500),
     Params("Feed_in_limit, Einschaltschwelle wurde unterschritten, Timer zurücksetzen", True, 1500,
            -681, 15000, 1652683250.0, ChargepointState.SWITCH_ON_DELAY,
-           Counter.SWITCH_ON_FALLEN_BELOW.format(1500), None, 0),
+           Counter.SWITCH_ON_TEXTS_CP.fallen_below.format(1500), None, 0),
     Params("Feed_in_limit, Timer starten", True, 0, 15001, 15000, None, ChargepointState.NO_CHARGING_ALLOWED,
-           Counter.SWITCH_ON_WAITING.format("30 Sek."), 1652683252.0, 1500),
+           Counter.SWITCH_ON_TEXTS_CP.waiting.format("30 Sek.")+" Die Einspeisegrenze wird berücksichtigt.",
+           1652683252.0, 1500),
     Params("Feed_in_limit, Einschaltschwelle nicht erreicht", True, 0, 14999,
-           15000, None, ChargepointState.NO_CHARGING_ALLOWED, Counter.SWITCH_ON_NOT_EXCEEDED.format(1500), None, 0),
+           15000, None, ChargepointState.NO_CHARGING_ALLOWED,
+           Counter.SWITCH_ON_TEXTS_CP.not_exceeded.format(1500), None, 0),
     Params("Feed_in_limit, Einschaltschwelle läuft", True, 1500, 15001,
            15000, 1652683250.0, ChargepointState.SWITCH_ON_DELAY, None, 1652683250.0, 1500),
 ]
@@ -141,7 +184,7 @@ def test_switch_on_threshold_reached(params: Params, caplog, general_data_fixtur
     cp.data.control_parameter.state = params.state
     cp.data.control_parameter.timestamp_switch_on_off = params.timestamp_switch_on_off
     ev.data.charge_template = ChargeTemplate()
-    ev.data.charge_template.data.chargemode.pv_charging.feed_in_limit = params.feed_in_limit
+    data.data.general_data.data.chargemode_config.surplus.feed_in_limit = params.feed_in_limit
     cp.data.set.charging_ev_data = ev
     mock_calc_switch_on_power = Mock(return_value=[params.surplus, params.threshold])
     monkeypatch.setattr(Counter, "calc_switch_on_power", mock_calc_switch_on_power)
@@ -170,7 +213,7 @@ def test_control_range(control_range, evu_power, expected_range_offset, general_
     get_evu_counter_mock = Mock(return_value=Mock(spec=Counter, data=Mock(
         spec=CounterData, get=Mock(spec=Get, power=evu_power))))
     monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", get_evu_counter_mock)
-    data.data.general_data.data.chargemode_config.pv_charging.control_range = control_range
+    data.data.general_data.data.chargemode_config.surplus.control_range = control_range
     c = Counter(0)
 
     # execution
@@ -178,3 +221,65 @@ def test_control_range(control_range, evu_power, expected_range_offset, general_
 
     # evaluation
     assert range_offset == expected_range_offset
+
+
+@pytest.mark.parametrize("load_factory, expected",
+                         [pytest.param(lambda: Chargepoint(0, None), -200, id="Ladepunkt"),
+                          pytest.param(lambda: Consumer(0), -50, id="Verbraucher")])
+def test_calc_switch_off_threshold_by_load(load_factory, expected: float, general_data_fixture):
+    # setup
+    surplus_config = data.data.general_data.data.chargemode_config.surplus
+    surplus_config.feed_in_limit = False
+    surplus_config.vehicle.switch_off_threshold = -200
+    surplus_config.consumer.switch_off_threshold = -50
+    c = Counter(0)
+
+    # execution
+    threshold = c.calc_switch_off_threshold(load_factory())
+
+    # evaluation
+    assert threshold == expected
+
+
+def test_reset_switch_on_off_ignores_stale_timestamp_without_delay_state(general_data_fixture, monkeypatch):
+    # setup
+    evu_counter = Counter(0)
+    evu_counter.data.set.reserved_surplus = 690
+    monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", Mock(return_value=evu_counter))
+
+    consumer = Consumer(7)
+    consumer.data.control_parameter.timestamp_switch_on_off = 1652683250.0
+    consumer.data.control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
+    consumer.data.control_parameter.required_current = 21.70138888888889
+    consumer.data.control_parameter.phases = 1
+    consumer.data.get.charge_state = False
+
+    # execution
+    evu_counter.reset_switch_on_off(consumer)
+
+    # evaluation
+    assert evu_counter.data.set.reserved_surplus == 690
+    assert consumer.data.control_parameter.timestamp_switch_on_off is None
+    assert consumer.data.control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED
+
+
+def test_reset_switch_on_off_releases_reserved_surplus_on_switch_on_delay(general_data_fixture, monkeypatch):
+    # setup
+    evu_counter = Counter(0)
+    evu_counter.data.set.reserved_surplus = 690
+    monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", Mock(return_value=evu_counter))
+
+    consumer = Consumer(6)
+    consumer.data.control_parameter.timestamp_switch_on_off = 1652683250.0
+    consumer.data.control_parameter.state = ChargepointState.SWITCH_ON_DELAY
+    consumer.data.control_parameter.required_current = 3
+    consumer.data.control_parameter.phases = 1
+    consumer.data.get.charge_state = False
+
+    # execution
+    evu_counter.reset_switch_on_off(consumer)
+
+    # evaluation
+    assert evu_counter.data.set.reserved_surplus == 0
+    assert consumer.data.control_parameter.timestamp_switch_on_off is None
+    assert consumer.data.control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED

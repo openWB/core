@@ -106,3 +106,19 @@ class TimeChargingPlan(TimeframePlan):
 class AutolockPlan(TimeframePlan):
     id: Optional[int] = None
     name: str = "neuer Plan für Sperren nach Uhrzeit"
+
+
+@dataclass
+class TimeChargingPlanConsumer(TimeframePlan):
+    id: Optional[int] = None
+    min_bat_soc: Optional[int] = None
+    name: str = "neuer Zeit-Plan"
+
+
+@dataclass
+class ScheduledPlanConsumer(PlanBase):
+    frequency: FrequencyDate = field(default_factory=frequency_date_factory)
+    id: Optional[int] = None
+    name: str = "neuer Ziel-Plan"
+    time: str = "07:00"
+    duration: int = 3600

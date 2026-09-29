@@ -99,6 +99,7 @@ import HouseIcon from 'src/assets/icons/owbHouse.svg?component';
 import VehicleIcon from 'src/assets/icons/owbVehicle.svg?component';
 import ChargePointIcon from 'src/assets/icons/owbChargePoint_2.svg?component';
 import CounterIcon from 'src/assets/icons/owbCounter.svg?component';
+import ConsumerIcon from 'src/assets/icons/owbConsumer.svg?component';
 
 const mqttStore = useMqttStore();
 
@@ -132,6 +133,9 @@ const arrowDirection = (id: string) => {
     case 'chargepoint':
       value = mqttStore.chargePointSumPower('value') as number;
       break;
+    case 'consumer':
+      value = mqttStore.consumerSumPower('value') as number;
+      break;
     default:
       if (id.startsWith('counter-')) {
         const counterId = Number(id.replace('counter-', ''));
@@ -155,6 +159,7 @@ const iconMap = {
   pv: PvIcon,
   house: HouseIcon,
   counter: CounterIcon,
+  consumer: ConsumerIcon,
 };
 </script>
 

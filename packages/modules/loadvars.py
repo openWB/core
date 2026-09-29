@@ -32,6 +32,8 @@ class Loadvars:
                 self._update_values_of_level_buttom_top(level, not_finished_threads)
                 wait_for_module_update_completed(self.event_module_update_completed, topic)
                 data.data.copy_module_data()
+
+            self._set_timeout_fault_for_timed_out_device_components(not_finished_threads)
             self._update_values_virtual_counter_uncounted_consumption(not_finished_threads)
             wait_for_module_update_completed(self.event_module_update_completed, topic)
             data.data.copy_module_data()
@@ -62,7 +64,43 @@ class Loadvars:
                                        args=(), name=f"set values cp{cp.chargepoint_module.config.id}"))
             except Exception:
                 log.exception(f"Fehler im loadvars-Modul bei Element {cp.num}")
+        for consumer in data.data.consumer_data.values():
+            try:
+                if consumer.module is None:
+                    # Verbraucher, dessen Modul nicht erstellt werden konnte (z.B. defekte Konfiguration).
+                    continue
+                modules_threads.append(Thread(target=consumer.module.update,
+                                              args=(),
+                                              name=f"set values consumer{consumer.data.module.id}"))
+            except Exception:
+                log.exception(f"Fehler im loadvars-Modul bei Element {consumer.num}")
         return joined_thread_handler(modules_threads, data.data.general_data.data.control_interval/3)
+
+    def _set_timeout_fault_for_timed_out_device_components(self, not_finished_threads: List[str]) -> None:
+        """Diese Funktion prüft, ob es Komponenten gibt, die nicht innerhalb des Timeouts abgearbeitet werden konnten
+        und setzt enstsprechend den FaultState."""
+        for item in data.data.system_data.values():
+            if isinstance(item, AbstractDevice):
+                for t in not_finished_threads:
+                    if t == f"device{item.device_config.id}":
+                        for comp in item.components.values():
+                            # Ab hier bin ich in der einer Komponente, die zu einem Gerät gehört, das nicht fertig ist.
+                            module_data = getattr(
+                                data.data, f"{type_to_topic_mapping(comp.component_config.type)}_data")
+                            if module_data[
+                                f"{type_to_topic_mapping(comp.component_config.type)}{comp.component_config.id}"
+                            ].data.get.fault_state == 2:
+                                log.error(f"Fehlerstatus in Komponente {comp.component_config.name}. "
+                                          "Werte werden nicht aktualisiert.")
+                                # Komponente hat bereits einen Faultstate und wird nicht weiter beachtet
+                                continue
+                            else:
+                                # Komponenent hat keinen FaultState -> Faultstate wird gesetzt
+                                comp.fault_state.error(f"nicht alle Komponente des device{item.device_config.id} "
+                                                       f"konnten innerhalb des Timeouts abgearbeitet werden. "
+                                                       f"Daten vom {comp.component_config.name} "
+                                                       "werden nicht aktualisiert")
+                                comp.fault_state.store_error()
 
     def _update_values_of_level_buttom_top(self, elements, not_finished_threads: List[str]) -> None:
         """Threads, um von der niedrigsten Ebene der Hierarchie beginnend Werte ggf. miteinander zu verrechnen und zu
@@ -78,6 +116,17 @@ class Loadvars:
                             target=update_values,
                             args=(chargepoint.chargepoint_module,),
                             name=f"update values cp{chargepoint.chargepoint_module.config.id}"))
+                elif element["type"] == ComponentType.CONSUMER.value:
+                    consumer = data.data.consumer_data[f'{type_to_topic_mapping(element["type"])}{element["id"]}']
+                    if consumer.module is None:
+                        # Verbraucher, dessen Modul nicht erstellt werden konnte (z.B. defekte Konfiguration).
+                        continue
+                    thread_name = f"set values consumer{consumer.data.module.id}"
+                    if thread_name not in not_finished_threads:
+                        modules_threads.append(Thread(
+                            target=update_values,
+                            args=(consumer.module,),
+                            name=f"update values consumer{consumer.data.module.id}"))
                 else:
                     component = get_finished_component_obj_by_id(element["id"], not_finished_threads)
                     if component is None:
@@ -93,6 +142,8 @@ class Loadvars:
         for counter in data.data.counter_data.values():
             try:
                 component = get_finished_component_obj_by_id(counter.num, not_finished_threads)
+                if component is None:
+                    continue
                 if component.component_config.type == "virtual":
                     if len(data.data.counter_all_data.get_entry_of_element(counter.num)["children"]) == 0:
                         thread_name = f"component{component.component_config.id}"

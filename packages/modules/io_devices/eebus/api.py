@@ -7,7 +7,7 @@ from threading import Thread
 from typing import Optional
 
 from control import data
-from dataclass_utils._dataclass_asdict import asdict
+from dataclass_utils import asdict
 from helpermodules import timecheck
 from helpermodules.broker import BrokerClient
 from helpermodules.pub import Pub

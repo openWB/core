@@ -26,6 +26,9 @@ def readmq() -> None:
 
 
 def smarthome_handler() -> None:
+    if not SubData.general_data.data.legacy_smarthome_active:
+        return
+
     def handler() -> None:
         try:
             try:

@@ -8,7 +8,7 @@ from modules.common import hardware_check
 from modules.common.component_state import CounterState, EvseState
 from modules.common.evse import Evse
 from modules.common.hardware_check import (
-    EVSE_BROKEN, LAN_ADAPTER_BROKEN, METER_BROKEN_VOLTAGES, METER_PROBLEM, USB_ADAPTER_BROKEN,
+    READ_EVSE_AGAIN, READ_LAN_ADAPTER_AGAIN, READ_METER_VOLTAGES_AGAIN, METER_PROBLEM, READ_USB_ADAPTER_AGAIN,
     SeriesHardwareCheckMixin, _check_meter_values)
 from modules.common.modbus import NO_CONNECTION, ModbusSerialClient_, ModbusTcpClient_
 from modules.conftest import SAMPLE_IP, SAMPLE_PORT
@@ -18,17 +18,17 @@ from modules.internal_chargepoint_handler.clients import ClientHandler
 @pytest.mark.parametrize(
     ("evse_side_effect, meter_side_effect, meter_return_value, handle_exception_side_effect,"
      "handle_exception_return_value, client_spec, expected_error_msg"),
-    [pytest.param(Exception("Modbus"), None, [230]*3, None, False, ModbusSerialClient_, EVSE_BROKEN,
+    [pytest.param(Exception("Modbus"), None, [230]*3, None, False, ModbusSerialClient_, READ_EVSE_AGAIN,
                   id="EVSE defekt"),
      pytest.param(Exception("Modbus"), None, [230, 0, 230], None, False, ModbusSerialClient_,
-                  EVSE_BROKEN + " " + METER_BROKEN_VOLTAGES.format([230, 0, 230]),
+                  READ_EVSE_AGAIN + " " + READ_METER_VOLTAGES_AGAIN.format([230, 0, 230]),
                   id="EVSE defekt und Zähler eine Phase defekt"),
      pytest.param(None, Exception("Modbus"), None, None, None,
                   ModbusSerialClient_, METER_PROBLEM, id="Zähler falsch konfiguriert"),
      pytest.param(Exception("Modbus"), Exception("Modbus"), None, None, False, ModbusSerialClient_,
-                  USB_ADAPTER_BROKEN, id="USB-Adapter defekt"),
+                  READ_USB_ADAPTER_AGAIN, id="USB-Adapter defekt"),
      pytest.param(Exception("Modbus"), Exception("Modbus"), None, None, False, ModbusTcpClient_,
-                  LAN_ADAPTER_BROKEN, id="LAN-Adapter defekt"),
+                  READ_LAN_ADAPTER_AGAIN, id="LAN-Adapter defekt"),
      pytest.param(Exception("Modbus"), Exception("Modbus"), None,
                   Exception(NO_CONNECTION.format(SAMPLE_IP, SAMPLE_PORT)), None, ModbusTcpClient_,
                   NO_CONNECTION.format(SAMPLE_IP, SAMPLE_PORT), id="LAN-Adapter nicht erreichbar"),
@@ -66,6 +66,32 @@ def test_hardware_check_fails(evse_side_effect,
         ClientHandler(0, client, [1], Mock())
 
 
+@pytest.mark.parametrize(
+    "transient_exception",
+    [pytest.param(Exception("Modbus"), id="response.isError() in modbus.py"),
+     pytest.param(ValueError("Unbekannter Zustand der EVSE"), id="EvseStatusCode.FAILURE in evse.py")]
+)
+def test_hardware_check_retries_transient_exception(transient_exception, monkeypatch):
+    # Neither modbus.py's response.isError() case nor evse.py's EvseStatusCode.FAILURE case raise
+    # ModbusIOException/ConnectionException. The retry loop must catch those too, or a single
+    # transient glitch fails the whole readout with no retry.
+    mock_evse_client = Mock(spec=Evse, version=18,
+                            get_evse_state=Mock(side_effect=[transient_exception, Mock(spec=EvseState)]))
+    monkeypatch.setattr(ClientHandler, "_evse_factory", Mock(return_value=mock_evse_client))
+
+    counter_state_mock = Mock(spec=CounterState, voltages=[230]*3, currents=[0, 0, 0], powers=[0, 0, 0],
+                              power=0, serial_number="1234")
+    mock_meter_client = Mock(spec=sdm.Sdm630_72, get_counter_state=Mock(return_value=counter_state_mock))
+    monkeypatch.setattr(ClientHandler, "find_meter_client", Mock(return_value=mock_meter_client))
+
+    client = Mock(spec=ModbusSerialClient_, __enter__=Mock(return_value=None), __exit__=Mock(return_value=None))
+
+    # execution and evaluation
+    # keine Exception: der zweite Versuch muss noch innerhalb von request_and_check_hardware laufen
+    ClientHandler(0, client, [1], Mock())
+    assert mock_evse_client.get_evse_state.call_count == 2
+
+
 def test_hardware_check_succeeds(monkeypatch):
     # setup
     mock_evse_client = Mock(spec=Evse, get_evse_state=Mock(return_value=Mock(spec=EvseState)), version=17)
@@ -90,12 +116,12 @@ def test_hardware_check_succeeds(monkeypatch):
 @pytest.mark.parametrize(
     "voltages, power, expected_msg",
     [pytest.param([230, 0, 0], 0, None, id="einphasig oder zweiphasig L2 defekt (nicht erkennbar)"),
-     pytest.param([0, 0, 0], 0, METER_BROKEN_VOLTAGES.format([0]*3), id="einphasig, L1 defekt"),
+     pytest.param([0, 0, 0], 0, READ_METER_VOLTAGES_AGAIN.format([0]*3), id="einphasig, L1 defekt"),
      pytest.param([230, 230, 0], 0, None, id="zweiphasig oder dreiphasig, L3 defekt (nicht erkennbar)"),
-     pytest.param([0, 230, 0], 0, METER_BROKEN_VOLTAGES.format([0, 230, 0]), id="zweiphasig, L1 defekt"),
+     pytest.param([0, 230, 0], 0, READ_METER_VOLTAGES_AGAIN.format([0, 230, 0]), id="zweiphasig, L1 defekt"),
      pytest.param([230, 230, 230], 0, None, id="dreiphasig"),
-     pytest.param([0, 230, 230], 0, METER_BROKEN_VOLTAGES.format([0, 230, 230]), id="dreiphasig, L1 defekt"),
-     pytest.param([230, 0, 230], 0, METER_BROKEN_VOLTAGES.format([230, 0, 230]), id="dreiphasig, L2 defekt"),
+     pytest.param([0, 230, 230], 0, READ_METER_VOLTAGES_AGAIN.format([0, 230, 230]), id="dreiphasig, L1 defekt"),
+     pytest.param([230, 0, 230], 0, READ_METER_VOLTAGES_AGAIN.format([230, 0, 230]), id="dreiphasig, L2 defekt"),
      pytest.param([230]*3, 100, METER_PROBLEM, id="Phantom-Leistung"),
      ]
 )

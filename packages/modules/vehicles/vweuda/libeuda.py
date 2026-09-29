@@ -631,6 +631,14 @@ def _created_on(entry: dict) -> datetime | None:
         return _filename_timestamp(entry.get("name", ""))
 
 
+def get_field_value_by_fieldname(D: dict, field: str) -> str:
+    ret = None
+    for f in D:
+        if f['dataFieldName'] == field:
+            ret = f['value']
+    return ret
+
+
 def get_field_value_by_key(D: dict, key: str, field: str) -> str:
     ret = None
     for f in D:
@@ -687,29 +695,37 @@ def utc_to_timestamp(d: str) -> float:
 def parse_vehicle_data(payload: dict) -> dict:
     """Extract normalized SoC fields from an EUDA JSON payload."""
     data = payload.get('Data', [])
+
+    # special case state_of_charge with timestamp (Caddy)
     soc = get_field_value_by_key(data, 'ae0294b4-1286-3e98-a818-1485b8d88430', 'soc')
     soc_timestamp_str = None
     if soc is not None:
         _LOGGER.info(f"soc {soc} found in state_of_charge")
         _ts = get_field_timestamp_by_key(data, 'ae0294b4-1286-3e98-a818-1485b8d88430')
         soc_timestamp_str = re.sub(r'\....Z', 'Z', _ts)
+
+    # try to get soc_timestamp as max of all car_captured_time fields
     if soc_timestamp_str is None:
         soc_timestamp_str = get_max_value_by_fieldname(data, CAR_TIMESTAMP)
 
+    # if soc is None, try sveral other fields
+    if soc is None:
+        soc = get_field_value_by_key(data, 'ac1108b1-b8cc-3db9-a663-03d387e42223', 'soc')
     if soc is None:
         soc = get_field_value_by_key(data, '0a18a053-b4b0-3db1-be44-a6c5dba629b1', 'soc')  # Skoda?
     if soc is None:
         soc = get_field_value_by_key(data, 'f89ed652-d104-3fa6-b7e2-ab7543309e7b', 'soc')
     if soc is None:
         soc = get_field_value_by_key(data, '506cb83e-f99f-3af3-bbeb-0429b69a78d9', 'soc')
-    if soc is None:
-        soc = get_field_value_by_key(data, 'ac1108b1-b8cc-3db9-a663-03d387e42223', 'soc')
+
     range = get_field_value_by_key(data, '153e8c40-4c6c-3c17-a11b-0ecc35d55b81', 'range')
     if range is None:
         range = get_field_value_by_key(data, '0ca40e18-0564-3eda-bcc0-7aee9ef44f04', 'range')
+
     odometer = get_field_value_by_key(data, '41c0805c-43e5-313e-9dfb-356cb8d20f7c', 'odometer')
     if odometer is None:
         odometer = get_field_value_by_key(data, '30cc36fd-71ca-3c09-9296-e94ebd47bd2b', 'odometer')
+
     if soc_timestamp_str:
         soc_timestamp = utc_to_timestamp(soc_timestamp_str)
         if soc_timestamp > 1e10:
@@ -717,12 +733,19 @@ def parse_vehicle_data(payload: dict) -> dict:
     else:
         _LOGGER.warning("soc_timestamp not found!")
 
+    warning = None
+    if get_field_value_by_fieldname(data, 'setting.bcam_activation') == 'BCAM_ACTIVATION_ACTIVATED':
+        bcam_threshold = get_field_value_by_fieldname(data, 'battery_care_mode.charge_bcam_threshold')
+        if bcam_threshold:
+            warning = f"Battery Care Mode ist im Fahrzeug aktiv und begrenzt die Ladung selbst auf {bcam_threshold}%."
+
     return {
         'soc': soc,
         'range': range,
         'soc_timestamp': soc_timestamp,
         'soc_timestamp_str': soc_timestamp_str,
         'odometer': odometer,
+        'warning': warning,
     }
 
 
@@ -805,10 +828,23 @@ class euda():
             if result['soc'] is None:
                 _LOGGER.info("thread result skipped, no soc found")
                 _valid = False
-            if _valid and result['odometer'] is not None:
-                if vin in euda.result and result['odometer'] < euda.result[vin]['odometer']:
-                    _LOGGER.info("odometer less than earlier - keep earlier value")
-                    result['odometer'] = euda.result[vin]['odometer']
+            if _valid:
+                cached_odometer = euda.result[vin].get('odometer')
+                if result['odometer'] is None:
+                    # newer payload carries no odometer reading - keep the
+                    # last known value instead of dropping the whole update
+                    result['odometer'] = cached_odometer
+                elif cached_odometer is not None:
+                    try:
+                        if float(result['odometer']) < float(cached_odometer):
+                            _LOGGER.info("odometer less than earlier - keep earlier value")
+                            result['odometer'] = cached_odometer
+                    except (TypeError, ValueError):
+                        _LOGGER.warning(
+                            f"could not compare odometer values "
+                            f"(new={result['odometer']!r}, cached={cached_odometer!r}); "
+                            "keeping new value"
+                        )
                 euda.result[vin] = result
                 _LOGGER.info("thread result is valid")
         else:
@@ -941,7 +977,7 @@ class euda():
     async def get_status(self,
                          conf: VWEUDA,
                          vehicle: int,
-                         vehicle_update_data: VehicleUpdateData) -> Union[int, float, str, float, float]:
+                         vehicle_update_data: VehicleUpdateData) -> Union[int, float, str, float, float, str]:
 
         # error codes SOCERR-xx raised:
         # SOCERR-00: general error
@@ -1001,12 +1037,14 @@ class euda():
                 _LOGGER.info(f"wait for first EUDA result for VIN {ano_vin(self.vin)}")
                 time.sleep(1)
 
+            warning = None
             if self.vin in euda.result:
                 _LOGGER.debug(f"vehicle match: {ano_vin(self.vin)}")
                 _ano_j = {}
                 for vin in euda.result:
                     _ano_j[ano_vin(vin)] = euda.result[vin]
                 _LOGGER.info(f"result from thread:\n{json.dumps(_ano_j, indent=4)}")
+                warning = euda.result[self.vin].get('warning')
                 soc = euda.result[self.vin]['soc']
                 range = euda.result[self.vin]['range']
                 try:
@@ -1070,7 +1108,7 @@ class euda():
             # _LOGGER.info(f"get_status: publish soc_timestamp as 0: topic: {topic}, message: {ep0}")
             # Pub().pub(topic, ep0)
 
-            return float(soc), float(range), float(ts), ts_str, float(odometer)
+            return float(soc), float(range), float(ts), ts_str, float(odometer), warning
         except Exception as e:
             _LOGGER.exception(f"get_status failed 0, exception={e}")
             # if exception is a SOCERR reraise it, otherwise raise general SOCERR-00
@@ -1085,7 +1123,7 @@ class euda():
 # sync function
 def fetch_soc(conf: VWEUDA,
               vehicle: int,
-              vehicle_update_data: VehicleUpdateData) -> Union[float, float, float, str, float]:
+              vehicle_update_data: VehicleUpdateData) -> Union[float, float, float, str, float, str]:
 
     # prepare and call async method
     loop = new_event_loop()
@@ -1093,7 +1131,7 @@ def fetch_soc(conf: VWEUDA,
 
     # get soc, range from server
     a = euda()
-    soc, range, soc_ts, soc_tsX, odometer =\
+    soc, range, soc_ts, soc_tsX, odometer, warning =\
         loop.run_until_complete(a.get_status(conf, vehicle, vehicle_update_data))
 
-    return soc, range, soc_ts, soc_tsX, odometer
+    return soc, range, soc_ts, soc_tsX, odometer, warning

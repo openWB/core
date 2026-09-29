@@ -1,4 +1,3 @@
-
 from datetime import datetime, timezone
 from typing import Dict
 from unittest.mock import MagicMock
@@ -6,7 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from modules.electricity_pricing.flexible_tariffs.octopusenergy import tariff
-from modules.electricity_pricing.flexible_tariffs.octopusenergy.tariff import build_tariff_state
+from modules.electricity_pricing.flexible_tariffs.octopusenergy.tariff import build_tariff_state, OctopusEnergyApiError
 
 
 TEST_DATA = {'data': {'account': {'property': {'electricityMalos': [
@@ -106,3 +105,62 @@ def test_build_tariff_state(now: datetime, expected_prices: Dict[str, float], mo
 
     # assert
     assert prices == expected_prices
+
+
+# --- Zusätzliche Tests für die Fehlerbehandlung bei fehlenden/kaputten API-Daten ---
+
+def test_build_tariff_state_raises_on_missing_property():
+    # setup: 'property' ist None, z.B. wenn die API keine gültige Property zurückgibt
+    data = {'account': {'property': None}}
+
+    # execution & assert
+    with pytest.raises(OctopusEnergyApiError, match="Property"):
+        build_tariff_state(data)
+
+
+def test_build_tariff_state_raises_on_missing_account():
+    # setup: 'account' fehlt komplett in der Antwort
+    data = {}
+
+    # execution & assert
+    with pytest.raises(OctopusEnergyApiError, match="Property"):
+        build_tariff_state(data)
+
+
+def test_build_tariff_state_raises_on_empty_malos():
+    # setup: 'electricityMalos' ist leer, z.B. Zählpunkt noch nicht verknüpft
+    data = {'account': {'property': {'electricityMalos': []}}}
+
+    # execution & assert
+    with pytest.raises(OctopusEnergyApiError, match="electricityMalos"):
+        build_tariff_state(data)
+
+
+def test_graphql_request_raises_on_graphql_errors(monkeypatch):
+    # setup: HTTP 200, aber GraphQL liefert ein 'errors'-Array statt 'data'
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "errors": [{"message": "Token invalid or expired"}]
+    }
+    mock_session = MagicMock()
+    mock_session.post.return_value = mock_response
+    monkeypatch.setattr(tariff.req, "get_http_session", lambda: mock_session)
+
+    # execution & assert: Authentifizierung im Konstruktor schlägt fehl
+    with pytest.raises(OctopusEnergyApiError, match="Token invalid or expired"):
+        tariff.OctopusEnergyClient(email="test@example.com", password="secret")
+
+
+def test_graphql_request_raises_on_missing_data_field(monkeypatch):
+    # setup: HTTP 200, aber weder 'data' noch 'errors' im Body (unerwartetes Format)
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {}
+    mock_session = MagicMock()
+    mock_session.post.return_value = mock_response
+    monkeypatch.setattr(tariff.req, "get_http_session", lambda: mock_session)
+
+    # execution & assert
+    with pytest.raises(OctopusEnergyApiError, match="data"):
+        tariff.OctopusEnergyClient(email="test@example.com", password="secret")

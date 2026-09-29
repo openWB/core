@@ -6,6 +6,7 @@ from modules.devices.generic.modbus.config import RegisterConfig, GenericModbusC
 
 def check_data(register_config: RegisterConfig, device_config: GenericModbusConfiguration):
     if (register_config.reg_type is None or
+        register_config.reg_factor is None or
         device_config.byteorder is None or
             device_config.wordorder is None):
         raise ValueError(
@@ -19,13 +20,17 @@ def read_value(client: ModbusTcpClient_, unit: int,
         return None
 
     check_data(register_config, device_config)
-    return client.read_input_registers(
+    value = client.read_input_registers(
         register_config.reg_address,
         ModbusDataType[register_config.reg_type],
         byteorder=device_config.byteorder,
         wordorder=device_config.wordorder,
         unit=unit,
     )
+
+    if value is not None and register_config.reg_factor != 1:
+        value = value * register_config.reg_factor
+    return value
 
 
 def read_phase_values(client: ModbusTcpClient_,

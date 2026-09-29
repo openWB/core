@@ -12,14 +12,23 @@ log = logging.getLogger(__name__)
 
 
 def fetch(config: RabotTariff) -> None:
-    raw_prices = req.get_http_session().get(
+    # Ohne Zeitraum liefert der Proxy isSuccess=true mit 0 Einträgen (consideredDataPeriod: null), siehe #3883 --
+    # Name/Format dieser Parameter ist nicht dokumentiert und an einem echten Rabot-Konto zu verifizieren.
+    now = datetime.datetime.now()
+    params = {
+        "startDate": now.strftime("%Y-%m-%d"),
+        "endDate": (now + datetime.timedelta(days=1)).strftime("%Y-%m-%d"),
+    }
+    url = (
         f"https://rabot.openwb.de/rabot-proxy.php/customers/{config.configuration.customer_number}"
-        f"/contracts/{config.configuration.contract_number}/metrics",
-        timeout=15
-    ).json()["data"]["records"]
+        f"/contracts/{config.configuration.contract_number}/metrics"
+    )
+    response_data = req.get_http_session().get(url, params=params, timeout=15).json()["data"]
+    raw_prices = response_data["records"]
     if len(raw_prices) == 0:
         raise Exception("Es konnten keine Preise vom Rabot-Server abgerufen werden. Bitte prüfe, ob dein Konto mit"
-                        " einem dynamischen Stromvertrag verknüpft ist.")
+                        f" einem dynamischen Stromvertrag verknüpft ist. "
+                        f"(Zeitraum: {params}, Antwort: {response_data})")
     prices: Dict[int, float] = {}
     for data in raw_prices:
         formatted_price = data["value"] / 100000  # ct/kWh -> €/Wh

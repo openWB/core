@@ -1,5 +1,5 @@
 
-from typing import Dict, Generic, Optional, TypeVar
+from typing import Dict, Generic, Optional, TypeVar, Union
 
 from dataclass_utils.factories import empty_dict_factory
 
@@ -13,8 +13,8 @@ class IoDeviceSetup(Generic[T]):
                  type: str,
                  id: int,
                  configuration: T,
-                 input: Optional[Dict[str, Dict[int, float]]] = None,
-                 output: Optional[Dict[str, Dict[int, float]]] = None) -> None:
+                 input: Optional[Dict[str, Union[Dict[str, bool], Dict[str, float], Dict[str, None]]]] = None,
+                 output: Optional[Dict[str, Union[Dict[str, bool], Dict[str, float], Dict[str, None]]]] = None) -> None:
         self.name = name
         self.type = type
         self.id = id
