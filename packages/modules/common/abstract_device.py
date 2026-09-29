@@ -3,7 +3,8 @@ from abc import abstractmethod
 from typing import Optional, Type, TYPE_CHECKING
 
 if TYPE_CHECKING:
-     from control.bat import Set as SetPoint
+    from control.bat import Set as SetPoint
+
 
 class AbstractDevice:
     @abstractmethod
