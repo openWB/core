@@ -49,7 +49,8 @@ class Algorithm:
                     log.info("Keine Leistung für PV-geführtes Laden übrig.")
                 log.info("**Bidi-(Ent-)Lade-Strom setzen**")
                 counter.set_raw_surplus_power_left()
-                self.bidi.set_bidi(grouped_loads)
+            # Nullpunktausregelung, nachdem für alle anderen Ladepunkte der Soll-Strom feststeht
+            self.bidi.set_bidi()
             self.no_current.set_no_current()
             self.no_current.set_none_current()
         except Exception:
