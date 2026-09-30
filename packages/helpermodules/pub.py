@@ -1,8 +1,7 @@
 import json
 import logging
-import paho.mqtt.publish as publish
 
-from helpermodules.broker import InternalBrokerPublisher
+from helpermodules.broker import InternalBrokerPublisher, get_persistent_broker_client
 
 
 log = logging.getLogger(__name__)
@@ -50,4 +49,5 @@ def pub_single(topic: str, payload, hostname: str = "localhost", port: int = 188
         Pub().pub(topic, payload, qos=0, no_json=no_json, retain=retain)
         return
 
-    publish.single(topic, payload if no_json else json.dumps(payload), hostname=hostname, port=port, retain=retain)
+    get_persistent_broker_client(hostname, port).publish(
+        topic, payload if no_json else json.dumps(payload), qos=0, retain=retain)
