@@ -5,6 +5,7 @@ import logging
 from typing import Any, Dict, List, Tuple
 
 from control import data
+from control.consumer.consumer import Consumer
 from control.counter_all.counter_all_data import CounterAllData
 from control.counter_all.hierarchy import HierarchyMixin
 from control.counter_all.loadmanagement_prio import LoadmanagementPrioMixin
@@ -48,8 +49,9 @@ class CounterAll(HierarchyMixin, LoadmanagementPrioMixin):
 
     def set_home_consumption(self) -> None:
         try:
-            home_consumption, elements = self._calc_home_consumption()
+            home_consumption, not_in_home_consumption, elements = self._calc_home_consumption()
             home_consumption = round(home_consumption, 2)
+            not_in_home_consumption = round(not_in_home_consumption, 2)
             if home_consumption < 0:
                 log.error(
                     f"Ungültiger Hausverbrauch: {home_consumption}W, Berücksichtigte Komponenten neben EVU {elements}")
@@ -68,6 +70,7 @@ class CounterAll(HierarchyMixin, LoadmanagementPrioMixin):
                     home_consumption = 0
             else:
                 self.data.set.invalid_home_consumption = 0
+            self.data.set.not_in_home_consumption = not_in_home_consumption
             self.data.set.home_consumption = home_consumption
             imported, _ = self.sim_counter.sim_count(self.data.set.home_consumption)
             self.data.set.imported_home_consumption = round(imported, 2)
@@ -96,12 +99,10 @@ class CounterAll(HierarchyMixin, LoadmanagementPrioMixin):
 
         return counter.data.config.is_home_consumption_counter
 
-    def _get_is_home_consumption_consumer(self, consumer: Any, parent_home_consumption: str) -> str:
-        consumer_mode = getattr(consumer.data.config, "is_home_consumption_consumer",
-                                CounterMode.AUTO_HOME_CONSUMPTION.value)
-        if consumer_mode == CounterMode.AUTO_HOME_CONSUMPTION.value:
+    def _get_is_home_consumption_consumer(self, consumer: Consumer, parent_home_consumption: str) -> str:
+        if consumer.data.config.is_home_consumption_consumer == CounterMode.AUTO_HOME_CONSUMPTION.value:
             return parent_home_consumption
-        return consumer_mode
+        return consumer.data.config.is_home_consumption_consumer
 
     def _get_local_power_from_counter(self, element: Dict) -> float:
         # Wird nur von Countern aufgerufen
@@ -121,12 +122,13 @@ class CounterAll(HierarchyMixin, LoadmanagementPrioMixin):
         return local_power
 
     def _calc_home_consumption_from_counter(
-            self, element: Dict, parent_home_consumption: str) -> float:
+            self, element: Dict, parent_home_consumption: str) -> Tuple[float, float]:
         # Wird nur von Countern aufgerufen
         # Bewertet, ob Hausverbrauch oder nicht
         # Gibt den Hausverbrauch des Zählers zurück
 
         home_consumption = 0.0
+        not_home_consumption = 0.0
         local_power = self._get_local_power_from_counter(element)
 
         counter = self._get_component(element)
@@ -134,24 +136,31 @@ class CounterAll(HierarchyMixin, LoadmanagementPrioMixin):
 
         if child_home_consumption == CounterMode.HOME_CONSUMPTION.value:
             home_consumption += local_power
+        elif child_home_consumption == CounterMode.NOT_HOME_CONSUMPTION.value:
+            not_home_consumption += local_power
 
         for child in element["children"]:
             comp = self._get_component(child)
 
             if comp.data.get.fault_state < 2:
                 if child["type"] == ComponentType.COUNTER.value:
-                    home_consumption += self._calc_home_consumption_from_counter(child, child_home_consumption)
+                    add_home_consumption, add_not_home_consumption = self._calc_home_consumption_from_counter(
+                        child, child_home_consumption)
+                    home_consumption += add_home_consumption
+                    not_home_consumption += add_not_home_consumption
                 elif child["type"] == ComponentType.CONSUMER.value:
-                    if self._get_is_home_consumption_consumer(
-                            comp, child_home_consumption) == CounterMode.HOME_CONSUMPTION.value:
+                    mode = self._get_is_home_consumption_consumer(comp, child_home_consumption)
+                    if mode == CounterMode.HOME_CONSUMPTION.value:
                         home_consumption += comp.data.get.power
+                    elif mode == CounterMode.NOT_HOME_CONSUMPTION.value:
+                        not_home_consumption += comp.data.get.power
             else:
                 log.warning(
                     f"Komponente {element['type']}{comp.num} ist im Fehlerzustand und wird nicht berücksichtigt.")
 
-        return home_consumption
+        return home_consumption, not_home_consumption
 
-    def _calc_home_consumption(self) -> Tuple[float, Dict]:
+    def _calc_home_consumption(self) -> Tuple[float, float, Dict]:
         evu_id = self.get_id_evu_counter()
 
         # get_elements_for_downstream_calculation berücksichtigt Hybrid-Batterien
@@ -167,11 +176,13 @@ class CounterAll(HierarchyMixin, LoadmanagementPrioMixin):
         home_consumption = 0.0
 
         # Rekursion startet immer beim EVU-Zähler.
-        home_consumption = self._calc_home_consumption_from_counter(evu_element, CounterMode.HOME_CONSUMPTION.value)
+        home_consumption, not_in_home_consumption = self._calc_home_consumption_from_counter(
+            evu_element, CounterMode.HOME_CONSUMPTION.value)
 
         home_consumption -= self.data.set.smarthome_power_excluded_from_home_consumption
+        not_in_home_consumption += self.data.set.smarthome_power_excluded_from_home_consumption
 
-        return home_consumption, evu_element
+        return home_consumption, not_in_home_consumption, evu_element
 
     def _add_hybrid_bat(self, id: int) -> List:
         elements = []

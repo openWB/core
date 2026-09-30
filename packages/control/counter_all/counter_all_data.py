@@ -22,6 +22,7 @@ class Set:
     loadmanagement_active: bool = field(
         default=False, metadata={"topic": "set/loadmanagement_active"})
     home_consumption: float = field(default=0, metadata={"topic": "set/home_consumption"})
+    not_in_home_consumption: float = field(default=0, metadata={"topic": "set/not_in_home_consumption"})
     smarthome_power_excluded_from_home_consumption: float = field(
         default=0,
         metadata={"topic": "set/smarthome_power_excluded_from_home_consumption"})
