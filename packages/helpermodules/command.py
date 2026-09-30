@@ -1206,6 +1206,11 @@ class Command:
         Pub().pub(f"openWB/set/consumer/{new_id}/usage", asdict(Usage(type=consumer_default["usage"][0])))
         self.max_id_hierarchy = new_id
         Pub().pub("openWB/set/command/max_id/hierarchy", new_id)
+        # add ACL roles for consumer access, if user management is active
+        if SubData.system_data["system"].data["security"]["user_management_active"]:
+            add_acl_role("consumer-<id>-access", new_id)
+            if consumer_default["type"] == "mqtt":
+                add_acl_role("consumer-<id>-write-access", new_id)
         pub_user_message(
             payload, connection_id,
             f'Neues Gerät vom Typ \'{payload["data"]["type"]}\' mit ID \'{new_id}\' hinzugefügt.',
@@ -1224,6 +1229,10 @@ class Command:
         Pub().pub("openWB/set/counter/get/hierarchy", SubData.counter_all_data.data.get.hierarchy)
         SubData.counter_all_data.remove_loadmanagement_prio_item(ComponentType.CONSUMER, payload["data"]["consumer_id"])
         Pub().pub("openWB/set/counter/get/loadmanagement_prios", SubData.counter_all_data.data.get.loadmanagement_prios)
+        # remove ACL roles for consumer access, if user management is active
+        if SubData.system_data["system"].data["security"]["user_management_active"]:
+            remove_acl_role("consumer-<id>-access", payload["data"]["consumer_id"])
+            remove_acl_role("consumer-<id>-write-access", payload["data"]["consumer_id"])
         pub_user_message(payload, connection_id,
                          f'Verbraucher mit ID \'{payload["data"]["consumer_id"]}\' gelöscht.', MessageType.SUCCESS)
 
