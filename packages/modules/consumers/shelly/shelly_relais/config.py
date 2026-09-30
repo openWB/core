@@ -1,0 +1,34 @@
+from typing import Optional, Tuple
+
+from control.consumer.consumer_data import ConsumerUsage
+from helpermodules.auto_str import auto_str
+from modules.common.consumer_setup import ConsumerSetup
+from ..vendor import vendor_descriptor
+
+
+@auto_str
+class ShellyConfiguration:
+    def __init__(self,
+                 ip_address: Optional[str] = None,
+                 factor: int = -1,
+                 channel: int = 0,
+                 username: Optional[str] = None,
+                 password: Optional[str] = None) -> None:
+        self.ip_address = ip_address
+        self.factor = factor
+        self.channel = channel
+        self.username = username
+        self.password = password
+
+
+@auto_str
+class ShellyRelais(ConsumerSetup[ShellyConfiguration]):
+    def __init__(self,
+                 name: str = "Shelly Relais (Schalten)",
+                 type: str = "shelly_relais",
+                 id: int = 0,
+                 configuration: Optional[ShellyConfiguration] = None,
+                 usage: Tuple[ConsumerUsage, ...] = (ConsumerUsage.SUSPENDABLE_ONOFF,),
+                 **kwargs) -> None:
+        super().__init__(name, type, id, vendor=vendor_descriptor.configuration_factory(
+        ).type, configuration=configuration or ShellyConfiguration(), usage=usage, **kwargs)
