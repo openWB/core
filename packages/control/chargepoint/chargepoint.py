@@ -558,6 +558,10 @@ class Chargepoint(ChargepointRfidMixin, Load):
                     required_current = self.data.get.max_discharge_power / phases / 230
                     msg = f"Die vom Auto übertragene Entladeleistung begrenzt den Strom auf " \
                         f"maximal {round(required_current, 2)} A."
+                # eigene Hardware-Stromgrenze des Ladepunkts auch beim Entladen durchsetzen, nicht nur
+                # beim Laden - check_cp_max_current() behandelt negative Werte bereits korrekt
+                # (Vorzeichen wird ueber abs()/sign wieder hergestellt).
+                required_current = self.check_cp_max_current(required_current, phases)
             else:
                 if self.data.get.max_charge_power / phases / 230 < required_current:
                     required_current = self.data.get.max_charge_power / phases / 230

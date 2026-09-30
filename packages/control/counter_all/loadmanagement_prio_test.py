@@ -5,6 +5,7 @@ from unittest.mock import Mock
 import pytest
 
 from control.chargepoint.chargepoint import Chargepoint
+from control.consumer.usage import ConsumerUsage
 from control.counter_all.counter_all import CounterAll
 from modules.common.component_type import ComponentType
 
@@ -74,6 +75,36 @@ def test_add_item(loadmanagement_prios: List[Dict],
 
     # assert
     assert c.data.get.loadmanagement_prios == expected_loadmanagement_prios
+
+
+@pytest.mark.parametrize(
+    "loadmanagement_prios, usage_type, expected_loadmanagement_prios, expected_changed",
+    [
+        pytest.param([], ConsumerUsage.CONTINUOUS, [{"type": "consumer", "id": 2}], True, id="add consumer"),
+        pytest.param([{"type": "consumer", "id": 2}], ConsumerUsage.CONTINUOUS,
+                     [{"type": "consumer", "id": 2}], False, id="do not add duplicate"),
+        pytest.param([{
+            "type": "group",
+            "label": "Verbraucher",
+            "children": [{"type": "consumer", "id": 2}],
+        }], ConsumerUsage.METER_ONLY, [], True, id="remove consumer from group"),
+        pytest.param([], ConsumerUsage.METER_ONLY, [], False, id="ignore absent meter"),
+        pytest.param([{"type": "consumer", "id": 2}], ConsumerUsage.SELF_CONTROLLED, [], True,
+                     id="remove self-controlled consumer"),
+        pytest.param([], ConsumerUsage.SELF_CONTROLLED, [], False, id="ignore absent self-controlled consumer"),
+    ],
+)
+def test_update_consumer_loadmanagement_prio(loadmanagement_prios: List[Dict],
+                                             usage_type: ConsumerUsage,
+                                             expected_loadmanagement_prios: List[Dict],
+                                             expected_changed: bool):
+    c = CounterAll()
+    c.data.get.loadmanagement_prios = loadmanagement_prios
+
+    changed = c.update_consumer_loadmanagement_prio(2, usage_type)
+
+    assert c.data.get.loadmanagement_prios == expected_loadmanagement_prios
+    assert changed is expected_changed
 
 
 @pytest.mark.parametrize(

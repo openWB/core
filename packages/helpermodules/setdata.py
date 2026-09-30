@@ -486,7 +486,8 @@ class SetData:
                     else:
                         self._validate_value(msg, float, [(float("-inf"), 0), (6, 32), (0, 0)])
                 elif "/set/required_power" in msg.topic:
-                    self._validate_value(msg, float, [(0, float("inf"))])
+                    # Don't accept NaN
+                    self._validate_value(msg, float, [(float("-inf"), float("inf"))])
                 elif "/set/phases_to_use" in msg.topic:
                     self._validate_value(msg, int, [(0, 3)])
                 elif ("/set/manual_lock" in msg.topic or
@@ -1068,6 +1069,7 @@ class SetData:
                     "openWB/set/system/perform_update" in msg.topic or
                     "openWB/set/system/wizard_done" in msg.topic or
                     "openWB/set/system/update_in_progress" in msg.topic or
+                    "openWB/set/system/log_data_ready" in msg.topic or
                     "openWB/set/system/backup_cloud/backup_before_update" in msg.topic or
                     "openWB/set/system/installAssistantDone" in msg.topic or
                     "openWB/set/system/dataprotection_acknowledged" in msg.topic or
@@ -1082,6 +1084,8 @@ class SetData:
                 self._validate_value(msg, float)
             elif "openWB/set/system/datastore_version" in msg.topic:
                 self._validate_value(msg, int, [(0, UpdateConfig.DATASTORE_VERSION)], collection=list)
+            elif "openWB/set/system/file_operation_version" in msg.topic:
+                self._validate_value(msg, int, [(0, UpdateConfig.FILE_OPERATION_VERSION)], collection=list)
             elif "openWB/set/system/GetRemoteSupport" in msg.topic:
                 # Server-Topic enthält kein json-Payload.
                 payload = msg.payload.decode("utf-8")

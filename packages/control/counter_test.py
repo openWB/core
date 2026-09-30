@@ -111,6 +111,30 @@ def test_set_current_left(loadmanagement_available: bool,
     assert counter.data.set.raw_currents_left == expected_raw_currents_left
 
 
+def test_set_current_left_nets_out_own_current_despite_noise_on_unused_phase(monkeypatch, data_):
+    """ Ein einphasig ladender Ladepunkt zeigt auf ungenutzten Phasen oft ein geringes negatives
+    Messrauschen (zB -0.05A). min(element_current) < 0 hat das faelschlich als Einspeisung eingeordnet,
+    wodurch der eigene Ladestrom nirgends von currents_raw abgezogen wurde - das Lastmanagement hielt
+    die eigene Ladung dann faelschlich fuer Fremdlast (siehe Matts Log in Discussion #3908)."""
+    # setup
+    get_loads_of_counter_mock = Mock(return_value=["cp4"])
+    monkeypatch.setattr(data.data.counter_all_data, "get_loads_of_counter", get_loads_of_counter_mock)
+    data.data.cp_data["cp4"].data.config.phase_1 = 1
+    data.data.cp_data["cp4"].data.get.currents = [20, 0.05, -0.05]
+    data.data.cp_data["cp4"].data.get.power = 4600
+    counter = Counter(0)
+    counter.data.config.max_currents = [35]*3
+    counter.data.config.max_total_power = 35*3*230
+    counter.data.config.max_power_errorcase = 7000
+    counter.data.get.currents = [10, -5, -3]
+
+    # execution
+    counter._set_current_left(True)
+
+    # evaluation
+    assert counter.data.set.raw_currents_left == [45, 40.05, 37.95]
+
+
 @dataclass
 class Params:
     name: str
@@ -197,6 +221,24 @@ def test_control_range(control_range, evu_power, expected_range_offset, general_
 
     # evaluation
     assert range_offset == expected_range_offset
+
+
+@pytest.mark.parametrize("load_factory, expected",
+                         [pytest.param(lambda: Chargepoint(0, None), -200, id="Ladepunkt"),
+                          pytest.param(lambda: Consumer(0), -50, id="Verbraucher")])
+def test_calc_switch_off_threshold_by_load(load_factory, expected: float, general_data_fixture):
+    # setup
+    surplus_config = data.data.general_data.data.chargemode_config.surplus
+    surplus_config.feed_in_limit = False
+    surplus_config.vehicle.switch_off_threshold = -200
+    surplus_config.consumer.switch_off_threshold = -50
+    c = Counter(0)
+
+    # execution
+    threshold = c.calc_switch_off_threshold(load_factory())
+
+    # evaluation
+    assert threshold == expected
 
 
 def test_reset_switch_on_off_ignores_stale_timestamp_without_delay_state(general_data_fixture, monkeypatch):

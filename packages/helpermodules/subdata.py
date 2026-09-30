@@ -1247,6 +1247,9 @@ class SubData:
                         var.pop("consumer"+index)
                 else:
                     if f"consumer{index}" not in var:
+                        if re.search(
+                                r"openWB/consumer/[0-9]+/(module|config|usage|extra_meter)$", msg.topic) is None:
+                            return
                         var[f"consumer{index}"] = Consumer(int(index))
                     if re.search("openWB/consumer/[0-9]+/module$", msg.topic) is not None:
                         consumer_config = decode_payload(msg.payload)
@@ -1274,9 +1277,23 @@ class SubData:
                     elif re.search("openWB/consumer/[0-9]+/set", msg.topic) is not None:
                         self.set_json_payload_class(var["consumer"+index].data.set, msg)
                     elif re.search("openWB/consumer/[0-9]+/extra_meter", msg.topic) is not None:
+                        old_extra_meter = var[f"consumer{index}"].data.extra_meter
                         self.set_json_payload_class(var[f"consumer{index}"].data, msg)
+                        if self.event_subdata_initialized.is_set() and old_extra_meter != var[
+                                f"consumer{index}"].data.extra_meter:
+                            if self.counter_all_data.update_linked_counter_hierarchy(
+                                    int(index),
+                                    old_extra_meter,
+                                    var[f"consumer{index}"].data.extra_meter):
+                                Pub().pub("openWB/set/counter/get/hierarchy",
+                                          self.counter_all_data.data.get.hierarchy)
                     elif re.search("openWB/consumer/[0-9]+/usage$", msg.topic) is not None:
-                        var[f"consumer{index}"].data.usage = dataclass_from_dict(Usage, decode_payload(msg.payload))
+                        usage = dataclass_from_dict(Usage, decode_payload(msg.payload))
+                        var[f"consumer{index}"].data.usage = usage
+                        if (self.event_subdata_initialized.is_set() and
+                                self.counter_all_data.update_consumer_loadmanagement_prio(int(index), usage.type)):
+                            Pub().pub("openWB/set/counter/get/loadmanagement_prios",
+                                      self.counter_all_data.data.get.loadmanagement_prios)
                     elif re.search("openWB/consumer/[0-9]+/control_parameter/", msg.topic) is not None:
                         if re.search("openWB/consumer/[0-9]+/control_parameter/limit", msg.topic) is not None:
                             payload = decode_payload(msg.payload)
