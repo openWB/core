@@ -3968,7 +3968,32 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
-   * Get or set the automatic mode-reset trigger of a consumer
+   * Get or set if automatic consumer mode reset is active.
+   * @param consumerId consumer id
+   * @returns writable computed of boolean
+   */
+  const consumerResetEnabled = (consumerId: number) => {
+    return computed({
+      get() {
+        return (getValue.value(
+          `openWB/consumer/${consumerId}/usage`,
+          'reset_chargemode.active',
+          false,
+        ) ?? false) as boolean;
+      },
+      set(newValue: boolean) {
+        return updateTopic(
+          `openWB/consumer/${consumerId}/usage`,
+          newValue,
+          'reset_chargemode.active',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the automatic mode-reset frequency of a consumer.
    * @param consumerId consumer id
    * @returns writable computed of ConsumerResetTrigger
    */
@@ -3977,15 +4002,15 @@ export const useMqttStore = defineStore('mqtt', () => {
       get() {
         return (getValue.value(
           `openWB/consumer/${consumerId}/usage`,
-          'reset_chargemode.mode',
-          'never',
-        ) ?? 'never') as ConsumerResetTrigger;
+          'reset_chargemode.frequency.selected',
+          'daily',
+        ) ?? 'daily') as ConsumerResetTrigger;
       },
       set(newValue: ConsumerResetTrigger) {
         return updateTopic(
           `openWB/consumer/${consumerId}/usage`,
           newValue,
-          'reset_chargemode.mode',
+          'reset_chargemode.frequency.selected',
           true,
         );
       },
@@ -4017,10 +4042,9 @@ export const useMqttStore = defineStore('mqtt', () => {
   };
 
   /**
-   * Get or set the absolute epoch (seconds) at which the consumer switches
-   * mode when reset_chargemode.mode === 'time'
+   * Get or set the reset time (HH:MM) of a consumer.
    * @param consumerId consumer id
-   * @returns writable computed of number | null
+   * @returns writable computed of string
    */
   const consumerResetTime = (consumerId: number) => {
     return computed({
@@ -4028,14 +4052,71 @@ export const useMqttStore = defineStore('mqtt', () => {
         return getValue.value(
           `openWB/consumer/${consumerId}/usage`,
           'reset_chargemode.time',
-          null,
-        ) as number | null;
+          '00:00',
+        ) as string;
       },
-      set(newValue: number) {
+      set(newValue: string) {
         return updateTopic(
           `openWB/consumer/${consumerId}/usage`,
           newValue,
           'reset_chargemode.time',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the once-date (YYYY-MM-DD) of a consumer mode reset.
+   * @param consumerId consumer id
+   * @returns writable computed of string
+   */
+  const consumerResetOnceDate = (consumerId: number) => {
+    return computed({
+      get() {
+        const systemDate = new Date();
+        const pad = (value: number) => String(value).padStart(2, '0');
+        const fallback = `${systemDate.getFullYear()}-${pad(systemDate.getMonth() + 1)}-${pad(systemDate.getDate())}`;
+        return getValue.value(
+          `openWB/consumer/${consumerId}/usage`,
+          'reset_chargemode.frequency.once',
+          fallback,
+        ) as string;
+      },
+      set(newValue: string) {
+        return updateTopic(
+          `openWB/consumer/${consumerId}/usage`,
+          newValue,
+          'reset_chargemode.frequency.once',
+          true,
+        );
+      },
+    });
+  };
+
+  /**
+   * Get or set the selected weekly days for consumer mode reset.
+   * @param consumerId consumer id
+   * @returns writable computed of weekly selection
+   */
+  const consumerResetWeeklyDays = (consumerId: number) => {
+    return computed({
+      get() {
+        const weekly = getValue.value(
+          `openWB/consumer/${consumerId}/usage`,
+          'reset_chargemode.frequency.weekly',
+          [false, false, false, false, false, false, false],
+        ) as boolean[];
+        if (Array.isArray(weekly) && weekly.length === 7) {
+          return weekly;
+        }
+        return [false, false, false, false, false, false, false];
+      },
+      set(newValue: boolean[]) {
+        return updateTopic(
+          `openWB/consumer/${consumerId}/usage`,
+          newValue,
+          'reset_chargemode.frequency.weekly',
           true,
         );
       },
@@ -4649,9 +4730,12 @@ export const useMqttStore = defineStore('mqtt', () => {
     consumerFaultStr,
     consumerUsageType,
     consumerMode,
+    consumerResetEnabled,
     consumerResetTrigger,
     consumerResetTargetMode,
     consumerResetTime,
+    consumerResetOnceDate,
+    consumerResetWeeklyDays,
     // Grid data
     gridId,
     secondaryCounterIds,
