@@ -80,7 +80,8 @@ def group_loads_generator() -> Iterator[List[Load]]:
                             sub_valid_chargemode.append(cp)
                 elif group_item["type"] == "consumer":
                     consumer = _get_consumer_by_prio_item(group_item)
-                    sub_valid_chargemode.append(consumer)
+                    if consumer is not None:
+                        sub_valid_chargemode.append(consumer)
             yield sub_valid_chargemode
         if item["type"] == "vehicle":
             for cp in data.data.cp_data.values():
@@ -88,11 +89,12 @@ def group_loads_generator() -> Iterator[List[Load]]:
                     yield [cp]
         elif item["type"] == "consumer":
             consumer = _get_consumer_by_prio_item(item)
-            yield [consumer]
+            if consumer is not None:
+                yield [consumer]
 
 
 def _group_loads_by_chargemode(chargemodes: Tuple[Tuple[Optional[str], str]],
-                               filter_func) -> Tuple[List[Load], List[List[Load]]]:
+                               filter_func) -> List[Load]:
     flat_loads: List[Load] = []
     for chargemode in chargemodes:
         for item in data.data.counter_all_data.data.get.loadmanagement_prios:
