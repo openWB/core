@@ -721,6 +721,8 @@ def parse_vehicle_data(payload: dict) -> dict:
     range = get_field_value_by_key(data, '153e8c40-4c6c-3c17-a11b-0ecc35d55b81', 'range')
     if range is None:
         range = get_field_value_by_key(data, '0ca40e18-0564-3eda-bcc0-7aee9ef44f04', 'range')
+    if range is None:
+        range = get_field_value_by_key(data, '55e0d40b-38ed-3cb5-9dcd-6193df6fc493', 'range')
 
     odometer = get_field_value_by_key(data, '41c0805c-43e5-313e-9dfb-356cb8d20f7c', 'odometer')
     if odometer is None:
