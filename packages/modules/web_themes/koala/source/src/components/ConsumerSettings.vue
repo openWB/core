@@ -21,35 +21,71 @@
           <div class="text-subtitle2">Betriebsmodus umstellen</div>
           <q-btn-group spread outline class="q-mt-sm">
             <q-btn
-              v-for="trigger in resetTriggers"
-              :key="trigger.value"
               size="sm"
-              :outline="resetTrigger !== trigger.value"
-              :color="resetTrigger === trigger.value ? 'primary' : 'grey'"
-              :label="trigger.label"
-              @click="selectTrigger(trigger.value)"
+              :outline="resetEnabled"
+              :color="!resetEnabled ? 'negative' : 'grey'"
+              label="Nein"
+              @click="setResetEnabled(false)"
+            />
+            <q-btn
+              size="sm"
+              :outline="!resetEnabled"
+              :color="resetEnabled ? 'positive' : 'grey'"
+              label="Ja"
+              @click="setResetEnabled(true)"
             />
           </q-btn-group>
 
-          <div
-            v-if="resetTrigger === 'time'"
-            class="row q-col-gutter-sm q-mt-sm"
-          >
+          <template v-if="resetEnabled">
             <q-input
-              v-model="resetDate"
-              type="date"
-              label="Datum"
-              class="col"
-            />
-            <q-input
-              v-model="resetTimeOfDay"
+              v-model="resetTime"
               type="time"
               label="Uhrzeit"
-              class="col"
+              class="q-mt-sm"
             />
-          </div>
 
-          <template v-if="resetTrigger !== 'never'">
+            <div class="text-subtitle2 q-mt-md">Wiederholung</div>
+            <q-btn-group spread outline class="q-mt-sm">
+              <q-btn
+                v-for="mode in resetModes"
+                :key="mode.value"
+                size="sm"
+                :outline="resetMode !== mode.value"
+                :color="resetMode === mode.value ? 'primary' : 'grey'"
+                :label="mode.label"
+                @click="selectResetMode(mode.value)"
+              />
+            </q-btn-group>
+
+            <q-input
+              v-if="resetMode === 'once'"
+              v-model="resetOnceDate"
+              type="date"
+              label="Datum"
+              class="q-mt-sm"
+            />
+
+            <div
+              v-if="resetMode === 'weekly'"
+              class="row q-col-gutter-xs q-mt-sm"
+            >
+              <div
+                v-for="(day, index) in weekDays"
+                :key="day"
+                class="col"
+              >
+                <q-btn
+                  no-caps
+                  size="sm"
+                  class="full-width"
+                  :outline="!resetWeeklyDays[index]"
+                  :color="resetWeeklyDays[index] ? 'primary' : 'grey'"
+                  :label="day"
+                  @click="toggleWeeklyDay(index)"
+                />
+              </div>
+            </div>
+
             <div class="text-subtitle2 q-mt-md">Zielmodus</div>
             <q-btn-group spread outline class="q-mt-sm">
               <q-btn
@@ -109,50 +145,56 @@ const visible = computed({
   set: (value) => emit('update:modelValue', value),
 });
 
-const resetTriggers: { value: ConsumerResetTrigger; label: string }[] = [
-  { value: 'never', label: 'Nie' },
-  { value: 'midnight', label: 'Mitternacht' },
-  { value: 'time', label: 'Zeitpunkt' },
+const resetModes: { value: ConsumerResetTrigger; label: string }[] = [
+  { value: 'once', label: 'Einmalig' },
+  { value: 'daily', label: 'Täglich' },
+  { value: 'weekly', label: 'Wöchentlich' },
 ];
 
-const resetTrigger = mqttStore.consumerResetTrigger(props.consumerId);
+const resetEnabled = mqttStore.consumerResetEnabled(props.consumerId);
+const resetMode = mqttStore.consumerResetTrigger(props.consumerId);
 const resetTargetMode = mqttStore.consumerResetTargetMode(props.consumerId);
 const resetTime = mqttStore.consumerResetTime(props.consumerId);
+const resetOnceDate = mqttStore.consumerResetOnceDate(props.consumerId);
+const resetWeeklyDays = mqttStore.consumerResetWeeklyDays(props.consumerId);
+const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
-const pad = (part: number) => String(part).padStart(2, '0');
-
-const writeResetTime = (dateStr: string, timeStr: string) => {
-  if (!dateStr || !timeStr) return;
-  const epoch = Math.floor(new Date(`${dateStr}T${timeStr}`).getTime() / 1000);
-  if (Number.isNaN(epoch)) return;
-  resetTime.value = epoch;
+const defaultWeekdayIndex = () => {
+  // JS: 0=Sonntag ... 6=Samstag, UI: 0=Montag ... 6=Sonntag
+  return (new Date().getDay() + 6) % 7;
 };
 
-const resetDate = computed({
-  get: () => {
-    const date = resetTime.value
-      ? new Date(resetTime.value * 1000)
-      : new Date();
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-  },
-  set: (dateStr: string) => writeResetTime(dateStr, resetTimeOfDay.value),
-});
-
-const resetTimeOfDay = computed({
-  get: () => {
-    const date = resetTime.value
-      ? new Date(resetTime.value * 1000)
-      : new Date();
-    return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
-  },
-  set: (timeStr: string) => writeResetTime(resetDate.value, timeStr),
-});
-
-const selectTrigger = (value: ConsumerResetTrigger) => {
-  resetTrigger.value = value;
-  if (value === 'time' && resetTime.value == null) {
-    resetTime.value = Math.floor(Date.now() / 1000);
+const setResetEnabled = (enabled: boolean) => {
+  resetEnabled.value = enabled;
+  if (!enabled) {
+    return;
   }
+  if (!resetTime.value) {
+    resetTime.value = '00:00';
+  }
+  if (!resetTargetMode.value) {
+    resetTargetMode.value = 'scheduled_charging';
+  }
+  if (resetMode.value === 'weekly' && !resetWeeklyDays.value.some(Boolean)) {
+    const updated = [...resetWeeklyDays.value];
+    updated[defaultWeekdayIndex()] = true;
+    resetWeeklyDays.value = updated;
+  }
+};
+
+const selectResetMode = (value: ConsumerResetTrigger) => {
+  resetMode.value = value;
+  if (value === 'weekly' && !resetWeeklyDays.value.some(Boolean)) {
+    const updated = [...resetWeeklyDays.value];
+    updated[defaultWeekdayIndex()] = true;
+    resetWeeklyDays.value = updated;
+  }
+};
+
+const toggleWeeklyDay = (index: number) => {
+  const updated = [...resetWeeklyDays.value];
+  updated[index] = !updated[index];
+  resetWeeklyDays.value = updated;
 };
 
 const consumerUsageType = computed(() =>
