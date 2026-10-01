@@ -519,7 +519,6 @@ class Chargepoint(ChargepointRfidMixin, Load):
         phases = min(phases, self.get_max_phase_hw())
 
         if phases != self.data.get.phases_in_use:
-
             if self.data.set.log.imported_since_plugged != 0:
                 if self.hw_supports_phase_switch() is False:
                     # sonst passt die Phasenzahl nicht bei Autos, die eine Phase weg schalten.
