@@ -781,39 +781,23 @@ class Chargepoint(ChargepointRfidMixin, Load):
             except Exception:
                 log.exception(f"Fehler bei Ladestop,cp{self.num}")
 
-# data.data.ocpp_client.send_heart_beat(self.data.config.ocpp_chargebox_id)
-            # data.data.ocpp_client.transfer_values(self.data.config.ocpp_chargebox_id,
-            #                                      self.num,
-            #                                      self.data.get.ocpp.transaction_id,
-            #                                      int(self.data.get.imported))
-            """
-            # OCPP Start Transaction nach Anstecken
-            if ((self.data.get.plug_state and self.data.set.plug_state_prev is False) or
-                    (self.data.get.ocpp.transaction_id is None)):  # and self.data.get.charge_state)):
-                # Starte nur Transaction wenn auch die chargepoint ID im Backend gesetzt wurde
-                if self.data.config.ocpp_chargebox_id:
-                    # Starte nur Transaction wenn bereits ein RFID Tag oder die Fahrzeug ID erkannt wurde
-                    if (self.data.set.rfid or self.data.get.rfid or self.data.get.vehicle_id):
-                        # self.data.get.ocpp.transaction_id =
-                        data.data.ocpp_client.start_transaction(
-                            self.data.config.ocpp_chargebox_id,
-                            self.num,
-                            self.data.set.rfid or self.data.get.rfid or self.data.get.vehicle_id,
-                            self.data.get.imported)
-            """
+            # CP sendet Statusmeldungen an den OCPP-Server
+            # bei jeden update-zyklus
+            # Client sendet Statusmeldungen nur wenn sich der Status ändert an den OCPP-Server
             if self.data.config.ocpp_chargebox_id:
                 print(
                     f"                                                                                                        {self.get_ocpp_status()}")
                 self.ocpp_send_status_notification()
 
             chargebox_id = self.data.config.ocpp_chargebox_id
-
             id_tag = (
                 self.data.set.rfid
                 or self.data.get.rfid
                 or self.data.get.vehicle_id
             )
 
+            # Wenn eine Transaktion aktiv ist, werden die aktuellen Zählerstände an den OCPP-Server übertragen
+            # werden in jedem update an den Client gesendet. Dieser sendet die Daten in einem eigenen Intervall an den OCPP-Server
             if chargebox_id and self.data.get.ocpp.transaction_id is not None:
                 data.data.ocpp_client.transfer_values(chargebox_id,
                                                       1,

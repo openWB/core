@@ -305,23 +305,3 @@ class Optional:
                 self._is_et_price_update_required_for_module(self.data.electricity_pricing.flexible_tariff)) or
                 (self._grid_fee_module is not None and
                 self._is_et_price_update_required_for_module(self.data.electricity_pricing.grid_fee)))
-
-    def ocpp_transfer_meter_values(self):
-        try:
-            if self.data.ocpp.config.active:
-                self._transfer_meter_values()
-        except Exception as e:
-            log.exception("Fehler im OCPP-Optional-Modul: %s", e)
-
-    def _transfer_meter_values(self):
-        client = data.data.ocpp_client
-        for cp in data.data.cp_data.values():
-            try:
-                chargebox_id = cp.data.config.ocpp_chargebox_id
-                if cp.data.get.ocpp.transaction_id is not None:
-                    client.transfer_values(chargebox_id,
-                                           1,
-                                           cp.data.get.ocpp.transaction_id,
-                                           int(cp.data.get.imported))
-            except Exception:
-                log.exception("Fehler im OCPP-Optional-Modul")

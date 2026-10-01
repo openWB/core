@@ -1,4 +1,7 @@
+
+from control.ocpp.ocpp_chargepoint import OcppChargePoint
 import logging
+
 log = logging.getLogger(__name__)
 
 
@@ -8,7 +11,7 @@ class OcppConnection:
         self,
         chargebox_id,
         ws,
-        cp,
+        cp: OcppChargePoint,
     ):
         self.chargebox_id = chargebox_id
         self.ws = ws
