@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from pathlib import Path
 from helpermodules.utils.error_handling import ImportErrorContext
 with ImportErrorContext():
     from ocpp.v16 import ChargePoint as cp
@@ -15,9 +16,11 @@ with ImportErrorContext():
         UnlockStatus,
         ResetStatus,
         ResetType,
-        DiagnosticsStatus
+        DiagnosticsStatus,
+        MessageTrigger,
+        TriggerMessageStatus,
     )
-    from ocpp.routing import on
+    from ocpp.routing import after, on
 from typing import Optional
 from helpermodules.pub import Pub, pub_single
 
@@ -32,12 +35,15 @@ log = logging.getLogger(__name__)
 
 class OcppChargePoint(cp):
 
-    def __init__(self, chargebox_id, ws, reset_callback=None):
+    def __init__(self, chargebox_id, ws, reset_callback=None, trigger_msg_callback=None):
         super().__init__(chargebox_id, ws)
         self.chargebox_id = chargebox_id
         self.ws = ws
 
         self.reset_callback = reset_callback
+        self.trigger_msg_callback = trigger_msg_callback
+        self._accepted_triggers = set()
+        self._diagnostics_status_stored = None
 
         # Speichert den aktuellen Status des CPs
         self._last_update: dict[
@@ -49,7 +55,7 @@ class OcppChargePoint(cp):
         self._pending_availability = {}
         # Default Availability Status des CPs
         self.availability = {
-            1: AvailabilityType.operative
+            1: self.openwb_cp.data.get.ocpp.availability
         }
 
         # später dann aus einer Datei lesen
@@ -62,7 +68,7 @@ class OcppChargePoint(cp):
             ),
             "MeterValueSampleInterval": datatypes.KeyValue(
                 key="MeterValueSampleInterval",
-                readonly=True,
+                readonly=False,
                 value="10"
             ),
         }
@@ -82,8 +88,8 @@ class OcppChargePoint(cp):
                                  id_tag: str,
                                  imported: int) -> Optional[object]:
 
-        print(f"START_TRANSACTION        CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
-
+        print(f"# START_TRANSACTION        CP {self.openwb_num} OCPP_Nr: {self.chargebox_id}")
+        log.debug(f"Start Transaktion für CP {self.openwb_num} mit OCPP_Nr: {self.chargebox_id}")
         request = call.StartTransaction(
             connector_id=connector_id,
             id_tag=id_tag if id_tag else "",
@@ -92,22 +98,15 @@ class OcppChargePoint(cp):
         )
 
         response: call_result.StartTransaction = await self.call(request)
-        print(f"StartTransaction response: {response}")
+        print(f"# StartTransaction response: {response}")
+        log.debug(f"StartTransaction response: {response}")
 
         return response
 
-    async def change_availability(self, connector_id: int, type: str, **kwargs):
-        print(f"Server-Anfrage erhalten: Connector {connector_id} -> {type}")
-        # Hier  rüber muss ich dann den Chargepoint sperren
-        # oder halt sagen, dass der Chargepoint wieder verfügbar ist.
-        return call_result.ChangeAvailability(
-            status="Accepted"
-        )
-
     async def _boot_notification(self):
         try:
-            print(f"BOOT_NOTIFICATION        CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
-
+            print(f"# BOOT_NOTIFICATION        CP {self.openwb_num} OCPP_Nr: {self.chargebox_id}")
+            log.debug(f"Boot Notification für CP {self.openwb_num} mit OCPP_Nr: {self.chargebox_id}")
             request = call.BootNotification(
                 charge_point_model=self.openwb_cp.chargepoint_module.config.type,
                 charge_point_vendor="openWB",
@@ -115,11 +114,14 @@ class OcppChargePoint(cp):
                 meter_serial_number=self.openwb_cp.data.get.serial_number
             )
             response: call_result.BootNotification = await self.call(request)
-            print(f"BootNotification response: {response}")
+            print(f"# BootNotification response: {response}")
+            log.debug(f"BootNotification response: {response}")
             return response
 
         except Exception as e:
-            print(f"Exception occurred: {e}")
+            print(f"# Exception occurred: {e}")
+            log.exception(
+                f"Exception occurred during Boot Notification for CP Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}: {e}")
         return None
 
     async def _authorize(self,
@@ -142,8 +144,8 @@ class OcppChargePoint(cp):
                                 id_tag: str,
                                 meter_stop: int) -> Optional[object]:
 
-        print(f"STOP_TRANSACTION        CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
-
+        print(f"# STOP_TRANSACTION        CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
+        log.debug(f"Stop Transaction for CP {self.openwb_num} OCPP_Nr: {self.chargebox_id}")
         request = call.StopTransaction(
             meter_stop=int(meter_stop),
             transaction_id=transaction_id,
@@ -152,31 +154,35 @@ class OcppChargePoint(cp):
             timestamp=_get_formatted_time(),
         )
         response: call_result.StopTransaction = await self.call(request)
-        print(f"StopTransaction response: {response}")
-
+        print(f"# StopTransaction response: {response}")
+        log.debug(f"StopTransaction response: {response}")
         return response
 
     async def _heartbeat(self) -> Optional[object]:
-        print(f"HEART_BEAT              CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
-
+        print(f"# HEART_BEAT              CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
+        log.debug(f"Heartbeat for CP {self.openwb_num} OCPP_Nr: {self.chargebox_id}")
         request = call.Heartbeat()
         response: call_result.Heartbeat = await self.call(request)
-        print(f"Heartbeat response: {response}")
+        print(f"# Heartbeat response: {response}")
+        log.debug(f"Heartbeat response: {response}")
         return response
 
     async def _meter_values(self,
                             connector_id: int,
                             transaction_id: int,
                             meter_value: list) -> Optional[object]:
-        print(f"METER_VALUES            CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
-
+        print(f"# METER_VALUES            CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
+        log.debug(
+            f"Send MeterValues for CP {self.openwb_num} OCPP_Nr: {self.chargebox_id} "
+            f"transaction_id: {transaction_id}, meter_value: {meter_value}")
         request = call.MeterValues(
             connector_id=connector_id,
             transaction_id=transaction_id,
             meter_value=meter_value
         )
         response: call_result.MeterValues = await self.call(request)
-        print(f"MeterValues response: {response}")
+        print(f"# MeterValues response: {response}")
+        log.debug(f"MeterValues response: {response}")
         return response
 
     async def _status_notification(self,
@@ -186,18 +192,17 @@ class OcppChargePoint(cp):
                                    status: ChargePointStatus,
                                    force: bool) -> Optional[object]:
 
-        # print(f"STATUS_NOTIFICATION     CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
-
         current_status = (status, get_ocpp_error_code(fault_state))
 
         key = (self.chargebox_id, connector_id)
 
-        # Wenn sich key nicht verändert hat, mach nix
+        # Wenn sich key nicht verändert hat, mach nichts
         if not force and self._last_update.get(key) == current_status:
-            # print(f"--------- No status change for key: {key}")
             return None
-        print(f"STATUS_NOTIFICATION     CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
-        print(f"--------- Status change detected for key: {key}")
+        print(f"# STATUS_NOTIFICATION     CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
+        print(f"# --------- Status change detected for key: {key}")
+        log.debug(f"Status change detected for CP {self.openwb_num} mit OCPP_Nr: {self.chargebox_id} "
+                  f"New Status: {current_status} for key: {key}")
 
         # Key rausschicken
         request = call.StatusNotification(
@@ -211,9 +216,10 @@ class OcppChargePoint(cp):
 
         )
         response: call_result.StatusNotification = await self.call(request)
-        print(f"StatusNotification response: {response}")
+        print(f"# StatusNotification response: {response}")
+        log.debug(f"StatusNotification response: {response}")
 
-        # Key hat sich geändert
+        # Status von diesem Key aktualisieren
         self._last_update[key] = current_status
 
         return response
@@ -392,7 +398,7 @@ class OcppChargePoint(cp):
         Wenn Tag erlaubt ist:
         wenn Fahrzeug nicht eingesteckt ist -> Nachricht: sie haben 5 min um das auto einzustecken.
         wenn Fahrzeug eingesteckt ist -> Transaktion wird gestartet.
-            -> standart reactionvon openWB, wie wenn man direkt nen tag gescannt hat
+            -> standart reaction von openWB, wie wenn man direkt nen tag gescannt hat
                                    
 
         """
@@ -424,7 +430,10 @@ class OcppChargePoint(cp):
             f"\nKwargs: {kwargs}"
         )
 
-        if self.openwb_cp is not None:
+        # Nur akzeptiren, wenn auch eine aktive Transaktion vorhanden ist
+        # und die transaction_id übereinstimmt
+        if (self.openwb_cp is not None and self.openwb_cp.data.get.ocpp.transaction_id is not None and
+                self.openwb_cp.data.get.ocpp.transaction_id == transaction_id):
             self.openwb_cp.data.get.ocpp.remote_stop = True
             Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/remote_stop", True)
         else:
@@ -501,7 +510,7 @@ class OcppChargePoint(cp):
             f"\nKwargs: {kwargs}"
         )
         log.debug("#############################. TEST")
-        filename = await create_diagnostics(location, retries, retry_interval, start_time, stop_time)
+        filename = await create_diagnostics(start_time, stop_time)
 
         # Upload in einem eigenen Task
         asyncio.create_task(self._upload_diagnostics(filename, location, retries or 0, retry_interval or 0))
@@ -520,13 +529,64 @@ class OcppChargePoint(cp):
         except Exception as e:
             log.exception("Fehler beim Hochladen der Diagnosedatei: %s", e)
             await self._diagnostics_status(DiagnosticsStatus.upload_failed)
+        finally:
+            # Temp-file wieder löschen
+            # egal ob das Hochladen erfolgreich war oder nicht
+            Path(filepath).unlink(missing_ok=True)
 
-    async def _diagnostics_status(self, status: DiagnosticsStatus):
+    async def _diagnostics_status(self, status: DiagnosticsStatus = None):
+        if status is None:
+            # sende den gespeicherten Diagnosestatus an die Zentrale
+            if self._diagnostics_status_stored is not None:
+                status = self._diagnostics_status_stored
+        else:
+            # speichere den neuen Status
+            self._diagnostics_status_stored = status
+
         request = call.DiagnosticsStatusNotification(
             status=status
         )
         response = await self.call(request)
         return response
+
+    @on(Action.trigger_message)
+    async def trigger_message(self, requested_message: MessageTrigger,
+                              connector_id: Optional[int] = None,
+                              call_unique_id: Optional[str] = None, **kwargs):
+        log.debug(
+            "TRIGGER_MESSAGE CP_Nr: %s OCPP_Nr: %s Requested Message: %s Connector: %s",
+            self.openwb_num,
+            self.chargebox_id,
+            requested_message,
+            connector_id,
+        )
+
+        if requested_message not in (MessageTrigger.boot_notification,
+                                     MessageTrigger.heartbeat,
+                                     MessageTrigger.meter_values,
+                                     MessageTrigger.status_notification,
+                                     MessageTrigger.diagnostics_status_notification):
+            return call_result.TriggerMessage(status=TriggerMessageStatus.not_implemented)
+
+        if (self.trigger_msg_callback is None or self.openwb_cp is None or
+                (requested_message == MessageTrigger.status_notification and connector_id not in (None, 0, 1))):
+            return call_result.TriggerMessage(status=TriggerMessageStatus.rejected)
+
+        if call_unique_id is not None:
+            self._accepted_triggers.add(call_unique_id)
+        return call_result.TriggerMessage(status=TriggerMessageStatus.accepted)
+
+    @after(Action.trigger_message)
+    async def after_trigger_message(self, requested_message: MessageTrigger,
+                                    connector_id: Optional[int] = None,
+                                    call_unique_id: Optional[str] = None, **kwargs):
+        if call_unique_id not in self._accepted_triggers:
+            return
+        self._accepted_triggers.remove(call_unique_id)
+        try:
+            await self.trigger_msg_callback(self, requested_message, connector_id)
+        except Exception:
+            log.exception("TriggerMessage-Versand für %s fehlgeschlagen", self.chargebox_id)
 
 
 def get_ocpp_error_code(fault_state: FaultState):
