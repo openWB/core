@@ -124,3 +124,92 @@ def test_get_loads_by_chargemodes(
     load_mapping: Dict[int, Load] = {1: mock_cp1, 2: mock_cp2, 3: mock_consumer3}
     expected_valid_loads = [load_mapping[i] for i in expected_cp_indices]
     assert valid_loads == expected_valid_loads
+
+
+def test_filter_grouped_loads_by_mode_and_counter_filters_all_non_matching_loads(
+        mock_cp1: Chargepoint,
+        mock_cp2: Chargepoint,
+        mock_consumer3: Consumer):
+    # setup
+    for load in [mock_cp1, mock_cp2, mock_consumer3]:
+        load.data.control_parameter.required_current = 6
+        load.data.control_parameter.chargemode = Chargemode.SCHEDULED_CHARGING
+        load.data.control_parameter.submode = Chargemode.INSTANT_CHARGING
+
+    data.data.counter_all_data = Mock()
+    data.data.counter_all_data.get_loads_of_counter.return_value = ["consumer3"]
+
+    # evaluation
+    valid_loads = filter_chargepoints.filter_grouped_loads_by_mode_and_counter(
+        [mock_cp1, mock_cp2, mock_consumer3],
+        ((None, Chargemode.INSTANT_CHARGING),),
+        "counter0"
+    )
+
+    # assertion
+    assert valid_loads == [mock_consumer3]
+
+
+def test_filter_loads_by_chargemodes_filters_and_keeps_order(
+        mock_cp1: Chargepoint,
+        mock_cp2: Chargepoint,
+        mock_consumer3: Consumer):
+    # setup
+    mock_cp1.data.control_parameter.chargemode = Chargemode.SCHEDULED_CHARGING
+    mock_cp1.data.control_parameter.submode = Chargemode.INSTANT_CHARGING
+
+    mock_cp2.data.control_parameter.chargemode = Chargemode.INSTANT_CHARGING
+    mock_cp2.data.control_parameter.submode = Chargemode.INSTANT_CHARGING
+
+    mock_consumer3.data.control_parameter.chargemode = Chargemode.SCHEDULED_CHARGING
+    mock_consumer3.data.control_parameter.submode = Chargemode.STOP
+
+    # evaluation
+    valid_loads = filter_chargepoints.filter_loads_by_chargemodes(
+        [mock_cp2, mock_consumer3, mock_cp1],
+        ((Chargemode.SCHEDULED_CHARGING, Chargemode.INSTANT_CHARGING),
+         (Chargemode.INSTANT_CHARGING, Chargemode.INSTANT_CHARGING)),
+    )
+
+    # assertion
+    assert valid_loads == [mock_cp2, mock_cp1]
+
+
+def test_filter_loads_by_chargemodes_supports_wildcard_for_chargemode(
+        mock_cp1: Chargepoint,
+        mock_cp2: Chargepoint,
+        mock_consumer3: Consumer):
+    # setup
+    mock_cp1.data.control_parameter.chargemode = Chargemode.SCHEDULED_CHARGING
+    mock_cp1.data.control_parameter.submode = Chargemode.INSTANT_CHARGING
+
+    mock_cp2.data.control_parameter.chargemode = Chargemode.INSTANT_CHARGING
+    mock_cp2.data.control_parameter.submode = Chargemode.STOP
+
+    mock_consumer3.data.control_parameter.chargemode = Chargemode.SCHEDULED_CHARGING
+    mock_consumer3.data.control_parameter.submode = Chargemode.INSTANT_CHARGING
+
+    # evaluation
+    valid_loads = filter_chargepoints.filter_loads_by_chargemodes(
+        [mock_cp1, mock_cp2, mock_consumer3],
+        ((None, Chargemode.INSTANT_CHARGING),),
+    )
+
+    # assertion
+    assert valid_loads == [mock_cp1, mock_consumer3]
+
+
+def test_filter_active_loads_removes_loads_with_zero_required_current(
+        mock_cp1: Chargepoint,
+        mock_cp2: Chargepoint,
+        mock_consumer3: Consumer):
+    # setup
+    mock_cp1.data.control_parameter.required_current = 0
+    mock_cp2.data.control_parameter.required_current = 6
+    mock_consumer3.data.control_parameter.required_current = 1
+
+    # evaluation
+    active_loads = filter_chargepoints._filter_active_loads([mock_cp1, mock_cp2, mock_consumer3])
+
+    # assertion
+    assert active_loads == [mock_cp2, mock_consumer3]

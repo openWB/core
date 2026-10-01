@@ -203,3 +203,40 @@ def test_cp4_bidi_discharge_unlocks_cp5_instant_charging_in_next_cycle(
     Algorithm().calc_current()
     assert data.data.cp_data["cp4"].data.set.current == -20
     assert data.data.cp_data["cp5"].data.set.current == 40
+
+
+def test_bidi_instant_discharge_prioritizes_single_ev_before_group_and_splits_remainder_evenly(
+        bidi_cps, all_cp_not_charging, monkeypatch):
+    # Prio 1: einzelnes Fahrzeug (EV3), Prio 2: Gruppe (EV4, EV5).
+    # Bei begrenzter Entladeleistung muss EV3 zuerst voll bedient werden,
+    # die verbleibende Leistung wird in der Gruppe gleichmaessig verteilt.
+
+    # setup
+    bidi_cps("cp3", "cp4", "cp5")
+    # Rund 30 A Entladebedarf pro Phase.
+    data.data.counter_data["counter0"].data.get.power = 20700
+    for counter in ("counter0", "counter6"):
+        data.data.counter_data[counter].data.set.raw_exported_currents_left = [30]*3
+
+    data.data.counter_all_data.data.get.loadmanagement_prios = [
+        {"type": "vehicle", "id": 3},
+        {
+            "type": "group",
+            "label": "Fahrzeuge",
+            "children": [
+                {"type": "vehicle", "id": 4},
+                {"type": "vehicle", "id": 5},
+            ],
+        },
+    ]
+
+    mock_get_component_name_by_id = Mock(return_value="Garage")
+    monkeypatch.setattr(loadmanagement, "get_component_name_by_id", mock_get_component_name_by_id)
+
+    # execution
+    Algorithm().calc_current()
+
+    # evaluation
+    assert data.data.cp_data["cp3"].data.set.current == -15.942028985507246
+    assert data.data.cp_data["cp4"].data.set.current == -7.028985507246377
+    assert data.data.cp_data["cp5"].data.set.current == -7.028985507246377

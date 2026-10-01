@@ -5,9 +5,9 @@ from control import data
 from control.algorithm import common
 from control.algorithm.chargemodes import (CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE, CONSIDERED_CHARGE_MODES_PV_ONLY,
                                            CONSIDERED_CHARGE_MODES_SURPLUS)
-from control.algorithm.filter_chargepoints import (filtered_loads_to_str, get_loads_by_chargemodes,
-                                                   get_grouped_loads_by_mode_and_counter,
-                                                   get_preferenced_load_charging)
+from control.algorithm.filter_chargepoints import (filter_grouped_loads_by_mode_and_counter,
+                                                   filter_loads_by_chargemodes, filtered_loads_to_str,
+                                                   get_loads_by_chargemodes, get_preferenced_load_charging)
 from control.algorithm.utils import get_medium_charging_current
 from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.chargepoint import Chargepoint
@@ -30,64 +30,65 @@ class SurplusControlled:
     def __init__(self) -> None:
         pass
 
-    def set_surplus_current(self) -> None:
-        common.reset_current_by_chargemode(CONSIDERED_CHARGE_MODES_SURPLUS)
+    def set_surplus_current(self, grouped_loads: List[Load]) -> None:
+        common.reset_current_by_chargemode(grouped_loads, CONSIDERED_CHARGE_MODES_SURPLUS)
         for counter in common.counter_generator():
-            preferenced_loads_groups, preferenced_loads_without_set_current = get_preferenced_load_charging(
-                get_grouped_loads_by_mode_and_counter(CONSIDERED_CHARGE_MODES_SURPLUS, f"counter{counter.num}"))
-            self._set(preferenced_loads_groups, counter)
+            preferenced_loads, preferenced_loads_without_set_current = get_preferenced_load_charging(
+                filter_grouped_loads_by_mode_and_counter(grouped_loads,
+                                                         CONSIDERED_CHARGE_MODES_SURPLUS,
+                                                         f"counter{counter.num}"))
+            self._set(preferenced_loads, counter)
             if preferenced_loads_without_set_current:
                 for cp in preferenced_loads_without_set_current:
                     cp.data.set.current = cp.data.set.target_current
-        for load in get_loads_by_chargemodes(CONSIDERED_CHARGE_MODES_SURPLUS):
+        for load in filter_loads_by_chargemodes(grouped_loads, CONSIDERED_CHARGE_MODES_SURPLUS):
             if isinstance(load, Chargepoint) and load.data.control_parameter.state in CHARGING_STATES:
                 self._fix_deviating_evse_current(load)
 
     def _set(self,
-             preferenced_loads_groups: List[List[Load]],
+             loads: List[Load],
              counter: Counter) -> None:
-        for loads in preferenced_loads_groups:
-            if len(loads) > 0:
-                log.info(f"Zähler {counter.num}, Verbraucher {filtered_loads_to_str(loads)}")
-            common.update_raw_data(loads, surplus=True)
-            while len(loads):
-                load = loads[0]
-                missing_currents, counts = common.get_missing_currents_left(loads)
-                available_currents, limit = Loadmanagement().get_available_currents_surplus(
-                    missing_currents,
-                    voltages_mean(load.data.get.voltages),
-                    counter,
-                    load
-                )
-                # im PV-Laden wird der Strom immer durch die Leistung begrenzt
-                if limit.limiting_value is not None and limit.limiting_value != LimitingValue.POWER:
-                    load.data.control_parameter.limit = limit
-                available_for_cp = common.available_current_for_load(load, counts, available_currents, missing_currents)
-                if counter.get_control_range_state() == ControlRangeState.MIDDLE:
-                    surplus_config = data.data.general_data.data.chargemode_config.surplus
-                    dif_to_old_current = available_for_cp + load.data.set.target_current - load.data.set.current_prev
-                    # Wenn die Differenz zwischen altem und neuem Soll-Strom größer als der Regelbereich ist, trotzdem
-                    # nachregeln, auch wenn der Regelbereich eingehalten wird. Sonst würde zB nicht berücksichtigt
-                    # werden,wenn noch ein Fahrzeug dazu kommt.
-                    if ((surplus_config.control_range[1] - surplus_config.control_range[0]) /
-                            (sum(counter.data.get.voltages) /
-                             len(counter.data.get.voltages)) < abs(dif_to_old_current)):
-                        current = available_for_cp
-                    else:
-                        # Nicht mehr freigeben, wie das Lastmanagement vorgibt
-                        current = min(load.data.set.current_prev - load.data.set.target_current, available_for_cp)
-                else:
+        if len(loads) > 0:
+            log.info(f"Zähler {counter.num}, Verbraucher {filtered_loads_to_str(loads)}")
+        common.update_raw_data(loads, surplus=True)
+        while len(loads):
+            load = loads[0]
+            missing_currents, counts = common.get_missing_currents_left(loads)
+            available_currents, limit = Loadmanagement().get_available_currents_surplus(
+                missing_currents,
+                voltages_mean(load.data.get.voltages),
+                counter,
+                load
+            )
+            # im PV-Laden wird der Strom immer durch die Leistung begrenzt
+            if limit.limiting_value is not None and limit.limiting_value != LimitingValue.POWER:
+                load.data.control_parameter.limit = limit
+            available_for_cp = common.available_current_for_load(load, counts, available_currents, missing_currents)
+            if counter.get_control_range_state() == ControlRangeState.MIDDLE:
+                surplus_config = data.data.general_data.data.chargemode_config.surplus
+                dif_to_old_current = available_for_cp + load.data.set.target_current - load.data.set.current_prev
+                # Wenn die Differenz zwischen altem und neuem Soll-Strom größer als der Regelbereich ist, trotzdem
+                # nachregeln, auch wenn der Regelbereich eingehalten wird. Sonst würde zB nicht berücksichtigt
+                # werden,wenn noch ein Fahrzeug dazu kommt.
+                if ((surplus_config.control_range[1] - surplus_config.control_range[0]) /
+                        (sum(counter.data.get.voltages) /
+                            len(counter.data.get.voltages)) < abs(dif_to_old_current)):
                     current = available_for_cp
+                else:
+                    # Nicht mehr freigeben, wie das Lastmanagement vorgibt
+                    current = min(load.data.set.current_prev - load.data.set.target_current, available_for_cp)
+            else:
+                current = available_for_cp
 
-                current = common.get_current_to_set(load.data.set.current, current, load.data.set.target_current)
-                self._set_loadmangement_message(current, limit, load)
-                limited_current = limit_adjust_current(load, current)
-                common.set_current_counterdiff(
-                    load.data.control_parameter.min_current,
-                    limited_current,
-                    load,
-                    surplus=True)
-                loads.pop(0)
+            current = common.get_current_to_set(load.data.set.current, current, load.data.set.target_current)
+            self._set_loadmangement_message(current, limit, load)
+            limited_current = limit_adjust_current(load, current)
+            common.set_current_counterdiff(
+                load.data.control_parameter.min_current,
+                limited_current,
+                load,
+                surplus=True)
+            loads.pop(0)
 
     def _set_loadmangement_message(self,
                                    current: float,
@@ -163,9 +164,9 @@ class SurplusControlled:
             except Exception:
                 log.exception(f"Fehler in der PV-gesteuerten Ladung bei {load.num}")
 
-    def set_required_current_to_max(self) -> None:
-        for load in get_loads_by_chargemodes(CONSIDERED_CHARGE_MODES_SURPLUS +
-                                             CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE):
+    def set_required_current_to_max(self, grouped_loads: List[Load]) -> None:
+        for load in filter_loads_by_chargemodes(grouped_loads, CONSIDERED_CHARGE_MODES_SURPLUS +
+                                                CONSIDERED_CHARGE_MODES_BIDI_DISCHARGE):
             try:
                 control_parameter = load.data.control_parameter
                 if control_parameter.required_current != 0:
