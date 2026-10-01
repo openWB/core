@@ -2,8 +2,11 @@ import logging
 import threading
 from helpermodules.utils.error_handling import ImportErrorContext
 with ImportErrorContext():
-    from ocpp.v16.enums import ChargePointStatus, RegistrationStatus, AvailabilityType, ResetType
-    from ocpp.routing import on
+    from ocpp.v16.enums import (ChargePointStatus,
+                                RegistrationStatus,
+                                AvailabilityType,
+                                ResetType,
+                                MessageTrigger)
 with ImportErrorContext():
     import websockets
 import asyncio
@@ -233,6 +236,7 @@ class OcppClient:
             chargebox_id,
             ws,
             reset_callback=self._handle_reset,
+            trigger_msg_callback=self.handler_trigger_msg,
         )
 
         # Bestehende Transaction übernehmen.
@@ -571,7 +575,7 @@ class OcppClient:
                 transaction = self._transactions.get(chargebox_id)
 
                 # Ohne aktive Transaction keine Transaction-MeterValues.
-                if transaction is None:
+                if transaction is None or transaction.transaction_id is None:
                     continue
                 transaction_id = transaction.transaction_id
 
@@ -725,6 +729,12 @@ class OcppClient:
         imported: int,
     ):
         if chargebox_id in self._start_blocked:
+            return False
+
+        # Hier auch availability einmal prüfen
+        cp = get_cp_from_chargebox_id(chargebox_id)
+        if cp.data.get.ocpp.availability == False:
+            log.debug(f"Request start blockiert für CP {chargebox_id} da CP nicht verfügbar ist (availability = False)")
             return False
 
         transaction = self._get_transaction(chargebox_id)
@@ -1221,6 +1231,7 @@ class OcppClient:
         request: PendingStop,
     ):
         transaction_id = transaction.transaction_id
+        cp = connection.cp
 
         if transaction_id is None:
             return True
@@ -1232,7 +1243,7 @@ class OcppClient:
         )
 
         try:
-            await connection.cp._stop_transaction(
+            await cp._stop_transaction(
                 meter_stop=request.meter_stop,
                 transaction_id=transaction_id,
                 reason=request.reason,
@@ -1265,9 +1276,6 @@ class OcppClient:
         connection.cp.transaction_id = None
         _publish_transaction_id(connection.cp, None)
         _set_tag_accepted(connection.cp, False)
-
-        # remote_stop bleibt dauehaft aktiv, bis man Stecker rauszieht.
-        # _set_remote_stop(connection.cp, False)
 
         # Pending ChangeAvailability kann jetzt angewendet werden.
         if connection.cp._pending_availability or connection.cp.openwb_cp.data.get.ocpp.pending_availability:
@@ -1367,6 +1375,82 @@ class OcppClient:
             False,
         )
 
+    async def handler_trigger_msg(
+        self,
+        cp: OcppChargePoint,
+        trigger_type: MessageTrigger,
+        connector_id: Optional[int],
+    ) -> None:
+        connection = self.connections.get(cp.chargebox_id)
+        if (connection is None or connection.cp is not cp or
+                connection.closing or connection.ws.closed or not connection.boot_accepted):
+            return
+
+        if trigger_type == MessageTrigger.heartbeat:
+            await cp._heartbeat()
+            return
+
+        if trigger_type == MessageTrigger.status_notification:
+            openwb_cp = cp.openwb_cp
+            if openwb_cp is None:
+                return
+
+            status = openwb_cp.get_ocpp_status()
+            await cp._status_notification(
+                connector_id=1,  # bei uns gibt es immer nur einen Connector
+                fault_state=openwb_cp.data.get.fault_state,
+                fault_state_str=openwb_cp.data.get.fault_str,
+                status=status,
+                force=True,
+            )
+
+        if trigger_type == MessageTrigger.meter_values:
+            snapshot = self._meter_snapshots.get(cp.chargebox_id)
+            transaction = self._transactions.get(cp.chargebox_id)
+
+            # Ohne aktive Transaction keine Transaction-MeterValues.
+            if transaction is None or transaction.transaction_id is None:
+                log.debug(
+                    f"Triggering meter_values: Keine aktive Transaktion für chargebox_id {cp.chargebox_id}"
+                )
+                return
+            transaction_id = transaction.transaction_id
+
+            if snapshot is None:
+                log.debug(
+                    f"Triggering meter_values: Kein Meterwert-Snapshot vorhanden für chargebox_id {cp.chargebox_id}"
+                )
+                return
+
+            await cp._meter_values(
+                connector_id=1,
+                transaction_id=transaction_id,
+                meter_value=[
+                    {
+                        "timestamp": _get_formatted_time(),
+                        "sampledValue": [
+                            {
+                                "value": str(snapshot.imported),
+                                "context": "Sample.Periodic",
+                                "format": "Raw",
+                                "measurand":
+                                    "Energy.Active.Import.Register",
+                                "unit": "Wh",
+                            }
+                        ],
+                    }
+                ],
+            )
+            return
+
+        if trigger_type == MessageTrigger.boot_notification:
+            await cp._boot_notification()
+            return
+
+        if trigger_type == MessageTrigger.diagnostics_status_notification:
+            await cp._diagnostics_status(None)
+            return
+
 
 """
 Static Methoden
@@ -1443,9 +1527,7 @@ def _set_tag_accepted(
     if cp is None or getattr(cp, "openwb_cp", None) is None:
         return
 
-    cp.openwb_cp.data.get.ocpp.tag_accepted = (
-        accepted
-    )
+    cp.openwb_cp.data.get.ocpp.tag_accepted = accepted
 
     transaction_id_tag = (
         str(accepted_tag)
@@ -1467,24 +1549,7 @@ def _set_tag_accepted(
     )
 
 
-def _set_remote_stop(
-    cp: "OcppChargePoint",
-    remote_stop: bool,
-):
-    cp.openwb_cp.data.get.ocpp.remote_stop = (
-        remote_stop
-    )
-
-    Pub().pub(
-        f"openWB/set/chargepoint/"
-        f"{cp.openwb_num}/get/ocpp/remote_stop",
-        remote_stop,
-    )
-
-
-def _clear_pending_transactions(
-    openwb_cp: "OcppChargePoint",
-):
+def _clear_pending_transactions(openwb_cp: "OcppChargePoint"):
     openwb_cp.data.get.ocpp.pending_transactions = []
     Pub().pub(
         f"openWB/set/chargepoint/{openwb_cp.num}/get/ocpp/pending_transactions",
