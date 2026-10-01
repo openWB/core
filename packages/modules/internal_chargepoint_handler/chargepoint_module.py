@@ -143,6 +143,16 @@ class ChargepointModule(AbstractChargepoint):
 
     def perform_phase_switch(self, phases_to_use: int) -> None:
         gpio_cp, gpio_relay = self._client.get_pins_phase_switch(phases_to_use)
+        try:
+            self._perform_phase_switch(phases_to_use, gpio_cp, gpio_relay)
+        finally:
+            # Auch bei einem Fehler oder Abbruch muss CP wieder verbunden werden, sonst
+            # erkennt das Fahrzeug den Ladepunkt nicht mehr.
+            GPIO.output(gpio_cp, GPIO.LOW)  # CP on
+            time.sleep(1)
+        self.old_phases_in_use = phases_to_use
+
+    def _perform_phase_switch(self, phases_to_use: int, gpio_cp: int, gpio_relay: int) -> None:
         evse = self._client.evse_client
         with SingleComponentUpdateContext(self.fault_state, update_always=False, reraise=True):
             evse.set_current(0)
@@ -159,12 +169,15 @@ class ChargepointModule(AbstractChargepoint):
         time.sleep(5)
         GPIO.output(gpio_relay, GPIO.LOW)  # 3 on/off
         time.sleep(5)
-        GPIO.output(gpio_cp, GPIO.LOW)  # CP on
-        time.sleep(1)
-        self.old_phases_in_use = phases_to_use
 
     def perform_cp_interruption(self, duration: int) -> None:
         gpio_cp = self._client.get_pins_cp_interruption()
+        try:
+            self._perform_cp_interruption(duration, gpio_cp)
+        finally:
+            GPIO.output(gpio_cp, GPIO.LOW)
+
+    def _perform_cp_interruption(self, duration: int, gpio_cp: int) -> None:
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
             self._client.evse_client.set_current(0)
         GPIO.setwarnings(False)
