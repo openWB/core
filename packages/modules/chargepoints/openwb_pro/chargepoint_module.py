@@ -144,9 +144,6 @@ class ChargepointModule(AbstractChargepoint):
                     self.__session.post(f'http://{self.config.configuration.ip_address}/connect.php',
                                         data={'phasetarget': str(1 if phases_to_use == 1 else 3)})
 
-    def clear_rfid(self) -> None:
-        pass
-
     def interrupt_cp(self, duration: int) -> None:
         self.__session.post(f'http://{self.config.configuration.ip_address}/connect.php',
                             data={'cp_interrupt': True,
