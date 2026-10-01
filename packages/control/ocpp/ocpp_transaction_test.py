@@ -24,6 +24,7 @@ def transaction_setup(monkeypatch):
             transaction_id=None,
             transaction_id_tag=None,
             tag_accepted=False,
+            availability=True,
             pending_transactions=[],
             pending_availability=False,
         ))),
@@ -114,7 +115,13 @@ def test_stop_during_start_is_not_lost(transaction_setup, waiting_for):
 
         original.side_effect = delayed
         start = asyncio.create_task(client._request_start("box-1", 1, "TAG", 100))
-        await entered.wait()
+        try:
+            await asyncio.wait_for(entered.wait(), timeout=5)
+        except asyncio.TimeoutError:
+            if start.done():
+                await start
+            raise
+        assert openwb_cp.data.get.ocpp.tag_accepted is False
         assert await client._request_stop("box-1", 150, "", "EVDisconnected") is False
         release.set()
         await start
@@ -130,6 +137,7 @@ def test_stop_during_start_is_not_lost(transaction_setup, waiting_for):
         )
         assert client._transactions["box-1"].state == TransactionState.IDLE
         assert openwb_cp.data.get.ocpp.transaction_id is None
+        assert openwb_cp.data.get.ocpp.tag_accepted is False
 
 
 def test_active_stop_clears_transaction_only_after_response(transaction_setup):
