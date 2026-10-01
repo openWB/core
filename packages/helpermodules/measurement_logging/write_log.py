@@ -170,7 +170,12 @@ def save_log():
         new_names = get_names(content["entries"][-1], sh_log_data.sh_names)
         existing_names.update(new_names)
         content["names"] = existing_names
-        content["colors"] = get_colors(content["entries"][-1])
+        existing_colors = content.get("colors")
+        if not isinstance(existing_colors, dict):
+            existing_colors = {}
+        new_colors = get_colors(content["entries"][-1])
+        existing_colors.update(new_colors)
+        content["colors"] = existing_colors
         write_and_check(filepath, content)
         return content["entries"]
     except Exception:
