@@ -164,7 +164,12 @@ def save_log():
 
         entries = content["entries"]
         entries.append(new_entry)
-        content["names"] = get_names(content["entries"][-1], sh_log_data.sh_names)
+        existing_names = content.get("names")
+        if not isinstance(existing_names, dict):
+            existing_names = {}
+        new_names = get_names(content["entries"][-1], sh_log_data.sh_names)
+        existing_names.update(new_names)
+        content["names"] = existing_names
         content["colors"] = get_colors(content["entries"][-1])
         write_and_check(filepath, content)
         return content["entries"]
@@ -384,7 +389,7 @@ def get_names(elements: Dict, sh_names: Dict, valid_names: Optional[Dict] = None
         Dictionary mit allen gültigen Namen, die in der Konfiguration hinterlegt sind.
         Ist None, wenn die Namen aus data ermittelt werden sollen.
     """
-    names = sh_names
+    names = dict(sh_names) if isinstance(sh_names, dict) else {}
     for group in elements.items():
         if group[0] not in ("bat", "consumer", "counter", "cp", "pv", "ev", "sh"):
             continue
