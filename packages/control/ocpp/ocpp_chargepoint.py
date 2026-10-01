@@ -55,7 +55,7 @@ class OcppChargePoint(cp):
         self._pending_availability = {}
         # Default Availability Status des CPs
         self.availability = {
-            1: self.openwb_cp.data.get.ocpp.availability
+            1: AvailabilityType.operative if self.openwb_cp and self.openwb_cp.data.get.ocpp.availability else AvailabilityType.inoperative
         }
 
         # später dann aus einer Datei lesen

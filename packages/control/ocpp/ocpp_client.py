@@ -770,6 +770,7 @@ class OcppClient:
                 transaction,
                 TransactionState.IDLE,
             )
+            self._commit_transaction(chargebox_id, transaction)
             return False
 
         # Nach einem unklaren Fehler nicht denselben
@@ -791,6 +792,7 @@ class OcppClient:
         if connection is None:
             log.info(f"OCPP {chargebox_id}: Start nicht ausgeführt, keine Verbindung zum OCPP-Server")
             transaction.reset()
+            self._commit_transaction(chargebox_id, transaction)
             return False
 
         cp = connection.cp
@@ -801,6 +803,7 @@ class OcppClient:
             transaction,
             TransactionState.AUTHORIZING,
         )
+        self._commit_transaction(chargebox_id, transaction)
 
         try:
             response = await cp._authorize(id_tag=id_tag)
@@ -817,6 +820,7 @@ class OcppClient:
                 transaction,
                 TransactionState.IDLE,
             )
+            self._commit_transaction(chargebox_id, transaction)
 
             log.exception(f"Authorize für {chargebox_id} fehlgeschlagen")
 
@@ -832,21 +836,15 @@ class OcppClient:
                 transaction,
                 TransactionState.REJECTED,
             )
-
-            _set_tag_accepted(cp, False,)
+            self._commit_transaction(chargebox_id, transaction)
             return True
-
-        _set_tag_accepted(cp, True, accepted_tag=id_tag)
 
         # Fahrzeug könnte während Authorize bereits
         # wieder abgesteckt worden sein.
         if transaction.pending_stop is not None:
             log.info(f"OCPP {chargebox_id}: Start abgebrochen,da inzwischen Stop angefordert wurde.")
-
             transaction.reset()
-
-            _set_tag_accepted(cp, False)
-
+            self._commit_transaction(chargebox_id, transaction)
             return True
 
         # START TRANSACTION
@@ -855,6 +853,7 @@ class OcppClient:
             transaction,
             TransactionState.STARTING,
         )
+        self._commit_transaction(chargebox_id, transaction)
 
         try:
             response = await cp._start_transaction(
@@ -882,10 +881,7 @@ class OcppClient:
                 transaction,
                 TransactionState.ERROR,
             )
-
-            # Ohne bestätigte Transaction-ID darf openWB die Ladung nicht auf
-            # Basis eines zuvor erfolgreichen Authorize weiter freigeben.
-            _set_tag_accepted(cp, False)
+            self._commit_transaction(chargebox_id, transaction)
 
             log.exception(f"StartTransaction für {chargebox_id} fehlgeschlagen")
 
@@ -905,25 +901,18 @@ class OcppClient:
                 transaction,
                 TransactionState.REJECTED,
             )
-
-            _set_tag_accepted(cp, False)
+            self._commit_transaction(chargebox_id, transaction)
 
             return True
 
         # TRANSACTION AKTIV
         transaction.transaction_id = response.transaction_id
-        cp.transaction_id = response.transaction_id
-
         self._set_transaction_state(
             chargebox_id,
             transaction,
             TransactionState.ACTIVE,
         )
-
-        _publish_transaction_id(
-            cp,
-            response.transaction_id,
-        )
+        self._commit_transaction(chargebox_id, transaction)
 
         log.info(f"OCPP Transaction {response.transaction_id} für {chargebox_id} gestartet.")
 
@@ -1006,6 +995,7 @@ class OcppClient:
             TransactionState.REJECTED,
         ):
             transaction.reset()
+            self._commit_transaction(chargebox_id, transaction)
 
             return True
 
@@ -1223,6 +1213,30 @@ class OcppClient:
         if old_state != state:
             print(f"\nOCPP {chargebox_id} Transaction-State: {old_state.value} -> {state.value}\n")
 
+    # Ich muss das jetz so umbauen, dass nur noch diese funktion die daten setzt/schreibt
+    def _commit_transaction(
+        self,
+        chargebox_id: str,
+        transaction: OcppTransaction,
+    ) -> None:
+        """Project the coordinator state to the persistent openWB model."""
+        openwb_cp = get_cp_from_chargebox_id(chargebox_id)
+        if openwb_cp is None:
+            return
+
+        ocpp_data = openwb_cp.data.get.ocpp
+        accepted = transaction.state == TransactionState.ACTIVE
+        transaction_id_tag = transaction.id_tag if accepted else None
+
+        ocpp_data.transaction_id = transaction.transaction_id
+        ocpp_data.transaction_id_tag = transaction_id_tag
+        ocpp_data.tag_accepted = accepted
+
+        prefix = f"openWB/set/chargepoint/{openwb_cp.num}/get/ocpp"
+        Pub().pub(f"{prefix}/transaction_id", transaction.transaction_id)
+        Pub().pub(f"{prefix}/transaction_id_tag", transaction_id_tag)
+        Pub().pub(f"{prefix}/tag_accepted", accepted)
+
     async def _stop_active_transaction(
         self,
         chargebox_id: str,
@@ -1241,6 +1255,7 @@ class OcppClient:
             transaction,
             TransactionState.STOPPING,
         )
+        self._commit_transaction(chargebox_id, transaction)
 
         try:
             await cp._stop_transaction(
@@ -1265,6 +1280,7 @@ class OcppClient:
                 transaction,
                 TransactionState.ERROR,
             )
+            self._commit_transaction(chargebox_id, transaction)
 
             log.exception(f"StopTransaction {transaction_id} für {chargebox_id} fehlgeschlagen")
 
@@ -1272,16 +1288,12 @@ class OcppClient:
 
         log.info(f"OCPP Transaction {transaction_id} für {chargebox_id} beendet.")
 
-        transaction.transaction_id = None
-        connection.cp.transaction_id = None
-        _publish_transaction_id(connection.cp, None)
-        _set_tag_accepted(connection.cp, False)
-
         # Pending ChangeAvailability kann jetzt angewendet werden.
         if connection.cp._pending_availability or connection.cp.openwb_cp.data.get.ocpp.pending_availability:
             await connection.cp.apply_pending_availability()
 
         transaction.reset()
+        self._commit_transaction(chargebox_id, transaction)
 
         return True
 
@@ -1484,27 +1496,6 @@ def _get_id_tag_status(response) -> Optional[str]:
     )
 
 
-def _publish_transaction_id(
-    cp: "OcppChargePoint",
-    transaction_id: Optional[int],
-):
-    if cp is None:
-        return
-
-    if cp.openwb_cp is None:
-        return
-
-    cp.openwb_cp.data.get.ocpp.transaction_id = (
-        transaction_id
-    )
-
-    Pub().pub(
-        f"openWB/set/chargepoint/"
-        f"{cp.openwb_num}/get/ocpp/transaction_id",
-        transaction_id,
-    )
-
-
 def _set_connected(
     cp: "OcppChargePoint",
     connected: bool,
@@ -1516,36 +1507,6 @@ def _set_connected(
     Pub().pub(
         f"openWB/set/chargepoint/{cp.openwb_num}/get/ocpp/connected",
         connected,
-    )
-
-
-def _set_tag_accepted(
-    cp: "OcppChargePoint",
-    accepted: bool,
-    accepted_tag: str = None
-):
-    if cp is None or getattr(cp, "openwb_cp", None) is None:
-        return
-
-    cp.openwb_cp.data.get.ocpp.tag_accepted = accepted
-
-    transaction_id_tag = (
-        str(accepted_tag)
-        if accepted and accepted_tag is not None
-        else None
-    )
-    cp.openwb_cp.data.get.ocpp.transaction_id_tag = transaction_id_tag
-
-    Pub().pub(
-        f"openWB/set/chargepoint/"
-        f"{cp.openwb_num}/get/ocpp/transaction_id_tag",
-        str(transaction_id_tag) if transaction_id_tag is not None else None,
-    )
-
-    Pub().pub(
-        f"openWB/set/chargepoint/"
-        f"{cp.openwb_num}/get/ocpp/tag_accepted",
-        accepted,
     )
 
 

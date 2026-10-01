@@ -101,7 +101,13 @@ def test_transfer_values_updates_meter_snapshot():
 def test_trigger_message_decisions(monkeypatch):
     from control.ocpp import ocpp_chargepoint
 
-    monkeypatch.setattr(ocpp_chargepoint, "get_cp_from_chargebox_id", lambda _: SimpleNamespace(num=1))
+    openwb_cp = SimpleNamespace(
+        num=1,
+        data=SimpleNamespace(get=SimpleNamespace(
+            ocpp=SimpleNamespace(availability=True),
+        )),
+    )
+    monkeypatch.setattr(ocpp_chargepoint, "get_cp_from_chargebox_id", lambda _: openwb_cp)
     cp = OcppChargePoint("box-1", Mock(), trigger_msg_callback=AsyncMock())
 
     async def check():
@@ -128,7 +134,7 @@ def test_trigger_status_message_after_confirmation(monkeypatch, connector_id):
     openwb_cp = SimpleNamespace(
         num=1,
         data=SimpleNamespace(get=SimpleNamespace(
-            ocpp=SimpleNamespace(), fault_state=1, fault_str="error",
+            ocpp=SimpleNamespace(availability=True), fault_state=1, fault_str="error",
         )),
         get_ocpp_status=Mock(return_value=ChargePointStatus.charging),
     )
@@ -194,7 +200,13 @@ def test_trigger_status_forces_repeat_and_skips_old_connection(monkeypatch):
 def test_trigger_heartbeat_ignores_connector_and_rejects_unsupported(monkeypatch):
     from control.ocpp import ocpp_chargepoint
 
-    monkeypatch.setattr(ocpp_chargepoint, "get_cp_from_chargebox_id", lambda _: SimpleNamespace(num=1))
+    openwb_cp = SimpleNamespace(
+        num=1,
+        data=SimpleNamespace(get=SimpleNamespace(
+            ocpp=SimpleNamespace(availability=True),
+        )),
+    )
+    monkeypatch.setattr(ocpp_chargepoint, "get_cp_from_chargebox_id", lambda _: openwb_cp)
     events = []
 
     async def send(message):
