@@ -209,7 +209,7 @@ def test_filter_active_loads_removes_loads_with_zero_required_current(
     mock_consumer3.data.control_parameter.required_current = 1
 
     # evaluation
-    active_loads = filter_chargepoints._filter_active_loads([mock_cp1, mock_cp2, mock_consumer3])
+    active_loads = filter_chargepoints.filter_active_loads([mock_cp1, mock_cp2, mock_consumer3])
 
     # assertion
     assert active_loads == [mock_cp2, mock_consumer3]

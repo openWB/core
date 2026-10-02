@@ -19,7 +19,6 @@ def filter_grouped_loads_by_mode_and_counter(grouped_loads: List[Load],
     filtered_grouped_loads = list(grouped_loads)
 
     filtered_grouped_loads = filter_loads_by_chargemodes(filtered_grouped_loads, chargemodes)
-    filtered_grouped_loads = _filter_active_loads(filtered_grouped_loads)
 
     loads_to_counter = data.data.counter_all_data.get_loads_of_counter(counter)
     # nur die Zahl aus dem String "cp1" und "consumer2" extrahieren
@@ -60,7 +59,7 @@ def filter_loads_by_chargemodes(grouped_loads: List[Load],
     return filtered_grouped_loads
 
 
-def _filter_active_loads(grouped_loads: List[Load]) -> List[Load]:
+def filter_active_loads(grouped_loads: List[Load]) -> List[Load]:
     active_loads: List[Load] = []
     for load in grouped_loads:
         if load.data.control_parameter.required_current != 0:
