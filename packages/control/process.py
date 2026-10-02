@@ -13,7 +13,6 @@ from control.consumer.consumer import Consumer
 from control.consumer.usage import ConsumerUsage
 from helpermodules import timecheck
 from helpermodules.phase_handling import voltages_mean
-from helpermodules.pub import Pub
 from helpermodules.utils._thread_handler import joined_thread_handler
 from modules.common.abstract_consumer import CurrentValues
 from modules.common.abstract_io import AbstractIoDevice
