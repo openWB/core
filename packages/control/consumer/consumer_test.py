@@ -42,7 +42,7 @@ def test_get_parameter_clears_previous_state_string_when_switch_interval_is_acti
     consumer.data.set.state_str_prev = "previous state"
 
     # execution
-    _, _, state_string, _, _ = consumer.get_parameter()
+    _, state_string, _, _ = consumer.get_parameter()
 
     # evaluation
     assert state_string is None
@@ -141,6 +141,45 @@ def test_wait_for_start_handler(
     assert result == expected_result
     assert consumer.data.set.wait_for_start_state == expected_state
     assert charging_func.call_count == func_calls
+
+
+@pytest.mark.parametrize(
+    "usage_type, expected_result, expected_state",
+    [
+        pytest.param(
+            ConsumerUsage.SUSPENDABLE_ONOFF,
+            (0, Consumer.WAIT_FOR_STOPPED_DEVICE, Chargemode.STOP, True),
+            WaitForStartStates.WAIT_FOR_STOPPED_DEVICE,
+            id="on-off-uses-standby-threshold",
+        ),
+        pytest.param(
+            ConsumerUsage.SUSPENDABLE_TUNABLE,
+            (10, Consumer.WAIT_FOR_DEVICE_START, Chargemode.INSTANT_CHARGING, True),
+            WaitForStartStates.WAIT_FOR_DEVICE_START,
+            id="tunable-uses-min-current-threshold",
+        ),
+    ],
+)
+def test_wait_for_start_handler_standby_threshold_depends_on_usage_type(
+        consumer: Consumer,
+        usage_type: ConsumerUsage,
+        expected_result: Tuple[float, str, Chargemode, bool],
+        expected_state: WaitForStartStates):
+    # setup
+    consumer.data.usage.wait_for_start_active = True
+    consumer.data.usage.type = usage_type
+    consumer.data.set.wait_for_start_state = WaitForStartStates.WAIT_FOR_DEVICE_START
+    # 0.2 A liegt über STANDBY_THRESHOLD (0.15), aber unter min_current (6 A)
+    consumer.data.get.currents = [0.2, 0.2, 0.2]
+    charging_func = Mock(return_value=(11, "ok", Chargemode.PV_CHARGING))
+
+    # execution
+    result = consumer.wait_for_start_handler(charging_func)
+
+    # evaluation
+    assert result == expected_result
+    assert consumer.data.set.wait_for_start_state == expected_state
+    assert charging_func.call_count == 0
 
 
 @pytest.mark.parametrize(

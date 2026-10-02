@@ -20,6 +20,7 @@ log = logging.getLogger(__name__)
 
 class Consumer(Load):
     PAUSE_BETWEEN_WAIT_FOR_START_TEST_RUNS = 3600
+    STANDBY_THRESHOLD = 0.15  # 35 Watt pro Phase
 
     def __init__(self, index: int):
         self.num = index
@@ -415,10 +416,11 @@ class Consumer(Load):
             self, func: Callable[[], Tuple[float, Optional[str], Chargemode]]
     ) -> Tuple[float, Optional[str], Chargemode, bool]:
         chargemode_defined_by_wait_for_start_handler = False
+        standby_threshold = self.STANDBY_THRESHOLD if self.data.usage.type in ON_OFF else self.data.config.min_current
         if self.data.usage.wait_for_start_active:
             if self.data.set.wait_for_start_state == WaitForStartStates.WAIT_FOR_DEVICE_START:
                 # mit Minimalstrom prüfen, damit Standby-Geräte nicht als laufend erkannt werden
-                if max(self.data.get.currents) > self.data.config.min_current:
+                if max(self.data.get.currents) > standby_threshold:
                     self.data.set.wait_for_start_state = WaitForStartStates.WAIT_FOR_STOPPED_DEVICE
                     required_current = 0
                     message = self.WAIT_FOR_STOPPED_DEVICE
@@ -432,7 +434,7 @@ class Consumer(Load):
                     chargemode_defined_by_wait_for_start_handler = True
             elif self.data.set.wait_for_start_state == WaitForStartStates.WAIT_FOR_STOPPED_DEVICE:
                 # mit Minimalstrom prüfen, damit Standby-Geräte nicht als laufend erkannt werden
-                if max(self.data.get.currents) < self.data.config.min_current:
+                if max(self.data.get.currents) < standby_threshold:
                     self.data.set.wait_for_start_state = WaitForStartStates.DEVICE_WAITING_FOR_START
                     required_current, message, submode = func()
                     message = self.DEVICE_WAITING_FOR_START + " " + (message if message else "")
@@ -444,7 +446,7 @@ class Consumer(Load):
                     chargemode_defined_by_wait_for_start_handler = True
             elif self.data.set.wait_for_start_state == WaitForStartStates.DEVICE_WAITING_FOR_START:
                 # mit Minimalstrom prüfen, damit Standby-Geräte nicht als laufend erkannt werden
-                if max(self.data.get.currents) > self.data.config.min_current:
+                if max(self.data.get.currents) > standby_threshold:
                     self.data.set.wait_for_start_state = WaitForStartStates.START_SIGNAL_RECEIVED
                     required_current, message, submode = func()
                 else:
