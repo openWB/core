@@ -783,16 +783,12 @@ export const useMqttStore = defineStore('mqtt', () => {
 
   /**
    * Check if user management is active
-   * Defaults to true if the value is not set as this may be due to insufficient permissions
+   * Returns false until the retained value is received, the topic is readable for all clients (including anonymous)
    * @returns boolean
    */
   const userManagementActive: ComputedRef<boolean> = computed(() => {
     return (
-      getValue.value(
-        'openWB/system/security/user_management_active',
-        undefined,
-        true,
-      ) === true
+      getValue.value('openWB/system/security/user_management_active') === true
     );
   });
 
