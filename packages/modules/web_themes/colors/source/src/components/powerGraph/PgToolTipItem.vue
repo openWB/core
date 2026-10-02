@@ -136,9 +136,7 @@ function height() {
 		Object.entries(props.entry).filter(
 			([k, v]) =>
 				k != 'selfUsage' && !k.startsWith('soc') && v != null && v > 0,
-		).length *
-			20 +
-		2
+		).length * 22 + 2 
 	)
 }
 function pvs() {
