@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from enum import IntEnum
-from typing import Optional, TypedDict, Any
+from typing import TypedDict, Any
 from modules.common.abstract_device import AbstractBat
 from modules.common.component_state import BatState
 from modules.common.component_type import ComponentDescriptor
@@ -11,6 +11,7 @@ from modules.common.store import get_component_value_store
 from modules.devices.sample_modbus.sample_modbus.config import SampleBatSetup
 from modules.common.utils.peak_filter import PeakFilter
 from modules.common.component_type import ComponentType
+from control.bat import Set as SetPoint
 
 
 class KwargsDict(TypedDict):
@@ -79,11 +80,11 @@ class SampleBat(AbstractBat):
         )
         self.store.set(bat_state)
 
-    def set_power_limit(self, power_limit: Optional[int]) -> None:
+    def set_power_limit(self, setpoint: SetPoint) -> None:
         # Wenn der Speicher die Steuerung der Ladeleistung unterstützt, muss bei Übergabe einer Zahl auf aktive
         # Speichersteurung umgeschaltet werden, sodass der Speicher mit der übergebenen Leistung lädt/entlädt. Wird
         # None übergeben, muss der Speicher die Null-Punkt-Ausregelung selbst übernehmen.
-        self.client.write_register(reg, power_limit)
+        self.client.write_register(reg, setpoint.power_limit)
         # Wenn der Speicher keine Steuerung der Ladeleistung unterstützt
         pass
 
