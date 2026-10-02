@@ -58,7 +58,7 @@ class Consumer(Load):
                                                      self.data.get.voltages[i])
                 self.data.get.phases_in_use = self.data.config.connected_phases
                 self.data.set.phases_to_use = self.data.config.connected_phases
-                self.data.get.charge_state = True if self.data.get.power > 0 else False
+                self.data.get.charge_state = max(self.data.get.currents) > self.STANDBY_THRESHOLD
                 self.reset_chargemode_at_time()
                 self.is_switch_interval_elapsed()
                 required_current, message, mode, submode = self.get_parameter()
