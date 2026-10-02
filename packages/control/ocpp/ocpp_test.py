@@ -10,8 +10,10 @@ from control.chargepoint.chargepoint_template import CpTemplate
 from control.counter import Counter
 from control.ev.ev import Ev
 from control.ocpp import ocpp_client
+from control.ocpp import ocpp_transaction_coordinator
 from control.ocpp.ocpp_chargepoint import OcppChargePoint
-from control.ocpp.ocpp_client import OcppClient, OcppTransaction, PendingStop, TransactionState
+from control.ocpp.ocpp_client import OcppClient
+from control.ocpp.ocpp_transaction_coordinator import TransactionCoordinator
 from ocpp.v16.enums import ChargePointStatus, MessageTrigger, TriggerMessageStatus
 from modules.chargepoints.mqtt.chargepoint_module import ChargepointModule
 from modules.chargepoints.mqtt.config import Mqtt
@@ -287,20 +289,18 @@ def test_offline_stop_is_persisted(monkeypatch):
                     transaction_id=42,
                     transaction_id_tag="TAG",
                     pending_transactions=[],
-                    tag_accepted=test_trigger_status_message_after_confirmation,
+                    tag_accepted=False,
                 )
             )
         ),
     )
     pub = Mock()
-    client = object.__new__(OcppClient)
-    client._transactions = {}
-    client.connections = {}
+    coordinator = TransactionCoordinator(ensure_connected=AsyncMock(return_value=None))
 
-    monkeypatch.setattr(ocpp_client, "get_cp_from_chargebox_id", lambda _: openwb_cp)
-    monkeypatch.setattr(ocpp_client, "Pub", lambda: SimpleNamespace(pub=pub))
+    monkeypatch.setattr(ocpp_transaction_coordinator, "get_cp_from_chargebox_id", lambda _: openwb_cp)
+    monkeypatch.setattr(ocpp_transaction_coordinator, "Pub", lambda: SimpleNamespace(pub=pub))
 
-    asyncio.run(client._request_stop("box-1", 1234, "", "EVDisconnected"))
+    asyncio.run(coordinator.stop("box-1", 1234, "", "EVDisconnected"))
 
     # nach dem die Transaktion gepseichert wurde, wird die:
     # pending_transaktion gespeichert
@@ -345,16 +345,15 @@ def test_persisted_stop_is_sent_once(monkeypatch):
         apply_pending_availability=AsyncMock(),
     )
     connection = SimpleNamespace(cp=cp)
-    client = object.__new__(OcppClient)
-    client._transactions = {}
+    coordinator = TransactionCoordinator(ensure_connected=AsyncMock())
     pub = Mock()
 
-    monkeypatch.setattr(ocpp_client, "get_cp_from_chargebox_id", lambda _: openwb_cp)
-    monkeypatch.setattr(ocpp_client, "Pub", lambda: SimpleNamespace(pub=pub))
+    monkeypatch.setattr(ocpp_transaction_coordinator, "get_cp_from_chargebox_id", lambda _: openwb_cp)
+    monkeypatch.setattr(ocpp_transaction_coordinator, "Pub", lambda: SimpleNamespace(pub=pub))
 
     async def replay_twice():
-        await client._play_pending_transactions("box-1", connection)
-        await client._play_pending_transactions("box-1", connection)
+        await coordinator.on_connected("box-1", connection)
+        await coordinator.on_connected("box-1", connection)
 
     asyncio.run(replay_twice())
 

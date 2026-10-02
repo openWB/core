@@ -177,6 +177,12 @@ class Chargepoint(ChargepointRfidMixin, Load):
             print("#####################################")
             message = "Keine Ladung, da OCPP den Ladepunkt auf INOPERATIV gesetzt hat."
             state = False
+        elif self.data.get.ocpp.reset:
+            print("#####################################")
+            print("OCPP Reset aktiv")
+            print("#####################################")
+            message = "Keine Ladung, da ein OCPP Reset durchgeführt wurde. Stecker ziehen und neu verbinden für nächsten Ladevorgang..."
+            state = False
 
         elif self.data.get.ocpp.remote_stop:
             print("#####################################")
@@ -688,9 +694,12 @@ class Chargepoint(ChargepointRfidMixin, Load):
     def update(self, ev_list: Dict[str, Ev]) -> None:
         try:
             # Wenn Stecker abgezogen wurde, reset remote_stop
-            if self.data.get.ocpp.remote_stop and self.data.get.plug_state is False:
+            if (self.data.get.ocpp.remote_stop or self.data.get.ocpp.reset) and self.data.get.plug_state is False:
                 self.data.get.ocpp.remote_stop = False
                 Pub().pub(f"openWB/set/chargepoint/"f"{self.num}/get/ocpp/remote_stop", False)
+
+                self.data.get.ocpp.reset = False
+                Pub().pub(f"openWB/set/chargepoint/"f"{self.num}/get/ocpp/reset", False)
 
             self._validate_rfid()
             charging_possible, message = self.is_charging_possible()
@@ -951,7 +960,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
         if self.data.get.ocpp.availability is False:
             return ChargePointStatus.unavailable
 
-        if self.data.get.ocpp.remote_stop:
+        if self.data.get.ocpp.remote_stop or self.data.get.ocpp.reset:
             return ChargePointStatus.finishing
 
         if self.data.get.fault_state:

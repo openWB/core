@@ -595,7 +595,8 @@ class SetData:
                 "/get/ocpp/remote_stop" in msg.topic or
                 "/get/ocpp/tag_accepted" in msg.topic or
                 "/get/ocpp/test_reconnect" in msg.topic or
-                "/get/ocpp/connected" in msg.topic):
+                "/get/ocpp/connected" in msg.topic or
+                "/get/ocpp/reset" in msg.topic):
             self._validate_value(msg, bool)
         elif "/get/fault_state" in msg.topic:
             self._validate_value(msg, int, [(0, 2)])
