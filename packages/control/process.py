@@ -55,16 +55,10 @@ class Process:
                         control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
                         cp.data.set.current = 0
 
-                    if cp.data.get.state_str is not None:
-                        Pub().pub("openWB/set/chargepoint/"+str(cp.num)+"/get/state_str",
-                                  cp.data.get.state_str)
-                    else:
-                        if cp.data.get.charge_state:
-                            Pub().pub(
-                                f"openWB/set/chargepoint/{cp.num}/get/state_str", "Fahrzeug lädt.")
-                        else:
-                            Pub().pub(
-                                f"openWB/set/chargepoint/{cp.num}/get/state_str", "Ladevorgang wird gestartet... ")
+                    if cp.data.get.charge_state:
+                        cp.data.get.state_str = f"Fahrzeug lädt. {cp.data.get.state_str if cp.data.get.state_str is not None else ''}"
+                    elif cp.data.set.current != 0:
+                        cp.data.get.state_str = f"Strom freigegeben, warten auf Fahrzeug. {cp.data.get.state_str if cp.data.get.state_str is not None else ''}"
                     if cp.chargepoint_module.fault_state.fault_state != FaultStateLevel.NO_ERROR:
                         cp.chargepoint_module.fault_state.store_error()
                     modules_threads.append(self._start_charging(cp))
@@ -87,11 +81,10 @@ class Process:
                             consumer.data.get.state_str = "Messwerte des Verbrauchers werden erfasst."
                         elif consumer.data.usage.type == ConsumerUsage.SELF_CONTROLLED:
                             consumer.data.get.state_str = "Messwerte werden an den Verbraucher übermittelt."
-                        else:
-                            if consumer.data.get.charge_state:
-                                consumer.data.get.state_str = "Verbraucher läuft."
-                            else:
-                                consumer.data.get.state_str = "Verbraucher wird gestartet... "
+                    if consumer.data.get.charge_state:
+                        consumer.data.get.state_str = f"Verbraucher läuft. {consumer.data.get.state_str if consumer.data.get.state_str is not None else ''}"
+                    elif consumer.data.set.current != 0:
+                        consumer.data.get.state_str += f"Strom freigegeben, warten auf Verbraucher. {consumer.data.get.state_str if consumer.data.get.state_str is not None else ''}"
 
                     consumer_thread = self._start_consumer(consumer)
                     if consumer_thread is not None:

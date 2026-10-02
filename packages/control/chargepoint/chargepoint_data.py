@@ -137,7 +137,7 @@ class Get:
     serial_number: Optional[str] = None
     soc: Optional[float] = None
     soc_timestamp: Optional[int] = None
-    state_str: Optional[str] = None
+    state_str: Optional[str] = field(default=None, metadata={"topic": "get/state_str"})
     vehicle_id: Optional[str] = None
     version: Optional[str] = None
     voltages: List[float] = field(default_factory=voltages_list_factory)
