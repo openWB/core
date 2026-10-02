@@ -18,31 +18,19 @@
         <q-separator inset />
 
         <q-card-section>
-          <div class="text-subtitle2">Betriebsmodus umstellen</div>
-          <q-btn-group spread outline class="q-mt-sm">
-            <q-btn
-              size="sm"
-              :outline="resetEnabled"
-              :color="!resetEnabled ? 'negative' : 'grey'"
-              label="Nein"
-              @click="setResetEnabled(false)"
+          <div class="row items-center justify-between">
+            <div class="text-subtitle2 q-mr-sm">Betriebsmodus umstellen</div>
+            <ToggleStandard
+              :model-value="resetEnabled"
+              :size="'sm'"
+              color="positive"
+              @update:model-value="setResetEnabled"
             />
-            <q-btn
-              size="sm"
-              :outline="!resetEnabled"
-              :color="resetEnabled ? 'positive' : 'grey'"
-              label="Ja"
-              @click="setResetEnabled(true)"
-            />
-          </q-btn-group>
+          </div>
 
           <template v-if="resetEnabled">
-            <q-input
-              v-model="resetTime"
-              type="time"
-              label="Uhrzeit"
-              class="q-mt-sm"
-            />
+            <q-separator inset class="q-mt-sm" />
+            <q-input v-model="resetTime" type="time" label="Uhrzeit" />
 
             <div class="text-subtitle2 q-mt-md">Wiederholung</div>
             <q-btn-group spread outline class="q-mt-sm">
@@ -67,20 +55,17 @@
 
             <div
               v-if="resetMode === 'weekly'"
-              class="row q-col-gutter-xs q-mt-sm"
+              class="row items-center q-gutter-sm justify-center no-wrap q-mt-xs"
             >
-              <div
-                v-for="(day, index) in weekDays"
-                :key="day"
-                class="col"
-              >
+              <div v-for="(day, index) in weekDays" :key="day">
                 <q-btn
-                  no-caps
-                  size="sm"
-                  class="full-width"
-                  :outline="!resetWeeklyDays[index]"
-                  :color="resetWeeklyDays[index] ? 'primary' : 'grey'"
+                  round
+                  :size="$q.platform.is.mobile ? '0.8rem' : '0.7rem'"
+                  :flat="!resetWeeklyDays[index]"
+                  :outline="resetWeeklyDays[index]"
+                  color="primary"
                   :label="day"
+                  :class="{ deselected: !resetWeeklyDays[index] }"
                   @click="toggleWeeklyDay(index)"
                 />
               </div>
@@ -125,6 +110,7 @@ import { useMqttStore } from 'src/stores/mqtt-store';
 import { useChargeModes } from 'src/composables/useChargeModes';
 import type { ConsumerResetTrigger } from 'src/stores/mqtt-store-model';
 import ConsumerModeButtons from './ConsumerModeButtons.vue';
+import ToggleStandard from './ToggleStandard.vue';
 
 const props = defineProps<{
   consumerId: number;
@@ -203,7 +189,9 @@ const consumerUsageType = computed(() =>
 
 /** Meter-only consumers cannot be controlled, so hide the mode controls. */
 const showModeControls = computed(
-  () => consumerUsageType.value !== 'meter_only' && consumerUsageType.value !== 'self_controlled',
+  () =>
+    consumerUsageType.value !== 'meter_only' &&
+    consumerUsageType.value !== 'self_controlled',
 );
 </script>
 
