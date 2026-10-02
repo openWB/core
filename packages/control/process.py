@@ -13,7 +13,6 @@ from control.consumer.consumer import Consumer
 from control.consumer.usage import ConsumerUsage
 from helpermodules import timecheck
 from helpermodules.phase_handling import voltages_mean
-from helpermodules.pub import Pub
 from helpermodules.utils._thread_handler import joined_thread_handler
 from modules.common.abstract_consumer import CurrentValues
 from modules.common.abstract_io import AbstractIoDevice
@@ -33,6 +32,10 @@ control_command_log = logging.getLogger("steuve_control_command")
 class Process:
     def __init__(self) -> None:
         pass
+
+    def _prepend_state_message(self, prefix: str, state_str: Optional[str]) -> str:
+        suffix = state_str or ""
+        return f"{prefix} {suffix}".strip()
 
     def process_algorithm_results(self) -> None:
         try:
@@ -55,16 +58,11 @@ class Process:
                         control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
                         cp.data.set.current = 0
 
-                    if cp.data.get.state_str is not None:
-                        Pub().pub("openWB/set/chargepoint/"+str(cp.num)+"/get/state_str",
-                                  cp.data.get.state_str)
-                    else:
-                        if cp.data.get.charge_state:
-                            Pub().pub(
-                                f"openWB/set/chargepoint/{cp.num}/get/state_str", "Fahrzeug lädt.")
-                        else:
-                            Pub().pub(
-                                f"openWB/set/chargepoint/{cp.num}/get/state_str", "Ladevorgang wird gestartet... ")
+                    if cp.data.get.charge_state:
+                        cp.data.get.state_str = self._prepend_state_message("Fahrzeug lädt.", cp.data.get.state_str)
+                    elif cp.data.set.current != 0:
+                        cp.data.get.state_str = self._prepend_state_message(
+                            "Strom freigegeben, warten auf Fahrzeug.", cp.data.get.state_str)
                     if cp.chargepoint_module.fault_state.fault_state != FaultStateLevel.NO_ERROR:
                         cp.chargepoint_module.fault_state.store_error()
                     modules_threads.append(self._start_charging(cp))
@@ -87,11 +85,12 @@ class Process:
                             consumer.data.get.state_str = "Messwerte des Verbrauchers werden erfasst."
                         elif consumer.data.usage.type == ConsumerUsage.SELF_CONTROLLED:
                             consumer.data.get.state_str = "Messwerte werden an den Verbraucher übermittelt."
-                        else:
-                            if consumer.data.get.charge_state:
-                                consumer.data.get.state_str = "Verbraucher läuft."
-                            else:
-                                consumer.data.get.state_str = "Verbraucher wird gestartet... "
+                    if consumer.data.get.charge_state:
+                        consumer.data.get.state_str = self._prepend_state_message(
+                            "Verbraucher läuft.", consumer.data.get.state_str)
+                    elif consumer.data.set.current != 0:
+                        consumer.data.get.state_str = self._prepend_state_message(
+                            "Strom freigegeben, warten auf Verbraucher.", consumer.data.get.state_str)
 
                     consumer_thread = self._start_consumer(consumer)
                     if consumer_thread is not None:
