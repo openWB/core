@@ -74,7 +74,7 @@ class Consumer(Load):
         except Exception:
             log.exception(f"Fehler bei Verbraucher {self.num}")
 
-    def _get_min_current(self):
+    def _get_min_current(self) -> float:
         if self.data.usage.type == ConsumerUsage.SUSPENDABLE_TUNABLE:
             return self.data.config.min_current
         else:
@@ -118,7 +118,6 @@ class Consumer(Load):
         if self.data.set.switch_interval_elapsed is False:
             log.debug("Intervall für neuen Schaltbefehl nicht abgelaufen.")
             return (0,
-                    0,
                     None,
                     self.data.control_parameter.chargemode,
                     self.data.control_parameter.submode)
