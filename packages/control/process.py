@@ -34,6 +34,10 @@ class Process:
     def __init__(self) -> None:
         pass
 
+    def _prepend_state_message(self, prefix: str, state_str: Optional[str]) -> str:
+        suffix = state_str or ""
+        return f"{prefix} {suffix}".strip()
+
     def process_algorithm_results(self) -> None:
         try:
             modules_threads: List[Thread] = []
@@ -56,9 +60,10 @@ class Process:
                         cp.data.set.current = 0
 
                     if cp.data.get.charge_state:
-                        cp.data.get.state_str = f"Fahrzeug lädt. {cp.data.get.state_str if cp.data.get.state_str is not None else ''}"
+                        cp.data.get.state_str = self._prepend_state_message("Fahrzeug lädt.", cp.data.get.state_str)
                     elif cp.data.set.current != 0:
-                        cp.data.get.state_str = f"Strom freigegeben, warten auf Fahrzeug. {cp.data.get.state_str if cp.data.get.state_str is not None else ''}"
+                        cp.data.get.state_str = self._prepend_state_message(
+                            "Strom freigegeben, warten auf Fahrzeug.", cp.data.get.state_str)
                     if cp.chargepoint_module.fault_state.fault_state != FaultStateLevel.NO_ERROR:
                         cp.chargepoint_module.fault_state.store_error()
                     modules_threads.append(self._start_charging(cp))
@@ -82,9 +87,11 @@ class Process:
                         elif consumer.data.usage.type == ConsumerUsage.SELF_CONTROLLED:
                             consumer.data.get.state_str = "Messwerte werden an den Verbraucher übermittelt."
                     if consumer.data.get.charge_state:
-                        consumer.data.get.state_str = f"Verbraucher läuft. {consumer.data.get.state_str if consumer.data.get.state_str is not None else ''}"
+                        consumer.data.get.state_str = self._prepend_state_message(
+                            "Verbraucher läuft.", consumer.data.get.state_str)
                     elif consumer.data.set.current != 0:
-                        consumer.data.get.state_str += f"Strom freigegeben, warten auf Verbraucher. {consumer.data.get.state_str if consumer.data.get.state_str is not None else ''}"
+                        consumer.data.get.state_str = self._prepend_state_message(
+                            "Strom freigegeben, warten auf Verbraucher.", consumer.data.get.state_str)
 
                     consumer_thread = self._start_consumer(consumer)
                     if consumer_thread is not None:
