@@ -8,8 +8,10 @@ import websockets
 from control import data
 from control.ocpp import ocpp_client
 from control.ocpp import ocpp_chargepoint
+from control.ocpp import ocpp_transaction_coordinator
 from control.ocpp.ocpp_chargepoint import OcppChargePoint
-from control.ocpp.ocpp_client import OcppClient, TransactionState
+from control.ocpp.ocpp_client import OcppClient
+from control.ocpp.ocpp_transaction_coordinator import TransactionCoordinator, TransactionState
 from ocpp.v16.enums import (AvailabilityStatus, AvailabilityType, ChargePointStatus,
                             ConfigurationStatus, RegistrationStatus, Action)
 from ocpp.v16 import ChargePoint as ServerChargePoint, call_result
@@ -41,22 +43,20 @@ def transaction_setup(monkeypatch):
         _pending_availability={},
     )
     connection = SimpleNamespace(cp=charge_point)
-    client = object.__new__(OcppClient)
-    client._transactions = {}
-    client._start_blocked = set()
-    client._ensure_connected = AsyncMock(return_value=connection)
-    monkeypatch.setattr(ocpp_client, "get_cp_from_chargebox_id", lambda _: openwb_cp)
-    return client, connection, openwb_cp
+    ensure_connected = AsyncMock(return_value=connection)
+    coordinator = TransactionCoordinator(ensure_connected=ensure_connected)
+    monkeypatch.setattr(ocpp_transaction_coordinator, "get_cp_from_chargebox_id", lambda _: openwb_cp)
+    return coordinator, connection, openwb_cp
 
 
 def test_start_publishes_active_transaction(transaction_setup, mock_pub):
-    client, connection, openwb_cp = transaction_setup
+    coordinator, connection, openwb_cp = transaction_setup
 
-    result = asyncio.run(client._request_start("box-1", 1, "TAG", 100))
+    result = asyncio.run(coordinator.start("box-1", 1, "TAG", 100))
 
     assert result is True
-    assert client._transactions["box-1"].state == TransactionState.ACTIVE
-    assert client._transactions["box-1"].transaction_id == 42
+    assert coordinator.get_state("box-1") == TransactionState.ACTIVE
+    assert coordinator.get_transaction_id("box-1") == 42
     assert openwb_cp.data.get.ocpp.transaction_id == 42
     assert openwb_cp.data.get.ocpp.tag_accepted is True
     connection.cp._authorize.assert_awaited_once_with(id_tag="TAG")
@@ -68,16 +68,16 @@ def test_start_publishes_active_transaction(transaction_setup, mock_pub):
 
 @pytest.mark.parametrize("rejected_step", ["authorize", "start"])
 def test_rejected_start_does_not_release_charging(transaction_setup, rejected_step):
-    client, connection, openwb_cp = transaction_setup
+    coordinator, connection, openwb_cp = transaction_setup
     response = SimpleNamespace(id_tag_info={"status": "Blocked"}, transaction_id=None)
     if rejected_step == "authorize":
         connection.cp._authorize.return_value = response
     else:
         connection.cp._start_transaction.return_value = response
 
-    assert asyncio.run(client._request_start("box-1", 1, "TAG", 100)) is True
+    assert asyncio.run(coordinator.start("box-1", 1, "TAG", 100)) is True
 
-    assert client._transactions["box-1"].state == TransactionState.REJECTED
+    assert coordinator.get_state("box-1") == TransactionState.REJECTED
     assert openwb_cp.data.get.ocpp.tag_accepted is False
     assert openwb_cp.data.get.ocpp.transaction_id is None
     if rejected_step == "authorize":
@@ -85,23 +85,23 @@ def test_rejected_start_does_not_release_charging(transaction_setup, rejected_st
 
 
 def test_start_response_error_does_not_retry_same_tag(transaction_setup):
-    client, connection, openwb_cp = transaction_setup
+    coordinator, connection, openwb_cp = transaction_setup
     connection.cp._start_transaction.side_effect = RuntimeError("response lost")
 
     async def check():
-        assert await client._request_start("box-1", 1, "TAG", 100) is False
-        assert await client._request_start("box-1", 1, "TAG", 100) is False
+        assert await coordinator.start("box-1", 1, "TAG", 100) is False
+        assert await coordinator.start("box-1", 1, "TAG", 100) is False
 
     asyncio.run(check())
 
-    assert client._transactions["box-1"].state == TransactionState.ERROR
+    assert coordinator.get_state("box-1") == TransactionState.ERROR
     assert openwb_cp.data.get.ocpp.tag_accepted is False
     connection.cp._start_transaction.assert_awaited_once()
 
 
 @pytest.mark.parametrize("waiting_for", ["authorize", "start"])
 def test_stop_during_start_is_not_lost(transaction_setup, waiting_for):
-    client, connection, openwb_cp = transaction_setup
+    coordinator, connection, openwb_cp = transaction_setup
     original = getattr(connection.cp, f"_{waiting_for}" if waiting_for == "authorize" else "_start_transaction")
 
     async def check():
@@ -114,7 +114,7 @@ def test_stop_during_start_is_not_lost(transaction_setup, waiting_for):
             return original.return_value
 
         original.side_effect = delayed
-        start = asyncio.create_task(client._request_start("box-1", 1, "TAG", 100))
+        start = asyncio.create_task(coordinator.start("box-1", 1, "TAG", 100))
         try:
             await asyncio.wait_for(entered.wait(), timeout=5)
         except asyncio.TimeoutError:
@@ -122,7 +122,7 @@ def test_stop_during_start_is_not_lost(transaction_setup, waiting_for):
                 await start
             raise
         assert openwb_cp.data.get.ocpp.tag_accepted is False
-        assert await client._request_stop("box-1", 150, "", "EVDisconnected") is False
+        assert await coordinator.stop("box-1", 150, "", "EVDisconnected") is False
         release.set()
         await start
 
@@ -135,13 +135,13 @@ def test_stop_during_start_is_not_lost(transaction_setup, waiting_for):
         connection.cp._stop_transaction.assert_awaited_once_with(
             meter_stop=150, transaction_id=42, reason="EVDisconnected", id_tag="TAG",
         )
-        assert client._transactions["box-1"].state == TransactionState.IDLE
+        assert coordinator.get_state("box-1") == TransactionState.IDLE
         assert openwb_cp.data.get.ocpp.transaction_id is None
         assert openwb_cp.data.get.ocpp.tag_accepted is False
 
 
 def test_active_stop_clears_transaction_only_after_response(transaction_setup):
-    client, connection, openwb_cp = transaction_setup
+    coordinator, connection, openwb_cp = transaction_setup
 
     async def check():
         entered = asyncio.Event()
@@ -152,52 +152,52 @@ def test_active_stop_clears_transaction_only_after_response(transaction_setup):
             await release.wait()
 
         connection.cp._stop_transaction.side_effect = delayed_stop
-        await client._request_start("box-1", 1, "TAG", 100)
-        stop = asyncio.create_task(client._request_stop("box-1", 150, "", "EVDisconnected"))
+        await coordinator.start("box-1", 1, "TAG", 100)
+        stop = asyncio.create_task(coordinator.stop("box-1", 150, "", "EVDisconnected"))
         await entered.wait()
-        assert client._transactions["box-1"].state == TransactionState.STOPPING
+        assert coordinator.get_state("box-1") == TransactionState.STOPPING
         assert openwb_cp.data.get.ocpp.transaction_id == 42
-        assert await client._request_stop("box-1", 150, "", "EVDisconnected") is False
+        assert await coordinator.stop("box-1", 150, "", "EVDisconnected") is False
         release.set()
         assert await stop is True
 
     asyncio.run(check())
 
     connection.cp._stop_transaction.assert_awaited_once()
-    assert client._transactions["box-1"].state == TransactionState.IDLE
+    assert coordinator.get_state("box-1") == TransactionState.IDLE
     assert openwb_cp.data.get.ocpp.transaction_id is None
     assert openwb_cp.data.get.ocpp.tag_accepted is False
 
 
 def test_failed_stop_keeps_transaction_id(transaction_setup):
-    client, connection, openwb_cp = transaction_setup
+    coordinator, connection, openwb_cp = transaction_setup
     connection.cp._stop_transaction.side_effect = RuntimeError("response lost")
 
     async def check():
-        await client._request_start("box-1", 1, "TAG", 100)
-        assert await client._request_stop("box-1", 150, "", "EVDisconnected") is False
+        await coordinator.start("box-1", 1, "TAG", 100)
+        assert await coordinator.stop("box-1", 150, "", "EVDisconnected") is False
 
     asyncio.run(check())
 
-    assert client._transactions["box-1"].state == TransactionState.ERROR
-    assert client._transactions["box-1"].transaction_id == 42
+    assert coordinator.get_state("box-1") == TransactionState.ERROR
+    assert coordinator.get_transaction_id("box-1") == 42
     assert openwb_cp.data.get.ocpp.transaction_id == 42
 
 
 def test_offline_stop_is_replayed_once_after_reconnect(transaction_setup, mock_pub):
-    client, connection, openwb_cp = transaction_setup
+    coordinator, connection, openwb_cp = transaction_setup
 
     async def check():
-        await client._request_start("box-1", 1, "TAG", 100)
-        client._ensure_connected.return_value = None
-        assert await client._request_stop("box-1", 150, "", "EVDisconnected") is False
+        await coordinator.start("box-1", 1, "TAG", 100)
+        coordinator._ensure_connected.return_value = None
+        assert await coordinator.stop("box-1", 150, "", "EVDisconnected") is False
         assert openwb_cp.data.get.ocpp.pending_transactions == [{
             "action": "stop", "transaction_id": 42, "id_tag": "TAG",
             "imported": 150, "reason": "EVDisconnected",
         }]
-        client._ensure_connected.return_value = connection
-        await client._play_pending_transactions("box-1", connection)
-        await client._play_pending_transactions("box-1", connection)
+        coordinator._ensure_connected.return_value = connection
+        await coordinator.on_connected("box-1", connection)
+        await coordinator.on_connected("box-1", connection)
 
     asyncio.run(check())
 
@@ -205,7 +205,7 @@ def test_offline_stop_is_replayed_once_after_reconnect(transaction_setup, mock_p
         meter_stop=150, transaction_id=42, reason="EVDisconnected", id_tag="TAG",
     )
     assert openwb_cp.data.get.ocpp.pending_transactions == []
-    assert client._transactions["box-1"].state == TransactionState.IDLE
+    assert coordinator.get_state("box-1") == TransactionState.IDLE
     assert mock_pub.pub.call_args_list.count(
         call("openWB/set/chargepoint/1/get/ocpp/pending_transactions", [])
     ) == 1
@@ -328,6 +328,7 @@ def test_websocket_transaction_survives_reconnect(monkeypatch):
     )
     monkeypatch.setattr(ocpp_client, "get_cp_from_chargebox_id", lambda _: openwb_cp)
     monkeypatch.setattr(ocpp_chargepoint, "get_cp_from_chargebox_id", lambda _: openwb_cp)
+    monkeypatch.setattr(ocpp_transaction_coordinator, "get_cp_from_chargebox_id", lambda _: openwb_cp)
 
     class FakeCsms(ServerChargePoint):
         @on(Action.boot_notification)
@@ -377,21 +378,20 @@ def test_websocket_transaction_survives_reconnect(monkeypatch):
             client._connect_locks = {}
             client._wanted_connections = set()
             client._reconnect_tasks = {}
-            client._transactions = {}
-            client._start_blocked = set()
+            client.transactions = TransactionCoordinator(client._ensure_connected)
             client._meter_snapshots = {}
 
             connection = await client._ensure_connected("box-1")
             try:
                 assert connection.boot_accepted is True
-                assert await client._request_start("box-1", 1, "TAG", 100) is True
+                assert await client.transactions.start("box-1", 1, "TAG", 100) is True
                 connection = await client._ensure_connected("box-1", force=True)
                 assert connection.cp.transaction_id == 42
                 await connection.cp._meter_values(1, 42, [{
                     "timestamp": "2026-09-30T12:00:00Z",
                     "sampledValue": [{"value": "150", "unit": "Wh"}],
                 }])
-                assert await client._request_stop("box-1", 150, "", "EVDisconnected") is True
+                assert await client.transactions.stop("box-1", 150, "", "EVDisconnected") is True
             finally:
                 await client._cleanup_connection(connection)
 
