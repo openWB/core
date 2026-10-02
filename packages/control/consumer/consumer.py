@@ -3,7 +3,7 @@ import logging
 from typing import Callable, Dict, List, Optional, Tuple
 
 from control import data
-from control.consumer.usage import NOT_CONTROLLED
+from control.consumer.usage import NOT_CONTROLLED, ON_OFF
 from control.algorithm.utils import get_medium_charging_current
 from control.chargemode import Chargemode
 from control.chargepoint.chargepoint_state import CHARGING_STATES, ChargepointState
@@ -60,11 +60,11 @@ class Consumer(Load):
                 self.data.get.charge_state = True if self.data.get.power > 0 else False
                 self.reset_chargemode_at_time()
                 self.is_switch_interval_elapsed()
-                min_current, required_current, message, mode, submode = self.get_parameter()
+                required_current, message, mode, submode = self.get_parameter()
                 self.set_mode_changed(submode, mode)
                 if self.chargemode_changed or self.submode_changed:
                     data.data.counter_all_data.get_evu_counter().reset_switch_on_off(self)
-                self.set_control_parameter(min_current, required_current,
+                self.set_control_parameter(required_current,
                                            self.data.config.connected_phases, submode, mode)
                 self.set_state_and_log(message)
                 self.process_on_time()
@@ -73,6 +73,15 @@ class Consumer(Load):
                           f" Modus {mode}, Submodus {submode}, {message}")
         except Exception:
             log.exception(f"Fehler bei Verbraucher {self.num}")
+
+    def _get_min_current(self):
+        if self.data.usage.type == ConsumerUsage.SUSPENDABLE_TUNABLE:
+            return self.data.config.min_current
+        else:
+            if self.data.get.charge_state:
+                return get_medium_charging_current(self.data.get.currents)
+            else:
+                return self._convert_power_to_current(self.data.config.max_power)
 
     def process_on_time(self):
         if self.data.get.charge_state:
@@ -105,7 +114,7 @@ class Consumer(Load):
     SURPLUS_CONTINOUS_STILL_RUNNING = ("Verbraucher läuft ggf auch ohne ausreichend Überschuss weiter, da der "
                                        "Verbraucher nicht abgeschaltet werden darf.")
 
-    def get_parameter(self) -> Tuple[float, float, Optional[str], Optional[Chargemode], Chargemode]:
+    def get_parameter(self) -> Tuple[float, Optional[str], Optional[Chargemode], Chargemode]:
         if self.data.set.switch_interval_elapsed is False:
             log.debug("Intervall für neuen Schaltbefehl nicht abgelaufen.")
             return (0,
@@ -114,10 +123,6 @@ class Consumer(Load):
                     self.data.control_parameter.chargemode,
                     self.data.control_parameter.submode)
 
-        if self.data.usage.type == ConsumerUsage.SUSPENDABLE_TUNABLE:
-            min_current = self.data.config.min_current
-        else:
-            min_current = self._convert_power_to_current(self.data.config.max_power)
         required_current = 0
         submode = Chargemode.STOP
         mode = self.data.usage.chargemode
@@ -144,10 +149,10 @@ class Consumer(Load):
                 message = f"{message or ''} {tmp_message or ''}".strip()
             if self.data.usage.chargemode == Chargemode.STOP:
                 required_current, message, submode = self.stop()
-        return min_current, required_current, message, mode, submode
+        return required_current, message, mode, submode
 
     def _parse_required_current_by_usage(self, required_current: float) -> float:
-        if self.data.usage.type in [ConsumerUsage.CONTINUOUS, ConsumerUsage.SUSPENDABLE_ONOFF]:
+        if self.data.usage.type in ON_OFF:
             if self.data.get.charge_state:
                 return get_medium_charging_current(self.data.get.currents)
             else:
@@ -306,7 +311,7 @@ class Consumer(Load):
                 else:
                     message = self.SCHEDULED_CHARGING_EXPENSIVE_HOUR.format(get_hours_message())
                     submode = Chargemode.PV_CHARGING
-                    required_current = self._parse_required_current_by_usage(self.data.config.min_current)
+                    required_current = self._parse_required_current_by_usage(self._get_min_current())
             else:
                 now = datetime.datetime.today()
                 start_time = now + datetime.timedelta(seconds=remaining_time)
@@ -317,7 +322,7 @@ class Consumer(Load):
                     message = self.SCHEDULED_CHARGING_USE_PV.format(
                         f"am {start_time.strftime('%d.%m')} um {start_time.strftime('%-H:%M')} Uhr")
                 submode = Chargemode.PV_CHARGING
-                required_current = self._parse_required_current_by_usage(self.data.config.min_current)
+                required_current = self._parse_required_current_by_usage(self._get_min_current())
         return required_current, message, submode
 
     TIME_CHARGING_MIN_BAT_SOC_REACHED = ("Betrieb mit Zeitladen nach Speicher-SoC nicht möglich, da der SoC des"
@@ -380,18 +385,18 @@ class Consumer(Load):
                 message = self.CHARGING_PRICE_LOW
                 submode = Chargemode.INSTANT_CHARGING
             else:
-                required_current = self._parse_required_current_by_usage(self.data.config.min_current)
+                required_current = self._parse_required_current_by_usage(self._get_min_current())
                 message = self.CHARGING_PRICE_EXCEEDED
                 if self.data.control_parameter.state in CHARGING_STATES:
                     message += "Lädt mit Überschuss. "
                 submode = Chargemode.PV_CHARGING
         else:
-            required_current = self._parse_required_current_by_usage(self.data.config.min_current)
+            required_current = self._parse_required_current_by_usage(self._get_min_current())
             submode = Chargemode.PV_CHARGING
         return required_current, message, submode
 
     def pv_charging(self) -> Tuple[float, Optional[str], Chargemode]:
-        required_current = self._parse_required_current_by_usage(self.data.config.min_current)
+        required_current = self._parse_required_current_by_usage(self._get_min_current())
         message = None
         submode = Chargemode.PV_CHARGING
         return required_current, message, submode
@@ -481,12 +486,11 @@ class Consumer(Load):
                     self.data.usage.chargemode = self.data.usage.reset_chargemode.chargemode
 
     def set_control_parameter(self,
-                              min_current: float,
                               required_current: float,
                               phases: int,
                               submode: Chargemode,
                               mode: Optional[Chargemode]):
-        self.data.control_parameter.min_current = min_current
+        self.data.control_parameter.min_current = self._get_min_current()
         self.data.control_parameter.required_current = required_current
         self.data.control_parameter.phases = phases
         self.data.control_parameter.submode = submode

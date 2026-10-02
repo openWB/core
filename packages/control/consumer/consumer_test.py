@@ -261,6 +261,38 @@ def test_pv_charging(consumer: Consumer):
 
 
 @pytest.mark.parametrize(
+    "usage_type, charge_state, currents, expected_min_current",
+    [
+        pytest.param(ConsumerUsage.CONTINUOUS, True, [13, 13, 13], 13, id="continuous-while-running"),
+        pytest.param(ConsumerUsage.CONTINUOUS, False, [13, 13, 13], 10, id="continuous-while-stopped"),
+        pytest.param(ConsumerUsage.SUSPENDABLE_TUNABLE, True, [13, 13, 13], 6, id="tunable-while-running"),
+        pytest.param(ConsumerUsage.SUSPENDABLE_TUNABLE, False, [13, 13, 13], 6, id="tunable-while-stopped"),
+    ],
+)
+def test_set_control_parameter_sets_min_current_by_usage_and_charge_state(
+        consumer: Consumer,
+        usage_type: ConsumerUsage,
+        charge_state: bool,
+        currents: List[float],
+        expected_min_current: float):
+    # setup
+    consumer.data.usage.type = usage_type
+    consumer.data.get.charge_state = charge_state
+    consumer.data.get.currents = currents
+
+    # execution
+    consumer.set_control_parameter(
+        required_current=11,
+        phases=1,
+        submode=Chargemode.PV_CHARGING,
+        mode=Chargemode.PV_CHARGING,
+    )
+
+    # evaluation
+    assert consumer.data.control_parameter.min_current == expected_min_current
+
+
+@pytest.mark.parametrize(
     "on_time, plan_duration, diff_end_date, expected",
     [
         pytest.param(0, 3600, 6000, (2400, 3600), id="no-runtime-yet"),
