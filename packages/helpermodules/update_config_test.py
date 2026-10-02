@@ -521,7 +521,7 @@ def test_upgrade_datastore_151_removes_linked_extra_meter_counters_from_hierarch
         ),
     ],
 )
-def test_upgrade_datastore_152_migrates_legacy_modes(
+def test_upgrade_datastore_153_migrates_legacy_modes(
     legacy_reset: dict,
     expected_active: bool,
     expected_time: Optional[str],
@@ -532,10 +532,10 @@ def test_upgrade_datastore_152_migrates_legacy_modes(
     uc = UpdateConfig()
     uc.all_received_topics = {
         "openWB/consumer/1/usage": {"reset_chargemode": legacy_reset},
-        "openWB/system/datastore_version": [151],
+        "openWB/system/datastore_version": [152],
     }
 
-    uc.upgrade_datastore_152()
+    uc.upgrade_datastore_153()
 
     result = uc.all_received_topics["openWB/consumer/1/usage"]["reset_chargemode"]
     assert result["active"] is expected_active
@@ -546,7 +546,7 @@ def test_upgrade_datastore_152_migrates_legacy_modes(
     if expected_once is not None:
         assert result["frequency"]["once"] == expected_once
     assert result["chargemode"] == expected_chargemode
-    assert uc.all_received_topics["openWB/system/datastore_version"] == [151, 152]
+    assert uc.all_received_topics["openWB/system/datastore_version"] == [152, 153]
 
 
 @pytest.mark.parametrize("file_operation_version, finished, expected_calls", [
