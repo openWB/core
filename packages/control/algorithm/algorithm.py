@@ -5,7 +5,7 @@ from control import data
 from control.algorithm import common
 from control.algorithm.additional_current import AdditionalCurrent
 from control.algorithm.bidi_charging import Bidi
-from control.algorithm.filter_chargepoints import filtered_loads_to_str, group_loads_generator
+from control.algorithm.filter_chargepoints import filter_active_loads, filtered_loads_to_str, group_loads_generator
 from control.algorithm.min_current import MinCurrent
 from control.algorithm.no_current import NoCurrent
 from control.algorithm.surplus_controlled import SurplusControlled
@@ -33,6 +33,9 @@ class Algorithm:
             for cp in data.data.cp_data.values():
                 cp.reset_values_before_algorithm()
             for grouped_loads in group_loads_generator():
+                grouped_loads = filter_active_loads(grouped_loads)
+                if len(grouped_loads) == 0:
+                    continue
                 log.info(f"Gruppe {filtered_loads_to_str(grouped_loads)}")
                 log.info("**Mindestrom setzen**")
                 self.min_current.set_min_current(grouped_loads)
@@ -47,9 +50,9 @@ class Algorithm:
                     self.surplus_controlled.set_surplus_current(grouped_loads)
                 else:
                     log.info("Keine Leistung für PV-geführtes Laden übrig.")
-                log.info("**Bidi-(Ent-)Lade-Strom setzen**")
-                counter.set_raw_surplus_power_left()
             # Nullpunktausregelung, nachdem für alle anderen Ladepunkte der Soll-Strom feststeht
+            log.info("**Bidi-(Ent-)Lade-Strom setzen**")
+            counter.set_raw_surplus_power_left()
             self.bidi.set_bidi()
             self.no_current.set_no_current()
             self.no_current.set_none_current()
