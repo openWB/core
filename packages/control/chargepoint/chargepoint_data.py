@@ -90,6 +90,7 @@ class Ocpp:
     # -> wurde nichts gescheduled
     # - mach dementsprechend auch nix
     pending_availability: bool = False
+    reset: bool = False
 
 
 def empty_enery_source_dict_factory():
