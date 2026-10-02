@@ -853,7 +853,8 @@ class TransactionCoordinator:
         # erhalten und wird nach Reconnect
         # beendet.
         #
-
+        # -> wir bleiben hier im STOPPING State
+        # -> deswegen kein reset() und _commit()
         ocpp_data.transaction_id = None
         ocpp_data.transaction_id_tag = None
         ocpp_data.tag_accepted = False
