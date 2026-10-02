@@ -28,7 +28,7 @@ from helpermodules.pub import Pub, pub_single
 from control import data
 from modules.common.fault_state import FaultState
 from control.ocpp.helper import _get_formatted_time, get_cp_from_chargebox_id
-from control.ocpp.diagnostics import create_diagnostics, upload_diagnostics
+from control.ocpp.helper_diagnostics import create_diagnostics, upload_diagnostics
 
 log = logging.getLogger(__name__)
 
