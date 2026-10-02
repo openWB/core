@@ -12,6 +12,7 @@ import { PowerItemType, type PowerItem } from '@/assets/js/types'
 import { pvSystems, registry } from '@/assets/js/model'
 import { batteries } from '../batteryList/model'
 import { shDevices } from '../smartHome/model'
+import { consumers } from '../consumerList/model'
 import { counters } from '../counterList/model'
 import { computed } from 'vue'
 import { chargePoints } from '../chargePointList/model'
@@ -28,6 +29,7 @@ const categoriesToShow = [
 	PowerItemType.chargepoint,
 	PowerItemType.battery,
 	PowerItemType.device,
+	PowerItemType.consumer,
 	PowerItemType.counter,
 ]
 const emptyPowerItem = computed(() => {
@@ -56,6 +58,7 @@ const plotdata = computed(() =>
 	[registry.getItem('evuOut')].concat(
 		chargePointsToShow.value,
 		devicesToShow.value,
+		consumersToShow.value,
 		countersToShow.value,
 		batteriesToShow.value,
 		invertersToShow.value,
@@ -108,7 +111,13 @@ const devicesToShow = computed(() => {
 						return b.power - a.power
 					}),
 			)
-		: [registry.getItem('devices')]
+		: [registry.getItem('consumers')]
+})
+
+const consumersToShow = computed(() => {
+	return [...consumers.values()].sort((a, b) => {
+		return b.power - a.power
+	})
 })
 
 const batteriesToShow = computed(() =>

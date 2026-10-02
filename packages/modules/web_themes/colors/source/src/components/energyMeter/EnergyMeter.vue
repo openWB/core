@@ -86,6 +86,7 @@ import { computed } from 'vue'
 import { chargePoints } from '../chargePointList/model'
 import { shDevices } from '../smartHome/model'
 import { counters } from '../counterList/model'
+import { consumers } from '../consumerList/model.ts'
 
 //state
 const width = 500
@@ -129,7 +130,12 @@ const plotdata = computed(() => {
 			result.push(dev)
 		}
 	})
-
+	result.push(registry.getItem('consumers')!)
+	consumers.forEach((con) => {
+		if (con.showInGraph) {
+			result.push(con)
+		}
+	})
 	//result.push(registry.getItem('counters'))
 
 	counters.forEach((ctr) => {
