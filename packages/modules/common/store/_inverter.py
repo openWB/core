@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 from control import data
 from modules.common.component_state import InverterState
@@ -32,6 +33,7 @@ class PurgeInverterState:
     def __init__(self, delegate: LoggingValueStore) -> None:
         self.delegate = delegate
         self.zeroed_on_sustained_error = False
+        self.last_read_state: Optional[InverterState] = None
 
     def set(self, state: InverterState) -> None:
         self.last_read_state = state
@@ -41,12 +43,20 @@ class PurgeInverterState:
         self.zeroed_on_sustained_error = True
 
     def update(self) -> None:
-        # update() läuft auch ohne neues set() (Lesefehler) - fix_hybrid_values() darf daher nicht mutieren.
-        state = self.fix_hybrid_values(self.last_read_state)
-        if self.zeroed_on_sustained_error:
-            # Hybrid-Korrektur könnte die Nullung sonst durch Abzug der Speicherleistung aufheben.
-            state.power = 0
+        if self.last_read_state is None:
+            if not self.zeroed_on_sustained_error:
+                raise AttributeError  # noch nie erfolgreich gelesen, nichts zu publizieren
+            # nie erfolgreich gelesen, aber andauernder Fehler - trotzdem 0 publizieren, sonst bliebe ein
+            # alter MQTT-Retained-Wert von vor einem Neustart für immer stehen.
+            state = InverterState(power=0, exported=None)
             self.zeroed_on_sustained_error = False
+        else:
+            # update() läuft auch ohne neues set() (Lesefehler) - fix_hybrid_values() darf daher nicht mutieren.
+            state = self.fix_hybrid_values(self.last_read_state)
+            if self.zeroed_on_sustained_error:
+                # Hybrid-Korrektur könnte die Nullung sonst durch Abzug der Speicherleistung aufheben.
+                state.power = 0
+                self.zeroed_on_sustained_error = False
         self.delegate.set(state)
         self.delegate.update()
 

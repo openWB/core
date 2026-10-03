@@ -83,3 +83,15 @@ def test_no_extra_meter_just_delegates():
 
     # evaluation
     delegate.update.assert_called_once()
+
+
+def test_zero_power_on_sustained_error_without_prior_read_still_publishes():
+    # setup - noch nie erfolgreich gelesen, aber trotzdem publizieren, sonst bliebe ein MQTT-Retained-Wert
+    # von vor einem Neustart für immer stehen.
+    broker = ConsumerValueStoreBroker(1)
+
+    # execution
+    broker.zero_power_on_sustained_error()
+
+    # evaluation
+    assert broker.state.power == 0

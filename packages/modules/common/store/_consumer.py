@@ -15,7 +15,10 @@ class ConsumerValueStoreBroker(ValueStore[ConsumerState]):
         self.state = state
 
     def zero_power_on_sustained_error(self) -> None:
-        self.state.power = 0
+        if hasattr(self, "state"):
+            self.state.power = 0
+        else:
+            self.state = ConsumerState(power=0)
 
     def update(self) -> None:
         if self.state.currents is not None:

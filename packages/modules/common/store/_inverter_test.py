@@ -52,6 +52,33 @@ def test_fix_hybrid_values(params):
     assert vars(state) == vars(params.expected_state)
 
 
+def test_update_without_any_prior_read_is_a_noop():
+    # setup - Komponente noch nie erfolgreich gelesen (zB direkt nach einem Neustart)
+    delegate = Mock(delegate=Mock(num=1))
+    purge = PurgeInverterState(delegate=delegate)
+
+    # execution / evaluation
+    with pytest.raises(AttributeError):
+        purge.update()
+    delegate.set.assert_not_called()
+
+
+def test_zero_power_on_sustained_error_without_any_prior_read_still_publishes():
+    # setup - zB Modul-Fehler besteht schon seit dem Start, nie erfolgreich gelesen, aber trotzdem nach
+    # 60s publizieren, sonst bliebe ein MQTT-Retained-Wert von vor dem Neustart für immer stehen.
+    data.data.counter_all_data.data.get.hierarchy = STANDARD_HIERARCHY
+    delegate = Mock(delegate=Mock(num=1))
+    purge = PurgeInverterState(delegate=delegate)
+
+    # execution
+    purge.zero_power_on_sustained_error()
+    purge.update()
+
+    # evaluation
+    state = delegate.set.call_args.args[0]
+    assert state.power == 0
+
+
 def test_update_without_new_reading_does_not_apply_hybrid_fix_twice():
     # setup
     # Lesefehler darf die Hybrid-Korrektur nicht doppelt anwenden.

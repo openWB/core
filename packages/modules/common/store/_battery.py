@@ -12,7 +12,12 @@ class BatteryValueStoreBroker(ValueStore[BatState]):
         self.state = bat_state
 
     def zero_power_on_sustained_error(self) -> None:
-        self.state.power = 0
+        if hasattr(self, "state"):
+            self.state.power = 0
+        else:
+            # noch nie erfolgreich gelesen - trotzdem publizieren, sonst bliebe ein alter MQTT-Retained-Wert
+            # von vor einem Neustart für immer stehen.
+            self.state = BatState(power=0)
 
     def update(self):
         pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/currents", self.state.currents, 2)
