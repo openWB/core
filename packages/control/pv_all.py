@@ -59,6 +59,7 @@ class PvAll:
                 fault_state = 0
                 for module in data.data.pv_data.values():
                     try:
+                        # power ist bei andauerndem Fehler bereits vom Modul selbst auf 0 gesetzt.
                         power += module.data.get.power
                     except Exception:
                         log.exception(f"Fehler im allgemeinen PV-Modul für pv{module.num}")

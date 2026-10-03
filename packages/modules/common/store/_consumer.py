@@ -14,6 +14,12 @@ class ConsumerValueStoreBroker(ValueStore[ConsumerState]):
     def set(self, state: ConsumerState) -> None:
         self.state = state
 
+    def zero_power_on_sustained_error(self) -> None:
+        if hasattr(self, "state"):
+            self.state.power = 0
+        else:
+            self.state = ConsumerState(power=0)
+
     def update(self) -> None:
         if self.state.currents is not None:
             pub_to_broker(f"openWB/set/consumer/{self.num}/get/currents", self.state.currents, 2)
@@ -40,19 +46,24 @@ class PurgeConsumerState(ValueStore[ConsumerState]):
     def set(self, state: ConsumerState) -> None:
         self.delegate.set(state)
 
+    def zero_power_on_sustained_error(self) -> None:
+        self.delegate.zero_power_on_sustained_error()
+
     def update(self) -> None:
         extra_meter_id = data.data.consumer_data[f"consumer{self.delegate.delegate.num}"].data.extra_meter
         if extra_meter_id is not None:
             try:
-                consumer = get_hierarchy_obj_by_id(extra_meter_id, ComponentType.COUNTER.value)
-                consumer_state = consumer.store.delegate.delegate.state
+                counter = get_hierarchy_obj_by_id(extra_meter_id, ComponentType.COUNTER.value)
+                counter_state = counter.store.delegate.delegate.state
+                # Leistung kommt vom Zähler, nicht vom Verbraucher - dessen Fehlerzustand zählt hier nicht.
+                power = 0 if counter.fault_state.error_duration_exceeded() else counter_state.power
                 self.set(ConsumerState(
-                    power=consumer_state.power,
-                    imported=consumer_state.imported,
-                    exported=consumer_state.exported,
-                    voltages=consumer_state.voltages,
-                    currents=consumer_state.currents,
-                    powers=consumer_state.powers,
+                    power=power,
+                    imported=counter_state.imported,
+                    exported=counter_state.exported,
+                    voltages=counter_state.voltages,
+                    currents=counter_state.currents,
+                    powers=counter_state.powers,
                 ))
             except Exception:
                 raise Exception(f"Fehler beim Auslesen des Verbrauchszählers {extra_meter_id} "
