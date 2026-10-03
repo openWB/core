@@ -11,6 +11,9 @@ class BatteryValueStoreBroker(ValueStore[BatState]):
     def set(self, bat_state: BatState):
         self.state = bat_state
 
+    def zero_power_on_sustained_error(self) -> None:
+        self.state.power = 0
+
     def update(self):
         pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/currents", self.state.currents, 2)
         pub_to_broker("openWB/set/bat/"+str(self.num)+"/get/power", self.state.power, 2)
@@ -28,6 +31,9 @@ class PurgeBatteryState:
 
     def set(self, state: BatState) -> None:
         self.delegate.set(state)
+
+    def zero_power_on_sustained_error(self) -> None:
+        self.delegate.zero_power_on_sustained_error()
 
     def update(self) -> None:
         self.delegate.update()

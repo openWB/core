@@ -31,16 +31,27 @@ class InverterValueStoreBroker(ValueStore[InverterState]):
 class PurgeInverterState:
     def __init__(self, delegate: LoggingValueStore) -> None:
         self.delegate = delegate
+        self.zeroed_on_sustained_error = False
 
     def set(self, state: InverterState) -> None:
+        self.last_read_state = state
         self.delegate.set(state)
 
+    def zero_power_on_sustained_error(self) -> None:
+        self.zeroed_on_sustained_error = True
+
     def update(self) -> None:
-        state = self.fix_hybrid_values(self.delegate.delegate.state)
+        # update() läuft auch ohne neues set() (Lesefehler) - fix_hybrid_values() darf daher nicht mutieren.
+        state = self.fix_hybrid_values(self.last_read_state)
+        if self.zeroed_on_sustained_error:
+            # Hybrid-Korrektur könnte die Nullung sonst durch Abzug der Speicherleistung aufheben.
+            state.power = 0
+            self.zeroed_on_sustained_error = False
         self.delegate.set(state)
         self.delegate.update()
 
     def fix_hybrid_values(self, state: InverterState) -> InverterState:
+        """ mutiert state nicht - wird ggf. mehrfach auf denselben Rohwert angewendet. """
         children = data.data.counter_all_data.get_entry_of_element(self.delegate.delegate.num)["children"]
         power = state.power
         exported = state.exported
@@ -64,9 +75,14 @@ class PurgeInverterState:
                 # Manche Systeme werden auch aus dem Netz geladen, um einen Mindest-SoC zu halten.
                 if state.dc_power == 0:
                     power = 0
-        state.power = power
-        state.exported = exported
-        return state
+        return InverterState(
+            power=power,
+            exported=exported,
+            imported=imported,
+            currents=state.currents,
+            dc_power=state.dc_power,
+            serial_number=state.serial_number,
+        )
 
 
 def get_inverter_value_store(component_num: int) -> PurgeInverterState:

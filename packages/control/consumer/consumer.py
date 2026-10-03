@@ -8,7 +8,7 @@ from control.algorithm.utils import get_medium_charging_current
 from control.chargemode import Chargemode
 from control.chargepoint.chargepoint_state import CHARGING_STATES, ChargepointState
 from control.consumer.consumer_data import ConsumerData, ConsumerUsage, ResetModes, WaitForStartStates
-from control.error_state import effective_power, error_duration_exceeded
+from control.error_state import error_duration_exceeded, tick_error_timer
 from control.load_protocol import Load
 from control.text import format_next_time_charging_start
 from helpermodules import timecheck
@@ -47,11 +47,9 @@ class Consumer(Load):
     def update(self):
         try:
             self.setup_values_at_start()
-            # Einzige Stelle, die error_timer schreibt (ConsumerAll.get_consumer_sum() und
-            # Counter._set_power_left() lesen anschließend nur noch das bereits abgebildete get.power).
-            result = effective_power(self.data.get.power, self.data.get.fault_state, self.data.set.error_timer)
-            self.data.set.error_timer = result.error_timer
-            self.data.get.power = result.power
+            # power ist bei andauerndem Fehler bereits vom Modul auf 0 gesetzt; error_timer wird hier
+            # nur noch für das Schaltbefehl-Gate in get_parameter() getickt.
+            self.data.set.error_timer = tick_error_timer(self.data.get.fault_state, self.data.set.error_timer)
             if self.data.usage.type in NOT_CONTROLLED:
                 return
             else:

@@ -64,14 +64,13 @@ def test_get_charging_power_left_diff_hybrid(bat_power: int,
     assert b_all.data.set.charging_power_left == expected_power
 
 
-def test_calc_power_for_all_components_excludes_battery_after_60s(data_):
+def test_calc_power_for_all_components_trusts_already_zeroed_battery_but_ticks_error_timer_for_active_control(data_):
     # setup
-    error_timer = timecheck.create_timestamp() - 61
+    # bat2 ist seit über 60s im Fehlerzustand, power schon vom Modul genullt - BatAll summiert nur noch.
     data.data.bat_data = {"bat1": Bat(1), "bat2": Bat(2)}
     data.data.bat_data["bat1"].data.get.power = -500
-    data.data.bat_data["bat2"].data.get.power = -2000
+    data.data.bat_data["bat2"].data.get.power = 0
     data.data.bat_data["bat2"].data.get.fault_state = FaultStateLevel.ERROR
-    data.data.bat_data["bat2"].data.set.error_timer = error_timer
     b_all = BatAll()
 
     # execution
@@ -79,15 +78,14 @@ def test_calc_power_for_all_components_excludes_battery_after_60s(data_):
 
     # evaluation
     assert b_all.data.get.power == -500
-    assert data.data.bat_data["bat2"].data.set.error_timer == error_timer
-    # eigener get.power-Wert wird jetzt ebenfalls abgebildet (wie bei Counter/Chargepoint), nicht nur die Summe
-    assert data.data.bat_data["bat2"].data.get.power == 0
+    assert data.data.bat_data["bat2"].data.set.error_timer is not None
 
 
 def test_calc_power_for_all_components_recovers_after_error_clears(data_):
     # setup
     # Speicher war im Fehlerzustand (error_timer noch gesetzt), liefert jetzt aber wieder gültige Werte
-    # (fault_state == 0) - der alte error_timer darf nicht mehr dazu führen, dass weiterhin 0 genutzt wird.
+    # (fault_state == 0) - der alte error_timer darf nicht mehr dazu führen, dass die aktive Speichersteuerung
+    # ihn weiterhin als fehlerhaft behandelt.
     data.data.bat_data = {"bat1": Bat(1)}
     data.data.bat_data["bat1"].data.get.power = -800
     data.data.bat_data["bat1"].data.get.fault_state = 0

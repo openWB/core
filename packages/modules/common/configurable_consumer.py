@@ -48,6 +48,7 @@ class ConfigurableConsumer(Generic[T_CONSUMER]):
         self.sim_counter = SimCounterConsumer(self.config.id, ComponentType.CONSUMER)
         self.store = get_component_value_store(ComponentType.CONSUMER.value, self.config.id)
         self.fault_state = FaultState(ComponentInfo(self.config.id, self.config.name, ComponentType.CONSUMER.value))
+        self.fault_state.on_sustained_error = self._zero_power_on_sustained_error
         self.peak_filter = PeakFilter(ComponentType.CONSUMER, self.config.id, self.fault_state)
         try:
             self.module_initializer()
@@ -72,18 +73,28 @@ class ConfigurableConsumer(Generic[T_CONSUMER]):
             self.error_timestamp = None
             Pub().pub(error_timestamp_topic, self.error_timestamp)
 
+    def _zero_power_on_sustained_error(self) -> None:
+        try:
+            self.store.zero_power_on_sustained_error()
+            self.store.update()
+        except AttributeError:
+            pass
+
     def update(self):
-        with SingleComponentUpdateContext(self.fault_state):
-            if self.module_updater is not None:
-                consumer_state = self.module_updater()
-                imported, exported = self.peak_filter.check_values(
-                    consumer_state.power,
-                    consumer_state.imported,
-                    consumer_state.exported if consumer_state.exported is not None else 0)
-                if imported != consumer_state.imported or exported != consumer_state.exported:
-                    consumer_state.imported = imported
-                    consumer_state.exported = exported
-                self.store.set(consumer_state)
+        try:
+            with SingleComponentUpdateContext(self.fault_state, reraise=True):
+                if self.module_updater is not None:
+                    consumer_state = self.module_updater()
+                    imported, exported = self.peak_filter.check_values(
+                        consumer_state.power,
+                        consumer_state.imported,
+                        consumer_state.exported if consumer_state.exported is not None else 0)
+                    if imported != consumer_state.imported or exported != consumer_state.exported:
+                        consumer_state.imported = imported
+                        consumer_state.exported = exported
+                    self.store.set(consumer_state)
+        except Exception:
+            self.error_handler()
 
     def set_power_limit(self, power_limit: float, data: SetLimitData) -> None:
         with SingleComponentUpdateContext(self.fault_state):
