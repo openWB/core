@@ -4301,15 +4301,22 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
-   * Get the consumers and counters that are not counted in the home
-   * consumption.
-   * @returns object with the ids of the consumers and counters
+   * Sort the consumers and sub-counters by whether they are counted in the
+   * home consumption.
    */
-  const notInHomeConsumption = computed(() => {
+  const homeConsumptionAssignment = computed(() => {
     const AUTO = 'auto_home_consumption';
     const NOT_HOME = 'no_home_consumption';
-    const result = { consumerIds: [] as number[], counterIds: [] as number[] };
-    function walk(nodes: Hierarchy[] | undefined, parentMode: string) {
+    const ids = () => ({
+      consumerIds: [] as number[],
+      counterIds: [] as number[],
+    });
+    const result = { inHome: ids(), notInHome: ids() };
+    function walk(
+      nodes: Hierarchy[] | undefined,
+      parentMode: string,
+      isRoot: boolean,
+    ) {
       if (nodes === undefined) {
         return;
       }
@@ -4322,9 +4329,11 @@ export const useMqttStore = defineStore('mqtt', () => {
           ) as string | undefined;
           const mode = own && own !== AUTO ? own : parentMode;
           if (mode === NOT_HOME) {
-            result.counterIds.push(node.id);
+            result.notInHome.counterIds.push(node.id);
+          } else if (!isRoot) {
+            result.inHome.counterIds.push(node.id);
           }
-          walk(node.children, mode);
+          walk(node.children, mode, false);
         } else if (node.type === 'consumer') {
           const own = getValue.value(
             `openWB/consumer/${node.id}/config`,
@@ -4332,19 +4341,40 @@ export const useMqttStore = defineStore('mqtt', () => {
             AUTO,
           ) as string | undefined;
           if ((own && own !== AUTO ? own : parentMode) === NOT_HOME) {
-            result.consumerIds.push(node.id);
+            result.notInHome.consumerIds.push(node.id);
+          } else {
+            result.inHome.consumerIds.push(node.id);
           }
         } else {
-          walk(node.children, parentMode);
+          walk(node.children, parentMode, false);
         }
       });
     }
     walk(
       getValue.value('openWB/counter/get/hierarchy') as Hierarchy[],
       'home_consumption',
+      true,
     );
     return result;
   });
+
+  /**
+   * Get the consumers and sub-counters that are counted in the home
+   * consumption.
+   * @returns object with the ids of the consumers and counters
+   */
+  const inHomeConsumption = computed(
+    () => homeConsumptionAssignment.value.inHome,
+  );
+
+  /**
+   * Get the consumers and counters that are not counted in the home
+   * consumption.
+   * @returns object with the ids of the consumers and counters
+   */
+  const notInHomeConsumption = computed(
+    () => homeConsumptionAssignment.value.notInHome,
+  );
 
   /**
    * Get the summed power of all consumers and counters that are not counted
@@ -4735,6 +4765,7 @@ export const useMqttStore = defineStore('mqtt', () => {
     // PV data
     pvConfigured,
     hybridInverters,
+    inHomeConsumption,
     notInHomeConsumption,
     notInHomeConsumptionPower,
     pvPowerTotal,

@@ -35,4 +35,5 @@ export interface FlowComponent {
   soc?: number;
   iconComponent?: Component;
   iconColor?: string;
+  showInfo?: boolean;
 }
