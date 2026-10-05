@@ -68,6 +68,16 @@ class ConnectedVehicle:
 
 
 @dataclass
+class OcppConfig:
+    HeartbeatInterval: int = 10
+    MeterValueSampleInterval: int = 20
+
+
+def ocpp_config_factory() -> OcppConfig:
+    return OcppConfig()
+
+
+@dataclass
 class Ocpp:
     connected: bool = False
     availability: bool = False
@@ -91,6 +101,9 @@ class Ocpp:
     # - mach dementsprechend auch nix
     pending_availability: bool = False
     reset: bool = False
+
+    config: OcppConfig = field(default_factory=ocpp_config_factory,
+                               metadata={"topic": "get/ocpp/config"})
 
 
 def empty_enery_source_dict_factory():

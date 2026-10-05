@@ -1,7 +1,7 @@
 import asyncio
 import json
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, Mock, PropertyMock
+from unittest.mock import AsyncMock, Mock
 import pytest
 
 from control import data
@@ -9,10 +9,11 @@ from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_template import CpTemplate
 from control.counter import Counter
 from control.ev.ev import Ev
-from control.ocpp import ocpp_client
+from control.ocpp import ocpp_connection_manager
 from control.ocpp import ocpp_transaction_coordinator
 from control.ocpp.ocpp_chargepoint import OcppChargePoint
 from control.ocpp.ocpp_client import OcppClient
+from control.ocpp.ocpp_connection_manager import OcppConnectionManager
 from control.ocpp.ocpp_transaction_coordinator import TransactionCoordinator
 from ocpp.v16.enums import ChargePointStatus, MessageTrigger, TriggerMessageStatus
 from modules.chargepoints.mqtt.chargepoint_module import ChargepointModule
@@ -93,9 +94,11 @@ def test_transfer_values_updates_meter_snapshot():
         client._set_meter_snapshot,
         "cp1",
         1,
+        123456,
         9876,
     )
     snapshot = client._meter_snapshots["cp1"]
+    assert snapshot.transaction_id == 123456
     assert snapshot.connector_id == 1
     assert snapshot.imported == 9876
 
@@ -113,9 +116,11 @@ def test_trigger_message_decisions(monkeypatch):
     cp = OcppChargePoint("box-1", Mock(), trigger_msg_callback=AsyncMock())
 
     async def check():
-        assert (await cp.trigger_message(MessageTrigger.heartbeat, connector_id=99)).status == TriggerMessageStatus.accepted
+        assert (await cp.trigger_message(MessageTrigger.heartbeat,
+                                         connector_id=99)).status == TriggerMessageStatus.accepted
         assert (await cp.trigger_message(MessageTrigger.status_notification)).status == TriggerMessageStatus.accepted
-        assert (await cp.trigger_message(MessageTrigger.status_notification, connector_id=2)).status == TriggerMessageStatus.rejected
+        assert (await cp.trigger_message(MessageTrigger.status_notification,
+                                         connector_id=2)).status == TriggerMessageStatus.rejected
         assert (await cp.trigger_message(MessageTrigger.boot_notification)).status == TriggerMessageStatus.accepted
 
     asyncio.run(check())
@@ -151,7 +156,9 @@ def test_trigger_status_message_after_confirmation(monkeypatch, connector_id):
     async def check():
         cp = OcppChargePoint("box-1", ws, trigger_msg_callback=client.handler_trigger_msg)
         cp.call = call
-        client.connections = {"box-1": SimpleNamespace(cp=cp, ws=ws, closing=False, boot_accepted=True)}
+        client.connection_manager = SimpleNamespace(
+            is_active_charge_point=Mock(return_value=True),
+        )
         await cp.route_message(json.dumps([2, "trigger-1", "TriggerMessage", request]))
         await asyncio.sleep(0)
 
@@ -187,10 +194,11 @@ def test_trigger_status_forces_repeat_and_skips_old_connection(monkeypatch):
     async def check():
         cp = OcppChargePoint("box-1", ws, trigger_msg_callback=client.handler_trigger_msg)
         cp.call = record
-        client.connections = {"box-1": SimpleNamespace(cp=cp, ws=ws, closing=False, boot_accepted=True)}
+        client.connection_manager = SimpleNamespace(
+            is_active_charge_point=Mock(side_effect=[True, True, False]),
+        )
         await client.handler_trigger_msg(cp, MessageTrigger.status_notification, 1)
         await client.handler_trigger_msg(cp, MessageTrigger.status_notification, 1)
-        client.connections["box-1"].cp = Mock()
         await client.handler_trigger_msg(cp, MessageTrigger.status_notification, 1)
 
     asyncio.run(check())
@@ -223,7 +231,9 @@ def test_trigger_heartbeat_ignores_connector_and_rejects_unsupported(monkeypatch
         async def heartbeat():
             events.append("Heartbeat")
         cp._heartbeat = heartbeat
-        client.connections = {"box-1": SimpleNamespace(cp=cp, ws=ws, closing=False, boot_accepted=True)}
+        client.connection_manager = SimpleNamespace(
+            is_active_charge_point=Mock(return_value=True),
+        )
         await cp.route_message(json.dumps([2, "heartbeat", "TriggerMessage", {
             "requestedMessage": "Heartbeat", "connectorId": 99,
         }]))
@@ -265,19 +275,20 @@ def test_invalid_chargebox_id_does_not_connect(monkeypatch):
     data.data_init(Mock())
     data.data.cp_data = {}
 
-    client = object.__new__(OcppClient)
-    client.connections = {}
-    client._connect_locks = {}
-    client._wanted_connections = {"invalid-cp"}
+    connection_manager = OcppConnectionManager(
+        chargepoint_factory=Mock(),
+        on_connected=AsyncMock(),
+        on_disconnected=AsyncMock(),
+    )
 
     connect_mock = Mock()
-    monkeypatch.setattr(ocpp_client.websockets, "connect", connect_mock)
+    monkeypatch.setattr(ocpp_connection_manager.websockets, "connect", connect_mock)
 
-    result = asyncio.run(client._ensure_connected("invalid-cp"))
+    result = asyncio.run(connection_manager.connect("invalid-cp"))
 
     assert result is None
     connect_mock.assert_not_called()
-    assert "invalid-cp" not in client._wanted_connections
+    assert connection_manager.is_wanted("invalid-cp") is False
 
 
 def test_offline_stop_is_persisted(monkeypatch):
@@ -306,9 +317,9 @@ def test_offline_stop_is_persisted(monkeypatch):
     # pending_transaktion gespeichert
     # und anschließend transaction_id und transaction_id_tag auf None und
     # tag_accepted auf False gesetzt
-    assert openwb_cp.data.get.ocpp.transaction_id == None
-    assert openwb_cp.data.get.ocpp.transaction_id_tag == None
-    assert openwb_cp.data.get.ocpp.tag_accepted == False
+    assert openwb_cp.data.get.ocpp.transaction_id is None
+    assert openwb_cp.data.get.ocpp.transaction_id_tag is None
+    assert openwb_cp.data.get.ocpp.tag_accepted is False
     assert openwb_cp.data.get.ocpp.pending_transactions == [{
         "action": "stop",
         "transaction_id": 42,

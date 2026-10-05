@@ -147,7 +147,10 @@ _UPLOADERS: Dict[str, Callable[[str, str], Awaitable[None]]] = {
 }
 
 
-async def upload_diagnostics(file_path: str, location: str, retries: Optional[int] = 0, retry_interval: Optional[int] = 0):
+async def upload_diagnostics(file_path: str,
+                             location: str,
+                             retries: Optional[int] = 0,
+                             retry_interval: Optional[int] = 0):
     scheme = urlsplit(location).scheme.lower()
     uploader = _UPLOADERS.get(scheme)
     if uploader is None:

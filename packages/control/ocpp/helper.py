@@ -1,7 +1,6 @@
 from datetime import datetime, timezone
 import logging
 from control import data
-from modules.common.fault_state import FaultState
 
 log = logging.getLogger(__name__)
 
