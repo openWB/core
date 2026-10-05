@@ -219,7 +219,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useQuasar, QInput } from 'quasar';
 import { useMqttStore } from 'src/stores/mqtt-store';
 
@@ -378,22 +378,15 @@ const resetPassword = () => {
   });
 };
 
-watch(anonymousAccessAllowed, (newValue) => {
-  if (userManagementActive.value && !newValue && !loggedIn.value) {
-    showLoginDialog.value = true;
-  } else {
-    showLoginDialog.value = false;
-  }
-});
-
-onMounted(() => {
-  if (
-    connected.value &&
-    userManagementActive.value &&
-    !anonymousAccessAllowed.value &&
-    !loggedIn.value
-  ) {
-    showLoginDialog.value = true;
-  }
-});
+// security topics are received after connecting, re-check whenever one of them arrives
+watch(
+  [userManagementActive, anonymousAccessAllowed],
+  () => {
+    showLoginDialog.value =
+      userManagementActive.value &&
+      !anonymousAccessAllowed.value &&
+      !loggedIn.value;
+  },
+  { immediate: true },
+);
 </script>
