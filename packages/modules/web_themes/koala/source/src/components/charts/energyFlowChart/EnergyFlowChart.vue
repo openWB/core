@@ -52,6 +52,12 @@ const svgViewBox = computed(
 // the inset leaves a visible gap between circle and pill edge.
 const iconCircleRadius = computed(() => svgSize.value.circleRadius - 2);
 
+const infoBadgeRadius = 4.0;
+const infoIconRadius = 2.7;
+const infoBadgeOffset = computed(
+  () => (iconCircleRadius.value + 1) * Math.SQRT1_2,
+);
+
 const svgIconWidth = computed(() => svgSize.value.circleRadius);
 
 const svgIconHeight = computed(() => svgSize.value.circleRadius);
@@ -112,9 +118,13 @@ const consumerConsumption = computed(
 const consumerProduction = computed(
   () => Number(consumerPower.value.value) < 0,
 );
-
 const countersNotInHome = computed(
   () => mqttStore.notInHomeConsumption.counterIds.length > 0,
+);
+const homeHasDetails = computed(
+  () =>
+    mqttStore.inHomeConsumption.consumerIds.length > 0 ||
+    mqttStore.inHomeConsumption.counterIds.length > 0,
 );
 const showConsumerPower = computed(
   () =>
@@ -398,6 +408,7 @@ const svgComponents = computed((): FlowComponent[] => {
       powerValue: Number(homePower.value.value),
       iconComponent: HouseIcon,
       iconColor: 'var(--q-home-stroke)',
+      showInfo: homeHasDetails.value,
     });
   }
 
@@ -922,6 +933,21 @@ const labelClipPath = computed(() => {
                 :style="{ color: component.iconColor }"
               />
             </g>
+            <!-- info badge: sits on the top left edge of the icon circle -->
+            <g
+              v-if="component.showInfo"
+              class="info-badge cursor-pointer"
+              :transform="`translate(${-infoBadgeOffset}, ${-infoBadgeOffset})`"
+            >
+              <circle
+                cx="0"
+                cy="0"
+                :r="infoBadgeRadius"
+                filter="url(#flow-box-shadow)"
+              />
+              <circle class="info-icon" cx="0" cy="0" :r="infoIconRadius" />
+              <path d="M 0 -0.95 v 0.01 M 0 -0.1 V 1" />
+            </g>
           </g>
         </g>
       </g>
@@ -1084,6 +1110,18 @@ circle {
 
 circle:not(.soc) {
   fill: var(--q-card-background);
+}
+
+.info-badge circle.info-icon {
+  stroke: var(--q-text);
+  stroke-width: 0.4;
+}
+
+.info-badge path {
+  fill: none;
+  stroke: var(--q-text);
+  stroke-width: 0.55;
+  stroke-linecap: round;
 }
 
 rect {
