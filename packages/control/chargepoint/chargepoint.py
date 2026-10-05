@@ -181,14 +181,16 @@ class Chargepoint(ChargepointRfidMixin, Load):
             print("#####################################")
             print("OCPP Reset aktiv")
             print("#####################################")
-            message = "Keine Ladung, da ein OCPP Reset durchgeführt wurde. Stecker ziehen und neu verbinden für nächsten Ladevorgang..."
+            message = "Keine Ladung, da ein OCPP Reset durchgeführt wurde. " \
+                      "Stecker ziehen und neu verbinden für nächsten Ladevorgang..."
             state = False
 
         elif self.data.get.ocpp.remote_stop:
             print("#####################################")
             print("OCPP Remote Stop aktiv")
             print("#####################################")
-            message = "Keine Ladung, da ein OCPP Remote Stop aktiv ist. Stecker ziehen und neu verbinden für nächsten Ladevorgang..."
+            message = "Keine Ladung, da ein OCPP Remote Stop aktiv ist. " \
+                      "Stecker ziehen und neu verbinden für nächsten Ladevorgang..."
             state = False
         elif not self.data.get.ocpp.tag_accepted:
             print("#####################################")
@@ -253,7 +255,8 @@ class Chargepoint(ChargepointRfidMixin, Load):
         self.data.set.charging_ev_data.reset_phase_switch_delay(self.data.control_parameter, self.get_max_phase_hw())
         self.reset_control_parameter_at_charge_stop()
         data.data.counter_all_data.get_evu_counter().reset_switch_on_off(self)
-        if (self.data.get.plug_state is False and self.data.set.plug_state_prev is True) or self.data.get.ocpp.remote_stop:
+        if (self.data.get.plug_state is False and
+                self.data.set.plug_state_prev is True) or self.data.get.ocpp.remote_stop:
             charging_ev = data.data.ev_data[f"ev{self.data.config.ev}"]
             chargelog.save_and_reset_data(self, charging_ev)
             self.data.control_parameter = control_parameter_factory()
@@ -795,7 +798,8 @@ class Chargepoint(ChargepointRfidMixin, Load):
             # Client sendet Statusmeldungen nur wenn sich der Status ändert an den OCPP-Server
             if self.data.config.ocpp_chargebox_id:
                 print(
-                    f"                                                                                                        {self.get_ocpp_status()}")
+                    f"                                                             "
+                    f"                                           {self.get_ocpp_status()}")
                 self.ocpp_send_status_notification()
 
             chargebox_id = self.data.config.ocpp_chargebox_id
@@ -806,7 +810,8 @@ class Chargepoint(ChargepointRfidMixin, Load):
             )
 
             # Wenn eine Transaktion aktiv ist, werden die aktuellen Zählerstände an den OCPP-Server übertragen
-            # werden in jedem update an den Client gesendet. Dieser sendet die Daten in einem eigenen Intervall an den OCPP-Server
+            # werden in jedem update an den Client gesendet.
+            # Dieser sendet die Daten in einem eigenen Intervall an den OCPP-Server
             if chargebox_id and self.data.get.ocpp.transaction_id is not None:
                 data.data.ocpp_client.transfer_values(chargebox_id,
                                                       1,

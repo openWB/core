@@ -629,6 +629,8 @@ class SetData:
             self._validate_value(msg, "json")
         elif msg.topic.endswith("/get/ocpp/transaction_id_tag"):
             self._validate_value(msg, str)
+        elif "/get/ocpp/config" in msg.topic:
+            self._validate_value(msg, "json")
         else:
             self.__unknown_topic(msg)
 

@@ -690,6 +690,7 @@ class UpdateConfig:
         ("openWB/chargepoint/3/get/ocpp/transaction_id_tag", None),
 
         ("openWB/chargepoint/3/get/ocpp/connected", False),
+        ("openWB/chargepoint/3/get/ocpp/config", {"HeartbeatInterval": 10, "MeterValueSampleInterval": 20}),
 
 
         ("openWB/bat/config/bat_control_activated", False),
