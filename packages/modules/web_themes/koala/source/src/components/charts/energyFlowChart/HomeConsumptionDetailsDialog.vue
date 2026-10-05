@@ -3,7 +3,7 @@
     <q-card class="card-width">
       <q-card-section>
         <div class="row no-wrap">
-          <div class="text-h6 q-pr-sm">Im Hausverbrauch enthalten:</div>
+          <div class="text-h6 q-pr-sm">{{ title }}</div>
           <q-space />
           <q-btn
             icon="close"
@@ -55,6 +55,7 @@ interface DetailsItem {
 
 const props = defineProps<{
   modelValue: boolean;
+  scope: 'inHome' | 'notInHome';
 }>();
 
 const emit = defineEmits<{
@@ -69,8 +70,17 @@ const visible = computed({
 });
 const isSmallScreen = computed(() => Screen.lt.sm);
 
+const title = computed(() =>
+  props.scope === 'inHome'
+    ? 'Im Hausverbrauch enthalten:'
+    : 'Nicht im Hausverbrauch enthalten:',
+);
+
 const items = computed((): DetailsItem[] => {
-  const { consumerIds, counterIds } = mqttStore.inHomeConsumption;
+  const { consumerIds, counterIds } =
+    props.scope === 'inHome'
+      ? mqttStore.inHomeConsumption
+      : mqttStore.notInHomeConsumption;
   return [
     ...consumerIds.map((id) => ({
       key: `consumer-${id}`,
