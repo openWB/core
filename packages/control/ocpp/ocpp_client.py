@@ -3,6 +3,7 @@ import threading
 from helpermodules.utils.error_handling import ImportErrorContext
 with ImportErrorContext():
     from ocpp.v16.enums import (ChargePointStatus,
+                                ChargePointErrorCode,
                                 RegistrationStatus,
                                 AvailabilityType,
                                 ResetType,
@@ -16,7 +17,7 @@ from helpermodules.pub import Pub, pub_single
 from modules.common.fault_state import FaultState
 from control.ocpp.helper import _get_formatted_time, get_cp_from_chargebox_id
 
-from control.ocpp.ocpp_chargepoint import OcppChargePoint
+from control.ocpp.ocpp_chargepoint import OcppChargePoint, get_ocpp_error_code
 from control.ocpp.ocpp_connection import OcppConnection
 from control.ocpp.ocpp_transaction_coordinator import TransactionCoordinator
 from control.ocpp.ocpp_connection_manager import OcppConnectionManager
@@ -48,6 +49,11 @@ class OcppClient:
     def __init__(self):
         if getattr(self, "_initialized", False):
             return
+        self._last_update: dict[
+            tuple[str, int],
+            tuple[ChargePointStatus, ChargePointErrorCode]
+        ] = {}
+
         with OcppClient._ocpp_runtime_lock:
             if (OcppClient._ocpp_thread is None
                     or not OcppClient._ocpp_thread.is_alive()):
@@ -143,24 +149,18 @@ class OcppClient:
         connection.boot_accepted = True
 
         # Heartbeat-Intervall des CSMS übernehmen.
-        """
         heartbeat_interval = getattr(response, "interval", None)
         if heartbeat_interval is not None:
             try:
                 heartbeat_interval = int(heartbeat_interval)
                 if heartbeat_interval > 0:
-                    cp.configuration["HeartbeatInterval"].value = str(heartbeat_interval)
+                    await cp.set_configuration_value("HeartbeatInterval", int(heartbeat_interval))
             except (TypeError, ValueError):
                 log.warning(
                     "Ungültiges Heartbeat-Intervall vom CSMS für %s: %r",
                     chargebox_id,
                     heartbeat_interval,
                 )
-        """
-
-        await cp._set_availability(1, AvailabilityType.operative
-                                   if cp.openwb_cp.data.get.ocpp.availability
-                                   else AvailabilityType.inoperative)
 
         await self.transactions.on_connected(chargebox_id, connection)
         await cp.apply_pending_availability()
@@ -176,6 +176,14 @@ class OcppClient:
         return True
 
     async def _connection_closed(self, connection: OcppConnection):
+        chargebox_id = connection.chargebox_id
+        # Letztes Status zurücksetzen, damit beim neuen connect
+        # wieder direkt der aktuelle Status gesendet wird
+        self._last_update = {
+            key: value
+            for key, value in self._last_update.items()
+            if key[0] != chargebox_id
+        }
         self._set_connected(connection.cp, False)
 
     def _set_connected(self,
@@ -306,9 +314,7 @@ class OcppClient:
         *args,
         **kwargs,
     ):
-        connection = await self.connection_manager.connect(
-            chargebox_id
-        )
+        connection = await self.connection_manager.connect(chargebox_id)
 
         if connection is None:
             log.exception(f"Keine Verbindung zu {chargebox_id} verfügbar")
@@ -338,17 +344,46 @@ class OcppClient:
             return
 
         self._submit(
-            self._call(
+            self._send_status_notification(
                 chargebox_id,
-                "_status_notification",
-                connector_id=connector_id,
-                fault_state=fault_state,
-                fault_state_str=fault_state_str,
-                status=status,
-                force=force,
+                connector_id,
+                fault_state,
+                fault_state_str,
+                status,
+                force,
             ),
             f"StatusNotification {chargebox_id}",
         )
+
+    async def _send_status_notification(
+        self,
+        chargebox_id: str,
+        connector_id: int,
+        fault_state: FaultState,
+        fault_state_str: str,
+        status: ChargePointStatus,
+        force: bool,
+    ) -> None:
+        key = (chargebox_id, connector_id)
+        current_status = (status, get_ocpp_error_code(fault_state))
+
+        # Prüfung im Client und nicht im CP, da sonst ständig Verbindung überprüft wird
+        # ohne was zu senden
+        if not force and self._last_update.get(key) == current_status:
+            return
+
+        response = await self._call(
+            chargebox_id,
+            "_status_notification",
+            connector_id=connector_id,
+            fault_state=fault_state,
+            fault_state_str=fault_state_str,
+            status=status,
+            force=True,
+        )
+
+        if response is not None:
+            self._last_update[key] = current_status
 
     def transfer_values(
         self,
@@ -549,13 +584,18 @@ class OcppClient:
                 return
 
             status = openwb_cp.get_ocpp_status()
-            await cp._status_notification(
+            response = await cp._status_notification(
                 connector_id=1,  # bei uns gibt es immer nur einen Connector
                 fault_state=openwb_cp.data.get.fault_state,
                 fault_state_str=openwb_cp.data.get.fault_str,
                 status=status,
                 force=True,
             )
+            if response is not None:
+                self._last_update[(cp.chargebox_id, 1)] = (
+                    status,
+                    get_ocpp_error_code(openwb_cp.data.get.fault_state),
+                )
 
         if trigger_type == MessageTrigger.meter_values:
             snapshot = self._meter_snapshots.get(cp.chargebox_id)

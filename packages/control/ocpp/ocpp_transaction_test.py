@@ -53,7 +53,6 @@ def transaction_setup(monkeypatch):
             id_tag_info={"status": "Accepted"}, transaction_id=42,
         )),
         _stop_transaction=AsyncMock(),
-        _pending_availability={},
     )
     connection = SimpleNamespace(cp=charge_point)
     ensure_connected = AsyncMock(return_value=connection)
@@ -278,6 +277,25 @@ def test_change_availability_rejects_unknown_connector(handler_setup):
     assert openwb_cp.data.get.ocpp.availability is True
 
 
+def test_immediate_availability_change_clears_pending_request(handler_setup, mock_pub):
+    make_charge_point, openwb_cp = handler_setup
+    openwb_cp.data.get.ocpp.pending_availability = True
+
+    async def check():
+        charge_point = make_charge_point()
+        return await charge_point.on_change_availability(1, AvailabilityType.inoperative)
+
+    response = asyncio.run(check())
+
+    assert response.status == AvailabilityStatus.accepted
+    assert openwb_cp.data.get.ocpp.availability is False
+    assert openwb_cp.data.get.ocpp.pending_availability is False
+    mock_pub.pub.assert_any_call(
+        "openWB/set/chargepoint/1/get/ocpp/pending_availability",
+        False,
+    )
+
+
 @pytest.mark.parametrize("value", ["0", "-1", "not-a-number", "1.5"])
 def test_invalid_configuration_interval_is_rejected(handler_setup, value):
     make_charge_point, _ = handler_setup
@@ -365,7 +383,7 @@ def test_valid_configuration_interval_is_used(handler_setup):
     assert response.status == ConfigurationStatus.accepted
 
 
-def test_status_notification_deduplicates_unless_forced(handler_setup):
+def test_status_notification_sends_each_requested_message(handler_setup):
     make_charge_point, _ = handler_setup
 
     async def check():
@@ -379,7 +397,7 @@ def test_status_notification_deduplicates_unless_forced(handler_setup):
 
     charge_point = asyncio.run(check())
 
-    assert charge_point.call.await_count == 2
+    assert charge_point.call.await_count == 3
     assert all(request.connector_id == 1 for request in (
         awaited.args[0] for awaited in charge_point.call.await_args_list
     ))

@@ -103,6 +103,48 @@ def test_transfer_values_updates_meter_snapshot():
     assert snapshot.imported == 9876
 
 
+def test_status_notification_skips_connection_check_when_status_is_unchanged():
+    client = object.__new__(OcppClient)
+    client._last_update = {("cp1", 1): (ChargePointStatus.available, "NoError")}
+    client.connection_manager = SimpleNamespace(connect=AsyncMock())
+
+    asyncio.run(client._send_status_notification(
+        chargebox_id="cp1",
+        connector_id=1,
+        fault_state=0,
+        fault_state_str="",
+        status=ChargePointStatus.available,
+        force=False,
+    ))
+
+    client.connection_manager.connect.assert_not_awaited()
+
+
+def test_status_notification_updates_client_cache_after_successful_send():
+    chargepoint = SimpleNamespace(_status_notification=AsyncMock(return_value=object()))
+    client = object.__new__(OcppClient)
+    client._last_update = {}
+    client.connection_manager = SimpleNamespace(
+        connect=AsyncMock(return_value=SimpleNamespace(cp=chargepoint)),
+    )
+
+    asyncio.run(client._send_status_notification(
+        chargebox_id="cp1",
+        connector_id=1,
+        fault_state=0,
+        fault_state_str="",
+        status=ChargePointStatus.available,
+        force=False,
+    ))
+
+    client.connection_manager.connect.assert_awaited_once_with("cp1")
+    chargepoint._status_notification.assert_awaited_once()
+    assert client._last_update[("cp1", 1)] == (
+        ChargePointStatus.available,
+        "NoError",
+    )
+
+
 def test_trigger_message_decisions(monkeypatch):
     from control.ocpp import ocpp_chargepoint
 
@@ -113,9 +155,9 @@ def test_trigger_message_decisions(monkeypatch):
         )),
     )
     monkeypatch.setattr(ocpp_chargepoint, "get_cp_from_chargebox_id", lambda _: openwb_cp)
-    cp = OcppChargePoint("box-1", Mock(), trigger_msg_callback=AsyncMock())
 
     async def check():
+        cp = OcppChargePoint("box-1", Mock(), trigger_msg_callback=AsyncMock())
         assert (await cp.trigger_message(MessageTrigger.heartbeat,
                                          connector_id=99)).status == TriggerMessageStatus.accepted
         assert (await cp.trigger_message(MessageTrigger.status_notification)).status == TriggerMessageStatus.accepted
@@ -351,7 +393,6 @@ def test_persisted_stop_is_sent_once(monkeypatch):
         openwb_num=1,
         openwb_cp=openwb_cp,
         transaction_id=None,
-        _pending_availability={},
         _stop_transaction=stop_transaction,
         apply_pending_availability=AsyncMock(),
     )

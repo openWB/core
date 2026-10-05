@@ -21,6 +21,7 @@ with ImportErrorContext():
         DiagnosticsStatus,
         MessageTrigger,
         TriggerMessageStatus,
+        ClearCacheStatus,
     )
     from ocpp.routing import after, on
 from typing import Optional
@@ -46,21 +47,6 @@ class OcppChargePoint(cp):
         self.trigger_msg_callback = trigger_msg_callback
         self._accepted_triggers = set()
         self._diagnostics_status_stored = None
-
-        # Speichert den aktuellen Status des CPs
-        self._last_update: dict[
-            tuple[str, int],
-            tuple[ChargePointStatus, ChargePointErrorCode]
-        ] = {}
-
-        # Change Availability Status des CPs
-        self._pending_availability = {}
-        # Default Availability Status des CPs
-        self.availability = {
-            1: AvailabilityType.operative
-            if self.openwb_cp and self.openwb_cp.data.get.ocpp.availability
-            else AvailabilityType.inoperative
-        }
 
     # Der openWB-Chargepoint kann beim Reconnect neu erzeugt werden.
     @property
@@ -180,19 +166,13 @@ class OcppChargePoint(cp):
                                    fault_state: FaultState,
                                    fault_state_str: str,
                                    status: ChargePointStatus,
-                                   force: bool) -> Optional[object]:
+                                   force: bool = False) -> Optional[object]:
 
-        current_status = (status, get_ocpp_error_code(fault_state))
-
-        key = (self.chargebox_id, connector_id)
-
-        # Wenn sich key nicht verändert hat, mach nichts
-        if not force and self._last_update.get(key) == current_status:
-            return None
         print(f"# STATUS_NOTIFICATION     CP_Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}")
-        print(f"# --------- Status change detected for key: {key}")
+        print(f"# --------- Status notification requested for connector: {connector_id}")
         log.debug(f"Status change detected for CP {self.openwb_num} mit OCPP_Nr: {self.chargebox_id} "
-                  f"New Status: {current_status} for key: {key}")
+                  f"New Status: {(status, get_ocpp_error_code(fault_state))} "
+                  f"for connector: {connector_id}")
 
         # Key rausschicken
         request = call.StatusNotification(
@@ -208,9 +188,6 @@ class OcppChargePoint(cp):
         response: call_result.StatusNotification = await self.call(request)
         print(f"# StatusNotification response: {response}")
         log.debug(f"StatusNotification response: {response}")
-
-        # Status von diesem Key aktualisieren
-        self._last_update[key] = current_status
 
         return response
 
@@ -236,17 +213,19 @@ class OcppChargePoint(cp):
 
             if (availability_type == AvailabilityType.inoperative
                     and self.openwb_cp.data.get.ocpp.transaction_id is not None):
-                self._pending_availability[connector_id] = availability_type
                 self.openwb_cp.data.get.ocpp.pending_availability = True
                 Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/pending_availability", True)
                 return call_result.ChangeAvailability(
                     status=AvailabilityStatus.scheduled
                 )
 
-            await self._set_availability(connector_id, availability_type)
+            await self._set_availability(availability_type)
 
-            if availability_type == AvailabilityType.operative:
-                self._pending_availability.pop(connector_id, None)
+            self.openwb_cp.data.get.ocpp.pending_availability = False
+            Pub().pub(
+                f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/pending_availability",
+                False,
+            )
 
             return call_result.ChangeAvailability(
                 status=AvailabilityStatus.accepted
@@ -258,35 +237,23 @@ class OcppChargePoint(cp):
                 status=AvailabilityStatus.rejected
             )
 
-    async def _set_availability(self, connector_id: int, availability_type: AvailabilityType):
-        if connector_id == 0:
-            for current_connector_id in self.availability:
-                self.availability[current_connector_id] = availability_type
-        else:
-            self.availability[connector_id] = availability_type
-
+    async def _set_availability(self, availability_type: AvailabilityType):
+        openwb_cp = self.openwb_cp
+        if openwb_cp is None:
+            return
         available = availability_type == AvailabilityType.operative
-        if self.openwb_cp is not None:
-            self.openwb_cp.data.get.ocpp.availability = available
+        openwb_cp.data.get.ocpp.availability = available
 
         Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/availability",
                   available)
 
     async def apply_pending_availability(self):
-        # Problem beim reconnect wird der ganze Chargepoint neu initialisiert,
-        # -> pending availabilities geht dadurch verloren...
-        if (self.openwb_cp is not None and
-            self.openwb_cp.data.get.ocpp.pending_availability and
-                0 not in self._pending_availability):
-            self._pending_availability[0] = AvailabilityType.inoperative
+        openwb_cp = self.openwb_cp
+        if openwb_cp is None or not openwb_cp.data.get.ocpp.pending_availability:
+            return
 
-        for connector_id, availability_type in list(self._pending_availability.items()):
-            await self._set_availability(connector_id, availability_type)
-            print(
-                f"Applying pending availability for connector_id: {connector_id}, "
-                f"availability_type: {availability_type}")
-            self._pending_availability.pop(connector_id, None)
-        self.openwb_cp.data.get.ocpp.pending_availability = False
+        await self._set_availability(AvailabilityType.inoperative)
+        openwb_cp.data.get.ocpp.pending_availability = False
         Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/pending_availability", False)
 
     @on(Action.get_configuration)
@@ -377,11 +344,9 @@ class OcppChargePoint(cp):
                     status=ConfigurationStatus.rejected
                 )
 
-        setattr(configuration, key, parsed_value)
-        Pub().pub(
-            f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/config",
-            asdict(configuration),
-        )
+        # Update Data und Broker
+        await self.set_configuration_value(key, parsed_value)
+
         return call_result.ChangeConfiguration(
             status=ConfigurationStatus.accepted
         )
@@ -410,12 +375,14 @@ class OcppChargePoint(cp):
 
         """
         requested_connector_id = connector_id if connector_id is not None else 1
-        if self.availability.get(requested_connector_id) != AvailabilityType.operative:
+        openwb_cp = self.openwb_cp
+        if (openwb_cp is None or requested_connector_id != 1 or
+                not openwb_cp.data.get.ocpp.availability):
             return call_result.RemoteStartTransaction(
                 status=RemoteStartStopStatus.rejected
             )
 
-        if data.data.cp_data[f"cp{self.openwb_num}"].data.get.ocpp.transaction_id is not None:
+        if openwb_cp.data.get.ocpp.transaction_id is not None:
             return call_result.RemoteStartTransaction(
                 status=RemoteStartStopStatus.rejected
             )
@@ -452,28 +419,23 @@ class OcppChargePoint(cp):
             status=RemoteStartStopStatus.accepted
         )
 
-    """
     @on(Action.unlock_connector)
     async def unlock_connector(self, connector_id: int, **kwargs):
-        # Laut Doku nur dafür gedacht um den Stecker zu entriegeln, falls nötig
-        # beschreibt das manual_lock hier????
-
-        print(
-            f"UNLOCK_CONNECTOR  CP_Nr: {self.openwb_num} "
-            f"OCPP_Nr: {self.chargebox_id} "
-            f"\nConnector ID: {connector_id} "
-            f"\nKwargs: {kwargs}"
-        )
-
-        # ???
-        # Sollte ich das einfach so machen?
-        # oder hat das manual_lock noch eine andere wichtige Funktion?
-        Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/set/manual_lock", False)
-
+        # Nur wenn der Stecker nicht fest mit der Wallbox verbunden ist relevant
+        # Also nur wenn beim kabel an beiden Seiten ein Stecker ist
+        #
+        # Antwort mit not_supported muss trotzdem gesendet werden!
         return call_result.UnlockConnector(
             status=UnlockStatus.not_supported
         )
-    """
+
+    @on(Action.clear_cache)
+    async def clear_cache(self, **kwargs):
+        # Wir führen aktuell keine Authorization Cache
+        # An den Server muss aber trotzdem eine Antwort gesendet werden!
+        return call_result.ClearCache(
+            status=ClearCacheStatus.rejected
+        )
 
     @on(Action.reset)
     async def reset(self, type: ResetType, **kwargs):
@@ -604,6 +566,14 @@ class OcppChargePoint(cp):
             await self.trigger_msg_callback(self, requested_message, connector_id)
         except Exception:
             log.exception("TriggerMessage-Versand für %s fehlgeschlagen", self.chargebox_id)
+
+    async def set_configuration_value(self, key: str, value):
+        configuration = self.openwb_cp.data.get.ocpp.config
+        setattr(configuration, key, value)
+        Pub().pub(
+            f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/config",
+            asdict(configuration),
+        )
 
 
 def get_ocpp_error_code(fault_state: FaultState):

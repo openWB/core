@@ -790,8 +790,7 @@ class TransactionCoordinator:
         # nach erfolgreichem Stop anwenden.
         #
 
-        if (cp._pending_availability or
-                cp.openwb_cp.data.get.ocpp.pending_availability):
+        if cp.openwb_cp.data.get.ocpp.pending_availability:
             await cp.apply_pending_availability()
 
         return True
