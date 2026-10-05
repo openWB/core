@@ -12,6 +12,7 @@ import VehicleIcon from 'src/assets/icons/owbVehicle.svg?component';
 import ChargePointIcon from 'src/assets/icons/owbChargePoint_2.svg?component';
 import ConsumerIcon from 'src/assets/icons/owbConsumer.svg?component';
 import CounterIcon from 'src/assets/icons/owbCounter.svg?component';
+import HomeConsumptionDetailsDialog from './HomeConsumptionDetailsDialog.vue';
 
 const mqttStore = useMqttStore();
 const $q = useQuasar();
@@ -121,6 +122,7 @@ const consumerProduction = computed(
 const countersNotInHome = computed(
   () => mqttStore.notInHomeConsumption.counterIds.length > 0,
 );
+const homeDetailsVisible = ref(false);
 const homeHasDetails = computed(
   () =>
     mqttStore.inHomeConsumption.consumerIds.length > 0 ||
@@ -938,6 +940,7 @@ const labelClipPath = computed(() => {
               v-if="component.showInfo"
               class="info-badge cursor-pointer"
               :transform="`translate(${-infoBadgeOffset}, ${-infoBadgeOffset})`"
+              @click.stop="homeDetailsVisible = true"
             >
               <circle
                 cx="0"
@@ -952,6 +955,7 @@ const labelClipPath = computed(() => {
         </g>
       </g>
     </svg>
+    <HomeConsumptionDetailsDialog v-model="homeDetailsVisible" />
   </div>
 </template>
 
