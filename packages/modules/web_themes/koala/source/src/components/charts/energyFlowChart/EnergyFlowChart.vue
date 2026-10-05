@@ -53,8 +53,8 @@ const svgViewBox = computed(
 // the inset leaves a visible gap between circle and pill edge.
 const iconCircleRadius = computed(() => svgSize.value.circleRadius - 2);
 
-const infoBadgeRadius = 4.0;
-const infoIconRadius = 2.7;
+const infoBadgeRadius = 3.6;
+const infoIconRadius = 3;
 const infoBadgeOffset = computed(
   () => (iconCircleRadius.value + 1) * Math.SQRT1_2,
 );
@@ -1137,13 +1137,14 @@ circle:not(.soc) {
 }
 
 .info-badge circle.info-icon {
-  stroke: var(--q-text);
+  fill: var(--q-flow-chart-info);
+  stroke: var(--q-flow-chart-info);
   stroke-width: 0.4;
 }
 
 .info-badge path {
   fill: none;
-  stroke: var(--q-text);
+  stroke: var(--q-white);
   stroke-width: 0.55;
   stroke-linecap: round;
 }
