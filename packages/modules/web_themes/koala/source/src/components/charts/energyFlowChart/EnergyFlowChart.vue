@@ -11,6 +11,7 @@ import HouseIcon from 'src/assets/icons/owbHouse.svg?component';
 import VehicleIcon from 'src/assets/icons/owbVehicle.svg?component';
 import ChargePointIcon from 'src/assets/icons/owbChargePoint_2.svg?component';
 import ConsumerIcon from 'src/assets/icons/owbConsumer.svg?component';
+import CounterIcon from 'src/assets/icons/owbCounter.svg?component';
 
 const mqttStore = useMqttStore();
 const $q = useQuasar();
@@ -103,9 +104,26 @@ const homeConsumption = computed(() => Number(homePower.value.value) > 0);
 const homeProduction = computed(() => Number(homePower.value.value) < 0);
 
 const consumerPower = computed(
-  () => mqttStore.consumerSumPower('object') as ValueObject,
+  () => mqttStore.notInHomeConsumptionPower('object') as ValueObject,
 );
-const showConsumerPower = computed(() => mqttStore.consumerIds.length > 0);
+const consumerConsumption = computed(
+  () => Number(consumerPower.value.value) > 0,
+);
+const consumerProduction = computed(
+  () => Number(consumerPower.value.value) < 0,
+);
+
+const countersNotInHome = computed(
+  () => mqttStore.notInHomeConsumption.counterIds.length > 0,
+);
+const showConsumerPower = computed(
+  () =>
+    mqttStore.notInHomeConsumption.consumerIds.length > 0 ||
+    countersNotInHome.value ||
+    // e.g. SmartHome devices excluded from the home consumption
+    consumerConsumption.value ||
+    consumerProduction.value,
+);
 
 const pvPower = computed(() => mqttStore.pvPowerTotal('object') as ValueObject);
 const pvProduction = computed(() => {
@@ -387,18 +405,20 @@ const svgComponents = computed((): FlowComponent[] => {
     components.push({
       id: 'consumer',
       class: {
-        base: 'consumer',
-        valueLabelColor: 'var(--q-consumer)',
-        animatedReverse: Number(consumerPower.value.value) > 0,
+        base: countersNotInHome.value ? 'not-in-home' : 'consumer',
+        animated: consumerProduction.value,
+        animatedReverse: consumerConsumption.value,
       },
       position: { row: 0, column: 1 },
       label: [
-        'Verbraucher',
+        countersNotInHome.value ? 'Sonstige' : 'Verbraucher',
         absoluteValueObject(consumerPower.value).textValue,
       ],
       powerValue: Number(consumerPower.value.value),
-      iconComponent: ConsumerIcon,
-      iconColor: 'var(--q-consumer)',
+      iconComponent: countersNotInHome.value ? CounterIcon : ConsumerIcon,
+      iconColor: countersNotInHome.value
+        ? 'var(--q-secondary-counter-stroke)'
+        : 'var(--q-consumer)',
     });
   }
 
@@ -980,8 +1000,15 @@ path.animatedReverse.home {
   animation-duration: v-bind('animationDurations.home');
 }
 
+path.animated.consumer,
 path.animatedReverse.consumer {
   color: var(--q-consumer);
+  animation-duration: v-bind('animationDurations.consumer');
+}
+
+path.animated.not-in-home,
+path.animatedReverse.not-in-home {
+  color: var(--q-secondary-counter-stroke);
   animation-duration: v-bind('animationDurations.consumer');
 }
 
