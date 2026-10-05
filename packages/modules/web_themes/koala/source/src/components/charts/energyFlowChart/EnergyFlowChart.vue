@@ -123,6 +123,14 @@ const countersNotInHome = computed(
   () => mqttStore.notInHomeConsumption.counterIds.length > 0,
 );
 const homeDetailsVisible = ref(false);
+
+const openDetails = (event: MouseEvent, component: FlowComponent) => {
+  if (!component.showInfo) {
+    return;
+  }
+  event.stopPropagation();
+  homeDetailsVisible.value = true;
+};
 const homeHasDetails = computed(
   () =>
     mqttStore.inHomeConsumption.consumerIds.length > 0 ||
@@ -906,6 +914,8 @@ const labelClipPath = computed(() => {
           </text>
           <g
             :transform="`translate(${svgSize.circleRadius - svgRectWidth / 2}, 0)`"
+            :class="{ 'cursor-pointer': component.showInfo }"
+            @click="openDetails($event, component)"
           >
             <circle
               cx="0"
@@ -938,9 +948,8 @@ const labelClipPath = computed(() => {
             <!-- info badge: sits on the top left edge of the icon circle -->
             <g
               v-if="component.showInfo"
-              class="info-badge cursor-pointer"
+              class="info-badge"
               :transform="`translate(${-infoBadgeOffset}, ${-infoBadgeOffset})`"
-              @click.stop="homeDetailsVisible = true"
             >
               <circle
                 cx="0"
