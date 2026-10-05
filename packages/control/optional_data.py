@@ -112,15 +112,15 @@ class ElectricityPricing:
     get: ElectricityPricingGet = field(default_factory=electricity_pricing_get_factory)
 
 
+def ep_factory() -> ElectricityPricing:
+    return ElectricityPricing()
+
+
 @dataclass
 class Forecast:
     configured: bool = field(default=False, metadata={"topic": "forecast/configured"})
     provider: Optional[Union[str, Dict[str, Any]]] = field(default=None, metadata={"topic": "forecast/provider"})
     get: ForecastGet = field(default_factory=forecast_get_factory)
-
-
-def ep_factory() -> ElectricityPricing:
-    return ElectricityPricing()
 
 
 def forecast_factory() -> Forecast:

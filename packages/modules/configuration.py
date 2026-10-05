@@ -115,33 +115,33 @@ def _pub_configurable_display_themes() -> None:
 def _pub_configurable_forecasts() -> None:
     try:
         forecasts: List[Dict] = []
-        path_list = Path(_get_packages_path()/'modules'/'forecast').glob('**/forecast.py')
+        path_list = Path(_get_packages_path()/"modules"/"forecast").glob('**/forecast.py')
         for path in path_list:
             try:
-                if path.name.endswith('_test.py'):
+                if path.name.endswith("_test.py"):
                     continue
                 dev_defaults = importlib.import_module(
-                    f'.forecast.{path.parts[-2]}.forecast', 'modules').device_descriptor.configuration_factory()
+                    f".forecast.{path.parts[-2]}.forecast", "modules").device_descriptor.configuration_factory()
                 forecasts.append({
-                    'value': dev_defaults.type,
-                    'text': dev_defaults.name,
-                    'defaults': dataclass_utils.asdict(dev_defaults)
+                    "value": dev_defaults.type,
+                    "text": dev_defaults.name,
+                    "defaults": dataclass_utils.asdict(dev_defaults)
                 })
             except Exception as e:
-                log.exception(f'Fehler im configuration-Modul, {path}: {e}')
+                log.exception(f"Fehler im configuration-Modul, {path}: {e}")
         forecasts = sorted(forecasts, key=lambda d: d['text'].upper())
         forecasts.insert(0,
                          {
-                             'value': None,
-                             'text': '- kein Anbieter -',
-                             'defaults': {
-                                 'type': None,
-                                 'configuration': {}
+                             "value": None,
+                             "text": "- kein Anbieter -",
+                             "defaults": {
+                                 "type": None,
+                                 "configuration": {}
                              }
                          })
-        Pub().pub('openWB/set/system/configurable/forecasts', forecasts)
+        Pub().pub("openWB/set/system/configurable/forecasts", forecasts)
     except Exception:
-        log.exception('Fehler im configuration-Modul')
+        log.exception("Fehler im configuration-Modul")
 
 
 def _pub_configurable_tariffs() -> None:
