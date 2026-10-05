@@ -7,7 +7,7 @@ from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ForecastState
 
-from modules.forecast.openmeteo.config import OpenMeteoForecast, OpenMeteoForecastConfiguration
+from modules.forecast.open_meteo.config import OpenMeteoForecast, OpenMeteoForecastConfiguration
 
 OPEN_METEO_FORECAST_HOURS = 48
 log = logging.getLogger("forecast")
@@ -15,14 +15,15 @@ log = logging.getLogger("forecast")
 
 def is_configuration_complete(config: OpenMeteoForecastConfiguration) -> bool:
     """Prüfe, ob die Open-Meteo-Konfiguration alle erforderlichen Felder hat."""
-    strings = getattr(config, "strings", None)
-    return isinstance(strings, list) and len(strings) > 0
+    return len(config.strings) > 0
 
 
 def _require(value, field_name: str):
-    if value is None:
-        raise ValueError(f"Missing required forecast config field: {field_name}")
-    if isinstance(value, str) and value.strip() == "":
+    if (
+        value is None
+        or (isinstance(value, str) and len(value.strip()) == 0)
+        or (isinstance(value, list) and len(value) == 0)
+    ):
         raise ValueError(f"Missing required forecast config field: {field_name}")
     return value
 
@@ -34,15 +35,13 @@ def fetch_forecast(config: OpenMeteoForecastConfiguration) -> Tuple[Dict[str, fl
     system_loss = float(config.system_loss if config.system_loss is not None else 0.14)
 
     string_configs_raw = _require(config.strings, "strings")
-    if not isinstance(string_configs_raw, list) or len(string_configs_raw) == 0:
-        raise ValueError("Missing required forecast config field: strings")
+    if len(string_configs_raw) == 0:
+        raise ValueError("Es wurden noch keine Strings konfiguriert!")
+    if len(string_configs_raw) > 6:
+        log.warning(f"Es wurden mehr als 6 Strings konfiguriert. Es werden nur die ersten 6 verwendet.")
     string_configs = string_configs_raw[:6]
 
-    log.info(
-        "Open-Meteo-Abruf gestartet (Strings=%s, Zeitzone=%s)",
-        len(string_configs),
-        timezone,
-    )
+    log.info(f"Open-Meteo-Abruf gestartet (Strings={len(string_configs)}, Zeitzone={timezone})")
 
     values: Dict[str, float] = {}
     for string_config in string_configs:
@@ -64,6 +63,7 @@ def fetch_forecast(config: OpenMeteoForecastConfiguration) -> Tuple[Dict[str, fl
         )
 
         response = req.get_http_session().get(url, timeout=(2, 6)).json()
+        log.debug(f"Open-Meteo-Antwort erhalten: {response}")
         hourly = response.get("hourly", {})
         times = hourly.get("time", [])
         radiation = hourly.get("global_tilted_irradiance", [])
@@ -79,7 +79,7 @@ def fetch_forecast(config: OpenMeteoForecastConfiguration) -> Tuple[Dict[str, fl
             values[timestamp_key] = values.get(timestamp_key, 0.0) + estimated_power_w
 
     daily_kwh = _calculate_daily_kwh(values)
-    log.info("Open-Meteo-Abruf beendet (Werte=%s, Tage=%s)", len(values), len(daily_kwh))
+    log.info(f"Open-Meteo-Abruf beendet (Werte={len(values)}, Tage={len(daily_kwh)})")
     return values, daily_kwh
 
 
