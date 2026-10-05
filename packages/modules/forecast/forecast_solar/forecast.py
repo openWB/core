@@ -7,7 +7,7 @@ from modules.common import req
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import ForecastState
 
-from modules.forecast.forecastsolar.config import ForecastSolar, ForecastSolarConfiguration
+from modules.forecast.forecast_solar.config import ForecastSolar, ForecastSolarConfiguration
 
 
 log = logging.getLogger("forecast")
@@ -15,40 +15,22 @@ log = logging.getLogger("forecast")
 
 def is_configuration_complete(config: ForecastSolarConfiguration) -> bool:
     """Prüfe, ob die Forecast.Solar-Konfiguration alle erforderlichen Felder hat."""
-    strings = getattr(config, "strings", None)
-    return isinstance(strings, list) and len(strings) > 0
+    return len(config.strings) > 0
 
 
 def _require(value, field_name: str):
-    if value is None:
-        raise ValueError(f"Missing required forecast config field: {field_name}")
-    if isinstance(value, str) and value.strip() == "":
+    if (
+        value is None
+        or (isinstance(value, str) and value.strip() == "")
+        or (isinstance(value, list) and len(value) == 0)
+    ):
         raise ValueError(f"Missing required forecast config field: {field_name}")
     return value
 
 
-def _parse_forecast_solar_response(payload: Dict) -> Tuple[Dict[str, float], Dict[str, float]]:
-    result = payload.get("result") if isinstance(payload, dict) else None
-    source = result if isinstance(result, dict) else payload
-
-    # Kostenlose API-Endpunkte geben das Ergebnis direkt als flaches {Zeitstempel: Wert} Dict zurück.
-    first_key = next(iter(source), None) if isinstance(source, dict) else None
-    is_flat_response = (
-        first_key is not None
-        and isinstance(first_key, str)
-        and len(first_key) >= 10
-        and first_key[4] == "-"
-    )
-
-    if is_flat_response:
-        watts_raw = source
-        daily_source = None
-    else:
-        watts_raw = source.get("watts") if isinstance(source, dict) else None
-        if watts_raw is None and isinstance(source, dict):
-            watts_raw = source.get("values") or source.get("data")
-        daily_source = source.get("watt_hours_day") if isinstance(source, dict) else None
-
+def _parse_forecast_solar_response(payload: Dict) -> Dict[str, float]:
+    # Vorhersage-API-Endpunkte ("estimate") geben das Ergebnis direkt als flaches {Zeitstempel: Wert} Dict zurück.
+    watts_raw = payload.get("result") if isinstance(payload, dict) else None
     values: Dict[str, float] = {}
     if isinstance(watts_raw, dict):
         for timestamp, value in watts_raw.items():
@@ -56,28 +38,18 @@ def _parse_forecast_solar_response(payload: Dict) -> Tuple[Dict[str, float], Dic
                 continue
             timestamp_key = str(int(datetime.fromisoformat(timestamp).timestamp()))
             values[timestamp_key] = float(value)
-
-    daily_kwh: Dict[str, float] = {}
-    if isinstance(daily_source, dict):
-        for date_key, value in daily_source.items():
-            if value is None:
-                continue
-            daily_kwh[str(date_key)] = float(value) / 1000.0
-
-    return values, daily_kwh
+    return values
 
 
 def fetch_forecast(config: ForecastSolarConfiguration) -> Tuple[Dict[str, float], Dict[str, float]]:
     latitude = _require(config.latitude, "latitude")
     longitude = _require(config.longitude, "longitude")
-    string_configs_raw = _require(config.strings, "strings")
-    if not isinstance(string_configs_raw, list) or len(string_configs_raw) == 0:
-        raise ValueError("Missing required forecast config field: strings")
-    string_configs: list[dict[str, Any]] = string_configs_raw
+    string_configs = _require(config.strings, "strings")
     if len(string_configs) > 6:
+        log.warning(f"Es wurden {len(string_configs)} Strings konfiguriert. Es werden nur die ersten 6 verwendet.")
         string_configs = string_configs[:6]
 
-    log.info("Forecast.Solar-Abruf gestartet (Strings=%s)", len(string_configs))
+    log.info(f"Forecast.Solar-Abruf gestartet (Strings={len(string_configs)})")
 
     values: Dict[str, float] = {}
     daily_kwh: Dict[str, float] = {}
@@ -111,29 +83,21 @@ def fetch_forecast(config: ForecastSolarConfiguration) -> Tuple[Dict[str, float]
                 remaining = response.headers.get("X-Ratelimit-Remaining")
                 limit = response.headers.get("X-Ratelimit-Limit")
                 period = response.headers.get("X-Ratelimit-Period")
-                log.warning(
-                    "Forecast.Solar rate limit hit for %s: remaining=%s limit=%s period=%s retry_at=%s",
-                    url,
-                    remaining,
-                    limit,
-                    period,
-                    retry_at,
-                )
+                log.warning(f"Forecast.Solar rate limit hit for {url}: "
+                            f"remaining={remaining} limit={limit} period={period} retry_at={retry_at}")
             raise
 
         response = response_obj.json()
-        string_values, string_daily_kwh = _parse_forecast_solar_response(response)
+        log.debug(f"Forecast.Solar Antwort für String {string_config.get('name')}: {response}")
+        string_values = _parse_forecast_solar_response(response)
         for timestamp, value in string_values.items():
             values[timestamp] = values.get(timestamp, 0.0) + value
-        for day, value in string_daily_kwh.items():
-            daily_kwh[day] = daily_kwh.get(day, 0.0) + value
 
     # Die genutzte /estimate/watts-Route liefert grundsätzlich keine vorab aggregierten
     # Tageswerte (weder mit noch ohne API-Key), daher werden sie aus den Stundenwerten berechnet.
-    if not daily_kwh:
-        daily_kwh = _calculate_daily_kwh_from_values(values)
+    daily_kwh = _calculate_daily_kwh_from_values(values)
 
-    log.info("Forecast.Solar-Abruf beendet (Werte=%s, Tage=%s)", len(values), len(daily_kwh))
+    log.info(f"Forecast.Solar-Abruf beendet (Werte={len(values)}, Tage={len(daily_kwh)})")
     return values, daily_kwh
 
 
