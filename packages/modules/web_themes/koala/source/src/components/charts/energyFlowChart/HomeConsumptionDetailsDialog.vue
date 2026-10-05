@@ -103,4 +103,8 @@ const items = computed((): DetailsItem[] => {
   width: 28px;
   height: 28px;
 }
+
+.q-list {
+  background-color: transparent;
+}
 </style>
