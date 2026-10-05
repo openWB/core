@@ -1,7 +1,7 @@
 import importlib
 import logging
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import dataclass_utils
 from helpermodules.pub import Pub
@@ -184,9 +184,9 @@ def _pub_configurable_soc_modules() -> None:
                            })
         Pub().pub("openWB/set/system/configurable/soc_modules", soc_modules)
     except Exception as e:
-        log.exception(f"Fehler {e} im configuration-Modul {path}")
+        log.exception(f"Fehler {e} im configuration-Modul")
         if hasattr(sys, '_called_from_test'):
-            print(f"Fehler {e} im configuration-Modul {path}")
+            print(f"Fehler {e} im configuration-Modul")
 
 
 def _pub_configurable_devices_components() -> None:
@@ -194,7 +194,7 @@ def _pub_configurable_devices_components() -> None:
               _get_configurable_devices_components(["*bat*", "*counter*", "*inverter*"]))
 
 
-def _get_configurable_devices_components(component_pattern: List[str]) -> None:
+def _get_configurable_devices_components(component_pattern: List[str]) -> Optional[Dict]:
     def update_nested_dict(dictionary: Dict, update: Dict) -> Dict:
         for key, value in update.items():
             if isinstance(value, dict):

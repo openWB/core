@@ -4,6 +4,7 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 import sys
 import threading
+from typing import Optional, Union
 import typing_extensions
 import re
 import io
@@ -31,7 +32,7 @@ REDACTION_PATTERNS = [
 URL_CREDENTIALS_PATTERN = (r'(\w+://[^/\s:@]*):[^/\s]+@', r'\1:***REDACTED***@')
 
 
-def redact_sensitive_info(message: str, additional_fields: list = None) -> str:
+def redact_sensitive_info(message: str, additional_fields: Optional[list] = None) -> str:
     """
     Redacts sensitive information from the given message.
 
@@ -163,7 +164,7 @@ class InMemoryLogHandler(logging.Handler):
         self.line_count = 0
 
 
-def clear_in_memory_log_handler(logger_name: str = None) -> None:
+def clear_in_memory_log_handler(logger_name: Optional[str] = None) -> None:
     if logger_name is None:
         # Clear all in-memory log handlers
         for handler in in_memory_log_handlers.values():
@@ -174,8 +175,8 @@ def clear_in_memory_log_handler(logger_name: str = None) -> None:
             in_memory_log_handlers[logger_name].clear()
 
 
-def write_logs_to_file(logger_name: str = None) -> None:
-    def rotate_logs(base_path: str, name: str):
+def write_logs_to_file(logger_name: Optional[str] = None) -> None:
+    def rotate_logs(base_path: Union[str, os.PathLike], name: str):
         # Rotate the log files
         for i in range(NUMBER_OF_LOGFILES-1, 0, -1):
             src = os.path.join(base_path, f'{name}.previous{i}.log')
@@ -187,7 +188,7 @@ def write_logs_to_file(logger_name: str = None) -> None:
         if os.path.exists(current_log):
             shutil.move(current_log, os.path.join(base_path, f'{name}.previous1.log'))
 
-    def combine_logs(base_path: str, name: str):
+    def combine_logs(base_path: Union[str, os.PathLike], name: str):
         latest_log_path = os.path.join(base_path, f'{name}.latest.log')
         with open(latest_log_path, 'w') as latest_log:
             for i in range(NUMBER_OF_LOGFILES-1, -1, -1):
@@ -257,8 +258,8 @@ def setup_generate_totals_logging(include_process_log: bool = False) -> None:
 
 
 def setup_logging() -> None:
-    def mb_to_bytes(megabytes: int) -> int:
-        return megabytes * 1000000
+    def mb_to_bytes(megabytes: float) -> int:
+        return int(megabytes * 1000000)
 
     global in_memory_log_handlers
     in_memory_log_handlers = {name: InMemoryLogHandler() for name in ["main", "internal_chargepoint"]}
