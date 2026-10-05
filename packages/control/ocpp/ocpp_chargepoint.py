@@ -1,5 +1,7 @@
 import asyncio
 import logging
+import math
+from dataclasses import asdict
 from pathlib import Path
 from helpermodules.utils.error_handling import ImportErrorContext
 with ImportErrorContext():
@@ -22,7 +24,7 @@ with ImportErrorContext():
     )
     from ocpp.routing import after, on
 from typing import Optional
-from helpermodules.pub import Pub, pub_single
+from helpermodules.pub import Pub
 
 
 from control import data
@@ -55,22 +57,9 @@ class OcppChargePoint(cp):
         self._pending_availability = {}
         # Default Availability Status des CPs
         self.availability = {
-            1: AvailabilityType.operative if self.openwb_cp and self.openwb_cp.data.get.ocpp.availability else AvailabilityType.inoperative
-        }
-
-        # später dann aus einer Datei lesen
-        # -> damit die Config auch nach einem Neustart noch vorhanden ist
-        self.configuration = {
-            "HeartbeatInterval": datatypes.KeyValue(
-                key="HeartbeatInterval",
-                readonly=False,
-                value="12"
-            ),
-            "MeterValueSampleInterval": datatypes.KeyValue(
-                key="MeterValueSampleInterval",
-                readonly=False,
-                value="10"
-            ),
+            1: AvailabilityType.operative
+            if self.openwb_cp and self.openwb_cp.data.get.ocpp.availability
+            else AvailabilityType.inoperative
         }
 
     # Der openWB-Chargepoint kann beim Reconnect neu erzeugt werden.
@@ -121,7 +110,8 @@ class OcppChargePoint(cp):
         except Exception as e:
             print(f"# Exception occurred: {e}")
             log.exception(
-                f"Exception occurred during Boot Notification for CP Nr: {self.openwb_num}  OCPP_Nr: {self.chargebox_id}: {e}")
+                f"Exception occurred during Boot Notification for CP Nr: {self.openwb_num} "
+                f"OCPP_Nr: {self.chargebox_id}: {e}")
         return None
 
     async def _authorize(self,
@@ -285,13 +275,16 @@ class OcppChargePoint(cp):
     async def apply_pending_availability(self):
         # Problem beim reconnect wird der ganze Chargepoint neu initialisiert,
         # -> pending availabilities geht dadurch verloren...
-        if self.openwb_cp is not None and self.openwb_cp.data.get.ocpp.pending_availability and 0 not in self._pending_availability:
+        if (self.openwb_cp is not None and
+            self.openwb_cp.data.get.ocpp.pending_availability and
+                0 not in self._pending_availability):
             self._pending_availability[0] = AvailabilityType.inoperative
 
         for connector_id, availability_type in list(self._pending_availability.items()):
             await self._set_availability(connector_id, availability_type)
             print(
-                f"Applying pending availability for connector_id: {connector_id}, availability_type: {availability_type}")
+                f"Applying pending availability for connector_id: {connector_id}, "
+                f"availability_type: {availability_type}")
             self._pending_availability.pop(connector_id, None)
         self.openwb_cp.data.get.ocpp.pending_availability = False
         Pub().pub(f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/pending_availability", False)
@@ -305,27 +298,29 @@ class OcppChargePoint(cp):
         )
 
         unknown_keys = []
-        configuration = {}
+        configuration = self.openwb_cp.data.get.ocpp.config
+        configuration_fields = vars(configuration)
         requested_keys = ([key] if isinstance(key, str) else key) or []
 
         if requested_keys:
+            configuration_values = []
             for requested_key in requested_keys:
-                config_value = self.configuration.get(requested_key)
-                if config_value is None:
+                if requested_key not in configuration_fields:
                     unknown_keys.append(requested_key)
-                else:
-                    configuration[requested_key] = config_value
+                    continue
+                configuration_values.append(
+                    (requested_key, configuration_fields[requested_key])
+                )
         else:
-            # Wenn kein key angegeben wurde, alle Konfigurationen zurückgeben
-            configuration = self.configuration
+            configuration_values = configuration_fields.items()
 
         response = dict(
             configuration_key=[
                 datatypes.KeyValue(
                     key=k,
-                    readonly=v.readonly,
-                    value=v.value
-                ) for k, v in configuration.items()
+                    readonly=False,
+                    value=str(v)
+                ) for k, v in configuration_values
             ],
             unknown_key=unknown_keys
         )
@@ -344,36 +339,49 @@ class OcppChargePoint(cp):
             f"Value: {value}"
         )
 
-        config_value = self.configuration.get(key)
-
-        if config_value is None:
+        configuration = self.openwb_cp.data.get.ocpp.config
+        configuration_fields = vars(configuration)
+        if key not in configuration_fields:
             return call_result.ChangeConfiguration(
-                status=ConfigurationStatus.rejected
+                status=ConfigurationStatus.not_supported
             )
 
-        if config_value.readonly:
-            return call_result.ChangeConfiguration(
-                status=ConfigurationStatus.rejected
-            )
-
-        # Die aktuell unterstützten schreibbaren Intervalle müssen positive
-        # Ganzzahlen sein, da sie später mit int(...) ausgewertet werden.
-        if key in ("HeartbeatInterval", "MeterValueSampleInterval"):
-            try:
+        current_value = configuration_fields[key]
+        try:
+            if isinstance(current_value, bool):
+                normalized_value = value.strip().lower()
+                if normalized_value not in ("true", "false"):
+                    raise ValueError("Boolean-Konfigurationswert muss true oder false sein")
+                parsed_value = normalized_value == "true"
+            elif isinstance(current_value, int):
                 parsed_value = int(value)
-            except (TypeError, ValueError):
+            elif isinstance(current_value, float):
+                parsed_value = float(value)
+                if not math.isfinite(parsed_value):
+                    raise ValueError("Float-Konfigurationswert muss endlich sein")
+            elif isinstance(current_value, str):
+                parsed_value = value
+            else:
                 return call_result.ChangeConfiguration(
                     status=ConfigurationStatus.rejected
                 )
+        except (AttributeError, TypeError, ValueError, OverflowError):
+            return call_result.ChangeConfiguration(
+                status=ConfigurationStatus.rejected
+            )
 
+        # diese Parameter unterstützen nur nur Werte größer 0
+        if key in ("HeartbeatInterval", "MeterValueSampleInterval"):
             if parsed_value <= 0:
                 return call_result.ChangeConfiguration(
                     status=ConfigurationStatus.rejected
                 )
 
-            value = str(parsed_value)
-
-        config_value.value = value
+        setattr(configuration, key, parsed_value)
+        Pub().pub(
+            f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/config",
+            asdict(configuration),
+        )
         return call_result.ChangeConfiguration(
             status=ConfigurationStatus.accepted
         )
@@ -389,7 +397,7 @@ class OcppChargePoint(cp):
         )
 
         """
-        Wenn der Cp nicht gesperrt ist durch OCPP_Availability, 
+        Wenn der Cp nicht gesperrt ist durch OCPP_Availability,
         kann die Remote-Start-Transaktion akzeptiert werden.
 
         Wir setzten einfach den übergebenen id_tag  in die rfif-Topic
@@ -399,7 +407,6 @@ class OcppChargePoint(cp):
         wenn Fahrzeug nicht eingesteckt ist -> Nachricht: sie haben 5 min um das auto einzustecken.
         wenn Fahrzeug eingesteckt ist -> Transaktion wird gestartet.
             -> standart reaction von openWB, wie wenn man direkt nen tag gescannt hat
-                                   
 
         """
         requested_connector_id = connector_id if connector_id is not None else 1
@@ -450,7 +457,7 @@ class OcppChargePoint(cp):
     async def unlock_connector(self, connector_id: int, **kwargs):
         # Laut Doku nur dafür gedacht um den Stecker zu entriegeln, falls nötig
         # beschreibt das manual_lock hier????
-        
+
         print(
             f"UNLOCK_CONNECTOR  CP_Nr: {self.openwb_num} "
             f"OCPP_Nr: {self.chargebox_id} "
@@ -503,7 +510,13 @@ class OcppChargePoint(cp):
         )
 
     @on(Action.get_diagnostics)
-    async def get_diagnostics(self, location: str, retries: Optional[int] = None, retry_interval: Optional[int] = None, start_time: Optional[str] = None, stop_time: Optional[str] = None, **kwargs):
+    async def get_diagnostics(self,
+                              location: str,
+                              retries: Optional[int] = None,
+                              retry_interval: Optional[int] = None,
+                              start_time: Optional[str] = None,
+                              stop_time: Optional[str] = None,
+                              **kwargs):
         print(
             f"GET_DIAGNOSTICS  CP_Nr: {self.openwb_num} "
             f"OCPP_Nr: {self.chargebox_id} "
@@ -519,7 +532,11 @@ class OcppChargePoint(cp):
             file_name=filename
         )
 
-    async def _upload_diagnostics(self, filepath, location, retries: Optional[int] = None, retry_interval: Optional[int] = None):
+    async def _upload_diagnostics(self,
+                                  filepath,
+                                  location,
+                                  retries: Optional[int] = None,
+                                  retry_interval: Optional[int] = None):
         # Set status to uploading
         await self._diagnostics_status(DiagnosticsStatus.uploading)
         try:

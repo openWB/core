@@ -26,6 +26,7 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class MeterSnapshot:
+    transaction_id: str
     connector_id: int
     imported: int
 
@@ -77,7 +78,10 @@ class OcppClient:
         self._initialized = True
 
     def _created_charge_point(self, charge_point_id: str, ws) -> OcppChargePoint:
-        return OcppChargePoint(charge_point_id, ws, reset_callback=self._handle_reset, trigger_msg_callback=self.handler_trigger_msg)
+        return OcppChargePoint(charge_point_id,
+                               ws,
+                               reset_callback=self._handle_reset,
+                               trigger_msg_callback=self.handler_trigger_msg)
 
     def _run_loop(self):
         asyncio.set_event_loop(self.loop)
@@ -138,7 +142,25 @@ class OcppClient:
 
         connection.boot_accepted = True
 
-        await cp._set_availability(1, AvailabilityType.operative if cp.openwb_cp.data.get.ocpp.availability else AvailabilityType.inoperative)
+        # Heartbeat-Intervall des CSMS übernehmen.
+        """
+        heartbeat_interval = getattr(response, "interval", None)
+        if heartbeat_interval is not None:
+            try:
+                heartbeat_interval = int(heartbeat_interval)
+                if heartbeat_interval > 0:
+                    cp.configuration["HeartbeatInterval"].value = str(heartbeat_interval)
+            except (TypeError, ValueError):
+                log.warning(
+                    "Ungültiges Heartbeat-Intervall vom CSMS für %s: %r",
+                    chargebox_id,
+                    heartbeat_interval,
+                )
+        """
+
+        await cp._set_availability(1, AvailabilityType.operative
+                                   if cp.openwb_cp.data.get.ocpp.availability
+                                   else AvailabilityType.inoperative)
 
         await self.transactions.on_connected(chargebox_id, connection)
         await cp.apply_pending_availability()
@@ -150,6 +172,8 @@ class OcppClient:
 
         connection.meter_task = asyncio.create_task(self._meter_loop(
             connection), name=f"ocpp-meter-loop_{chargebox_id}")
+
+        return True
 
     async def _connection_closed(self, connection: OcppConnection):
         self._set_connected(connection.cp, False)
@@ -182,11 +206,7 @@ class OcppClient:
         try:
             while not connection.closing:
 
-                interval = int(
-                    connection.cp.configuration[
-                        "HeartbeatInterval"
-                    ].value
-                )
+                interval = int(connection.cp.openwb_cp.data.get.ocpp.config.HeartbeatInterval)
 
                 interval = max(interval, 1)
 
@@ -220,9 +240,7 @@ class OcppClient:
             while not connection.closing:
 
                 interval = int(
-                    connection.cp.configuration[
-                        "MeterValueSampleInterval"
-                    ].value
+                    connection.cp.openwb_cp.data.get.ocpp.config.MeterValueSampleInterval
                 )
 
                 interval = max(interval, 1)
@@ -242,6 +260,10 @@ class OcppClient:
                 )
 
                 if snapshot is None:
+                    continue
+
+                if transaction_id != self._meter_snapshots.get(chargebox_id).transaction_id:
+                    # Die gespeicherte Transaktion gehört nicht zur aktuellen Transaktion.
                     continue
 
                 await connection.cp._meter_values(
@@ -340,6 +362,7 @@ class OcppClient:
             self._set_meter_snapshot,
             chargebox_id,
             connector_id,
+            transaction_id,
             imported,
         )
 
@@ -347,9 +370,11 @@ class OcppClient:
         self,
         chargebox_id: str,
         connector_id: int,
+        transaction_id: int,
         imported: int,
     ):
         self._meter_snapshots[chargebox_id] = MeterSnapshot(
+            transaction_id=transaction_id,
             connector_id=connector_id,
             imported=int(imported),
         )

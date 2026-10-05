@@ -15,26 +15,13 @@ from control.ocpp.ocpp_connection import OcppConnection
 log = logging.getLogger(__name__)
 
 
-ConnectionCallback = Callable[[OcppConnection], Awaitable[None]]
+ConnectionCallback = Callable[[OcppConnection], Awaitable[Optional[bool]]]
 ChargePointFactory = Callable[[str, Any], OcppChargePoint]
 
 
 class OcppConnectionManager:
     """
     Verwaltet den Lebenszyklus der Transportverbindungen aller OCPP-Verbindungen.
-
-    Aufgaben:
-    - gewünschte Verbindungen nachverfolgen
-    - WebSocket-Verbindungen öffnen
-    - OcppChargePoint-/OcppConnection-Instanzen erstellen
-    - gleichzeitige Verbindungsversuche je Ladebox nacheinander ausführen
-    - die OCPP-Empfänger-Task ausführen
-    - getrennte oder ersetzte Verbindungen bereinigen
-    - mit exponentiell wachsenden Wartezeiten erneut verbinden
-
-    Die Initialisierung der OCPP-Sitzung bleibt bewusst außerhalb dieser Klasse.
-    Der Callback on_connected ist für BootNotification, Verfügbarkeit,
-    Transaktionswiederherstellung und den Start der Heartbeat-/Zähler-Tasks zuständig.
     """
 
     def __init__(
@@ -217,7 +204,10 @@ class OcppConnectionManager:
                 name=f"ocpp-{chargebox_id}-receiver",
             )
 
-            await self._on_connected(connection)
+            response = await self._on_connected(connection)
+            if response is None:
+                log.error(f"Boot Notification für {chargebox_id} fehlgeschlagen")
+                return None
 
             log.info("OCPP Chargebox %s verbunden", chargebox_id)
             return connection

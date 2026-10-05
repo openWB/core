@@ -310,13 +310,6 @@ class TransactionCoordinator:
             TransactionState.ACTIVE,
         )
 
-        # Wird aktuell beim Reconnect ebenfalls gesetzt.
-        # Damit ist der OcppChargePoint auch beim initialen
-        # Start konsistent.
-        cp.transaction_id = (
-            transaction.transaction_id
-        )
-
         log.info(
             f"OCPP Transaction {transaction.transaction_id} für {chargebox_id} gestartet.",
         )
@@ -516,10 +509,6 @@ class TransactionCoordinator:
 
         transaction = self._get_transaction(chargebox_id)
 
-        # Bei einem Reconnect wird eine neue OCPP-Chargepoint-Instanz erzeugt
-        # Eine bereits laufende Transaktion dafür übernehemen
-        connection.cp.transaction_id = transaction.transaction_id
-
         openwb_cp = get_cp_from_chargebox_id(chargebox_id)
 
         if openwb_cp is None:
@@ -569,7 +558,6 @@ class TransactionCoordinator:
         #
         # Während des Replay soll sie nicht kurz
         # wieder als aktiv publiziert werden.
-        connection.cp.transaction_id = transaction_id
 
         stop_request = PendingStop(
             meter_stop=int(entry.get("imported", 0)),
@@ -794,6 +782,9 @@ class TransactionCoordinator:
             f"OCPP Transaction {transaction_id} für {chargebox_id} beendet.",
         )
 
+        transaction.reset()
+        self._commit(chargebox_id, transaction)
+
         #
         # Pending ChangeAvailability erst
         # nach erfolgreichem Stop anwenden.
@@ -802,12 +793,6 @@ class TransactionCoordinator:
         if (cp._pending_availability or
                 cp.openwb_cp.data.get.ocpp.pending_availability):
             await cp.apply_pending_availability()
-
-        transaction.reset()
-
-        cp.transaction_id = None
-
-        self._commit(chargebox_id, transaction)
 
         return True
 
