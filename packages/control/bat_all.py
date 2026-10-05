@@ -303,15 +303,14 @@ class BatAll:
         try:
             if self.data.config.configured is True:
                 self.set_power_limit_controllable_state()
-                if self.data.get.fault_state == 0:
+                if self.data.get.fault_state == 2:
+                    # Speicher-Leistung nur im Fehlerfall nicht in der Regelung berücksichtigen.
+                    self.data.set.charging_power_left = 0
+                else:
                     self.get_power_limit()
                     self._set_bat_power_active_control(self.data.set.power_limit)
                     self.get_charging_power_left_diff()
                     log.info(f"{self.data.set.charging_power_left}W verbleibende Speicher-Leistung")
-                else:
-                    # Bei Warnung oder Fehlerfall, zB durch Kalibrierung, Speicher-Leistung nicht in der
-                    # Regelung berücksichtigen.
-                    self.data.set.charging_power_left = 0
             else:
                 self.data.set.charging_power_left = 0
                 self.data.get.power = 0
