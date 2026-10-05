@@ -4301,6 +4301,74 @@ export const useMqttStore = defineStore('mqtt', () => {
   });
 
   /**
+   * Get the consumers and counters that are not counted in the home
+   * consumption.
+   * @returns object with the ids of the consumers and counters
+   */
+  const notInHomeConsumption = computed(() => {
+    const AUTO = 'auto_home_consumption';
+    const NOT_HOME = 'no_home_consumption';
+    const result = { consumerIds: [] as number[], counterIds: [] as number[] };
+    function walk(nodes: Hierarchy[] | undefined, parentMode: string) {
+      if (nodes === undefined) {
+        return;
+      }
+      nodes.forEach((node) => {
+        if (node.type === 'counter') {
+          const own = getValue.value(
+            `openWB/counter/${node.id}/config/is_home_consumption_counter`,
+            undefined,
+            AUTO,
+          ) as string | undefined;
+          const mode = own && own !== AUTO ? own : parentMode;
+          if (mode === NOT_HOME) {
+            result.counterIds.push(node.id);
+          }
+          walk(node.children, mode);
+        } else if (node.type === 'consumer') {
+          const own = getValue.value(
+            `openWB/consumer/${node.id}/config`,
+            'is_home_consumption_consumer',
+            AUTO,
+          ) as string | undefined;
+          if ((own && own !== AUTO ? own : parentMode) === NOT_HOME) {
+            result.consumerIds.push(node.id);
+          }
+        } else {
+          walk(node.children, parentMode);
+        }
+      });
+    }
+    walk(
+      getValue.value('openWB/counter/get/hierarchy') as Hierarchy[],
+      'home_consumption',
+    );
+    return result;
+  });
+
+  /**
+   * Get the summed power of all consumers and counters that are not counted
+   * in the home consumption.
+   * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
+   * @returns string | number | ValueObject
+   */
+  const notInHomeConsumptionPower = computed(() => {
+    return (returnType: string = 'textValue') => {
+      const power = getValue.value(
+        'openWB/counter/set/not_in_home_consumption',
+      ) as number | undefined;
+      const valueObject = getValueObject.value(power);
+      if (Object.hasOwn(valueObject, returnType)) {
+        return valueObject[returnType as keyof ValueObject];
+      }
+      if (returnType == 'object') {
+        return valueObject;
+      }
+      console.error('returnType not found!', returnType, power);
+    };
+  });
+
+  /**
    * Get pv power
    * @param returnType type of return value, 'textValue', 'value', 'scaledValue', 'scaledUnit' or 'object'
    * @returns string | number | ValueObject | undefined
@@ -4667,6 +4735,8 @@ export const useMqttStore = defineStore('mqtt', () => {
     // PV data
     pvConfigured,
     hybridInverters,
+    notInHomeConsumption,
+    notInHomeConsumptionPower,
     pvPowerTotal,
     pvDailyExported,
     pvIds,
