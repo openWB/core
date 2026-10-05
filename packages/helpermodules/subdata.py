@@ -477,6 +477,9 @@ class SubData:
                                 var["cp"+index].chargepoint.data.get.connected_vehicle.info, msg)
                         elif re.search("/chargepoint/[0-9]+/get/connected_vehicle/soc", msg.topic) is not None:
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.get.connected_vehicle.soc, msg)
+                        elif re.search("/chargepoint/[0-9]+/get/ocpp/config$", msg.topic) is not None:
+                            self.set_json_payload_class(
+                                var["cp"+index].chargepoint.data.get.ocpp.config, msg)
                         elif re.search("/chargepoint/[0-9]+/get/ocpp/", msg.topic) is not None:
                             self.set_json_payload_class(var["cp"+index].chargepoint.data.get.ocpp, msg)
                         elif (re.search("/chargepoint/[0-9]+/get/soc$", msg.topic) is not None and
