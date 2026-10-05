@@ -12,6 +12,7 @@ import VehicleIcon from 'src/assets/icons/owbVehicle.svg?component';
 import ChargePointIcon from 'src/assets/icons/owbChargePoint_2.svg?component';
 import ConsumerIcon from 'src/assets/icons/owbConsumer.svg?component';
 import CounterIcon from 'src/assets/icons/owbCounter.svg?component';
+import InfoIcon from 'src/assets/icons/owbInformation.svg?component';
 import HomeConsumptionDetailsDialog from './HomeConsumptionDetailsDialog.vue';
 
 const mqttStore = useMqttStore();
@@ -53,8 +54,8 @@ const svgViewBox = computed(
 // the inset leaves a visible gap between circle and pill edge.
 const iconCircleRadius = computed(() => svgSize.value.circleRadius - 2);
 
-const infoBadgeRadius = 3.6;
-const infoIconRadius = 3;
+const infoBadgeRadius = 3.2;
+const infoIconSize = 6;
 const infoBadgeOffset = computed(
   () => (iconCircleRadius.value + 1) * Math.SQRT1_2,
 );
@@ -965,8 +966,15 @@ const labelClipPath = computed(() => {
                 :r="infoBadgeRadius"
                 filter="url(#flow-box-shadow)"
               />
-              <circle class="info-icon" cx="0" cy="0" :r="infoIconRadius" />
-              <path d="M 0 -0.95 v 0.01 M 0 -0.1 V 1" />
+              <g
+                :transform="`translate(${-infoIconSize / 2}, ${-infoIconSize / 2})`"
+              >
+                <InfoIcon
+                  class="info-icon"
+                  :width="infoIconSize"
+                  :height="infoIconSize"
+                />
+              </g>
             </g>
           </g>
         </g>
@@ -1136,17 +1144,8 @@ circle:not(.soc) {
   fill: var(--q-card-background);
 }
 
-.info-badge circle.info-icon {
-  fill: var(--q-flow-chart-info);
-  stroke: var(--q-flow-chart-info);
-  stroke-width: 0.4;
-}
-
-.info-badge path {
-  fill: none;
-  stroke: var(--q-white);
-  stroke-width: 0.55;
-  stroke-linecap: round;
+.info-badge .info-icon {
+  color: var(--q-flow-chart-info);
 }
 
 rect {
