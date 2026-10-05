@@ -122,19 +122,26 @@ const consumerProduction = computed(
 const countersNotInHome = computed(
   () => mqttStore.notInHomeConsumption.counterIds.length > 0,
 );
-const homeDetailsVisible = ref(false);
+const detailsVisible = ref(false);
+const detailsScope = ref<'inHome' | 'notInHome'>('inHome');
 
 const openDetails = (event: MouseEvent, component: FlowComponent) => {
   if (!component.showInfo) {
     return;
   }
   event.stopPropagation();
-  homeDetailsVisible.value = true;
+  detailsScope.value = component.id === 'home' ? 'inHome' : 'notInHome';
+  detailsVisible.value = true;
 };
 const homeHasDetails = computed(
   () =>
     mqttStore.inHomeConsumption.consumerIds.length > 0 ||
     mqttStore.inHomeConsumption.counterIds.length > 0,
+);
+const notInHomeHasDetails = computed(
+  () =>
+    mqttStore.notInHomeConsumption.consumerIds.length > 0 ||
+    mqttStore.notInHomeConsumption.counterIds.length > 0,
 );
 const showConsumerPower = computed(
   () =>
@@ -440,6 +447,7 @@ const svgComponents = computed((): FlowComponent[] => {
       iconColor: countersNotInHome.value
         ? 'var(--q-secondary-counter-stroke)'
         : 'var(--q-consumer)',
+      showInfo: notInHomeHasDetails.value,
     });
   }
 
@@ -964,7 +972,10 @@ const labelClipPath = computed(() => {
         </g>
       </g>
     </svg>
-    <HomeConsumptionDetailsDialog v-model="homeDetailsVisible" />
+    <HomeConsumptionDetailsDialog
+      v-model="detailsVisible"
+      :scope="detailsScope"
+    />
   </div>
 </template>
 
