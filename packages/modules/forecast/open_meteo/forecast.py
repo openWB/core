@@ -38,7 +38,7 @@ def fetch_forecast(config: OpenMeteoForecastConfiguration) -> Tuple[Dict[str, fl
     if len(string_configs_raw) == 0:
         raise ValueError("Es wurden noch keine Strings konfiguriert!")
     if len(string_configs_raw) > 6:
-        log.warning(f"Es wurden mehr als 6 Strings konfiguriert. Es werden nur die ersten 6 verwendet.")
+        log.warning("Es wurden mehr als 6 Strings konfiguriert. Es werden nur die ersten 6 verwendet.")
     string_configs = string_configs_raw[:6]
 
     log.info(f"Open-Meteo-Abruf gestartet (Strings={len(string_configs)}, Zeitzone={timezone})")

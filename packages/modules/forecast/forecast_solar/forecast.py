@@ -1,6 +1,6 @@
 from datetime import datetime
 import logging
-from typing import Any, Dict, Tuple
+from typing import Dict, Tuple
 from requests import HTTPError
 
 from modules.common import req

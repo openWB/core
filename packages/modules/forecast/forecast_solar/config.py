@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
 from typing import List, Optional, TypedDict
-from dataclasses import field
 
 
 class ForecastSolarStringConfiguration(TypedDict):
