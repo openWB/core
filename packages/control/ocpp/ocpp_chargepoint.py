@@ -511,8 +511,9 @@ class OcppChargePoint(cp):
         # Upload in einem eigenen Task
         asyncio.create_task(self._upload_diagnostics(filename, location, retries or 0, retry_interval or 0))
 
+        # Nur den Namen der Datei zurückgeben, nicht den gesamten Pfad
         return call_result.GetDiagnostics(
-            file_name=filename
+            file_name=Path(filename).name
         )
 
     async def _upload_diagnostics(self,
@@ -520,9 +521,18 @@ class OcppChargePoint(cp):
                                   location,
                                   retries: Optional[int] = None,
                                   retry_interval: Optional[int] = None):
-        # Set status to uploading
-        await self._diagnostics_status(DiagnosticsStatus.uploading)
+        log.debug(
+            "Uploading diagnostics file: %s to location: %s with retries: %s and retry_interval: %s",
+            filepath,
+            location,
+            retries,
+            retry_interval
+        )
+
         try:
+            # Set status to uploading
+            await self._diagnostics_status(DiagnosticsStatus.uploading)
+
             await upload_diagnostics(filepath, location, retries or 0, retry_interval or 0)
 
             await self._diagnostics_status(DiagnosticsStatus.uploaded)
@@ -530,19 +540,29 @@ class OcppChargePoint(cp):
             log.exception("Fehler beim Hochladen der Diagnosedatei: %s", e)
             await self._diagnostics_status(DiagnosticsStatus.upload_failed)
         finally:
+            # Status wieder auf 'idle' setzen
+            # damit bei späteren Upload-Versuchen kein veralteter Status verwendet wird
+            await self._diagnostics_status(DiagnosticsStatus.idle)
             # Temp-file wieder löschen
             # egal ob das Hochladen erfolgreich war oder nicht
             Path(filepath).unlink(missing_ok=True)
 
     async def _diagnostics_status(self, status: DiagnosticsStatus = None):
+
         if status is None:
             # sende den gespeicherten Diagnosestatus an die Zentrale
-            if self._diagnostics_status_stored is not None:
+            if self._diagnostics_status_stored is None:
+                # Wenn kein gespeicherter Status vorhanden ist, setze den Status auf 'idle'
+                status = DiagnosticsStatus.idle
+            else:
+                # Wenn kein Status übergeben wurde, verwende den gespeicherten Status
                 status = self._diagnostics_status_stored
+
         else:
             # speichere den neuen Status
             self._diagnostics_status_stored = status
 
+        print(f"Setting diagnostics status: {status}")
         request = call.DiagnosticsStatusNotification(
             status=status
         )

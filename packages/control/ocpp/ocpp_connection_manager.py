@@ -21,7 +21,8 @@ ChargePointFactory = Callable[[str, Any], OcppChargePoint]
 
 class OcppConnectionManager:
     """
-    Verwaltet den Lebenszyklus der Transportverbindungen aller OCPP-Verbindungen.
+    Die Klasse kümmert sich um Aufbau, Wiederverbindung und 
+    sauberen Abbau der OCPP-Transportverbindungen.
     """
 
     def __init__(
