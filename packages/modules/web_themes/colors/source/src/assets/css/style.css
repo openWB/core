@@ -201,6 +201,13 @@ body>.container-fluid {
 	--color-ctr7: #c19a6b;
 	--color-ctr8: #987654;
 	--color-ctr9: #f4a460;
+	/* consumers use a petrol color scheme */
+	--color-consumers: #009696;
+	--color-consumer1: #009696; 
+	--color-consumer2: #00b4cc;
+	--color-consumer3: #008c9e;
+	--color-consumer4: #00dffc;
+	--color-consumer5: #00ffff;
 
 	--font-normal: 1.4rem;
 	--font-large: 1.6rem;

@@ -74,6 +74,8 @@ export enum PowerItemType {
 	chargeSummary = 'chargeSummary',
 	device = 'device',
 	deviceSummary = 'deviceSummary',
+	consumer = 'consumer',
+	consumerSummary = 'consumerSummary',
 	counterSummary = 'counterSummary',
 	house = 'house',
 }
@@ -84,6 +86,7 @@ export interface PowerItem {
 	color: string
 	icon: string
 	showInGraph: boolean
+	showInList?: boolean
 	now: EnergyData
 	past: EnergyData
 }

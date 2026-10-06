@@ -50,6 +50,7 @@ export interface RawDayGraphDataItem {
 	cp: object
 	ev: object
 	sh: object
+	consumer: object
 	prices: {
 		grid: number
 		pv: number
@@ -388,6 +389,14 @@ export function updateEnergyValues(
 		registry.setEnergyBat('devices', devicesBatEnergy)
 		registry.calculatePvPercentage('devices')
 
+		// Consumers
+		Object.entries(totals.consumer).forEach(([id, values]) => {
+			if (id == 'all') {
+				updatePvValues(values, 'consumers')
+			} else {
+				updatePvValues(values, id)
+			}
+		})
 		// Counters
 		registry.setEnergy('counters', 0)
 		let counterEnergy = 0

@@ -81,6 +81,7 @@ function extractValues(data: RawGraphDataItem): GraphDataItem {
 	const car1id = 'ev' + car1 + '-soc'
 	const car2id = 'ev' + car2 + '-soc'
 	const re_cp = /cp(\d+)-power/
+	const re_consumer = /consumer(\d+)-power/
 	const re_ctr = /counter(\d+)-power/
 	const values: GraphDataItem = {}
 	values.date = +data.timestamp * 1000
@@ -139,6 +140,17 @@ function extractValues(data: RawGraphDataItem): GraphDataItem {
 				values['cp' + found[1]] = +(data[key] ?? 0)
 			}
 		})
+	values.consumers = 0
+	Object.keys(data)
+		.filter((key) => re_consumer.test(key))
+		.forEach((key) => {
+			const found = key.match(re_consumer)
+			if (found && found[1]) {
+				const id = 'consumer' + found[1]
+				values[id] = +(data[key] ?? 0)
+				values.consumers += +(data[key] ?? 0)
+			}
+		})
 	values['counters'] = 0
 	Object.keys(data)
 		.filter((key) => re_ctr.test(key))
@@ -157,6 +169,5 @@ function extractValues(data: RawGraphDataItem): GraphDataItem {
 		values.selfUsage = 0
 	}
 	values.devices = 0
-
 	return values
 }
