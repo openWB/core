@@ -5,7 +5,6 @@ with ImportErrorContext():
     from ocpp.v16.enums import (ChargePointStatus,
                                 ChargePointErrorCode,
                                 RegistrationStatus,
-                                AvailabilityType,
                                 ResetType,
                                 MessageTrigger)
 import asyncio
@@ -49,6 +48,7 @@ class OcppClient:
     def __init__(self):
         if getattr(self, "_initialized", False):
             return
+
         self._last_update: dict[
             tuple[str, int],
             tuple[ChargePointStatus, ChargePointErrorCode]
@@ -83,16 +83,19 @@ class OcppClient:
 
         self._initialized = True
 
+    # Chargepoint Factory für Connection Manager
     def _created_charge_point(self, charge_point_id: str, ws) -> OcppChargePoint:
         return OcppChargePoint(charge_point_id,
                                ws,
                                reset_callback=self._handle_reset,
                                trigger_msg_callback=self.handler_trigger_msg)
 
+    # startet den Event-Loop des OCPP-Clients
     def _run_loop(self):
         asyncio.set_event_loop(self.loop)
         self.loop.run_forever()
 
+    # startet asynchron Funktionen (Coroutinen) innerhalb des OCPP-Threads
     def _submit(self, coroutine, description: str):
         """
         Coroutine im OCPP-Thread starten.
