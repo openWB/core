@@ -13,9 +13,15 @@ from control.ocpp import ocpp_connection_manager
 from control.ocpp import ocpp_transaction_coordinator
 from control.ocpp.ocpp_chargepoint import OcppChargePoint
 from control.ocpp.ocpp_client import OcppClient
+from control.ocpp.ocpp_connection import OcppConnection, RegistrationState
 from control.ocpp.ocpp_connection_manager import OcppConnectionManager
 from control.ocpp.ocpp_transaction_coordinator import TransactionCoordinator
-from ocpp.v16.enums import ChargePointStatus, MessageTrigger, TriggerMessageStatus
+from ocpp.v16.enums import (
+    ChargePointStatus,
+    MessageTrigger,
+    RegistrationStatus,
+    TriggerMessageStatus,
+)
 from modules.chargepoints.mqtt.chargepoint_module import ChargepointModule
 from modules.chargepoints.mqtt.config import Mqtt
 
@@ -125,7 +131,10 @@ def test_status_notification_updates_client_cache_after_successful_send():
     client = object.__new__(OcppClient)
     client._last_update = {}
     client.connection_manager = SimpleNamespace(
-        connect=AsyncMock(return_value=SimpleNamespace(cp=chargepoint)),
+        connect=AsyncMock(return_value=SimpleNamespace(
+            cp=chargepoint,
+            boot_accepted=True,
+        )),
     )
 
     asyncio.run(client._send_status_notification(
@@ -331,6 +340,235 @@ def test_invalid_chargebox_id_does_not_connect(monkeypatch):
     assert result is None
     connect_mock.assert_not_called()
     assert connection_manager.is_wanted("invalid-cp") is False
+
+
+def test_connection_transport_is_usable_before_registration_is_accepted():
+    connection = OcppConnection(
+        chargebox_id="box-1",
+        ws=SimpleNamespace(closed=False),
+        cp=Mock(),
+    )
+    connection.start_task = Mock(done=Mock(return_value=False))
+    connection.registration_state = RegistrationState.PENDING
+
+    assert connection.boot_accepted is False
+    assert OcppConnectionManager._is_usable(connection) is True
+
+
+def test_pending_boot_notification_keeps_connection_unaccepted():
+    client = object.__new__(OcppClient)
+    client.connection_manager = SimpleNamespace()
+    connection = OcppConnection("box-1", SimpleNamespace(closed=False), SimpleNamespace())
+
+    async def check():
+        result = await client._handle_boot_response(
+            connection,
+            SimpleNamespace(status=RegistrationStatus.pending, interval=30),
+        )
+        assert result is True
+
+    asyncio.run(check())
+
+    assert connection.registration_state == RegistrationState.PENDING
+    assert connection.cp.registration_state == RegistrationState.PENDING
+    assert connection.boot_accepted is False
+    assert connection.heartbeat_task is None
+    assert connection.meter_task is None
+
+
+def test_rejected_boot_notification_schedules_interval_retry():
+    client = object.__new__(OcppClient)
+    client.connection_manager = SimpleNamespace()
+    connection = OcppConnection("box-1", SimpleNamespace(closed=False), SimpleNamespace())
+
+    async def check():
+        await client._handle_boot_response(
+            connection,
+            SimpleNamespace(status=RegistrationStatus.rejected, interval=17),
+        )
+        assert connection.registration_state == RegistrationState.REJECTED
+        assert connection.retry_interval == 17
+        assert connection.retry_task is not None
+        connection.retry_task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await connection.retry_task
+
+    asyncio.run(check())
+
+
+def test_rejected_boot_notification_retries_on_same_connection_until_accepted(monkeypatch):
+    client = object.__new__(OcppClient)
+    client._start_accepted_connection = AsyncMock()
+    delays = []
+
+    async def immediate_sleep(delay):
+        delays.append(delay)
+
+    monkeypatch.setattr(asyncio, "sleep", immediate_sleep)
+    chargepoint = SimpleNamespace(
+        registration_state=None,
+        _boot_notification=AsyncMock(side_effect=[
+            SimpleNamespace(status=RegistrationStatus.rejected, interval=2),
+            SimpleNamespace(status=RegistrationStatus.accepted, interval=30),
+        ]),
+    )
+    connection = OcppConnection(
+        "box-1",
+        SimpleNamespace(closed=False),
+        chargepoint,
+    )
+    connection.registration_state = RegistrationState.REJECTED
+    connection.retry_interval = 0.01
+    client.connection_manager = SimpleNamespace(get=Mock(return_value=connection))
+
+    async def check():
+        connection.retry_task = asyncio.create_task(
+            client._retry_rejected_registration(connection),
+        )
+        await connection.retry_task
+
+    asyncio.run(check())
+
+    assert chargepoint._boot_notification.await_count == 2
+    assert connection.registration_state == RegistrationState.ACCEPTED
+    assert connection.boot_accepted is True
+    assert delays == [0.01, 2]
+    client._start_accepted_connection.assert_awaited_once()
+    client.connection_manager.get.assert_called_with("box-1")
+
+
+def test_rejected_charge_point_ignores_inbound_calls_but_receives_call_results():
+    sent_messages = []
+
+    async def send(message):
+        sent_messages.append(json.loads(message))
+
+    async def check():
+        cp = OcppChargePoint("box-1", SimpleNamespace(send=send))
+        cp.registration_state = RegistrationState.REJECTED
+        await cp.route_message(json.dumps([
+            2,
+            "trigger-1",
+            "TriggerMessage",
+            {"requestedMessage": "Heartbeat"},
+        ]))
+        await cp.route_message(json.dumps([3, "boot-retry", {}]))
+
+        assert sent_messages == []
+        response = cp._response_queue.get_nowait()
+        assert response.unique_id == "boot-retry"
+
+    asyncio.run(check())
+
+
+def test_pending_trigger_is_sent_after_confirmation(monkeypatch):
+    from control.ocpp import ocpp_chargepoint
+
+    events = []
+
+    async def send(message):
+        events.append(json.loads(message))
+
+    openwb_cp = SimpleNamespace(num=1, data=SimpleNamespace(get=SimpleNamespace(
+        ocpp=SimpleNamespace(availability=True),
+    )))
+    monkeypatch.setattr(ocpp_chargepoint, "get_cp_from_chargebox_id", lambda _: openwb_cp)
+    client = object.__new__(OcppClient)
+    connection = SimpleNamespace(registration_state=RegistrationState.PENDING)
+
+    async def check():
+        cp = OcppChargePoint(
+            "box-1",
+            SimpleNamespace(send=send),
+            trigger_msg_callback=client.handler_trigger_msg,
+        )
+        connection.cp = cp
+        cp._heartbeat = AsyncMock(side_effect=lambda: events.append("Heartbeat"))
+        client.connection_manager = SimpleNamespace(
+            is_active_charge_point=Mock(return_value=False),
+            get=Mock(return_value=connection),
+        )
+        await cp.route_message(json.dumps([
+            2,
+            "trigger-pending",
+            "TriggerMessage",
+            {"requestedMessage": "Heartbeat"},
+        ]))
+        await asyncio.sleep(0)
+
+    asyncio.run(check())
+
+    assert events == [[3, "trigger-pending", {"status": "Accepted"}], "Heartbeat"]
+
+
+@pytest.mark.parametrize(
+    ("action", "payload"),
+    [
+        ("RemoteStartTransaction", {"idTag": "TAG", "connectorId": 1}),
+        ("RemoteStopTransaction", {"transactionId": 42}),
+    ],
+)
+def test_pending_rejects_remote_transaction_requests(action, payload, monkeypatch):
+    from control.ocpp import ocpp_chargepoint
+
+    events = []
+
+    async def send(message):
+        events.append(json.loads(message))
+
+    openwb_cp = SimpleNamespace(
+        num=1,
+        data=SimpleNamespace(get=SimpleNamespace(ocpp=SimpleNamespace(
+            availability=True,
+            transaction_id=42,
+            remote_stop=False,
+        ))),
+    )
+    monkeypatch.setattr(ocpp_chargepoint, "get_cp_from_chargebox_id", lambda _: openwb_cp)
+
+    async def check():
+        cp = OcppChargePoint("box-1", SimpleNamespace(send=send))
+        cp.registration_state = RegistrationState.PENDING
+        await cp.route_message(json.dumps([2, "pending-request", action, payload]))
+
+    asyncio.run(check())
+
+    assert events == [[3, "pending-request", {"status": "Rejected"}]]
+    assert openwb_cp.data.get.ocpp.remote_stop is False
+
+
+def test_transaction_start_does_not_authorize_before_boot_accepted(monkeypatch):
+    openwb_cp = SimpleNamespace(
+        num=1,
+        data=SimpleNamespace(get=SimpleNamespace(ocpp=SimpleNamespace(
+            availability=True,
+            transaction_id=None,
+            transaction_id_tag=None,
+        ))),
+    )
+    authorize = AsyncMock()
+    connection = SimpleNamespace(
+        boot_accepted=False,
+        cp=SimpleNamespace(_authorize=authorize),
+    )
+    coordinator = TransactionCoordinator(
+        ensure_connected=AsyncMock(return_value=connection),
+    )
+    monkeypatch.setattr(
+        ocpp_transaction_coordinator,
+        "get_cp_from_chargebox_id",
+        lambda _: openwb_cp,
+    )
+    monkeypatch.setattr(
+        ocpp_transaction_coordinator,
+        "Pub",
+        lambda: SimpleNamespace(pub=Mock()),
+    )
+
+    result = asyncio.run(coordinator.start("box-1", 1, "TAG", 0))
+
+    assert result is False
+    authorize.assert_not_awaited()
 
 
 def test_offline_stop_is_persisted(monkeypatch):

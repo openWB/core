@@ -47,6 +47,17 @@ class OcppChargePoint(cp):
         self.trigger_msg_callback = trigger_msg_callback
         self._accepted_triggers = set()
         self._diagnostics_status_stored = None
+        self.registration_state = None
+
+    async def _handle_call(self, msg):
+        state = getattr(self.registration_state, "value", self.registration_state)
+        if state == "Rejected":
+            log.info(
+                "OCPP Call %s von der Zentrale während Rejected ignoriert",
+                msg.action,
+            )
+            return
+        return await super()._handle_call(msg)
 
     # Der openWB-Chargepoint kann beim Reconnect neu erzeugt werden.
     @property
@@ -353,6 +364,11 @@ class OcppChargePoint(cp):
 
     @on(Action.remote_start_transaction)
     async def remote_start_transaction(self, id_tag: str, connector_id: Optional[int] = None, **kwargs):
+        if getattr(self.registration_state, "value", self.registration_state) == "Pending":
+            return call_result.RemoteStartTransaction(
+                status=RemoteStartStopStatus.rejected
+            )
+
         print(
             f"REMOTE_START_TRANSACTION  CP_Nr: {self.openwb_num} "
             f"OCPP_Nr: {self.chargebox_id} "
@@ -397,6 +413,11 @@ class OcppChargePoint(cp):
 
     @on(Action.remote_stop_transaction)
     async def remote_stop_transaction(self, transaction_id: int, **kwargs):
+        if getattr(self.registration_state, "value", self.registration_state) == "Pending":
+            return call_result.RemoteStopTransaction(
+                status=RemoteStartStopStatus.rejected
+            )
+
         print(
             f"REMOTE_STOP_TRANSACTION  CP_Nr: {self.openwb_num} "
             f"OCPP_Nr: {self.chargebox_id} "
