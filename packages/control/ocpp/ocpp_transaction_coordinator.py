@@ -155,6 +155,11 @@ class TransactionCoordinator:
 
             return False
 
+        if not connection.boot_accepted:
+            transaction.reset()
+            self._commit(chargebox_id, transaction)
+            return False
+
         # Stop kam während Verbindungsaufbau.
         #
         # Es wurde noch kein Authorize und keine
@@ -429,7 +434,7 @@ class TransactionCoordinator:
             "StopTransaction",
         )
 
-        if connection is None:
+        if connection is None or not connection.boot_accepted:
             self._persist_offline_stop(
                 chargebox_id,
                 transaction.transaction_id,
@@ -437,8 +442,8 @@ class TransactionCoordinator:
             )
 
             log.info(
-                f"OCPP {chargebox_id}: Stop wegen fehlender "
-                "Verbindung vorgemerkt.",
+                f"OCPP {chargebox_id}: Stop wegen fehlender oder "
+                "nicht akzeptierter Verbindung vorgemerkt.",
             )
 
             return False
