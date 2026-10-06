@@ -4764,12 +4764,12 @@ export const useMqttStore = defineStore('mqtt', () => {
     // Home data
     homePower,
     homeDailyYield,
-    // PV data
-    pvConfigured,
-    hybridInverters,
     inHomeConsumption,
     notInHomeConsumption,
     notInHomeConsumptionPower,
+    // PV data
+    pvConfigured,
+    hybridInverters,
     pvPowerTotal,
     pvDailyExported,
     pvIds,
