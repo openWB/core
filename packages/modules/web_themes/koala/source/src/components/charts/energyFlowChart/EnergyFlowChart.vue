@@ -13,6 +13,7 @@ import ChargePointIcon from 'src/assets/icons/owbChargePoint_2.svg?component';
 import ConsumerIcon from 'src/assets/icons/owbConsumer.svg?component';
 import CounterIcon from 'src/assets/icons/owbCounter.svg?component';
 import InfoIcon from 'src/assets/icons/owbInformation.svg?component';
+import MiscDevicesIcon from 'src/assets/icons/owbMiscDevices.svg?component';
 import HomeConsumptionDetailsDialog from './HomeConsumptionDetailsDialog.vue';
 
 const mqttStore = useMqttStore();
@@ -123,6 +124,34 @@ const consumerProduction = computed(
 const countersNotInHome = computed(
   () => mqttStore.notInHomeConsumption.counterIds.length > 0,
 );
+const notInHomeVariants = {
+  consumer: {
+    label: 'Verbraucher',
+    class: 'consumer',
+    iconComponent: ConsumerIcon,
+    iconColor: 'var(--q-consumer)',
+  },
+  counter: {
+    label: 'Zähler',
+    class: 'not-in-home',
+    iconComponent: CounterIcon,
+    iconColor: 'var(--q-secondary-counter-stroke)',
+  },
+  mixed: {
+    label: 'Sonstiges',
+    class: 'not-in-home',
+    iconComponent: MiscDevicesIcon,
+    iconColor: 'var(--q-secondary-counter-stroke)',
+  },
+};
+const notInHomeVariant = computed(() => {
+  if (!countersNotInHome.value) {
+    return notInHomeVariants.consumer;
+  }
+  return mqttStore.notInHomeConsumption.consumerIds.length > 0
+    ? notInHomeVariants.mixed
+    : notInHomeVariants.counter;
+});
 const detailsVisible = ref(false);
 const detailsScope = ref<'inHome' | 'notInHome'>('inHome');
 
@@ -434,20 +463,18 @@ const svgComponents = computed((): FlowComponent[] => {
     components.push({
       id: 'consumer',
       class: {
-        base: countersNotInHome.value ? 'not-in-home' : 'consumer',
+        base: notInHomeVariant.value.class,
         animated: consumerProduction.value,
         animatedReverse: consumerConsumption.value,
       },
       position: { row: 0, column: 1 },
       label: [
-        countersNotInHome.value ? 'Sonstige' : 'Verbraucher',
+        notInHomeVariant.value.label,
         absoluteValueObject(consumerPower.value).textValue,
       ],
       powerValue: Number(consumerPower.value.value),
-      iconComponent: countersNotInHome.value ? CounterIcon : ConsumerIcon,
-      iconColor: countersNotInHome.value
-        ? 'var(--q-secondary-counter-stroke)'
-        : 'var(--q-consumer)',
+      iconComponent: notInHomeVariant.value.iconComponent,
+      iconColor: notInHomeVariant.value.iconColor,
       showInfo: notInHomeHasDetails.value,
     });
   }
