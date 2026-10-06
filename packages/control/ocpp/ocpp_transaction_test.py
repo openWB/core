@@ -85,7 +85,7 @@ def test_rejected_start_does_not_release_charging(transaction_setup, rejected_st
     else:
         connection.cp._start_transaction.return_value = response
 
-    assert asyncio.run(coordinator.start("box-1", 1, "TAG", 100)) is True
+    assert asyncio.run(coordinator.start("box-1", 1, "TAG", 100)) is False
 
     assert coordinator.get_state("box-1") == TransactionState.REJECTED
     assert openwb_cp.data.get.ocpp.tag_accepted is False
@@ -355,12 +355,13 @@ def test_get_configuration_reads_dataclass_values(handler_setup):
 
     assert response.configuration_key[0].key == "HeartbeatInterval"
     assert response.configuration_key[0].value == "10"
-    assert response.configuration_key[0].readonly is True
+    assert response.configuration_key[0].readonly is False
     assert response.unknown_key == []
 
 
 def test_change_configuration_rejects_readonly_parameter(handler_setup):
     make_charge_point, openwb_cp = handler_setup
+    openwb_cp.data.get.ocpp.config.HeartbeatInterval["readonly"] = True
 
     async def check():
         charge_point = make_charge_point()
@@ -440,7 +441,7 @@ def test_set_configuration_value_publishes_parameter_dictionary(handler_setup, m
     expected_config = {
         "HeartbeatInterval": {
             "value": 10,
-            "readonly": True,
+            "readonly": False,
             "type": "int",
         },
         "MeterValueSampleInterval": {

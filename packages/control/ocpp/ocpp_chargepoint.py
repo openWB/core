@@ -595,6 +595,11 @@ class OcppChargePoint(cp):
     async def trigger_message(self, requested_message: MessageTrigger,
                               connector_id: Optional[int] = None,
                               call_unique_id: Optional[str] = None, **kwargs):
+
+        if connector_id is None or connector_id == 0:
+            # Bei uns gibt es immer nur einen Connector pro Ladepunkt/Ladepunkt_id
+            connector_id = 1
+
         log.debug(
             "TRIGGER_MESSAGE CP_Nr: %s OCPP_Nr: %s Requested Message: %s Connector: %s",
             self.openwb_num,
