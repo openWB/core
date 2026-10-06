@@ -4302,7 +4302,9 @@ export const useMqttStore = defineStore('mqtt', () => {
 
   /**
    * Sort the consumers and sub-counters by whether they are counted in the
-   * home consumption.
+   * home consumption. The root counter is only listed if it is excluded.
+   * @returns object with the keys inHome and notInHome, each holding the ids
+   * of the consumers and counters
    */
   const homeConsumptionAssignment = computed(() => {
     const AUTO = 'auto_home_consumption';
