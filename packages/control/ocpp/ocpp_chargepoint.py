@@ -296,8 +296,8 @@ class OcppChargePoint(cp):
             configuration_key=[
                 datatypes.KeyValue(
                     key=k,
-                    readonly=False,
-                    value=str(v)
+                    readonly=v.get("readonly", False),
+                    value=str(v.get("value"))
                 ) for k, v in configuration_values
             ],
             unknown_key=unknown_keys
@@ -324,26 +324,37 @@ class OcppChargePoint(cp):
                 status=ConfigurationStatus.not_supported
             )
 
-        current_value = configuration_fields[key]
+        parameter = configuration_fields[key]
+        if not isinstance(parameter, dict):
+            return call_result.ChangeConfiguration(
+                status=ConfigurationStatus.rejected
+            )
+        if parameter.get("readonly", False):
+            return call_result.ChangeConfiguration(
+                status=ConfigurationStatus.rejected
+            )
+
+        value_type = parameter.get("type")
         try:
-            if isinstance(current_value, bool):
+            if value_type == "bool":
                 normalized_value = value.strip().lower()
                 if normalized_value not in ("true", "false"):
                     raise ValueError("Boolean-Konfigurationswert muss true oder false sein")
                 parsed_value = normalized_value == "true"
-            elif isinstance(current_value, int):
+            elif value_type == "int":
                 parsed_value = int(value)
-            elif isinstance(current_value, float):
+            elif value_type == "float":
                 parsed_value = float(value)
                 if not math.isfinite(parsed_value):
                     raise ValueError("Float-Konfigurationswert muss endlich sein")
-            elif isinstance(current_value, str):
+            elif value_type == "str":
                 parsed_value = value
             else:
                 return call_result.ChangeConfiguration(
                     status=ConfigurationStatus.rejected
                 )
         except (AttributeError, TypeError, ValueError, OverflowError):
+            log.debug("Fehler beim Parsen des Konfigurationswerts für '%s': %s", key, value)
             return call_result.ChangeConfiguration(
                 status=ConfigurationStatus.rejected
             )
@@ -360,6 +371,17 @@ class OcppChargePoint(cp):
 
         return call_result.ChangeConfiguration(
             status=ConfigurationStatus.accepted
+        )
+
+    async def set_configuration_value(self, key: str, value):
+        configuration = self.openwb_cp.data.get.ocpp.config
+        configuration_parameter = getattr(configuration, key)
+        if not isinstance(configuration_parameter, dict):
+            raise TypeError(f"OCPP-Konfiguration {key} muss ein Parameter-Dictionary sein")
+        configuration_parameter["value"] = value
+        Pub().pub(
+            f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/config",
+            asdict(configuration),
         )
 
     @on(Action.remote_start_transaction)
@@ -601,20 +623,16 @@ class OcppChargePoint(cp):
                                     connector_id: Optional[int] = None,
                                     call_unique_id: Optional[str] = None, **kwargs):
         if call_unique_id not in self._accepted_triggers:
+            log.debug(
+                "Weiterleitung der TriggerMessage mit call_unique_id %s wurde nicht akzeptiert",
+                call_unique_id,
+            )
             return
         self._accepted_triggers.remove(call_unique_id)
         try:
             await self.trigger_msg_callback(self, requested_message, connector_id)
         except Exception:
-            log.exception("TriggerMessage-Versand für %s fehlgeschlagen", self.chargebox_id)
-
-    async def set_configuration_value(self, key: str, value):
-        configuration = self.openwb_cp.data.get.ocpp.config
-        setattr(configuration, key, value)
-        Pub().pub(
-            f"openWB/set/chargepoint/{self.openwb_num}/get/ocpp/config",
-            asdict(configuration),
-        )
+            log.exception("Weiterleitung der TriggerMessage für %s ist fehlgeschlagen", self.chargebox_id)
 
 
 def get_ocpp_error_code(fault_state: FaultState):
