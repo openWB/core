@@ -52,7 +52,7 @@ class OcppConnectionManager:
 
         try:
             connection = await self.ensure_connected(chargebox_id)
-            if connection is not None and self.is_wanted(chargebox_id):
+            if connection is None:
                 self._schedule_reconnect(chargebox_id)
             return connection
         except asyncio.CancelledError:
@@ -165,6 +165,7 @@ class OcppConnectionManager:
         return (
             connection is not None
             and connection.cp is cp
+            and connection.boot_accepted
             and self._is_usable(connection)
         )
 
@@ -254,6 +255,7 @@ class OcppConnectionManager:
 
         current_task = asyncio.current_task()
         tasks = [
+            connection.retry_task,
             connection.heartbeat_task,
             connection.meter_task,
             connection.start_task,
@@ -410,7 +412,6 @@ class OcppConnectionManager:
     ) -> bool:
         return (
             connection is not None
-            and connection.boot_accepted
             and not connection.closing
             and connection.start_task is not None
             and not connection.start_task.done()

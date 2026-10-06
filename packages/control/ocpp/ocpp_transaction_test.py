@@ -54,7 +54,7 @@ def transaction_setup(monkeypatch):
         )),
         _stop_transaction=AsyncMock(),
     )
-    connection = SimpleNamespace(cp=charge_point)
+    connection = SimpleNamespace(cp=charge_point, boot_accepted=True)
     ensure_connected = AsyncMock(return_value=connection)
     coordinator = TransactionCoordinator(ensure_connected=ensure_connected)
     monkeypatch.setattr(ocpp_transaction_coordinator, "get_cp_from_chargebox_id", lambda _: openwb_cp)
