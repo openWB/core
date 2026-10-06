@@ -4,7 +4,6 @@ from helpermodules.utils.error_handling import ImportErrorContext
 with ImportErrorContext():
     from ocpp.v16.enums import (ChargePointStatus,
                                 ChargePointErrorCode,
-                                RegistrationStatus,
                                 ResetType,
                                 MessageTrigger)
 import asyncio
@@ -17,7 +16,7 @@ from modules.common.fault_state import FaultState
 from control.ocpp.helper import _get_formatted_time, get_cp_from_chargebox_id
 
 from control.ocpp.ocpp_chargepoint import OcppChargePoint, get_ocpp_error_code
-from control.ocpp.ocpp_connection import OcppConnection
+from control.ocpp.ocpp_connection import OcppConnection, RegistrationState
 from control.ocpp.ocpp_transaction_coordinator import TransactionCoordinator
 from control.ocpp.ocpp_connection_manager import OcppConnectionManager
 
@@ -145,11 +144,149 @@ class OcppClient:
 
         response = await cp._boot_notification()
 
-        if response is None or response.status != RegistrationStatus.accepted:
+        if response is None:
             log.error(f"Boot Notification für {chargebox_id} fehlgeschlagen")
-            return
+            return None
+
+        return await self._handle_boot_response(connection, response)
+
+    async def _handle_boot_response(
+        self,
+        connection: OcppConnection,
+        response,
+        retrying: bool = False,
+    ) -> bool:
+        chargebox_id = connection.chargebox_id
+        status = getattr(response, "status", None)
+        try:
+            state = RegistrationState(getattr(status, "value", status))
+        except ValueError:
+            log.error(
+                "Unbekannter Boot-Registrierungsstatus für %s: %r",
+                chargebox_id,
+                status,
+            )
+            return False
+
+        connection.registration_state = state
+        connection.cp.registration_state = state
+
+        if state == RegistrationState.PENDING:
+            connection.boot_accepted = False
+            await self._stop_registration_tasks(connection)
+            log.info(
+                "OCPP-Registrierung für %s ist Pending; warte auf Anweisungen der Zentrale",
+                chargebox_id,
+            )
+            return True
+
+        if state == RegistrationState.REJECTED:
+            connection.boot_accepted = False
+            await self._stop_registration_tasks(connection)
+            connection.retry_interval = self._get_boot_interval(response, chargebox_id)
+            log.warning(
+                "OCPP-Registrierung für %s abgelehnt; erneuter Boot-Versuch in %ss",
+                chargebox_id,
+                connection.retry_interval,
+            )
+            if not retrying and (
+                connection.retry_task is None or connection.retry_task.done()
+            ):
+                connection.retry_task = asyncio.create_task(
+                    self._retry_rejected_registration(connection),
+                    name=f"ocpp-boot-retry-{chargebox_id}",
+                )
+            return True
 
         connection.boot_accepted = True
+        connection.retry_interval = None
+        await self._start_accepted_connection(connection, response)
+        return True
+
+    @staticmethod
+    async def _stop_registration_tasks(connection: OcppConnection) -> None:
+        tasks = (connection.heartbeat_task, connection.meter_task)
+        connection.heartbeat_task = None
+        connection.meter_task = None
+
+        current_task = asyncio.current_task()
+        for task in tasks:
+            if task is not None and task is not current_task and not task.done():
+                task.cancel()
+
+        for task in tasks:
+            if task is None or task is current_task:
+                continue
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+
+    @staticmethod
+    def _get_boot_interval(response, chargebox_id: str) -> int:
+        try:
+            interval = int(response.interval)
+            if interval > 0:
+                return interval
+        except (AttributeError, TypeError, ValueError):
+            pass
+
+        log.warning(
+            "Ungültiges BootNotification-Intervall für %s; verwende 1s Retry",
+            chargebox_id,
+        )
+        return 1
+
+    async def _retry_rejected_registration(
+        self,
+        connection: OcppConnection,
+    ) -> None:
+        try:
+            while (
+                not connection.closing
+                and connection.registration_state == RegistrationState.REJECTED
+                and not connection.ws.closed
+            ):
+                await asyncio.sleep(connection.retry_interval)
+
+                if (
+                    connection.closing
+                    or connection.registration_state != RegistrationState.REJECTED
+                    or connection.ws.closed
+                    or self.connection_manager.get(connection.chargebox_id) is not connection
+                ):
+                    return
+
+                response = await connection.cp._boot_notification()
+                if response is None:
+                    log.warning(
+                        "Boot-Retry für %s erhielt keine Antwort; nächster Versuch in %ss",
+                        connection.chargebox_id,
+                        connection.retry_interval,
+                    )
+                    continue
+
+                await self._handle_boot_response(
+                    connection,
+                    response,
+                    retrying=True,
+                )
+        except asyncio.CancelledError:
+            raise
+        finally:
+            if connection.retry_task is asyncio.current_task():
+                connection.retry_task = None
+
+    async def _start_accepted_connection(
+        self,
+        connection: OcppConnection,
+        response,
+    ) -> None:
+        if connection.heartbeat_task is not None:
+            return
+
+        chargebox_id = connection.chargebox_id
+        cp = connection.cp
 
         # Heartbeat-Intervall des CSMS übernehmen.
         heartbeat_interval = getattr(response, "interval", None)
@@ -175,8 +312,6 @@ class OcppClient:
 
         connection.meter_task = asyncio.create_task(self._meter_loop(
             connection), name=f"ocpp-meter-loop_{chargebox_id}")
-
-        return True
 
     async def _connection_closed(self, connection: OcppConnection):
         chargebox_id = connection.chargebox_id
@@ -216,6 +351,8 @@ class OcppClient:
 
         try:
             while not connection.closing:
+                if not connection.boot_accepted:
+                    break
 
                 interval = int(connection.cp.openwb_cp.data.get.ocpp.config.HeartbeatInterval)
 
@@ -224,6 +361,8 @@ class OcppClient:
                 await asyncio.sleep(interval)
 
                 if connection.closing:
+                    break
+                if not connection.boot_accepted:
                     break
 
                 await connection.cp._heartbeat()
@@ -249,6 +388,8 @@ class OcppClient:
 
         try:
             while not connection.closing:
+                if not connection.boot_accepted:
+                    break
 
                 interval = int(
                     connection.cp.openwb_cp.data.get.ocpp.config.MeterValueSampleInterval
@@ -259,6 +400,8 @@ class OcppClient:
                 await asyncio.sleep(interval)
 
                 if connection.closing:
+                    break
+                if not connection.boot_accepted:
                     break
 
                 transaction_id = self.transactions.get_transaction_id(chargebox_id)
@@ -321,6 +464,14 @@ class OcppClient:
 
         if connection is None:
             log.exception(f"Keine Verbindung zu {chargebox_id} verfügbar")
+            return
+
+        if not connection.boot_accepted:
+            log.debug(
+                "OCPP-Anfrage %s für %s bis zur Registrierung zurückgestellt",
+                method_name,
+                chargebox_id,
+            )
             return
 
         method = getattr(
@@ -575,6 +726,30 @@ class OcppClient:
         connector_id: Optional[int],
     ) -> None:
         if not self.connection_manager.is_active_charge_point(cp):
+            get_connection = getattr(self.connection_manager, "get", None)
+            connection = (
+                get_connection(cp.chargebox_id)
+                if get_connection is not None
+                else None
+            )
+            if (
+                connection is None
+                or connection.cp is not cp
+                or connection.registration_state != RegistrationState.PENDING
+            ):
+                return
+
+        if trigger_type == MessageTrigger.boot_notification:
+            response = await cp._boot_notification()
+            if response is not None:
+                get_connection = getattr(self.connection_manager, "get", None)
+                connection = (
+                    get_connection(cp.chargebox_id)
+                    if get_connection is not None
+                    else None
+                )
+                if connection is not None and connection.cp is cp:
+                    await self._handle_boot_response(connection, response)
             return
 
         if trigger_type == MessageTrigger.heartbeat:
@@ -588,7 +763,7 @@ class OcppClient:
 
             status = openwb_cp.get_ocpp_status()
             response = await cp._status_notification(
-                connector_id=1,  # bei uns gibt es immer nur einen Connector
+                connector_id=1,
                 fault_state=openwb_cp.data.get.fault_state,
                 fault_state_str=openwb_cp.data.get.fault_str,
                 status=status,
@@ -599,6 +774,7 @@ class OcppClient:
                     status,
                     get_ocpp_error_code(openwb_cp.data.get.fault_state),
                 )
+            return
 
         if trigger_type == MessageTrigger.meter_values:
             snapshot = self._meter_snapshots.get(cp.chargebox_id)
@@ -635,10 +811,6 @@ class OcppClient:
                     }
                 ],
             )
-            return
-
-        if trigger_type == MessageTrigger.boot_notification:
-            await cp._boot_notification()
             return
 
         if trigger_type == MessageTrigger.diagnostics_status_notification:
