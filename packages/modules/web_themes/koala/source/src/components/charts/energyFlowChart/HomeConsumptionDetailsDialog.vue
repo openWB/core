@@ -2,7 +2,8 @@
   <q-dialog v-model="visible" :backdrop-filter="isSmallScreen ? '' : 'blur(4px)'">
     <q-card class="card-width">
       <q-card-section>
-        <div class="row no-wrap">
+        <div class="row no-wrap items-center">
+          <InfoIcon class="title-icon q-mr-md" />
           <div class="text-h6 q-pr-sm">{{ title }}</div>
           <q-space />
           <q-btn
@@ -17,7 +18,7 @@
       </q-card-section>
       <q-separator />
       <q-card-section class="q-pa-none">
-        <q-list>
+        <q-list dense class="q-pt-sm">
           <q-item v-for="item in items" :key="item.key">
             <q-item-section avatar>
               <component
@@ -43,6 +44,7 @@ import { Screen } from 'quasar';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import ConsumerIcon from 'src/assets/icons/owbConsumer.svg?component';
 import CounterIcon from 'src/assets/icons/owbCounter.svg?component';
+import InfoIcon from 'src/assets/icons/owbInformation.svg?component';
 
 defineOptions({ name: 'HomeConsumptionDetailsDialog' });
 
@@ -72,8 +74,8 @@ const isSmallScreen = computed(() => Screen.lt.sm);
 
 const title = computed(() =>
   props.scope === 'inHome'
-    ? 'Im Hausverbrauch enthalten:'
-    : 'Nicht im Hausverbrauch enthalten:',
+    ? 'Im Hausverbrauch:'
+    : 'Nicht im Hausverbrauch:',
 );
 
 const items = computed((): DetailsItem[] => {
@@ -109,9 +111,17 @@ const items = computed((): DetailsItem[] => {
   height: 2.5em;
   width: 2.5em;
 }
+.title-icon,
 .item-icon {
   width: 28px;
   height: 28px;
+}
+.title-icon {
+  flex-shrink: 0;
+  color: var(--q-flow-chart-info);
+}
+.q-item__section--avatar {
+  min-width: 0;
 }
 
 .q-list {
