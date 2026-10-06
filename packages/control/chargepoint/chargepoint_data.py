@@ -80,7 +80,7 @@ def ocpp_config_key_factory(
 @dataclass
 class OcppConfig:
     HeartbeatInterval: OcppConfigKey = field(
-        default_factory=lambda: ocpp_config_key_factory(value=10, readonly=True, value_type="int")
+        default_factory=lambda: ocpp_config_key_factory(value=10, readonly=False, value_type="int")
     )
     MeterValueSampleInterval: OcppConfigKey = field(
         default_factory=lambda: ocpp_config_key_factory(value=20, readonly=False, value_type="int")
