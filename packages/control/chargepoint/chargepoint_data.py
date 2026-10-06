@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field
 from threading import Event
-from typing import Dict, List, Optional, Protocol
 from control.chargemode import Chargemode
 from control.chargepoint.chargepoint_state import ChargepointState
+from typing import Dict, List, Optional, Protocol, Union
 from control.chargepoint.chargepoint_template import CpTemplate
 
 from control.chargepoint.control_parameter import ControlParameter, control_parameter_factory
@@ -67,10 +67,24 @@ class ConnectedVehicle:
     soc: ConnectedSoc = field(default_factory=connected_soc_factory, metadata={"topic": "get/connected_vehicle/soc"})
 
 
+OcppConfigKey = Dict[str, Union[bool, int, float, str]]
+
+
+def ocpp_config_key_factory(
+        value: Union[bool, int, float, str] = 0,
+        readonly: bool = False,
+        value_type: str = "int") -> OcppConfigKey:
+    return {"value": value, "readonly": readonly, "type": value_type}
+
+
 @dataclass
 class OcppConfig:
-    HeartbeatInterval: int = 10
-    MeterValueSampleInterval: int = 20
+    HeartbeatInterval: OcppConfigKey = field(
+        default_factory=lambda: ocpp_config_key_factory(value=10, readonly=True, value_type="int")
+    )
+    MeterValueSampleInterval: OcppConfigKey = field(
+        default_factory=lambda: ocpp_config_key_factory(value=20, readonly=False, value_type="int")
+    )
 
 
 def ocpp_config_factory() -> OcppConfig:

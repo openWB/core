@@ -1,5 +1,4 @@
 import asyncio
-from dataclasses import dataclass
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, call
 
@@ -7,7 +6,7 @@ import pytest
 import websockets
 
 from control import data
-from control.chargepoint.chargepoint_data import OcppConfig as ChargepointOcppConfig
+from control.chargepoint.chargepoint_data import ocpp_config_factory
 from control.ocpp import ocpp_client
 from control.ocpp import ocpp_chargepoint
 from control.ocpp import ocpp_connection_manager
@@ -22,13 +21,12 @@ from ocpp.v16 import ChargePoint as ServerChargePoint, call_result
 from ocpp.routing import on
 
 
-@dataclass
-class OcppConfigForTest:
-    HeartbeatInterval: int = 10
-    MeterValueSampleInterval: int = 20
-    TextSetting: str = "old"
-    EnabledSetting: bool = False
-    ScaleSetting: float = 1.5
+def ocpp_config_for_test():
+    configuration = ocpp_config_factory()
+    configuration.TextSetting = {"value": "old", "readonly": False, "type": "str"}
+    configuration.EnabledSetting = {"value": False, "readonly": False, "type": "bool"}
+    configuration.ScaleSetting = {"value": 1.5, "readonly": False, "type": "float"}
+    return configuration
 
 
 @pytest.fixture
@@ -208,10 +206,14 @@ def test_offline_stop_is_replayed_once_after_reconnect(transaction_setup, mock_p
             "imported": 150, "reason": "EVDisconnected",
         }]
         coordinator._ensure_connected.return_value = connection
+        transaction_id_publications_before_replay = mock_pub.pub.call_args_list.count(
+            call("openWB/set/chargepoint/1/get/ocpp/transaction_id", 42)
+        )
         await coordinator.on_connected("box-1", connection)
         await coordinator.on_connected("box-1", connection)
+        return transaction_id_publications_before_replay
 
-    asyncio.run(check())
+    transaction_id_publications_before_replay = asyncio.run(check())
 
     connection.cp._stop_transaction.assert_awaited_once_with(
         meter_stop=150, transaction_id=42, reason="EVDisconnected", id_tag="TAG",
@@ -221,6 +223,36 @@ def test_offline_stop_is_replayed_once_after_reconnect(transaction_setup, mock_p
     assert mock_pub.pub.call_args_list.count(
         call("openWB/set/chargepoint/1/get/ocpp/pending_transactions", [])
     ) == 1
+    assert mock_pub.pub.call_args_list.count(
+        call("openWB/set/chargepoint/1/get/ocpp/transaction_id", 42)
+    ) == transaction_id_publications_before_replay
+
+
+def test_failed_offline_stop_replay_keeps_transaction_id_cleared(transaction_setup, mock_pub):
+    coordinator, connection, openwb_cp = transaction_setup
+
+    async def check():
+        await coordinator.start("box-1", 1, "TAG", 100)
+        coordinator._ensure_connected.return_value = None
+        assert await coordinator.stop("box-1", 150, "", "EVDisconnected") is False
+        transaction_id_publications_before_replay = mock_pub.pub.call_args_list.count(
+            call("openWB/set/chargepoint/1/get/ocpp/transaction_id", 42)
+        )
+
+        coordinator._ensure_connected.return_value = connection
+        connection.cp._stop_transaction.side_effect = RuntimeError("response lost")
+        await coordinator.on_connected("box-1", connection)
+
+        assert coordinator.get_state("box-1") == TransactionState.ERROR
+        assert coordinator.get_transaction_id("box-1") == 42
+        assert openwb_cp.data.get.ocpp.transaction_id is None
+        assert openwb_cp.data.get.ocpp.tag_accepted is False
+        assert openwb_cp.data.get.ocpp.pending_transactions
+        assert mock_pub.pub.call_args_list.count(
+            call("openWB/set/chargepoint/1/get/ocpp/transaction_id", 42)
+        ) == transaction_id_publications_before_replay
+
+    asyncio.run(check())
 
 
 @pytest.fixture
@@ -229,7 +261,7 @@ def handler_setup(monkeypatch):
         num=1,
         data=SimpleNamespace(get=SimpleNamespace(ocpp=SimpleNamespace(
             transaction_id=None, availability=True, pending_availability=False,
-            config=OcppConfigForTest(),
+            config=ocpp_config_for_test(),
         ))),
     )
     monkeypatch.setattr(ocpp_chargepoint, "get_cp_from_chargebox_id", lambda _: openwb_cp)
@@ -303,7 +335,7 @@ def test_invalid_configuration_interval_is_rejected(handler_setup, value):
     async def check():
         charge_point = make_charge_point()
         response = await charge_point.change_configuration("HeartbeatInterval", value)
-        assert charge_point.openwb_cp.data.get.ocpp.config.HeartbeatInterval == 10
+        assert charge_point.openwb_cp.data.get.ocpp.config.HeartbeatInterval["value"] == 10
         return response
 
     response = asyncio.run(check())
@@ -323,8 +355,21 @@ def test_get_configuration_reads_dataclass_values(handler_setup):
 
     assert response.configuration_key[0].key == "HeartbeatInterval"
     assert response.configuration_key[0].value == "10"
-    assert response.configuration_key[0].readonly is False
+    assert response.configuration_key[0].readonly is True
     assert response.unknown_key == []
+
+
+def test_change_configuration_rejects_readonly_parameter(handler_setup):
+    make_charge_point, openwb_cp = handler_setup
+
+    async def check():
+        charge_point = make_charge_point()
+        return await charge_point.change_configuration("HeartbeatInterval", "30")
+
+    response = asyncio.run(check())
+
+    assert response.status == ConfigurationStatus.rejected
+    assert openwb_cp.data.get.ocpp.config.HeartbeatInterval["value"] == 10
 
 
 @pytest.mark.parametrize(
@@ -338,7 +383,7 @@ def test_get_configuration_reads_dataclass_values(handler_setup):
 def test_change_configuration_uses_existing_field_type(
         handler_setup, key, initial_value, new_value, expected_value):
     make_charge_point, openwb_cp = handler_setup
-    setattr(openwb_cp.data.get.ocpp.config, key, initial_value)
+    getattr(openwb_cp.data.get.ocpp.config, key)["value"] = initial_value
 
     async def check():
         charge_point = make_charge_point()
@@ -347,7 +392,7 @@ def test_change_configuration_uses_existing_field_type(
     response = asyncio.run(check())
 
     assert response.status == ConfigurationStatus.accepted
-    assert getattr(openwb_cp.data.get.ocpp.config, key) == expected_value
+    assert getattr(openwb_cp.data.get.ocpp.config, key)["value"] == expected_value
 
 
 @pytest.mark.parametrize(
@@ -357,7 +402,7 @@ def test_change_configuration_uses_existing_field_type(
 def test_change_configuration_rejects_invalid_typed_values(
         handler_setup, key, initial_value, new_value):
     make_charge_point, openwb_cp = handler_setup
-    setattr(openwb_cp.data.get.ocpp.config, key, initial_value)
+    getattr(openwb_cp.data.get.ocpp.config, key)["value"] = initial_value
 
     async def check():
         charge_point = make_charge_point()
@@ -366,7 +411,7 @@ def test_change_configuration_rejects_invalid_typed_values(
     response = asyncio.run(check())
 
     assert response.status == ConfigurationStatus.rejected
-    assert getattr(openwb_cp.data.get.ocpp.config, key) == initial_value
+    assert getattr(openwb_cp.data.get.ocpp.config, key)["value"] == initial_value
 
 
 def test_valid_configuration_interval_is_used(handler_setup):
@@ -375,12 +420,44 @@ def test_valid_configuration_interval_is_used(handler_setup):
     async def check():
         charge_point = make_charge_point()
         response = await charge_point.change_configuration("MeterValueSampleInterval", "30")
-        assert charge_point.openwb_cp.data.get.ocpp.config.MeterValueSampleInterval == 30
+        assert charge_point.openwb_cp.data.get.ocpp.config.MeterValueSampleInterval["value"] == 30
         return response
 
     response = asyncio.run(check())
 
     assert response.status == ConfigurationStatus.accepted
+
+
+def test_set_configuration_value_publishes_parameter_dictionary(handler_setup, mock_pub):
+    make_charge_point, openwb_cp = handler_setup
+
+    async def check():
+        charge_point = make_charge_point()
+        await charge_point.set_configuration_value("MeterValueSampleInterval", 30)
+
+    asyncio.run(check())
+
+    expected_config = {
+        "HeartbeatInterval": {
+            "value": 10,
+            "readonly": True,
+            "type": "int",
+        },
+        "MeterValueSampleInterval": {
+            "value": 30,
+            "readonly": False,
+            "type": "int",
+        },
+    }
+    assert expected_config["MeterValueSampleInterval"] == {
+        "value": 30,
+        "readonly": False,
+        "type": "int",
+    }
+    mock_pub.pub.assert_called_once_with(
+        "openWB/set/chargepoint/1/get/ocpp/config",
+        expected_config,
+    )
 
 
 def test_status_notification_sends_each_requested_message(handler_setup):
@@ -412,7 +489,7 @@ def test_websocket_transaction_survives_reconnect(monkeypatch):
                                  tag_accepted=False, availability=True,
                                  pending_availability=False, pending_transactions=[],
                                  test_reconnect=False,
-                                 config=ChargepointOcppConfig()),
+                                 config=ocpp_config_factory()),
             serial_number="serial-1",
         )),
         chargepoint_module=SimpleNamespace(config=SimpleNamespace(type="test-cp")),
