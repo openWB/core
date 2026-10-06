@@ -80,7 +80,8 @@ def ocpp_config_factory() -> OcppConfig:
 @dataclass
 class Ocpp:
     connected: bool = False
-    availability: bool = False
+    # neu erzeugte CPs sind per default erstmal available
+    availability: bool = True
     transaction_id: Optional[int] = None
     tag_accepted: bool = False
     remote_stop: bool = False

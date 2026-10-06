@@ -55,7 +55,16 @@ ConnectionProvider = Callable[
 
 
 class TransactionCoordinator:
-    """Owns the OCPP transaction lifecycle for all chargeboxes."""
+    """
+    Owns the OCPP transaction lifecycle for all chargeboxes.
+    Verwaltet den State der OCPP-Transaktionen für alle Ladepunkte.
+    -> sorgt dafür das Reihenfolgen eingehalten werden und 
+    keine parallelen Konflikte entstehen.
+    Bsp.:
+        - Ein Start wird blockiert, wenn bereits ein anderer Start läuft.
+        - Nur Start, wenn Auth erfolgreich war.
+        - usw.
+    """
 
     def __init__(self, ensure_connected: ConnectionProvider):
         self._ensure_connected = ensure_connected

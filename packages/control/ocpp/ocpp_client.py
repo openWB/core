@@ -237,6 +237,8 @@ class OcppClient:
         )
         return 1
 
+    # Bei rejected BootNotification wird nach einem bestimmten Intervall
+    # ein erneuter Boot-Versuch gestartet.
     async def _retry_rejected_registration(
         self,
         connection: OcppConnection,
@@ -277,6 +279,8 @@ class OcppClient:
             if connection.retry_task is asyncio.current_task():
                 connection.retry_task = None
 
+    # Wenn BootNotification akzeptiert wurde,
+    # wird die Verbindung initialisiert.
     async def _start_accepted_connection(
         self,
         connection: OcppConnection,
@@ -303,9 +307,11 @@ class OcppClient:
                 )
 
         await self.transactions.on_connected(chargebox_id, connection)
-        await cp.apply_pending_availability()
-
         self._set_connected(cp, True)
+
+        if self.transactions.get_transaction_id(chargebox_id) is None:
+            # beim reconnect nur machen, wenn keine aktive Transaktion läuft
+            await cp.apply_pending_availability()
 
         connection.heartbeat_task = asyncio.create_task(self._heartbeat_loop(
             connection), name=f"ocpp-heartbeat-loop_{chargebox_id}")
@@ -738,7 +744,7 @@ class OcppClient:
                 or connection.registration_state != RegistrationState.PENDING
             ):
                 return
-
+        # func
         if trigger_type == MessageTrigger.boot_notification:
             response = await cp._boot_notification()
             if response is not None:
@@ -752,10 +758,11 @@ class OcppClient:
                     await self._handle_boot_response(connection, response)
             return
 
+        # func
         if trigger_type == MessageTrigger.heartbeat:
             await cp._heartbeat()
             return
-
+        # func
         if trigger_type == MessageTrigger.status_notification:
             openwb_cp = cp.openwb_cp
             if openwb_cp is None:
@@ -776,15 +783,13 @@ class OcppClient:
                 )
             return
 
+        # func
         if trigger_type == MessageTrigger.meter_values:
             snapshot = self._meter_snapshots.get(cp.chargebox_id)
             transaction_id = self.transactions.get_transaction_id(cp.chargebox_id)
 
-            if transaction_id is None:
-                log.debug(
-                    f"Triggering meter_values: Keine aktive Transaktion für chargebox_id {cp.chargebox_id}"
-                )
-                return
+            # Hier wird nicht auf eine Transaktion geprüft,
+            # MessageTrigger.meter_values schickt immer den letzen vorhanden Zählerstand
 
             if snapshot is None:
                 log.debug(
@@ -801,7 +806,7 @@ class OcppClient:
                         "sampledValue": [
                             {
                                 "value": str(snapshot.imported),
-                                "context": "Sample.Periodic",
+                                "context": "Sample.Trigger",
                                 "format": "Raw",
                                 "measurand":
                                     "Energy.Active.Import.Register",
@@ -813,6 +818,7 @@ class OcppClient:
             )
             return
 
+        # func
         if trigger_type == MessageTrigger.diagnostics_status_notification:
             await cp._diagnostics_status(None)
             return
