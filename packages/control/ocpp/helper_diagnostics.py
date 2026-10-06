@@ -30,48 +30,24 @@ def filter_ocpp_log(start: Optional[str], stop: Optional[str]) -> list[str]:
     with log_path.open(encoding="utf-8") as log_file:
         lines = log_file.readlines()
 
-    start_time = _parse_server_time(start).replace(second=0, microsecond=0) if start is not None else None
-    stop_time = _parse_server_time(stop).replace(second=0, microsecond=0) if stop is not None else None
+    start_time = _parse_server_time(start) if start is not None else None
+    stop_time = _parse_server_time(stop) if stop is not None else None
     if start_time is not None and stop_time is not None and start_time > stop_time:
         raise ValueError("start muss vor oder gleich stop liegen")
 
-    log_entries = []
-    log_minutes = set()
+    if start_time is None and stop_time is None:
+        return lines
+
+    matching_lines = []
     for line in lines:
         try:
             line_time = datetime.strptime(line.split(" - ", 1)[0], "%Y-%m-%d %H:%M:%S,%f")
         except ValueError:
             continue
 
-        minute = line_time.replace(second=0, microsecond=0)
-        log_entries.append((minute, line))
-        log_minutes.add(minute)
-
-    available_minutes = sorted(log_minutes)
-
-    def resolve_boundary(boundary: Optional[datetime]) -> Optional[datetime]:
-        if boundary is None:
-            return None
-        return next(
-            (
-                minute for minute in available_minutes
-                if minute >= boundary
-                and minute.date() == boundary.date()
-            ),
-            None,
-        )
-
-    start_time = resolve_boundary(start_time)
-    stop_time = resolve_boundary(stop_time)
-    if start_time is None and stop_time is None:
-        # Wenn weder Start- noch Stoppzeit angegeben ist, werden alle Logeinträge zurückgegeben.
-        return lines
-
-    matching_lines = []
-    for minute, line in log_entries:
-        if stop_time is not None and minute > stop_time:
-            break
-        if start_time is not None and minute < start_time:
+        if start_time is not None and line_time < start_time:
+            continue
+        if stop_time is not None and line_time > stop_time:
             continue
         matching_lines.append(line)
     return matching_lines
