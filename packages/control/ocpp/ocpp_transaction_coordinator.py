@@ -135,6 +135,10 @@ class TransactionCoordinator:
             if transaction.id_tag == id_tag:
                 return False
 
+            # nur reseten, wenn keine transaktion_id mehr vorhanden ist
+            if transaction.transaction_id is not None:
+                return False
+
             transaction.reset()
             self._commit(chargebox_id, transaction)
 
@@ -584,6 +588,11 @@ class TransactionCoordinator:
             connection,
             transaction,
             stop_request,
+            # Normale Stops publizieren Zwischenzustände ins Backend. Beim Replay
+            # ist die Transaktion dort bereits freigegeben; ein Publish würde
+            # ihre ID vorübergehend wieder sichtbar machen. Der erfolgreiche
+            # Abschluss publiziert weiterhin das endgültige Zurücksetzen.
+            publish_state=False,
         )
 
         if successful:
@@ -744,6 +753,7 @@ class TransactionCoordinator:
         connection: OcppConnection,
         transaction: OcppTransaction,
         request: PendingStop,
+        publish_state: bool = True,
     ) -> bool:
         transaction_id = transaction.transaction_id
 
@@ -753,11 +763,18 @@ class TransactionCoordinator:
         cp = connection.cp
 
         if transaction.state != TransactionState.STOPPING:
-            self._transition(
-                chargebox_id,
-                transaction,
-                TransactionState.STOPPING,
-            )
+            if publish_state:
+                self._transition(
+                    chargebox_id,
+                    transaction,
+                    TransactionState.STOPPING,
+                )
+            else:
+                self._set_state(
+                    chargebox_id,
+                    transaction,
+                    TransactionState.STOPPING,
+                )
 
         try:
             await cp._stop_transaction(
@@ -780,11 +797,18 @@ class TransactionCoordinator:
             # Der Server könnte StopTransaction
             # bereits verarbeitet haben und nur
             # die Antwort ist verloren gegangen.
-            self._transition(
-                chargebox_id,
-                transaction,
-                TransactionState.ERROR,
-            )
+            if publish_state:
+                self._transition(
+                    chargebox_id,
+                    transaction,
+                    TransactionState.ERROR,
+                )
+            else:
+                self._set_state(
+                    chargebox_id,
+                    transaction,
+                    TransactionState.ERROR,
+                )
 
             log.exception(
                 f"StopTransaction {transaction_id} für {chargebox_id} fehlgeschlagen",
