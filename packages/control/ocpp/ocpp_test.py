@@ -307,6 +307,65 @@ def test_trigger_heartbeat_ignores_connector_and_rejects_unsupported(monkeypatch
     ]
 
 
+@pytest.mark.parametrize("has_snapshot", [True, False])
+def test_trigger_meter_values_uses_snapshot_or_skips_when_missing(has_snapshot):
+    chargepoint = SimpleNamespace(
+        chargebox_id="box-1",
+        _meter_values=AsyncMock(),
+    )
+    client = object.__new__(OcppClient)
+    client.connection_manager = SimpleNamespace(
+        is_active_charge_point=Mock(return_value=True),
+    )
+    client._meter_snapshots = (
+        {"box-1": SimpleNamespace(connector_id=1, imported=9876)}
+        if has_snapshot else {}
+    )
+    client.transactions = SimpleNamespace(
+        get_transaction_id=Mock(return_value=42),
+    )
+
+    asyncio.run(client.handler_trigger_msg(
+        chargepoint,
+        MessageTrigger.meter_values,
+        1,
+    ))
+
+    client.connection_manager.is_active_charge_point.assert_called_once_with(chargepoint)
+    if has_snapshot:
+        client.transactions.get_transaction_id.assert_called_once_with("box-1")
+        chargepoint._meter_values.assert_awaited_once()
+        kwargs = chargepoint._meter_values.await_args.kwargs
+        assert kwargs["connector_id"] == 1
+        assert kwargs["transaction_id"] == 42
+        assert kwargs["meter_value"][0]["sampledValue"][0] == {
+            "value": "9876",
+            "context": "Trigger",
+            "format": "Raw",
+            "measurand": "Energy.Active.Import.Register",
+            "unit": "Wh",
+        }
+    else:
+        client.transactions.get_transaction_id.assert_called_once_with("box-1")
+        chargepoint._meter_values.assert_not_awaited()
+
+
+def test_trigger_diagnostics_status_sends_stored_status():
+    chargepoint = SimpleNamespace(_diagnostics_status=AsyncMock())
+    client = object.__new__(OcppClient)
+    client.connection_manager = SimpleNamespace(
+        is_active_charge_point=Mock(return_value=True),
+    )
+
+    asyncio.run(client.handler_trigger_msg(
+        chargepoint,
+        MessageTrigger.diagnostics_status_notification,
+        None,
+    ))
+
+    chargepoint._diagnostics_status.assert_awaited_once_with(None)
+
+
 def test_trigger_message_rejected_without_backend_or_callback(monkeypatch):
     from control.ocpp import ocpp_chargepoint
 

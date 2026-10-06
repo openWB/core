@@ -21,7 +21,7 @@ ChargePointFactory = Callable[[str, Any], OcppChargePoint]
 
 class OcppConnectionManager:
     """
-    Die Klasse kümmert sich um Aufbau, Wiederverbindung und 
+    Die Klasse kümmert sich um Aufbau, Wiederverbindung und
     sauberen Abbau der OCPP-Transportverbindungen.
     """
 

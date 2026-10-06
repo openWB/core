@@ -808,7 +808,7 @@ class OcppClient:
                         "sampledValue": [
                             {
                                 "value": str(snapshot.imported),
-                                "context": "Sample.Trigger",
+                                "context": "Trigger",
                                 "format": "Raw",
                                 "measurand":
                                     "Energy.Active.Import.Register",

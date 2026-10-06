@@ -58,7 +58,7 @@ class TransactionCoordinator:
     """
     Owns the OCPP transaction lifecycle for all chargeboxes.
     Verwaltet den State der OCPP-Transaktionen für alle Ladepunkte.
-    -> sorgt dafür das Reihenfolgen eingehalten werden und 
+    -> sorgt dafür das Reihenfolgen eingehalten werden und
     keine parallelen Konflikte entstehen.
     Bsp.:
         - Ein Start wird blockiert, wenn bereits ein anderer Start läuft.
@@ -186,7 +186,7 @@ class TransactionCoordinator:
             transaction.reset()
             self._commit(chargebox_id, transaction)
 
-            return True
+            return False
 
         cp = connection.cp
 
@@ -234,7 +234,7 @@ class TransactionCoordinator:
                 TransactionState.REJECTED,
             )
 
-            return True
+            return False
 
         # Fahrzeug wurde während Authorize
         # wieder abgesteckt.
@@ -247,7 +247,7 @@ class TransactionCoordinator:
             transaction.reset()
             self._commit(chargebox_id, transaction)
 
-            return True
+            return False
 
         #
         # START TRANSACTION
@@ -311,7 +311,7 @@ class TransactionCoordinator:
                 TransactionState.REJECTED,
             )
 
-            return True
+            return False
 
         #
         # TRANSACTION ACTIVE
