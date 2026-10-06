@@ -28,7 +28,10 @@
               />
             </q-item-section>
             <q-item-section>
-              <q-item-label>{{ item.name }}</q-item-label>
+              <div class="row no-wrap items-center">
+                <div class="col">{{ item.name }}</div>
+                <div class="q-pl-md text-no-wrap">{{ item.power }}</div>
+              </div>
             </q-item-section>
           </q-item>
         </q-list>
@@ -53,6 +56,7 @@ interface DetailsItem {
   name: string;
   icon: Component;
   color: string;
+  power: string;
 }
 
 const props = defineProps<{
@@ -89,6 +93,7 @@ const items = computed((): DetailsItem[] => {
       name: mqttStore.consumerName(id) || `Verbraucher ${id}`,
       icon: ConsumerIcon,
       color: mqttStore.consumerColor(id) || 'var(--q-consumer)',
+      power: mqttStore.consumerPower(id, 'textValue') as string,
     })),
     ...counterIds.map((id) => ({
       key: `counter-${id}`,
@@ -97,6 +102,7 @@ const items = computed((): DetailsItem[] => {
       color:
         mqttStore.secondaryCounterColor(id) ||
         'var(--q-secondary-counter-stroke)',
+      power: mqttStore.counterPower('textValue', id) as string,
     })),
   ];
 });
