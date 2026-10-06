@@ -225,7 +225,9 @@ class Chargepoint(ChargepointRfidMixin, Load):
         # werden soll (-1), Daten zurücksetzen.
         # Ocpp Stop Funktion aufrufen
         chargebox_id = self.data.config.ocpp_chargebox_id
-        if chargebox_id and self.data.get.ocpp.transaction_id is not None:
+        if (data.data.optional_data.data.ocpp.config.active and
+            chargebox_id and
+                self.data.get.ocpp.transaction_id is not None):
             if self.data.get.ocpp.remote_stop:
 
                 data.data.ocpp_client.request_stop(
@@ -796,7 +798,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
             # CP sendet Statusmeldungen an den OCPP-Server
             # bei jeden update-zyklus
             # Client sendet Statusmeldungen nur wenn sich der Status ändert an den OCPP-Server
-            if self.data.config.ocpp_chargebox_id:
+            if data.data.optional_data.data.ocpp.config.active and self.data.config.ocpp_chargebox_id:
                 print(
                     f"                                                             "
                     f"                                           {self.get_ocpp_status()}")
@@ -812,13 +814,16 @@ class Chargepoint(ChargepointRfidMixin, Load):
             # Wenn eine Transaktion aktiv ist, werden die aktuellen Zählerstände an den OCPP-Server übertragen
             # werden in jedem update an den Client gesendet.
             # Dieser sendet die Daten in einem eigenen Intervall an den OCPP-Server
-            if chargebox_id and self.data.get.ocpp.transaction_id is not None:
+            if (data.data.optional_data.data.ocpp.config.active and
+                chargebox_id and
+                    self.data.get.ocpp.transaction_id is not None):
                 data.data.ocpp_client.transfer_values(chargebox_id,
                                                       1,
                                                       self.data.get.ocpp.transaction_id,
                                                       int(self.data.get.imported))
 
-            if chargebox_id:    # <- als ocpp Chargepoint konfiguriert
+            # als ocpp Chargepoint konfiguriert
+            if data.data.optional_data.data.ocpp.config.active and chargebox_id:
                 if not self.data.get.plug_state:
                     data.data.ocpp_client.clear_start_block(chargebox_id)
                 elif (self.data.get.ocpp.connected  # <- mit OCPP-Server verbunden
