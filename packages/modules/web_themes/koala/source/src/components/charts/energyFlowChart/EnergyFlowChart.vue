@@ -154,6 +154,11 @@ const notInHomeVariant = computed(() => {
 });
 const detailsVisible = ref(false);
 const detailsScope = ref<'inHome' | 'notInHome'>('inHome');
+const detailsTitle = computed(() =>
+  detailsScope.value === 'inHome'
+    ? 'Im Hausverbrauch enthalten:'
+    : notInHomeVariant.value.label,
+);
 
 const openDetails = (event: MouseEvent, component: FlowComponent) => {
   if (!component.showInfo) {
@@ -1010,6 +1015,7 @@ const labelClipPath = computed(() => {
     <HomeConsumptionDetailsDialog
       v-model="detailsVisible"
       :scope="detailsScope"
+      :title="detailsTitle"
     />
   </div>
 </template>

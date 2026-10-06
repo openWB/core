@@ -1,5 +1,5 @@
 <template>
-  <q-dialog v-model="visible" :backdrop-filter="isSmallScreen ? '' : 'blur(4px)'">
+  <q-dialog v-model="visible">
     <q-card class="card-width">
       <q-card-section>
         <div class="row no-wrap items-center">
@@ -43,7 +43,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { Component } from 'vue';
-import { Screen } from 'quasar';
 import { useMqttStore } from 'src/stores/mqtt-store';
 import ConsumerIcon from 'src/assets/icons/owbConsumer.svg?component';
 import CounterIcon from 'src/assets/icons/owbCounter.svg?component';
@@ -62,6 +61,7 @@ interface DetailsItem {
 const props = defineProps<{
   modelValue: boolean;
   scope: 'inHome' | 'notInHome';
+  title: string;
 }>();
 
 const emit = defineEmits<{
@@ -74,13 +74,6 @@ const visible = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value),
 });
-const isSmallScreen = computed(() => Screen.lt.sm);
-
-const title = computed(() =>
-  props.scope === 'inHome'
-    ? 'Im Hausverbrauch:'
-    : 'Nicht im Hausverbrauch:',
-);
 
 const items = computed((): DetailsItem[] => {
   const { consumerIds, counterIds } =
