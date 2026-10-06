@@ -2,6 +2,7 @@ import { registry } from '@/assets/js/model'
 import { shDevices, addShDevice } from './model'
 
 export function processSmarthomeMessages(topic: string, message: string) {
+	// console.debug('Processing Smarthome message: ' + topic + ' with message: ' + message)
 	if (topic.match(/^openWB\/LegacySmarthome\/config\//i)) {
 		processSmarthomeConfigMessages(topic, message)
 	} else if (topic.match(/^openWB\/LegacySmarthome\/Devices\//i)) {
@@ -14,23 +15,29 @@ export function processSmarthomeMessages(topic: string, message: string) {
 function processSmarthomeConfigMessages(topic: string, message: string) {
 	const index = getIndex(topic)
 	if (index == undefined) {
-		// console.warn('Smarthome: Missing index in ' + topic)
+		console.warn('Smarthome: Missing index in ' + topic)
 		return
 	}
-	if (!shDevices.has('sh' + index)) {
-		// console.warn('Invalid sh device id received: ' + index)
-		addShDevice('sh' + index)
-	}
-	const dev = shDevices.get('sh' + index)!
 	if (
 		topic.match(
 			/^openWB\/LegacySmarthome\/config\/get\/Devices\/[0-9]+\/device_configured$/i,
 		)
 	) {
-		dev.configured = message != '0'
-		updateShSummary('power')
-		updateShSummary('energy')
-	} else if (
+		if (+message == 1 && !shDevices.has('sh' + index)) {
+			addShDevice('sh' + index)
+
+			updateShSummary('power')
+			updateShSummary('energy')
+		}
+		return
+	}
+
+	const dev = shDevices.get('sh' + index)!
+	if (!dev) {
+		console.warn('Smarthome: Device with index ' + index + ' not found.')
+		return
+	}
+	if (
 		topic.match(
 			/^openWB\/LegacySmarthome\/config\/get\/Devices\/[0-9]+\/device_name$/i,
 		)
@@ -76,8 +83,8 @@ function processSmarthomeDeviceMessages(topic: string, message: string) {
 		return
 	}
 	if (!shDevices.has('sh' + index)) {
-		// console.warn('Invalid sh device id received: ' + index)
-		addShDevice('sh' + index)
+		console.warn('Invalid sh device id received: ' + index)
+		return
 	}
 	const dev = shDevices.get('sh' + index)!
 	if (topic.match(/^openWB\/LegacySmarthome\/Devices\/[0-9]+\/Watt$/i)) {
@@ -132,14 +139,15 @@ function processSmarthomeDeviceMessages(topic: string, message: string) {
 	}
 }
 
-function updateShSummary(cat: string) {
+export function updateShSummary(cat: string) {
 	switch (cat) {
 		case 'power':
 			registry.setPower(
 				'devices',
 				[...shDevices.values()]
 					.filter((dev) => dev.configured && !dev.countAsHouse)
-					.reduce((sum, consumer) => sum + consumer.power, 0),
+					.reduce((sum, consumer) => sum + consumer.power, 0) +
+					registry.getPower('consumers'),
 			)
 			break
 		case 'energy':
