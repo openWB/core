@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class MeterSnapshot:
-    transaction_id: str
+    transaction_id: int
     connector_id: int
     imported: int
 
@@ -360,7 +360,9 @@ class OcppClient:
                 if not connection.boot_accepted:
                     break
 
-                interval = int(connection.cp.openwb_cp.data.get.ocpp.config.HeartbeatInterval)
+                interval = int(
+                    connection.cp.openwb_cp.data.get.ocpp.config.HeartbeatInterval["value"]
+                )
 
                 interval = max(interval, 1)
 
@@ -398,7 +400,7 @@ class OcppClient:
                     break
 
                 interval = int(
-                    connection.cp.openwb_cp.data.get.ocpp.config.MeterValueSampleInterval
+                    connection.cp.openwb_cp.data.get.ocpp.config.MeterValueSampleInterval["value"]
                 )
 
                 interval = max(interval, 1)
@@ -469,7 +471,7 @@ class OcppClient:
         connection = await self.connection_manager.connect(chargebox_id)
 
         if connection is None:
-            log.exception(f"Keine Verbindung zu {chargebox_id} verfügbar")
+            log.error(f"Keine Verbindung zu {chargebox_id} verfügbar")
             return
 
         if not connection.boot_accepted:
