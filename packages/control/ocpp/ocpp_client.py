@@ -1,3 +1,4 @@
+import concurrent.futures
 import logging
 import threading
 from helpermodules.utils.error_handling import ImportErrorContext
@@ -50,7 +51,7 @@ class OcppClient:
 
         self._last_update: dict[
             tuple[str, int],
-            tuple[ChargePointStatus, ChargePointErrorCode]
+            tuple[ChargePointStatus, ChargePointErrorCode, str]
         ] = {}
         self._chargepoint_lifecycle: dict[int, tuple[Optional[str], bool]] = {}
 
@@ -111,7 +112,7 @@ class OcppClient:
         def done_callback(f):
             try:
                 f.result()
-            except asyncio.CancelledError:
+            except (asyncio.CancelledError, concurrent.futures.CancelledError):
                 pass
             except Exception:
                 log.exception(f"Fehler in OCPP-Job: {description}")
@@ -202,30 +203,21 @@ class OcppClient:
         connection.registration_state = state
         connection.cp.registration_state = state
 
-        # if state == RegistrationState.PENDING:
-        #    connection.boot_accepted = False
-        #    await self._stop_registration_tasks(connection)
-        #    log.info(
-        #        "OCPP-Registrierung für %s ist Pending; warte auf Anweisungen der Zentrale",
-        #        chargebox_id,
-        #    )
-        #    return True
-
-        # Bei beiden muss nach x Sekunden ein erneuter Boot-Versuch gestartet werden
-        if state == RegistrationState.REJECTED or state == RegistrationState.PENDING:
+        if state in (RegistrationState.PENDING, RegistrationState.REJECTED):
             connection.boot_accepted = False
             await self._stop_registration_tasks(connection)
             connection.retry_interval = self._get_boot_interval(response, chargebox_id)
             log.warning(
-                "OCPP-Registrierung für %s abgelehnt; erneuter Boot-Versuch in %ss",
+                "OCPP-Registrierung für %s ist %s; erneuter Boot-Versuch in %ss",
                 chargebox_id,
+                state.value,
                 connection.retry_interval,
             )
             if not retrying and (
                 connection.retry_task is None or connection.retry_task.done()
             ):
                 connection.retry_task = asyncio.create_task(
-                    self._retry_rejected_registration(connection),
+                    self._retry_registration(connection),
                     name=f"ocpp-boot-retry-{chargebox_id}",
                 )
             return True
@@ -269,23 +261,29 @@ class OcppClient:
         )
         return 1
 
-    # Bei rejected BootNotification wird nach einem bestimmten Intervall
-    # ein erneuter Boot-Versuch gestartet.
-    async def _retry_rejected_registration(
+    # Bei Pending/Rejected BootNotification wird nach dem vom CSMS
+    # vorgegebenen Intervall ein erneuter Boot-Versuch gestartet.
+    async def _retry_registration(
         self,
         connection: OcppConnection,
     ) -> None:
         try:
             while (
                 not connection.closing
-                and connection.registration_state in (RegistrationState.REJECTED, RegistrationState.PENDING)
+                and connection.registration_state in (
+                    RegistrationState.PENDING,
+                    RegistrationState.REJECTED,
+                )
                 and not connection.ws.closed
             ):
                 await asyncio.sleep(connection.retry_interval)
 
                 if (
                     connection.closing
-                    or connection.registration_state not in (RegistrationState.REJECTED, RegistrationState.PENDING)
+                    or connection.registration_state not in (
+                        RegistrationState.PENDING,
+                        RegistrationState.REJECTED,
+                    )
                     or connection.ws.closed
                     or self.connection_manager.get(connection.chargebox_id) is not connection
                 ):
@@ -353,6 +351,12 @@ class OcppClient:
 
     async def _connection_closed(self, connection: OcppConnection):
         chargebox_id = connection.chargebox_id
+
+        # Wiederholungsversuche für ausstehende StopTransactions beim Verbindungsabbau abbrechen.
+        transactions = getattr(self, "transactions", None)
+        if transactions is not None:
+            await transactions.on_disconnected(chargebox_id, connection)
+
         # Letztes Status zurücksetzen, damit beim neuen connect
         # wieder direkt der aktuelle Status gesendet wird
         self._last_update = {
@@ -559,7 +563,12 @@ class OcppClient:
         force: bool,
     ) -> None:
         key = (chargebox_id, connector_id)
-        current_status = (status, get_ocpp_error_code(fault_state))
+        fault_state_str = (fault_state_str or "")[:50]
+        current_status = (
+            status,
+            get_ocpp_error_code(fault_state),
+            fault_state_str,
+        )
 
         # Prüfung im Client und nicht im CP, da sonst ständig Verbindung überprüft wird
         # ohne was zu senden
@@ -814,6 +823,7 @@ class OcppClient:
                 self._last_update[(cp.chargebox_id, 1)] = (
                     status,
                     get_ocpp_error_code(openwb_cp.data.get.fault_state),
+                    openwb_cp.data.get.fault_str or "",
                 )
             return
 

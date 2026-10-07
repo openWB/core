@@ -179,7 +179,7 @@ def test_active_stop_clears_transaction_only_after_response(transaction_setup):
     assert openwb_cp.data.get.ocpp.tag_accepted is False
 
 
-def test_failed_stop_keeps_transaction_id(transaction_setup):
+def test_failed_stop_keeps_internal_transaction_id_and_releases_local_state(transaction_setup):
     coordinator, connection, openwb_cp = transaction_setup
     connection.cp._stop_transaction.side_effect = RuntimeError("response lost")
 
@@ -191,7 +191,12 @@ def test_failed_stop_keeps_transaction_id(transaction_setup):
 
     assert coordinator.get_state("box-1") == TransactionState.ERROR
     assert coordinator.get_transaction_id("box-1") == 42
-    assert openwb_cp.data.get.ocpp.transaction_id == 42
+    assert openwb_cp.data.get.ocpp.transaction_id is None
+    assert openwb_cp.data.get.ocpp.tag_accepted is False
+    assert openwb_cp.data.get.ocpp.pending_transactions == [{
+        "action": "stop", "transaction_id": 42, "id_tag": "TAG",
+        "imported": 150, "reason": "EVDisconnected",
+    }]
 
 
 def test_offline_stop_is_replayed_once_after_reconnect(transaction_setup, mock_pub):
@@ -353,9 +358,11 @@ def test_get_configuration_reads_dataclass_values(handler_setup):
 
     response = asyncio.run(check())
 
-    assert response.configuration_key[0].key == "HeartbeatInterval"
-    assert response.configuration_key[0].value == "10"
-    assert response.configuration_key[0].readonly is False
+    assert response.configuration_key[0] == {
+        "key": "HeartbeatInterval",
+        "value": "10",
+        "readonly": False,
+    }
     assert response.unknown_key == []
 
 
@@ -468,7 +475,7 @@ def test_status_notification_sends_each_requested_message(handler_setup):
         charge_point = make_charge_point()
         for force in (False, False, True):
             await charge_point._status_notification(
-                connector_id=1, fault_state=0, fault_state_str="",
+                connector_id=1, fault_state=0, fault_state_str="x" * 60,
                 status=ChargePointStatus.available, force=force,
             )
         return charge_point
@@ -477,6 +484,9 @@ def test_status_notification_sends_each_requested_message(handler_setup):
 
     assert charge_point.call.await_count == 3
     assert all(request.connector_id == 1 for request in (
+        awaited.args[0] for awaited in charge_point.call.await_args_list
+    ))
+    assert all(request.info == "x" * 50 for request in (
         awaited.args[0] for awaited in charge_point.call.await_args_list
     ))
 
@@ -539,7 +549,11 @@ def test_websocket_transaction_survives_reconnect(monkeypatch):
             port = server.sockets[0].getsockname()[1]
             monkeypatch.setattr(data, "data", SimpleNamespace(
                 optional_data=SimpleNamespace(data=SimpleNamespace(ocpp=SimpleNamespace(
-                    config=SimpleNamespace(url=f"ws://127.0.0.1:{port}", version="ocpp1.6"),
+                    config=SimpleNamespace(
+                        active=True,
+                        url=f"ws://127.0.0.1:{port}",
+                        version="ocpp1.6",
+                    ),
                 ))),
                 system_data={"system": SimpleNamespace(data={"version": "test"})},
             ), raising=False)

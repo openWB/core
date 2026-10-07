@@ -50,6 +50,10 @@ class OcppConnectionManager:
         if not chargebox_id:
             return None
 
+        if not data.data.optional_data.data.ocpp.config.active:
+            await self.disconnect(chargebox_id)
+            return None
+
         self.want(chargebox_id)
 
         try:
@@ -84,7 +88,6 @@ class OcppConnectionManager:
             connection = self._connections.get(chargebox_id)
             if connection is not None:
                 await self._cleanup_connection(connection)
-        print(f"Disconnected finished for chargebox_id: {chargebox_id}")
 
     async def ensure_connected(
         self,
@@ -95,6 +98,15 @@ class OcppConnectionManager:
         Verwendbare Verbindung zurückgeben, eine neue Verbindung erstellen, falls erforderlich.
         """
         if not chargebox_id:
+            return None
+
+        if not data.data.optional_data.data.ocpp.config.active:
+            self._wanted_connections.discard(chargebox_id)
+            lock = self._get_connect_lock(chargebox_id)
+            async with lock:
+                existing = self._connections.get(chargebox_id)
+                if existing is not None:
+                    await self._cleanup_connection(existing)
             return None
 
         openwb_cp = get_cp_from_chargebox_id(chargebox_id)
@@ -175,7 +187,7 @@ class OcppConnectionManager:
     async def _open_connection(
         self,
         chargebox_id: str,
-    ) -> OcppConnection:
+    ) -> Optional[OcppConnection]:
         url = data.data.optional_data.data.ocpp.config.url
         version = data.data.optional_data.data.ocpp.config.version
 
