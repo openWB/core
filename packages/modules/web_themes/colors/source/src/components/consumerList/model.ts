@@ -40,7 +40,7 @@ export class Consumer implements PowerItem {
 	}
 	set showInGraph(val: boolean) {
 		this._showInGraph = val
-		registry.items.get('sh' + this.id)!.showInGraph = val
+		registry.items.get('consumer' + this.id)!.showInGraph = val
 		savePrefs()
 	}
 	setShowInGraph(val: boolean) {
@@ -51,12 +51,20 @@ export class Consumer implements PowerItem {
 export const consumers = reactive(new Map<number, Consumer>())
 
 export function addConsumer(index: number, showInList = true) {
+	const consumerColorCount = 5
 	if (!consumers.has(index)) {
 		consumers.set(index, new Consumer(index, showInList))
 		const dev = consumers.get(index)!
-		dev.color = 'var(--color-consumer' + consumers.size + ')'
+		dev.color =
+			'var(--color-consumer' +
+			(((consumers.size - 1) % consumerColorCount) + 1) +
+			')'
 		// console.log('Added consumer with index ' + index + ' and color ' + dev.color)
 	} else {
 		console.warn('Consumer with index ' + index + ' already exists.')
 	}
+}
+
+export function resetConsumers() {
+	consumers.clear()
 }
