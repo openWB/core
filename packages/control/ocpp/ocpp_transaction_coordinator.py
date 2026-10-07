@@ -70,6 +70,7 @@ class TransactionCoordinator:
         self._ensure_connected = ensure_connected
         self._transactions: dict[str, OcppTransaction] = {}
         self._start_blocked: set[str] = set()
+        self._replay_tasks: dict[str, asyncio.Task] = {}
 
     async def start(
         self,
@@ -338,12 +339,20 @@ class TransactionCoordinator:
 
             transaction.pending_stop = None
 
-            await self._stop_active(
+            stop_successful = await self._stop_active(
                 chargebox_id,
                 connection,
                 transaction,
                 pending_stop,
             )
+            # Fehlgeschlagenen Stop für die spätere Wiederholung sichern.
+            if not stop_successful and transaction.transaction_id is not None:
+                self._persist_offline_stop(
+                    chargebox_id,
+                    transaction.transaction_id,
+                    pending_stop,
+                )
+                self._schedule_replay_retry(chargebox_id, connection)
 
         return True
 
@@ -463,12 +472,23 @@ class TransactionCoordinator:
 
         transaction.pending_stop = None
 
-        return await self._stop_active(
+        successful = await self._stop_active(
             chargebox_id,
             connection,
             transaction,
             stop_request,
         )
+
+        # Fehlgeschlagenen Stop für die spätere Wiederholung sichern.
+        if not successful and transaction.transaction_id is not None:
+            self._persist_offline_stop(
+                chargebox_id,
+                transaction.transaction_id,
+                stop_request,
+            )
+            self._schedule_replay_retry(chargebox_id, connection)
+
+        return successful
 
     async def stop_and_wait(
         self,
@@ -520,45 +540,52 @@ class TransactionCoordinator:
         chargebox_id: str,
         connection: OcppConnection,
     ) -> None:
-        """
-        Spielt nach einem Reconnect eine persistent
-        gespeicherte StopTransaction erneut ab.
-        """
+        """Spielt einen persistent gespeicherten Offline-Stop nach Reconnect ab."""
+        successful = await self._replay_persisted_stop_once(chargebox_id, connection)
+        if successful is False:
+            self._schedule_replay_retry(chargebox_id, connection)
 
-        transaction = self._get_transaction(chargebox_id)
+    async def on_disconnected(
+        self,
+        chargebox_id: str,
+        connection: OcppConnection,
+    ) -> None:
+        task = self._replay_tasks.pop(chargebox_id, None)
+        if task is None or task.done() or task is asyncio.current_task():
+            return
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
+    async def _replay_persisted_stop_once(
+        self,
+        chargebox_id: str,
+        connection: OcppConnection,
+    ) -> bool:
         openwb_cp = get_cp_from_chargebox_id(chargebox_id)
-
         if openwb_cp is None:
-            return
+            return True
 
-        pending_transactions = (
-            openwb_cp.data.get.ocpp.pending_transactions
-            or []
-        )
-
+        pending_transactions = openwb_cp.data.get.ocpp.pending_transactions or []
         if not pending_transactions:
-            return
-
-        # Aktuell speichern wir absichtlich nur
-        # ein Stop-Event.
-        #
-        # Falls aus einer alten Version Duplikate
-        # existieren, verwenden wir das letzte.
+            return True
         entry = pending_transactions[-1]
-
-        transaction_id = entry.get("transaction_id")
-
-        if transaction_id is None:
+        try:
+            transaction_id = entry.get("transaction_id")
+            meter_stop = entry.get("imported", 0)
+        except (TypeError, ValueError) as exc:
+            log.error(
+                "OCPP %s: ungültiger persistierter StopTransaction-Eintrag: %s; Eintrag wird verworfen",
+                chargebox_id,
+                exc,
+            )
             self._clear_pending_transactions(openwb_cp)
-            return
-
-        transaction_id = int(transaction_id)
+            return True
 
         transaction = self._get_transaction(chargebox_id)
-
         transaction.transaction_id = transaction_id
-
         transaction.id_tag = str(entry.get("id_tag", ""))
         transaction.pending_stop = None
         transaction.last_error = None
@@ -569,17 +596,11 @@ class TransactionCoordinator:
             TransactionState.ACTIVE,
         )
 
-        # Hier bewusst KEIN _commit().
-        #
-        # Beim Offline-Stop wurde die lokale
+        # Hier bewusst KEIN _commit(): Beim Offline-Stop wurde die lokale
         # openWB-Transaction bereits freigegeben.
-        #
-        # Während des Replay soll sie nicht kurz
-        # wieder als aktiv publiziert werden.
-
         stop_request = PendingStop(
-            meter_stop=int(entry.get("imported", 0)),
-            id_tag=str(entry.get("id_tag", "",)),
+            meter_stop=meter_stop,
+            id_tag=str(entry.get("id_tag", "")),
             reason=str(entry.get("reason", "EVDisconnected")),
         )
 
@@ -588,15 +609,65 @@ class TransactionCoordinator:
             connection,
             transaction,
             stop_request,
-            # Normale Stops publizieren Zwischenzustände ins Backend. Beim Replay
-            # ist die Transaktion dort bereits freigegeben; ein Publish würde
-            # ihre ID vorübergehend wieder sichtbar machen. Der erfolgreiche
-            # Abschluss publiziert weiterhin das endgültige Zurücksetzen.
             publish_state=False,
         )
 
         if successful:
             self._clear_pending_transactions(openwb_cp)
+
+        return successful
+
+    def _schedule_replay_retry(
+        self,
+        chargebox_id: str,
+        connection: OcppConnection,
+    ) -> None:
+        attempts = 3  # <- muss langfristig in die Konfiguration verschoben werden
+        if attempts <= 1:
+            return
+
+        existing = self._replay_tasks.get(chargebox_id)
+        if existing is not None and not existing.done():
+            return
+
+        self._replay_tasks[chargebox_id] = asyncio.create_task(
+            self._retry_persisted_stop(chargebox_id, connection, attempts),
+            name=f"ocpp-stop-replay-{chargebox_id}",
+        )
+
+    async def _retry_persisted_stop(
+        self,
+        chargebox_id: str,
+        connection: OcppConnection,
+        attempts: int,
+    ) -> None:
+        try:
+            for retry_number in range(1, attempts):
+                retry_interval = 60  # <-  muss langfristig in config
+                # OCPP 1.6: Wartezeit vor jeder Wiederholung = Basisintervall
+                # * Anzahl der vorangegangenen Übertragungen.
+                await asyncio.sleep(retry_interval * retry_number)
+
+                if (
+                    connection.closing
+                    or connection.ws.closed
+                    or not connection.boot_accepted
+                ):
+                    return
+
+                if await self._replay_persisted_stop_once(chargebox_id, connection):
+                    return
+
+            log.error(
+                "OCPP %s: persistierter StopTransaction konnte nach %s Versuchen nicht gesendet werden",
+                chargebox_id,
+                attempts,
+            )
+        except asyncio.CancelledError:
+            raise
+        finally:
+            if self._replay_tasks.get(chargebox_id) is asyncio.current_task():
+                self._replay_tasks.pop(chargebox_id, None)
 
     def get_transaction_id(self, chargebox_id: str,) -> Optional[int]:
         return self._get_transaction(chargebox_id).transaction_id
@@ -658,16 +729,32 @@ class TransactionCoordinator:
             existing_id = openwb_cp.data.get.ocpp.transaction_id
             existing_id_tag = openwb_cp.data.get.ocpp.transaction_id_tag
 
+            invalid_persisted_transaction = False
             if existing_id is not None:
-                transaction.transaction_id = int(existing_id)
-                transaction.id_tag = (existing_id_tag)
-                transaction.state = (TransactionState.ACTIVE)
-
-                log.info(
-                    f"Bestehende OCPP-Transaction {existing_id} für {chargebox_id} übernommen.",
-                )
+                try:
+                    transaction.transaction_id = int(existing_id)
+                except (TypeError, ValueError) as exc:
+                    invalid_persisted_transaction = True
+                    log.error(
+                        "OCPP %s: ungültige persistierte Transaction-ID %r: %s; Zustand wird zurückgesetzt",
+                        chargebox_id,
+                        existing_id,
+                        exc,
+                    )
+                else:
+                    transaction.id_tag = existing_id_tag
+                    transaction.state = TransactionState.ACTIVE
+                    log.info(
+                        f"Bestehende OCPP-Transaction {existing_id} für {chargebox_id} übernommen.",
+                    )
+        else:
+            invalid_persisted_transaction = False
 
         self._transactions[chargebox_id] = transaction
+
+        if invalid_persisted_transaction:
+            transaction.reset()
+            self._commit(chargebox_id, transaction)
 
         return transaction
 
@@ -694,16 +781,6 @@ class TransactionCoordinator:
             log.debug(
                 f"OCPP {chargebox_id} Transaction-State: {old_state.value} -> {state.value}",
             )
-            # NUR TEMP zuj DEBUG
-            with open(
-                "/var/www/html/openWB/temp_ocpp_transaction_state.log",
-                "a",
-                encoding="utf-8",
-            ) as state_log:
-                state_log.write(
-                    f"OCPP {chargebox_id} Transaction-State: "
-                    f"{old_state.value} -> {state.value}\n"
-                )
 
     def _commit(
         self,
@@ -872,11 +949,9 @@ class TransactionCoordinator:
         #
         # Die echte Transaction-ID bleibt
         # im Coordinator und im pending event
-        # erhalten und wird nach Reconnect
-        # beendet.
-        #
-        # -> wir bleiben hier im STOPPING State
-        # -> deswegen kein reset() und _commit()
+        # erhalten und wird auf derselben Verbindung oder nach Reconnect
+        # erneut beendet. Der interne State bleibt deshalb absichtlich erhalten;
+        # kein reset() und kein _commit().
         ocpp_data.transaction_id = None
         ocpp_data.transaction_id_tag = None
         ocpp_data.tag_accepted = False

@@ -2,7 +2,7 @@
 import asyncio
 import ftplib
 import tempfile
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Awaitable, Callable, Dict, Optional
 from urllib.parse import SplitResult, unquote, urlsplit
@@ -18,9 +18,16 @@ ftp://test:test@192.168.1.97:2121/uploads/test1.py
 
 
 def _parse_server_time(value: str) -> datetime:
-    return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%fZ").replace(
-        tzinfo=timezone.utc
-    ).astimezone().replace(tzinfo=None)
+    normalized = value.strip()
+    if normalized.endswith("Z"):
+        normalized = normalized[:-1] + "+00:00"
+
+    parsed = datetime.fromisoformat(normalized)
+    if parsed.tzinfo is None:
+        raise ValueError("OCPP dateTime muss eine Zeitzone enthalten")
+
+    # Das openWB-Log verwendet lokale, naive Zeitstempel.
+    return parsed.astimezone().replace(tzinfo=None)
 
 
 # Filtert die OCPP-Logeinträge nach einem gegebenen Start- und Stoppzeitpunkt
@@ -55,7 +62,7 @@ def filter_ocpp_log(start: Optional[str], stop: Optional[str]) -> list[str]:
 
 # Erstellt eine Diagnosedatei basierend auf den gefilterten OCPP-Logeinträgen.
 # diese Datei wird dann per FTP übertragen
-async def create_diagnostics(
+def _create_diagnostics_sync(
     start_time: Optional[str] = None,
     stop_time: Optional[str] = None,
 ) -> str:
@@ -69,6 +76,15 @@ async def create_diagnostics(
     ) as diagnostics_file:
         diagnostics_file.writelines(log_lines)
         return diagnostics_file.name
+
+
+# Auslagerung in einen eigenen Thread,
+# damit der OCPP-Event-Loop nicht blockiert wird.
+async def create_diagnostics(
+    start_time: Optional[str] = None,
+    stop_time: Optional[str] = None,
+) -> str:
+    return await asyncio.to_thread(_create_diagnostics_sync, start_time, stop_time)
 
 
 def _parse_ftp_location(location: str) -> SplitResult:
