@@ -117,7 +117,7 @@ const items = computed((): DetailsItem[] => {
 }
 .title-icon {
   flex-shrink: 0;
-  color: var(--q-flow-chart-info);
+  color: var(--q-primary);
 }
 .q-item__section--avatar {
   min-width: 0;
