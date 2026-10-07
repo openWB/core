@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from control import data
 from modules.common.abstract_device import DeviceDescriptor
 from typing import Optional
 from modules.common.component_state import ConsumerState
