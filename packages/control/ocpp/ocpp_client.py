@@ -52,6 +52,7 @@ class OcppClient:
             tuple[str, int],
             tuple[ChargePointStatus, ChargePointErrorCode]
         ] = {}
+        self._chargepoint_lifecycle: dict[int, tuple[Optional[str], bool]] = {}
 
         with OcppClient._ocpp_runtime_lock:
             if (OcppClient._ocpp_thread is None
@@ -130,10 +131,40 @@ class OcppClient:
         )
 
     def disconnect(self, chargebox_id: str) -> None:
+        print(f"Client___Disconnecting chargebox {chargebox_id}")
         self._submit(
             self.connection_manager.disconnect(chargebox_id),
             f"disconnect {chargebox_id}",
         )
+
+    def sync_chargepoint_lifecycle(
+        self,
+        chargepoint_num: int,
+        chargebox_id: Optional[str],
+        ocpp_active: bool,
+    ) -> None:
+        """Disconnect obsolete OCPP connections after configuration changes."""
+        chargebox_id = chargebox_id or None
+        enabled = bool(ocpp_active and chargebox_id)
+        previous = self._chargepoint_lifecycle.get(chargepoint_num)
+
+        if previous is None:
+            # Bei deaktiviertem OCPP kann nach einem Backend-Neustart noch eine alte Verbindung bestehen.
+            if not enabled and chargebox_id:
+                self.disconnect(chargebox_id)
+        else:
+            previous_id, previous_enabled = previous
+            if previous_id and previous_id != chargebox_id:
+                self.disconnect(previous_id)
+
+            if (
+                chargebox_id
+                and not enabled
+                and (previous_enabled or previous_id != chargebox_id)
+            ):
+                self.disconnect(chargebox_id)
+
+        self._chargepoint_lifecycle[chargepoint_num] = (chargebox_id, enabled)
 
     async def _initialize_connection(
         self,
@@ -171,16 +202,17 @@ class OcppClient:
         connection.registration_state = state
         connection.cp.registration_state = state
 
-        if state == RegistrationState.PENDING:
-            connection.boot_accepted = False
-            await self._stop_registration_tasks(connection)
-            log.info(
-                "OCPP-Registrierung für %s ist Pending; warte auf Anweisungen der Zentrale",
-                chargebox_id,
-            )
-            return True
+        # if state == RegistrationState.PENDING:
+        #    connection.boot_accepted = False
+        #    await self._stop_registration_tasks(connection)
+        #    log.info(
+        #        "OCPP-Registrierung für %s ist Pending; warte auf Anweisungen der Zentrale",
+        #        chargebox_id,
+        #    )
+        #    return True
 
-        if state == RegistrationState.REJECTED:
+        # Bei beiden muss nach x Sekunden ein erneuter Boot-Versuch gestartet werden
+        if state == RegistrationState.REJECTED or state == RegistrationState.PENDING:
             connection.boot_accepted = False
             await self._stop_registration_tasks(connection)
             connection.retry_interval = self._get_boot_interval(response, chargebox_id)
@@ -246,14 +278,14 @@ class OcppClient:
         try:
             while (
                 not connection.closing
-                and connection.registration_state == RegistrationState.REJECTED
+                and connection.registration_state in (RegistrationState.REJECTED, RegistrationState.PENDING)
                 and not connection.ws.closed
             ):
                 await asyncio.sleep(connection.retry_interval)
 
                 if (
                     connection.closing
-                    or connection.registration_state != RegistrationState.REJECTED
+                    or connection.registration_state not in (RegistrationState.REJECTED, RegistrationState.PENDING)
                     or connection.ws.closed
                     or self.connection_manager.get(connection.chargebox_id) is not connection
                 ):
