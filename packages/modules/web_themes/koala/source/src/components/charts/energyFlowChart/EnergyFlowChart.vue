@@ -1178,7 +1178,7 @@ circle:not(.soc) {
 }
 
 .info-badge .info-icon {
-  color: var(--q-flow-chart-info);
+  color: var(--q-primary);
 }
 
 rect {
