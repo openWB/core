@@ -14,6 +14,7 @@ from typing import List, Optional
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
 
 from control.chargemode import Chargemode
+from control.consumer.consumer_data import ResetChargemode
 from control.consumer.usage import NOT_CONTROLLED
 from control.limiting_value import LoadmanagementLimit
 
@@ -22,7 +23,7 @@ from helpermodules import timecheck
 from helpermodules import hardware_configuration
 from helpermodules import pub
 from helpermodules.broker import BrokerClient
-from helpermodules.abstract_plans import Limit
+from helpermodules.abstract_plans import FrequencyDate, Limit
 from helpermodules.constants import DEFAULT_COLORS, NO_ERROR
 from helpermodules.hardware_configuration import (
     get_hardware_configuration_setting,
@@ -62,7 +63,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 152
+    DATASTORE_VERSION = 154
 
     FILE_OPERATION_VERSION = 0
 
@@ -4070,3 +4071,50 @@ class UpdateConfig:
                 else:
                     remove_acl_role("consumer-<id>-write-access", consumer_id)
         self._append_datastore_version(152)
+
+    def upgrade_datastore_153(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search(r"^openWB/consumer/[0-9]+/usage$", topic) is not None:
+                usage = decode_payload(payload)
+                reset_chargemode = usage["reset_chargemode"]
+                if reset_chargemode.get("mode") is not None:
+                    legacy_target_chargemode = reset_chargemode.get("chargemode", Chargemode.INSTANT_CHARGING)
+                    # altes Schema
+                    if reset_chargemode["mode"] == "never":
+                        reset_chargemode = ResetChargemode(active=False, chargemode=legacy_target_chargemode)
+                    elif reset_chargemode["mode"] == "midnight":
+                        reset_chargemode = ResetChargemode(active=True, time="00:00",
+                                                           frequency=FrequencyDate(selected="daily"),
+                                                           chargemode=legacy_target_chargemode)
+                    elif reset_chargemode["mode"] == "time":
+                        timestamp = reset_chargemode["time"]
+                        if timestamp is not None:
+                            date = datetime.datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d")
+                            time = datetime.datetime.fromtimestamp(timestamp).strftime("%H:%M")
+                        else:
+                            date = datetime.datetime.today().strftime("%Y-%m-%d")
+                            time = "07:00"
+                        reset_chargemode = ResetChargemode(
+                            active=True, time=time, frequency=FrequencyDate(selected="once", once=date),
+                            chargemode=legacy_target_chargemode)
+
+                    usage["reset_chargemode"] = reset_chargemode
+                    return {topic: asdict(usage)}
+            return None
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(153)
+
+    def upgrade_datastore_154(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search(r"^openWB/consumer/[0-9]+/config$", topic) is not None:
+                config = decode_payload(payload)
+                if "min_current" in config:
+                    if "min_power" not in config:
+                        phases = config.get("connected_phases") or 1
+                        config["min_power"] = float(config["min_current"]) * phases * 230
+                    del config["min_current"]
+                    return {topic: config}
+            return None
+
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(154)

@@ -80,6 +80,21 @@
 				:width="boxwidth"
 			/>
 			<PgToolTipLine
+				cat="consumers"
+				:indent="5"
+				:power="entry.consumers"
+				:width="boxwidth"
+			/>
+			<PgToolTipLine
+				v-for="consumer in consumers()"
+				:key="consumer.id"
+				cat="consumers"
+				:name="consumer.name"
+				:power="consumer.power"
+				:indent="10"
+				:width="boxwidth"
+			/>
+			<PgToolTipLine
 				cat="counters"
 				:indent="5"
 				:power="entry.counters"
@@ -137,7 +152,7 @@ function height() {
 			([k, v]) =>
 				k != 'selfUsage' && !k.startsWith('soc') && v != null && v > 0,
 		).length *
-			20 +
+			22 +
 		2
 	)
 }
@@ -176,6 +191,22 @@ function devs() {
 				name: itemNames.value.get(k)
 					? trimName(itemNames.value.get(k)!)
 					: 'Gerät',
+				id: k,
+			}
+		})
+}
+function consumers() {
+	return Object.entries(props.entry)
+		.filter(
+			([k, v]) =>
+				k.startsWith('consumer') && k != 'consumers' && k.length > 8 && v > 0,
+		)
+		.map(([k, v]) => {
+			return {
+				power: v,
+				name: itemNames.value.get(k)
+					? trimName(itemNames.value.get(k)!)
+					: 'Verbraucher',
 				id: k,
 			}
 		})

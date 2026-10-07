@@ -263,6 +263,7 @@ const valuesToDisplay = computed(() => {
 		registry.getItem('evuOut'),
 		registry.getItem('charging'),
 		registry.getItem('devices'),
+		// registry.getItem('consumers'),
 		registry.getItem('batIn'),
 		registry.getItem('house'),
 		registry.getItem('counters'),

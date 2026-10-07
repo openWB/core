@@ -149,12 +149,8 @@ export function processVehicleMessages(topic: string, message: string) {
 			vehicles[index].updateEvTemplateId(+message)
 		} else if (topic.match(/^openwb\/vehicle\/[0-9]+\/soc_module\/config$/i)) {
 			const config = JSON.parse(message)
-			Object.values(chargePoints).forEach((cp) => {
-				if (cp.connectedVehicle == index) {
-					cp.isSocConfigured = config.type !== null
-					cp.isSocManual = config.type == 'manual'
-				}
-			})
+			vehicles[index].isSocConfigured = config.type !== null
+			vehicles[index].isSocManual = config.type == 'manual'
 		} else {
 			// console.warn('Ignored vehicle message [' + topic + ']=' + message)
 		}

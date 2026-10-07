@@ -30,7 +30,7 @@ def mock_data() -> None:
 def consumer() -> Consumer:
     load = Consumer(1)
     load.data.usage.type = ConsumerUsage.CONTINUOUS
-    load.data.config.min_current = 6
+    load.data.config.min_power = 1380
     load.data.config.max_power = 2300
     load.data.config.connected_phases = 1
     load.data.get.voltages = [230]
@@ -240,7 +240,7 @@ def test_wait_for_start_handler_standby_threshold_depends_on_usage_type(
     consumer.data.usage.wait_for_start_active = True
     consumer.data.usage.type = usage_type
     consumer.data.set.wait_for_start_state = WaitForStartStates.WAIT_FOR_DEVICE_START
-    # 0.2 A liegt über STANDBY_THRESHOLD (0.15), aber unter min_current (6 A)
+    # 0.2 A liegt über STANDBY_THRESHOLD (0.15), aber unter der aus min_power abgeleiteten Schwelle (~6 A)
     consumer.data.get.currents = [0.2, 0.2, 0.2]
     charging_func = Mock(return_value=(11, "ok", Chargemode.PV_CHARGING))
 
@@ -251,6 +251,26 @@ def test_wait_for_start_handler_standby_threshold_depends_on_usage_type(
     assert result == expected_result
     assert consumer.data.set.wait_for_start_state == expected_state
     assert charging_func.call_count == 0
+
+
+def test_process_on_time_pauses_when_charge_state_is_false(
+        consumer: Consumer,
+        monkeypatch: pytest.MonkeyPatch):
+    # setup
+    monkeypatch.setattr(timecheck, "create_timestamp", Mock(side_effect=[100, 130, 160]))
+
+    # execution
+    consumer.data.get.charge_state = True
+    consumer.process_on_time()  # Start bei t=100
+    consumer.data.get.charge_state = False
+    consumer.process_on_time()  # Pause: Zeitstempel wird verworfen
+    consumer.data.get.charge_state = True
+    consumer.process_on_time()  # Neustart bei t=130 ohne Nachlauf aus Pause
+    consumer.process_on_time()  # Laufzeit von 30s wird gezaehlt
+
+    # evaluation
+    assert consumer.data.set.on_time == 30
+    assert consumer.data.set.timestamp_wrote_last_on_time == 160
 
 
 @pytest.mark.parametrize(
@@ -371,29 +391,34 @@ def test_pv_charging(consumer: Consumer):
 
 
 @pytest.mark.parametrize(
-    "usage_type, charge_state, currents, expected_min_current",
+    "usage_type, charge_state, connected_phases, currents, expected_min_current",
     [
-        pytest.param(ConsumerUsage.CONTINUOUS, True, [13, 13, 13], 13, id="continuous-while-running"),
-        pytest.param(ConsumerUsage.CONTINUOUS, False, [13, 13, 13], 10, id="continuous-while-stopped"),
-        pytest.param(ConsumerUsage.SUSPENDABLE_TUNABLE, True, [13, 13, 13], 6, id="tunable-while-running"),
-        pytest.param(ConsumerUsage.SUSPENDABLE_TUNABLE, False, [13, 13, 13], 6, id="tunable-while-stopped"),
+        pytest.param(ConsumerUsage.CONTINUOUS, True, 1, [13, 13, 13], 13, id="continuous-while-running"),
+        pytest.param(ConsumerUsage.CONTINUOUS, False, 1, [13, 13, 13], 10, id="continuous-while-stopped"),
+        pytest.param(ConsumerUsage.SUSPENDABLE_TUNABLE, True, 1, [13, 13, 13], 6,
+                     id="tunable-single-phase"),
+        pytest.param(ConsumerUsage.SUSPENDABLE_TUNABLE, False, 2, [13, 13, 13], 3,
+                     id="tunable-two-phases-min-power-conversion"),
     ],
 )
 def test_set_control_parameter_sets_min_current_by_usage_and_charge_state(
         consumer: Consumer,
         usage_type: ConsumerUsage,
         charge_state: bool,
+        connected_phases: int,
         currents: List[float],
         expected_min_current: float):
     # setup
     consumer.data.usage.type = usage_type
     consumer.data.get.charge_state = charge_state
+    consumer.data.config.connected_phases = connected_phases
+    consumer.data.get.voltages = [230]*3
     consumer.data.get.currents = currents
 
     # execution
     consumer.set_control_parameter(
         required_current=11,
-        phases=1,
+        phases=connected_phases,
         submode=Chargemode.PV_CHARGING,
         mode=Chargemode.PV_CHARGING,
     )
@@ -568,3 +593,71 @@ def test_scheduled_charging_calc_current_electricity_tariff(
 
     # evaluation
     assert ret == expected
+
+
+@pytest.mark.parametrize(
+    "is_active,current_mode,target_mode,remaining_time,expected_mode,expected_check_end_time_calls",
+    [
+        pytest.param(
+            False,
+            Chargemode.STOP,
+            Chargemode.PV_CHARGING,
+            0,
+            Chargemode.STOP,
+            0,
+            id="inactive-noop",
+        ),
+        pytest.param(
+            True,
+            Chargemode.STOP,
+            Chargemode.PV_CHARGING,
+            5,
+            Chargemode.STOP,
+            1,
+            id="active-not-due-noop",
+        ),
+        pytest.param(
+            True,
+            Chargemode.STOP,
+            Chargemode.PV_CHARGING,
+            0,
+            Chargemode.PV_CHARGING,
+            1,
+            id="active-due-switch",
+        ),
+        pytest.param(
+            True,
+            Chargemode.PV_CHARGING,
+            Chargemode.PV_CHARGING,
+            0,
+            Chargemode.PV_CHARGING,
+            1,
+            id="active-due-already-target",
+        ),
+    ],
+)
+def test_reset_chargemode_at_time(
+    consumer: Consumer,
+    monkeypatch: pytest.MonkeyPatch,
+    is_active: bool,
+    current_mode: Chargemode,
+    target_mode: Chargemode,
+    remaining_time: int,
+    expected_mode: Chargemode,
+    expected_check_end_time_calls: int,
+):
+    # setup
+    consumer.data.usage.chargemode = current_mode
+    consumer.data.usage.reset_chargemode.active = is_active
+    consumer.data.usage.reset_chargemode.chargemode = target_mode
+    check_end_time_mock = Mock(return_value=remaining_time)
+    monkeypatch.setattr(timecheck, "check_end_time_current_occurrence", check_end_time_mock)
+
+    # execution
+    consumer.reset_chargemode_at_time()
+
+    # evaluation
+    assert consumer.data.usage.chargemode == expected_mode
+    assert check_end_time_mock.call_count == expected_check_end_time_calls
+    if expected_check_end_time_calls:
+        check_end_time_mock.assert_called_once_with(consumer.data.usage.reset_chargemode)
