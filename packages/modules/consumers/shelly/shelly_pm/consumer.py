@@ -62,8 +62,7 @@ def create_consumer(config: ShellyPM):
 
     def update() -> ConsumerState:
         status = request_status(config.configuration.ip_address, generation)
-        powers, voltages, currents, _, power, _ = parse_data(
-            data.data.consumer_data[f"consumer{config.id}"].data.config.phase_1, config.configuration.factor, status)
+        powers, voltages, currents, _, power, _ = parse_data(1, config.configuration.factor, status)
         imported, exported = sim_counter.sim_count(power)
         return ConsumerState(
             power=power,
