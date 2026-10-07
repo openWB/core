@@ -77,7 +77,7 @@ class Consumer(Load):
 
     def _get_min_current(self) -> float:
         if self.data.usage.type == ConsumerUsage.SUSPENDABLE_TUNABLE:
-            return self.data.config.min_current
+            return self._convert_power_to_current(self.data.config.min_power)
         else:
             if self.data.get.charge_state:
                 return get_medium_charging_current(self.data.get.currents)
@@ -416,7 +416,8 @@ class Consumer(Load):
             self, func: Callable[[], Tuple[float, Optional[str], Chargemode]]
     ) -> Tuple[float, Optional[str], Chargemode, bool]:
         chargemode_defined_by_wait_for_start_handler = False
-        standby_threshold = self.STANDBY_THRESHOLD if self.data.usage.type in ON_OFF else self.data.config.min_current
+        standby_threshold = (self.STANDBY_THRESHOLD if self.data.usage.type in ON_OFF
+                             else self._convert_power_to_current(self.data.config.min_power))
         if self.data.usage.wait_for_start_active:
             if self.data.set.wait_for_start_state == WaitForStartStates.WAIT_FOR_DEVICE_START:
                 # mit Minimalstrom prüfen, damit Standby-Geräte nicht als laufend erkannt werden
