@@ -182,6 +182,26 @@ def test_wait_for_start_handler_standby_threshold_depends_on_usage_type(
     assert charging_func.call_count == 0
 
 
+def test_process_on_time_pauses_when_charge_state_is_false(
+        consumer: Consumer,
+        monkeypatch: pytest.MonkeyPatch):
+    # setup
+    monkeypatch.setattr(timecheck, "create_timestamp", Mock(side_effect=[100, 130, 160]))
+
+    # execution
+    consumer.data.get.charge_state = True
+    consumer.process_on_time()  # Start bei t=100
+    consumer.data.get.charge_state = False
+    consumer.process_on_time()  # Pause: Zeitstempel wird verworfen
+    consumer.data.get.charge_state = True
+    consumer.process_on_time()  # Neustart bei t=130 ohne Nachlauf aus Pause
+    consumer.process_on_time()  # Laufzeit von 30s wird gezaehlt
+
+    # evaluation
+    assert consumer.data.set.on_time == 30
+    assert consumer.data.set.timestamp_wrote_last_on_time == 160
+
+
 @pytest.mark.parametrize(
     "plans, plan_found, expected",
     [
