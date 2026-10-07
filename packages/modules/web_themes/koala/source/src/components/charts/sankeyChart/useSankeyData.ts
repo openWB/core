@@ -61,8 +61,14 @@ export function useSankeyData() {
   // production as negative; batteryPower reports charging as positive.
   const hybrid = computed(() =>
     mqttStore.hybridInverters.map(({ inverterId, batteryId }) => ({
-      inverterPv: Math.max(0, -num(mqttStore.pvPowerIndividual(inverterId, 'value'))),
-      batteryCharge: Math.max(0, num(mqttStore.batteryPower(batteryId, 'value'))),
+      inverterPv: Math.max(
+        0,
+        -num(mqttStore.pvPowerIndividual(inverterId, 'value')),
+      ),
+      batteryCharge: Math.max(
+        0,
+        num(mqttStore.batteryPower(batteryId, 'value')),
+      ),
     })),
   );
 
@@ -125,7 +131,9 @@ export function useSankeyData() {
     }
     if (id.startsWith('cp')) {
       const cpId = Number(id.slice(2));
-      return mqttStore.chargePointColor(cpId) || cssVar('--q-charge-point-stroke');
+      return (
+        mqttStore.chargePointColor(cpId) || cssVar('--q-charge-point-stroke')
+      );
     }
     if (id.startsWith(CONSUMER_ID_PREFIX)) {
       const consumerId = Number(id.slice(CONSUMER_ID_PREFIX.length));
@@ -133,7 +141,6 @@ export function useSankeyData() {
     }
     return cssVar('--q-vehicle-stroke');
   };
-
 
   //Node-label color for dark mode / light mode.
   const labelColor = (): string => {
