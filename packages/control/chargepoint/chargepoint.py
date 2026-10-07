@@ -67,6 +67,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
             # bestehende Daten auf dem Broker nicht zurücksetzen, daher nicht veröffentlichen
             self.data: ChargepointData = ChargepointData()
             self.data.set_event(event)
+
         except Exception:
             log.exception("Fehler in der Ladepunkt-Klasse von "+str(self.num))
 
@@ -161,7 +162,10 @@ class Chargepoint(ChargepointRfidMixin, Load):
 
     def _is_ocpp(self) -> Tuple[bool, Optional[str]]:
         # OCPP darf Ladepunkte ohne OCPP-Konfiguration nicht beeinflussen.
-        if not self.data.config.ocpp_chargebox_id:
+        if (
+            not data.data.optional_data.data.ocpp.config.active
+            or not self.data.config.ocpp_chargebox_id
+        ):
             return True, None
 
         state = self.data.get.ocpp.availability
@@ -223,11 +227,12 @@ class Chargepoint(ChargepointRfidMixin, Load):
     def _process_charge_stop(self) -> None:
         # Charging Ev ist noch das EV des vorherigen Zyklus, wenn das nicht -1 war und jetzt nicht mehr geladen
         # werden soll (-1), Daten zurücksetzen.
+
         # Ocpp Stop Funktion aufrufen
         chargebox_id = self.data.config.ocpp_chargebox_id
-        if (data.data.optional_data.data.ocpp.config.active and
-            chargebox_id and
-                self.data.get.ocpp.transaction_id is not None):
+        # hier nicht nach data.data.optional_data.data.ocpp.config.active prüfen
+        # Stop muss immer aufgerufen werden, wenn noch eine alten Transaktion aktiv ist.
+        if (chargebox_id and self.data.get.ocpp.transaction_id is not None):
             if self.data.get.ocpp.remote_stop:
 
                 data.data.ocpp_client.request_stop(
@@ -698,7 +703,13 @@ class Chargepoint(ChargepointRfidMixin, Load):
 
     def update(self, ev_list: Dict[str, Ev]) -> None:
         try:
-            # Wenn Stecker abgezogen wurde, reset remote_stop
+            data.data.ocpp_client.sync_chargepoint_lifecycle(
+                self.num,
+                self.data.config.ocpp_chargebox_id,
+                data.data.optional_data.data.ocpp.config.active,
+            )
+
+            # Wenn Stecker abgezogen wurde, reset remote_stop und reset_stop OCPP
             if (self.data.get.ocpp.remote_stop or self.data.get.ocpp.reset) and self.data.get.plug_state is False:
                 self.data.get.ocpp.remote_stop = False
                 Pub().pub(f"openWB/set/chargepoint/"f"{self.num}/get/ocpp/remote_stop", False)
@@ -795,6 +806,8 @@ class Chargepoint(ChargepointRfidMixin, Load):
             except Exception:
                 log.exception(f"Fehler bei Ladestop,cp{self.num}")
 
+            # OCPP-STUFF
+            ##############
             # CP sendet Statusmeldungen an den OCPP-Server
             # bei jeden update-zyklus
             # Client sendet Statusmeldungen nur wenn sich der Status ändert an den OCPP-Server
@@ -810,7 +823,6 @@ class Chargepoint(ChargepointRfidMixin, Load):
                 or self.data.get.rfid
                 or self.data.get.vehicle_id
             )
-
             # Wenn eine Transaktion aktiv ist, werden die aktuellen Zählerstände an den OCPP-Server übertragen
             # werden in jedem update an den Client gesendet.
             # Dieser sendet die Daten in einem eigenen Intervall an den OCPP-Server
@@ -822,9 +834,9 @@ class Chargepoint(ChargepointRfidMixin, Load):
                                                       self.data.get.ocpp.transaction_id,
                                                       int(self.data.get.imported))
 
-            # als ocpp Chargepoint konfiguriert
+            # als ocpp Chargepoint konfiguriert?
             if data.data.optional_data.data.ocpp.config.active and chargebox_id:
-                if not self.data.get.plug_state:
+                if not self.data.get.plug_state:  # <- Stecker eingesteckt?
                     data.data.ocpp_client.clear_start_block(chargebox_id)
                 elif (self.data.get.ocpp.connected  # <- mit OCPP-Server verbunden
                         and self.data.get.plug_state and id_tag):
@@ -837,6 +849,7 @@ class Chargepoint(ChargepointRfidMixin, Load):
                 elif self.data.get.plug_state and id_tag:
                     log.info(f"OCPP {chargebox_id} kein Start ohne Verbindung zum OCPP-Server.")
 
+            ######################################################
             if self.data.get.plug_state and self.data.set.plug_state_prev is False:
                 self.data.control_parameter.timestamp_chargemode_changed = create_timestamp()
             # SoC nach Anstecken aktualisieren

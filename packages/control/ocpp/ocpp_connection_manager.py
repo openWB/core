@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from typing import Awaitable, Callable, Optional, Any
+from urllib.parse import quote
 
 from helpermodules.utils.error_handling import ImportErrorContext
 
@@ -83,6 +84,7 @@ class OcppConnectionManager:
             connection = self._connections.get(chargebox_id)
             if connection is not None:
                 await self._cleanup_connection(connection)
+        print(f"Disconnected finished for chargebox_id: {chargebox_id}")
 
     async def ensure_connected(
         self,
@@ -177,7 +179,12 @@ class OcppConnectionManager:
         url = data.data.optional_data.data.ocpp.config.url
         version = data.data.optional_data.data.ocpp.config.version
 
-        ws_url = f"{url.rstrip('/')}/{chargebox_id}"
+        if not url:
+            raise ValueError("OCPP-Server-URL ist nicht konfiguriert")
+        if not version:
+            raise ValueError("OCPP-Subprotocol ist nicht konfiguriert")
+
+        ws_url = f"{url.rstrip('/')}/{quote(chargebox_id, safe='')}"
 
         log.info(
             "Verbinde OCPP Chargebox %s mit %s",
@@ -207,8 +214,9 @@ class OcppConnectionManager:
             )
 
             response = await self._on_connected(connection)
-            if response is None:
-                log.error(f"Boot Notification für {chargebox_id} fehlgeschlagen")
+            if response is not True:
+                log.error("Initialisierung der OCPP-Verbindung für %s fehlgeschlagen", chargebox_id)
+                await self._cleanup_connection(connection)
                 return None
 
             log.info("OCPP Chargebox %s verbunden", chargebox_id)
